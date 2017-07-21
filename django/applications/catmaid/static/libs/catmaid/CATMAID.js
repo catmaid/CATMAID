@@ -523,4 +523,28 @@ var requestQueue = new RequestQueue();
       return true;
   };
 
+  /**
+   * Return a function to perform text matching, either as substring or as a regular expression when the text starts with a '/'. Returns null if the text is not suitable.
+   */
+  CATMAID.createTextMatchingFunction = function(text) {
+    text = text.trim();
+    if (!text) {
+      CATMAID.msg("Select by regular expression", "No text.");
+      return null;
+    }
+    var match;
+    if ('/' === text[0]) {
+      // Search by regular expression
+      match = (function(regexp, label) {
+        return regexp.test(label);
+      }).bind(null, new RegExp(text.substr(1), 'i'));
+    } else {
+      // Search by indexOf
+      match = function(label) {
+        return -1 !== label.indexOf(text);
+      };
+    }
+    return match;
+  };
+
 })(CATMAID);

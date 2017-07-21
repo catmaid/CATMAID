@@ -3331,23 +3331,8 @@
    */
   GroupGraph.prototype.selectByLabel = function(ev, text) {
     text = text ? text.trim() : $("#gg_select_regex" + this.widgetID).val();
-    if (!text) {
-      CATMAID.msg("Select by regular expression", "No text.");
-      return;
-    }
-    var match;
-    if ('/' === text[0]) {
-      // Search by regular expression
-      match = (function(regexp, label) {
-        return regexp.test(label);
-      }).bind(null, new RegExp(text.substr(1), 'i'));
-    } else {
-      // Search by indexOf
-      match = function(label) {
-        return -1 !== label.indexOf(text);
-      };
-    }
-    var regex = new RegExp(text, 'i');
+    var match = CATMAID.createTextMatchingFunction(text);
+    if (!match) return;
     var count = 0;
     this.cy.nodes().forEach(function(node) {
       if (match(node.data('label'))) {

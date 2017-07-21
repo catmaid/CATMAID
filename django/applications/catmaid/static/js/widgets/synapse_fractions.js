@@ -1132,11 +1132,12 @@
   SynapseFractions.prototype.filterByRegex = function() {
     var text = $('#sf-filter-by-regex' + this.widgetID)[0].value.trim();
     if (!text || 0 === text.length) {
-      this.skip = {};
+      this.skip = {}; // clear
       this.redraw();
     } else {
       var match = CATMAID.createTextMatchingFunction(text);
       if (match) {
+        this.skip = {}; // clear
         this.items.forEach(function(item, i) {
           if (!match(item.name)) this.skip[i] = true;
         }, this);

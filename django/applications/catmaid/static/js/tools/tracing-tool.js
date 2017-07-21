@@ -1602,6 +1602,16 @@
       }
     }),
 
+    new CATMAID.Action({
+      helpText: "Synapse Fractions: Show fraction of inputs or outputs in percent",
+      buttonID: "data_button_synapse_fractions",
+      buttonName: 'synapse_fractions',
+      run: function (e) {
+        WindowMaker.create('synapse-fractions');
+        return true;
+      }
+    }),
+
   ];
 
   // Make tracing tool in CATMAID namespace

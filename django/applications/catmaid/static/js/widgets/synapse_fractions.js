@@ -62,7 +62,7 @@
     this.other_source = new CATMAID.BasicSkeletonSource(this.getName() + ' partners');
 
     // Set of selected partners or partner groups, with shift+click
-    this.selected = {};
+    this.selected_partners = {};
 
     // Matching function: if an item's name matches, its legend is drawn in bold
     this.highlightFn = null;
@@ -86,7 +86,7 @@
       contentID: "synapse_fractions_widget" + this.widgetID,
       createControls: function(controls) {
         var tabs = CATMAID.DOM.addTabGroup(controls, this.widgetID,
-            ['Main', 'Filter & Highlight', 'Filter partners', 'Color', 'Partner groups', 'Options']);
+            ['Main', 'Filter/Highlight', 'Filter partners', 'Color', 'Partner groups', 'Options']);
 
         var partners_source = CATMAID.skeletonListSources.createPushSelect(this, "filter");
         partners_source.onchange = this.onchangeFilterPartnerSkeletons.bind(this);
@@ -113,7 +113,7 @@
              ['Open', function() { fileButton.click(); }],
             ]);
 
-        CATMAID.DOM.appendToTab(tabs['Filter & Highlight'],
+        CATMAID.DOM.appendToTab(tabs['Filter/Highlight'],
             [[document.createTextNode('Show only: ')],
              [CATMAID.DOM.createTextField('sf-filter-by-regex' + this.widgetID, null, null, '', null, this.filterByRegex.bind(this), 10, null)],
              [document.createTextNode(' - Highlight: ')],
@@ -166,7 +166,10 @@
 
         CATMAID.DOM.appendToTab(tabs['Partner groups'],
             [[partner_group],
-             ['Create group', this.createPartnerGroup.bind(this)]]);
+             ['Create group', this.createPartnerGroup.bind(this)],
+             [CATMAID.DOM.createTextField('sf-select-partners-regex' + this.widgetID, ' - Select: ', 'Select partner neurons or groups by regular expression matching', '', null, this.selectPartnersByRegex.bind(this), null)],
+             ['Create group from selected', this.createGroupFromSelected.bind(this)],
+            ]);
 
         CATMAID.DOM.appendToTab(tabs['Options'],
             [{
@@ -316,7 +319,7 @@
     this.partner_colors = {};
     this.groups = {};
     this.groupOf = {};
-    this.selected = {};
+    this.selected_partners = {};
     this.redraw();
   };
 
@@ -704,8 +707,6 @@
       return data;
     };
 
-    var self = this;
-
     state.selectAll("rect")
       .data((function(index) {
         return prepare(sorted_entries[index].fractions);
@@ -722,26 +723,23 @@
         .style("fill", function(d, i) {
           return colors[d.id];
         })
-        .style("stroke", function(d, i) {
-          if (self.selected.hasOwnProperty(d.id)) {
-            return '#000000'; // black
-          }
-          return colors[d.id];
-        })
-        .on('click', function(d) {
+        .style("stroke", (function(d, i) {
+          return this.selected_partners.hasOwnProperty(d.id) ? '#000000' : colors[d.id];
+        }).bind(this))
+        .on('click', (function(d) {
           if (d3.event.shiftKey) {
             d3.event.preventDefault();
-            if (self.selected.hasOwnProperty(d.id)) {
-              delete self.selected[d.id];
+            if (this.selected_partners.hasOwnProperty(d.id)) {
+              delete this.selected_partners[d.id];
             } else {
-              self.selected[d.id] = true;
+              this.selected_partners[d.id] = true;
             }
-            self.redraw();
+            this.redraw();
           } else {
             if ("others" === d.id || d.id < 0) return; // negative when it is a group
             CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', d.id);
           }
-        })
+        }).bind(this))
         .append('svg:title') // on mouse over
           .text((function(d) {
             var title = "";
@@ -769,6 +767,9 @@
       .attr("y", 9)
       .attr("dy", ".35em")
       .style("text-anchor", "end")
+      .style("font-weight", (function(id) {
+        return this.selected_partners && this.selected_partners[id] ? "bold" : "";
+      }).bind(this))
       .text((function(id) {
         if ("others" === id) return id;
         if (id < 0) return this.groups[id].name;
@@ -788,7 +789,7 @@
     container.append(colorDummy);
     colorDummy.style.position = "absolute";
     CATMAID.ColorPicker.enable(colorDummy, {
-      onColorChange: function(color, alpha, colorChanged, alphaChanged) {
+      onColorChange: (function(color, alpha, colorChanged, alphaChanged) {
         if (!currentElementId || !(colorChanged || alphaChanged)) {
           return;
         }
@@ -797,13 +798,13 @@
             Math.round(255 * color.r), Math.round(255 * color.g),
             Math.round(255 * color.b));
         if (currentElementId < 0) {
-          self.groups[currentElementId].color = newColor;
+          this.groups[currentElementId].color = newColor;
         } else {
-          self.partner_colors[currentElementId] = newColor;
+          this.partner_colors[currentElementId] = newColor;
         }
         // Update graphics
-        self.redraw();
-      }
+        this.redraw();
+      }).bind(this)
     });
 
     legend.selectAll('rect')
@@ -984,41 +985,45 @@
 
   SynapseFractions.prototype.handleKeyUp = function(event) {
     if (event.key === 'j') {
-      var ids = Object.keys(this.selected);
-      if (ids.length > 1) {
-        var name = prompt("Group name", "");
-        if (!name) return; // cancelled
-        // Collect skeleton IDs from partner groups and skeletons
-        var groups = this.groups;
-        var skids = ids.reduce(function(o, id) {
-          if (id < 0) {
-            // A group of partner skeletons
-            $.extend(o, groups[id].skids);
-            // Remove the group
-            delete groups[id];
-          } else {
-            // A partner skeleton
-            o[id] = true;
-          }
-          return o;
-        }, {});
-        // Create new partner skeleton group
-        var gid = this.next_group_id--;
-        this.groups[gid] = {
-          id: gid,
-          skids: skids,
-          name: name,
-          autocolor: true,
-          color: '#ffff00'
-        };
-        Object.keys(skids).forEach(function(skid) { this.groupOf[skid] = gid; }, this);
-        // clear selection
-        this.selected = {};
-        // Recompute fractions and redraw
-        this.updateGraph();
-      } else {
-        CATMAID.msg("Info", "Select at least 2 partner skeletons or groups with shift+click.");
-      }
+      this.createGroupFromSelected();
+    }
+  };
+
+  SynapseFractions.prototype.createGroupFromSelected = function() {
+    var ids = Object.keys(this.selected_partners);
+    if (ids.length > 1) {
+      var name = prompt("Group name", "");
+      if (!name) return; // cancelled
+      // Collect skeleton IDs from partner groups and skeletons
+      var groups = this.groups;
+      var skids = ids.reduce(function(o, id) {
+        if (id < 0) {
+          // A group of partner skeletons
+          $.extend(o, groups[id].skids);
+          // Remove the group
+          delete groups[id];
+        } else {
+          // A partner skeleton
+          o[id] = true;
+        }
+        return o;
+      }, {});
+      // Create new partner skeleton group
+      var gid = this.next_group_id--;
+      this.groups[gid] = {
+        id: gid,
+        skids: skids,
+        name: name,
+        autocolor: true,
+        color: '#ffff00'
+      };
+      Object.keys(skids).forEach(function(skid) { this.groupOf[skid] = gid; }, this);
+      // clear selection
+      this.selected_partners = {};
+      // Recompute fractions and redraw
+      this.updateGraph();
+    } else {
+      CATMAID.msg("Info", "Select at least 2 partner skeletons or groups with shift+click or by regex.");
     }
   };
 
@@ -1161,6 +1166,44 @@
       }
     }
   };
+
+  /**
+   * Select partner groups by matching text or regex.
+   */
+  SynapseFractions.prototype.selectPartnersByRegex = function() {
+    var text = $('#sf-select-partners-regex' + this.widgetID)[0].value.trim();
+    if (!text || 0 === text.length) {
+      // Deselect all
+      this.selected_partners = {};
+      this.redraw();
+    } else {
+      var match = CATMAID.createTextMatchingFunction(text);
+      if (match && this.fractions) {
+        // Get set of unique partner skeleton IDs or group IDs
+        var ids = this.fractions.reduce(function(o, counts) {
+          return Object.keys(counts).reduce(function(o, id) {
+            o[id] = null;
+            return o;
+          }, o);
+        }, {});
+        // Find those that match
+        this.selected_partners = {};
+        var getName = CATMAID.NeuronNameService.getInstance().getName;
+        Object.keys(ids).forEach(function(id) {
+          if (id < 0) {
+            // A group
+            if (match(this.groups[id].name)) this.selected_partners[id] = true;
+          } else {
+            // A skeleton ID
+            var text = getName(id);
+            if (text && match(text)) this.selected_partners[id] = true;
+          }
+        }, this);
+        this.redraw();
+      }
+    }
+  };
+
 
   SynapseFractions.prototype.exportCSV = function() {
     // TODO

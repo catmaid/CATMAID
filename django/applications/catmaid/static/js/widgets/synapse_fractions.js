@@ -261,7 +261,7 @@
         '<h2>Mouse operations</h2>',
         '<ul>',
         '<li>Mouse click: select that partner neuron in the stack viewer (does nothing for groups of partner neurons).</li>',
-        '<li>Shift+click: toggle selected/deselected status of a partner neuron or group of partner neurons. Push "j" then to create a new partner group.</li>',
+        '<li>Shift+click: toggle selected/deselected status of a partner neuron or group of partner neurons. Works on both the legend and the graph itself. Push "j" then to create a new partner group.</li>',
         '<li>Mouse over: show the name of the partner neuron.</li>',
         '</ul>',
         '<h2>Key bindings</h2>',
@@ -734,7 +734,7 @@
         .style("stroke", (function(d, i) {
           return !this.hideSelectionDecorations && this.selected_partners.hasOwnProperty(d.id) ? '#000000' : colors[d.id];
         }).bind(this))
-        .on('click', (function(d) {
+        .on('mousedown', (function(d) {
           if (d3.event.shiftKey) {
             d3.event.preventDefault();
             if (this.selected_partners.hasOwnProperty(d.id)) {
@@ -835,7 +835,17 @@
 
     // Select nearest node in skeleton if legend text is clicked
     legend.selectAll('text')
-      .on("click", (function(id) {
+      .on("mousedown", (function(id) {
+        if (d3.event.shiftKey) {
+          d3.event.preventDefault();
+          if (this.selected_partners.hasOwnProperty(id)) {
+            delete this.selected_partners[id];
+          } else {
+            this.selected_partners[id] = true;
+          }
+          this.redraw();
+          return;
+        }
         if ("others" === id) return;
         // negative when it is a group
         if (id < 0) {

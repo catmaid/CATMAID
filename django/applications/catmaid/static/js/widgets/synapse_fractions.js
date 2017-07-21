@@ -649,10 +649,12 @@
 
     if (this.rotateXLabels) {
       var rotation = this.rotationXLabels;
+      var anchor = rotation < 0 ? "end" : "start";
+      var dx = rotation < 0 ? "-0.8em" : "0.8em";
       xg.selectAll('text').
-          style("text-anchor", "end")
-          .attr("dx", "-0.8em")
-          .attr("dy", ".15em")
+          style("text-anchor", anchor)
+          .attr("dx", dx)
+          .attr("dy", "-0.40em")
           .attr("transform", "rotate(" + rotation + ")" );
 
         // Find max label height height, adjust the height accordingly and transform the x axis.

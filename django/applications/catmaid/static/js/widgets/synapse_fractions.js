@@ -276,6 +276,7 @@
           '</ul>',
         '<li>Shift+click: toggle selected/deselected status of a partner neuron or group of partner neurons. Works on both the legend and the graph itself. Push "j" then to create a new partner group.</li>',
         '<li>Mouse over: show the name of the partner neuron.</li>',
+        '<li>Control+Shift+click on an x-axis legend name: remove that neuron or group of neurons.</li>',
         '</ul>',
         '<h2>Key bindings</h2>',
         '<p><b>J</b>: if more than two partner skeletons or groups are selected, create a new group. When a single group is selected, this provides the opportunity to rename the group.</p>',
@@ -681,7 +682,31 @@
 
     xg.selectAll("text")
         .attr("fill", "black")
-        .attr("stroke", "none");
+        .attr("stroke", "none")
+        .on("mousedown", (function(item_index) {
+          if (d3.event.shiftKey
+           && d3.event.ctrlKey
+           && !d3.event.altKey
+           && !d3.event.metaKey) {
+            var entry = sorted_entries[item_index];
+            // Find the entry.item in this.items
+            for (var i=0; i<this.items.length; ++i) {
+              if (this.items[i].name === entry.item.name) {
+                var skids = Object.keys(this.items[i].models);
+                var count = 0;
+                skids.forEach(function(skid) {
+                  if (entry.item.models.hasOwnProperty(skid)) count++;
+                });
+                if (count === Object.keys(entry.item.models).length) {
+                  // Found:
+                  this.items.splice(i, 1);
+                  this.updateGraph();
+                  return;
+                }
+              }
+            }
+          }
+        }).bind(this));
 
     if (this.highlightFn) {
       xg.selectAll("text")
@@ -1412,7 +1437,6 @@
   // 1. Filter by whether they receive any inputs from a certain partner id
   // 2. Click on item label to remove it.
   // 3. Remove visible items or remove highlighted ones.
-  // 4. Open matrix for box on click when it is a group
 
   SynapseFractions.prototype.exportCSV = function() {
     // TODO

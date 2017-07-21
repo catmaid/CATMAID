@@ -1092,7 +1092,7 @@
         // Generate groupOf
         self.groupOf = Object.keys(self.groups).reduce(function(o, gid) {
           var group = self.groups[gid];
-          Object.keys(group.models).forEach(function(skid) {
+          Object.keys(group.skids).forEach(function(skid) {
             o[skid] = gid;
           });
           return o;

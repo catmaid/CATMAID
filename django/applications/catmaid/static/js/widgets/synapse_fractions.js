@@ -97,7 +97,6 @@
 
         var fileButton = CATMAID.DOM.createFileButton('sf-file-dialog-' + this.widgetID, false, (function(evt) { this.loadFromFiles(evt.target.files); }).bind(this));
 
-        var self= this;
         CATMAID.DOM.appendToTab(tabs['Main'],
             [[document.createTextNode('From')],
              [CATMAID.skeletonListSources.createSelect(this)],
@@ -175,10 +174,10 @@
                label: 'Rotated labels',
                title: 'Rotate neuron name labels on X axis',
                value: this.rotateXLabels,
-               onclick: function() {
-                 self.rotateXLabels = this.checked;
-                 self.redraw();
-               }
+               onclick: (function(ev) {
+                 this.rotateXLabels = ev.target.checked;
+                 this.redraw();
+               }).bind(this)
              },
              [CATMAID.DOM.createNumericField(
                "rotation" + this.widgetID,

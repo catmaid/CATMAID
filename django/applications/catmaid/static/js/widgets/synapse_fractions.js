@@ -775,8 +775,6 @@
         return CATMAID.NeuronNameService.getInstance().getName(id);
       }).bind(this));
 
-    var self = this;
-
     // Since our color picker refuses to work with SVG elements easily, we have
     // to jump through some hoops to have the color assigned to the correct
     // element. This keeps track of which element is currently modified.

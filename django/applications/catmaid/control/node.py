@@ -3,13 +3,14 @@ from __future__ import unicode_literals
 
 import json
 import ujson
+import uuid
 
 from collections import defaultdict
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.conf import settings
-from django.db import connection
-from django.http import HttpResponse, JsonResponse
+from django.db import connection, transaction
+from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 
@@ -26,6 +27,8 @@ from six.moves import map as imap
 
 
 class Postgis3dNodeProvider(object):
+
+    provides_cursor = False
 
     # Fetch treenodes with the help of two PostGIS filters: The &&& operator
     # to exclude all edges that don't have a bounding box that intersect with
@@ -237,6 +240,8 @@ class Postgis3dNodeProvider(object):
 
 
 class Postgis2dNodeProvider(object):
+
+    provides_cursor = False
 
     # Fetch treenodes with the help of two PostGIS filters: First, select all
     # edges with a bounding box overlapping the XY-box of the query bounding
@@ -454,12 +459,234 @@ class Postgis2dNodeProvider(object):
         return list(cursor.fetchall())
 
 
+class Postgis2dStreamingNodeProvider(object):
+
+    # Indicate that this provider expects to be streamed
+    provides_cursor = True
+
+    # Fetch treenodes with the help of two PostGIS filters: First, select all
+    # edges with a bounding box overlapping the XY-box of the query bounding
+    # box. This set is then constrained by a particular range in Z. Both filters
+    # are backed by indices that make these operations very fast. This is
+    # semantically equivalent with what the &&& does. This, however, leads to
+    # false positives, because edge bounding boxes can intersect without the
+    # edge actually intersecting. To limit the result set, ST_3DDWithin is used.
+    # It allows to limit the result set by a distance to another geometry. Here
+    # it only allows edges that are no farther away than half the height of the
+    # query bounding box from a plane that cuts the query bounding box in half
+    # in Z. There are still false positives, but much fewer. Even though
+    # ST_3DDWithin is used, it seems to be enough to have a n-d index available
+    # (the query plan says ST_3DDWithin wouldn't use a 2-d index in this query,
+    # even if present).
+    treenode_query = """
+          SELECT
+            t1.id,
+            t1.parent_id,
+            t1.location_x,
+            t1.location_y,
+            t1.location_z,
+            t1.confidence,
+            t1.radius,
+            t1.skeleton_id,
+            EXTRACT(EPOCH FROM t1.edition_time),
+            t1.user_id
+          FROM
+            (SELECT UNNEST(ARRAY[te.id, t.parent_id])
+               FROM treenode_edge te
+               JOIN treenode t
+                 ON t.id = te.id
+               WHERE te.edge && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
+                 AND floatrange(ST_ZMin(te.edge),
+                    ST_ZMax(te.edge), '[]') && floatrange({z1}, {z2}, '[)')
+                 AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+                     ST_MakePoint({left},  {top},    {halfz}),
+                     ST_MakePoint({right}, {top},    {halfz}),
+                     ST_MakePoint({right}, {bottom}, {halfz}),
+                     ST_MakePoint({left},  {bottom}, {halfz}),
+                     ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
+                     {halfzdiff})
+                 AND te.project_id = {project_id}
+              UNION
+              SELECT UNNEST({sanitized_treenode_ids}::bigint[])
+        ) edges(edge_child_id)
+        JOIN treenode t1
+          ON edges.edge_child_id = t1.id
+        LIMIT {limit};
+    """
+
+    connector_query = """
+        SELECT
+            c.id,
+            c.location_x,
+            c.location_y,
+            c.location_z,
+            c.confidence,
+            EXTRACT(EPOCH FROM c.edition_time),
+            c.user_id,
+            tc.treenode_id,
+            tc.relation_id,
+            tc.confidence,
+            EXTRACT(EPOCH FROM tc.edition_time),
+            tc.id
+        FROM (SELECT tce.id AS tce_id
+             FROM treenode_connector_edge tce
+             WHERE tce.edge && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
+               AND floatrange(ST_ZMin(tce.edge), ST_ZMax(tce.edge), '[]') &&
+                 floatrange({z1}, {z2}, '[)')
+               AND ST_3DDWithin(tce.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+                   ST_MakePoint({left},  {top},    {halfz}),
+                   ST_MakePoint({right}, {top},    {halfz}),
+                   ST_MakePoint({right}, {bottom}, {halfz}),
+                   ST_MakePoint({left},  {bottom}, {halfz}),
+                   ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
+                   {halfzdiff})
+               AND tce.project_id = {project_id}
+          ) edges(edge_tc_id)
+        JOIN treenode_connector tc
+          ON (tc.id = edge_tc_id)
+        JOIN connector c
+          ON (c.id = tc.connector_id)
+
+        UNION
+
+        SELECT
+            c.id,
+            c.location_x,
+            c.location_y,
+            c.location_z,
+            c.confidence,
+            EXTRACT(EPOCH FROM c.edition_time),
+            c.user_id,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            NULL
+        FROM (SELECT cg.id AS cg_id
+             FROM connector_geom cg
+             WHERE cg.geom && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
+               AND floatrange(ST_ZMin(cg.geom), ST_ZMax(cg.geom), '[]') &&
+                 floatrange({z1}, {z2}, '[)')
+               AND ST_3DDWithin(cg.geom, ST_MakePolygon(ST_MakeLine(ARRAY[
+                   ST_MakePoint({left},  {top},    {halfz}),
+                   ST_MakePoint({right}, {top},    {halfz}),
+                   ST_MakePoint({right}, {bottom}, {halfz}),
+                   ST_MakePoint({left},  {bottom}, {halfz}),
+                   ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
+                   {halfzdiff})
+               AND cg.project_id = {project_id}
+            UNION SELECT UNNEST({sanitized_connector_ids}::bigint[])
+          ) geoms(geom_connector_id)
+        JOIN connector c
+          ON (geom_connector_id = c.id)
+        LIMIT {limit}
+    """
+
+    # To execute the query directly with PsycoPg (i.e. not prepared) a different
+    # parameter formatt is used: {left} -> %(left)s.
+    treenode_query_params = ['project_id', 'left', 'top', 'z1', 'right',
+        'bottom', 'z2', 'halfz', 'halfzdiff', 'limit', 'sanitized_treenode_ids']
+    treenode_query_psycopg = treenode_query.format(
+        **{k:'%({})s'.format(k) for k in treenode_query_params})
+
+
+    connector_query_params = ['project_id', 'left', 'top', 'z1', 'right',
+        'bottom', 'z2', 'halfz', 'halfzdiff', 'limit', 'sanitized_connector_ids']
+    connector_query_psycopg = connector_query.format(
+        **{k:'%({})s'.format(k) for k in connector_query_params})
+
+    # Create prepared statement version
+    prepare_var_names = {
+        'project_id': '$1',
+        'left': '$2',
+        'top': '$3',
+        'z1': '$4',
+        'right': '$5',
+        'bottom': '$6',
+        'z2': '$7',
+        'halfz': '$8',
+        'halfzdiff': '$9',
+        'limit': '$10',
+        'sanitized_connector_ids': '$11',
+        'sanitized_treenode_ids': '$11'
+    }
+    treenode_query_prepare = treenode_query.format(**prepare_var_names)
+    connector_query_prepare = connector_query.format(**prepare_var_names)
+
+
+    def prepare_db_statements(self, connection):
+        """Create prepared statements on a given connection. This is mainly useful
+        for long lived connections.
+        """
+        cursor = connection.cursor()
+        cursor.execute("""
+            -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
+            -- 8 halfz, 9 halfzdiff, 10 limit
+            PREPARE get_treenodes_postgis_2d (int, real, real, real,
+                    real, real, real, real, real, int) AS
+            {}
+        """.format(self.treenode_query_prepare))
+        cursor.execute("""
+            -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
+            -- 8 halfz, 9 halfzdiff, 10 limit, 11 sanitized connector ids
+            PREPARE get_connectors_postgis_2d (int, real, real, real,
+                    real, real, real, real, real, int, bigint[]) AS
+            {}
+        """.format(self.connector_query_prepare))
+
+    def get_treenode_data(self, cursor, params, extra_treenode_ids):
+        """ Selects all treenodes of which links to other treenodes intersect with
+        the request bounding box.
+        """
+        params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
+        params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
+        params['sanitized_treenode_ids'] = list(imap(int, extra_treenode_ids))
+
+        if settings.PREPARED_STATEMENTS:
+            # Use a prepared statement to get the treenodes
+            cursor.execute('''
+                EXECUTE get_treenodes_postgis_2d(%(project_id)s,
+                    %(left)s, %(top)s, %(z1)s, %(right)s, %(bottom)s, %(z2)s,
+                    %(halfz)s, %(halfzdiff)s, %(limit)s,
+                    %(sanitized_treenode_ids)s)
+            ''', params)
+        else:
+            cursor.execute(self.treenode_query_psycopg, params)
+
+        return cursor
+
+    def get_connector_data(self, cursor, params, missing_connector_ids):
+        """Selects all connectors that are in or have links that intersect the
+        bounding box, or that are in missing_connector_ids.
+        """
+        params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
+        params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
+        params['sanitized_connector_ids'] = list(imap(int, missing_connector_ids))
+
+        if settings.PREPARED_STATEMENTS:
+            # Use a prepared statement to get connectors
+            cursor.execute('''
+                EXECUTE get_connectors_postgis_2d(%(project_id)s,
+                    %(left)s, %(top)s, %(z1)s, %(right)s, %(bottom)s, %(z2)s,
+                    %(halfz)s, %(halfzdiff)s, %(limit)s,
+                    %(sanitized_connector_ids)s)
+            ''', params)
+        else:
+            cursor.execute(self.connector_query_psycopg, params)
+
+        return list(cursor.fetchall())
+
+    def get_cursor(self):
+        return connection.connection.cursor("cur" + str(uuid.uuid4()).replace("-", ""))
+
 def get_provider():
     provider_key = settings.NODE_PROVIDER
     if 'postgis3d' == provider_key:
         return Postgis3dNodeProvider()
     elif 'postgis2d' == provider_key:
         return Postgis2dNodeProvider()
+    elif 'postgis2dstream' == provider_key:
+        return Postgis2dStreamingNodeProvider()
     else:
         raise ValueError('Unknown node provider: ' + provider_key)
 
@@ -467,6 +694,7 @@ def prepare_db_statements(connection):
     get_provider().prepare_db_statements(connection)
 
 
+@transaction.non_atomic_requests()
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def node_list_tuples(request, project_id=None, provider=None):
     '''Retrieve all nodes intersecting a bounding box
@@ -584,8 +812,15 @@ def node_list_tuples(request, project_id=None, provider=None):
     params['project_id'] = project_id
     include_labels = (request.POST.get('labels', None) == 'true')
 
-    return node_list_tuples_query(params, project_id, get_provider(),
-            treenode_ids, connector_ids, include_labels)
+    node_provider = get_provider()
+    if node_provider.provides_cursor:
+        response = node_list_tuples_query(params, project_id, get_provider(),
+                treenode_ids, connector_ids, include_labels)
+    else:
+        with transaction.atomic():
+            response = node_list_tuples_query(params, project_id, get_provider(),
+                    treenode_ids, connector_ids, include_labels)
+    return response
 
 
 def node_list_tuples_query(params, project_id, node_provider, explicit_treenode_ids=tuple(),
@@ -608,103 +843,139 @@ def node_list_tuples_query(params, project_id, node_provider, explicit_treenode_
         missing_treenode_ids = set(n for n in explicit_treenode_ids if n != -1)
         missing_connector_ids = set(c for c in explicit_connector_ids if c != -1)
 
-        # Find connectors in the field of view
-        response_on_error = 'Failed to query connector locations.'
-        crows = node_provider.get_connector_data(cursor, params,
-            missing_connector_ids)
+        if node_provider.provides_cursor:
+            # Turn off autocommit
+            original_autocommit = transaction.get_autocommit()
+            transaction.set_autocommit(False)
 
-        connectors = []
-        # A set of unique connector IDs
-        connector_ids = set()
+            def stream(node_cursor):
+                """Return generator that yields records in 3000 packets
+                """
+                slice_size = 10000
+                d = 0
+                # Need to return strings for streaming response
+                yield "[["
+                tostr = lambda x: "null" if x is None else str(x)
 
-        # Collect links to connectors for each treenode. Each entry maps a
-        # relation ID to a an object containing the relation name, and an object
-        # mapping connector IDs to confidences.
-        links = defaultdict(list)
-        used_relations = set()
-        seen_links = set()
+                # Get first element
+                rec = node_cursor.fetchone()
+                if rec:
+                    yield "[" + ",".join(imap(tostr, rec)) + "]"
 
-        for row in crows:
-            # Collect treeenode IDs related to connectors but not yet in treenode_ids
-            # because they lay beyond adjacent sections
-            cid = row[0] # connector ID
-            tnid = row[7] # treenode ID
-            tcid = row[11] # treenode connector ID
+                while True:
+                    counter = 0
+                    for counter, rec in enumerate(node_cursor.fetchmany(slice_size)):
+                        yield ",[" + ",".join(imap(tostr, rec)) + "]"
+                    if counter != slice_size - 1:
+                        yield "], [], {}, \"false\", {}]"
+                        yield " " * 10240
+                        transaction.commit()
+                        transaction.set_autocommit(original_autocommit)
+                        break
 
-            if tnid is not None:
-                if tcid in seen_links:
-                    continue
-                missing_treenode_ids.add(tnid)
-                seen_links.add(tcid)
-                # Collect relations between connectors and treenodes
-                # row[7]: treenode_id (tnid above)
-                # row[8]: treenode_relation_id
-                # row[9]: tc_confidence
-                # row[10]: tc_edition_time
-                # row[11]: tc_id
-                links[cid].append(row[7:12])
-                used_relations.add(row[8])
+            # Get binary cursor and execute query on it
+            node_cursor = node_provider.get_cursor()
+            node_provider.get_treenode_data(node_cursor,
+                    params, missing_treenode_ids)
 
-            # Collect unique connectors
-            if cid not in connector_ids:
-                connectors.append(row[0:7] + (links[cid],))
-                connector_ids.add(cid)
+            return StreamingHttpResponse(stream(node_cursor), content_type="application/json")
+        else:
+            # Find connectors in the field of view
+            response_on_error = 'Failed to query connector locations.'
+            crows = node_provider.get_connector_data(cursor, params,
+                missing_connector_ids)
 
-        response_on_error = 'Failed to query treenodes'
+            connectors = []
+            # A set of unique connector IDs
+            connector_ids = set()
 
-        treenode_ids, treenodes = node_provider.get_treenode_data(cursor,
-                params, missing_treenode_ids)
-        n_retrieved_nodes = len(treenode_ids)
+            # Collect links to connectors for each treenode. Each entry maps a
+            # relation ID to a an object containing the relation name, and an object
+            # mapping connector IDs to confidences.
+            links = defaultdict(list)
+            used_relations = set()
+            seen_links = set()
 
-        labels = defaultdict(list)
-        if include_labels:
-            # Avoid dict lookups in loop
-            top, left, z1 = params['top'], params['left'], params['z1']
-            bottom, right, z2 = params['bottom'], params['right'], params['z2']
+            for row in crows:
+                # Collect treeenode IDs related to connectors but not yet in treenode_ids
+                # because they lay beyond adjacent sections
+                cid = row[0] # connector ID
+                tnid = row[7] # treenode ID
+                tcid = row[11] # treenode connector ID
 
-            def is_visible(r):
-                return left <= r[2] < right and \
-                    top <= r[3] < bottom and \
-                    z1 <= r[4] < z2
+                if tnid is not None:
+                    if tcid in seen_links:
+                        continue
+                    missing_treenode_ids.add(tnid)
+                    seen_links.add(tcid)
+                    # Collect relations between connectors and treenodes
+                    # row[7]: treenode_id (tnid above)
+                    # row[8]: treenode_relation_id
+                    # row[9]: tc_confidence
+                    # row[10]: tc_edition_time
+                    # row[11]: tc_id
+                    links[cid].append(row[7:12])
+                    used_relations.add(row[8])
 
-            # Collect treenodes visible in the current section
-            visible = [row[0] for row in treenodes if is_visible(row)]
-            if visible:
-                cursor.execute('''
-                SELECT treenode_class_instance.treenode_id,
-                       class_instance.name
-                FROM class_instance,
-                     treenode_class_instance,
-                     UNNEST(%s::bigint[]) treenodes(tnid)
-                WHERE treenode_class_instance.relation_id = %s
-                  AND class_instance.id = treenode_class_instance.class_instance_id
-                  AND treenode_class_instance.treenode_id = tnid
-                ''', (visible, relation_map['labeled_as']))
-                for row in cursor.fetchall():
-                    labels[row[0]].append(row[1])
+                # Collect unique connectors
+                if cid not in connector_ids:
+                    connectors.append(row[0:7] + (links[cid],))
+                    connector_ids.add(cid)
 
-            # Collect connectors visible in the current section
-            visible = [row[0] for row in connectors if z1 <= row[3] < z2]
-            if visible:
-                cursor.execute('''
-                SELECT connector_class_instance.connector_id,
-                       class_instance.name
-                FROM class_instance,
-                     connector_class_instance,
-                     UNNEST(%s::bigint[]) connectors(cnid)
-                WHERE connector_class_instance.relation_id = %s
-                  AND class_instance.id = connector_class_instance.class_instance_id
-                  AND connector_class_instance.connector_id = cnid
-                ''', (visible, relation_map['labeled_as']))
-                for row in cursor.fetchall():
-                    labels[row[0]].append(row[1])
+            response_on_error = 'Failed to query treenodes'
+            treenode_ids, treenodes = node_provider.get_treenode_data(cursor,
+                    params, missing_treenode_ids)
+            n_retrieved_nodes = len(treenode_ids)
 
-        used_rel_map = {r:id_to_relation[r] for r in used_relations}
-        return HttpResponse(ujson.dumps((
-            treenodes, connectors, labels,
-            n_retrieved_nodes == params['limit'],
-            used_rel_map)),
-            content_type='application/json')
+            labels = defaultdict(list)
+            if include_labels:
+                # Avoid dict lookups in loop
+                top, left, z1 = params['top'], params['left'], params['z1']
+                bottom, right, z2 = params['bottom'], params['right'], params['z2']
+
+                def is_visible(r):
+                    return left <= r[2] < right and \
+                        top <= r[3] < bottom and \
+                        z1 <= r[4] < z2
+
+                # Collect treenodes visible in the current section
+                visible = [row[0] for row in treenodes if is_visible(row)]
+                if visible:
+                    cursor.execute('''
+                    SELECT treenode_class_instance.treenode_id,
+                           class_instance.name
+                    FROM class_instance,
+                         treenode_class_instance,
+                         UNNEST(%s::bigint[]) treenodes(tnid)
+                    WHERE treenode_class_instance.relation_id = %s
+                      AND class_instance.id = treenode_class_instance.class_instance_id
+                      AND treenode_class_instance.treenode_id = tnid
+                    ''', (visible, relation_map['labeled_as']))
+                    for row in cursor.fetchall():
+                        labels[row[0]].append(row[1])
+
+                # Collect connectors visible in the current section
+                visible = [row[0] for row in connectors if z1 <= row[3] < z2]
+                if visible:
+                    cursor.execute('''
+                    SELECT connector_class_instance.connector_id,
+                           class_instance.name
+                    FROM class_instance,
+                         connector_class_instance,
+                         UNNEST(%s::bigint[]) connectors(cnid)
+                    WHERE connector_class_instance.relation_id = %s
+                      AND class_instance.id = connector_class_instance.class_instance_id
+                      AND connector_class_instance.connector_id = cnid
+                    ''', (visible, relation_map['labeled_as']))
+                    for row in cursor.fetchall():
+                        labels[row[0]].append(row[1])
+
+            used_rel_map = {r:id_to_relation[r] for r in used_relations}
+            return HttpResponse(ujson.dumps((
+                treenodes, connectors, labels,
+                n_retrieved_nodes == params['limit'],
+                used_rel_map)),
+                content_type='application/json')
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))

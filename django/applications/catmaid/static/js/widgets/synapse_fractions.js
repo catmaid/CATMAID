@@ -130,7 +130,8 @@
                  this.sort_by_selected_partners = ev.target.checked;
                  this.redraw();
                }).bind(this)
-             }
+             },
+             ['Remove all highlighted', this.removeAllHighlighted.bind(this)],
             ]);
 
         var nf = CATMAID.DOM.createNumericField("synapse_threshold" + this.widgetID, // id
@@ -1279,6 +1280,25 @@
     }
   };
 
+  SynapseFractions.prototype.removeAllHighlighted = function() {
+    if (this.highlightFn) {
+      var indices_to_remove = [];
+      for (var i=0; i<this.items.length; ++i) {
+        if (this.highlightFn(this.items[i].name)) {
+          indices_to_remove.push(i);
+        }
+      }
+      if (0 === indices_to_remove.length) return;
+      var check = confirm("Remove " + indices_to_remove.length + " entries?");
+      if (check) {
+        for (var i=0; i<indices_to_remove.length; ++i) {
+          this.items.splice(indices_to_remove[i] - i, 1);
+        }
+        this.updateGraph();
+      }
+    }
+  };
+
   /** Get the set of unique partner skeleton IDs or group IDs, as a map of ids vs their names. */
   SynapseFractions.prototype.getPartnerIds = function() {
     var ids = this.fractions.reduce(function(o, counts) {
@@ -1435,7 +1455,6 @@
 
   // TODO
   // 1. Filter by whether they receive any inputs from a certain partner id
-  // 2. Click on item label to remove it.
   // 3. Remove visible items or remove highlighted ones.
 
   SynapseFractions.prototype.exportCSV = function() {

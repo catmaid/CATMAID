@@ -64,6 +64,9 @@
     // Set of selected partners or partner groups, with shift+click
     this.selected_partners = {};
 
+    // Whether to decorate selected partner boxes with a black contour or not
+    this.hideSelectionDecorations = false;
+
     // Matching function: if an item's name matches, its legend is drawn in bold
     this.highlightFn = null;
 
@@ -199,7 +202,17 @@
                this.rotationXLabels,
                undefined,
                this.onchangeXLabelRotation.bind(this),
-               5)]
+               5)],
+             {
+               type: 'checkbox',
+               label: 'Hide selection decorations',
+               title: 'Do not paint the contour of partner boxes in black',
+               value: this.hideSelectionDecorations,
+               onclick: (function(ev) {
+                 this.hideSelectionDecorations = ev.target.checked;
+                 this.redraw();
+               }).bind(this)
+             }
             ]);
 
 
@@ -719,7 +732,7 @@
           return colors[d.id];
         })
         .style("stroke", (function(d, i) {
-          return this.selected_partners.hasOwnProperty(d.id) ? '#000000' : colors[d.id];
+          return !this.hideSelectionDecorations && this.selected_partners.hasOwnProperty(d.id) ? '#000000' : colors[d.id];
         }).bind(this))
         .on('click', (function(d) {
           if (d3.event.shiftKey) {

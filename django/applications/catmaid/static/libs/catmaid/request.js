@@ -165,6 +165,9 @@ RequestQueue = function(originUrl, csrfToken)
         var responseXML = isTextResponse ? xmlHttp.responseXML : null;
         queue[ 0 ].callback(xmlHttp.status, responseData, responseXML);
       } catch(error) {
+        // Call back with Service Unavailable error (503) for consistency with
+        // other error cases and to give the caller information about the error.
+        queue[ 0 ].callback(503, error, "");
         // In case of error, reset complete queue
         queue.length = 0;
         advance = false;

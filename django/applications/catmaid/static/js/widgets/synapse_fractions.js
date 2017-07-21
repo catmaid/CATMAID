@@ -117,7 +117,17 @@
             [[document.createTextNode('Show only: ')],
              [CATMAID.DOM.createTextField('sf-filter-by-regex' + this.widgetID, null, null, '', null, this.filterByRegex.bind(this), 10, null)],
              [document.createTextNode(' - Highlight: ')],
-             [CATMAID.DOM.createTextField('sf-highlight' + this.widgetID, null, null, '', null, this.highlightByRegex.bind(this), 10, null)]
+             [CATMAID.DOM.createTextField('sf-highlight' + this.widgetID, null, null, '', null, this.highlightByRegex.bind(this), 10, null)],
+             {
+               type: 'checkbox',
+               label: 'Sort by selected partners',
+               title: 'Sort the X-axis according to the sum of fractions of selected partners',
+               value: this.sort_by_selected_partners,
+               onclick: (function(ev) {
+                 this.sort_by_selected_partners = ev.target.checked;
+                 this.redraw();
+               }).bind(this)
+             }
             ]);
 
         var nf = CATMAID.DOM.createNumericField("synapse_threshold" + this.widgetID, // id
@@ -215,6 +225,7 @@
         '<ul>',
         '<li>Show only: type any text and push return. Will show only entries matching the text.</li>',
         '<li>Highlight: type any text and push return. Will render in bold text the labels of matching entries. </li>',
+        '<li>Sort by selected partners: select some partners first (shift-click or via regex in the "Partner groups" tab) and then check this box to sort by the sum of fractions of the selected partners, descending.</li>',
         '</ul>',
         '<p>Add leading "/" for regular expressions.</p>',
         '<p>Erase text and push return to reset.</p>',
@@ -571,24 +582,7 @@
       order.push('others');
     }
 
-    // Sort by name. TODO: other sorting methods
-    var sorted_entries = this.items
-      .filter(function(item, i) {
-        return !this.skip.hasOwnProperty(i);
-      }, this)
-      .map(function(item, i) {
-        // Update name
-        var name = item.name;
-        var skids = Object.keys(item.models);
-        if (1 === skids.length) {
-          // Single neuron group
-          name = CATMAID.NeuronNameService.getInstance().getName(skids[0]);
-        }
-        return {item: item,
-                name: name,
-                fractions: this.fractions[i]};
-      }, this)
-      .sort(function(a, b) { return a.name > b.name ? 1 : -1; });
+    var sorted_entries = this.sortEntries();
 
     if (0 === sorted_entries.length) return;
 
@@ -1205,6 +1199,52 @@
     }
   };
 
+  SynapseFractions.prototype.sortEntries = function() {
+
+    var sortByValue = this.sort_by_selected_partners
+                   && this.fractions
+                   && this.items.length > 1
+                   && this.selected_partners
+                   && Object.keys(this.selected_partners).length > 0;
+
+    var getName = CATMAID.NeuronNameService.getInstance().getName;
+
+    var skipFn = (function(item, i) { return !this.skip.hasOwnProperty(i); }).bind(this);
+
+    var computeValueFn = (function(i) {
+      var fractions = this.fractions[i];
+      var sumFn = function(sum, id) {
+        var v = fractions[id]; // might not be a partner of this item
+        return sum + (v ? v : 0);
+      };
+      var partial = Object.keys(this.selected_partners).reduce(sumFn, 0);
+      if (0 === partial) return 0;
+      var total = Object.keys(fractions).reduce(sumFn, 0);
+      return partial / total;
+    }).bind(this);
+
+    var makeEntryFn = (function(item, i) {
+      var skids = Object.keys(item.models);
+      return {item: item,
+              name: 1 === skids.length ? getName(skids[0]) : item.name, // updated name for single-skeleton items
+              fractions: this.fractions[i],
+              value: sortByValue ? computeValueFn(i) : 0};
+    }).bind(this);
+
+    var sortFn = function(a, b) {
+        if (a.value === b.value) {
+          // Alphabetic when equal value
+          return a.name < b.name ? -1 : 1;
+        }
+        // Descending
+        return a.value > b.value ? -1 : 1;
+    };
+
+    return this.items
+      .filter(skipFn)
+      .map(makeEntryFn)
+      .sort(sortFn);
+  };
 
   SynapseFractions.prototype.exportCSV = function() {
     // TODO

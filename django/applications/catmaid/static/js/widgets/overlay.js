@@ -3232,7 +3232,9 @@ SkeletonAnnotations.TracingOverlay.prototype.cycleThroughBranches = function (
  * a jump to a location that is farther away than one section.
  */
 SkeletonAnnotations.TracingOverlay.prototype.goToParentNode = function(treenode_id, ignoreVirtual) {
-  if (this.isIDNull(treenode_id)) return Promise.reject("No treenode to select provided");
+  if (treenode_id === null || treenode_id === undefined) {
+    return Promise.reject(new CATMAID.Warning("No treenode to select provided"));
+  }
 
   // Find parent of node
   var parentID;
@@ -3240,18 +3242,15 @@ SkeletonAnnotations.TracingOverlay.prototype.goToParentNode = function(treenode_
     var node = this.nodes[treenode_id];
     if (!node) {
       var msg = "Could not find node with id #" + treenode_id;
-      CATMAID.error(msg);
-      return Promise.reject(msg);
+      return Promise.reject(new CATMAID.Warning(msg));
     }
     if (node.type === SkeletonAnnotations.TYPE_CONNECTORNODE) {
       var msg = "Connector nodes do not have parent nodes";
-      CATMAID.info(msg);
-      return Promise.reject(msg);
+      return Promise.reject(new CATMAID.Warning(msg));
     }
     if (null === node.parent_id) {
       var msg = "This is the root node, can't move to its parent";
-      CATMAID.info(msg);
-      return Promise.reject(msg);
+      return Promise.reject(new CATMAID.Warning(msg));
     }
     parentID = node.parent_id;
   } else {
@@ -3657,7 +3656,9 @@ SkeletonAnnotations.TracingOverlay.prototype.moveTo = function(z, y, x, fn) {
  * @return {Promise} A promise yielding the selected node.
  */
 SkeletonAnnotations.TracingOverlay.prototype.moveToAndSelectNode = function(nodeID) {
-  if (this.isIDNull(nodeID)) return Promise.reject("Couldn't select node " + nodeID);
+  if (nodeID === null || nodeID === undefined) {
+    return Promise.reject(new CATMAID.Warning("No node selected"));
+  }
   var self = this;
   return this.goToNode(nodeID).then(
       function() {

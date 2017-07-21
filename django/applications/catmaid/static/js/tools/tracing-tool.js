@@ -587,7 +587,8 @@
           var skid = SkeletonAnnotations.getActiveSkeletonId();
           if (Number.isInteger(skid)) CATMAID.WebGLApplication.prototype.staticReloadSkeletons([skid]);
         } else {
-          activeTracingLayer.tracingOverlay.moveToAndSelectNode(SkeletonAnnotations.getActiveNodeId());
+          activeTracingLayer.tracingOverlay.moveToAndSelectNode(SkeletonAnnotations.getActiveNodeId())
+            .catch(CATMAID.handleError);
         }
         return true;
       }
@@ -662,8 +663,9 @@
           // completed.
           update.then(function() {
             updateInProgress = false;
-          }).catch(function() {
+          }).catch(function(error) {
             updateInProgress = false;
+            CATMAID.handleError(error);
           });
 
           return true;

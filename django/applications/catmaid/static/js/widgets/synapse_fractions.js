@@ -89,7 +89,7 @@
       contentID: "synapse_fractions_widget" + this.widgetID,
       createControls: function(controls) {
         var tabs = CATMAID.DOM.addTabGroup(controls, this.widgetID,
-            ['Main', 'Filter/Highlight', 'Filter partners', 'Color', 'Partner groups', 'Options']);
+            ['Main', 'Filter/Highlight', 'Filter partners', 'Color', 'Groups', 'Partner groups', 'Options']);
 
         var partners_source = CATMAID.skeletonListSources.createPushSelect(this, "filter");
         partners_source.onchange = this.onchangeFilterPartnerSkeletons.bind(this);
@@ -175,13 +175,20 @@
              [document.createTextNode("Color by: ")],
              [partners_color]]);
 
+        CATMAID.DOM.appendToTab(tabs['Groups'],
+            [['Ungroup all', this.ungroupAll.bind(this)],
+             ['Group equally named', this.groupEquallyNamed.bind(this)],
+            ]);
+
         var partner_group = CATMAID.skeletonListSources.createPushSelect(this, "group");
 
         CATMAID.DOM.appendToTab(tabs['Partner groups'],
             [[partner_group],
              ['Create group', this.createPartnerGroup.bind(this)],
              [CATMAID.DOM.createTextField('sf-select-partners-regex' + this.widgetID, ' - Select: ', 'Select partner neurons or groups by regular expression matching', '', null, this.selectPartnersByRegex.bind(this), null)],
-             ['Create group from selected', this.createGroupFromSelected.bind(this)],
+             ['Create group from selected', this.createPartnerGroupFromSelected.bind(this)],
+             ['Group equally named partners', this.groupEquallyNamedPartners.bind(this)],
+             ['Ungroup all', this.ungroupAllPartnerGroups.bind(this)],
             ]);
 
         CATMAID.DOM.appendToTab(tabs['Options'],
@@ -1003,39 +1010,16 @@
 
   SynapseFractions.prototype.handleKeyUp = function(event) {
     if (event.key === 'j') {
-      this.createGroupFromSelected();
+      this.createPartnerGroupFromSelected();
     }
   };
 
-  SynapseFractions.prototype.createGroupFromSelected = function() {
+  SynapseFractions.prototype.createPartnerGroupFromSelected = function() {
     var ids = Object.keys(this.selected_partners);
     if (ids.length > 1) {
       var name = prompt("Group name", "");
       if (!name) return; // cancelled
-      // Collect skeleton IDs from partner groups and skeletons
-      var groups = this.groups;
-      var skids = ids.reduce(function(o, id) {
-        if (id < 0) {
-          // A group of partner skeletons
-          $.extend(o, groups[id].skids);
-          // Remove the group
-          delete groups[id];
-        } else {
-          // A partner skeleton
-          o[id] = true;
-        }
-        return o;
-      }, {});
-      // Create new partner skeleton group
-      var gid = this.next_group_id--;
-      this.groups[gid] = {
-        id: gid,
-        skids: skids,
-        name: name,
-        autocolor: true,
-        color: '#ffff00'
-      };
-      Object.keys(skids).forEach(function(skid) { this.groupOf[skid] = gid; }, this);
+      this._addPartnerGroupFrom(ids, name);
       // clear selection
       this.selected_partners = {};
       // Recompute fractions and redraw
@@ -1043,6 +1027,34 @@
     } else {
       CATMAID.msg("Info", "Select at least 2 partner skeletons or groups with shift+click or by regex.");
     }
+  };
+
+  // Create a partner group from an array of ids and a name
+  SynapseFractions.prototype._addPartnerGroupFrom = function(ids, name) {
+    // Collect skeleton IDs from partner groups and skeletons
+    var groups = this.groups;
+    var skids = ids.reduce(function(o, id) {
+      if (id < 0) {
+        // A group of partner skeletons
+        $.extend(o, groups[id].skids);
+        // Remove the group
+        delete groups[id];
+      } else {
+        // A partner skeleton
+        o[id] = true;
+      }
+      return o;
+    }, {});
+    // Create new partner skeleton group
+    var gid = this.next_group_id--;
+    this.groups[gid] = {
+      id: gid,
+      skids: skids,
+      name: name,
+      autocolor: true,
+      color: '#ffff00'
+    };
+    Object.keys(skids).forEach(function(skid) { this.groupOf[skid] = gid; }, this);
   };
 
   SynapseFractions.prototype.saveToFile = function() {
@@ -1186,6 +1198,25 @@
     }
   };
 
+  /** Get the set of unique partner skeleton IDs or group IDs, as a map of ids vs their names. */
+  SynapseFractions.prototype.getPartnerIds = function() {
+    var ids = this.fractions.reduce(function(o, counts) {
+      return Object.keys(counts).reduce(function(o, id) {
+        o[id] = null;
+        return o;
+      }, o);
+    }, {});
+
+    var getName = CATMAID.NeuronNameService.getInstance().getName;
+
+    Object.keys(ids).forEach(function(id) {
+      if (id < 0) ids[id] = this.groups[id].name; // a group has always a negative ID
+      else ids[id] = getName(id);
+    }, this);
+
+    return ids;
+  };
+
   /**
    * Select partner groups by matching text or regex.
    */
@@ -1199,24 +1230,12 @@
       var match = CATMAID.createTextMatchingFunction(text);
       if (match && this.fractions) {
         // Get set of unique partner skeleton IDs or group IDs
-        var ids = this.fractions.reduce(function(o, counts) {
-          return Object.keys(counts).reduce(function(o, id) {
-            o[id] = null;
-            return o;
-          }, o);
-        }, {});
+        var ids = this.getPartnerIds();
         // Find those that match
         this.selected_partners = {};
         var getName = CATMAID.NeuronNameService.getInstance().getName;
         Object.keys(ids).forEach(function(id) {
-          if (id < 0) {
-            // A group
-            if (match(this.groups[id].name)) this.selected_partners[id] = true;
-          } else {
-            // A skeleton ID
-            var text = getName(id);
-            if (text && match(text)) this.selected_partners[id] = true;
-          }
+          if (match(ids[id])) this.selected_partners[id] = true;
         }, this);
         this.redraw();
       }
@@ -1268,6 +1287,68 @@
       .filter(skipFn)
       .map(makeEntryFn)
       .sort(sortFn);
+  };
+
+  SynapseFractions.prototype.ungroupAll = function() {
+    var getName = CATMAID.NeuronNameService.getInstance().getName;
+    this.items = this.items.reduce(function(a, item) {
+      var skids = Object.keys(item.models);
+      if (1 === skids.length) a.push(item);
+      else {
+        skids.forEach(function(skid) {
+          a.push(new CATMAID.SkeletonGroup({[skid]: item.models[skid]},
+                                           getName(skid),
+                                           item.models[skid].color.clone()));
+        });
+      }
+      return a;
+    }, []);
+    this.updateGraph();
+  };
+
+  /** Find items with identical names and group them. */
+  SynapseFractions.prototype.groupEquallyNamed = function() {
+    var grouped_items = this.items.reduce(function(o, item) {
+      var seen = o[item.name];
+      if (seen) {
+        $.extend(seen.models, item.models);
+        seen.name = item.name + ' [#' + Object.keys(seen.models).length + ']';
+      } else {
+        o[item.name] = item;
+      }
+      return o;
+    }, {});
+
+    this.items = Object.keys(grouped_items).map(function(name) { return grouped_items[name]; });
+    this.updateGraph();
+  };
+
+  SynapseFractions.prototype.groupEquallyNamedPartners = function() {
+    if (0 === this.items.length) return;
+    var ids = this.getPartnerIds();
+    var grouped = Object.keys(ids).reduce(function(o, id) {
+      var name = ids[id];
+      var seen = o[name];
+      if (seen) o[name].push(id);
+      else o[name] = [id];
+      return o;
+    }, {});
+    // Make groups for those with a count > 1
+    Object.keys(grouped).forEach(function(name) {
+      var a = grouped[name]; // an array
+      if (a.length > 1) {
+        this._addPartnerGroupFrom(a, name);
+      }
+    }, this);
+    // Recompute fractions and redraw
+    this.updateGraph();
+  };
+
+  SynapseFractions.prototype.ungroupAllPartnerGroups = function() {
+    this.groups = {};
+    this.groupOf = {};
+    this.next_group_id = -1;
+    this.updateGraph();
   };
 
   SynapseFractions.prototype.exportCSV = function() {

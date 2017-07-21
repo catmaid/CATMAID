@@ -501,6 +501,23 @@
     this.updateGraph();
   };
 
+  SynapseFractions.prototype._makePartnerCountsMap = function(synapses) {
+    var type = this.mode === this.DOWNSTREAM ? 0 : 1; // 0 is pre, 1 is post
+    return synapses.reduce((function(o, row) {
+      // compact-arbor indices:
+      // 1: confidence of synaptic relation between skid and connector
+      // 3: confidence of synaptic relation between connector and other skid
+      // 5: skeleton ID of the other skeleton
+      // 6: relation_id for skid to connector
+      if (row[6] === type && Math.min(row[1], row[3]) >= this.confidence_threshold) {
+        var skid2 = row[5],
+            count = o[skid2];
+        o[skid2] = count ? count + 1 : 1;
+      }
+      return o;
+    }).bind(this), {});
+  };
+
   /** Updates this.fractions and this.other_source, and invokes redraw.  */
   SynapseFractions.prototype.updateGraph = function() {
     if (0 === this.items.length) return;
@@ -511,22 +528,8 @@
     this.fractions = this.items.map(function(item) {
       // For every model in items
       return Object.keys(item.models).reduce((function(fractions, skid) {
-        var morphology = this.morphologies[skid];
         // Collect counts of synapses with partner neurons
-        var type = this.mode === this.DOWNSTREAM ? 0 : 1; // 0 is pre, 1 is post
-        var partners = morphology.synapses.reduce((function(o, row) {
-          // compact-arbor indices:
-          // 1: confidence of synaptic relation between skid and connector
-          // 3: confidence of synaptic relation between connector and other skid
-          // 5: skeleton ID of the other skeleton
-          // 6: relation_id for skid to connector
-          if (row[6] === type && Math.min(row[1], row[3]) >= this.confidence_threshold) {
-            var skid2 = row[5],
-                count = o[skid2];
-            o[skid2] = count ? count + 1 : 1;
-          }
-          return o;
-        }).bind(this), {});
+        var partners = this._makePartnerCountsMap(this.morphologies[skid].synapses);
         // Filter partners and add up synapse counts
         Object.keys(partners).forEach((function(skid2) {
           var count = partners[skid2];
@@ -578,7 +581,7 @@
   };
 
   SynapseFractions.prototype._redraw = function(container, containerID) {
-    // Map of partner skeletin IDs or group IDs, vs counts of synapses across all models,
+    // Map of partner skeleton IDs or group IDs, vs counts of synapses across all models,
     // useful for sorting later the blocks inside each column
     var partners = this.fractions.reduce(function(o, counts) {
       return Object.keys(counts).reduce(function(o, id) {
@@ -703,13 +706,14 @@
       .attr("transform", function(d) { return "translate(" + x(d) + ",0)"; });
 
     // Sort according to order and compute cumulatives
-    var prepare = function(fractions) {
+    var prepare = function(entry) {
       var total = 0;
       var data = order.reduce(function(a, id) {
-        var count = fractions[id];
+        var count = entry.fractions[id];
         if (!count) return a; // skid2 is not a partner
         total += count; // SIDE EFFECT
-        a.push({id: id, // skid or gid
+        a.push({id: id, // partner skid or gid
+                item: entry.item,
                 counts: count,
                 cumulative: 0, // for offset
                 total: 0}); // to normalize
@@ -726,7 +730,7 @@
 
     state.selectAll("rect")
       .data((function(index) {
-        return prepare(sorted_entries[index].fractions);
+        return prepare(sorted_entries[index]);
       }).bind(this))
       .enter()
         .append('rect')
@@ -753,8 +757,52 @@
             }
             this.redraw();
           } else {
-            if ("others" === d.id || d.id < 0) return; // negative when it is a group
-            CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', d.id);
+            // If others or a group (groups have negative IDs):
+            if ("others" === d.id || d.id < 0) {
+              // Extract data to display a connectivity matrix
+              var item_models = d.item.models;
+              var partner_skids;
+              if (d.id < 0) {
+                // A group
+                partner_skids = this.groups[d.id].skids;
+              } else {
+                // Others: all that are under threshold or not in this.only
+                partner_skids = Object.keys(d.item.models).reduce((function(o, skid) {
+                  var partners = this._makePartnerCountsMap(this.morphologies[skid].synapses);
+                  return Object.keys(partners).reduce((function(o, skid2) {
+                    var count = partners[skid2];
+                    if (count < this.threshold
+                     || (this.only && !this.only[skid2])) {
+                       o[skid2] = true;
+                    }
+                    return o;
+                  }).bind(this), o);
+                }).bind(this), {});
+              }
+              var partner_models = Object.keys(partner_skids).reduce(function(o, skid2) {
+                o[skid2] = new CATMAID.SkeletonModel(skid2, "", new THREE.Color(1, 1, 0));
+                return o;
+              }, {});
+
+              // Open a connectivity matrix, sorted by total synapse count descending
+              var CM = WindowMaker.show("connectivity-matrix");
+
+              CM.widget.rowSorting = 5;
+              CM.widget.rowSortingDesc = true;
+              CM.widget.colSorting = 5;
+              CM.widget.colSortingDesc = true;
+
+              if (this.mode === this.UPSTREAM) {
+                CM.widget.rowDimension.append(partner_models);
+                CM.widget.colDimension.append(item_models);
+              } else {
+                CM.widget.rowDimension.append(item_models);
+                CM.widget.colDimension.append(partner_models);
+              }
+
+            } else {
+              CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', d.id);
+            }
           }
         }).bind(this))
         .append('svg:title') // on mouse over
@@ -1291,6 +1339,7 @@
       .sort(sortFn);
   };
 
+  /** Ungroup all items, so that each item holds a single skeleton ID. */
   SynapseFractions.prototype.ungroupAll = function() {
     var getName = CATMAID.NeuronNameService.getInstance().getName;
     this.items = this.items.reduce(function(a, item) {
@@ -1352,6 +1401,12 @@
     this.next_group_id = -1;
     this.updateGraph();
   };
+
+  // TODO
+  // 1. Filter by whether they receive any inputs from a certain partner id
+  // 2. Click on item label to remove it.
+  // 3. Remove visible items or remove highlighted ones.
+  // 4. Open matrix for box on click when it is a group
 
   SynapseFractions.prototype.exportCSV = function() {
     // TODO

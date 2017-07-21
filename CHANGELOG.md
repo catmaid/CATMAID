@@ -163,6 +163,9 @@ Miscellaneous:
 
 - Setting a stack viewer offset won't cause an error anymore.
 
+- User interaction without a reachable server (e.g. due to a disconnected
+  network) doesn't lead to image and tracing data freezing anymore.
+
 
 ## 2017.05.17
 

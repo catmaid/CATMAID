@@ -336,7 +336,7 @@
    * Implements duck-typing interface SkeletonGroupSource
    */
   VennDiagram.prototype.getSelectedGroups = function() {
-    if (0 == Object.keys(this.selected).length) return [];
+    if (0 === Object.keys(this.selected).length) return [];
     var label = $('#venn_diagram_sel' + this.widgetID);
     return [new CATMAID.SkeletonGroup($.extend({}, this.selected), label.text(), new THREE.Color(1, 1, 0))];
   };

@@ -1250,3 +1250,26 @@ img.missing-image:before {
   left: 0;
   top: 0;
 }
+
+.selection-box {
+  position: absolute;
+  top: 500px;
+  left: 500px;
+  margin: 0;
+  padding: 0;
+  border: solid 1px #0000FF;
+  background: url(../images/blue20.png);
+  overflow: visible;
+  z-index: 3;
+  width: 100px;
+  height: 100px;
+}
+
+.selection-box-text {
+  position: absolute;
+  margin: 0;
+  padding: 2px;
+  background: #0000FF;
+  color: #FFFFFF;
+  white-space: nowrap;
+}

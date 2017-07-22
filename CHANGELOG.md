@@ -130,6 +130,13 @@ Miscellaneous:
 - URLs to a particular view work now also with a location and a skeleton ID only
   rather than requiring a node ID always.
 
+- Using "Shift + x" and "Ctrl + x" will now activate a checkbox selection mode
+  and the cursor turns into a crosshair. In this mode one can draw a rectangle
+  everywhere on the screen and all checkboxes that are behind the rectangle will
+  be toggled using "Ctrl + x" (turned on if off and vise versa) or checked with
+  "Shift + x". Either releasing the drawing mouse click or a second "Shift + x"
+  or "Ctrl + x" will deactivate the tool again.
+
 
 ### Bug fixes
 

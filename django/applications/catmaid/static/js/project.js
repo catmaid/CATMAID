@@ -497,6 +497,15 @@
 
     var actions = CATMAID.toolActions.concat(CATMAID.EditTool.actions);
 
+    actions.push(new CATMAID.Action({
+        helpText: "Toggle/check checkboxes under selection rectangle (<kbd>Ctrl</kbd>: toggle <kbd>Shift</kbd>: check)",
+        keyShortcuts: { "X": [ "Ctrl + x", "Shift + x" ] },
+        run: function(event) {
+          var checkOnly = event.shiftKey;
+          CATMAID.ui.toggleRectCheckboxSelect(checkOnly);
+        }
+    }));
+
     this.getActions = function () {
       return actions;
     };

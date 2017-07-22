@@ -21,6 +21,7 @@
     var ctrlKeyDown = false;
     var altKeyDown = false;
     var contextMenuEnabled = false;
+    var checkboxToggler = null;
     var lastX = 0;
     var lastY = 0;
     var x = 0;
@@ -512,6 +513,22 @@
       focusCatcher.focus();
     };
 
+    /**
+     * Toggle the display of an overlay over all of the front end that allows
+     * users to draw a rectangle with their mouse under which all checkboxes will
+     * be toggled.
+     */
+    this.toggleRectCheckboxSelect = function(checkOnly) {
+      if (checkboxToggler && checkboxToggler.active) {
+        checkboxToggler.destroy();
+        checkboxToggler = null;
+      } else {
+        checkboxToggler = new CATMAID.RectCheckboxSelector({
+          checkOnly: checkOnly
+        });
+        checkboxToggler.init();
+      }
+    };
 
     /**
      * Enables or disables the browser context menu.
@@ -540,6 +557,7 @@
     document.onkeydown = onkeydown;
     document.onkeyup = onkeyup;
   };
+
   /**
    * Map a key combination to a standard key value. This will for instance
    * map 'shift + a' to A. For a list of key values

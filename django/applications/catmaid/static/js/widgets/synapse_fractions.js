@@ -1334,7 +1334,6 @@
         var ids = this.getPartnerIds();
         // Find those that match
         this.selected_partners = {};
-        var getName = CATMAID.NeuronNameService.getInstance().getName;
         Object.keys(ids).forEach(function(id) {
           if (match(ids[id])) this.selected_partners[id] = true;
         }, this);

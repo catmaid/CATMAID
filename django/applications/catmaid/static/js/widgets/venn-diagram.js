@@ -11,6 +11,7 @@
   var VennDiagram = function() {
     this.widgetID = this.registerInstance();
     CATMAID.SkeletonSource.call(this, true);
+    CATMAID.skeletonListSources.updateGUI();
 
     this.groups = [];
     this.selected = {}; // skid vs model

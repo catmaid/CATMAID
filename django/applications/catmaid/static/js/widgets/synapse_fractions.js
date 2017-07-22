@@ -72,6 +72,9 @@
 
     // Set of items to skip displaying, as a map of index vs true
     this.skip = {};
+
+    this.sort_by_selected_partners = false;
+    this.sort_composition_fn = "sum";
   };
 
   SynapseFractions.prototype = Object.create(CATMAID.SkeletonSource.prototype);
@@ -116,22 +119,30 @@
              ['Open', function() { fileButton.click(); }],
             ]);
 
+        var compositionFns = CATMAID.DOM.createSelect("sf-composition-fn" + this.widgetID, ["sum", "max"]);
+        compositionFns.onchange = (function() {
+          this.sort_composition_fn = compositionFns.options[compositionFns.selectedIndex].value;
+          this.redraw();
+        }).bind(this);
+
         CATMAID.DOM.appendToTab(tabs['Filter/Highlight'],
             [[document.createTextNode('Show only: ')],
              [CATMAID.DOM.createTextField('sf-filter-by-regex' + this.widgetID, null, null, '', null, this.filterByRegex.bind(this), 10, null)],
              [document.createTextNode(' - Highlight: ')],
              [CATMAID.DOM.createTextField('sf-highlight' + this.widgetID, null, null, '', null, this.highlightByRegex.bind(this), 10, null)],
+             ['Remove all highlighted', this.removeAllHighlighted.bind(this)],
              {
                type: 'checkbox',
                label: 'Sort by selected partners',
-               title: 'Sort the X-axis according to the sum of fractions of selected partners',
+               title: 'Sort the X-axis according to the sum of fractions of selected partners, which are aggregated using a chosen composition function (default is sum)',
                value: this.sort_by_selected_partners,
                onclick: (function(ev) {
                  this.sort_by_selected_partners = ev.target.checked;
                  this.redraw();
                }).bind(this)
              },
-             ['Remove all highlighted', this.removeAllHighlighted.bind(this)],
+             [document.createTextNode(" Compose with: ")],
+             [compositionFns],
             ]);
 
         var nf = CATMAID.DOM.createNumericField("synapse_threshold" + this.widgetID, // id
@@ -1360,7 +1371,15 @@
         var v = fractions[id]; // might not be a partner of this item
         return sum + (v ? v : 0);
       };
-      var partial = Object.keys(this.selected_partners).reduce(sumFn, 0);
+      // Default is "sum"
+      var composeFn = sumFn;
+      if ("max" == this.sort_composition_fn) {
+        composeFn = function(m, id) {
+          var v = fractions[id]; // might not be a partner of this item
+          return v ? Math.max(m, v) : m;
+        };
+      }
+      var partial = Object.keys(this.selected_partners).reduce(composeFn, 0);
       if (0 === partial) return 0;
       var total = Object.keys(fractions).reduce(sumFn, 0);
       return partial / total;
@@ -1451,10 +1470,6 @@
     this.next_group_id = -1;
     this.updateGraph();
   };
-
-  // TODO
-  // 1. Filter by whether they receive any inputs from a certain partner id
-  // 3. Remove visible items or remove highlighted ones.
 
   SynapseFractions.prototype.exportCSV = function() {
     // TODO

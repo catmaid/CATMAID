@@ -637,10 +637,10 @@
    * Return a key combination string based on a set of components.
    */
   CATMAID.UI.toKeyCombo = function(components) {
-    return (components.altKey ? "Alt + " : "") +
-           (components.ctrlKey ? "Ctrl + " : "") +
-           (components.metaKey ? "Meta + " : "") +
-           (components.shiftKey ? "Shift + " : "") +
+    return (components.altKey && components.key !== "Alt" ? "Alt + " : "") +
+           (components.ctrlKey && components.key !== "Ctrl" ? "Ctrl + " : "") +
+           (components.metaKey && components.key !== "Meta" ? "Meta + " : "") +
+           (components.shiftKey && components.key !== "Shift" ? "Shift + " : "") +
            components.key;
   };
 

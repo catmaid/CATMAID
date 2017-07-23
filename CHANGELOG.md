@@ -138,9 +138,10 @@ Miscellaneous:
   or "Ctrl + x" will deactivate the tool again.
 
 - All skeleton source widgets (typically those with a skeleton source drop-down
-  menu) now support copy and paste of skeleton models. Pressing "Ctrl + c" in
-  an active widget will copy its skeletons into a clipboard. Pressing "Ctrl + v"
-  in another widget will then paste those models into the now active widget.
+  menu) now support copy and paste of skeleton models. Pressing "Ctrl + Shift c"
+  in an active widget will copy its skeletons (along with colors) into a
+  clipboard. Pressing "Ctrl + Shift + v" in another widget will then paste those
+  models into the now active widget.
 
 
 ### Bug fixes

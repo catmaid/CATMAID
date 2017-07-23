@@ -40,6 +40,10 @@
     if (options.handleRemovedModels) {
       this.handleRemovedModels = options.handleRemovedModels;
     }
+
+    // If an owner reference is provided, this source can be discovered as being
+    // part of a widget.
+    this.owner = CATMAID.tools.getDefined(options.owner, null);
   };
 
   BasicSkeletonSource.prototype = Object.create(CATMAID.SkeletonSource.prototype);

@@ -53,7 +53,9 @@
     this.sigma = 200;
 
     // Maintain a skeleton source for neurons in the plot
-    this.preSource = new CATMAID.BasicSkeletonSource(this.getName() + ' Presynaptics');
+    this.preSource = new CATMAID.BasicSkeletonSource(this.getName() + ' Presynaptics', {
+      owner: this
+    });
   };
 
   SynapsePlot.prototype = Object.create(CATMAID.SkeletonSource.prototype);

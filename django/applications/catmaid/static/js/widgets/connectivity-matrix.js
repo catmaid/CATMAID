@@ -10,11 +10,13 @@
     this.matrix = new CATMAID.ConnectivityMatrix();
     var update = this.update.bind(this);
     this.rowDimension = new CATMAID.BasicSkeletonSource(this.getName() + " Rows", {
+      owner: this,
       handleAddedModels: update,
       handleChangedModels: update,
       handleRemovedModels: update
     });
     this.colDimension = new CATMAID.BasicSkeletonSource(this.getName() + " Columns", {
+      owner: this,
       handleAddedModels: update,
       handleChangedModels: update,
       handleRemovedModels: update

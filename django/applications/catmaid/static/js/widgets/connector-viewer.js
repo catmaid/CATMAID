@@ -46,7 +46,9 @@
 
 
     // A skeleton source to collect results in
-    this.resultSkeletonSource = new CATMAID.BasicSkeletonSource(this.getName());
+    this.resultSkeletonSource = new CATMAID.BasicSkeletonSource(this.getName(), {
+      owner: this
+    });
 
     this.cache = new ConnectorViewerCache(this.skelSources);
     this.stackViewerGrid = null;  // instantiated in init()

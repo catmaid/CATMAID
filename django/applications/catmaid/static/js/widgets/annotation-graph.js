@@ -21,7 +21,9 @@
     this.maxNodes = null;
 
     // Register a skeletonSource
-    this.skeletonSource = new CATMAID.BasicSkeletonSource(this.getName());
+    this.skeletonSource = new CATMAID.BasicSkeletonSource(this.getName(), {
+      owner: this
+    });
   };
 
   AnnotationGraph.prototype = Object.create(InstanceRegistry.prototype);

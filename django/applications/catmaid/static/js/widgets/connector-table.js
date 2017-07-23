@@ -25,7 +25,9 @@
       handleRemovedModels: update
     });
     // A skeleton source to collect results in
-    this.resultSkeletonSource = new CATMAID.BasicSkeletonSource(this.getName());
+    this.resultSkeletonSource = new CATMAID.BasicSkeletonSource(this.getName(), {
+      owner: this
+    });
 
     // The displayed data table
     this.connectorTable = null;

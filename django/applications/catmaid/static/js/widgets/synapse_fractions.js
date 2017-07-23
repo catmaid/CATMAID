@@ -59,7 +59,9 @@
 
     this.confidence_threshold = 1;
 
-    this.other_source = new CATMAID.BasicSkeletonSource(this.getName() + ' partners');
+    this.other_source = new CATMAID.BasicSkeletonSource(this.getName() + ' partners', {
+      owner: this
+    });
 
     // Set of selected partners or partner groups, with shift+click
     this.selected_partners = {};

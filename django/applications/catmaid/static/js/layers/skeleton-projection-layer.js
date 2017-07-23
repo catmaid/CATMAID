@@ -27,6 +27,7 @@
     this.useSourceColors = false;
     this.selectionBasedSource = true;
     this.skeletonSource = new CATMAID.BasicSkeletonSource('Skeleton projection layer', {
+      owner: this,
       handleAddedModels: this.update.bind(this),
       handleRemovedModels: this.update.bind(this),
       handleChangedModels: this._updateModels.bind(this),

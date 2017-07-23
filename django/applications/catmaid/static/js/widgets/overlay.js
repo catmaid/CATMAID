@@ -714,6 +714,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
 
   this._skeletonDisplaySource = new CATMAID.BasicSkeletonSource(
       'Tracing overlay (' + this.stackViewer.primaryStack.title + ')', {
+        owner: this,
         register: false
       });
   this._skeletonDisplaySource.ignoreLocal = true;

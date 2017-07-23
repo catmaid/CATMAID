@@ -12,7 +12,9 @@
     /**
      * Skeleton source which is registered and other widgets can use
      */
-    this.resultSkeletons = new CATMAID.BasicSkeletonSource(this.getName());
+    this.resultSkeletons = new CATMAID.BasicSkeletonSource(this.getName(), {
+      owner: this
+    });
 
     var constrainSkelsAndRedraw = this.constrainSkelsAndRedraw.bind(this);
 

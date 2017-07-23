@@ -14,6 +14,7 @@
     var refresh = this.refresh.bind(this);
     var refreshSkeletons = this.refreshSkeletons.bind(this);
     this.skeletonSource = new CATMAID.BasicSkeletonSource(this.getName(), {
+      owner: this,
       handleAddedModels: refreshSkeletons,
       handleChangedModels: refresh,
       handleRemovedModels: refreshSkeletons

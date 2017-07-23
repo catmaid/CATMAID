@@ -26,6 +26,9 @@
    */
   function Project( pid ) {
 
+    // A general purpurse clipboard.
+    var clipboard = null;
+
     this.getView = function() {
       return view;
     };
@@ -506,6 +509,62 @@
         }
     }));
 
+    actions.push(new CATMAID.Action({
+      helpText: "Copy selected skeletons of active widge into clipboard",
+      keyShortcuts: { "C": [ "Ctrl + c"] },
+      run: function(event) {
+        var activeWidget = CATMAID.front();
+        if (!activeWidget) {
+          CATMAID.warn("No active widget found, no data to copy to clipboard");
+          return;
+        }
+        var sources = CATMAID.skeletonListSources.getSourcesOfOwner(activeWidget);
+        if (!sources || sources.length === 0) {
+          CATMAID.msg("No active skeleton source", "Please select a skeleton skeleton source widget first");
+          return;
+        }
+
+        // Take first available source by default
+        var activeSource = sources[0];
+        var models = activeSource.getSelectedSkeletonModels();
+        var nModels = Object.keys(models).length;
+        if (nModels === 0) {
+          CATMAID.msg("No selected skeletons", "Please select at least one skeleton first");
+          return;
+        }
+
+        clipboard = new ClipboardElement("skeleton-models", models);
+        CATMAID.msg("Success", "Copied " + nModels + " to clipboard");
+      }
+    }));
+
+    actions.push(new CATMAID.Action({
+      helpText: "Paste previously copied data, like skeleton models",
+      keyShortcuts: { "V": [ "Ctrl + v" ] },
+      run: function(event) {
+        if (!clipboard) {
+          CATMAID.warn("Please copy data to the clipboard first");
+          return;
+        }
+        var activeWidget = CATMAID.front();
+        if (!activeWidget) {
+          CATMAID.warn("Please activate widget first");
+          return;
+        }
+        if (!clipboard.data) {
+          throw new CATMAID.ValueError("No clipboarod data in clipboard element");
+        }
+        if (clipboard.type === "skeleton-models") {
+          var nModels = Object.keys(clipboard.data).length;
+          activeWidget.append(clipboard.data);
+          CATMAID.msg("Success", "Pasted " + nModels + " skeletons into " +
+              activeWidget.getName());
+        } else {
+          throw new CATMAID.ValueError("Unknown clipboard data type: " + clipboard.type);
+        }
+      }
+    }));
+
     this.getActions = function () {
       return actions;
     };
@@ -535,6 +594,11 @@
   Project.EVENT_STACKVIEW_CLOSED = 'project_stackview_closed';
   Project.EVENT_STACKVIEW_FOCUS_CHANGED = 'project_stackview_focus_changed';
   Project.EVENT_LOCATION_CHANGED = 'project_location_changed';
+
+  function ClipboardElement(type, data) {
+    this.type = type;
+    this.data = data;
+  }
 
   // Make Project available in CATMAID namespace
   CATMAID.Project = Project;

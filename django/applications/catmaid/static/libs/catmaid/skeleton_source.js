@@ -55,6 +55,7 @@
   SkeletonSource.prototype.EVENT_SUBSCRIPTION_REMOVED = "skeleton_source_subscription_removed";
 
   SkeletonSource.prototype.registerSource = function() {
+    this.trigger(this.EVENT_SOURCE_ADDED, this);
     CATMAID.skeletonListSources.add(this);
   };
 

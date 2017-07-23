@@ -587,6 +587,23 @@
     }, this);
   };
 
+  /**
+   * Get sources registered to a particular owner.
+   *
+   * @param {Object} owner Owner of source
+   *
+   * @returns A list of skeleton sources having the passed in owner. This list
+   *          is empty of no owner is found.
+   */
+  SkeletonSourceManager.prototype.getSourcesOfOwner = function(owner) {
+    return this.orderedSources.filter(function(sourceName) {
+      var source = this.sources[sourceName];
+      return source.owner === owner || source === owner;
+    }, this).map(function(sourceName) {
+      return this.sources[sourceName];
+    }, this);
+  };
+
   // Make source manager available in CATMAID namespace
   CATMAID.SkeletonSourceManager = SkeletonSourceManager;
 

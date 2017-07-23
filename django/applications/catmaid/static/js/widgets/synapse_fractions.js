@@ -75,6 +75,7 @@
 
     this.sort_by_selected_partners = false;
     this.sort_composition_fn = "sum";
+    this.sort_keep_equally_named_together = true;
   };
 
   SynapseFractions.prototype = Object.create(CATMAID.SkeletonSource.prototype);
@@ -143,6 +144,16 @@
              },
              [document.createTextNode(" Compose with: ")],
              [compositionFns],
+             {
+               type: 'checkbox',
+               label: 'Keep equally named together',
+               title: 'When sorting, keep those equally named next to each other',
+               value: this.sort_keep_equally_named_together,
+               onclick: (function(ev) {
+                 this.sort_keep_equally_named_together = ev.target.checked;
+                 this.redraw();
+               }).bind(this)
+             },
             ]);
 
         var nf = CATMAID.DOM.createNumericField("synapse_threshold" + this.widgetID, // id
@@ -1402,10 +1413,29 @@
         return a.value > b.value ? -1 : 1;
     };
 
-    return this.items
+    var sorted_entries = this.items
       .filter(skipFn)
       .map(makeEntryFn)
       .sort(sortFn);
+
+    if (sortByValue && this.sort_keep_equally_named_together) {
+      // For every entry, find if any other after it is equally named, and put it next to it.
+      // Make a map first of names vs array of items with same names
+      var equals = sorted_entries.reduce(function(o, item) {
+        var a = o[item.name];
+        if (a) a.push(item);
+        else o[item.name] = [item];
+        return o;
+      }, {});
+      var seen = {};
+      return sorted_entries.reduce(function(a, item) {
+        if (seen[item.name]) return a; // was done
+        seen[item.name] = true;
+        return a.concat(equals[item.name]);
+      }, []);
+    }
+
+    return sorted_entries;
   };
 
   /** Ungroup all items, so that each item holds a single skeleton ID. */

@@ -36,8 +36,6 @@
     if (skeletonModels) {
       this.skeletonSource.append(skeletonModels);
     }
-
-    CATMAID.skeletonListSources.updateGUI();
   };
 
   ConnectorTable.prototype = {};

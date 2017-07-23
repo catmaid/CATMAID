@@ -1243,8 +1243,6 @@ var WindowMaker = new function()
     // available vertical space (instead of 50%).
     win.getParent().changeHeight(Math.abs(win.getHeight() * 0.5));
 
-    CATMAID.skeletonListSources.updateGUI();
-
     // Now that a Selection Table exists, have the 3D viewer subscribe to it and
     // make it ignore local models. Don't make it selection based, to not reload
     // skeletons on visibility changes.
@@ -1439,8 +1437,6 @@ var WindowMaker = new function()
     addLogic(win);
 
     GG.init();
-
-    CATMAID.skeletonListSources.updateGUI();
 
     return {window: win, widget: GG};
   };
@@ -1638,8 +1634,6 @@ var WindowMaker = new function()
     // Let the navigator initialize the interface within
     // the created container.
     NN.init_ui(container, new_nn_instance === undefined);
-
-    CATMAID.skeletonListSources.updateGUI();
 
     return {window: win, widget: NN};
   };

@@ -34,8 +34,6 @@
     this.rotateColumnHeaders = false;
     // Display manual order edit controls
     this.displayOrderFields = false;
-
-    CATMAID.skeletonListSources.updateGUI();
   };
 
   ConnectivityMatrixWidget.prototype = {};

@@ -27,8 +27,6 @@
     this.timeUnits = new Set(["sec", "min", "hours", "days"]);
     // Will store a datatable instance
     this.table = null;
-
-    CATMAID.skeletonListSources.updateGUI();
   };
 
   NeuronHistoryWidget.prototype = new InstanceRegistry();

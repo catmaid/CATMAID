@@ -25,7 +25,6 @@
       handleChangedModels: constrainSkelsAndRedraw,
       handleRemovedModels: constrainSkelsAndRedraw
     });
-    CATMAID.skeletonListSources.updateGUI();
 
     this.oTable = null;  // Initialise DataTables API instance
   };

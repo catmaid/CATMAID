@@ -179,6 +179,12 @@ Miscellaneous:
 - 3D viewer: the active node split shading can now handle changed virtual nodes
   to which it is lacking information and won't raise an error.
 
+- All newly opened widgets that support it, appear now in the "skeleton source"
+  drop-down menus of all other widgets from that moment on. This was a problem
+  mainly with Analyze Arbor, Measurements Table, Morphology Plot, Neuron
+  Dendrogrm and Treenode Table.
+
+
 ## 2017.05.17
 
 Contributors: Andrew Champion, Tom Kazimiers

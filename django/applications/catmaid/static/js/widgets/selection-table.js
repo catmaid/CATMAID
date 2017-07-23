@@ -328,7 +328,6 @@
         // Add auto completetion to annotation filter
         CATMAID.annotations.add_autocomplete_to_input(
             $("#selection-table-ann-filter" + this.widgetID));
-        CATMAID.skeletonListSources.updateGUI();
         this.init();
         win.focus();
       },

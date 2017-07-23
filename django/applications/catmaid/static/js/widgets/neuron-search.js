@@ -268,8 +268,6 @@
         // the filter select box doesn't work when it is hidden.
         $(this.content).hide();
 
-        CATMAID.skeletonListSources.updateGUI();
-
         // Focus search box
         setTimeout(function() {
           $('input#neuron_query_by_name' + self.widgetID).focus();

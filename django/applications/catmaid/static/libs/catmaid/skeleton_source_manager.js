@@ -36,6 +36,7 @@
   SkeletonSourceManager.prototype.add = function(source) {
     this.sources[source.getName()] = source;
     this.orderedSources.push(source.getName());
+    this.updateGUI();
   };
 
   SkeletonSourceManager.prototype.destroy = function() {

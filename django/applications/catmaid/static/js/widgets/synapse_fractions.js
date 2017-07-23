@@ -75,7 +75,7 @@
 
     this.sort_by_selected_partners = false;
     this.sort_composition_fn = "sum";
-    this.sort_keep_equally_named_together = true;
+    this.sort_keep_equally_named_together = false;
   };
 
   SynapseFractions.prototype = Object.create(CATMAID.SkeletonSource.prototype);

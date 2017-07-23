@@ -413,7 +413,7 @@
 
     skids.forEach(function(skid) {
       // register
-      var model = models[skid];
+      var model = models[skid].clone();
       this.items.push(new CATMAID.SkeletonGroup(
             {[skid]: model}, // [skid] evaluates skid
             CATMAID.NeuronNameService.getInstance().getName(skid), // will be updated upon invoking redraw, when sorting the entries into "sorted_entries"
@@ -471,6 +471,9 @@
     }
 
     if (append_count_to_name) group_name += ' [#' + skids.length + ']';
+
+    // clone models
+    models = Object.keys(models).reduce(function(o, skid) { o[skid] = models[skid].clone(); return o; }, {});
 
     // Add all as a new group
     this.items.push(new CATMAID.SkeletonGroup(models, group_name, models[skids[0]].color.clone()));

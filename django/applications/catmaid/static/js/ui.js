@@ -64,51 +64,36 @@
     };
 
     /**
-     * Deal with key press and release in one function. If <released> is falsy,
+     * Deal wit/h key press and release in one function. If <released> is falsy,
      * the keydown handler will be called, otherwise,
      */
     var handleKeyAction = function( e, released ) {
+      if (!e) {
+        throw new CATMAID.ValueError("No event provided");
+      }
       released = !!released;
       var projectKeyPress;
       var key;
-      var shift;
-      var alt;
-      var ctrl;
-      var meta;
       var keyAction;
 
-      /* The code here used to modify 'e' and pass it
-         on, but Firefox no longer allows this.  So, create
-         a fake event object instead, and pass that down. */
+      // The event object can't be modified directly. To be able to do this, a
+      // new event object is created. The data we need is copied over.
       var fakeEvent = {};
+      fakeEvent.key = e.key;
+      fakeEvent.shiftKey = e.shiftKey;
+      fakeEvent.altKey = e.altKey;
+      fakeEvent.ctrlKey = e.ctrlKey;
+      fakeEvent.metaKey = e.metaKey;
+      fakeEvent.repeat = e.repeat;
+      fakeEvent.target = CATMAID.UI.getTargetElement(e);
 
-      if ( e )
-      {
-        fakeEvent.key = e.key;
-        fakeEvent.shiftKey = e.shiftKey;
-        fakeEvent.altKey = e.altKey;
-        fakeEvent.ctrlKey = e.ctrlKey;
-        fakeEvent.metaKey = e.metaKey;
-        fakeEvent.repeat = e.repeat;
-        shift = e.shiftKey;
-        alt = e.altKey;
-        ctrl = e.ctrlKey;
-        meta = e.metaKey;
-      }
-      else if ( event && event.key)
-      {
-        fakeEvent.key = event.key;
-        fakeEvent.shiftKey = event.shiftKey;
-        fakeEvent.altKey = event.altKey;
-        fakeEvent.ctrlKey = event.ctrlKey;
-        fakeEvent.metaKey = event.metaKey;
-        fakeEvent.repeat = event.repeat;
-        shift = event.shiftKey;
-        alt = event.altKey;
-        ctrl = event.ctrlKey;
-        meta = event.metaKey;
-      }
-      fakeEvent.target = CATMAID.UI.getTargetElement(e || event);
+      var shift = e.shiftKey;
+      var alt = e.altKey;
+      var ctrl = e.ctrlKey;
+      var meta = e.metaKey;
+
+      var propagate = true;
+
       var n = fakeEvent.target.nodeName.toLowerCase();
       var fromATextField = fakeEvent.target.getAttribute('contenteditable');
       if (n === "input") {
@@ -119,41 +104,42 @@
       }
       if (meta) {
         // Don't intercept command-key events on Mac.
-        return true;
+        propagate = true;
       }
       if (!(fromATextField || n == "textarea" || n == "area"))
       {
-        /* Note that there are two different
-           conventions for return values here: the
-           handleKeyPress() methods return true if the
-           event has been dealt with (i.e. it should
-           not be propagated) but the onkeydown
-           function should only return true if the
-           event should carry on for default
-           processing. */
-
         // Let UI actions in closure only deal with key-down events.
         if (!released && handleKeyPress(fakeEvent)) {
-          return false;
+          propagate = false;
         }
 
         // Try to handle key in this order: active widget, tool, project
         var activeWidget = CATMAID.front();
         if (activeWidget && handledBy(activeWidget, fakeEvent, released)) {
-          return false;
+          propagate = false;
         }
         if (project) {
           var tool = project.getTool();
           if (tool && handledBy(tool, fakeEvent, released)) {
-            return false;
+            propagate = false;
           }
           if (handledBy(project, fakeEvent, released)) {
-            return false;
+            propagate = false;
           }
         }
       }
 
-      return true;
+      // If the event was handled, prevent the browser's default action.
+      if (!propagate) {
+        e.preventDefault();
+      }
+
+      // Note that there are two different conventions for return values here:
+      // the handleKeyPress() methods return true if the event has been dealt
+      // with (i.e. it should not be propagated) but the onkeydown function
+      // should only return true if the event should carry on for default
+      // processing.
+      return propagate;
     };
 
     var onkeydown = function( e ) {

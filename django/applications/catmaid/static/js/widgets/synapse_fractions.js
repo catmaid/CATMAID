@@ -117,6 +117,7 @@
              [modes],
              [document.createTextNode(' - ')],
              ['Export SVG', this.exportSVG.bind(this)],
+             ['Export CSV', this.exportCSV.bind(this)],
              [document.createTextNode(' - ')],
              ['Save', this.saveToFile.bind(this)],
              ['Open', function() { fileButton.click(); }],
@@ -1514,8 +1515,40 @@
     this.updateGraph();
   };
 
+  /** Export a CSV matrix of entries as rows and fractions as columns. */
   SynapseFractions.prototype.exportCSV = function() {
-    // TODO
+    if (!this.fractions) return;
+
+    var today = new Date();
+    var defaultFileName = 'synapse-fractions-' + today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate() + ".csv";
+    var filename = prompt('File name', defaultFileName);
+    if (!filename) return;
+
+    var order = this.orderOfPartners(); // last is "others" if this.show_others
+    var getName = CATMAID.NeuronNameService.getInstance().getName;
+    var partner_names = order.map(function(id) {
+      return id < 0 ? this.groups[id].name : getName(id);
+    });
+    if (this.show_others) {
+      partner_names[partner_names.length -1] = "others"; // was null from getName
+    }
+    var quote = function(s) { return '"' + s + '"'; };
+    var rows = ["," + partner_names.map(quote).join(",")];
+    this.sortEntries().forEach(function(entry) {
+      var total = 0;
+      var row = order
+        .map(function(id) {
+          var count = entry.fractions[id];
+          if (!count) return 0; // id is not a partner of this entry
+          total += count; // SIDE EFFECT
+          return count;
+        })
+        .map(function(v) { return v / total; });
+      row.unshift(quote(entry.name)); // prepend
+      rows.push(row.join(','));
+    });
+
+    saveAs(new Blob([rows.join('\n')], {type: 'text/plain'}), filename);
   };
 
   SynapseFractions.prototype.exportSVG = function() {

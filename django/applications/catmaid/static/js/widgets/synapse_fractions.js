@@ -1528,7 +1528,7 @@
     var getName = CATMAID.NeuronNameService.getInstance().getName;
     var partner_names = order.map(function(id) {
       return id < 0 ? this.groups[id].name : getName(id);
-    });
+    }, this);
     if (this.show_others) {
       partner_names[partner_names.length -1] = "others"; // was null from getName
     }

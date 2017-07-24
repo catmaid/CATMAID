@@ -516,12 +516,12 @@
         var activeWidget = CATMAID.front();
         if (!activeWidget) {
           CATMAID.warn("No active widget found, no data to copy to clipboard");
-          return;
+          return false;
         }
         var sources = CATMAID.skeletonListSources.getSourcesOfOwner(activeWidget);
         if (!sources || sources.length === 0) {
           CATMAID.msg("No active skeleton source", "Please select a skeleton skeleton source widget first");
-          return;
+          return false;
         }
 
         // Take first available source by default
@@ -530,11 +530,12 @@
         var nModels = Object.keys(models).length;
         if (nModels === 0) {
           CATMAID.msg("No selected skeletons", "Please select at least one skeleton first");
-          return;
+          return false;
         }
 
         clipboard = new ClipboardElement("skeleton-models", models);
         CATMAID.msg("Success", "Copied " + nModels + " to clipboard");
+        return true;
       }
     }));
 
@@ -544,12 +545,12 @@
       run: function(event) {
         if (!clipboard) {
           CATMAID.warn("Please copy data to the clipboard first");
-          return;
+          return false;
         }
         var activeWidget = CATMAID.front();
         if (!activeWidget) {
           CATMAID.warn("Please activate widget first");
-          return;
+          return false;
         }
         if (!clipboard.data) {
           throw new CATMAID.ValueError("No clipboarod data in clipboard element");
@@ -562,6 +563,8 @@
         } else {
           throw new CATMAID.ValueError("Unknown clipboard data type: " + clipboard.type);
         }
+
+        return true;
       }
     }));
 

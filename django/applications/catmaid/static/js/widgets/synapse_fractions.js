@@ -616,29 +616,8 @@
   };
 
   SynapseFractions.prototype._redraw = function(container, containerID) {
-    // Map of partner skeleton IDs or group IDs, vs counts of synapses across all models,
-    // useful for sorting later the blocks inside each column
-    var partners = this.fractions.reduce(function(o, counts) {
-      return Object.keys(counts).reduce(function(o, id) {
-        var sum = o[id];
-        o[id] = (sum ? sum : 0) + counts[id];
-        return o;
-      }, o);
-    }, {});
 
-    // List of partner skeleton IDs or group IDs, sorted from most synapses to least
-    // with 'other' always at the end
-    var other = partners['others'];
-    delete partners['others'];
-    var order = Object.keys(partners)
-      .map(function(id) { return [id, partners[id]]; })
-      .sort(function(a, b) { return a[1] < b[1] ? 1 : -1; }) // Descending
-      .map(function(pair) { return pair[0]; });
-
-    if (this.show_others) {
-      // Append at the end
-      order.push('others');
-    }
+    var order = this.orderOfPartners();
 
     var sorted_entries = this.sortEntries();
 
@@ -1441,6 +1420,35 @@
     }
 
     return sorted_entries;
+  };
+
+  /** Return an array of sorted partner IDs */
+  SynapseFractions.prototype.orderOfPartners = function() {
+    // Map of partner skeleton IDs or group IDs, vs counts of synapses across all models,
+    // useful for sorting later the blocks inside each column
+    var partners = this.fractions.reduce(function(o, counts) {
+      return Object.keys(counts).reduce(function(o, id) {
+        var sum = o[id];
+        o[id] = (sum ? sum : 0) + counts[id];
+        return o;
+      }, o);
+    }, {});
+
+    // List of partner skeleton IDs or group IDs, sorted from most synapses to least
+    // with 'other' always at the end
+    var other = partners['others'];
+    delete partners['others'];
+    var order = Object.keys(partners)
+      .map(function(id) { return [id, partners[id]]; })
+      .sort(function(a, b) { return a[1] < b[1] ? 1 : -1; }) // Descending
+      .map(function(pair) { return pair[0]; });
+
+    if (this.show_others) {
+      // Append at the end
+      order.push('others');
+    }
+
+    return order;
   };
 
   /** Ungroup all items, so that each item holds a single skeleton ID. */

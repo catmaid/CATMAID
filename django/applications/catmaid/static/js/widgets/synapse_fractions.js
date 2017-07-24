@@ -72,8 +72,15 @@
     // Matching function: if an item's name matches, its legend is drawn in bold
     this.highlightFn = null;
 
-    // Set of items to skip displaying, as a map of index vs true
+    // Set of items to skip displaying, as a map of index vs true, defined by the "Show only" regex
     this.skip = {};
+
+    // Whether to hide those not connected to selected
+    this.hide_disconnected_from_selected = false;
+    this.disconnected_fn = "all selected";
+    
+    // Set of items to skip displaying, as a map of index vs true
+    this.hide = {};
 
     this.sort_by_selected_partners = false;
     this.sort_composition_fn = "sum";
@@ -129,6 +136,12 @@
           this.redraw();
         }).bind(this);
 
+        var disconnectedFns = CATMAID.DOM.createSelect("sf-disconnected-fn" + this.widgetID, ["all selected", "any selected"]);
+        disconnectedFns.onchange = (function() {
+          this.disconnected_fn = disconnectedFns.options[disconnectedFns.selectedIndex].value;
+          this.redraw();
+        }).bind(this);
+
         CATMAID.DOM.appendToTab(tabs['Filter/Highlight'],
             [[document.createTextNode('Show only: ')],
              [CATMAID.DOM.createTextField('sf-filter-by-regex' + this.widgetID, null, null, '', null, this.filterByRegex.bind(this), 10, null)],
@@ -157,6 +170,17 @@
                  this.redraw();
                }).bind(this)
              },
+             {
+               type: 'checkbox',
+               label: 'Hide disconnected from',
+               title: 'Hide any in the X-axis if they are not connected to selected partners, either to any or to all according to the composition function (default is all)',
+               value: this.hide_unconnected_to_selected,
+               onclick: (function(ev) {
+                 this.hide_disconnected_from_selected = ev.target.checked;
+                 this.redraw();
+               }).bind(this)
+             },
+             [disconnectedFns],
             ]);
 
         var nf = CATMAID.DOM.createNumericField("synapse_threshold" + this.widgetID, // id
@@ -1306,6 +1330,40 @@
     }
   };
 
+  /** Hide/show items disconnected from selected partners. */
+  SynapseFractions.prototype.hideDisconnectedFromSelected = function() {
+    this.hide = {};
+    if (!this.hide_disconnected_from_selected) return;
+    var selected = Object.keys(this.selected_partners);
+    if (0 === selected.length) return;
+    if ("all selected" === this.disconnected_fn) {
+      this.items.forEach(function(item, i) {
+        // All: hide if any partner is disconnected
+        for (var k=0; k<selected.length; ++k) {
+          var count = this.fractions[i][selected[k]];
+          if (!count) {
+            // At least one is disconnected: hide
+            this.hide[i] = true;
+            return;
+          }
+        }
+      }, this);
+    } else if ("any selected" === this.disconnected_fn) {
+      this.items.forEach(function(item, i) {
+        // Any: hide if all partners are disconnected
+        for (var k=0; k<selected.length; ++k) {
+          var count = this.fractions[i][selected[k]];
+          if (count) {
+            // At least one is connected: avoid hiding
+            return;
+          }
+        }
+        // None are connected, hence hide
+        this.hide[i] = true;
+      }, this);
+    }
+  };
+
   /** Get the set of unique partner skeleton IDs or group IDs, as a map of ids vs their names. */
   SynapseFractions.prototype.getPartnerIds = function() {
     var ids = this.fractions.reduce(function(o, counts) {
@@ -1359,7 +1417,12 @@
 
     var getName = CATMAID.NeuronNameService.getInstance().getName;
 
-    var skipFn = (function(item, i) { return !this.skip.hasOwnProperty(i); }).bind(this);
+    this.hideDisconnectedFromSelected();
+
+    var skipFn = (function(item, i) {
+      return !this.skip.hasOwnProperty(i)  // did not match regex
+          && !this.hide.hasOwnProperty(i); // was disconnected from selected partners
+    }).bind(this);
 
     var computeValueFn = (function(i) {
       var fractions = this.fractions[i];

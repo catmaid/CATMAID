@@ -511,7 +511,7 @@
 
     actions.push(new CATMAID.Action({
       helpText: "Copy selected skeletons of active widge into clipboard",
-      keyShortcuts: { "Ctrl + Shift + C": [ "Ctrl + Shift + c"] },
+      keyShortcuts: { "Alt + Shift + C": [ "Meta + Shift + c"] },
       run: function(event) {
         var activeWidget = CATMAID.front();
         if (!activeWidget) {
@@ -540,7 +540,7 @@
 
     actions.push(new CATMAID.Action({
       helpText: "Paste previously copied data, like skeleton models",
-      keyShortcuts: { "Ctrl + Shift + V": [ "Ctrl + Shift + v" ] },
+      keyShortcuts: { "Alt + Shift + V": [ "Meta + Shift + v" ] },
       run: function(event) {
         if (!clipboard) {
           CATMAID.warn("Please copy data to the clipboard first");

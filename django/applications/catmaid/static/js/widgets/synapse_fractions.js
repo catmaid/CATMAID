@@ -1399,8 +1399,8 @@
     };
 
     var sorted_entries = this.items
-      .filter(skipFn)
       .map(makeEntryFn)
+      .filter(skipFn) // must skip after making the entries, which depend on correlated index for fractions array
       .sort(sortFn);
 
     if (sortByValue && this.sort_keep_equally_named_together) {

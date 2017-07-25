@@ -817,7 +817,10 @@
           return !this.hideSelectionDecorations && this.selected_partners.hasOwnProperty(d.id) ? '#000000' : colors[d.id];
         }).bind(this))
         .on('mousedown', (function(d) {
-          if (d3.event.shiftKey) {
+          if (d3.event.shiftKey
+           && !d3.event.ctrlKey
+           && !d3.event.altKey
+           && !d3.event.metaKey) {
             d3.event.preventDefault();
             if (this.selected_partners.hasOwnProperty(d.id)) {
               delete this.selected_partners[d.id];
@@ -855,6 +858,10 @@
 
               // Open a connectivity matrix, sorted by total synapse count descending
               var CM = WindowMaker.show("connectivity-matrix");
+
+              if (d3.event.altKey) {
+                CM.widget.clear(true, true);
+              }
 
               CM.widget.rowSorting = 5;
               CM.widget.rowSortingDesc = true;

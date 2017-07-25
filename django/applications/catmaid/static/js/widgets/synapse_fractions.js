@@ -346,13 +346,17 @@
     CATMAID.NeuronNameService.getInstance().unregister(this);
   };
 
-  SynapseFractions.prototype.getSelectedSkeletons = function() {
+  SynapseFractions.prototype.getSkeletons = function() {
     return this.items.reduce(function(a, item) {
       return a.concat(Object.keys(item.models));
     }, []);
   };
 
-  SynapseFractions.prototype.getSkeletons = SynapseFractions.prototype.getSelectedSkeletons;
+  SynapseFractions.prototype.getSelectedSkeletons = function() {
+    return this.sortEntries().reduce(function(a, entry) {
+      return a.concat(Object.keys(entry.item.models));
+    }, []);
+  };
 
   SynapseFractions.prototype.getSkeletonColor = function(skid) {
     var model = this.getSkeletonModel(skid);
@@ -383,7 +387,14 @@
     }, {});
   };
 
-  SynapseFractions.prototype.getSelectedSkeletonModels = SynapseFractions.prototype.getSkeletonModels;
+  SynapseFractions.prototype.getSelectedSkeletonModels = function() {
+    return this.sortEntries().reduce(function(o, entry) {
+      Object.keys(entry.item.models).forEach(function(skid) {
+        o[skid] = entry.item.models[skid].clone();
+      });
+      return o;
+    }, {});
+  };
 
   SynapseFractions.prototype.update = function() {
     var morphologies = {};

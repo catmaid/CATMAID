@@ -1064,6 +1064,16 @@
     // Enable deleting the group
     var remove = od.appendCheckbox("Remove group", "group-remove-synapse-fraction" + this.widgetID, false);
 
+    // A source to update the group from (includes itself, which are the x-axis entries)
+
+    od.appendMessage("Update partner list:");
+    var methods = ["append", "replace"];
+    var methodChoice = od.appendChoice("Method: ", "sf-group-update-method" + this.widgetID, methods, methods, 0);
+    var p = document.createElement('p');
+    p.innerHTML = "From: ";
+    p.appendChild(CATMAID.skeletonListSources.createPushSelect({getName: function() { return ""; }}, "group"));
+    od.dialog.appendChild(p);
+
     od.onOK = (function() {
       if ($(remove).prop('checked')) {
         Object.keys(group.skids).forEach(function(skid) { delete this.groupOf[skid]; }, this);
@@ -1074,6 +1084,46 @@
       group.name = title.value;
       if (color) group.color = color;
       group.autocolor = $(auto).prop('checked');
+
+      var source = CATMAID.skeletonListSources.getSelectedPushSource({getName: function() { return ""; }}, "group");
+      if (source && confirm('Update group "' + group.name + '" with neurons from ' + source.getName() + ' ?')) {
+        var models = source.getSelectedSkeletonModels();
+        var method = methods[methodChoice.selectedIndex];
+        var skids = Object.keys(models);
+        if (skids.length > 0) {
+          if ("append" === method) {
+            skids.forEach(function(skid) {
+              group.skids[skid] = true;
+              this.groupOf[skid] = id;
+            }, this);
+          } else if ("replace" === method) {
+            Object.keys(group.skids).forEach(function(skid) { delete this.groupOf[skid]; }, this);
+            group.skids = {};
+            skids.forEach(function(skid) {
+              group.skids[skid] = true;
+              this.groupOf[skid] = id;
+            }, this);
+          }
+
+          // Ensure skids are not part of other groups
+          Object.keys(this.groups).forEach(function(gid) {
+            if (gid === id) return; // the group being edited
+            var gskids = this.groups[gid].skids;
+            skids.forEach(function(skid) {
+              delete gskids[skid];
+            });
+            // Delete group if empty
+            if (0 === Object.keys(gskids).length) {
+              CATMAID.msg("Info", 'Removed absorbed group "' + this.groups[gid].name + '"');
+              delete this.groups[gid];
+            }
+          }, this);
+
+          // Update the fractions, given that the updated group may contain skeleton IDs from
+          this.updateGraph();
+          return;
+        }
+      }
 
       this.redraw();
 
@@ -1631,7 +1681,6 @@
 
   /** Export a CSV matrix of entries as rows and fractions as columns. */
   SynapseFractions.prototype.exportCSV = function() {
-
     var today = new Date();
     var defaultFileName = 'synapse-fractions-' + today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate() + ".csv";
     var filename = prompt('File name', defaultFileName);

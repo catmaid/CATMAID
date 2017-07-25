@@ -266,6 +266,101 @@ class Postgis3dNodeProvider(PostgisNodeProvider):
     '''
 
 
+class Postgis3dBlurryNodeProvider(PostgisNodeProvider):
+    """
+    Fetch treenodes with the help of two PostGIS filters: The &&& operator to
+    exclude all edges that don't have a bounding box that intersect with the
+    query bounding box. This leads to false positives, because edge bounding
+    boxes can intersect without the edge actually intersecting. To further
+    limit the result set to avoid false positives use Postgis3dNodeProvider.
+    """
+
+    TREENODE_STATEMENT_NAME = PostgisNodeProvider.TREENODE_STATEMENT_NAME + '_3d'
+    treenode_query = '''
+        SELECT
+            t1.id,
+            t1.parent_id,
+            t1.location_x,
+            t1.location_y,
+            t1.location_z,
+            t1.confidence,
+            t1.radius,
+            t1.skeleton_id,
+            EXTRACT(EPOCH FROM t1.edition_time),
+            t1.user_id
+        FROM
+          (SELECT UNNEST(ARRAY[te.id, t.parent_id])
+             FROM treenode_edge te
+             JOIN treenode t
+               ON te.id = t.id
+             WHERE te.edge &&& ST_MakeLine(ARRAY[
+                 ST_MakePoint({left}, {bottom}, {z2}),
+                 ST_MakePoint({right}, {top}, {z1})] ::geometry[])
+             AND te.project_id = {project_id}
+           UNION
+           SELECT UNNEST({sanitized_treenode_ids}::bigint[])
+          ) edges(edge_child_id)
+        JOIN treenode t1
+          ON edge_child_id = t1.id
+        LIMIT {limit}
+    '''
+
+    CONNECTOR_STATEMENT_NAME = PostgisNodeProvider.CONNECTOR_STATEMENT_NAME + '_3d'
+    connector_query = '''
+      SELECT
+          c.id,
+          c.location_x,
+          c.location_y,
+          c.location_z,
+          c.confidence,
+          EXTRACT(EPOCH FROM c.edition_time),
+          c.user_id,
+          tc.treenode_id,
+          tc.relation_id,
+          tc.confidence,
+          EXTRACT(EPOCH FROM tc.edition_time),
+          tc.id
+      FROM (SELECT tce.id AS tce_id
+            FROM treenode_connector_edge tce
+            WHERE tce.edge &&& ST_MakeLine(ARRAY[
+                ST_MakePoint({left}, {bottom}, {z2}),
+                ST_MakePoint({right}, {top}, {z1})] ::geometry[])
+            AND tce.project_id = {project_id}
+        ) edges(edge_tc_id)
+      JOIN treenode_connector tc
+        ON (tc.id = edge_tc_id)
+      JOIN connector c
+        ON (c.id = tc.connector_id)
+
+      UNION
+
+      SELECT
+          c.id,
+          c.location_x,
+          c.location_y,
+          c.location_z,
+          c.confidence,
+          EXTRACT(EPOCH FROM c.edition_time),
+          c.user_id,
+          NULL,
+          NULL,
+          NULL,
+          NULL,
+          NULL
+      FROM (SELECT cg.id AS cg_id
+           FROM connector_geom cg
+           WHERE cg.geom &&& ST_MakeLine(ARRAY[
+               ST_MakePoint({left}, {bottom}, {z2}),
+               ST_MakePoint({right}, {top}, {z1})] ::geometry[])
+           AND cg.project_id = {project_id}
+          UNION SELECT UNNEST({sanitized_connector_ids}::bigint[])
+        ) geoms(geom_connector_id)
+      JOIN connector c
+        ON (geom_connector_id = c.id)
+      LIMIT {limit}
+    '''
+
+
 class Postgis2dNodeProvider(PostgisNodeProvider):
     """
     Fetch treenodes with the help of two PostGIS filters: First, select all
@@ -391,12 +486,114 @@ class Postgis2dNodeProvider(PostgisNodeProvider):
     """
 
 
+class Postgis2dBlurryNodeProvider(PostgisNodeProvider):
+    """
+    Fetch treenodes with the help of two PostGIS filters: First, select all
+    edges with a bounding box overlapping the XY-box of the query bounding
+    box. This set is then constrained by a particular range in Z. Both filters
+    are backed by indices that make these operations very fast. This is
+    semantically equivalent with what the &&& does. This, however, leads to
+    false positives, because edge bounding boxes can intersect without the
+    edge actually intersecting. To limit the result set further and reduce the
+    number of false positives use Postgis2dNodeProvider.
+    """
+
+    TREENODE_STATEMENT_NAME = PostgisNodeProvider.TREENODE_STATEMENT_NAME + '_2d_blurry'
+    treenode_query = """
+          SELECT
+            t1.id,
+            t1.parent_id,
+            t1.location_x,
+            t1.location_y,
+            t1.location_z,
+            t1.confidence,
+            t1.radius,
+            t1.skeleton_id,
+            EXTRACT(EPOCH FROM t1.edition_time),
+            t1.user_id
+          FROM
+            (SELECT UNNEST(ARRAY[te.id, t.parent_id])
+               FROM treenode_edge te
+               JOIN treenode t
+                 ON t.id = te.id
+               WHERE te.edge && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
+                 AND floatrange(ST_ZMin(te.edge),
+                    ST_ZMax(te.edge), '[]') && floatrange({z1}, {z2}, '[)')
+                 AND te.project_id = {project_id}
+              UNION
+              SELECT UNNEST({sanitized_treenode_ids}::bigint[])
+        ) edges(edge_child_id)
+        JOIN treenode t1
+          ON edges.edge_child_id = t1.id
+        LIMIT {limit};
+    """
+
+    CONNECTOR_STATEMENT_NAME = PostgisNodeProvider.CONNECTOR_STATEMENT_NAME + '_2d_blurry'
+    connector_query = """
+        SELECT
+            c.id,
+            c.location_x,
+            c.location_y,
+            c.location_z,
+            c.confidence,
+            EXTRACT(EPOCH FROM c.edition_time),
+            c.user_id,
+            tc.treenode_id,
+            tc.relation_id,
+            tc.confidence,
+            EXTRACT(EPOCH FROM tc.edition_time),
+            tc.id
+        FROM (SELECT tce.id AS tce_id
+             FROM treenode_connector_edge tce
+             WHERE tce.edge && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
+               AND floatrange(ST_ZMin(tce.edge), ST_ZMax(tce.edge), '[]') &&
+                 floatrange({z1}, {z2}, '[)')
+               AND tce.project_id = {project_id}
+          ) edges(edge_tc_id)
+        JOIN treenode_connector tc
+          ON (tc.id = edge_tc_id)
+        JOIN connector c
+          ON (c.id = tc.connector_id)
+
+        UNION
+
+        SELECT
+            c.id,
+            c.location_x,
+            c.location_y,
+            c.location_z,
+            c.confidence,
+            EXTRACT(EPOCH FROM c.edition_time),
+            c.user_id,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            NULL
+        FROM (SELECT cg.id AS cg_id
+             FROM connector_geom cg
+             WHERE cg.geom && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
+               AND floatrange(ST_ZMin(cg.geom), ST_ZMax(cg.geom), '[]') &&
+                 floatrange({z1}, {z2}, '[)')
+               AND cg.project_id = {project_id}
+            UNION SELECT UNNEST({sanitized_connector_ids}::bigint[])
+          ) geoms(geom_connector_id)
+        JOIN connector c
+          ON (geom_connector_id = c.id)
+        LIMIT {limit}
+    """
+
+
 def get_provider(connection=None):
     provider_key = settings.NODE_PROVIDER
     if 'postgis3d' == provider_key:
         return Postgis3dNodeProvider(connection)
+    elif 'postgis3dblurry' == provider_key:
+        return Postgis3dBlurryNodeProvider(connection)
     elif 'postgis2d' == provider_key:
         return Postgis2dNodeProvider(connection)
+    elif 'postgis2dblurry' == provider_key:
+        return Postgis2dBlurryNodeProvider(connection)
     else:
         raise ValueError('Unknown node provider: ' + provider_key)
 

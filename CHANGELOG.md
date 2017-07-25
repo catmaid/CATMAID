@@ -13,6 +13,12 @@
   INSTALLED_APPs += ("kombu.transport.django")
   BROKER_URL = 'django://'
 
+- Two new treenode and connector node providers have been added: postgis2dblurry
+  and postgis3dblurry. They works like the regular postgis2d and postgis3d node
+  providers except that they allow more false positives, because edges are only
+  tested for bounding box intersection with the query bounding box. Depending on
+  the dataset, this can help performance but might require a larger node limit.
+
 ### Features and enhancements
 
 Synapse Fractions:

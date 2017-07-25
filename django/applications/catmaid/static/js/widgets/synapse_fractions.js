@@ -986,7 +986,10 @@
     // Select nearest node in skeleton if legend text is clicked
     legend.selectAll('text')
       .on("mousedown", (function(id) {
-        if (d3.event.shiftKey) {
+        if (d3.event.shiftKey
+         && !d3.event.altKey
+         && !d3.event.metaKey
+         && !d3.event.ctrlKey) {
           d3.event.preventDefault();
           if (this.selected_partners.hasOwnProperty(id)) {
             delete this.selected_partners[id];

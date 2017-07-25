@@ -417,6 +417,7 @@
     this.groups = {};
     this.groupOf = {};
     this.selected_partners = {};
+    this.svg_elems = null;
     this.redraw();
   };
 
@@ -723,6 +724,7 @@
     xg.selectAll("text")
         .attr("fill", "black")
         .attr("stroke", "none")
+        .style("text-shadow", "unset")
         .on("mousedown", (function(item_index) {
           if (d3.event.shiftKey
            && d3.event.ctrlKey
@@ -777,7 +779,7 @@
       .attr("transform", function(d) { return "translate(" + x(d) + ",0)"; });
 
     // Sort according to order and compute cumulatives
-    var prepare = function(entry) {
+    var prepare = function(entry, index) {
       var total = 0;
       var data = order.reduce(function(a, id) {
         var count = entry.item.fractions[id];
@@ -785,6 +787,7 @@
         total += count; // SIDE EFFECT
         a.push({id: id, // partner skid or gid
                 item: entry.item,
+                index: index, // relative to sorted entries
                 counts: count,
                 cumulative: 0, // for offset
                 total: 0}); // to normalize
@@ -801,7 +804,7 @@
 
     state.selectAll("rect")
       .data((function(index) {
-        return prepare(sorted_entries[index]);
+        return prepare(sorted_entries[index], index);
       }).bind(this))
       .enter()
         .append('rect')
@@ -817,6 +820,13 @@
         })
         .style("stroke", (function(d, i) {
           return !this.hideSelectionDecorations && this.selected_partners.hasOwnProperty(d.id) ? '#000000' : colors[d.id];
+        }).bind(this))
+        .on('mouseover', (function(d) {
+          this.svg_elems.xg.selectAll('text')
+            .style('text-shadow', function(index) {
+              // indices relative to sorted_entries
+              return d.index == index ? '0px 0px 15px red' : 'unset';
+            });
         }).bind(this))
         .on('mousedown', (function(d) {
           if (d3.event.shiftKey
@@ -990,6 +1000,12 @@
         CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', id);
       }).bind(this));
 
+    // Store some SVG elements for editing later
+    this.svg_elems = {
+      xg: xg, // the groups with text in the x Axis
+      yg: yg, // the groups with text in the y Axis
+      legend: legend
+    };
   };
 
   /** Launch properties editor for the group. */
@@ -1631,6 +1647,7 @@
   };
 
   SynapseFractions.prototype.exportSVG = function() {
+    this.svg_elems.xg.selectAll('text').style('text-shadow', 'unset');
     CATMAID.svgutil.saveDivSVG('synapse_fractions_widget' + this.widgetID, "synapse_fractions.svg");
   };
 

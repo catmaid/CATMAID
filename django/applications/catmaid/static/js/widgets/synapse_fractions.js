@@ -82,6 +82,9 @@
     this.sort_by_selected_partners = false;
     this.sort_composition_fn = "sum";
     this.sort_keep_equally_named_together = false;
+
+    // Some elements of the D3 SVG such as the text of the x-axis, y-axis and legends
+    this.svg_elems = null;
   };
 
   SynapseFractions.prototype = Object.create(CATMAID.SkeletonSource.prototype);

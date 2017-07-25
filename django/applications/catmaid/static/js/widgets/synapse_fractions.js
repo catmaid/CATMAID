@@ -874,7 +874,7 @@
             if (d.id == "others") title = d.id;
             else if (d.id < 0) title = this.groups[d.id].name;
             else title = CATMAID.NeuronNameService.getInstance().getName(d.id);
-            return title + ": " + d.counts + " synapses";
+            return title + ": " + d.counts + " synapses (" + (Math.round((d.counts * 1000) / d.total) / 10) + "%)";
           }).bind(this));
 
     var legend = svg.selectAll(".legend")

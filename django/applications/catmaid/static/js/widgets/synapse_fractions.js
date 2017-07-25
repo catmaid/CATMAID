@@ -996,6 +996,16 @@
         if ("others" === id) return;
         // negative when it is a group
         if (id < 0) {
+          if ((d3.event.altKey || d3.event.metaKey) && !d3.event.ctrlKey) {
+            // Open group in Selection Table
+            var ST = WindowMaker.create("selection-table");
+            ST.widget.append(Object.keys(this.groups[id].skids).reduce(function(o, skid) {
+              o[skid] = new CATMAID.SkeletonModel(skid, "", new THREE.Color(colors[id]));
+              return o;
+            }, {}));
+            return;
+          }
+          // Else
           this.groupEditor(id);
           return;
         }

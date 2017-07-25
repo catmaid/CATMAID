@@ -143,16 +143,6 @@ class PostgisNodeProvider(object):
 
         return list(cursor.fetchall())
 
-    @staticmethod
-    def get_provider(connection=None):
-        provider_key = settings.NODE_PROVIDER
-        if 'postgis3d' == provider_key:
-            return Postgis3dNodeProvider(connection)
-        elif 'postgis2d' == provider_key:
-            return Postgis2dNodeProvider(connection)
-        else:
-            raise ValueError('Unknown node provider: ' + provider_key)
-
 
 class Postgis3dNodeProvider(PostgisNodeProvider):
     """
@@ -401,12 +391,19 @@ class Postgis2dNodeProvider(PostgisNodeProvider):
     """
 
 
-def get_provider(connection):
-    return PostgisNodeProvider.get_provider(connection)
+def get_provider(connection=None):
+    provider_key = settings.NODE_PROVIDER
+    if 'postgis3d' == provider_key:
+        return Postgis3dNodeProvider(connection)
+    elif 'postgis2d' == provider_key:
+        return Postgis2dNodeProvider(connection)
+    else:
+        raise ValueError('Unknown node provider: ' + provider_key)
 
 
 def prepare_db_statements(connection):
-    PostgisNodeProvider.get_provider(connection)
+    provider = get_provider(connection)
+    provider.prepare_db_statements(connection)
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

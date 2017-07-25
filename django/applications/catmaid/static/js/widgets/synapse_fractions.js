@@ -45,9 +45,6 @@
     // The loaded data for each arbor
     this.morphologies = {};
 
-    // The data for redrawing
-    this.fractions = null;
-
     // Map of group ID vs object with keys: id, name, color, and map of skids vs true
     this.groups = {};
     // Group IDs count towards minus inifinity
@@ -397,8 +394,7 @@
   };
 
   SynapseFractions.prototype.update = function() {
-    var morphologies = {};
-    var fractions = null;
+    this.morphologies = {};
     this.updateMorphologies(this.getSkeletons());
   };
 
@@ -414,7 +410,6 @@
     this.items = [];
     this.only = null;
     this.morphologies = {};
-    this.fractions = null;
     this.other_source.clear();
     this.partner_colors = {};
     this.groups = {};
@@ -589,16 +584,16 @@
     }).bind(this), {});
   };
 
-  /** Updates this.fractions and this.other_source, and invokes redraw.  */
+  /** Updates fractions and this.other_source, and invokes redraw.  */
   SynapseFractions.prototype.updateGraph = function() {
     if (0 === this.items.length) return;
 
     var skids2 = {}; // unique partner skeleton IDs
 
     // An array of synapse counts, one per item in this.items
-    this.fractions = this.items.map(function(item) {
+    this.items.forEach(function(item) {
       // For every model in items
-      return Object.keys(item.models).reduce((function(fractions, skid) {
+      item.fractions = Object.keys(item.models).reduce((function(fractions, skid) {
         // Collect counts of synapses with partner neurons
         var partners = this._makePartnerCountsMap(this.morphologies[skid].synapses);
         // Filter partners and add up synapse counts
@@ -643,7 +638,7 @@
     container.empty();
 
     // Stop if empty
-    if (!this.fractions || 0 === this.fractions.length) return;
+    if (0 === this.items.length || !this.items[0].fractions) return;
 
     // Load names of both pre and post skids
     CATMAID.NeuronNameService.getInstance().registerAll(
@@ -783,7 +778,7 @@
     var prepare = function(entry) {
       var total = 0;
       var data = order.reduce(function(a, id) {
-        var count = entry.fractions[id];
+        var count = entry.item.fractions[id];
         if (!count) return a; // skid2 is not a partner
         total += count; // SIDE EFFECT
         a.push({id: id, // partner skid or gid
@@ -1030,7 +1025,7 @@
       if ($(remove).prop('checked')) {
         Object.keys(group.skids).forEach(function(skid) { delete this.groupOf[skid]; }, this);
         delete this.groups[id];
-        this.updateGraph(); // remake this.fractions
+        this.updateGraph(); // remake fractions
         return;
       }
       group.name = title.value;
@@ -1351,7 +1346,7 @@
       this.items.forEach(function(item, i) {
         // All: hide if any partner is disconnected
         for (var k=0; k<selected.length; ++k) {
-          var count = this.fractions[i][selected[k]];
+          var count = item.fractions[selected[k]];
           if (!count) {
             // At least one is disconnected: hide
             this.hide[i] = true;
@@ -1363,7 +1358,7 @@
       this.items.forEach(function(item, i) {
         // Any: hide if all partners are disconnected
         for (var k=0; k<selected.length; ++k) {
-          var count = this.fractions[i][selected[k]];
+          var count = item.fractions[selected[k]];
           if (count) {
             // At least one is connected: avoid hiding
             return;
@@ -1377,7 +1372,9 @@
 
   /** Get the set of unique partner skeleton IDs or group IDs, as a map of ids vs their names. */
   SynapseFractions.prototype.getPartnerIds = function() {
-    var ids = this.fractions.reduce(function(o, counts) {
+    var ids = this.items
+      .map(function(item) { return item.fractions; })
+      .reduce(function(o, counts) {
       return Object.keys(counts).reduce(function(o, id) {
         o[id] = null;
         return o;
@@ -1405,7 +1402,7 @@
       this.redraw();
     } else {
       var match = CATMAID.createTextMatchingFunction(text);
-      if (match && this.fractions) {
+      if (match) {
         // Get set of unique partner skeleton IDs or group IDs
         var ids = this.getPartnerIds();
         // Find those that match
@@ -1418,10 +1415,10 @@
     }
   };
 
+  /** Prepare the array of entries for redraw, sorted and filtered. */
   SynapseFractions.prototype.sortEntries = function() {
 
     var sortByValue = this.sort_by_selected_partners
-                   && this.fractions
                    && this.items.length > 1
                    && this.selected_partners
                    && Object.keys(this.selected_partners).length > 0;
@@ -1435,8 +1432,7 @@
           && !this.hide.hasOwnProperty(i); // was disconnected from selected partners
     }).bind(this);
 
-    var computeValueFn = (function(i) {
-      var fractions = this.fractions[i];
+    var computeValueFn = (function(fractions) {
       var sumFn = function(sum, id) {
         var v = fractions[id]; // might not be a partner of this item
         return sum + (v ? v : 0);
@@ -1455,12 +1451,11 @@
       return partial / total;
     }).bind(this);
 
-    var makeEntryFn = (function(item, i) {
+    var makeEntryFn = (function(item) {
       var skids = Object.keys(item.models);
       return {item: item,
               name: 1 === skids.length ? getName(skids[0]) : item.name, // updated name for single-skeleton items
-              fractions: this.fractions[i],
-              value: sortByValue ? computeValueFn(i) : 0};
+              value: sortByValue ? computeValueFn(item.fractions) : 0};
     }).bind(this);
 
     var sortFn = function(a, b) {
@@ -1501,7 +1496,9 @@
   SynapseFractions.prototype.orderOfPartners = function() {
     // Map of partner skeleton IDs or group IDs, vs counts of synapses across all models,
     // useful for sorting later the blocks inside each column
-    var partners = this.fractions.reduce(function(o, counts) {
+    var partners = this.items
+      .map(function(item) { return item.fractions; })
+      .reduce(function(o, counts) {
       return Object.keys(counts).reduce(function(o, id) {
         var sum = o[id];
         o[id] = (sum ? sum : 0) + counts[id];
@@ -1591,7 +1588,6 @@
 
   /** Export a CSV matrix of entries as rows and fractions as columns. */
   SynapseFractions.prototype.exportCSV = function() {
-    if (!this.fractions) return;
 
     var today = new Date();
     var defaultFileName = 'synapse-fractions-' + today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate() + ".csv";
@@ -1612,7 +1608,7 @@
       var total = 0;
       var row = order
         .map(function(id) {
-          var count = entry.fractions[id];
+          var count = entry.item.fractions[id];
           if (!count) return 0; // id is not a partner of this entry
           total += count; // SIDE EFFECT
           return count;

@@ -2844,7 +2844,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNewOrExtendActiveSkeleton =
   if (this.coords.lastX !== null && this.coords.lastY !== null) {
     // Choose a search radius that is the scaled selection radius for nodes
     var searchRadius = this.graphics.Node.prototype.CATCH_RADIUS *
-       this.graphics.Node.prototype.scaling;
+       this.graphics.Node.prototype.stackScaling;
     var respectVirtualNodes = true;
     var nearestnode = this.getClosestNode(this.coords.lastX,
                                           this.coords.lastY,

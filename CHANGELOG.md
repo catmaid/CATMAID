@@ -149,6 +149,12 @@ Miscellaneous:
   clipboard. Pressing "Alt + Ctrl + v" in another widget will then paste those
   models into the now active widget.
 
+- When using the Z key to create new nodes, existing nodes are not as easily
+  selected from a distance anymore. Before, the radius around a click event was
+  too large and the closest node around the click was selected. Other nodes will
+  now only be selected if the mouse cursor is close to their circle graphic on
+  screen.
+
 
 ### Bug fixes
 

@@ -83,6 +83,8 @@
     this.sort_composition_fn = "sum";
     this.sort_keep_equally_named_together = false;
 
+    this.font_size = "11";
+
     // Some elements of the D3 SVG such as the text of the x-axis, y-axis and legends
     this.svg_elems = null;
   };
@@ -269,7 +271,18 @@
                  this.hideSelectionDecorations = ev.target.checked;
                  this.redraw();
                }).bind(this)
-             }
+             },
+             [CATMAID.DOM.createNumericField(
+                 "sf-font-size" + this.widgetID,
+                 "Font size: ",
+                 "Font size for all text labels in axes and legend",
+                 this.font_size,
+                 undefined,
+                 (function(ev) {
+                   this.font_size = ev.target.value;
+                   this.redraw();
+                 }).bind(this),
+                 5)],
             ]);
 
 
@@ -726,10 +739,13 @@
 
     xg.attr("transform", "translate(0," + height + ")");
 
+    var font_size = $.isNumeric(this.font_size) ? this.font_size : 11;
+
     xg.selectAll("text")
         .attr("fill", "black")
         .attr("stroke", "none")
         .style("text-shadow", "unset")
+        .style("font-size", font_size + "px")
         .on("mousedown", (function(item_index) {
           if (d3.event.shiftKey
            && d3.event.ctrlKey
@@ -773,6 +789,7 @@
         .style("shape-rendering", "crispEdges")
         .call(yAxis);
     yg.selectAll("text")
+        .style("font-size", font_size + "px")
         .attr("fill", "black")
         .attr("stroke", "none");
 
@@ -927,6 +944,7 @@
       .attr("x", width + 74)
       .attr("y", 9)
       .attr("dy", ".35em")
+      .style("font-size", font_size + "px")
       .style("text-anchor", "end")
       .style("font-weight", (function(id) {
         return this.selected_partners && this.selected_partners[id] ? "bold" : "";
@@ -1286,7 +1304,8 @@
       partner_colors: this.partner_colors,
       groups: this.groups,
       mode: this.mode,
-      confidence_threshold: this.confidence_threshold
+      confidence_threshold: this.confidence_threshold,
+      font_size: this.font_size
     };
 
     saveAs(new Blob([JSON.stringify(data, null, ' ')], {type: 'text/plain'}), filename);
@@ -1356,6 +1375,8 @@
         self.partner_colors = json.partner_colors; // colors in hex
         self.threshold = Math.max(0, json.threshold) || 5;
         $('#synapse_threshold' + self.widgetID)[0].value = self.threshold;
+        self.font_size = json.font_size || 11;
+        $('#sf-font-size' + self.widgetID)[0].value = self.font_size;
 
         self.updateMorphologies(Object.keys(skids));
       };

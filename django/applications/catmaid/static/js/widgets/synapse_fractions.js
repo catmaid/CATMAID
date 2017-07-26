@@ -826,6 +826,9 @@
         .style("stroke", (function(d, i) {
           return !this.hideSelectionDecorations && this.selected_partners.hasOwnProperty(d.id) ? '#000000' : colors[d.id];
         }).bind(this))
+        .on('mouseout', (function(d) {
+          this.svg_elems.xg.selectAll('text').style('text-shadow', 'unset');
+        }).bind(this))
         .on('mouseover', (function(d) {
           this.svg_elems.xg.selectAll('text')
             .style('text-shadow', function(index) {

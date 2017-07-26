@@ -128,6 +128,7 @@
              ['Export SVG', this.exportSVG.bind(this)],
              ['Export CSV', this.exportCSV.bind(this)],
              [document.createTextNode(' - ')],
+             ['Clone', this.cloneVisible.bind(this)],
              ['Save', this.saveToFile.bind(this)],
              ['Open', function() { fileButton.click(); }],
             ]);
@@ -1743,6 +1744,12 @@
   SynapseFractions.prototype.exportSVG = function() {
     this.svg_elems.xg.selectAll('text').style('text-shadow', 'unset');
     CATMAID.svgutil.saveDivSVG('synapse_fractions_widget' + this.widgetID, "synapse_fractions.svg");
+  };
+
+  /** Clone currently visible x-axis items onto a new widget instance. */
+  SynapseFractions.prototype.cloneVisible = function() {
+    var SF = WindowMaker.create("synapse-fractions");
+    SF.widget.populateFrom(JSON.parse(JSON.stringify(this._packageData(true))));
   };
 
   SynapseFractions.prototype.highlight = function(skid) {

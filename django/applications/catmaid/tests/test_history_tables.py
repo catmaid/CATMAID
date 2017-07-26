@@ -229,6 +229,7 @@ class HistoryTableTests(TransactionTestCase):
         'treenode_connector_edge',
         'connector_geom',
         'catmaid_transaction_info',
+        'catmaid_stats_summary',
 
         # Regular unversioned non-CATMAID tables
         'djkombu_queue',

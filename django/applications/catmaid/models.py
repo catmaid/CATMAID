@@ -1072,6 +1072,27 @@ class SamplerDomainEnd(models.Model):
     def __str__(self):
         return "End: {}".format(self.end_node_id)
 
+@python_2_unicode_compatible
+class StatsSummary(models.Model):
+    class Meta:
+        db_table = "catmaid_stats_summary"
+        unique_together = (("project", "user", "date"),)
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    date = models.DateTimeField(default=timezone.now, db_index=True)
+    n_connector_links = models.IntegerField(null=False, default=0)
+    n_reviewed_nodes = models.IntegerField(null=False, default=0)
+    n_treenodes = models.IntegerField(null=False, default=0)
+    n_edited_treenodes = models.IntegerField(null=False, default=0)
+    n_edited_connectors = models.IntegerField(null=False, default=0)
+    n_imported_treenodes = models.IntegerField(null=False, default=0)
+    n_imported_connectors = models.IntegerField(null=False, default=0)
+    cable_length = models.FloatField(null=False, default=0)
+
+    def __str__(self):
+        "Stats summary for {} on {}".format(
+                    self.reviewer_id, self.review_day)
 
 @python_2_unicode_compatible
 class UserProfile(models.Model):

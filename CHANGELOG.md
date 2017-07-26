@@ -1,6 +1,20 @@
 ## Under development
 
 
+### Notes
+
+- This release adds optional statics summary tables, which can increase the
+  performance of project/user statistics significantly, but statistics will also
+  be correct without them. The additional table keeps aggregated information
+  about various user actions. To initialize this table, the following
+  manangement command has to be run after the migration:
+
+    ./manage.py catmaid_populate_summary_tables
+
+  To maintain good performance, this command has to be run regularly, e.g.
+  through a cron job or Celery every night. Because summary updates are
+  incremental by default, they don't take much time to update.
+
 
 ### Features and enhancements
 
@@ -15,6 +29,8 @@ Miscellaneous:
 
 - The dialog to add a new annotation displays now the existing annotations as
   well.
+
+- Project/user statistics: the widget should now be much faster.
 
 
 ### Bug fixes

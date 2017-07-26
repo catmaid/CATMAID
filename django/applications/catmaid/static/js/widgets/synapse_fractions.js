@@ -204,6 +204,7 @@
             [[nf],
              [document.createTextNode(' - Only in: ')],
              [partners_source],
+             ['Show "only" club', this.showOnly.bind(this)],
              [cb[0]],
              [cb[1]],
              [document.createTextNode(' - Synapse confidence threshold: ')],
@@ -1769,6 +1770,18 @@
   SynapseFractions.prototype.cloneVisible = function() {
     var SF = WindowMaker.create("synapse-fractions");
     SF.widget.populateFrom(JSON.parse(JSON.stringify(this._packageData(true))));
+  };
+
+  SynapseFractions.prototype.showOnly = function() {
+    if (this.only) {
+      var ST = WindowMaker.create("selection-table");
+      ST.widget.append(Object.keys(this.only).reduce((function(o, skid) {
+        o[skid] = new CATMAID.SkeletonModel(skid, "", new THREE.Color(1, 1, 0));
+        return o;
+      }).bind(this), {}));
+    } else {
+      CATMAID.msg("Info", "There isn't any \"only\" club defined.");
+    }
   };
 
   SynapseFractions.prototype.highlight = function(skid) {

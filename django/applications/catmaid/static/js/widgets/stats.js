@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   project,
-  requestQueue,
   WindowMaker
 */
 
@@ -192,43 +191,45 @@
             }
 
             // Query all neurons reviewed by the given user in the given timeframe
-            requestQueue.register(django_url + project.id + '/skeletons/',
-                'GET', params, CATMAID.jsonResponseHandler(function(skeleton_ids) {
-                  // Open a new selection table with the returned set of
-                  // skeleton IDs, if any.
-                  if (0 === skeleton_ids.length) {
-                    CATMAID.info('No skeletons found for your selection');
-                    return;
-                  }
-                  var models = skeleton_ids.reduce(function(o, skid) {
-                    o[skid] = new CATMAID.SkeletonModel(skid, "",
-                        new THREE.Color(1, 1, 0));
-                    return o;
-                  }, {});
-                  var widget = WindowMaker.create('selection-table').widget;
-                  if (widget) {
-                    widget.append(models);
-                  } else {
-                    CATMAID.warn('Couldn\'t open selection table');
-                  }
-                }));
+            CATMAID.fetch(project.id + '/skeletons/')
+              .then(function(skeleton_ids) {
+                // Open a new selection table with the returned set of
+                // skeleton IDs, if any.
+                if (0 === skeleton_ids.length) {
+                  CATMAID.info('No skeletons found for your selection');
+                  return;
+                }
+                var models = skeleton_ids.reduce(function(o, skid) {
+                  o[skid] = new CATMAID.SkeletonModel(skid, "",
+                      new THREE.Color(1, 1, 0));
+                  return o;
+                }, {});
+                var widget = WindowMaker.create('selection-table').widget;
+                if (widget) {
+                  widget.append(models);
+                } else {
+                  CATMAID.warn('Couldn\'t open selection table');
+                }
+              })
+              .catch(CATMAID.handleError);
             break;
           case 'connectors':
             // Query all connectors created by the given user in the given
             // timeframe and open the connector selection table
-            requestQueue.register(django_url + project.id + '/connector/list/completed',
-                'GET', {
-                  completed_by: user_id,
-                  from: from,
-                  to: to,
-                }, CATMAID.jsonResponseHandler(function(connectors) {
-                  if (0 === connectors.length) {
-                    CATMAID.info('No connectors found for your selection');
-                    return;
-                  }
+            CATMAID.fetch(project.id + '/connector/list/completed', 'GET', {
+                completed_by: user_id,
+                from: from,
+                to: to,
+              })
+              .then(function(connectors) {
+                if (0 === connectors.length) {
+                  CATMAID.info('No connectors found for your selection');
+                  return;
+                }
 
-                  CATMAID.ConnectorSelection.show_connectors(connectors);
-                }));
+                CATMAID.ConnectorSelection.show_connectors(connectors);
+              })
+              .catch(CATMAID.handleError);
             break;
           default:
             return;
@@ -438,78 +439,45 @@
     this.refresh_history = function() {
       // disable the refresh button until finished
       $(".stats-history-setting").prop('disabled', true);
-      requestQueue.register(django_url + project.id + '/stats/user-history', "GET", {
-        "pid": project.id,
-        "start_date": $("#stats-history-start-date").val(),
-        "end_date": $("#stats-history-end-date").val(),
-      }, function (status, text, xml) {
-        $(".stats-history-setting").prop('disabled', false);
-        statisticsData = null;
-        if (status == 200) {
-          if (text && text != " ") {
-            var jso = JSON.parse(text);
-            if (jso.error) {
-              alert(jso.error);
-            } else {
-              statisticsData = jso;
-              update_user_history(jso, timeUnit);
-            }
-          }
-        }
-        return true;
-      });
+      CATMAID.fetch(project.id + '/stats/user-history', "GET", {
+          "pid": project.id,
+          "start_date": $("#stats-history-start-date").val(),
+          "end_date": $("#stats-history-end-date").val(),
+        })
+        .then(function(jso) {
+          $(".stats-history-setting").prop('disabled', false);
+          statisticsData = jso || null;
+          update_user_history(jso, timeUnit);
+        })
+        .catch(CATMAID.handleError);
+      return true;
     };
 
     var refresh_editors = function() {
-      requestQueue.register(django_url + project.id + '/stats/editor', "GET",{
-      }, function (status, text, xml) {
-        if (status == 200) {
-          if (text && text != " ") {
-            var jso = JSON.parse(text);
-            if (jso.error) {
-              alert(jso.error);
-            } else {
-              update_piechart(jso, "piechart_editor_holder");
-            }
-          }
-        }
-        return true;
-      });
+      CATMAID.fetch(project.id + '/stats/editor')
+        .then(function(response) {
+          update_piechart(response, "piechart_editor_holder");
+        })
+        .catch(CATMAID.handleError);
+      return true;
     };
 
     var refresh_nodecount = function() {
-      requestQueue.register(django_url + project.id + '/stats/nodecount', "GET", {
-      }, function (status, text, xml) {
-        if (status == 200) {
-          if (text && text != " ") {
-            var jso = JSON.parse(text);
-            if (jso.error) {
-              alert(jso.error);
-            } else {
-              update_piechart(jso, "piechart_treenode_holder");
-            }
-          }
-        }
-        return true;
-      });
+      CATMAID.fetch(project.id + '/stats/nodecount')
+        .then(function(response) {
+          update_piechart(response, "piechart_treenode_holder");
+        })
+        .catch(CATMAID.handleError);
+      return true;
     };
 
     var refresh_summary = function() {
-      requestQueue.register(django_url + project.id + '/stats/summary', "GET", {
-      }, function (status, text, xml) {
-        if (status == 200) {
-          if (text && text != " ") {
-            var jso = JSON.parse(text);
-            if (jso.error) {
-              alert(jso.error);
-            }
-            else {
-              update_stats_fields(jso);
-            }
-          }
-        }
-        return true;
-      });
+      CATMAID.fetch(project.id + '/stats/summary')
+        .then(function(response) {
+          update_stats_fields(jso);
+        })
+        .catch(CATMAID.handleError);
+      return true;
     };
 
     /**

@@ -1290,15 +1290,11 @@
     Object.keys(skids).forEach(function(skid) { this.groupOf[skid] = gid; }, this);
   };
 
-  SynapseFractions.prototype.saveToFile = function() {
-    var today = new Date();
-    var defaultFileName = 'synapse-fractions-' + today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate() + ".json";
-    var filename = prompt('File name', defaultFileName);
-    if (!filename) return;
-
+  /** Return an object with the necessary data for saving to JSON or cloning the widget. */
+  SynapseFractions.prototype._packageData = function(visible_only) {
     // Missing: rotateXLabels, rotationXLabels and show_others, whose UI elements don't have IDs so the UI can't be updated.
-    var data = {
-      items: this.items,
+    return {
+      items: visible_only ? this.sortEntries().map(function(entry) { return entry.item; }) : this.items,
       threshold: this.threshold,
       only: this.only,
       partner_colors: this.partner_colors,
@@ -1307,8 +1303,79 @@
       confidence_threshold: this.confidence_threshold,
       font_size: this.font_size
     };
+  };
+
+  SynapseFractions.prototype.saveToFile = function() {
+    var today = new Date();
+    var defaultFileName = 'synapse-fractions-' + today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate() + ".json";
+    var filename = prompt('File name', defaultFileName);
+    if (!filename) return;
+
+    var data = this._packageData(false);
 
     saveAs(new Blob([JSON.stringify(data, null, ' ')], {type: 'text/plain'}), filename);
+  };
+
+  /** Clears the widget and populates it from the JSON data. */
+  SynapseFractions.prototype.populateFrom = function(json) {
+    this.clear();
+    var skids = {};
+    // Transform model data into SkeletonModel instances
+    for (var i=0; i<json.items.length; ++i) {
+      var item = json.items[i];
+      item.models = Object.keys(item.models).reduce(function(o, skid) {
+        if (skids.hasOwnProperty(skid)) {
+          console.log("skeleton ID already seen", skid);
+          return;
+        } else {
+          skids[skid] = true;
+        }
+        var pseudomodel = item.models[skid];
+        var model = new CATMAID.SkeletonModel(skid, pseudomodel.baseName, new THREE.Color(pseudomodel.color.r, pseudomodel.color.g, pseudomodel.color.b));
+        model.meta_visible = pseudomodel.meta_visible;
+        model.opacity = pseudomodel.opacity;
+        model.post_visible = pseudomodel.post_visible;
+        model.pre_visible = pseudomodel.pre_visible;
+        model.selected = pseudomodel.selected;
+        model.text_visible = pseudomodel.text_visible;
+        o[skid] = model;
+        return o;
+      }, {});
+      var count = Object.keys(item.models).length;
+      if (0 === count) continue; // skip item
+      this.items.push(item);
+      // Transform color data
+      item.color = new THREE.Color(item.color.r, item.color.g, item.color.b);
+      if (1 === count) {
+        // Update name
+        item.name = CATMAID.NeuronNameService.getInstance().getName(Object.keys(item.models)[0]);
+      }
+      // TODO: item.name might need an update when it is a group of more than 1 and some where repeated
+    }
+    // No need to transform anything for groups
+    this.groups = json.groups;
+    this.next_group_id = Math.min.apply(null, Object.keys(this.groups)) -1 || -1;
+    // Generate groupOf
+    this.groupOf = Object.keys(this.groups).reduce((function(o, gid) {
+      var group = this.groups[gid];
+      Object.keys(group.skids).forEach(function(skid) {
+        o[skid] = gid;
+      });
+      return o;
+    }).bind(this), {});
+    // Other properties
+    this.confidence_threshold = Math.max(1, Math.min(5, json.confidence_threshold)) || 1;
+    $('#synapse_confidence_threshold' + this.widgetID)[0].value = this.confidence_threshold;
+    this.mode = Math.max(1, Math.min(2, json.mode)) || 2;
+    $('#synapse_fraction_mode' + this.widgetID)[0].value = this.mode;
+    this.only = json.only; // null or a map of skid vs true
+    this.partner_colors = json.partner_colors; // colors in hex
+    this.threshold = Math.max(0, json.threshold) || 5;
+    $('#synapse_threshold' + this.widgetID)[0].value = this.threshold;
+    this.font_size = json.font_size || 11;
+    $('#sf-font-size' + this.widgetID)[0].value = this.font_size;
+
+    this.updateMorphologies(Object.keys(skids));
   };
 
   /**
@@ -1318,83 +1385,19 @@
       if (!CATMAID.isValidJSONFile(files)) {
         return;
       }
-      this.clear();
-      var self = this;
 
-      var parse = function(json) {
-        var skids = {};
-        // Transform model data into SkeletonModel instances
-        for (var i=0; i<json.items.length; ++i) {
-          var item = json.items[i];
-          item.models = Object.keys(item.models).reduce(function(o, skid) {
-            if (skids.hasOwnProperty(skid)) {
-              console.log("skeleton ID already seen", skid);
-              return;
-            } else {
-              skids[skid] = true;
-            }
-            var pseudomodel = item.models[skid];
-            var model = new CATMAID.SkeletonModel(skid, pseudomodel.baseName, new THREE.Color(pseudomodel.color.r, pseudomodel.color.g, pseudomodel.color.b));
-            model.meta_visible = pseudomodel.meta_visible;
-            model.opacity = pseudomodel.opacity;
-            model.post_visible = pseudomodel.post_visible;
-            model.pre_visible = pseudomodel.pre_visible;
-            model.selected = pseudomodel.selected;
-            model.text_visible = pseudomodel.text_visible;
-            o[skid] = model;
-            return o;
-          }, {});
-          var count = Object.keys(item.models).length;
-          if (0 === count) continue; // skip item
-          self.items.push(item);
-          // Transform color data
-          item.color = new THREE.Color(item.color.r, item.color.g, item.color.b);
-          if (1 === count) {
-            // Update name
-            item.name = CATMAID.NeuronNameService.getInstance().getName(Object.keys(item.models)[0]);
-          }
-          // TODO: item.name might need an update when it is a group of more than 1 and some where repeated
-        }
-        // No need to transform anything for groups
-        self.groups = json.groups;
-        self.next_group_id = Math.min.apply(null, Object.keys(self.groups)) -1 || -1;
-        // Generate groupOf
-        self.groupOf = Object.keys(self.groups).reduce(function(o, gid) {
-          var group = self.groups[gid];
-          Object.keys(group.skids).forEach(function(skid) {
-            o[skid] = gid;
-          });
-          return o;
-        }, {});
-        // Other properties
-        self.confidence_threshold = Math.max(1, Math.min(5, json.confidence_threshold)) || 1;
-        $('#synapse_confidence_threshold' + self.widgetID)[0].value = self.confidence_threshold;
-        self.mode = Math.max(1, Math.min(2, json.mode)) || 2;
-        $('#synapse_fraction_mode' + self.widgetID)[0].value = self.mode;
-        self.only = json.only; // null or a map of skid vs true
-        self.partner_colors = json.partner_colors; // colors in hex
-        self.threshold = Math.max(0, json.threshold) || 5;
-        $('#synapse_threshold' + self.widgetID)[0].value = self.threshold;
-        self.font_size = json.font_size || 11;
-        $('#sf-font-size' + self.widgetID)[0].value = self.font_size;
+      var reader = new FileReader();
 
-        self.updateMorphologies(Object.keys(skids));
-      };
-      
-      var registerAndParse = function(json) {
+      // Register the skeletons and parse the JSON
+      reader.onload = (function(e) {
+        var json = JSON.parse(e.target.result);
         var pseudomodels = json.items.reduce(function(o, item) {
           $.extend(o, item.models);
           return o;
         }, {});
-        CATMAID.NeuronNameService.getInstance().registerAll(self, pseudomodels, function() { parse(json); });
-      };
-
-      var reader = new FileReader();
-
-      reader.onload = function(e) {
-        var json = JSON.parse(e.target.result);
-        registerAndParse(json);
-      };
+        CATMAID.NeuronNameService.getInstance().registerAll(this, pseudomodels,
+            (function() { this.populateFrom(json); }).bind(this));
+      }).bind(this);
 
       reader.readAsText(files[0]);
   };

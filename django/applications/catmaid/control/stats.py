@@ -55,7 +55,7 @@ def stats_editor(request, project_id=None):
     FROM treenode
     WHERE project_id=%s
       AND editor_id != user_id
-    GROUP BY username
+    GROUP BY editor_id
     ''' % int(project_id), "*unedited*")
 
 

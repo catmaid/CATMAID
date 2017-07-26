@@ -341,11 +341,16 @@
             '<li>Color box by the partner legend: open a color picker to change the color.</li>',
           '</ul>',
         '<li>Shift+click: toggle selected/deselected status of a partner neuron or group of partner neurons. Works on both the legend and the graph itself. Push "j" then to create a new partner group.</li>',
-        '<li>Mouse over: show the name of the partner neuron.</li>',
+        '<li>Mouse over: show the name of the partner neuron or group, the number of synapses and the corresponding fraction. Also highlights the name on the x-axis.</li>',
         '<li>Control+Shift+click on an x-axis legend name: remove that neuron or group of neurons.</li>',
+        '<li>Alt+click or meta+click on partner legend text: if it is a group of partners, open a Selection Table listing them.</li>',
         '</ul>',
         '<h2>Key bindings</h2>',
         '<p><b>J</b>: if more than two partner skeletons or groups are selected, create a new group. When a single group is selected, this provides the opportunity to rename the group.</p>',
+        '<h2>Parner group editor dialog</h2>',
+        '<p>Open the partner group editor dialog by clicking on the text of the legend (towards your right) of the group.</p>',
+        '<p>The dialog enables renaming the group, setting its color (or leaving it as automatic color), and also appending to or replacing the partner neurons with those selected in another widget.</p>',
+        '<p></p>',
       ].join('\n')
     };
   };

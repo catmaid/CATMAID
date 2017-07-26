@@ -624,20 +624,25 @@
         // Filter partners and add up synapse counts
         Object.keys(partners).forEach((function(skid2) {
           var count = partners[skid2];
-          if (count < this.threshold
-            || (this.only && !this.only[skid2])) {
-            // Add to others the counts for partner skeletons that are under threshold or not in the exclusive "only" list
+          // Check if neuron is not a member of the exclusive "only" club,
+          // and therefore must be throw into the "others" group:
+          if (this.only && !this.only[skid2]) {
+            fractions.others += count;
+            return;
+          }
+          // Place either into a group or by itself, or in "others" if under threshold
+          var gid = this.groupOf[skid2];
+          if (gid) {
+            var gcount = fractions[gid];
+            fractions[gid] = (gcount ? gcount : 0) + count;
+            // SIDE EFFECT: accumulate unique skeleton IDs for the other_source
+            skids2[skid2] = true;
+          } else if (count < this.threshold) {
+            // Add to "others" the counts for partner skeletons that are under threshold
             fractions.others += count;
           } else {
-            // Place either into a group or by itself
-            var gid = this.groupOf[skid2];
-            if (gid) {
-              var gcount = fractions[gid];
-              fractions[gid] = (gcount ? gcount : 0) + count;
-            } else {
-              fractions[skid2] = count;
-            }
-            // SIDE EFFECT: accumulate unique skeleton IDs
+            fractions[skid2] = count;
+            // SIDE EFFECT: accumulate unique skeleton IDs for the other_source
             skids2[skid2] = true;
           }
         }).bind(this));

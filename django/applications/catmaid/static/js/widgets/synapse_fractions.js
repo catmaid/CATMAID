@@ -196,11 +196,7 @@
                onclick: (function(e) {
                  this.applyFilterRules = e.target.checked;
                  if (this.filterRules.length > 0) {
-                   if (this.applyFilterRules.checked) {
-                     this.updateFilter(true);
-                   } else {
-                     this.redraw();
-                   }
+                   this.update();
                  }
                }).bind(this)
              }

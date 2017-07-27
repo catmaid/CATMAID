@@ -56,6 +56,7 @@
 
     this.mode = this.UPSTREAM;
 
+    // Synapse confidence threshold, defaults to showing all (1 or larger)
     this.confidence_threshold = 1;
 
     this.other_source = new CATMAID.BasicSkeletonSource(this.getName() + ' partners', {
@@ -77,6 +78,9 @@
     // Whether to hide those not connected to selected
     this.hide_disconnected_from_selected = false;
     this.disconnected_fn = "all selected";
+
+    // The minimum fraction amount to consider as connected, in percent
+    this.connected_threshold = 0; // default 0%
     
     // Set of items to skip displaying, as a map of index vs true
     this.hide = {};
@@ -191,6 +195,20 @@
                }).bind(this)
              },
              [disconnectedFns],
+             [CATMAID.DOM.createNumericField('sf-minimum-fraction-connected' + this.widgetID, "with a minimum of ", "Minimum fraction (in percent) to consider as connected when hiding", this.connected_threshold, '% connected',
+                 (function(ev) {
+                   var val = ev.target.value;
+                   if ($.isNumeric(val)) {
+                     if (val < 0 || val > 100) {
+                       CATMAID.msg("Info", "Invalid value! Must range between 0 and 100.");
+                     } else {
+                       this.connected_threshold =  Math.min(100, Math.max(0, +val));
+                       this.updateGraph();
+                     }
+                   } else {
+                     CATMAID.msg("Info", "Not a number!");
+                   }
+                 }).bind(this), 5)],
             ]);
 
         var nf = CATMAID.DOM.createNumericField("synapse_threshold" + this.widgetID, // id
@@ -1551,12 +1569,18 @@
     if (!this.hide_disconnected_from_selected) return;
     var selected = Object.keys(this.selected_partners);
     if (0 === selected.length) return;
+
+    var sum = function(fractions) {
+      return Object.keys(fractions).reduce(function(s, id) { return s + fractions[id]; }, 0);
+    };
+
     if ("all selected" === this.disconnected_fn) {
       this.items.forEach(function(item, i) {
+        var total = sum(item.fractions);
         // All: hide if any partner is disconnected
         for (var k=0; k<selected.length; ++k) {
           var count = item.fractions[selected[k]];
-          if (!count) {
+          if (!count || (count / total) * 100 <= this.connected_threshold) {
             // At least one is disconnected: hide
             this.hide[i] = true;
             return;
@@ -1565,10 +1589,11 @@
       }, this);
     } else if ("any selected" === this.disconnected_fn) {
       this.items.forEach(function(item, i) {
+        var total = sum(item.fractions);
         // Any: hide if all partners are disconnected
         for (var k=0; k<selected.length; ++k) {
           var count = item.fractions[selected[k]];
-          if (count) {
+          if (count && (count / total) * 100 >= this.connected_threshold) {
             // At least one is connected: avoid hiding
             return;
           }

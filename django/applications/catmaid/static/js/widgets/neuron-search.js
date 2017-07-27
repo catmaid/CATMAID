@@ -37,6 +37,11 @@
     // Set a user ID to show only annotations of specific users
     this.annotationUserFilter = null;
 
+    // A set of filter rules to apply to the handled skeletons
+    this.filterRules = [];
+    // Filter rules can optionally be disabled
+    this.applyFilterRules = true;
+
     // Listen to annotation change events to update self when needed
     CATMAID.Annotations.on(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
         this.handleAnnotationUpdate, this);
@@ -62,6 +67,10 @@
         // Create the query fields HTML and use {{NA-ID}} as template for the
         // actual this.widgetID which will be replaced afterwards.
         var queryFields_html =
+          '<label style="float: right">' +
+            '<input type="checkbox" id="neuron_search_apply_filters{{NA-ID}}" />' +
+            'Apply filters' +
+          '</label>' +
           '<form id="neuron_query_by_annotations{{NA-ID}}" autocomplete="on">' +
           '<table cellpadding="0" cellspacing="0" border="0" ' +
               'class="neuron_annotations_query_fields" ' +
@@ -199,7 +208,7 @@
               var form = document.getElementById('neuron_query_by_annotations' + self.widgetID);
               CATMAID.DOM.submitFormInIFrame(form);
               // Do actual query
-              self.query.call(self, true);
+              self.query(true);
               event.preventDefault();
               return false;
             });
@@ -219,6 +228,15 @@
             var widget = e.data;
             widget.displayAnnotations = this.checked;
             widget.updateAnnotations();
+          });
+        $('#neuron_search_apply_filters' + this.widgetID)
+          .prop('checked', this.applyFilterRules)
+          .on('change', this, function(e) {
+            var widget = e.data;
+            widget.applyFilterRules = this.checked;
+            if (widget.filterRules.length > 0) {
+              widget.applyFilter();
+            }
           });
 
         $('#neuron_annotations_toggle_neuron_selections_checkbox' + this.widgetID)[0].onclick =
@@ -272,6 +290,10 @@
         setTimeout(function() {
           $('input#neuron_query_by_name' + self.widgetID).focus();
         }, 10);
+      },
+      filter: {
+        rules: this.filterRules,
+        update: this.applyFilter.bind(this)
       },
       helpText: [
         '<p>Find neurons and annotations by neuron name or by annotations ',
@@ -501,7 +523,10 @@
           { "orderable": true },
           { "orderable": true },
           { "orderable": false, "visible": this.displayAnnotations }
-        ]
+        ],
+        language: {
+          "emptyTable": "No search results found"
+        }
       }).off('.dt').on('draw.dt', this, function(e) {
         e.data.updateSelectionUI();
         e.data.updateAnnotationFiltering();
@@ -640,6 +665,68 @@
     return tr;
   };
 
+  /**
+   * Apply current node filters to current result set.
+   */
+  NeuronSearch.prototype.filterResults = function(data) {
+    var hasResults = data.entities.length > 0;
+    if (this.filterRules.length > 0 && this.applyFilterRules && hasResults) {
+      // Collect skeleton models from input
+      var skeletons = data.entities.reduce(function(o, e) {
+        if (e.type === 'neuron') {
+          for (var i=0; i<e.skeleton_ids.length; ++i) {
+            var skeletonId = e.skeleton_ids[i];
+            if (!o[skeletonId]) {
+              o[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
+            }
+          }
+        }
+        return o;
+      }, {});
+      // Execute filter
+      var filter = new CATMAID.SkeletonFilter(this.filterRules, skeletons);
+      return filter.execute()
+        .then(function(filtered) {
+          if (filtered.skeletons.size === 0) {
+            CATMAID.warn("No skeletons left after filter application");
+            data.entities = [];
+            data.totalRecords = 0;
+            return data;
+          }
+
+          // Remove all invalid neuron results
+          var entities = data.entities;
+          var validSkeletons = filtered.skeletons;
+          var validEntities = [];
+          for (var i=0; i<entities.length; ++i) {
+            var entity = entities[i];
+            if (entity.type === 'neuron') {
+              var nValidSkeletons = 0;
+              for (var j=0; j<entity.skeleton_ids.length; ++j) {
+                var skeletonId = entity.skeleton_ids[j];
+                if (validSkeletons.has(skeletonId)) {
+                  ++nValidSkeletons;
+                }
+              }
+              if (nValidSkeletons > 0) {
+                validEntities.push(entity);
+              }
+            }
+          }
+          data.entities = validEntities;
+
+          return data;
+        })
+        .catch(CATMAID.handleError);
+    } else {
+      return Promise.resolve(data);
+    }
+  };
+
+  NeuronSearch.prototype.applyFilter = function() {
+    this.query(true);
+  };
+
   NeuronSearch.prototype.query = function(initialize)
   {
     if (initialize) {
@@ -751,6 +838,9 @@
     params.with_annotations = this.displayAnnotations;
 
     CATMAID.fetch(this.pid + '/annotations/query-targets', 'POST', params)
+      .then((function(e) {
+        return this.filterResults(e);
+      }).bind(this))
       .then((function(e) {
         // Keep a copy of all models that are removed
         var removedModels = this.getSkeletonModels();
@@ -886,19 +976,14 @@
     this.appendEntities(entities, appender, 0, []);
 
     // If there are results, display the result table
-    if (entities.length > 0) {
-      $('#neuron_annotations_query_no_results' + this.widgetID).hide();
-      $('#neuron_annotations_query_results' + this.widgetID).show();
-      this.update_result_row_classes();
-      // Reset annotator constraints
-      $( "#neuron_annotations_user_filter" + this.widgetID).combobox(
-          'set_value', 'show_all');
+    $('#neuron_annotations_query_no_results' + this.widgetID).hide();
+    $('#neuron_annotations_query_results' + this.widgetID).show();
+    this.update_result_row_classes();
+    // Reset annotator constraints
+    $( "#neuron_annotations_user_filter" + this.widgetID).combobox(
+        'set_value', 'show_all');
 
-      this.makeDataTable();
-    } else {
-      $('#neuron_annotations_query_results' + this.widgetID).hide();
-      $('#neuron_annotations_query_no_results' + this.widgetID).show();
-    }
+    this.makeDataTable();
 
     // Add handler to the checkbox in front of each entity
     var create_cb_handler = function(widget) {

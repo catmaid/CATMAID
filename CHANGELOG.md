@@ -84,6 +84,9 @@ Neuron Search:
 
 - Both neuron name and type columns can now be sorted.
 
+- Filters are now supported. Only neurons will be shown of which at least one
+  node is in the node filter result set.
+
 
 Neuron History:
 

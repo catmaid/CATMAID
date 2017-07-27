@@ -565,31 +565,30 @@
     this.items.push(new CATMAID.SkeletonGroup(models, group_name, models[skids[0]].color.clone()));
   };
 
-  SynapseFractions.prototype.updateNodeFilters = function(skeletonIds) {
-    var skeletons = skeletonIds.reduce(function(o, s) {
-      o[s] = new CATMAID.SkeletonModel(s);
-      return o;
-    }, {});
-    var filter = new CATMAID.SkeletonFilter(this.filterRules, skeletons);
+  SynapseFractions.prototype.updateFilter = function() {
+    var models = this.getSkeletonModels();
+    var filter = new CATMAID.SkeletonFilter(this.filterRules, models);
     return filter.execute()
       .then((function(filtered) {
+        // TODO remove
         if (filtered.nNodes === 0) {
-          CATMAID.warn("No points left after filter application");
+          CATMAID.warn("No skeleton nodes left after applying filters");
         }
 
-        function isAllowed(node) {
-           /* jshint validthis:true */
-          return !!this[node[0]];
+        function isAllowed(row) {
+          // row[0]: the skeleton treenode ID
+          // this: the filtered.nodes dictionary
+          /* jshint validthis:true */
+          return !!this[row[0]];
         }
 
         // Filter morphologies
+        var skeletonIds = Object.keys(models);
         for (var i=0; i<skeletonIds.length; ++i) {
-          var skeletonId = skeletonIds[i];
-          var morphology = this.morphologies[skeletonId];
-          if (!morphology) {
-            continue;
+          var morphology = this.morphologies[skeletonIds[i]];
+          if (morphology) {
+            morphology.synapses = morphology.synapses.filter(isAllowed, filtered.nodes);
           }
-          morphology.synapses = morphology.synapses.filter(isAllowed, filtered.nodes);
         }
       }).bind(this));
   };
@@ -623,7 +622,7 @@
         }).bind(this),
         (function() {
           if (this.filterRules.length > 0 && this.applyFilterRules) {
-            this.updateNodeFilters(skids)
+            this.updateFilter()
               .then(this.updateGraph.bind(this))
               .catch(CATMAID.handleError);
           } else {

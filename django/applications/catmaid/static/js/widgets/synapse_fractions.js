@@ -566,7 +566,7 @@
               delete items[i].models[skid];
               // TODO update name if it has the number attached at the end
             }
-            if (0 == Object.keys(items[i].models).length) {
+            if (0 === Object.keys(items[i].models).length) {
               items.splice(i, 1);
             }
             break;

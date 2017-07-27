@@ -87,9 +87,9 @@ class TriangleMeshVolume(PostGISVolume):
             # If surface is none, the old value will be used. This makes it
             # possible to update the volume without overriding its geometry.
             cursor.execute("""
-                UPDATE catmaid_volume SET (user_id, project_id, editor_id, name,
+                UPDATE catmaid_volume SET (project_id, editor_id, name,
                         comment, edition_time, geometry) =
-                (%(uid)s, %(pid)s, %(uid)s, %(t)s, %(c)s, now(), """ +
+                (%(pid)s, %(uid)s, %(t)s, %(c)s, now(), """ +
                            (surface or "geometry") + """)
                 WHERE id=%(id)s RETURNING id;""", params)
         else:
@@ -297,7 +297,9 @@ def update_volume(request, project_id, volume_id):
     if request.method != "POST":
         raise ValueError("Volume updates require a POST request")
 
-    instance = get_volume_instance(project_id, request.user.id, request.POST)
+    options = request.POST.dict()
+    options["id"] = volume_id
+    instance = get_volume_instance(project_id, request.user.id, options)
     volume_id = instance.save()
 
     return Response({

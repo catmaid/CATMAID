@@ -195,6 +195,7 @@
    */
   VolumeManagerWidget.prototype.editVolume = function(volume) {
     var self = this;
+    var createNewVolume = !volume;
 
     if (this.currentContext) {
       CATMAID.tools.callIfFn(this.currentContext.onExit);
@@ -225,19 +226,21 @@
 
     var title = function(e) { volume.title = this.value; };
     var comment = function(e) { volume.comment = this.value; };
-    var typeSelect = CATMAID.DOM.createSelectSetting("Type",
-        {
-          "Box": "box",
-          "Convex Hull": "convexhull",
-          "Alpha shape": "alphashape"
-        },
-        "The geometry type of this volume.", undefined, volumeType);
-    $addContent.append(typeSelect);
-    $('select', typeSelect).on('change', function() {
-      $("div.volume-properties", $content).remove();
-      var volumeHelper = volumeTypes[this.value];
-      self.editVolume(volumeHelper.createVolume({}));
-    });
+    if (createNewVolume) {
+      var typeSelect = CATMAID.DOM.createSelectSetting("Type",
+          {
+            "Box": "box",
+            "Convex Hull": "convexhull",
+            "Alpha shape": "alphashape"
+          },
+          "The geometry type of this volume.", undefined, volumeType);
+      $addContent.append(typeSelect);
+      $('select', typeSelect).on('change', function() {
+        $("div.volume-properties", $content).remove();
+        var volumeHelper = volumeTypes[this.value];
+        self.editVolume(volumeHelper.createVolume({}));
+      });
+    }
 
     $addContent.append(CATMAID.DOM.createInputSetting("Name", volume.title,
         "This name will be used whereever CATMAID refers to this volume in " +
@@ -246,7 +249,11 @@
     $addContent.append(CATMAID.DOM.createInputSetting("Comment", volume.comment,
         "Additional information regarding this volume.", comment));
 
-    $addContent.append(volumeHelper.createSettings(volume));
+    var volumeSettings = volumeHelper.createSettings(volume);
+    if (!createNewVolume) {
+      $('input', volumeSettings).attr('disabled', 'disabled');
+    }
+    $addContent.append(volumeSettings);
 
     // Create volume update and close handlers (used for preview)
     var handlers = volumeHelper.createHandlers(volume);

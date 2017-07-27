@@ -87,6 +87,11 @@
 
     // Some elements of the D3 SVG such as the text of the x-axis, y-axis and legends
     this.svg_elems = null;
+
+    // A set of filter rules to apply to the handled skeletons
+    this.filterRules = [];
+    // Filter rules can optionally be disabled
+    this.applyFilterRules = true;
   };
 
   SynapseFractions.prototype = Object.create(CATMAID.SkeletonSource.prototype);
@@ -184,6 +189,21 @@
                }).bind(this)
              },
              [disconnectedFns],
+             {
+               type: 'checkbox',
+               label: 'Apply node filters',
+               value: this.applyFilterRules,
+               onclick: (function(e) {
+                 this.applyFilterRules = e.target.checked;
+                 if (this.filterRules.length > 0) {
+                   if (this.applyFilterRules.checked) {
+                     this.updateFilter(true);
+                   } else {
+                     this.redraw();
+                   }
+                 }
+               }).bind(this)
+             }
             ]);
 
         var nf = CATMAID.DOM.createNumericField("synapse_threshold" + this.widgetID, // id
@@ -300,6 +320,10 @@
         graph.style.height = "100%";
         graph.style.backgroundColor = "#ffffff";
         content.appendChild(graph);
+      },
+      filter: {
+        rules: this.filterRules,
+        update: this.update.bind(this)
       },
       helpText: [
         '<h1>Synapse Fractions</h1>',
@@ -545,6 +569,35 @@
     this.items.push(new CATMAID.SkeletonGroup(models, group_name, models[skids[0]].color.clone()));
   };
 
+  SynapseFractions.prototype.updateNodeFilters = function(skeletonIds) {
+    var skeletons = skeletonIds.reduce(function(o, s) {
+      o[s] = new CATMAID.SkeletonModel(s);
+      return o;
+    }, {});
+    var filter = new CATMAID.SkeletonFilter(this.filterRules, skeletons);
+    return filter.execute()
+      .then((function(filtered) {
+        if (filtered.nNodes === 0) {
+          CATMAID.warn("No points left after filter application");
+        }
+
+        function isAllowed(node) {
+           /* jshint validthis:true */
+          return !!this[node[0]];
+        }
+
+        // Filter morphologies
+        for (var i=0; i<skeletonIds.length; ++i) {
+          var skeletonId = skeletonIds[i];
+          var morphology = this.morphologies[skeletonId];
+          if (!morphology) {
+            continue;
+          }
+          morphology.synapses = morphology.synapses.filter(isAllowed, filtered.nodes);
+        }
+      }).bind(this));
+  };
+
   /** Update arbor and synapse data, and then update the graph.
    * @skids An array of skeleton IDs to update. */
   SynapseFractions.prototype.updateMorphologies = function(skids) {
@@ -572,7 +625,15 @@
             break;
           }
         }).bind(this),
-        (function() { this.updateGraph(); }).bind(this));
+        (function() {
+          if (this.filterRules.length > 0 && this.applyFilterRules) {
+            this.updateNodeFilters(skids)
+              .then(this.updateGraph.bind(this))
+              .catch(CATMAID.handleError);
+          } else {
+            this.updateGraph();
+          }
+        }).bind(this));
   };
 
   SynapseFractions.prototype.createPartnerGroup = function() {

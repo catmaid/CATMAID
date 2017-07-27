@@ -34,6 +34,8 @@ Synapse Fractions:
 
 - X axis labels can now be rotated, from the Options tab.
 
+- Node filters can now be applied to filter valid connector links.
+
 
 3D Viewer:
 

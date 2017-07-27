@@ -171,9 +171,9 @@ class BoxVolume(PostGISVolume):
         cursor = connection.cursor()
         if self.id:
             cursor.execute("""
-                UPDATE catmaid_volume SET (user_id, project_id, editor_id, name,
+                UPDATE catmaid_volume SET (project_id, editor_id, name,
                         comment, edition_time, geometry) =
-                (%(uid)s, %(pid)s, %(uid)s, %(t)s, %(c)s, now(), """ +
+                (%(pid)s, %(uid)s, %(t)s, %(c)s, now(), """ +
                            surface + """)
                 WHERE id=%(id)s RETURNING id;""", params)
         else:

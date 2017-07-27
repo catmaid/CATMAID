@@ -44,6 +44,8 @@
 
     // The loaded data for each arbor
     this.morphologies = {};
+    // The loaded data for each arbor, filtered with skeleton node filters
+    this.filtered_morphologies = {};
 
     // Map of group ID vs object with keys: id, name, color, and map of skids vs true
     this.groups = {};
@@ -189,17 +191,6 @@
                }).bind(this)
              },
              [disconnectedFns],
-             {
-               type: 'checkbox',
-               label: 'Apply node filters',
-               value: this.applyFilterRules,
-               onclick: (function(e) {
-                 this.applyFilterRules = e.target.checked;
-                 if (this.filterRules.length > 0) {
-                   this.update();
-                 }
-               }).bind(this)
-             }
             ]);
 
         var nf = CATMAID.DOM.createNumericField("synapse_threshold" + this.widgetID, // id
@@ -224,7 +215,19 @@
              [cb[0]],
              [cb[1]],
              [document.createTextNode(' - Synapse confidence threshold: ')],
-             [confidence]
+             [confidence],
+             [document.createTextNode(' - ')],
+             {
+               type: 'checkbox',
+               label: 'Apply node filters',
+               value: this.applyFilterRules,
+               onclick: (function(e) {
+                 this.applyFilterRules = e.target.checked;
+                 if (this.filterRules.length > 0) {
+                   this.updateGraph();
+                 }
+               }).bind(this)
+             }
             ]);
 
         var partners_color = CATMAID.skeletonListSources.createPushSelect(this, "color");
@@ -446,8 +449,15 @@
   };
 
   SynapseFractions.prototype.update = function() {
-    this.morphologies = {};
-    this.updateMorphologies(this.getSkeletons());
+    if (0 === this.filterRules.length) {
+      // Reset
+      this.filtered_morphologies = {};
+      this.updateGraph();
+      return;
+    }
+    this.updateFilter()
+      .then(this.updateGraph.bind(this))
+      .catch(CATMAID.handleError);
   };
 
   SynapseFractions.prototype.resize = function() {
@@ -462,6 +472,7 @@
     this.items = [];
     this.only = null;
     this.morphologies = {};
+    this.filtered_morphologies = {};
     this.other_source.clear();
     this.partner_colors = {};
     this.groups = {};
@@ -565,15 +576,20 @@
     this.items.push(new CATMAID.SkeletonGroup(models, group_name, models[skids[0]].color.clone()));
   };
 
-  SynapseFractions.prototype.updateFilter = function() {
+  SynapseFractions.prototype.updateFilter = function(skids) {
     var models = this.getSkeletonModels();
     var filter = new CATMAID.SkeletonFilter(this.filterRules, models);
     return filter.execute()
       .then((function(filtered) {
-        // TODO remove
         if (filtered.nNodes === 0) {
           CATMAID.warn("No skeleton nodes left after applying filters");
         }
+
+        // Create filtered morphologies
+        this.filtered_morphologies = {};
+
+        // Nothing to do
+        if (0 === this.filterRules.length) return;
 
         function isAllowed(row) {
           // row[0]: the skeleton treenode ID
@@ -582,14 +598,10 @@
           return !!this[row[0]];
         }
 
-        // Filter morphologies
-        var skeletonIds = Object.keys(models);
-        for (var i=0; i<skeletonIds.length; ++i) {
-          var morphology = this.morphologies[skeletonIds[i]];
-          if (morphology) {
-            morphology.synapses = morphology.synapses.filter(isAllowed, filtered.nodes);
-          }
-        }
+        Object.keys(models).forEach(function(skid) {
+          this.filtered_morphologies[skid] = {synapses: this.morphologies[skid].synapses.filter(isAllowed, filtered.nodes)};
+        }, this);
+
       }).bind(this));
   };
 
@@ -622,7 +634,7 @@
         }).bind(this),
         (function() {
           if (this.filterRules.length > 0 && this.applyFilterRules) {
-            this.updateFilter()
+            this.updateFilter(skids)
               .then(this.updateGraph.bind(this))
               .catch(CATMAID.handleError);
           } else {
@@ -656,9 +668,12 @@
     this.updateGraph();
   };
 
-  SynapseFractions.prototype._makePartnerCountsMap = function(synapses) {
+  /** Takes into account any node filters. */
+  SynapseFractions.prototype._makePartnerCountsMap = function(skid) {
+    var morphology = this.applyFilterRules && this.filterRules.length > 0 ?
+        this.filtered_morphologies[skid] : this.morphologies[skid];
     var type = this.mode === this.DOWNSTREAM ? 0 : 1; // 0 is pre, 1 is post
-    return synapses.reduce((function(o, row) {
+    return morphology.synapses.reduce((function(o, row) {
       // compact-arbor indices:
       // 1: confidence of synaptic relation between skid and connector
       // 3: confidence of synaptic relation between connector and other skid
@@ -684,7 +699,7 @@
       // For every model in items
       item.fractions = Object.keys(item.models).reduce((function(fractions, skid) {
         // Collect counts of synapses with partner neurons
-        var partners = this._makePartnerCountsMap(this.morphologies[skid].synapses);
+        var partners = this._makePartnerCountsMap(skid);
         // Filter partners and add up synapse counts
         Object.keys(partners).forEach((function(skid2) {
           var count = partners[skid2];
@@ -951,7 +966,7 @@
               } else {
                 // Others: all that are under threshold or not in this.only
                 partner_skids = Object.keys(d.item.models).reduce((function(o, skid) {
-                  var partners = this._makePartnerCountsMap(this.morphologies[skid].synapses);
+                  var partners = this._makePartnerCountsMap(skid);
                   return Object.keys(partners).reduce((function(o, skid2) {
                     var count = partners[skid2];
                     if (count < this.threshold

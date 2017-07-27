@@ -205,6 +205,7 @@
     // strict left-associative combination is used.
     var nodeCollection = {};
     var radiiCollection = {};
+    var skeletonCollection = new Set();
     var nNodes = 0;
     if (mapResultNode === undefined) {
       mapResultNode = function() {
@@ -237,14 +238,26 @@
       nNodes += count;
     }).bind(nodeCollection);
 
-    // If there is only one rule, the rule's merge mode should be ignored.
-    // Otherwise if there is only a single rule
-    var mergeModeOverride = rules.length === 1 ? CATMAID.UNION : null;
+    var mergeSkeletonCollection = (function(other, mergeMode) {
+      if (CATMAID.UNION === mergeMode) {
+        for (var skeletonId of other) {
+          this.add(skeletonId);
+        }
+      } else if (CATMAID.INTERSECTION === mergeMode) {
+        for (var skeletonId of this) {
+          if (!other.has(skeletonId)) {
+            this.delete(skeletonId);
+          }
+        }
+      } else {
+        throw new CATMAID.ValueError("Unknown merge mode: " + mergeMode);
+      }
+    }).bind(skeletonCollection);
 
     // Get final set of points by going through all rules and apply them
     // either to all skeletons or a selected sub-set. Results of individual
     // rules are OR-combined.
-    rules.forEach(function(rule) {
+    rules.forEach(function(rule, i) {
       // Pick source skeleton(s). If a rule requests to be only applied for
       // a particular skeleton, this working set will be limited to this
       // skeleton only.
@@ -256,6 +269,12 @@
         sourceSkeletons = skeletonIndex;
       }
 
+      // Ignore the merge mode for the first rule, because it can't be merge
+      // with anything.
+      var mergeMode = i === 0 ? CATMAID.UNION : rule.mergeMode;
+
+      var allowedSkeletons = new Set();
+
       // Apply rules and get back a set of valid nodes for each skeleton
       Object.keys(sourceSkeletons).forEach(function(skid) {
         // Get valid point list from this skeleton with the current filter
@@ -264,17 +283,21 @@
             inputMap, rule.options);
         // Merge all point sets for this rule. How this is done exactly (i.e.
         // OR or AND) is configured separately.
-        if (nodeCollection) {
-          var mergeMode = mergeModeOverride ? mergeModeOverride : rule.mergeMode;
-          mergeNodeCollection(skid, nodeCollection, mergeMode,  mapResultNode);
+        if (nodeCollection && !CATMAID.tools.isEmpty(nodeCollection)) {
+          mergeNodeCollection(skid, nodeCollection, mergeMode, mapResultNode);
+          // Remember this skeleton as potentially valid
+          allowedSkeletons.add(parseInt(skid, 10));
         }
       });
+
+      mergeSkeletonCollection(allowedSkeletons, mergeMode);
     });
 
     return {
       nodes: nodeCollection,
       nNodes: nNodes,
-      input: inputMap
+      input: inputMap,
+      skeletons: skeletonCollection
     };
   }
 

@@ -697,10 +697,9 @@
     sorted_entries = sorted_entries.reduce(function(o, entry, i) { o[i] = entry; return o; }, {});
 
     var colors = (function(partner_colors, colorFn, groups) {
-          var i = 0;
-          return order.reduce(function(o, id) {
-            var c = id < 0 ? (groups[id].autocolor ? colorFn(i++) : groups[id].color) : partner_colors[id];
-            o[id] = c ? c : colorFn(i++);
+          return order.reduce(function(o, id, index) {
+            var c = id < 0 ? (groups[id].autocolor ? colorFn(index) : groups[id].color) : partner_colors[id];
+            o[id] = c ? c : colorFn(index);
             return o;
           }, {});
         })(this.partner_colors, this.colorFn, this.groups);

@@ -237,6 +237,10 @@
       nNodes += count;
     }).bind(nodeCollection);
 
+    // If there is only one rule, the rule's merge mode should be ignored.
+    // Otherwise if there is only a single rule
+    var mergeModeOverride = rules.length === 1 ? CATMAID.UNION : null;
+
     // Get final set of points by going through all rules and apply them
     // either to all skeletons or a selected sub-set. Results of individual
     // rules are OR-combined.
@@ -261,7 +265,8 @@
         // Merge all point sets for this rule. How this is done exactly (i.e.
         // OR or AND) is configured separately.
         if (nodeCollection) {
-          mergeNodeCollection(skid, nodeCollection, rule.mergeMode,  mapResultNode);
+          var mergeMode = mergeModeOverride ? mergeModeOverride : rule.mergeMode;
+          mergeNodeCollection(skid, nodeCollection, mergeMode,  mapResultNode);
         }
       });
     });

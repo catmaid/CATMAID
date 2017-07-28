@@ -1580,7 +1580,7 @@
         // All: hide if any partner is disconnected
         for (var k=0; k<selected.length; ++k) {
           var count = item.fractions[selected[k]];
-          if (!count || (count / total) * 100 <= this.connected_threshold) {
+          if (!count || (count / total) * 100 < this.connected_threshold) {
             // At least one is disconnected: hide
             this.hide[i] = true;
             return;

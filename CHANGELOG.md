@@ -1,5 +1,17 @@
 ## Under development
 
+
+
+### Features and enhancements
+
+
+
+### Bug fixes
+
+
+
+## Under development
+
 ### Notes
 
 - Prepared statements can now also be used together with connection pooling.

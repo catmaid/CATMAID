@@ -10,6 +10,25 @@ None.
 
 ### Modifications
 
+None.
+
+### Deprecations
+
+None.
+
+### Removals
+
+None.
+
+
+## Under development
+
+### Additions
+
+None.
+
+### Modifications
+
 - `POST /{project_id}/skeletons/import`:
   The new 'name' parameter can be used to set the name of a new neuron.
 

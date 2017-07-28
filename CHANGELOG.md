@@ -1,5 +1,6 @@
-## Under development
+## 2017.07.28
 
+Contributors: Chris Barnes, Albert Cardona, Tom Kazimiers, Daniel Witvliet
 ### Notes
 
 - Prepared statements can now also be used together with connection pooling.

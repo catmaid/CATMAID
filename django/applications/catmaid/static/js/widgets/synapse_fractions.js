@@ -36,7 +36,7 @@
 
     this.rotationXLabels = -65;
 
-    // Color partner skeletons using these colors
+    // Color partner skeletons using these colors (only when set from the color picker)
     this.partner_colors = {};
 
     // Function to generate default colors
@@ -1084,6 +1084,7 @@
             Math.round(255 * color.r), Math.round(255 * color.g),
             Math.round(255 * color.b));
         if (currentElementId < 0) {
+          this.groups[currentElementId].autocolor = false;
           this.groups[currentElementId].color = newColor;
         } else {
           this.partner_colors[currentElementId] = newColor;

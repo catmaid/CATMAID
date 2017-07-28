@@ -147,7 +147,9 @@
         $(table).on('click', 'td', function() {
           var tr = $(this).closest("tr");
           var volume = self.datatable.row(tr).data();
-          self.loadVolume(volume.id).then(self.editVolume.bind(self));
+          self.loadVolume(volume.id)
+            .then(self.editVolume.bind(self))
+            .catch(CATMAID.handleError);
         });
       }
     };

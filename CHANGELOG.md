@@ -102,6 +102,43 @@ Neuron History:
   "Tracing time" drop down menu.
 
 
+Reconstruction Sampler:
+
+- This new widget can be opened using Ctrl + Space and the keyword
+  "reconstruction-sampler". It allows to target reconstruction effort based on
+  the spatial sampling of a skeleton. This is mainly useful for large neurons
+  that can't be quickly traced to completion. The widget is organized as a
+  workflow that prevents skipping steps.
+
+- To keep track of reconstruction progress, a so called sampler is created
+  for a skeleton of interest. This skeleton is typically the backbone of a
+  larger neuron. The sampler keeps track of some global properties for the
+  sampling. Once created, a sampler can be "opened" either by clicking "Open" or
+  by double clicking the respective table row. Also note that with a sampler
+  attached to a skeleton, the skeleton can not be deleted. If a skeleton should
+  be deleted, delete its samplers first.
+
+- Once opened, a sampler allows creating so called sampler domains, which are
+  regions on the skeletons which should in principle be considered for sampling.
+  Topological and tag based definitions of sampler domains are possible. Created
+  samplers can be opened through a click on "Open" or a double click on the
+  table row.
+
+- Once opened, sampler domains can be further divided in so called sampler
+  intervals. To do so the "Create intervals" buttons has to be pressed. These
+  have initially all the same length (defined in sampler) and no branches.
+  Intervals are meant to picked at random through the respective button.
+
+- With an interval selected, the goal is now to reconstruct it to completion
+  with all branches and connectors. CATMAID will show a warning when moved out
+  of the interval. The workflow page will show both input and output connectors.
+
+- As soon as the interval is reconstructed completely, a synapse can be picked
+  at random from which the next backbone can be reconstructed. Once the backbone
+  is found and reconstructed, the sampling can start over. Alternatively,
+  another interval in the original skeleton can be selected at random.
+
+
 Miscellaneous:
 
 - Split/Merge dialog: the node count for both respectively remaining/new and

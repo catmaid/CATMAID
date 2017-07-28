@@ -26,6 +26,11 @@ None.
   a list of reviews and a list of linked skeleton IDs respectively for each
   returned skeleton.
 
+- `POST /{project_id}/volumes/{volume_id}/`
+  Individual fields can now be updated selectively. Only fields that are passed
+  in as arguments will be updated. This allows for instance to only change the
+  name of a volume.
+
 ### Deprecations
 
 None.

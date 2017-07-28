@@ -51,8 +51,63 @@ class PostGISVolume(object):
         self.id = options.get('id', None)
         self.project_id = project_id
         self.user_id = user_id
-        self.title = require_option(options, "title")
+        self.title = options.get('title') if self.id else require_option(options, "title")
         self.comment = options.get("comment", None)
+
+    def get_geometry(self):
+        return None
+
+    def get_params(self):
+        return None
+
+    def save(self):
+        surface = self.get_geometry()
+        cursor = connection.cursor()
+        extra_params = self.get_params() or {}
+        if self.id:
+            params = {
+                "id": self.id,
+                "project_id": self.project_id or 'project_id',
+            }
+            editable_params = {
+                "editor_id": self.user_id,
+                "name": self.title,
+                "comment": self.comment,
+                'geometry': surface
+            }
+            params.update(editable_params)
+            params.update(extra_params)
+            fields = [k for k in editable_params.keys() if editable_params.get(k)]
+            # If surface is none, the old value will be used. This makes it
+            # possible to update the volume without overriding its geometry.
+            cursor.execute("""
+                UPDATE catmaid_volume SET ({fields}) = ({templates})
+                WHERE id=%(id)s
+                RETURNING id
+            """.format(**{
+                'fields': ', '.join(fields + ['edition_time']),
+                'templates': ', '.join(['%({})s'.format(f) for f in fields] + ['now()'])
+            }), params)
+        else:
+            params = {
+                "uid": self.user_id,
+                "pid": self.project_id,
+                "t": self.title,
+                "c": self.comment,
+            }
+            params.update(extra_params)
+
+            if not surface:
+                raise ValueError("Can't create new volume without mesh")
+
+            cursor.execute("""
+                INSERT INTO catmaid_volume (user_id, project_id, editor_id, name,
+                        comment, creation_time, edition_time, geometry)
+                VALUES (%(uid)s, %(pid)s, %(uid)s, %(t)s, %(c)s, now(), now(), """ +
+                           surface + """)
+                RETURNING id;""", params)
+
+        return cursor.fetchone()[0]
 
 class TriangleMeshVolume(PostGISVolume):
     """A generic triangle mesh, provided from an external source.
@@ -71,39 +126,11 @@ class TriangleMeshVolume(PostGISVolume):
         else:
             self.mesh = None
 
-    def save(self):
+    def get_params(self):
+        return None
 
-        params = {
-            "uid": self.user_id,
-            "pid": self.project_id,
-            "t": self.title,
-            "c": self.comment,
-            "id": self.id
-        }
-
-        surface = TriangleMeshVolume.fromLists(self.mesh) if self.mesh else None
-        cursor = connection.cursor()
-        if self.id:
-            # If surface is none, the old value will be used. This makes it
-            # possible to update the volume without overriding its geometry.
-            cursor.execute("""
-                UPDATE catmaid_volume SET (project_id, editor_id, name,
-                        comment, edition_time, geometry) =
-                (%(pid)s, %(uid)s, %(t)s, %(c)s, now(), """ +
-                           (surface or "geometry") + """)
-                WHERE id=%(id)s RETURNING id;""", params)
-        else:
-            if not surface:
-                raise ValueError("Can't create new volume without mesh")
-
-            cursor.execute("""
-                INSERT INTO catmaid_volume (user_id, project_id, editor_id, name,
-                        comment, creation_time, edition_time, geometry)
-                VALUES (%(uid)s, %(pid)s, %(uid)s, %(t)s, %(c)s, now(), now(), """ +
-                           surface + """)
-                RETURNING id;""", params)
-
-        return cursor.fetchone()[0]
+    def get_geometry(self):
+        return TriangleMeshVolume.fromLists(self.mesh) if self.mesh else None
 
     @classmethod
     def fromLists(cls, mesh):
@@ -136,26 +163,8 @@ class BoxVolume(PostGISVolume):
         self.max_y = get_req_coordinate(options, "max_y")
         self.max_z = get_req_coordinate(options, "max_z")
 
-    def save(self):
-        """Create or update a PostGIS box in project space.
-
-        An existing box is updated, if the ID parameter is None.
-        """
-        params = {
-            "uid": self.user_id,
-            "pid": self.project_id,
-            "t": self.title,
-            "c": self.comment,
-            "lx": self.min_x,
-            "ly": self.min_y,
-            "lz": self.min_z,
-            "hx": self.max_x,
-            "hy": self.max_y,
-            "hz": self.max_z,
-            "id": self.id
-        }
-
-        surface = """ST_GeomFromEWKT('POLYHEDRALSURFACE (
+    def get_geometry(self):
+        return """ST_GeomFromEWKT('POLYHEDRALSURFACE (
             ((%(lx)s %(ly)s %(lz)s, %(lx)s %(hy)s %(lz)s, %(hx)s %(hy)s %(lz)s,
               %(hx)s %(ly)s %(lz)s, %(lx)s %(ly)s %(lz)s)),
             ((%(lx)s %(ly)s %(lz)s, %(lx)s %(hy)s %(lz)s, %(lx)s %(hy)s %(hz)s,
@@ -168,23 +177,18 @@ class BoxVolume(PostGISVolume):
               %(hx)s %(hy)s %(lz)s, %(hx)s %(hy)s %(hz)s)),
             ((%(hx)s %(hy)s %(hz)s, %(hx)s %(hy)s %(lz)s, %(lx)s %(hy)s %(lz)s,
               %(lx)s %(hy)s %(hz)s, %(hx)s %(hy)s %(hz)s)))')"""
-        cursor = connection.cursor()
-        if self.id:
-            cursor.execute("""
-                UPDATE catmaid_volume SET (project_id, editor_id, name,
-                        comment, edition_time, geometry) =
-                (%(pid)s, %(uid)s, %(t)s, %(c)s, now(), """ +
-                           surface + """)
-                WHERE id=%(id)s RETURNING id;""", params)
-        else:
-            cursor.execute("""
-                INSERT INTO catmaid_volume (user_id, project_id, editor_id, name,
-                        comment, creation_time, edition_time, geometry)
-                VALUES (%(uid)s, %(pid)s, %(uid)s, %(t)s, %(c)s, now(), now(), """ +
-                           surface + """)
-                RETURNING id;""", params)
 
-        return cursor.fetchone()[0]
+    def get_params(self):
+        return {
+            "lx": self.min_x,
+            "ly": self.min_y,
+            "lz": self.min_z,
+            "hx": self.max_x,
+            "hy": self.max_y,
+            "hz": self.max_z,
+            "id": self.id
+        }
+
 
 volume_type = {
     "box": BoxVolume,
@@ -293,13 +297,49 @@ def remove_volume(request, project_id, volume_id):
 @requires_user_role([UserRole.Annotate])
 def update_volume(request, project_id, volume_id):
     """Update properties of an existing volume
+
+    Only the fields that are provided are updated. If no mesh or bounding box
+    parameter is changed, no type has to be provided.
+    ---
+    parameters:
+      - name: type
+        description: Type of volume to edit
+        paramType: form
+        type: string
+        enum: ["box", "trimesh"]
+        required: false
+      - name: title
+        description: Title of volume
+        type: string
+        required: false
+      - name: comment
+        description: A comment on a volume
+        type: string
+        required: false
+    type:
+      'success':
+        type: boolean
+        required: true
+      'volume_id':
+        type: integer
+        required: true
     """
     if request.method != "POST":
         raise ValueError("Volume updates require a POST request")
 
-    options = request.POST.dict()
-    options["id"] = volume_id
-    instance = get_volume_instance(project_id, request.user.id, options)
+    options = {
+        "id": volume_id,
+        "type": request.POST.get('type'),
+        "title": request.POST.get('title'),
+        "comment": request.POST.get('comment')
+    }
+    try:
+        instance = get_volume_instance(project_id, request.user.id, options)
+    except ValueError as e:
+        if volume_id:
+            instance = PostGISVolume(project_id, request.user.id, options)
+        else:
+            raise e
     volume_id = instance.save()
 
     return Response({

@@ -4,6 +4,14 @@
 
 ### Features and enhancements
 
+Miscellaneous:
+
+- If multiple tile layers are used, the stack viewer layer settings (blue white
+  box in lower left corner) allow to set which stacks should be respected if
+  broken sections are skipped. This can be done through the "Skip broken
+  sections of stacks" drop-down menu. Whether layers added after the first layer
+  should be respected by default when checking for broken sections can be set in
+  the Settings Widget in the "Stack view" section.
 
 
 ### Bug fixes

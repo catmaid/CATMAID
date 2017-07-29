@@ -161,6 +161,11 @@ div.LayerControl .layerControl {
   counter-increment: order-counter;
 }
 
+div.LayerControl .customselect {
+  color: black;
+  margin-top: 0.3em;
+}
+
 .layerControl.orderable {
   background: #111;
 }

@@ -249,19 +249,19 @@
     var changeSliceDelayedAction = function()
     {
       window.clearTimeout( changeSliceDelayedTimer );
-      self.changeSlice( changeSliceDelayedParam.z );
+      self.changeSlice( changeSliceDelayedParam.z, changeSliceDelayedParam.step );
       changeSliceDelayedParam = null;
       return false;
     };
 
-    this.changeSliceDelayed = function( val )
+    this.changeSliceDelayed = function( val, step )
     {
       if ( changeSliceDelayedTimer ) window.clearTimeout( changeSliceDelayedTimer );
-      changeSliceDelayedParam = { z : val };
+      changeSliceDelayedParam = { z : val, step: step };
       changeSliceDelayedTimer = window.setTimeout( changeSliceDelayedAction, 100 );
     };
 
-    this.changeSlice = function( val )
+    this.changeSlice = function( val, step )
     {
       val = self.stackViewer.toValidZ(val, step < 0 ? -1 : 1);
       self.stackViewer.moveToPixel( val, self.stackViewer.y, self.stackViewer.x, self.stackViewer.s );

@@ -435,7 +435,7 @@
     }
 
     this.prototype.changeSlice = function(val, step) {
-      val = self.stackViewer.toValidZ(val, step < 0 ? -1 : 1);
+      val = activeStackViewer.toValidZ(val, step < 0 ? -1 : 1);
       activeStackViewer.moveToPixel( val, activeStackViewer.y, activeStackViewer.x, activeStackViewer.s )
         .catch(CATMAID.warn);
     };

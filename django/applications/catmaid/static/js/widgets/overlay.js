@@ -2286,8 +2286,8 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   // Set curently allowed section distances, to correctly account for broken
   // sections.
   var sv = this.stackViewer;
-  var dToSecBefore = sv.primaryStack.validZDistanceBefore(sv.z);
-  var dToSecAfter = sv.primaryStack.validZDistanceAfter(sv.z);
+  var dToSecBefore = sv.validZDistanceBefore(sv.z);
+  var dToSecAfter = sv.validZDistanceAfter(sv.z);
   this.graphics.init(dToSecBefore, dToSecAfter);
 
   // Add extra nodes

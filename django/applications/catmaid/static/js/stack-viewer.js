@@ -26,13 +26,16 @@
     this.primaryStack = primaryStack;
     this._stacks = [primaryStack];
 
+    // The stacks broken slices should be respected of
+    this._brokenSliceStacks = new Set([this.primaryStack]);
+
     this._offset = [0, 0, 0];
 
     this._widgetId = this.registerInstance();
 
     // take care, that all values are within a proper range
     // Declare the x,y,z,s as coordinates in pixels
-    this.z = primaryStack.isSliceBroken(0) ? primaryStack.validZDistanceAfter(0): 0;
+    this.z = this.toValidZ(0, 1);
     this.y = Math.floor( primaryStack.MAX_Y / 2 );
     this.x = Math.floor( primaryStack.MAX_X / 2 );
     this.s = primaryStack.MAX_S;
@@ -54,6 +57,7 @@
     this._tool = null;
     this._layers = new Map();
     this._layerOrder = [];
+
     /**
      * Whether redraws in this stack viewer should be blocking, that is,
      * whether layers that have asynchronous redraws must wait for redraw to
@@ -143,6 +147,68 @@
   StackViewer.prototype = {};
   $.extend(StackViewer.prototype, new InstanceRegistry());
   StackViewer.prototype.constructor = StackViewer;
+
+  /**
+   * Get a valid Z location based on all stacks that are selected to be
+   * respected.
+   *
+   * @params {Number} z    The z location to verify
+   * @params {Number} step The number of sections to move in case of a broken
+   *                       section.
+   * @return The passed in Z is valid, otherwise the next valid Z either after
+   *         or before (if descOrder truthy) the passed in Z.
+   */
+  StackViewer.prototype.validZDistanceByStep = function(z, step) {
+    // Without any stacks that should be tested for broken sections, the passe
+    // in Z is valid.
+    if (this._brokenSliceStacks.size === 0) {
+      return step;
+    }
+    // Find Z that is valid for all respected stacks
+    var referenceStack = Array.from(this._brokenSliceStacks.keys())[0];
+    var validDistance = step;
+    while (true) {
+      var newSection = z + validDistance;
+      if (!this.isSliceBroken(newSection)) {
+        break;
+      }
+      validDistance += referenceStack.validZDistanceByStep(newSection, step);
+      if (!validDistance) {
+        return null;
+      }
+    }
+    return validDistance;
+  };
+
+  StackViewer.prototype.toValidZ = function(z, step) {
+    var distance = this.validZDistanceByStep(z - step, step);
+    if (distance === 0) {
+      throw new CATMAID.ValueError("Couldn't find valid Z section");
+    }
+    return z - step + distance;
+  };
+
+  StackViewer.prototype.validZDistanceBefore = function(z) {
+    return this.validZDistanceByStep(z, -1);
+  };
+
+  StackViewer.prototype.validZDistanceAfter = function(z) {
+    return this.validZDistanceByStep(z, 1);
+  };
+
+  /**
+   * Test if a particular Z section is broken in at least one stack that is
+   * respected for this operation.
+   */
+  StackViewer.prototype.isSliceBroken = function(z) {
+    // This uses layers
+    for (var stack of this._brokenSliceStacks) {
+      if (stack.isSliceBroken(z)) {
+        return true;
+      }
+    }
+    return false;
+  };
 
   StackViewer.LayerInsertionStrategy = {
     "append": {
@@ -796,6 +862,7 @@
         if (!otherStackLayers) {
           // Remove that stack from this stack viewer and update the tool.
           this._stacks = this._stacks.filter(function (s) { return s.id !== layer.stack.id; });
+          this._brokenSliceStacks.delete(layer.stack);
           if (this._tool) {
             this._tool.unregister(this);
             this._tool.register(this);
@@ -866,6 +933,9 @@
     }
 
     this._stacks.push(stack);
+    if (StackViewer.Settings.session.respect_broken_sections_new_stacks) {
+      this._brokenSliceStacks.add(stack);
+    }
     this.addLayer('TileLayer' + stack.id, layer);
     if (this._tool) {
       this._tool.unregister(this);
@@ -962,7 +1032,10 @@
           },
           layer_insertion_strategy: {
             default: "image-data-first"
-          }
+          },
+          respect_broken_sections_new_stacks: {
+            default: false
+          },
         },
         migrations: {}
       });

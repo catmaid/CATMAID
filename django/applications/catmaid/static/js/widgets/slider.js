@@ -247,6 +247,7 @@
     }
 
     if (val !== this.val) {
+      var step = val - this.val;
       this._setHandle(index);
       this.val = val;
       this._ind = valBin[0];
@@ -256,7 +257,7 @@
         this._input.value = Number(val).toFixed(2).replace(/\.?0+$/,"");
       }
 
-      if (!cancelOnchange) this.onchange(this.val);
+      if (!cancelOnchange) this.onchange(this.val, step);
     }
   };
 

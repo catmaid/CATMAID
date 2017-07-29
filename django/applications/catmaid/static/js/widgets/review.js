@@ -530,7 +530,7 @@
       var viewer = project.focusedStackViewer;
       var stack = project.focusedStackViewer.primaryStack;
       var validDistanced = segment[i][depthField] > segment[i-1][depthField] ?
-          stack.validZDistanceBefore(viewer.z) : stack.validZDistanceAfter(viewer.z);
+          viewer.validZDistanceBefore(viewer.z) : viewer.validZDistanceAfter(viewer.z);
       var targetZ = validDistanced ? viewer.z + validDistanced : viewer.z;
       // Move to location found
       project.moveTo(

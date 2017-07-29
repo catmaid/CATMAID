@@ -88,6 +88,40 @@
     offsetSelect.append(offsetTable);
     $view.append(offsetSelect);
 
+    var uniqueStackIds = new Set(stackViewer._stacks.map(function(s) {
+      return s.id;
+    }));
+    var brokenSectionStacks = CATMAID.DOM.createCheckboxSelect(
+        "Skip broken sections of stacks",
+        stackViewer._stacks.filter(function(s) {
+          if (uniqueStackIds.has(s.id)) {
+            uniqueStackIds.delete(s.id);
+            return true;
+          }
+          return false;
+        }).map(function(s) {
+          return {title: s.title, value: s.id};
+        }), Array.from(stackViewer._brokenSliceStacks).map(function(s) {
+          return s.id;
+        }));
+    brokenSectionStacks.onchange = function(e) {
+      var respected = e.target.checked;
+      var stackId = e.target.value;
+      var matches = stackViewer._stacks.filter(function(s) {
+        return s.id == stackId;
+      });
+      if (matches.length !== 1) {
+        throw new CATMAID.ValueError("Could not find stack for ID " + stackId);
+      }
+      var stack = matches[0];
+      if (respected) {
+        stackViewer._brokenSliceStacks.add(stack);
+      } else {
+        stackViewer._brokenSliceStacks.delete(stack);
+      }
+    };
+    $view.append(brokenSectionStacks);
+
     $view.append('<h3>Layers by render order (drag to reorder)</h3>');
     var layerList = $('<ol/>');
 

@@ -146,23 +146,23 @@
       var changeSliceDelayedAction = function()
       {
           window.clearTimeout( changeSliceDelayedTimer );
-          self.changeSlice( changeSliceDelayedParam.z );
+          self.changeSlice( changeSliceDelayedParam.z, changeSliceDelayedParam );
           changeSliceDelayedParam = null;
           return false;
       };
 
-      this.changeSliceDelayed = function( val )
+      this.changeSliceDelayed = function( val, step )
       {
           current_section = val;
           if ( changeSliceDelayedTimer ) window.clearTimeout( changeSliceDelayedTimer );
-          changeSliceDelayedParam = { z : val };
+          changeSliceDelayedParam = { z : val, step: step };
           changeSliceDelayedTimer = window.setTimeout( changeSliceDelayedAction, 100 );
       };
 
-      this.changeSlice = function( val )
+      this.changeSlice = function( val, step )
       {
+          val = self.stackViewer.toValidZ(val, step < 0 ? -1 : 1);
           self.stack.moveToPixel( val, self.stack.y, self.stack.x, self.stack.s );
-          return;
       };
 
       var updateControls = function()

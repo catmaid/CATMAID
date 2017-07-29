@@ -113,8 +113,8 @@ function TextlabelTool()
 
     var proto_changeSlice = self.prototype.changeSlice;
     self.prototype.changeSlice =
-      function( val ) {
-        proto_changeSlice( val );
+      function( val, step ) {
+        proto_changeSlice( val, step );
       };
   };
 

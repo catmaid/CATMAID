@@ -1194,7 +1194,7 @@ div.selection-table.windowContent {
   background: white;
   padding: 4px;
   cursor: default;
-  z-index: 1;
+  z-index: 10;
   overflow: auto;
   max-height: 20em;
 }

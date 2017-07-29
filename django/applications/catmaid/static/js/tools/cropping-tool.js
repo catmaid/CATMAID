@@ -263,8 +263,8 @@
 
     this.changeSlice = function( val )
     {
+      val = self.stackViewer.toValidZ(val, step < 0 ? -1 : 1);
       self.stackViewer.moveToPixel( val, self.stackViewer.y, self.stackViewer.x, self.stackViewer.s );
-      return;
     };
 
     this.changeBottomSlice = function( val )

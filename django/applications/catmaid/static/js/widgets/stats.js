@@ -191,7 +191,7 @@
             }
 
             // Query all neurons reviewed by the given user in the given timeframe
-            CATMAID.fetch(project.id + '/skeletons/')
+            CATMAID.fetch(project.id + '/skeletons/', 'GET', params)
               .then(function(skeleton_ids) {
                 // Open a new selection table with the returned set of
                 // skeleton IDs, if any.

@@ -883,9 +883,10 @@
     return placeholder;
   };
 
-	DOM.createCheckbox = function(label, value, onclickFn) {
+	DOM.createCheckbox = function(label, value, onclickFn, id) {
 		var cb = document.createElement('input');
 		cb.setAttribute('type', 'checkbox');
+		if (id) cb.setAttribute('id', id);
 		cb.checked = value ? true : false;
 		cb.onchange = onclickFn;
 		return [cb, document.createTextNode(label)];
@@ -1033,7 +1034,7 @@
           case 'color-button':
             return CATMAID.DOM.appendColorButton(tab, e.label, e.title, e.attr, e.onchange, e.color);
           case 'checkbox':
-            return CATMAID.DOM.appendCheckbox(tab, e.label, e.title, e.value, e.onclick, e.left);
+            return CATMAID.DOM.appendCheckbox(tab, e.label, e.title, e.value, e.onclick, e.left, e.id);
           case 'numeric':
             return CATMAID.DOM.appendNumericField(tab, e.label, e.title, e.value, e.postlabel, e.onchange, e.length, e.placeholder);
           case 'text':
@@ -1093,10 +1094,10 @@
   /**
    * Append a new checkbox to another element.
    */
-  DOM.appendCheckbox = function(div, label, title, value, onclickFn, left) {
+  DOM.appendCheckbox = function(div, label, title, value, onclickFn, left, id) {
     var labelEl = document.createElement('label');
     labelEl.setAttribute('title', title);
-    var elems = DOM.createCheckbox(label, value, onclickFn);
+    var elems = DOM.createCheckbox(label, value, onclickFn, id);
     if (left) elems.reverse();
     elems.forEach(function(elem) { labelEl.appendChild(elem); });
     div.appendChild(labelEl);

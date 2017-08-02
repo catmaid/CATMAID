@@ -124,8 +124,8 @@
         if (!SkeletonAnnotations.isRealNode(node.id)) {
           // Force re-focus on next step if the newly active virtual node is not
           // on the edge between parent and child.
-          var pID = SkeletonAnnotations.getParentOfVirtualNode(node.id);
-          var cID = SkeletonAnnotations.getChildOfVirtualNode(node.id);
+          var pID = parseInt(SkeletonAnnotations.getParentOfVirtualNode(node.id), 10);
+          var cID = parseInt(SkeletonAnnotations.getChildOfVirtualNode(node.id), 10);
           nodeId = pID;
           if (rNode && rNode.id != pID && rNode.id != cID) {
             this.segmentUnfocused = true;

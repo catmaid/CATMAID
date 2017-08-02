@@ -389,7 +389,7 @@
         '<li>Mouse click:',
           '<ul>',
             '<li>Single neuron box: select that partner neuron in the stack viewer. The number of synapses is visible on mouse over as a floating text label.</li>',
-            '<li>Groups of partner neurons or the "others" group: open a Connectivity Matrix widget showing the synapses in that box. With alt+click, clears the connectivity matrix first. (If alt+click moves the whole window in your computer, use another modifier such as shift+alt+click.)</li>',
+            '<li>Groups of partner neurons or the "others" group: open a Connectivity Matrix widget showing the synapses in that box. With control+click, reuse an existing widget rather than opening a new one, and with control+alt+click, clears first the widget to reuse rather than appending to it. (If alt+click moves the whole window in your computer, use another modifier such as shift+alt+click.)</li>',
             '<li>Partner legend text: select that neuron, or for groups open the group editor dialog.</li>',
             '<li>Color box by the partner legend: open a color picker to change the color.</li>',
           '</ul>',
@@ -1019,7 +1019,7 @@
               }, {});
 
               // Open a connectivity matrix, sorted by total synapse count descending
-              var CM = WindowMaker.show("connectivity-matrix");
+              var CM = (d3.event.ctrlKey ? WindowMaker.show : WindowMaker.create)("connectivity-matrix");
 
               if (d3.event.altKey) {
                 CM.widget.clear(true, true);

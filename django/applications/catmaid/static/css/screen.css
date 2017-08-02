@@ -95,6 +95,15 @@ label input {
   margin-right: 0.25em;
 }
 
+label.checkbox-label {
+  margin: 0.1em 0.35em;
+  display: inline-block;
+}
+
+label.checkbox-label input {
+  vertical-align: middle;
+}
+
 .cm-center {
   text-align: center;
 }

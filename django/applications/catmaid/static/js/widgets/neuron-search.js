@@ -67,7 +67,7 @@
         // Create the query fields HTML and use {{NA-ID}} as template for the
         // actual this.widgetID which will be replaced afterwards.
         var queryFields_html =
-          '<label style="float: right">' +
+          '<label style="float: right" class="checkbox-label">' +
             '<input type="checkbox" id="neuron_search_apply_filters{{NA-ID}}" />' +
             'Apply filters' +
           '</label>' +
@@ -78,7 +78,7 @@
             '<tr id="neuron_query_by_name{{NA-ID}}">' +
               '<td class="neuron_annotations_query_field_label">named as:</td> ' +
               '<td class="neuron_annotations_query_field">' +
-                '<label><input type="checkbox" name="neuron_query_by_name_not" ' +
+                '<label class="checkbox-label"><input type="checkbox" name="neuron_query_by_name_not" ' +
                     'id="neuron_query_by_name_not{{NA-ID}}" />not</label>' +
                 '<input type="text" name="neuron_query_by_name" tabindex="1" ' +
                     'id="neuron_query_by_name{{NA-ID}}" value="" class="" />' +
@@ -88,12 +88,12 @@
             '<tr id="neuron_query_by_annotation{{NA-ID}}">' +
               '<td class="neuron_annotations_query_field_label">annotated:</td> ' +
               '<td class="neuron_annotations_query_field">' +
-                '<label><input type="checkbox" name="neuron_query_by_annotation_not" ' +
+                '<label class="checkbox-label"><input type="checkbox" name="neuron_query_by_annotation_not" ' +
                     'id="neuron_query_not{{NA-ID}}" />not</label>' +
                 '<input type="text" name="neuron_query_by_annotation" autocomplete="off" tabindex="2" ' +
                     'class="neuron_query_by_annotation_name{{NA-ID}}" value="" placeholder="Use / for RegEx" />' +
               '</td><td>' +
-                '<label><input type="checkbox" name="neuron_query_include_subannotation" tabindex="3"' +
+                '<label class="checkbox-label"><input type="checkbox" name="neuron_query_include_subannotation" tabindex="3"' +
                     'class="neuron_query_include_subannotation{{NA-ID}}" value="" />' +
                 'Include sub-annotations</label> ' +
                 '<input type="button" name="neuron_annotations_add_annotation" ' +
@@ -143,7 +143,7 @@
             '<input type="button" id="neuron_annotations_export_csv{{NA-ID}}" ' +
                 'value="Export CSV" title="Export selected neuron IDs and names. ' +
                 'Annotations are exported if displayed."/>' +
-            '<label>' +
+            '<label class="checkbox-label">' +
               '<input type="checkbox" id="neuron_search_show_annotations{{NA-ID}}" />' +
               'Show annotations' +
             '</label>' +
@@ -607,6 +607,7 @@
         CATMAID.NeuronNameService.getInstance().getName(entity.skeleton_ids[0]);
     a.appendChild(document.createTextNode(name));
     var label = document.createElement('label');
+    label.classList.add('checkbox-label');
     label.appendChild(cb);
     label.appendChild(a);
     div_cb.appendChild(label);

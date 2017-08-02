@@ -998,20 +998,11 @@
               var partner_skids;
               if (d.id < 0) {
                 // A group
+                // TODO: Filter the subset actually connected to the item
                 partner_skids = this.groups[d.id].skids;
               } else {
                 // Others: all that are under threshold or not in this.only
-                partner_skids = Object.keys(d.item.models).reduce((function(o, skid) {
-                  var partners = this._makePartnerCountsMap(skid);
-                  return Object.keys(partners).reduce((function(o, skid2) {
-                    var count = partners[skid2];
-                    if (count < this.threshold
-                     || (this.only && !this.only[skid2])) {
-                       o[skid2] = true;
-                    }
-                    return o;
-                  }).bind(this), o);
-                }).bind(this), {});
+                partner_skids = d.item.others_skids;
               }
               var partner_models = Object.keys(partner_skids).reduce(function(o, skid2) {
                 o[skid2] = new CATMAID.SkeletonModel(skid2, "", new THREE.Color(1, 1, 0));

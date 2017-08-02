@@ -507,6 +507,7 @@
     this.groups = {};
     this.groupOf = {};
     this.selected_partners = {};
+    this.updateOtherSource();
     this.svg_elems = null;
     this.redraw();
   };
@@ -721,21 +722,24 @@
   SynapseFractions.prototype.updateGraph = function() {
     if (0 === this.items.length) return;
 
-    var skids2 = {}; // unique partner skeleton IDs
+    var partner_skids = {};
 
     // An array of synapse counts, one per item in this.items
     this.items.forEach(function(item) {
       // For every model in items
+      item.others_skids = {};
       item.fractions = Object.keys(item.models).reduce((function(fractions, skid) {
         // Collect counts of synapses with partner neurons
         var partners = this._makePartnerCountsMap(skid);
         // Filter partners and add up synapse counts
         Object.keys(partners).forEach((function(skid2) {
+          partner_skids[skid2] = true;
           var count = partners[skid2];
           // Check if neuron is not a member of the exclusive "only" club,
           // and therefore must be throw into the "others" group:
           if (this.only && !this.only[skid2]) {
             fractions.others += count;
+            item.others_skids[skid2] = true;
             return;
           }
           // Place either into a group or by itself, or in "others" if under threshold
@@ -743,32 +747,26 @@
           if (gid) {
             var gcount = fractions[gid];
             fractions[gid] = (gcount ? gcount : 0) + count;
-            // SIDE EFFECT: accumulate unique skeleton IDs for the other_source
-            skids2[skid2] = true;
           } else if (count < this.threshold) {
             // Add to "others" the counts for partner skeletons that are under threshold
             fractions.others += count;
+            item.others_skids[skid2] = true;
           } else {
             fractions[skid2] = count;
-            // SIDE EFFECT: accumulate unique skeleton IDs for the other_source
-            skids2[skid2] = true;
           }
         }).bind(this));
         return fractions;
       }).bind(this), {others: 0});
     }, this);
 
-    this.other_source.clear();
-    var models = Object.keys(skids2).reduce(function(o, skid2) {
-      o[skid2] = new CATMAID.SkeletonModel(skid2, "", new THREE.Color(1, 1, 1));
-      return o;
-    }, {});
-    this.other_source.append(models);
+    // Some selected partner skeletons may not exist anymore
+    this.updateOtherSource();
 
-    this.redraw();
+    this.redraw(partner_skids);
   };
 
-  SynapseFractions.prototype.redraw = function() {
+  /** Optional parameter partner_skids. */
+  SynapseFractions.prototype.redraw = function(partner_skids) {
     var containerID = '#synapse_fractions' + this.widgetID,
         container = $(containerID);
 
@@ -778,9 +776,16 @@
     // Stop if empty
     if (0 === this.items.length || !this.items[0].fractions) return;
 
+    var partner_models = partner_skids ?
+      Object.keys(partner_skids).reduce(function(o, skid2) {
+        o[skid2] = new CATMAID.SkeletonModel(skid2);
+        return o;
+      }, {})
+      : {};
+
     // Load names of both pre and post skids
     CATMAID.NeuronNameService.getInstance().registerAll(
-        this, this.other_source.getSkeletonModels(),
+        this, partner_models,
         (function() { this._redraw(container, containerID); }).bind(this));
   };
 
@@ -983,6 +988,7 @@
             } else {
               this.selected_partners[d.id] = true;
             }
+            this.updateOtherSource();
             this.redraw();
           } else {
             // If others or a group (groups have negative IDs):
@@ -1137,6 +1143,7 @@
           } else {
             this.selected_partners[id] = true;
           }
+          this.updateOtherSource();
           this.redraw();
           return;
         }
@@ -1672,6 +1679,7 @@
     if (!text || 0 === text.length) {
       // Deselect all
       this.selected_partners = {};
+      this.updateOtherSource();
       this.redraw();
     } else {
       var match = CATMAID.createTextMatchingFunction(text);
@@ -1683,6 +1691,7 @@
         Object.keys(ids).forEach(function(id) {
           if (match(ids[id])) this.selected_partners[id] = true;
         }, this);
+        this.updateOtherSource();
         this.redraw();
       }
     }
@@ -1914,6 +1923,52 @@
     } else {
       CATMAID.msg("Info", "There isn't any \"only\" club defined.");
     }
+  };
+
+  SynapseFractions.prototype.updateOtherSource = function() {
+    this.other_source.clear();
+    var ids = Object.keys(this.selected_partners);
+    if (0 === ids.length) return;
+    var partners = this.getPartnerIds();
+    var getName = CATMAID.NeuronNameService.getInstance().getName;
+
+    var models = {};
+
+    if (this.selected_partners["others"]) {
+      this.items.forEach(function(item) {
+        Object.keys(item.others_skids).forEach(function(skid2) {
+          if (models[skid2]) return; // already present
+          models[skid2] = new CATMAID.SkeletonModel(skid2, getName(skid2), new THREE.Color('#f2f2f2'));
+        });
+      });
+      // Remove
+      for (var i=0; i<ids.length; ++i) {
+        if ("others" === ids[i]) {
+          ids.splice(i, 1);
+          break;
+        }
+      }
+    }
+
+    ids.forEach(function(id) {
+      if (id < 0) {
+        var group = this.groups[id];
+        Object.keys(group.skids).forEach(function(skid2) {
+          models[skid2] = new CATMAID.SkeletonModel(skid2, "", new THREE.Color(group.color));
+        });
+      } else {
+        // TODO why is this side effect here
+        if (!partners[id]) {
+          // Remove from selection
+          delete this.selected_partners[id];
+          return;
+        }
+        // A skeleton ID
+        models[id] = new CATMAID.SkeletonModel(id, getName(id), new THREE.Color(1, 1, 0));
+      }
+    }, this);
+
+    this.other_source.append(models);
   };
 
   SynapseFractions.prototype.highlight = function(skid) {

@@ -865,6 +865,7 @@
         .style("text-shadow", "unset")
         .style("font-size", font_size + "px")
         .on("mousedown", (function(item_index) {
+          // Remove item on control+shift+click on its text
           if (d3.event.shiftKey
            && d3.event.ctrlKey
            && !d3.event.altKey
@@ -879,7 +880,7 @@
                   if (entry.item.models.hasOwnProperty(skid)) count++;
                 });
                 if (count === Object.keys(entry.item.models).length) {
-                  // Found:
+                  // Found: remove item
                   this.items.splice(i, 1);
                   this.updateGraph();
                   return;

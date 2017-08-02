@@ -81,7 +81,7 @@
 
     // The minimum fraction amount to consider as connected, in percent
     this.connected_threshold = 0; // default 0%
-    
+
     // Set of items to skip displaying, as a map of index vs true
     this.hide = {};
 
@@ -178,6 +178,7 @@
                type: 'checkbox',
                label: 'Keep equally named together',
                title: 'When sorting, keep those equally named next to each other',
+               id: 'sf-keep-equally-named-together' + this.widgetID,
                value: this.sort_keep_equally_named_together,
                onclick: (function(ev) {
                  this.sort_keep_equally_named_together = ev.target.checked;
@@ -189,6 +190,7 @@
                label: 'Hide disconnected from',
                title: 'Hide any in the X-axis if they are not connected to selected partners, either to any or to all according to the composition function (default is all)',
                value: this.hide_unconnected_to_selected,
+               id: 'sf-hide-disconnected-from-selected' + this.widgetID,
                onclick: (function(ev) {
                  this.hide_disconnected_from_selected = ev.target.checked;
                  this.redraw();
@@ -288,13 +290,14 @@
                label: 'Rotated labels',
                title: 'Rotate neuron name labels on X axis',
                value: this.rotateXLabels,
+               id: 'sf-rotate-x-labels' + this.widgetID,
                onclick: (function(ev) {
                  this.rotateXLabels = ev.target.checked;
                  this.redraw();
                }).bind(this)
              },
              [CATMAID.DOM.createNumericField(
-               "rotation" + this.widgetID,
+               "sf-rotation-x-labels" + this.widgetID,
                "X-axis label rotation: ",
                "The rotation of the text labels in the X axis",
                this.rotationXLabels,
@@ -306,6 +309,7 @@
                label: 'Hide selection decorations',
                title: 'Do not paint the contour of partner boxes in black',
                value: this.hideSelectionDecorations,
+               id: 'sf-hide-selection-decorations' + this.widgetID,
                onclick: (function(ev) {
                  this.hideSelectionDecorations = ev.target.checked;
                  this.redraw();
@@ -1409,7 +1413,15 @@
       groups: this.groups,
       mode: this.mode,
       confidence_threshold: this.confidence_threshold,
-      font_size: this.font_size
+      font_size: this.font_size,
+      connected_threshold: this.connected_threshold,
+      // Don't: it's suprising when selecting partners on a loaded graph
+      //selected: this.selected,
+      //hide_disconnected_from_selected: this.hide_disconnected_from_selected,
+      //disconnected_fn: this.disconnected_fn,
+      hideSelectionDecorations: this.hideSelectionDecorations,
+      rotateXLabels: this.rotateXLabels,
+      rotationXLabels: this.rotationXLabels,
     };
   };
 
@@ -1475,13 +1487,29 @@
     this.confidence_threshold = Math.max(1, Math.min(5, json.confidence_threshold)) || 1;
     $('#synapse_confidence_threshold' + this.widgetID)[0].value = this.confidence_threshold;
     this.mode = Math.max(1, Math.min(2, json.mode)) || 2;
-    $('#synapse_fraction_mode' + this.widgetID)[0].value = this.mode;
+    $('#synapse_fraction_mode' + this.widgetID).val(this.mode);
     this.only = json.only; // null or a map of skid vs true
     this.partner_colors = json.partner_colors; // colors in hex
     this.threshold = Math.max(0, json.threshold) || 5;
     $('#synapse_threshold' + this.widgetID)[0].value = this.threshold;
     this.font_size = json.font_size || 11;
     $('#sf-font-size' + this.widgetID)[0].value = this.font_size;
+    this.connected_threshold = json.connected_threshold || 0;
+    $('#sf-minimum-fraction-connected' + this.widgetID)[0].value = this.connected_threshold;
+    // Don't: it's surprising when selecting partners on a loaded graph
+    //this.selected_partners = json.selected_partners || {};
+    //this.hide_disconnected_from_selected = json.hide_disconnected_from_selected || false;
+    //$('#sf-hide-disconnected-from-selected' + this.widgetID)[0].checked = this.hide_disconnected_from_selected;
+    this.disconnected_fn = json.disconnected_fn || "all selected";
+    $('#sf-disconnected-fn' + this.widgetID).val(this.disconnected_fn);
+    this.sort_keep_equally_named_together = json.sort_keep_equally_named_together || false;
+    $('#sf-keep-equally-named-together' + this.widgetID)[0].checked = this.sort_keep_equally_named_together;
+    this.hideSelectionDecorations = json.hideSelectionDecorations || false;
+    $('#sf-hide-selection-decorations' + this.widgetID)[0].checked = this.hideSelectionDecorations;
+    this.rotateXLabels = json.rotateXLabels || true;
+    $('#sf-rotate-x-labels' + this.widgetID)[0].checked = this.rotateXLabels;
+    this.rotationXLabels = json.rotationXLabels || -65;
+    $('#sf-rotation-x-labels' + this.widgetID)[0].value = this.rotationXLabels;
 
     this.updateMorphologies(Object.keys(skids));
   };

@@ -487,6 +487,13 @@
   };
 
   SynapseFractions.prototype.updateNeuronNames = function() {
+    // Update names for single-neuron items
+    var getName = CATMAID.NeuronNameService.getInstance().getName;
+    this.items.forEach(function(item) {
+      var skids = Object.keys(item.models);
+      if (1 === skids.length) item.name = getName(skids[0]);
+    });
+
     this.redraw();
   };
 

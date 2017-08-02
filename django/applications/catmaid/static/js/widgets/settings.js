@@ -618,7 +618,7 @@
                     "Reference the Nth component by using \"%N\". " +
                     "Use \"%f\" for a fallback that uses first available component " +
                     "from the top. Optionally, append \"{<em>delimiter</em>}\" to specify " +
-                    "how component values should be separeted, defaulting to \"{, }\".",
+                    "how component values should be separated, defaulting to \"{, }\".",
                     function () {
                       CATMAID.NeuronNameService.Settings
                         .set(

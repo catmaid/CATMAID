@@ -39,8 +39,7 @@
    * Show an annotation dialog which allows to specify multiple new annotations
    * and meta annotations.
    */
-  CATMAID.promtForAnnotations = function(success_fn)
-  {
+  CATMAID.promptForAnnotations = function(success_fn) {)
     var dialog = new CATMAID.OptionsDialog("Add new annotation");
     dialog.appendMessage("Add a new annotation for the selected objects.");
 
@@ -141,7 +140,7 @@
     }
 
     // Get annotation terms
-    var annotations = CATMAID.promtForAnnotations(function(annotations,
+    var annotations = CATMAID.promptForAnnotations(function(annotations,
         meta_annotations) {
       if (!annotations) return;
       // Build request data structure

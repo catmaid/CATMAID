@@ -99,6 +99,10 @@ label input {
   text-align: center;
 }
 
+.clickable {
+  cursor: pointer;
+}
+
 #imprint {
 	height: 32px;
 	width: 100%;

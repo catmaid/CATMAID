@@ -187,7 +187,7 @@
               '</tr>' +
               '<tr>' +
                 '<th></th>' +
-                '<th><span class="ui-icon ui-icon-close" id="selection-table-remove-all' + this.widgetID + '" title="Remove all"></th>' +
+                '<th><i class="fa fa-close" id="selection-table-remove-all' + this.widgetID + '" title="Remove all"></i></th>' +
                 '<th class="expanding"><input type="button" value="Filter" class="filter" />' +
                   '<input class="filter" type="text" title="Use / for regex" placeholder="name filter" id="selection-table-filter' + this.widgetID + '" />' +
                   '<input class="filter" type="text" title="Use / for regex" placeholder="annotation filter" id="selection-table-ann-filter' + this.widgetID + '" /></th>' +
@@ -1181,8 +1181,9 @@
         },
         {
           "orderable": false,
+          "className": "dt-center cm-center",
           "render": function(data, type, row, meta) {
-            return '<span class="ui-icon ui-icon-close action-remove" alt="Remove" title="Remove"></span>';
+            return '<i class="fa fa-remove fa-fw clickable action-remove" alt="Remove" title="Remove"></i>';
           }
         },
         {
@@ -1240,6 +1241,7 @@
         },
         {
           "type": "hslcolor",
+          "className": "dt-center cm-center",
           "render": {
             "_": function(data, type, row, meta) {
               return row.skeleton.color.getHSL();
@@ -1256,16 +1258,16 @@
         {
           "orderable": false,
           "render": function(data, type, row, meta) {
-            return '<span class="ui-icon ui-icon-tag action-annotate" ' +
-              'alt="Annotate" title="Annotate skeleton"></span>' +
-              '<span class="ui-icon ui-icon-info action-info" alt="Info" ' +
-              'title="Open skeleton information"></span>' +
-              '<span class="ui-icon ui-icon-folder-collapsed action-navigator" ' +
-              'alt="Navigator" title="Open neuron navigator for skeleton"></span>' +
-              '<span class="ui-icon ui-icon-triangle-1-n action-moveup" ' +
-              'alt="Move up" title="Move skeleton up in list"></span>' +
-              '<span class="ui-icon ui-icon-triangle-1-s action-movedown" ' +
-              'alt="Move down" title="Move skeleton down in list"></span>';
+            return '<i class="fa fa-tag fa-fw clickable action-annotate" ' +
+              'alt="Annotate" title="Annotate skeleton"></i>' +
+              '<i class="fa fa-info-circle fa-fw clickable action-info" alt="Info" ' +
+              'title="Open skeleton information"></i>' +
+              '<i class="fa fa-folder fa-fw clickable action-navigator" ' +
+              'alt="Navigator" title="Open neuron navigator for skeleton"></i>' +
+              '<i class="fa fa-caret-up fa-fw clickable action-moveup" ' +
+              'alt="Move up" title="Move skeleton up in list"></i>' +
+              '<i class="fa fa-caret-down fa-fw clickable action-movedown" ' +
+              'alt="Move down" title="Move skeleton down in list"></i>';
           }
         }
       ],

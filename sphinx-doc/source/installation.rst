@@ -92,15 +92,6 @@ Ubuntu 14.04:
        :split: 75
        :splitend:  \
 
-Ubuntu 12.04:
-
-    .. fileinclude:: ../../packagelist-ubuntu-12.04-apt.txt
-       :removelinebreaks:
-       :indent:
-       :prepend: sudo apt-get install
-       :split: 75
-       :splitend:  \
-
 Virtualenv Wrapper needs to source your environment. Start a new terminal
 or if you are using the bash::
 

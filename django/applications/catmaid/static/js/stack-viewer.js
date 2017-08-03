@@ -172,10 +172,11 @@
       if (!this.isSliceBroken(newSection)) {
         break;
       }
-      validDistance += referenceStack.validZDistanceByStep(newSection, step);
-      if (!validDistance) {
+      var distance = referenceStack.validZDistanceByStep(newSection, step);
+      if (!distance) {
         return null;
       }
+      validDistance += distance;
     }
     return validDistance;
   };

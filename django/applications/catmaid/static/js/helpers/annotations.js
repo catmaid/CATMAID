@@ -66,17 +66,16 @@
       })
       .catch(CATMAID.handleError);
 
-    var helpMsg = dialog.appendMessage("Click here for details");
-    $(helpMsg).click(function() {
-      $(this).empty().append(document.createTextNode("Every occurrence of " +
-        "'{nX}' with X being a number is replaced by a number that is " +
-        "automatically incremented (starting from X) for each annotated " +
-        "object."));
-    });
-
     // Add annotation input field supporting auto-completion
     var annotation_input = dialog.appendField('New annotation: ', 'new-annotation',
         '', true);
+
+    var helpMsg = dialog.appendMessage("Every occurrence of " +
+        "'{nX}' with X being a number is replaced by a number that is " +
+        "automatically incremented (starting from X) for each annotated " +
+        "object.");
+    helpMsg.classList.add('help');
+
     // Add button to toggle display of meta annotation input field
     var $meta_toggle = $(dialog.appendMessage(
         "Click here to also add a meta annotation"));

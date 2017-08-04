@@ -32,6 +32,79 @@
     },
 
     /**
+     * Get all annotations for a list of skeletons.
+     */
+    forSkeletons: function(projectId, skeletonIds) {
+      return CATMAID.fetch(projectId + '/annotations/forskeletons', 'POST', {
+        skeleton_ids: skeletonIds
+      });
+    },
+
+    /**
+     * Get all annotations for a list of target entities like neurons or
+     * other annotations.
+     */
+    forTarget: function(projectId, entityIds) {
+      return CATMAID.fetch(project.id + '/annotations/query', 'POST', {
+        object_ids: entityIds
+      });
+    },
+
+    /**
+     * Get a set of all annotations linked to either the passed in entity IDs or
+     * the neurons that the passed in skeleton IDs model.
+     */
+    forAny: function(projectId, entityIds, skeletonIds, sort) {
+      var requestAnnotations = Promise.resolve({
+        uniqueIds: new Set(),
+        nameMap: new Map()
+      });
+      var collectAnnotations = function(ann, annotationInfo) {
+        if (annotationInfo && annotationInfo.annotations) {
+          for (var annotationId in annotationInfo.annotations) {
+            annotationId = parseInt(annotationId, 10);
+            if (!ann.uniqueIds.has(annotationId)) {
+              ann.uniqueIds.add(annotationId);
+              ann.nameMap.set(annotationId,
+                  annotationInfo.annotations[annotationId]);
+            }
+          }
+        }
+        return ann;
+      };
+      if (entityIds && entityIds.length > 0) {
+        requestAnnotations = requestAnnotations.then(function(ann) {
+          return CATMAID.Annotations.forTarget(project.id, entityIds)
+            .then(function(annotationInfo) {
+              return collectAnnotations(ann, annotationInfo);
+            });
+        });
+      }
+      if (skeletonIds && skeletonIds.length > 0) {
+        requestAnnotations = requestAnnotations.then(function(ann) {
+          return CATMAID.Annotations.forSkeletons(project.id, skeletonIds)
+            .then(function(annotationInfo) {
+              return collectAnnotations(ann, annotationInfo);
+            });
+        });
+      }
+      return requestAnnotations
+        .then(function(ann) {
+          var annotations = Array.from(ann.uniqueIds);
+          for (var i=0; i<annotations.length; ++i) {
+            var id = annotations[i];
+            annotations[i] = {
+              id: id,
+              name: ann.nameMap.get(id)
+            };
+          }
+          return sort ? annotations.sort(function(a, b) {
+            return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+          }) : annotations;
+        });
+    },
+
+    /**
      * Removes multiple annotation from a list of entities. It is not dependent on
      * any context, but asks the user for confirmation. A promise is returned.
      */

@@ -13,6 +13,9 @@ Miscellaneous:
   should be respected by default when checking for broken sections can be set in
   the Settings Widget in the "Stack view" section.
 
+- The dialog to add a new annotation displays now the existing annotations as
+  well.
+
 
 ### Bug fixes
 

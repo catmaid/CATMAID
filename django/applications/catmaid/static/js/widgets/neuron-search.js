@@ -1403,7 +1403,7 @@
 
     if (entitiesToQuery.length > 0) {
       var self = this;
-      CATMAID.fetch(project.id + '/annotations/query', 'POST', {object_ids: entityIdsToQuery})
+      CATMAID.Annotations.forTarget(project.id, entityIdsToQuery)
         .then(function(json) {
           // Create mapping from skeleton ID to result object
           var results = entitiesToQuery.reduce(function(o, r, i) {

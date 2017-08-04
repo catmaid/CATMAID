@@ -39,9 +39,32 @@
    * Show an annotation dialog which allows to specify multiple new annotations
    * and meta annotations.
    */
-  CATMAID.promptForAnnotations = function(success_fn) {
+  CATMAID.promptForAnnotations = function(projectId, entityIds, skeletonIds) {
     var dialog = new CATMAID.OptionsDialog("Add new annotation");
-    dialog.appendMessage("Add a new annotation for the selected objects.");
+    var annotationList = dialog.appendMessage("Current annotations: ");
+    annotationList.classList.add('annotation-container');
+    CATMAID.Annotations.forAny(projectId, entityIds, skeletonIds, true)
+      .then(function(annotations) {
+        if (annotations && annotations.length > 0) {
+          // Annotations are already sorted
+          var ul = annotations.reduce(function(o, a) {
+            var li = document.createElement('li');
+            li.setAttribute('title', 'Annotation ID: ' + a.id);
+            li.setAttribute('class', 'show_annotation');
+            li.setAttribute('data-annotation-id', a.id);
+            li.appendChild(document.createTextNode(a.name));
+            o.appendChild(li);
+            return o;
+          }, document.createElement('ul'));
+          ul.setAttribute('class', 'resultTags');
+          annotationList.appendChild(ul);
+        } else {
+          var msg = document.createElement('em');
+          msg.appendChild(document.createTextNode('(none)'));
+          annotationList.appendChild(msg);
+        }
+      })
+      .catch(CATMAID.handleError);
 
     var helpMsg = dialog.appendMessage("Click here for details");
     $(helpMsg).click(function() {
@@ -52,7 +75,7 @@
     });
 
     // Add annotation input field supporting auto-completion
-    var annotation_input = dialog.appendField('Annotation: ', 'new-annotation',
+    var annotation_input = dialog.appendField('New annotation: ', 'new-annotation',
         '', true);
     // Add button to toggle display of meta annotation input field
     var $meta_toggle = $(dialog.appendMessage(
@@ -78,33 +101,42 @@
     $meta_toggle.click(add_meta_annotation_fields.bind(this,
         $meta_toggle.hide.bind($meta_toggle)));
 
-    dialog.onOK = function() {
-      // Get annotation, if any
-      var annotation = annotation_input.value;
-      if (!annotation) return;
-      annotation = annotation.trim();
-      if (0 === annotation.length) return; // can't annotate with nothing
-      // Get meta annotation, if any
-      var meta_annotations = this.meta_annotation_inputs.reduce(function(o, e) {
-        var ma = e.value.trim();
-        if (ma.length > 0) {
-          o.push(ma);
+    return new Promise(function(resolve, reject) {
+      dialog.onOK = function() {
+        // Get annotation, if any
+        var annotation = annotation_input.value;
+        if (!annotation) {
+          throw new CATMAID.ValueError("No annotation provided");
         }
-        return o;
-      }, []);
-      // Call handler
-      success_fn([annotation], meta_annotations);
-    };
+        annotation = annotation.trim();
+        if (0 === annotation.length) {
+          throw new CATMAID.ValueError("No annotation provided");
+        }
+        // Get meta annotation, if any
+        var meta_annotations = this.meta_annotation_inputs.reduce(function(o, e) {
+          var ma = e.value.trim();
+          if (ma.length > 0) {
+            o.push(ma);
+          }
+          return o;
+        }, []);
 
-    dialog.show(400, 'auto', true);
+        resolve({
+          annotations: [annotation],
+          metaAnnotations: meta_annotations
+        });
+      };
 
-    // Allow content to overflow the dialog borders. This is needed for
-    // displaying all annotation autocompletion options.
-    dialog.dialog.parentNode.style.overflow = 'visible';
-    // Auto-completion has to be added after the dialog has been created to ensure
-    // the auto completion controls com after the dialog in the DOM (to display
-    // them above the dialog).
-    CATMAID.annotations.add_autocomplete_to_input(annotation_input);
+      dialog.show(500, 'auto', true);
+
+      // Allow content to overflow the dialog borders. This is needed for
+      // displaying all annotation autocompletion options.
+      dialog.dialog.parentNode.style.overflow = 'visible';
+      // Auto-completion has to be added after the dialog has been created to ensure
+      // the auto completion controls com after the dialog in the DOM (to display
+      // them above the dialog).
+      CATMAID.annotations.add_autocomplete_to_input(annotation_input);
+    });
   };
 
   CATMAID.annotate_neurons_of_skeletons = function(
@@ -140,52 +172,56 @@
     }
 
     // Get annotation terms
-    var annotations = CATMAID.promptForAnnotations(function(annotations,
-        meta_annotations) {
-      if (!annotations) return;
-      // Build request data structure
-      var data = {
-        annotations: annotations,
-      };
-      if (meta_annotations) {
-        data.meta_annotations = meta_annotations;
-      }
-      if (entity_ids) {
-          data.entity_ids = entity_ids;
-      }
-      if (skeleton_ids) {
-          data.skeleton_ids = skeleton_ids;
-      }
+    return CATMAID.promptForAnnotations(project.id, entity_ids, skeleton_ids)
+      .then(function(annotationSelection) {
+        var annotations = annotationSelection.annotations;
+        var meta_annotations = annotationSelection.metaAnnotations;
 
-      var add = noCommand ?
-          CATMAID.Annotations.add(project.id,
-              entity_ids, skeleton_ids, annotations, meta_annotations) :
-          CATMAID.commands.execute(new CATMAID.AddAnnotationsCommand(project.id,
-              entity_ids, skeleton_ids, annotations, meta_annotations));
+        if (!annotations) return;
+        // Build request data structure
+        var data = {
+          annotations: annotations,
+        };
+        if (meta_annotations) {
+          data.meta_annotations = meta_annotations;
+        }
+        if (entity_ids) {
+            data.entity_ids = entity_ids;
+        }
+        if (skeleton_ids) {
+            data.skeleton_ids = skeleton_ids;
+        }
 
-      return add.then(function(result) {
-          if (result.annotations.length == 1) {
-            var name = result.annotation_names[0];
-            if (result.used_annotations.length > 0) {
-              CATMAID.info('Annotation ' + name + ' added to ' +
-                  result.annotations[0].entities.length +
-                  (result.annotations[0].entities.length > 1 ? ' entities.' : ' entity.'));
-            } else {
-              CATMAID.info('Couldn\'t add annotation ' + name + '.');
-            }
+        var add = noCommand ?
+            CATMAID.Annotations.add(project.id,
+                entity_ids, skeleton_ids, annotations, meta_annotations) :
+            CATMAID.commands.execute(new CATMAID.AddAnnotationsCommand(project.id,
+                entity_ids, skeleton_ids, annotations, meta_annotations));
+
+        return add;
+      })
+      .then(function(result) {
+        if (result.annotations.length == 1) {
+          var name = result.annotation_names[0];
+          if (result.used_annotations.length > 0) {
+            CATMAID.info('Annotation ' + name + ' added to ' +
+                result.annotations[0].entities.length +
+                (result.annotations[0].entities.length > 1 ? ' entities.' : ' entity.'));
           } else {
-            if (result.used_annotations.length > 0) {
-              CATMAID.info('Annotations ' + result.used_annotations.join(', ') + ' added.');
-            } else {
-              CATMAID.info('Couldn\'t add any of the annotations' +
-                  result.annotation_names.join(', ') + '.');
-            }
+            CATMAID.info('Couldn\'t add annotation ' + name + '.');
           }
+        } else {
+          if (result.used_annotations.length > 0) {
+            CATMAID.info('Annotations ' + result.used_annotations.join(', ') + ' added.');
+          } else {
+            CATMAID.info('Couldn\'t add any of the annotations' +
+                result.annotation_names.join(', ') + '.');
+          }
+        }
 
-          CATMAID.tools.callIfFn(callback);
-        })
-        .catch(CATMAID.handleError);
-    });
+        CATMAID.tools.callIfFn(callback);
+      })
+      .catch(CATMAID.handleError);
   };
 
 })(CATMAID);

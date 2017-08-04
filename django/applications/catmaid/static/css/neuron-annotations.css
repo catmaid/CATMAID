@@ -25,6 +25,10 @@
   clear: both;
 }
 
+.annotation-container ul {
+  display: inline;
+}
+
 .resultTags {
   margin: 4px 0;
   padding: 0;
@@ -34,7 +38,7 @@
   display: inline-block;
   background-color: #eef;
   list-style-type: none;
-  padding: 0 0 0 6px;
+  padding: 0 6px 0 6px;
   margin: 2px 2px;
   cursor: pointer;
   -webkit-border-radius: 5px;
@@ -49,8 +53,8 @@
   display: inline;
   background-image: url(../images/minus_small.png);
   background-color: #eef;
-  background-position: center;
+  background-position: right;
   background-repeat: no-repeat;
-  padding: 0 17px 0 4px;
+  padding: 0 0px 0 17px;
   cursor: pointer;
 }

@@ -100,7 +100,7 @@ def user_list_datatable(request):
         sorting_directions = map(lambda d: '-' if d.upper() == 'DESC' else '',
                 sorting_directions)
 
-        fields = ['username', 'first_name', 'last_name']
+        fields = ['username', 'first_name', 'last_name', 'id']
         sorting_index = [int(request.POST.get('iSortCol_%d' % d))
                 for d in range(column_count)]
         sorting_cols = map(lambda i: fields[i], sorting_index)

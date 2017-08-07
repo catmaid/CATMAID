@@ -157,7 +157,7 @@ class DVIDImportWizard(SessionWizardView):
                     StackStackGroup.objects.create(
                         group_relation=view_relation,
                         stack=stack,
-                        stackgroup=sg,
+                        stack_group=sg,
                         position=view)
 
         if new_project:

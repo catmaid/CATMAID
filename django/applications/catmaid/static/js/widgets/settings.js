@@ -3,7 +3,6 @@
 /* global
   CATMAID,
   project,
-  requestQueue,
   SkeletonAnnotations,
   WindowMaker
 */
@@ -1413,17 +1412,18 @@
           });
       dsTracingWarnings.append(twVolumeSelect);
 
-      // Get volumes asynchronously
-      requestQueue.register(CATMAID.makeURL(project.id + "/volumes"), "GET",
-            undefined, CATMAID.jsonResponseHandler(function(json) {
-              var currentWarningVolumeID = SkeletonAnnotations.getNewNodeVolumeWarning();
-              var select = twVolumeSelect.find("select")[0];
-              json.forEach(function(volume) {
-                var name = volume.name + " (#" + volume.id + ")";
-                var selected = currentWarningVolumeID == volume.id ? true : undefined;
-                select.options.add(new Option(name, volume.id, selected, selected));
-              });
-            }));
+      // Get volumes
+      CATMAID.fetch(project.id + "/volumes/")
+        .then(function(json) {
+          var currentWarningVolumeID = SkeletonAnnotations.getNewNodeVolumeWarning();
+          var select = twVolumeSelect.find("select")[0];
+          json.forEach(function(volume) {
+            var name = volume.name + " (#" + volume.id + ")";
+            var selected = currentWarningVolumeID == volume.id ? true : undefined;
+            select.options.add(new Option(name, volume.id, selected, selected));
+          });
+        })
+        .catch(CATMAID.handleError);
     };
 
 

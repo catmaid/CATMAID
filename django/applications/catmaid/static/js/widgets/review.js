@@ -20,7 +20,6 @@
     self.current_segment = null;
     self.current_segment_index = 0;
     var end_puffer_count = 0,
-      autoCentering = true,
       followedUsers = [];
     // Set to true, if one moves beyond the current segment
     self.movedBeyondSegment = false;
@@ -42,6 +41,9 @@
     // Whether node selection should automatically scroll to the respective
     // segment.
     this.scrollToActiveSegment = true;
+    // Whether the review widget should center automatically when the user moves
+    // to a different node.
+    this.autoCentering = true;
 
     // A set of filter rules to apply to the handled skeletons
     this.filterRules = [];
@@ -54,14 +56,6 @@
       this.projectId = project.id;
       followedUsers = [CATMAID.session.userid, 'whitelist'];
       this.redraw();
-    };
-
-    this.setAutoCentering = function(centering) {
-      autoCentering = centering ? true : false;
-    };
-
-    this.getAutoCentering = function() {
-      return autoCentering;
     };
 
     this.validSegment = function() {
@@ -215,7 +209,7 @@
     this.goToNodeOfSegmentSequence = function(node, forceCentering) {
       if (self.skeleton_segments===null)
         return;
-      var center = autoCentering || forceCentering;
+      var center = this.autoCentering || forceCentering;
       SkeletonAnnotations.staticMoveTo(
           (self.isZView() || center) ? node.z : project.coordinates.z,
           (self.isYView() || center) ? node.y : project.coordinates.y,
@@ -1376,6 +1370,14 @@
     };
   };
 
+  CATMAID.ReviewSystem.prototype.setAutoCentering = function(centering) {
+    this.autoCentering = !!centering;
+  };
+
+  CATMAID.ReviewSystem.prototype.getAutoCentering = function() {
+    return this.autoCentering;
+  };
+
   /**
    * Redraw the review widget.
    */
@@ -1693,7 +1695,8 @@
           persistReview: widget.persistReview,
           visibleReviewers: widget.visibleReviewers,
           scrollToActiveSegment: widget.scrollToActiveSegment,
-          applyFilterRules: widget.applyFilterRules
+          applyFilterRules: widget.applyFilterRules,
+          autoCentering: widget.autoCentering
         };
       },
       setState: function(widget, state) {
@@ -1704,6 +1707,7 @@
         CATMAID.tools.copyIfDefined(state, widget, 'visibleReviewers');
         CATMAID.tools.copyIfDefined(state, widget, 'scrollToActiveSegment');
         CATMAID.tools.copyIfDefined(state, widget, 'applyFilterRules');
+        CATMAID.tools.copyIfDefined(state, widget, 'autoCentering');
       }
     }
   });

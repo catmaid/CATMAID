@@ -1767,7 +1767,6 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
               self.submit.then(function() {
                 // Suspend tracing layer during join to avoid unnecessary
                 // reloads.
-                var originalSuspended = self.suspended;
                 self.suspended = true;
                 // Join skeletons
                 var command = new CATMAID.JoinSkeletonsCommand(self.state, project.id,
@@ -1777,7 +1776,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
                   .then(function(result) {
                     // Activate tracing layer again and update the view
                     // manually.
-                    self.suspended = originalSuspended;
+                    self.suspended = false;
                     if (result) {
                       self.updateNodes(function() {
                         // Wait for updates to finish before updating the active node
@@ -1907,13 +1906,13 @@ SkeletonAnnotations.TracingOverlay.prototype.createLink = function (fromid, toid
 
           self.redraw();
         });
-    })
-    .catch(CATMAID.handleError);
+    });
 
   // Make sure this promise is properly enqueued in the submitter queue, i.e.
   // newly submitted requests happen after the link creation.
   this.submit.then(function() {
-    return createLink;
+    return createLink
+      .catch(CATMAID.noop);
   });
 
   return createLink;
@@ -1928,13 +1927,6 @@ SkeletonAnnotations.TracingOverlay.prototype.createSingleConnector = function (
     phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval, subtype, completionCallback)
 {
   var self = this;
-  // Suspend this layer from updates while this connector is created. It is
-  // updated and unsuspended after the connector was created (or in the case of
-  // error). This is done to manually update the internal nodes array as an
-  // optimization prior to sending the update event.
-  var originalSuspended = this.suspended;
-  this.suspended = true;
-
   // Create connector
   var createConnector = CATMAID.commands.execute(
       new CATMAID.CreateConnectorCommand(project.id,
@@ -1948,7 +1940,6 @@ SkeletonAnnotations.TracingOverlay.prototype.createSingleConnector = function (
     nn.createGraphics();
     // Activate layer and emit new node event after we added to our local node
     // set to not trigger a node update.
-    self.suspended = originalSuspended;
     CATMAID.Connectors.trigger(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
         result.newConnectorId, phys_x, phys_y, phys_z);
 
@@ -1958,9 +1949,6 @@ SkeletonAnnotations.TracingOverlay.prototype.createSingleConnector = function (
     }
 
     return result.newConnectorId;
-  }).catch(function(error) {
-    self.suspended = originalSuspended;
-    CATMAID.handleError(error);
   });
 };
 
@@ -2053,14 +2041,15 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
       nn.createGraphics();
       // create link : new treenode postsynaptic_to or presynaptic_to
       // deactivated connectorID
-      return self.createLink(nid, connectorID, link_type, function() {
-        if (afterCreate) {
-          // Use a new node reference, because createLink() triggers an update,
-          // which potentially re-initializes node objects.
-          var node = self.nodes[nid];
-          afterCreate(self, node);
-        }
-      });
+      return self.createLink(nid, connectorID, link_type)
+        .then(function() {
+          if (afterCreate) {
+            // Use a new node reference, because createLink() triggers an update,
+            // which potentially re-initializes node objects.
+            var node = self.nodes[nid];
+            afterCreate(self, node);
+          }
+        });
     });
 };
 
@@ -2080,13 +2069,6 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
   var neuronname = null === selneuron ? SkeletonAnnotations.defaultNewNeuronName : '';
 
   var self = this;
-
-  // Suspend layer to avoid potentially expensive updateNodes() call. An event
-  // is triggered manually after the nodes array was updated by hand. Right
-  // before this, the tracing layer is activated again. In case of error, the
-  // layer is also activated again.
-  var originalSuspended = this.suspended;
-  this.suspended = true;
 
   var command = childId ?
     new CATMAID.InsertNodeCommand(this.state, project.id, phys_x, phys_y,
@@ -2112,7 +2094,6 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
 
       // Reset layer activation and emit new node event after we added to our
       // local node set to not trigger a node update.
-      self.suspended = originalSuspended;
       CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_CREATED,
           nid, phys_x, phys_y, phys_z);
       // Append to parent and recolor
@@ -2139,10 +2120,6 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
 
       // Invoke callback if necessary
       if (afterCreate) afterCreate(self, nn);
-    })
-    .catch(function(error) {
-      self.suspended = originalSuspended;
-      CATMAID.handleError(error);
     });
 };
 
@@ -2638,15 +2615,12 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
   // To suspend field of view node updates during/post model creation,
   // individual creation functions store a promise in <create>, after the
   // execution of which the original suspend state is restored again.
-  var originalSuspended = this.suspended;
   try {
     this.suspended = true;
     var create = null;
 
     if (insert) {
       if (null !== atn.id && SkeletonAnnotations.TYPE_NODE === atn.type) {
-        // For node insertion it is currently not practical to suspend the layer
-        this.suspended = originalSuspended;
         // Insert a treenode along an edge on the active skeleton
         var respectVirtualNodes = true;
         this.insertNodeInActiveSkeleton(phys_x, phys_y, phys_z, atn, respectVirtualNodes);
@@ -2654,9 +2628,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
     } else if (link || postLink) {
       if (null === atn.id) {
         if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SKELETON) {
-          CATMAID.msg('BEWARE', 'You need to activate a treenode first (skeleton tracing mode)!');
-          this.suspended = originalSuspended;
-          return true;
+          throw new CATMAID.Warning("You need to activate a treenode first (skeleton tracing mode)!");
         }
       } else {
         if (SkeletonAnnotations.TYPE_NODE === atn.type) {
@@ -2730,7 +2702,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
                 "Created connector with " + synapseType + "synaptic treenode #" + atn.id);
           } else {
             CATMAID.warn("Unknown connector type selected");
-            this.suspended = originalSuspended;
+            this.suspended = false;
             return true;
           }
         } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
@@ -2750,7 +2722,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
             create = this.createGapjunctionTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5,
                 pos_x, pos_y, pos_z, postCreateFn);
           } else {
-            this.suspended = originalSuspended;
+            this.suspended = false;
             return false;
           }
         }
@@ -2759,8 +2731,6 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
       // depending on what mode we are in do something else when clicking
       if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SKELETON) {
         if (SkeletonAnnotations.TYPE_NODE === atn.type || null === atn.id) {
-          // Suspension happens currently separately
-          this.suspended = originalSuspended;
           // Wait for the submitter queue before determining the active node,
           // then return the node creation promise so that node creation and its
           // resulting active node change resolve before any other submitter queue
@@ -2793,7 +2763,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
           create = this.createPresynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5, pos_x, pos_y, pos_z,
               postCreateFn);
         } else {
-          this.suspended = originalSuspended;
+          this.suspended = false;
           return false;
         }
       } else if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SYNAPSE) {
@@ -2804,19 +2774,24 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
     }
 
     if (create) {
-      var reset = (function() {
-        this.suspended = originalSuspended;
+      var reset = (function(error) {
+        this.suspended = false;
       }).bind(this);
+      var handleError = function(error) {
+        reset();
+        CATMAID.handleError(error);
+      };
       // Reset suspended property, ignoring any errors
-      create.then(reset).catch(reset);
+      create.then(reset).catch(handleError);
     } else {
       // Expect async behavior only with create promise.
-      this.suspended = originalSuspended;
+      this.suspended = false;
     }
 
   } catch (error) {
     // In case of error, reset the original suspend state
-    this.suspended = originalSuspended;
+    this.suspended = false;
+    CATMAID.handleError(error);
   }
 
   return true;

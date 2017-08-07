@@ -1411,7 +1411,8 @@
                 }
                 // careful, atnID is a connector
                 SkeletonAnnotations.atn.subtype = CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR;
-                catmaidTracingOverlay.createLink(node.id, atnID, "gapjunction_with");
+                catmaidTracingOverlay.createLink(node.id, atnID, "gapjunction_with")
+                  .catch(CATMAID.handleError);
               }  else if (atnSubType === CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR) {
                 if (!CATMAID.mayEdit()) {
                   CATMAID.error("You lack permissions to declare node #" + node.id +
@@ -1419,7 +1420,8 @@
                   return;
                 }
                 // careful, atnID is a connector
-                catmaidTracingOverlay.createLink(node.id, atnID, "postsynaptic_to");
+                catmaidTracingOverlay.createLink(node.id, atnID, "postsynaptic_to")
+                  .catch(CATMAID.handleError);
               } else if (atnSubType === CATMAID.Connectors.SUBTYPE_ABUTTING_CONNECTOR) {
                 if (!CATMAID.mayEdit()) {
                   CATMAID.error("You lack permissions to declare node #" + node.id +
@@ -1427,7 +1429,8 @@
                   return;
                 }
                 // careful, atnID is a connector
-                catmaidTracingOverlay.createLink(node.id, atnID, "abutting");
+                catmaidTracingOverlay.createLink(node.id, atnID, "abutting")
+                  .catch(CATMAID.handleError);
               } else {
                 CATMAID.error("Unknown connector subtype: " + atnSubType);
                 return;
@@ -1624,7 +1627,8 @@
                 CATMAID.error("The selected connector is of unknown type: " + connectornode.subtype);
                 return;
               }
-              catmaidTracingOverlay.createLink(atnID, connectornode.id, linkType);
+              catmaidTracingOverlay.createLink(atnID, connectornode.id, linkType)
+                .catch(CATMAID.handleError);
               CATMAID.statusBar.replaceLast("Joined node #" + atnID + " with connector #" + connectornode.id);
             }
           } else {

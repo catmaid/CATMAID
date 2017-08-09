@@ -769,7 +769,7 @@ def _treenode_info(project_id, treenode_id):
     return results[0]
 
 
-@api_view(['POST'])
+@api_view(['GET'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def treenode_info(request, project_id=None, treenode_id=None):
     """Retrieve skeleton and neuron information about this treenode.

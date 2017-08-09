@@ -662,7 +662,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
         self.fake_authentication()
         treenode_id = 55555
 
-        response = self.client.post(
+        response = self.client.get(
                 '/%d/treenodes/%s/info' % (self.test_project_id, treenode_id))
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
@@ -675,7 +675,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
         self.fake_authentication()
         treenode_id = 239
 
-        response = self.client.post(
+        response = self.client.get(
                 '/%d/treenodes/%s/info' % (self.test_project_id, treenode_id))
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))

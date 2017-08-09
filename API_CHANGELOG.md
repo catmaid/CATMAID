@@ -10,7 +10,9 @@ None.
 
 ### Modifications
 
-None.
+- `POST /{project_id}/treenodes/{treenode_id}/info`:
+  This API endpoint is changed to only accept GET requests. Using POST will
+  raise an error.
 
 ### Deprecations
 

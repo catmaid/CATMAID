@@ -1747,7 +1747,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
     var fromid = nids[0], toid=nids[1];
     self.submit(
       django_url + project.id + '/treenodes/' + toid + '/info',
-      'POST',
+      'GET',
       undefined,
       function(json) {
         var from_model = SkeletonAnnotations.activeSkeleton.createModel();

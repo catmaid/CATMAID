@@ -1546,7 +1546,7 @@
     }).bind(this))
     .then((function() {
       if (this.options.connector_filter) {
-        self.refreshRestrictedConnectors();
+        this.refreshRestrictedConnectors();
       }
       CATMAID.tools.callIfFn(callback);
     }).bind(this))

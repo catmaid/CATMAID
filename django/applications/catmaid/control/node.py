@@ -1492,20 +1492,28 @@ def _update_location(table, nodes, now, user, cursor):
     node_template = "(" + "),(".join(["%s, %s, %s, %s"] * len(nodes)) + ")"
     node_table = [v for k in nodes for v in k]
 
+    # Sanitize table name, because we are going to insert it directly into the
+    # SQL query below.
+    if table not in ('treenode', 'connector'):
+        raise ValueError('Expected treenode or connector')
+
+    # If we update the location parent table to update both treenode and connector
+    # nodes, statement level triggers would not be run on the respective child
+    # tables (treenode and connector).
     cursor.execute("""
-        UPDATE location n
+        UPDATE {} n
         SET editor_id = %s, location_x = target.x,
             location_y = target.y, location_z = target.z
         FROM (SELECT x.id, x.location_x AS old_loc_x,
                      x.location_y AS old_loc_y, x.location_z AS old_loc_z,
                      y.new_loc_x AS x, y.new_loc_y AS y, y.new_loc_z AS z
-              FROM location x
+              FROM {} x
               INNER JOIN (VALUES {}) y(id, new_loc_x, new_loc_y, new_loc_z)
               ON x.id = y.id FOR NO KEY UPDATE) target
         WHERE n.id = target.id
         RETURNING n.id, n.edition_time, target.old_loc_x, target.old_loc_y,
                   target.old_loc_z
-    """.format(node_template), [user.id] + node_table)
+    """.format(table, table, node_template), [user.id] + node_table)
 
     updated_rows = cursor.fetchall()
     if len(nodes) != len(updated_rows):

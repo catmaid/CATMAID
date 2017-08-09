@@ -11,6 +11,8 @@
 - The Docker images now support the options CM_HOST and CM_PORT to configure
   where uwsgi is listening.
 
+- Postgres 10+ is now required.
+
 ### Features and enhancements
 
 Landmarks:

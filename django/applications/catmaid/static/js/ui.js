@@ -582,6 +582,57 @@
       map.set('Shift + ' + keyValue, capitalKeyValue);
     }
 
+    // On Mac OS pressing Alt together with another key produces a different
+    // character than the key without modifiers. The key referenced in the key
+    // field of the event object reflects that. Make it so that these characters
+    // are replaced by the plain key as it is the default on Linux and Windows.
+    map.set('Alt + ¡', '1');
+    map.set('Alt + ™', '2');
+    map.set('Alt + £', '3');
+    map.set('Alt + ¢', '4');
+    map.set('Alt + ∞', '5');
+    map.set('Alt + §', '6');
+    map.set('Alt + ¶', '7');
+    map.set('Alt + •', '8');
+    map.set('Alt + ª', '9');
+    map.set('Alt + º', '0');
+    map.set('Alt + –', '-');
+    map.set('Alt + ≠', '=');
+    map.set('Alt + œ', 'q');
+    map.set('Alt + ∑', 'w');
+    map.set('Alt + ´', 'e');
+    map.set('Alt + ®', 'r');
+    map.set('Alt + †', 't');
+    map.set('Alt + ¥', 'y');
+    map.set('Alt + ¨', 'u');
+    map.set('Alt + ˆ', 'i');
+    map.set('Alt + ø', 'o');
+    map.set('Alt + π', 'p');
+    map.set('Alt + “', '[');
+    map.set('Alt + ‘', ']');
+    map.set('Alt + «', '\\');
+    map.set('Alt + å', 'a');
+    map.set('Alt + ß', 's');
+    map.set('Alt + ∂', 'd');
+    map.set('Alt + ƒ', 'f');
+    map.set('Alt + ©', 'g');
+    map.set('Alt + ˙', 'h');
+    map.set('Alt + ∆', 'j');
+    map.set('Alt + ˚', 'k');
+    map.set('Alt + ¬', 'l');
+    map.set('Alt + …', ';');
+    map.set('Alt + æ', '\'');
+    map.set('Alt + Ω', 'z');
+    map.set('Alt + ≈', 'x');
+    map.set('Alt + ç', 'c');
+    map.set('Alt + √', 'v');
+    map.set('Alt + ∫', 'b');
+    map.set('Alt + ˜', 'n');
+    map.set('Alt + µ', 'm');
+    map.set('Alt + ≤', ',');
+    map.set('Alt + ≥', '.');
+    map.set('Alt + ÷', '/');
+
     return map;
   };
 
@@ -621,13 +672,15 @@
 
   CATMAID.UI.normalizeKeyComponents = function(components) {
     var keyValue;
-    if (components.shiftKey) {
+    if (components.shiftKey || components.altKey) {
       var keyCombo = CATMAID.UI.toKeyCombo({
         key: components.key,
-        shiftKey: components.shiftKey
+        shiftKey: components.shiftKey,
+        altKey: components.altKey
       });
       keyValue = CATMAID.UI.keyValueMap.get(keyCombo);
     }
+
     return {
       key: keyValue ? keyValue : components.key,
       altKey: components.altKey,

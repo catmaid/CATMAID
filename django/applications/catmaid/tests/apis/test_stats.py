@@ -34,18 +34,15 @@ class StatsApiTests(CatmaidApiTestCase):
         cursor = connection.cursor()
 
         def test_nodecount():
-            expected_stats = set([
-                ('test0 (4)', 4),
-                ('test1 (2)', 2),
-                ('test2 (89)', 89)
-            ])
+            expected_stats = {
+                '5': 4,
+                '2': 2,
+                '3': 89
+            }
             response = self.client.get('/%d/stats/nodecount' % (self.test_project_id,))
             self.assertEqual(response.status_code, 200)
             parsed_response = json.loads(response.content.decode('utf-8'))
-            values = parsed_response['values']
-            users = parsed_response['users']
-            values_and_users = set(zip(users, values))
-            self.assertEqual(values_and_users, expected_stats)
+            self.assertEqual(parsed_response, expected_stats)
 
         self.assert_empty_summary_table(cursor)
 

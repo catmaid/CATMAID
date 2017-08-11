@@ -237,8 +237,18 @@
       });
     };
 
+    /**
+     * Update the pie chart with the passed in <chart_name> with the passed in
+     * <data>. The data maps user IDs to values.
+     */
     var update_piechart = function(data, chart_name) {
+      var userIds = Object.keys(data);
+      var userNodeCounts = userIds.map(function(userId) {
+        return this[userId];
+      }, data);
+
       $(chart_name).empty();
+
       var x = 90, y = 100, radius = 80, height = 200;
       // Create basic pie chart without any labels
       var rpie = Raphael(chart_name, '100%', height);
@@ -247,8 +257,8 @@
       // and replacing the long tail of low values to a single entry that
       // is annotated with the boolean flag "others".
       // The parameter maxSlices should be accepted but it is ignored.
-      var pie = rpie.piechart(x, y, radius, data.values, {
-          colors: data.values.map(function(v, i) { return colorizer(i);}),
+      var pie = rpie.piechart(x, y, radius, userNodeCounts, {
+          colors: userNodeCounts.map(function(v, i) { return colorizer(i);}),
       });
 
       /* Manually draw labels, because the legend can easily grow to large and
@@ -267,7 +277,8 @@
       // The current maximum label lengths, can increase over time
       var max_label_width = 0;
       // Draw all labels, including a colored circle in front of it
-      data.values.forEach(function(e, i, values) {
+      userNodeCounts.forEach(function(e, i) {
+        var userId = userIds[e.order];
         var circ_r = 5;
         var text_indent = 2 * circ_r + 10;
         var l_x = legend_x + shift_x;
@@ -286,12 +297,13 @@
                 'fill': color,
             });
         // Draw label
-        var text = rpie.text(l_x + 2 * circ_r + 10, l_y + circ_r,
-            e.others ? "Others" : data.users[e.order])
-                .attr({
-                    'text-anchor': 'start',
-                    'font': '12px Arial, sans-serif',
-                });
+        var labelText = e.others ? "Others" :
+          (CATMAID.User.safe_get(userId).login + " (" + e.value + ")");
+        var text = rpie.text(l_x + 2 * circ_r + 10, l_y + circ_r, labelText)
+          .attr({
+            'text-anchor': 'start',
+            'font': '12px Arial, sans-serif',
+          });
         // Find maximum text width
         var bb = text.getBBox();
         if (bb.width > max_label_width) {
@@ -465,6 +477,7 @@
     var refresh_nodecount = function() {
       CATMAID.fetch(project.id + '/stats/nodecount')
         .then(function(response) {
+          // The respose maps user IDs to number of nodes
           update_piechart(response, "piechart_treenode_holder");
         })
         .catch(CATMAID.handleError);

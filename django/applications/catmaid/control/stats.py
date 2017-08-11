@@ -61,7 +61,7 @@ def stats_nodecount(request, project_id=None):
             AND t.creation_time >= last_precomputation.max_date
             GROUP BY t.user_id
         )
-        SELECT user_id, SUM(n_treenodes)
+        SELECT user_id, SUM(n_treenodes)::float
         FROM result_with_precomputation, last_precomputation
         WHERE last_precomputation.max_date IS NOT NULL
         GROUP BY user_id
@@ -70,21 +70,17 @@ def stats_nodecount(request, project_id=None):
         -- counting that doesn't involve date comparisons. In this case
         -- duplicates are impossible.
         UNION ALL
-        SELECT user_id, count(*)
+        SELECT user_id, count(*)::float
         FROM treenode, last_precomputation
         WHERE project_id = %(project_id)s
         AND last_precomputation IS NULL
         GROUP BY user_id
     ''', dict(project_id=int(project_id)))
 
-    result = {'users': [],
-              'values': []}
-    for row in cursor.fetchall():
-        result['values'].append(int(row[1]))
-        s = (names[row[0]], row[1]) if -1 != row[0] else ("*anonymous*", row[1])
-        result['users'].append('%s (%d)' % s)
-
-    return JsonResponse(result)
+    # Both SUM and COUNT are represented as floating point number in the
+    # response, which works better with JSON than Decimal (which is converted to
+    # a string by the JSON encoder).
+    return JsonResponse(dict(cursor.fetchall()))
 
 
 @requires_user_role(UserRole.Browse)

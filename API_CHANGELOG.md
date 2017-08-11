@@ -14,6 +14,10 @@ None.
   This API endpoint is changed to only accept GET requests. Using POST will
   raise an error.
 
+- `GET /{project_id}/stats/nodecount`:
+  The response format changed. Now a dictionary mapping user IDs to node counts
+  is returned.
+
 ### Deprecations
 
 None.

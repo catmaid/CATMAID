@@ -699,7 +699,7 @@ class StatsApiTests(CatmaidApiTestCase):
             end_date_utc, expected_stats):
         cursor = connection.cursor()
 
-        # Remove existing treenodes to make results easyer to predict
+        # Remove existing treenodes to make results easier to predict
         cursor.execute("""TRUNCATE treenode CASCADE""")
 
         # Don't expect any connector links
@@ -737,7 +737,7 @@ class StatsApiTests(CatmaidApiTestCase):
             end_date_utc, expected_stats):
         cursor = connection.cursor()
 
-        # Remove existing treenodes to make results easyer to predict
+        # Remove existing treenodes to make results easier to predict
         cursor.execute("""TRUNCATE treenode CASCADE""")
 
         # Don't expect any connector links

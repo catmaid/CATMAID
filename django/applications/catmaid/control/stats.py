@@ -24,7 +24,7 @@ from catmaid.models import ClassInstance, Connector, Treenode, User, UserRole, \
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
 def stats_nodecount(request, project_id=None):
-    """ Get the total number of nodes per user.
+    """ Get the total number of created nodes per user.
     """
     cursor = connection.cursor()
     names = dict(User.objects.values_list('id', 'username'))
@@ -83,8 +83,11 @@ def stats_nodecount(request, project_id=None):
     return JsonResponse(dict(cursor.fetchall()))
 
 
+@api_view(['GET'])
 @requires_user_role(UserRole.Browse)
 def stats_editor(request, project_id=None):
+    """ Get the total number of edited nodes per user.
+    """
     cursor = connection.cursor()
     cursor.execute('''
         SELECT editor_id, count(editor_id)::float

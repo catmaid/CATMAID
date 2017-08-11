@@ -18,6 +18,10 @@ None.
   The response format changed. Now a dictionary mapping user IDs to node counts
   is returned.
 
+- `GET /{project_id}/stats/editor`:
+  The response format changed. Now a dictionary mapping user IDs to the number
+  of edited nodes is returned.
+
 ### Deprecations
 
 None.

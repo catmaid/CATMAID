@@ -87,26 +87,14 @@ def stats_nodecount(request, project_id=None):
 def stats_editor(request, project_id=None):
     cursor = connection.cursor()
     cursor.execute('''
-        SELECT editor_id, count(editor_id)
+        SELECT editor_id, count(editor_id)::float
         FROM treenode
         WHERE project_id=%(project_id)s
           AND editor_id != user_id
         GROUP BY editor_id
     ''', dict(project_id=int(project_id)))
 
-
-    # Get name dictonary separately to avoid joining the user table to the
-    # treenode table, which in turn improves performance.
-    names = dict(User.objects.values_list('id', 'username'))
-
-    result = {'users': [],
-              'values': []}
-    for row in cursor.fetchall():
-        result['values'].append(int(row[1]))
-        s = (names[row[0]], row[1]) if -1 != row[0] else ("*unedited*", row[1])
-        result['users'].append('%s (%d)' % s)
-
-    return JsonResponse(result)
+    return JsonResponse(dict(cursor.fetchall()))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

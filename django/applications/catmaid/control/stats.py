@@ -25,9 +25,19 @@ from catmaid.models import ClassInstance, Connector, Treenode, User, UserRole, \
 @requires_user_role(UserRole.Browse)
 def stats_nodecount(request, project_id=None):
     """ Get the total number of created nodes per user.
+    ---
+    parameters:
+    - name: with_imports
+      description: |
+        Whether data added through imports should be respected.
+      required: false
+      default: false
+      type: boolean
+      paramType: form
     """
     cursor = connection.cursor()
     names = dict(User.objects.values_list('id', 'username'))
+    with_imports = request.GET.get('with_imports', 'false') == 'true'
 
     cursor.execute('''
         WITH precomputed AS (
@@ -77,10 +87,70 @@ def stats_nodecount(request, project_id=None):
         GROUP BY user_id
     ''', dict(project_id=int(project_id)))
 
+    node_stats = dict(cursor.fetchall())
+
+    if not with_imports:
+        # In case imports should be excluded, subtract the number imported nodes
+        # for each entry. Otherwise the regular node count doesn't differentiate
+        # between imported and createad nodes. This flag requires history
+        # tracking to be enabled to work reliably.
+        cursor.execute('''
+            WITH precomputed AS (
+                SELECT user_id,
+                    date,
+                    SUM(n_imported_treenodes) AS n_imported_treenodes
+                FROM catmaid_stats_summary
+                WHERE project_id = %(project_id)s
+                -- This is required to not just take the last available cache
+                -- entry, which might not contain a valid precomputed import
+                -- cache field.
+                AND n_imported_treenodes > 0
+                GROUP BY 1, 2
+            ),
+            last_precomputation AS (
+                SELECT COALESCE(
+                    -- Select first start date after last precomputed hour/bucket
+                    date_trunc('hour', MAX(date)) + interval '1 hour',
+                    '-infinity') AS max_date
+                FROM precomputed
+            ),
+            all_treenodes AS (
+                SELECT p.user_id AS user_id,
+                    p.n_imported_treenodes AS n_imported_treenodes
+                FROM precomputed p
+                -- Don't expect duplicates
+                UNION ALL
+                SELECT sorted_row_history.user_id AS user_id,
+                    1 AS n_imported_treenodes
+                FROM (
+                    SELECT DISTINCT t.id, t.user_id,
+                        ROW_NUMBER() OVER(PARTITION BY t.id ORDER BY t.edition_time) AS n
+                    FROM last_precomputation, treenode__with_history t
+                    JOIN catmaid_transaction_info cti
+                      ON t.txid = cti.transaction_id
+                    WHERE cti.project_id = %(project_id)s
+                      AND t.creation_time = cti.execution_time
+                      AND t.creation_time >= last_precomputation.max_date
+                      AND label = 'skeletons.import'
+                ) sorted_row_history
+                WHERE sorted_row_history.n = 1
+            )
+            SELECT user_id,
+                -- Return float to make python side arithmetic easier
+                SUM(n_imported_treenodes)::float AS n_imported_treenodes
+            FROM all_treenodes
+            GROUP BY user_id
+        ''', dict(project_id=int(project_id)))
+
+        for user_id, n_imported_nodes in cursor.fetchall():
+            created_nodes = node_stats.get(user_id)
+            if created_nodes:
+                node_stats[user_id] = created_nodes - n_imported_nodes
+
     # Both SUM and COUNT are represented as floating point number in the
     # response, which works better with JSON than Decimal (which is converted to
     # a string by the JSON encoder).
-    return JsonResponse(dict(cursor.fetchall()))
+    return JsonResponse(node_stats)
 
 
 @api_view(['GET'])
@@ -616,6 +686,7 @@ def populate_stats_summary(project_id, delete=False, incremental=True):
     populate_connector_stats_summary(project_id, incremental, cursor)
     populate_cable_stats_summary(project_id, incremental, cursor)
     populate_nodecount_stats_summary(project_id, incremental, cursor)
+    populate_import_nodecount_stats_summary(project_id, incremental, cursor)
 
 def populate_review_stats_summary(project_id, incremental=True, cursor=None):
     """Add review summary information to the summary table. Create hourly
@@ -791,4 +862,52 @@ def populate_nodecount_stats_summary(project_id, incremental=True,
         FROM node_info ni
         ON CONFLICT (project_id, user_id, date) DO UPDATE
         SET n_treenodes = EXCLUDED.n_treenodes;
+    """, dict(project_id=project_id, incremental=incremental))
+
+def populate_import_nodecount_stats_summary(project_id, incremental=True,
+                                            cursor=None):
+    """Add import node count summary data to the statistics summary table. By
+    default, this happens in an incremental manner, but can optionally be fone
+    for all data from scratch (overriding existing statistics).
+    """
+    if not cursor:
+        cursor = connection.cursor()
+
+    # Add import node count incrementally by finding the last precomputed
+    # import treenode count value above zero for the passed in project and
+    # (re)compute statistics starting one hour before. This means, some
+    # statistics might be recomputed, which is done to increase reobustness.
+    cursor.execute("""
+        WITH last_precomputation AS (
+            SELECT CASE WHEN %(incremental)s = FALSE THEN '-infinity'
+                ELSE COALESCE(date_trunc('hour', MAX(date)) - interval '1 hour',
+                    '-infinity') END AS max_date
+            FROM catmaid_stats_summary
+            WHERE project_id=%(project_id)s
+                AND n_imported_treenodes > 0
+        ),
+        node_info AS (
+            SELECT sorted_row_history.user_id AS user_id,
+                date_trunc('hour', sorted_row_history.creation_time) AS date,
+                count(*) AS node_count
+            FROM (
+                SELECT DISTINCT t.id, t.user_id, t.creation_time,
+                    ROW_NUMBER() OVER(PARTITION BY t.id ORDER BY t.edition_time) AS n
+                FROM last_precomputation, treenode__with_history t
+                JOIN catmaid_transaction_info cti
+                  ON t.txid = cti.transaction_id
+                WHERE cti.project_id = %(project_id)s
+                  AND t.creation_time = cti.execution_time
+                  AND t.creation_time >= last_precomputation.max_date
+                  AND label = 'skeletons.import'
+            ) sorted_row_history
+            WHERE sorted_row_history.n = 1
+            GROUP BY 1, 2
+        )
+        INSERT INTO catmaid_stats_summary (project_id, user_id, date,
+                n_imported_treenodes)
+        SELECT %(project_id)s, ni.user_id, ni.date, ni.node_count
+        FROM node_info ni
+        ON CONFLICT (project_id, user_id, date) DO UPDATE
+        SET n_imported_treenodes = EXCLUDED.n_imported_treenodes;
     """, dict(project_id=project_id, incremental=incremental))

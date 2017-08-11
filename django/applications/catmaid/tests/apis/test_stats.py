@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import copy
 import datetime
 import json
 import pytz
@@ -8,11 +9,12 @@ import pytz
 from itertools import chain
 
 from django.db import connection
+from django.utils.six import StringIO
 from catmaid.models import Connector
 from catmaid.tests.apis.common import CatmaidApiTestCase
 from catmaid.control import stats
 from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
-
+from guardian.shortcuts import assign_perm
 
 class StatsApiTests(CatmaidApiTestCase):
 
@@ -49,6 +51,104 @@ class StatsApiTests(CatmaidApiTestCase):
         test_nodecount()
         stats.populate_nodecount_stats_summary(self.test_project_id, cursor=cursor)
         test_nodecount()
+
+    def test_treenode_stats_exclude_imports(self):
+        self.fake_authentication()
+        cursor = connection.cursor()
+
+        def test_nodecount(with_imports, expected_stats):
+            response = self.client.get('/%d/stats/nodecount' %
+                    (self.test_project_id,), {
+                        'with_imports': 'true' if with_imports else 'false'
+                    })
+            self.assertEqual(response.status_code, 200)
+            parsed_response = json.loads(response.content.decode('utf-8'))
+            self.assertEqual(parsed_response, expected_stats)
+
+        self.assert_empty_summary_table(cursor)
+
+        test_nodecount(False, {
+            '5': 4,
+            '2': 2,
+            '3': 89
+        })
+
+        test_nodecount(True, {
+            '5': 4,
+            '2': 2,
+            '3': 89
+        })
+
+        # Import some data
+        result = self.add_test_imports()
+        n_imported_nodes = len(result['node_id_map'].keys())
+
+        test_nodecount(True, {
+            '5': 4,
+            '2': 2,
+            '3': 89 + n_imported_nodes
+        })
+
+        # Exclude imported nodes
+        test_nodecount(False, {
+            '5': 4,
+            '2': 2,
+            '3': 89
+        })
+
+        # Add regular node count summary data. This should not effect import
+        # information.
+        stats.populate_nodecount_stats_summary(self.test_project_id, cursor=cursor)
+
+        test_nodecount(True, {
+            '5': 4,
+            '2': 2,
+            '3': 89 + n_imported_nodes
+        })
+
+        test_nodecount(False, {
+            '5': 4,
+            '2': 2,
+            '3': 89
+        })
+
+        # Add import summary data.
+        stats.populate_import_nodecount_stats_summary(self.test_project_id, cursor=cursor)
+
+        test_nodecount(True, {
+            '5': 4,
+            '2': 2,
+            '3': 89 + n_imported_nodes
+        })
+
+        test_nodecount(False, {
+            '5': 4,
+            '2': 2,
+            '3': 89
+        })
+
+        # Make sure the summary table is what we expected
+        p = self.test_project_id
+        summary_table = set(self.get_summary_table(cursor))
+        expected_summary = set([
+            (datetime.datetime(2011, 11,  1, 12, 0, tzinfo=pytz.utc), 0, 0,  4, 0, 0, 0, 0, 0.0, 3, 5),
+            (datetime.datetime(2011,  9,  4,  7, 0, tzinfo=pytz.utc), 0, 0,  5, 0, 0, 0, 0, 0.0, 3, 3),
+            (datetime.datetime(2011,  9, 27,  7, 0, tzinfo=pytz.utc), 0, 0, 64, 0, 0, 0, 0, 0.0, 3, 3),
+            (datetime.datetime(2011, 10,  7,  7, 0, tzinfo=pytz.utc), 0, 0,  2, 0, 0, 0, 0, 0.0, 3, 3),
+            (datetime.datetime(2011, 11,  1, 12, 0, tzinfo=pytz.utc), 0, 0,  2, 0, 0, 0, 0, 0.0, 3, 2),
+            (datetime.datetime(2011, 12,  9,  8, 0, tzinfo=pytz.utc), 0, 0,  7, 0, 0, 0, 0, 0.0, 3, 3),
+            (datetime.datetime(2012,  7, 22, 16, 0, tzinfo=pytz.utc), 0, 0,  1, 0, 0, 0, 0, 0.0, 3, 3),
+            (datetime.datetime(2012,  7, 22, 19, 0, tzinfo=pytz.utc), 0, 0,  4, 0, 0, 0, 0, 0.0, 3, 3),
+            (datetime.datetime(2016,  3,  9, 18, 0, tzinfo=pytz.utc), 0, 0,  6, 0, 0, 0, 0, 0.0, 3, 3),
+        ])
+        # Add line for test import above, get date from actual summary table,
+        # which seems more robust than assuming than guessing the date in other
+        # ways.
+        last_date_time = max(d[0] for d in summary_table)
+        expected_summary.add((last_date_time, 0, 0, n_imported_nodes, 0, 0,
+            n_imported_nodes, 0, 0.0, 3, 3));
+
+        self.assertEqual(summary_table, expected_summary)
 
     def test_stats_summary(self):
         self.fake_authentication()
@@ -694,6 +794,28 @@ class StatsApiTests(CatmaidApiTestCase):
                     'creation_time': node[1]
                 })
                 last_node = cursor.fetchone()[0]
+
+    def add_test_imports(self):
+        self.fake_authentication()
+        orig_skeleton_id = 235
+
+        # Get SWC for a neuron
+        response = self.client.get('/%d/skeleton/%d/swc' % (self.test_project_id, orig_skeleton_id))
+        self.assertEqual(response.status_code, 200)
+        orig_swc_string = response.content.decode('utf-8')
+
+        # Give user import permissions and Import SWC
+        swc_file = StringIO(orig_swc_string)
+        assign_perm('can_import', self.test_user, self.test_project)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.swc': swc_file, 'name': 'test'})
+
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        new_skeleton_id = parsed_response['skeleton_id']
+        id_map = parsed_response['node_id_map']
+
+        return parsed_response
 
     def _test_setup_nodecount_summary(self, time_zone, start_date_utc,
             end_date_utc, expected_stats):

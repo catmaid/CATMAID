@@ -16,6 +16,9 @@
     // The time interval for the contribution table, default to days
     var timeUnit = "day";
 
+    // Whether import activity should be included in the displayed statistics.
+    this.includeImports = false;
+
     var update_stats_fields = function(data) {
       $("#skeletons_created").text(data.skeletons_created);
       $("#treenodes_created").text(data.treenodes_created);
@@ -442,10 +445,19 @@
     };
 
     this.refresh_project_statistics = function() {
-      refresh_nodecount();
       this.refresh_history();
+      this.refreshNodecount();
+    };
 
-      // d3.json(django_url + project.id + '/stats/history', update_linegraph);
+    this.refreshNodecount = function() {
+      return CATMAID.fetch(project.id + '/stats/nodecount', 'GET', {
+          with_imports: this.includeImports
+        })
+        .then(function(response) {
+          // The respose maps user IDs to number of nodes
+          update_piechart(response, "piechart_treenode_holder");
+        })
+        .catch(CATMAID.handleError);
     };
 
     this.refresh_history = function() {
@@ -469,16 +481,6 @@
       CATMAID.fetch(project.id + '/stats/editor')
         .then(function(response) {
           update_piechart(response, "piechart_editor_holder");
-        })
-        .catch(CATMAID.handleError);
-      return true;
-    };
-
-    var refresh_nodecount = function() {
-      CATMAID.fetch(project.id + '/stats/nodecount')
-        .then(function(response) {
-          // The respose maps user IDs to number of nodes
-          update_piechart(response, "piechart_treenode_holder");
         })
         .catch(CATMAID.handleError);
       return true;
@@ -510,6 +512,23 @@
   ProjectStatistics.prototype.getWidgetConfiguration = function() {
     var config = {
       contentID: "project_stats_widget",
+      createControls: function(controls) {
+        var self = this;
+
+        var includeImports = document.createElement('label');
+        includeImports.title = "If checked, all statistics will also include " +
+            "import activity. Is only precise if history tracking is enabled.";
+        var includeImportsCb = document.createElement('input');
+        includeImportsCb.setAttribute('type', 'checkbox');
+        includeImportsCb.checked = this.includeImports;
+        includeImportsCb.onchange = function() {
+          self.includeImports = this.checked;
+          self.refreshNodecount();
+        };
+        includeImports.appendChild(includeImportsCb);
+        includeImports.appendChild(document.createTextNode('Include imports'));
+        controls.appendChild(includeImports);
+      },
       createContent: function(container) {
         container.innerHTML =
           '<div class="project-stats">' +

@@ -18,6 +18,16 @@
 
 ### Features and enhancements
 
+Project/user statistics:
+
+- The widget should now be much faster.
+
+- Import actions are not counted anymore by default. The "Include imports"
+  checkbox can be used to change this.
+
+- State saving is now supported.
+
+
 Miscellaneous:
 
 - If multiple tile layers are used, the stack viewer layer settings (blue white
@@ -29,8 +39,6 @@ Miscellaneous:
 
 - The dialog to add a new annotation displays now the existing annotations as
   well.
-
-- Project/user statistics: the widget should now be much faster.
 
 
 ### Bug fixes

@@ -632,7 +632,17 @@
   // Register widget with CATMAID
   CATMAID.registerWidget({
     key: "statistics",
-    creator: ProjectStatistics
+    creator: ProjectStatistics,
+    state: {
+      getState: function(widget) {
+        return {
+          includeImports: widget.includeImports
+        };
+      },
+      setState: function(widget, state) {
+        CATMAID.tools.copyIfDefined(state, widget, "includeImports");
+      }
+    }
   });
 
 })(CATMAID);

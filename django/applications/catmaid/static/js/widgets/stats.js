@@ -512,8 +512,24 @@
   ProjectStatistics.prototype.getWidgetConfiguration = function() {
     var config = {
       contentID: "project_stats_widget",
+      controlsID: "project_stats_controls",
       createControls: function(controls) {
         var self = this;
+
+        // If this user has has can_administer permissions in this project,
+        // buttons to access additional tools are addeed.
+        if (userAnalyticsAccessible(project.id)) {
+          var userAnalytics = document.createElement('input');
+          userAnalytics.setAttribute("type", "button");
+          userAnalytics.setAttribute("value", "User Analytics");
+          userAnalytics.onclick = function() {
+            openUserAnalytics({
+              startDate: $("#stats-history-start-date").val(),
+              endDate: $("#stats-history-end-date").val()
+            });
+          };
+          controls.appendChild(userAnalytics);
+        }
 
         var includeImports = document.createElement('label');
         includeImports.title = "If checked, all statistics will also include " +
@@ -587,24 +603,6 @@
         this.refresh_project_statistics();
       }
     };
-
-    // If this user has has can_administer permissions in this project,
-    // buttons to access additional tools are addeed.
-    if (userAnalyticsAccessible(project.id)) {
-      config['controlsID'] = 'project_stats_controls';
-      config['createControls'] = function(controls) {
-        var userAnalytics = document.createElement('input');
-        userAnalytics.setAttribute("type", "button");
-        userAnalytics.setAttribute("value", "User Analytics");
-        userAnalytics.onclick = function() {
-          openUserAnalytics({
-            startDate: $("#stats-history-start-date").val(),
-            endDate: $("#stats-history-end-date").val()
-          });
-        };
-        controls.appendChild(userAnalytics);
-      };
-    }
 
     return config;
   };

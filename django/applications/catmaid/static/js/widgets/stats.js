@@ -250,7 +250,7 @@
         return this[userId];
       }, data);
 
-      $(chart_name).empty();
+      $('#' + chart_name).empty();
 
       var x = 90, y = 100, radius = 80, height = 200;
       // Create basic pie chart without any labels

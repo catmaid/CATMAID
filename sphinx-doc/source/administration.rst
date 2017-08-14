@@ -309,6 +309,11 @@ CATMAID
   ``NODE_LIST_MAXIMUM_COUNT = <number>`` in the ``settings.py`` file to a
   maximum number of nodes to be queried (e.g. 20000).
 
+* If neuron reconstruction statistics are slow to compute, consider running the
+  management command ``manage.py catmaid_populate_summary_tables`` to populate
+  an optional statistics summary table. Consider running this command regularly
+  over, e.g. over night using Celery or a cron job.
+
 Making CATMAID available through SSL
 ------------------------------------
 

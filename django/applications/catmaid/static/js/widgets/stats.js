@@ -300,8 +300,8 @@
                 'fill': color,
             });
         // Draw label
-        var labelText = e.others ? "Others" :
-          (CATMAID.User.safe_get(userId).login + " (" + e.value + ")");
+        var labelText = (e.others ? "Others" : CATMAID.User.safe_get(userId).login) +
+            " (" + e.value + ")";
         var text = rpie.text(l_x + 2 * circ_r + 10, l_y + circ_r, labelText)
           .attr({
             'text-anchor': 'start',

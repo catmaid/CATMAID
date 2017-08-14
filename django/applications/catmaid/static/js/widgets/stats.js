@@ -530,20 +530,6 @@
           };
           controls.appendChild(userAnalytics);
         }
-
-        var includeImports = document.createElement('label');
-        includeImports.title = "If checked, all statistics will also include " +
-            "import activity. Is only precise if history tracking is enabled.";
-        var includeImportsCb = document.createElement('input');
-        includeImportsCb.setAttribute('type', 'checkbox');
-        includeImportsCb.checked = this.includeImports;
-        includeImportsCb.onchange = function() {
-          self.includeImports = this.checked;
-          self.refreshNodecount();
-        };
-        includeImports.appendChild(includeImportsCb);
-        includeImports.appendChild(document.createTextNode('Include imports'));
-        controls.appendChild(includeImports);
       },
       createContent: function(container) {
         container.innerHTML =
@@ -577,9 +563,27 @@
           '</div>' +
           '<br clear="all" />' +
           '<h3>Nodes created by user</h3>' +
+          '<div class="buttonpanel" data-role="piechart_treenode_controls"></div>' +
           '<div id="piechart_treenode_holder"></div>' +
           '<br clear="all" />' +
           '</div>';
+
+        var self = this;
+
+        var includeImports = document.createElement('label');
+        includeImports.title = "If checked, all statistics will also include " +
+            "import activity. Is only precise if history tracking is enabled.";
+        var includeImportsCb = document.createElement('input');
+        includeImportsCb.setAttribute('type', 'checkbox');
+        includeImportsCb.checked = this.includeImports;
+        includeImportsCb.onchange = function() {
+          self.includeImports = this.checked;
+          self.refreshNodecount();
+        };
+        includeImports.appendChild(includeImportsCb);
+        includeImports.appendChild(document.createTextNode('Include imports'));
+
+        $('div[data-role=piechart_treenode_controls]', container).append(includeImports);
       },
       init: function() {
         var self = this;

@@ -114,24 +114,33 @@ def stats_nodecount(request, project_id=None):
                     '-infinity') AS max_date
                 FROM precomputed
             ),
+            transactions AS (
+                SELECT cti.transaction_id, cti.execution_time
+                FROM last_precomputation
+                JOIN catmaid_transaction_info cti
+                    ON cti.execution_time >= last_precomputation.max_date
+                WHERE cti.project_id = %(project_id)s
+                AND label = 'skeletons.import'
+            ),
             all_treenodes AS (
                 SELECT p.user_id AS user_id,
                     p.n_imported_treenodes AS n_imported_treenodes
                 FROM precomputed p
+
                 -- Don't expect duplicates
                 UNION ALL
+
                 SELECT sorted_row_history.user_id AS user_id,
                     1 AS n_imported_treenodes
                 FROM (
-                    SELECT DISTINCT t.id, t.user_id,
+                    SELECT t.id, t.user_id,
                         ROW_NUMBER() OVER(PARTITION BY t.id ORDER BY t.edition_time) AS n
-                    FROM last_precomputation, treenode__with_history t
-                    JOIN catmaid_transaction_info cti
-                      ON t.txid = cti.transaction_id
-                    WHERE cti.project_id = %(project_id)s
-                      AND t.creation_time = cti.execution_time
-                      AND t.creation_time >= last_precomputation.max_date
-                      AND label = 'skeletons.import'
+                    FROM last_precomputation,
+                       transactions tx
+                    JOIN treenode__with_history t
+                    ON t.txid = tx.transaction_id
+                    WHERE t.creation_time = tx.execution_time
+                    AND t.creation_time >= last_precomputation.max_date
                 ) sorted_row_history
                 WHERE sorted_row_history.n = 1
             )

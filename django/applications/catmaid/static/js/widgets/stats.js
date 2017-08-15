@@ -247,8 +247,17 @@
     var update_piechart = function(data, chart_name) {
       var userIds = Object.keys(data);
       var userNodeCounts = userIds.map(function(userId) {
-        return this[userId];
+        var count = this[userId];
+        // Due to the way Raphael renders a single 100% user, no pie chart
+        // unless there is at least one other value > 0. Therefore, zero is not
+        // represented as zero for Raphael, but almost zero.
+        return count === 0 ? 0.00001 : count;
       }, data);
+
+      if (userNodeCounts.length === 1) {
+        userIds.push("Anonymous");
+        userNodeCounts.push(0.00001);
+      }
 
       $('#' + chart_name).empty();
 
@@ -299,9 +308,11 @@
                 'stroke': color,
                 'fill': color,
             });
-        // Draw label
+        // Draw label, the rounding is needed to to a corner case with a single
+        // 100% users with other zero contribution users, for which we set the
+        // zero values to 0.00001 above.
         var labelText = (e.others ? "Others" : CATMAID.User.safe_get(userId).login) +
-            " (" + e.value + ")";
+            " (" + Math.round(e.value) + ")";
         var text = rpie.text(l_x + 2 * circ_r + 10, l_y + circ_r, labelText)
           .attr({
             'text-anchor': 'start',

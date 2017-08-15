@@ -154,7 +154,12 @@ def stats_nodecount(request, project_id=None):
         for user_id, n_imported_nodes in cursor.fetchall():
             created_nodes = node_stats.get(user_id)
             if created_nodes:
-                node_stats[user_id] = created_nodes - n_imported_nodes
+                # The lower boundary of zero shouldn't be needed, but due to the
+                # fact that general node counting doesn't take history into
+                # account (deleted nodes are not counted), there are corner
+                # cases in which more nodes have been imported than there are
+                # created (and still available).
+                node_stats[user_id] = min(0, created_nodes - n_imported_nodes)
 
     # Both SUM and COUNT are represented as floating point number in the
     # response, which works better with JSON than Decimal (which is converted to

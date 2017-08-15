@@ -1081,7 +1081,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Move to previous node in segment for review. At an end node, moves one section beyond for you to check that it really ends.",
-      keyShortcuts: { 'Q': [ 'q' ] },
+      keyShortcuts: { 'Q': [ 'q', 'Shift + q' ] },
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;

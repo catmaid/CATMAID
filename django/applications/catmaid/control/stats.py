@@ -159,7 +159,7 @@ def stats_nodecount(request, project_id=None):
                 # account (deleted nodes are not counted), there are corner
                 # cases in which more nodes have been imported than there are
                 # created (and still available).
-                node_stats[user_id] = min(0, created_nodes - n_imported_nodes)
+                node_stats[user_id] = max(0, created_nodes - n_imported_nodes)
 
     # Both SUM and COUNT are represented as floating point number in the
     # response, which works better with JSON than Decimal (which is converted to

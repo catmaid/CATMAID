@@ -217,7 +217,24 @@
       .then(function () {
         return SkeletonAnnotations.staticSelectNode( node.id, self.currentSkeletonId );
       })
-      .catch(CATMAID.handleError);
+      .catch(function(error) {
+        if (error instanceof CATMAID.Warning) {
+          // If all available tracing layers are hidden, don;t show the node not
+          // found warning.
+          var visibleTracingLayers = project.getStackViewers().reduce(function(tls, l) {
+            if (l instanceof CATMAID.TracingLayer && l.opacity > 0) {
+              tls.push(l);
+            }
+            return tls;
+          }, []);
+          if (visibleTracingLayers.length === 0) {
+            console.log("CATMAID Review - blocked warning, because no tracing layers is visible: " +
+                error.message);
+            return;
+          }
+        }
+        CATMAID.handleError(error);
+      });
     };
 
     this.moveNodeInSegmentBackward = function(advanceToNextUnfollowed) {

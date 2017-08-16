@@ -43,6 +43,20 @@ Miscellaneous:
 
 ### Bug fixes
 
+- Review widget: moving in reverse direction from a virtual node doesn't show
+  error anymore.
+
+- Review widget: the Shift + Q key combination to select the next unreviewed
+  node in downstream direction is respected again.
+
+- Key combinations involving the Alt key were not respected on Mac OS. This is
+  fixed now.
+
+- Reconstruction sampler: the list of connectors in the selected interval of the
+  synapse workflow step is now complete when refreshed.
+
+- 3D viewer: the error shown when changing skeleton properties with an active
+  connector restriction is fixed.
 
 
 ## 2017.07.28

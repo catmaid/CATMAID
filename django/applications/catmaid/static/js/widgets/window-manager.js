@@ -745,9 +745,6 @@ CMWTabbedNode.prototype.addChild = function (newChild) {
 
 CMWTabbedNode.prototype._addTab = function (child, index) {
   var tab = document.createElement("span");
-  tab.innerText = child.getTitle ?
-      child.getTitle() :
-      (child.getWindows().length + ' windows');
   if (child === this.activeChild) tab.className = "active";
 
   tab.addEventListener("click", (function () {
@@ -762,7 +759,20 @@ CMWTabbedNode.prototype._addTab = function (child, index) {
     this.tabs[index] = tab;
   }
 
+  this._updateTabTitle(child);
+
   return tab;
+};
+
+CMWTabbedNode.prototype._updateTabTitle = function (child) {
+  var childIndex = this.children.indexOf(child);
+  if (childIndex === -1) return;
+  var tab = this.tabs[childIndex];
+  if (!tab) return;
+
+  tab.innerText = child.getTitle ?
+      child.getTitle() :
+      (child.getWindows().length + ' windows');
 };
 
 CMWTabbedNode.prototype.activateChild = function (child) {
@@ -867,6 +877,10 @@ CMWTabbedNode.prototype.toXML = function (tabs) {
         return c.toXML(tabs + "\t");
       }).join("\n") + "\n" +
       tabs + "</tabbednode>";
+};
+
+CMWTabbedNode.prototype.childChanged = function (child) {
+  this._updateTabTitle(child);
 };
 
 
@@ -1182,6 +1196,10 @@ CMWWindow.prototype.getWindows = function () {
 CMWWindow.prototype.setTitle = function (newTitle) {
   this.title = newTitle;
   this.titleText.replaceChild(document.createTextNode(this.title), this.titleText.firstChild);
+  // Notify parent node about changed title.
+  if (this.parent && CATMAID.tools.isFn(this.parent.childChanged)) {
+    this.parent.childChanged(this);
+  }
   return this;
 };
 

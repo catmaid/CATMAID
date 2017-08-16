@@ -40,6 +40,8 @@ Miscellaneous:
 - The dialog to add a new annotation displays now the existing annotations as
   well.
 
+- Tabbed windows: changing window aliases are now reflected in tab headers.
+
 
 ### Bug fixes
 

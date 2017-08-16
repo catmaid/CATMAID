@@ -1474,21 +1474,18 @@
     var outputTable = document.createElement('table');
     content.appendChild(outputTable);
 
-    // Get arbor if not already cached
-    var arborParser = widget.state['arbor'];
-    var prepare = Promise.resolve();
-    if (!arborParser) {
-      prepare = CATMAID.Sampling.getArbor(skeletonId)
-          .then(function(result) {
-            arborParser = result;
-            widget.state['arbor'] = result;
-          });
-    }
+    // Get current arbor. Don't use the cached one, because the user is expected
+    // to change the arbor in this step.
+    var prepare = CATMAID.Sampling.getArbor(skeletonId)
+      .then(function(result) {
+        widget.state['arbor'] = result;
+      });
     // Create up-to-date version of interval nodes
     var self = this;
     Promise.all([prepare, this.ensureMetadata()])
       .then(getDomainDetails.bind(this, project.id, domain.id))
       .then(function(domainDetails) {
+        var arborParser = widget.state['arbor'];
         // Regenerate interval information
         self.intervalTreenodes.clear();
         var intervalNodes = getIntervalNodes(arborParser.arbor,

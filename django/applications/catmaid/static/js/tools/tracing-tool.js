@@ -383,7 +383,10 @@
         var label = $('#active-element' + stackViewer.getId());
         if (0 === label.length) return;
 
-        CATMAID.NeuronNameService.getInstance().unregister(label.data());
+        var labelData = label.data();
+        if (labelData) {
+          CATMAID.NeuronNameService.getInstance().unregister(labelData);
+        }
 
         label.data('skeleton_id', skeletonID);
         label.data('updateNeuronNames', function () {

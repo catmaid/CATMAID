@@ -654,7 +654,7 @@
     // todo: do this in the stack viewers rather than here
     // hide window controls
     var $content = $(this.contentContainer);
-    $content.find('.neuronname').hide();
+    $content.find('.active-element').hide();
     $content.find('.stackClose').hide();
     $content.find('.smallMapView_hidden').hide();  // doesn't work anyway
   };

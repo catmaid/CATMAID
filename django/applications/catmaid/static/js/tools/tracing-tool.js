@@ -197,17 +197,17 @@
       }
 
       // Insert a text div for the neuron name in the canvas window title bar
-      var neuronNameDisplayID = "neuronName" + stackViewer.getId();
-      var neuronNameDisplay = document.getElementById(neuronNameDisplayID);
-      if (!neuronNameDisplay) {
+      var activeElementId = "active-element" + stackViewer.getId();
+      var activeElement = document.getElementById(activeElementId);
+      if (!activeElement) {
         var stackFrame = stackViewer.getWindow().getFrame();
-        neuronnameDisplay = document.createElement("p");
-        neuronnameDisplay.id = neuronNameDisplayID;
-        neuronnameDisplay.className = "neuronname";
+        activeElement = document.createElement("p");
+        activeElement.id = activeElementId;
+        activeElement.classList.add("active-element");
         var spanName = document.createElement("span");
         spanName.appendChild(document.createTextNode(""));
-        neuronnameDisplay.appendChild(spanName);
-        stackFrame.appendChild(neuronnameDisplay);
+        activeElement.appendChild(spanName);
+        stackFrame.appendChild(activeElement);
         setNeuronNameInTopbars(SkeletonAnnotations.getActiveSkeletonId());
       }
 
@@ -220,7 +220,7 @@
     function closeStackViewer(stackViewer) {
       // Unregister the neuron name label from the neuron name service and
       // remove it.
-      var label = $('#neuronName' + stackViewer.getId());
+      var label = $('#active-element' + stackViewer.getId());
       var labelData = label.data();
       if (labelData) CATMAID.NeuronNameService.getInstance().unregister(labelData);
       label.remove();
@@ -359,7 +359,7 @@
      */
     function clearTopbars(text) {
       project.getStackViewers().forEach(function(stackViewer) {
-        var label = $('#neuronName' + stackViewer.getId());
+        var label = $('#active-element' + stackViewer.getId());
         label.text(text || '');
         var labelData = label.data();
         if (labelData) CATMAID.NeuronNameService.getInstance().unregister(labelData);
@@ -380,7 +380,7 @@
       prefix = prefix || '';
 
       project.getStackViewers().forEach(function(stackViewer) {
-        var label = $('#neuronName' + stackViewer.getId());
+        var label = $('#active-element' + stackViewer.getId());
         if (0 === label.length) return;
 
         CATMAID.NeuronNameService.getInstance().unregister(label.data());

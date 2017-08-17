@@ -1362,6 +1362,10 @@
 
     addIsoTimeAccessor(ptype.ConnectorLink.prototype, 'edition_time');
 
+    function eventShouldActiveNode(e) {
+      return !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey;
+    }
+
     /**
      * Event handling functions.
      * Below, the function() is but a namespace that returns a manager object
@@ -1448,13 +1452,9 @@
               // TODO check for error
               CATMAID.statusBar.replaceLast("Joined node #" + atnID + " to node #" + node.id);
             }
-
           } else {
             alert("Nothing to join without an active node!");
           }
-        } else {
-          // activate this node
-          catmaidTracingOverlay.activateNode(node);
         }
       };
 
@@ -1536,6 +1536,16 @@
             .removeAllListeners('mouseup')
             .removeAllListeners('mouseupoutside');
 
+        var node = this.node;
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(
+            node.overlayGlobals.skeletonElements);
+        var e = event.data.originalEvent;
+
+        if (eventShouldActiveNode(e) && !(o && o.activated)) {
+          // Activate this node if not already done
+          catmaidTracingOverlay.activateNode(node);
+        }
+
         if (!dragging) {
           o = null;
           return;
@@ -1575,13 +1585,15 @@
         e.stopPropagation();
         e.preventDefault();
 
-        // If not trying to join or remove a node, but merely click on it to drag it or select it:
-        if (!e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey) {
-          catmaidTracingOverlay.activateNode(node);
-        }
-
         o = {id: node.id,
              data: event.data};
+
+        // If not trying to join or remove a node, but merely click on it to
+        // drag it or select it already on mous down.
+        if (eventShouldActiveNode(e)) {
+          o.activated = true;
+          catmaidTracingOverlay.activateNode(node);
+        }
 
         this.on('mousemove', mc_move)
             .on('mouseup', mc_up)
@@ -1635,9 +1647,6 @@
             CATMAID.msg('BEWARE', 'You need to activate a node before ' +
                 'joining it to a connector node!');
           }
-        } else {
-          // activate this node
-          catmaidTracingOverlay.activateNode(connectornode);
         }
       };
 

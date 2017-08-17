@@ -4285,6 +4285,105 @@ SkeletonAnnotations.TracingOverlay.prototype.switchBetweenTerminalAndConnector =
 };
 
 /**
+ * Delete the connector from the database and removes it from the current view
+ * and local objects.
+ */
+SkeletonAnnotations.TracingOverlay.prototype._deleteConnectorNode =
+    function(connectornode) {
+  // Suspennd the node before submitting the request to note catch mouse
+  // events on the removed node.
+  connectornode.suspend();
+  var self = this;
+  return this.submit.promise(function() {
+    self.nodeIDsNeedingSync.delete(connectornode.id);
+    var command = new CATMAID.RemoveConnectorCommand(self.state, project.id, connectornode.id);
+    return CATMAID.commands.execute(command)
+      .then(function(result) {
+        // If there was a presynaptic node, select it
+        var preIDs  = Object.keys(connectornode.pregroup);
+        var postIDs = Object.keys(connectornode.postgroup);
+        var gjIDs = Object.keys(connectornode.gjgroup);
+        if (preIDs.length > 0) {
+            self.selectNode(preIDs[0]).catch(CATMAID.handleError);
+        } else if (postIDs.length > 0) {
+            self.selectNode(postIDs[0]).catch(CATMAID.handleError);
+        } else if (gjIDs.length > 0) {
+            self.selectNode(gjIDs[0]).catch(CATMAID.handleError);
+        } else {
+            self.activateNode(null);
+        }
+
+        // Delete this connector from overlay (to not require a database update).
+        var connectorId = connectornode.id;
+        delete self.nodes[connectorId];
+        connectornode.obliterate();
+        self.pixiLayer._renderIfReady();
+
+        CATMAID.statusBar.replaceLast("Deleted connector #" + connectorId);
+      })
+      .catch(CATMAID.handleError);
+  }, CATMAID.handleError);
+};
+
+/**
+ * Delete the node from the database and removes it from the current view and
+ * local objects.
+ */
+SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
+    function(node, wasActiveNode) {
+  var self = this;
+  // Make sure all other pending tasks are done before the node is deleted.
+  return this.submit.promise(function() {
+    var command = new CATMAID.RemoveNodeCommand(self.state, project.id, node.id);
+    return CATMAID.commands.execute(command);
+  }).then(function(json) {
+    // nodes not refreshed yet: node still contains the properties of the deleted node
+    // ensure the node, if it had any changes, these won't be pushed to the database: doesn't exist anymore
+    self.nodeIDsNeedingSync.delete(node.id);
+
+    // Delete this node from overlay (to not require a database update).
+    var children = node.children;
+    var parent = node.parent;
+    delete self.nodes[node.id];
+    if (children) {
+      for (var childId in children) {
+        var child = children[childId];
+        child.parent = parent;
+      }
+    }
+    delete parent.children[node.id];
+    node.obliterate();
+    node.drawEdges();
+    self.pixiLayer._renderIfReady();
+
+    // activate parent node when deleted
+    if (wasActiveNode) {
+      if (json.parent_id) {
+        self.selectNode(json.parent_id);
+      } else {
+        // No parent. But if this node was postsynaptic or presynaptic
+        // to a connector, the connector must be selected:
+        var pp = self.findConnectors(node.id);
+        // Try first connectors for which node is postsynaptic:
+        if (pp[1].length > 0) {
+          self.selectNode(pp[1][0]).catch(CATMAID.handleError);
+        // Then try connectors for which node is presynaptic
+        } else if (pp[0].length > 0) {
+          self.selectNode(pp[0][0]).catch(CATMAID.handleError);
+        // Then try connectors for which node has gap junction with
+        } else if (pp[2].length > 0) {
+          self.selectNode(pp[2][0]).catch(CATMAID.handleError);
+        } else {
+          self.activateNode(null);
+        }
+      }
+    }
+    // Nodes are refreshed due to the change event the neuron controller emits
+    CATMAID.statusBar.replaceLast("Deleted node #" + node.id);
+  }, CATMAID.handleError);
+};
+
+/**
  * Delete a node with the given ID. The node can either be a connector or a
  * treenode.
  */
@@ -4331,90 +4430,28 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
 
   // Call actual delete methods defined below (which are callable due to
   // hoisting)
+  var del;
   switch (node.type) {
     case SkeletonAnnotations.TYPE_CONNECTORNODE:
-      deleteConnectorNode(node);
+      this.suspended = true;
+      del = this._deleteConnectorNode(node);
       break;
     case SkeletonAnnotations.TYPE_NODE:
-      deleteTreenode(node, isActiveNode);
+      this.suspended = true;
+      del = this._deleteTreenode(node, isActiveNode);
       break;
   }
 
-  /**
-   * Delete the connector from the database and removes it from the current view
-   * and local objects.
-   */
-  function deleteConnectorNode(connectornode) {
-    // Suspennd the node before submitting the request to note catch mouse
-    // events on the removed node.
-    connectornode.suspend();
-    self.submit.then(function() {
-      self.nodeIDsNeedingSync.delete(connectornode.id);
-      var command = new CATMAID.RemoveConnectorCommand(self.state, project.id, connectornode.id);
-      CATMAID.commands.execute(command)
-        .then(function(result) {
-          // If there was a presynaptic node, select it
-          var preIDs  = Object.keys(connectornode.pregroup);
-          var postIDs = Object.keys(connectornode.postgroup);
-          var gjIDs = Object.keys(connectornode.gjgroup);
-          if (preIDs.length > 0) {
-              self.selectNode(preIDs[0]).catch(CATMAID.handleError);
-          } else if (postIDs.length > 0) {
-              self.selectNode(postIDs[0]).catch(CATMAID.handleError);
-          } else if (gjIDs.length > 0) {
-              self.selectNode(gjIDs[0]).catch(CATMAID.handleError);
-          } else {
-              self.activateNode(null);
-          }
-          // capture ID prior to refreshing nodes and connectors
-          var cID = connectornode.id;
-          // Refresh all nodes in any case, to reflect the new state of the database
-          self.updateNodes();
+  if (del) {
+    var reset = (function() {
+      this.suspended = false;
+    }).bind(this);
+    del.then(reset)
+      .catch(function(error) {
+        reset();
+        CATMAID.handleError(error);
+      });
 
-          CATMAID.statusBar.replaceLast("Deleted connector #" + cID);
-        })
-        .catch(CATMAID.handleError);
-    }, CATMAID.handleError);
-  }
-
-  /**
-   * Delete the node from the database and removes it from the current view and
-   * local objects.
-   */
-  function deleteTreenode(node, wasActiveNode) {
-    // Make sure all other pending tasks are done before the node is deleted.
-    self.submit.then(function() {
-      var command = new CATMAID.RemoveNodeCommand(self.state, project.id, node.id);
-      return CATMAID.commands.execute(command);
-    }).then(function(json) {
-      // nodes not refreshed yet: node still contains the properties of the deleted node
-      // ensure the node, if it had any changes, these won't be pushed to the database: doesn't exist anymore
-      self.nodeIDsNeedingSync.delete(node.id);
-      // activate parent node when deleted
-      if (wasActiveNode) {
-        if (json.parent_id) {
-          self.selectNode(json.parent_id);
-        } else {
-          // No parent. But if this node was postsynaptic or presynaptic
-          // to a connector, the connector must be selected:
-          var pp = self.findConnectors(node.id);
-          // Try first connectors for which node is postsynaptic:
-          if (pp[1].length > 0) {
-            self.selectNode(pp[1][0]).catch(CATMAID.handleError);
-          // Then try connectors for which node is presynaptic
-          } else if (pp[0].length > 0) {
-            self.selectNode(pp[0][0]).catch(CATMAID.handleError);
-          // Then try connectors for which node has gap junction with
-          } else if (pp[2].length > 0) {
-            self.selectNode(pp[2][0]).catch(CATMAID.handleError);
-          } else {
-            self.activateNode(null);
-          }
-        }
-      }
-      // Nodes are refreshed due to the change event the neuron controller emits
-      CATMAID.statusBar.replaceLast("Deleted node #" + node.id);
-    }, CATMAID.handleError);
   }
 
   return true;

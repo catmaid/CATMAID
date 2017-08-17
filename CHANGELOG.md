@@ -42,6 +42,9 @@ Miscellaneous:
 
 - Tabbed windows: changing window aliases are now reflected in tab headers.
 
+- The performance of node creation and deletion operations has been improved by
+  preventing full node updates after these operations.
+
 
 ### Bug fixes
 

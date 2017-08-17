@@ -4333,7 +4333,7 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
     function(node, wasActiveNode) {
   var self = this;
   // Make sure all other pending tasks are done before the node is deleted.
-  return this.submit.promise(function() {
+  return this.submit.then(function() {
     var command = new CATMAID.RemoveNodeCommand(self.state, project.id, node.id);
     return CATMAID.commands.execute(command);
   }).then(function(json) {
@@ -4351,7 +4351,9 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
         child.parent = parent;
       }
     }
-    delete parent.children[node.id];
+    if (parent) {
+      delete parent.children[node.id];
+    }
     node.obliterate();
     node.drawEdges();
     self.pixiLayer._renderIfReady();
@@ -4380,7 +4382,9 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
     }
     // Nodes are refreshed due to the change event the neuron controller emits
     CATMAID.statusBar.replaceLast("Deleted node #" + node.id);
-  }, CATMAID.handleError);
+  })
+  .promise()
+  .catch(CATMAID.handleError);
 };
 
 /**

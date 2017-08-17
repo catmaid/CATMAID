@@ -52,21 +52,25 @@ QUnit.test('Tracing overlay test', function( assert ) {
 
     // Mock SVG overlay
     var nodeID = 42;
-    var fakeOverlay = {
-      nodes: {
+    var FakeOverlay = function() {
+      this.nodes = {
         '41': {
           id: 41,
           canEdit: function () { return true; },
           type: SkeletonAnnotations.TYPE_NODE,
+          obliterate: function() {},
+          drawEdges: function() {}
         },
         '42': {
           id: 42,
           canEdit: function () { return true; },
           type: SkeletonAnnotations.TYPE_NODE,
+          obliterate: function() {},
+          drawEdges: function() {}
         }
-      },
-      nodeIDsNeedingSync: new Set([41, 42]),
-      state: new CATMAID.GenericState({
+      };
+      this.nodeIDsNeedingSync = new Set([41, 42]);
+      this.state = new CATMAID.GenericState({
         getNode: function(nodeId) {
           return [nodeId, "fakeEditTime"];
         },
@@ -79,21 +83,26 @@ QUnit.test('Tracing overlay test', function( assert ) {
         getLinks: function(nodeId) {
           return [];
         },
-      }),
-      selectNode: function() {},
-      submit: submitterFn(),
-      pix2physX: function() { return 0; },
-      pix2physY: function() { return 0; },
-      pix2physZ: function() { return 0; },
-      stackViewer: {
+      });
+      this.selectNode = function() {};
+      this.submit = submitterFn();
+      this.pix2physX = function() { return 0; };
+      this.pix2physY = function() { return 0; };
+      this.pix2physZ = function() { return 0; };
+      this.stackViewer = {
         createStackViewBox: function () {
           return {
             min: {x: -Infinity, y: -Infinity, z: -Infinity},
             max: {x: Infinity, y: Infinity, z: Infinity}
           };
-        },
-      },
+        }
+      };
+      this.pixiLayer = {
+        _renderIfReady: CATMAID.noop
+      };
     };
+    FakeOverlay.prototype = Object.create(SkeletonAnnotations.TracingOverlay.prototype);
+    var fakeOverlay = new FakeOverlay();
 
     // Indicates which nodes are available in our fake backend
     var availableNodes = { 41: {}, 42: {} };
@@ -154,11 +163,10 @@ QUnit.test('Tracing overlay test', function( assert ) {
       delete availableNodes[nodeID];
     });
     // Update the tracing layer immediately after queing the deleting
-    SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesInDB.call(
-        fakeOverlay, function(json) {
-          assert.deepEqual(json, {"updated": 1},
-              "The node update returns with expected response.");
-        });
+    fakeOverlay.updateNodeCoordinatesInDB(function(json) {
+      assert.deepEqual(json, {"updated": 1},
+          "The node update returns with expected response.");
+    });
     // Update the tracing layer immediately after queing the deleting
     fakeOverlay.submit.then(function() {
       // Reset request queue to original queue

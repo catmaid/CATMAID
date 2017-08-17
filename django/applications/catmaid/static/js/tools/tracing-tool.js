@@ -208,7 +208,7 @@
         spanName.appendChild(document.createTextNode(""));
         activeElement.appendChild(spanName);
         stackFrame.appendChild(activeElement);
-        setNeuronNameInTopbars(SkeletonAnnotations.getActiveSkeletonId());
+        setActiveElemenTopBarText(SkeletonAnnotations.getActiveSkeletonId());
       }
 
       return layer;
@@ -370,8 +370,8 @@
      * Set the text in the small bar next to the close button of each stack
      * viewer to the name of the skeleton as it is given by the nameservice.
      */
-    function setNeuronNameInTopbars(skeletonID, prefix) {
-      if (!skeletonID) {
+    function setActiveElemenTopBarText(skeletonId, prefix) {
+      if (!skeletonId) {
         clearTopbars();
         return;
       }
@@ -388,16 +388,17 @@
           CATMAID.NeuronNameService.getInstance().unregister(labelData);
         }
 
-        label.data('skeleton_id', skeletonID);
+        // If a skeleton is selected, register with neuron name service.
+        label.data('skeleton_id', skeletonId);
         label.data('updateNeuronNames', function () {
           label.text(prefix + CATMAID.NeuronNameService.getInstance().getName(this.skeleton_id));
         });
 
         var models = {};
-        models[skeletonID] = {};
+        models[skeletonId] = {};
         CATMAID.NeuronNameService.getInstance().registerAll(label.data(), models)
           .then(function() {
-            label.text(prefix + CATMAID.NeuronNameService.getInstance().getName(skeletonID));
+            label.text(prefix + CATMAID.NeuronNameService.getInstance().getName(skeletonId));
           });
       });
     }
@@ -409,7 +410,7 @@
     function handleActiveNodeChange(node, skeletonChanged) {
       if (node && node.id) {
         if (skeletonChanged && SkeletonAnnotations.TYPE_NODE === node.type) {
-          setNeuronNameInTopbars(node.skeleton_id);
+          setActiveElemenTopBarText(node.skeleton_id);
         } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
           if (CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR === node.subtype) {
             // Retrieve presynaptic skeleton
@@ -419,8 +420,8 @@
             .then(function(json) {
               var presynaptic_to = json[0] ? json[0][1].presynaptic_to : false;
               if (presynaptic_to) {
-                setNeuronNameInTopbars(presynaptic_to, 'Connector ' + node.id +
-                    ', presynaptic partner: ');
+                setActiveElemenTopBarText(presynaptic_to, 'Connector ' +
+                    node.id + ', presynaptic partner: ');
               } else {
                 clearTopbars('Connector ' + node.id + ' (no presynatpic partner)');
               }

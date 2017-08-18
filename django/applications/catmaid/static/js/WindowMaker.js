@@ -257,7 +257,7 @@ var WindowMaker = new function()
 
     // Widgets can announce they have filtering support
     if (config.filter) {
-      DOM.addFiltereControlsToggle(win, 'Filter: ' +
+      DOM.addFilterControlsToggle(win, 'Filter: ' +
           instance.getName(), config.filter);
     }
 
@@ -345,7 +345,7 @@ var WindowMaker = new function()
     var bar = document.createElement( "div" );
     bar.id = "3d_viewer_buttons";
     bar.setAttribute('class', 'buttonpanel');
-    DOM.addFiltereControlsToggle(win, 'Filter: ' +
+    DOM.addFiltereControlToggle(win, 'Filter: ' +
         WA.getName(), {
           rules: WA.filterRules,
           update: WA.updateFilter.bind(WA)

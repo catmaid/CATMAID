@@ -398,7 +398,7 @@
    * Inject an extra button into the caption of a window. This button allows to
    * show and hide filter controls for a widget.
    */
-  DOM.addFiltereControlsToggle = function(win, title, options) {
+  DOM.addFilterControlsToggle = function(win, title, options) {
     title = title || 'Toggle filter controls';
 
     // A toggle function that also allows to recreate the UI.

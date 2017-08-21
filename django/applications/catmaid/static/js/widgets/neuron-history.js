@@ -316,9 +316,14 @@
         loadedSkeletons++;
         CATMAID.tools.callIfFn(tick, loadedSkeletons, ids.length);
 
+        var resultComponents = new Set(['tracingTime', 'reviewTime',
+          'totalTime', 'firstTracing', 'lastTracing', 'firstReview',
+          'lastReview', 'cableBeforeAfterReview',
+          'connectorBeftorAfterReview']);
+
         return NeuronHistoryWidget.skeletonDetailToStats(skeletonId,
             skeletonDetail, maxInactivityTime, tracingTimeComponents,
-            timeUnits);
+            timeUnits, resultComponents);
       });
     });
 
@@ -338,7 +343,10 @@
 
   NeuronHistoryWidget.skeletonDetailToStats = function(skeletonId,
       skeletonDetail, maxInactivityTime, tracingTimeComponents,
-      timeUnits) {
+      timeUnits, resultComponents) {
+    var result = {
+      skeletonId: skeletonId
+    };
     var inputTagLists = [];
     var tagMap = skeletonDetail[2];
     for (var tag in tagMap) {
@@ -355,29 +363,39 @@
       annotations: new TS.EventSource(skeletonDetail[4], 1)
     };
 
-    // Get sorted total events for both reconstruction and review as well as a
-    // total time.
-    // TODO: count all writes
-    var tracingEvents = TS.mergeEventSources(availableEvents,
-        Array.from(tracingTimeComponents), 'asc');
-    var reviewEvents = TS.mergeEventSources(availableEvents, ["reviews"], 'asc');
+    if (resultComponents.has('tracingTime')) {
+      // Get sorted tracing revents
+      // TODO: count all writes
+      var tracingEvents = TS.mergeEventSources(availableEvents,
+          Array.from(tracingTimeComponents), 'asc');
+      // Calculate tracing time by finding active bouts. Each bout consists of
+      // a lists of events that contribute to the reconstruction of a neuron.
+      // These events are currently node edits and connector edits.
+      var activeTracingBouts = TS.getActiveBouts(tracingEvents, maxInactivityTime);
+      var tracingTime = TS.getTotalTime(activeTracingBouts);
+      result.tracingTime = tracingTime ?
+          CATMAID.tools.humanReadableTimeInterval(tracingTime, timeUnits) : "0";
+    }
 
-    var totalTimeComponents = new Set(tracingTimeComponents);
-    totalTimeComponents.add('reviews');
-    var totalEvents = TS.mergeEventSources(availableEvents,
-        Array.from(totalTimeComponents), 'asc');
+    if (resultComponents.has('reviewTime')) {
+      // Get sorted review revents
+      var reviewEvents = TS.mergeEventSources(availableEvents, ["reviews"], 'asc');
+      var activeReviewBouts = TS.getActiveBouts(reviewEvents, maxInactivityTime);
+      var reviewTime = TS.getTotalTime(activeReviewBouts);
+      result.reviewTime = reviewTime ?
+          CATMAID.tools.humanReadableTimeInterval(reviewTime, timeUnits) : "0";
+    }
 
-    // Calculate tracing time by finding active bouts. Each bout consists of
-    // a lists of events that contribute to the reconstruction of a neuron.
-    // These events are currently node edits and connector edits.
-    var activeTracingBouts = TS.getActiveBouts(tracingEvents, maxInactivityTime);
-    var activeReviewBouts = TS.getActiveBouts(reviewEvents, maxInactivityTime);
-    var activeTotalBouts = TS.getActiveBouts(totalEvents, maxInactivityTime);
-
-    // Comput total time intervals
-    var tracingTime = TS.getTotalTime(activeTracingBouts);
-    var reviewTime = TS.getTotalTime(activeReviewBouts);
-    var totalTime = TS.getTotalTime(activeTotalBouts);
+    if (resultComponents.has('totalTime')) {
+      var totalTimeComponents = new Set(tracingTimeComponents);
+      totalTimeComponents.add('reviews');
+      var totalEvents = TS.mergeEventSources(availableEvents,
+          Array.from(totalTimeComponents), 'asc');
+      var activeTotalBouts = TS.getActiveBouts(totalEvents, maxInactivityTime);
+      var totalTime = TS.getTotalTime(activeTotalBouts);
+      result.totalTime = totalTime ?
+          CATMAID.tools.humanReadableTimeInterval(totalTime, timeUnits) : "0";
+    }
 
     // Get first and last review event. Bouts are sorted already, which
     // makes it easy to get min and max time.
@@ -388,68 +406,78 @@
     }
     var reviewAvailable = !!firstReviewTime && !!lastReviewTime;
 
-    // Get the sorted history of each node
-    var history = TS.makeHistoryIndex(availableEvents, true);
+    if (resultComponents.has('connectorBeftorAfterReview') ||
+        resultComponents.has('cableBeforeAfterReview') ||
+        resultComponents.has('splitMergeBeforeAfterReview')) {
+      // Get the sorted history of each node
+      var history = TS.makeHistoryIndex(availableEvents, true);
+      // Set parent ID of parent nodes that are not available from the index
+      // null. This essentially makes them root nodes. Which, however, for a
+      // the given point in time is correct.
+      TS.setUnavailableReferencesNull(availableEvents.nodes, history.nodes, 1);
 
-    // Set parent ID of parent nodes that are not available from the index
-    // null. This essentially makes them root nodes. Which, however, for a
-    // the given point in time is correct.
-    TS.setUnavailableReferencesNull(availableEvents.nodes, history.nodes, 1);
+      // Review relative arbors
+      var arborParserBeforeReview, arborParserAfterReview;
+      if (reviewAvailable) {
+        arborParserBeforeReview = TS.getArborBeforePointInTime(history.nodes, history.connectors, firstReviewTime);
+        // TODO: Is it okay to take "now" as reference or do we need the last
+        // review time? I.e. is the final arbor the interesting one or the one
+        // right after review?
+        arborParserAfterReview = TS.getArborBeforePointInTime(history.nodes, history.connectors, new Date());
+      } else {
+        // Without reviews, the arbor at its current state is the one before
+        // reviews.
+        arborParserBeforeReview = TS.getArborBeforePointInTime(history.nodes, history.connectors, new Date());
+      }
 
-    // Review relative arbors
-    var arborParserBeforeReview, arborParserAfterReview;
-    if (reviewAvailable) {
-      arborParserBeforeReview = TS.getArborBeforePointInTime(history.nodes, history.connectors, firstReviewTime);
-      // TODO: Is it okay to take "now" as reference or do we need the last
-      // review time? I.e. is the final arbor the interesting one or the one
-      // right after review?
-      arborParserAfterReview = TS.getArborBeforePointInTime(history.nodes, history.connectors, new Date());
-    } else {
-      // Without reviews, the arbor at its current state is the one before
-      // reviews.
-      arborParserBeforeReview = TS.getArborBeforePointInTime(history.nodes, history.connectors, new Date());
+      // Cable length information
+      var cableBeforeReview = "N/A", cableAfterReview = "N/A";
+      if (reviewAvailable) {
+        cableBeforeReview = Math.round(cableLength(arborParserBeforeReview.arbor,
+            arborParserBeforeReview.positions));
+        cableAfterReview = Math.round(cableLength(arborParserAfterReview.arbor,
+            arborParserAfterReview.positions));
+      } else {
+        cableBeforeReview = Math.round(cableLength(arborParserBeforeReview.arbor,
+            arborParserBeforeReview.positions));
+      }
+
+      // Connector information
+      var connectorsBeforeReview = "N/A", connectorsAfterReview = "N/A";
+      if (reviewAvailable) {
+        connectorsBeforeReview = arborParserBeforeReview.n_inputs +
+            arborParserBeforeReview.n_presynaptic_sites;
+        connectorsAfterReview = arborParserAfterReview.n_inputs +
+            arborParserAfterReview.n_presynaptic_sites;
+      } else {
+        connectorsBeforeReview = arborParserBeforeReview.n_inputs +
+            arborParserBeforeReview.n_presynaptic_sites;
+      }
+
+      result.cableBeforeReview = cableBeforeReview;
+      result.cableAfterReview = cableAfterReview;
+      result.connBeforeReview = connectorsBeforeReview;
+      result.connAfterReview = connectorsAfterReview;
+      result.splitsDuringReview = "?";
+      result.mergesDuringReview = "?";
     }
 
-    // Cable length information
-    var cableBeforeReview = "N/A", cableAfterReview = "N/A";
-    if (reviewAvailable) {
-      cableBeforeReview = Math.round(cableLength(arborParserBeforeReview.arbor,
-          arborParserBeforeReview.positions));
-      cableAfterReview = Math.round(cableLength(arborParserAfterReview.arbor,
-          arborParserAfterReview.positions));
-    } else {
-      cableBeforeReview = Math.round(cableLength(arborParserBeforeReview.arbor,
-          arborParserBeforeReview.positions));
+    if (resultComponents.has('firstTracing')) {
+      result.firstTracingTime = activeTracingBouts ?
+          activeTracingBouts[0].minDate : "N/A";
+    }
+    if (resultComponents.has('lastTracing')) {
+      result.lastTracingTime = activeTracingBouts ?
+          activeTracingBouts[activeTracingBouts.length - 1].maxDate : "N/A";
+    }
+    if (resultComponents.has('firstReview')) {
+      result.firstReviewTime = reviewAvailable ? firstReviewTime : "N/A";
+    }
+    if (resultComponents.has('lastReview')) {
+      result.lastReviewTime = reviewAvailable ? lastReviewTime : "N/A";
     }
 
-    // Connector information
-    var connectorsBeforeReview = "N/A", connectorsAfterReview = "N/A";
-    if (reviewAvailable) {
-      connectorsBeforeReview = arborParserBeforeReview.n_inputs +
-          arborParserBeforeReview.n_presynaptic_sites;
-      connectorsAfterReview = arborParserAfterReview.n_inputs +
-          arborParserAfterReview.n_presynaptic_sites;
-    } else {
-      connectorsBeforeReview = arborParserBeforeReview.n_inputs +
-          arborParserBeforeReview.n_presynaptic_sites;
-    }
-
-    return {
-      skeletonId: skeletonId,
-      tracingTime: tracingTime ? CATMAID.tools.humanReadableTimeInterval(tracingTime, timeUnits) : "0",
-      reviewTime: reviewTime ? CATMAID.tools.humanReadableTimeInterval(reviewTime, timeUnits) : "0",
-      totalTime: totalTime ? CATMAID.tools.humanReadableTimeInterval(totalTime, timeUnits) : "0",
-      cableBeforeReview: cableBeforeReview,
-      cableAfterReview: cableAfterReview,
-      connBeforeReview: connectorsBeforeReview,
-      connAfterReview: connectorsAfterReview,
-      splitsDuringReview: "?",
-      mergesDuringReview: "?",
-      firstTracingTime: activeTracingBouts ? activeTracingBouts[0].minDate : "N/A",
-      lastTracingTime: activeTracingBouts ? activeTracingBouts[activeTracingBouts.length - 1].maxDate : "N/A",
-      firstReviewTime: reviewAvailable ? firstReviewTime : "N/A",
-      lastReviewTime: reviewAvailable ? lastReviewTime : "N/A"
-    };
+    return result;
   };
 
   /**

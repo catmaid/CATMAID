@@ -445,7 +445,7 @@ CATMAID.tools = CATMAID.tools || {};
 
       var pretty = "";
       for (var i=0; i<values.length; ++i) {
-        var val = Math.round(values[i]);
+        var val = Math.floor(values[i]);
         if(val <= 0) continue;
         if (i > 0) {
           pretty += " ";

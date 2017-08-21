@@ -195,7 +195,7 @@
             {title: "Connectors after review", data: "connAfterReview",
                 help: "Number of synaptic connections to partners after last review."},
             {className: "cm-center", title: "First Tracing", data: "firstTracingTime"},
-            {className: "cm-center", title: "Last Tracing", data: "firstTracingTime"},
+            {className: "cm-center", title: "Last Tracing", data: "lastTracingTime"},
             {className: "cm-center", title: "First Review", data: "firstReviewTime"},
             {className: "cm-center", title: "Last Review", data: "lastReviewTime"}
           ],

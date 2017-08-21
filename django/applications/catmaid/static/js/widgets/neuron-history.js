@@ -83,7 +83,7 @@
           self.refresh();
         };
         var maxInactivityTimeLabel = document.createElement('label');
-        maxInactivityTimeLabel.appendChild(document.createTextNode('Max. inactivity time'));
+        maxInactivityTimeLabel.appendChild(document.createTextNode('Max. inactivity time (minutes)'));
         maxInactivityTimeLabel.appendChild(maxInactivityTime);
         controls.appendChild(maxInactivityTimeLabel);
 

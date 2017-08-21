@@ -366,7 +366,7 @@
     var activeReviewBouts = TS.getActiveBouts(reviewEvents, maxInactivityTime);
 
     // Comput total time intervals
-    var totalTime = TS.getTotalTime(activeTracingBouts);
+    var tracingTime = TS.getTotalTime(activeTracingBouts);
     var reviewTime = TS.getTotalTime(activeReviewBouts);
 
     // Get first and last review event. Bouts are sorted already, which
@@ -426,7 +426,7 @@
 
     return {
       skeletonId: skeletonId,
-      tracingTime: totalTime ? CATMAID.tools.humanReadableTimeInterval(totalTime, timeUnits) : "0",
+      tracingTime: tracingTime ? CATMAID.tools.humanReadableTimeInterval(tracingTime, timeUnits) : "0",
       reviewTime: reviewTime ? CATMAID.tools.humanReadableTimeInterval(reviewTime, timeUnits) : "0",
       cableBeforeReview: cableBeforeReview,
       cableAfterReview: cableAfterReview,

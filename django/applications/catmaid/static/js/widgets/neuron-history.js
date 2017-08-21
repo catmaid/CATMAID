@@ -193,6 +193,7 @@
             },
             {className: "cm-center", title: "Tracing time", data: "tracingTime"},
             {className: "cm-center", title: "Review time", data: "reviewTime"},
+            {className: "cm-center", title: "Total time", data: "totalTime"},
             {title: "Cable before review", data: "cableBeforeReview",
                 help: "Unsmoothed cable length before first review, measured in nanometers."},
             {title: "Cable after review", data: "cableAfterReview",
@@ -233,6 +234,7 @@
         '<dl>',
         '<dt>Tracing time</dt><dd>The sum of all active tracing bouts by all users.</dt>',
         '<dt>Review time</dt><dd>The sum of all active review bouts by all users.</dt>',
+        '<dt>Total time</dt><dd>The sum of all active bouts (tracing and review) by all users.</dt>',
         '<dt>Cable before review</dt><dd>Cable length before first review event.</dt>',
         '<dt>Cable after review</dt><dd>Cable length after last review event.</dt>',
         '<dt>Connectors before review</dt><dd>The number of connectors before first review event.</dt>',
@@ -353,21 +355,29 @@
       annotations: new TS.EventSource(skeletonDetail[4], 1)
     };
 
-    // Get sorted total events for both reconstruction and review
+    // Get sorted total events for both reconstruction and review as well as a
+    // total time.
     // TODO: count all writes
     var tracingEvents = TS.mergeEventSources(availableEvents,
         Array.from(tracingTimeComponents), 'asc');
     var reviewEvents = TS.mergeEventSources(availableEvents, ["reviews"], 'asc');
+
+    var totalTimeComponents = new Set(tracingTimeComponents);
+    totalTimeComponents.add('reviews');
+    var totalEvents = TS.mergeEventSources(availableEvents,
+        Array.from(totalTimeComponents), 'asc');
 
     // Calculate tracing time by finding active bouts. Each bout consists of
     // a lists of events that contribute to the reconstruction of a neuron.
     // These events are currently node edits and connector edits.
     var activeTracingBouts = TS.getActiveBouts(tracingEvents, maxInactivityTime);
     var activeReviewBouts = TS.getActiveBouts(reviewEvents, maxInactivityTime);
+    var activeTotalBouts = TS.getActiveBouts(totalEvents, maxInactivityTime);
 
     // Comput total time intervals
     var tracingTime = TS.getTotalTime(activeTracingBouts);
     var reviewTime = TS.getTotalTime(activeReviewBouts);
+    var totalTime = TS.getTotalTime(activeTotalBouts);
 
     // Get first and last review event. Bouts are sorted already, which
     // makes it easy to get min and max time.
@@ -428,6 +438,7 @@
       skeletonId: skeletonId,
       tracingTime: tracingTime ? CATMAID.tools.humanReadableTimeInterval(tracingTime, timeUnits) : "0",
       reviewTime: reviewTime ? CATMAID.tools.humanReadableTimeInterval(reviewTime, timeUnits) : "0",
+      totalTime: totalTime ? CATMAID.tools.humanReadableTimeInterval(totalTime, timeUnits) : "0",
       cableBeforeReview: cableBeforeReview,
       cableAfterReview: cableAfterReview,
       connBeforeReview: connectorsBeforeReview,

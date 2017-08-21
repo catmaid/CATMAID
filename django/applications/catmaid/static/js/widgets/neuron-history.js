@@ -175,6 +175,13 @@
           },
           columns: [
             {
+              title: "",
+              orderable: false,
+              render: function(data, type, row, meta) {
+                return '<a data-action="remove" href="#"><i class="fa fa-close" title="Remove neuron"></i></a>';
+              }
+            },
+            {
               className: "cm-center",
               title: "Neuron",
               data: "skeletonId",
@@ -205,6 +212,9 @@
         }).on("click", "td .action-select", this, function(e) {
           var skeletonId = $(this).closest("tr").attr("data-skeleton-id");
           CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
+        }).on("click", "a[data-action=remove]", this, function(e) {
+          var skeletonId = $(this).closest("tr").attr("data-skeleton-id");
+          self.skeletonSource.removeSkeletons([skeletonId]);
         });
       },
       helpText: [

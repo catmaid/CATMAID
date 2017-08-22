@@ -287,6 +287,15 @@
           }
         };
         panel.appendChild(saveStateButton);
+
+        var resetStateButton = document.createElement('button');
+        resetStateButton.appendChild(document.createTextNode('Clear saved settings'));
+        resetStateButton.onclick = function() {
+          if (CATMAID.clearSavedWidgetState(widget)) {
+            CATMAID.msg('Success', 'Stored widget settings cleared');
+          }
+        };
+        panel.appendChild(resetStateButton);
       }
 
       // Add as first element after caption and event catcher

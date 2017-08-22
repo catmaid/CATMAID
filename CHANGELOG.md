@@ -45,6 +45,10 @@ Miscellaneous:
 - The performance of node creation and deletion operations has been improved by
   preventing full node updates after these operations.
 
+- Widgets with state saving support now also support removing previously saved
+  states through a button in the widget controls available through the window
+  icon in the widget title bar.
+
 
 ### Bug fixes
 

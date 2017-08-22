@@ -53,6 +53,27 @@ var WindowMaker = new function()
   };
 
   /**
+   * Clear the stored state of a widget if there is a state manager available
+   * for it.
+   */
+  CATMAID.clearSavedWidgetState = function(widget) {
+    var stateManager = stateManagers.get(widget.constructor);
+    if (stateManager) {
+      try {
+        var key = windowManagerStoragePrefix + stateManager.key;
+        localStorage.removeItem(key);
+        return true;
+      } catch (e) {
+        CATMAID.warn("Coudln't save widget state");
+        return false;
+      }
+    } else {
+      CATMAID.warn("No state manager found");
+      return false;
+    }
+  };
+
+  /**
    *  Try to load a widget state from a cookie using the passed in state
    *  manager.
    */

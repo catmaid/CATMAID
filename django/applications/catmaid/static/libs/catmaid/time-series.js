@@ -11,8 +11,8 @@
   var TimeSeries = {};
 
   function sumBoutLengths(sum, bout) {
-    // Count at least one millisecond per bout
-    return sum + Math.max(1, bout.maxDate - bout.minDate);
+    // Count at least one second per bout
+    return sum + Math.max(1000, bout.maxDate - bout.minDate);
   }
 
   function returnMinTime(currentMin, newMin) {

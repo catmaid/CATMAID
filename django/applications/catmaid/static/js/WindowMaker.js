@@ -46,7 +46,7 @@ var WindowMaker = new function()
       try {
         return storeWidgetState(widget, widgetStateManager);
       } catch (e) {
-        CATMAID.warn("Coudldn't save widget state");
+        CATMAID.warn("Coudln't save widget state");
         return false;
       }
     }

@@ -28,6 +28,22 @@ Project/user statistics:
 - State saving is now supported.
 
 
+Neuron history:
+
+- Events by different users are now collected in separate bouts to attribute
+  parallel user activity. To restore the previous behavior (users are ignored)
+  the "Merge parallel events" checkbox can be checked.
+
+- State saving is now supported
+
+- Individual neurons can be removed with the help of an "X" icon in the firs
+  column.
+
+- A "total time" column has been added, which aggregates time across all active
+  bouts formed by both tracing and review events. Since events are binnned in
+  bouts, the total time is not just the sum of both tracing time and review
+  time.
+
 Miscellaneous:
 
 - If multiple tile layers are used, the stack viewer layer settings (blue white
@@ -66,6 +82,9 @@ Miscellaneous:
 
 - 3D viewer: the error shown when changing skeleton properties with an active
   connector restriction is fixed.
+
+- The neuron history widget now calculates both tracing time and review time
+  correctly.
 
 
 ## 2017.07.28

@@ -571,10 +571,32 @@
   // Export widget
   CATMAID.NeuronHistoryWidget = NeuronHistoryWidget;
 
+  function toSet(array) {
+    return new Set(array);
+  }
+
   // Register widget with CATMAID
   CATMAID.registerWidget({
     key: 'neuron-history',
-    creator: NeuronHistoryWidget
+    creator: NeuronHistoryWidget,
+    state: {
+      getState: function(widget) {
+        return {
+          maxInactivityTime: widget.maxInactivityTime,
+          tracingTimeComponents: Array.from(widget.tracingTimeComponents),
+          timeUnits: Array.from(widget.timeUnits),
+          mergeUsers: widget.mergeUsers
+        };
+      },
+      setState: function(widget, state) {
+        CATMAID.tools.copyIfDefined(state, widget, 'maxInactivityTime');
+        CATMAID.tools.copyIfDefined(state, widget, 'tracingTimeComponents',
+            'tracingTimeComponents', toSet);
+        CATMAID.tools.copyIfDefined(state, widget, 'timeUnits', 'timeUnits',
+            toSet);
+        CATMAID.tools.copyIfDefined(state, widget, 'mergeUsers');
+      }
+    }
   });
 
 })(CATMAID);

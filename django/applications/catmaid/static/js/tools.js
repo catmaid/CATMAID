@@ -226,11 +226,15 @@ CATMAID.tools = CATMAID.tools || {};
    * Copy from source[sourceField] to target[targetField] if and only if both
    * are defined.
    */
-  tools.copyIfDefined = function(source, target, sourceField, targetField) {
+  tools.copyIfDefined = function(source, target, sourceField, targetField, mapFn) {
     targetField = targetField || sourceField;
     if (source && source.hasOwnProperty(sourceField) &&
         target && target.hasOwnProperty(targetField)) {
-      target[targetField] = source[sourceField];
+      if (CATMAID.tools.isFn(mapFn)) {
+        target[targetField] = mapFn(source[sourceField]);
+      } else {
+        target[targetField] = source[sourceField];
+      }
     }
   };
 

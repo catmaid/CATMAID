@@ -366,7 +366,7 @@ var WindowMaker = new function()
     var bar = document.createElement( "div" );
     bar.id = "3d_viewer_buttons";
     bar.setAttribute('class', 'buttonpanel');
-    DOM.addFiltereControlToggle(win, 'Filter: ' +
+    DOM.addFilterControlsToggle(win, 'Filter: ' +
         WA.getName(), {
           rules: WA.filterRules,
           update: WA.updateFilter.bind(WA)

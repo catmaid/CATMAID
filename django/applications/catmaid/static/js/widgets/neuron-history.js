@@ -141,6 +141,7 @@
         this.table = $(table).DataTable({
           dom: "lrphtip",
           paging: true,
+          autoWidth: false,
           order: [],
           lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
           processing: true,
@@ -176,6 +177,7 @@
           columns: [
             {
               title: "",
+              className: "cm-center",
               orderable: false,
               render: function(data, type, row, meta) {
                 return '<a data-action="remove" href="#"><i class="fa fa-close" title="Remove neuron"></i></a>';

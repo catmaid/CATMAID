@@ -444,14 +444,16 @@ CATMAID.tools = CATMAID.tools || {};
       }
 
       var pretty = "";
+      var addedComponents = 0;
       for (var i=0; i<values.length; ++i) {
-        var val = Math.round(values[i]);
+        var val = Math.floor(values[i]);
         if(val <= 0) continue;
-        if (i > 0) {
+        if (addedComponents > 0) {
           pretty += " ";
         }
 
         pretty += val + units[i];
+        ++addedComponents;
       }
 
       // If there is no valid time representation found, state the passed in

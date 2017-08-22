@@ -202,6 +202,13 @@ def compact_skeleton_detail(request, project_id=None, skeleton_id=None):
       type: boolean
       defaultValue: "false"
       paramType: form
+    - name: with_user_info
+      description: |
+        Whether all result elements should contain also the creator ID.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
     type:
     - type: array
       items:
@@ -217,10 +224,11 @@ def compact_skeleton_detail(request, project_id=None, skeleton_id=None):
     with_merge_history = request.GET.get("with_merge_history", "false") == "true"
     with_reviews = request.GET.get("with_reviews", "false") == "true"
     with_annotations = request.GET.get("with_annotations", "false") == "true"
+    with_user_info = request.GET.get("with_user_info", "false") == "true"
 
     result = _compact_skeleton(project_id, skeleton_id, with_connectors,
                                with_tags, with_history, with_merge_history,
-                               with_reviews, with_annotations)
+                               with_reviews, with_annotations, with_user_info)
 
     return JsonResponse(result, safe=False,
             json_dumps_params={
@@ -248,10 +256,11 @@ def compact_skeleton(request, project_id=None, skeleton_id=None,
     with_merge_history = request.GET.get("with_merge_history", "false").lower() == "true"
     with_reviews = request.GET.get("with_reviews", "false").lower() == "true"
     with_annotations = request.GET.get("with_annotations", "false").lower() == "true"
+    with_user_info = request.POST.get("with_user_info", "false") == "true"
 
     result = _compact_skeleton(project_id, skeleton_id, with_connectors,
                                with_tags, with_history, with_merge_history,
-                               with_reviews, with_annotations)
+                               with_reviews, with_annotations, with_user_info)
 
     return JsonResponse(result, safe=False,
             json_dumps_params={
@@ -341,6 +350,13 @@ def compact_skeleton_detail_many(request, project_id=None):
       type: boolean
       defaultValue: "false"
       paramType: form
+    - name: with_user_info
+      description: |
+        Whether all result elements should contain also the creator ID.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
     type:
     - type: array
       items:
@@ -355,6 +371,7 @@ def compact_skeleton_detail_many(request, project_id=None):
     with_merge_history = request.POST.get("with_merge_history", "false") == "true"
     with_reviews = request.POST.get("with_reviews", "false") == "true"
     with_annotations = request.POST.get("with_annotations", "false") == "true"
+    with_user_info = request.POST.get("with_user_info", "false") == "true"
 
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
@@ -363,7 +380,7 @@ def compact_skeleton_detail_many(request, project_id=None):
     for skeleton_id in skeleton_ids:
         skeletons[skeleton_id] = _compact_skeleton(project_id, skeleton_id,
                 with_connectors, with_tags, with_history, with_merge_history,
-                with_reviews, with_annotations)
+                with_reviews, with_annotations, with_user_info)
 
     return JsonResponse({
         "skeletons": skeletons
@@ -375,7 +392,7 @@ def compact_skeleton_detail_many(request, project_id=None):
 
 def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
         with_tags=True, with_history=False, with_merge_history=True,
-        with_reviews=False, with_annotations=False):
+        with_reviews=False, with_annotations=False, with_user_info=False):
     """Get a compact treenode representation of a skeleton, optionally with the
     history of individual nodes and connector, reviews and annotationss. Note
     this function is performance critical! Returns, in JSON:
@@ -494,17 +511,22 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
         gj = relations.get('gapjunction_with', -1)
         relation_index = {pre: 0, post: 1, gj: 2}
         if not with_history:
+            user_select = ', tc.user_id' if with_user_info else ''
             cursor.execute('''
                 SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
                     c.location_x, c.location_y, c.location_z
+                    {user_select}
                 FROM treenode_connector tc,
                     connector c
                 WHERE tc.skeleton_id = %s
                 AND tc.connector_id = c.id
                 AND (tc.relation_id = %s OR tc.relation_id = %s OR tc.relation_id = %s)
-            ''', (skeleton_id, pre, post, gj))
+            '''.format(user_select=user_select), (skeleton_id, pre, post, gj))
 
-            connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5]) for row in cursor.fetchall())
+            if with_user_info:
+                connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5], row[6]) for row in cursor.fetchall())
+            else:
+                connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5]) for row in cursor.fetchall())
         else:
             params = {
                 'skeleton_id': skeleton_id,
@@ -512,6 +534,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
                 'post': post,
                 'gj': gj
             }
+            user_select = ', links.user_id' if with_user_info else ''
 
             # Get present and historic connectors. If a historic validity range
             # is empty (e.g. due to a change in the same transaction), the
@@ -521,50 +544,59 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
                 SELECT links.treenode_id, links.connector_id, links.relation_id,
                         c.location_x, c.location_y, c.location_z,
                         links.valid_from, links.valid_to
+                        {user_select}
                 FROM (
                     SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
-                        tc.edition_time, tc.creation_time
+                        tc.edition_time, tc.creation_time, tc.user_id
                     FROM treenode_connector tc
                     WHERE tc.skeleton_id = %(skeleton_id)s
                     UNION ALL
                     SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
                         COALESCE(lower(tc.sys_period), tc.edition_time),
-                        COALESCE(upper(tc.sys_period), tc.edition_time)
+                        COALESCE(upper(tc.sys_period), tc.edition_time),
+                        tc.user_id
                     FROM treenode_connector__history tc
                     WHERE tc.skeleton_id = %(skeleton_id)s
-                    {}
-                ) links(treenode_id, connector_id, relation_id, valid_from, valid_to)
+                    {extra_query}
+                ) links(treenode_id, connector_id, relation_id, valid_from, valid_to, user_id)
                 JOIN connector__with_history c
                     ON links.connector_id = c.id
                 WHERE (links.relation_id = %(pre)s OR links.relation_id = %(post)s OR links.relation_id = %(gj)s)
             '''
 
             if with_merge_history:
-                query =  query.format('''
+                merge_user_select = ', tch.user_id' if with_user_info else ''
+                extra_query = '''
                     UNION ALL
                     SELECT tch.treenode_id, tch.connector_id, tch.relation_id,
                         COALESCE(lower(tch.sys_period), tch.edition_time),
                         COALESCE(upper(tch.sys_period), tch.edition_time)
+                        {user_select}
                     FROM treenode_connector__history tch
                     JOIN treenode_connector tc
                         ON tc.id = tch.id
                         AND tc.skeleton_id = %(skeleton_id)s
                         AND tch.skeleton_id <> tc.skeleton_id
-                ''')
+                '''.format(user_select=merge_user_select)
             else:
-                query = query.format('')
+                extra_query = ''
 
-            cursor.execute(query, params)
+            cursor.execute(query.format(extra_query=extra_query, user_select=user_select), params)
 
-            connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5], row[6], row[7]) for row in cursor.fetchall())
+            if with_user_info:
+                connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5], row[6], row[7], row[8]) for row in cursor.fetchall())
+            else:
+                connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5], row[6], row[7]) for row in cursor.fetchall())
 
     if with_tags:
         history_suffix = '__with_history' if with_history else ''
         t_history_query = ', tci.edition_time' if with_history else ''
+        user_select = ', tci.user_id' if with_user_info else ''
         # Fetch all node tags
         cursor.execute('''
             SELECT c.name, tci.treenode_id
                    {0}
+                   {user_select}
             FROM treenode{1} t,
                  treenode_class_instance{1} tci,
                  class_instance{1} c
@@ -572,14 +604,23 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
               AND t.id = tci.treenode_id
               AND tci.relation_id = %s
               AND c.id = tci.class_instance_id
-        '''.format(t_history_query, history_suffix), (skeleton_id, relations['labeled_as']))
+        '''.format(t_history_query, history_suffix, user_select=user_select),
+        (skeleton_id, relations['labeled_as']))
 
         if with_history:
-            for row in cursor.fetchall():
-                tags[row[0]].append([row[1], row[2]])
+            if with_user_info:
+                for row in cursor.fetchall():
+                    tags[row[0]].append([row[1], row[2], row[3]])
+            else:
+                for row in cursor.fetchall():
+                    tags[row[0]].append([row[1], row[2]])
         else:
-            for row in cursor.fetchall():
-                tags[row[0]].append(row[1])
+            if with_user_info:
+                for row in cursor.fetchall():
+                    tags[row[0]].append([row[1], row[2]])
+            else:
+                for row in cursor.fetchall():
+                    tags[row[0]].append(row[1])
 
     if with_reviews:
         r_history_query = ', r.review_time' if with_history else ''
@@ -597,17 +638,19 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
     if with_annotations:
         history_suffix = '__with_history' if with_history else ''
         link_history_query = ', annotation_link.edition_time' if with_history else ''
+        user_select = ', neuron_link.user_id' if with_user_info else ''
         # Fetch all node tags
         cursor.execute('''
             SELECT annotation_link.class_instance_b
                    {0}
+                   {user_select}
             FROM class_instance_class_instance{1} neuron_link
             JOIN class_instance_class_instance{1} annotation_link
                 ON annotation_link.class_instance_a = neuron_link.class_instance_b
             WHERE neuron_link.class_instance_a = %(skeleton_id)s
               AND neuron_link.relation_id = %(model_of)s
               AND annotation_link.relation_id = %(annotated_with)s
-        '''.format(link_history_query, history_suffix), {
+        '''.format(link_history_query, history_suffix, user_select=user_select), {
             'skeleton_id': skeleton_id,
             'model_of': relations['model_of'],
             'annotated_with': relations['annotated_with']

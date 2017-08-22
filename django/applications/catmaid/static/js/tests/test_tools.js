@@ -131,4 +131,16 @@ QUnit.test('Utilities test', function( assert ) {
     var obj = {};
     assert.strictEqual(CATMAID.tools.getDefined(undefined, obj), obj, "CATMAID.tools.getDefined returns fallback object value");
   })();
+
+  // Test humanReadableTimeInterval
+  (function() {
+    assert.strictEqual(CATMAID.tools.humanReadableTimeInterval(10, new Set(['sec'])), '< 1sec',
+        'CATMAID.tools.humanReadableTimeInterval returns expected result');
+    assert.strictEqual(CATMAID.tools.humanReadableTimeInterval(119000, new Set(['sec', 'min'])), '1min 59sec',
+        'CATMAID.tools.humanReadableTimeInterval returns expected result');
+    assert.strictEqual(CATMAID.tools.humanReadableTimeInterval(3396724, new Set(['sec', 'min', 'hours', 'days'])), '56min 36sec',
+        'CATMAID.tools.humanReadableTimeInterval returns expected result');
+    assert.strictEqual(CATMAID.tools.humanReadableTimeInterval(4496724, new Set(['sec', 'min', 'hours', 'days'])), '1h 14min 56sec',
+        'CATMAID.tools.humanReadableTimeInterval returns expected result');
+  })();
 });

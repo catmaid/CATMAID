@@ -11,8 +11,8 @@
   var TimeSeries = {};
 
   function sumBoutLengths(sum, bout) {
-    // Count at least one millisecond per bout
-    return sum + Math.max(1, bout.maxDate - bout.minDate);
+    // Count at least one second per bout
+    return sum + Math.max(1000, bout.maxDate - bout.minDate);
   }
 
   function returnMinTime(currentMin, newMin) {
@@ -26,9 +26,10 @@
   /**
    * A single time series event.
    */
-  TimeSeries.Event = function(date, timeIndex, data) {
+  TimeSeries.Event = function(date, timeIndex, userIndex, data) {
     this.date = date;
     this.timeIndex = timeIndex;
+    this.userIndex = userIndex;
     this.data = data;
   };
 
@@ -105,7 +106,7 @@
     this.events.push(e);
   };
 
-  TimeSeries.EventSource = function(data, timeIndex) {
+  TimeSeries.EventSource = function(data, timeIndex, userIndex) {
     if (Array.isArray(data)) {
       this.data = data;
     } else {
@@ -116,6 +117,7 @@
       this.data = unmappedData;
     }
     this.timeIndex = timeIndex;
+    this.userIndex = userIndex;
   };
 
   function sumEventSourceLengths(sum, sourceId) {
@@ -145,11 +147,12 @@
       var source = eventSources[sourceId];
       var events = source.data;
       var timeIndex = source.timeIndex;
+      var userIndex = source.userIndex;
       for (var j=0, jmax=events.length; j<jmax; ++j) {
         var e = events[j];
         // Store each event source with normalized data:
         // [lowerBount, upperBound, [lowerBoundStr, upperBoundStr, data]]
-        mergedEvents[addedEvents] = new Event(new Date(e[timeIndex]), timeIndex, e);
+        mergedEvents[addedEvents] = new Event(new Date(e[timeIndex]), timeIndex, userIndex, e);
         ++addedEvents;
       }
     }
@@ -167,28 +170,59 @@
     return mergedEvents;
   };
 
-  TimeSeries.getActiveBouts = function(events, maxInactivity) {
+  /**
+   * Group all input events into bouts which only contain events that are a
+   * maximum of <maxInactivity> seconds apart from each other. To count parallel
+   * events of different users correctly, <mergeUsers> has to be set to false.
+   * If this is the case, all events within one bout will be from the same user.
+   * This also means, bouts can overlap.
+   */
+  TimeSeries.getActiveBouts = function(events, maxInactivity, mergeUsers) {
     // Convert minutes to milliseconds
     maxInactivity = maxInactivity * 60 * 1000;
-    return events.reduce(function(activeBouts, e) {
-      var bout;
-      if (activeBouts.length === 0) {
-        bout = new TimeSeries.Bout();
-        activeBouts.push(bout);
-      } else {
-        // Add this event to the last bout, if it doesn't exceed the max
-        // inactivity interval.
-        var lastBout = activeBouts[activeBouts.length - 1];
-        if (e.date - lastBout.maxDate > maxInactivity) {
+    if (mergeUsers) {
+      return events.reduce(function(activeBouts, e) {
+        var bout;
+        if (activeBouts.length === 0) {
           bout = new TimeSeries.Bout();
           activeBouts.push(bout);
         } else {
-          bout = lastBout;
+          // Add this event to the last bout, if it doesn't exceed the max
+          // inactivity interval.
+          var lastBout = activeBouts[activeBouts.length - 1];
+          if (e.date - lastBout.maxDate > maxInactivity) {
+            bout = new TimeSeries.Bout();
+            activeBouts.push(bout);
+          } else {
+            bout = lastBout;
+          }
         }
-      }
-      bout.addEvent(e);
-      return activeBouts;
-    }, []);
+        bout.addEvent(e);
+        return activeBouts;
+      }, []);
+    } else {
+      var boutCollection = events.reduce(function(o, e) {
+        var activeBouts = o.activeBouts;
+        var userId = e.data[e.userIndex];
+        var bout = o.lastUserBouts[userId];
+
+        // Add this event to the last bout, if it doesn't exceed the max
+        // inactivity interval.
+        if (!bout || (e.date - bout.maxDate > maxInactivity)) {
+          bout = new TimeSeries.Bout();
+          o.lastUserBouts[userId] = bout;
+          activeBouts.push(bout);
+        }
+        bout.addEvent(e);
+
+        return o;
+      }, {
+        activeBouts: [],
+        lastUserBouts: {}
+      });
+
+      return boutCollection.activeBouts;
+    }
   };
 
   /**

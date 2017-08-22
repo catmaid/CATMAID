@@ -26,6 +26,9 @@
     this.tracingTimeComponents = new Set(["nodes", "connectors", "tags", "annotations"]);
     // The time components the tracing time is represented with
     this.timeUnits = new Set(["sec", "min", "hours", "days"]);
+    // Whether user information should be ignored (deflates times, because
+    // parallel user activities are not looked at separately).
+    this.mergeUsers = false;
     // Will store a datatable instance
     this.table = null;
   };
@@ -122,6 +125,19 @@
           self.refresh();
         };
         controls.append(timeUnits);
+
+        var mergeUsers = document.createElement('input');
+        mergeUsers.setAttribute("type", "checkbox");
+        mergeUsers.checked = this.mergeUsers;
+        mergeUsers.onchange = function() {
+          self.mergeUsers = this.checked;
+          self.refresh();
+        };
+        var mergeUsersLabel = document.createElement('label');
+        mergeUsersLabel.appendChild(mergeUsers);
+        mergeUsersLabel.appendChild(document.createTextNode('Merge parallel events'));
+        mergeUsersLabel.setAttribute('title', 'If true, parallel user activity won\'t be counted separately.');
+        controls.appendChild(mergeUsersLabel);
       },
       createContent: function(content) {
         var self = this;
@@ -300,8 +316,10 @@
     var maxInactivityTime = this.maxInactivityTime;
     var tracingTimeComponents = this.tracingTimeComponents;
     var timeUnits = this.timeUnits;
+    var mergeUsers = this.mergeUsers;
     var skeletonPromises = skeletonIds.map(function(skeletonId, i, ids) {
       return CATMAID.fetch(project.id + "/skeletons/" + skeletonId + "/compact-detail", "GET", {
+        with_user_info: true,
         with_connectors: true,
         with_tags: true,
         with_history: true,
@@ -325,7 +343,7 @@
 
         return NeuronHistoryWidget.skeletonDetailToStats(skeletonId,
             skeletonDetail, maxInactivityTime, tracingTimeComponents,
-            timeUnits, resultComponents);
+            timeUnits, mergeUsers, resultComponents);
       });
     });
 
@@ -345,7 +363,7 @@
 
   NeuronHistoryWidget.skeletonDetailToStats = function(skeletonId,
       skeletonDetail, maxInactivityTime, tracingTimeComponents,
-      timeUnits, resultComponents) {
+      timeUnits, mergeUsers, resultComponents) {
     var result = {
       skeletonId: skeletonId
     };
@@ -358,31 +376,33 @@
 
     var TS = CATMAID.TimeSeries;
     var availableEvents = {
-      nodes: new TS.EventSource(skeletonDetail[0], 8),
-      connectors: new TS.EventSource(skeletonDetail[1], 6),
-      tags: new TS.EventSource(tags, 1),
-      reviews: new TS.EventSource(skeletonDetail[3], 3),
-      annotations: new TS.EventSource(skeletonDetail[4], 1)
+      nodes: new TS.EventSource(skeletonDetail[0], 8, 2),
+      connectors: new TS.EventSource(skeletonDetail[1], 6, 8),
+      tags: new TS.EventSource(tags, 1, 2),
+      reviews: new TS.EventSource(skeletonDetail[3], 3, 2),
+      annotations: new TS.EventSource(skeletonDetail[4], 1, 2)
     };
 
     if (resultComponents.has('tracingTime')) {
-      // Get sorted tracing revents
+      // Get sorted tracing events
       // TODO: count all writes
       var tracingEvents = TS.mergeEventSources(availableEvents,
           Array.from(tracingTimeComponents), 'asc');
       // Calculate tracing time by finding active bouts. Each bout consists of
       // a lists of events that contribute to the reconstruction of a neuron.
       // These events are currently node edits and connector edits.
-      var activeTracingBouts = TS.getActiveBouts(tracingEvents, maxInactivityTime);
+      var activeTracingBouts = TS.getActiveBouts(tracingEvents,
+          maxInactivityTime, mergeUsers);
       var tracingTime = TS.getTotalTime(activeTracingBouts);
       result.tracingTime = tracingTime ?
           CATMAID.tools.humanReadableTimeInterval(tracingTime, timeUnits) : "0";
     }
 
     if (resultComponents.has('reviewTime')) {
-      // Get sorted review revents
+      // Get sorted review events
       var reviewEvents = TS.mergeEventSources(availableEvents, ["reviews"], 'asc');
-      var activeReviewBouts = TS.getActiveBouts(reviewEvents, maxInactivityTime);
+      var activeReviewBouts = TS.getActiveBouts(reviewEvents, maxInactivityTime,
+          mergeUsers);
       var reviewTime = TS.getTotalTime(activeReviewBouts);
       result.reviewTime = reviewTime ?
           CATMAID.tools.humanReadableTimeInterval(reviewTime, timeUnits) : "0";
@@ -393,7 +413,8 @@
       totalTimeComponents.add('reviews');
       var totalEvents = TS.mergeEventSources(availableEvents,
           Array.from(totalTimeComponents), 'asc');
-      var activeTotalBouts = TS.getActiveBouts(totalEvents, maxInactivityTime);
+      var activeTotalBouts = TS.getActiveBouts(totalEvents, maxInactivityTime,
+          mergeUsers);
       var totalTime = TS.getTotalTime(activeTotalBouts);
       result.totalTime = totalTime ?
           CATMAID.tools.humanReadableTimeInterval(totalTime, timeUnits) : "0";
@@ -411,12 +432,21 @@
     if (resultComponents.has('connectorBeftorAfterReview') ||
         resultComponents.has('cableBeforeAfterReview') ||
         resultComponents.has('splitMergeBeforeAfterReview')) {
+      // History index creation works currently only for connectors and nodes,
+      // which is also what we need for the before/after review computations.
+      // Therefore, a new event source description is created.
+      var beforeAfterEventSources = {
+        nodes: availableEvents.nodes,
+        connectors: availableEvents.connectors
+      };
+
       // Get the sorted history of each node
-      var history = TS.makeHistoryIndex(availableEvents, true);
+      var history = TS.makeHistoryIndex(beforeAfterEventSources, true);
       // Set parent ID of parent nodes that are not available from the index
       // null. This essentially makes them root nodes. Which, however, for a
       // the given point in time is correct.
-      TS.setUnavailableReferencesNull(availableEvents.nodes, history.nodes, 1);
+      TS.setUnavailableReferencesNull(beforeAfterEventSources.nodes,
+          history.nodes, 1);
 
       // Review relative arbors
       var arborParserBeforeReview, arborParserAfterReview;

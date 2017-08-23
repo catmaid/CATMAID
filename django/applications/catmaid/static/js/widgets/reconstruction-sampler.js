@@ -244,7 +244,7 @@
         })
         .catch(CATMAID.handleError);
     }
-    return Promise.reject("Canceled by user");
+    return Promise.reject(new CATMAID.Warning("Canceled by user"));
   };
 
   BackboneWorkflowStep.prototype.updateContent = function(content, widget) {
@@ -413,7 +413,8 @@
       deleteSampler(samplerId)
           .then(function() {
             datatable.ajax.reload();
-          });
+          })
+          .catch(CATMAID.handleError);
     }).on('click', 'a[data-action=next]', function() {
       var table = $(this).closest('table');
       var tr = $(this).closest('tr');

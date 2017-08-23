@@ -979,6 +979,7 @@
         CATMAID.fetch(project.id +  "/samplers/domains/" + domain.id + "/intervals/", "GET")
           .then(function(result) {
             self.availableIntervals = result;
+            widget.state['domainIntervals'] = result;
             return self.ensureMetadata()
               .then(callback.bind(window, {
                 draw: data.draw,
@@ -1324,11 +1325,14 @@
   /**
    * Return all nodes that are part of the requested interval. This set will not
    * contain any branches starting off the start or end node, as these will be
-   * part of other intervals.
+   * part of other intervals. Additionally a Set instance can be passed in as
+   * <boundaryNodes>. The returned interval nodes won't contain any nodes beyond
+   * any of those boundary nodes nor the boundary nodes themselves.
    */
-  var getIntervalNodes = function(arbor, startNodeId, endNodeId) {
+  var getIntervalNodes = function(arbor, startNodeId, endNodeId, boundaryNodes) {
     startNodeId = parseInt(startNodeId, 10);
     endNodeId = parseInt(endNodeId, 10);
+    boundaryNodes = boundaryNodes || new Set();
     var intervalBackbone = getIntervalBackboneNodes(arbor, startNodeId,
         endNodeId, true);
 
@@ -1357,6 +1361,10 @@
       var children = allSuccessors[currentNodeId];
       for (var i=0; i<children.length; ++i) {
         var childId = parseInt(children[i], 10);
+        // Don't include nodes that are off limit
+        if (boundaryNodes.has(childId)) {
+          continue;
+        }
         intervalNodes.add(childId);
         workingSet.push(childId);
       }
@@ -1437,6 +1445,18 @@
       CATMAID.warn("Need domain for synapse workflow step");
       return;
     }
+    var availableIntervals = widget.state['domainIntervals'];
+    if (availableIntervals === undefined) {
+      CATMAID.warn("Need intervals available in domain");
+      return;
+    }
+    var otherIntervalBoundaries = availableIntervals.reduce(function(o, testInterval) {
+      if (interval.id !== testInterval.id) {
+        o.add(testInterval.start_node_id);
+        o.add(testInterval.end_node_id);
+      }
+      return o;
+    }, new Set());
 
     var p = content.appendChild(document.createElement('p'));
     var msg = (widget.state['reviewRequired'] ?
@@ -1492,7 +1512,8 @@
         // Regenerate interval information
         self.intervalTreenodes.clear();
         var intervalNodes = getIntervalNodes(arborParser.arbor,
-            interval.start_node_id, interval.end_node_id);
+            interval.start_node_id, interval.end_node_id,
+            otherIntervalBoundaries);
         self.intervalTreenodes.addAll(intervalNodes);
       })
       .then(function() {

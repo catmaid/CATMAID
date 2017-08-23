@@ -862,6 +862,9 @@
             widget.options.shading_method = 'sampler-domains';
             widget.options.interpolate_vertex_colots = false;
             widget.updateSkeletonColors();
+
+            // Update screen
+            widget.render();
           });
         });
       }).then(function(result) {

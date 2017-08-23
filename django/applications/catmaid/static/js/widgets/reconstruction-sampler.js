@@ -236,7 +236,8 @@
   };
 
   var deleteSampler = function(samplerId) {
-    if (confirm("Do you really want to delete this sampler and all associated data")) {
+    if (confirm("Do you really want to delete sampler " + samplerId +
+        " and all associated domains and intervals")) {
       return CATMAID.fetch(project.id + "/samplers/" + samplerId + "/delete", "POST")
         .then(function(response) {
           CATMAID.msg("Success", "Deleted sampler " + response.deleted_sampler_id);

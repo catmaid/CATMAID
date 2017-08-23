@@ -1064,7 +1064,7 @@
           title: "Action",
           orderable: false,
           render: function(data, type, row, meta) {
-            return '<a href="#" data-action="next">Open</a>';
+            return '<a href="#" data-action="next">Open</a> <a href="#" data-action="review">Review</a>';
           }
         }
       ],
@@ -1088,6 +1088,11 @@
       widget.state['interval'] = data;
       widget.workflow.advance();
       widget.update();
+    }).on('click', 'a[data-action=review]', function() {
+      var skeletonId = widget.state['skeletonId'];
+      var tr = $(this).closest('tr');
+      var data =  $(table).DataTable().row(tr).data();
+      return reviewInterval(skeletonId, data);
     });
   };
 
@@ -1284,6 +1289,16 @@
       });
   };
 
+  var reviewInterval = function(skeletonId, interval) {
+    var reviewWidget = WindowMaker.create('review-system').widget;
+    var strategy = CATMAID.NodeFilterStrategy['sampler-interval'];
+    var rule = new CATMAID.SkeletonFilterRule(strategy, {
+      'intervalId': interval.id
+    });
+    reviewWidget.filterRules.push(rule);
+    reviewWidget.startSkeletonToReview(skeletonId);
+  };
+
 /**
    * Pick a synapse at random from the traced interval (input, output, or
    * either, depending on the goals).
@@ -1328,7 +1343,7 @@
         label: 'Review interval',
         title: "Review the selected interval in a new review widget",
         onclick: function() {
-          self.reviewInterval(widget);
+          self.reviewCurrentInterval(widget);
         }
       },
       {
@@ -1649,7 +1664,7 @@
     }
   };
 
-  SynapseWorkflowStep.prototype.reviewInterval = function(widget) {
+  SynapseWorkflowStep.prototype.reviewCurrentInterval = function(widget) {
     var skeletonId = widget.state['skeletonId'];
     if (!skeletonId) {
       throw new CATMAID.ValueError("Need skeleton ID for interval review");
@@ -1660,13 +1675,7 @@
       throw new CATMAID.ValueError("Need interval for interval review");
     }
 
-    var reviewWidget = WindowMaker.create('review-system').widget;
-    var strategy = CATMAID.NodeFilterStrategy['sampler-interval'];
-    var rule = new CATMAID.SkeletonFilterRule(strategy, {
-      'intervalId': interval.id
-    });
-    reviewWidget.filterRules.push(rule);
-    reviewWidget.startSkeletonToReview(skeletonId);
+    return reviewInterval(skeletonId, interval);
   };
 
   SynapseWorkflowStep.prototype.pickRandomSynapse = function(widget) {

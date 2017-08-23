@@ -54,9 +54,10 @@ Node filters:
 
 Reconstruction sampler:
 
-- Interval reviews can now be initiated directly from the synapse workflow step.
-  A new button "Review interval" has been added to its controls. It will open a
-  new review widget with pre-set interval filter and added skeleton.
+- Interval reviews can now be initiated directly from the interval step table.
+  It will open a new review widget with pre-set interval filter and added
+  skeleton. The same is possible from the synapse workflow step using the
+  "Review interval" button.
 
 
 Miscellaneous:

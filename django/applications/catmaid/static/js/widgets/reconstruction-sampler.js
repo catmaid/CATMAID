@@ -236,14 +236,15 @@
   };
 
   var deleteSampler = function(samplerId) {
-    if (confirm("Do you really want to delete this sampler and all associated data")) {
+    if (confirm("Do you really want to delete sampler " + samplerId +
+        " and all associated domains and intervals")) {
       return CATMAID.fetch(project.id + "/samplers/" + samplerId + "/delete", "POST")
         .then(function(response) {
           CATMAID.msg("Success", "Deleted sampler " + response.deleted_sampler_id);
         })
         .catch(CATMAID.handleError);
     }
-    return Promise.reject("Canceled by user");
+    return Promise.reject(new CATMAID.Warning("Canceled by user"));
   };
 
   BackboneWorkflowStep.prototype.updateContent = function(content, widget) {
@@ -412,7 +413,8 @@
       deleteSampler(samplerId)
           .then(function() {
             datatable.ajax.reload();
-          });
+          })
+          .catch(CATMAID.handleError);
     }).on('click', 'a[data-action=next]', function() {
       var table = $(this).closest('table');
       var tr = $(this).closest('tr');
@@ -862,6 +864,9 @@
             widget.options.shading_method = 'sampler-domains';
             widget.options.interpolate_vertex_colots = false;
             widget.updateSkeletonColors();
+
+            // Update screen
+            widget.render();
           });
         });
       }).then(function(result) {
@@ -976,6 +981,7 @@
         CATMAID.fetch(project.id +  "/samplers/domains/" + domain.id + "/intervals/", "GET")
           .then(function(result) {
             self.availableIntervals = result;
+            widget.state['domainIntervals'] = result;
             return self.ensureMetadata()
               .then(callback.bind(window, {
                 draw: data.draw,
@@ -1278,7 +1284,7 @@
       });
   };
 
-  /**
+/**
    * Pick a synapse at random from the traced interval (input, output, or
    * either, depending on the goals).
    */
@@ -1350,6 +1356,18 @@
       CATMAID.warn("Need domain for synapse workflow step");
       return;
     }
+    var availableIntervals = widget.state['domainIntervals'];
+    if (availableIntervals === undefined) {
+      CATMAID.warn("Need intervals available in domain");
+      return;
+    }
+    var otherIntervalBoundaries = availableIntervals.reduce(function(o, testInterval) {
+      if (interval.id !== testInterval.id) {
+        o.add(testInterval.start_node_id);
+        o.add(testInterval.end_node_id);
+      }
+      return o;
+    }, new Set());
 
     var p = content.appendChild(document.createElement('p'));
     var msg = (widget.state['reviewRequired'] ?

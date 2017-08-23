@@ -341,6 +341,99 @@
     }
   };
 
+  /**
+   * Return all nodes on the straight path in then interval [startNodeId,
+   * endNodeId], assuming both nodes are connected through a monotone
+   * parent-child relationship. The direction doesn't matter as long as <strict>
+   * isn't set to true. If this is the case, the start node has to be closer to
+   * root than end node. The result can optionally be sorted by setting <sort>
+   * to true.
+   */
+  Sampling.getIntervalBackboneNodes = function(arbor, startNodeId, endNodeId,
+      sort, strict) {
+    var intervalNodes = [];
+    // Assume end node is downstream of start node
+    var nodes = arbor.edges;
+    var lastNode = endNodeId;
+    while (true) {
+      lastNode = parseInt(lastNode, 10);
+      intervalNodes.push(lastNode);
+      if (lastNode == startNodeId) {
+        break;
+      }
+
+      lastNode = nodes[lastNode];
+      if (!lastNode) {
+        break;
+      }
+    }
+
+    if (intervalNodes.length === 0) {
+      return null;
+    }
+
+    // If the last node is not the interval start node, try reversing start/end
+    // node if not in strict mode.
+    if (intervalNodes[intervalNodes.length - 1] == startNodeId) {
+      return sort ? intervalNodes.reverse() : intervalNodes;
+    } else {
+      return strict ? null : CATMAID.Sampling.getIntervalBackboneNodes(arbor,
+          endNodeId, startNodeId, sort, true);
+    }
+  };
+
+  /**
+   * Return all nodes that are part of the requested interval. This set will not
+   * contain any branches starting off the start or end node, as these will be
+   * part of other intervals. Additionally a Set instance can be passed in as
+   * <boundaryNodes>. The returned interval nodes won't contain any nodes beyond
+   * any of those boundary nodes nor the boundary nodes themselves.
+   */
+  Sampling.getIntervalNodes = function(arbor, startNodeId, endNodeId, boundaryNodes) {
+    startNodeId = parseInt(startNodeId, 10);
+    endNodeId = parseInt(endNodeId, 10);
+    boundaryNodes = boundaryNodes || new Set();
+    var intervalBackbone = CATMAID.Sampling.getIntervalBackboneNodes(arbor,
+        startNodeId, endNodeId, true);
+
+    if (!intervalBackbone || intervalBackbone.length === 0) {
+      throw new CATMAID.ValueError("Could not find interval backbone for between nodes " +
+          startNodeId + " and " + endNodeId);
+    }
+
+    var edges = arbor.edges;
+    var allSuccessors = arbor.allSuccessors();
+
+    // Collect nodes between start and end of the interval back-bone, all
+    // branches inbetween will be added. Branches originating from the start or
+    // end node will *not* be added, other intervals have to be used for those.
+    var workingSet = intervalBackbone.map(function(n) {
+      // Make sure we deal with numbers
+      return parseInt(n, 10);
+    });
+    var intervalNodes = new Set(workingSet);
+    while (workingSet.length > 0) {
+      var currentNodeId = workingSet.pop();
+      if (currentNodeId === startNodeId || currentNodeId === endNodeId) {
+        continue;
+      }
+
+      var children = allSuccessors[currentNodeId];
+      for (var i=0; i<children.length; ++i) {
+        var childId = parseInt(children[i], 10);
+        // Don't include nodes that are off limit
+        if (boundaryNodes.has(childId)) {
+          continue;
+        }
+        intervalNodes.add(childId);
+        workingSet.push(childId);
+      }
+    }
+
+    return intervalNodes;
+  };
+
+
   // Export into CATMAID namespace
   CATMAID.Sampling = Sampling;
 

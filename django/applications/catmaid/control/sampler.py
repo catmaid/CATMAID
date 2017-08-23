@@ -878,3 +878,21 @@ def set_interval_state(request, project_id, interval_id):
         'id': interval.id,
         'interval_state_id': interval.interval_state_id
     })
+
+
+@api_view(['GET'])
+@requires_user_role([UserRole.Browse])
+def get_interval_details(request, project_id, interval_id):
+    """Get details on a particular interval.
+    """
+    interval_id=int(interval_id)
+    interval = SamplerInterval.objects.get(id=interval_id)
+    return JsonResponse({
+        "id": interval.id,
+        "domain_id": interval.domain_id,
+        "interval_state": interval.interval_state_id,
+        "start_node_id": interval.start_node_id,
+        "end_node_id": interval.start_node_id,
+        "user_id": interval.user_id,
+        "project_id": interval.project_id
+    })

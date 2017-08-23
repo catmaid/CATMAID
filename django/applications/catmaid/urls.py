@@ -126,6 +126,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/samplers/domains/(?P<domain_id>\d+)/details$', sampler.get_domain_details),
     url(r'^(?P<project_id>\d+)/samplers/domains/(?P<domain_id>\d+)/intervals/$', sampler.list_domain_intervals),
     url(r'^(?P<project_id>\d+)/samplers/domains/(?P<domain_id>\d+)/intervals/add-all$', sampler.add_all_intervals),
+    url(r'^(?P<project_id>\d+)/samplers/domains/intervals/(?P<interval_id>\d+)/details$', sampler.get_interval_details),
     url(r'^(?P<project_id>\d+)/samplers/domains/intervals/(?P<interval_id>\d+)/set-state$', sampler.set_interval_state),
     url(r'^(?P<project_id>\d+)/samplers/(?P<sampler_id>\d+)/delete$', sampler.delete_sampler),
     url(r'^(?P<project_id>\d+)/samplers/(?P<sampler_id>\d+)/domains/$', sampler.list_sampler_domains),

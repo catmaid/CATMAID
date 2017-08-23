@@ -44,6 +44,13 @@ Neuron history:
   bouts, the total time is not just the sum of both tracing time and review
   time.
 
+Node filters:
+
+- A Reconstruction Sampler interval can now be used as a node filter. This
+  allows e.g. reviewing only an interval or look only at the connectivity of
+  the interval.
+
+
 Miscellaneous:
 
 - If multiple tile layers are used, the stack viewer layer settings (blue white

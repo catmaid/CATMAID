@@ -152,7 +152,7 @@
   /**
    * Return a promise that will resolve when all data dependencies for the
    * passed in sets of skeletons and filter rules. This ignores per-skeleton
-   * consraints at the moment.
+   * constraints at the moment.
    */
   function prepareFilterInput(skeletonIds, rules, input) {
     var neededInput = new Set();
@@ -171,7 +171,9 @@
     var needsArbor = neededInput.has("arbor"),
         needsPartners = neededInput.has("partners"),
         needsTags = neededInput.has("tags"),
-        needsTime = neededInput.has("time");
+        needsTime = neededInput.has("time"),
+        needsIntervals = neededInput.has("intervals");
+
     if (needsArbor || needsTags || needsPartners) {
       if (input.skeletons === undefined) { input.skeletons = {}; }
       var fetchSkeletons = CATMAID.SkeletonFilter.fetchArbors(skeletonIds,
@@ -187,9 +189,52 @@
         if (volumeId !== undefined) {
           volumeIds.add(volumeId);
         }
-        volumeIds = Array.from(volumeIds);
       }
+      volumeIds = Array.from(volumeIds);
       prepareActions.push(CATMAID.SkeletonFilter.loadVolumes(volumeIds, input.volumes));
+    }
+
+    if (needsIntervals) {
+      if (input.intervals === undefined) { input.intervals = []; }
+      if (input.intervalIndex === undefined) { input.intervalIndex = {}; }
+      var intervalRetrieval = Promise.resolve();
+      var nRules = rules.length;
+      for (var i=0; i<nRules; ++i) {
+        var intervalId = rules[i].options['intervalId'];
+        if (intervalId !== undefined) {
+          intervalRetrieval = intervalRetrieval
+            .then(function() {
+              return CATMAID.fetch(project.id  + '/samplers/domains/intervals/' +
+                  intervalId + '/details');
+            })
+            .then(function(interval) {
+              return CATMAID.fetch(project.id + '/samplers/domains/' +
+                  interval.domain_id + '/intervals');
+            })
+            .then(function(intervals) {
+              var intervalIndex = input.intervalIndex;
+              for (var i=0; i<intervals.length; ++i) {
+                var interval = intervals[i];
+                intervalIndex[interval.id] = interval;
+              }
+              if (nRules === 1) {
+                input.intervals = intervals;
+              }
+            });
+
+        }
+      }
+      if (nRules > 1) {
+        intervalRetrieval = intervalRetrieval
+          .then(function() {
+            if (input.intervals) {
+              input.intervals = input.intervals.keys().map(function(intervalId) {
+                return this[intervalId];
+              }, input.intervals);
+            }
+          });
+      }
+      prepareActions.push(intervalRetrieval);
     }
 
     return Promise.all(prepareActions)
@@ -745,6 +790,40 @@
         }
         return includedNodes;
       }
+    },
+    'sampler-interval': {
+      name: "Sampler interval",
+      prepare: ['arbor', 'intervals'],
+      filter: function(skeletonId, neuron, input, options) {
+        var skeleton = input.skeletons[skeletonId];
+        var arbor = skeleton.arbor;
+        var intervalId = options.intervalId;
+        var interval = input.intervalIndex[intervalId];
+        var otherIntervalBoundaries = input.intervals.reduce(
+            function(o, testInterval) {
+              if (intervalId !== testInterval.id &&
+                  interval.start_node_id !== testInterval.end_node_id &&
+                  interval.end_node_id !== testInterval.start_node_id) {
+                o.add(testInterval.start_node_id);
+                o.add(testInterval.end_node_id);
+              }
+              return o;
+            }, new Set());
+
+        try {
+          var intervalNodes = CATMAID.Sampling.getIntervalNodes(arbor,
+            interval.start_node_id, interval.end_node_id,
+            otherIntervalBoundaries);
+
+          var includedNodes = {};
+          for (var nodeId of intervalNodes) {
+            includedNodes[nodeId] = true;
+          }
+          return includedNodes;
+        } catch (error) {
+          return {};
+        }
+      }
     }
   };
 
@@ -1033,6 +1112,17 @@
           });
       $(container).append($tag);
     },
+    'sampler-interval': function(container, options) {
+      var intervalId = document.createElement('input');
+      intervalId.setAttribute('type', 'number');
+      intervalId.onchange = function() {
+        options.intervalId = parseInt(this.value);
+      };
+      var intervalIdLabel = document.createElement('label');
+      intervalIdLabel.appendChild(document.createTextNode('Interval ID'));
+      intervalIdLabel.appendChild(intervalId);
+      container.appendChild(intervalIdLabel);
+    }
   };
 
   // A default no-op filter rule that takes all nodes.

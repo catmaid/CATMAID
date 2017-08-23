@@ -6,7 +6,8 @@ included in this changelog.
 
 ### Additions
 
-None.
+- `GET /{project_id}/samplers/domains/intervals/{interval_id}/details`:
+  Get detailed information about a particular interval.
 
 ### Modifications
 

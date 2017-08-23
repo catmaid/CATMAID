@@ -1325,6 +1325,14 @@
       },
       {
         type: 'button',
+        label: 'Review interval',
+        title: "Review the selected interval in a new review widget",
+        onclick: function() {
+          self.reviewInterval(widget);
+        }
+      },
+      {
+        type: 'button',
         label: 'Pick random synapse',
         title: "Select a random non-abandoned, non-excluded synapse to continue with",
         onclick: function() {
@@ -1639,6 +1647,26 @@
           }, {});
         });
     }
+  };
+
+  SynapseWorkflowStep.prototype.reviewInterval = function(widget) {
+    var skeletonId = widget.state['skeletonId'];
+    if (!skeletonId) {
+      throw new CATMAID.ValueError("Need skeleton ID for interval review");
+    }
+
+    var interval = widget.state['interval'];
+    if (!interval) {
+      throw new CATMAID.ValueError("Need interval for interval review");
+    }
+
+    var reviewWidget = WindowMaker.create('review-system').widget;
+    var strategy = CATMAID.NodeFilterStrategy['sampler-interval'];
+    var rule = new CATMAID.SkeletonFilterRule(strategy, {
+      'intervalId': interval.id
+    });
+    reviewWidget.filterRules.push(rule);
+    reviewWidget.startSkeletonToReview(skeletonId);
   };
 
   SynapseWorkflowStep.prototype.pickRandomSynapse = function(widget) {

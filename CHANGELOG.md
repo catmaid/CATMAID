@@ -44,11 +44,19 @@ Neuron history:
   bouts, the total time is not just the sum of both tracing time and review
   time.
 
+
 Node filters:
 
 - A Reconstruction Sampler interval can now be used as a node filter. This
   allows e.g. reviewing only an interval or look only at the connectivity of
   the interval.
+
+
+Reconstruction sampler:
+
+- Interval reviews can now be initiated directly from the synapse workflow step.
+  A new button "Review interval" has been added to its controls. It will open a
+  new review widget with pre-set interval filter and added skeleton.
 
 
 Miscellaneous:

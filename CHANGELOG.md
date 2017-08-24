@@ -81,6 +81,10 @@ Miscellaneous:
   states through a button in the widget controls available through the window
   icon in the widget title bar.
 
+- The Selection Tool (the first icon in the top bar) has been removed, because
+  it didn't provide any functionality. It is replaced by an icon to show the
+  "Open Widget" dialog, which can otherwise be shown using Ctrl + Space.
+
 
 ### Bug fixes
 

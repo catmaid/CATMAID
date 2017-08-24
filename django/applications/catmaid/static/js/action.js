@@ -195,11 +195,12 @@
   CATMAID.toolActions = [
 
     new Action({
-      helpText: "Switch to the selector tool",
-      buttonID: 'edit_button_select',
-      buttonName: "select",
+      helpText: "Open new widget",
+      buttonID: 'edit_button_newwidget',
+      buttonName: "newwindow",
       run: function (e) {
-        project.setTool( new CATMAID.Selector() );
+        var dialog = new CATMAID.OpenWidgetDialog();
+        dialog.show();
         return true;
       }
     }),

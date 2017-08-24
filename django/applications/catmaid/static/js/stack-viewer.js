@@ -187,7 +187,7 @@
   StackViewer.prototype.toValidZ = function(z, step) {
     var distance = this.validZDistanceByStep(z - step, step);
     if (distance === 0) {
-      throw new CATMAID.ValueError("Couldn't find valid Z section");
+      throw new CATMAID.Warning("Couldn't find valid Z section");
     }
     return z - step + distance;
   };

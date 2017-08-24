@@ -44,6 +44,10 @@
     // Whether the review widget should center automatically when the user moves
     // to a different node.
     this.autoCentering = true;
+    // Whether single-node segments (e.g. result of node filter) should be
+    // removed from the listing if this node is also available in another,
+    // preferably longer segment.
+    this.pruneDuplicateSingleNodeSegments = true;
 
     // A set of filter rules to apply to the handled skeletons
     this.filterRules = [];
@@ -791,13 +795,44 @@
       var nFilteredNodes = 0;
       if (activeNodeFilters) {
         var filterSegmentNodes = filterNodeSequence.bind(window, this.allowedNodes);
-        skeleton_data = skeleton_data.filter(function(segment) {
+        skeleton_data = skeleton_data.map(function(segment) {
           var newSequence = segment.sequence.filter(filterSegmentNodes);
           nFilteredNodes += segment.sequence.length - newSequence.length;
           segment.sequence = newSequence;
           segment.nr_nodes = newSequence.length;
+          return segment;
+        }).filter(function(segment) {
           return segment.nr_nodes > 0;
         });
+        if (this.pruneDuplicateSingleNodeSegments) {
+          // Sort segmends in descending order and remove single node segments
+          // that have been seen in longer segments. This is mainly a concern when
+          // node filters are in use and single node segments can occur.
+          var sortedSegments = skeleton_data.sort(function(a, b) {
+            if (a.nr_nodes > b.nr_nodes) {
+              return -1;
+            }
+            if (a.nr_nodes < b.nr_nodes) {
+              return 1;
+            }
+            return 0;
+          });
+          var seen = new Set();
+          skeleton_data = skeleton_data.filter(function(segment) {
+            var sequence = segment.sequence;
+            var nNodes = sequence.length;
+            if (nNodes === 1) {
+              if (seen.has(sequence[0].id)) {
+                ++nFilteredNodes;
+                return false;
+              }
+            }
+            for (var j=0, max=sequence.length; j<max; ++j) {
+              seen.add(sequence[j].id);
+            }
+            return true;
+          });
+        }
       }
 
       // Count which user reviewed how many nodes and map user ID vs object
@@ -1022,8 +1057,13 @@
       if (!checkSkeletonID()) {
         return;
       }
+      if (dataChanged) {
+        this.refresh();
+      }
+    };
 
-      if (dataChanged && this.filterRules.length > 0 && this.applyFilterRules) {
+    this.refresh = function() {
+      if (this.filterRules.length > 0 && this.applyFilterRules) {
         this.updateFilter();
       } else {
         this.update();
@@ -1215,6 +1255,15 @@
                   self.update();
                 }
               }
+            }
+          }, {
+            type: 'checkbox',
+            label: 'Hide duplicate one-node segments',
+            title: 'If node filters are in use, it can happen that single node segments remain. If these nodes are included in other visible longer segments, they will be hidden.',
+            value: this.pruneDuplicateSingleNodeSegments,
+            onclick: function() {
+              self.pruneDuplicateSingleNodeSegments = this.checked;
+              self.refresh();
             }
           }
         ]);

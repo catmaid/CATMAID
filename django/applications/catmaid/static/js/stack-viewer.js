@@ -170,7 +170,11 @@
     while (true) {
       var newSection = z + validDistance;
       if (!this.isSliceBroken(newSection)) {
-        break;
+        if (newSection < 0 || newSection > referenceStack.MAX_Z) {
+          return null;
+        } else {
+          return validDistance;
+        }
       }
       var distance = referenceStack.validZDistanceByStep(newSection, step);
       if (!distance) {
@@ -178,7 +182,6 @@
       }
       validDistance += distance;
     }
-    return validDistance;
   };
 
   StackViewer.prototype.toValidZ = function(z, step) {

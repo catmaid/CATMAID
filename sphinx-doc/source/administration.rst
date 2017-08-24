@@ -136,6 +136,19 @@ and the actual ``pg_dump`` call is executed as `postgres` user with the help of
 more complicated than this, it is recommended to create a script file and call
 this from cron.
 
+Modifying the database directly
+-------------------------------
+
+To avoid database triggers firing during direct database modifications, the
+following SQL can be used to disable triggers temporarily::
+
+  SET session_replication_role = replica;
+  
+  /* Do your edits */
+  
+  SET session_replication_role = DEFAULT;
+
+
 .. _performance-tuning:
 
 Adding custom code

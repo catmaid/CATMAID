@@ -15,6 +15,12 @@
   through a cron job or Celery every night. Because summary updates are
   incremental by default, they don't take much time to update.
 
+- CATMAID's Docker images changed: The existing `catmaid/catmaid` image is now
+  only a base image that is used for a simple standalone demo image, available
+  as `catmaid/catmaid-standalone`. Additionally, the base image is used in a new
+  docker-compose setup, which can be used if persistent data is required. The
+  documentation has been updared with all the details.
+
 
 ### Features and enhancements
 

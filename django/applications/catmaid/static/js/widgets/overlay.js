@@ -2735,7 +2735,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
           // then return the node creation promise so that node creation and its
           // resulting active node change resolve before any other submitter queue
           // items are processed.
-          return this.submit.promise((function () {
+          create = this.submit.promise((function () {
             // Create a new treenode, either root node if atn is null, or child if
             // it is not null
             if (null !== SkeletonAnnotations.atn.id) {

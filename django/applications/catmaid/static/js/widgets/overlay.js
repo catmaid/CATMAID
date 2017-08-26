@@ -2579,6 +2579,10 @@ SkeletonAnnotations.TracingOverlay.prototype.whenclicked = function (e) {
   return false;
 };
 
+/**
+ * Create a new node or link depending on the passed in flags. Wrap this action
+ * and suspend the tracing overlay while the operation runs.
+ */
 SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert, link, postLink) {
   var handled = false;
   // To suspend field of view node updates during/post model creation,

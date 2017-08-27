@@ -36,7 +36,12 @@
         388,
         388,
         1,
-        function( val ){ CATMAID.statusBar.replaceLast( "z: " + val ); return; } );
+        function( val ){ CATMAID.statusBar.replaceLast( "z: " + val ); return; },
+        undefined,
+        undefined,
+        undefined,
+        this.validateZ.bind(this),
+        this.getEffectiveStep.bind(this));
 
     this.slider_s = new CATMAID.Slider(
         CATMAID.Slider.HORIZONTAL,
@@ -180,8 +185,15 @@
 
     this.changeSlice = function(val, step)
     {
-      val = self.stackViewer.toValidZ(val, step < 0 ? -1 : 1);
-      self.stackViewer.moveToPixel( val, self.stackViewer.y, self.stackViewer.x, self.stackViewer.s );
+      try {
+        val = self.stackViewer.toValidZ(val, step < 0 ? -1 : 1);
+        self.stackViewer.moveToPixel( val, self.stackViewer.y, self.stackViewer.x, self.stackViewer.s );
+      } catch (error) {
+        // Due to the way, sliders area currently used, we have to reset the
+        // slider value.
+        self.slider_z.setByValue( self.stackViewer.z, true );
+        CATMAID.handleError(error);
+      }
     };
 
     var smoothChangeSlice = function (e, step) {
@@ -633,6 +645,19 @@
       return result;
     };
   }
+
+  Navigator.prototype.validateZ = function(val) {
+    try {
+      return this.stackViewer.isValidZ(val);
+    } catch (error) {
+      return false;
+    }
+  };
+
+  Navigator.prototype.getEffectiveStep = function(val) {
+    // Get the next valid step
+    return val + this.stackViewer.validZDistanceByStep(this.stackViewer.z + val, val, true);
+  };
 
   Navigator.Settings = new CATMAID.Settings(
       'navigator',

@@ -152,44 +152,66 @@
    * Get a valid Z location based on all stacks that are selected to be
    * respected.
    *
-   * @params {Number} z    The z location to verify
-   * @params {Number} step The number of sections to move in case of a broken
-   *                       section.
+   * @params {Number}  z         The z location to verify
+   * @params {Number}  step      The number of sections to move in case of a
+   *                             broken section.
+   * @params {Boolean} allowZero Optional, whether a distance of zero should be
+   *                             returned if the passed in Z is valid. Default
+   *                             is false.
    * @return The passed in Z is valid, otherwise the next valid Z either after
-   *         or before (if descOrder truthy) the passed in Z.
+   *         or before (<step> sections away). Optionally, a zero distance can
+   *         be allowed as well.
    */
-  StackViewer.prototype.validZDistanceByStep = function(z, step) {
-    // Without any stacks that should be tested for broken sections, the passe
-    // in Z is valid.
-    if (this._brokenSliceStacks.size === 0) {
-      return step;
+  StackViewer.prototype.validZDistanceByStep = function(z, step, allowZero) {
+    if (allowZero) {
+      // If a zero step is allowed, check if the passed in Z is valid.
+      if (this.isValidZ(z)) {
+        return 0;
+      }
     }
-    // Find Z that is valid for all respected stacks
+    // Without any stacks that should be tested for broken sections, the new
+    // section is only invalid if it is below zero or above the max Z of the
+    // reference stack.
+    if (this._brokenSliceStacks.size === 0) {
+      var newSection = z + step;
+      return (newSection < 0 || newSection > referenceStack.MAX_Z) ? null : step;
+    }
+    // Find Z that is valid for all respected stacks. Use a random reference
+    // stack with broken sections to do better informed steps.
     var referenceStack = Array.from(this._brokenSliceStacks.keys())[0];
-    var validDistance = step;
+    var testDistance = step;
     while (true) {
-      var newSection = z + validDistance;
+      var newSection = z + testDistance;
+      if (newSection < 0 || newSection > this.primaryStack.MAX_Z) {
+        return null;
+      }
       if (!this.isSliceBroken(newSection)) {
-        if (newSection < 0 || newSection > referenceStack.MAX_Z) {
-          return null;
-        } else {
-          return validDistance;
-        }
+        return testDistance;
       }
       var distance = referenceStack.validZDistanceByStep(newSection, step);
       if (!distance) {
         return null;
       }
-      validDistance += distance;
+      testDistance += distance;
     }
   };
 
+  StackViewer.prototype.isValidZ = function(z) {
+    return (z < 0 || z > this.primaryStack.MAX_Z) ?
+        null : !this.isSliceBroken(z);
+  };
+
+  /**
+   * Returns the passed in Z if it is valid, otherwise the next valid step
+   * spaced Z.
+   */
   StackViewer.prototype.toValidZ = function(z, step) {
-    var distance = this.validZDistanceByStep(z - step, step);
-    if (distance === 0) {
+    var distance = this.validZDistanceByStep(z, step, true);
+    if (distance === null || distance === undefined) {
       throw new CATMAID.Warning("Couldn't find valid Z section");
     }
-    return z - step + distance;
+    // If the returned valid distance is exactly one step,
+    return z + distance;
   };
 
   StackViewer.prototype.validZDistanceBefore = function(z) {

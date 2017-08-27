@@ -20,7 +20,9 @@
     onchange, //!< method to call
     split,    //!< split value
     forceSnap,//!< whether to force input to snap to indexed values
-    minMove   //!< a required minimum change when calling move
+    minMove,  //!< a required minimum change when calling move
+    validate, //!< an optional validation function to constrain new values
+    step      //!< an optional distance provider, used to get step to prev/next element
     )
   {
     if ( type != Slider.HORIZONTAL ) type = Slider.VERTICAL;
@@ -81,6 +83,12 @@
     this._boundHandleMove = this._handleMove.bind(this);
     this._boundHandleMouseUp = this._handleMouseUp.bind(this);
     this._boundBarMouseUp = this._barMouseUp.bind(this);
+
+    this.extraValidate = CATMAID.tools.isFn(validate) ? validate : null;
+
+    // The 'step' parameter can be used to set up a transformation function that
+    // is applied to each move input.
+    this.getEffectiveStep = CATMAID.tools.isFn(step) ? step : function(val) { return val; };
 
     if ( input )
     {
@@ -148,6 +156,16 @@
 
   Slider.HORIZONTAL = 0;
   Slider.VERTICAL = 1;
+
+  Slider.prototype.validate = function(val) {
+    if (isNaN(val)) {
+      return false;
+    }
+    if (this.extraValidate) {
+      return this.extraValidate(val);
+    }
+    return true;
+  };
 
   /**
    * returns the slider-element for insertion to the document
@@ -221,8 +239,12 @@
    * value set. Assumes the value array is sorted and unique, but no assumptions
    * are made about order or interval.
    */
-  Slider.prototype.setByValue = function(val, cancelOnchange) {
+  Slider.prototype.setByValue = function(val, cancelOnchange, noValidation) {
     var valBin, index;
+
+    if (!noValidation && !this.validate(val)) {
+      return;
+    }
 
     if (this._values.length > 1) {
       valBin = this._binValue(val, this._values);
@@ -264,14 +286,19 @@
   /**
    * set a value, priorly check if it is in the value array
    */
-  Slider.prototype._setByInputHandler = function (e) {
+  Slider.prototype._setByInputHandler = function () {
     var self = this;
     return function (e) {
       var inputVal = Number(this.value);
-      // If not a valid Number, reset slider to previous value (or first value if
-      // previous value is also NaN, such as through bad initialization).
-      if (isNaN(inputVal)) this.value = isNaN(self.val) ? self.values[0] : self.val;
-      else self.setByValue(inputVal);
+      // Execute validation function if available, otherwise only check if the
+      // input is not a number. If the new value is not valud, reset slider to
+      // previous value (or first value if previous value is also NaN, such as
+      // through bad initialization).
+      if (self.validate(inputVal)) {
+        self.setByValue(inputVal);
+      } else {
+        this.value = self.validate(self.val) ? self.values[0] : self.val;
+      }
       if (e && e.target && self.blurOnChange) {
         e.target.blur();
       }
@@ -404,6 +431,8 @@
    */
   Slider.prototype.move = function( i, major )
   {
+    // Apply an optional transformation to the input set size
+    i = this.getEffectiveStep(i);
     if ( major )
     {
       var valBin = this._binValue( this.val, this._majorValues );

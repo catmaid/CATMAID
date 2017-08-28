@@ -97,12 +97,13 @@
       initialValue, submitOnEnter) {
     var p = document.createElement('p');
     var label = document.createElement('label');
+    label.setAttribute('for', fieldID);
     label.appendChild(document.createTextNode(title));
     p.appendChild(label);
     var input = document.createElement('input');
     input.setAttribute("id", fieldID);
     input.setAttribute("value", initialValue);
-    label.appendChild(input);
+    p.appendChild(input);
     this.dialog.appendChild(p);
     // Make this field press okay on Enter, if wanted
     if (submitOnEnter) {

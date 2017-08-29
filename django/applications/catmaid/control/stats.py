@@ -450,7 +450,8 @@ def select_node_stats(cursor, project_id, start_date_utc, end_date_utc,
 
     # Get review information by first getting all hourly precomputed statistics
     # for the requested timezone and then add all remaining statistics on
-    # demand.
+    # demand. The result sum is returned as float, to not required
+    # Decimal-to-JSON conversion.
     cursor.execute('''
         WITH precomputed AS (
             SELECT user_id,
@@ -487,7 +488,7 @@ def select_node_stats(cursor, project_id, start_date_utc, end_date_utc,
         )
         SELECT t.user_id,
             date_trunc(%(time_unit)s, timezone(%(tz)s, t.date)) AS date,
-            SUM(t.n_treenodes)
+            SUM(t.n_treenodes)::float
         FROM all_treenodes t
         GROUP BY 1, 2
     ''', {
@@ -503,6 +504,8 @@ def select_node_stats(cursor, project_id, start_date_utc, end_date_utc,
 
 def select_cable_stats(cursor, project_id, start_date_utc, end_date_utc,
         time_zone, time_unit='day'):
+    # The result sum is returned as float, to not required Decimal-to-JSON
+    # conversion.
     cursor.execute('''
         WITH precomputed AS (
             SELECT user_id,
@@ -553,7 +556,7 @@ def select_cable_stats(cursor, project_id, start_date_utc, end_date_utc,
         )
         SELECT l.user_id,
             date_trunc(%(time_unit)s, timezone(%(tz)s, l.date)) AS date,
-            ROUND(SUM(l.cable_length))
+            ROUND(SUM(l.cable_length))::float
         FROM all_cable_lengths l
         GROUP BY 1, 2
     ''', dict(tz=time_zone.zone, project_id=project_id,
@@ -572,7 +575,8 @@ def select_connector_stats(cursor, project_id, start_date_utc, end_date_utc,
     # one were a user created both the presynaptic and the postsynaptic side
     # (one of them in the given time frame) or if a user completes an existing
     # 'half connection'. To avoid duplicates, only links are counted, where the
-    # second node is younger than the first one
+    # second node is younger than the first one. The result sum is returned as
+    # float, to not required Decimal-to-JSON conversion.
     cursor.execute('''
         WITH precomputed AS (
             SELECT user_id,
@@ -615,7 +619,7 @@ def select_connector_stats(cursor, project_id, start_date_utc, end_date_utc,
         )
         SELECT l.user_id,
             date_trunc(%(time_unit)s, timezone(%(tz)s, l.date)) AS date,
-            SUM(l.n_connector_links)
+            SUM(l.n_connector_links)::float
         FROM all_connectors l
         GROUP BY 1, 2
     ''', {
@@ -635,7 +639,8 @@ def select_review_stats(cursor, project_id, start_date_utc, end_date_utc,
 
     # Get review information by first getting all hourly precomputed statistics
     # for the requested timezone and then add all remaining statistics on
-    # demand.
+    # demand. The result sum is returned as float, to not required
+    # Decimal-to-JSON conversion.
     cursor.execute('''
         WITH precomputed AS (
             SELECT user_id,
@@ -672,7 +677,7 @@ def select_review_stats(cursor, project_id, start_date_utc, end_date_utc,
         )
         SELECT r.reviewer_id,
             date_trunc(%(time_unit)s, timezone(%(tz)s, r.date)) AS date,
-            SUM(r.n_reviewed_nodes)
+            SUM(r.n_reviewed_nodes)::float
         FROM all_reviews r
         GROUP BY 1, 2
     ''', {

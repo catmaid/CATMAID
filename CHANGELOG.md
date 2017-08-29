@@ -117,6 +117,10 @@ Miscellaneous:
 - The Split Skeleton Dialog updates the embedded 3D view again after all
   skeletons are loaded.
 
+- Former partner nodes of deleted connector nodes can now be deleted without an
+  additional tracing layer update.
+
+
 ## 2017.07.28
 
 Contributors: Chris Barnes, Albert Cardona, Tom Kazimiers, Daniel Witvliet

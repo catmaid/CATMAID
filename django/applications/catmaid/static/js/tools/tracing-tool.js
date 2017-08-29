@@ -1278,6 +1278,7 @@
         var removePeekingSkeleton = function () {
           viewersWithoutSkel.forEach(function (viewer) {
             viewer.removeSkeletons([skid]);
+            viewer.render();
           });
           self.peekingSkeleton = false;
         };
@@ -1286,7 +1287,11 @@
           // In case the key is released before the skeleton has loaded,
           // check after loading whether it is still being peeked.
           viewer.addSkeletons(skeletonModels, function () {
-            if (self.peekingSkeleton !== skid) removePeekingSkeleton();
+            if (self.peekingSkeleton !== skid) {
+              removePeekingSkeleton();
+            } else {
+              viewer.render();
+            }
           });
         });
 

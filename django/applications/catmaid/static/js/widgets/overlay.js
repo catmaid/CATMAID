@@ -4322,8 +4322,16 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteConnectorNode =
             self.activateNode(null);
         }
 
-        // Delete this connector from overlay (to not require a database update).
         var connectorId = connectornode.id;
+
+        // Delete all connector links
+        var links = connectornode.getLinks();
+        for (var i=0; i<links.length; ++i) {
+          var link = links[i];
+          delete link.treenode.connectors[connectorId];
+        }
+
+        // Delete this connector from overlay (to not require a database update).
         delete self.nodes[connectorId];
         connectornode.obliterate();
         self.pixiLayer._renderIfReady();

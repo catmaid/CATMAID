@@ -28,6 +28,9 @@
 
     // The stacks broken slices should be respected of
     this._brokenSliceStacks = new Set([this.primaryStack]);
+    // An updated list of valid sections
+    this._validSections = null;
+    this._updateValidSections();
 
     this._offset = [0, 0, 0];
 
@@ -196,6 +199,10 @@
     }
   };
 
+  StackViewer.prototype.getValidSections = function() {
+    return this._validSections;
+  };
+
   StackViewer.prototype.isValidZ = function(z) {
     return (z < 0 || z > this.primaryStack.MAX_Z) ?
         null : !this.isSliceBroken(z);
@@ -234,6 +241,27 @@
       }
     }
     return false;
+  };
+
+  StackViewer.prototype.addBrokenSliceStack = function(stack) {
+    this._brokenSliceStacks.add(stack);
+    this._updateValidSections();
+  };
+
+  StackViewer.prototype.removeBrokenSliceStack = function(stack) {
+    this._brokenSliceStacks.delete(stack);
+    this._updateValidSections();
+  };
+
+  StackViewer.prototype._updateValidSections = function() {
+    var validSections = new Set();
+    for (var stack of this._brokenSliceStacks) {
+      var validStackSections = stack.slices;
+      for (var i=0, max=validStackSections.length; i<max; ++i) {
+        validSections.add(validStackSections[i]);
+      }
+    }
+    this._validSections = Array.from(validSections).sort();
   };
 
   StackViewer.LayerInsertionStrategy = {

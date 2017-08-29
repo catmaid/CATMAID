@@ -115,9 +115,9 @@
       }
       var stack = matches[0];
       if (respected) {
-        stackViewer._brokenSliceStacks.add(stack);
+        stackViewer.addBrokenSliceStack(stack);
       } else {
-        stackViewer._brokenSliceStacks.delete(stack);
+        stackViewer.removeBrokenSliceStack(stack);
       }
     };
     $view.append(brokenSectionStacks);

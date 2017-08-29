@@ -40,8 +40,7 @@
         undefined,
         undefined,
         undefined,
-        this.validateZ.bind(this),
-        this.getEffectiveStep.bind(this));
+        this.validateZ.bind(this));
 
     this.slider_s = new CATMAID.Slider(
         CATMAID.Slider.HORIZONTAL,
@@ -557,11 +556,12 @@
       {
         self.slider_z.getView().parentNode.style.display = "block";
       }
+      var validSections = self.stackViewer.getValidSections();
       self.slider_z.update(
         undefined,
         undefined,
-        { major: self.stackViewer.primaryStack.slices.filter(function(el,ind,arr) { return (ind % 10) === 0; }),
-          minor: self.stackViewer.primaryStack.slices },
+        { major: validSections.filter(function(e, i) { return i % 10 === 0; }),
+          minor: validSections },
         self.stackViewer.z,
         self.changeSliceDelayed );
 
@@ -652,11 +652,6 @@
     } catch (error) {
       return false;
     }
-  };
-
-  Navigator.prototype.getEffectiveStep = function(val) {
-    // Get the next valid step
-    return val + this.stackViewer.validZDistanceByStep(this.stackViewer.z + val, val, true);
   };
 
   Navigator.Settings = new CATMAID.Settings(

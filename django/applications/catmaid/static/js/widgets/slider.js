@@ -21,8 +21,7 @@
     split,    //!< split value
     forceSnap,//!< whether to force input to snap to indexed values
     minMove,  //!< a required minimum change when calling move
-    validate, //!< an optional validation function to constrain new values
-    step      //!< an optional distance provider, used to get step to prev/next element
+    validate  //!< an optional validation function to constrain new values
     )
   {
     if ( type != Slider.HORIZONTAL ) type = Slider.VERTICAL;
@@ -85,10 +84,6 @@
     this._boundBarMouseUp = this._barMouseUp.bind(this);
 
     this.extraValidate = CATMAID.tools.isFn(validate) ? validate : null;
-
-    // The 'step' parameter can be used to set up a transformation function that
-    // is applied to each move input.
-    this.getEffectiveStep = CATMAID.tools.isFn(step) ? step : function(val) { return val; };
 
     if ( input )
     {
@@ -431,8 +426,6 @@
    */
   Slider.prototype.move = function( i, major )
   {
-    // Apply an optional transformation to the input set size
-    i = this.getEffectiveStep(i);
     if ( major )
     {
       var valBin = this._binValue( this.val, this._majorValues );

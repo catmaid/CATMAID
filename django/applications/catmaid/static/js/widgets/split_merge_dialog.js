@@ -349,6 +349,8 @@
           }
         }
       }
+
+      this.webglapp.render();
     }).bind(this));
 
     var self = this;

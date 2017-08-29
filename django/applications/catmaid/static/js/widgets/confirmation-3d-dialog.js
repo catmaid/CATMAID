@@ -185,6 +185,7 @@
         var shading = this.checked ? 'strahler' :'active_node_split';
         self.webglapp.options.shading_method = shading;
         self.webglapp.updateSkeletonColors();
+        self.webglapp.render();
         self.onSettingChanged('strahler-shading', this.checked);
       };
       var strahlerShading = document.createElement('label');

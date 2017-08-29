@@ -112,6 +112,10 @@ Miscellaneous:
 - The neuron history widget now calculates both tracing time and review time
   correctly.
 
+- 'Peek skeleton' (P key) works again.
+
+- The Split Skeleton Dialog updates the embedded 3D view again after all
+  skeletons are loaded.
 
 ## 2017.07.28
 

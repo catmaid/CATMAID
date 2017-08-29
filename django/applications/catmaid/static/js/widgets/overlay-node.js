@@ -1121,6 +1121,15 @@
         return this.linkGroups.reduce(this.expandGroup.bind(this), []);
       };
 
+      this.removeLink = function(link) {
+        this.linkGroups.forEach(function(groupName) {
+          var group = this[groupName];
+          if (group[link.treenode.id] === link) {
+            delete group[link.treenode.id];
+          }
+        }, this);
+      };
+
       /**
        * Suspend all links to disable mouse events.
        */

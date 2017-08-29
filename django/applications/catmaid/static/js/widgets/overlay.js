@@ -4350,6 +4350,16 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
     // ensure the node, if it had any changes, these won't be pushed to the database: doesn't exist anymore
     self.nodeIDsNeedingSync.delete(node.id);
 
+    // Delete any connector links
+    for (var connectorId in node.connectors) {
+      var connector = self.nodes[connectorId];
+      if (connector) {
+        var link = node.connectors[connectorId];
+        connector.removeLink(link);
+        connector.drawEdges(true);
+      }
+    }
+
     // Delete this node from overlay (to not require a database update).
     var children = node.children;
     var parent = node.parent;

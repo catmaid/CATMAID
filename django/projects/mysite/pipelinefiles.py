@@ -118,6 +118,7 @@ JAVASCRIPT['catmaid'] = {
         'js/extensions.js',
         'js/data-view.js',
         'js/action.js',
+        'js/layout.js',
         'js/settings-manager.js',
         'js/helpers/*.js',
         'js/init.js',

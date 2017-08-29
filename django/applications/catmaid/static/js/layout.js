@@ -52,7 +52,5 @@
   };
 
 
-  // Export Layouter
-  CATMAID.Layouter = Layouter;
 
 })(CATMAID);

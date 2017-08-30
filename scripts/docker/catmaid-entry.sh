@@ -49,26 +49,19 @@ init_catmaid () {
 
   cd /home/django/projects
 
-  # Create database and databsae user if not yet present. In this case, also
-  # migrate the database, collect static files and create a superuser. Doing
-  # this only if the database wasn't there before allows a separate database
-  # to be plugged in.
+  # Create database and databsae user if not yet present. This should only
+  # happen if the database is not run in a separete container.
   echo "Testing database access"
-  if ! PGPASSWORD="${DB_PASS}" psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}" -w; then
+  if ! PGPASSWORD="${DB_PASS}" psql -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}" -d "${DB_NAME}" -w; then
     echo "Initialize CATMAID database"
-    /home/scripts/createuser.sh ${DB_NAME} ${DB_USER} ${DB_PASS} | runuser -l postgres -c 'psql --cluster 9.5/main'
-
-    echo "Migrating databse"
-    python manage.py migrate --noinput
-    echo "Updating static files"
-    python manage.py collectstatic --clear --link --noinput
-  else
-    # Make sure the database schema is updated
-    echo "Migrating databse"
-    python manage.py migrate --noinput
-    echo "Updating static files"
-    python manage.py collectstatic --clear --link --noinput
+    /home/scripts/createuser.sh ${DB_NAME} ${DB_USER} ${DB_PASS} | runuser -l postgres -c 'psql -h "${DB_HOST}" -p "${DB_PORT}"'
   fi
+
+  # Migrate the database, collect static files and create a superuser.
+  echo "Migrating databse"
+  python manage.py migrate --noinput
+  echo "Updating static files"
+  python manage.py collectstatic --clear --link --noinput
 
   echo "Ensuring existence of super user"
   cat /home/scripts/docker/create_superuser.py | python manage.py shell

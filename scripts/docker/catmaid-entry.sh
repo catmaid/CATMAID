@@ -61,7 +61,7 @@ init_catmaid () {
   echo "Migrating databse"
   python manage.py migrate --noinput
   echo "Updating static files"
-  python manage.py collectstatic --clear --link --noinput
+  python manage.py collectstatic --clear --noinput
 
   # The additional new lines are needed to end the input stream
   echo "Ensuring existence of super user"

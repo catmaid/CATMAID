@@ -4,7 +4,9 @@
 QUnit.test('Miscellaneous tests', function( assert ) {
 
   var originalRequestQueue = window.requestQueue;
-  var server = this.sandbox.useFakeServer();
+  //var server = this.sandbox.useFakeServer();
+  var server = sinon.fakeServer.create();
+  var sandbox = sinon.sandbox.create();
 
   var permissionResponse = JSON.stringify([{fake_permission: [1]}]);
   server.respondWith("GET", "a/permissions",
@@ -43,18 +45,13 @@ QUnit.test('Miscellaneous tests', function( assert ) {
     assert.strictEqual(CATMAID.staticExtensionURL, "c/",
         "CATMAID.staticExtensionURL cannot be overridden.");
 
-    /* As long as this PhantomJS bug is not fixed, this test will fail on our CI
-     * setup: https://github.com/ariya/phantomjs/issues/11856.
-     * */
-    if (!CATMAID.tests.runByPhantomJS()) {
-      CATMAID.configure("c/", "d/", "e/");
-      assert.strictEqual(CATMAID.backendURL, "c/",
-          "CATMAID.configure sets the back-end URL if trailing slash is provided.");
-      assert.strictEqual(CATMAID.staticURL, "d/",
-          "CATMAID.configure sets the static URL if trailing slash is provided.");
-      assert.strictEqual(CATMAID.staticExtensionURL, "e/",
-          "CATMAID.configure sets the static extension URL if trailing slash is provided.");
-    }
+    CATMAID.configure("c/", "d/", "e/");
+    assert.strictEqual(CATMAID.backendURL, "c/",
+        "CATMAID.configure sets the back-end URL if trailing slash is provided.");
+    assert.strictEqual(CATMAID.staticURL, "d/",
+        "CATMAID.configure sets the static URL if trailing slash is provided.");
+    assert.strictEqual(CATMAID.staticExtensionURL, "e/",
+        "CATMAID.configure sets the static extension URL if trailing slash is provided.");
   })();
 
   // Test CATMAID.makeURL
@@ -90,7 +87,7 @@ QUnit.test('Miscellaneous tests', function( assert ) {
   })();
 
   setTimeout(server.respond.bind(server), 0);
-  this.sandbox.restore();
+  sandbox.restore();
   window.requestQueue = originalRequestQueue;
 
   // Test CATMAID.fetch()

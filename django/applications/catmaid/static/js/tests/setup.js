@@ -11,22 +11,3 @@ sinon.config = {
     useFakeTimers: false,
     useFakeServer: false
 };
-
-/**
- * Add methods to a CATMAID.tests namespace.
- */
-(function(CATMAID) {
-
-  CATMAID.tests = {
-
-    /**
-     * Return true if the current user agent indicates that PhatomJS is used.
-     * False otherwise.
-     */
-    runByPhantomJS: function() {
-      return (-1 !== navigator.userAgent.toUpperCase().indexOf('PHANTOMJS'));
-    }
-
-  };
-
-})(CATMAID);

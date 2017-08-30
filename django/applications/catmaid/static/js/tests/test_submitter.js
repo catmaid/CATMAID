@@ -2,12 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
 QUnit.test('Submitter test', function( assert ) {
-  // Don't run this test in PhantomJS, because ES6 Promises are not yet
-  // supported, it seems.
-  if (CATMAID.tests.runByPhantomJS()) {
-    assert.expect(0);
-    return;
-  }
 
   // Test chaining promises and maintaining order
   (function() {

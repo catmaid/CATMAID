@@ -3,17 +3,11 @@
 
 QUnit.test('Tracing overlay test', function( assert ) {
 
-  // Don't run this test in PhantomJS, because ES6 Promises are not yet
-  // supported, it seems.
-  if (CATMAID.tests.runByPhantomJS()) {
-    assert.expect(0);
-    return;
-  }
-
   // Create a mock server to fake XHR requests and replace CATMAID's request
   // queue with a new instance that makes automatically use of the fake XHR
   // requests.
-  var server = this.sandbox.useFakeServer();
+  var server = sinon.fakeServer.create();
+  var sandbox = sinon.sandbox.create();
 
   // Test queuing of node deleting and update operation
   (function() {

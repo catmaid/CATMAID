@@ -242,8 +242,8 @@ class StatsApiTests(CatmaidApiTestCase):
                 '1': {
                     '20170701': {},
                     '20170702': {
-                        'new_connectors': '1',
-                        'new_reviewed_nodes': '1',
+                        'new_connectors': 1,
+                        'new_reviewed_nodes': 1,
                         'new_treenodes': 10.0
                     },
                     '20170703': {},
@@ -313,8 +313,8 @@ class StatsApiTests(CatmaidApiTestCase):
                 },
                 '3': {
                     '20170701': {
-                        'new_connectors': '3',
-                        'new_reviewed_nodes': '4',
+                        'new_connectors': 3,
+                        'new_reviewed_nodes': 4,
                         'new_treenodes': 7.0
                     },
                     '20170702': {},
@@ -520,8 +520,8 @@ class StatsApiTests(CatmaidApiTestCase):
                 '1': {
                     '20170701': {},
                     '20170702': {
-                        'new_connectors': '1',
-                        'new_reviewed_nodes': '1',
+                        'new_connectors': 1,
+                        'new_reviewed_nodes': 1,
                         'new_treenodes': 10.0
                     },
                     '20170703': {},
@@ -591,8 +591,8 @@ class StatsApiTests(CatmaidApiTestCase):
                 },
                 '3': {
                     '20170701': {
-                        'new_connectors': '3',
-                        'new_reviewed_nodes': '3',
+                        'new_connectors': 3,
+                        'new_reviewed_nodes': 3,
                         'new_treenodes': 4.0
                     },
                     '20170702': {},

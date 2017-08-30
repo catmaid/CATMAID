@@ -6,7 +6,7 @@
    * Layout currently open stack viewers. Currently, this only changes the layout
    * if there are three ortho-views present.
    */
-  CATMAID.layoutStackViewer = function() {
+  CATMAID.layoutStackViewers = function() {
     var stackViewers = project.getStackViewers();
     var orientations = stackViewers.reduce(function(o, s) {
       o[s.primaryStack.orientation] = s;

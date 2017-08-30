@@ -570,8 +570,8 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
                     UNION ALL
                     SELECT tch.treenode_id, tch.connector_id, tch.relation_id,
                         COALESCE(lower(tch.sys_period), tch.edition_time),
-                        COALESCE(upper(tch.sys_period), tch.edition_time)
-                        {user_select}
+                        COALESCE(upper(tch.sys_period), tch.edition_time),
+                        tch.user_id
                     FROM treenode_connector__history tch
                     JOIN treenode_connector tc
                         ON tc.id = tch.id

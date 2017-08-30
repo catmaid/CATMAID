@@ -63,8 +63,9 @@ init_catmaid () {
   echo "Updating static files"
   python manage.py collectstatic --clear --link --noinput
 
+  # The additional new lines are needed to end the input stream
   echo "Ensuring existence of super user"
-  cat /home/scripts/docker/create_superuser.py | python manage.py shell
+  printf '\n\n' | cat /home/scripts/docker/create_superuser.py - | python manage.py shell
 
   if [ "$CM_EXAMPLE_PROJECTS" = true ]; then
     python manage.py catmaid_insert_example_projects --user=1

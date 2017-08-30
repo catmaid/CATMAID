@@ -29,7 +29,7 @@ try:
     from pylab import figure
     from matplotlib.backends.backend_agg import FigureCanvasAgg
 except ImportError:
-    logger.warning("CATMAID was unable to laod the matplitlib module. "
+    logger.warning("CATMAID was unable to laod the matplotlib module. "
         "User analytics will not be available")
 
 from six.moves import range

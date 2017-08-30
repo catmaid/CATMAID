@@ -62,8 +62,6 @@ init_catmaid () {
     python manage.py migrate --noinput
     echo "Updating static files"
     python manage.py collectstatic --clear --link --noinput
-    echo "Creating super user"
-    cat /home/scripts/docker/create_superuser.py | python manage.py shell
   else
     # Make sure the database schema is updated
     echo "Migrating databse"
@@ -71,6 +69,9 @@ init_catmaid () {
     echo "Updating static files"
     python manage.py collectstatic --clear --link --noinput
   fi
+
+  echo "Ensuring existence of super user"
+  cat /home/scripts/docker/create_superuser.py | python manage.py shell
 
   if [ "$CM_EXAMPLE_PROJECTS" = true ]; then
     python manage.py catmaid_insert_example_projects --user=1

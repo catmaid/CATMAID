@@ -292,7 +292,7 @@
       if (self.validate(inputVal)) {
         self.setByValue(inputVal);
       } else {
-        this.value = self.validate(self.val) ? self.values[0] : self.val;
+        this.value = self.validate(self.val) ? self.val : self._values[0];
       }
       if (e && e.target && self.blurOnChange) {
         e.target.blur();

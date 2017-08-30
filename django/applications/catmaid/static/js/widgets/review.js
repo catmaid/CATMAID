@@ -1092,7 +1092,7 @@
               "Remove all of my reviews": function () {
                 self.submit(CATMAID.makeURL(self.projectId + "/skeleton/" + self.currentSkeletonId + "/review/" + fnName), "POST", {},
                   function (json) {
-                    self.startReviewActiveSkeleton();
+                    self.refresh();
                   });
                 $(this).dialog('destroy');
               }

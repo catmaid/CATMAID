@@ -90,11 +90,13 @@
 
     this.updateControls = function()
     {
-      self.slider_s.setByValue( self.stackViewer.s, true );
-      self.slider_z.setByValue( self.stackViewer.z, true );
+      if (self.stackViewer) {
+        self.slider_s.setByValue( self.stackViewer.s, true );
+        self.slider_z.setByValue( self.stackViewer.z, true );
 
-      self.input_x.value = self.stackViewer.x;
-      self.input_y.value = self.stackViewer.y;
+        self.input_x.value = self.stackViewer.x;
+        self.input_y.value = self.stackViewer.y;
+      }
     };
 
     this.resize = function( width, height )

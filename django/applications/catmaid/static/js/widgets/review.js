@@ -1046,10 +1046,10 @@
       if (subarborOnly) {
         subarborNodeId = SkeletonAnnotations.getActiveNodeId();
       }
-      this.startSkeletonToReview( skid, subarborNodeId );
+      this.startSkeletonToReview( skid, subarborNodeId, true );
     };
 
-    this.startSkeletonToReview = function( skid, nodeId ) {
+    this.startSkeletonToReview = function( skid, nodeId, forceRefresh ) {
       var dataChanged = false;
       if (!skid) {
         CATMAID.error('No skeleton ID provided for review.');
@@ -1063,7 +1063,7 @@
       if (!checkSkeletonID()) {
         return;
       }
-      if (dataChanged) {
+      if (dataChanged || forceRefresh) {
         this.refresh();
       }
     };

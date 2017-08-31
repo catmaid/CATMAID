@@ -365,8 +365,9 @@
             Math.max(self.current_segment_index - 1, 0);
 
         // Find the next real node
-        var fromNode, toIndex;
+        var fromNode, fromIndex, toIndex;
         if (skipStep) {
+          fromIndex = self.current_segment_index;
           fromNode = skipStep;
         } else {
           var whitelist = this.getCurrentWhiteListAndFollowed();
@@ -398,7 +399,7 @@
             }
           }
 
-          var fromIndex = upstream ? Math.max(0, newIndex - 1) :
+          fromIndex = upstream ? Math.max(0, newIndex - 1) :
               Math.min(sequenceLength - 1, newIndex + 1);
           fromNode = sequence[fromIndex];
         }
@@ -410,7 +411,12 @@
         // already been taken before, this step is the reference point for the
         // distance test.
         skipStep = self.limitMove(fromNode, toNode, toIndex, upstream);
-        if (!skipStep) {
+        if (skipStep) {
+          // For virtual nodes make sure the current segment index is set
+          // correctly (needed mainly if advanceToNextUnfollowed = true and a
+          // virtual node is selected next.
+          self.current_segment_index = fromIndex;
+        } else {
           // If a real node is next, update current segment index and check if
           // we are close to the segment end.
           self.current_segment_index = toIndex;

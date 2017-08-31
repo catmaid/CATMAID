@@ -100,6 +100,9 @@ Miscellaneous:
 - Review widget: the Shift + Q key combination to select the next unreviewed
   node in downstream direction is respected again.
 
+- Review widget: Shift + W and Shift + Q work now correctly if the first
+  unreviewed node is a virtual node.
+
 - Key combinations involving the Alt key were not respected on Mac OS. This is
   fixed now.
 

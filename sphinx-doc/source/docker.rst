@@ -20,13 +20,13 @@ lightweight virtual machines.
 After `installing Docker <https://www.docker.com/>`_, download and run the
 CATMAID image::
 
-  docker run -p 8080:80 --name catmaid catmaid/catmaid-standalone
+  docker run -p 8000:80 --name catmaid catmaid/catmaid-standalone
 
-Navigate your browser to `http://localhost:8080 <http://localhost:8080>`_
+Navigate your browser to `http://localhost:8000 <http://localhost:8000>`_
 and you should see the CATMAID landing page. You can log in as a superuser
 with username "admin" and password "admin". The Docker image contains a few
 example CATMAID projects and stacks, but you can add your own through the
-`admin page <http://localhost:8080/admin>`_.
+`admin page <http://localhost:8000/admin>`_.
 
 .. warning::
 
@@ -68,7 +68,7 @@ Run containers::
 
   docker-compose up
 
-Navigate your browser to `http://localhost <http://localhost>`_
+Navigate your browser to `http://localhost:8000 <http://localhost:8000>`_
 and you should see the CATMAID landing page. You can log in as a superuser
 with username "admin" and password "admin". The Docker image contains a few
 example projects, which are added by default. To disable these, set

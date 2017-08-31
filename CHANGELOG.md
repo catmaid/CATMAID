@@ -21,6 +21,9 @@
   docker-compose setup, which can be used if persistent data is required. The
   documentation has been updared with all the details.
 
+- The Docker default port is now 8000 for both regular setups and docker-compose
+  setups.
+
 
 ### Features and enhancements
 

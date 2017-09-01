@@ -126,6 +126,9 @@ Miscellaneous:
 - Former partner nodes of deleted connector nodes can now be deleted without an
   additional tracing layer update.
 
+- The Skeleton Projection Layer can now use the skeleton source color again
+  properly.
+
 
 ## 2017.07.28
 

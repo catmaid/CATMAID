@@ -475,7 +475,7 @@
       upstream = upstream.reroot(parentId);
 
       var upstreamColor = this.options.preferSourceColor && skeletonModel ?
-        skeletonModel.color.getStyle() : this.options.upstreamColor;
+        skeletonModel.color.getHex() : this.options.upstreamColor;
 
       // Update render options with upstream color
       renderOptions.color = material.color(this, upstreamColor);

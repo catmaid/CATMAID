@@ -199,6 +199,7 @@
     if (!this.filter) {
       searchForm.style.display = 'none';
     }
+    searchForm.onkeyup = this.refreshDelayed.bind(this);
     hp.appendChild(searchForm);
 
     var searchInput = document.createElement('input');
@@ -256,16 +257,13 @@
       display = false;
       toappend = [];
 
-      dt = document.createElement("dt");
-
       title = p.title;
-      if (re.test(title)) {
-        display = true;
+      if (!re.test(title)) {
+        continue;
       }
-      dt.appendChild(document.createTextNode(p.title));
 
-      this.container.querySelector("[data-role=project-header]").style.display = "block";
-      this.container.querySelector("[data-role=filter]").style.display = "block";
+      dt = document.createElement("dt");
+      dt.appendChild(document.createTextNode(p.title));
       toappend.push(dt);
 
       // add a link for every action (e.g. a stack link)
@@ -288,13 +286,16 @@
           toappend.push(ddc);
         }
       }
-      if (display) {
-        ++ matchingProjects;
-        for (var i=0; i<toappend.length; ++i) {
-          pp.appendChild(toappend[i]);
-        }
+
+      ++ matchingProjects;
+      for (var i=0; i<toappend.length; ++i) {
+        pp.appendChild(toappend[i]);
       }
     }
+
+    this.container.querySelector("[data-role=project-header]").style.display = "block";
+    this.container.querySelector("[data-role=filter]").style.display = "block";
+
     if (projects.length === 0) {
       $('[data-role=filter-message]', this.container).text('Could not find any CATMAID projects');
     } else if (matchingProjects === 0) {

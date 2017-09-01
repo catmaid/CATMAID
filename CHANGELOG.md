@@ -129,6 +129,8 @@ Miscellaneous:
 - The Skeleton Projection Layer can now use the skeleton source colors and other
   colors source again.
 
+- The simple front end data view's project filter works again
+
 
 ## 2017.07.28
 

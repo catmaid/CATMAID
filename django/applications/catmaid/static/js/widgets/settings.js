@@ -962,6 +962,7 @@
         return {
           "visible": skpVisible.find('input').prop('checked'),
           "shadingMode": skpShading.val(),
+          "preferSourceColor": skpPreferSourceColor.find('input').prop('checked'),
           "downstreamColor": new THREE.Color(skpDownstreamColor.find('input').val()).getHex(),
           "upstreamColor": new THREE.Color(skpUpstreamColor.find('input').val()).getHex(),
           "showEdges": skpShowEdges.find('input').prop('checked'),

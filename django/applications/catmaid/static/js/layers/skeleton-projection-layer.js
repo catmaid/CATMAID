@@ -382,11 +382,15 @@
   SkeletonProjectionLayer.prototype.clear = function() {
     if (this.graphics) {
       this.graphics.containers.nodes.children.forEach(function (child) {
-        child.destroy();
+        if (child) {
+          child.destroy();
+        }
       });
       this.graphics.containers.nodes.removeChildren();
       this.graphics.containers.lines.children.forEach(function (child) {
-        child.destroy();
+        if (child) {
+          child.destroy();
+        }
       });
       this.graphics.containers.lines.removeChildren();
     }

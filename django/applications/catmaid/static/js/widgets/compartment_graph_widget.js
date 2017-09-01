@@ -1527,11 +1527,11 @@
       var groupName = options.appendField("Or type a new name: ", "gg-typed", "", true);
       options.appendCheckbox("Hide intragroup edges", "gg-edges", true);
       options.appendCheckbox("Append number of neurons to name", "gg-number", true);
-      options.appendMessage("Choose group color:");
+      var groupColorMessage = options.appendMessage("Choose group color:");
       var groupColor = color ? '#' + color.getHexString() : '#aaaaff';
       var colorButton = document.createElement('button');
       colorButton.appendChild(document.createTextNode('Color'));
-      options.dialog.appendChild(colorButton);
+      groupColorMessage.appendChild(colorButton);
       CATMAID.ColorPicker.enable(colorButton, {
         initialColor: groupColor,
         onColorChange: function(rgb, alpha, colorChanged, alphaChanged) {

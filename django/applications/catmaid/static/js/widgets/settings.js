@@ -991,6 +991,7 @@
             }
           } else if (layer) {
             sv.removeLayer("skeletonprojection");
+            sv.redraw();
           }
         });
       }

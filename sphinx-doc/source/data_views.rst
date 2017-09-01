@@ -26,7 +26,7 @@ Currently, CATMAID comes with two pre-defined data views:
 as the default, i.e. it is shown when CATMAID is loaded. Both views
 have different view types. They are *Project list* and *Project table*.
 There is also two more data view types that are not used by the
-pre-defined views: *Legacy project list*. It allows the display of a
+pre-defined views: *Simple project list*. It allows the display of a
 project list used before the advent of data views. Then there is also
 the *Project tag table* which allows the construction of a table
 based on tags. The details are described below.
@@ -105,7 +105,7 @@ However, also values might need quoting if they are strings other than
 ``true`` or ``false`` (and no numbers). Alternative values are separated by
 a logical *or*/pipe symbol (``|``) and only one of them can be used. Let's
 have a look at the *sort* option as an example: All data view types, except
-the *Legacy Project List* type, support the option
+the *Simple Project List* type, support the option
 
   ``"sort":[true|false]``.
  
@@ -121,7 +121,7 @@ another one -- within the same pair of curly braces:
   ``{"name1":opt1, "name2:opt2, ...}``
 
 Like already mentioned, there are options that are supported by all the
-different data view types. The only exception to this is the *Legacy Project
+different data view types. The only exception to this is the *Simple Project
 List* type, which doesn't support such general options. All the other types
 respect the following general options:
 
@@ -149,23 +149,22 @@ look like:
 The remainder of this section will briefly discuss the different data view
 types available.
 
-Legacy Project List
+Simple Project List
 ^^^^^^^^^^^^^^^^^^^
 
 All data views except this one are processed or the server-side. This project
-list is done with the help of JavaScript in the browser of a user. Since it was
-the only view available for a long time, it is called "legacy". It supports
+list is done with the help of JavaScript in the browser of a user. It supports
 an interactive live filter, but it cannot be configured in any way. Therefore,
 the configuration is very likely to be just ``{}`` (an empty JSON object). It
 looks like this:
 
-.. image:: _static/dataviews/admin_data_views_legacy_project_list.png
+.. image:: _static/dataviews/admin_data_views_simple_project_list.png
 
 Project List
 ^^^^^^^^^^^^
 
 The appearance of *Project List* is very similar to the one of
-*Legacy Project List*. Currently, it doesn't support live filtering of projects,
+*Simple Project List*. Currently, it doesn't support live filtering of projects,
 though. When a project has no stacks, it won't be visible with this view type.
 It is processed server-side and offers some configuration options:
 

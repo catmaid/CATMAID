@@ -99,7 +99,7 @@
     this.title = "Project list " + this.widgetID;
     this.dataview = new ProjectListDataView({
        id: null,
-       type: 'legacy_project_list_data_view',
+       type: 'simple_project_list_data_view',
        header: false,
        message: false,
     });
@@ -333,7 +333,7 @@
    */
   DataView.dataviewTypes = {
     'empty': DataView,
-    'legacy_project_list_data_view': ProjectListDataView,
+    'simple_project_list_data_view': ProjectListDataView,
     'project_list_data_view': BackendDataView,
     'project_table_data_view': BackendDataView,
     'dynamic_projects_list_data_view': BackendDataView,

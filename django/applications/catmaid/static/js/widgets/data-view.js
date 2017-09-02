@@ -292,7 +292,12 @@
         dt, dd, a, ddc,
         p,
         catalogueElement, catalogueElementLink,
-        pp = this.container.querySelector("[data-role=project-display]");
+        pp = this.container.querySelector("[data-role=project-display]"),
+        container = pp.parentElement;
+
+    // Detach container from parent to have quicker updates
+    container.removeChild(pp);
+
     // remove all the projects
     while (pp.firstChild) pp.removeChild(pp.firstChild);
     $('[data-role=filter-message]', this.container).text('');
@@ -341,6 +346,8 @@
 
       ++matchingProjects;
     }
+
+    container.appendChild(pp);
 
     if (projects.length === 0) {
       $('[data-role=filter-message]', this.container).text('Could not find any CATMAID projects');

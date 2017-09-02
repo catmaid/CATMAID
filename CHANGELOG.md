@@ -24,6 +24,13 @@
 - The Docker default port is now 8000 for both regular setups and docker-compose
   setups.
 
+- The data view "legacy project list" has been renamed to "simple project list".
+  It now supports separate project title and stack title filters, which can be
+  preconfigured using the data view config options "projectFilterTerm" and
+  "stackFilterTerm". For both simple terms and regular expressions can be used.
+  The filter input boxes can optionally be hidden by setting the "filter" config
+  property to false.
+
 
 ### Features and enhancements
 

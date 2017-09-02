@@ -30,7 +30,11 @@
      */
     getConfig: function(dataViewId) {
       var url = 'dataviews/' + dataViewId + '/';
-      return CATMAID.fetch(url, 'GET', undefined);
+      return CATMAID.fetch(url, 'GET', undefined)
+        .then(function(config) {
+          config.config = config.config ? JSON.parse(config.config) : {};
+          return config;
+        });
     },
 
     /**
@@ -41,7 +45,11 @@
      */
     getDefaultConfig: function() {
       var url = 'dataviews/default';
-      return CATMAID.fetch(url, 'GET', undefined);
+      return CATMAID.fetch(url, 'GET', undefined)
+        .then(function(config) {
+          config.config = config.config ? JSON.parse(config.config) : {};
+          return config;
+        });
     },
 
     /**

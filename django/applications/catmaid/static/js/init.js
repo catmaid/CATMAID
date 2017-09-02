@@ -454,8 +454,10 @@ var project;
     this.switch_dataview(new CATMAID.DataView({
        id: null,
        type: 'empty',
-       message: 'Loading...',
-       classList: 'wait_bgwhite'
+       config: {
+         message: 'Loading...',
+         classList: 'wait_bgwhite'
+       }
     }));
 
     var self = this;
@@ -722,7 +724,9 @@ var project;
       CATMAID.client.switch_dataview(new CATMAID.DataView({
          id: null,
          type: 'empty',
-         message: 'Loading list of available projects...'
+         config: {
+            message: 'Loading list of available projects...'
+         }
       }));
 
       var projectUpdate = CATMAID.client.updateProjects()
@@ -974,22 +978,22 @@ var project;
    */
   CATMAID.userprofile = null;
 
-  function handle_dataviews(e) {
-    // a function for creating data view menu handlers
-    var create_handler = function(id) {
-      return function() {
-        // close any open project and its windows
-        CATMAID.rootWindow.closeAllChildren();
+  // a function for creating data view menu handlers
+  var handleDataViewSelection = function(id) {
+    // close any open project and its windows
+    CATMAID.rootWindow.closeAllChildren();
 
-        CATMAID.DataViews.getConfig(id)
-          .then(function(config) {
-            // open data view
-            var dataview = CATMAID.DataView.makeDataView(config);
-            CATMAID.client.switch_dataview(dataview);
-          })
-          .catch(CATMAID.handleError);
-      };
-    };
+    CATMAID.DataViews.getConfig(id)
+      .then(function(config) {
+        // open data view
+        var dataview = CATMAID.DataView.makeDataView(config);
+        CATMAID.client.switch_dataview(dataview);
+      })
+      .catch(CATMAID.handleError);
+  };
+
+  function handle_dataviews(e) {
+    var menuItems = {};
     /* As we want to handle a data view change in JS,
      * a function is added as action for all the menu
      * elements. Also add small links to each menu entry
@@ -997,13 +1001,17 @@ var project;
      */
     for ( var i in e )
     {
-      e[i].action = create_handler(e[i].id);
-      var link = '<a class="hoverlink" href="' + django_url +
-        '?dataview=' + e[i].id + '">&para;&nbsp;</a>';
-      e[i].note = link + e[i].note;
+      var dv = e[i];
+      var url = CATMAID.makeURL('?dataview=' + dv.id);
+      var link = '<a class="hoverlink" href="' + url + '">&para;&nbsp;</a>';
+      menuItems[i] = {
+        title: dv.title,
+        note: link + dv.note,
+        action: handleDataViewSelection.bind(undefined, dv.id)
+      };
     }
 
-    dataview_menu.update( e );
+    dataview_menu.update(menuItems);
   }
 
   /**

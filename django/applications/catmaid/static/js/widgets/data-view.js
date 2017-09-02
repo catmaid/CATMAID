@@ -10,16 +10,17 @@
    * general header.
    */
   var DataView = function(options) {
-    options = CATMAID.tools.updateFromDefaults(options, DataView.defaultOptions);
+    options.config = CATMAID.tools.updateFromDefaults(options.config,
+        DataView.defaultOptions);
 
     this.id = options.id;
     this.type = options.code_type;
 
     this.container = document.createElement('div');
 
-    this.header = options.header;
-    this.message = options.message;
-    this.classList = options.classList;
+    this.header = options.config.header;
+    this.message = options.config.message;
+    this.classList = options.config.classList;
   };
 
   /**
@@ -100,8 +101,10 @@
     this.dataview = new ProjectListDataView({
        id: null,
        type: 'simple_project_list_data_view',
-       header: false,
-       message: false,
+       config: {
+         header: false,
+         message: false
+       }
     });
   };
 
@@ -164,12 +167,15 @@
 
 
   var ProjectListDataView = function(options) {
-    options = CATMAID.tools.updateFromDefaults(options, ProjectListDataView.defaultOptions);
+    options.config = CATMAID.tools.updateFromDefaults(options.config,
+        ProjectListDataView.defaultOptions);
 
     // Call super constructor
     DataView.call(this, options);
 
-    this.filter = options.filter;
+    this.filter = options.config.filter;
+    this.projectFilterTerm = options.config.projectFilterTerm;
+    this.stackFilterTerm = options.config.stackFilterTerm;
     this.cacheLoadingTimeout = null;
   };
 
@@ -177,7 +183,9 @@
   ProjectListDataView.prototype.constructor = DataView;
 
   ProjectListDataView.defaultOptions = {
-    filter: false
+    filter: true,
+    projectFilterTerm: "",
+    stackFilterTerm: ""
   };
 
   ProjectListDataView.prototype.createContent = function(content) {
@@ -199,13 +207,28 @@
     if (!this.filter) {
       searchForm.style.display = 'none';
     }
-    searchForm.onkeyup = this.refreshDelayed.bind(this);
     hp.appendChild(searchForm);
 
-    var searchInput = document.createElement('input');
-    searchInput.setAttribute('type', 'text');
-    searchInput.onkeyup = this.refreshDelayed.bind(this);
-    searchForm.appendChild(searchInput);
+    var projectSearchInput = document.createElement('input');
+    projectSearchInput.setAttribute('type', 'text');
+    projectSearchInput.setAttribute('data-role', 'project-filter');
+    projectSearchInput.setAttribute('placeholder', 'Project filter');
+    if (this.projectFilterTerm.length > 0) {
+      projectSearchInput.value = this.projectFilterTerm;
+    }
+    projectSearchInput.onkeyup = this.refreshDelayed.bind(this);
+    searchForm.appendChild(projectSearchInput);
+
+    var stackSearchInput = document.createElement('input');
+    stackSearchInput.setAttribute('type', 'text');
+    stackSearchInput.setAttribute('data-role', 'stack-filter');
+    stackSearchInput.setAttribute('placeholder', 'Stack filter');
+    stackSearchInput.style.marginLeft = '0.5em';
+    if (this.stackFilterTerm.length > 0) {
+      stackSearchInput.value = this.stackFilterTerm;
+    }
+    stackSearchInput.onkeyup = this.refreshDelayed.bind(this);
+    searchForm.appendChild(stackSearchInput);
 
     var searchIndicator = document.createElement('span');
     searchIndicator.setAttribute('data-role', 'filter-indicator');
@@ -237,10 +260,13 @@
   ProjectListDataView.prototype.refresh = function(content) {
     DataView.prototype.refresh.call(this, content);
 
+    this.projectFilterTerm = $('input[data-role=project-filter]', this.container).val();
+    var projectRegEx = this.projectFilterTerm.length > 0 ? new RegExp(this.projectFilterTerm, "i") : null;
+
+    this.stackFilterTerm = $('input[data-role=stack-filter]', this.container).val();
+    var stackRegEx = this.stackFilterTerm.length > 0 ? new RegExp(this.stackFilterTerm, "i") : null;
+
     var matchingProjects = 0,
-        searchString = $('[data-role=filter] input', this.container).val(),
-        display,
-        re = new RegExp(searchString, "i"),
         title,
         toappend,
         dt, dd, a, ddc,
@@ -254,11 +280,10 @@
     var projects = CATMAID.client.projects;
     for (var projectId in projects) {
       p = projects[projectId];
-      display = false;
       toappend = [];
 
       title = p.title;
-      if (!re.test(title)) {
+      if (projectRegEx && !projectRegEx.test(title)) {
         continue;
       }
 
@@ -266,17 +291,20 @@
       dt.appendChild(document.createTextNode(p.title));
       toappend.push(dt);
 
+      // add a link for each stack group
+
       // add a link for every action (e.g. a stack link)
+      var matchingStacks = 0;
       for (var i=0; i<p.stacks.length; ++i) {
         var s = p.stacks[i];
+        if (stackRegEx && !stackRegEx.test(s.title)) {
+          continue;
+        }
         dd = document.createElement("dd");
         a = document.createElement("a");
         ddc = document.createElement("dd");
         a.href = "#";
         a.onclick = CATMAID.openProjectStack.bind(window, p.id, s.id, false);
-        if (re.test(s.title)) {
-          display = true;
-        }
         a.appendChild(document.createTextNode(s.title));
         dd.appendChild(a);
         toappend.push(dd);
@@ -285,6 +313,7 @@
           ddc.innerHTML = s.comment;
           toappend.push(ddc);
         }
+        ++matchingStacks;
       }
 
       ++ matchingProjects;
@@ -293,13 +322,10 @@
       }
     }
 
-    this.container.querySelector("[data-role=project-header]").style.display = "block";
-    this.container.querySelector("[data-role=filter]").style.display = "block";
-
     if (projects.length === 0) {
       $('[data-role=filter-message]', this.container).text('Could not find any CATMAID projects');
     } else if (matchingProjects === 0) {
-      $('[data-role=filter-message]', this.container).text('No projects matched "' + searchString + '"');
+      $('[data-role=filter-message]', this.container).text('No projects matched "' + this.projectFilterTerm + '"');
     }
   };
 
@@ -327,6 +353,10 @@
         indicator.className = "";
       }, 500);
   };
+
+  // Export data view
+  CATMAID.ProjectListDataView = ProjectListDataView;
+
 
   /**
    * A map of all available data views from their type.

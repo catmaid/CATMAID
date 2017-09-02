@@ -154,9 +154,21 @@ Simple Project List
 
 All data views except this one are processed or the server-side. This project
 list is done with the help of JavaScript in the browser of a user. It supports
-an interactive live filter, but it cannot be configured in any way. Therefore,
-the configuration is very likely to be just ``{}`` (an empty JSON object). It
-looks like this:
+an interactive live filters for both projects and stacks/stack groups, which can
+optionally pre-set with the data view configuration. The ``filter`` option
+decides if the filter input boxes are visible.
+
+======================= =========================================== ================
+Name                    Options                                     Default
+======================= =========================================== ================
+``filter``              ``true, false``                             ``true``
+``projectFilterTerm``   ``Plain string or regular expression``      ``""``
+``stackFilterTerm``     ``Plain string or regular expression``      ``""``
+``header``              ``true, false``                             ``true``
+``message``             ``String``                                  ``def. message``
+======================= =========================================== ================
+
+An example:
 
 .. image:: _static/dataviews/admin_data_views_simple_project_list.png
 

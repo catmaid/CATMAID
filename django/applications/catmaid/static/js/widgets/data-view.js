@@ -325,7 +325,7 @@
             continue;
           }
           createProjectMemberEntry(sg, pp,
-              CATMAID.openStackGroup.bind(window, p.id, sg.id, false));
+              CATMAID.openStackGroup.bind(window, p.id, sg.id, false, undefined));
           ++matchingStackGroups;
         }
       }
@@ -339,7 +339,7 @@
             continue;
           }
           createProjectMemberEntry(s, pp,
-              CATMAID.openProjectStack.bind(window, p.id, s.id, false));
+              CATMAID.openProjectStack.bind(window, p.id, s.id, false, undefined));
           ++matchingStacks;
         }
       }

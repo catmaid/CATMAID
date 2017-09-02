@@ -166,6 +166,8 @@ Name                    Options                                     Default
 ``stackFilterTerm``     ``Plain string or regular expression``      ``""``
 ``header``              ``true, false``                             ``true``
 ``message``             ``String``                                  ``def. message``
+``with_stacks``         ``true, false``                             ``true``
+``with_stackgroups``    ``true, false``                             ``true``
 ======================= =========================================== ================
 
 An example:

@@ -176,6 +176,8 @@
     this.filter = options.config.filter;
     this.projectFilterTerm = options.config.projectFilterTerm;
     this.stackFilterTerm = options.config.stackFilterTerm;
+    this.with_stacks = options.config.with_stacks;
+    this.with_stackgroups = options.config.with_stackgroups;
     this.cacheLoadingTimeout = null;
   };
 
@@ -185,7 +187,9 @@
   ProjectListDataView.defaultOptions = {
     filter: true,
     projectFilterTerm: "",
-    stackFilterTerm: ""
+    stackFilterTerm: "",
+    with_stacks: true,
+    with_stackgroups: true
   };
 
   ProjectListDataView.prototype.createContent = function(content) {
@@ -253,6 +257,22 @@
     return Promise.resolve();
   };
 
+  function createProjectMemberEntry(member, target, handler) {
+    var dd = document.createElement("dd");
+    var a = document.createElement("a");
+    var ddc = document.createElement("dd");
+    a.href = "#";
+    a.onclick = handler;
+    a.appendChild(document.createTextNode(member.title));
+    dd.appendChild(a);
+    target.appendChild(dd);
+    if (member.comment) {
+      ddc = document.createElement("dd");
+      ddc.innerHTML = member.comment;
+      target.appendChild(ddc);
+    }
+  }
+
   /**
    * Update the displayed project list based on the cache entries. This can
    * involve a filter in the text box "project_filter_text".
@@ -289,37 +309,37 @@
 
       dt = document.createElement("dt");
       dt.appendChild(document.createTextNode(p.title));
-      toappend.push(dt);
+      pp.appendChild(dt);
 
       // add a link for each stack group
+      var matchingStackGroups = 0;
+      if (this.with_stackgroups) {
+        for (var i=0; i<p.stackgroups.length; ++i) {
+          var sg = p.stackgroups[i];
+          if (stackRegEx && !stackRegEx.test(sg.title)) {
+            continue;
+          }
+          createProjectMemberEntry(sg, pp,
+              CATMAID.openStackGroup.bind(window, p.id, sg.id, false));
+          ++matchingStackGroups;
+        }
+      }
 
       // add a link for every action (e.g. a stack link)
       var matchingStacks = 0;
-      for (var i=0; i<p.stacks.length; ++i) {
-        var s = p.stacks[i];
-        if (stackRegEx && !stackRegEx.test(s.title)) {
-          continue;
+      if (this.with_stacks) {
+        for (var i=0; i<p.stacks.length; ++i) {
+          var s = p.stacks[i];
+          if (stackRegEx && !stackRegEx.test(s.title)) {
+            continue;
+          }
+          createProjectMemberEntry(s, pp,
+              CATMAID.openProjectStack.bind(window, p.id, s.id, false));
+          ++matchingStacks;
         }
-        dd = document.createElement("dd");
-        a = document.createElement("a");
-        ddc = document.createElement("dd");
-        a.href = "#";
-        a.onclick = CATMAID.openProjectStack.bind(window, p.id, s.id, false);
-        a.appendChild(document.createTextNode(s.title));
-        dd.appendChild(a);
-        toappend.push(dd);
-        if (s.comment) {
-          ddc = document.createElement("dd");
-          ddc.innerHTML = s.comment;
-          toappend.push(ddc);
-        }
-        ++matchingStacks;
       }
 
-      ++ matchingProjects;
-      for (var i=0; i<toappend.length; ++i) {
-        pp.appendChild(toappend[i]);
-      }
+      ++matchingProjects;
     }
 
     if (projects.length === 0) {

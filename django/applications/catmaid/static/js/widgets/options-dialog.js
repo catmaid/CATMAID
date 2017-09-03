@@ -21,7 +21,7 @@
   /**
    * Takes three optional arguments; default to 300, 200, true.
    */
-  OptionsDialog.prototype.show = function(width, height, modal) {
+  OptionsDialog.prototype.show = function(width, height, modal, maxHeight) {
     var self = this;
     var buttons;
     if (this.buttons) {
@@ -46,9 +46,15 @@
         }
       };
     }
+    // With auto height the maximum height is set to two thirds of the available
+    // height.
+    var fallbackMaxHeight = height === 'auto' ?
+        Math.floor(CATMAID.ui.getFrameHeight() * 0.66) : undefined;
+
     $(this.dialog).dialog({
       width: width ? width : 300,
       height: height ? height : 200,
+      maxHeight: CATMAID.tools.getDefined(maxHeight, fallbackMaxHeight),
       modal: modal !== undefined ? modal : true,
       close: function() {
         if (self.onCancel) self.onCancel();

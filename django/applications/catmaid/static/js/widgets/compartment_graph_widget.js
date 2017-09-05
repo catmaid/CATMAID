@@ -518,7 +518,7 @@
       this.updateEdgeGraphics(true);
     }).bind(this);
 
-    dialog.show(440, 300, true);
+    dialog.show(440, 'auto', true);
   };
 
   GroupGraph.prototype.init = function() {

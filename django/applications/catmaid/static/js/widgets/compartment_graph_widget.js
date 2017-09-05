@@ -3303,9 +3303,10 @@
   };
 
   GroupGraph.prototype.filterEdges = function(countThreshold, confidenceThreshold) {
-    // TODO refactor _validate into a Util or CATMAID namespace
-    countThreshold = CATMAID.WebGLApplication.prototype._validate(countThreshold, 'Invalid synaptic count', 1);
-    confidenceThreshold = CATMAID.WebGLApplication.prototype._validate(confidenceThreshold, 'Invalid synaptic confidence threshold', 1);
+    countThreshold = CATMAID.tools.validateNumber(countThreshold,
+        'Invalid synaptic count', 1);
+    confidenceThreshold = CATMAID.tools.validateNumber(confidenceThreshold,
+        'Invalid synaptic confidence threshold', 1);
     if (!countThreshold) return;
     countThreshold = countThreshold | 0; // cast to int
     this.edge_threshold = countThreshold;

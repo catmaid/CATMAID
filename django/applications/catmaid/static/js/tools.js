@@ -636,4 +636,25 @@ CATMAID.tools = CATMAID.tools || {};
     return now.getFullYear() + '-' + now.getMonth() + '-' + now.getDay() + '-' + now.getHours() + '-' + now.getMinutes();
   };
 
+  /**
+   * Cast the passed in value to a number. If this is not possible, show a
+   * warning and return null. Optionally, a bounds check with min and max values
+   * can be performed. If not provided, min is set to negative infinity and max
+   * to positive infinity. If the value is out of bounds, null is returned as
+   * well.
+   */
+  tools.validateNumber = function(number, errorMessage, min, max) {
+    if (!number) return null;
+    var min = typeof(min) === "number" ? min : -Infinity;
+    var max = typeof(max) === "number" ? max : Infinity;
+    var value = +number; // cast
+    if (Number.isNaN(value) || value < min || value > max) {
+      if (errorMessage) {
+        CATMAID.warn(errorMsg);
+      }
+      return null;
+    }
+    return value;
+  };
+
 })(CATMAID.tools);

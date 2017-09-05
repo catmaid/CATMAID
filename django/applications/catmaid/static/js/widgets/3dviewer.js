@@ -687,7 +687,7 @@
         checkbox = od.appendCheckbox("Only among loaded in 3D view", "spatial-loaded", false);
 
     od.onOK = (function() {
-      var distance = this._validate(field.value, "Invalid distance value");
+      var distance = CATMAID.tools.validateNumber(field.value, "Invalid distance value", 1);
       if (!distance) return;
       var mode = Number(choice.value),
           distanceSq = distance * distance,
@@ -6223,14 +6223,6 @@
     this.space.render();
   };
 
-  WebGLApplication.prototype._validate = function(number, error_msg, min) {
-    if (!number) return null;
-    var min = typeof(min) === "number" ? min : 1.0;
-    var value = +number; // cast
-    if (Number.isNaN(value) || value < min) return CATMAID.warn(error_msg);
-    return value;
-  };
-
   /**
    * Open a connector table with the connectors currently visisble in the 3D
    * viewer.
@@ -6251,7 +6243,7 @@
   };
 
   WebGLApplication.prototype.updateSynapseClusteringBandwidth = function(value) {
-    value = this._validate(value, "Invalid synapse clustering value");
+    value = CATMAID.tools.validateNumber(value, "Invalid synapse clustering value", 1);
     if (!value) return;
     this.options.synapse_clustering_bandwidth = value;
     if ('synapse-clustering' === this.options.connector_color) {
@@ -6262,7 +6254,7 @@
   };
 
   WebGLApplication.prototype.updateSkeletonLineWidth = function(value) {
-    value = this._validate(value, "Invalid skeleton line width value");
+    value = CATMAID.tools.validateNumber(value, "Invalid skeleton line width value", 1);
     if (!value) return;
     this.options.skeleton_line_width = value;
     var sks = this.space.content.skeletons;
@@ -6271,7 +6263,7 @@
   };
 
   WebGLApplication.prototype.updateSkeletonNodeHandleScaling = function(value) {
-    value = this._validate(value, "Invalid skeleton node scaling value", 0);
+    value = CATMAID.tools.validateNumber(value, "Invalid skeleton node scaling value", 0);
     if (!value) return;
     this.options.skeleton_node_scaling = value;
     var sks = this.space.content.skeletons;
@@ -6280,14 +6272,14 @@
   };
 
   WebGLApplication.prototype.updateSmoothSkeletonsSigma = function(value) {
-    value = this._validate(value, "Invalid sigma value");
+    value = CATMAID.tools.validateNumber(value, "Invalid sigma value", 1);
     if (!value) return;
     this.options.smooth_skeletons_sigma = value;
     if (this.options.smooth_skeletons) this.updateSkeletons();
   };
 
   WebGLApplication.prototype.updateResampleDelta = function(value) {
-    value = this._validate(value, "Invalid resample delta");
+    value = CATMAID.tools.validateNumber(value, "Invalid resample delta", 1);
     if (!value) return;
     this.options.resampling_delta = value;
     if (this.options.resample_skeletons) this.updateSkeletons();
@@ -6333,7 +6325,7 @@
   };
 
   WebGLApplication.prototype.updateActiveNodeNeighborhoodRadius = function(value) {
-    value = this._validate(value, "Invalid value");
+    value = CATMAID.tools.validateNumber(value, "Invalid value", 1);
     if (!value) return;
     this.options.distance_to_active_node = value;
     if (this.options.shading_method.indexOf('near_active_node') !== -1) {
@@ -6368,7 +6360,7 @@
       this.options[param] = value;
     } else {
       // Numerical only
-      value = this._validate(value, "Invalid value");
+      value = CATMAID.tools.validateNumber(value, "Invalid value", 1);
       if (!value) return;
       this.options[param] = value;
     }

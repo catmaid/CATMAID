@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from django.conf import settings
 from django.conf.urls import url
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -444,10 +445,11 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/analytics/broken-section-nodes$', analytics.list_broken_section_nodes)
 ]
 
-# Front-end tests
-urlpatterns += [
-    url(r'^tests$', login_required(CatmaidView.as_view(template_name="catmaid/tests.html")), name="frontend_tests"),
-]
+# Front-end tests, disabled by default
+if settings.FRONT_END_TESTS_ENABLED:
+    urlpatterns += [
+        url(r'^tests$', login_required(CatmaidView.as_view(template_name="catmaid/tests.html")), name="frontend_tests"),
+    ]
 
 # Collection of various parts of the CATMAID API. These methods are usually
 # one- or two-liners and having them in a separate statement would not improve

@@ -313,6 +313,9 @@ VERSION = utils.get_version()
 # its behavior.
 TEST_RUNNER = 'custom_testrunner.TestSuiteRunner'
 
+# By default, front end tests are disabled.
+FRONT_END_TESTS_ENABLED = False
+
 # By default GUI tests are disabled. Enable them by setting GUI_TESTS_ENABLED to
 # True (done during CI).
 GUI_TESTS_ENABLED = False

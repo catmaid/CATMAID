@@ -11,7 +11,7 @@ module.exports = function(config) {
       // Raphael needs to be imported explicitly or it will fail
       'django/static/js/libs/raphael-lib.js',
       // Include everything but the CATMAID library
-      'django/static/js/libs/!(catmaid-lib.js)',
+      'django/static/js/libs/!(catmaid-lib).js',
       // Include CATMAID library last
       'django/static/js/libs/catmaid-lib.js',
       // Include CATMAID front-end

@@ -37,6 +37,10 @@
     // Listen to change events of the active node and skeletons
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
         this.selectActiveNode, this);
+
+    // Listen to annotation change events to update self when needed
+    CATMAID.Annotations.on(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+        this.handleAnnotationUpdate, this);
   };
 
   SelectionTable._lastFocused = null; // Static reference to last focused instance
@@ -377,6 +381,8 @@
     if (SelectionTable._lastFocused === this) SelectionTable._lastFocused = null;
     SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
         this.selectActiveNode, this);
+    CATMAID.Annotations.off(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+        this.handleAnnotationUpdate, this);
   };
 
   SelectionTable.prototype.updateModels = function(models, source_chain) {
@@ -489,6 +495,15 @@
   SelectionTable.prototype.selectActiveNode = function(activeNode)
   {
     this.highlight(activeNode ? activeNode.skeleton_id : null);
+  };
+
+  /**
+   * Update internal annotation based controls.
+   */
+  SelectionTable.prototype.handleAnnotationUpdate = function(targets, annotations) {
+    // Update auto completion for input fields
+    $("#selection-table-ann-filter" + this.widgetID).autocomplete(
+        "option", {source: CATMAID.annotations.getAllNames()});
   };
 
   /**

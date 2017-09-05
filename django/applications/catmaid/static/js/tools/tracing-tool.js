@@ -1150,8 +1150,13 @@
         if (!CATMAID.mayEdit()) {
           return false;
         }
-        CATMAID.annotate_neurons_of_skeletons(
-            [SkeletonAnnotations.getActiveSkeletonId()]);
+        var activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+        if (activeSkeletonId) {
+          CATMAID.annotate_neurons_of_skeletons(
+              [activeSkeletonId]);
+        } else {
+          CATMAID.warn('No neuron selected to annotate');
+        }
         return true;
       }
     }));

@@ -1200,10 +1200,14 @@
       keyShortcuts: { '/': [ '/', 'Shift + /' ] },
       run: function (e) {
         if (e.shiftKey) {
-          var nextSkid = CATMAID.NeuronSearch.prototype.getFirstInstance()
-              .getNextSkeletonIdAfter(SkeletonAnnotations.getActiveSkeletonId());
-          if (nextSkid) {
-            CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', nextSkid);
+          var neuronSearch = CATMAID.NeuronSearch.prototype.getFirstInstance();
+          if (neuronSearch) {
+            var nextSkid = neuronSearch.getNextSkeletonIdAfter(SkeletonAnnotations.getActiveSkeletonId());
+            if (nextSkid) {
+              CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', nextSkid);
+            }
+          } else {
+            CATMAID.msg('No search widget open', 'Please open a search widget first');
           }
         } else {
           WindowMaker.create('neuron-search');

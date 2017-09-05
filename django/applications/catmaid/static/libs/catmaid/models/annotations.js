@@ -35,8 +35,14 @@
      * Get all annotations for a list of skeletons.
      */
     forSkeletons: function(projectId, skeletonIds) {
+      var validSkeletonIds = skeletonIds.filter(function(skeletonId) {
+        return skeletonId || skeletonId === 0;
+      });
+      if (validSkeletonIds.length !== skeletonIds.length) {
+        throw new CATMAID.ValueError("No skeleton ID can be null or undefiend");
+      }
       return CATMAID.fetch(projectId + '/annotations/forskeletons', 'POST', {
-        skeleton_ids: skeletonIds
+        skeleton_ids: validSkeletonIds
       });
     },
 

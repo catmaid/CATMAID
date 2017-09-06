@@ -138,6 +138,9 @@ Miscellaneous:
 
 - The simple front end data view's project filter works again
 
+- Skeleton source subscriptions: opting in and out of applying color changes in
+  source skeletons to existing target skeletons works again.
+
 
 ## 2017.07.28
 

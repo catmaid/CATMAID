@@ -76,6 +76,9 @@ example projects, which are added by default. To disable these, set
 service (in ``docker-compose.yaml``) before starting the containers for the
 first time. This is also the place where database details can be configured.
 
+Additionally, the environment option ``CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE``
+can be used to set the maximum allowed import file size in bytes.
+
 .. warning::
 
     Make sure you change the default password of the admin user.

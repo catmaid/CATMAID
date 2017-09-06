@@ -7,6 +7,7 @@ DB_NAME=${DB_NAME:-catmaid}
 DB_USER=${DB_USER:-catmaid_user}
 DB_PASS=${DB_PASS:-catmaid_password}
 CM_EXAMPLE_PROJECTS=${CM_EXAMPLE_PROJECTS:-true}
+CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE=${CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:-""}
 
 TIMEZONE=`readlink /etc/localtime | sed "s/.*\/\(.*\)$/\1/"`
 
@@ -48,6 +49,13 @@ init_catmaid () {
   fi
 
   cd /home/django/projects
+
+  # Update maximum import size setting
+  sed -i "/^\(IMPORTED_SKELETON_FILE_MAXIMUM_SIZE = \).*/d" mysite/settings.py
+  if [ ! -z "${CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE}" ]; then
+    echo "Setting IMPORTED_SKELETON_FILE_MAXIMUM_SIZE = ${CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE}"
+    echo "IMPORTED_SKELETON_FILE_MAXIMUM_SIZE = ${CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE}" >> mysite/settings.py
+  fi
 
   # Create database and databsae user if not yet present. This should only
   # happen if the database is not run in a separete container.

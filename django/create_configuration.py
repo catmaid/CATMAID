@@ -19,10 +19,11 @@ def exit_err(msg):
 # Make sure trailing and leading slashes are where they are expected.
 if abs_catmaid_path[-1] == '/':
     exit_err("abs_catmaid_path should not have a trailing slash! Aborting.")
-if catmaid_servername[-1] == '/':
-    exit_err("catmaid_servername should not have a trailing slash! Aborting.")
-if catmaid_servername.startswith('http://'):
-    exit_err("catmaid_servername should not start with 'http://'! Aborting.")
+if len(catmaid_servername) > 0:
+    if catmaid_servername[-1] == '/':
+        exit_err("catmaid_servername should not have a trailing slash! Aborting.")
+    if catmaid_servername.startswith('http://'):
+        exit_err("catmaid_servername should not start with 'http://'! Aborting.")
 if len(catmaid_subdirectory) > 0:
     if catmaid_subdirectory[-1] == '/':
         exit_err("catmaid_subdirectory should not have a trailing slash! Aborting.")

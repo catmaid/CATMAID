@@ -164,29 +164,42 @@
     // to not require unnecessary reloads.
     var result = this.ignoreLocal ? {} : this.getSkeletonModels();
     for (var i=0, max=this.subscriptions.length; i<max; ++i) {
-      var sbs = this.subscriptions[i];
-      var sbsModels = sbs.getModels();
+      var subscription = this.subscriptions[i];
+      var subscriptionModels = subscription.getModels();
+      var useTargetColor = !subscription.colors;
+
       // Always use union for combination with local/empty set
-      var op = 0 === i ? SkeletonSource.UNION : sbs.op;
+      var op = 0 === i ? SkeletonSource.UNION : subscription.op;
       if (SkeletonSource.UNION === op) {
-        // Make models of both sources available
-        for (var mId in sbsModels) {
-          // Use model of earleir source
-          if (!result[mId]) {
-            result[mId] = sbsModels[mId];
+        // Make models of both sources available, use target color if available
+        // and no colors should by synced.
+        for (var mId in subscriptionModels) {
+          var targetModel = result[mId];
+          var model = subscriptionModels[mId];
+          if (targetModel && useTargetColor) {
+            model.color.copy(targetModel.color);
           }
+          result[mId] = model;
         }
       } else if (SkeletonSource.INTERSECTION === op) {
-        // Make models available that appear in both sources
+        // Make models available that appear in both sources, use target color
+        // if available and no colors should by synced.
         for (var mId in result) {
-          if (!sbsModels[mId]) {
+          var targetModel = result[mId];
+          var model = subscriptionModels[mId];
+          if (model) {
+            if (targetModel && useTargetColor) {
+              model.color.copy(targetModel.color);
+            }
+            result[mId] = model;
+          } else {
             delete result[mId];
           }
         }
       } else if (SkeletonSource.DIFFERENCE === op) {
         // Make models available that don't appear in the current source
         for (var mId in result) {
-          if (sbsModels[mId]) {
+          if (subscriptionModels[mId]) {
             delete result[mId];
           }
         }

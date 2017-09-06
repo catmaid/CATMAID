@@ -286,7 +286,8 @@
         "width": "10%",
         "render": function(data, type, row, meta) {
           var checked = row.colors ? 'checked="checked"' : '';
-          return '<label><input type="checkbox" ' + checked + ' />Colors</label>';
+          return '<label><input class="action-colors" type="checkbox" ' +
+              checked + ' />Colors</label>';
         }
       }, {
         "width": "10%",
@@ -318,6 +319,12 @@
       var subscription = datatable.row(tr).data();
       e.data.removeSubscription(subscription);
       datatable.row(tr).remove().draw();
+    });
+    $(table).on("change", "td .action-colors", source, function(e) {
+      var tr = $(this).closest("tr");
+      var subscription = datatable.row(tr).data();
+      subscription.colors = this.checked;
+      subscription.target.loadSubscriptions();
     });
     $(table).on("change", "td .action-changeop", source, function(e) {
       var tr = $(this).closest("tr");

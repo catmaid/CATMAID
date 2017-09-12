@@ -248,6 +248,14 @@ Neuron History:
   "Tracing time" drop down menu.
 
 
+Graph Widget:
+
+- Edge labels can now take different forms and can be configured in the
+  properties dialog. There are two new label options available: "Fractions of
+  outbound connections" and "Fractions of inbound connections". Instead of an
+  absolute number they display the relative fraction.
+
+
 Reconstruction Sampler:
 
 - This new widget can be opened using Ctrl + Space and the keyword

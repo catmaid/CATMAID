@@ -35,6 +35,7 @@
     // Edge width is computed as edge_min_width + edge_width_function(weight)
     this.edge_min_width = 0;
     this.edge_width_function = "sqrt"; // choices: identity, log, log10, sqrt
+    this.edge_label_strategy = "absolute"; // choicess: edgeLabelStrategies keys
 
     this.edge_threshold = 1;
     this.edge_confidence_threshold = 1;
@@ -441,6 +442,11 @@
     var edgeFnNames = ["identity", "log", "log10", "sqrt"];
     var edgeFnSel = dialog.appendChoice("Edge width as a function of synaptic count:", "edge_width_fn", edgeFnNames, edgeFnNames, this.edge_width_function);
 
+    var edgeLabelFnValues = Object.keys(edgeLabelStrategies);
+    var edgeLabelFnNames = edgeLabelFnValues.map(function(v) { return edgeLabelStrategies[v].name; });
+    var edgeLabelFnSelect = dialog.appendChoice("Edge label:", "edge_label_strategy",
+        edgeLabelFnNames, edgeLabelFnValues, this.edge_label_strategy);
+
     var newEdgeColor = this.edge_color;
     var colorButton = document.createElement('button');
     colorButton.appendChild(document.createTextNode('edge color'));
@@ -488,6 +494,8 @@
         }
       };
 
+      var needsReload = false;
+
       this.label_halign = label_hpos.value;
       this.label_valign = label_vpos.value;
       this.node_width = validate('node_width', node_width, node_width.value);
@@ -513,9 +521,20 @@
       var edge_min_width = Number(props[2].value.trim());
       if (!Number.isNaN(edge_min_width)) this.edge_min_width = edge_min_width;
       this.edge_width_function = edgeFnNames[edgeFnSel.selectedIndex];
+
+      var new_edge_label_strategy = edgeLabelFnValues[edgeLabelFnSelect.selectedIndex];
+      if (new_edge_label_strategy !== this.edge_label_strategy) {
+        needsReload = true;
+        this.edge_label_strategy = new_edge_label_strategy;
+      }
+
       this.edge_color = newEdgeColor;
       this.edge_text_color = newEdgeTextColor;
-      this.updateEdgeGraphics(true);
+      if (needsReload) {
+        this.update();
+      } else {
+        this.updateEdgeGraphics(true);
+      }
     }).bind(this);
 
     dialog.show(440, 'auto', true);
@@ -755,6 +774,21 @@
     }).bind(this));
   };
 
+  GroupGraph.prototype.makeEdgeLabelOptions = function(rawData) {
+    var edgeLabelStrategy = edgeLabelStrategies[this.edge_label_strategy];
+    if (!edgeLabelStrategy) {
+      throw new CATMAID.ValueError("Unknown edge label strategy: " + this.edge_label_strategy);
+    }
+    var edgeLabelOptions = {
+      edge_confidence_threshold: this.edge_confidence_threshold,
+    };
+    if (edgeLabelStrategy.requires && edgeLabelStrategy.requires.has('originIndex')) {
+      edgeLabelOptions.originIndex = rawData.overall_counts;
+      edgeLabelOptions.relationMap = rawData.relation_map;
+    }
+    return edgeLabelOptions;
+  };
+
   /** There is a model for every skeleton ID included in json.
    *  But there could be models for which there isn't a skeleton_id in json: these are disconnected nodes. */
   GroupGraph.prototype.updateGraph = function(json, models, morphology) {
@@ -783,12 +817,19 @@
     var edge_color = this.edge_color;
     var edge_text_color = this.edge_text_color;
     var edge_confidence_threshold = this.edge_confidence_threshold;
+    var edgeLabelStrategy = edgeLabelStrategies[this.edge_label_strategy];
+    var edgeLabelOptions = this.makeEdgeLabelOptions(json);
     var asEdge = function(edge) {
         var count = _filterSynapses(edge[2], edge_confidence_threshold);
+        edgeLabelOptions.count = count;
+        edgeLabelOptions.sourceId = edge[0];
+        edgeLabelOptions.targetId = edge[1];
+        edgeLabelOptions.synapses = edge[2];
+        var value = edgeLabelStrategy.run(edgeLabelOptions);
         return {data: {directed: true,
                        arrow: 'triangle',
                        id: edge[0] + '_' + edge[1],
-                       label: count,
+                       label: value,
                        color: edge_color,
                        label_color: edge_text_color,
                        source: edge[0],
@@ -1160,12 +1201,15 @@
       });
     });
 
-    var edge_confidence_threshold = this.edge_confidence_threshold;
     Object.keys(cedges).forEach(function(source_id) {
       var e = cedges[source_id];
       Object.keys(e).forEach(function(target_id) {
         var confidence = e[target_id];
-        var count = _filterSynapses(confidence, edge_confidence_threshold);
+        edgeLabelOptions.synapses = confidence;
+        edgeLabelOptions.sourceId = source_id;
+        edgeLabelOptions.targetId = target_id;
+        var value = edgeLabelStrategy.run(edgeLabelOptions);
+        var count = edgeLabelOptions.count;
         elements.edges.push({data: {directed: true,
                                     arrow: 'triangle',
                                     color: edge_color,
@@ -1174,7 +1218,7 @@
                                     source: source_id,
                                     target: target_id,
                                     confidence: confidence,
-                                    label: count,
+                                    label: value,
                                     weight: count}});
       });
     });
@@ -1585,9 +1629,16 @@
     var skeleton_ids = Object.keys(models);
     if (0 === skeleton_ids.length) return CATMAID.info("Nothing to load!");
 
+    var edgeLabelStrategy = edgeLabelStrategies[this.edge_label_strategy];
+    var with_overall_counts = edgeLabelStrategy.requires &&
+        edgeLabelStrategy.requires.has('originIndex');
+
     requestQueue.replace(django_url + project.id + "/skeletons/confidence-compartment-subgraph",
         "POST",
-        {skeleton_ids: skeleton_ids},
+        {
+          skeleton_ids: skeleton_ids,
+          with_overall_counts: with_overall_counts
+        },
         (function (status, text) {
             if (200 !== status) return;
             var json = JSON.parse(text);
@@ -2767,7 +2818,7 @@
             return count + d.confidence[conf];
           });
           gedge.data.weight += d.weight;
-          gedge.data.label = gedge.data.weight;
+          gedge.data.label = Math.round(100 * (gedge.data.label + d.label) / 2) / 100;
         } else {
           // Don't show self-edge if desired
           if (intragroup && this.groups[source].hide_self_edges) return false;
@@ -3360,6 +3411,39 @@
     return synapses
             .slice(threshold - 1)
             .reduce(function (skidSum, c) {return skidSum + c;}, 0);
+  };
+
+  var edgeLabelStrategies = {
+    "absolute": {
+      name: "Absolute number of connections",
+      run: function(options) {
+        return options.count;
+      }
+    },
+    "outbound-relative": {
+      name: "Fraction of outbound connections",
+      requires: new Set(["originIndex"]),
+      run: function(options) {
+        var preId = options.relationMap['presynaptic_to'];
+        var allOutboundConnections = options.originIndex[options.sourceId][preId];
+        var outboundCount = _filterSynapses(allOutboundConnections,
+            options.edge_confidence_threshold);
+        // Return a two decimal precision number
+        return Math.round(100 * options.count / outboundCount) / 100;
+      }
+    },
+    "inbound-relative": {
+      name: "Fraction of inbound connections",
+      requires: new Set(["originIndex"]),
+      run: function(options) {
+        var postId = options.relationMap['postsynaptic_to'];
+        var allInboundConnections = options.originIndex[options.targetId][postId];
+        var inboundCount = _filterSynapses(allInboundConnections,
+            options.edge_confidence_threshold);
+        // Return a two decimal precision number
+        return Math.round(100 * options.count / inboundCount) / 100;
+      }
+    }
   };
 
   // Export Graph Widget

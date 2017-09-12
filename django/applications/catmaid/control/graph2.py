@@ -28,14 +28,15 @@ from six.moves import range, zip as izip
 def make_new_synapse_count_array():
     return [0, 0, 0, 0, 0]
 
-def basic_graph(project_id, skeleton_ids):
+def basic_graph(project_id, skeleton_ids, relations=None):
 
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
 
     cursor = connection.cursor()
 
-    relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
+    if not relations:
+        relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
     preID, postID = relations['presynaptic_to'], relations['postsynaptic_to']
 
     cursor.execute('''
@@ -80,7 +81,8 @@ def basic_graph(project_id, skeleton_ids):
     """
 
 
-def confidence_split_graph(project_id, skeleton_ids, confidence_threshold):
+def confidence_split_graph(project_id, skeleton_ids, confidence_threshold,
+        relations=None):
     """ Assumes 0 < confidence_threshold <= 5. """
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
@@ -88,7 +90,8 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold):
     cursor = connection.cursor()
     skids = ",".join(str(int(skid)) for skid in skeleton_ids)
 
-    relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
+    if not relations:
+        relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
     preID, postID = relations['presynaptic_to'], relations['postsynaptic_to']
 
     # Fetch synapses of all skeletons
@@ -152,7 +155,8 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold):
             'edges': [(pre, post, count) for pre, edge in six.iteritems(edges) for post, count in six.iteritems(edge)]}
 
 
-def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, expand):
+def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
+        expand, relations=None):
     """ Assumes bandwidth > 0 and some skeleton_id in expand. """
     cursor = connection.cursor()
     skeleton_ids = set(skeleton_ids)
@@ -165,7 +169,8 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
 
     skids = ",".join(str(int(skid)) for skid in skeleton_ids)
 
-    relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
+    if not relations:
+        relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
     preID, postID = relations['presynaptic_to'], relations['postsynaptic_to']
 
     # Fetch synapses of all skeletons

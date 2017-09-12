@@ -25,10 +25,10 @@ from catmaid.control.synapseclustering import tree_max_density
 
 from six.moves import range, zip as izip
 
+def make_new_synapse_count_array():
+    return [0, 0, 0, 0, 0]
 
 def basic_graph(project_id, skeleton_ids):
-    def newSynapseCounts():
-        return [0, 0, 0, 0, 0]
 
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
@@ -51,7 +51,7 @@ def basic_graph(project_id, skeleton_ids):
            'pre': preID,
            'post': postID})
 
-    edges = defaultdict(partial(defaultdict, newSynapseCounts))
+    edges = defaultdict(partial(defaultdict, make_new_synapse_count_array))
     for row in cursor.fetchall():
         edges[row[0]][row[1]][row[2] - 1] += 1
 
@@ -82,9 +82,6 @@ def basic_graph(project_id, skeleton_ids):
 
 def confidence_split_graph(project_id, skeleton_ids, confidence_threshold):
     """ Assumes 0 < confidence_threshold <= 5. """
-    def newSynapseCounts():
-        return [0, 0, 0, 0, 0]
-
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
 
@@ -145,7 +142,7 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold):
         nodeIDs.extend(split_by_confidence(current_skid, tree, stc[current_skid], connectors))
 
     # Create the edges of the graph from the connectors, which was populated as a side effect of 'split_by_confidence'
-    edges = defaultdict(partial(defaultdict, newSynapseCounts)) # pre vs post vs count
+    edges = defaultdict(partial(defaultdict, make_new_synapse_count_array)) # pre vs post vs count
     for c in six.itervalues(connectors):
         for pre in c[preID]:
             for post in c[postID]:
@@ -157,9 +154,6 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold):
 
 def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, expand):
     """ Assumes bandwidth > 0 and some skeleton_id in expand. """
-    def newSynapseCounts():
-        return [0, 0, 0, 0, 0]
-
     cursor = connection.cursor()
     skeleton_ids = set(skeleton_ids)
     expand = set(expand)
@@ -283,7 +277,7 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
 
 
     # Create the edges of the graph
-    edges = defaultdict(partial(defaultdict, newSynapseCounts)) # pre vs post vs count
+    edges = defaultdict(partial(defaultdict, make_new_synapse_count_array)) # pre vs post vs count
     for c in six.itervalues(connectors):
         for pre in c[preID]:
             for post in c[postID]:

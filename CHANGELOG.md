@@ -141,6 +141,9 @@ Miscellaneous:
 - Skeleton source subscriptions: opting in and out of applying color changes in
   source skeletons to existing target skeletons works again.
 
+- Dragging nodes in stacks with smaller resolutions (larger nm/px) doesn't
+  require large drag distances anymore, before the move is registered.
+
 
 ## 2017.07.28
 

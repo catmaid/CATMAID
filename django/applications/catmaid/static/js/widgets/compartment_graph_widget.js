@@ -814,6 +814,13 @@
     // A neuron that is split cannot be part of a group anymore: makes no sense.
     // Neither by confidence nor by synapse clustering.
 
+    // If groups are present, the edge label strategy has to be set to 'absolute'
+    // at the moment.
+    if (this.edge_label_strategy !== 'absolute' && !CATMAID.tools.isEmpty(this.groups)) {
+      this.edge_label_strategy = 'absolute';
+      CATMAID.warn("Groups are in use, resetting edge labels to absolte links");
+    }
+
     var edge_color = this.edge_color;
     var edge_text_color = this.edge_text_color;
     var edge_confidence_threshold = this.edge_confidence_threshold;

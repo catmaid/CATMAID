@@ -11,7 +11,8 @@ from django.contrib.auth.models import User
 
 from catmaid.control.authentication import requires_user_role, \
         can_edit_class_instance_or_fail, can_edit_all_or_fail
-from catmaid.control.common import insert_into_log, get_request_list
+from catmaid.control.common import insert_into_log, get_request_list, \
+        get_class_to_id_map
 from catmaid.models import UserRole, Project, Class, ClassInstance, \
         ClassInstanceClassInstance, Relation, Treenode
 
@@ -19,6 +20,8 @@ from rest_framework.decorators import api_view
 
 import operator
 from collections import defaultdict
+
+from six.moves import map
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -297,3 +300,113 @@ def get_neuron_ids_from_models(request, project_id=None):
     for row in cursor.fetchall():
         models[row[0]] = row[1]
     return JsonResponse(models)
+
+
+@api_view(['GET'])
+@requires_user_role(UserRole.Browse)
+def list_neurons(request, project_id):
+    """List neurons matching filtering criteria.
+
+    The result set is the intersection of neurons matching criteria (the
+    criteria are conjunctive) unless stated otherwise.
+    ---
+    parameters:
+        - name: created_by
+          description: Filter for user ID of the neurons' creator.
+          type: integer
+          paramType: query
+        - name: reviewed_by
+          description: Filter for user ID of the neurons' reviewer.
+          type: integer
+          paramType: query
+        - name: from_date
+          description: Filter for neurons with nodes created after this date.
+          type: string
+          format: date
+          paramType: query
+        - name: to_date
+          description: Filter for neurons with nodes created before this date.
+          type: string
+          format: date
+          paramType: query
+        - name: nodecount_gt
+          description: |
+            Filter for neurons with more nodes than this threshold. Removes
+            all other criteria.
+          type: integer
+          paramType: query
+    type:
+    - type: array
+      items:
+        type: integer
+        description: ID of neuron matching the criteria.
+      required: true
+    """
+    created_by = request.GET.get('created_by', None)
+    reviewed_by = request.GET.get('reviewed_by', None)
+    from_date = request.GET.get('from', None)
+    to_date = request.GET.get('to', None)
+    nodecount_gt = int(request.GET.get('nodecount_gt', 0))
+
+    # Sanitize
+    if reviewed_by:
+        reviewed_by = int(reviewed_by)
+    if created_by:
+        created_by = int(created_by)
+    if from_date:
+        from_date = datetime.strptime(from_date, '%Y%m%d')
+    if to_date:
+        to_date = datetime.strptime(to_date, '%Y%m%d')
+
+    response = _list_neurons(project_id, created_by, reviewed_by, from_date,
+                to_date, nodecount_gt)
+    return JsonResponse(response, safe=False)
+
+
+def _list_neurons(project_id, created_by, reviewed_by, from_date, to_date,
+        nodecount_gt):
+    """ Returns a list of neuron IDs of which nodes exist that fulfill the
+    given constraints (if any). It can be constrained who created nodes in this
+    neuron during a given period of time. Having nodes that are reviewed by
+    a certain user is another constraint. And so is the node count that one can
+    specify which each result node must exceed.
+    """
+    cursor = connection.cursor()
+    class_map = get_class_to_id_map(project_id, ["neuron"])
+
+    # Without any constraints, it is fastest to list all neurons in the project.
+    with_constraints = created_by or reviewed_by or from_date or to_date or nodecount_gt > 0
+    if with_constraints:
+        # Need to import internally to prevent cyclic import
+        from catmaid.control.skeleton import _list_skeletons
+
+        skeleton_ids = _list_skeletons(project_id, created_by, reviewed_by,
+                from_date, to_date, nodecount_gt)
+        skeleton_id_template = ",".join("(%s)" for _ in skeleton_ids)
+
+        # Get neurons modeled by skeletons
+        if skeleton_ids:
+            cursor.execute("""
+                SELECT DISTINCT c.id
+                FROM class_instance_class_instance cc
+                JOIN class_instance c
+                    ON cc.class_instance_b = c.id
+                JOIN (VALUES {}) skeleton(id)
+                    ON cc.class_instance_a = skeleton.id
+                WHERE cc.project_id = %s
+                AND c.class_id = %s
+            """.format(skeleton_id_template),
+                    skeleton_ids + [project_id, class_map["neuron"]])
+
+            return list(map(lambda x: x[0], cursor.fetchall()))
+        else:
+            return []
+    else:
+        cursor.execute("""
+            SELECT id
+            FROM class_instance
+            WHERE project_id = %s
+            AND class_id = %s
+        """, (project_id, class_map["neuron"]))
+
+        return list(map(lambda x: x[0], cursor.fetchall()))

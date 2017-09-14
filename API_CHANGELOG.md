@@ -9,6 +9,10 @@ included in this changelog.
 - `GET /{project_id}/samplers/domains/intervals/{interval_id}/details`:
   Get detailed information about a particular interval.
 
+- `GET /{project_id}/neurons/`:
+  List all neurons in a project. Optionally, the parameters created_by,
+  reviewed_by, from, to and nodecount_gt can be provided.
+
 ### Modifications
 
 - `POST /{project_id}/treenodes/{treenode_id}/info`:

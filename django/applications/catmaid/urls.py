@@ -214,6 +214,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/give-to-user$', record_view("neurons.give_to_user")(neuron.give_neuron_to_other_user)),
     url(r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/delete$', record_view("neurons.remove")(neuron.delete_neuron)),
     url(r'^(?P<project_id>\d+)/neurons/(?P<neuron_id>\d+)/rename$', record_view("neurons.rename")(neuron.rename_neuron)),
+    url(r'^(?P<project_id>\d+)/neurons/$', neuron.list_neurons),
     url(r'^(?P<project_id>\d+)/neurons/from-models$', neuron.get_neuron_ids_from_models),
 ]
 

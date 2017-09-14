@@ -21,7 +21,7 @@ def get_annotation_graph(project_id=None):
         class_instance_a__class_column__class_name__in=["group", "neuron", "skeleton"],
         class_instance_b__class_column__class_name__in=["root", "group", "neuron", "skeleton"],
     ).select_related("class_instance_a", "class_instance_b", "relation",
-        "class_instance_a__class_column__class_name", "class_instance_b__class_column__class_name")
+        "class_instance_a__class_column", "class_instance_b__class_column")
     g=nx.DiGraph()
     for e in qs:
         if not e.class_instance_a.id in g:

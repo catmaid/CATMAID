@@ -68,6 +68,14 @@ Node filters:
   the interval.
 
 
+Graph Widget:
+
+- Edge labels can now take different forms and can be configured in the
+  properties dialog. There are two new label options available: "Fractions of
+  outbound connections" and "Fractions of inbound connections". Instead of an
+  absolute number they display the relative fraction.
+
+
 Reconstruction sampler:
 
 - Interval reviews can now be initiated directly from the interval step table.
@@ -249,14 +257,6 @@ Neuron History:
 
 - The components that contribute to the tracing time can be adjusted with the
   "Tracing time" drop down menu.
-
-
-Graph Widget:
-
-- Edge labels can now take different forms and can be configured in the
-  properties dialog. There are two new label options available: "Fractions of
-  outbound connections" and "Fractions of inbound connections". Instead of an
-  absolute number they display the relative fraction.
 
 
 Reconstruction Sampler:

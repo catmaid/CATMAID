@@ -25,7 +25,10 @@ included in this changelog.
 
 ### Deprecations
 
-None.
+- `GET /{project_id}/annotationdiagram/nx_json`:
+  This API has a confusing name, because it uses 'annotation' differently than
+  others. There are different APIs available to get skeleton IDs and treenode
+  IDs.
 
 ### Removals
 

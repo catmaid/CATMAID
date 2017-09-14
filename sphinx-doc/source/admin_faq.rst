@@ -105,3 +105,13 @@ coming in the form of this header field::
   Access-Control-Allow-Origin *
 
 An example setup for Nginx can be found :ref:`here <nginx-image-data>`.
+
+Nginx won't serve static files
+------------------------------
+
+Besides checking the Nginx configuration itself, make sure the files are
+readable by the user running Nginx (e.g. ``www-data``).  Also, to serve static
+files, Nginx needs execute permission on every directory in the path to those
+files. To check this, the ``namei`` command can be very helpful, because it can
+list permissions for each path component when called like this: ``namei -l
+/path/to/static/files``.

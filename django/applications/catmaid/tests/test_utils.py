@@ -64,3 +64,9 @@ class UtilTests(TestCase):
 
         self.assertFalse(is_collinear(p1, p2, p3))
         self.assertFalse(is_collinear(p1, p2, p3, True))
+
+    def test_get_version(self):
+        from mysite.utils import get_version
+
+        version = get_version()
+        self.assertNotEqual(version, "unknown")

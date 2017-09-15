@@ -188,8 +188,9 @@ class CATMAIDConfig(AppConfig):
                 raise ImproperlyConfigured(
                         "Please add the %s settings field" % field)
             if not isinstance(getattr(settings, field), data_type):
+                current_type = type(getattr(settings, field))
                 raise ImproperlyConfigured("Please make sure settings field %s "
-                        "is of type %s" % (field, data_type))
+                        "is of type %s (current type: %s)" % (field, data_type, current_type))
 
         # Make sure swagger (API doc) knows about a potential sub-directory
         if not hasattr(settings, 'SWAGGER_SETTINGS'):

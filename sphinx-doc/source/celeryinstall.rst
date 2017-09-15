@@ -124,9 +124,9 @@ so, the Celery scheduler has to be started (the ``beat`` service)::
 
     celery -A mysite beat -l info
 
-The _`Celery documentation
-<http://docs.celeryproject.org/en/latest/userguide/periodic-tasks.html>` has to
-say a lot about this, but in general periodic tasks are taken from the
+The
+_`Celery documentation <http://docs.celeryproject.org/en/latest/userguide/periodic-tasks.html>`
+has to say a lot about this, but in general periodic tasks are taken from the
 ``CELERY_BEAT_SCHEDULE`` setting.
 
 For example, it might be desirable to clean-up cropped stacks every night. This

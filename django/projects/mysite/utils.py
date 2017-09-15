@@ -19,7 +19,9 @@ def get_version():
                 shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 universal_newlines=True)
         (out, error) = p.communicate()
-        return "unknown" if error else out.rstrip().decode('utf-8')
+        # We need to encode and decode the bytestring to make this work in both
+        # Python 2 and 3.
+        return "unknown" if error else out.rstrip().encode('utf-8').decode('utf-8')
     except:
         return "unknown"
 

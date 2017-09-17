@@ -4381,6 +4381,9 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
     if (parent) {
       delete parent.children[node.id];
     }
+
+    CATMAID.statusBar.replaceLast("Deleted node #" + node.id);
+
     node.obliterate();
     node.drawEdges();
     self.pixiLayer._renderIfReady();
@@ -4407,8 +4410,6 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
         }
       }
     }
-    // Nodes are refreshed due to the change event the neuron controller emits
-    CATMAID.statusBar.replaceLast("Deleted node #" + node.id);
   })
   .promise()
   .catch(CATMAID.handleError);

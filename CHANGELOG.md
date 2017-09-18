@@ -3,6 +3,8 @@
 
 ### Notes
 
+- A virtualenv update is required.
+
 - This release adds optional statics summary tables, which can increase the
   performance of project/user statistics significantly, but statistics will also
   be correct without them. The additional table keeps aggregated information

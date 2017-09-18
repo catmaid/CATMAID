@@ -15,7 +15,7 @@ def get_version():
     try:
         dir = os.path.dirname(os.path.realpath(__file__))
         # Universal newlines is used to get both Python 2 and 3 to use text mode.
-        p = subprocess.Popen("/usr/bin/git describe", cwd=os.path.dirname(dir),
+        p = subprocess.Popen("/usr/bin/git describe --always", cwd=os.path.dirname(dir),
                 shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 universal_newlines=True)
         (out, error) = p.communicate()

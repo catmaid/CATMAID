@@ -30,6 +30,11 @@ for subdirectory in ('projects', 'applications', 'lib'):
     full_path = os.path.join(PROJECT_ROOT, subdirectory)
     sys.path.insert(0, full_path)
 
+# FIXME: Newer GEOS versions won't be detected correctly in Django 1.10 and a
+# monkey patch is required. This can be removed when updating to Django 1.11.
+import custom_geos_importer
+custom_geos_importer.patch()
+
 # A list of people who get code error notifications. They will get an email
 # if DEBUG=False and a view raises an exception.
 ADMINS = (

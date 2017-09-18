@@ -50,7 +50,7 @@ var SkeletonAnnotations = {
  */
 SkeletonAnnotations.handleDeletedNode = function(nodeId, parentId) {
   // Use == to allow string and integer IDs
-  if (nodeId == SkeletonAnnotations.getActiveNodeId()) {
+  if (nodeId == SkeletonAnnotations.getActiveNodeId() && parentId) {
     SkeletonAnnotations.staticSelectNode(parentId)
       .catch(CATMAID.handleError);
   }

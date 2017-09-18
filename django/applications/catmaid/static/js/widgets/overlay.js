@@ -4465,9 +4465,6 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
 
   // Unset active node to avoid actions that involve the deleted node
   var isActiveNode = (node.id === SkeletonAnnotations.getActiveNodeId());
-  if (isActiveNode) {
-    this.activateNode(null);
-  }
 
   // Call actual delete methods defined below (which are callable due to
   // hoisting)

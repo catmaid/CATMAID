@@ -4358,6 +4358,13 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
     // ensure the node, if it had any changes, these won't be pushed to the database: doesn't exist anymore
     self.nodeIDsNeedingSync.delete(node.id);
 
+    // Make sure, we got a list of all partners before we delete the node data
+    // structure. This is only needed if the node was active and has no parent
+    // node, because the partner information is used for making another node
+    // active.
+    var partners = wasActiveNode && !json.parent_id ?
+        self.findConnectors(node.id) : null;
+
     // Delete any connector links
     for (var connectorId in node.connectors) {
       var connector = self.nodes[connectorId];
@@ -4382,11 +4389,14 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
       delete parent.children[node.id];
     }
 
-    CATMAID.statusBar.replaceLast("Deleted node #" + node.id);
+    // Store node ID before node gets reset
+    var nodeId = node.id;
 
     node.obliterate();
     node.drawEdges();
     self.pixiLayer._renderIfReady();
+
+    CATMAID.statusBar.replaceLast("Deleted node #" + nodeId);
 
     // activate parent node when deleted
     if (wasActiveNode) {
@@ -4395,16 +4405,15 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
       } else {
         // No parent. But if this node was postsynaptic or presynaptic
         // to a connector, the connector must be selected:
-        var pp = self.findConnectors(node.id);
         // Try first connectors for which node is postsynaptic:
-        if (pp[1].length > 0) {
-          self.selectNode(pp[1][0]).catch(CATMAID.handleError);
+        if (partners[1].length > 0) {
+          self.selectNode(partners[1][0]).catch(CATMAID.handleError);
         // Then try connectors for which node is presynaptic
-        } else if (pp[0].length > 0) {
-          self.selectNode(pp[0][0]).catch(CATMAID.handleError);
+        } else if (partners[0].length > 0) {
+          self.selectNode(partners[0][0]).catch(CATMAID.handleError);
         // Then try connectors for which node has gap junction with
-        } else if (pp[2].length > 0) {
-          self.selectNode(pp[2][0]).catch(CATMAID.handleError);
+        } else if (partners[2].length > 0) {
+          self.selectNode(partners[2][0]).catch(CATMAID.handleError);
         } else {
           self.activateNode(null);
         }

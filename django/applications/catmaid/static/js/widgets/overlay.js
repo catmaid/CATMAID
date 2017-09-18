@@ -1706,49 +1706,47 @@ SkeletonAnnotations.TracingOverlay.prototype.rerootSkeleton = function(nodeID) {
 
 /**
  * Split the skeleton of the given node (ID). If this node happens to be
- * virtual and the skeleton is editable, the node is created before the split
- * dialog is shown. For now, the user is responsible of removing this node
- * again.
+ * virtual and the skeleton is editable, the node is created after the user
+ * pressed OK in the dialog, canceling will not change the virtual node.
  */
-SkeletonAnnotations.TracingOverlay.prototype.splitSkeleton = function(nodeID) {
-  if (!this.checkLoadedAndIsNotRoot(nodeID)) return;
+SkeletonAnnotations.TracingOverlay.prototype.splitSkeleton = function(nodeId) {
+  if (!this.checkLoadedAndIsNotRoot(nodeId)) return;
   var self = this;
-  var node = self.nodes[nodeID];
+  var node = self.nodes[nodeId];
   // Make sure we have permissions to edit the neuron
   this.executeIfSkeletonEditable(node.skeleton_id, function() {
-    // Make sure the load is not virtual
-    self.promiseNode(node).then(function(nodeId) {
-      // Make sure we reference the correct node and create a model
-      node = self.nodes[nodeId];
-      var name = CATMAID.NeuronNameService.getInstance().getName(node.skeleton_id);
-      var model = new CATMAID.SkeletonModel(node.skeleton_id, name, new THREE.Color(1, 1, 0));
-      /* Create the dialog */
-      var dialog = new CATMAID.SplitMergeDialog({
-        model1: model,
-        splitNodeId: nodeId,
-        split: function() {
-          // Get upstream and downstream annotation set
-          var upstream_set, downstream_set;
-          if (self.upstream_is_small) {
-            upstream_set = dialog.get_under_annotation_set();
-            downstream_set = dialog.get_over_annotation_set();
-          } else {
-            upstream_set = dialog.get_over_annotation_set();
-            downstream_set = dialog.get_under_annotation_set();
-          }
-          // Call backend
-          self.submit.then(function() {
+    // Make sure we reference the correct node and create a model
+    var name = CATMAID.NeuronNameService.getInstance().getName(node.skeleton_id);
+    var model = new CATMAID.SkeletonModel(node.skeleton_id, name, new THREE.Color(1, 1, 0));
+    /* Create the dialog */
+    var dialog = new CATMAID.SplitMergeDialog({
+      model1: model,
+      splitNodeId: nodeId,
+      split: function() {
+        // Get upstream and downstream annotation set
+        var upstream_set, downstream_set;
+        if (self.upstream_is_small) {
+          upstream_set = dialog.get_under_annotation_set();
+          downstream_set = dialog.get_over_annotation_set();
+        } else {
+          upstream_set = dialog.get_over_annotation_set();
+          downstream_set = dialog.get_under_annotation_set();
+        }
+        // Call backend
+        self.submit.promise()
+          .then(function() {
+            return self.promiseNode(node);
+          }).then(function(splitNodeId) {
             var command = new CATMAID.SplitSkeletonCommand(self.state,
-                project.id, nodeId, upstream_set, downstream_set);
+                project.id, splitNodeId, upstream_set, downstream_set);
             CATMAID.commands.execute(command)
               .then(function(result) {
-                self.updateNodes(function () { self.selectNode(nodeId); });
+                self.updateNodes(function () { self.selectNode(splitNodeId); });
               }).catch(CATMAID.handleError);
           }, CATMAID.handleError, true);
-        }
-      });
-      dialog.show();
+      }
     });
+    dialog.show();
   });
 };
 

@@ -111,6 +111,10 @@ Miscellaneous:
   it didn't provide any functionality. It is replaced by an icon to show the
   "Open Widget" dialog, which can otherwise be shown using Ctrl + Space.
 
+- When splitting a skeleton on a virtual node, the virtual node will now only be
+  instantiated if the user presses OK in the dialog, canceling won't cause a
+  change of the virtual node.
+
 
 ### Bug fixes
 

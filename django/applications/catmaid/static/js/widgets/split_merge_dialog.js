@@ -288,8 +288,23 @@
       } else {
         var skeleton = this.webglapp.space.content.skeletons[this.model1_id],
             arbor = skeleton.createArbor(),
-            positions = skeleton.getPositions(),
-            length1 = arbor.subArbor(this.splitNodeId).cableLength(positions),
+            positions = skeleton.getPositions();
+
+        // In case the split node is virtual, creeate an artificial node in the
+        // arbor data structure to measure each segment's length.
+        if (!SkeletonAnnotations.isRealNode(this.splitNodeId)) {
+          var childId = SkeletonAnnotations.getChildOfVirtualNode(this.splitNodeId);
+          var parentId = SkeletonAnnotations.getParentOfVirtualNode(this.splitNodeId);
+          var x = Number(SkeletonAnnotations.getXOfVirtualNode(this.splitNodeId));
+          var y = Number(SkeletonAnnotations.getYOfVirtualNode(this.splitNodeId));
+          var z = Number(SkeletonAnnotations.getZOfVirtualNode(this.splitNodeId));
+          var currentParentId = arbor.edges[childId];
+          arbor.edges[childId] = this.splitNodeId;
+          arbor.edges[this.splitNodeId] = currentParentId;
+          positions[this.splitNodeId] = new THREE.Vector3(x, y, z);
+        }
+
+        var length1 = arbor.subArbor(this.splitNodeId).cableLength(positions),
             length2 = arbor.cableLength(positions) - length1,
             over_length, under_length,
             model_name = this.models[this.model1_id].baseName;

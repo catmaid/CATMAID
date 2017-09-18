@@ -836,7 +836,8 @@
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
-        activeTracingLayer.tracingOverlay.rerootSkeleton(SkeletonAnnotations.getActiveNodeId());
+        var tracingLayer = getActiveNodeTracingLayer();
+        tracingLayer.tracingOverlay.rerootSkeleton(SkeletonAnnotations.getActiveNodeId());
         return true;
       }
     }));

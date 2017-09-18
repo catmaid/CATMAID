@@ -4,7 +4,7 @@ Cython==0.23.4
 Django==1.10.8
 django-adminplus==0.5
 django-formtools==2.0
-django-guardian==1.4.8
+django-guardian==1.4.9
 django-pipeline==1.6.12
 git+https://github.com/tomka/django-rest-swagger@c38521b60c073252c68dd53fc900d37355cf8c59#egg=django-rest-swagger
 django-taggit==0.22.1

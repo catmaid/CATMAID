@@ -246,7 +246,7 @@
       return CATMAID.getNeighborhoodState(node[0], node[1], null, null, null, null, cLinks);
     } else {
       var parent = this.getParent(nodeId);
-      if (!parent && !isConnector) {
+      if (!parent) {
         throw new CATMAID.ValueError("Couldn't find parent of node " + nodeId + " in state");
       }
       var links = this.getLinks(nodeId, false);

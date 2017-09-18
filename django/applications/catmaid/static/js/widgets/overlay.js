@@ -4680,9 +4680,9 @@ SkeletonAnnotations.TracingOverlay.prototype.importActiveNode = function(node) {
   }
 
   // Get project coordinates
-  var x = sourceStackViewer.primaryStack.stackToProjectX(node.z, node.y, node.z);
-  var y = sourceStackViewer.primaryStack.stackToProjectY(node.z, node.y, node.z);
-  var z = sourceStackViewer.primaryStack.stackToProjectZ(node.z, node.y, node.z);
+  var x = sourceStackViewer.primaryStack.stackToProjectX(node.z, node.y, node.x);
+  var y = sourceStackViewer.primaryStack.stackToProjectY(node.z, node.y, node.x);
+  var z = sourceStackViewer.primaryStack.stackToProjectZ(node.z, node.y, node.x);
 
   // Get stack coordinates for target stack
   var xs = this.stackViewer.primaryStack.projectToUnclampedStackX(z, y, x);

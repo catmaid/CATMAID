@@ -152,6 +152,9 @@ Miscellaneous:
 - Dragging nodes in stacks with smaller resolutions (larger nm/px) doesn't
   require large drag distances anymore, before the move is registered.
 
+- Node selection works now reliably with orthogonal views, including using the
+  "G" key.
+
 
 ## 2017.07.28
 

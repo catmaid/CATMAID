@@ -225,16 +225,34 @@ SkeletonAnnotations.getTracingOverlayBySkeletonElements = function(skeletonEleme
 
 /**
  * Select a node in any of the existing TracingOverlay instances, by its ID.
- * WARNING: Will only select the node in the first TracingOverlay found to contain it.
+ * Will return a rejected promise if the node could not be selected in all stack
+ * viewers. This behavior can be changed using the <singleMatchValid> parameter
+ * to require only a single viewer to have the node to return a resolved
+ * promise. All stack viewers are asked to select the node.
  */
-SkeletonAnnotations.staticSelectNode = function(nodeID) {
+SkeletonAnnotations.staticSelectNode = function(nodeId, singleMatchValid) {
+  var nFound = 0;
+  var incFound = function() { ++nFound; };
+  var selections = [];
   var instances = this.TracingOverlay.prototype._instances;
-  for (var stack in instances) {
-    if (instances.hasOwnProperty(stack)) {
-      return instances[stack].selectNode(nodeID);
+  for (var stackViewerId in instances) {
+    if (instances.hasOwnProperty(stackViewerId)) {
+      var select = instances[stackViewerId].selectNode(nodeId);
+      selections.push(select.then(incFound));
     }
   }
-  CATMAID.statusBar.replaceLast("Could not find node #" + nodeID);
+
+  // Wait until we tried to select the node in all viewers.
+  return Promise.all(selections)
+    .catch(function(error) {
+      if (nFound === 0) {
+        CATMAID.statusBar.replaceLast("Could not find node #" + nodeId);
+        throw error;
+      }
+      if (nFound !== instances.length && !singleMatchValid) {
+        throw error;
+      }
+    });
 };
 
 /**

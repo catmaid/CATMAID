@@ -962,7 +962,7 @@
           if (selectedNode) {
             // If this layer has a node close by, activate it
             if (activeTracingLayer.stackViewer.z === selectedNode.node.z) {
-              SkeletonAnnotations.staticSelectNode(selectedNode.id)
+              SkeletonAnnotations.staticSelectNode(selectedNode.id, true)
                 .catch(CATMAID.handleError);
             } else {
               SkeletonAnnotations.staticMoveToAndSelectNode(selectedNode.id)

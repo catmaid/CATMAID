@@ -2782,7 +2782,7 @@ SkeletonAnnotations.TracingOverlay.prototype._createNodeOrLink = function(insert
         // then return the node creation promise so that node creation and its
         // resulting active node change resolve before any other submitter queue
         // items are processed.
-        create = this.submit.promise((function () {
+        create = this.submit.then((function () {
           // Create a new treenode, either root node if atn is null, or child if
           // it is not null
           if (null !== SkeletonAnnotations.atn.id) {
@@ -2803,7 +2803,7 @@ SkeletonAnnotations.TracingOverlay.prototype._createNodeOrLink = function(insert
             return this.createNode(null, null, phys_x, phys_y, phys_z, -1, 5,
                 pos_x, pos_y, pos_z, postCreateFn);
           }
-        }).bind(this));
+        }).bind(this)).promise();
       } else if (CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR === atn.subtype) {
         // create new treenode (and skeleton) presynaptic to activated connector
         // if the connector doesn't have a presynaptic node already

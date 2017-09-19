@@ -20,7 +20,7 @@ pgmagick==0.6.7; platform_python_implementation != 'PyPy'
 pillow==3.0.0; platform_python_implementation != 'PyPy'
 progressbar2==3.6.2
 psycopg2==2.7.3.1; platform_python_implementation != 'PyPy'
-psycopg2cffi==2.7.5;  platform_python_implementation == 'PyPy'
+psycopg2cffi==2.7.6;  platform_python_implementation == 'PyPy'
 Pygments==2.0.2
 python-dateutil==2.1
 python-libuuid==0.9.0; platform_python_implementation != 'PyPy'

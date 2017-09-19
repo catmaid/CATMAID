@@ -406,6 +406,32 @@
           CATMAID.StackViewer.Settings,
           'layer_insertion_strategy',
           SETTINGS_SCOPE));
+
+      // Default layouts
+      var defaultLayoutInput = CATMAID.DOM.createInputSetting(
+          "Default layouts",
+          CATMAID.Layout.Settings[SETTINGS_SCOPE].default_layouts.join(', '),
+          "A list of default layouts of which the first one matched will be " +
+          "applied. Use v(a,b) and h(a,b) for vertical and horizontal splits, " +
+          "o(c) for optional windows, where a and b can each be one of " +
+          "[XY, XZ,  ZY, F1] and c can be F1.",
+          function() {
+            let defaultLayouts = CATMAID.Layout.parseLayoutSpecList(this.value);
+            CATMAID.Layout.Settings
+                .set(
+                  'default_layouts',
+                  defaultLayouts,
+                  SETTINGS_SCOPE);
+          });
+      $('input', defaultLayoutInput)
+        .css('width', '30em')
+        .css('font-family', 'monospace');
+
+      ds.append(wrapSettingsControl(
+          defaultLayoutInput,
+          CATMAID.Layout.Settings,
+          'default_layouts',
+          SETTINGS_SCOPE));
     };
 
     /*

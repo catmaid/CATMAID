@@ -19,12 +19,39 @@ dictionary. JavaScript files go into the 'catmaid' entry of the ``JAVASCRIPT``
 dictonary at the end of this file.
 """
 
-import six
 from collections import OrderedDict
+from importlib import import_module
+
+import six
+
+# python module names of CATMAID extensions which could potentially be installed
+KNOWN_EXTENSIONS = (
+    'synapsesuggestor',
+)
 
 
-STYLESHEETS = {
-    'libraries': {
+class PipelineSpecUpdater(object):
+    def __init__(self, input_dict=None):
+        if input_dict is None:
+            input_dict = OrderedDict()
+        self.result = input_dict
+        self.existing_output_files = set()
+
+    def update(self, other_dict, key_prefix='catmaid-ext-'):
+        """Include items from other_dict in the input dict, ensuring that no data will be overwritten and the result
+        will not cause multiple libraries to create static files of the same name. key_prefix will be prepended to
+        the keys in other_dict when they are inserted into the input dict (default 'catmaid-ext-')."""
+        for key, value in six.iteritems(other_dict):
+            new_key = key_prefix + str(key)
+            assert new_key not in self.result, 'Extension static file IDs must not overwrite existing static file IDs'
+            assert value['output_filename'] not in self.existing_output_files, \
+                'Extension static files must not overwrite existing static files ({})'.format(value['output_filename'])
+            self.existing_output_files.add(value['output_filename'])
+            self.result['{}{}'.format(key_prefix, key)] = value
+
+
+STYLESHEETS = OrderedDict()
+STYLESHEETS['libraries'] = {
         'source_filenames': (
             'libs/jquery/themes/smoothness/jquery-ui.css',
             'libs/jquery/datatable/css/demo_table.css',
@@ -37,8 +64,8 @@ STYLESHEETS = {
         'extra_context': {
             'media': 'screen,projection',
         }
-    },
-    'catmaid': {
+    }
+STYLESHEETS['catmaid'] = {
         'source_filenames': (
             'css/*.css',
         ),
@@ -46,8 +73,8 @@ STYLESHEETS = {
         'extra_context': {
             'media': 'screen,projection',
         }
-    },
-}
+    }
+
 
 libraries_js = OrderedDict([
     ('modernizr', ['*.js']),
@@ -149,3 +176,31 @@ JAVASCRIPT['catmaid'] = {
     ),
     'output_filename': 'js/catmaid.js',
 }
+
+installed_extensions = []
+
+stylesheet_updater = PipelineSpecUpdater(STYLESHEETS)
+non_pipeline_js_updater = PipelineSpecUpdater(non_pipeline_js)
+javascript_updater = PipelineSpecUpdater(JAVASCRIPT)
+
+for app_name in KNOWN_EXTENSIONS:
+    try:
+        app_pipelinefiles = import_module(app_name + '.pipelinefiles')
+        installed_extensions.append(app_name)
+    except ImportError:
+        continue
+
+    try:
+        stylesheet_updater.update(app_pipelinefiles.STYLESHEETS)
+    except AttributeError:
+        pass
+
+    try:
+        non_pipeline_js_updater.update(app_pipelinefiles.non_pipeline_js)
+    except AttributeError:
+        pass
+
+    try:
+        javascript_updater.update(app_pipelinefiles.JAVASCRIPT)
+    except AttributeError:
+        pass

@@ -814,13 +814,6 @@
     // A neuron that is split cannot be part of a group anymore: makes no sense.
     // Neither by confidence nor by synapse clustering.
 
-    // If groups are present, the edge label strategy has to be set to 'absolute'
-    // at the moment.
-    if (this.edge_label_strategy !== 'absolute' && !CATMAID.tools.isEmpty(this.groups)) {
-      this.edge_label_strategy = 'absolute';
-      CATMAID.warn("Groups are in use, resetting edge labels to absolte links");
-    }
-
     var edge_color = this.edge_color;
     var edge_text_color = this.edge_text_color;
     var edge_confidence_threshold = this.edge_confidence_threshold;
@@ -1242,7 +1235,8 @@
     }).bind(this));
 
     // Group neurons, if any groups exist, skipping splitted neurons
-    var to_lock = this._regroup(elements, this.subgraphs, models);
+    var to_lock = this._regroup(elements, this.subgraphs, models,
+        edgeLabelStrategy, edgeLabelOptions);
 
     // Compute edge width for rendering the edge width
     var edgeWidth = this.edgeWidthFn();
@@ -2734,6 +2728,12 @@
     return groups;
   };
 
+  var addToConfidenceList = function(target, diff) {
+    for (let i=0, imax=target.length; i<imax; ++i) {
+      target[i] += diff[i];
+    }
+    return target;
+  };
 
   /** Reformat in place the data object, to:
    * 1) Group some of the nodes if any groups exist.
@@ -2749,7 +2749,8 @@
    *
    * - models: one for every skeleton_id in data.
    */
-  GroupGraph.prototype._regroup = function(data, splitted, models) {
+  GroupGraph.prototype._regroup = function(data, splitted, models,
+      edgeLabelStrategy, edgeLabelOptions) {
     // Remove splitted neurons from existing groups when necessary,
     // construct member_of: a map of skeleton ID vs group ID,
     // and reset the group's nodes list.
@@ -2805,35 +2806,96 @@
 
     // map of edge_id vs edge, involving groups
     var gedges = {};
+    // Pre and post ID are needed if the edge label strategy requires an origin
+    // index.
+    var createOriginIndex = edgeLabelStrategy.requires &&
+        edgeLabelStrategy.requires.has('originIndex');
 
-    // Remove edges from grouped nodes,
-    // and reassign them to new edges involving groups.
+    // A new origin index that includes groups is created. This is needed to
+    // calculate new labels for the group edges.
+    var originalOriginIndex = edgeLabelOptions.originIndex;
+    if (createOriginIndex) {
+      let preId = edgeLabelOptions.relationMap['presynaptic_to'];
+      let postId = edgeLabelOptions.relationMap['postsynaptic_to'];
+      let groupOriginIndex = $.extend(true, {}, originalOriginIndex);
+      let seenGroupNodes = new Set();
+      data.edges.forEach(function(edge) {
+        var d = edge.data,
+            source = member_of[d.source],
+            target = member_of[d.target],
+            sourceInGroup = source !== undefined,
+            targetInGroup = target !== undefined,
+            intragroup = source === target && sourceInGroup && targetInGroup;
+        if (sourceInGroup || targetInGroup) {
+          source = source ? source : d.source;
+          target = target ? target : d.target;
+
+          // If the source node has not been seen yet, add its overall counts.
+          var nodesToAdd = [];
+          if (sourceInGroup && !seenGroupNodes.has(d.source)) {
+            nodesToAdd.push([d.source, source]);
+            seenGroupNodes.add(d.source);
+          }
+          if (targetInGroup && !seenGroupNodes.has(d.target)) {
+            nodesToAdd.push([d.target, target]);
+            seenGroupNodes.add(d.target);
+          }
+          for (let i=0; i<nodesToAdd.length; ++i) {
+            var nodeToAdd = nodesToAdd[i][0];
+            var groupId = nodesToAdd[i][1];
+            var groupOriginCount = groupOriginIndex[groupId];
+            var preCount, postCount;
+            if (groupOriginCount === undefined) {
+              groupOriginCount = groupOriginIndex[groupId] = {};
+              preCount = groupOriginCount[preId] = [0,0,0,0,0];
+              postCount = groupOriginCount[postId] = [0,0,0,0,0];
+            } else {
+              preCount = groupOriginCount[preId];
+              postCount = groupOriginCount[postId];
+            }
+            var nodeCount = originalOriginIndex[nodeToAdd];
+            if (nodeCount[preId]) {
+              addToConfidenceList(preCount, nodeCount[preId]);
+            }
+            if (nodeCount[postId]) {
+              addToConfidenceList(postCount, nodeCount[postId]);
+            }
+          }
+        }
+      }, this);
+
+      // Override non-group origin index, reset it after label processing.
+      edgeLabelOptions.originIndex = groupOriginIndex;
+    }
+
+    // Remove edges from grouped nodes, and reassign them to new edges involving
+    // groups.
+    var groupEdges = [];
     data.edges = data.edges.filter(function(edge) {
       var d = edge.data,
-          source = member_of[d.source],
-          target = member_of[d.target],
-          intragroup = source === target && undefined !== source && undefined !== target;
-      if (source || target) {
-        source = source ? source : d.source;
-        target = target ? target : d.target;
+          source = member_of[d.source] || d.source,
+          target = member_of[d.target] || d.target,
+          sourceInGroup = source !== undefined,
+          targetInGroup = target !== undefined,
+          intragroup = source === target && sourceInGroup && targetInGroup;
+      if (sourceInGroup || targetInGroup) {
         // Edge between skeletons, with at least one of them belonging to a group
         var id = source + '_' + target;
         var gedge = gedges[id];
         if (gedge) {
           // Just append the synapse count to the already existing edge
-          gedge.data.confidence = gedge.data.confidence.map(function (count, conf) {
-            return count + d.confidence[conf];
-          });
-          gedge.data.weight += d.weight;
-          gedge.data.label = Math.round(100 * (gedge.data.label + d.label) / 2) / 100;
+          addToConfidenceList(gedge.data.confidence, d.confidence);
         } else {
           // Don't show self-edge if desired
           if (intragroup && this.groups[source].hide_self_edges) return false;
           // Reuse edge
           d.id = id;
-          d.source = source + ""; // ensure both are strings, fixes issue with edges not curving out (to avoid overlap) in reciprocal connections involving a group
+          // Ensure both are strings, fixes issue with edges not curving out (to
+          // avoid overlap) in reciprocal connections involving a group.
+          d.source = source + "";
           d.target = target + "";
           gedges[id] = edge;
+          groupEdges.push(edge);
         }
         return false;
       }
@@ -2841,6 +2903,29 @@
       // Keep only edges among ungrouped nodes
       return true;
     }, this);
+
+    // Assign new labels to loaded group edges.
+    var edgeConfidenceThreshold = edgeLabelStrategy.edge_confidence_threshold;
+    groupEdges.forEach(function(edge) {
+      let d = edge.data;
+      let synapses = d.confidence;
+      let count = _filterSynapses(synapses, edgeConfidenceThreshold);
+
+      // Prepare options for current edge, group based index is already set
+      // above.
+      edgeLabelOptions.count = count;
+      edgeLabelOptions.sourceId = d.source;
+      edgeLabelOptions.targetId = d.target;
+      edgeLabelOptions.synapses = synapses;
+
+      d.weight = count;
+      d.label = edgeLabelStrategy.run(edgeLabelOptions);
+    });
+
+    // Reset label option origin index
+    if (createOriginIndex) {
+      edgeLabelOptions.originIndex = originalOriginIndex;
+    }
 
     data.nodes = data.nodes.concat(gnodes);
     data.edges = data.edges.concat(Object.keys(gedges).map(function(gid) { return gedges[gid]; }));

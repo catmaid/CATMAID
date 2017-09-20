@@ -152,8 +152,8 @@ add the following code to it::
     from catmaid.control.cropping import cleanup as cropping_cleanup
     @periodic_task( run_every=crontab( hour="0" ) )
     def cleanup_cropped_stacks():
-        twelve_hours = 60 * 60 * 24 # seconds
-        cropping_cleanup( twelve_hours )
+        seconds_per_day = 60 * 60 * 24
+        cropping_cleanup(seconds_per_day)
         return "Cleaned cropped stacks directory"
 
 One can also use the ``datetime.timedelta`` function to specify when and how

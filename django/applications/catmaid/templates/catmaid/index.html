@@ -14,14 +14,20 @@
     </script>
 
     {% stylesheet 'libraries' %}
-    {% stylesheet 'catmaid' %}
+    {% for f in STYLESHEET_IDS %}
+        {% if 'catmaid' in f %}
+            {% stylesheet f %}
+        {% endif %}
+    {% endfor %}
 
-    <!-- Regular CATMAID components -->
+    <!-- Non-CATMAID javascript dependencies -->
     {% for f in COMPRESSED_FILE_IDS %}
-        {% if f != 'catmaid' %}
+        {% if 'catmaid' not in f %}
             {% javascript f %}
         {% endif %}
     {% endfor %}
+
+    {% javascript 'catmaid-lib' %}
 
     <!-- Front end initialization -->
     <script type="text/javascript">
@@ -36,13 +42,19 @@
       CATMAID.expandErrors = {{ EXPAND_FRONTEND_ERRORS|make_js_bool }};
     </script>
 
+    <!-- CATMAID and 3rd-party CATMAID extensions -->
     {% javascript 'catmaid' %}
+    {% for f in COMPRESSED_FILE_IDS %}
+        {% if 'catmaid-ext-' in f %}
+            {% javascript f %}
+        {% endif %}
+    {% endfor %}
 
     {% for f in NON_COMPRESSED_FILES %}
       <script type="application/javascript" src="{{ STATIC_URL }}{{ f }}"></script>
     {% endfor %}
 
-    <!-- Extensions -->
+    <!-- Standalone static extension files -->
     {% for f in STATIC_EXTENSION_FILES %}
       <script type="text/javascript" src="{{ STATIC_EXTENSION_URL }}{{ f }}"></script>
     {% endfor %}

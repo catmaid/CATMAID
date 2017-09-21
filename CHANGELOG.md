@@ -33,6 +33,11 @@
   The filter input boxes can optionally be hidden by setting the "filter" config
   property to false.
 
+- Running periodic tasks is now easier and a default setup for cleaning up
+  cropping data at 23:30 and update tracing project statistics at 23:45 every
+  night is now available. All it needs is to run a Celery worker and a Celery
+  beat scheduler. The documentation has more details.
+
 
 ### Features and enhancements
 

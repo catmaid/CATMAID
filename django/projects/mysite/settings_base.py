@@ -301,10 +301,12 @@ PIPELINE = {
 
 # Make a list of files that should be included directly (bypassing pipeline)
 # and a list of pipeline identifiers for all others.
-NON_COMPRESSED_FILES = list(six.itervalues(pipelinefiles.non_pipeline_js))
-NON_COMPRESSED_FILE_IDS = list(six.iterkeys(pipelinefiles.non_pipeline_js))
-COMPRESSED_FILE_IDS = list(six.moves.filter(lambda f: f not in NON_COMPRESSED_FILE_IDS,
-        pipelinefiles.JAVASCRIPT.keys()))
+NON_COMPRESSED_FILE_IDS = list(pipelinefiles.non_pipeline_js)
+NON_COMPRESSED_FILES = list(pipelinefiles.non_pipeline_js.values())
+STYLESHEET_IDS = list(pipelinefiles.STYLESHEETS)
+COMPRESSED_FILE_IDS = [key for key in pipelinefiles.JAVASCRIPT if key not in NON_COMPRESSED_FILE_IDS]
+
+INSTALLED_EXTENSIONS = tuple(pipelinefiles.installed_extensions)
 
 # Make Git based version of CATMAID available as a settings field
 VERSION = utils.get_version()

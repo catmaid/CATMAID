@@ -120,51 +120,60 @@ Periodic Tasks
 --------------
 
 The Celery infrastructure can also be used to execute tasks periodically. To do
-so, the Celery scheduler has to be started (the ``beat`` service)::
+so, both a *Celery worker* (see above) and the *Celery beat scheduler* have to
+be started. The scheduler can be run like this::
 
-    celery -A mysite beat -l info
+  celery -A mysite beat -l info
 
 The
 _`Celery documentation <http://docs.celeryproject.org/en/latest/userguide/periodic-tasks.html>`
 has to say a lot about this, but in general periodic tasks are taken from the
-``CELERY_BEAT_SCHEDULE`` setting.
+``CELERY_BEAT_SCHEDULE`` setting. CATMAID includes two default tasks that are
+configured to run every night, if enabled::
 
-For example, it might be desirable to clean-up cropped stacks every night. This
-can be realized by updating ``settings.py`` and adding a little Python code. In
-``settings.py`` add the following lines::
+  At 23:30 Cleanup cropped image stacks
+  At 23:45 Update project statistics
 
-    # Disable automatic clean-up of the cropping tool
-    CROP_AUTO_CLEAN = False
-    # Let Celery workers import our tasks module
-    CELERY_IMPORTS = CELERY_IMPORTS + ("tasks", )
+Like said earlier, to actually execute these tasks, both a Celery worker and a
+Celery beat scheduler have to be running. If you in fact use these tasks, you
+may also want to disable the automatic removal of cropped images with every
+download by setting::
 
-The code above also disables the automatic cleaning which is done on every
-download request for a cropped stack. This isn't really necessary, but gives you
-more control over the removal. The last line lets Celery look for additional
-tasks in a file called ``tasks.py``. Create it right next to ``settings.py`` and
-add the following code to it::
+  # Disable automatic clean-up of the cropping tool
+  CROP_AUTO_CLEAN = False
 
-    from celery.schedules import crontab
-    from celery.task import periodic_task
+Both tasks above are defined in CATMAID's ``settings_base.py`` file. New tasks
+can be added by adding new entries to the ``CELERY_BEAT_SCHEDULE`` dictionary in
+the ``settings.py`` file. For instance, to print the number of available CATMAID
+projects once a minute, the following could be added to ``settings.py``::
 
-    # Define a periodic task that runs every day at midnight. It removes all
-    # cropped stacks that are older than 24 hours.
-    from catmaid.control.cropping import cleanup as cropping_cleanup
-    @periodic_task( run_every=crontab( hour="0" ) )
-    def cleanup_cropped_stacks():
-        seconds_per_day = 60 * 60 * 24
-        cropping_cleanup(seconds_per_day)
-        return "Cleaned cropped stacks directory"
+  from celery import shared_task
+  from celery.schedules import crontab
 
-One can also use the ``datetime.timedelta`` function to specify when and how
-often the task should be run.
+  @shared_task(name='print_project_count')
+  def print_project_count():
+    from catmaid.models import Project
+    n_projects = Project.objects.count()
+    return 'Number of available projects: {}'.format(n_projects)
 
-Other tasks can be defined in a similar fashion.
+  CELERY_BEAT_SCHEDULE['print-project-count'] = {
+    'task': 'print_project_count',
+    'schedule': crontab(minute='*/1')
+  }
+
+Note, for this to work, make sure you have this in the first line of your
+``settings.py`` file::
+
+  from __future__ import absolute_import
+
+To specify when and how often the task should be run, ``datetime.timedelta``
+can be used as well . Other tasks can be defined in a similar fashion.
 
 Besides defining the tasks themselves, the scheduler also requires write
 permissions to the ``projects/mysite`` directory. By default it will create
-there a file called ``celerybeat-schedule``.  To adjust this file name and path,
-have a look in the Celery manual.
+there a file called ``celerybeat-schedule`` to keep track of task execution.
+To adjust this file name and path of this file, use the ``--schedule`` option
+for Celery beat.
 
 .. _celery-supervisord:
 

@@ -39,7 +39,7 @@ A migration file contains of a class with a ``forward()`` and a ``backward()``
 method as well as a dictionary called ``models`` which contains all available
 models which were around when the migration was created (i.e. it contains the
 changes of the migration; read more about it
-`here <http://south.readthedocs.org/en/latest/ormfreezing.html>`_).
+`here <http://south.readthedocs.org/en/latest/ormfreezing.html>`__).
 
 The main way to interact with South is with the help of ``manage.py``
 commands. South adds multiple commands to it, the most often used will probably
@@ -162,11 +162,11 @@ Though, this works in most situations, it is not very pretty. As an alternative,
 you might want to consider the following: Re-create the migration(s) to have the
 correct ID, based on the upstream commits. This however needs some manual work.
 So before merging a branch, check whether there are conflicting IDs and, if so,
-do the following in the topic branch (referring to the example above)::
+do the following in the topic branch (referring to the example above):
 
 1. Roll back the migrations to the last non-conflicting state, here ``0007``::
 
-      manage.py migrate catmaid 0007
+       manage.py migrate catmaid 0007
 
 2. Delete all conflicting migrations in the topic branch. If custom migration
    code has been added (like raw SQL), make sure to keep it around.

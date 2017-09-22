@@ -81,9 +81,17 @@
       }
       if (isFn(this.a.makeRegularWindows)) {
         n = this.a.makeRegularWindows(n, target);
+      } else if (!validOrientations.has(this.a)) {
+        var win = createWindow(this.a);
+        target.set(this.a, win);
+        --n;
       }
       if (isFn(this.b.makeRegularWindows)) {
         n = this.b.makeRegularWindows(n, target);
+      } else if (!validOrientations.has(this.b)) {
+        var win = createWindow(this.b);
+        target.set(this.b, win);
+        --n;
       }
       return n;
     }

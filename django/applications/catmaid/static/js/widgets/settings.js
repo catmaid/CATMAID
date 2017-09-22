@@ -413,8 +413,10 @@
           CATMAID.Layout.Settings[SETTINGS_SCOPE].default_layouts.join(', '),
           "A list of default layouts of which the first one matched will be " +
           "applied. Use v(a,b) and h(a,b) for vertical and horizontal splits, " +
-          "o(c) for optional windows, where a and b can each be one of " +
-          "[XY, XZ,  ZY, F1] and c can be F1.",
+          "o(a) for optional windows, where a and b can each be other v() or " +
+          "h() nodes, one of [XY, XZ, ZY, F1] or any widget handle (see " +
+          "<kbd>Ctrl</kbd> + <kbd>Space</kbd>). At the moment, with o(a), " +
+          "\"a\" can't be XY, XZ or ZY.",
           function() {
             let defaultLayouts = CATMAID.Layout.parseLayoutSpecList(this.value);
             CATMAID.Layout.Settings

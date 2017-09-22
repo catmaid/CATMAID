@@ -17,6 +17,23 @@
     return WindowMaker.create('keyboard-shortcuts').window;
   };
 
+  const createWindow = function(name) {
+    var creator = WindowBuilder[name];
+    if (!creator) {
+      creator = function() {
+        return WindowMaker.create(name).window;
+      };
+    }
+    if (!creator) {
+      throw new CATMAID.ValueError("Could not find window creator for: " + name);
+    }
+    var win = creator();
+    if (!win) {
+      throw new CATMAID.ValueError("Could not create window for: " + name);
+    }
+    return win;
+  };
+
   const Node = {
     missingViews: function(views) {
       if (isFn(this.a.missingViews)) {
@@ -93,11 +110,7 @@
       if (n === 0) {
         return;
       }
-      var creator = WindowBuilder[this.a];
-      if (!creator) {
-        throw new CATMAID.ValueError("Unknown window layout token: " + this.a);
-      }
-      var win = creator();
+      var win = createWindow(this.a);
       target.set(this.a, win);
       return n - 1;
     }

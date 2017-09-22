@@ -99,6 +99,11 @@ Layouts:
   and vertical splits are declared, respectively. With o(F1) a help window will
   be opened as fourth window if not already another window exists..
 
+- Layouts mimic function calls and are constructed from v(a,b) and h(a,b)
+  elements for vertical and horizontal splits, o(a) for optional windows, where
+  a and b can each be other v() or h() nodes, one of [XY, XZ, ZY, F1] or any
+  widget handle (see Ctrl + Space). At the moment, with o(a), "a" can't be XY,
+  XZ or ZY
 
 
 Miscellaneous:

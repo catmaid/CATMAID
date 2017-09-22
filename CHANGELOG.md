@@ -93,21 +93,21 @@ Layouts:
   groups. Layouts are useful for having a reasonable default configuration of a
   newly opened CATMAID workspace including stacks and stack groups.
 
+- Layouts mimic nested function calls and are constructed from v(a,b) and h(a,b)
+  elements for vertical and horizontal splits, o(a) for optional windows, where
+  a and b can each be other v() or h() nodes, one of [XY, XZ, ZY, F1] or any
+  quoted widget handle (e.g. "neuron-search", see Ctrl + Space). At the moment,
+  in o(a), "a" can't be XY, XZ or ZY
+
 - By default only one layout is available: organize XY, XZ and ZY in four
   quadrants using one additional window (if non available the help page). This
   is its specification: h(v(XY, XZ), v(ZY, o(F1))). With h() and v(), horizontal
   and vertical splits are declared, respectively. With o(F1) a help window will
-  be opened as fourth window if not already another window exists..
+  be opened as fourth window if not already another window exists.
 
-- Useful to organize orthogonal views in a custom way and to create default
+- Useful for organizing orthogonal views in a custom way and to create default
   workspaces. For instance, to always open a Neuron Search widget right to the
-  a single XY view stack, the layout can be used: h(XY, o("neuron-search")).
-
-- Layouts mimic function calls and are constructed from v(a,b) and h(a,b)
-  elements for vertical and horizontal splits, o(a) for optional windows, where
-  a and b can each be other v() or h() nodes, one of [XY, XZ, ZY, F1] or any
-  widget handle (see Ctrl + Space). At the moment, with o(a), "a" can't be XY,
-  XZ or ZY
+  a single XY view stack, the layout can be used: h(XY, "neuron-search").
 
 
 Miscellaneous:

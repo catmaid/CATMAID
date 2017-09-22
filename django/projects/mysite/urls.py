@@ -26,6 +26,12 @@ urlpatterns = [
     url(r'^', include('catmaid.urls')),
 ]
 
+# CATMAID extensions
+urlpatterns += [
+    url(r'^ext/{}/'.format(extension), include('{}.urls'.format(extension)))
+    for extension in settings.INSTALLED_EXTENSIONS
+]
+
 # Admin site
 urlpatterns += [
     url(r'^admin/', include(admin.site.urls))

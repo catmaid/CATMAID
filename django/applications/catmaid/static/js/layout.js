@@ -274,12 +274,7 @@
           missingViews.size === 0 &&
           stackViewers.length >= minStackViewers &&
           stackViewers.length <= maxStackViewers,
-      allWindows: allWindows,
-      minStackViewers: minStackViewers,
-      maxStackViewers: maxStackViewers,
-      neededExtraWindows: neededExtraWindows,
       regularWindowsToCreate: regularWindowsToCreate,
-      validOrientations: validOrientations,
       windows: windows
     };
   };

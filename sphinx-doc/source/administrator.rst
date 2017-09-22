@@ -7,9 +7,9 @@ Administrator Documentation
    installation
    administration
    permissions
+   celery
    history_tables
    docker
    userprofiles
-   celeryinstall
    alternative_install
    admin_faq

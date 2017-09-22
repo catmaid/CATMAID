@@ -12,3 +12,4 @@ Developer Documentation
    djangounittest
    models_state_commands
    ami
+   extensions

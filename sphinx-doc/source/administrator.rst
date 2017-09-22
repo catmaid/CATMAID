@@ -6,10 +6,10 @@ Administrator Documentation
 
    installation
    administration
+   Production setup <nginx>
    permissions
    celery
    history_tables
    docker
    userprofiles
-   alternative_install
    admin_faq

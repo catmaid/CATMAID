@@ -1,4 +1,4 @@
-.. _alternative-install:
+.. _nginx:
 
 Setting Up Nginx for CATMAID
 ============================
@@ -123,7 +123,7 @@ image data.
 Setup based on Nginx and Gevent
 -------------------------------
 
-`Nginx  <http://nginx.org/>`_ is a web server with focus on high performance
+`Nginx  <http://nginx.org/>`__ is a web server with focus on high performance
 and concurrency while maintaining a low memory footprint. However, it is
 (by default) not a WSGI server and one needs to set this up separately. Here,
 we will use `Gevent <http://gevent.org/>`_ to provide this functionality. It

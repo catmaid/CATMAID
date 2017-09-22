@@ -394,10 +394,11 @@ var project;
           var useExistingStackViewer = composite && (loaded > 0);
           if (pid) {
             if (sids.length > 0) {
+              var noLayout = sids.length > 1;
               // Open stack and queue test/loading for next one
               var sid = sids.shift();
               var s = ss.shift();
-              return CATMAID.openProjectStack(pid, sid, useExistingStackViewer, undefined)
+              return CATMAID.openProjectStack(pid, sid, useExistingStackViewer, undefined, noLayout)
                 .then(function() {
                   // Moving every stack is not really necessary, but for now a
                   // convenient way to apply the requested scale to each stack.
@@ -477,7 +478,7 @@ var project;
               'title': s.title,
               'comment': s.comment,
               'note': '',
-              'action': CATMAID.openProjectStack.bind(window, p.id, s.id, false, undefined)
+              'action': CATMAID.openProjectStack.bind(window, p.id, s.id, false, undefined, false)
             };
             return o;
           }, {});
@@ -1100,7 +1101,7 @@ var project;
               // Try to load stacks and continue trying if loading fails for one
               return handle_openProjectStack(json, stackViewer)
                 .catch(CATMAID.handleError)
-                .then(function (newStackViewer) {
+                .then(function(newStackViewer) {
                   var nextIndex = stackIndex + 1;
                   if (nextIndex < stacks.length) {
                     var sv = firstStackViewer ? firstStackViewer : newStackViewer;
@@ -1132,14 +1133,16 @@ var project;
    * @param  {number|string} projectID   ID of the project to open. If different
    *                                     than the ID of the currently open
    *                                     project, it will be destroyed.
-   * @param  {number} stackID            ID of the stack to open.
+   * @param  {number}  stackID           ID of the stack to open.
    * @param  {boolean} useExistingViewer True to add the stack to the existing,
    *                                     focused stack viewer.
-   * @param  {number} mirrorIndex        An optional mirror index, defaults to
+   * @param  {number}  mirrorInde        An optional mirror index, defaults to
    *                                     the first available.
+   * @param  {boolean} noLayout          Falsy to layout all available stack
+   *                                     viewers (default).
    * @return {Promise}                   A promise yielding the stack viewer.
    */
-  CATMAID.openProjectStack = function(projectID, stackID, useExistingViewer, mirrorIndex) {
+  CATMAID.openProjectStack = function(projectID, stackID, useExistingViewer, mirrorIndex, noLayout) {
     if (project && project.id != projectID) {
       project.destroy();
     }
@@ -1149,7 +1152,13 @@ var project;
       .then(function(json) {
         return handle_openProjectStack(json,
             useExistingViewer ? project.focusedStackViewer : undefined,
-            mirrorIndex);
+            mirrorIndex)
+          .then(function() {
+            if (noLayout) {
+              return;
+            }
+            CATMAID.layoutStackViewers();
+          });
       });
 
     // Catch any error, but return original rejected promise
@@ -1267,11 +1276,11 @@ var project;
                   action: [{
                       title: 'Open in new viewer',
                       note: '',
-                      action: CATMAID.openProjectStack.bind(window, s.pid, s.id, false, undefined)
+                      action: CATMAID.openProjectStack.bind(window, s.pid, s.id, false, undefined, true)
                     },{
                       title: 'Add to focused viewer',
                       note: '',
-                      action: CATMAID.openProjectStack.bind(window, s.pid, s.id, true, undefined)
+                      action: CATMAID.openProjectStack.bind(window, s.pid, s.id, true, undefined, true)
                     }
                   ]
                 }

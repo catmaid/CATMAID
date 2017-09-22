@@ -88,7 +88,7 @@ by SSH and call relevant Python scripts::
     ssh -i downloaded_catmaidkey.pem ubuntu@$ec2-hostname
     cd CATMAID/scripts/database
 
-You can then call the scripts as described in section 3 and 4 in :ref:`basic-installation`.
+You can then call the scripts as described in section 3 and 4 in the :ref:`basic installation instructions <basic-installation>`.
 
 This fabfile should allow you to install CATMAID also on your local Ubuntu machine. Warning: It would
 overwrite your Apache configuration::

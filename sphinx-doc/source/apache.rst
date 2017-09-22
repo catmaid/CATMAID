@@ -28,7 +28,8 @@ existing virtual host that you want to modify is in
 ``/etc/apache2/sites-enabled/000-default`` and that you want to
 have your catmaid instance appear at ``/catmaid``.  We also
 assume that you have already run the ``create_configuration.py``
-script as described in :ref:`basic_installation` to create your
+script as described in the
+:ref:`basic installation insructions <basic-installation>` to create your
 ``django.wsgi`` file.
 
 You should then add lines to your existing virtualhost as shown

@@ -284,7 +284,12 @@ You can run the Django development server with::
     ./manage.py runserver
 
 You should then be able to visit your instance of catmaid at `http://localhost:8000
-<http://localhost:8000>`_
+<http://localhost:8000>`_. Note though that in its default configuration CATMAID
+will prevent static files from being served with the ``runserver`` command and
+while the website should load it may not look like expected. To temporarily
+allow this to test without enabling debug mode, set ``SERVE_STATIC = True`` in
+``settings.py``. For a production setup, the webserver should take care of
+serving static files.
 
 10. Setting up a production webserver
 #####################################

@@ -682,7 +682,7 @@ var project;
       // Update user menu
       user_menu.update({
         "user_menu_entry_1": {
-          action: django_url + "user/password_change/",
+          action: CATMAID.makeURL("user/password_change/"),
           title: "Change password",
           note: "",
         },

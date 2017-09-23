@@ -73,7 +73,7 @@ class PreStackGroup():
         self.classification = info_object.get('classification', None)
         self.relation = info_object.get('relation', None)
         valid_relations = ("view", "channel")
-        if self.relation  and self.relation not in valid_relations:
+        if self.relation and self.relation not in valid_relations:
             raise ValueError("Unsupported stack group relation: {}. Plese use "
                     "one of: {}.".format(self.relation, ", ".join(valid_relations)))
 

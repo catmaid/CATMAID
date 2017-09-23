@@ -3181,11 +3181,11 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNextBranchOrEndNode = function(
             // Center already selected node
             var atn = SkeletonAnnotations.atn;
             if (atn) {
-              self.goToNode(atn.id);
+              return self.goToNode(atn.id);
             }
           } else {
             self.cacheBranches(treenode_id, json);
-            self.cycleThroughBranches(null, branchIndex, true);
+            return self.cycleThroughBranches(null, branchIndex, true);
           }
         });
   }

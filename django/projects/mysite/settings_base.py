@@ -234,6 +234,10 @@ MEDIA_ROI_SUBDIRECTORY = 'roi'
 MEDIA_TREENODE_SUBDIRECTORY = 'treenode_archives'
 MEDIA_EXPORT_SUBDIRECTORY = 'export'
 
+# Cropping output extension
+CROPPING_OUTPUT_FILE_EXTENSION = "tiff"
+CROPPING_OUTPUT_FILE_PREFIX = "crop_"
+
 # The maximum allowed size in Bytes for generated files. The cropping tool, for
 # instance, uses this to cancel a request if the generated file grows larger
 # than this. This defaults to 50 Megabyte.

@@ -38,6 +38,12 @@
   night is now available. All it needs is to run a Celery worker and a Celery
   beat scheduler. The documentation has more details.
 
+- The cropping output file file name prefix and file extension can now be
+  specified from settings.py. The defaults are:
+
+  CROPPING_OUTPUT_FILE_EXTENSION = "tiff"
+  CROPPING_OUTPUT_FILE_PREFIX = "crop_"
+
 
 ### Features and enhancements
 

@@ -44,9 +44,9 @@ except ImportError:
 from celery.task import task
 
 # Prefix for stored microstacks
-file_prefix = "crop_"
+file_prefix = settings.CROPPING_OUTPUT_FILE_PREFIX
 # File extension of the stored microstacks
-file_extension = "tiff"
+file_extension = settings.CROPPING_OUTPUT_FILE_EXTENSION
 # The path were cropped files get stored in
 crop_output_path = os.path.join(settings.MEDIA_ROOT,
     settings.MEDIA_CROPPING_SUBDIRECTORY)

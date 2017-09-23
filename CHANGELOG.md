@@ -101,9 +101,9 @@ Layouts:
 
 - Layouts mimic nested function calls and are constructed from v(a,b) and h(a,b)
   elements for vertical and horizontal splits, o(a) for optional windows, where
-  a and b can each be other v() or h() nodes, one of [XY, XZ, ZY, F1] or any
+  a and b can each be other v() or h() nodes, one of [XY, XZ, ZY, F1, X3D] or any
   quoted widget handle (e.g. "neuron-search", see Ctrl + Space). At the moment,
-  in o(a), "a" can't be XY, XZ or ZY
+  in o(a), "a" can't be XY, XZ or ZY. To reference the 3D Viewer use X3D.
 
 - By default only one layout is available: organize XY, XZ and ZY in four
   quadrants using one additional window (if non available the help page). This

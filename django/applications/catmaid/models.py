@@ -1091,8 +1091,8 @@ class StatsSummary(models.Model):
     cable_length = models.FloatField(null=False, default=0)
 
     def __str__(self):
-        "Stats summary for {} on {}".format(
-                    self.reviewer_id, self.review_day)
+        return "Stats summary for {} on {}".format(
+                    self.user, self.date)
 
 @python_2_unicode_compatible
 class UserProfile(models.Model):

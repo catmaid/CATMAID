@@ -428,12 +428,12 @@ def delete_projects_and_stack_data(projects):
                 .filter(stack_group_id__in=stack_stack_group_ids) \
                 .exclude(stack__in=stacks)
         stack_groups_with_other_stacks_ids = set([ssg.stack_group_id for ssg in stack_groups_with_other_stacks])
-        exclusive_stack_groups = all_linked_stack_groups - stack_groups_with_other_stacks_ids
+        exclusive_stack_groups = all_linked_stack_group_ids - stack_groups_with_other_stacks_ids
         stack_groups = StackGroup.objects.filter(id__in=exclusive_stack_groups)
 
         # Delete everything
         broken_slices.delete()
         stacks.delete()
-        only_linked_stack_groups.delete()
+        stack_groups.delete()
         project_stack_relations.delete()
         p.delete()

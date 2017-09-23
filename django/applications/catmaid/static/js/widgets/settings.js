@@ -321,7 +321,22 @@
           'prefer_webgl',
           SETTINGS_SCOPE));
 
-      // WebGL tile layers
+      // Hide layers if nearest section is broken
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Hide layers if nearest section broken",
+              CATMAID.TileLayer.Settings[SETTINGS_SCOPE].hide_if_nearest_section_broken,
+              'Whether to hide tile layers by default if the nearest section ' +
+              'is marked as broken, rather than displaying the nearest non-broken ' +
+              'section. This can be adjusted for each individual layer.',
+              function() {
+                CATMAID.TileLayer.Settings[SETTINGS_SCOPE].hide_if_nearest_section_broken = this.checked;
+              }),
+          CATMAID.TileLayer.Settings,
+          'hide_if_nearest_section_broken',
+          SETTINGS_SCOPE));
+
+      // Skip broken sections of extra tile layers
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createCheckboxSetting(
               "Skip broken sections of extra tile layers by default",

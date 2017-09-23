@@ -84,7 +84,7 @@
      * non-broken section.
      * @type {Boolean}
      */
-    this.hideIfNearestSliceBroken = false;
+    this.hideIfNearestSliceBroken = CATMAID.TileLayer.Settings.session.hide_if_nearest_section_broken;
 
     /**
      * Omit tiles with less area than this threshold visible.
@@ -999,6 +999,9 @@
           },
           linear_interpolation: {
             default: true
+          },
+          hide_if_nearest_section_broken: {
+            default: false
           }
         },
         migrations: {}

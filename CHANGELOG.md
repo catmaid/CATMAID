@@ -151,6 +151,10 @@ Miscellaneous:
   instantiated if the user presses OK in the dialog, canceling won't cause a
   change of the virtual node.
 
+- The default for hiding tile layers if the nearest section is broken (instead
+  of showing the next available) can now be configured from the Settings Widget
+  in its Stack View section.
+
 
 ### Bug fixes
 

@@ -40,6 +40,13 @@ CATMAID.tools = CATMAID.tools || {};
   };
 
   /**
+   * Compare two numbers, can be used with sort().
+   */
+  tools.compareNumbers = function(a, b) {
+    return a - b;
+  };
+
+  /**
    * Compare two objects that represent HSL colors. Sorting is done by hue, then
    * saturation then luminance.
    */

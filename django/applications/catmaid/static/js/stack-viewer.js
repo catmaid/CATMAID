@@ -261,7 +261,7 @@
         validSections.add(validStackSections[i]);
       }
     }
-    this._validSections = Array.from(validSections).sort();
+    this._validSections = Array.from(validSections).sort(CATMAID.tools.compareNumbers);
   };
 
   StackViewer.LayerInsertionStrategy = {

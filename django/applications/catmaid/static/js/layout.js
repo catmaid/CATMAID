@@ -8,6 +8,7 @@
   const XZ = Stack.ORIENTATION_XZ;
   const ZY = Stack.ORIENTATION_ZY;
   const F1 = "f1";
+  const X3D = "3d";
 
   const validOrientations = new Set([XY, XZ, ZY]);
   const isFn = CATMAID.tools.isFn;
@@ -15,6 +16,19 @@
   const WindowBuilder = {};
   WindowBuilder[F1] = function() {
     return WindowMaker.create('keyboard-shortcuts').window;
+  };
+
+  /**
+   * Opening the 3D viewer creates a vertical split node with the 3D Viewer on
+   * top of a newly created Selection Table. To be able to use the 3D viewer in
+   * with the data structures below, we need to return the newly created node
+   * thats highest in the window hierarchy. In this case this is the parent of
+   * the 3D Viewer.
+   */
+  WindowBuilder[X3D] = function() {
+    var win = WindowMaker.create('3d-webgl-view').window;
+    var splitNode = win.getParent();
+    return splitNode;
   };
 
   const createWindow = function(name) {
@@ -184,6 +198,9 @@
 
   var Layout = function(spec) {
     try {
+      // Replace special case "3D" token with X3D. This allow to specify the 3D
+      // viewer more easily. This is needed because we run eval() below.
+      spec = spec.replace(/([^X])3D/g, '$1X3D');
       this._layout = eval(spec);
     } catch (error) {
       CATMAID.warn("Can't parse layout: " + spec + ", using default");

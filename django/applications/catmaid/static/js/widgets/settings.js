@@ -414,9 +414,9 @@
           "A list of default layouts of which the first one matched will be " +
           "applied. Use v(a,b) and h(a,b) for vertical and horizontal splits, " +
           "o(a) for optional windows, where a and b can each be other v() or " +
-          "h() nodes, one of [XY, XZ, ZY, F1] or any widget handle (see " +
+          "h() nodes, one of [XY, XZ, ZY, F1, X3D] or any widget handle (see " +
           "<kbd>Ctrl</kbd> + <kbd>Space</kbd>). At the moment, with o(a), " +
-          "\"a\" can't be XY, XZ or ZY.",
+          "\"a\" can't be XY, XZ or ZY. Use X3D to reference the 3D Viewer.",
           function() {
             let defaultLayouts = CATMAID.Layout.parseLayoutSpecList(this.value);
             CATMAID.Layout.Settings

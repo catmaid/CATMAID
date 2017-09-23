@@ -27,6 +27,10 @@ included in this changelog.
   The response format changed. Now a dictionary mapping user IDs to the number
   of edited nodes is returned.
 
+- `GET /{project_id}/projects/export`:
+  Stacks include now also their translation and orientation relative to project
+  space.
+
 ### Deprecations
 
 - `GET /{project_id}/annotationdiagram/nx_json`:

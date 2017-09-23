@@ -301,7 +301,8 @@ def export_projects(request):
             s.dimension, s.resolution, s.num_zoom_levels, s.metadata, s.comment,
             s.attribution, s.description, s.canary_location,
             s.placeholder_color,
-            ARRAY(SELECT index FROM broken_slice WHERE stack_id = s.id ORDER BY index)
+            ARRAY(SELECT index FROM broken_slice WHERE stack_id = s.id ORDER BY index),
+            ps.translation, ps.orientation
         FROM project_stack ps
         INNER JOIN (VALUES {}) user_project(id)
             ON ps.project_id = user_project.id
@@ -329,7 +330,9 @@ def export_projects(request):
             'canary_location': row[10],
             'placeholder_color': row[11],
             'mirrors': stack_mirror_index.get(row[1], []),
-            'broken_sections': row[12]
+            'broken_sections': row[12],
+            'translation': row[13],
+            'orientation': row[14]
         }
 
         stacks.append(stack)

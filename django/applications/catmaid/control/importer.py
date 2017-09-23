@@ -142,7 +142,7 @@ class PreStack(object):
         self.description = info_object.get('description', '')
         self.canary_location = info_object.get('canary_location')
         self.placeholder_color = info_object.get('placeholder_color')
-        self.broken_slices = info_object.get('broken_slices')
+        self.broken_slices = info_object.get('broken_sections')
 
         # Mirrors are kept in a separate data structure
         self.mirrors = [PreMirror(md, project_url) for md in info_object.get('mirrors', [])]

@@ -10,7 +10,8 @@ from django.db import connection
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 
-from catmaid.models import UserRole, Class, ClientDatastore, Project, Relation, StackGroup
+from catmaid.models import (BrokenSlice, Class, ClientDatastore, Project,
+        ProjectStack, Relation, Stack, StackGroup, StackStackGroup, UserRole)
 from catmaid.control.authentication import requires_user_role
 
 from rest_framework.decorators import api_view
@@ -397,3 +398,42 @@ def export_projects(request):
     else:
         return HttpResponse(json.dumps(result, sort_keys=True, indent=4),
                 content_type="application/json")
+
+def delete_projects_and_stack_data(projects):
+    """Expects a list of projects (can be a queryset) to be deleted. All stacks
+    linked with a project_stack relation to those projects will be deleted as
+    well along with stack groups that exclusivelt use the stacks and broken
+    sections."""
+    for p in projects:
+        project_id = p.id
+
+        # Delete only stacks that are not referenced by project-stack links to
+        # other projects.
+        project_stack_relations = ProjectStack.objects.filter(project_id=project_id)
+        stack_ids = set([ps.stack_id for ps in project_stack_relations])
+        other_project_relations = ProjectStack.objects \
+                .filter(stack_id__in=stack_ids) \
+                .exclude(project__in=projects)
+        stacks_used_in_other_projects = set([ps.stack_id for ps in other_project_relations])
+        exclusive_stack_ids = stack_ids - stacks_used_in_other_projects
+
+        stacks = Stack.objects.filter(id__in=exclusive_stack_ids)
+        broken_slices = BrokenSlice.objects.filter(stack__in=stacks)
+
+        # Get all stack groups that only have stacks linked from the set above
+        stack_stack_groups = StackStackGroup.objects.filter(stack__in=stacks)
+        stack_stack_group_ids = set([ssg.id for ssg in stack_stack_groups])
+        all_linked_stack_group_ids = set([ssg.stack_group_id for ssg in stack_stack_groups])
+        stack_groups_with_other_stacks = StackStackGroup.objects \
+                .filter(stack_group_id__in=stack_stack_group_ids) \
+                .exclude(stack__in=stacks)
+        stack_groups_with_other_stacks_ids = set([ssg.stack_group_id for ssg in stack_groups_with_other_stacks])
+        exclusive_stack_groups = all_linked_stack_groups - stack_groups_with_other_stacks_ids
+        stack_groups = StackGroup.objects.filter(id__in=exclusive_stack_groups)
+
+        # Delete everything
+        broken_slices.delete()
+        stacks.delete()
+        only_linked_stack_groups.delete()
+        project_stack_relations.delete()
+        p.delete()

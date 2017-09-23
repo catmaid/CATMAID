@@ -15,6 +15,7 @@ from catmaid.models import (Project, DataView, Stack, ProjectStack, UserProfile,
 from catmaid.control.importer import importer_admin_view
 from catmaid.control.classificationadmin import classification_admin_view
 from catmaid.control.annotationadmin import ImportingWizard
+from catmaid.control.project import delete_projects_and_stack_data
 from catmaid.views import UseranalyticsView, UserProficiencyView, \
     GroupMembershipHelper
 from catmaid.views.dvid import DVIDImportWizard
@@ -42,6 +43,14 @@ def duplicate_action(modeladmin, request, queryset):
         object.id = None
         object.save()
 duplicate_action.short_description = "Duplicate selected without relations"
+
+def delete_projects_plus_stack_data(modeladmin, request, queryset):
+    """An action that expects a list of projects as queryset that will be
+    deleted. All stacks linked with a project_stack relation to those projects
+    will be deleted as well along with stack groups that exclusivelt use the
+    stacks and broken sections."""
+    delete_projects_and_stack_data(queryset)
+delete_projects_plus_stack_data.short_description = "Delete selected incl. linked stack data"
 
 
 class BrokenSliceModelForm(forms.ModelForm):
@@ -152,7 +161,7 @@ class ProjectAdmin(GuardedModelAdmin):
     search_fields = ['title','comment']
     inlines = [ProjectStackInline]
     save_as = True
-    actions = (duplicate_action,)
+    actions = (duplicate_action, delete_projects_plus_stack_data)
 
 
 class StackAdmin(GuardedModelAdmin):

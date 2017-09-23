@@ -150,6 +150,7 @@ class PreStack(object):
         # Stacks can optionally contain a "translation" field, which can be used
         # to add an offset when the stack is linked to a project
         self.project_translation = info_object.get('translation', "(0,0,0)")
+        self.orientation = info_object.get('orientation', 0)
         # Make sure this dimension can be matched
         if not Double3D.tuple_pattern.match(self.project_translation):
             raise ValueError("Couldn't read translation value")
@@ -1127,6 +1128,7 @@ def import_projects( user, pre_projects, tags, permissions,
             updated_stacks = []
             stack_groups = {}
             translations = {}
+            orientations = {}
             stack_classification = {}
             stackgroup_classification = {}
             for s in pp.stacks:
@@ -1245,6 +1247,7 @@ def import_projects( user, pre_projects, tags, permissions,
                     })
                 # Keep track of project-stack offsets
                 translations[stack] = s.project_translation
+                orientations[stack] = s.orientation
 
             # Create new project, if no existing one has been selected before
             p = project or Project.objects.create(title=pp.title)
@@ -1258,13 +1261,16 @@ def import_projects( user, pre_projects, tags, permissions,
             # Add stacks to import to project
             for s in stacks:
                 trln = Double3D.from_str(translations[s])
+                orientation = orientations[s]
                 ps = ProjectStack.objects.create(
-                    project=p, stack=s, translation=trln)
+                    project=p, stack=s, translation=trln,
+                    orientation=orientation)
             # Update project links of updated projects
             for us in updated_stacks:
                 trln = Double3D.from_str(translations[us])
+                orientation = orientations[us]
                 ps = ProjectStack.objects.create(project=p, stack=us,
-                    translation=trln)
+                    translation=trln, orientation=orientation)
             # Make project changes persistent
             p.save()
 

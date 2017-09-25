@@ -1204,6 +1204,41 @@ var project;
       // updating for the project change.
       return CATMAID.DataStoreManager.reloadAll().then(function () {
         CATMAID.Init.trigger(CATMAID.Init.EVENT_PROJECT_CHANGED, project);
+
+        // Update the projects stack menu. If there is more than one stack
+        // linked to the current project, a submenu for easy access is
+        // generated. This need to be done only once on project creation.
+        stack_menu.update();
+        CATMAID.Stack.list(project.id, true)
+          .then(function(stacks) {
+            if (stacks.length > 1) {
+              var stack_menu_content = [];
+              stacks.forEach(function(s) {
+                stack_menu_content.push({
+                    id: s.id,
+                    title: s.title,
+                    note: '',
+                    action: [{
+                        title: 'Open in new viewer',
+                        note: '',
+                        action: CATMAID.openProjectStack.bind(window, s.pid, s.id, false, undefined, true)
+                      },{
+                        title: 'Add to focused viewer',
+                        note: '',
+                        action: CATMAID.openProjectStack.bind(window, s.pid, s.id, true, undefined, true)
+                      }
+                    ]
+                  }
+                );
+              });
+
+              stack_menu.update( stack_menu_content );
+              var stackMenuBox = document.getElementById( "stackmenu_box" );
+              stackMenuBox.firstElementChild.lastElementChild.style.display = "none";
+              stackMenuBox.style.display = "block";
+            }
+          }).catch(CATMAID.handleError);
+
         return loadStack(e);
       });
     } else {
@@ -1259,40 +1294,6 @@ var project;
       } else {
         stackViewer.addStackLayer(stack, tilelayer);
       }
-
-      /* Update the projects stack menu. If there is more
-      than one stack linked to the current project, a submenu for easy
-      access is generated. */
-      stack_menu.update();
-      CATMAID.Stack.list(project.id, true)
-        .then(function(stacks) {
-          if (stacks.length > 1) {
-            var stack_menu_content = [];
-            stacks.forEach(function(s) {
-              stack_menu_content.push({
-                  id: s.id,
-                  title: s.title,
-                  note: '',
-                  action: [{
-                      title: 'Open in new viewer',
-                      note: '',
-                      action: CATMAID.openProjectStack.bind(window, s.pid, s.id, false, undefined, true)
-                    },{
-                      title: 'Add to focused viewer',
-                      note: '',
-                      action: CATMAID.openProjectStack.bind(window, s.pid, s.id, true, undefined, true)
-                    }
-                  ]
-                }
-              );
-            });
-
-            stack_menu.update( stack_menu_content );
-            var stackMenuBox = document.getElementById( "stackmenu_box" );
-            stackMenuBox.firstElementChild.lastElementChild.style.display = "none";
-            stackMenuBox.style.display = "block";
-          }
-        }).catch(CATMAID.handleError);
 
       CATMAID.ui.releaseEvents();
       return stackViewer;

@@ -1133,7 +1133,11 @@ var project;
 
     // Catch error, but return rejected promise
     request.catch(function(error) {
-      CATMAID.error("Couldn't load stack group: " + error.error, error.detail);
+      if (error && error.error && error.detail) {
+        CATMAID.error("Couldn't load stack group: " + error.error, error.detail);
+      } else {
+        CATMAID.error("Couldn't load stack group", error);
+      }
     });
 
     return request;

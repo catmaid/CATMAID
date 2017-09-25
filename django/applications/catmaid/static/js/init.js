@@ -1100,7 +1100,10 @@ var project;
               if (firstStackViewer && 'channel' === stack.relation) {
                 stackViewer = firstStackViewer;
               }
-              // Try to load stacks and continue trying if loading fails for one
+              // Try to load stacks and continue trying if loading fails for
+              // one. Load stacks invisible (opacity of 0) to avoid a Pixi.js
+              // initialization problem with multiple renderers at the same
+              // time.
               return handle_openProjectStack(json, stackViewer, undefined, true)
                 .catch(CATMAID.handleError)
                 .then(function(newStackViewer) {
@@ -1115,7 +1118,8 @@ var project;
                       stacks: stacks
                     };
                     CATMAID.layoutStackViewers();
-                    // Make all tile layers visible
+                    // Make all tile layers visible, they have been initialized
+                    // invisible.
                     for (var i=0; i<loadedStackViewers.length; ++i) {
                       var sv = loadedStackViewers[i];
                       var tileLayers = sv.getLayersOfType(CATMAID.TileLayer);

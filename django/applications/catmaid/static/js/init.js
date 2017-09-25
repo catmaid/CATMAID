@@ -1084,6 +1084,8 @@ var project;
 
         CATMAID.throwOnInsufficientWebGlContexts(json.stacks.length);
 
+        var loadedStackViewers = [];
+
         // Open first stack
         return loadNextStack(json.project_id, 0, json.id, json.stacks);
 
@@ -1099,9 +1101,10 @@ var project;
                 stackViewer = firstStackViewer;
               }
               // Try to load stacks and continue trying if loading fails for one
-              return handle_openProjectStack(json, stackViewer)
+              return handle_openProjectStack(json, stackViewer, undefined, true)
                 .catch(CATMAID.handleError)
                 .then(function(newStackViewer) {
+                  loadedStackViewers.push(newStackViewer);
                   var nextIndex = stackIndex + 1;
                   if (nextIndex < stacks.length) {
                     var sv = firstStackViewer ? firstStackViewer : newStackViewer;
@@ -1112,6 +1115,16 @@ var project;
                       stacks: stacks
                     };
                     CATMAID.layoutStackViewers();
+                    // Make all tile layers visible
+                    for (var i=0; i<loadedStackViewers.length; ++i) {
+                      var sv = loadedStackViewers[i];
+                      var tileLayers = sv.getLayersOfType(CATMAID.TileLayer);
+                      for (var j=0; j<tileLayers.length; ++j) {
+                        var tl = tileLayers[j];
+                        tl.setOpacity(1.0);
+                        tl.redraw();
+                      }
+                    }
                   }
                 });
             });
@@ -1187,10 +1200,12 @@ var project;
    * @param  {StackViewer} stackViewer Viewer to which to add the stack.
    * @param  {number}      mirrorIndex Optional mirror index, defaults to
    *                                   the first available.
+   * @param  {Boolean} hide            The stack's tile layer will initially be
+   *                                   hidden.
    * @return {Promise}                 A promise yielding the stack viewer
    *                                   containing the new stack.
    */
-  function handle_openProjectStack( e, stackViewer, mirrorIndex )
+  function handle_openProjectStack( e, stackViewer, mirrorIndex, hide )
   {
     if (!stackViewer) {
       CATMAID.throwOnInsufficientWebGlContexts(1);
@@ -1239,18 +1254,18 @@ var project;
             }
           }).catch(CATMAID.handleError);
 
-        return loadStack(e);
+        return loadStack(e, undefined, hide);
       });
     } else {
       // Call loadStack() asynchronously to catch potential errors in the
       // promise handling code. Otherwise, an error during the construction of
       // one stack viewer will cancel the following ones.
       return new Promise(function(resolve, reject) {
-        resolve(loadStack(e, stackViewer));
+        resolve(loadStack(e, stackViewer, hide));
       });
     }
 
-    function loadStack(e, stackViewer) {
+    function loadStack(e, stackViewer, hideTileLayer) {
       var useExistingViewer = typeof stackViewer !== 'undefined';
 
       var stack = new CATMAID.Stack(
@@ -1283,8 +1298,8 @@ var project;
           "Image data (" + stack.title + ")",
           stack,
           mirrorIndex,
-          true,
-          1,
+          !hideTileLayer,
+          hideTileLayer ? 0 : 1,
           !useExistingViewer,
           CATMAID.TileLayer.Settings.session.linear_interpolation,
           true);

@@ -1242,7 +1242,12 @@ var project;
         return loadStack(e);
       });
     } else {
-      return Promise.resolve(loadStack(e, stackViewer));
+      // Call loadStack() asynchronously to catch potential errors in the
+      // promise handling code. Otherwise, an error during the construction of
+      // one stack viewer will cancel the following ones.
+      return new Promise(function(resolve, reject) {
+        resolve(loadStack(e, stackViewer));
+      });
     }
 
     function loadStack(e, stackViewer) {

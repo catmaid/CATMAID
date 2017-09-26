@@ -70,6 +70,7 @@ libraries_js = OrderedDict([
                  'loaders/VRMLLoader.js', 'renderer/Projector.js',
                  'renderer/SVGRenderer.js']),
     ('threex', ['*.js']),
+    ('plotly', ['*.js']),
     ('pixi.js', ['*.js']),
     ('cytoscapejs', ['cytoscape.js', 'cytoscape-spread.js',
                     'arbor.js', 'cytoscape-arbor.js',

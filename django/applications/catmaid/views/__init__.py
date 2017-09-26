@@ -19,6 +19,7 @@ class CatmaidView(TemplateView):
         context['COOKIE_SUFFIX'] = settings.COOKIE_SUFFIX
         context['COMPRESSED_FILE_IDS'] = settings.COMPRESSED_FILE_IDS
         context['NON_COMPRESSED_FILES'] = settings.NON_COMPRESSED_FILES
+        context['STYLESHEET_IDS'] = settings.STYLESHEET_IDS
         context['STATIC_EXTENSION_URL'] = settings.STATIC_EXTENSION_URL
         context['STATIC_EXTENSION_FILES'] = settings.STATIC_EXTENSION_FILES
         context['HISTORY_TRACKING'] = settings.HISTORY_TRACKING

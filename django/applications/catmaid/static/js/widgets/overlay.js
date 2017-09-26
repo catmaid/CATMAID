@@ -3124,27 +3124,30 @@ SkeletonAnnotations.TracingOverlay.prototype.goToPreviousBranchOrRootNode = func
     treenode_id = SkeletonAnnotations.getChildOfVirtualNode(treenode_id);
   }
   var self = this;
-  this.submit(
-      django_url + project.id + "/treenodes/" + treenode_id + "/previous-branch-or-root",
-      'POST',
-      {alt: e.altKey ? 1 : 0},
-      function(json) {
-        // json is a tuple:
-        // json[0]: treenode id
-        // json[1], [2], [3]: x, y, z in calibrated world units
-        if (treenode_id === json[0]) {
-          // Already at the root node
-          CATMAID.msg('Already there', 'You are already at the root node');
-          // Center already selected node
-          self.moveTo(json[3], json[2], json[1]);
-        } else {
-          self.moveTo(json[3], json[2], json[1],
-            function() {
-              self.selectNode(json[0], json[4])
-                .catch(CATMAID.handleError);
-            });
-        }
-      });
+  this.submit.promise()
+    .then(function() {
+      return CATMAID.fetch(CATMAID.makeURL(project.id + "/treenodes/" +
+        treenode_id + "/previous-branch-or-root"), 'POST', {
+          alt: e.altKey ? 1 : 0
+        });
+    })
+    .then(function(json) {
+      // json is a tuple:
+      // json[0]: treenode id
+      // json[1], [2], [3]: x, y, z in calibrated world units
+      if (treenode_id === json[0]) {
+        // Already at the root node
+        CATMAID.msg('Already there', 'You are already at the root node');
+        // Center already selected node
+        return self.moveTo(json[3], json[2], json[1]);
+      } else {
+        return self.moveTo(json[3], json[2], json[1])
+          .then(function() {
+            return self.selectNode(json[0], json[4])
+              .catch(CATMAID.handleError);
+          });
+      }
+    });
 };
 
 /**
@@ -3164,30 +3167,31 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNextBranchOrEndNode = function(
     this.cycleThroughBranches(treenode_id, branchIndex, true);
   } else {
     var self = this;
-    this.submit(
-        django_url + project.id + "/treenodes/" + treenode_id + "/next-branch-or-end",
-        'POST',
-        undefined,
-        function(json) {
-          // json is an array of branches
-          // each branch is a tuple:
-          // [child head of branch, first node of interest, first branch or leaf]
-          // each node is a tuple:
-          // node[0]: treenode id
-          // node[1], [2], [3]: x, y, z in calibrated world units
-          if (json.length === 0) {
-            // Already at a branch or end node
-            CATMAID.msg('Already there', 'You are at an end node');
-            // Center already selected node
-            var atn = SkeletonAnnotations.atn;
-            if (atn) {
-              return self.goToNode(atn.id);
-            }
-          } else {
-            self.cacheBranches(treenode_id, json);
-            return self.cycleThroughBranches(null, branchIndex, true);
+    this.submit.promise()
+      .then(function() {
+        return CATMAID.fetch(CATMAID.makeURL(project.id + "/treenodes/" +
+          treenode_id + "/next-branch-or-end"), 'POST');
+      })
+      .then(function(json) {
+        // json is an array of branches
+        // each branch is a tuple:
+        // [child head of branch, first node of interest, first branch or leaf]
+        // each node is a tuple:
+        // node[0]: treenode id
+        // node[1], [2], [3]: x, y, z in calibrated world units
+        if (json.length === 0) {
+          // Already at a branch or end node
+          CATMAID.msg('Already there', 'You are at an end node');
+          // Center already selected node
+          var atn = SkeletonAnnotations.atn;
+          if (atn) {
+            return self.goToNode(atn.id);
           }
-        });
+        } else {
+          self.cacheBranches(treenode_id, json);
+          return self.cycleThroughBranches(null, branchIndex, true);
+        }
+      });
   }
 };
 

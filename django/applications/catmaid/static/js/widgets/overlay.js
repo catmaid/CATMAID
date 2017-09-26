@@ -2187,7 +2187,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesInDB = functio
   }
 
   // Queue update of real nodes as a promise
-  var promise = this.submit.then(promiseUpdate.bind(this));
+  var promise = this.submit.then(promiseUpdate.bind(this)).promise();
 
   // Queue callback, if there is any (it will get the results of the node update
   // as arguments automatically).
@@ -3645,11 +3645,10 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
  */
 SkeletonAnnotations.TracingOverlay.prototype.moveTo = function(z, y, x, fn) {
   var self = this;
-  return new Promise(function(resolve, reject) {
-    self.updateNodeCoordinatesInDB(resolve);
-  }).then(function() {
-    return self.stackViewer.getProject().moveTo(z, y, x, undefined, fn);
-  });
+  return self.updateNodeCoordinatesInDB()
+    .then(function() {
+      return self.stackViewer.getProject().moveTo(z, y, x, undefined, fn);
+    });
 };
 
 

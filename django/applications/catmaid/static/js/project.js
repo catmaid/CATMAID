@@ -337,10 +337,7 @@
 
       var movePromises = stackViewers.map(function (sv) {
         return sv.navigateWithProject ?
-          new Promise(function (resolve, reject) {
-            sv.moveTo(zp, yp, xp, sp, resolve);
-          }) :
-          Promise.resolve();
+            sv.moveTo(zp, yp, xp, sp) : Promise.resolve();
       });
 
       return Promise.all(movePromises).then(function () {

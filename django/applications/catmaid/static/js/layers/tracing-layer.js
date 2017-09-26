@@ -49,8 +49,8 @@
     this.tracingOverlay.redraw();
   };
 
-  TracingLayer.prototype.beforeMove = function (completionCallback) {
-    this.tracingOverlay.updateNodeCoordinatesInDB(completionCallback);
+  TracingLayer.prototype.beforeMove = function () {
+    return this.tracingOverlay.updateNodeCoordinatesInDB();
   };
 
   TracingLayer.prototype.getClosestNode = function (x, y, radius, respectVirtualNodes) {

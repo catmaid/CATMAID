@@ -350,7 +350,7 @@
   /**
    * update all state informations and the screen content
    */
-  StackViewer.prototype.update = function (completionCallback) {
+  StackViewer.prototype.update = function (completionCallback, errorCallback) {
     this.overview.redraw();
     if (this.s !== this.old_s) this.updateScaleBar();
 
@@ -622,8 +622,8 @@
    * Similar to the moveTo functionality in project.js, this wouldn't be
    * possible to do with loops.
    */
-  StackViewer.prototype.moveToAfterBeforeMoves = function (
-      zp, yp, xp, sp, completionCallback, layersWithBeforeMove) {
+  StackViewer.prototype.moveToAfterBeforeMoves = function (zp, yp, xp, sp,
+      layersWithBeforeMove) {
     var layerWithBeforeMove;
 
     if ( layersWithBeforeMove.length === 0 )
@@ -641,17 +641,18 @@
       this.y = this.primaryStack.projectToUnclampedStackY( zp, yp, xp ) + this._offset[1];
       this.z = this.primaryStack.projectToUnclampedStackZ( zp, yp, xp ) + this._offset[2];
 
-      this.update( completionCallback );
-
+      return new Promise((function(resolve, reject) {
+        this.update(resolve, reject);
+      }).bind(this));
     }
     else
     {
       // Otherwise do the next layer's beforeMove() and call self recursively as
       // a continuation of it.
       layerWithBeforeMove = layersWithBeforeMove.shift();
-      layerWithBeforeMove.beforeMove(
-        this.moveToAfterBeforeMoves.bind(this, zp, yp, xp, sp, completionCallback, layersWithBeforeMove)
-      );
+      return layerWithBeforeMove.beforeMove()
+        .then(this.moveToAfterBeforeMoves.bind(this, zp, yp, xp, sp,
+            layersWithBeforeMove));
     }
   };
 
@@ -676,15 +677,11 @@
       }
     });
 
-    var self = this;
-    return new Promise(function(resolve, reject) {
-      var done = completionCallback ? function() {
-        completionCallback();
-        resolve();
-      } : resolve;
-
-      self.moveToAfterBeforeMoves( zp, yp, xp, sp, done, layersWithBeforeMove );
-    });
+    var afterBeforeMoves = this.moveToAfterBeforeMoves(zp, yp, xp, sp, layersWithBeforeMove);
+    if (completionCallback) {
+      afterBeforeMoves.then(completionCallback);
+    }
+    return afterBeforeMoves;
   };
 
   /**

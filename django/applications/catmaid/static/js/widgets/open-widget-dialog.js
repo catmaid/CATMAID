@@ -73,21 +73,20 @@
       var updated = false;
 
       this.widgetField.onkeydown = function(e) {
-        if (e.key === 'ArrowDown') {
-          var row = datatable.row(referenceRow,
-              {order: 'applied', search: 'applied'}).data();
-          if (row) {
-            updated = true;
-            self.widgetField.value = row.key;
-            ++referenceRow;
-          }
-        } else if (e.key === 'ArrowUp') {
-          ++referenceRow;
-          var row = datatable.row(referenceRow,
-              {order: 'applied', search: 'applied'}).data();
-          if (row) {
-            updated = true;
-            self.widgetField.value = row.key;
+        let up = e.key === 'ArrowUp';
+        let down = e.key === 'ArrowDown';
+        if (up || down) {
+          var rows = datatable.rows({order: 'applied', search: 'applied'}).data();
+          if (rows) {
+            referenceRow = (referenceRow + (up ? -1 : 1)) % rows.length;
+            if (referenceRow < 0) {
+              referenceRow = rows.length - 1;
+            }
+            let row = rows[referenceRow];
+            if (row) {
+              updated = true;
+              self.widgetField.value = row.key;
+            }
           }
         }
       };

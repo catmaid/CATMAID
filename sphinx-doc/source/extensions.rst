@@ -66,12 +66,18 @@ Creating an extension
 #. If your extension includes javascript and/or stylesheets, create \
     ``myextension/pipelinefiles.py`` to make Django Pipeline aware of them. See \
     `synapsesuggestor <https://github.com/clbarnes/CATMAID-synapsesuggestor/pipelinefiles.py>`_ \
-    for an example.
+    and \
+    `CATMAID <https://github.com/catmaid/CATMAID/blob/master/django/projects/mysite/pipelinefiles.py>`_ \
+    for how they interoperate.
 
 #. Develop away! For testing purposes, you will need to `install <extension-install_>`_ \
     the extension in your CATMAID environment - it's convenient to use ``pip install -e`` \
     to install the module in editable mode and ``python manage.py collectstatic -l``. \
-    Don't forget to add it to ``INSTALLED_APPS``. \
+    Don't forget to add it to ``INSTALLED_APPS``.
+
+To quickstart development, you may find this `cookiecutter <https://github.com/audreyr/cookiecutter>`_
+template valuable:
+`clbarnes/CATMAID-ext-cookiecutter <https://github.com/clbarnes/CATMAID-ext-cookiecutter>`_.
 
 Examples
 --------

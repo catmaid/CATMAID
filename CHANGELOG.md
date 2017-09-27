@@ -126,6 +126,22 @@ Layouts:
   a single XY view stack, the layout can be used: h(XY, "neuron-search").
 
 
+CATMAID extensions:
+
+- As well as supporting standalone 3rd party static files, CATMAID now supports
+  fully-featured extensions, which can include database models, API endpoints,
+  and tests as well as static files.
+
+- CATMAID extensions are Django apps which follow a particular layout, and can
+  be installed with `pip`
+
+- The goal is for CATMAID extensions to be reusable and interoperable
+  between versions and installations of CATMAID, reducing the need to fork it
+  and keep the fork updated in parallel.
+
+- More details can be found in the docs.
+
+
 Miscellaneous:
 
 - The Open Widget dialog now displays a table that includes more information on
@@ -162,6 +178,9 @@ Miscellaneous:
 - The default for hiding tile layers if the nearest section is broken (instead
   of showing the next available) can now be configured from the Settings Widget
   in its Stack View section.
+
+- `plotly.js`, a d3-based plotting library, is now available within CATMAID,
+  making it much easier to generate common plots.
 
 
 ### Bug fixes

@@ -152,13 +152,19 @@
     };
   };
 
+  var toPaddedString = function(value) {
+    return (value < 10 ? '0' : '') + value;
+  };
+
   var formatDate = function(date) {
+    let month = date.getUTCMonth() + 1;
+    let day = date.getUTCDate();
     return date.getUTCFullYear() + '-' +
-        date.getUTCMonth() + '-' +
-        date.getUTCDay() + ' ' +
-        date.getUTCHours() + ':' +
-        date.getUTCMinutes() + ':' +
-        date.getUTCSeconds();
+        toPaddedString(date.getUTCMonth() + 1) + '-' +
+        toPaddedString(date.getUTCDate()) + ' ' +
+        toPaddedString(date.getUTCHours()) + ':' +
+        toPaddedString(date.getUTCMinutes()) + ':' +
+        toPaddedString(date.getUTCSeconds());
   };
 
   /**

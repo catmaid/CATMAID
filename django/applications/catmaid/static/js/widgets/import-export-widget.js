@@ -776,6 +776,8 @@ annotations, neuron name, connectors or partner neurons.
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Import/Export",
+    description: "Export tracing data in various ways and import neurons",
     key: widgetKey,
     creator: ImportExportWidget
   });

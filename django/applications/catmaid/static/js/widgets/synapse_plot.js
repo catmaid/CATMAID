@@ -729,6 +729,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Synapse Plot",
+    descending: "Plot synapse distribution",
     key: "synapse-plot",
     creator: CATMAID.SynapsePlot
   });

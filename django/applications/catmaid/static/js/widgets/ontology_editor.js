@@ -1310,6 +1310,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Ontology Editor",
+    description: "Edit ontology classes and relations",
     key: "ontology-editor",
     creator: OntologyEditor
   });

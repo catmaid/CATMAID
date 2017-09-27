@@ -153,6 +153,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "System check",
+    description: "Developer widget with different metrics and tests",
     key: "system-check",
     creator: SystemCheckWidget
   });

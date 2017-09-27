@@ -70,6 +70,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Treenode Viewer",
+    description: "Display all or a subset of a skeleton's treenodes",
     key: 'treenode-viewer',
     creator: TreenodeViewer
   });

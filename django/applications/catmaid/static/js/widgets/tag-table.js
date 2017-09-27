@@ -507,6 +507,11 @@
     this.unregisterInstance();
   };
 
-  CATMAID.registerWidget({key: 'tag-table', creator: TagTable});
+  CATMAID.registerWidget({
+    name: "Tag Table",
+    description: "List all tagged nodes of a skeleton",
+    key: 'tag-table',
+    creator: TagTable
+  });
 
 })(CATMAID);

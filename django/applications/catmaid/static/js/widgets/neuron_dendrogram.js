@@ -1181,6 +1181,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Neuron Dendrogram",
+    description: "Visualize the topology of a neuron",
     key: "neuron-dendrogram",
     creator: NeuronDendrogram
   });

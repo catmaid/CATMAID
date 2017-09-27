@@ -171,6 +171,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Generic Search",
+    description: "Search by names and IDs",
     creator: SearchWidget,
     key: "search"
   });

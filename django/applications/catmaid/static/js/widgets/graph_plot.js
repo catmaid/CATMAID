@@ -1449,6 +1449,7 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Circuit Graph Plot",
     key: "circuit-graph-plot",
     creator: CATMAID.CircuitGraphPlot
   });

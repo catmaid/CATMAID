@@ -140,6 +140,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Project list data view",
+    description: "List available projects and stacks",
     key: "project-list",
     creator: DataViewWidget
   });

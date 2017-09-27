@@ -653,6 +653,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Morphology Plot",
+    description: "A histogram based analysis tool working on neuron intervals",
     key: "morphology-plot",
     creator: MorphologyPlot
   });

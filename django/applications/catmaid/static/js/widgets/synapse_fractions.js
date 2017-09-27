@@ -1969,6 +1969,8 @@
   CATMAID.SynapseFractions = SynapseFractions;
 
   CATMAID.registerWidget({
+    name: "Synapse Fractions",
+    descending: "Plot input/ouput fraction wrt. partner neurons",
     key: "synapse-fractions",
     creator: CATMAID.SynapseFractions
   });

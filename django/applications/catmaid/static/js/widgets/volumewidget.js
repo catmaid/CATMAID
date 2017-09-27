@@ -734,6 +734,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Volume Manager",
+    description: "List and edit volumes and create new ones",
     key: widgetKey,
     creator: VolumeManagerWidget
   });

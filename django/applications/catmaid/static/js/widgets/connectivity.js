@@ -1981,6 +1981,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Connectivity Widget",
+    description: "List connected partner neurons",
     key: "connectivity-widget",
     creator: SkeletonConnectivity,
     state: {

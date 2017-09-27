@@ -1800,6 +1800,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Reconstruction Sampler",
+    description: "Find strongly connected partners through sampling",
     key: 'reconstruction-sampler',
     creator: ReconstructionSampler
   });

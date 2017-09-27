@@ -392,6 +392,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Connector Viewer",
+    description: "View and edit connectors linked to a set of neurons",
     key: 'connector-viewer',
     creator: ConnectorViewer
   });

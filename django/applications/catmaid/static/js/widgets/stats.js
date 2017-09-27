@@ -646,6 +646,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Project Statistics",
+    description: "Show user statistics for this project",
     key: "statistics",
     creator: ProjectStatistics,
     state: {

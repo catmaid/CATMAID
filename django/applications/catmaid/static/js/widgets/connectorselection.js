@@ -249,6 +249,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Connector Selection",
+    description: "A simple connector table",
     key: "create-connector-selection",
     creator: ConnectorSelection
   });

@@ -1687,6 +1687,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Selection Table",
+    description: "Manage lists of neurons",
     key: 'selection-table',
     creator: SelectionTable
   });

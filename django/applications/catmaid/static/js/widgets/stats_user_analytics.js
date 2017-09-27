@@ -178,6 +178,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "User Analytics",
+    description: "Fine grained reconstruction time evaluation",
     key: "user-analytics",
     creator: UserAnalytics
   });

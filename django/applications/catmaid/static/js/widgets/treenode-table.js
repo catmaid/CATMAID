@@ -534,6 +534,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Treenode table",
+    description: "List all treenodes of a skeleton",
     key: "treenode-table",
     creator: TreenodeTable
   });

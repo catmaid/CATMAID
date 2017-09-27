@@ -1507,6 +1507,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Neuron Search",
+    description: "Search for neurons and annotations",
     key: 'neuron-search',
     creator: NeuronSearch
   });

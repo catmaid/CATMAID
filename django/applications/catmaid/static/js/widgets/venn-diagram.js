@@ -346,6 +346,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Venn Diagram",
+    description: "Use set logic to filter skeletons",
     key: 'venn-diagram',
     creator: VennDiagram
   });

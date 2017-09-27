@@ -394,6 +394,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Log and History",
+    description: "List all user actions and data changes",
     key: "log-table",
     creator: LogTable
   });

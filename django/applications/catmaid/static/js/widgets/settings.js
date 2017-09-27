@@ -1510,6 +1510,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Settings",
+    description: "Configure CATMAID",
     key: 'settings',
     creator: SettingsWidget
   });

@@ -1763,6 +1763,8 @@
   CATMAID.Init.on(CATMAID.Init.EVENT_USER_CHANGED, CATMAID.ReviewSystem.Whitelist.refresh);
 
   CATMAID.registerWidget({
+    name: "Review Widget",
+    description: "Proofread a skeleton or a part of it",
     key: "review-system",
     creator: CATMAID.ReviewSystem,
     state: {

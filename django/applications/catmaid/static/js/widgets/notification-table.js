@@ -248,6 +248,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Notification Table",
+    description: "List your notificiations",
     key: 'notifications',
     creator: NotificationsTable
   });

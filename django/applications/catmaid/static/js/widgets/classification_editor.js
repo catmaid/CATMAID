@@ -1169,6 +1169,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Classification Editor",
+    description: "View and edit semantic classifications",
     key: "classification-editor",
     creator: ClassificationEditor
   });

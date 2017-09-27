@@ -306,6 +306,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Connector Table",
+    description: "List connectors of neurons",
     key: 'connector-table',
     creator: ConnectorTable
   });

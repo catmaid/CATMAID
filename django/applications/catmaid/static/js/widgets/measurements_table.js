@@ -361,6 +361,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Measurements Table",
+    description: "List various metrics for a set of neurons",
     key: "skeleton-measurements-table",
     creator: SkeletonMeasurementsTable
   });

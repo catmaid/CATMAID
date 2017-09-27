@@ -577,6 +577,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Neuron History Widget",
+    description: "List time information regarding reconstruction and review",
     key: 'neuron-history',
     creator: NeuronHistoryWidget,
     state: {

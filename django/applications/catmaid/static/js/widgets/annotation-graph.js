@@ -546,6 +546,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: 'Annotation Graph',
+    description: 'Show all annotations and their hierarchy',
     key: 'annotation-graph',
     creator: AnnotationGraph
   });

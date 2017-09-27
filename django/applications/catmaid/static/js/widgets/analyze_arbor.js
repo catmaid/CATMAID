@@ -909,6 +909,8 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
+    name: "Analyze Arbor",
+    description: "Metrics for different parts of a neuron",
     key: "analyze-arbor",
     creator: AnalyzeArbor
   });

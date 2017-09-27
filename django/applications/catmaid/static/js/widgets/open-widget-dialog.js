@@ -107,8 +107,11 @@
         // the table.
         if (!widgetIndex[widgetName]) {
           var firstRow = datatable.row(0, {order: 'applied', search: 'applied'});
-          if (firstRow) {
+          if (firstRow.length > 0) {
             widgetName = firstRow.data().key;
+          } else {
+            CATMAID.warn("No valid widget selected");
+            return;
           }
         }
         WindowMaker.create(widgetName);

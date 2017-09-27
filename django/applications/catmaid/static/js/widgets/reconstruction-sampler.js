@@ -866,8 +866,8 @@
             widget.updateSkeletonColors()
               .then(function() { widget.render(); });
 
-            // Update screen
-            widget.render();
+            // Look at center of mass of skeleton and update screen
+            widget.lookAtSkeleton(skeletonId);
           });
         });
       }).then(function(result) {
@@ -1188,6 +1188,9 @@
             widget.options.interpolate_vertex_colots = false;
             widget.updateSkeletonColors()
               .then(function() { widget.render(); });
+
+            // Look at center of mass of skeleton and update screen
+            widget.lookAtSkeleton(skeletonId);
           });
         });
       })

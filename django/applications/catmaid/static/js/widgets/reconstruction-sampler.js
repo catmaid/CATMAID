@@ -1181,47 +1181,6 @@
           var models = {};
           models[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
           widget.addSkeletons(models, function() {
-
-            var makeEndNode = function(nodeId) {
-              return {
-                id: null,
-                node_id: parseInt(nodeId, 10)
-              };
-            };
-
-            /*
-
-            // The defined domains are noy yet available from the back-end,
-            // prepopulate the skeleton's sampler property with fake data that
-            // showing the domains to be created.
-            var skeletons = widget.space.content.skeletons;
-            var fakeDomainId = 0;
-            var previewDomains = domains.map(function(d) {
-              return {
-                ends : d.endNodeIds.map(makeEndNode),
-                id: fakeDomainId++, // use fake ID, needed for different colors
-                start_node_id: d.startNodeId, // needed
-                // parent_interval: null,
-                // project_id: project.id,
-                // sampler_id: null,
-              };
-            });
-            for (var skeletonId in skeletons) {
-              var skeleton = skeletons[skeletonId];
-              skeleton.setSamplers([{
-                id: null,
-                domains: previewDomains,
-                // creation_time,
-                // edition_time,
-                // interval_length,
-                // skeleton_id,
-                // state_id,
-                // user_ud
-              }]);
-            }
-
-            */
-
             // Set new shading and coloring methods
             widget.options.color_method = 'sampler-intervals';
             widget.options.shading_method = 'sampler-intervals';

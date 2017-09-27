@@ -1041,6 +1041,10 @@ a.neuron-selection-link:hover {
   float: left;
 }
 
+div#dialog-confirm select {
+  width: 100%;
+}
+
 table.skeleton-table {
   width: 100%;
 }
@@ -1285,4 +1289,27 @@ img.missing-image:before {
   background: #0000FF;
   color: #FFFFFF;
   white-space: nowrap;
+}
+
+.widget-list label {
+  width: 5em;
+}
+
+.widget-list label input {
+  width: 10em;
+}
+
+.widget-list table {
+  width:100%;
+  cursor: pointer;
+}
+.widget-list table td {
+  padding: 0.1em 0.3em 0.1em 0.3em;
+  white-space: nowrap;
+  min-width: 10em;
+}
+
+.widget-list .dataTables_info {
+  padding-left: 0.4em;
+  padding-top: 0.6em;
 }

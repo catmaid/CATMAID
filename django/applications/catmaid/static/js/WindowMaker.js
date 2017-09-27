@@ -1675,14 +1675,47 @@ var WindowMaker = new function()
   };
 
   var creators = {
-    "keyboard-shortcuts": createKeyboardShortcutsWindow,
-    "3d-webgl-view": create3dWebGLWindow,
-    "graph-widget": createGraphWindow,
-    "connectivity-graph-plot": createConnectivityGraphPlot,
-    "ontology-search": createOntologySearchWidget,
-    "neuron-navigator": createNeuronNavigatorWindow,
-    "connectivity-matrix": createConnectivityMatrixWindow,
-    "html": createHtmlWindow,
+    "keyboard-shortcuts": {
+      name: 'Keyboard Shortcuts',
+      description: 'A tool specific list of keyboard shortcuts',
+      init: createKeyboardShortcutsWindow
+    },
+    "3d-webgl-view": {
+      name: '3D Viewer',
+      description: 'Visualize neurons, synapses and image data in 3D',
+      init: create3dWebGLWindow
+    },
+    "graph-widget": {
+      name: 'Graph Widget',
+      description: 'Display and explore connectivity graphs',
+      init: createGraphWindow
+    },
+    "connectivity-graph-plot": {
+      name: 'Graph Plot',
+      description: 'Plot',
+      init: createConnectivityGraphPlot
+    },
+    "ontology-search": {
+      name: 'Ontology Search',
+      description: 'Search for elements of the symantic space',
+      init: createOntologySearchWidget
+    },
+    "neuron-navigator": {
+      name: 'Neuron Navigator',
+      description: 'Traverse and constrain neuron, user and annotation networks',
+      init: createNeuronNavigatorWindow
+    },
+    "connectivity-matrix": {
+      name: 'Connectivity Matrix',
+      description: 'Aggregate partner connections and display them in a matrix',
+      init: createConnectivityMatrixWindow
+    },
+    "html": {
+      name: 'HTML Widget',
+      description: 'A generic HTML widget',
+      init: createHtmlWindow,
+      hidden: true,
+    },
   };
 
   /** If the window for the given name is already showing, just focus it.
@@ -1699,7 +1732,7 @@ var WindowMaker = new function()
           widget: instances.get(win)
         };
       } else {
-        var handles = creators[name](params);
+        var handles = creators[name].init(params);
         windows.set(name, new Map([[handles.window, handles.widget]]));
         return handles;
       }
@@ -1722,7 +1755,7 @@ var WindowMaker = new function()
         var instances = windows.get(name);
         return new Map(instances);
       } else if (create) {
-        var handles = creators[name](params);
+        var handles = creators[name].init(params);
         handles = new Map([[handles.window, handles.widget]]);
         windows.set(name, handles);
         return new Map(handles);
@@ -1739,7 +1772,7 @@ var WindowMaker = new function()
   this.create = function(name, init_params) {
     if (creators.hasOwnProperty(name)) {
       try {
-        var handles = creators[name](init_params);
+        var handles = creators[name].init(init_params);
         if (windows.has(name)) {
           windows.get(name).set(handles.window, handles.widget);
         } else {
@@ -1792,7 +1825,7 @@ var WindowMaker = new function()
   /**
    * Allow new widgets to register with a window maker.
    */
-  this.registerWidget = function(key, creator, replace, stateManager) {
+  this.registerWidget = function(key, creator, replace, stateManager, options) {
     if (key in creators && !replace) {
       throw new CATMAID.ValueError("A widget with the following key is " +
           "already registered: " + key);
@@ -1805,9 +1838,13 @@ var WindowMaker = new function()
       saveStateManager(creator, key, stateManager);
     }
 
-    creators[key] = function(options, isInstance) {
-      instance = isInstance ? options : new creator(options);
-      return createWidget(instance);
+    creators[key] = {
+      init: function(options, isInstance) {
+        instance = isInstance ? options : new creator(options);
+        return createWidget(instance);
+      },
+      name: options.name || key,
+      description: options.description || ''
     };
   };
 
@@ -1835,6 +1872,13 @@ var WindowMaker = new function()
       return Object.keys(creators);
   };
 
+  /**
+   * Get a copy of the descriptions of a registered widget.
+   */
+  this.getWidgetDescription = function(widgetKey) {
+     return $.extend(true, {}, creators[widgetKey]);
+  };
+
 }();
 
 
@@ -1849,7 +1893,7 @@ var WindowMaker = new function()
    * existing widgets.
    */
   CATMAID.registerWidget = function(options) {
-    WindowMaker.registerWidget(options.key, options.creator, options.replace, options.state);
+    WindowMaker.registerWidget(options.key, options.creator, options.replace, options.state, options);
   };
 
   /**

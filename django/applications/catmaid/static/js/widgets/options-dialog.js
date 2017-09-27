@@ -21,7 +21,7 @@
   /**
    * Takes three optional arguments; default to 300, 200, true.
    */
-  OptionsDialog.prototype.show = function(width, height, modal, maxHeight) {
+  OptionsDialog.prototype.show = function(width, height, modal, maxHeight, resize) {
     var self = this;
     var buttons;
     if (this.buttons) {
@@ -60,8 +60,16 @@
         if (self.onCancel) self.onCancel();
         $(this).dialog("destroy");
       },
-      buttons: buttons
+      buttons: buttons,
+      resize: resize
     });
+  };
+
+  OptionsDialog.prototype.appendChild = function(element) {
+    var container = document.createElement('p');
+    container.appendChild(element);
+    this.dialog.appendChild(container);
+    return container;
   };
 
   OptionsDialog.prototype.appendHTML = function(html) {

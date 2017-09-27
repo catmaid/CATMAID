@@ -124,6 +124,10 @@ Layouts:
 
 Miscellaneous:
 
+- The Open Widget dialog now displays a table that includes more information on
+  widgets. Instead of the previously used auto-completion this table is now
+  filtered.
+
 - If multiple tile layers are used, the stack viewer layer settings (blue white
   box in lower left corner) allow to set which stacks should be respected if
   broken sections are skipped. This can be done through the "Skip broken

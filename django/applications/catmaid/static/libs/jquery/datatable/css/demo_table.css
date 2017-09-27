@@ -67,6 +67,8 @@
 
 .dataTables_info {
 	width: 60%;
+	padding-top: 0.6em;
+	padding-left: 0.4em;
 	float: left;
 }
 

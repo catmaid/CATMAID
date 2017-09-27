@@ -8,6 +8,7 @@
      */
     var OpenWidgetDialog = function(text, callback) {
       this.dialog = new CATMAID.OptionsDialog("Open widget");
+      this.dialog.dialog.classList.add('widget-list');
       if (text) {
         this.dialog.appendMessage(text);
       }
@@ -18,13 +19,113 @@
       // Add input fields
       this.widgetField = this.dialog.appendField('Widget', 'widget-name', '', true);
       // Align input fields better
-      $(this.dialog.dialog).find('label').css('width', '25%');
+      $(this.dialog.dialog).find('label').css('width', '5em');
       $(this.dialog.dialog).find('label').css('display', 'inline-block');
+
+      // Add list
+      var widgetIndex = {};
+      var availableWidgetKeys = WindowMaker.getAvailableWidgetNames().sort(
+          CATMAID.tools.compareStrings);
+      var widgetListContainer = document.createElement('div');
+      this.widgetNameTable = document.createElement('table');
+      this.availableWidgets = availableWidgetKeys.map(function(widgetKey) {
+        var config = WindowMaker.getWidgetDescription(widgetKey);
+        config.key = widgetKey;
+        widgetIndex[widgetKey] = config;
+        return config;
+      }).filter(function(config) {
+        return !config.hidden;
+      });
+      widgetListContainer.appendChild(this.widgetNameTable);
+      this.dialog.appendChild(widgetListContainer);
+
+      var self = this;
+      var datatable = $(this.widgetNameTable).DataTable({
+        dom: 't<ip>',
+        order: [],
+        data: this.availableWidgets,
+        language: {
+          info: "Showing _START_ to _END_  of _TOTAL_ widgets",
+          infoFiltered: "(filtered from _MAX_ total widgets)",
+          emptyTable: 'No widget found',
+          zeroRecords: 'No matching widgets found'
+        },
+        columns: [{
+          data: 'name'
+        }, {
+          data: 'key'
+        }, {
+          data: 'description',
+        }]
+      }).on('click', 'tbody tr', function() {
+        var table = $(this.closest('table')).DataTable();
+        var row = table.row(this);
+        var data = row.data();
+        self.widgetField.value = data.key;
+      }).on('dblclick', 'tbody tr', function() {
+        var table = $(this.closest('table')).DataTable();
+        var data = table.row(this).data();
+        WindowMaker.create(data.key);
+        $(self.dialog.dialog).dialog("destroy");
+      });
+
+      var referenceRow = 0;
+      var updated = false;
+
+      this.widgetField.onkeydown = function(e) {
+        if (e.key === 'ArrowDown') {
+          var row = datatable.row(referenceRow,
+              {order: 'applied', search: 'applied'}).data();
+          if (row) {
+            updated = true;
+            self.widgetField.value = row.key;
+            ++referenceRow;
+          }
+        } else if (e.key === 'ArrowUp') {
+          ++referenceRow;
+          var row = datatable.row(referenceRow,
+              {order: 'applied', search: 'applied'}).data();
+          if (row) {
+            updated = true;
+            self.widgetField.value = row.key;
+          }
+        }
+      };
+
+      this.widgetField.onkeyup = function() {
+        if (!updated) {
+          referenceRow = 0;
+          datatable.search(this.value).draw();
+        }
+        updated = false;
+      };
 
       var self = this;
       this.dialog.onOK = function() {
         var widgetName = self.widgetField.value;
+        // If there is no valid widget with this key, take the first entry from
+        // the table.
+        if (!widgetIndex[widgetName]) {
+          var firstRow = datatable.row(0, {order: 'applied', search: 'applied'});
+          if (firstRow) {
+            widgetName = firstRow.data().key;
+          }
+        }
         WindowMaker.create(widgetName);
+      };
+
+      // Resizing a select element is apparently only manually possible.
+      this._onresize = function() {
+        /*
+        var dialogStyle = window.getComputedStyle(this.dialog.dialog, null);
+        var optionStyle = window.getComputedStyle(widgetNameTable[0], null);
+        var fontSize = parseFloat(optionStyle.getPropertyValue('font-size'));
+        var remainingElements = 11 * fontSize;
+
+        var dialogHeight = parseFloat(dialogStyle.getPropertyValue('height')) - remainingElements;
+        var optionHeight = parseFloat(optionStyle.getPropertyValue('height'));
+        widgetNameTable.size = Math.max(2, Math.floor(dialogHeight / optionHeight));
+        */
       };
     };
 
@@ -34,15 +135,13 @@
      * Displays the widget open dialog.
      */
     OpenWidgetDialog.prototype.show = function() {
-      this.dialog.show('400', 'auto', true);
-      $(this.widgetField).autocomplete({
-        autoFocus: true,
-        source: WindowMaker.getAvailableWidgetNames()
-      });
+      this.dialog.show('650', '380', true, undefined, this._onresize.bind(this));
 
 			// Allow content to overflow the dialog borders. This is needed for
 			// displaying all annotation autocompletion options.
 			this.dialog.dialog.parentNode.style.overflow = 'visible';
+
+      this._onresize();
     };
 
     // Make dialog available in CATMAID namespace

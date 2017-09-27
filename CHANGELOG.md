@@ -92,6 +92,10 @@ Graph Widget:
 
 Reconstruction sampler:
 
+- Intervals for a particular interval length can now be previewed before
+  creating a new sampler. To do so, use the "Preview intervals" button in the
+  Sampler tab.
+
 - Interval reviews can now be initiated directly from the interval step table.
   It will open a new review widget with pre-set interval filter and added
   skeleton. The same is possible from the synapse workflow step using the

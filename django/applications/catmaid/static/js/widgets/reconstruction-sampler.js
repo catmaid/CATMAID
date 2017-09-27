@@ -218,6 +218,13 @@
       },
       {
         type: 'button',
+        label: 'Preview intervals',
+        onclick: function() {
+          self.previewIntervals(widget);
+        }
+      },
+      {
+        type: 'button',
         label: 'New sampler for active backbone',
         onclick: function() {
           self.createNewSampler(widget);
@@ -425,6 +432,111 @@
       widget.workflow.advance();
       widget.update();
     });
+  };
+
+  /**
+   * Show a 3D confirmation dialog that will show the current interval setting
+   * applied to the active neuron (if any).
+   */
+  BackboneWorkflowStep.prototype.previewIntervals = function(widget) {
+    var skeletonId = widget.state['skeletonId'];
+    if (!skeletonId) {
+      CATMAID.warn("Please select a skeleton first");
+      return;
+    }
+    var intervalLength = widget.state['intervalLength'];
+    if (!intervalLength) {
+      CATMAID.warn("No valid interval length found");
+      return;
+    }
+
+    var arbor = widget.state['arbor'];
+    // Get arbor if not already cached
+    var prepare;
+    if (arbor) {
+      prepare = Promise.resolve();
+    } else {
+      prepare = CATMAID.Sampling.getArbor(skeletonId)
+        .then(function(result) {
+          arbor = result;
+          widget.state['arbor'] = result;
+        });
+    }
+
+    prepare
+      .then(function() {
+        return new Promise(function(resolve, reject) {
+          // Create a a fake sampler with a fake domain that covers the whole
+          // skeleton.
+          var fakeDomain = {
+            start_node_id: parseInt(arbor.arbor.root),
+            ends: arbor.arbor.findEndNodes().map(function(nodeId) {
+              return {
+                id: null,
+                node_id: parseInt(nodeId, 10)
+              };
+            })
+          };
+          var fakeSampler = {
+            id: null,
+            edition_time: null,
+            creation_time: null,
+            review_required: null,
+            state_id: null,
+            user_id: null,
+            skeleton_id: skeletonId,
+            interval_length: intervalLength,
+            domains: [fakeDomain]
+          };
+          let preferSmallerError = true;
+          let intervals = CATMAID.Sampling.intervalsFromModels(arbor.arbor,
+            arbor.positions, fakeDomain, intervalLength, preferSmallerError);
+
+          // Show 3D viewer confirmation dialog
+          var dialog = new CATMAID.Confirmation3dDialog({
+            title: intervals.length + " interval with a length of " +
+                intervalLength + "nm each",
+            showControlPanel: false,
+            buttons: {
+              "Close": function() {
+                dialog.close();
+              }
+            }
+          });
+          dialog.show();
+
+          // At the moment the 3D viewer is only accessible after display
+          var widget = dialog.webglapp;
+          var models = {};
+          models[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
+
+          // Add skeleton to 3D viewer and configure shading
+          widget.addSkeletons(models, function() {
+            // Add sampling information to skeleton
+            let skeleton = widget.space.content.skeletons[skeletonId];
+            if (!skeleton) {
+              throw new CATMAID.ValueError('Couldn\'t find skeleton ' +
+                  skeletonId + ' in 3D viewer');
+            }
+            // Set sampler on skeleton so that shading method doesn't try to
+            // pull sampler data from back-end.
+            skeleton.setSamplers([fakeSampler]);
+
+            // Set new shading and coloring methods
+            widget.options.color_method = 'sampler-intervals';
+            widget.options.shading_method = 'sampler-intervals';
+            widget.options.interpolate_vertex_colots = false;
+
+            // Look at center of mass of skeleton and update screen
+            widget.lookAtSkeleton(skeletonId);
+
+            return widget.updateSkeletonColors()
+              .then(function() { widget.render(); });
+
+          });
+        });
+      })
+      .catch(CATMAID.handleError);
   };
 
   BackboneWorkflowStep.prototype.createNewSampler = function(widget) {

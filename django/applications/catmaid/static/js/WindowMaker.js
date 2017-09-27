@@ -1463,7 +1463,7 @@ var WindowMaker = new function()
   };
 
   var createConnectivityGraphPlot = function(instance) {
-    var GP = instance ? instance : new ConnectivityGraphPlot();
+    var GP = instance ? instance : new CATMAID.ConnectivityGraphPlot();
 
     var win = new CMWWindow(GP.getName());
     var content = win.getFrame();

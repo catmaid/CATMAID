@@ -1924,6 +1924,9 @@
         containerID, "Downstream", this.widgetID, container.width(), colorizer);
   };
 
+  // Export plot
+  CATMAID.ConnectivityGraphPlot = ConnectivityGraphPlot;
+
   /**
    * Return the number of partner links that conflict with the current filter
    * rule set.

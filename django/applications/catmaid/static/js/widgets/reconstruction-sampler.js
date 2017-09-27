@@ -863,7 +863,8 @@
             widget.options.color_method = 'sampler-domains';
             widget.options.shading_method = 'sampler-domains';
             widget.options.interpolate_vertex_colots = false;
-            widget.updateSkeletonColors();
+            widget.updateSkeletonColors()
+              .then(function() { widget.render(); });
 
             // Update screen
             widget.render();
@@ -1185,7 +1186,8 @@
             widget.options.color_method = 'sampler-intervals';
             widget.options.shading_method = 'sampler-intervals';
             widget.options.interpolate_vertex_colots = false;
-            widget.updateSkeletonColors();
+            widget.updateSkeletonColors()
+              .then(function() { widget.render(); });
           });
         });
       })

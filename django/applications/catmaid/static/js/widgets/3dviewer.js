@@ -1387,6 +1387,17 @@
     this.space.render();
   };
 
+  /**
+   * Look at the center of mass of a loaded skeleton.
+   */
+  WebGLApplication.prototype.lookAtSkeleton = function(skeletonId) {
+    var skeleton = this.space.content.skeletons[skeletonId];
+    if (!skeleton) {
+      throw new CATMAID.ValueError("Skeleton " + skeletonId + " is not loaded");
+    }
+    this.lookAt(skeleton.getCenterOfMass());
+  };
+
   WebGLApplication.prototype.updateActiveNode = function() {
     var activeNode = this.space.content.active_node;
     var activeNodeDisplayed = activeNode.mesh.visibile;
@@ -4819,6 +4830,18 @@
       p[v.node_id] = v;
     }
     return p;
+  };
+
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getCenterOfMass = function() {
+    var nVertices = this.geometry['neurite'].vertices.length;
+    if (!nVertices) {
+      throw new CATMAID.ValueError("No vertices found for skeleton");
+    }
+    var weight = 1.0 / nVertices;
+    return this.geometry['neurite'].vertices.reduce(function(center, pos) {
+      center.addScaledVector(pos, weight);
+      return center;
+    }, new THREE.Vector3());
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setSamplers = function(samplers) {

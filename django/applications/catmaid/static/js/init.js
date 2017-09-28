@@ -84,9 +84,6 @@ var project;
    */
   var EDIT_DOMAIN_TIMEOUT_INTERVAL = 5*60*1000;
 
-  // Timeout reference for message updates
-  var msg_timeout;
-
   /**
    * Length (in milliseconds) of the message lookup interval.
    * @type {Number}
@@ -114,6 +111,9 @@ var project;
 
     // Currently visible projects
     this.projects = null;
+
+    // Timeout reference for message updates if no websockets are available
+    this._messageTimeout = undefined;
 
     // Do periodic update checks
     window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
@@ -593,7 +593,7 @@ var project;
    * @returns {Promise}
    */
   Client.prototype.login = function(account, password) {
-    if ( msg_timeout ) window.clearTimeout( msg_timeout );
+    this.closeBackChannel();
 
     CATMAID.ui.catchEvents( "wait" );
     var login;
@@ -615,9 +615,10 @@ var project;
     // Handle error to reset cursor, but also return it to communicate it to
     // caller.
     login.catch(CATMAID.handleError)
-      .then(function() {
+      .then((function() {
         CATMAID.ui.releaseEvents();
-      });
+        this.refreshBackChannel();
+      }).bind(this));
 
     return login;
   };
@@ -675,9 +676,6 @@ var project;
       document.getElementById("session_box").style.display = "block";
 
       document.getElementById("message_box").style.display = "block";
-
-      // Check for unread messages
-      CATMAID.client.check_messages();
 
       // Update user menu
       user_menu.update({
@@ -801,13 +799,29 @@ var project;
         .catch(function(error) {
           CATMAID.statusBar.replaceLast('Unable to check for messages (network may be disconnected).');
         })
-        .then(function() {
+        .then((function() {
           // Check again later
-          msg_timeout = window.setTimeout(CATMAID.client.check_messages,
+          this._messageTimeout = window.setTimeout(CATMAID.client.check_messages,
               MSG_TIMEOUT_INTERVAL);
-        });
+        }).bind(this));
     };
   })();
+
+  /**
+   * Try to setup websocket channels to the back-end server to avoid long
+   * polling for message updates and more. If this is not possible, resort to
+   * long polling.
+   */
+  Client.prototype.refreshBackChannel = function() {
+    this.check_messages();
+  };
+
+  /**
+   * Close any existing back-end server connections.
+   */
+  Client.prototype.closeBackChannel = function() {
+    if (this._messageTimeout) window.clearTimeout(this._messageTimeout);
+  };
 
   /**
    * Retrieve user messages.
@@ -876,8 +890,6 @@ var project;
       if ( n > 0 ) document.getElementById( "message_menu_text" ).className = "alert";
       else document.getElementById( "message_menu_text" ).className = "";
     }
-
-    msg_timeout = window.setTimeout( CATMAID.client.check_messages, MSG_TIMEOUT_INTERVAL );
   }
 
   /**
@@ -956,7 +968,7 @@ var project;
    * Freeze the window to wait for an answer.
    */
   Client.prototype.logout = function() {
-    if (msg_timeout) window.clearTimeout(msg_timeout);
+    this.closeBackChannel();
 
     CATMAID.ui.catchEvents("wait");
     var logout = CATMAID.fetch('accounts/logout', 'POST');
@@ -966,9 +978,10 @@ var project;
     // Handle error to reset cursor, but also return it to communicate it to
     // caller.
     logout.catch(CATMAID.handleError)
-      .then(function() {
+      .then((function() {
         CATMAID.ui.releaseEvents();
-      });
+        this.refreshBackChannel();
+      }).bind(this));
 
     return logout;
   };

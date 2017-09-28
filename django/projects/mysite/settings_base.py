@@ -92,6 +92,7 @@ INSTALLED_APPS = (
     'rest_framework.authtoken',
     'rest_framework_swagger',
     'custom_rest_swagger_apis',
+    'channels'
 )
 
 LOGGING = {
@@ -392,6 +393,13 @@ SWAGGER_SETTINGS = {
         'licenseUrl': 'https://raw.githubusercontent.com/catmaid/CATMAID/master/LICENSE',
     },
     'doc_expansion': 'list'
+}
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "asgi_ipc.IPCChannelLayer",
+        "ROUTING": "mysite.routing.channel_routing",
+    },
 }
 
 # Needed for NRRD export

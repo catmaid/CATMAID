@@ -14,6 +14,7 @@ from catmaid.models import (Stack, Project, ProjectStack, Message, User,
 from catmaid.control.common import (id_generator, json_error_response,
         get_request_list)
 from catmaid.control.tile import get_tile_source
+from catmaid.control.message import notify_user
 
 try:
     # Python 3
@@ -556,8 +557,9 @@ def process_crop_job(job, create_message=True):
         bb_text = "( %s, %s, %s ) -> ( %s, %s, %s )" % (job.x_min, job.y_min, \
                 job.z_min, job.x_max, job.y_max, job.z_max)
 
+        user = User.objects.get(pk=int(job.user.id))
         msg = Message()
-        msg.user = User.objects.get(pk=int(job.user.id))
+        msg.user = user
         msg.read = False
         if no_error_occured:
             file_name = os.path.basename( job.output_path )
@@ -574,6 +576,8 @@ def process_crop_job(job, create_message=True):
                     (bb_text, error_message)
             msg.action = ""
         msg.save()
+
+        notify_user(user.id, msg.id, msg.title)
 
     return job.output_path if no_error_occured else error_message
 

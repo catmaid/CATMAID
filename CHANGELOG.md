@@ -44,6 +44,13 @@
   CROPPING_OUTPUT_FILE_EXTENSION = "tiff"
   CROPPING_OUTPUT_FILE_PREFIX = "crop_"
 
+- CATMAID can now make use of a ASGI server to utilize WebSocket connections.
+  Such a server (e.g. Daphne) needs to handle URLs that start with /channels/.
+  Currently only messages can be updated this way, which already removes many
+  requests for setups with many users. This allows for instance an immediate
+  feedback after a cropping a sub-stack finished without requiring the client to
+  check for new messages every minute.
+
 
 ### Features and enhancements
 

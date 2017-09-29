@@ -8,10 +8,10 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render
 
 from catmaid.models import Message, ChangeRequest
+from catmaid.consumers import msg_user
 from catmaid.control.common import makeJSON_legacy_list
 
 from six.moves import map as imap
-
 
 @login_required
 def get_latest_unread_date(request):
@@ -67,3 +67,10 @@ def read_message(request, message_id):
             return JsonResponse({
                 'success': True
             })
+
+def notify_user(user_id, message_id, message_title):
+    """Send a ASGI message to the user, if a channel is available."""
+    msg_user(user_id, "new-message", {
+        "message_id": message_id,
+        "message_title": message_title
+    })

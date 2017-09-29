@@ -84,9 +84,6 @@ var project;
    */
   var EDIT_DOMAIN_TIMEOUT_INTERVAL = 5*60*1000;
 
-  // Timeout reference for message updates
-  var msg_timeout;
-
   /**
    * Length (in milliseconds) of the message lookup interval.
    * @type {Number}
@@ -114,6 +111,15 @@ var project;
 
     // Currently visible projects
     this.projects = null;
+
+    // Timeout reference for message updates if no websockets are available
+    this._messageTimeout = undefined;
+
+    // General update WebSockets connection reference (if available)
+    this._updateSocket = undefined;
+
+    // The number of attempts of re-opening a closed socket
+    this._updateSocketRetries = 0;
 
     // Do periodic update checks
     window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
@@ -593,7 +599,7 @@ var project;
    * @returns {Promise}
    */
   Client.prototype.login = function(account, password) {
-    if ( msg_timeout ) window.clearTimeout( msg_timeout );
+    this.closeBackChannel();
 
     CATMAID.ui.catchEvents( "wait" );
     var login;
@@ -615,9 +621,10 @@ var project;
     // Handle error to reset cursor, but also return it to communicate it to
     // caller.
     login.catch(CATMAID.handleError)
-      .then(function() {
+      .then((function() {
         CATMAID.ui.releaseEvents();
-      });
+        this.refreshBackChannel();
+      }).bind(this));
 
     return login;
   };
@@ -675,9 +682,6 @@ var project;
       document.getElementById("session_box").style.display = "block";
 
       document.getElementById("message_box").style.display = "block";
-
-      // Check for unread messages
-      CATMAID.client.check_messages();
 
       // Update user menu
       user_menu.update({
@@ -783,7 +787,7 @@ var project;
     // The date of the last unread message
     var latest_message_date = null;
 
-    return function() {
+    return function(singleRequest) {
       CATMAID.fetch('messages/latestunreaddate')
         .then(function(data) {
           // If there is a newer latest message than we know of, get all
@@ -801,13 +805,124 @@ var project;
         .catch(function(error) {
           CATMAID.statusBar.replaceLast('Unable to check for messages (network may be disconnected).');
         })
-        .then(function() {
-          // Check again later
-          msg_timeout = window.setTimeout(CATMAID.client.check_messages,
-              MSG_TIMEOUT_INTERVAL);
-        });
+        .then((function() {
+          if (!singleRequest) {
+            // Check again later
+            this._messageTimeout = window.setTimeout(CATMAID.client.check_messages,
+                MSG_TIMEOUT_INTERVAL);
+          }
+        }).bind(this));
     };
   })();
+
+  /**
+   * Parse WebSockets messages and take appropriate action.
+   */
+  Client.prototype._handleWebsockMessage = function(message) {
+    var data = JSON.parse(message.data);
+    if (!data) {
+      throw new CATMAID.ValueError("Unexpected message format: " +
+          message.data);
+    }
+    var handler = CATMAID.Client.messageHandlers.get(data.event);
+    if (!handler) {
+      throw new CATMAID.ValueError("Unexpected message from server: " +
+          message.data);
+    }
+    handler(this, data.payload);
+  };
+
+  Client.messageHandlers = new Map([[
+        'new-message',
+        function(client, payload) {
+          CATMAID.msg("New message", payload.message_title);
+          client.check_messages(true);
+        }
+      ], [
+        'unknown',
+        function(message) {
+          var report = "An unknown message has been received" +
+              (message ? (": " + message) : "");
+          CATMAID.warn(report);
+          console.log(report);
+        }
+      ]]);
+
+  /**
+   * Try to setup WebSockets channels to the back-end server to avoid long
+   * polling for message updates and more. If this is not possible, resort to
+   * long polling.
+   */
+  Client.prototype.refreshBackChannel = function() {
+    if (Modernizr.websockets) {
+      // Close existing socket, if any
+      if (this._updateSocket) {
+        this._updateSocket.close();
+      }
+      // Create new socket
+      var url = 'ws://' + window.location.host + CATMAID.makeURL('/channels/updates/');
+      this._updateSocket = new WebSocket(url);
+
+      this._updateSocket.onopen = (function() {
+        console.log('WebSockets connection established.');
+        this._updateSocketRetries = 0;
+      }).bind(this);
+
+      // If errors happen (e.g. the back-end doesn't support WebSockets), fall
+      // back to long polling.
+      this._updateSocket.onerror = (function() {
+        console.log('There was an error establishing WebSockets connections. ' +
+            'Falling back to long polling.');
+        this.refreshLongPolling();
+        // Don't call clone handler after error
+        this._updateSocket.onclose = null;
+      }).bind(this);
+
+      // When a WebSockets connection is closed, try to re-open it three times
+      // before falling back to long polling.
+      this._updateSocket.onclose = (function() {
+        let maxRetries = 3;
+        if (this._updateSocketRetries >= maxRetries) {
+          console.log('WebSockets connection closed and maximum number of ' +
+            'retries reached, falling back to long polling.');
+          this.refreshLongPolling();
+        } else {
+          this._updateSocket = undefined;
+          ++this._updateSocketRetries;
+          console.log('WebSockets connection closed. Trying to re-open it in 3 second, retry ' +
+              this._updateSocketRetries + '/' + maxRetries + '.');
+          setTimeout(this.refreshBackChannel.bind(this), 3000);
+        }
+
+      }).bind(this);
+
+      this._updateSocket.onmessage = this._handleWebsockMessage.bind(this);
+
+      // Initial message update without long polling
+      this.check_messages(true);
+
+      // In case the socket was opened before the event listener was registered.
+      if (this._updateSocket.readyState == WebSocket.OPEN) {
+        this._updateSocket.onopen();
+      }
+    } else {
+      this.refreshLongPolling();
+    }
+  };
+
+  /**
+   * Close any existing back-end server connections.
+   */
+  Client.prototype.closeBackChannel = function() {
+    if (this._messageTimeout) window.clearTimeout(this._messageTimeout);
+  };
+
+  /**
+   * Enable long polling update functions.
+   */
+  Client.prototype.refreshLongPolling = function() {
+    this.check_messages();
+  };
 
   /**
    * Retrieve user messages.
@@ -876,8 +991,6 @@ var project;
       if ( n > 0 ) document.getElementById( "message_menu_text" ).className = "alert";
       else document.getElementById( "message_menu_text" ).className = "";
     }
-
-    msg_timeout = window.setTimeout( CATMAID.client.check_messages, MSG_TIMEOUT_INTERVAL );
   }
 
   /**
@@ -956,7 +1069,7 @@ var project;
    * Freeze the window to wait for an answer.
    */
   Client.prototype.logout = function() {
-    if (msg_timeout) window.clearTimeout(msg_timeout);
+    this.closeBackChannel();
 
     CATMAID.ui.catchEvents("wait");
     var logout = CATMAID.fetch('accounts/logout', 'POST');
@@ -966,9 +1079,10 @@ var project;
     // Handle error to reset cursor, but also return it to communicate it to
     // caller.
     logout.catch(CATMAID.handleError)
-      .then(function() {
+      .then((function() {
         CATMAID.ui.releaseEvents();
-      });
+        this.refreshBackChannel();
+      }).bind(this));
 
     return logout;
   };

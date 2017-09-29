@@ -9,6 +9,7 @@ Administrator Documentation
    Production setup <nginx>
    permissions
    celery
+   websockets
    history_tables
    docker
    userprofiles

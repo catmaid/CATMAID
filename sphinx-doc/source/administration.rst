@@ -255,6 +255,10 @@ Webserver
   by a client. If the image data is public, one could let the webserver also set
   the ``Cache-Control: public`` header for the images.
 
+* To not require clients to ask every minute for particular updates (like new
+  messages) use an ASGI server like we describe :ref:`here <websockets>`. This
+  reduces some basline level of requests.
+
 Database management system
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 

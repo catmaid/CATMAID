@@ -399,6 +399,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "asgi_ipc.IPCChannelLayer",
         "ROUTING": "mysite.routing.channel_routing",
+        "CONFIG": {}
     },
 }
 

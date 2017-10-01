@@ -82,6 +82,31 @@ more fie handles by setting this on the most outer level in
 
     worker_rlimit_nofile 10000;
 
+Use RabbitMQ as back-end
+------------------------
+
+The WebSockets layer needs a back-end to share data between different processes.
+By default, the shared memory back-end
+`ASGI-IPC <https://channels.readthedocs.io/en/stable/backends.html#ipc>`_ is
+used. Alternatively,
+`RabbitMQ <https://channels.readthedocs.io/en/stable/backends.html#rabbitmq>`_
+can be used, which might already be in use for the :ref:`Celery <celery>`
+setup. To do this, install the ``asgi_rabbitmq`` layer package into the
+virtualenv::
+
+    pip install -U asgi_rabbitmq
+
+Additionally, the folllowing has to be added to ``settings.py``:
+
+.. code-block:: python
+
+    CHANNEL_LAYERS["default"]["BACKEND"] = "asgi_rabbitmq.RabbitmqChannelLayer"
+    CHANNEL_LAYERS["default"]["CONFIG"]["url"] = "amqp://guest:guest@localhost:5672/%2F"
+
+Of course, if you changed RabbitMQ's default credentials or its port, the above
+line has to be adjusted accordingly. You can find more information on this layer
+`here <http://asgi-rabbitmq.readthedocs.io/en/latest/>`_.
+
 Process management with Supervisord
 -----------------------------------
 

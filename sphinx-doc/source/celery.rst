@@ -1,3 +1,5 @@
+.. _celery:
+
 Installation of the Celery task queue
 =====================================
 

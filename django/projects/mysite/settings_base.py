@@ -418,3 +418,13 @@ CREATE_DEFAULT_DATAVIEWS = True
 # NBLAST support
 NBLAST_ALL_BY_ALL_MIN_SIZE = 10
 MAX_PARALLEL_ASYNC_WORKERS = 1
+
+# Intersection grid settings, dimensions in project coordinates (nm)
+DEFAULT_CACHE_GRID_CELL_WIDTH = 25000
+DEFAULT_CACHE_GRID_CELL_HEIGHT = 25000
+DEFAULT_CACHE_GRID_CELL_DEPTH = 40
+
+# Whether Postgres should emit "catmaid.spatial-update" events on changes of
+# spatial data (e.g. inserts, updates and deletions of treenodes, connectors and
+# connector links).
+SPATIAL_UPDATE_NOTIFICATIONS = False

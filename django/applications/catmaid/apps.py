@@ -2,7 +2,7 @@
 
 import logging
 
-from catmaid import history
+from catmaid import history, spatial
 
 from django.apps import AppConfig
 from django.conf import settings
@@ -95,12 +95,31 @@ def check_history_setup(app_configs, **kwargs):
     # Ignore silently, if the database wasn't migrated yet.
     if getattr(settings, 'HISTORY_TRACKING', True):
         run = history.enable_history_tracking(True)
+        logger.info('History tracking enabled')
     else:
         run = history.disable_history_tracking(True)
+        logger.info('History tracking disabled')
 
     if not run:
         messages.append(Warning(
             "Couldn't check history setup, missing database functions",
+            hint="Migrate CATMAID"))
+    return messages
+
+def check_spatial_update_setup(app_configs, **kwargs):
+    messages = []
+    # Enable or disable history tracking, depending on the configuration.
+    # Ignore silently, if the database wasn't migrated yet.
+    if getattr(settings, 'SPATIAL_UPDATE_NOTIFICATIONS', False):
+        run = spatial.enable_spatial_update_events(True)
+        logger.info('Spatial update events enabled')
+    else:
+        run = spatial.disable_spatial_update_events(True)
+        logger.info('Spatial update events disabled')
+
+    if not run:
+        messages.append(Warning(
+            "Couldn't check spatial update notification setup, missing database functions",
             hint="Migrate CATMAID"))
     return messages
 
@@ -147,6 +166,9 @@ class CATMAIDConfig(AppConfig):
 
         # Register history checks
         register(check_history_setup)
+
+        # Enable or disable spatial update notifications
+        register(check_spatial_update_setup)
 
     # A list of settings that are expected to be available.
     required_setting_fields = {

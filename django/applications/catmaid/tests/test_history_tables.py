@@ -253,6 +253,7 @@ class HistoryTableTests(TransactionTestCase):
         'taggit_taggeditem__tracking',
 
         # Regular unversioned CATMAID tables
+        'dirty_node_grid_cache_cell',
         'node_query_cache',
         'log',
         'treenode_edge',
@@ -260,6 +261,8 @@ class HistoryTableTests(TransactionTestCase):
         'treenode_connector_edge',
         'connector_geom',
         'nblast_skeleton_source_type',
+        'node_grid_cache_cell',
+        'node_grid_cache',
         'catmaid_transaction_info',
         'catmaid_stats_summary',
         'catmaid_skeleton_summary',

@@ -53,3 +53,10 @@ overridden in ``settings.py``. Below is an explanation of all available settings
      This option controls the maximum allowed requests size that the client
      application is allowed to send in bytes. By default this is set to 10 MB.
      If a requests exceeds this limit, error code 400 is returned.
+
+.. glossary::
+   ``SPATIAL_UPDATE_NOTIFICATIONS``
+      If enabled, each spatial update (e.g placing, updating or deleting
+      treenodes, connectors, connector links) will trigger a PostgreSQL event
+      named "catmaid.spatial-update". This allows cache update workers to update
+      caches quickly after a change. Disabled by default.

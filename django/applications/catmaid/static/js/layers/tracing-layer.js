@@ -117,6 +117,15 @@
         this.tracingOverlay.updateWhilePanning = value;
       }
     });
+
+    Object.defineProperty(this, 'levelOfDetail', {
+      get: function() {
+        return this.tracingOverlay.levelOfDetail;
+      },
+      set: function(value) {
+        this.tracingOverlay.levelOfDetail = value;
+      }
+    });
   }
 
   TracingLayer.prototype = Object.create(CATMAID.PixiLayer.prototype);
@@ -195,6 +204,14 @@
       type: 'checkbox',
       value: this.updateWhilePanning,
       help: 'Whether or not to update the visible tracing data while panning the view.'
+    }, {
+      name: 'levelOfDetail',
+      displayName: 'Level of detail',
+      type: 'number',
+      step: 1,
+      min: 0,
+      value: this.levelOfDetail,
+      help: 'Level-of-detail, use 0 for all levels (most detail)',
     }, {
       name: 'applyTracingWindow',
       displayName: 'Apply and show tracing window',
@@ -297,6 +314,9 @@
       this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('updateWhilePanning' === name) {
       this.updateWhilePanning = value;
+    } else if ('levelOfDetail' === name) {
+      this.levelOfDetail = value;
+      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     }
   };
 

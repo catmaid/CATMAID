@@ -394,3 +394,124 @@ def rebuild_edges_selectively(skeleton_ids, connector_ids=[], log=None):
                     (num_new_tn_edges, num_new_c_edges, num_new_c_geoms))
         except Project.DoesNotExist:
             raise CommandError('Project "%s" does not exist' % project_id)
+
+
+def get_intersected_grid_cells(p1, p2, cell_width, cell_height, cell_depth,
+       p1_cell=None, p2_cell=None):
+    if not p1_cell:
+        p1_cell = [
+            int(p1[0] // cell_width),
+            int(p1[1] // cell_height),
+            int(p1[2] // cell_depth),
+        ]
+    if not p2_cell:
+        p2_cell = [
+            int(p2[0] // cell_width),
+            int(p2[1] // cell_height),
+            int(p2[2] // cell_depth),
+        ]
+
+    start_x, start_y, start_z = 0.0, 0.0, 0.0
+    pos_x, pos_y, pos_z = p1[0], p1[1], p1[2]
+    dir_x = p2[0] - p1[0]
+    dir_y = p2[1] - p1[1]
+    dir_z = p2[2] - p1[2]
+
+    current_cell_x, current_cell_y, current_cell_z = p1_cell
+
+    if dir_x > 0.0:
+        step_x = 1;
+        next_cell_x = start_x + (p1_cell[0] + 1) * cell_width
+    else:
+        step_x = -1;
+        next_cell_x = start_x + p1_cell[0] * cell_width
+
+    if dir_y > 0.0:
+        step_y = 1;
+        next_cell_y = start_y + (p1_cell[1] + 1) * cell_height
+    else:
+        step_y = -1;
+        next_cell_y = start_y + p1_cell[1] * cell_height
+
+    if dir_z > 0.0:
+        step_z = 1;
+        next_cell_z = start_z + (p1_cell[2] + 1) * cell_depth
+    else:
+        step_z = -1;
+        next_cell_z = start_z + p1_cell[2] * cell_depth
+
+    if dir_x != 0.0:
+        inv_dir_x = 1.0 / dir_x
+        t_max_x = (next_cell_x - pos_x)  * inv_dir_x
+        t_delta_x = cell_width * step_x * inv_dir_x
+    else:
+        t_max_x = float('inf')
+        t_delta_x = float('inf')
+
+    if dir_y != 0.0:
+        inv_dir_y = 1.0 / dir_y
+        t_max_y = (next_cell_y - pos_y)  * inv_dir_y
+        t_delta_y = cell_height * step_y * inv_dir_y
+    else:
+        t_max_y = float('inf')
+        t_delta_y = float('inf')
+
+    if dir_z != 0.0:
+        inv_dir_z = 1.0 / dir_z
+        t_max_z = (next_cell_z - pos_z)  * inv_dir_z
+        t_delta_z = cell_depth * step_z * inv_dir_z
+    else:
+        t_max_z = float('inf')
+        t_delta_z = float('inf')
+
+    # Find cell indices
+    cells = []
+    while True:
+        cells.append([current_cell_x, current_cell_y, current_cell_z])
+        # If we reached the target cell, stop
+        if current_cell_x == p2_cell[0] and current_cell_y == p2_cell[1] \
+                and current_cell_z == p2_cell[2]:
+            break
+        # Find next cell
+        if abs(t_max_x - t_max_y) < 0.00001 or t_max_x == t_max_y:
+            if abs(t_max_x - t_max_z) < 0.00001 or t_max_x == t_max_z:
+                current_cell_x += step_x
+                current_cell_y += step_y
+                current_cell_z += step_z
+                t_max_x += t_delta_x
+                t_max_y += t_delta_y
+                t_max_z += t_delta_z
+            elif t_max_x < t_max_z:
+                current_cell_x += step_x
+                current_cell_y += step_y
+                t_max_x += t_delta_x
+                t_max_y += t_delta_y
+            else:
+                current_cell_z += step_z
+                t_max_z += t_delta_z
+        elif t_max_x < t_max_y:
+            if abs(t_max_x - t_max_z) < 0.00001 or t_max_x == t_max_z:
+                current_cell_x += step_x
+                current_cell_z += step_z
+                t_max_x += t_delta_x
+                t_max_z += t_delta_z
+            elif t_max_x < t_max_z:
+                current_cell_x += step_x
+                t_max_x += t_delta_x
+            else:
+                current_cell_z += step_z
+                t_max_z += t_delta_z
+        else:
+            if abs(t_max_y - t_max_z) < 0.00001 or t_max_y == t_max_z:
+                current_cell_y += step_y
+                current_cell_z += step_z
+                t_max_y += t_delta_y
+                t_max_z += t_delta_z
+            elif t_max_y < t_max_z:
+                current_cell_y += step_y
+                t_max_y += t_delta_y
+            else:
+                current_cell_z += step_z
+                t_max_z += t_delta_z
+
+    return cells

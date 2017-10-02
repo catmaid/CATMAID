@@ -754,6 +754,8 @@ var SkeletonAnnotations = {};
     this.applyTracingWindow = CATMAID.TracingOverlay.Settings.session.apply_tracing_window;
     /** Wheter updates can be suspended during a planar panning operation */
     this.updateWhilePanning = CATMAID.TracingOverlay.Settings.session.update_while_panning;
+    /** The level of detail (highter = more detail, "max" everything). */
+    this.levelOfDetail = 'max';
     /** A cached copy of the a map from IDs to relation names, set on firt load. **/
     this.relationMap = null;
     /** An optional color source **/
@@ -2754,6 +2756,10 @@ var SkeletonAnnotations = {};
     if (extraData) {
       for (var i=0, imax=extraData.length; i<imax; ++i) {
         let d = extraData[i];
+        if (!d) {
+          // Ignore invalid entries.
+          continue;
+        }
         // Exta treenodes
         if (d[0] && d[0].length > 0) {
           Array.prototype.push.apply(jsonNodes, d[0]);
@@ -3756,7 +3762,8 @@ var SkeletonAnnotations = {};
         bottom: wy1,
         z2: wz1,
         labels: self.getLabelStatus(),
-        with_relation_map: self.relationMap ? 'none' : 'all'
+        with_relation_map: self.relationMap ? 'none' : 'all',
+        lod: self.levelOfDetail,
       };
 
       // Extra treenode IDs and connector Ids are only fetched through the primary
@@ -3932,28 +3939,43 @@ var SkeletonAnnotations = {};
             }
           }
 
-          var renderingQueued = self.refreshNodesFromTuples(response, extraNodes);
-
-          // initialization hack for "URL to this view"
-          var nodeSelected = false;
-          if (SkeletonAnnotations.hasOwnProperty('init_active_node_id')) {
-            nodeSelected = true;
-            self.activateNode(self.nodes.get(SkeletonAnnotations.init_active_node_id));
-            delete SkeletonAnnotations.init_active_node_id;
+          // If there is no relation map cached yet and also none was returned,
+          // inject retrieval of relation map
+          let wrapUp;
+          if (!self.relationMap && (!response[4] || CATMAID.tools.isEmpty(response[4]))) {
+            wrapUp = CATMAID.Relations.getNameMap(project.id, false)
+              .then(function(map) {
+                self.relationMap = map;
+                return response;
+              });
+          } else {
+            wrapUp = Promise.resolve(response);
           }
-          if (SkeletonAnnotations.hasOwnProperty('init_active_skeleton_id')) {
-            if (!nodeSelected) {
-              SkeletonAnnotations.staticMoveToAndSelectClosestNode(project.coordinates.x,
-                  project.coordinates.y, project.coordinates.z,
-                  SkeletonAnnotations.init_active_skeleton_id, true);
+
+          wrapUp.then(function(response) {
+            var renderingQueued = self.refreshNodesFromTuples(response, extraNodes);
+
+            // initialization hack for "URL to this view"
+            var nodeSelected = false;
+            if (SkeletonAnnotations.hasOwnProperty('init_active_node_id')) {
+              nodeSelected = true;
+              self.activateNode(self.nodes.get(SkeletonAnnotations.init_active_node_id));
+              delete SkeletonAnnotations.init_active_node_id;
             }
-            delete SkeletonAnnotations.init_active_skeleton_id;
-          }
+            if (SkeletonAnnotations.hasOwnProperty('init_active_skeleton_id')) {
+              if (!nodeSelected) {
+                SkeletonAnnotations.staticMoveToAndSelectClosestNode(project.coordinates.x,
+                    project.coordinates.y, project.coordinates.z,
+                    SkeletonAnnotations.init_active_skeleton_id, true);
+              }
+              delete SkeletonAnnotations.init_active_skeleton_id;
+            }
 
-          self.redraw(false, undefined, renderingQueued);
-          if (typeof callback !== "undefined") {
-            callback();
-          }
+            self.redraw(false, undefined, renderingQueued);
+            if (typeof callback !== "undefined") {
+              callback();
+            }
+          });
         });
     });
   };
@@ -3978,7 +4000,8 @@ var SkeletonAnnotations = {};
           entryParams.top <= params.top &&
           entryParams.bottom >= params.bottom &&
           entryParams.z1 <= params.z1 &&
-          entryParams.z2 >= params.z2;
+          entryParams.z2 >= params.z2 &&
+          entryParams.lod == params.lod;
       // Only allow cached entries that either require no extra treenodes or
       // connectors or have matching extra nodes.
       let extraNodesMatch =

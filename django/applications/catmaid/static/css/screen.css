@@ -1191,6 +1191,10 @@ div.selection-table.windowContent {
   display: inline-block;
 }
 
+.customselect input[type=text] {
+  display: block;
+}
+
 .customselect-selectbox {
   position: relative;
 }

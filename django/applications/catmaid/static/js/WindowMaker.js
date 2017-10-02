@@ -610,7 +610,7 @@ var WindowMaker = new function()
           var selectedVolumes = WA.getLoadedVolumeIds();
           // Create actual element based on the returned data
           var node = DOM.createCheckboxSelect('Volumes', volumes,
-              selectedVolumes);
+              selectedVolumes, true);
           // Add a selection handler
           node.onchange = function(e) {
             var visible = e.target.checked;
@@ -619,6 +619,9 @@ var WindowMaker = new function()
 
             // Add extra display controls for enabled volumes
             var li = e.target.closest('li');
+            if (!li) {
+              return;
+            }
             if (visible) {
               var volumeControls = li.appendChild(document.createElement('span'));
               volumeControls.setAttribute('data-role', 'volume-controls');

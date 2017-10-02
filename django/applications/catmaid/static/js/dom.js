@@ -721,12 +721,15 @@
    * @param options      {Object[]} A list of {title: <>, value: <>} objects.
    * @param selectedKeys {String[]} (Optional) list of keys that should be
    *                                selected initially
+   * @param showFilter   {Bool}     Whether to show a filter input field.
    *
    * @returns a wrapper around the select element
    */
-  DOM.createCheckboxSelect = function(title, options, selectedKeys) {
+  DOM.createCheckboxSelect = function(title, options, selectedKeys, showFilter) {
     var selectedSet = new Set(selectedKeys ? selectedKeys : undefined);
+    var container = document.createElement('div');
     var checkboxes = document.createElement('ul');
+    var entryIndex = new Map();
     for (var i=0; i<options.length; ++i) {
       var o = options[i];
       var entry = document.createElement('label');
@@ -742,14 +745,53 @@
       listElement.style.display = 'flex';
       listElement.appendChild(entry);
       checkboxes.appendChild(listElement);
+      // Save in index
+      if (showFilter) {
+        var labelElements = entryIndex.get(o.title);
+        if (!labelElements) {
+          labelElements = [];
+          entryIndex.set(o.title, labelElements);
+        }
+        labelElements.push(entry);
+      }
     }
+    var entryKeys = Array.from(entryIndex.keys());
+
     checkboxes.onclick = function(e) {
       // Cancel bubbling
       e.cancelBubble = true;
       if (e.stopPropagation) e.stopPropagation();
     };
 
-    return CATMAID.DOM.createCustomContentSelect(title, checkboxes);
+    if (showFilter) {
+      var filterInput = document.createElement('input');
+      filterInput.setAttribute('placeholder', 'Filter');
+      filterInput.setAttribute('type', 'text');
+      filterInput.onclick = function(e) {
+        e.cancelBubble = true;
+        if (e.stopPropagation) e.stopPropagation();
+      };
+      filterInput.onkeyup = function(e) {
+        var filterTerm = this.value;
+        var keys = entryKeys;
+        var regex = new RegExp(CATMAID.tools.escapeRegEx(filterTerm), 'i');
+        for (var i=0, max=keys.length; i<max; ++i) {
+          var key = keys[i];
+          var elements = entryIndex.get(key);
+          var match = key.match(regex);
+          for (var j=0, jmax=elements.length; j<jmax; ++j) {
+            var element = elements[j];
+            element.style.display = match ? 'block' : 'none';
+          }
+          e.cancelBubble = true;
+          if (e.stopPropagation) e.stopPropagation();
+        }
+      };
+      container.appendChild(filterInput);
+    }
+    container.appendChild(checkboxes);
+
+    return CATMAID.DOM.createCustomContentSelect(title, container);
   };
 
   /**

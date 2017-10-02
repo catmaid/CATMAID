@@ -149,6 +149,12 @@ CATMAID extensions:
 - More details can be found in the docs.
 
 
+3D viewer:
+
+- Volumes can now be filtered in the volume drop-down menu with the help of a
+  built-in text box.
+
+
 Miscellaneous:
 
 - The Open Widget dialog now displays a table that includes more information on

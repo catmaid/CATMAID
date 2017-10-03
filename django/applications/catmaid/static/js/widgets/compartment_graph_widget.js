@@ -2873,12 +2873,14 @@
     var groupEdges = [];
     data.edges = data.edges.filter(function(edge) {
       var d = edge.data,
-          source = member_of[d.source] || d.source,
-          target = member_of[d.target] || d.target,
+          source = member_of[d.source],
+          target = member_of[d.target],
           sourceInGroup = source !== undefined,
           targetInGroup = target !== undefined,
           intragroup = source === target && sourceInGroup && targetInGroup;
       if (sourceInGroup || targetInGroup) {
+        source = source ? source : d.source;
+        target = target ? target : d.target;
         // Edge between skeletons, with at least one of them belonging to a group
         var id = source + '_' + target;
         var gedge = gedges[id];

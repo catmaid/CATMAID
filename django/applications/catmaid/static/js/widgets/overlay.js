@@ -3126,8 +3126,8 @@ SkeletonAnnotations.TracingOverlay.prototype.goToPreviousBranchOrRootNode = func
   var self = this;
   this.submit.promise()
     .then(function() {
-      return CATMAID.fetch(CATMAID.makeURL(project.id + "/treenodes/" +
-        treenode_id + "/previous-branch-or-root"), 'POST', {
+      return CATMAID.fetch(project.id + "/treenodes/" +
+        treenode_id + "/previous-branch-or-root", 'POST', {
           alt: e.altKey ? 1 : 0
         });
     })
@@ -3169,8 +3169,8 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNextBranchOrEndNode = function(
     var self = this;
     this.submit.promise()
       .then(function() {
-        return CATMAID.fetch(CATMAID.makeURL(project.id + "/treenodes/" +
-          treenode_id + "/next-branch-or-end"), 'POST');
+        return CATMAID.fetch(project.id + "/treenodes/" +
+          treenode_id + "/next-branch-or-end", 'POST');
       })
       .then(function(json) {
         // json is an array of branches

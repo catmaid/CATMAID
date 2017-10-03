@@ -860,7 +860,8 @@ var project;
         this._updateSocket.close();
       }
       // Create new socket
-      var url = 'ws://' + window.location.host + CATMAID.makeURL('/channels/updates/');
+      var url = (window.location.protocol.startsWith('https') ? 'wss://' : 'ws://') +
+          window.location.host + CATMAID.makeURL('/channels/updates/');
       this._updateSocket = new WebSocket(url);
 
       this._updateSocket.onopen = (function() {

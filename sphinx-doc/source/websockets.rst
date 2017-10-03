@@ -137,7 +137,7 @@ section and the ``[group:catmaid]`` section:
     stdout_logfile = /opt/catmaid/django/projects/mysite/daphne-worker.log
     redirect_stderr = true
     autorestart = true
-    process_name = "Daphne worker %(process_num)s"
+    process_name = %(program_name)s_%(process_num)02d
     numprocs = <NUM-CPUS>
 
 Replace ``<NUM-CPUS>`` in the last line with the number of CPUs on your system.

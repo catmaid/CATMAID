@@ -325,6 +325,7 @@ grouped under the name "catmaid"::
   user = www-data
   stdout_logfile = /opt/catmaid/django/projects/mysite/uwsgi.log
   redirect_stderr = true
+  stopsignal = INT
 
   [program:catmaid-celery]
   command = /opt/catmaid/django/projects/mysite/run-celery.sh
@@ -336,10 +337,12 @@ grouped under the name "catmaid"::
   programs=catmaid-app,catmaid-celery
 
 This of course expects a CATMAID instance installed in the folder
-``/opt/catmaid/``. An example for a working ``run-celery.sh`` script can be
-found :ref:`here <celery-supervisord>`. With the configuration and the scripts
-in place, ``supervisord`` can be instructed to reload its configuration and
-start the catmaid group::
+``/opt/catmaid/``. The ``stopsignal = INT`` directive is needed for ``uwsgi``,
+because it interprets Supervisor's default ``SIGTERM`` as "brutal reload"
+instead of stop. An example for a working ``run-celery.sh`` script can be found
+:ref:`here <celery-supervisord>`. With the configuration and the scripts in
+place, ``supervisord`` can be instructed to reload its configuration and start
+the catmaid group::
 
   $ sudo supervisorctl reread
   $ sudo supervisorctl update

@@ -308,6 +308,7 @@
       // skeleton only.
       var sourceSkeletons;
       if (rule.validOnlyForSkid) {
+        let skid = rule.validOnlyForSkid;
         sourceSkeletons = {};
         sourceSkeletons[skid] = skeletons[skid];
       } else {

@@ -1531,6 +1531,7 @@
     var add = prepare.then((function() {
       var availableSkletons = this.space.content.skeletons;
       var inputSkeletonIds = Object.keys(models);
+      var updatedSkeletons = [];
       for (var i=0, max=inputSkeletonIds.length; i<max; ++i) {
         var skeletonId = inputSkeletonIds[i];
         var model = models[skeletonId];
@@ -1545,14 +1546,15 @@
           skeleton.actorColor = model.color.clone();
           skeleton.opacity = model.opacity;
           skeleton.updateSkeletonColor(colorizer);
-          // In case connectors are colored like skeletons, they have to be
-          // updated, too.
-          if ('skeleton' === this.options.connector_color) {
-            return this.space.updateConnectorColors(this.options, [skeleton]);
-          } else {
-            this.space.updateConnectorEdgeVisibility(this.options, [skeleton]);
-          }
+          updatedSkeletons.push(skeleton);
         }
+      }
+      // In case connectors are colored like skeletons, they have to be
+      // updated, too.
+      if ('skeleton' === this.options.connector_color) {
+        return this.space.updateConnectorColors(this.options, updatedSkeletons);
+      } else {
+        this.space.updateConnectorEdgeVisibility(this.options, updatedSkeletons);
       }
     }).bind(this))
     .then((function() {

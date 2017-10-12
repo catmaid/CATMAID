@@ -29,6 +29,8 @@ Miscellaneous:
 
 ### Bug fixes
 
+- 3D Viewer: the visibility of skeletons with connector colors the same as the
+  skeleton can now be controlled correctly.
 
 
 ## 2017.10.02

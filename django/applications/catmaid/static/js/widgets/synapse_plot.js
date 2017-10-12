@@ -543,11 +543,12 @@
   };
 
   SynapsePlot.prototype.redraw = function() {
-    var containerID = '#synapse_plot' + this.widgetID,
-        container = $(containerID);
+    var containerID = 'synapse_plot' + this.widgetID,
+        container = document.getElementById(containerID),
+        $container = $(container);
 
     // Clear prior graph if any
-    container.empty();
+    $container.empty();
 
     // Stop if empty
     if (!this.rows || 0 === this.rows.length) return;
@@ -559,147 +560,135 @@
   };
 
   SynapsePlot.prototype._redraw = function(container, containerID) {
+    var $container = $(container);
+    var dataIndex = {};
+    var data = [];
+    var NNS = CATMAID.NeuronNameService.getInstance();
+    //this.rows.forEach(function(pre) {
+    Object.keys(this.models).forEach(function(skeletonId) {
+      var postName = NNS.getName(skeletonId);
+      var x = [];
+      var y = [];
+      var customdata = [];
+      var trace = {
+        x: x,
+        y: y,
+        customdata: customdata,
+        name: postName,
+        mode: 'markers',
+        type: 'scatter',
+        marker: {
+          symbol: 'circle',
+          line: {
+            color: 'rgb(50, 50, 50)',
+            width: 1
+          },
+          opacity: 0.8
+        }
+      };
+      dataIndex[skeletonId] = trace;
+      data.push(trace);
+    }, this);
+
     // Upper bound of the X axis range
     var max_dist = 0;
     this.rows.forEach(function(pre) {
-      pre.posts.forEach(function(post) {
+      var preName = NNS.getName(pre.pre_skid);
+      for (var i=0, imax=pre.posts.length; i<imax; ++i) {
+        var post = pre.posts[i];
+        var d = dataIndex[post.post_skid];
         max_dist = Math.max(max_dist, post.distance);
-      });
+        d.x.push(post.distance);
+        d.y.push(preName);
+        d.customdata.push({
+          preId: pre.pre_skid,
+          postId: post.post_skid,
+          treenodeId: post.treenodeID
+        });
+      }
+    }, this);
+
+    var margin = {top: 10, right: 20, bottom: 50, left: 150},
+        width = $container.width() - margin.left - margin.right,
+        height = $container.height() - margin.top - margin.bottom;
+
+    let layout = {
+      xaxis: {
+        exponentformat: 'none',
+        showline: true,
+        showgrid: false,
+        zerolinecolor: '#aaa'
+      },
+      yaxis: {
+        showgrid: false,
+        zerolinecolor: '#aaa'
+      },
+      annotations: [{
+        xref: 'paper',
+        yref: 'paper',
+        x: 1,
+        y: 0,
+        text: 'distance (nm)',
+        xanchor: 'right',
+        yanchor: 'bottom',
+        showarrow: false
+      }],
+      showlegend: true,
+      legend: {
+        yanchor: 'top',
+        xanchor: 'left',
+        orientation: 'h'
+      },
+      font: {
+        family: 'sans-serif',
+        size: 8,
+        color: '#000'
+      },
+      margin: {
+        t: margin.top,
+        r: margin.right,
+        b: margin.bottom,
+        l: margin.left
+      }
+    };
+    Plotly.newPlot(containerID, data, layout, {
+      scrollZoom: true,
+      displaylogo: false,
     });
 
-    var margin = {top: 20, right: 20, bottom: 50, left: 150},
-        width = container.width() - margin.left - margin.right,
-        height = container.height() - margin.top - margin.bottom;
+    // Assign colors
+    for (var i=0; i<data.length; ++i) {
+      var trace = data[i];
+      var colors = new Array(trace.x.length);
+      for (var j=0, jmax=trace.x.length; j<jmax; ++j) {
+        // default is to color according to post_skid, but will color according to
+        // pre_skid if present in this.pre_models.  (see this.onchangecoloring)
+        var d = trace.customdata[j];
+        var preModel = this.pre_models[d.preId];
+        var refModel = preModel ? preModel : this.models[d.postId];
+        colors[j] = '#' + refModel.color.getHexString();
+      }
+      var update = {
+        'marker': {
+          color: colors,
+          size: 5,
+          line: {
+            color: '#555',
+            width: 1
+          }
+        }
+      };
+      Plotly.restyle(containerID, update, [i]);
+    }
 
-    var svg = d3.select(containerID).append("svg")
-            .attr("id", 'svg_' + containerID)
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
-            .append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-    var x = d3.scale.linear().domain([0, max_dist]).range([0, width]),
-        y = d3.scale.linear().domain([0, this.rows.length -1]).range([height, 0]); // domain starts at 1
-
-    var xAxis = d3.svg.axis().scale(x).orient("bottom"),
-        yAxis = d3.svg.axis().scale(y)
-                  .ticks(this.rows.length + 1)
-                  .tickFormat((function(i) {
-                    if (!this.rows[i] || !this.rows[i].pre_skid) {
-                      return "";
-                    }
-                    return CATMAID.NeuronNameService.getInstance().getName(this.rows[i].pre_skid);
-                  }).bind(this))
-                  .orient("left");
-
-    var state = svg.selectAll(".state")
-                   .data(this.rows)
-                   .enter()
-                   .append('g')
-                     .attr('class', 'g') // one row, representing one pre_skid
-                     .attr('transform', function(d, i) {
-                       return "translate(0," + y(i) + ")";
-                     });
-
-    state.selectAll("circle")
-         .data(function(pre) { // for each pre_skid
-           return pre.posts;
-         })
-         .enter() // for each postsynaptic site
-           .append("circle")
-           .attr('class', 'dot')
-           .attr('r', '3')
-           .attr("cx", function(post) {
-             return x(post.distance);
-           })
-           .attr("cy", (function(post) {
-             // y(1) - y(0) gives the height of the horizonal row used for a pre_skid,
-             // then jitter takes a fraction of that, and Math.random spreads the value within that range.
-             return ((y(1) - y(0)) * this.jitter) * (Math.random() - 0.5);
-           }).bind(this))
-           .style('fill', (function(post) {
-             // Default is to color according to post_skid,
-             // but will color according to pre_skid if present in this.pre_models.
-             // (see this.onchangeColoring)
-             var pre_model = this.pre_models[post.pre_skid];
-             var model = pre_model ? pre_model : this.models[post.post_skid];
-             return '#' + model.color.getHexString();
-           }).bind(this))
-           .style('stroke', 'black')
-           .on('click', function(post) {
-             SkeletonAnnotations.staticMoveToAndSelectNode(post.treenodeID);
-           })
-           .append('svg:title') // on mouse over
-             .text(function(post) {
-               return CATMAID.NeuronNameService.getInstance().getName(post.post_skid);
-             });
-
-      var xg = svg.append("g")
-          .attr("class", "x axis")
-          .attr("transform", "translate(0," + (height + 10) + ")") // translated down a bit
-          .attr("fill", "none")
-          .attr("stroke", "black")
-          .style("shape-rendering", "crispEdges")
-          .call(xAxis);
-      xg.selectAll("text")
-          .attr("fill", "black")
-          .attr("stroke", "none");
-      xg.append("text")
-          .attr("x", width)
-          .attr("y", -6)
-          .attr("fill", "black")
-          .attr("stroke", "none")
-          .attr("font-family", "sans-serif")
-          .attr("font-size", "11px")
-          .style("text-anchor", "end")
-          .text("distance (nm)");
-
-      var yg = svg.append("g")
-          .attr("class", "y axis")
-          .attr("fill", "none")
-          .attr("stroke", "black")
-          .style("shape-rendering", "crispEdges")
-          .call(yAxis);
-      yg.selectAll("text")
-          .attr("fill", "black")
-          .attr("stroke", "none");
-      yg.append("text")
-          .attr("fill", "black")
-          .attr("stroke", "none")
-          .attr("transform", "rotate(-90)")
-          .attr("font-family", "sans-serif")
-          .attr("font-size", "11px")
-          .attr("y", 6)
-          .attr("dy", ".71em")
-          .style("text-anchor", "end");
-
-      var legend = svg.selectAll(".legend")
-        .data(Object.keys(this.models))
-        .enter()
-          .append("g")
-          .attr("class", "legend")
-          .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; })
-          .on("click", (function(skid) {
-            var ais_node = this.morphologies[skid].ais_node;
-            if (!ais_node) {
-              CATMAID.msg("Warning", "No axon initial segment found for " + CATMAID.NeuronNameService.getInstance().getName(skid));
-            } else {
-              SkeletonAnnotations.staticMoveToAndSelectNode(ais_node);
-            }
-          }).bind(this));
-
-      legend.append("rect")
-        .attr("x", width - 18)
-        .attr("width", 18)
-        .attr("height", 18)
-        .style("fill", (function(skid) { return '#' + this.models[skid].color.getHexString(); }).bind(this));
-
-      legend.append("text")
-        .attr("x", width - 24)
-        .attr("y", 9)
-        .attr("dy", ".35em")
-        .style("text-anchor", "end")
-        .text(function(skid) { return CATMAID.NeuronNameService.getInstance().getName(skid); });
+    container.on('plotly_click', function(event) {
+      if (!event.points || event.points.length === 0) {
+        return;
+      }
+      var point = event.points[event.points.length - 1];
+      var pointData = point.data.customdata[point.pointNumber];
+      SkeletonAnnotations.staticMoveToAndSelectNode(pointData.treenodeId);
+    });
   };
 
   SynapsePlot.prototype.highlight = function(skid) {

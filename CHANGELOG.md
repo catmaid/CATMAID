@@ -5,6 +5,10 @@
 - New settings field: CROPPING_VERIFY_CERTIFICATES. This controls whether SSL
   certificates should be verified during cropping and defaults to True.
 
+- The file `UPDATE.md` will now list all administration related changes for each
+  release, including required manual tasks. These changes also continue to be
+  part of this change log.
+
 
 ### Features and enhancements
 

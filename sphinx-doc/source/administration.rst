@@ -31,7 +31,15 @@ remote::
 
 Note that this will merge into your local branch. So if you have local
 commits that you want to keep you might want to rebase those on
-origin's master branch. Then, move into the Django sub-directory::
+origin's master branch using the "--rebase" option.
+
+Have a careful look at the required update steps that need to happen to update
+your current version to the target version. Both ``CHANGELOG.md`` and
+``UPDATE.md`` provide this information, the latter only in a more condensed
+form. It is also available :ref:`here <update>`. If there are extra steps
+required, apply them as directed.
+
+Then move into the Django sub-directory::
 
    cd django
 
@@ -72,10 +80,11 @@ clone the virtualenv by calling::
 
 .. note::
 
-   It is advisable to go through the changelog (CHANGELOG.md file) for each
-   release that is either skipped or upgrade to. Sometimes settings change or
+   It is advisable to go through the changelog (``CHANGELOG.md`` file) for each
+   release that is either skipped or upgraded to. Sometimes settings change or
    other adjustments are required, which the changelog will provide information
-   on for the respective release.
+   on for the respective release. The file ``UPDATE.md`` contains a condensed
+   list of these changes.
 
 Backup and restore the database
 -------------------------------

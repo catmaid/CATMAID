@@ -1,5 +1,9 @@
 ## Under development
 
+### Notes
+
+- New settings field: CROPPING_VERIFY_CERTIFICATES. This controls whether SSL
+  certificates should be verified during cropping and defaults to True.
 
 
 ### Features and enhancements

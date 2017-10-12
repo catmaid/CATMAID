@@ -16,14 +16,6 @@ from catmaid.control.common import (id_generator, json_error_response,
 from catmaid.control.tile import get_tile_source
 from catmaid.control.message import notify_user
 
-try:
-    # Python 3
-    from urllib.request import urlopen
-    from urllib.error import HTTPError, URLError
-except ImportError:
-    # Python 2
-    from urllib2 import urlopen, HTTPError, URLError
-
 import requests
 import os.path
 import glob
@@ -51,6 +43,9 @@ file_extension = settings.CROPPING_OUTPUT_FILE_EXTENSION
 # The path were cropped files get stored in
 crop_output_path = os.path.join(settings.MEDIA_ROOT,
     settings.MEDIA_CROPPING_SUBDIRECTORY)
+# Whether SSL certificates should be verified
+verify_ssl = getattr(settings, 'CROPPING_VERIFY_CERTIFICATES', True)
+
 
 class CropJob(object):
     """ A small container class to keep information about the cropping
@@ -131,13 +126,15 @@ class ImagePart:
     def get_image( self ):
         # Open the image
         try:
-            img_file = urlopen( self.path )
-            img_data = img_file.read()
+            r = requests.get(self.path, allow_redirects=True, verify=verify_ssl)
+            if not r:
+                raise ValueError("Could not get " + self.path)
+            if r.status_code != 200:
+                raise ValueError("Unexpected status code ({}) for {}".format(r.status_code, self.path))
+            img_data = r.content
             bytes_read = len(img_data)
-        except HTTPError as e:
-            raise ImageRetrievalError(self.path, "Error code: %s" % e.code)
-        except URLError as e:
-            raise ImageRetrievalError(self.path, e.reason)
+        except requests.exceptions.RequestException as e:
+            raise ImageRetrievalError(self.path, str(e))
 
         blob = Blob( img_data )
         image = Image( blob )
@@ -652,9 +649,11 @@ def crop(request, project_id=None):
             # If mirror is reachable use it right away
             tile_source = get_tile_source(sm.tile_source_type)
             try:
-                req = requests.head(tile_source.get_canaray_url(sm))
+                req = requests.head(tile_source.get_canaray_url(sm),
+                        allow_redirects=True, verify=verify_ssl)
                 reachable = req.status_code == 200
-            except :
+            except Exception as e:
+                logger.error(e)
                 reachable = False
             if reachable:
                 stack_mirror_ids.append(sm.id)

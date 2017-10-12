@@ -4,6 +4,13 @@
 
 ### Features and enhancements
 
+Node filters:
+
+- A new node filter called "In skeleton source" has been added. This allows to
+  add a filter which only allows nodes of a particular set of skeletons,
+  accessed through a skeleton source. This can be useful to look at connectivity
+  of a particular set of neurons. It can of course be combined with other
+  filters like volume intersection.
 
 
 ### Bug fixes

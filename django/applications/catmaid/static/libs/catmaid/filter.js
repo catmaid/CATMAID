@@ -824,6 +824,20 @@
           return {};
         }
       }
+    },
+    'in-skeleton-source': {
+      name: "In skeleton source",
+      prepare: ['arbor'],
+      filter: function(skeletonId, neuron, input, options) {
+        // If skeleton in set in mapping of other neurons, add all its nodes.
+        var otherNeurons = options.otherNeurons;
+        if (otherNeurons && otherNeurons.hasOwnProperty(skeletonId)) {
+          var skeleton = input.skeletons[skeletonId];
+          return skeleton.arbor.nodes();
+        } else {
+          return {};
+        }
+      }
     }
   };
 
@@ -1122,6 +1136,33 @@
       intervalIdLabel.appendChild(document.createTextNode('Interval ID'));
       intervalIdLabel.appendChild(intervalId);
       container.appendChild(intervalIdLabel);
+    },
+    'in-skeleton-source': function(container, options) {
+      var availableSources = CATMAID.skeletonListSources.getSourceNames();
+      var sourceOptions = availableSources.reduce(function(o, name) {
+        o[name] = name;
+        return o;
+      }, {
+        'None': 'None' // default to enforce active selection
+      });
+
+      var $otherNeurons = CATMAID.DOM.createSelectSetting("Source",
+          sourceOptions, "Only nodes of neurons from this source will be allowed in the working set.",
+          function(e) {
+            // Get models from source to store in option set
+            var source = this.value && this.value !== "None" ?
+              CATMAID.skeletonListSources.getSource(this.value) : undefined;
+
+            if (!source) {
+              options.otherNeurons = null;
+              return;
+            }
+
+            // Collect points based on current source list and current rule set
+            options.otherNeurons = source.getSelectedSkeletonModels();
+          }, 'None');
+
+      $(container).append($otherNeurons);
     }
   };
 

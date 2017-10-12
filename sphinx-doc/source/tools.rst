@@ -81,8 +81,7 @@ image's X and Y resolution, respectively -- in pixel per nanometer (if the
 image resolution in the data base is nano meter based). The
 ``ImageDescription`` tag contains ImageJ specific meta data. It passes
 information about the number of images, the channels and whether to use
-hyperstacks to ImageJ. For the purpose of creating these meta data tags,
-the tool ``exiftool`` is used internally.
+hyperstacks to ImageJ.
 
 Ontology Tools
 --------------

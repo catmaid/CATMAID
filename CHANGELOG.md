@@ -2,6 +2,8 @@
 
 ### Notes
 
+- A virtualenv update is required.
+
 - New settings field: CROPPING_VERIFY_CERTIFICATES. This controls whether SSL
   certificates should be verified during cropping and defaults to True.
 
@@ -19,6 +21,10 @@ Node filters:
   accessed through a skeleton source. This can be useful to look at connectivity
   of a particular set of neurons. It can of course be combined with other
   filters like volume intersection.
+
+Miscellaneous:
+
+- Exported sub-stacks now include the Z resolution.
 
 
 ### Bug fixes

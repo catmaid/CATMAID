@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import os
 import json
 import logging
 
@@ -15,6 +16,8 @@ from catmaid.control.common import (id_generator, json_error_response,
         get_request_list)
 from catmaid.control.tile import get_tile_source
 from catmaid.control.message import notify_user
+
+from PIL import Image as PILImage, TiffImagePlugin
 
 import requests
 import os.path
@@ -183,9 +186,7 @@ def addMetaData( path, job, result ):
     """ Use this method to add meta data to the image. Due to a bug in
     exiv2, its python wrapper pyexiv2 is of no use to us. This bug
     (http://dev.exiv2.org/issues/762) hinders us to work on multi-page
-    TIFF files. Instead, we use a separate tool called exiftool to write
-    meta data. Currently, there seems no better solution than this. If the
-    tool is not found, no meta data is produced and no error is raised.
+    TIFF files. Instead, we use Pillow to write meta data.
     """
     # Add resolution information in pixel per nanometer. The stack info
     # available is nm/px and refers to a zoom-level of zero.
@@ -193,48 +194,55 @@ def addMetaData( path, job, result ):
     res_y_scaled = job.ref_stack.resolution.y * 2**job.zoom_level
     res_x_nm_px = 1.0 / res_x_scaled
     res_y_nm_px = 1.0 / res_y_scaled
-    res_args = "-EXIF:XResolution={0} -EXIF:YResolution={1} -EXIF:" \
-            "ResolutionUnit=None".format( str(res_x_nm_px), str(res_y_nm_px) )
+    res_z_nm_px = 1.0 / job.ref_stack.resolution.z
+    ifd = dict()
+    ifd = TiffImagePlugin.ImageFileDirectory_v2()
+    ifd[TiffImagePlugin.X_RESOLUTION] = res_x_nm_px
+    ifd[TiffImagePlugin.Y_RESOLUTION] = res_y_nm_px
+    ifd[TiffImagePlugin.RESOLUTION_UNIT] = 1 # 1 = None
 
     # ImageJ specific meta data to allow easy embedding of units and
     # display options.
-    n_images = len( result )
-    ij_version= "1.45p"
+    n_images = len(result)
+    ij_version= "1.51n"
     unit = "nm"
-    newline = "\n"
+
+    n_channels = len(job.stack_mirrors)
+    if n_images % n_channels != 0:
+        raise ValueError( "Meta data creation: the number of images " \
+                "modulo the channel count is not zero" )
+    n_slices = n_images / n_channels
 
     # sample with (the actual is a line break instead of a .):
     # ImageJ=1.45p.images={0}.channels=1.slices=2.hyperstack=true.mode=color.unit=micron.finterval=1.spacing=1.5.loop=false.min=0.0.max=4095.0.
-    ij_data = "ImageJ={1}{0}unit={2}{0}".format( newline, ij_version, unit)
-    if n_images > 1:
-        n_channels = len(job.stack_mirrors)
-        if n_images % n_channels != 0:
-            raise ValueError( "Meta data creation: the number of images " \
-                    "modulo the channel count is not zero" )
-        n_slices = n_images / n_channels
-        ij_data += "images={1}{0}channels={2}{0}slices={3}{0}hyperstack=true{0}mode=color{0}".format( newline, str(n_images), str(n_channels), str(n_slices) )
-    ij_args = "-EXIF:ImageDescription=\"{0}\"".format( ij_data )
+    ij_data = [
+        "ImageJ={}".format(ij_version),
+        "unit={}".format(unit),
+        "spacing={}".format(str(res_z_nm_px)),
+    ]
+
+    if n_channels > 1:
+        ij_data.append("images={}".format(str(n_images)))
+        ij_data.append("slices={}".format(str(n_slices)))
+        ij_data.append("channels={}".format(str(n_channels)))
+        ij_data.append("hyperstack=true")
+        ij_data.append("mode=composite")
+
+    # We want to end with a final newline
+    ij_data.append("")
+
+    ifd[TiffImagePlugin.IMAGEDESCRIPTION] = "\n".join(ij_data)
 
     # Information about the software used
-    sw_args = "-EXIF:Software=\"Created with CATMAID and GraphicsMagic, " \
-            "processed with exiftool.\""
-    # Build up the final tag changing arguments for each slice
-    tag_args = "{0} {1} {2}".format( res_args, ij_args, sw_args )
-    per_slice_tag_args = []
-    for i in range(0, n_images):
-        # the string EXIF gets replaced for every image with IFD<N>
-        slice_args = tag_args.replace( "EXIF", "IFD" + str(i) )
-        per_slice_tag_args.append( slice_args  )
-    final_tag_args = " ".join( per_slice_tag_args )
-    # Create the final call and execute
-    call = "exiftool -overwrite_original {0} {1}".format( final_tag_args, path )
-    os.system( call )
+    ifd[TiffImagePlugin.SOFTWARE] = "CATMAID {}".format(settings.VERSION)
 
-    # Re-save the image with GraphicsMagick, otherwise ImageJ won't read the
-    # images directly.
-    images = ImageList()
-    images.readImages( path.encode('ascii', 'ignore') )
-    images.writeImages( path.encode('ascii', 'ignore') )
+    image = PILImage.open(path)
+    # Can't use libtiff for saving non core libtiff exif tags, therefore
+    # compression="raw" is used. Also, we don't want to re-encode.
+    tmp_path = path + ".tmp"
+    image.save(tmp_path, "tiff", compression="raw", tiffinfo=ifd, save_all=True)
+    os.remove(path)
+    os.rename(tmp_path, path)
 
 def extract_substack(job ):
     """ Extracts a sub-stack as specified in the passed job while respecting

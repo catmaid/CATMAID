@@ -148,7 +148,7 @@ def installDjangoBackend():
             print(each_package)
             run('sudo apt-get -y --force-yes install %s' % each_package, pty = True)
 
-        packagelist = ['python-numpy', 'python-h5py' ,'graphicsmagick', 'libimage-exiftool-perl']
+        packagelist = ['python-numpy', 'python-h5py' ,'graphicsmagick']
         for each_package in packagelist:
             print(each_package)
             run('sudo apt-get -y --force-yes build-dep %s' % each_package, pty = True)

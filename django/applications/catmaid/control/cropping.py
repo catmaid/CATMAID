@@ -28,9 +28,6 @@ from math import cos, sin, radians
 logger = logging.getLogger(__name__)
 
 try:
-    # The libuuid import is a workaround for a bug with GraphicsMagick
-    # which expects the library to be loaded already. Therefore, it
-    # has to be loaded before pgmagick.
     from pgmagick import Blob, Image, ImageList, Geometry, ChannelType, \
             CompositeOperator as co, ColorRGB
 except ImportError:

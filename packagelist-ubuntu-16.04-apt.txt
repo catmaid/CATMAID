@@ -12,7 +12,6 @@ libhdf5-serial-dev
 libboost-dev
 virtualenvwrapper
 libboost-python-dev
-uuid-dev
 libxml2-dev
 libxslt1-dev
 libjpeg-dev

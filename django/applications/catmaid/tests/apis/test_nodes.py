@@ -148,7 +148,7 @@ class NodesApiTests(CatmaidApiTestCase):
             [367, 7030.0, 1980.0, 0.0],
             [387, 9030.0, 1480.0, 0.0]
         ]
-        self.assertItemsEqual(expected_result, parsed_response)
+        six.assertCountEqual(self, expected_result, parsed_response)
         self.assertEqual(sorted(expected_result), sorted(parsed_response))
 
 

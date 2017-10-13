@@ -1032,29 +1032,91 @@ def node_nearest(request, project_id=None):
         raise Exception(response_on_error + ':' + str(e))
 
 
-def _fetch_location(location_id):
-    locations = _fetch_locations([location_id])
+def _fetch_location(project_id, location_id):
+    """Get the locations of the passed in node ID in the passed in project."""
+    locations = _fetch_locations(project_id, [location_id])
     if not locations:
         raise ValueError('Could not find location for node {}'.format(location_id))
     return locations[0]
 
 
-def _fetch_locations(location_ids):
+def _fetch_locations(project_id, location_ids):
+    """Get the locations of the passed in node IDs in the passed in project."""
+    node_template = ",".join("(%s)" for _ in location_ids)
+    params = list(location_ids)
+    params.append(project_id)
     cursor = connection.cursor()
     cursor.execute('''
         SELECT
-          id,
-          location_x AS x,
-          location_y AS y,
-          location_z AS z
-        FROM location
-        WHERE id IN (%s)''' % ','.join(map(str, location_ids)))
+          l.id,
+          l.location_x AS x,
+          l.location_y AS y,
+          l.location_z AS z
+        FROM location l
+        JOIN (VALUES {}) node(id)
+            ON l.id = node.id
+        WHERE project_id = %s
+    '''.format(node_template), params)
     return cursor.fetchall()
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def get_location(request, project_id=None):
     tnid = int(request.POST['tnid'])
-    return JsonResponse(_fetch_location(tnid), safe=False)
+    return JsonResponse(_fetch_location(project_id, tnid), safe=False)
+
+@api_view(['POST'])
+@requires_user_role([UserRole.Browse])
+def get_locations(request, project_id=None):
+    """Get locations for a particular set of nodes in a project.
+
+    A list of lists is returned. Each inner list represents one location and
+    hast the following format: [id, x, y, z].
+    ---
+    parameters:
+        - name: node_ids
+          description: A list of node IDs to get the location for
+          required: true
+          type: array
+          items:
+            type: number
+            format: integer
+          required: true
+          paramType: form
+    models:
+      location_element:
+        id: location_element
+        properties:
+        - name: id
+          description: ID of the node.
+          type: integer
+          required: true
+        - name: x
+          description: X coordinate of the node.
+          required: true
+          type: number
+          format: double
+          paramType: form
+        - name: y
+          description: Y coordinate of the node.
+          required: true
+          type: number
+          format: double
+          paramType: form
+        - name: z
+          description: Z coordinate of the node.
+          required: true
+          type: number
+          format: double
+          paramType: form
+    type:
+    - type: array
+      items:
+        $ref: location_element
+      required: true
+    """
+    node_ids = get_request_list(request.POST, 'node_ids', map_fn=int)
+    locations = _fetch_locations(project_id, node_ids)
+    return JsonResponse(locations, safe=False)
 
 
 @requires_user_role([UserRole.Browse])

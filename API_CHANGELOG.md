@@ -6,7 +6,8 @@ included in this changelog.
 
 ### Additions
 
-None.
+- `POST /{project_id}/nodes/location`:
+  Get the location of multiple nodes, expects a `node_ids` parameter.
 
 ### Modifications
 

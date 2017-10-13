@@ -134,6 +134,36 @@ class NodesApiTests(CatmaidApiTestCase):
         self.assertEqual(expected_result, parsed_response)
 
 
+    def test_node_get_locations(self):
+        self.fake_authentication()
+
+        treenode_ids = [367, 383, 387]
+        response = self.client.post( '/%d/nodes/location' % self.test_project_id, {
+            'node_ids': treenode_ids
+        })
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = [
+            [383, 7850.0, 1970.0, 0.0],
+            [367, 7030.0, 1980.0, 0.0],
+            [387, 9030.0, 1480.0, 0.0]
+        ]
+        self.assertItemsEqual(expected_result, parsed_response)
+        self.assertEqual(sorted(expected_result), sorted(parsed_response))
+
+
+    def test_node_get_locations_wrong_project(self):
+        self.fake_authentication()
+
+        treenode_ids = [367, 383, 387]
+        response = self.client.post( '/%d/nodes/location' % (self.test_project_id + 1), {
+            'node_ids': treenode_ids
+        })
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        self.assertTrue('error' in parsed_response)
+
+
     def test_node_find_labels(self):
         self.fake_authentication()
 

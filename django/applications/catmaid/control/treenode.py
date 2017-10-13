@@ -1019,7 +1019,7 @@ def find_previous_branchnode_or_root(request, project_id=None, treenode_id=None)
         if seq and alt:
             tnid = _find_first_interesting_node(seq)
 
-        return JsonResponse(_fetch_location(tnid), safe=False)
+        return JsonResponse(_fetch_location(project_id, tnid), safe=False)
     except Exception as e:
         raise Exception('Could not obtain previous branch node or root:' + str(e))
 
@@ -1060,7 +1060,7 @@ def find_next_branchnode_or_end(request, project_id=None, treenode_id=None):
         if len(children) > 0:
             # Create a dict of node ID -> node location
             node_ids_flat = list(itertools.chain.from_iterable(branches))
-            node_locations = {row[0]: row for row in _fetch_locations(node_ids_flat)}
+            node_locations = {row[0]: row for row in _fetch_locations(project_id, node_ids_flat)}
 
         branches = [[node_locations[node_id] for node_id in branch] for branch in branches]
         return JsonResponse(branches, safe=False)

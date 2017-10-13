@@ -470,7 +470,8 @@
             ["Postsynapses contributed by: ", format(json.post_contributors)],
             ["Construction time: ", time_string],
             ["Minimal review time (min): ", review_time_string],
-            ["Multiuser review time (min): ", review_time_string2]
+            ["Multiuser review time (min): ", review_time_string2],
+            ["Reviewed skeleton nodes:", format(json.review_contributors)],
           ].map(function(row) {
             return "<tr><td>" + row[0] + "</td><td>" + row[1] + "</td></tr>";
           }).join('');

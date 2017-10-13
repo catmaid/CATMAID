@@ -452,6 +452,8 @@ def contributor_statistics_multiple(request, project_id=None, skeleton_ids=None)
 
     rev = None
     last_skeleton_id = None
+    review_contributors = defaultdict(int) # reviewer_id vs count of nodes reviewed
+
     for row in Review.objects.filter(skeleton_id__in=skeleton_ids).order_by('skeleton').values_list('reviewer', 'treenode', 'review_time', 'skeleton_id').iterator():
         if last_skeleton_id != row[3]:
             if rev:
@@ -463,6 +465,8 @@ def contributor_statistics_multiple(request, project_id=None, skeleton_ids=None)
             last_skeleton_id = row[3]
         #
         rev[row[0]][row[1]] = row[2]
+        #
+        review_contributors[row[0]] += 1
 
     # Process last one
     if rev:
@@ -496,7 +500,9 @@ def contributor_statistics_multiple(request, project_id=None, skeleton_ids=None)
         'n_pre': sum(six.itervalues(synapses[relations['presynaptic_to']])),
         'n_post': sum(six.itervalues(synapses[relations['postsynaptic_to']])),
         'pre_contributors': synapses[relations['presynaptic_to']],
-        'post_contributors': synapses[relations['postsynaptic_to']]})
+        'post_contributors': synapses[relations['postsynaptic_to']],
+        'review_contributors': review_contributors
+    })
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

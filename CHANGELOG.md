@@ -26,6 +26,9 @@ Miscellaneous:
 
 - Exported sub-stacks now include the Z resolution.
 
+- Added table of reviewers vs number of nodes reviewed to the "Summary Info"
+  in the Selection Table widget.
+
 
 ### Bug fixes
 

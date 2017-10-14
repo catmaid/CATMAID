@@ -128,10 +128,10 @@ be started. The scheduler can be run like this::
   celery -A mysite beat -l info
 
 The
-_`Celery documentation <http://docs.celeryproject.org/en/latest/userguide/periodic-tasks.html>`
-has to say a lot about this, but in general periodic tasks are taken from the
-``CELERY_BEAT_SCHEDULE`` setting. CATMAID includes two default tasks that are
-configured to run every night, if enabled::
+`Celery documentation <http://docs.celeryproject.org/en/latest/userguide/periodic-tasks.html>`_
+has to say a lot mor about this, but in general periodic tasks are taken from
+the ``CELERY_BEAT_SCHEDULE`` setting. CATMAID includes two default tasks that
+are configured to run every night, if enabled::
 
   At 23:30 Cleanup cropped image stacks
   At 23:45 Update project statistics

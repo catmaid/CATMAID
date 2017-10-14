@@ -29,6 +29,9 @@ Miscellaneous:
 - Added table of reviewers vs number of nodes reviewed to the "Summary Info"
   in the Selection Table widget.
 
+- Synapse distribution plot: global and single-axis zoom and pan are now
+  supported.
+
 
 ### Bug fixes
 

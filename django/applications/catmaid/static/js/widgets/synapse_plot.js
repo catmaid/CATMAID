@@ -578,27 +578,81 @@
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    var x = d3.scale.linear().domain([0, max_dist]).range([0, width]),
-        y = d3.scale.linear().domain([0, this.rows.length -1]).range([height, 0]); // domain starts at 1
+    var xaxis = d3.svg.axis();
+    var yaxis = d3.svg.axis();
+    var xscale = d3.scale.linear();
+    var yscale = d3.scale.linear();
 
-    var xAxis = d3.svg.axis().scale(x).orient("bottom"),
-        yAxis = d3.svg.axis().scale(y)
-                  .ticks(this.rows.length + 1)
-                  .tickFormat((function(i) {
-                    if (!this.rows[i] || !this.rows[i].pre_skid) {
-                      return "";
-                    }
-                    return CATMAID.NeuronNameService.getInstance().getName(this.rows[i].pre_skid);
-                  }).bind(this))
-                  .orient("left");
+    var xyzoom = d3.behavior.zoom()
+      .x(xscale)
+      .y(yscale)
+      .on("zoom", draw);
+    var xzoom = d3.behavior.zoom()
+      .x(xscale)
+      .on("zoom", draw);
+    var yzoom = d3.behavior.zoom()
+      .y(yscale)
+      .on("zoom", draw);
 
+    svg.append("svg:rect")
+      .attr("class", "zoom xy box")
+      .attr("width", width - margin.left - margin.right)
+      .attr("height", height - margin.top - margin.bottom)
+      .style("visibility", "hidden")
+      .attr("pointer-events", "all")
+      .call(xyzoom);
+
+    svg.append("svg:rect")
+      .attr("class", "zoom x box")
+      .attr("width", width - margin.left - margin.right)
+      .attr("height", height - margin.top - margin.bottom)
+      .attr("transform", "translate(" + 0 + "," + (height - margin.top - margin.bottom) + ")")
+      .style("visibility", "hidden")
+      .attr("pointer-events", "all")
+      .call(xzoom);
+
+    svg.append("svg:rect")
+      .attr("class", "zoom y box")
+      .attr("width", margin.left)
+      .attr("height", height - margin.top - margin.bottom)
+      .attr("transform", "translate(" + -margin.left + "," + 0 + ")")
+      .style("visibility", "hidden")
+      .attr("pointer-events", "all")
+      .call(yzoom);
+
+    // Set up x axis
+    xscale.domain([0, max_dist])
+      .range([0, width]);
+    xaxis.scale(xscale)
+      .orient("bottom");
+
+    // Set up y axis. Explicit tick values are needed or otherwise d3 will
+    // remove ticks when zooming out.
+    var tickValues = new Array(this.rows.length);
+    for (var i=0; i<tickValues.length; ++i) {
+      tickValues[i] = i;
+    }
+    yscale.domain([0, this.rows.length -1])
+      .range([height, 0]); // domain starts at 1
+    yaxis.scale(yscale)
+      .ticks(this.rows.length + 1)
+      .tickValues(tickValues)
+      .tickFormat((function(i) {
+        if (!this.rows[i] || !this.rows[i].pre_skid) {
+          return "";
+        }
+        return CATMAID.NeuronNameService.getInstance().getName(this.rows[i].pre_skid);
+      }).bind(this))
+      .orient("left");
+
+    // State
     var state = svg.selectAll(".state")
                    .data(this.rows)
                    .enter()
                    .append('g')
                      .attr('class', 'g') // one row, representing one pre_skid
                      .attr('transform', function(d, i) {
-                       return "translate(0," + y(i) + ")";
+                       return "translate(0," + yscale(i) + ")";
                      });
 
     state.selectAll("circle")
@@ -610,12 +664,14 @@
            .attr('class', 'dot')
            .attr('r', '3')
            .attr("cx", function(post) {
-             return x(post.distance);
+             return xscale(post.distance);
            })
            .attr("cy", (function(post) {
              // y(1) - y(0) gives the height of the horizonal row used for a pre_skid,
              // then jitter takes a fraction of that, and Math.random spreads the value within that range.
-             return ((y(1) - y(0)) * this.jitter) * (Math.random() - 0.5);
+             post.jitter = this.jitter;
+             post.offset = Math.random();
+             return ((yscale(1) - yscale(0)) * post.jitter) * (post.offset - 0.5);
            }).bind(this))
            .style('fill', (function(post) {
              // Default is to color according to post_skid,
@@ -640,10 +696,7 @@
           .attr("fill", "none")
           .attr("stroke", "black")
           .style("shape-rendering", "crispEdges")
-          .call(xAxis);
-      xg.selectAll("text")
-          .attr("fill", "black")
-          .attr("stroke", "none");
+          .call(xaxis);
       xg.append("text")
           .attr("x", width)
           .attr("y", -6)
@@ -659,10 +712,7 @@
           .attr("fill", "none")
           .attr("stroke", "black")
           .style("shape-rendering", "crispEdges")
-          .call(yAxis);
-      yg.selectAll("text")
-          .attr("fill", "black")
-          .attr("stroke", "none");
+          .call(yaxis);
       yg.append("text")
           .attr("fill", "black")
           .attr("stroke", "none")
@@ -700,6 +750,56 @@
         .attr("dy", ".35em")
         .style("text-anchor", "end")
         .text(function(skid) { return CATMAID.NeuronNameService.getInstance().getName(skid); });
+
+      function transform(d, i) {
+        //return "translate(" + xscale(d.distance) + "," + yscale(0) + ")";
+        let x = xscale(d.distance);
+        let y = ((yscale(1) - yscale(0)) * d.jitter) * (d.offset - 0.5);
+        return "translate(" + x + "," + y + ")";
+      }
+
+      function zoomUpdate() {
+        xyzoom = d3.behavior.zoom()
+          .x(xscale)
+          .y(yscale)
+          .on("zoom", draw);
+        xzoom = d3.behavior.zoom()
+          .x(xscale)
+          .on("zoom", draw);
+        yzoom = d3.behavior.zoom()
+          .y(yscale)
+          .on("zoom", draw);
+
+        svg.select('rect.zoom.xy.box').call(xyzoom);
+        svg.select('rect.zoom.x.box').call(xzoom);
+        svg.select('rect.zoom.y.box').call(yzoom);
+
+        xg.selectAll("text")
+          .attr("fill", "black")
+          .attr("stroke", "none");
+        yg.selectAll("text")
+          .attr("fill", "black")
+          .attr("stroke", "none");
+      }
+
+      function draw() {
+        svg.select('g.x.axis').call(xaxis);
+        svg.select('g.y.axis').call(yaxis);
+
+        // Update location of displayed data
+        state.attr('transform', function(d, i) {
+           return "translate(0," + yscale(i) + ")";
+         });
+        state.selectAll("circle")
+          //.attr('transform', transform);
+          .attr("cx", function(post) {
+           return xscale(post.distance);
+          });
+
+        zoomUpdate();
+      }
+
+      draw();
   };
 
   SynapsePlot.prototype.highlight = function(skid) {

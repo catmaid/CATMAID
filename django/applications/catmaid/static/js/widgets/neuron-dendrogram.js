@@ -654,7 +654,7 @@
                     taggedNodes.indexOf(cid) == -1) || // not tagged?
                    (minStrahler && // Alternatively, is min Strahler set?
                     strahler[cid] < minStrahler) || // Strahler below threshold?
-                   (blacklist.indexOf(cid) !== -1); // Alternatively, blacklisted?
+                   (blacklist.has(cid)); // Alternatively, blacklisted?
         if (skip) {
             // Test if child can also be skipped, if available
             var c = index[cid];
@@ -742,7 +742,7 @@
     }).bind(this);
 
     var taggedNodeIds = getTaggedNodes(this.highlightTags);
-    var blacklist = this.collapseNotABranch ? getTaggedNodes(['not a branch']): [];
+    var blacklist = new Set(this.collapseNotABranch ? getTaggedNodes(['not a branch']): []);
     this.renderTree = this.createTreeRepresentation(this.currentSkeletonTree, taggedNodeIds, blacklist);
     this.renderedNodeIds = this.getNodesInTree(this.renderTree);
 

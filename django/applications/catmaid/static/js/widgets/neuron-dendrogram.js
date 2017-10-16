@@ -630,7 +630,7 @@
   var createTree = function(index, taggedNodes, data, belowTag, collapsed, strahler,
       minStrahler, blacklist) {
     var id = data[0];
-    var tagged = taggedNodes.indexOf(id) != -1;
+    var tagged = taggedNodes.has(id);
     belowTag =  belowTag || tagged;
     // Basic node data structure
     var node = {
@@ -651,7 +651,7 @@
         var skip = (collapsed && // collapse active?
                     index.hasOwnProperty(cid) && // is parent?
                     (1 === index[cid].length) && // only one child?
-                    taggedNodes.indexOf(cid) == -1) || // not tagged?
+                    !taggedNodes.has(cid)) || // not tagged?
                    (minStrahler && // Alternatively, is min Strahler set?
                     strahler[cid] < minStrahler) || // Strahler below threshold?
                    (blacklist.has(cid)); // Alternatively, blacklisted?
@@ -741,7 +741,7 @@
       }, []);
     }).bind(this);
 
-    var taggedNodeIds = getTaggedNodes(this.highlightTags);
+    var taggedNodeIds = new Set(getTaggedNodes(this.highlightTags));
     var blacklist = new Set(this.collapseNotABranch ? getTaggedNodes(['not a branch']): []);
     this.renderTree = this.createTreeRepresentation(this.currentSkeletonTree, taggedNodeIds, blacklist);
     this.renderedNodeIds = this.getNodesInTree(this.renderTree);

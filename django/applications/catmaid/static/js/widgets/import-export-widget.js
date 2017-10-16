@@ -369,7 +369,7 @@ annotations, neuron name, connectors or partner neurons.
     dialog.dialog.appendChild(label_p);
 
     var sourceSelect = document.createElement('select');
-    ['FAFB13'].forEach(function(key, i) {
+    ['FAFB14', 'FAFB13'].forEach(function(key, i) {
       this.options.add(new Option(key, key));
       if (i === 0) {
         this.selectedIndex = i;

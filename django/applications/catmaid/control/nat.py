@@ -111,7 +111,7 @@ def export_skeleton_as_nrrd(skeleton_id, source_ref, target_ref, user_id, mirror
     """ Export the skeleton with the passed in ID as NRRD file using R. For
     this to work R has to be installed.
 
-    source_ref: FAFB13
+    source_ref: FAFB14
     target_ref: JFRC2
     """
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")

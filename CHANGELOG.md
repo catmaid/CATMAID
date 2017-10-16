@@ -32,6 +32,9 @@ Miscellaneous:
 - Synapse distribution plot: global and single-axis zoom and pan are now
   supported.
 
+- Neuron dendrogram: nodes linked to connectors (synaptic sites) can now be
+  highlighted.
+
 
 ### Bug fixes
 

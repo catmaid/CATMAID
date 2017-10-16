@@ -1000,6 +1000,12 @@ div.review-block::after {
   stroke-width: 1.5px;
 }
 
+.node.connector-linked circle {
+  stroke: mediumaquamarine;
+  stroke-width: 1.5px;
+  fill: khaki;
+}
+
 .node {
   font: 10px sans-serif;
 }

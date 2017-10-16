@@ -23,6 +23,7 @@
     this.showNodeIDs = false;
     this.showTags = true;
     this.showStrahler = false;
+    this.showConnectorPartners = false;
     this.radialDisplay = true;
     this.minStrahler = 1;
     this.collapseNotABranch = true;
@@ -149,6 +150,20 @@
         collapse.appendChild(collapseInput);
         collapse.appendChild(document.createTextNode('Only branches and tagged nodes'));
         tabs['Main'].appendChild(collapse);
+
+        var showConnectorPartners = document.createElement('label');
+        var showConnectorPartnersInput = document.createElement('input');
+        showConnectorPartnersInput.setAttribute('type', 'checkbox');
+        if (this.showConnectorPartners) {
+          showConnectorPartnersInput.setAttribute('checked', 'checked');
+        }
+        showConnectorPartnersInput.onchange = function() {
+          self.setShowConnectorPartners(this.checked);
+          self.update();
+        };
+        showConnectorPartners.appendChild(showConnectorPartnersInput);
+        showConnectorPartners.appendChild(document.createTextNode('Show connector partners'));
+        tabs['Main'].appendChild(showConnectorPartners);
 
         var collapseNotABranch = document.createElement('label');
         var collapseNotABranchInput = document.createElement('input');
@@ -580,12 +595,13 @@
     this.updating = true;
 
     // Retrieve skeleton data
-    var url = django_url + project.id + '/' + skid + '/0/1/compact-skeleton';
+    var url = django_url + project.id + '/' + skid + '/1/1/compact-skeleton';
     requestQueue.register(url, "GET", {}, CATMAID.jsonResponseHandler(
           (function(data) {
             this.reset();
             this.currentSkeletonId = skid;
             this.currentSkeletonTree = data[0];
+            this.currentSkeletonConnectors = data[1];
             this.currentSkeletonTags = data[2];
             var ap  = new CATMAID.ArborParser().init('compact-skeleton', data);
             this.currentArbor = ap.arbor;
@@ -627,8 +643,8 @@
    * Helper to create a tree representation of a skeleton. Expects data to be of
    * the format [id, parent_id, user_id, x, y, z, radius, confidence].
    */
-  var createTree = function(index, taggedNodes, data, belowTag, collapsed, strahler,
-      minStrahler, blacklist) {
+  var createTree = function(index, taggedNodes, connectorPartnerNodes, data,
+      belowTag, collapsed, strahler, minStrahler, blacklist) {
     var id = data[0];
     var tagged = taggedNodes.has(id);
     belowTag =  belowTag || tagged;
@@ -641,6 +657,7 @@
       'tagged': tagged,
       'belowTag': belowTag,
       'strahler': strahler[id],
+      'connectorLinked': connectorPartnerNodes.has(id)
     };
 
     // Add children to node, if they exist
@@ -651,6 +668,7 @@
         var skip = (collapsed && // collapse active?
                     index.hasOwnProperty(cid) && // is parent?
                     (1 === index[cid].length) && // only one child?
+                    !connectorPartnerNodes.has(cid) && // no connector node
                     !taggedNodes.has(cid)) || // not tagged?
                    (minStrahler && // Alternatively, is min Strahler set?
                     strahler[cid] < minStrahler) || // Strahler below threshold?
@@ -669,8 +687,8 @@
       };
 
       node.children = index[id].map(findNext).filter(notNull).map(function(c) {
-        return createTree(index, taggedNodes, c, belowTag, collapsed, strahler,
-            minStrahler, blacklist);
+        return createTree(index, taggedNodes, connectorPartnerNodes, c,
+            belowTag, collapsed, strahler, minStrahler, blacklist);
       });
 
     }
@@ -682,7 +700,8 @@
    * Creates a tree representation of a node array. Nodes that appear in
    * taggedNodes get a label attached.
    */
-  NeuronDendrogram.prototype.createTreeRepresentation = function(nodes, taggedNodes, nodesToSkip)
+  NeuronDendrogram.prototype.createTreeRepresentation = function(nodes,
+      taggedNodes, connectorPartnerNodes, nodesToSkip)
   {
     // Prepare hierarchical node data structure which is readable by d3. This is
     // done by indexing by parent first and then building the tree object.
@@ -710,8 +729,8 @@
 
     // Create the tree, starting from the root node
     var root = parentToChildren[null][0];
-    var tree = createTree(parentToChildren, taggedNodes, root, false, this.collapsed, strahler,
-        this.minStrahler, nodesToSkip);
+    var tree = createTree(parentToChildren, taggedNodes, connectorPartnerNodes,
+        root, false, this.collapsed, strahler, this.minStrahler, nodesToSkip);
 
     return tree;
   };
@@ -720,6 +739,14 @@
   {
     // For now do nothing.
   };
+
+  function firstElement(list) {
+    return list[0];
+  }
+
+  function getConnectorPartnerNodes(connectorNodes) {
+    return connectorNodes.map(firstElement);
+  }
 
 
   NeuronDendrogram.prototype.update = function()
@@ -742,8 +769,11 @@
     }).bind(this);
 
     var taggedNodeIds = new Set(getTaggedNodes(this.highlightTags));
+    var connectorPartnerNodes = new Set(this.showConnectorPartners ?
+        getConnectorPartnerNodes(this.currentSkeletonConnectors) : []);
     var blacklist = new Set(this.collapseNotABranch ? getTaggedNodes(['not a branch']): []);
-    this.renderTree = this.createTreeRepresentation(this.currentSkeletonTree, taggedNodeIds, blacklist);
+    this.renderTree = this.createTreeRepresentation(this.currentSkeletonTree,
+        taggedNodeIds, connectorPartnerNodes, blacklist);
     this.renderedNodeIds = this.getNodesInTree(this.renderTree);
 
     if (this.currentSkeletonTree && this.currentSkeletonTags) {
@@ -1016,6 +1046,7 @@
       .attr("id", function(d) { return "node" + d.id; })
       .attr("transform", nodeTransform)
       .classed('tagged', function(d) { return d.belowTag; })
+      .classed('connector-linked', function(d) { return d.connectorLinked; })
       .on("dblclick", nodeClickHandler.bind(this));
     node.append("circle")
       .attr("r", 4.5);
@@ -1173,6 +1204,11 @@
   NeuronDendrogram.prototype.setVSpaceFactor = function(value)
   {
     this.vNodeSpaceFactor = value;
+  };
+
+  NeuronDendrogram.prototype.setShowConnectorPartners = function(value)
+  {
+    this.showConnectorPartners = !!value;
   };
 
   // Export widget

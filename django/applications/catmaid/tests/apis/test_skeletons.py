@@ -116,7 +116,8 @@ class SkeletonsApiTests(CatmaidApiTestCase):
                 "min_review_minutes": 0,
                 "n_pre": 3,
                 "post_contributors": {},
-                "n_post": 0}
+                "n_post": 0,
+                "review_contributors": {}}
         self.assertEqual(parsed_response, expected_response)
 
         response = self.client.post(
@@ -139,7 +140,8 @@ class SkeletonsApiTests(CatmaidApiTestCase):
                 "min_review_minutes": 0,
                 "n_pre": 3,
                 "post_contributors": {"3": 1},
-                "n_post": 1}
+                "n_post": 1,
+                "review_contributors": {}}
         self.assertEqual(parsed_response, expected_response)
 
 

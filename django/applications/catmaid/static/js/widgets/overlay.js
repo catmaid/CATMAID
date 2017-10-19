@@ -2296,22 +2296,28 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   // Look-up some frequently used objects
   var primaryStack = this.stackViewer.primaryStack;
 
-  // Populate Nodes
   var jsonNodes = jso[0];
+  var jsonConnectors = jso[1];
+
+  // Keetp track of all nodes that have been added
+  var addedNodes = [];
+
+  // Populate Nodes
   for (var i=0, max=jsonNodes.length; i<max; ++i) {
     var a = jsonNodes[i];
     // a[0]: ID, a[1]: parent ID, a[2]: x, a[3]: y, a[4]: z, a[5]: confidence
     // a[8]: user_id, a[6]: radius, a[7]: skeleton_id, a[9]: user_id
     var z = primaryStack.projectToUnclampedStackZ(a[4], a[3], a[2]);
-    this.nodes[a[0]] = this.graphics.newNode(
+    let newNode = this.graphics.newNode(
       a[0], null, a[1], a[6],
       primaryStack.projectToUnclampedStackX(a[4], a[3], a[2]),
       primaryStack.projectToUnclampedStackY(a[4], a[3], a[2]),
       z, z - this.stackViewer.z, a[5], a[7], a[8], a[9]);
+    this.nodes[a[0]] = newNode;
+    addedNodes.push(newNode);
   }
 
   // Populate ConnectorNodes
-  var jsonConnectors = jso[1];
   for (var i=0, max=jsonConnectors.length; i<max; ++i) {
     var a = jsonConnectors[i];
     var links = a[7];
@@ -2342,11 +2348,13 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     // a[7]: treenode links
     var z = primaryStack.projectToUnclampedStackZ(a[3], a[2], a[1]);
     // For performance reasons, the edition time is transmitted as epoch time
-    this.nodes[a[0]] = this.graphics.newConnectorNode(
+    let newNode = this.graphics.newConnectorNode(
       a[0],
       primaryStack.projectToUnclampedStackX(a[3], a[2], a[1]),
       primaryStack.projectToUnclampedStackY(a[3], a[2], a[1]),
       z, z - this.stackViewer.z, a[4], subtype, a[5], a[6]);
+    this.nodes[a[0]] = newNode;
+    addedNodes.push(newNode);
   }
 
   // Disable any unused instances
@@ -2379,6 +2387,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
         pn.addChildNode(vn);
         vn.addChildNode(n);
         this.nodes[vn.id] = vn;
+        addedNodes.push(vn);
         continue;
       }
     }
@@ -2417,10 +2426,8 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   }
 
   // Draw node edges and circles, including the ones for virtual nodes.
-  for (var i in this.nodes) {
-    if (this.nodes.hasOwnProperty(i)) {
-      this.nodes[i].createGraphics();
-    }
+  for (var i=0, imax=addedNodes.length; i<imax; ++i) {
+    addedNodes[i].createGraphics();
   }
 
   // Now that all edges have been created, disable unused arrows
@@ -2431,7 +2438,9 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     var m = jso[2];
     // Scale labels relative to confidence text labels to account for overlay scaling.
     var fontSize = parseFloat(this.graphics.ArrowLine.prototype.confidenceFontSize) * 0.75;
-    for (var nid in m) {
+    var labeledNodes = Object.keys(m);
+    for (var i=0, imax=labeledNodes.length; i<imax; ++i) {
+      var nid = labeledNodes[i];
       if (m.hasOwnProperty(nid)) {
         var node = this.nodes[nid];
         // Only add labels for nodes in current section

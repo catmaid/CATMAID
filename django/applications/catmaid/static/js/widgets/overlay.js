@@ -456,7 +456,15 @@ SkeletonAnnotations.getVirtualNodeID = function(childID, parentID, x, y, z) {
   if (!SkeletonAnnotations.isRealNode(parentID)) {
     parentID = SkeletonAnnotations.getParentOfVirtualNode(parentID);
   }
-  return 'vn:' + childID + ':' + parentID + ':' + x.toFixed(3) + ':' +
+  return SkeletonAnnotations._getVirtualNodeID(childID, parentID, x, y, z);
+};
+
+/**
+ * Get a virtual node ID, expecting childId and parentId to be real nodes. No
+ * further checks are attempted.
+ */
+SkeletonAnnotations._getVirtualNodeID = function(childId, parentId, x, y, z) {
+  return 'vn:' + childId + ':' + parentId + ':' + x.toFixed(3) + ':' +
     y.toFixed(3) + ':' + z.toFixed(3);
 };
 
@@ -2203,6 +2211,9 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesInDB = functio
  * child and parent are connected directly. However, both of them (!) are not
  * part of the current section. The node will be placed on the XY plane of the
  * given Z. If child and parent have the same Z, null is returned.
+ *
+ * This function expects child and parent to be real nodes and does no further
+ * checks in this regard for performance reasons.
  */
 function createVirtualNode(graphics, child, parent, stackViewer)
 {
@@ -2225,7 +2236,7 @@ function createVirtualNode(graphics, child, parent, stackViewer)
   var xp = stackViewer.primaryStack.stackToProjectX(z, pos[1], pos[0]);
   var yp = stackViewer.primaryStack.stackToProjectY(z, pos[1], pos[0]);
   var zp = stackViewer.primaryStack.stackToProjectZ(z, pos[1], pos[0]);
-  var id = SkeletonAnnotations.getVirtualNodeID(child.id, parent.id, xp, yp, zp);
+  var id = SkeletonAnnotations._getVirtualNodeID(child.id, parent.id, xp, yp, zp);
 
   if (child.radius && parent.radius) {
     var a = (parent.z - z)/(parent.z - child.z);
@@ -2237,17 +2248,6 @@ function createVirtualNode(graphics, child, parent, stackViewer)
 
   var vn = graphics.newNode(id, parent, parent.id, r, pos[0], pos[1], z, 0, c,
       child.skeleton_id, child.edition_time, child.user_id);
-
-  // Update child information of virtual node and parent as if the virtual
-  // node was a real node. That is, replace the original child of the parent
-  // with the virtual node, and add the original child as child of the virtual
-  // node.
-  delete parent.children[child.id];
-  parent.numberOfChildren--;
-  parent.addChildNode(vn);
-  child.parent = vn;
-  child.parent_id = id;
-  vn.addChildNode(child);
 
   return vn;
 }
@@ -2353,18 +2353,42 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   var nTreeNodes = jso[0].length + (extraNodes ? extraNodes.length : 0);
   this.graphics.disableBeyond(nTreeNodes, jso[1].length);
 
-  // Now that all Node instances are in place, loop nodes again
-  // and set correct parent objects and parent's children update
+  // Now that all Node instances are in place, loop nodes again and link parents
+  // and children. If virtual nodes are needed for a particular edge, insert
+  // them between parent and child. These are nodes that are not actually on the
+  // current section, but are created to represent the connection between a
+  // child and a parent node that are not part of this section either.
   for (var i=0, max=jsonNodes.length; i<max; ++i) {
     var a = jsonNodes[i];
+    var n = this.nodes[a[0]];
     var pn = this.nodes[a[1]]; // parent Node
-    if (pn) {
-      var nn = this.nodes[a[0]];
-      // if parent exists, update the references
-      nn.parent = pn;
-      // update the parent's children
-      pn.addChildNode(nn);
+
+    // Neither virtual nodes or other parent/child links need to be created if
+    // there is no parent node.
+    if (!pn) {
+      continue;
     }
+
+    // Virtual nodes can only exists if both parent and child are not on the
+    // current section and not both above or below.
+    if ((n.zdiff < 0 && pn.zdiff > 0) || (n.zdiff > 0 && pn.zdiff < 0)) {
+      var vn = createVirtualNode(this.graphics, n, pn, this.stackViewer);
+      if (vn) {
+        n.parent = vn;
+        n.parent_id = vn.id;
+        pn.addChildNode(vn);
+        vn.addChildNode(n);
+        this.nodes[vn.id] = vn;
+        continue;
+      }
+    }
+
+    // If no virtual node was inserted, link parent and child normally.
+    var n = this.nodes[a[0]];
+    // if parent exists, update the references
+    n.parent = pn;
+    // update the parent's children
+    pn.addChildNode(n);
   }
 
   // Now that ConnectorNode and Node instances are in place,
@@ -2388,26 +2412,6 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
         var link = this.graphics.newLinkNode(r[4], node, r[1], r[2], r[3]);
         connector[group][tnid] = link;
         node.linkConnector(connector.id, link);
-      }
-    }
-  }
-
-  // Create virtual nodes, if needed. These are nodes that are not actually on
-  // the current section, but are created to represent the connection between a
-  // child and a parent node that are not part of this section either.
-  var sameSign = CATMAID.tools.sameSign;
-  for (var i=0, max=jsonNodes.length; i<max; ++i) {
-    var a = jsonNodes[i];
-    var n = this.nodes[a[0]];
-    // Check if the node is above or below this section
-    if (n.zdiff !== 0) {
-      // Check if parent is also not in this section
-      var p = n.parent;
-      if (p && p.zdiff !== 0 && !sameSign(n.zdiff, p.zdiff)) {
-        var vn = createVirtualNode(this.graphics, n, p, this.stackViewer);
-        if (vn) {
-          this.nodes[vn.id] = vn;
-        }
       }
     }
   }

@@ -902,6 +902,9 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
           },
           extended_status_update: {
             default: false
+          },
+          subviews_from_cache: {
+            default: true
           }
         },
         migrations: {
@@ -2444,7 +2447,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
       if (m.hasOwnProperty(nid)) {
         var node = this.nodes[nid];
         // Only add labels for nodes in current section
-        if (node.shouldDisplay()) {
+        if (node && node.shouldDisplay()) {
           this.labels[nid] = new CATMAID.OverlayLabel(nid, this.paper, node.x, node.y, fontSize, m[nid], node.isVisible());
         }
       }
@@ -3065,6 +3068,16 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
     var paramsKey = JSON.stringify(params);
     var json = self.nodeListCache.get(paramsKey);
 
+    // Special case: allow fast sub-views of a previous view (e.g. when zooming
+    // in and back out) based on cached data. If no exact matching node list
+    // cache entry was found, try to find a cache entry that encloses the
+    // current request bounding box and that didn't have any nodes dropped.
+    var subviewsFromCache = SkeletonAnnotations.TracingOverlay.Settings.session.subviews_from_cache;
+    if (subviewsFromCache && !json) {
+      json = self.createSubViewNodeListFromCache(params);
+    }
+
+    // Finally, if a cache entry was found, use it
     if (json) {
       success(json);
     } else {
@@ -3084,6 +3097,47 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
         'stack-' + self.stackViewer.getId() + '-url-' + url);
     }
   });
+};
+
+SkeletonAnnotations.TracingOverlay.prototype.createSubViewNodeListFromCache = function(params) {
+  var nodeList = null;
+  var self = this;
+  this.nodeListCache.forEachEntry(function(entry) {
+    // Ignore entry if it doesn't contain all nodes for section. Don't use
+    // the cache's get() function, because it will keep each accessed entry
+    // in the cache longer. Use get() only once we know we can use the
+    // entry.
+    let incomplete = entry.value[3];
+    if (incomplete) {
+      return;
+    }
+    // Check if the entry encloses the current request bounding box.
+    let entryParams = JSON.parse(entry.key);
+    let entryEnclosesRequest =
+        entryParams.left <= params.left &&
+        entryParams.right >= params.right &&
+        entryParams.top <= params.top &&
+        entryParams.bottom >= params.bottom &&
+        entryParams.z1 <= params.z1 &&
+        entryParams.z2 >= params.z2;
+    if (entryEnclosesRequest &&
+        entryParams.labels === params.labels) {
+      var cachedJson = self.nodeListCache.get(entry.key);
+      if (!cachedJson) {
+        // This can happen if the entry just turned invalid due to lifetime
+        // constraints.
+        return;
+      }
+      // Use cached entry if there was no hit yet or the cached version is
+      // smaller.
+      var cachedLength = cachedJson[0].length + cachedJson[1].length;
+      if (!nodeList || cachedLength < (nodeList[0].length + nodeList[1].length)) {
+        nodeList = cachedJson;
+      }
+    }
+  });
+
+  return nodeList;
 };
 
 /**

@@ -108,6 +108,19 @@
     this._store.length = 0;
   };
 
+  /**
+   * Execue <fn> for each entry without marking it as accessed.
+   */
+  LRUCache.prototype.forEachEntry = function(fn) {
+    var now = Date.now();
+    for (var i = 0; i < this._store.length; ++i) {
+      var entry = this._store[i];
+      if (entry && (now - entry.timestamp <= this.lifetime)) {
+        fn(entry);
+      }
+    }
+  };
+
   CATMAID.LRUCache = LRUCache;
 
 })(CATMAID);

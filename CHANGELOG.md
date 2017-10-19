@@ -35,6 +35,11 @@ Miscellaneous:
 - Neuron dendrogram: nodes linked to connectors (synaptic sites) can now be
   highlighted.
 
+- Tracing layer: cached tracing data is now used by default when showing
+  sub-views of previously loaded data. This is useful for e.g. quickly zooming
+  in. Like with the regular node cache, views not used for one minute will be
+  thrown away.
+
 
 ### Bug fixes
 

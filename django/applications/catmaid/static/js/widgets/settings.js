@@ -749,6 +749,19 @@
           'extended_status_update',
           SETTINGS_SCOPE));
 
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              'Use cached data for matching sub-views',
+              SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].subviews_from_cache,
+              'If enabled, CATMAID will use already loaded tracing data when ' +
+              'showing sub-views of a previously shown view, e.g. when zooming in.',
+              function() {
+                SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].subviews_from_cache = this.checked;
+              }),
+          SkeletonAnnotations.TracingOverlay.Settings,
+          'subviews_from_cache',
+          SETTINGS_SCOPE));
+
 
       // Add explanatory text
       ds.append($('<div/>').addClass('setting').append("Choose how nodes, " +

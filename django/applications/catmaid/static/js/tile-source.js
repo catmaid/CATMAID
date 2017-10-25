@@ -378,6 +378,8 @@
 
   /**
    * Serve images from Felix FlixServer.
+   *
+   * Source type: 9
    */
   CATMAID.FlixServerTileSource = function(baseURL, fileExtension, tileWidth, tileHeight) {
     this.color = null;

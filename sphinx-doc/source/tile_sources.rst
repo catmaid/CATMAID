@@ -330,6 +330,26 @@ Tile source types are listed by the enumeration integer ID referenced by
 
     https://catmaid.org/path/root.n5/group/dataset/%SCALE_DATASET%/raw/0_1_2
 
+12. JHU/APL Boss tiles
+**********************
+
+   This type supports loading tiles from a
+   `JHU/APL Boss <https://github.com/jhuapl-boss/boss>`_ instance, using a
+   manually entered API token for authorization. The API taken entered through
+   the front-end layer control UI is passed in an ``Authorization`` header
+   with all tile requests.
+
+   Currently only XY tiles are fully supported. ``tileWidth`` and ``tileHeight``
+   must be equal.
+
+   ``sourceBaseURL`` should reference the REST resource directly::
+
+       <instance URL>/v1/tile/<collection>/<experiment>/<channel>/
+
+   XY URL format::
+
+       <sourceBaseURL>xy/<tileWidth>/<zoomLevel>/<col>/<row>/<pixelPosition.z>
+
 Backend Representation
 ----------------------
 

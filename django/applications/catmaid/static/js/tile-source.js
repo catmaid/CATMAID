@@ -41,7 +41,8 @@
       '8': CATMAID.DVIDImagetileTileSource,
       '9': CATMAID.FlixServerTileSource,
       '10': CATMAID.H2N5TileSource,
-      '11': CATMAID.N5ImageBlockSource
+      '11': CATMAID.N5ImageBlockSource,
+      '12': CATMAID.BossTileSource,
     };
 
     return tileSources[tileSourceType];
@@ -165,7 +166,6 @@
       };
     });
   };
-
 
   CATMAID.AbstractTileSourceWithOverview = function () {
     CATMAID.AbstractTileSource.apply(this, arguments);
@@ -689,6 +689,35 @@
           cors:       result[1][0],
           corsTime:   result[1][1]
       })));
+    }
+  };
+
+  /**
+   * Tile source for Boss tiles.
+   *
+   * See https://docs.theboss.io/docs/image
+   *
+   * https://api.theboss.io/v1/tile/:collection/:experiment/:channel/:orientation/:tile_size/:resolution/:x_idx/:y_idx/:z_idx/:t_idx/
+   *
+   * Tile source: 10
+   */
+  CATMAID.BossTileSource = function () {
+    CATMAID.AbstractTileSource.apply(this, arguments);
+
+    if (this.tileWidth !== this.tileHeight)
+      throw new CATMAID.ValueError('Tile width and height must be equal for Boss tile sources!');
+  };
+
+  CATMAID.BossTileSource.prototype = Object.create(CATMAID.AbstractTileSource.prototype);
+
+  CATMAID.BossTileSource.prototype.getTileURL = function (
+      project, stack, slicePixelPosition, col, row, zoomLevel) {
+    if (stack.orientation === CATMAID.Stack.ORIENTATION_XY) {
+      return this.baseURL + 'xy/' + this.tileWidth + '/' + zoomLevel + '/' + col + '/' + row + '/' + slicePixelPosition[0];
+    } else if (stack.orientation === CATMAID.Stack.ORIENTATION_XZ) {
+      return this.baseURL + 'xz/' + this.tileWidth + '/' + zoomLevel + '/' + col + '/' + slicePixelPosition[0] + '/' + row ;
+    } else if (stack.orientation === CATMAID.Stack.ORIENTATION_ZY) {
+      return this.baseURL + 'yz/' + this.tileWidth + '/' + zoomLevel + '/' + col + '/' + row + '/' + slicePixelPosition[0];
     }
   };
 

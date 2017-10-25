@@ -247,7 +247,7 @@ def check_http_accessibility(image_base, file_extension, auth=None):
     slice_zero_url = urljoin(image_base, "0")
     first_file_url = urljoin(slice_zero_url, "0_0_0." + file_extension)
     try:
-        response = requests.get(first_file_url, auth=auth)
+        response = requests.get(first_file_url, auth=auth, timeout=1)
     except IOError:
         return False
     return response.status_code == 200

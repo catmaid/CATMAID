@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import array
 import json
 import logging
 import networkx as nx
 import pytz
 import six
+import struct
 
 from functools import partial
 from collections import defaultdict, deque
@@ -396,9 +398,9 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
     """Get a compact treenode representation of a skeleton, optionally with the
     history of individual nodes and connector, reviews and annotationss. Note
     this function is performance critical! Returns, in JSON:
-    
+
       [[nodes], [connectors], {nodeID: [tags]}, [reviews], [annotations]]
-    
+
     with connectors and tags being empty when 0 == with_connectors and 0 ==
     with_tags, respectively.
 
@@ -1549,3 +1551,36 @@ HAVING count(*) %s 1
 
     return HttpResponse(json.dumps(tuple(row[0] for row in cursor.fetchall())))
 
+@api_view(['GET'])
+@requires_user_role(UserRole.Browse)
+def neuroglancer_skeleton(request, project_id=None, skeleton_id=None):
+    """Export a morphology-only skeleton in neuroglancer's binary format.
+    """
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT id, parent_id, location_x, location_y, location_z
+        FROM treenode
+        WHERE project_id = %s AND skeleton_id = %s
+    """, (project_id, skeleton_id))
+
+    rows = cursor.fetchall()
+
+    num_vertices = cursor.rowcount
+    id_map = {row[0]: i for i, row in enumerate(rows)}
+
+    vertices = [row[2:] for row in rows]
+    edges = [[i, id_map[row[1]]] for i, row in enumerate(rows) if row[1] is not None]
+
+    total_size = (16 + 12*num_vertices + 8*(num_vertices - 1))
+    buff = array.array('c', b'\x00'*total_size)
+
+    struct.pack_into('3I', buff, 0, num_vertices, 0, num_vertices - 1)
+    offset = 16
+    for v in vertices:
+        struct.pack_into('3f', buff, offset, *v)
+        offset += 12
+    for e in edges:
+        struct.pack_into('2I', buff, offset, *e)
+        offset += 8
+
+    return HttpResponse(buff)

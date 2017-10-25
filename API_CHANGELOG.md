@@ -13,6 +13,9 @@ included in this changelog.
   directly and not only links. The previous API is available as
   `GET /{project_id}/connctors/links/` (see below).
 
+- `GET /{project_id}/skeletons/{skeleton_id}/neuroglancer`:
+  Export a morphology-only skeleton in neuroglancer's binary format.
+
 ### Modifications
 
 - `GET /{project_id}/connector/user-info` has been replaced with

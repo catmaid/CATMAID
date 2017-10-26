@@ -13,6 +13,8 @@ Publications using CATMAID
 2017
 ~~~~
 
+* Stephan Gerhard, Ingrid Andrade, Richard D. Fetter, Albert Cardona, Casey M. Schneider-Mizell. `Conserved neural circuit structure across Drosophila larva development revealed by comparative connectomics <https://elifesciences.org/articles/29089>`_, eLife, 2017.
+
 * Katharina Eichler, Feng Li, Ashok Litwin-Kumar, Youngser Park, Ingrid Andrade, Casey M. Schneider-Mizell, Timo Saumweber, Annina Huser, Claire Eschbach, Bertram Gerber, Richard D. Fetter, James W. Truman, Carey E. Priebe, L. F. Abbott, Andreas S. Thum, Marta Zlatic, Albert Cardona. `The complete connectome of a learning and memory centre in an insect brain <http://www.biorxiv.org/content/biorxiv/early/2017/05/24/141762.full.pdf>`_, Nature, 2017.
 
 * Ivan Larderet, Pauline M. J. Fritsch, Nanae Gendre, G. Larisa Neagu-Maier, Richard D. Fetter, Casey M. Schneider-Mizell, James W. Truman, Marta Zlatic, Albert Cardona, Simon G. Sprecher. `Organization of the Drosophila larval visual circuit <https://elifesciences.org/articles/28387>`_, eLife, 2017.

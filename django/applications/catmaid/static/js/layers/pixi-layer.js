@@ -94,10 +94,10 @@
 
   Loader.prototype.constructor = Loader;
 
-  Loader.prototype.add = function (url, options, completionCallback) {
+  Loader.prototype.add = function (url, headers, completionCallback) {
     var request = new Request(
         url,
-        {mode: 'cors', credentials: 'same-origin'});
+        {mode: 'cors', credentials: 'same-origin', headers: headers});
     this._queue.add(request);
     var remove = (function () { this._queue.delete(request); }).bind(this);
     fetch(request)
@@ -138,6 +138,7 @@
     this._loader = new Loader(this._concurrency);
     this._loading = {};
     this._loadingQueue = [];
+    this._loadingQueueHeaders = {};
     this._loadingRequests = new Set();
     this._unused = [];
     this._unusedCapacity = 256;
@@ -157,7 +158,7 @@
    * @return {Object}            A request tracking object that can be used to
    *                             to cancel this request.
    */
-  PixiContext.TextureManager.prototype.load = function (urls, callback) {
+  PixiContext.TextureManager.prototype.load = function (urls, headers, callback) {
     var request = {urls: urls, callback: callback, remaining: 0};
     // Remove any URLs already cached or being loaded by other requests.
     var newUrls = urls.filter(function (url) {
@@ -170,6 +171,10 @@
         this._loading[url] = new Set([request]);
         return true;
       }
+    }, this);
+
+    newUrls.forEach(function (url) {
+      this._loadingQueueHeaders[url] = headers;
     }, this);
 
     if (request.remaining === 0) {
@@ -197,9 +202,9 @@
     this._loadingQueue = remainingQueue;
     toLoad.forEach(function (url) {
       this._loader.add(url,
-                       {crossOrigin: true,
-                        xhrType: PIXI.loaders.Resource.XHR_RESPONSE_TYPE.BLOB},
+                       this._loadingQueueHeaders[url],
                        this._boundResourceLoaded);
+      delete this._loadingQueueHeaders[url];
     }, this);
   };
 

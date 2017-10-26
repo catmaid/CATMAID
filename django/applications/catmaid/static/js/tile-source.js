@@ -149,7 +149,11 @@
     });
 
     var beforeCorsLoad = performance.now();
-    var corsReq = fetch(new Request(url, {mode: 'cors', credentials: 'same-origin'}))
+    var corsReq = new Request(url, {
+        mode: 'cors',
+        credentials: 'same-origin',
+        headers: this.getRequestHeaders()});
+    corsReq = fetch(corsReq)
       .then(function (response) {
         var contentHeader = response.headers.get('Content-Type');
         return [contentHeader && contentHeader.startsWith('image'),
@@ -165,6 +169,10 @@
         corsTime:   result[1][1]
       };
     });
+  };
+
+  CATMAID.AbstractTileSource.prototype.getRequestHeaders = function () {
+    return {};
   };
 
   CATMAID.AbstractTileSourceWithOverview = function () {
@@ -706,6 +714,9 @@
 
     if (this.tileWidth !== this.tileHeight)
       throw new CATMAID.ValueError('Tile width and height must be equal for Boss tile sources!');
+
+    this.authToken = '';
+    this.headers = {};
   };
 
   CATMAID.BossTileSource.prototype = Object.create(CATMAID.AbstractTileSource.prototype);
@@ -719,6 +730,26 @@
     } else if (stack.orientation === CATMAID.Stack.ORIENTATION_ZY) {
       return this.baseURL + 'yz/' + this.tileWidth + '/' + zoomLevel + '/' + col + '/' + row + '/' + slicePixelPosition[0];
     }
+  };
+
+  CATMAID.BossTileSource.prototype.getSettings = function () {
+    return [
+        {name: 'authToken', displayName: 'Boss auth token', type: 'text', value: this.authToken,
+          help: 'TODO'},
+      ];
+  };
+
+  CATMAID.BossTileSource.prototype.setSetting = function () {
+    CATMAID.AbstractTileSource.prototype.setSetting.apply(this, arguments);
+    this._buildRequestHeaders();
+  };
+
+  CATMAID.BossTileSource.prototype._buildRequestHeaders = function () {
+    this.headers = {'Authorization': 'Token ' + this.authToken};
+  };
+
+  CATMAID.BossTileSource.prototype.getRequestHeaders = function () {
+    return this.headers;
   };
 
 

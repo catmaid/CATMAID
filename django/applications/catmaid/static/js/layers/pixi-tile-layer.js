@@ -37,7 +37,9 @@
 
   /** @inheritdoc */
   PixiTileLayer.prototype._handleCanaryCheck = function (accessible) {
-    if (accessible.normal && !accessible.cors) {
+    if (accessible.cors) {
+      return;
+    } else if (accessible.normal) {
       CATMAID.warn('Stack mirror is not CORS accessible, so WebGL will not be used.');
       this.switchToDomTileLayer();
     } else {

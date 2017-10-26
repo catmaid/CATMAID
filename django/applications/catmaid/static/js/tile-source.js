@@ -121,32 +121,77 @@
     } else throw new RangeError('Tile source type ' + tileSourceType + ' is unknown.');
   };
 
+
+  CATMAID.AbstractTileSource = function (baseURL, fileExtension, tileWidth, tileHeight) {
+    this.baseURL = baseURL;
+    this.fileExtension = fileExtension;
+    this.tileWidth = tileWidth;
+    this.tileHeight = tileHeight;
+    this.transposeTiles = new Set();
+  };
+
+  CATMAID.AbstractTileSource.prototype.constructor = CATMAID.AbstractTileSource;
+
+  /**
+   * Return the URL of a single tile, defined by it grid position
+   * (x, y), ...
+   */
+  CATMAID.AbstractTileSource.prototype.getTileURL = function (
+      project, stack, slicePixelPosition, col, row, zoomLevel) {
+    throw new CATMAID.Error('Not implemented');
+  };
+
+  CATMAID.AbstractTileSource.prototype.getOverviewLayer = function (layer) {
+    return new CATMAID.ArtificialOverviewLayer(layer);
+  };
+
+  CATMAID.AbstractTileSource.prototype.getSettings = function () {
+    return this.settings || [];
+  };
+
+  CATMAID.AbstractTileSource.prototype.setSetting = function (name, value) {
+    this[name] = value;
+  };
+
+
+  CATMAID.AbstractTileSourceWithOverview = function () {
+    CATMAID.AbstractTileSource.apply(this, arguments);
+  };
+
+  CATMAID.AbstractTileSourceWithOverview.prototype = Object.create(CATMAID.AbstractTileSource.prototype);
+
+  CATMAID.AbstractTileSourceWithOverview.prototype.getOverviewURL = function (stack, slicePixelPosition) {
+    throw new CATMAID.Error('Not implemented');
+  };
+
+  CATMAID.AbstractTileSourceWithOverview.prototype.getOverviewLayer = function (layer) {
+    return new CATMAID.GenericOverviewLayer(layer, this.baseURL, this.fileExtension,
+        this.getOverviewURL.bind(this));
+  };
+
+
   /**
    * Creates URLs for standard tile path of CATMAID.
    *
    * Source type: 1
    */
-  CATMAID.DefaultTileSource = function(baseURL, fileExtension, tileWidth, tileHeight) {
-    /**
-     * Return the URL of a single tile, defined by it grid position
-     * (x, y), ...
-     */
-    this.getTileURL = function(project, stack, slicePixelPosition,
-                               col, row, zoomLevel) {
-      var baseName = CATMAID.getTileBaseName(slicePixelPosition);
-      return baseURL + baseName + row + '_' + col + '_' + zoomLevel + '.' +
-          fileExtension;
-    };
-
-    this.getOverviewURL = function(stack, slicePixelPosition) {
-      return baseURL + slicePixelPosition[0] + '/small.' + fileExtension;
-    };
-
-    this.getOverviewLayer = function(layer) {
-      return new CATMAID.GenericOverviewLayer(layer, baseURL, fileExtension,
-          this.getOverviewURL);
-    };
+  CATMAID.DefaultTileSource = function () {
+    CATMAID.AbstractTileSourceWithOverview.apply(this, arguments);
   };
+
+  CATMAID.DefaultTileSource.prototype = Object.create(CATMAID.AbstractTileSourceWithOverview.prototype);
+
+  CATMAID.DefaultTileSource.prototype.getTileURL = function(
+      project, stack, slicePixelPosition, col, row, zoomLevel) {
+    var baseName = CATMAID.getTileBaseName(slicePixelPosition);
+    return this.baseURL + baseName + row + '_' + col + '_' + zoomLevel + '.' +
+        this.fileExtension;
+  };
+
+  CATMAID.DefaultTileSource.prototype.getOverviewURL = function(stack, slicePixelPosition) {
+    return this.baseURL + slicePixelPosition[0] + '/small.' + this.fileExtension;
+  };
+
 
   /**
    * Creates the URL for a tile in a generic way.
@@ -154,54 +199,56 @@
    *
    * Source type: 2
    */
-  CATMAID.RequestTileSource = function(baseURL, fileExtension, tileWidth, tileHeight) {
-    this.getTileURL = function( project, stack, slicePixelPosition,
-                                col, row, zoomLevel ) {
-      return baseURL + '?' + $.param({
-        x: col * tileWidth,
-        y: row * tileHeight,
-        width : tileWidth,
-        height : tileHeight,
-        row : 'y',
-        col : 'x',
-        scale : 1/(1 << zoomLevel), // Bitshift is safe because zoomLevel is integral.
-        z : slicePixelPosition[0]
-      });
-    };
-
-    this.getOverviewLayer = function( layer ) {
-      return new CATMAID.ArtificialOverviewLayer(layer);
-    };
+  CATMAID.RequestTileSource = function () {
+    CATMAID.AbstractTileSource.apply(this, arguments);
   };
+
+  CATMAID.RequestTileSource.prototype = Object.create(CATMAID.AbstractTileSource.prototype);
+
+  CATMAID.RequestTileSource.prototype.getTileURL = function (
+      project, stack, slicePixelPosition, col, row, zoomLevel) {
+    return this.baseURL + '?' + $.param({
+      x: col * this.tileWidth,
+      y: row * this.tileHeight,
+      width : this.tileWidth,
+      height : this.tileHeight,
+      row : 'y',
+      col : 'x',
+      scale : 1/(1 << zoomLevel), // Bitshift is safe because zoomLevel is integral.
+      z : slicePixelPosition[0]
+    });
+  };
+
 
   /**
    * Get Tile from HDF5 through Django.
    *
    * Source type: 3
    */
-  CATMAID.HDF5TileSource = function(baseURL, fileExtension, tileWidth, tileHeight) {
-    this.getTileURL = function(project, stack, slicePixelPosition,
-                               col, row, zoomLevel) {
-      return django_url + project.id + '/stack/' + stack.id + '/tile?' +
-          $.param({
-            x: col * tileWidth,
-            y: row * tileHeight,
-            width : tileWidth,
-            height : tileHeight,
-            row : 'y',
-            col : 'x',
-            scale : 1/(1 << zoomLevel), // Bitshift is safe because zoomLevel is integral.
-            z: slicePixelPosition[0],
-            file_extension: fileExtension,
-            basename: baseURL,
-            type:'all'
-          });
-    };
-
-    this.getOverviewLayer = function(layer) {
-      return new CATMAID.ArtificialOverviewLayer(layer);
-    };
+  CATMAID.HDF5TileSource = function () {
+    CATMAID.AbstractTileSource.apply(this, arguments);
   };
+
+  CATMAID.HDF5TileSource.prototype = Object.create(CATMAID.AbstractTileSource.prototype);
+
+  CATMAID.HDF5TileSource.prototype.getTileURL = function (
+      project, stack, slicePixelPosition, col, row, zoomLevel) {
+    return django_url + project.id + '/stack/' + stack.id + '/tile?' +
+        $.param({
+          x: col * this.tileWidth,
+          y: row * this.tileHeight,
+          width : this.tileWidth,
+          height : this.tileHeight,
+          row : 'y',
+          col : 'x',
+          scale : 1/(1 << zoomLevel), // Bitshift is safe because zoomLevel is integral.
+          z: slicePixelPosition[0],
+          file_extension: this.fileExtension,
+          basename: this.baseURL,
+          type:'all'
+        });
+  };
+
 
   /**
    * A tile source like the DefaultTileSource, but with a backslash
@@ -209,28 +256,23 @@
    *
    * Source type: 4
    */
-  CATMAID.BackslashTileSource = function(baseURL, fileExtension, tileWidth, tileHeight) {
-    /**
-     * Return the URL of a single tile, defined by it grid position
-     * (x, y), ...
-     */
-    this.getTileURL = function(project, stack, slicePixelPosition,
-                               col, row, zoomLevel) {
-      var baseName = CATMAID.getTileBaseName(slicePixelPosition);
-      return baseURL + baseName + zoomLevel + '/' + row + '_' + col + '.' +
-          fileExtension;
-    };
-
-    this.getOverviewURL = function(stack, slicePixelPosition) {
-      return baseURL + slicePixelPosition[0] + '/small.' + fileExtension;
-    };
-
-    this.getOverviewLayer = function( layer )
-    {
-      return new CATMAID.GenericOverviewLayer(layer, baseURL, fileExtension,
-          this.getOverviewURL);
-    };
+  CATMAID.BackslashTileSource = function () {
+    CATMAID.AbstractTileSourceWithOverview.apply(this, arguments);
   };
+
+  CATMAID.BackslashTileSource.prototype = Object.create(CATMAID.AbstractTileSourceWithOverview.prototype);
+
+  CATMAID.BackslashTileSource.prototype.getTileURL = function (
+      project, stack, slicePixelPosition, col, row, zoomLevel) {
+    var baseName = CATMAID.getTileBaseName(slicePixelPosition);
+    return this.baseURL + baseName + zoomLevel + '/' + row + '_' + col + '.' +
+        this.fileExtension;
+  };
+
+  CATMAID.BackslashTileSource.prototype.getOverviewURL = function (stack, slicePixelPosition) {
+    return this.baseURL + slicePixelPosition[0] + '/small.' + this.fileExtension;
+  };
+
 
   /**
    * A tile source for large datasets where the scale and rows are encoded as
@@ -238,28 +280,23 @@
    *
    * Source type: 5
    */
-  CATMAID.LargeDataTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
-  {
-    /**
-     * Return the URL of a single tile, defined by it grid position
-     * (x, y), ...
-     */
-    this.getTileURL = function( project, stack, slicePixelPosition,
-        col, row, zoomLevel ) {
-      var baseName = CATMAID.getTileBaseName(slicePixelPosition);
-      return baseURL + zoomLevel + '/' + baseName + row + '/' +  col + '.' +
-         fileExtension;
-    };
-
-    this.getOverviewURL = function(stack, slicePixelPosition) {
-      return baseURL + 'small/' + slicePixelPosition[0] + '.' + fileExtension;
-    };
-
-    this.getOverviewLayer = function( layer ) {
-      return new CATMAID.GenericOverviewLayer(layer, baseURL, fileExtension,
-          this.getOverviewURL);
-    };
+  CATMAID.LargeDataTileSource = function () {
+    CATMAID.AbstractTileSourceWithOverview.apply(this, arguments);
   };
+
+  CATMAID.LargeDataTileSource.prototype = Object.create(CATMAID.AbstractTileSourceWithOverview.prototype);
+
+  CATMAID.LargeDataTileSource.prototype.getTileURL = function (
+      project, stack, slicePixelPosition, col, row, zoomLevel) {
+    var baseName = CATMAID.getTileBaseName(slicePixelPosition);
+    return this.baseURL + zoomLevel + '/' + baseName + row + '/' +  col + '.' +
+       this.fileExtension;
+  };
+
+  CATMAID.LargeDataTileSource.prototype.getOverviewURL = function (stack, slicePixelPosition) {
+    return this.baseURL + 'small/' + slicePixelPosition[0] + '.' + this.fileExtension;
+  };
+
 
   /**
    * Simple tile source type for DVID imageblk (uint8blk, rgba8blk) datatype
@@ -270,27 +307,26 @@
    *
    * Source type: 6
    */
-  CATMAID.DVIDImageblkTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
-  {
-    this.getTileURL = function( project, stack, slicePixelPosition,
-        col, row, zoomLevel ) {
-      if (stack.orientation === CATMAID.Stack.ORIENTATION_XY) {
-        return baseURL + tileWidth + '_' + tileHeight + '/' + col * tileWidth + '_' +
-            row * tileHeight + '_' + slicePixelPosition[0] + '/' + fileExtension;
-      } else if (stack.orientation === CATMAID.Stack.ORIENTATION_XZ) {
-        return baseURL + tileWidth + '_' + tileHeight + '/' + col * tileWidth + '_' +
-            slicePixelPosition[0] + '_' + row * tileHeight + '/' + fileExtension;
-      } else if (stack.orientation === CATMAID.Stack.ORIENTATION_ZY) {
-        return baseURL + tileWidth + '_' + tileHeight + '/' + slicePixelPosition[0] + '_' +
-            row * tileHeight + '_' + col * tileWidth + '/' + fileExtension;
-      }
-    };
+  CATMAID.DVIDImageblkTileSource = function () {
+    CATMAID.AbstractTileSource.apply(this, arguments);
 
-    this.getOverviewLayer = function( layer ) {
-      return new CATMAID.ArtificialOverviewLayer(layer);
-    };
+    this.transposeTiles.add(CATMAID.Stack.ORIENTATION_ZY);
+  };
 
-    this.transposeTiles = new Set([CATMAID.Stack.ORIENTATION_ZY]);
+  CATMAID.DVIDImageblkTileSource.prototype = Object.create(CATMAID.AbstractTileSource.prototype);
+
+  CATMAID.DVIDImageblkTileSource.prototype.getTileURL = function (
+      project, stack, slicePixelPosition, col, row, zoomLevel) {
+    if (stack.orientation === CATMAID.Stack.ORIENTATION_XY) {
+      return this.baseURL + this.tileWidth + '_' + this.tileHeight + '/' + col * this.tileWidth + '_' +
+          row * this.tileHeight + '_' + slicePixelPosition[0] + '/' + this.fileExtension;
+    } else if (stack.orientation === CATMAID.Stack.ORIENTATION_XZ) {
+      return baseURL + this.tileWidth + '_' + this.tileHeight + '/' + col * this.tileWidth + '_' +
+          slicePixelPosition[0] + '_' + row * this.tileHeight + '/' + this.fileExtension;
+    } else if (stack.orientation === CATMAID.Stack.ORIENTATION_ZY) {
+      return baseURL + this.tileWidth + '_' + this.tileHeight + '/' + slicePixelPosition[0] + '_' +
+          row * this.tileHeight + '_' + col * this.tileWidth + '/' + this.fileExtension;
+    }
   };
 
 
@@ -305,47 +341,44 @@
    *
    * Source type: 7
    */
-  CATMAID.RenderServTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
-  {
-    this.maxTiles = null;
+  CATMAID.RenderServTileSource = function () {
+    CATMAID.AbstractTileSourceWithOverview.apply(this, arguments);
 
-    this.getSettings = function() {
-      return [
+    this.maxTiles = null;
+  };
+
+  CATMAID.RenderServTileSource.prototype = Object.create(CATMAID.AbstractTileSourceWithOverview.prototype);
+
+  CATMAID.RenderServTileSource.prototype.getTileURL = function (
+      project, stack, slicePixelPosition, col, row, zoomLevel) {
+    var baseName = CATMAID.getTileBaseName(slicePixelPosition);
+    var url = this.baseURL + 'largeDataTileSource/' + this.tileWidth + '/' + this.tileHeight + '/' +
+           zoomLevel + '/' + baseName + row + '/' +  col + '.' + this.fileExtension;
+
+    var params = [];
+    if (null !== this.maxTiles && undefined !== this.maxTiles) {
+        params.push('maxTileSpecsToRender=' + this.maxTiles);
+    }
+
+    if (0 < params.length) {
+      url += "?" + params.join("&");
+    }
+
+    return url;
+  };
+
+  CATMAID.RenderServTileSource.prototype.getOverviewURL = function (stack, slicePixelPosition) {
+    return this.baseURL + 'largeDataTileSource/' + this.tileWidth + '/' + this.tileHeight + '/' +
+           'small/' + slicePixelPosition[0] + '.' + this.fileExtension;
+  };
+
+  CATMAID.RenderServTileSource.prototype.getSettings = function () {
+    return [
         {name: 'maxTiles', displayName: 'Maximum tiles', type: 'number', range: [0, 100000],
           value: this.maxTiles, help: 'Maximum number of image tiles to load for a section'}
       ];
-    };
-
-    this.setSetting = function(name, value) {
-      this[name] = value;
-    };
-
-    this.getTileURL = function(project, stack, slicePixelPosition, col, row, zoomLevel) {
-      var baseName = CATMAID.getTileBaseName(slicePixelPosition);
-      var url = baseURL + 'largeDataTileSource/' + tileWidth + '/' + tileHeight + '/' +
-             zoomLevel + '/' + baseName + row + '/' +  col + '.' + fileExtension;
-
-      var params = [];
-      if (null !== this.maxTiles && undefined !== this.maxTiles) {
-          params.push('maxTileSpecsToRender=' + this.maxTiles);
-      }
-
-      if (0 < params.length) {
-        url += "?" + params.join("&");
-      }
-
-      return url;
-    };
-
-    this.getOverviewURL = function(stack, slicePixelPosition) {
-      return baseURL + 'largeDataTileSource/' + tileWidth + '/' + tileHeight + '/' +
-             'small/' + slicePixelPosition[0] + '.' + fileExtension;
-    };
-
-    this.getOverviewLayer = function(layer) {
-      return new CATMAID.GenericOverviewLayer(layer, baseURL, fileExtension, this.getOverviewURL);
-    };
   };
+
 
   /**
    * Simple tile source type for DVID imagetile datatype
@@ -356,25 +389,25 @@
    *
    * Source type: 8
    */
-  CATMAID.DVIDImagetileTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
-  {
-    this.getTileURL = function(project, stack, slicePixelPosition,
-                               col, row, zoomLevel) {
-      if (stack.orientation === CATMAID.Stack.ORIENTATION_XY) {
-        return baseURL + 'xy/' + zoomLevel + '/' + col + '_' + row + '_' + slicePixelPosition[0];
-      } else if (stack.orientation === CATMAID.Stack.ORIENTATION_XZ) {
-        return baseURL + 'xz/' + zoomLevel + '/' + col + '_' + slicePixelPosition[0] + '_' + row;
-      } else if (stack.orientation === CATMAID.Stack.ORIENTATION_ZY) {
-        return baseURL + 'yz/' + zoomLevel + '/' + slicePixelPosition[0] + '_' + row + '_' + col;
-      }
-    };
+  CATMAID.DVIDImagetileTileSource = function () {
+    CATMAID.AbstractTileSource.apply(this, arguments);
 
-    this.getOverviewLayer = function(layer) {
-      return new CATMAID.ArtificialOverviewLayer(layer);
-    };
-
-    this.transposeTiles = new Set([CATMAID.Stack.ORIENTATION_ZY]);
+    this.transposeTiles.add(CATMAID.Stack.ORIENTATION_ZY);
   };
+
+  CATMAID.DVIDImagetileTileSource.prototype = Object.create(CATMAID.AbstractTileSource.prototype);
+
+  CATMAID.DVIDImagetileTileSource.prototype.getTileURL = function(
+      project, stack, slicePixelPosition, col, row, zoomLevel) {
+    if (stack.orientation === CATMAID.Stack.ORIENTATION_XY) {
+      return this.baseURL + 'xy/' + zoomLevel + '/' + col + '_' + row + '_' + slicePixelPosition[0];
+    } else if (stack.orientation === CATMAID.Stack.ORIENTATION_XZ) {
+      return this.baseURL + 'xz/' + zoomLevel + '/' + col + '_' + slicePixelPosition[0] + '_' + row;
+    } else if (stack.orientation === CATMAID.Stack.ORIENTATION_ZY) {
+      return this.baseURL + 'yz/' + zoomLevel + '/' + slicePixelPosition[0] + '_' + row + '_' + col;
+    }
+  };
+
 
   /**
    * Serve images from Felix FlixServer.
@@ -382,14 +415,43 @@
    * Source type: 9
    */
   CATMAID.FlixServerTileSource = function(baseURL, fileExtension, tileWidth, tileHeight) {
+    CATMAID.AbstractTileSource.apply(this, arguments);
+
     this.color = null;
     this.minIntensity = null;
     this.maxIntensity = null;
     this.gamma = null;
     this.quality = null;
+  };
 
-    this.getSettings = function() {
-      return [
+  CATMAID.FlixServerTileSource.prototype = Object.create(CATMAID.AbstractTileSource.prototype);
+
+  CATMAID.FlixServerTileSource.prototype.getTileURL = function (
+      project, stack, slicePixelPosition, col, row, zoomLevel) {
+    var baseName = CATMAID.getTileBaseName(slicePixelPosition);
+    var url = this.baseURL + baseName + row + '_' + col + '_' + zoomLevel + '.' +
+        this.fileExtension;
+
+    var params = [];
+    if (this.color) { params.push('color=' + this.color); }
+    if (this.minIntensity) { params.push('min=' + this.minIntensity); }
+    if (this.maxIntensity) { params.push('max=' + this.maxIntensity); }
+    if (this.gamma) { params.push('gamma=' + this.gamma); }
+    if (this.quality) { params.push('quality=' + this.quality); }
+
+    if (0 < params.length) {
+      url += "?" + params.join("&");
+    }
+
+    return url;
+  };
+
+  CATMAID.FlixServerTileSource.prototype.getOverviewURL = function (stack, slicePixelPosition) {
+    return this.baseURL + slicePixelPosition[0] + '/small.' + this.fileExtension;
+  };
+
+  CATMAID.FlixServerTileSource.prototype.getSettings = function () {
+    return [
         {name: 'color', displayName: 'Color', type: 'text', value: this.color,
           help: 'Use one or list of: red, green, blue, cyan, magenta, yellow, white. Use comma for multiple channels'},
         {name: 'minIntensity', displayName: 'Min Intensity', type: 'text', range: [0, 65535],
@@ -401,41 +463,8 @@
         {name: 'quality', displayName: 'Quality', type: 'number', range: [0, 100],
           value: this.quality, help: 'Image quality in range 0-100, use comma for multiple channels'}
       ];
-    };
-
-    this.setSetting = function(name, value) {
-      this[name] = value;
-    };
-
-    this.getTileURL = function(project, stack, slicePixelPosition,
-                               col, row, zoomLevel) {
-      var baseName = CATMAID.getTileBaseName(slicePixelPosition);
-      var url = baseURL + baseName + row + '_' + col + '_' + zoomLevel + '.' +
-          fileExtension;
-
-      var params = [];
-      if (this.color) { params.push('color=' + this.color); }
-      if (this.minIntensity) { params.push('min=' + this.minIntensity); }
-      if (this.maxIntensity) { params.push('max=' + this.maxIntensity); }
-      if (this.gamma) { params.push('gamma=' + this.gamma); }
-      if (this.quality) { params.push('quality=' + this.quality); }
-
-      if (0 < params.length) {
-        url += "?" + params.join("&");
-      }
-
-      return url;
-    };
-
-    this.getOverviewURL = function(stack, slicePixelPosition) {
-      return baseURL + slicePixelPosition[0] + '/small.' + fileExtension;
-    };
-
-    this.getOverviewLayer = function(layer) {
-      return new CATMAID.GenericOverviewLayer(layer, baseURL, fileExtension,
-          this.getOverviewURL);
-    };
   };
+
 
   /**
    * This is an overview layer that doesn't display anything.

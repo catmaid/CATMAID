@@ -101,8 +101,7 @@
         this._tiles[i][j].position.x = j * this.tileSource.tileWidth;
         this._tiles[i][j].position.y = i * this.tileSource.tileHeight;
 
-        if (this.tileSource.transposeTiles &&
-            this.tileSource.transposeTiles.has(this.stack.orientation)) {
+        if (this.tileSource.transposeTiles.has(this.stack.orientation)) {
           this._tiles[i][j].scale.x = -1.0;
           this._tiles[i][j].rotation = -Math.PI / 2.0;
         }

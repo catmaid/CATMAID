@@ -3062,8 +3062,7 @@
       var tileHeight = tileSource.tileHeight;
       var nHTiles = getNZoomedParts(stack.dimension.x, tileZoomLevel, tileWidth);
       var nVTiles = getNZoomedParts(stack.dimension.y, tileZoomLevel, tileHeight);
-      var transpose = tileSource.transposeTiles &&
-          tileSource.transposeTiles.has(stack.orientation);
+      var transpose = tileSource.transposeTiles.has(stack.orientation);
 
       // Use THREE's plane geometry so that UVs and normals are set up aleady.
       var tilePlaneWidth = nHTiles * pTileWidth;

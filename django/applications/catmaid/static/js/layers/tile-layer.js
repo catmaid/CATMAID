@@ -132,7 +132,7 @@
     this._interpolationMode = linearInterpolation;
     this.tilesContainer.classList.add('interpolation-mode-' + (this._interpolationMode ? 'linear' : 'nearest'));
 
-    if (this.tileSource.transposeTiles && this.tileSource.transposeTiles.has(stack.orientation)) {
+    if (this.tileSource.transposeTiles.has(stack.orientation)) {
       // Some tile sources may provide transposed tiles versus CATMAID's
       // expectation, e.g., YZ tiles for a ZY oriented stack. In these cases
       // the tile layer is responsible for transposing them back to CATMAID's
@@ -863,7 +863,7 @@
         }]
     }];
 
-    if (this.tileSource && CATMAID.tools.isFn(this.tileSource.getSettings)) {
+    if (this.tileSource) {
       settings = settings.concat(this.tileSource.getSettings());
     }
 

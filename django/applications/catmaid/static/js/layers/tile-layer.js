@@ -831,6 +831,12 @@
               'the current mirror is inaccessible. This is usually recomended ' +
               'except for some use cases involving custom mirrors.'
     },{
+        name: 'webGL',
+        displayName: 'Use WebGL',
+        type: 'checkbox',
+        value: this instanceof CATMAID.PixiTileLayer,
+        help: 'Switch between WebGL or DOM tile rendering.'
+    },{
         name: 'efficiencyThreshold',
         displayName: 'Tile area efficiency threshold',
         type: 'number',
@@ -889,6 +895,18 @@
       if (this.changeMirrorIfNoData) {
         CATMAID.checkTileSourceCanary(project, this.stack, this.tileSource)
             .then(this._handleCanaryCheck.bind(this));
+      }
+    } else if ('webGL' === name) {
+      if (value) {
+        if (!(this instanceof CATMAID.PixiTileLayer)) {
+          var newTileLayer = this.constructCopy({}, CATMAID.PixiTileLayer);
+          var layerKey = this.stackViewer.getLayerKey(this);
+          this.stackViewer.replaceStackLayer(layerKey, newTileLayer);
+        }
+      } else {
+        if (this instanceof CATMAID.PixiTileLayer) {
+          this.switchToDomTileLayer();
+        }
       }
     } else if (this.tileSource && CATMAID.tools.isFn(this.tileSource.setSetting)) {
       return this.tileSource.setSetting(name, value);

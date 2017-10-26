@@ -215,7 +215,7 @@
     var requests = this._loading[url];
     delete this._loading[url];
 
-    if (PIXI.utils.TextureCache.hasOwnProperty(url)) {
+    if (url in PIXI.utils.TextureCache) {
       if (resource.texture && !resource.texture.valid) {
         // If there was an error, remove texture from Pixi's cache.
         resource.texture.destroy(true);
@@ -796,7 +796,7 @@
     this.updateMatrix();
   };
 
-  PixiLayer.Filters.Invert.prototype = Object.create(PIXI.Filter.prototype);
+  PixiLayer.Filters.Invert.prototype = Object.create(PIXI.filters.ColorMatrixFilter.prototype);
   PixiLayer.Filters.Invert.prototype.constructor = PixiLayer.Filters.Invert;
 
   PixiLayer.Filters.Invert.prototype.updateMatrix = function () {

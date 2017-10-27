@@ -42,6 +42,84 @@
     };
   })();
 
+  var NODE_PARAMS = {
+    ringWeightPx: 2,
+    crossWeightPx: 2,
+    crossRadiusPx: 3,
+    bullseyeRadiusPx: 1,
+    innerRingPpn: 0.4
+  };
+
+  /**
+   * Create a white disc/spot
+   *
+   * @param radius
+   */
+  var makeDisc = function(radius) {
+    return new PIXI.Graphics()
+      .beginFill(0xFFFFFF)
+      .drawCircle(0, 0, radius)
+      .endFill();
+  };
+
+  /**
+   * Create a white ring
+   *
+   * @param radius
+   * @param ringWeight
+   */
+  var makeRing = function(radius, ringWeight) {
+    return new PIXI.Graphics()
+      .lineStyle(ringWeight, 0xFFFFFF)
+      .drawCircle(0, 0, radius);
+  };
+
+  /**
+   * Create a white target (2 concentric rings). If innerRingPpn is falsey, 0.5 will be used.
+   *
+   * @param radius
+   * @param ringWeight
+   * @param innerRingPpn : 0 < innerPpn <= 1; radius of the inner ring, as a proportion of the outer.
+   */
+  var makeTarget = function(radius, ringWeight, innerRingPpn) {
+    innerRingPpn = innerRingPpn || 0.5;
+
+    return makeRing(radius, ringWeight)
+      .drawCircle(0, 0, radius * innerRingPpn);
+  };
+
+  /**
+   * Create a white crosshair. If crossRadius is falsey, radius is used.
+   *
+   * @param radius
+   * @param ringWeight
+   * @param crossWeight
+   * @param crossRadius
+   */
+  var makeCrosshair = function(radius, ringWeight, crossWeight, crossRadius) {
+    crossRadius = crossRadius || radius;
+    return makeRing(radius, ringWeight)
+      .lineStyle(crossWeight, 0xFFFFFF)
+      .moveTo(-crossRadius, 0)
+      .lineTo(crossRadius, 0)
+      .moveTo(0, -crossRadius)
+      .lineTo(0, crossRadius);
+  };
+
+  /**
+   * Create a white bullseye
+   *
+   * @param radius
+   * @param ringWeight
+   * @param bullseyeRadius
+   */
+  var makeBullseye = function(radius, ringWeight, bullseyeRadius) {
+    return makeRing(radius, ringWeight)
+      .beginFill(0xFFFFFF)
+      .drawCircle(0, 0, bullseyeRadius)
+      .endFill();
+  };
+
   /** Namespace where graphics element instances are created, cached and edited. */
   var SkeletonElements = function (tracingOverlay, pixiContainer, skeletonDisplayModels) {
     this.overlayGlobals = {
@@ -60,10 +138,15 @@
       SkeletonElements.prototype.ConnectorNode.prototype,
       SkeletonElements.prototype.ArrowLine.prototype,
     ];
-    concreteElements.forEach(function (klass) {
-      klass.overlayGlobals = this.overlayGlobals;
-      klass.initTextures();
-    }, this);
+
+    this.initTextures = function(force) {
+        concreteElements.forEach(function (klass) {
+          klass.overlayGlobals = this.overlayGlobals;
+          klass.initTextures(force);
+        }, this);
+    };
+
+    this.initTextures();
 
     // Create element groups to enforce drawing order: lines, arrows, nodes, labels
     this.containers = ['lines', 'arrows', 'nodes', 'labels'].reduce(function (o, name) {
@@ -305,6 +388,8 @@
       this.dToSecBefore = -1;
       this.dToSecAfter = 1;
 
+      this.markerType = 'disc';
+
       /**
        * Create the node graphics elements.
        */
@@ -432,20 +517,36 @@
         if (oldScaling !== this.scaling) this.initTextures();
       };
 
+      /**
+       * Generic constructor for node marker of various types
+       */
+      this.makeMarker = function() {
+        var args = NODE_PARAMS;
+        var radiusPx = this.NODE_RADIUS * this.baseScale;
+        switch (this.markerType) {
+          case 'crosshair':
+            return makeCrosshair(radiusPx, args.ringWeightPx, args.crossWeightPx, args.crossRadiusPx);
+          case 'ring':
+            return makeRing(radiusPx, args.ringWeightPx);
+          case 'target':
+            return makeTarget(radiusPx, args.ringWeightPx, args.innerRingPpn);
+          case 'bullseye':
+            return makeBullseye(radiusPx, args.ringWeightPx, args.bullseyeRadiusPx);
+          default:
+            return makeDisc(radiusPx);
+        }
+      };
+
       this.initTextures = function () {
-        var g = new PIXI.Graphics();
-        g.beginFill(0xFFFFFF);
-        g.drawCircle(0, 0, this.NODE_RADIUS * this.baseScale);
-        g.endFill();
+        var g = this.makeMarker();
 
         var tracingOverlay = this.overlayGlobals.tracingOverlay;
-        var texture = tracingOverlay.pixiLayer._context.renderer.generateTexture(
-            g, PIXI.SCALE_MODES.DEFAULT, 1);
+        var texture = tracingOverlay.pixiLayer._context.renderer.generateTexture(g, PIXI.SCALE_MODES.DEFAULT, 1);
 
         if (this.NODE_TEXTURE) {
-          var oldTexture = this.NODE_TEXTURE.baseTexture;
+          var oldBaseTexture = this.NODE_TEXTURE.baseTexture;
           this.NODE_TEXTURE.baseTexture = texture.baseTexture;
-          oldTexture.destroy();
+          oldBaseTexture.destroy();
         } else {
           this.NODE_TEXTURE = texture;
         }
@@ -1051,7 +1152,9 @@
 
     ptype.AbstractConnectorNode = function() {
       // For drawing:
-      this.NODE_RADIUS = 8;
+      this.markerType = SkeletonAnnotations.TracingOverlay.Settings.session.connector_node_marker;
+      this.NODE_RADIUS = this.markerType === 'disc' ? 8 : 15;
+
       this.CATCH_RADIUS = 0;
 
       this.type = SkeletonAnnotations.TYPE_CONNECTORNODE;
@@ -1236,6 +1339,32 @@
           if (!this.shouldDisplay()) {
             this.c.visible = false;
           }
+        }
+      };
+
+      /**
+       * Using force causes this to leak a texture if the user switches between a small marker type (disc) and a large
+       * marker type (any other). This is necessary to change the size of the marker and happens very infrequently.
+       *
+       * @param force
+       */
+      this.initTextures = function(force) {
+        var oldMarkerType = this.markerType;
+        this.markerType = SkeletonAnnotations.TracingOverlay.Settings.session.connector_node_marker;
+        force = force && (oldMarkerType === 'disc' ^ this.markerType === 'disc');
+        this.NODE_RADIUS = this.markerType === 'disc' ? 8 : 15;
+        var g = this.makeMarker();
+
+        var tracingOverlay = this.overlayGlobals.tracingOverlay;
+        var texture = tracingOverlay.pixiLayer._context.renderer.generateTexture(g, PIXI.SCALE_MODES.DEFAULT, 1);
+
+        if (!force && this.NODE_TEXTURE) {
+          var oldBaseTexture = this.NODE_TEXTURE.baseTexture;
+          this.NODE_TEXTURE.baseTexture = texture.baseTexture;
+          oldBaseTexture.destroy();
+        } else {
+          if (this.NODE_TEXTURE) console.log('Warning: Possible connector node texture leak');
+          this.NODE_TEXTURE = texture;
         }
       };
     };
@@ -1695,29 +1824,43 @@
           });
       };
 
-      this.update = function(x1, y1, x2, y2, relationName, confidence, rloc) {
+      this.update = function(x1, y1, x2, y2, relationName, confidence, tgtRadius, srcRadius) {
         var xdiff = (x2 - x1);
         var ydiff = (y2 - y1);
-        var le = Math.sqrt(xdiff * xdiff + ydiff * ydiff);
-        if( le === 0 ) {
-            le = 0.9 * rloc;
+        var length = Math.sqrt(xdiff * xdiff + ydiff * ydiff);
+        if( length === 0 ) {
+            length = 0.9 * tgtRadius;
         }
-        // rloc is the radius of target node, which we don't want to touch.
-        var F = 1 - rloc / le;
-        var x2new = (x2 - x1) * F + x1;
-        var y2new = (y2 - y1) * F + y1;
+        // tgtRadius is the radius of target node, which we don't want to touch.
+        var F = 1 - tgtRadius / length;
+        var x2new = xdiff * F + x1;
+        var y2new = ydiff * F + y1;
+
+        var x1new, y1new;
+
+        if (srcRadius) {
+          var newXdiff = (x2new - x1);
+          var newYdiff = (y2new - y1);
+          var newLength = Math.sqrt(newXdiff * newXdiff + newYdiff * newYdiff);
+          var radiusPpn = srcRadius / newLength;
+          x1new = newXdiff * radiusPpn + x1;
+          y1new = newYdiff * radiusPpn + y1;
+        } else {
+          x1new = x1;
+          y1new = y1;
+        }
 
         // Draw line.
         this.line.clear();
         this.line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
-        this.line.moveTo(x1, y1);
+        this.line.moveTo(x1new, y1new);
         this.line.lineTo(x2new, y2new);
 
         // Draw arrowhead.
         var norm = lineNormal(x1, y1, x2, y2);
         var s = 1.5 * this.EDGE_WIDTH;
-        var x2a = x2new - (x2 - x1) * 2 * s / le,
-            y2a = y2new - (y2 - y1) * 2 * s / le;
+        var x2a = x2new - xdiff * 2 * s / length,
+            y2a = y2new - ydiff * 2 * s / length;
         this.line.beginFill(0xFFFFFF, 1.0);
         this.line.drawPolygon([
             x2new, y2new,
@@ -1803,10 +1946,12 @@
         this.treenode_id = node.id;
         this.relation_id = relationId;
         this.relation_name = relationName;
+        var connectorRadiusPx = connector.NODE_RADIUS * connector.stackScaling;
+        var nodeRadiusPx = node.NODE_RADIUS * node.stackScaling;
         if (outwards) {
-          this.update(node.x, node.y, connector.x, connector.y, relationName, confidence, connector.NODE_RADIUS*connector.stackScaling);
+          this.update(node.x, node.y, connector.x, connector.y, relationName, confidence, connectorRadiusPx);
         } else {
-          this.update(connector.x, connector.y, node.x, node.y, relationName, confidence, node.NODE_RADIUS*node.stackScaling);
+          this.update(connector.x, connector.y, node.x, node.y, relationName, confidence, nodeRadiusPx, connectorRadiusPx);
         }
         this.updateVisibility(connector);
       };

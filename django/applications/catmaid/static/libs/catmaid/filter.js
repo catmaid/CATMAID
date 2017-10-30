@@ -554,6 +554,38 @@
         }, {});
       }
     },
+    // Options: tag
+    "subarbor-any": {
+      name: "Use all sub-arbors starting from a tag",
+      prepare: ["arbor", "tags"],
+      filter: function(skeletonId, neuron, input, options) {
+        var skeleton = input.skeletons[skeletonId];
+        var arbor = skeleton.arbor;
+        var tags = skeleton.tags;
+        var cuts = tags[options.tag];
+        return cuts.reduce(function(nodes, cut) {
+          return $.extend(nodes, arbor.subArbor(cut).nodes());
+        }, {});
+      }
+    },
+    // Options: tag
+    "uparbor": {
+      name: "Prunned arbor",
+      prepare: ["arbor", "tags"],
+      filter: function(skeletonId, neuron, input, options) {
+        var skeleton = input.skeletons[skeletonId];
+        var arbor = skeleton.arbor;
+        var tags = skeleton.tags;
+        var cuts = tags[options.tag];
+        var nodes = arbor.nodes();
+        cuts.forEach(function(cut) {
+          arbor.subArbor(cut).nodesArray().forEach(function(node) {
+            delete nodes[node];
+          });
+        });
+        return nodes;
+      }
+    },
     // Options: tagStart, tagEnd
     "single-region": {
       name: "Use a region",
@@ -882,6 +914,20 @@
           });
       $(container).append($tag);
       $(container).append($expected);
+    },
+    'subarbor-any': function(container, options) {
+      var $tag = CATMAID.DOM.createInputSetting("Tag", "",
+          "Nodes distal to nodes tagged with this tag will be used", function() {
+            options.tag = this.value;
+          });
+      $(container).append($tag);
+    },
+    'uparbor': function(container, options) {
+      var $tag = CATMAID.DOM.createInputSetting("Tag", "",
+          "Nodes proximal to nodes tagged with this tag will be used", function() {
+            options.tag = this.value;
+          });
+      $(container).append($tag);
     },
     'single-region': function(container, options) {
       var $tagStart = CATMAID.DOM.createInputSetting("Start tag", "",

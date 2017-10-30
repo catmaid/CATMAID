@@ -872,7 +872,7 @@
     },
     'subarbor': function(container, options) {
       var $tag = CATMAID.DOM.createInputSetting("Tag", "",
-          "A tag that every used node must have", function() {
+          "Nodes distal to nodes tagged with this tag will be used", function() {
             options.tag = this.value;
           });
       var $expected = CATMAID.DOM.createInputSetting("Expected", "",

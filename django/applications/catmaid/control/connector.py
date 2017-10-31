@@ -49,6 +49,7 @@ LINK_TYPES = [
     }
 ]
 
+LINK_RELATION_NAMES = [r['relation'] for r in LINK_TYPES]
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
@@ -671,17 +672,18 @@ def connector_user_info(request, project_id):
     """
     treenode_id = int(request.GET.get('treenode_id'))
     connector_id = int(request.GET.get('connector_id'))
+    relation_id = int(request.GET.get('relation_id'))
     cursor = connection.cursor()
-    relation_names = ('presynaptic_to', 'postsynaptic_to', 'abutting', 'gapjunction_with')
-    relations = get_relation_to_id_map(project_id, relation_names, cursor)
-    relation_id = relations[request.GET.get('relation_name')]
+    if relation_id == None:
+        relations = get_relation_to_id_map(project_id, LINK_RELATION_NAMES, cursor)
+        relation_id = relations[request.GET.get('relation_name')]
     cursor.execute('''
         SELECT tc.id, tc.user_id, tc.creation_time, tc.edition_time
         FROM treenode_connector tc
         WHERE tc.treenode_id = %s
           AND tc.connector_id = %s
           AND tc.relation_id = %s
-                   ''', (treenode_id, connector_id, relation_id))
+    ''', (treenode_id, connector_id, relation_id))
 
     # We expect at least one result node.
     if not cursor.rowcount:

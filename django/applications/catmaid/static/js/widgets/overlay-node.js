@@ -145,13 +145,13 @@
     };
 
     this.createArrow = (function(arrowPool, ArrowLine) {
-      return function(connector, node, confidence, is_pre) {
+      return function(connector, node, confidence, relationId, relationName, outwards) {
         var arrow = arrowPool.next();
         if (!arrow) {
           arrow = new ArrowLine();
           arrowPool.push(arrow);
         }
-        arrow.init(connector, node, confidence, is_pre);
+        arrow.init(connector, node, confidence, relationId, relationName, outwards);
         return arrow;
       };
     })(this.cache.arrowPool, this.ArrowLine);
@@ -209,8 +209,8 @@
       return connector;
     };
 
-    this.newLinkNode = function(id, node, relation_id, confidence, edition_time) {
-      return new this.ConnectorLink(id, node, relation_id, confidence, edition_time);
+    this.newLinkNode = function(id, node, relation_id, relation_name, confidence, edition_time, outwards) {
+      return new this.ConnectorLink(id, node, relation_id, relation_name, confidence, edition_time, outwards);
     };
   };
 
@@ -1056,9 +1056,6 @@
 
       this.type = SkeletonAnnotations.TYPE_CONNECTORNODE;
 
-      this.linkGroups = ['pregroup', 'postgroup', 'gjgroup', 'undirgroup'];
-      this.lineGroups = ['preLines', 'postLines', 'gjLines', 'undirLines'];
-
       this.getVisibilityGroups = function (noCache) {
         if (this.visibilityGroups && !noCache) return this.visibilityGroups;
 
@@ -1075,7 +1072,7 @@
         // For hidden groups, the connector is in the group if *all* linked
         // treenodes are in the group. The connector has the override group
         // if *any* linked treenode is in the override group.
-        var links = this.getLinks();
+        let links = this.links;
         links.forEach(function (link) {
           link.treenode.getVisibilityGroups(noCache).forEach(function (groupID) {
             groupCounts[groupID]++;
@@ -1093,75 +1090,49 @@
         return this.visibilityGroups;
       };
 
+      this.linkNode = function(nodeId, link) {
+        this.links.push(link);
+      };
+
       this.isConnectedToActiveSkeleton = function () {
         var atsID = SkeletonAnnotations.getActiveSkeletonId();
         if (null === atsID) return false;
 
-        return this.linkGroups.some(function (group) {
-          return this[group] && Object.keys(this[group]).some(function (partner) {
-            return this[group][partner].treenode.skeleton_id === atsID;
-          }, this);
+        return this.links && this.links.some(function(link) {
+          return link.treenode.skeleton_id === atsID;
         }, this);
-      };
-
-      /**
-       * Get al links of a specific connector group or an empty list.
-       */
-      this.expandGroup = function(target, group) {
-        var partners = this[group];
-        if (partners) {
-          for (var partner in partners) {
-            target.push(partners[partner]);
-          }
-        }
-        return target;
       };
 
       this.getLinks = function() {
-        return this.linkGroups.reduce(this.expandGroup.bind(this), []);
+        return this.links.slice(0);
       };
 
       this.removeLink = function(link) {
-        this.linkGroups.forEach(function(groupName) {
-          var group = this[groupName];
-          if (group[link.treenode.id] === link) {
-            delete group[link.treenode.id];
-          }
-        }, this);
+        if (this.links) {
+          this.links.forEach(function(l, i, array) {
+            if (l.treenode.id === link) {
+              array.splice(i, 1);
+            }
+          });
+        }
       };
 
       /**
        * Suspend all links to disable mouse events.
        */
       this.suspend = function() {
-        this.lineGroups.forEach(function(group) {
-          var lines = this[group];
-          if (lines) {
-            for (var i=0; i<lines.length; ++i) {
-              lines[i].suspend();
-            }
-          }
-        }, this);
+        for (var i=0, imax=this.edges.length; i<imax; ++i) {
+          this.edges[i].suspend();
+        }
       };
 
-      /** Disables the ArrowLine object and removes entries from the preLines and postLines. */
+      /** Disables the ArrowLine object and removes entries from the lines list. */
       this.removeConnectorArrows = function() {
-        if (this.preLines) {
-          this.preLines.forEach(ptype.ElementPool.prototype.disableFn);
-          this.preLines = null;
+        var disable = ptype.ElementPool.prototype.disableFn;
+        for (var i=0, imax=this.edges.length; i<imax; ++i) {
+          disable(this.edges[i]);
         }
-        if (this.postLines) {
-          this.postLines.forEach(ptype.ElementPool.prototype.disableFn);
-          this.postLines = null;
-        }
-        if (this.undirLines) {
-          this.undirLines.forEach(ptype.ElementPool.prototype.disableFn);
-          this.undirLines = null;
-        }
-        if (this.gjLines) {
-          this.gjLines.forEach(ptype.ElementPool.prototype.disableFn);
-          this.gjLines = null;
-        }
+        this.edges = [];
       };
 
       this.obliterate = function() {
@@ -1175,15 +1146,9 @@
         }
         this.visibilityGroups = null;
         this.subtype = null;
-        this.pregroup = null;
-        this.postgroup = null;
-        this.undirgroup = null;
-        this.gjgroup = null;
         this.removeConnectorArrows(); // also removes confidence text associated with edges
-        this.preLines = null;
-        this.postLines = null;
-        this.undirLines = null;
-        this.gjLines = null;
+        this.links = null;
+        this.edges = null;
       };
 
       this.disable = function() {
@@ -1193,10 +1158,6 @@
         }
         this.subtype = null;
         this.removeConnectorArrows();
-        this.pregroup = null;
-        this.postgroup = null;
-        this.undirgroup = null;
-        this.gjgroup = null;
       };
 
       this.color = function() {
@@ -1236,14 +1197,9 @@
           this.c.visible = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups(noCache));
         }
 
-        if (this.preLines)
-          this.preLines.forEach(function (arrow) { arrow.updateVisibility(this); }, this);
-        if (this.postLines)
-          this.postLines.forEach(function (arrow) { arrow.updateVisibility(this); }, this);
-        if (this.undirLines)
-          this.undirLines.forEach(function (arrow) { arrow.updateVisibility(this); }, this);
-        if (this.gjLines)
-          this.gjLines.forEach(function (arrow) { arrow.updateVisibility(this); }, this);
+        for (var i=0, imax=this.edges; i<imax; ++i) {
+          this.edges[i].updateVisibility(this);
+        }
       };
 
       this.drawEdges = function(redraw) {
@@ -1252,46 +1208,12 @@
           this.removeConnectorArrows();
         }
 
-        var i, node;
-
-        // re-create
-        for (i in this.pregroup) {
-          if (this.pregroup.hasOwnProperty(i)) {
-            node = this.pregroup[i].treenode;
-            if (this.mustDrawLineWith(node)) {
-              if (!this.preLines) this.preLines = [];
-              this.preLines.push(this.createArrow(this, node, this.pregroup[i].confidence, 1));
-            }
-          }
-        }
-
-        for (i in this.postgroup) {
-          if (this.postgroup.hasOwnProperty(i)) {
-            node = this.postgroup[i].treenode;
-            if (this.mustDrawLineWith(node)) {
-              if (!this.postLines) this.postLines = [];
-              this.postLines.push(this.createArrow(this, node, this.postgroup[i].confidence, 0));
-            }
-          }
-        }
-
-        for (i in this.undirgroup) {
-          if (this.undirgroup.hasOwnProperty(i)) {
-            node = this.undirgroup[i].treenode;
-            if (this.mustDrawLineWith(node)) {
-              if (!this.undirLines) this.undirLines = [];
-              this.undirLines.push(this.createArrow(this, node, this.undirgroup[i].confidence, undefined));
-            }
-          }
-        }
-
-        for (i in this.gjgroup) {
-          if (this.gjgroup.hasOwnProperty(i)) {
-            node = this.gjgroup[i].treenode;
-            if (this.mustDrawLineWith(node)) {
-              if (!this.gjLines) this.gjLines = [];
-              this.gjLines.push(this.createArrow(this, node, this.gjgroup[i].confidence, 2));
-            }
+        for (var i=0, imax=this.links.length; i<imax; ++i) {
+          var link = this.links[i];
+          var node = link.treenode;
+          if (this.mustDrawLineWith(node)) {
+            var edge = this.createArrow(this, node, link.confidence, link.relation_id, link.relation_name, link.outwards);
+            this.edges.push(edge);
           }
         }
       };
@@ -1307,21 +1229,14 @@
         this.subtype = subtype;
         this.edition_time = edition_time;
         this.user_id = user_id;
-        this.pregroup = {};
-        this.postgroup = {};
-        this.undirgroup = {};
-        this.gjgroup = {};
+        this.links = [];
+        this.edges = [];
 
         if (this.c) {
           if (!this.shouldDisplay()) {
             this.c.visible = false;
           }
         }
-
-        this.preLines = null;
-        this.postLines = null;
-        this.undirLines = null;
-        this.gjLines = null;
       };
     };
 
@@ -1347,26 +1262,26 @@
       this.confidence = confidence;
       this.edition_time = edition_time;
       this.user_id = user_id;
-      this.pregroup = {}; // set of presynaptic treenodes
-      this.postgroup = {}; // set of postsynaptic treenodes
-      this.undirgroup = {}; // set of undirected treenodes
-      this.gjgroup = {}; // set of gap junction treenodes
+      this.links = [];
+      this.edges = [];
       this.c = null; // The circle for drawing
-      this.preLines = null; // Array of ArrowLine to the presynaptic nodes
-      this.postLines = null; // Array of ArrowLine to the postsynaptic nodes
-      this.undirLines = null; // Array of undirected ArraowLine
-      this.gjLines = null; // Array of gap junction ArrowLine
     };
 
     ptype.ConnectorNode.prototype = new ptype.AbstractConnectorNode();
 
-    ptype.ConnectorLink = function( id, node, relation_id, confidence,
-        edition_time) {
+    var linkedToNode = function(link) {
+      return link.treenode.id === this.id;
+    };
+
+    ptype.ConnectorLink = function( id, node, relation_id, relation_name,
+        confidence, edition_time, outwards) {
       this.id = id;
       this.treenode = node;
       this.relation_id = relation_id;
+      this.relation_name = relation_name;
       this.confidence = confidence;
       this.edition_time = edition_time;
+      this.outwards = outwards;
     };
 
     addIsoTimeAccessor(ptype.ConnectorLink.prototype, 'edition_time');
@@ -1522,10 +1437,7 @@
             if (catmaidTracingOverlay.nodes.hasOwnProperty(connID)) {
               var conn = catmaidTracingOverlay.nodes[connID];
               if (conn.type === SkeletonAnnotations.TYPE_CONNECTORNODE) {
-                if (node.id in conn.postgroup ||
-                    node.id in conn.pregroup ||
-                    node.id in conn.undirgroup ||
-                    node.id in conn.gjgroup) {
+                if (conn.links.some(linkedToNode, node)) {
                   conn.drawEdges(true);
                 }
               }
@@ -1713,10 +1625,6 @@
     };
 
     ptype.ArrowLine.prototype = new (function() {
-      this.PRE_COLOR = new THREE.Color("rgb(200,0,0)").getHex();
-      this.POST_COLOR = new THREE.Color("rgb(0,217,232)").getHex();
-      this.GJ_COLOR = new THREE.Color("rgb(159,37,194)").getHex();
-      this.OTHER_COLOR = new THREE.Color("rgb(0,200,0)").getHex();
       this.BASE_EDGE_WIDTH = 2;
       this.CATCH_SCALE = 3;
       this.CONFIDENCE_FONT_PT = 15;
@@ -1757,45 +1665,37 @@
         if (this.suspended) {
           return;
         }
-        var relation_name, title;
-        if (this.link.relation === undefined) {
-          relation_name = 'abutting';
-          title = 'Abutting';
-        } else if (this.link.relation === 2) {
-          relation_name = 'gapjunction_with';
-          title = 'Gap junction';
-        } else if (this.link.relation === 1) {
-          relation_name = 'presynaptic_to';
-          title = 'Presynaptic';
-        } else {
-          relation_name = 'postsynaptic_to';
-          title = 'Postsynaptic';
-        }
 
-        requestQueue.register(
-            django_url + project.id + '/connector/user-info',
-            'GET',
-            { treenode_id: this.link.treenode_id,
+        Promise.all([
+            CATMAID.fetch(project.id + '/connector/user-info', 'GET', {
+              treenode_id: this.link.treenode_id,
               connector_id: this.link.connector_id,
-              relation_name: relation_name},
-            CATMAID.jsonResponseHandler(function(data) {
-              var msg = title + ' edge: ' + data.map(function (info) {
-                return 'created by ' + CATMAID.User.safeToString(info.user) + ' ' +
-                    CATMAID.tools.contextualDateString(info.creation_time) +
-                    ', last edited ' +
-                    CATMAID.tools.contextualDateString(info.edition_time);
-              }).join('; ');
-              CATMAID.statusBar.replaceLast(msg);
-            }, function(json) {
-              // Display only a warning in case of an error. Since it is
-              // possible that we get false errors when the link or one of the
-              // nodes get removed, this is probably okay.
-              if (json && json.error) CATMAID.warn(json.error);
-              return true;
-            }));
+              relation_id: this.link.relation_id
+            }),
+            // Link types are cached, so this doesn't add extra overhead
+            CATMAID.Connectors.linkType(project.id, this.link.relation_id)
+          ])
+          .then(function(results) {
+            let data = results[0];
+            let linkType = results[1];
+            var msg = linkType.name + ' edge: ' + data.map(function (info) {
+              return 'created by ' + CATMAID.User.safeToString(info.user) + ' ' +
+                  CATMAID.tools.contextualDateString(info.creation_time) +
+                  ', last edited ' +
+                  CATMAID.tools.contextualDateString(info.edition_time);
+            }).join('; ');
+            CATMAID.statusBar.replaceLast(msg);
+          })
+          .catch(function(json) {
+            // Display only a warning in case of an error. Since it is
+            // possible that we get false errors when the link or one of the
+            // nodes get removed, this is probably okay.
+            if (json && json.error) CATMAID.warn(json.error);
+            return true;
+          });
       };
 
-      this.update = function(x1, y1, x2, y2, is_pre, confidence, rloc) {
+      this.update = function(x1, y1, x2, y2, relationName, confidence, rloc) {
         var xdiff = (x2 - x1);
         var ydiff = (y2 - y1);
         var le = Math.sqrt(xdiff * xdiff + ydiff * ydiff);
@@ -1841,9 +1741,16 @@
         this.line.hitArea.points[7] = y1 - norm[1];
 
         var stroke_color;
-        if (undefined === is_pre) stroke_color = this.OTHER_COLOR;
-        else if (2 === is_pre) stroke_color = this.GJ_COLOR;
-        else stroke_color = is_pre ? this.PRE_COLOR : this.POST_COLOR;
+        let settings = SkeletonAnnotations.TracingOverlay.Settings.session;
+        if (relationName === 'presynaptic_to') {
+          stroke_color = settings.presynaptic_to_rel_color;
+        } else if (relationName === 'postsynaptic_to') {
+          stroke_color = settings.postsynaptic_to_rel_color;
+        } else if (relationName === 'gapjunction_with') {
+          stroke_color = settings.gapjunction_rel_color;
+        } else {
+          stroke_color = settings.other_rel_color;
+        }
 
         if (confidence < 5) {
           this.confidence_text = this.updateConfidenceText(x2, y2, x1, y1, stroke_color, confidence, this.confidence_text);
@@ -1891,14 +1798,15 @@
         }
       };
 
-      this.init = function(connector, node, confidence, is_pre) {
+      this.init = function(connector, node, confidence, relationId, relationName, outwards) {
         this.connector_id = connector.id;
         this.treenode_id = node.id;
-        this.relation = is_pre;
-        if (1 === is_pre) {
-          this.update(node.x, node.y, connector.x, connector.y, is_pre, confidence, connector.NODE_RADIUS*connector.stackScaling);
+        this.relation_id = relationId;
+        this.relation_name = relationName;
+        if (outwards) {
+          this.update(node.x, node.y, connector.x, connector.y, relationName, confidence, connector.NODE_RADIUS*connector.stackScaling);
         } else {
-          this.update(connector.x, connector.y, node.x, node.y, is_pre, confidence, node.NODE_RADIUS*node.stackScaling);
+          this.update(connector.x, connector.y, node.x, node.y, relationName, confidence, node.NODE_RADIUS*node.stackScaling);
         }
         this.updateVisibility(connector);
       };

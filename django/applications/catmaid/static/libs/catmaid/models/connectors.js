@@ -242,6 +242,23 @@
     },
 
     /**
+     * Promise inforamtion on a particular link ID. Use cache if no update is
+     * enforced.
+     */
+    linkType: function(projectId, linkId, forceCacheUpdate) {
+      return CATMAID.Connectors.linkTypes(projectId, forceCacheUpdate)
+        .then(function(result) {
+          for (var i=0; i<result.length; ++i) {
+            var linkType = result[i];
+            if (linkType.relation_id === linkId) {
+              return linkType;
+            }
+          }
+          throw new CATMAID.ValueError("Could not find link type with ID " + linkId);
+        });
+    },
+
+    /**
      * Get a list of available connector types.
      */
     connectorTypes: function(projectId, forceCacheUpdate) {

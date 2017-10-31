@@ -950,6 +950,18 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
           },
           subviews_from_cache: {
             default: true
+          },
+          presynaptic_to_rel_color: {
+            default: 0xC80000
+          },
+          postsynaptic_to_rel_color: {
+            default: 0x00D9E8
+          },
+          gapjunction_rel_color: {
+            default: 0x9F25C2
+          },
+          other_rel_color: {
+            default: 0x00C800
           }
         },
         migrations: {
@@ -1352,15 +1364,16 @@ SkeletonAnnotations.TracingOverlay.prototype.findConnectors = function(node_id) 
   for (var id in this.nodes) {
     if (this.nodes.hasOwnProperty(id)) {
       var node = this.nodes[id];
-      if (CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR === node.subtype) {
-        if (node.pregroup.hasOwnProperty(node_id)) {
-          pre.push(parseInt(id));
-        } else if (node.postgroup.hasOwnProperty(node_id)) {
-          post.push(parseInt(id));
-        }
-      } else if (CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR === node.subtype) {
-        if (node.gjgroup.hasOwnProperty(node_id)) {
-          gj.push(parseInt(id));
+      for (var i=0, imax=node.links.length; i<imax; ++i) {
+        var link = node.links[i];
+        if (link.treenode_id == node_id) {
+          if (link.relation_name === 'presynaptic_to') {
+            pre.push(id);
+          } else if (link.relation_name === 'postsynaptic_to') {
+            post.push(id);
+          } else if (link.relation_name === 'gapjunction_with') {
+            gj.push(id);
+          }
         }
       }
     }
@@ -1936,6 +1949,10 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
   });
 };
 
+SkeletonAnnotations.linkTypePointsOutwards = function(linkType) {
+  return linkType === 'presynaptic_to';
+};
+
 /**
  * Asynchronously, create a link between the nodes @fromid and @toid of type
  * @link_type. It is expected, that both nodes are existent. All nodes are
@@ -1964,11 +1981,11 @@ SkeletonAnnotations.TracingOverlay.prototype.createLink = function (fromid, toid
             return true;
           }
           // Add result link to set of display (to not required update)
-          var group = SkeletonAnnotations.groupedRelations[link_type] || 'undirgroup';
+          var outwards = SkeletonAnnotations.linkTypePointsOutwards(link_type);
           var link = self.graphics.newLinkNode(result.linkId, node,
-              result.relationId, 5, 0);
+              result.relationId, link_type, 5, 0, outwards);
           link.edition_time_iso_str = result.linkEditTime;
-          connector[group][node.id] = link;
+          connector.links.push(link);
           node.linkConnector(connector.id, link);
           connector.createGraphics();
 
@@ -2035,6 +2052,24 @@ SkeletonAnnotations.TracingOverlay.prototype.createPostsynapticTreenode = functi
       confidence, pos_x, pos_y, pos_z, "postsynaptic_to", afterCreate);
 };
 
+var countRelationNames = function(counts, l) {
+  let sum = counts[l.relationName];
+  if (sum === undefined) {
+    sum = 0;
+  }
+  counts[l.relationName] = sum + 1;
+  return counts;
+};
+
+var collectLinksByRelation = function(target, l) {
+  let set = target[l.relationName];
+  if (set === undefined) {
+    set = target[l.relationName] = [];
+  }
+  set.push(l);
+  return target;
+};
+
 /**
  * Create a new treenode that is postsynaptic to the given @connectorID.
  */
@@ -2051,7 +2086,8 @@ SkeletonAnnotations.TracingOverlay.prototype.createPresynapticTreenode = functio
         connectorID + " is not loaded. Browse to " +
         "its section and make sure it is selected."));
   }
-  if (Object.keys(connectorNode.pregroup).length > 0) {
+  var counts = connectorNode.links.reduce(countRelationNames, {});
+  if (CATMAID.tools.getDefined(counts['presynaptic_to'], 0) > 0) {
     return Promise.reject(new CATMAID.Warning(
         "The connector already has a presynaptic node!"));
   }
@@ -2075,11 +2111,14 @@ SkeletonAnnotations.TracingOverlay.prototype.createGapjunctionTreenode = functio
         connectorID + " is not loaded. Browse to " +
         "its section and make sure it is selected."));
   }
-  if (Object.keys(connectorNode.gjgroup).length > 1) {
+  var counts = connectorNode.links.reduce(countRelationNames, {});
+
+  if (CATMAID.tools.getDefined(counts['gapjunction_with'], 0) > 1) {
     return Promise.reject(new CATMAID.Warning(
         "The connector already has two gap junction nodes!"));
   }
-  if (Object.keys(connectorNode.pregroup).length > 0 || Object.keys(connectorNode.postgroup).length > 0) {
+  if (CATMAID.tools.getDefined(counts['presynaptic_to'], 0) > 0 ||
+      CATMAID.tools.getDefined(counts['postsynaptic_to'], 0) > 0) {
     return Promise.reject(new CATMAID.Warning(
         "Gap junction can not be added as the connector is part of a synapse!"));
   }
@@ -2300,14 +2339,6 @@ function createVirtualNode(graphics, child, parent, stackViewer)
   return vn;
 }
 
-// All relations not in this map, will be part of the 'undirgroup'
-SkeletonAnnotations.groupedRelations = {
-  'presynaptic_to': 'pregroup',
-  'postsynaptic_to': 'postgroup',
-  'gapjunction_with': 'gjgroup'
-};
-
-
 /**
  * Recreate all nodes (or reuse existing ones if possible).
  *
@@ -2450,7 +2481,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
 
   // Now that ConnectorNode and Node instances are in place,
   // set all relations
-  var groupedRelations = SkeletonAnnotations.groupedRelations;
+  var pointsOutwards = SkeletonAnnotations.linkTypePointsOutwards;
   for (var i=0, max=jsonConnectors.length; i<max; ++i) {
     var a = jsonConnectors[i];
     // a[0] is the ID of the ConnectorNode
@@ -2465,9 +2496,10 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
       var node = this.nodes[tnid];
       if (node) {
         var relation_name = jso[4][r[1]];
-        var group = groupedRelations[relation_name] || 'undirgroup';
-        var link = this.graphics.newLinkNode(r[4], node, r[1], r[2], r[3]);
-        connector[group][tnid] = link;
+        var outwards = pointsOutwards(relation_name);
+        var link = this.graphics.newLinkNode(r[4], node, r[1], relation_name, r[2], r[3], outwards);
+
+        connector.linkNode(tnid, link);
         node.linkConnector(connector.id, link);
       }
     }
@@ -4402,12 +4434,15 @@ SkeletonAnnotations.TracingOverlay.prototype.switchBetweenTerminalAndConnector =
       // Switch back to the terminal
       this.moveToAndSelectNode(this.nodes[this.switchingTreenodeID].id);
     } else {
+      var links = ob.links.reduce(collectLinksByRelation, {});
+      var preLinks = links['presynaptic_to'];
+      var postLinks = links['postsynaptic_to'];
       // Go to the postsynaptic terminal if there is only one
-      if (1 === Object.keys(ob.postgroup).length) {
-        this.moveToAndSelectNode(this.nodes[Object.keys(ob.postgroup)[0]].id);
+      if (postLinks && postLinks.length === 1) {
+        this.moveToAndSelectNode(this.nodes[postLinks[0].id]);
       // Otherwise, go to the presynaptic terminal if there is only one
-      } else if (1 === Object.keys(ob.pregroup).length) {
-        this.moveToAndSelectNode(this.nodes[Object.keys(ob.pregroup)[0]].id);
+      } else if (preLinks && preLinks.length === 1) {
+        this.moveToAndSelectNode(this.nodes[preLinks[0].id]);
       } else {
         CATMAID.msg("Oops", "Don't know which terminal to switch to");
         return;
@@ -4461,16 +4496,17 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteConnectorNode =
     var command = new CATMAID.RemoveConnectorCommand(self.state, project.id, connectornode.id);
     return CATMAID.commands.execute(command)
       .then(function(result) {
+        let links = connectornode.links.reduce(collectLinksByRelation, {});
+        let preLinks = links['presynaptic_to'];
+        let postLinks = links['postsynaptic_to'];
+        let gapjunctionLinks = links['gapjunction_with'];
         // If there was a presynaptic node, select it
-        var preIDs  = Object.keys(connectornode.pregroup);
-        var postIDs = Object.keys(connectornode.postgroup);
-        var gjIDs = Object.keys(connectornode.gjgroup);
-        if (preIDs.length > 0) {
-            self.selectNode(preIDs[0]).catch(CATMAID.handleError);
-        } else if (postIDs.length > 0) {
-            self.selectNode(postIDs[0]).catch(CATMAID.handleError);
-        } else if (gjIDs.length > 0) {
-            self.selectNode(gjIDs[0]).catch(CATMAID.handleError);
+        if (preLinks && preLinks.length > 0) {
+            self.selectNode(preLinks[0].treenode_id).catch(CATMAID.handleError);
+        } else if (postLinks && postLinks.length > 0) {
+            self.selectNode(postLinks[0].treenode_id).catch(CATMAID.handleError);
+        } else if (gapjunctionLinks && gapjunctionLinks.length > 0) {
+            self.selectNode(gapjunctionLinks[0].treenode_id).catch(CATMAID.handleError);
         } else {
             self.activateNode(null);
         }
@@ -4478,9 +4514,9 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteConnectorNode =
         var connectorId = connectornode.id;
 
         // Delete all connector links
-        var links = connectornode.getLinks();
-        for (var i=0; i<links.length; ++i) {
-          var link = links[i];
+        var allLinks = connectornode.getLinks();
+        for (var i=0; i<allLinks.length; ++i) {
+          var link = allLinks[i];
           delete link.treenode.connectors[connectorId];
         }
 

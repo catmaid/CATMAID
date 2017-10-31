@@ -355,7 +355,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
     def test_connector_user_info(self):
         self.fake_authentication()
         response = self.client.get(
-                '/%d/connector/user-info' % (self.test_project_id,), {
+                '/%d/connectors/user-info' % (self.test_project_id,), {
                     'treenode_id': 415,
                     'connector_id': 421,
                     'relation_name': 'presynaptic_to'

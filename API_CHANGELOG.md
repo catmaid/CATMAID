@@ -11,7 +11,8 @@ included in this changelog.
 
 ### Modifications
 
-None.
+- `GET /{project_id}/connector/user-info` has been replaced with
+  `GET /{project_id}/connectors/user-info`. Functionality is the same.
 
 ### Deprecations
 

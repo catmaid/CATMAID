@@ -1667,7 +1667,7 @@
         }
 
         Promise.all([
-            CATMAID.fetch(project.id + '/connector/user-info', 'GET', {
+            CATMAID.fetch(project.id + '/connectors/user-info', 'GET', {
               treenode_id: this.link.treenode_id,
               connector_id: this.link.connector_id,
               relation_id: this.link.relation_id

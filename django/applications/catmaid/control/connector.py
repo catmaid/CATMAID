@@ -662,13 +662,49 @@ def connectors_info(request, project_id):
 
     return HttpResponse(json.dumps(rows))
 
+@api_view(['GET'])
 @requires_user_role([UserRole.Browse])
 def connector_user_info(request, project_id):
     """ Return information on a treenode connector edge.
 
-    This function is called often (every connector mouseover) and should
-    therefore be as fast as possible. Analogous to user_info for treenodes and
-    connectors.
+    Returns a JSON array with elements representing information on the matched
+    links. They have the following form:
+
+      { "user": ..., "creaetion_time": ..., "edition_time": ... }
+
+    Developer node: This function is called often (every connector mouseover)
+    and should therefore be as fast as possible. Analogous to user_info for
+    treenodes and connectors.
+    ---
+    parameters:
+      - name: project_id
+        description: Project of connectors
+        type: array
+        items:
+          type: integer
+        paramType: form
+        required: true
+      - name: treenode_id
+        description: The treenode, the connector is linked to
+        type: integer
+        paramType: form
+        required: true
+      - name: connector_id
+        description: The connector, the treenode is linked to
+        type: integer
+        paramType: form
+        defaultValue: true
+        required: true
+      - name: relation_id
+        description: The relation ID of the link, can be used instead of relation_name
+        type: integer
+        paramType: form
+        required: false
+      - name: relation_name
+        description: The relation name of the link, can be used instead of relation_id
+        type: string
+        paramType: form
+        required: false
     """
     treenode_id = int(request.GET.get('treenode_id'))
     connector_id = int(request.GET.get('connector_id'))

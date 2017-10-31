@@ -275,23 +275,68 @@ SkeletonAnnotations.staticMoveTo = function(z, y, x) {
 
 /**
  * Move to a location, ensuring that any edits to node coordinates are pushed to
- * the database. After the move, the given node is selected.
+ * the database. After the move, the given node is selected in all stackviewers
+ * navigating with the project.
  *
  * @param  {number|string} nodeID  ID of the node to move to and select.
  * @return {Promise}               Promise succeeding after move and selection,
  *                                 yielding an array of the selected node from
  *                                 all open tracing overlays.
  */
-SkeletonAnnotations.staticMoveToAndSelectNode = function(nodeID) {
+SkeletonAnnotations.staticMoveToAndSelectNode = function(nodeId) {
   var instances = SkeletonAnnotations.TracingOverlay.prototype._instances;
-  var movePromises = [];
+  var preparePromises = [];
+  // Save all changes in each layer
   for (var stackViewerId in instances) {
     if (instances.hasOwnProperty(stackViewerId)) {
-      movePromises.push(instances[stackViewerId].moveToAndSelectNode(nodeID));
+      let overlay = instances[stackViewerId];
+      // Save changed nodes
+      preparePromises.push(overlay.updateNodeCoordinatesInDB);
     }
   }
 
-  return Promise.all(movePromises);
+  // Get node location, try to find it in existing stacks first
+  return Promise.all(preparePromises)
+    .then(function() {
+      var nodeLocation = null;
+      // Get node location if not yet found
+      for (var stackViewerId in instances) {
+        if (instances.hasOwnProperty(stackViewerId)) {
+          let overlay = instances[stackViewerId];
+
+          if (nodeLocation) {
+            // Only try to get node from overlay, if no location has been found
+            // yet.
+            nodeLocation = nodeLocation.then(function(loc) {
+              return loc ? loc : overlay.getNodeLocation(nodeId);
+            }).catch(function() {
+              return overlay.getNodeLocation(nodeId);
+            });
+          } else {
+            nodeLocation = overlay.getNodeLocation(nodeId);
+          }
+
+          // Save changed nodes
+          preparePromises.push(overlay.updateNodeCoordinatesInDB);
+        }
+      }
+      return nodeLocation;
+    })
+    .then(function(loc) {
+      // Move project to new location
+      return project.moveTo(loc.z, loc.y, loc.x);
+    })
+    .then(function() {
+      let selectionPromises = [];
+      // Select nodes
+      for (var stackViewerId in instances) {
+        if (instances.hasOwnProperty(stackViewerId)) {
+          let overlay = instances[stackViewerId];
+          selectionPromises.push(overlay.selectNode(nodeId));
+        }
+      }
+      return Promise.all(selectionPromises);
+    });
 };
 
 /**
@@ -3740,30 +3785,34 @@ SkeletonAnnotations.TracingOverlay.prototype.moveToAndSelectNode = function(node
 };
 
 /**
- * Move to the node and then invoke the function. If the node happens to be
- * virtual and not available in the front-end already, it tries to get both
- * real parent and real child of it and determine the correct position.
+ * Get a promise that resolves into the location of the passed in node. If node
+ * information has to be tretrieved, the request ist queued after all pending
+ * requests of this overlay.
  */
-SkeletonAnnotations.TracingOverlay.prototype.goToNode = function (nodeID, fn) {
-  if (this.isIDNull(nodeID)) return Promise.reject("No node provided for selection");
+SkeletonAnnotations.TracingOverlay.prototype.getNodeLocation = function (nodeId) {
+  if (this.isIDNull(nodeId)) {
+    return Promise.reject("No node provided for selection");
+  }
 
-  var node = this.nodes[nodeID];
+  var node = this.nodes[nodeId];
   if (node) {
-    return this.moveTo(
-      this.pix2physZ(node.z, node.y, node.x),
-      this.pix2physY(node.z, node.y, node.x),
-      this.pix2physX(node.z, node.y, node.x),
-      fn);
-  } else if (SkeletonAnnotations.isRealNode(nodeID)) {
+    return Promise.resolve({
+      x: this.pix2physX(node.z, node.y, node.x),
+      y: this.pix2physY(node.z, node.y, node.x),
+      z: this.pix2physZ(node.z, node.y, node.x),
+    });
+  } else if (SkeletonAnnotations.isRealNode(nodeId)) {
     var self = this;
     return new Promise(function(resolve, reject) {
-      self.submit(
-          django_url + project.id + "/node/get_location",
-          'POST',
-          {tnid: nodeID},
+      self.submit(django_url + project.id + "/node/get_location",
+          'POST', {tnid: nodeId},
           function(json) {
             // json[0], [1], [2], [3]: id, x, y, z
-            resolve(self.moveTo(json[3], json[2], json[1], fn));
+            resolve({
+              x: json[1],
+              y: json[2],
+              z: json[3]
+            });
           },
           false,
           true,
@@ -3771,23 +3820,39 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNode = function (nodeID, fn) {
     });
   } else {
     // Get parent and child ID locations
-    var vnComponents = SkeletonAnnotations.getVirtualNodeComponents(nodeID);
-    var parentID = SkeletonAnnotations.getParentOfVirtualNode(nodeID, vnComponents);
-    var childID = SkeletonAnnotations.getChildOfVirtualNode(nodeID, vnComponents);
-    var vnX = SkeletonAnnotations.getXOfVirtualNode(nodeID, vnComponents);
-    var vnY = SkeletonAnnotations.getYOfVirtualNode(nodeID, vnComponents);
-    var vnZ = SkeletonAnnotations.getZOfVirtualNode(nodeID, vnComponents);
+    var vnComponents = SkeletonAnnotations.getVirtualNodeComponents(nodeId);
+    var parentID = SkeletonAnnotations.getParentOfVirtualNode(nodeId, vnComponents);
+    var childID = SkeletonAnnotations.getChildOfVirtualNode(nodeId, vnComponents);
+    var vnX = SkeletonAnnotations.getXOfVirtualNode(nodeId, vnComponents);
+    var vnY = SkeletonAnnotations.getYOfVirtualNode(nodeId, vnComponents);
+    var vnZ = SkeletonAnnotations.getZOfVirtualNode(nodeId, vnComponents);
 
     if (parentID && childID && vnX && vnY && vnZ) {
-      return this.moveTo(vnZ, vnY, vnX, fn);
+      return Promise.resolve({
+        x: vnX,
+        y: vnY,
+        z: vnZ
+      });
     } else {
-      var msg = "Could not find location for node " + nodeID;
-      CATMAID.warn(msg);
-      return Promise.reject(msg);
+      var msg = "Could not find location for node " + nodeId;
+      return Promise.reject(new CATMAID.Warning(msg));
     }
   }
 
-  return Promise.reject("Could not select node " + nodeID);
+  return Promise.reject("Could not select node " + nodeId);
+};
+
+/**
+ * Move to the node and then invoke the function. If the node happens to be
+ * virtual and not available in the front-end already, it tries to get both
+ * real parent and real child of it and determine the correct position.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.goToNode = function (nodeID, fn) {
+  let self = this;
+  return this.getNodeLocation(nodeID)
+    .then(function(loc) {
+      return self.moveTo(loc.z, loc.y, loc.x, fn);
+    });
 };
 
 /**

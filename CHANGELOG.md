@@ -46,6 +46,9 @@ Miscellaneous:
 - 3D Viewer: the visibility of skeletons with connector colors the same as the
   skeleton can now be controlled correctly.
 
+- Selecting nodes explicitly with multiple stackviewers open (e.g. by
+  Shift-Click in the 3D Viewer) sometimes raised an error about not being able
+  to find the selected node. This is fixed now.
 
 ## 2017.10.02
 

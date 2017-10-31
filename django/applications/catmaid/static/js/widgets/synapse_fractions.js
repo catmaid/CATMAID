@@ -281,6 +281,7 @@
              [CATMAID.DOM.createTextField('sf-select-partners-regex' + this.widgetID, ' - Select: ', 'Select partner neurons or groups by regular expression matching', '', null, this.selectPartnersByRegex.bind(this), null)],
              ['Create group from selected', this.createPartnerGroupFromSelected.bind(this)],
              ['Group equally named partners', this.groupEquallyNamedPartners.bind(this)],
+             ['Group all ungrouped', this.groupAllUngrouped.bind(this)],
              ['Ungroup all', this.ungroupAllPartnerGroups.bind(this)],
             ]);
 
@@ -1850,6 +1851,24 @@
     }, this);
     // Recompute fractions and redraw
     this.updateGraph();
+  };
+
+  SynapseFractions.prototype.groupAllUngrouped = function() {
+    if (0 === this.items.length) return;
+    var ids = this.getPartnerIds(); // skeleton IDs (positive) or group IDs (negative)
+    delete ids["others"];
+    var ungrouped = Object.keys(ids).reduce(function(a, id) {
+      if (Number(id) > -1) a.push(id);
+      return a;
+    }, []);
+    if (ungrouped.length > 1) {
+      var name = prompt("Group name", "");
+      if (!name) return; // cancelled
+      this._addPartnerGroupFrom(ungrouped, name);
+      this.updateGraph();
+    } else {
+      CATMAID.msg("Information", "None remain ungrouped");
+    }
   };
 
   SynapseFractions.prototype.ungroupAllPartnerGroups = function() {

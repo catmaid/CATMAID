@@ -109,7 +109,7 @@ var submitterFn = function() {
     try {
       callbacks.forEach(function(errCallback, i) {
         var result =  errCallback(error);
-        // The andler of the failed request, can mark this error as handled.
+        // The handler of the failed request, can mark this error as handled.
         handled = (errCallback === q.errCallback) ? result : handled;
       });
     } catch (e) {

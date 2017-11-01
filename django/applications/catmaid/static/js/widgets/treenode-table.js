@@ -285,12 +285,7 @@
     var formatTime = function(seconds_since_epoch) {
       var d = new Date(0);
       d.setUTCSeconds(seconds_since_epoch);
-      var day = d.getDate();
-      if (day < 10) day = '0' + day;
-      var month = d.getUTCMonth() + 1; // 0-based
-      if (month < 10) month = '0' + month;
-      return day + '-' + month + '-' + d.getUTCFullYear() +
-        ' ' + d.getHours() + ":" + d.getMinutes() + ":" + d.getSeconds();
+      return CATMAID.tools.dateToString(d);
     };
 
     var stack = project.focusedStackViewer.primaryStack,

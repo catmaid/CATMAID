@@ -417,6 +417,25 @@ CATMAID.tools = CATMAID.tools || {};
     };
   })();
 
+  /**
+   * Return a string representation of a Date instance with the format
+   * YYYY-MM-DD hh:mm:ss.
+   */
+  tools.dateToString = function(d) {
+    var day = d.getDate();
+    if (day < 10) day = '0' + day;
+    var month = d.getUTCMonth() + 1; // 0-based
+    if (month < 10) month = '0' + month;
+    var hour = d.getHours();
+    if (hour < 10) hour = '0' + hour;
+    var min = d.getMinutes();
+    if (min < 10) min = '0' + min;
+    var sec = d.getSeconds();
+    if (sec < 10) sec = '0' + sec;
+    return d.getUTCFullYear() + '-' + month + '-' + day + ' ' +
+        hour + ":" + min + ":" + sec;
+  };
+
   tools.numberSuffix = function(n) {
     return n > 1 ? 's' : '';
   };

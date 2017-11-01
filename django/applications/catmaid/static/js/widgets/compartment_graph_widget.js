@@ -3497,6 +3497,8 @@
   };
 
   GroupGraph.prototype.groupEquallyNamed = function() {
+    var seen = {};
+
     this.cy.nodes().each(function(i, node) {
         var name = node.data("label");
         var list = seen[name];
@@ -3537,7 +3539,7 @@
 
          this.update();
        }
-    });
+    }, this);
   };
 
   /**

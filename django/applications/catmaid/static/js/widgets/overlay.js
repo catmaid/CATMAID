@@ -3028,19 +3028,16 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
     if (activeNodeId) {
       var activeNodeType = SkeletonAnnotations.getActiveNodeType();
       if (activeNodeType === SkeletonAnnotations.TYPE_NODE) {
-        if (futureActiveNodeID) {
-          treenodeIDs = futureActiveNodeID;
-        } else {
-          treenodeIDs = activeNodeId;
-        }
-
+        var extraTreenodeId = futureActiveNodeID ? futureActiveNodeID : activeNodeId;
         // If the active node is virtual, explicitly request both the child
         // and parent from the backend and inject the virtual node into the
         // result.
-        if (!SkeletonAnnotations.isRealNode(treenodeIDs)) {
-          treenodeIDs = [
-            SkeletonAnnotations.getChildOfVirtualNode(treenodeIDs),
-            SkeletonAnnotations.getParentOfVirtualNode(treenodeIDs)];
+        if (SkeletonAnnotations.isRealNode(extraTreenodeId)) {
+          treenodeIDs.push(extraTreenodeId);
+        } else {
+          treenodeIDs.push(
+            SkeletonAnnotations.getChildOfVirtualNode(extraTreenodeId),
+            SkeletonAnnotations.getParentOfVirtualNode(extraTreenodeId));
           var n = self.nodes[activeNodeId];
           if (n) {
             extraNodes = [{

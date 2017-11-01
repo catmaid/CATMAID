@@ -1205,11 +1205,12 @@
       var e = cedges[source_id];
       Object.keys(e).forEach(function(target_id) {
         var confidence = e[target_id];
+        var count = _filterSynapses(confidence, edge_confidence_threshold);
+        edgeLabelOptions.count = count;
         edgeLabelOptions.synapses = confidence;
         edgeLabelOptions.sourceId = source_id;
         edgeLabelOptions.targetId = target_id;
         var value = edgeLabelStrategy.run(edgeLabelOptions);
-        var count = edgeLabelOptions.count;
         elements.edges.push({data: {directed: true,
                                     arrow: 'triangle',
                                     color: edge_color,

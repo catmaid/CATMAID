@@ -708,11 +708,14 @@ def connector_user_info(request, project_id):
     """
     treenode_id = int(request.GET.get('treenode_id'))
     connector_id = int(request.GET.get('connector_id'))
-    relation_id = int(request.GET.get('relation_id'))
+    relation_id = request.GET.get('relation_id')
     cursor = connection.cursor()
     if relation_id == None:
         relations = get_relation_to_id_map(project_id, LINK_RELATION_NAMES, cursor)
         relation_id = relations[request.GET.get('relation_name')]
+    else:
+        relation_id = int(relation_id)
+
     cursor.execute('''
         SELECT tc.id, tc.user_id, tc.creation_time, tc.edition_time
         FROM treenode_connector tc

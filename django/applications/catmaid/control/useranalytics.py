@@ -102,7 +102,7 @@ def plot_useranalytics(request):
     end_date = end_date + timedelta(days=1)
 
     if request.user.is_superuser or \
-            project and request.user.has_perm('can_administer', project):
+            project and request.user.has_perm('can_browse', project):
         f = generateReport( userid, project_id, maxInactivity, start_date,
                 end_date, all_writes )
     else:

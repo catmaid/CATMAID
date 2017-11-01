@@ -623,7 +623,7 @@
   };
 
   var userAnalyticsAccessible = function(projectId) {
-    return CATMAID.hasPermission(projectId, 'can_administer');
+    return CATMAID.hasPermission(projectId, 'can_browse');
   };
 
   var openUserAnalytics = function(options) {

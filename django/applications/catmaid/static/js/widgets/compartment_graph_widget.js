@@ -3496,6 +3496,50 @@
     });
   };
 
+  GroupGraph.prototype.groupEquallyNamed = function() {
+    this.cy.nodes().each(function(i, node) {
+        var name = node.data("label");
+        var list = seen[name];
+        if (undefined === list) {
+            seen[name] = [node];
+        } else {
+            list.push(node);
+        }
+    });
+
+    Object.keys(seen).forEach(function(name) {
+       var list = seen[name];
+
+       if (list.length > 0) {
+         var position = null;
+         var color = null;
+         var models = list.reduce(function(o, node) {
+           var p = node.position();
+           if (!position) {
+             position = {x: p.x, y: p.y};
+             color = new THREE.Color(node.data("color"));
+           } else {
+             position.x += p.x;
+             position.y += p.y;
+             color.add(new THREE.Color(node.data("color")));
+           }
+           node.data("skeletons").forEach(function(model) {
+              o[model.id] = model;
+           });
+           return o;
+         }, {});
+
+         position.x /= list.length;
+         position.y /= list.length;
+
+         var gid = this.nextGroupID();
+         this.groups[gid] = new CATMAID.GroupGraph.prototype.Group(gid, models, name, color, false, position);
+
+         this.update();
+       }
+    });
+  };
+
   /**
    * Helper to get the number of synapses with confidence greater than or
    * equal to a threshold.

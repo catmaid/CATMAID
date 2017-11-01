@@ -3194,7 +3194,15 @@ SkeletonAnnotations.TracingOverlay.prototype.createSubViewNodeListFromCache = fu
         entryParams.bottom >= params.bottom &&
         entryParams.z1 <= params.z1 &&
         entryParams.z2 >= params.z2;
-    if (entryEnclosesRequest &&
+    // Only allow cached entries that either require no extra treenodes or
+    // connectors or have matching extra nodes.
+    let extraNodesMatch =
+        (!params.connector_ids ||
+            CATMAID.tools.arraysEqual(entryParams.connector_ids, params.connector_ids)) &&
+        (!params.treenode_ids ||
+            CATMAID.tools.arraysEqual(entryParams.treenode_ids, params.treenode_ids));
+
+    if (entryEnclosesRequest && extraNodesMatch &&
         entryParams.labels === params.labels) {
       var cachedJson = self.nodeListCache.get(entry.key);
       if (!cachedJson) {

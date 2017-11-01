@@ -135,4 +135,20 @@ QUnit.test('Utilities test', function( assert ) {
     assert.strictEqual(CATMAID.tools.humanReadableTimeInterval(4496724, new Set(['sec', 'min', 'hours', 'days'])), '1h 14min 56sec',
         'CATMAID.tools.humanReadableTimeInterval returns expected result');
   })();
+
+  // Test arraysEqual
+  (function() {
+    assert.ok(CATMAID.tools.arraysEqual([], []),
+        "CATMAID.tools.arraysEqual correctly finds arrays are equal");
+    assert.ok(CATMAID.tools.arraysEqual([1,2], [1,2]),
+        "CATMAID.tools.arraysEqual correctly finds arrays are equal");
+    assert.notOk(CATMAID.tools.arraysEqual(null, [1,2]),
+        "CATMAID.tools.arraysEqual correctly finds arrays are not equal");
+    assert.notOk(CATMAID.tools.arraysEqual([1,2], null),
+        "CATMAID.tools.arraysEqual correctly finds arrays are not equal");
+    assert.notOk(CATMAID.tools.arraysEqual([1,2], [2,1]),
+        "CATMAID.tools.arraysEqual correctly finds arrays are not equal");
+    assert.notOk(CATMAID.tools.arraysEqual([1,2], [1,2,3]),
+        "CATMAID.tools.arraysEqual correctly finds arrays are not equal");
+  })();
 });

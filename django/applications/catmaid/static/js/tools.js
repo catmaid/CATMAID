@@ -664,4 +664,23 @@ CATMAID.tools = CATMAID.tools || {};
     return value;
   };
 
+  /**
+   * Test if two arrays are exactly the same, i.e. they are defined and have the
+   * same elements in the same order.
+   */
+  tools.arraysEqual = function(a, b) {
+    if (!a || !b) {
+      return false;
+    }
+    if (a.length !== b.length) {
+      return false;
+    }
+    for (var i=0, imax=a.length; i<imax; ++i) {
+      if (a[i] !== b[i]) {
+        return false;
+      }
+    }
+    return true;
+  };
+
 })(CATMAID.tools);

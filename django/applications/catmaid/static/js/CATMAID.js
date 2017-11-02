@@ -267,20 +267,11 @@
               CATMAID.msg('Success', 'Network accessible again');
               warningSet = false;
             }
-            $.unblockUI();
             networkTestTimeout = undefined;
           } else {
             if (!warningSet) {
               CATMAID.statusBar.setWarning("No network connection");
               warningSet = true;
-              $.blockUI({
-                message: "Please wait, the CATMAID server is currently not accessible",
-                css: {
-                  padding: "1em",
-                  border: "2px solid orange",
-                  fontWeight: "bold"
-                }
-              });
             }
             networkTestTimeout = window.setTimeout(test, NETWORK_ACCESS_TEST_INTERVAL);
           }
@@ -309,6 +300,7 @@
       } else if (error instanceof CATMAID.TooManyWebGlContextsError) {
         new CATMAID.TooManyWebGlContextsDialog(error.message, error.detail).show();
       } else if (error instanceof CATMAID.NetworkAccessError) {
+        CATMAID.warn('No network access');
         CATMAID.verifyNetworkAccess();
       } else {
         CATMAID.error(error.message, error.detail);

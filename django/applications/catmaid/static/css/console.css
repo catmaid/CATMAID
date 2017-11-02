@@ -52,3 +52,12 @@ div.console:hover pre {
 div.console:hover #coordinates {
   display: none;
 }
+
+div.console.warning {
+  background-color: orange;
+  color: white;
+}
+div.console.warning pre {
+  font-weight: bold;
+  color: white;
+}

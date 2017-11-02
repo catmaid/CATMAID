@@ -10,6 +10,9 @@
    * displayed separately from each other.
    */
   CATMAID.Console = function() {
+    // No new message can be printed while blocked
+    this.blocked = false;
+
     var view = document.createElement("div");
     view.className = "console";
 
@@ -54,6 +57,9 @@
     };
 
     this.print = function (obj, color) {
+      if (this.blocked) {
+        return;
+      }
       var line;
       if (typeof obj == "string") {
         line = document.createTextNode(obj);
@@ -68,6 +74,9 @@
     };
 
     this.println = function (obj, color) {
+      if (this.blocked) {
+        return;
+      }
       var sp = document.createElement("pre");
       if (typeof obj == "string") {
         sp.appendChild(document.createTextNode(obj));
@@ -82,6 +91,9 @@
     };
 
     this.replaceLast = function (obj, color) {
+      if (this.blocked) {
+        return;
+      }
       var sp = document.createElement("pre");
       if (typeof obj == "string") {
         sp.appendChild(document.createTextNode(obj));
@@ -93,6 +105,9 @@
     };
 
     this.replaceLastHTML = function (html) {
+      if (this.blocked) {
+        return;
+      }
       var e = document.createElement("pre");
       e.innerHTML = html;
       view.replaceChild(e, view.lastChild);
@@ -100,6 +115,21 @@
 
     this.getView = function () {
       return view;
+    };
+
+    this.setWarning = function(text) {
+      this.replaceLast(text);
+      this.blocked = true;
+      view.classList.add('warning');
+    };
+
+    this.unsetWarning = function() {
+      this.unblock();
+      view.classList.remove('warning');
+    };
+
+    this.unblock = function() {
+      this.blocked = false;
     };
   };
 

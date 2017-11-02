@@ -547,4 +547,31 @@ var requestQueue = new RequestQueue();
     return match;
   };
 
+  /**
+   * Return a promise that resolves when the back-end is reachable and rejects
+   * otherwise. This is done directly with AJAX to be independent from own
+   * request/response implementations.
+   */
+  CATMAID.testNetworkAccess = function() {
+    var url = CATMAID.makeURL('version');
+    return new Promise(function(resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.onreadystatechange = function() {
+        try {
+          if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status === 200) {
+              resolve(true);
+            } else {
+              resove(false);
+            }
+          }
+        } catch(error) {
+          resolve(false);
+        }
+      };
+      xhr.open('GET', url);
+      xhr.send();
+    });
+  };
+
 })(CATMAID);

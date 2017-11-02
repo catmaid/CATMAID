@@ -6,6 +6,14 @@
   "use strict";
 
   function handleUnhandledError(err, detail) {
+    // If this error is due to missing network access, handle it differently.
+    if (err instanceof CATMAID.NetworkAccessError) {
+      if (CATMAID) {
+        CATMAID.verifyNetworkAccess();
+        CATMAID.warn('No network access');
+        return;
+      }
+    }
     console.group("Undhandled CATMAID error");
     // Log the error detail to the console
     console.log(detail);
@@ -240,6 +248,54 @@
   };
 
   /**
+   * Warn about network access errors in the status bar, and check every second
+   * if network access is back.
+   */
+  CATMAID.verifyNetworkAccess = (function() {
+    var NETWORK_ACCESS_TEST_INTERVAL = 500;
+    var networkTestTimeout;
+    var warningSet = false;
+    var test = function() {
+      // If the back-end is not accessible, set a status bar warning and
+      // test again periodically. Otherwise, clear the warning.
+      CATMAID.testNetworkAccess()
+        .then(function(accessible) {
+          if (accessible) {
+            if (warningSet) {
+              CATMAID.statusBar.unsetWarning();
+              CATMAID.statusBar.replaceLast('Network accessible again');
+              CATMAID.msg('Success', 'Network accessible again');
+              warningSet = false;
+            }
+            $.unblockUI();
+            networkTestTimeout = undefined;
+          } else {
+            if (!warningSet) {
+              CATMAID.statusBar.setWarning("No network connection");
+              warningSet = true;
+              $.blockUI({
+                message: "Please wait, the CATMAID server is currently not accessible",
+                css: {
+                  padding: "1em",
+                  border: "2px solid orange",
+                  fontWeight: "bold"
+                }
+              });
+            }
+            networkTestTimeout = window.setTimeout(test, NETWORK_ACCESS_TEST_INTERVAL);
+          }
+        })
+        .catch(CATMAID.handleError);
+    };
+    return function() {
+      // Only start monitoring if no timeout is already active
+      if (!networkTestTimeout) {
+        networkTestTimeout = window.setTimeout(test, NETWORK_ACCESS_TEST_INTERVAL);
+      }
+    };
+  })();
+
+  /**
    * Look at the error type and take appropriate action.
    */
   CATMAID.handleError = function(error) {
@@ -252,6 +308,8 @@
         CATMAID.suggestStateUpdate(error);
       } else if (error instanceof CATMAID.TooManyWebGlContextsError) {
         new CATMAID.TooManyWebGlContextsDialog(error.message, error.detail).show();
+      } else if (error instanceof CATMAID.NetworkAccessError) {
+        CATMAID.verifyNetworkAccess();
       } else {
         CATMAID.error(error.message, error.detail);
       }

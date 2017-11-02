@@ -22,6 +22,9 @@ Node filters:
   of a particular set of neurons. It can of course be combined with other
   filters like volume intersection.
 
+- New filter: Pruned arbor, which keeps the arbor proximal to the (tagged) cut
+  points, discarding distal subarbors.
+
 Miscellaneous:
 
 - Exported sub-stacks now include the Z resolution.
@@ -40,6 +43,17 @@ Miscellaneous:
   in. Like with the regular node cache, views not used for one minute will be
   thrown away.
 
+- All users can now view their user analytics plot with the help of the Project
+  Statistics widget.
+
+- The NRRD file export can now transform from FAFB v14 into template brain
+  space.
+
+- Synapse Fractions: the button "Group all ungrouped" will move all skeletons
+  that are not part of a group already and not part of "others" into a new
+  group. To also include skeletons in "others", use a synapse threshold of zero
+  in the "Filter partners" tab.
+
 
 ### Bug fixes
 
@@ -49,6 +63,14 @@ Miscellaneous:
 - Selecting nodes explicitly with multiple stackviewers open (e.g. by
   Shift-Click in the 3D Viewer) sometimes raised an error about not being able
   to find the selected node. This is fixed now.
+
+- Entries in the Treenode Table can now be correctly sorted by date.
+
+- Cropping tasks can now work with HTTPS URLs.
+
+- Graph widget: new skeletons can now be added again after individual skeletons
+  have been split.
+
 
 ## 2017.10.02
 

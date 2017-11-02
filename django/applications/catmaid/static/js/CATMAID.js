@@ -140,7 +140,7 @@
 
   /**
    * Return a string version of the input array and replace occurences of "-1"
-   * with "All". This is usefule for page length lists.
+   * with "All". This is useful for page length lists.
    */
   CATMAID.getPageLengthLabels = function(options) {
     return options.map(function (n) {

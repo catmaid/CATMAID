@@ -962,6 +962,10 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
           },
           other_rel_color: {
             default: 0x00C800
+          },
+          connector_node_marker: {
+            // enum of 'disc', 'crosshair', 'target', 'bullseye', 'ring'
+            default: 'disc'
           }
         },
         migrations: {

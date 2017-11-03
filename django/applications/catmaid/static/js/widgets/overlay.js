@@ -960,6 +960,9 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
           gapjunction_rel_color: {
             default: 0x9F25C2
           },
+          attachment_rel_color: {
+            default: 0xDD6602
+          },
           other_rel_color: {
             default: 0x00C800
           }
@@ -2420,6 +2423,8 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
         subtype = CATMAID.Connectors.SUBTYPE_ABUTTING_CONNECTOR;
       } else if (relation_name == 'gapjunction_with') {
         subtype = CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR;
+      } else if (relation_name == 'attached_to') {
+        subtype = CATMAID.Connectors.SUBTYPE_ATTACHMENT_CONNECTOR;
       }
     }
     // a[0]: ID, a[1]: x, a[2]: y, a[3]: z, a[4]: confidence,
@@ -4369,8 +4374,12 @@ SkeletonAnnotations.TracingOverlay.prototype.printTreenodeInfo = function(nodeID
         prefix = "Abutting connector node #" + node.id;
       } else if (CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR === node.subtype) {
         prefix = "Gap junction connector node #" + node.id;
-      } else {
+      } else if (CATMAID.Connectors.SUBTYPE_ATTACHMENT_CONNECTOR === node.subtype) {
+        prefix = "Attachment connector node #" + node.id;
+      } else if (CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR === node.subtype) {
         prefix = "Synaptic connector node #" + node.id;
+      } else {
+        prefix = "Unknown connector node #" + node.id;
       }
     }
   }

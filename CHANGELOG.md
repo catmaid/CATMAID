@@ -54,6 +54,11 @@ Miscellaneous:
   group. To also include skeletons in "others", use a synapse threshold of zero
   in the "Filter partners" tab.
 
+- A new connector relation is available: attached_to. A new connector nod can be
+  linked using it with the help of the Alt + Click context menu and by chooising
+  "Attachment. The idea is to then tag the connector node to provide semantic
+  information, e.g. with "vesicle".
+
 
 ### Bug fixes
 

@@ -46,6 +46,10 @@ LINK_TYPES = [
         'name': 'Gap junction',
         'type': 'Gap junction',
         'relation': 'gapjunction_with'
+    }, {
+        'name': 'Attachment',
+        'type': 'Attachment',
+        'relation': 'attached_to'
     }
 ]
 

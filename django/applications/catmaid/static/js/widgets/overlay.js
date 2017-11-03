@@ -2858,12 +2858,12 @@ SkeletonAnnotations.TracingOverlay.prototype._createNodeOrLink = function(insert
           create = this.createPostsynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5,
               pos_x, pos_y, pos_z, postCreateFn);
         } else if (CATMAID.Connectors.SUBTYPE_ABUTTING_CONNECTOR === atn.subtype) {
-          // create new treenode (and skeleton) postsynaptic to activated connector
+          // create new treenode (and skeleton) abutting to activated connector
           CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " abutting to active connector");
           create = this.createTreenodeWithLink(atn.id, phys_x, phys_y, phys_z, -1, 5,
               pos_x, pos_y, pos_z, "abutting", postCreateFn);
         } else if (CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR === atn.subtype || postLink) {
-          // create new treenode (and skeleton) postsynaptic to activated connector
+          // create new treenode (and skeleton) as a gap junction to activated connector
           CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " with gap junction to active connector");
           create = this.createGapjunctionTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5,
               pos_x, pos_y, pos_z, postCreateFn);

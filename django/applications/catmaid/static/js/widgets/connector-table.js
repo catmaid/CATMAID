@@ -88,7 +88,8 @@
           {title: 'Incoming connectors', value: "postsynaptic_to"},
           {title: 'Outgoing connectors', value: "presynaptic_to"},
           {title: 'Gap junction connectors', value: "gapjunction_with"},
-          {title: 'Abutting connectors', value: "abutting"}],
+          {title: 'Abutting connectors', value: "abutting"},
+          {title: 'Attachment connectors', value: "attached_to"}],
           "presynaptic_to");
         relation.onchange = this.update.bind(this);
         var relationLabel = document.createElement('label');

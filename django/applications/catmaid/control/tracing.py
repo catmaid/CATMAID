@@ -33,6 +33,7 @@ needed_relations = {
     'postsynaptic_to': "Something is postsynaptic to something else.",
     'abutting': "Two things abut against each other",
     'gapjunction_with': "Something has a gap junction with something else",
+    'attached_to': "Something is considered attached/linked to something else"
 }
 
 # Expected sampler states, sampler interval sates and sampler domain types

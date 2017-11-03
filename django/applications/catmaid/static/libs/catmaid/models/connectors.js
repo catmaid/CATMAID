@@ -299,6 +299,7 @@
   Connectors.SUBTYPE_SYNAPTIC_CONNECTOR = "synaptic-connector";
   Connectors.SUBTYPE_ABUTTING_CONNECTOR = "abutting-connector";
   Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR = "gapjunction-connector";
+  Connectors.SUBTYPE_ATTACHMENT_CONNECTOR = "attachment-connector";
 
   Connectors.relationToSubtype = function(relationName) {
     if ('presynaptic_to' === relationName || 'postsynaptic_to' === relationName) {
@@ -307,6 +308,8 @@
       return Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR;
     } else if ('abutting' === relationName) {
       return Connectors.SUBTYPE_ABUTTING_CONNECTOR;
+    } else if ('attached_to' === relationName) {
+      return Connectors.SUBTYPE_ATTACHMENT_CONNECTOR;
     } else {
       throw new CATMAID.ValueError('Unknown connector link relation: ' + relationName);
     }

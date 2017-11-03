@@ -960,6 +960,9 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
           gapjunction_rel_color: {
             default: 0x9F25C2
           },
+          attachment_rel_color: {
+            default: 0xDD6602
+          },
           other_rel_color: {
             default: 0x00C800
           },
@@ -2424,6 +2427,8 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
         subtype = CATMAID.Connectors.SUBTYPE_ABUTTING_CONNECTOR;
       } else if (relation_name == 'gapjunction_with') {
         subtype = CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR;
+      } else if (relation_name == 'attached_to') {
+        subtype = CATMAID.Connectors.SUBTYPE_ATTACHMENT_CONNECTOR;
       }
     }
     // a[0]: ID, a[1]: x, a[2]: y, a[3]: z, a[4]: confidence,
@@ -2857,12 +2862,12 @@ SkeletonAnnotations.TracingOverlay.prototype._createNodeOrLink = function(insert
           create = this.createPostsynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5,
               pos_x, pos_y, pos_z, postCreateFn);
         } else if (CATMAID.Connectors.SUBTYPE_ABUTTING_CONNECTOR === atn.subtype) {
-          // create new treenode (and skeleton) postsynaptic to activated connector
+          // create new treenode (and skeleton) abutting to activated connector
           CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " abutting to active connector");
           create = this.createTreenodeWithLink(atn.id, phys_x, phys_y, phys_z, -1, 5,
               pos_x, pos_y, pos_z, "abutting", postCreateFn);
         } else if (CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR === atn.subtype || postLink) {
-          // create new treenode (and skeleton) postsynaptic to activated connector
+          // create new treenode (and skeleton) as a gap junction to activated connector
           CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " with gap junction to active connector");
           create = this.createGapjunctionTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5,
               pos_x, pos_y, pos_z, postCreateFn);
@@ -4373,8 +4378,12 @@ SkeletonAnnotations.TracingOverlay.prototype.printTreenodeInfo = function(nodeID
         prefix = "Abutting connector node #" + node.id;
       } else if (CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR === node.subtype) {
         prefix = "Gap junction connector node #" + node.id;
-      } else {
+      } else if (CATMAID.Connectors.SUBTYPE_ATTACHMENT_CONNECTOR === node.subtype) {
+        prefix = "Attachment connector node #" + node.id;
+      } else if (CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR === node.subtype) {
         prefix = "Synaptic connector node #" + node.id;
+      } else {
+        prefix = "Unknown connector node #" + node.id;
       }
     }
   }

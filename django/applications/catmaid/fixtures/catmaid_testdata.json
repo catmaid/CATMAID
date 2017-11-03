@@ -1253,6 +1253,20 @@
     }
   },
   {
+    "pk": 1026,
+    "model": "catmaid.relation",
+    "fields": {
+      "description": null,
+      "isreciprocal": false,
+      "creation_time": "2011-10-29T04:33:34.263Z",
+      "uri": null,
+      "edition_time": "2011-10-29T04:33:34.263Z",
+      "project": 3,
+      "relation_name": "attached_to",
+      "user": 5
+    }
+  },
+  {
     "pk": 1035,
     "model": "catmaid.relation",
     "fields": {

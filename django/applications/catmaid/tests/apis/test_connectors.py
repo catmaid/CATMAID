@@ -40,6 +40,12 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                 'relation': 'gapjunction_with',
                 'relation_id': 1025,
                 'type': 'Gap junction'
+            },
+            {
+                'name': 'Attachment',
+                'relation': 'attached_to',
+                'relation_id': 1026,
+                'type': 'Attachment'
             }]
 
 

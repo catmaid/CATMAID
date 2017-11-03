@@ -27,6 +27,11 @@ Node filters:
 
 Miscellaneous:
 
+- Users can now choose alternative markers for connector
+nodes, which do not obscure the object being annotated: this encourages
+manually annotating synapses etc. in a manner which is more comparable
+with automated detections
+
 - Exported sub-stacks now include the Z resolution.
 
 - Added table of reviewers vs number of nodes reviewed to the "Summary Info"

@@ -139,7 +139,6 @@
         applyFilters.onchange = (function(e) {
           this.applyFilterRules = e.target.checked;
           this.update();
-
         }).bind(this);
         applyFiltersLabel.appendChild(applyFilters);
         applyFiltersLabel.appendChild(document.createTextNode("Apply node filters"));

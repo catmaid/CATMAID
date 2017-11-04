@@ -29,6 +29,8 @@ Connector table:
 
 - Node filters are now supported.
 
+- Attachment connectors are now supported.
+
 Miscellaneous:
 
 - Users can now choose alternative markers for connector

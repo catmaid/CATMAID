@@ -823,6 +823,43 @@
           'scale',
           SETTINGS_SCOPE));
 
+      ds.append(wrapSettingsControl(
+        CATMAID.DOM.createSelectSetting(
+          'Connector node marker',
+          {
+            'Disc (classic)': 'disc',
+            'Ring': 'ring',
+            'Target': 'target',
+            'Crosshair': 'crosshair',
+            'Bullseye': 'bullseye'
+          },
+          "Texture to use for connector nodes: classic CATMAID uses 'Disc', but this obscures " +
+          "image data underneath the node.",
+          function() {
+            SkeletonAnnotations.TracingOverlay.Settings
+              .set(
+                'connector_node_marker',
+                this.value,
+                SETTINGS_SCOPE
+              )
+              .then(function() {
+                project.getStackViewers().every(function(stackViewer) {
+                  var overlay = SkeletonAnnotations.getTracingOverlay(stackViewer.getId());
+                  if (overlay) {
+                    overlay.graphics.cache.connectorPool.clear();
+                    overlay.graphics.initTextures(true);
+                    overlay.redraw(true);
+                  }
+                });
+              });
+          },
+          SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].connector_node_marker
+        ),
+        SkeletonAnnotations.TracingOverlay.Settings,
+        'connector_node_marker',
+        SETTINGS_SCOPE
+      ));
+
 
       var dsNodeColors = CATMAID.DOM.addSettingsContainer(ds, "Skeleton colors", true);
       dsNodeColors.append(CATMAID.DOM.createCheckboxSetting(

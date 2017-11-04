@@ -25,6 +25,10 @@ Node filters:
 - New filter: Pruned arbor, which keeps the arbor proximal to the (tagged) cut
   points, discarding distal subarbors.
 
+Connector table:
+
+- Node filters are now supported.
+
 Miscellaneous:
 
 - Users can now choose alternative markers for connector

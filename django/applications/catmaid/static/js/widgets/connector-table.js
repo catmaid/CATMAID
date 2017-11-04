@@ -35,6 +35,11 @@
     // Wi1l keep an up-to-date mapping of connector tags
     this.connectorTags = null;
 
+    // A set of filter rules to apply to the handled connectors
+    this.filterRules = [];
+    // Filter rules can optionally be disabled
+    this.applyFilterRules = true;
+
     if (skeletonModels) {
       this.skeletonSource.append(skeletonModels);
     }
@@ -126,6 +131,20 @@
         exportCSV.setAttribute("title", "Export a CSV file for the currently displayed table");
         exportCSV.onclick = this.exportCSV.bind(this);
         controls.appendChild(exportCSV);
+
+        var applyFiltersLabel = document.createElement('label');
+        var applyFilters = document.createElement('input');
+        applyFilters.setAttribute("type", "checkbox");
+        applyFilters.checked = true;
+        applyFilters.onchange = (function(e) {
+          this.applyFilterRules = e.target.checked;
+          this.update();
+
+        }).bind(this);
+        applyFiltersLabel.appendChild(applyFilters);
+        applyFiltersLabel.appendChild(document.createTextNode("Apply node filters"));
+        applyFiltersLabel.setAttribute("title", "Whether or not to appply filters to partner nodes");
+        controls.appendChild(applyFiltersLabel);
       },
       contentID: this.idPrefix + 'content',
       createContent: function(content) {
@@ -163,6 +182,9 @@
             }
 
             CATMAID.fetch(project.id +  "/connectors/", "GET", params)
+              .then(function(result) {
+                return self.filterResults(result);
+              })
               .then(function(result) {
                 // Store connector tags
                 self.connectorTags = result.tags || {};
@@ -270,8 +292,48 @@
             tagHead.appendChild(input);
           }
         });
-      }
+      },
+      filter: {
+        rules: this.filterRules,
+        update: this.update.bind(this)
+      },
     };
+  };
+
+  /**
+   * Apply current filter set, if any, to the input data and return a promise
+   * which resolves with the filtered data.
+   */
+  ConnectorTable.prototype.filterResults = function(data) {
+    var hasResults = data.links.length > 0;
+    if (this.filterRules.length > 0 && this.applyFilterRules && hasResults) {
+      // Collect skeleton models from input
+      var skeletons = data.links.reduce(function(o, link) {
+        var skeletonId = link[0];
+        o[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
+        return o;
+      }, {});
+      var filter = new CATMAID.SkeletonFilter(this.filterRules, skeletons);
+      return filter.execute()
+        .then(function(filtered) {
+          if (filtered.skeletons.size === 0) {
+            CATMAID.warn("No skeletons left after filter application");
+            data.links = [];
+            return Promise.resolve(data);
+          }
+          // Filter links
+          let links = data.links;
+          let allowedNodes = new Set(Object.keys(filtered.nodes).map(function(n) {
+            return parseInt(n, 10);
+          }));
+          data.links = links.filter(function(link) {
+            let treenodeId = link[7];
+            return allowedNodes.has(treenodeId);
+          });
+          return Promise.resolve(data);
+        });
+    }
+    return Promise.resolve(data);
   };
 
   /**

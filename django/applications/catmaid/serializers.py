@@ -5,9 +5,6 @@ from rest_framework.serializers import ModelSerializer
 from catmaid.models import ClassInstance, Point, Volume
 
 
-#class BoundingBoxSerializer(serializers.Serializer):
-
-
 class VolumeSerializer(ModelSerializer):
 
     class Meta:

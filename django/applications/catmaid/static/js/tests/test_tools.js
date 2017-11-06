@@ -151,4 +151,13 @@ QUnit.test('Utilities test', function( assert ) {
     assert.notOk(CATMAID.tools.arraysEqual([1,2], [1,2,3]),
         "CATMAID.tools.arraysEqual correctly finds arrays are not equal");
   })();
+
+  // Test isoStringToDate
+  (function() {
+    // Note, the Date constructor's month argument is 0-based.
+    assert.deepEqual(CATMAID.tools.isoStringToDate('2017-11-06T03:58:32.835595Z'),
+        new Date(Date.UTC(2017, 10, 6, 3, 58, 32, 835595 / 1000)), 'Test date is parsed correctly');
+    assert.deepEqual(CATMAID.tools.isoStringToDate('2017-11-06T03:58:32Z'),
+        new Date(Date.UTC(2017, 10, 6, 3, 58, 32)), 'Test date is parsed correctly');
+  })();
 });

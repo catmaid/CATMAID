@@ -531,6 +531,11 @@ table.neuron_annotations_query_fields {
   margin: 0;
 }
 
+.buttonpanel .section-header {
+  font-weight: bold;
+  padding: 0 0.3em 0 1em;
+}
+
 .buttonpanel div.hSliderView {
   display: inline-block;
   float: none;
@@ -543,6 +548,21 @@ table.neuron_annotations_query_fields {
   display: inline-flex;
   position: relative;
   top: 0.5em;
+}
+
+.windowContent table {
+  width: 100%;
+}
+
+.windowContent .container {
+  width: 100%;
+  display: inline-block;
+}
+
+.windowContent h1 {
+  margin: 1em 0.1em 1em 0.4em;
+  font-size: large;
+  font-weight: bold;
 }
 
 .sourcepanel {

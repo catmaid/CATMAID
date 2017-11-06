@@ -436,6 +436,44 @@ CATMAID.tools = CATMAID.tools || {};
         hour + ":" + min + ":" + sec;
   };
 
+  /**
+   * Parse an ISO date/time string representation to a new Date instance. Input
+   * strings are of the form: 2017-11-06T03:58:32.835595Z and are expected to be
+   * UTC timestamps. The fraction of seconds is optional, but if it has six
+   * characters, microseconds are assumed. If it has three, millisconds are
+   * assumed.
+   */
+  tools.isoStringToDate = (function() {
+    var isoRegEx = /^(\d{4})-0?(\d+)-0?(\d+)[T ]0?(\d+):0?(\d+):0?(\d+)(\.\d+)?Z$/;
+    return function(isoDate) {
+      var match = isoDate.match(isoRegEx);
+      if (match) {
+        if (match[7] === undefined) {
+          return new Date(Date.UTC(parseInt(match[1], 10), parseInt(match[2], 10) - 1,
+              parseInt(match[3], 10), parseInt(match[4], 10),
+              parseInt(match[5], 10), parseInt(match[6], 10)));
+        } else {
+          var secFraction = match[7].substring(1);
+          var denominator;
+          if (secFraction.length === 6) {
+            denominator = 1000;
+          } else if (secFraction.length === 3) {
+            denominator = 1;
+          } else {
+            throw new CATMAID.ValueError("Can't parse seconds fraction of date");
+          }
+          return new Date(Date.UTC(parseInt(match[1], 10), parseInt(match[2], 10) - 1,
+              parseInt(match[3], 10), parseInt(match[4], 10),
+              parseInt(match[5], 10), parseInt(match[6], 10),
+              parseInt(secFraction, 10) / denominator));
+        }
+      } else {
+        // Unable to parse date
+        return null;
+      }
+    };
+  })();
+
   tools.numberSuffix = function(n) {
     return n > 1 ? 's' : '';
   };

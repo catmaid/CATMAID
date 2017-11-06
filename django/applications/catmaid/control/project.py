@@ -22,6 +22,8 @@ from rest_framework.decorators import api_view
 needed_classes = {
     'annotation': "An arbitrary annotation",
     'stack_property': 'A property which a stack has',
+    'landmark': "A particular type of location",
+    "landmarkgroup": "A type of collection that groups landmarks"
 }
 
 # All relations needed by the tracing system alongside their

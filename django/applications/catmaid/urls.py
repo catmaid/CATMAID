@@ -20,7 +20,7 @@ from catmaid.control import (authentication, user, log, message, client, common,
         cropping, data_view, ontology, classification, notifications, roi,
         clustering, volume, flytem, dvid, useranalytics, user_evaluation,
         search, graphexport, transaction, graph2, circles, analytics, review,
-        wiringdiagram, object, sampler, treenodetable, nat, point)
+        wiringdiagram, object, sampler, treenodetable, nat, point, landmarks)
 
 from catmaid.views import CatmaidView
 from catmaid.history import record_request_action as record_view
@@ -429,6 +429,15 @@ UrlParser.explicit_root_paths |= set(['{project_id}/points'])
 urlpatterns += [
     url(r'^(?P<project_id>{0})/points/$'.format(integer), point.PointList.as_view()),
     url(r'^(?P<project_id>{0})/points/(?P<point_id>[0-9]+)/$'.format(integer), point.PointDetail.as_view()),
+]
+
+# Landmarks
+UrlParser.explicit_root_paths |= set(['{project_id}/landmarks'])
+urlpatterns += [
+    url(r'^(?P<project_id>{0})/landmarks/$'.format(integer), landmarks.LandmarkList.as_view()),
+    url(r'^(?P<project_id>{0})/landmarks/(?P<landmark_id>[0-9]+)/$'.format(integer), landmarks.LandmarkDetail.as_view()),
+    url(r'^(?P<project_id>{0})/landmarks/groups/$'.format(integer), landmarks.LandmarkGroupList.as_view()),
+    url(r'^(?P<project_id>{0})/landmarks/groups/(?P<landmarkgroup_id>[0-9]+)/$'.format(integer), landmarks.LandmarkGroupDetail.as_view()),
 ]
 
 # Clustering

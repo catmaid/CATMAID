@@ -11,6 +11,8 @@
   release, including required manual tasks. These changes also continue to be
   part of this change log.
 
+- Requires running of: manage.py catmaid_update_project_configuration
+
 
 ### Features and enhancements
 

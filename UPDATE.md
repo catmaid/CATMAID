@@ -1,6 +1,10 @@
 Some CATMAID versions require manual changes to an existing setup. Below these
 and other administration related changes are listed in order.
 
+## Under development
+
+- Requires running of: manage.py catmaid_update_project_configuration
+
 ## 2017.04.20
 
 - The location of the `manage.py` script changed: it moved a level up into

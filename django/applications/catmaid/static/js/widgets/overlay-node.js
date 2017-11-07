@@ -1231,11 +1231,13 @@
 
       /** Disables the ArrowLine object and removes entries from the lines list. */
       this.removeConnectorArrows = function() {
-        var disable = ptype.ElementPool.prototype.disableFn;
-        for (var i=0, imax=this.edges.length; i<imax; ++i) {
-          disable(this.edges[i]);
+        if (this.edges) {
+          var disable = ptype.ElementPool.prototype.disableFn;
+          for (var i=0, imax=this.edges.length; i<imax; ++i) {
+            disable(this.edges[i]);
+          }
+          this.edges = [];
         }
-        this.edges = [];
       };
 
       this.obliterate = function() {
@@ -1249,10 +1251,8 @@
         }
         this.visibilityGroups = null;
         this.subtype = null;
-        if (this.edges) {
-          this.removeConnectorArrows(); // also removes confidence text associated with edges
-          this.edges = null;
-        }
+        this.removeConnectorArrows(); // also removes confidence text associated with edges
+        this.edges = null;
         this.links = null;
       };
 

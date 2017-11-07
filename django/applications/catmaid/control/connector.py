@@ -22,7 +22,7 @@ from catmaid.models import Project, Stack, ProjectStack, Connector, \
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 from catmaid.control.link import create_treenode_links
 from catmaid.control.common import cursor_fetch_dictionary, \
-        get_relation_to_id_map, get_request_list
+        get_relation_to_id_map, get_class_to_id_map, get_request_list
 
 # Python 2 and 3 compatible map iterator
 from six.moves import map
@@ -197,9 +197,204 @@ def _many_to_many_synapses(skids1, skids2, relation_name, project_id):
                   row[11], row[12], row[13], row[14],
                   (row[15], row[16], row[17])) for row in cursor.fetchall())
 
+@api_view(['POST'])
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def list_connectors(request, project_id=None):
+    """Get a collection of connectors.
+
+    The `connectors` field of the returned object contains a list of all result
+    nodes, each represented as a list of the form:
+
+    `[id, x, y, z, confidence, creator_id, editor_id, creation_time, edition_time]`
+
+    Both edition time and creation time are returned as UTC epoch values. If
+    tags are requested, the `tags` field of the response object will contain a
+    mapping of connector IDs versus tag lists. If partners are requested, the
+    `partners` field of the response object will contain a mapping of connector
+    IDs versus lists of partner links. Each partner link is an array of the
+    following format:
+
+    `[link_id, treenode_id, skeleton_id, relation_id, confidence]`
+
+    If both `skeleton_ids` and `relation_type` are used, the linked skeletons
+    need to be linked by the specified relation. Without `relation_type`,
+    linked skeletons can have any relation and without `skeleton_ids` a
+    connector needs to have a least one link with the specified relation.
+    ---
+    parameters:
+      - name: project_id
+        description: Project of connectors
+        type: integer
+        paramType: path
+        required: true
+      - name: skeleton_ids
+        description: Skeletons linked to connectors
+        type: array
+        items:
+          type: integer
+        paramType: form
+        required: false
+      - name: tags
+        description: Require a set of tags
+        type: array
+        items:
+          type: string
+        paramType: form
+        required: false
+      - name: relation_type
+        description: Relation of linked skeletons to connector.
+        type: string
+        paramType: form
+        required: false
+      - name: with_tags
+        description: If connector tags should be fetched
+        type: boolean
+        paramType: form
+        defaultValue: true
+        required: false
+      - name: with_partners
+        description: If partner node information should be fetched
+        type: boolean
+        paramType: form
+        defaultValue: false
+        required: false
+    type:
+      connectors:
+        type: array
+        items:
+          type: array
+          items:
+            type: string
+        description: Matching connector links
+        required: true
+      tags:
+         type array
+      partners:
+         type array
+    """
+    project_id = int(project_id)
+    skeleton_ids = get_request_list(request.POST, 'skeleton_ids', map_fn=int)
+    tags = get_request_list(request.POST, 'tags')
+    relation_type = request.POST.get('relation_type')
+    with_tags = request.POST.get('with_tags', 'true') == 'true'
+    with_partners = request.POST.get('with_partners', 'false') == 'true'
+
+    cursor = connection.cursor()
+    class_map = get_class_to_id_map(project_id, cursor=cursor)
+    relation_map = get_relation_to_id_map(project_id, cursor=cursor)
+
+    if relation_type:
+        relation_id = relation_map.get(relation_type)
+        if not relation_id:
+            raise ValueError("Unknown relation: " + relation_type)
+
+    # Query connectors
+    constraints = []
+    params = []
+
+    if skeleton_ids:
+        sk_template = ",".join("(%s)" for _ in skeleton_ids)
+        constraints.append('''
+            JOIN treenode_connector tc
+                ON tc.connector_id = c.id
+            JOIN (VALUES {}) q_skeleton(id)
+                ON tc.skeleton_id = q_skeleton.id
+        '''.format(sk_template))
+        params.extend(skeleton_ids)
+        if relation_type:
+            constraints.append('''
+                AND tc.relation_id = %s
+            ''')
+            params.append(relation_id)
+    elif relation_type:
+        constraints.append('''
+            JOIN treenode_connector tc
+                ON tc.connector_id = c.id
+                AND tc.relation_id = %s
+        ''')
+        params.append(relation_id)
+
+    if tags:
+        tag_template = ",".join("%s" for _ in tags)
+        constraints.append('''
+            JOIN connector_class_instance cci
+                ON cci.connector_id = c.id
+            JOIN class_instance label
+                ON label.id = class_instance_id
+                AND cci.relation_id = %s
+            JOIN (
+                SELECT id
+                FROM class_instance
+                WHERE name IN ({})
+                    AND project_id = %s
+                    AND class_id = %s
+            ) q_label(id) ON label.id = q_label.id
+        '''.format(tag_template))
+        params.append(relation_map['labeled_as'])
+        params.extend(tags)
+        params.append(project_id)
+        params.append(class_map['label'])
+
+    query = '''
+        SELECT DISTINCT c.id, c.location_x, c.location_y, c.location_z, c.confidence,
+            c.user_id, c.editor_id, EXTRACT(EPOCH FROM c.creation_time),
+            EXTRACT(EPOCH FROM c.edition_time)
+        FROM connector c
+        {}
+        WHERE c.project_id = %s
+        ORDER BY c.id
+    '''.format('\n'.join(constraints))
+    params.append(project_id)
+
+    cursor.execute(query, params)
+
+    connectors = cursor.fetchall()
+
+    connector_ids = [c[0] for c in connectors]
+    tags = defaultdict(list)
+    if connector_ids and with_tags:
+        c_template = ",".join("(%s)" for _ in connector_ids)
+        cursor.execute('''
+            SELECT cci.connector_id, ci.name
+            FROM connector_class_instance cci
+            JOIN (VALUES {}) q_connector(id)
+                ON cci.connector_id = q_connector.id
+            JOIN (VALUES (%s)) q_relation(id)
+                ON cci.relation_id = q_relation.id
+            JOIN class_instance ci
+                ON cci.class_instance_id = ci.id
+        '''.format(c_template), connector_ids + [relation_map['labeled_as']])
+
+        for row in cursor.fetchall():
+            tags[row[0]].append(row[1])
+
+        # Sort labels by name
+        for connector_id, labels in six.iteritems(tags):
+            labels.sort(key=lambda k: k.upper())
+
+    partners = defaultdict(list)
+    if connector_ids and with_partners:
+        c_template = ",".join("(%s)" for _ in connector_ids)
+        cursor.execute('''
+            SELECT tc.connector_id, tc.id, tc.treenode_id, tc.skeleton_id,
+                tc.relation_id, tc.confidence
+            FROM treenode_connector tc
+            JOIN (VALUES {}) c(id)
+                ON tc.connector_id = c.id
+        '''.format(c_template), connector_ids)
+
+        for row in cursor.fetchall():
+            partners[row[0]].append(row[1:])
+
+    return JsonResponse({
+        "connectors": connectors,
+        "tags": tags,
+        "partners": partners
+    }, safe=False)
+
 @api_view(['GET'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def list_connector(request, project_id=None):
+def list_connector_links(request, project_id=None):
     """Get connectors linked to a set of skeletons.
 
     The result data set includes information about linked connectors on a given

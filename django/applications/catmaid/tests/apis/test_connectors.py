@@ -55,7 +55,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
     def test_list_connector_empty(self):
         self.fake_authentication()
         response = self.client.get(
-                '/%d/connectors/' % self.test_project_id, {
+                '/%d/connectors/links/' % self.test_project_id, {
                     'relation_type': 'presynaptic_to',
                     'skeleton_ids': [0]})
         self.assertEqual(response.status_code, 200)
@@ -70,7 +70,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
     def test_list_connector_outgoing_with_sorting(self):
         self.fake_authentication()
         response = self.client.get(
-                '/%d/connectors/' % self.test_project_id, {
+                '/%d/connectors/links/' % self.test_project_id, {
                     'relation_type': 'presynaptic_to',
                     'skeleton_ids': [235]})
         self.assertEqual(response.status_code, 200)
@@ -91,7 +91,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
     def test_list_connector_incoming_with_connecting_skeletons(self):
         self.fake_authentication()
         response = self.client.get(
-                '/%d/connectors/' % self.test_project_id, {
+                '/%d/connectors/links/' % self.test_project_id, {
                     'relation_type': 'postsynaptic_to',
                     'skeleton_ids': [373]})
         self.assertEqual(response.status_code, 200)

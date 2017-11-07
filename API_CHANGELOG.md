@@ -9,10 +9,17 @@ included in this changelog.
 - `POST /{project_id}/nodes/location`:
   Get the location of multiple nodes, expects a `node_ids` parameter.
 
+- `GET /{project_id}/connectors/` now provides a new API to query connectors
+  directly and not only links. The previous API is available as
+  `GET /{project_id}/connctors/links/` (see below).
+
 ### Modifications
 
 - `GET /{project_id}/connector/user-info` has been replaced with
   `GET /{project_id}/connectors/user-info`. Functionality is the same.
+
+- `GET /{project_id}/connectors/` has been replaced with
+  `GET /{project_if}/connectors/links/`. Functionality is the same.
 
 ### Deprecations
 

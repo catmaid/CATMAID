@@ -1249,9 +1249,11 @@
         }
         this.visibilityGroups = null;
         this.subtype = null;
-        this.removeConnectorArrows(); // also removes confidence text associated with edges
+        if (this.edges) {
+          this.removeConnectorArrows(); // also removes confidence text associated with edges
+          this.edges = null;
+        }
         this.links = null;
-        this.edges = null;
       };
 
       this.disable = function() {

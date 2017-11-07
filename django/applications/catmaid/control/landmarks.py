@@ -1,16 +1,21 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from django.db import connection
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
-from catmaid.models import Class, ClassInstance, UserRole
+from catmaid.control.common import get_request_list
+from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
+        Relation, UserRole)
 from catmaid.serializers import BasicClassInstanceSerializer
 
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer
 from rest_framework.views import APIView
+
+from collections import defaultdict
 
 
 class LandmarkList(APIView):
@@ -185,10 +190,13 @@ class LandmarkGroupList(APIView):
         serializer = BasicClassInstanceSerializer(landmarkgroups, many=True)
         data = serializer.data
 
-        if with_members:
+        if with_members and data:
+            # Get member information
+            landmarkgroup_ids = [d['id'] for d in data]
+            member_index = get_landmark_group_members(project_id, landmarkgroup_ids)
             # Append member information
             for group in data:
-                group['members'] = []
+                group['members'] = member_index[group['id']]
 
         return Response(data)
 
@@ -272,19 +280,58 @@ class LandmarkGroupDetail(APIView):
           required: false
           type: string
           paramType: form
+        - name: members
+          description: The new members of the landmark group.
+          required: false
+          type: array
+          items:
+            type: integer
+          paramType: form
         """
+        project_id = int(project_id)
+        if not project_id:
+            raise ValueError("Need project ID")
+        landmarkgroup_id = int(landmarkgroup_id)
+        if not landmarkgroup_id:
+            raise ValueError("Need landmark group ID")
         can_edit_or_fail(request.user, landmarkgroup_id, 'class_instance')
         name = request.data.get('name')
-        if not name:
-            raise ValueError('Need name for update')
+        if request.data.get('members') == 'none':
+            members = []
+        else:
+            members = get_request_list(request.data, 'members', map_fn=int)
+
+        if not name and members == None:
+            raise ValueError('Need name or members parameter for update')
 
         landmarkgroup_class = Class.objects.get(project_id=project_id, class_name='landmarkgroup')
         landmarkgroup = get_object_or_404(ClassInstance, pk=landmarkgroup_id,
                 project_id=project_id, class_column=landmarkgroup_class)
-        landmarkgroup.name = name
-        landmarkgroup.save()
+        if name:
+            landmarkgroup.name = name
+            landmarkgroup.save()
 
-        landmarkgroup.id = None
+        if members is not None:
+            # Find out which members need to be added and which existing ones
+            # need to be removed.
+            current_members = set(get_landmark_group_members(project_id,
+                        [landmarkgroup_id]).get(landmarkgroup_id, []))
+            new_members = set(members)
+            to_add = new_members - current_members
+            to_remove = current_members - new_members
+
+            part_of = Relation.objects.get(project_id=project_id,
+                    relation_name='part_of')
+            ClassInstanceClassInstance.objects.filter(project_id=project_id,
+                    class_instance_a__in=to_remove,
+                    class_instance_b_id=landmarkgroup_id,
+                    relation=part_of).delete()
+
+            for landmark_id in to_add:
+                ClassInstanceClassInstance.objects.create(project_id=project_id,
+                            class_instance_a_id=landmark_id,
+                            class_instance_b_id=landmarkgroup_id,
+                            relation=part_of, user=request.user)
 
         serializer = BasicClassInstanceSerializer(landmarkgroup)
         return Response(serializer.data)
@@ -316,3 +363,22 @@ class LandmarkGroupDetail(APIView):
 
         serializer = BasicClassInstanceSerializer(landmarkgroup)
         return Response(serializer.data)
+
+def get_landmark_group_members(project_id, landmarkgroup_ids):
+    cursor = connection.cursor()
+    landmarkgroups_template = ','.join(['(%s)' for _ in landmarkgroup_ids])
+    cursor.execute("""
+        SELECT cici.class_instance_a, cici.class_instance_b
+        FROM class_instance_class_instance cici
+        JOIN (VALUES {}) landmarkgroup(id)
+        ON cici.class_instance_b = landmarkgroup.id
+        WHERE cici.relation_id = (
+            SELECT id from relation
+            WHERE relation_name = 'part_of' AND project_id = %s
+        ) AND cici.project_id = %s
+    """.format(landmarkgroups_template),
+        landmarkgroup_ids + [project_id, project_id])
+    member_index = defaultdict(list)
+    for r in cursor.fetchall():
+        member_index[r[1]].append(r[0])
+    return member_index

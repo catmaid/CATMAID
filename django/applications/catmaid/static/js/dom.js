@@ -710,22 +710,7 @@
     return target;
   };
 
-  /**
-   * Create a new select element that when clicked (or optionally hovered) shows
-   * a custom list in a DIV container below it. This custom list provides
-   * checkbox elements for each entry
-   *
-   * Main idea from: http://stackoverflow.com/questions/17714705
-   *
-   * @param title        {String}   A title showing as the first element of the select
-   * @param options      {Object[]} A list of {title: <>, value: <>} objects.
-   * @param selectedKeys {String[]} (Optional) list of keys that should be
-   *                                selected initially
-   * @param showFilter   {Bool}     Whether to show a filter input field.
-   *
-   * @returns a wrapper around the select element
-   */
-  DOM.createCheckboxSelect = function(title, options, selectedKeys, showFilter) {
+  DOM.createCheckboxSelectPanel = function(options, selectedKeys, showFilter) {
     var selectedSet = new Set(selectedKeys ? selectedKeys : undefined);
     var container = document.createElement('div');
     var checkboxes = document.createElement('ul');
@@ -791,6 +776,27 @@
     }
     container.appendChild(checkboxes);
 
+    return container;
+  };
+
+
+  /**
+   * Create a new select element that when clicked (or optionally hovered) shows
+   * a custom list in a DIV container below it. This custom list provides
+   * checkbox elements for each entry
+   *
+   * Main idea from: http://stackoverflow.com/questions/17714705
+   *
+   * @param title        {String}   A title showing as the first element of the select
+   * @param options      {Object[]} A list of {title: <>, value: <>} objects.
+   * @param selectedKeys {String[]} (Optional) list of keys that should be
+   *                                selected initially
+   * @param showFilter   {Bool}     Whether to show a filter input field.
+   *
+   * @returns a wrapper around the select element
+   */
+  DOM.createCheckboxSelect = function(title, options, selectedKeys, showFilter) {
+    var container = DOM.createCheckboxSelectPanel(options, selectedKeys, showFilter);
     return CATMAID.DOM.createCustomContentSelect(title, container);
   };
 

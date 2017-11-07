@@ -39,13 +39,19 @@
     /**
      * Delete a landmark group. This requires can_edit permissions for the
      * requesting user on that landmark group.
-     *
-     *
      */
     deleteGroup: function(projectId, groupId) {
       return CATMAID.fetch(projectId + '/landmarks/groups/' + groupId + '/', 'DELETE');
     },
 
+    /**
+     * Update the landmarks linked to a particular landmark group.
+     */
+    updateGroupMembers: function(projectId, groupId, newMemberIds) {
+      return CATMAID.fetch(projectId + '/landmarks/groups/' + groupId + '/', 'POST', {
+        members: newMemberIds.length === 0 ? 'none' : newMemberIds
+      });
+    }
   };
 
   // Export namespace

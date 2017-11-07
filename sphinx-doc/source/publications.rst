@@ -8,7 +8,7 @@ Publications
 
 Publications using CATMAID
 `````````````````````````````````````
-*The following publications used CATMAID for neural circuit reconstruction. Please get in touch with us if your publication is missing.*
+*The following publications used CATMAID for neural circuit reconstruction or other tasks. Please get in touch with us if your publication is missing.*
 
 2017
 ~~~~
@@ -48,3 +48,5 @@ Publications using CATMAID
 * Réza Shahidi, Elizabeth A Williams, Markus Conzelmann, Albina Asadulina, Csaba Verasztó, Sanja Jasek, Luis A Bezares-Calderón, Gáspár Jékely. `A serial multiplex immunogold labeling method for identifying peptidergic neurons in connectomes <http://lens.elifesciences.org/11147/>`_, eLife, 2015
 
 * Sebastian Dunst, Tom Kazimiers, Felix von Zadow, Helena Jambor, Andreas Sagner, Beate Brankatschk, Ali Mahmoud, Stephanie Spannl, Pavel Tomančák, Suzanne Eaton, Marko Brankatschk. `Endogenously tagged rab proteins: a resource to study membrane trafficking in Drosophila <http://www.cell.com/developmental-cell/abstract/S1534-5807(15)00218-X>`_, Developmental Cell, 2015
+
+* Fernando Amat, Burkhard Höckendorf, Yinan Wan, William C. Lemon, Katie McDole, Philipp J. Keller. `Efficient processing and analysis of large-scale light-sheet microscopy data. <http://www.nature.com/nprot/journal/v10/n11/abs/nprot.2015.111.html>`_, Nature Protocols, 2015

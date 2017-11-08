@@ -87,6 +87,16 @@
   CATMAID.TooManyWebGlContextsError.prototype.constructor = CATMAID.TooManyWebGlContextsError;
 
   /**
+   * Represent the error condition of no WebGL support.
+   */
+  CATMAID.NoWebGLAvailableError = function(message, detail) {
+    CATMAID.Error.call(this, message, detail);
+  };
+
+  CATMAID.NoWebGLAvailableError.prototype = Object.create(CATMAID.Error.prototype);
+  CATMAID.NoWebGLAvailableError.prototype.constructor = CATMAID.NoWebGLAvailableError;
+
+  /**
    * An error type to indicate network access problems.
    */
   CATMAID.NetworkAccessError = function(message, detail) {

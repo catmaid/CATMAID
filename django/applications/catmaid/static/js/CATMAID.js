@@ -302,6 +302,9 @@
       } else if (error instanceof CATMAID.NetworkAccessError) {
         CATMAID.warn('No network access');
         CATMAID.verifyNetworkAccess();
+      } else if (error instanceof CATMAID.NoWebGLAvailableError) {
+        CATMAID.error("WebGL is required, but not available. Please check " +
+            "your browser settings or graphics card driver", error.message);
       } else {
         CATMAID.error(error.message, error.detail);
       }

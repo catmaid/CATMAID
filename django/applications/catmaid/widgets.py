@@ -2,10 +2,30 @@
 from __future__ import unicode_literals
 
 from django import forms
+from django.forms.widgets import Widget
 from six import string_types
 
 
-class Integer3DWidget(forms.MultiWidget):
+class Swatch(Widget):
+    """A simple widget that shows a color field for the RGBAWidget."""
+
+    template_name = 'catmaid/widgets/swatch.html'
+
+class LabeledMultiWidget(forms.MultiWidget):
+    """Display a label left to each sub-widget."""
+
+    template_name = 'catmaid/widgets/multiwidget.html'
+
+    def __init__(self, labels, widgets, attrs, **kwargs):
+        self.labels = labels
+        super(LabeledMultiWidget, self).__init__(widgets, attrs, **kwargs)
+
+    def get_context(self, name, value, attrs):
+        context = super(LabeledMultiWidget, self).get_context(name, value, attrs)
+        context['labels'] = self.labels
+        return context
+
+class Integer3DWidget(LabeledMultiWidget):
     """
     A widget that splits Integer3D input into three <input type="text"> boxes.
     """
@@ -16,7 +36,8 @@ class Integer3DWidget(forms.MultiWidget):
             forms.TextInput(attrs),
             forms.TextInput(attrs),
         )
-        super(Integer3DWidget, self).__init__(widgets, attrs, **kwargs)
+        super(Integer3DWidget, self).__init__(('X', 'Y', 'Z'), widgets, attrs,
+                **kwargs)
 
     def decompress(self, value):
         from catmaid.fields import Integer3D
@@ -32,11 +53,7 @@ class Integer3DWidget(forms.MultiWidget):
                 return [value.x, value.y, value.z]
         return [None, None, None]
 
-    def format_output(self, rendered_widgets):
-        return  u'X: ' + rendered_widgets[0] + \
-            u' Y: ' + rendered_widgets[1] + u' Z: ' + rendered_widgets[2]
-
-class Double3DWidget(forms.MultiWidget):
+class Double3DWidget(LabeledMultiWidget):
     """
     A widget that splits Double3D input into three <input type="text"> boxes.
     """
@@ -47,7 +64,8 @@ class Double3DWidget(forms.MultiWidget):
             forms.TextInput(attrs),
             forms.TextInput(attrs),
         )
-        super(Double3DWidget, self).__init__(widgets, attrs, **kwargs)
+        super(Double3DWidget, self).__init__(('X', 'Y', 'Z'), widgets, attrs,
+                **kwargs)
 
     def decompress(self, value):
         from catmaid.fields import Double3D
@@ -63,12 +81,7 @@ class Double3DWidget(forms.MultiWidget):
                 return [value.x, value.y, value.z]
         return [None, None, None]
 
-    def format_output(self, rendered_widgets):
-        return  u'X: ' + rendered_widgets[0] + \
-            u' Y: ' + rendered_widgets[1] + u' Z: ' + rendered_widgets[2]
-
-
-class RGBAWidget(forms.MultiWidget):
+class RGBAWidget(LabeledMultiWidget):
     """
     A widget that splits RGBA input into three <input type="text"> boxes.
     """
@@ -79,10 +92,11 @@ class RGBAWidget(forms.MultiWidget):
             forms.TextInput(attrs),
             forms.TextInput(attrs),
             forms.TextInput(attrs),
-            self.Swatch(attrs),
+            Swatch(attrs),
         )
 
-        super(RGBAWidget, self).__init__(widgets, attrs, **kwargs)
+        super(RGBAWidget, self).__init__(('R', 'G', 'B', 'A', ''), widgets,
+                attrs, **kwargs)
 
     def decompress(self, value):
         from catmaid.fields import RGBA
@@ -99,45 +113,3 @@ class RGBAWidget(forms.MultiWidget):
             elif isinstance(value, RGBA):
                 return [value.r, value.g, value.b, value.a]
         return [None, None, None, None]
-
-    def format_output(self, rendered_widgets):
-        return (u'R: %s G: %s B: %s A: %s %s' % tuple(rendered_widgets))
-
-    class Swatch(forms.TextInput):
-        def render(self, name, value, attrs=None):
-            return (u'''
-                <span style="background-image:
-                            linear-gradient(45deg, #808080 25%%, transparent 25%%),
-                            linear-gradient(-45deg, #808080 25%%, transparent 25%%),
-                            linear-gradient(45deg, transparent 75%%, #808080 75%%),
-                            linear-gradient(-45deg, transparent 75%%, #808080 75%%);
-                        background-size: 20px 20px;
-                        background-position: 0 0, 0 10px, 10px -10px, -10px 0px;">
-
-                    <input id="%s"
-                            style="background-color:rgba(0, 0, 0, 0);"
-                            type="text" disabled="disabled">
-                    </input>
-                </span>
-                <script>(function (id) {
-                    var baseId = id.match(/^(.+)_\d$/)[1];
-                    var inputIds = [0, 1, 2, 3].map(function (ind) { return baseId + "_" + ind; });
-
-                    updateColorSwatch = function () {
-                        rgba = inputIds.map(function (id) {
-                            return parseFloat(document.getElementById(id).value);
-                        });
-                        [0, 1, 2].forEach(function (ind) {
-                            rgba[ind] = Math.round(255 * rgba[ind]);
-                        });
-                        document.getElementById(id).style.backgroundColor = "rgba(" + rgba.join(', ') + ")";
-                    };
-
-                    inputIds.forEach(function (id) {
-                        document.getElementById(id).onchange = updateColorSwatch;
-                    });
-
-                    updateColorSwatch();
-                })("%s")
-                </script>
-                ''' % (attrs['id'], attrs['id']))

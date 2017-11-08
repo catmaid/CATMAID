@@ -1,6 +1,13 @@
 ## Under development
 
 
+## Notes
+
+- Three new OS package dependencies have been added (due to a Django framework
+  upgrade), make sure they are installed:
+
+  sudo apt-get install binutils libproj-dev gdal-bin
+
 
 ### Features and enhancements
 
@@ -17,7 +24,12 @@ Contributors: Albert Cardona, Andrew Champion, Chris Barnes, Tom Kazimiers
 
 - PostgreSQL 9.6 and Postgis 2.4 are now required.
 
-- A virtualenv update is required.
+- A virtualenv upgrade is required. To correctly install one updated dependency,
+  the django-rest-swagger Python package has to be removed first from from the
+  virtualenv, before the virtualenv is updated:
+
+  pip uninstall django-rest-swagger
+  pip install -r requirements.txt
 
 - New settings field: CROPPING_VERIFY_CERTIFICATES. This controls whether SSL
   certificates should be verified during cropping and defaults to True.

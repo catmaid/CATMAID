@@ -12,6 +12,9 @@ from django.views.static import serve
 
 from catmaid.control.authentication import ObtainAuthToken
 
+from rest_framework_swagger.views import get_swagger_view
+
+
 # Administration
 admin.site = AdminSitePlus()
 admin.autodiscover()
@@ -39,7 +42,7 @@ urlpatterns += [
 
 # API Documentation
 urlpatterns += [
-    url(r'^apis/', include('rest_framework_swagger.urls')),
+    url(r'^apis/', get_swagger_view(title='CATMAID API')),
     url(r'^api-token-auth/', ObtainAuthToken.as_view()),
 ]
 

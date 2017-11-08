@@ -19,6 +19,7 @@ class SuppressedVirtualTreenodeSerializer(ModelSerializer):
     class Meta:
         model = SuppressedVirtualTreenode
         read_only_fields = ('id', 'user', 'creation_time', 'edition_time', 'project', 'child')
+        fields = '__all__'
 
 
 class SuppressedVirtualTreenodeList(APIView):

@@ -17,8 +17,6 @@ from django.db.backends import signals as db_signals
 from django.contrib import auth
 from django.contrib.auth.management.commands import createsuperuser
 
-import custom_rest_swagger_apis
-
 
 def get_system_user(user_model=None):
     """Return a User instance of a superuser. This is either the superuser
@@ -145,9 +143,6 @@ class CATMAIDConfig(AppConfig):
 
         # Register history checks
         register(check_history_setup)
-
-        # Monkey patch django-rest-swagger so that it can handle our URLs
-        custom_rest_swagger_apis.patch()
 
     # A list of settings that are expected to be available.
     required_setting_fields = {

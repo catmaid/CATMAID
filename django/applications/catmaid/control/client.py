@@ -24,6 +24,7 @@ class ClientDatastoreSerializer(ModelSerializer):
     class Meta:
         model = ClientDatastore
         read_only_fields = ('id',)
+        fields = '__all__'
 
 
 class ClientDatastoreList(APIView):
@@ -87,6 +88,7 @@ class ClientDataSerializer(ModelSerializer):
     class Meta:
         model = ClientData
         read_only_fields = ('id',)
+        fields = '__all__'
 
 
 class ClientDataList(APIView):

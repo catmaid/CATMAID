@@ -16,7 +16,6 @@ from django.http import HttpResponse, JsonResponse
 from django.views.generic.base import TemplateView
 from django.shortcuts import get_object_or_404, render
 from django.contrib.contenttypes.models import ContentType
-from django.template.context import RequestContext
 
 from formtools.wizard.views import SessionWizardView
 

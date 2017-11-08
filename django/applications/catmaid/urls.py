@@ -9,8 +9,6 @@ from django.views.generic import TemplateView
 
 import django.contrib.auth.views as djauth
 
-# For adding explicit grouping resource endpoints in API documentation.
-from rest_framework_swagger.urlparser import UrlParser
 from rest_framework.decorators import api_view
 
 from catmaid.control import (authentication, user, log, message, client, common,
@@ -67,7 +65,6 @@ urlpatterns += [
 ]
 
 # Transaction history
-UrlParser.explicit_root_paths |= set(['{project_id}/transactions'])
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/transactions/$', transaction.transaction_collection),
     url(r'^(?P<project_id>\d+)/transactions/location$', transaction.get_location),
@@ -118,7 +115,6 @@ urlpatterns += [
 ]
 
 # Reconstruction sampling
-UrlParser.explicit_root_paths |= set(['{project_id}/samplers'])
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/samplers/$', sampler.list_samplers),
     url(r'^(?P<project_id>\d+)/samplers/add$', sampler.add_sampler),
@@ -141,7 +137,6 @@ urlpatterns += [
 ]
 
 # Statistics
-UrlParser.explicit_root_paths |= set(['{project_id}/stats'])
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/stats/nodecount$', stats.stats_nodecount),
     url(r'^(?P<project_id>\d+)/stats/editor$', stats.stats_editor),
@@ -189,7 +184,6 @@ urlpatterns += [
 ]
 
 # Connector access
-UrlParser.explicit_root_paths |= set(['{project_id}/connectors'])
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/connector/create$', record_view("connectors.create")(connector.create_connector)),
     url(r'^(?P<project_id>\d+)/connector/delete$', record_view("connectors.remove")(connector.delete_connector)),
@@ -209,7 +203,6 @@ urlpatterns += [
 ]
 
 # Neuron access
-UrlParser.explicit_root_paths |= set(['{project_id}/neurons'])
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/get-all-skeletons$', neuron.get_all_skeletons_of_neuron),
     url(r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/give-to-user$', record_view("neurons.give_to_user")(neuron.give_neuron_to_other_user)),
@@ -220,7 +213,6 @@ urlpatterns += [
 ]
 
 # Node access
-UrlParser.explicit_root_paths |= set(['{project_id}/nodes'])
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/reviewed$', record_view("nodes.add_or_update_review")(node.update_location_reviewer)),
     url(r'^(?P<project_id>\d+)/nodes/most-recent$', node.most_recent_treenode),
@@ -235,7 +227,6 @@ urlpatterns += [
 ]
 
 # Treenode access
-UrlParser.explicit_root_paths |= set(['{project_id}/treenodes'])
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/treenode/create$', record_view("treenodes.create")(treenode.create_treenode)),
     url(r'^(?P<project_id>\d+)/treenode/insert$', record_view("treenodes.insert")(treenode.insert_treenode)),
@@ -426,14 +417,12 @@ urlpatterns += [
 ]
 
 # General points
-UrlParser.explicit_root_paths |= set(['{project_id}/points'])
 urlpatterns += [
     url(r'^(?P<project_id>{0})/points/$'.format(integer), point.PointList.as_view()),
     url(r'^(?P<project_id>{0})/points/(?P<point_id>[0-9]+)/$'.format(integer), point.PointDetail.as_view()),
 ]
 
 # Landmarks
-UrlParser.explicit_root_paths |= set(['{project_id}/landmarks'])
 urlpatterns += [
     url(r'^(?P<project_id>{0})/landmarks/$'.format(integer), landmarks.LandmarkList.as_view()),
     url(r'^(?P<project_id>{0})/landmarks/(?P<landmark_id>[0-9]+)/$'.format(integer), landmarks.LandmarkDetail.as_view()),
@@ -466,7 +455,6 @@ urlpatterns += [
 ]
 
 # Analytics
-UrlParser.explicit_root_paths |= set(['{project_id}/analytics'])
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/analytics/skeletons$', analytics.analyze_skeletons),
     url(r'^(?P<project_id>\d+)/analytics/broken-section-nodes$', analytics.list_broken_section_nodes)

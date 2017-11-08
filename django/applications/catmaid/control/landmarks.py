@@ -16,7 +16,6 @@ from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
 from catmaid.serializers import BasicClassInstanceSerializer
 
 from rest_framework.response import Response
-from rest_framework.serializers import ModelSerializer
 from rest_framework.views import APIView
 
 from collections import defaultdict

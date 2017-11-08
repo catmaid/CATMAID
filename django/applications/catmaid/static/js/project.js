@@ -212,9 +212,13 @@
 
       self.hideToolboxes();
 
-      var prepare;
-      if (CATMAID.tools.isFn(newTool.init)) {
-        prepare = newTool.init();
+      var prepare, initError = false;
+      if (newTool && CATMAID.tools.isFn(newTool.init)) {
+        prepare = newTool.init()
+          .catch(function(error) {
+            initError = true;
+            return Promise.reject(error);
+          });
       } else {
         prepare = Promise.resolve();
       }
@@ -234,7 +238,13 @@
           window.onresize();
           WindowMaker.setKeyShortcuts();
         })
-        .catch(CATMAID.handleError);
+        .catch(function(error) {
+          if (initError) {
+            // Unselect all tools on initialization errors
+            self.setTool(null);
+          }
+          CATMAID.handleError(error);
+        });
     };
 
     this.getTool = function( ) {

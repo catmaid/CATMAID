@@ -1293,7 +1293,12 @@ var project;
             if (noLayout) {
               return;
             }
-            CATMAID.layoutStackViewers();
+            try {
+              // Don't let all of open() fail, only because the layout failed
+              CATMAID.layoutStackViewers();
+            } catch(error) {
+              CATMAID.handleError(error);
+            }
           });
       });
 
@@ -1304,11 +1309,9 @@ var project;
         // re-login.
         if (e && e.permission_error) {
           new CATMAID.LoginDialog(e.error, CATMAID.initWebClient).show();
-          return true;
         } else {
-          CATMAID.handleError(e);
+          return Promise.reject(e);
         }
-        return Promise.reject(e);
       });
 
     return open;

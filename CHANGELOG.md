@@ -69,6 +69,8 @@ Miscellaneous:
   "Attachment. The idea is to then tag the connector node to provide semantic
   information, e.g. with "vesicle".
 
+- Selection Table: Open/Save (JSON) does now preserve the order of skeletons.
+
 
 ### Bug fixes
 

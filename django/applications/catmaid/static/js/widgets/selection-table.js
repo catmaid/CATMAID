@@ -674,10 +674,32 @@
   };
 
   SelectionTable.prototype.append = function(models) {
+    return this._append(models);
+  };
+
+  /**
+   * Append skeleton models, optionally in an ordered fashion.
+   */
+  SelectionTable.prototype._append = function(models, orderedSkeletonIds) {
     var skeleton_ids = Object.keys(models);
     if (0 === skeleton_ids.length) {
       CATMAID.info("No skeletons selected!"); // at source
       return;
+    }
+    if (orderedSkeletonIds) {
+      // Make sure that the list of ordered skeleton Ids contain all required
+      // skeletons
+      let orderSet = new Set(orderedSkeletonIds);
+      for (var i=0, imax=skeleton_ids.length; i<imax; ++i) {
+        let skeletonId = parseInt(skeleton_ids[i], 10);
+        if (!orderSet.has(skeletonId)) {
+          throw new CATMAID.ValueError("Missing skeleton " + skeletonId + " inf ordered input list");
+        }
+      }
+      if (skeleton_ids.length !== orderedSkeletonIds.length) {
+        throw new CATMAID.ValueError("The number of ordered skeleton Ids doesn't match models");
+      }
+      skeleton_ids = orderedSkeletonIds;
     }
 
     // Retrieve review status before doing anything else
@@ -1654,8 +1676,8 @@
                 return m;
               }, {});
 
-              // Load models
-              self.append(models);
+              // Load models, respecting their order
+              self._append(models, skeletonIds);
           });
       };
       reader.readAsText(files[0]);
@@ -1672,7 +1694,9 @@
     if (!filename) return;
 
     // Create a list of all skeletons along with their color and opacity
-    var data = this.skeletons.map(function(skeleton) {
+    var sortedSkeletons = this.gui.datatable.rows({order: 'current'}).data().toArray();
+    var data = sortedSkeletons.map(function(row) {
+      var skeleton = row.skeleton;
       return {
         'skeleton_id': skeleton.id,
         'color': '#' + skeleton.color.getHexString(),

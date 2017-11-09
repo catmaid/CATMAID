@@ -163,7 +163,9 @@
 
   LandmarkWidget.prototype.updateLandmarks = function() {
     var self = this;
-    return CATMAID.fetch(project.id +  "/landmarks/", "GET")
+    return CATMAID.fetch(project.id +  "/landmarks/", "GET", {
+        with_locations: true
+      })
       .then(function(result) {
         self.landmarks = result;
         self.landmarkIndex = result.reduce(addLandmarkToIndex, new Map());
@@ -173,7 +175,7 @@
 
   LandmarkWidget.prototype.updateLandmarkGroups = function() {
     var self = this;
-    return CATMAID.fetch(project.id +  "/landmarks/groups", "GET", {
+    return CATMAID.fetch(project.id +  "/landmarks/groups/", "GET", {
         with_members: true
       })
       .then(function(result) {
@@ -481,6 +483,9 @@
             });
         });
 
+        // The context menu used to modify locations
+        var contextMenu = null;
+
         // Add table with landmarks
         var landmarkHeader = content.appendChild(document.createElement('h1'));
         landmarkHeader.appendChild(document.createTextNode('Landmarks'));
@@ -532,6 +537,28 @@
                       row.id + '" >' + row.name + '</a>';
                 } else {
                   return row.name;
+                }
+              }
+            },
+            {
+              data: "locations",
+              title: "Locations",
+              orderable: true,
+              class: "no-context-menu",
+              render: function(data, type, row, meta) {
+                if (type === 'display') {
+                  if (data.length === 0) {
+                    return '<a class="no-context-menu" href="#" data-action="select-location" data-index="' + 'none' + '">(none)</a>';
+                  } else {
+                    let links = new Array(data.length);
+                    for (let i=0; i<links.length; ++i) {
+                      links[i] = '<a href="#" class="bordered-list-elem no-context-menu" data-action="select-location" data-index="' +
+                          i + '">' + (i + 1) + '</a>';
+                    }
+                    return links.join('');
+                  }
+                } else {
+                  return data;
                 }
               }
             },
@@ -616,6 +643,108 @@
               landmarkDataTable.ajax.reload();
             })
             .catch(CATMAID.handleError);
+        }).on('contextmenu', '.no-context-menu', function(e) {
+          e.stopPropagation();
+          e.preventDefault();
+          return false;
+        }).on('mousedown', 'a[data-action=select-location]', function(e) {
+          var index = parseInt(this.dataset.index, 10);
+          var table = $(this).closest('table');
+          var datatable = $(table).DataTable();
+          var tr = $(this).closest('tr');
+          var data =  datatable.row(tr).data();
+          var location = Number.isNaN(index) ? null : data.locations[index];
+
+          if (e.which === 1 && location) {
+            project.moveTo(location.z, location.y, location.x)
+              .then(function() {
+                // Biefly flash new location
+                var nFlashes = 3;
+                var delay = 100;
+                project.getStackViewers().forEach(function(s) {
+                  s.pulseateReferenceLines(nFlashes, delay);
+                });
+              })
+              .catch(CATMAID.handleError);
+            return;
+          }
+
+          // Hide current context menut (if any) and show new context menu
+          if (contextMenu) {
+            contextMenu.hide();
+          }
+
+          var items = [
+            {
+              'title': 'Add current location',
+              'value': 'add-current-location',
+              'data': data
+            },
+            {
+              'title': 'Add active node location',
+              'value': 'add-active-node-location',
+              'data': data
+            }
+          ];
+          if (location) {
+            items.push({
+              'title': 'Delete location',
+              'value': 'delete',
+              'data': {
+                landmark: data,
+                location: data.locations[index]
+              }
+            });
+          }
+          contextMenu = new CATMAID.ContextMenu({
+            select: function(selection) {
+              let landmark = selection.item.data;
+              let action = selection.item.value;
+              if (action === 'delete') {
+                // Confirm
+                let data = selection.item.data;
+                if (!confirm("Are you sure you want to delete the link between landmark \"" +
+                    data.landmark.name + "\" (" + data.landmark.id + ") and location " +
+                    data.location.id + "?")) {
+                  return;
+                }
+                CATMAID.Landmarks.deleteLocationLink(project.id,
+                    data.landmark.id, data.location.id)
+                  .then(function() {
+                    CATMAID.msg("Success", "Deleted link to location");
+                    datatable.ajax.reload();
+                  });
+              } else if (action === 'add-current-location' ||
+                  action === 'add-active-node-location') {
+                var loc;
+                if (action === 'add-current-location') {
+                  loc = project.coordinates;
+                  if (!loc) {
+                    CATMAID.warn('Couldn\'t get project location');
+                    return;
+                  }
+                } else {
+                  loc = SkeletonAnnotations.getActiveNodePositionW();
+                  if (!loc) {
+                    CATMAID.warn("No active node");
+                    return;
+                  }
+                }
+                CATMAID.Landmarks.linkNewLocationToLandmark(project.id, data.id, loc)
+                  .then(function(link) {
+                    CATMAID.msg("Success", "Location linked");
+                    datatable.ajax.reload();
+                  })
+                  .catch(CATMAID.handleError);
+              }
+            },
+            hide: function(selected) {
+              contextMenu = null;
+            },
+            items: items
+          });
+          contextMenu.show(true);
+          return false;
         });
       }
     },

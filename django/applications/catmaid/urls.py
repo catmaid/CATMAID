@@ -436,6 +436,10 @@ UrlParser.explicit_root_paths |= set(['{project_id}/landmarks'])
 urlpatterns += [
     url(r'^(?P<project_id>{0})/landmarks/$'.format(integer), landmarks.LandmarkList.as_view()),
     url(r'^(?P<project_id>{0})/landmarks/(?P<landmark_id>[0-9]+)/$'.format(integer), landmarks.LandmarkDetail.as_view()),
+    url(r'^(?P<project_id>{0})/landmarks/(?P<landmark_id>[0-9]+)/locations/$'.format(integer),
+            landmarks.LandmarkLocationList.as_view()),
+    url(r'^(?P<project_id>{0})/landmarks/(?P<landmark_id>[0-9]+)/locations/(?P<location_id>[0-9]+)/$'.format(integer),
+            landmarks.LandmarkLocationDetail.as_view()),
     url(r'^(?P<project_id>{0})/landmarks/groups/$'.format(integer), landmarks.LandmarkGroupList.as_view()),
     url(r'^(?P<project_id>{0})/landmarks/groups/(?P<landmarkgroup_id>[0-9]+)/$'.format(integer), landmarks.LandmarkGroupDetail.as_view()),
 ]

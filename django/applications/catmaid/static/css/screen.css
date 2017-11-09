@@ -565,6 +565,20 @@ table.neuron_annotations_query_fields {
   font-weight: bold;
 }
 
+.bordered-list-elem {
+  border: 1px;
+  border-radius: 5px;
+  margin: 0.25em 0.25em 0.1em 0.25em;
+  padding: 0.02em 0.4em 0.02em 0.4em;
+  background-color: #eef;
+  text-decoration: none;
+}
+
+.bordered-list-elem:hover {
+  background-color: #ccc;
+  color: blue;
+}
+
 .sourcepanel {
   clear: both;
   margin-bottom: 1em;

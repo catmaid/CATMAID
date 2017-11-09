@@ -8,7 +8,7 @@ from django.utils.decorators import method_decorator
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 from catmaid.control.common import get_request_list
 from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
-        Relation, UserRole)
+        Relation, Point, PointClassInstance, UserRole)
 from catmaid.serializers import BasicClassInstanceSerializer
 
 from rest_framework.response import Response
@@ -31,13 +31,56 @@ class LandmarkList(APIView):
             type: integer
             paramType: path
             required: true
+          - name: with_locations
+            description: Whether to return linked locations
+            required: false
+            defaultValue: false
+            paramType: form
         """
-        with_members = request.data.get('with_members', 'false') == 'true'
+        with_locations = request.query_params.get('with_locations', 'false') == 'true'
         landmark_class = Class.objects.get(project_id=project_id, class_name="landmark")
         landmarks = ClassInstance.objects.filter(project_id=project_id,
                 class_column=landmark_class).order_by('id')
+
         serializer = BasicClassInstanceSerializer(landmarks, many=True)
-        return Response(serializer.data)
+        serialized_landmarks = serializer.data
+
+        if with_locations and serialized_landmarks:
+            # A landmark class instance's linked locations are points using the
+            # "annotated_with" relation.
+            landmark_ids = [lm['id'] for lm in serialized_landmarks]
+            landmark_template = ",".join("(%s)" for _ in landmark_ids)
+            cursor = connection.cursor()
+            cursor.execute("""
+                SELECT landmark.id, p.id, p.location_x, p.location_y, p.location_z
+                FROM point_class_instance pci
+                JOIN point p
+                    ON pci.point_id = p.id
+                JOIN (VALUES {}) landmark(id)
+                    ON pci.class_instance_id = landmark.id
+                WHERE pci.relation_id = (
+                    SELECT id FROM relation
+                    WHERE relation_name = 'annotated_with'
+                    AND project_id = %s
+                )
+                AND pci.project_id = %s
+            """.format(landmark_template),
+                landmark_ids + [project_id, project_id])
+
+            point_index = defaultdict(list)
+            for point in cursor.fetchall():
+                point_index[point[0]].append({
+                    'id': point[1],
+                    'x': point[2],
+                    'y': point[3],
+                    'z': point[4]
+                })
+
+            # Append landmark locations to landmarks
+            for lm in serialized_landmarks:
+                lm['locations'] = point_index[lm['id']]
+
+        return Response(serialized_landmarks)
 
     @method_decorator(requires_user_role(UserRole.Annotate))
     def put(self, request, project_id):
@@ -76,6 +119,10 @@ class LandmarkDetail(APIView):
     @method_decorator(requires_user_role(UserRole.Browse))
     def get(self, request, project_id, landmark_id):
         """Get details on one particular landmark.
+
+        If locations are returned alongside the landmarks, they are all points
+        that are linked to a particular landmark, regardless of which group the
+        location is linked to.
         ---
         parameters:
         - name: project_id
@@ -88,13 +135,51 @@ class LandmarkDetail(APIView):
           required: true
           type: integer
           paramType: path
+        - name: with_locations
+          description: Whether to return linked locations
+          required: false
+          defaultValue: false
+          paramType: form
         """
         landmark_class = Class.objects.get(project_id=project_id, class_name="landmark")
         landmark = get_object_or_404(ClassInstance, pk=landmark_id,
                 project_id=project_id, class_column=landmark_class)
 
         serializer = BasicClassInstanceSerializer(landmark)
-        return Response(serializer.data)
+        serialized_landmark = serializer.data
+
+        # Linked points use the "annotated_with" relation
+        with_locations = request.data.get('with_locations', 'false') == 'true'
+        if with_locations:
+            # A landmark class instance's linked locations are points using the
+            # "annotated_with" relation.
+            serialized_landmark.locations = []
+            cursor = connection.cursor()
+            cursor.execute("""
+                SELECT p.id, p.location_x, p.location_y, p.location_z
+                FROM point_class_instance pci
+                JOIN point p
+                    ON pci.point_id = p.id
+                WHERE pci.relation_id = (
+                    SELECT id FROM relation
+                    WHERE relation_name = 'annotated_with'
+                    AND project_id = %(project_id)s
+                )
+                AND pci.class_instance_id = %(landmark_id)s
+                AND pci.project_id = %(project_id)s
+            """, {
+                "project_id": project_id,
+                "landmark_id": landmark_id
+            })
+            for point in cursor.fetchall():
+                serialized_landmark.locations.append({
+                    'id': point[0],
+                    'x': point[1],
+                    'y': point[2],
+                    'z': point[3]
+                })
+
+        return Response(serialized_landmark)
 
     @method_decorator(requires_user_role(UserRole.Annotate))
     def post(self, request, project_id, landmark_id):
@@ -382,3 +467,118 @@ def get_landmark_group_members(project_id, landmarkgroup_ids):
     for r in cursor.fetchall():
         member_index[r[1]].append(r[0])
     return member_index
+
+class LandmarkLocationList(APIView):
+
+    @method_decorator(requires_user_role(UserRole.Annotate))
+    def put(self, request, project_id, landmark_id):
+        """Add a new location or use an existing one and link it to a landmark.
+
+        Either (x,y,z) or location_id have to be provided.
+        ---
+        parameters:
+          - name: project_id
+            description: Project of landmark group
+            type: integer
+            paramType: path
+            required: true
+          - name: landmark_id
+            description: The landmark to link
+            type: integer
+            paramType: path
+            required: true
+          - name: location_id
+            description: Optional existing location ID
+            type: integer
+            required: false
+          - name: x
+            description: Optional new location X coodinate
+            type: float
+            required: false
+          - name: y
+            description: Optional new location Y coodinate
+            type: float
+            required: false
+          - name: z
+            description: Optional new location Z coodinate
+            type: float
+            required: false
+        """
+        location_id = request.data.get('location_id')
+        x = request.data.get('x')
+        y = request.data.get('y')
+        z = request.data.get('z')
+        if location_id and (x or y or z):
+            raise ValueError("Please provide either location ID or coordinates")
+        landmark = ClassInstance.objects.get(project_id=project_id, pk=int(landmark_id))
+
+        if location_id:
+            point = Point.objects.get(project_id=project_id, pk=location_id)
+        else:
+            # Create new point
+            point = Point.objects.create(project_id=project_id, user=request.user,
+                    editor=request.user, location_x=x, location_y=y, location_z=z)
+
+        pci = PointClassInstance.objects.create(point=point,
+                user=request.user, class_instance=landmark,
+                project_id=project_id, relation=Relation.objects.get(
+                    project_id=project_id,
+                    relation_name="annotated_with"))
+
+        return Response({
+            'link_id': pci.id,
+            'point_id': point.id,
+            'landmark_id': landmark.id
+        })
+
+class LandmarkLocationDetail(APIView):
+
+    @method_decorator(requires_user_role(UserRole.Annotate))
+    def delete(self, request, project_id, landmark_id, location_id):
+        """Delete the link between a location and a landmark. If the last link
+        to a location is deleted, the location is removed as well.
+        ---
+        parameters:
+          - name: project_id
+            description: Project of landmark group
+            type: integer
+            paramType: path
+            required: true
+          - name: landmark_id
+            description: The landmark to unlink
+            type: integer
+            paramType: path
+            required: true
+          - name: location_id
+            description: The location to unlink
+            paramType: path
+            type: integer
+            required: true
+        """
+        can_edit_or_fail(request.user, landmark_id, 'class_instance')
+        landmark = ClassInstance.objects.get(project_id=project_id, pk=int(landmark_id))
+
+        pci = PointClassInstance.objects.get(project_id=project_id,
+                class_instance=landmark, point_id=int(location_id),
+                relation=Relation.objects.get(project_id=project_id,
+                    relation_name='annotated_with'))
+        can_edit_or_fail(request.user, pci.id, 'point_class_instance')
+        pci_id = pci.id
+        pci.delete()
+
+        deleted_point = False
+        remaining_pci = PointClassInstance.objects.filter(point_id=int(location_id))
+        if remaining_pci.count() == 0:
+            try:
+                can_edit_or_fail(request.user, point.id, 'point')
+                Point.objects.get(pk=int(location_id)).delete()
+                deleted_point = True
+            except:
+                pass
+
+        return Response({
+            'link_id': pci_id,
+            'landmark_id': pci.class_instance_id,
+            'point_id': pci.point_id,
+            'deleted_point': deleted_point
+        })

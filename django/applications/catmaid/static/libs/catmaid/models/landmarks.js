@@ -51,6 +51,28 @@
       return CATMAID.fetch(projectId + '/landmarks/groups/' + groupId + '/', 'POST', {
         members: newMemberIds.length === 0 ? 'none' : newMemberIds
       });
+    },
+
+    /**
+     * Link a landmark to a location. Landmarks can be part of multiple landmark
+     * groups to represent that as logical entity a landmark is found in
+     * multiple places or contextes. Linking a landmark to a location gives a
+     * type to the landmark, but its context/group has to be sed separetyle.
+     */
+    linkNewLocationToLandmark: function(projectId, landmarkId, location) {
+      return CATMAID.fetch(projectId + '/landmarks/' + landmarkId + '/locations/', 'PUT', {
+          x: location.x,
+          y: location.y,
+          z: location.z
+        });
+    },
+
+    /**
+     * Delete the link between the passed in landmark and location.
+     */
+    deleteLocationLink: function(projectId, landmarkId, locationId) {
+      return CATMAID.fetch(projectId + '/landmarks/' + landmarkId +
+        '/locations/' + locationId + '/', 'DELETE');
     }
   };
 

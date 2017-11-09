@@ -697,6 +697,7 @@
             });
           }
           contextMenu = new CATMAID.ContextMenu({
+            disableDefaultContextMenu: true,
             select: function(selection) {
               let landmark = selection.item.data;
               let action = selection.item.value;

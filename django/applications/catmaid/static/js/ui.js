@@ -588,7 +588,9 @@
     // are replaced by the plain key as it is the default on Linux and Windows.
     map.set('Alt + ¡', '1');
     map.set('Alt + ™', '2');
+    map.set('Alt + €', '2');
     map.set('Alt + £', '3');
+    map.set('Alt + #', '3');
     map.set('Alt + ¢', '4');
     map.set('Alt + ∞', '5');
     map.set('Alt + §', '6');

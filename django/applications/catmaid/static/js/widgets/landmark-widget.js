@@ -7,19 +7,8 @@
 
   /**
    * Create a new Landmark Widget, optional with a set of initial landmark
-   * groups. The widget is devided in a semantic space editor and a spatial
-   * space editor.
-   *
-   * The semantic space allows to define new class instances of the class
-   * "landmark", which represents a conceptual landmark, without any spatial
-   * link. These landmark class instances can then be grouped into landmark
-   * groups, which themselves are also class instasnces, but of type "landmark
-   * group". Landmarks can be shared between groups. This allows to define e.g.
-   * a region on the left and right brain hemisphere as landmark groups without
-   * requiring both to have all landmarks.
-   *
-   * The spatial editor allows to define locations and to link them to
-   * particular semantic landmarks.
+   * groups. The widget allows to create landmarks, landmark groups and link
+   * both to points in project space.
    */
   var LandmarkWidget = function(options)
   {
@@ -39,8 +28,8 @@
     this.selectedLandmarkGroups = new Set();
 
     // The current edit mode
-    this.mode = 'semantic';
-    this.modes = ['semantic', 'spatial'];
+    this.mode = 'landmarks';
+    this.modes = ['landmarks'];
   };
 
   LandmarkWidget.prototype = {};
@@ -59,7 +48,9 @@
       controlsID: this.idPrefix + 'controls',
       createControls: function(controls) {
         var self = this;
-        var tabNames = ['Semantic', 'Spatial links'];
+        var tabNames = this.modes.map(function(m) {
+          return LandmarkWidget.MODES[m].title;
+        }, this);
         var tabs = CATMAID.DOM.addTabGroup(controls, '-landmarks', tabNames);
         this.modes.forEach(function(mode, i) {
           var mode = LandmarkWidget.MODES[mode];
@@ -138,7 +129,7 @@
    * table, if Semantic mode is active.
    */
   LandmarkWidget.prototype.selectLandmark = function(landmarkId) {
-    if (this.mode === 'semantic') {
+    if (this.mode === 'landmarks') {
       
     }
   };
@@ -289,8 +280,8 @@
   };
 
   LandmarkWidget.MODES = {
-    semantic: {
-      title: 'Semantic',
+    landmarks: {
+      title: 'Landmarks',
       createControls: function(target) {
         var self = this;
         let newLandmarkGroupSection = document.createElement('span');
@@ -901,18 +892,6 @@
           contextMenu.show(true);
           return false;
         });
-      }
-    },
-    spatial: {
-      title: 'Spatial links',
-      createControls: function(target) {
-        return [document.createElement('span')];
-      },
-      createContent: function(content, widget) {
-        content.appendChild(document.createElement('p'))
-          .appendChild(document.createTextNode('Link physical locations to ' +
-            'landmarks to define local spaces. These can be used to compare ' +
-            'other spatial elements (like skeletons) between landmark groups'));
       }
     }
   };

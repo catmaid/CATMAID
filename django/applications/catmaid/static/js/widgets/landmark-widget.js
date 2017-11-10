@@ -143,21 +143,71 @@
     }
   };
 
+  function locationIndexToString(i) {
+    let displayIndex = i + 1;
+    /* jshint validthis: true */
+    return '<a href="#" class="bordered-list-elem" data-id="' + this.id +
+        '" data-action="select-location" data-index="' + i + '">' + displayIndex + '</a>';
+  }
+
+  function wrapInGroupEditLink(e) {
+    return '<a href="#" data-action="edit-group-members">' + e + '</a>';
+  }
+
   /**
    * If the respective landmark is available from already retrieved data return
    * the landmark's name, otherwise return its ID.
    */
-  LandmarkWidget.prototype.landmarkToString = function(landmarkId) {
-    if (this.landmarkIndex) {
-      var landmark = this.landmarkIndex.get(landmarkId);
-      return landmark ? landmark.name : landmark.id;
+  LandmarkWidget.prototype.groupedLandmarkToString = function(group, landmarkId) {
+    if (this.landmarkIndex && this.landmarkGroupIndex) {
+      let landmark = this.landmarkIndex.get(landmarkId);
+      if (landmark) {
+        // These are the possible locations, the ones linked to the landmark
+        // itself. Based on this we can find the group linked locations.
+        let groupLocations = group.locations;
+        let linkedLocations = [];
+        for (let i=0, imax=landmark.locations.length; i<imax; ++i) {
+          // Check if the landmark location is a member of this group
+          var loc = landmark.locations[i];
+          var isMember = false;
+          for (var j=0, jmax=groupLocations.length; j<jmax; ++j) {
+            let groupLocation = groupLocations[j];
+            if (groupLocation.id == loc.id) {
+              linkedLocations.push(i);
+              break;
+            }
+          }
+        }
+        let linkedLocationsRepr = linkedLocations.map(locationIndexToString, landmark);
+        if (linkedLocationsRepr.length > 0) {
+          return wrapInGroupEditLink(landmark.name) + " (" + linkedLocationsRepr.join("") + ")";
+        } else {
+          return wrapInGroupEditLink(landmark.name) + " (-)";
+        }
+      } else {
+        return wrapInGroupEditLink(landmark.id);
+      }
     } else {
-      return landmarkId;
+      return wrapInGroupEditLink(landmarkId);
     }
   };
 
-  function addLandmarkToIndex(index, landmark) {
-    index.set(landmark.id, landmark);
+  function addToIdIndex(index, element) {
+    index.set(element.id, element);
+    return index;
+  }
+
+  function addLandmarkGroupMembership(index, landmarkGroup) {
+    let members = landmarkGroup.members;
+    for (var i=0, imax=members.length; i<imax; ++i) {
+      let landmarkId = members[i];
+      let groups = index.get(landmarkId);
+      if (!groups) {
+        groups = [];
+        index.set(landmarkId, groups);
+      }
+      groups.push(landmarkGroup.id);
+    }
     return index;
   }
 
@@ -168,7 +218,7 @@
       })
       .then(function(result) {
         self.landmarks = result;
-        self.landmarkIndex = result.reduce(addLandmarkToIndex, new Map());
+        self.landmarkIndex = result.reduce(addToIdIndex, new Map());
         return result;
       });
   };
@@ -176,10 +226,13 @@
   LandmarkWidget.prototype.updateLandmarkGroups = function() {
     var self = this;
     return CATMAID.fetch(project.id +  "/landmarks/groups/", "GET", {
-        with_members: true
+        with_members: true,
+        with_locations: true
       })
       .then(function(result) {
         self.landmarkGroups = result;
+        self.landmarkGroupMemberships = result.reduce(addLandmarkGroupMembership, new Map());
+        self.landmarkGroupIndex = result.reduce(addToIdIndex, new Map());
         return result;
       });
   };
@@ -413,13 +466,12 @@
               render: function(data, type, row, meta) {
                 if (type === 'display') {
                   if (data.length === 0) {
-                    return '<a href="#" data-action="edit-group-members">(none)</a>';
+                    return wrapInGroupEditLink("(none)");
                   } else {
                     var namedLandmarks = data.map(function(landmarkId) {
-                      return widget.landmarkToString(landmarkId);
+                      return widget.groupedLandmarkToString(row, landmarkId);
                     });
-                    return '<a href="#" data-action="edit-group-members">' +
-                      namedLandmarks.join(', ') + '</a>';
+                    return namedLandmarks.join(' ');
                   }
                 } else {
                   return data;
@@ -481,6 +533,42 @@
                 widget.update();
               }
             });
+        }).on('mousedown', 'a[data-action=select-location]', function(e) {
+          var index = parseInt(this.dataset.index, 10);
+          var landmarkId = parseInt(this.dataset.id, 10);
+
+          var table = $(this).closest('table');
+          var datatable = $(table).DataTable();
+          var tr = $(this).closest('tr');
+          var data =  datatable.row(tr).data();
+
+          // The index refers to the landmark's location list! To find it there,
+          // we need the landmark index.
+          if (!widget.landmarkIndex) {
+            CATMAID.warn('No landmark index available');
+            return;
+          }
+          var landmark = widget.landmarkIndex.get(landmarkId);
+          if (!landmark) {
+            CATMAID.warn('Couldn\'t find landmark ' + landmarkId);
+            return;
+          }
+
+          // If left mouse button was used and a location is available, move to
+          // it.
+          var loc = Number.isNaN(index) ? null : landmark.locations[index];
+          if (e.which === 1 && loc) {
+            project.moveTo(loc.z, loc.y, loc.x)
+              .then(function() {
+                // Biefly flash new location
+                var nFlashes = 3;
+                var delay = 100;
+                project.getStackViewers().forEach(function(s) {
+                  s.pulseateReferenceLines(nFlashes, delay);
+                });
+              })
+              .catch(CATMAID.handleError);
+          }
         });
 
         // The context menu used to modify locations
@@ -692,18 +780,64 @@
               'value': 'delete',
               'data': {
                 landmark: data,
-                location: data.locations[index]
+                location: location
               }
             });
+            if (widget.landmarkGroupMemberships && widget.landmarkGroupIndex) {
+              let linkedGroups = widget.landmarkGroupMemberships.get(data.id);
+              if (linkedGroups) {
+                let add = [], remove = [];
+                for (var i=0, imax=linkedGroups.length; i<imax; ++i) {
+                  var groupId = linkedGroups[i];
+                  var group = widget.landmarkGroupIndex.get(groupId);
+                  if (!group) {
+                    throw new CATMAID.ValueError("Unknown landmark group: " + groupId);
+                  }
+                  var groupLocations = group.locations;
+                  // Check if the landmark location is already a member of this group
+                  var isMember = false;
+                  for (var j=0, jmax=groupLocations.length; j<jmax; ++j) {
+                    let groupLocation = groupLocations[j];
+                    if (groupLocation.id == location.id) {
+                      isMember = true;
+                      break;
+                    }
+                  }
+                  // If it is a member, show option to remove from group,
+                  // otherwise show option to add to group.
+                  if (isMember) {
+                    remove.push({
+                      'title': 'Remove from: ' + group.name,
+                      'value': 'remove-from-group',
+                      'data': {
+                        landmark: data,
+                        group: group,
+                        location: location
+                      }
+                    });
+                  } else {
+                    add.push({
+                      'title': 'Add to: ' + group.name,
+                      'value': 'add-to-group',
+                      'data': {
+                        landmark: data,
+                        group: group,
+                        location: location
+                      }
+                    });
+                  }
+                }
+                items = items.concat(add).concat(remove);
+              }
+            }
           }
           contextMenu = new CATMAID.ContextMenu({
             disableDefaultContextMenu: true,
             select: function(selection) {
-              let landmark = selection.item.data;
+              let data = selection.item.data;
               let action = selection.item.value;
               if (action === 'delete') {
                 // Confirm
-                let data = selection.item.data;
                 if (!confirm("Are you sure you want to delete the link between landmark \"" +
                     data.landmark.name + "\" (" + data.landmark.id + ") and location " +
                     data.location.id + "?")) {
@@ -733,8 +867,28 @@
                 }
                 CATMAID.Landmarks.linkNewLocationToLandmark(project.id, data.id, loc)
                   .then(function(link) {
-                    CATMAID.msg("Success", "Location linked");
+                    CATMAID.msg("Success", "Location linked to landmark");
                     datatable.ajax.reload();
+                  })
+                  .catch(CATMAID.handleError);
+              } else if (action === "add-to-group") {
+                // Add the referenced location to the selected group
+                CATMAID.Landmarks.addLandmarkLocationToGroup(project.id,
+                    data.group.id, data.location.id)
+                  .then(function(link) {
+                    CATMAID.msg("Success", "Location linked to group");
+                    landmarkGroupDataTable.ajax.reload();
+                    landmarkDataTable.ajax.reload();
+                  })
+                  .catch(CATMAID.handleError);
+              } else if (action === "remove-from-group") {
+                // Remove the referenced location from the selected group
+                CATMAID.Landmarks.removeLandmarkLocationFromGroup(project.id,
+                    data.group.id, data.location.id)
+                  .then(function(link) {
+                    CATMAID.msg("Success", "Location removed from group");
+                    landmarkGroupDataTable.ajax.reload();
+                    landmarkDataTable.ajax.reload();
                   })
                   .catch(CATMAID.handleError);
               }

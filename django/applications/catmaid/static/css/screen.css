@@ -567,9 +567,9 @@ table.neuron_annotations_query_fields {
 
 .bordered-list-elem {
   border: 1px;
-  border-radius: 5px;
-  margin: 0.25em 0.25em 0.1em 0.25em;
-  padding: 0.02em 0.4em 0.02em 0.4em;
+  border-radius: 4px;
+  margin: 0 0.1em 0 0.1em;
+  padding: 0.02em 0.3em 0.02em 0.3em;
   background-color: #eef;
   text-decoration: none;
 }

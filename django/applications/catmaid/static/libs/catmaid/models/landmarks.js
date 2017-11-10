@@ -73,7 +73,26 @@
     deleteLocationLink: function(projectId, landmarkId, locationId) {
       return CATMAID.fetch(projectId + '/landmarks/' + landmarkId +
         '/locations/' + locationId + '/', 'DELETE');
+    },
+
+    /**
+     * Add a point location to a landmark group if the location is also linked to
+     * by the landmark.
+     */
+    addLandmarkLocationToGroup: function(projectId, groupId, locationId) {
+      return CATMAID.fetch(projectId + '/landmarks/groups/' + groupId +
+          '/locations/' + locationId + '/', 'PUT');
+    },
+
+    /**
+     * Remove the link between a point location and a landmark group when the
+     * location is also linked to the landmark.
+     */
+    removeLandmarkLocationFromGroup: function(projectId, groupId, locationId) {
+      return CATMAID.fetch(projectId + '/landmarks/groups/' + groupId +
+          '/locations/' + locationId + '/', 'DELETE');
     }
+
   };
 
   // Export namespace

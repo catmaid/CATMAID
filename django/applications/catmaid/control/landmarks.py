@@ -266,8 +266,14 @@ class LandmarkGroupList(APIView):
             paramType: form
             defaultValue: false
             required: false
+          - name: with_locations
+            description: Whether to return linked locations
+            required: false
+            defaultValue: false
+            paramType: form
         """
         with_members = request.query_params.get('with_members', 'false') == 'true'
+        with_locations = request.query_params.get('with_locations', 'false') == 'true'
         landmarkgroup_class = Class.objects.get(project_id=project_id, class_name="landmarkgroup")
         landmarkgroups = ClassInstance.objects.filter(project_id=project_id,
                 class_column=landmarkgroup_class).order_by('id')
@@ -275,13 +281,24 @@ class LandmarkGroupList(APIView):
         serializer = BasicClassInstanceSerializer(landmarkgroups, many=True)
         data = serializer.data
 
-        if with_members and data:
-            # Get member information
-            landmarkgroup_ids = [d['id'] for d in data]
-            member_index = get_landmark_group_members(project_id, landmarkgroup_ids)
-            # Append member information
-            for group in data:
-                group['members'] = member_index[group['id']]
+        if data:
+            if with_members:
+                # Get member information
+                landmarkgroup_ids = [d['id'] for d in data]
+                member_index = get_landmark_group_members(project_id,
+                        landmarkgroup_ids)
+                # Append member information
+                for group in data:
+                    group['members'] = member_index[group['id']]
+
+            if with_locations:
+                # Get linked locations, which represent instances of
+                # landmark in this landmark group.
+                location_index = get_landmark_group_locations(project_id,
+                        landmarkgroup_ids)
+                # Append location information
+                for group in data:
+                    group['locations'] = location_index[group['id']]
 
         return Response(data)
 
@@ -461,12 +478,40 @@ def get_landmark_group_members(project_id, landmarkgroup_ids):
             SELECT id from relation
             WHERE relation_name = 'part_of' AND project_id = %s
         ) AND cici.project_id = %s
+        ORDER BY cici.class_instance_a
     """.format(landmarkgroups_template),
         landmarkgroup_ids + [project_id, project_id])
     member_index = defaultdict(list)
     for r in cursor.fetchall():
         member_index[r[1]].append(r[0])
     return member_index
+
+def get_landmark_group_locations(project_id, landmarkgroup_ids):
+    cursor = connection.cursor()
+    landmarkgroups_template = ','.join(['(%s)' for _ in landmarkgroup_ids])
+    cursor.execute("""
+        SELECT pci.point_id, pci.class_instance_id, p.location_x,
+            p.location_y, p.location_z
+        FROM point_class_instance pci
+        JOIN (VALUES {}) landmarkgroup(id)
+            ON pci.class_instance_id = landmarkgroup.id
+        JOIN point p
+            ON p.id = pci.point_id
+        WHERE pci.relation_id = (
+            SELECT id from relation
+            WHERE relation_name = 'annotated_with' AND project_id = %s
+        ) AND pci.project_id = %s
+    """.format(landmarkgroups_template),
+        landmarkgroup_ids + [project_id, project_id])
+    location_index = defaultdict(list)
+    for r in cursor.fetchall():
+        location_index[r[1]].append({
+            'id': r[0],
+            'x': r[2],
+            'y': r[3],
+            'z': r[4]
+        })
+    return location_index
 
 class LandmarkLocationList(APIView):
 
@@ -530,6 +575,88 @@ class LandmarkLocationList(APIView):
             'point_id': point.id,
             'landmark_id': landmark.id
         })
+
+class LandmarkGroupLocationList(APIView):
+
+    @method_decorator(requires_user_role(UserRole.Annotate))
+    def put(self, request, project_id, landmarkgroup_id, location_id):
+        """Link a location to a landmark group.
+        ---
+        parameters:
+          - name: project_id
+            description: Project of landmark group
+            type: integer
+            paramType: path
+            required: true
+          - name: landmarkgroup_id
+            description: The landmark group to link
+            type: integer
+            paramType: path
+            required: true
+          - name: location_id
+            description: Existing location ID
+            type: integer
+            paramType: path
+            required: true
+        """
+        point = Point.objects.get(project_id=project_id, pk=location_id)
+        landmarkgroup = ClassInstance.objects.get(project_id=project_id,
+                pk=landmarkgroup_id, class_column=Class.objects.get(
+                    project_id=project_id, class_name="landmarkgroup"))
+
+        pci = PointClassInstance.objects.create(point=point,
+                user=request.user, class_instance=landmarkgroup,
+                project_id=project_id, relation=Relation.objects.get(
+                    project_id=project_id,
+                    relation_name="annotated_with"))
+
+        return Response({
+            'link_id': pci.id,
+            'point_id': point.id,
+            'landmarkgroup_id': landmarkgroup.id
+        })
+
+    @method_decorator(requires_user_role(UserRole.Annotate))
+    def delete(self, request, project_id, landmarkgroup_id, location_id):
+        """Remove the link between a location and a landmark group.
+        ---
+        parameters:
+          - name: project_id
+            description: Project of landmark group
+            type: integer
+            paramType: path
+            required: true
+          - name: landmarkgroup_id
+            description: The landmark group to link
+            type: integer
+            paramType: path
+            required: true
+          - name: location_id
+            description: Existing location ID
+            type: integer
+            paramType: path
+            required: true
+        """
+        point = Point.objects.get(project_id=project_id, pk=location_id)
+        landmarkgroup = ClassInstance.objects.get(project_id=project_id,
+                pk=landmarkgroup_id, class_column=Class.objects.get(
+                    project_id=project_id, class_name="landmarkgroup"))
+
+        pci = PointClassInstance.objects.get(point=point,
+                user=request.user, class_instance=landmarkgroup,
+                project_id=project_id, relation=Relation.objects.get(
+                    project_id=project_id,
+                    relation_name="annotated_with"))
+        can_edit_or_fail(request.user, pci.id, 'point_class_instance')
+        pci_id = pci.id
+        pci.delete()
+
+        return Response({
+            'link_id': pci_id,
+            'point_id': point.id,
+            'landmarkgroup_id': landmarkgroup.id
+        })
+
 
 class LandmarkLocationDetail(APIView):
 

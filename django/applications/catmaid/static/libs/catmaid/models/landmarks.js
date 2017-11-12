@@ -91,6 +91,28 @@
     removeLandmarkLocationFromGroup: function(projectId, groupId, locationId) {
       return CATMAID.fetch(projectId + '/landmarks/groups/' + groupId +
           '/locations/' + locationId + '/', 'DELETE');
+    },
+
+    /**
+     * Import and link landmarks, landmark groups and locations. The passed in
+     * <data> parameter is a list of two-element lists, each representing a
+     * group along with its linked landmark and locations. The group is
+     * represented by its name and the members are a list of four-element lists,
+     * containing the landmark name and the location. This results in the
+     * following format:
+     *
+     *  [[group_1_name, [[landmark_1_name, x, y, z], [landmark_2_name, x, y, z]]], ...]
+     */
+    import: function(projectId, data, reuse_existing_groups,
+        reuse_existing_landmarks, create_non_existing_groups,
+        create_non_existing_landmarks) {
+      return CATMAID.fetch(projectId + '/landmarks/groups/import', 'POST', {
+        data: JSON.stringify(data),
+        reuse_existing_groups: CATMAID.tools.getDefined(reuse_existing_groups, false),
+        reuse_existing_landmarks: CATMAID.tools.getDefined(reuse_existing_landmarks, false),
+        create_non_existing_groups: CATMAID.tools.getDefined(create_non_existing_groups, true),
+        create_non_existing_landmarks: CATMAID.tools.getDefined(create_non_existing_landmarks, true)
+      });
     }
 
   };

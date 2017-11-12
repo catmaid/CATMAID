@@ -171,6 +171,21 @@
     return fb;
   };
 
+  DOM.appendFileButton = function(div, id, label, title, multiple, onchange) {
+    var fileButton = DOM.createFileButton(id, false, onchange);
+    if (multiple) {
+      fileButton.setAttribute('multiple', 'multiple');
+    }
+    div.appendChild(fileButton);
+    var open = document.createElement('input');
+    open.setAttribute("type", "button");
+    open.setAttribute("value", "Open");
+    open.onclick = function() { fileButton.click(); };
+    div.appendChild(open);
+
+    return open;
+  };
+
   /**
    * Clones the given form into a dynamically created iframe and submits it
    * there. This can be used to store autocompletion information of a form that
@@ -1101,7 +1116,10 @@
                 e.postlabel, e.onchange, e.length, e.placeholder, e.time);
           case 'select':
             return CATMAID.DOM.appendSelect(tab, e.id, e.label, e.entries, e.title, e.value, e.onchange);
-          default: return undefined;
+          case 'file':
+            return CATMAID.DOM.appendFileButton(tab, e.id, e.label, e.title, e.multiple, e.onclick);
+          default:
+            return undefined;
         }
       }
     });

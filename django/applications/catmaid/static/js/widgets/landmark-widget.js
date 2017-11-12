@@ -16,12 +16,25 @@
     this.idPrefix = `landmark-widget${this.widgetID}-`;
 
     // The displayed data table
-    this.landmarkTable = null;
+    this.landmarkDataTable = null;
 
     // Data caches
     this.landmarks = null;
     this.landmarkIndex = null;
     this.landmarkGroups = null;
+    this.landmarkGroupMemberships = null;
+    this.landmarkGroupIndex = null;
+
+    // A list of selected files to import
+    this.filesToImport = [];
+    // How many lines to skip during import
+    this.importCSVLineSkip = 1;
+    // Whether to allow import into non-empty groups
+    this.importAllowNonEmptyGroups = false;
+    // Whether to automatically create non-existing groups
+    this.importCreateNonExistingGroups = true;
+    // Whether to allow use of existing landmarks
+    this.importReuseExistingLandmarks = false;
 
     // The set of currently selected landmark groups, acts as filter for
     // landmark table.
@@ -29,7 +42,7 @@
 
     // The current edit mode
     this.mode = 'landmarks';
-    this.modes = ['landmarks'];
+    this.modes = ['landmarks', 'import'];
   };
 
   LandmarkWidget.prototype = {};
@@ -93,8 +106,10 @@
     };
   };
 
-  LandmarkWidget.prototype.reload = function() {
-    
+  LandmarkWidget.prototype.refresh = function() {
+    if (this.landmarkDataTable) {
+      this.landmarkDataTable.rows().invalidate();
+    }
   };
 
   LandmarkWidget.prototype.update = function() {
@@ -277,6 +292,44 @@
         return CATMAID.Landmarks.updateGroupMembers(project.id,
             landmarkGroup.id, selectedLandmarks);
       });
+  };
+
+  /**
+   * Parse a single file as CSV and return a promise once complete with the
+   * file's content.
+   */
+  LandmarkWidget.prototype.parseCSVFile = function(file, nLinesToSkip) {
+    return new Promise(function(resolve, reject) {
+      let reader = new FileReader();
+      reader.onload = function(e) {
+        // Split text into individual lines
+        var lines = e.target.result.split(/[\n\r]/);
+        // Remove first N lines
+        if (nLinesToSkip && nLinesToSkip > 0) {
+          lines = lines.slice(nLinesToSkip);
+        }
+        // Split individual lines
+        lines = lines.map(function(l) {
+          return l.split(',');
+        }).filter(function(l) {
+          return l.length === 4;
+        });
+
+        resolve(lines);
+      };
+      reader.onerror = reject;
+      reader.onabort = reject;
+      reader.readAsText(file);
+    });
+  };
+
+  LandmarkWidget.prototype.resetImportView = function() {
+    this.filesToImport = [];
+    let fileButton = document.querySelector('input#csv-import-' + this.widgetID);
+    if (fileButton) {
+      fileButton.value = '';
+    }
+    this.update();
   };
 
   LandmarkWidget.MODES = {
@@ -575,7 +628,7 @@
         landmarkTableWrapper.classList.add('container');
         landmarkTableWrapper.appendChild(landmarkTable);
         content.appendChild(landmarkTableWrapper);
-        var landmarkDataTable = $(landmarkTable).DataTable({
+        var landmarkDataTable = widget.landmarkDataTable = $(landmarkTable).DataTable({
           dom: "lfrtip",
           autoWidth: false,
           paging: true,
@@ -892,6 +945,169 @@
           contextMenu.show(true);
           return false;
         });
+      }
+    },
+    import: {
+      title: 'Import',
+      createControls: function(target) {
+        return [
+          {
+            type: 'button',
+            label: 'Clear view',
+            onclick: function() {
+              target.resetImportView();
+            }
+          },
+          {
+            type: 'file',
+            id: 'csv-import-' + target.widgetID,
+            label: 'Open CSV Files',
+            multiple: true,
+            onclick: function(e) {
+              target.filesToImport = e.target.files;
+              target.update();
+            }
+          },
+          {
+            type: 'numeric',
+            label: 'Skip first N lines',
+            length: 3,
+            onchange: function(e) {
+              target.importCSVLineSkip = parseInt(this.value, 10);
+              target.update();
+            },
+            value: target.importCSVLineSkip
+          },
+          {
+            type: 'checkbox',
+            label: 'Allow non-empty groups',
+            onclick: function(e) {
+              target.importAllowNonEmptyGroups = this.checked;
+            },
+            value: target.importAllowNonEmptyGroups
+          },
+          {
+            type: 'checkbox',
+            label: 'Create non-existing groups',
+            onclick: function(e) {
+              target.importCreateNonExistingGroups = this.checked;
+            },
+            value: target.importCreateNonExistingGroups
+          },
+          {
+            type: 'checkbox',
+            label: 'Re-use existing landmarks',
+            onclick: function(e) {
+              target.importReuseExistingLandmarks = this.checked;
+            },
+            value: target.importReuseExistingLandmarks
+          }
+        ];
+      },
+      createContent: function(content, widget) {
+        if (widget.filesToImport && widget.filesToImport.length > 0) {
+          // Show files to import in table and allow user to assign a group to
+          // each one.
+          var table = document.createElement('table');
+          var thead = table.appendChild(document.createElement('thead'));
+          var thtr  = thead.appendChild(document.createElement('tr'));
+          thtr.appendChild(document.createElement('th'))
+              .appendChild(document.createTextNode('File'));
+          thtr.appendChild(document.createElement('th'))
+              .appendChild(document.createTextNode('Landmark group'));
+
+          var tbody = table.appendChild(document.createElement('tbody'));
+          var groupFields = [];
+          var contentElements = [];
+          for (let i=0; i<widget.filesToImport.length; ++i) {
+            let groupSelector = document.createElement('input');
+            groupFields.push(groupSelector);
+            let filePath = widget.filesToImport[i].name;
+            let tr = tbody.appendChild(document.createElement('tr'));
+            let filePathElement = document.createElement('span');
+            filePathElement.classList.add('file-path');
+            let contentElement = document.createElement('span');
+            contentElement.classList.add('file-content');
+            contentElements.push(contentElement);
+            filePathElement.appendChild(document.createTextNode(filePath));
+            let fileCell = document.createElement('td');
+            fileCell.appendChild(filePathElement);
+            fileCell.appendChild(contentElement);
+            tr.appendChild(fileCell);
+            let td2 = tr.appendChild(document.createElement('td'));
+            td2.appendChild(groupSelector);
+            td2.classList.add('cm-center');
+          }
+          content.appendChild(table);
+
+          // Load selected CSV files and enable import button if this worked
+          // without problems.
+          let importList = [];
+          let parsePromises = [];
+          for (let i=0; i<widget.filesToImport.length; ++i) {
+            let file = widget.filesToImport[i];
+            let promise = widget.parseCSVFile(file, widget.importCSVLineSkip);
+            parsePromises.push(promise);
+          }
+
+          // The actual import button, disabled initially
+          let p = document.createElement('p');
+          p.classList.add('right');
+          let importButton = p.appendChild(document.createElement('button'));
+          importButton.setAttribute('disabled', '');
+          importButton.appendChild(document.createTextNode('Import'));
+          importButton.onclick = function(e) {
+            Promise.all(parsePromises)
+              .then(function(parsedFiles) {
+                let importList = [];
+                for (let i=0; i<widget.filesToImport.length; ++i) {
+                  let fileContent = parsedFiles[i];
+                  let group = groupFields[i];
+                  if (!group) {
+                    throw new CATMAID.ValueError("Can't find " + i + ". group assignment");
+                  }
+                  if (group.value.length === 0) {
+                    CATMAID.error("Please provide all group names");
+                    return;
+                  }
+                  importList.push([group.value, fileContent]);
+                }
+                return CATMAID.Landmarks.import(project.id, importList)
+                  .then(function(result) {
+                    CATMAID.msg("Success", "Import successful");
+                    widget.resetImportView();
+                  });
+              })
+              .catch(CATMAID.handleError);
+          };
+
+          Promise.all(parsePromises)
+            .then(function(parsedFiles) {
+              // Show first line of file in table
+              for (let i=0; i<parsedFiles.length; ++i) {
+                let data = parsedFiles[i];
+                if (data && data.length > 0) {
+                  let firstLine = "First line: " + data[0].join(", ");
+                  contentElements[i].appendChild(document.createTextNode(firstLine));
+                } else {
+                  contentElements[i].appendChild(document.createTextNode('No valid content found'));
+                }
+              }
+
+              // Enable import button once files were parsed without error
+              importButton.disabled = false;
+            })
+            .catch(CATMAID.handleError);
+
+          content.appendChild(p);
+        } else {
+          content.appendChild(document.createElement('p'))
+            .appendChild(document.createTextNode('Import landmarks, landmark ' +
+              'groups and locations from CSV files. Add files by clicking the ' +
+              '"Open Files" button. Files are expected to have four columns: ' +
+              'landmark name, x, y, z. The coordinate is expected to be in ' +
+              'project/world space.'));
+        }
       }
     }
   };

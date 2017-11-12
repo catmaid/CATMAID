@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import json
+import math
+
 from django.db import connection
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
-from catmaid.control.common import get_request_list
+from catmaid.control.common import (get_request_list, get_class_to_id_map,
+        get_relation_to_id_map, get_request_list)
 from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
         Relation, Point, PointClassInstance, UserRole)
 from catmaid.serializers import BasicClassInstanceSerializer
@@ -466,6 +470,192 @@ class LandmarkGroupDetail(APIView):
         serializer = BasicClassInstanceSerializer(landmarkgroup)
         return Response(serializer.data)
 
+class LandmarkGroupImport(APIView):
+
+    @method_decorator(requires_user_role(UserRole.Annotate))
+    def post(self, request, project_id):
+        """Import and link landmarks, landmark groups and locations.
+
+        The passed in <data> parameter is a list of two-element lists, each
+        representing a group along with its linked landmark and locations. The
+        group is represented by its name and the members are a list of
+        four-element lists, containing the landmark name and the location. This
+        results in the following format:
+
+        [[group_1_name, [[landmark_1_name, x, y, z], [landmark_2_name, x, y, z]]], ...]
+
+        Note that this parameter has to be transmitted as a JSON encoded string.
+
+        ---
+        parameters:
+        - name: project_id
+          description: The project the landmark group is part of.
+          type: integer
+          paramType: path
+          required: true
+        - name: data
+          description: The data to import.
+          required: true
+          type: string
+          paramType: form
+        - name: reuse_existing_groups
+          description: Whether existing groups should be reused.
+          type: boolean
+          paramType: form
+          defaultValue: false
+          required: false
+        - name: reuse_existing_landmarks
+          description: Whether existing landmarks should be reused.
+          type: boolean
+          paramType: form
+          defaultValue: false
+          required: false
+        - name: create_non_existing_groups
+          description: Whether non-existing groups should be created.
+          type: boolean
+          paramType: form
+          defaultValue: true
+          required: false
+        - name: create_non_existing_landmarks
+          description: Whether non-existing landmarks should be created.
+          type: boolean
+          paramType: form
+          defaultValue: true
+          required: false
+        """
+        project_id = int(project_id)
+        if not project_id:
+            raise ValueError("Need project ID")
+        reuse_existing_groups = request.data.get('reuse_existing_groups', 'false') == 'true'
+        reuse_existing_landmarks = request.data.get('reuse_existing_landmarks', 'false') == 'true'
+        create_non_existing_groups = request.data.get('create_non_existing_groups', 'true') == 'true'
+        create_non_existing_landmarks = request.data.get('create_non_existing_landmarks', 'true') == 'true'
+
+        # Make sure the data to import matches our expectations
+        data = request.data.get('data')
+        if not data:
+            raise ValueError("Need data to import")
+        data = json.loads(data)
+        for n, (group_name, landmarks) in enumerate(data):
+            if not group_name:
+                raise ValueError("The {}. group doesn't have a name".format(n))
+            if not landmarks:
+                raise ValueError("Group {} doesn't contain any landmarks".format(group_name))
+            for m, link in enumerate(landmarks):
+                if not link or len(link) != 4:
+                    raise ValueError("The {}. link of the {}. group ({}) " \
+                        "doesn't conform to the [ID, X, Y, Z] format.".format(m,
+                        n, group_name))
+                for ci in (1,2,3):
+                    coordinate = link[ci]
+                    value = float(coordinate)
+                    if math.isnan(value):
+                        raise ValueError("The {}. link of the {}. group ({}) " \
+                            "doesn't have a valid {}. coordinate: {}.".format(
+                            m, n, group_name, ci, coordinate))
+                    link[ci] = value
+
+        classes = get_class_to_id_map(project_id)
+        relations = get_relation_to_id_map(project_id)
+        landmark_class = classes['landmark']
+        landmarkgroup_class = classes['landmarkgroup']
+        part_of_relation = relations['part_of']
+        annotated_with_relation = relations['annotated_with']
+
+        landmarks = dict((k.lower(),v) for k,v in
+                ClassInstance.objects.filter(project_id=project_id,
+                class_column=landmark_class).values_list('name', 'id'))
+        landmarkgroups = dict((k.lower(),v) for k,v in
+                ClassInstance.objects.filter(project_id=project_id,
+                class_column=landmarkgroup_class).values_list('name', 'id'))
+
+        imported_groups = []
+
+        # Keep track of which landmarks have been seen and were accepted.
+        seen_landmarks = set()
+
+        for n, (group_name, linked_landmarks) in enumerate(data):
+            # Test if group exists already and raise error if they do and are
+            # prevented from being reused (option).
+            existing_group_id = landmarkgroups.get(group_name.lower())
+            if existing_group_id:
+                if n == 0:
+                    if not reuse_existing_groups:
+                        raise ValueError("Group \"{}\" exists already ({}).  Please" \
+                                "remove it or enable group re-use.".format(
+                                group_name, existing_group_id))
+                    can_edit_or_fail(request.user, existing_group_id, 'class_instance')
+            elif create_non_existing_groups:
+                group = ClassInstance.objects.create(project_id=project_id,
+                        class_column_id=landmarkgroup_class, user=request.user,
+                        name=group_name)
+                existing_group_id = group.id
+                landmarkgroups[group_name.lower()] = group.id
+            else:
+                raise ValueError("Group \"{}\" does not exist. Please create " \
+                        "it or enable automatic creation/".format(group_name))
+
+            imported_landmarks = []
+            imported_group = {
+                    'id': existing_group_id,
+                    'name': group_name,
+                    'members': imported_landmarks
+            }
+            imported_groups.append(imported_group)
+
+            for m, link in enumerate(linked_landmarks):
+                landmark_name = link[0]
+                x, y, z = link[1], link[2], link[3]
+                existing_landmark_id = landmarks.get(landmark_name.lower())
+                if existing_landmark_id:
+                    # Test only on first look at landmark
+                    if existing_landmark_id not in seen_landmarks:
+                        if not reuse_existing_landmarks:
+                            raise ValueError("Landmark \"{}\" exists already. " \
+                                        "Please remove it or enable re-use of " \
+                                        "existing landmarks.".format(landmark_name))
+                        can_edit_or_fail(request.user, existing_landmark_id, 'class_instance')
+                elif create_non_existing_landmarks:
+                    landmark = ClassInstance.objects.create(project_id=project_id,
+                            class_column_id=landmark_class, user=request.user,
+                            name=landmark_name)
+                    existing_landmark_id = landmark.id
+                    landmarks[landmark_name.lower()] = landmark.id
+                else:
+                    raise ValueError("Landmark \"{}\" does not exist. Please " \
+                            "create it or enable automatic creation.".format(
+                            landmark_name))
+                seen_landmarks.add(existing_landmark_id)
+
+                # Make sure the landmark is linked to the group
+                landmark_link = ClassInstanceClassInstance.objects.get_or_create(
+                            project_id=project_id, relation_id=part_of_relation,
+                            class_instance_a_id=existing_landmark_id,
+                            class_instance_b_id=existing_group_id,
+                            defaults={'user': request.user})
+
+                # With an existing group and landmark in place, the location can
+                # be linked (to both).
+                point = Point.objects.create(project_id=project_id, user=request.user,
+                        editor=request.user, location_x=x, location_y=y, location_z=z)
+                point_landmark = PointClassInstance.objects.create(point=point,
+                        user=request.user, class_instance_id=existing_landmark_id,
+                        project_id=project_id, relation_id=annotated_with_relation)
+                point_landmark_group = PointClassInstance.objects.create(point=point,
+                        user=request.user, class_instance_id=existing_group_id,
+                        project_id=project_id, relation_id=annotated_with_relation)
+
+                imported_landmarks.append({
+                    'id': existing_landmark_id,
+                    'name': landmark_name,
+                    'x': x,
+                    'y': y,
+                    'z': z
+                })
+
+        return Response(imported_groups)
+
+
 def get_landmark_group_members(project_id, landmarkgroup_ids):
     cursor = connection.cursor()
     landmarkgroups_template = ','.join(['(%s)' for _ in landmarkgroup_ids])
@@ -550,9 +740,9 @@ class LandmarkLocationList(APIView):
             required: false
         """
         location_id = request.data.get('location_id')
-        x = request.data.get('x')
-        y = request.data.get('y')
-        z = request.data.get('z')
+        x = float(request.data.get('x'))
+        y = float(request.data.get('y'))
+        z = float(request.data.get('z'))
         if location_id and (x or y or z):
             raise ValueError("Please provide either location ID or coordinates")
         landmark = ClassInstance.objects.get(project_id=project_id, pk=int(landmark_id))

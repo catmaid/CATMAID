@@ -565,6 +565,15 @@ table.neuron_annotations_query_fields {
   font-weight: bold;
 }
 
+.windowContent span.file-path {
+  display: block;
+}
+
+.windowContent span.file-content {
+  display: block;
+  color: #aaa;
+}
+
 .bordered-list-elem {
   border: 1px;
   border-radius: 4px;

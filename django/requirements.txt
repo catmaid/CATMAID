@@ -1,4 +1,4 @@
-asgi_ipc==1.4.1
+asgi_ipc==1.4.2
 celery==4.1.0
 channels==1.1.8
 cssmin==0.2.0

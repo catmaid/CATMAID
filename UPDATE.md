@@ -1,6 +1,10 @@
 Some CATMAID versions require manual changes to an existing setup. Below these
 and other administration related changes are listed in order.
 
+## Under development
+
+- PostgreSQL 9.6 and Postgis 2.4 are now required.
+
 ## 2017.04.20
 
 - The location of the `manage.py` script changed: it moved a level up into

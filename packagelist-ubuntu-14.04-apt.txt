@@ -1,5 +1,5 @@
-postgresql-9.5
-postgresql-9.5-postgis-2.3
+postgresql-9.6
+postgresql-9.6-postgis-2.4
 imagemagick
 gcc
 gfortran

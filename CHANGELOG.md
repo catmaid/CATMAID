@@ -2,6 +2,8 @@
 
 ### Notes
 
+- PostgreSQL 9.6 and Postgis 2.4 are now required.
+
 - A virtualenv update is required.
 
 - New settings field: CROPPING_VERIFY_CERTIFICATES. This controls whether SSL

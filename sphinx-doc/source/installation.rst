@@ -20,7 +20,7 @@ Introduction
 
 The most fundamental dependencies of CATMAID are:
 
-1. PostgreSQL >= 9.5 and PostGIS >= 2.2
+1. PostgreSQL >= 9.6 and PostGIS >= 2.4
 2. Python 2.7 or 3.5, PyPy2
 3. Imagemagick (for generating image tiles)
 
@@ -39,7 +39,7 @@ done so already)::
 
 And then you can install these dependencies with::
 
-    sudo apt-get install python postgresql-9.5 imagemagick
+    sudo apt-get install python postgresql-9.6 imagemagick
 
 CATMAID is based on the `Django web framework
 <https://www.djangoproject.com/>`_.  If you just wish to work on
@@ -173,7 +173,7 @@ database called ``catmaid`` and a database user called
 ``catmaid_user``.  Firstly, we need to reconfigure PostgreSQL to
 allow password-based authentication for that user to that
 database.  To do that, edit the file
-``/etc/postgresql/9.5/main/pg_hba.conf`` and add this line as the
+``/etc/postgresql/9.6/main/pg_hba.conf`` and add this line as the
 *first* rule in that file::
 
     local catmaid catmaid_user md5
@@ -199,7 +199,7 @@ relations, e.g.::
 
     psql -U catmaid_user catmaid
     Password:
-    psql (9.5.3)
+    psql (9.6.5)
     Type "help" for help.
 
     catmaid=> \d

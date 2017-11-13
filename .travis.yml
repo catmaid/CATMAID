@@ -12,11 +12,11 @@ addons:
   chrome: stable
   apt:
     sources:
-    - precise-pgdg-9.5
+    - precise-pgdg-9.6
     packages:
-    - postgresql-9.5
-    - postgresql-contrib-9.5
-  postgresql: 9.5
+    - postgresql-9.6
+    - postgresql-contrib-9.6
+  postgresql: 9.6
   sauce_connect:
     username: catmaid
   jwt:
@@ -36,7 +36,7 @@ install:
   - npm bin
   - export PATH=$(npm bin):$PATH
 before_script:
-  - sudo cp /etc/postgresql/9.4/main/pg_hba.conf /etc/postgresql/9.5/main/pg_hba.conf
+  - sudo cp /etc/postgresql/9.5/main/pg_hba.conf /etc/postgresql/9.6/main/pg_hba.conf
   - sudo /etc/init.d/postgresql restart
   - psql -c 'CREATE DATABASE catmaid;' -U postgres
   - psql -c 'CREATE EXTENSION postgis;' -U postgres catmaid

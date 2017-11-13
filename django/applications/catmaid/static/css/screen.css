@@ -1269,7 +1269,7 @@ img.missing-image:before {
 }
 
 .table-widget p {
-  margin: 1em 0em 1em 0em;
+  margin: 1em 0 1em 0;
 }
 
 .synapse-fractions svg {

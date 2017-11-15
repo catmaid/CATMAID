@@ -28,6 +28,7 @@
   };
 
   SkeletonSourceManager.prototype = {};
+  CATMAID.asEventSource(SkeletonSourceManager.prototype);
 
   /**
    * Add a new source to this manager. It is references by its name
@@ -37,6 +38,7 @@
     this.sources[source.getName()] = source;
     this.orderedSources.push(source.getName());
     this.updateGUI();
+    this.trigger(SkeletonSourceManager.EVENT_SOURCE_ADDED, this);
   };
 
   SkeletonSourceManager.prototype.destroy = function() {
@@ -59,6 +61,7 @@
       this.orderedSources.splice(orderIndex, 1);
     }
     this.updateGUI();
+    this.trigger(SkeletonSourceManager.EVENT_SOURCE_REMOVED, this);
   };
 
   /**
@@ -610,6 +613,10 @@
       return this.sources[sourceName];
     }, this);
   };
+
+  // Events
+  SkeletonSourceManager.EVENT_SOURCE_ADDED = "skeleton_source_added";
+  SkeletonSourceManager.EVENT_SOURCE_REMOVED = "skeleton_source_removed";
 
   // Make source manager available in CATMAID namespace
   CATMAID.SkeletonSourceManager = SkeletonSourceManager;

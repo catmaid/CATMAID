@@ -33,6 +33,11 @@ Connector table:
 
 - Attachment connectors are now supported.
 
+3D viewer:
+
+- Landmark groups can be displayed. Similarly to volumes individual groups can
+  be selected and adjusted through the "View settings" tab.
+
 Miscellaneous:
 
 - Users can now choose alternative markers for connector nodes, which do not

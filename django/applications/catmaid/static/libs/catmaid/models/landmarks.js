@@ -21,6 +21,15 @@
     },
 
     /**
+     * Get details on a landmark.
+     */
+    get: function(projectId, landmarkId, with_locations) {
+      return CATMAID.fetch(projectId + '/landmarks/' + landmarkId + '/', 'GET', {
+        with_locations: !!with_locations
+      });
+    },
+
+    /**
      * Create a new landmark with the specified name.
      */
     add: function(projectId, name) {
@@ -51,7 +60,18 @@
      */
     listGroups: function(projectId, with_members, with_locations) {
       return CATMAID.fetch(project.id +  "/landmarks/groups/", "GET", {
+          with_members: with_members,
           with_locations: with_locations
+        });
+    },
+
+    /**
+     * Get details on a landmark group.
+     */
+    getGroup: function(projectId, groupId, with_members, with_locations) {
+      return CATMAID.fetch(projectId + '/landmarks/groups/' + groupId + '/', 'GET', {
+          with_members: !!with_members,
+          with_locations: !!with_locations
         });
     },
 

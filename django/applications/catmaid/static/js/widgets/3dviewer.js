@@ -41,6 +41,8 @@
     this.history = undefined;
     // Map loaded volume IDs to an array of Three.js meshes
     this.loadedVolumes = {};
+    // Map loaded landmark group IDs to an array of Three.js meshes
+    this.loadedLandmarkGroups = {};
     // Current set of filtered connectors (if any)
     this.filteredConnectors = null;
 
@@ -832,6 +834,9 @@
     this.meshes_color = "#ffffff";
     this.meshes_opacity = 0.2;
     this.meshes_faces = false;
+    this.landmarkgroup_color = "#ffa500";
+    this.landmarkgroup_opacity = 0.2;
+    this.landmarkgroup_faces = true;
     this.show_missing_sections = false;
     this.missing_section_height = 20;
     this.show_active_node = true;
@@ -908,6 +913,21 @@
       depthWrite: opacity === 1});
   };
 
+  WebGLApplication.prototype.Options.prototype.createLandmarkGroupMaterial = function(color, opacity) {
+    color = color || new THREE.Color(this.landmarkgroup_color);
+    if (typeof opacity === 'undefined') opacity = this.landmarkgroup_opacity;
+    return new THREE.MeshLambertMaterial({color: color, opacity: opacity,
+      transparent: opacity !== 1, wireframe: !this.landmarkgroup_faces, side: THREE.DoubleSide,
+      depthWrite: opacity === 1});
+  };
+
+  WebGLApplication.prototype.Options.prototype.createLandmarkMaterial = function(color, opacity) {
+    var material = new THREE.SpriteMaterial({
+		    map: new THREE.CanvasTexture(generateSprite(color, opacity)),
+				blending: THREE.AdditiveBlending
+	    });
+    return material;
+  };
 
   /** Persistent options, get replaced every time the 'ok' button is pushed in the dialog. */
   WebGLApplication.prototype.OPTIONS = new WebGLApplication.prototype.Options();
@@ -1862,6 +1882,123 @@
     var existingMeshes = this.loadedVolumes[volumeId];
     if (!existingMeshes) {
       CATMAID.warn("Volume not loaded");
+      return;
+    }
+    for (var i=0; i<existingMeshes.length; ++i) {
+      var material = existingMeshes[i].material;
+      material.wireframe = !faces;
+      material.needsUpdate = true;
+    }
+    this.space.render();
+  };
+
+  /**
+   * Show or hide a stored landmark group with a given Id.
+   */
+  WebGLApplication.prototype.showLandmarkGroup = function(landmarkGroupId, visible) {
+    var existingLandmarkGroup = this.loadedLandmarkGroups[landmarkGroupId];
+    if (visible) {
+      // Bail out if the landmarkGroup in question is already visible
+      if (existingLandmarkGroup) {
+        CATMAID.warn("Landmark group \"" + landmarkGroupId + "\" is already visible.");
+        return;
+      }
+
+      CATMAID.Landmarks.getGroup(project.id, landmarkGroupId, true, true)
+        .then((function(landmarkGroup) {
+          // Find bounding box around locations
+          let min = { x: Infinity, y: Infinity, z: Infinity };
+          let max = { x: -Infinity, y: -Infinity, z: -Infinity };
+          let locations = landmarkGroup.locations;
+          for (var i=0, imax=locations.length; i<imax; ++i) {
+            let loc = locations[i];
+            if (loc.x < min.x) min.x = loc.x;
+            if (loc.y < min.y) min.y = loc.y;
+            if (loc.z < min.z) min.z = loc.z;
+            if (loc.x > max.x) max.x = loc.x;
+            if (loc.y > max.y) max.y = loc.y;
+            if (loc.z > max.z) max.z = loc.z;
+          }
+
+          let meshes = [];
+
+          // Create box mesh
+          let groupMaterial = this.options.createLandmarkGroupMaterial();
+          let groupGeometry = new THREE.BoxBufferGeometry(
+              max.x - min.x,
+              max.y - min.y,
+              max.z - min.z);
+          groupGeometry.translate(
+              min.x + (max.x - min.x) * 0.5,
+              min.y + (max.y - min.y) * 0.5,
+              min.z + (max.z - min.z) * 0.5);
+          meshes.push(new THREE.Mesh(groupGeometry, material));
+
+          for (let j=0, jmax=meshes.length; j<jmax; ++j) {
+            this.space.scene.add(meshes[j]);
+          }
+
+          // Store mesh reference
+          this.loadedLandmarkGroups[landmarkGroupId] = meshes;
+          this.space.render();
+        }).bind(this))
+        .catch(CATMAID.handleError);
+    } else if (existingLandmarkGroup) {
+      // Remove landmarkGroup
+      existingLandmarkGroup.forEach(function(v) {
+        this.space.scene.remove(v);
+      }, this);
+      delete this.loadedLandmarkGroups[landmarkGroupId];
+      this.space.render();
+    }
+  };
+
+  /**
+   * Return IDs of the currently loaded landmark groups.
+   */
+  WebGLApplication.prototype.getLoadedLandmarkGroupIds = function() {
+    return Object.keys(this.loadedLandmarkGroups);
+  };
+
+  /**
+   * Set color and alpha of a loaded landmark group. Color and alpha will only
+   * be adjusted if the respective value is not null. Otherwise it is ignored.
+   *
+   * @param {Number} volumeId The ID of the landmark group to adjust.
+   * @param {String} color    The new color as hex string of the group or null.
+   * @param {Number} alpha    The new alpha of the landmark group or null.
+   */
+  WebGLApplication.prototype.setLandmarkGroupColor = function(landmarkGroupId, color, alpha) {
+    var existingMeshes = this.loadedLandmarkGroups[landmarkGroupId];
+    if (!existingMeshes) {
+      CATMAID.warn("Landmark group not loaded");
+      return;
+    }
+    for (var i=0; i<existingMeshes.length; ++i) {
+      var material = existingMeshes[i].material;
+      if (color !== null) {
+        material.color.set(color);
+        material.needsUpdate = true;
+      }
+      if (alpha !== null) {
+        material.opacity = alpha;
+        material.transparent = alpha !== 1;
+        material.depthWrite = alpha === 1;
+        material.needsUpdate = true;
+      }
+    }
+    this.space.render();
+  };
+
+  /**
+   * Set landmark group render style properties.
+   *
+   * @param {Boolean} faces    Whether mesh faces should be rendered.
+   */
+  WebGLApplication.prototype.setLandmarkGroupStyle = function(landmarkGroupsId, faces) {
+    var existingMeshes = this.loadedLandmarkGroups[landmarkGroupsId];
+    if (!existingMeshes) {
+      CATMAID.warn("Landmark group not loaded");
       return;
     }
     for (var i=0; i<existingMeshes.length; ++i) {

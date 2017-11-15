@@ -417,13 +417,43 @@ class LandmarkGroupDetail(APIView):
           required: true
           type: integer
           paramType: path
+        - name: with_members
+          description: Whether to return group members
+          type: boolean
+          paramType: form
+          defaultValue: false
+          required: false
+        - name: with_locations
+          description: Whether to return linked locations
+          required: false
+          defaultValue: false
+          paramType: form
         """
+        landmarkgroup_id = int(landmarkgroup_id)
+        with_members = request.query_params.get('with_members', 'false') == 'true'
+        with_locations = request.query_params.get('with_locations', 'false') == 'true'
         landmarkgroup_class = Class.objects.get(project_id=project_id, class_name='landmarkgroup')
         landmarkgroup = get_object_or_404(ClassInstance, pk=landmarkgroup_id,
                 project_id=project_id, class_column=landmarkgroup_class)
 
         serializer = BasicClassInstanceSerializer(landmarkgroup)
-        return Response(serializer.data)
+        data = serializer.data
+
+        if data:
+            if with_members:
+                # Get member information
+                member_index = get_landmark_group_members(project_id, [landmarkgroup_id])
+                # Append member information
+                data['members'] = member_index[landmarkgroup_id]
+
+            if with_locations:
+                # Get linked locations, which represent instances of
+                # landmark in this landmark group.
+                location_index = get_landmark_group_locations(project_id, [landmarkgroup_id])
+                # Append location information
+                data['locations'] = location_index[landmarkgroup_id]
+
+        return Response(data)
 
     @method_decorator(requires_user_role(UserRole.Annotate))
     def post(self, request, project_id, landmarkgroup_id):

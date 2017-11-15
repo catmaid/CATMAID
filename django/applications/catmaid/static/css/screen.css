@@ -550,6 +550,10 @@ table.neuron_annotations_query_fields {
   top: 0.5em;
 }
 
+.buttonpanel select {
+  margin-left: 0.5em;
+}
+
 .windowContent table {
   width: 100%;
 }

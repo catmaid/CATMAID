@@ -43,7 +43,14 @@
 
     // The current edit mode
     this.mode = 'landmarks';
-    this.modes = ['landmarks', 'import'];
+    this.modes = ['landmarks', 'display', 'import'];
+
+    // Some parts of the widget need to update when skeleton sources are added
+    // or removed.
+    CATMAID.skeletonListSources.on(CATMAID.SkeletonSourceManager.EVENT_SOURCE_ADDED,
+        this.handleUpdatedSkeletonSources, this);
+    CATMAID.skeletonListSources.on(CATMAID.SkeletonSourceManager.EVENT_SOURCE_REMOVED,
+        this.handleUpdatedSkeletonSources, this);
   };
 
   LandmarkWidget.prototype = {};
@@ -55,6 +62,10 @@
 
   LandmarkWidget.prototype.destroy = function() {
     this.unregisterInstance();
+    CATMAID.skeletonListSources.off(CATMAID.SkeletonSourceManager.EVENT_SOURCE_ADDED,
+        this.handleUpdatedSkeletonSources, this);
+    CATMAID.skeletonListSources.off(CATMAID.SkeletonSourceManager.EVENT_SOURCE_REMOVED,
+        this.handleUpdatedSkeletonSources, this);
   };
 
   LandmarkWidget.prototype.getWidgetConfiguration = function() {
@@ -72,6 +83,7 @@
           CATMAID.DOM.appendToTab(tab, mode.createControls(this));
           tab.dataset.index = i;
         }, this);
+        this.controls = controls;
         this.tabControls = $(controls).tabs({
           active: this.modes.indexOf(this.mode),
           activate: function(event, ui) {
@@ -111,6 +123,50 @@
     if (this.landmarkDataTable) {
       this.landmarkDataTable.rows().invalidate();
     }
+  };
+
+  /**
+   * Updaet display targets.
+   */
+  LandmarkWidget.prototype.handleUpdatedSkeletonSources = function() {
+    if (!this.controls) {
+      return;
+    }
+    let targetSelectContainer = this.controls.querySelector('span[data-role=display-target]');
+    if (targetSelectContainer) {
+      this.updateTargetSelect(targetSelectContainer);
+    }
+  };
+
+  /**
+   * Create a new checkbox target select in the passed in container.
+   */
+  LandmarkWidget.prototype.updateTargetSelect = function(targetSelectContainer) {
+    // Clear current content
+    while (targetSelectContainer.firstChild) {
+      targetSelectContainer.removeChild(targetSelectContainer.firstChild);
+    }
+    // Get a list of current skeleton sources and create a checkbox select for
+    // the available 3D Viewers.
+    var availableSources = Object.keys(CATMAID.skeletonListSources.sources)
+        .filter(function(name) {
+          let source = CATMAID.skeletonListSources.sources[name];
+          return source && source instanceof CATMAID.WebGLApplication;
+        })
+        .sort()
+        .map(function(name) {
+          return {
+            title: name,
+            value: name
+          };
+        });
+    var select = CATMAID.DOM.createCheckboxSelect("Target 3D viewers",
+        availableSources, undefined, true);
+    if (availableSources.length === 0) {
+      var element = select.querySelector('select');
+      element.setAttribute('disabled', '');
+    }
+    targetSelectContainer.appendChild(select);
   };
 
   LandmarkWidget.prototype.update = function() {
@@ -331,6 +387,10 @@
       fileButton.value = '';
     }
     this.update();
+  };
+
+  LandmarkWidget.prototype.resetDisplay = function() {
+
   };
 
   LandmarkWidget.MODES = {
@@ -1166,6 +1226,33 @@
               'landmark name, x, y, z. The coordinate is expected to be in ' +
               'project/world space.'));
         }
+      }
+    },
+    display: {
+      title: 'Display',
+      createControls: function(target) {
+        let target3dViewerSelect = document.createElement('span');
+        target3dViewerSelect.setAttribute('data-role', 'display-target');
+        target.updateTargetSelect(target3dViewerSelect);
+        return [
+          {
+            type: 'button',
+            label: 'Clear display',
+            onclick: function() {
+              target.resetDisplay();
+            }
+          },
+          {
+            type: 'child',
+            element: target3dViewerSelect
+          }
+        ];
+      },
+      createContent: function(content, widget) {
+        content.appendChild(document.createElement('p'))
+          .appendChild(document.createTextNode('Display landmarks and ' +
+            'landmark groups at their linked locations in CATMAID\'s 3D ' +
+            'Viewer.'));
       }
     }
   };

@@ -35,8 +35,10 @@ Connector table:
 
 3D viewer:
 
-- Landmark groups can be displayed. Similarly to volumes individual groups can
-  be selected and adjusted through the "View settings" tab.
+- Landmarks and landmark groups can be displayed. Similarly to volumes
+  individual groups can be selected and adjusted through the "View settings"
+  tab. Apart from the color and mesh-faces option for groups, it is possible to
+  scale landmarks.
 
 Miscellaneous:
 

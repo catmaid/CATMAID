@@ -738,6 +738,19 @@ var WindowMaker = new function()
           ['Faces ', o.meshes_faces, function() { WA.options.meshes_faces = this.checked;}, false],
           [WA.createMeshColorButton()],
           [landmarkGroupSelection],
+          {
+            type: 'numeric',
+            label: 'Landmark scale',
+            value: o.landmark_scale,
+            length: 3,
+            onchange: function() {
+              let value  = parseInt(this.value, 10);
+              if (value && !Number.isNaN(value)) {
+                WA.options.landmark_scale = value;
+                WA.adjustContent();
+              }
+            }
+          },
           ['Active node', o.show_active_node, function() { WA.options.show_active_node = this.checked; WA.adjustContent(); }, false],
           ['Active node on top', o.active_node_on_top, function() { WA.options.active_node_on_top = this.checked; WA.adjustContent(); }, false],
           ['Black background', o.show_background, adjustFn('show_background'), false],

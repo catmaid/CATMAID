@@ -837,6 +837,7 @@
     this.landmarkgroup_color = "#ffa500";
     this.landmarkgroup_opacity = 0.2;
     this.landmarkgroup_faces = true;
+    this.landmark_scale = 2000;
     this.show_missing_sections = false;
     this.missing_section_height = 20;
     this.show_active_node = true;
@@ -928,6 +929,22 @@
 	    });
     return material;
   };
+
+  function generateSprite(colorr, opacity) {
+    var canvas = document.createElement( 'canvas' );
+    canvas.width = 16;
+    canvas.height = 16;
+    var context = canvas.getContext( '2d' );
+    var gradient = context.createRadialGradient( canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2 );
+    gradient.addColorStop( 0, 'rgba(255,255,255,1)' );
+    gradient.addColorStop( 0.2, 'rgba(0,255,255,1)' );
+    gradient.addColorStop( 0.4, 'rgba(0,0,64,1)' );
+    gradient.addColorStop( 1, 'rgba(0,0,0,1)' );
+    context.fillStyle = gradient;
+    context.fillRect( 0, 0, canvas.width, canvas.height );
+    return canvas;
+  }
+
 
   /** Persistent options, get replaced every time the 'ok' button is pushed in the dialog. */
   WebGLApplication.prototype.OPTIONS = new WebGLApplication.prototype.Options();
@@ -1932,7 +1949,17 @@
               min.x + (max.x - min.x) * 0.5,
               min.y + (max.y - min.y) * 0.5,
               min.z + (max.z - min.z) * 0.5);
-          meshes.push(new THREE.Mesh(groupGeometry, material));
+          meshes.push(new THREE.Mesh(groupGeometry, groupMaterial));
+
+          // Create landmark particles
+          let landmarkMaterial = this.options.createLandmarkMaterial();
+          for (var j=0, jmax=locations.length; j<jmax; ++j) {
+            let loc = locations[j];
+            let particle = new THREE.Sprite(landmarkMaterial);
+            particle.position.set(loc.x, loc.y, loc.z);
+            particle.scale.x = particle.scale.y = this.options.landmark_scale;
+            meshes.push(particle);
+          }
 
           for (let j=0, jmax=meshes.length; j<jmax; ++j) {
             this.space.scene.add(meshes[j]);

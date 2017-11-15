@@ -279,9 +279,7 @@
 
   LandmarkWidget.prototype.updateLandmarks = function() {
     var self = this;
-    return CATMAID.fetch(project.id +  "/landmarks/", "GET", {
-        with_locations: true
-      })
+    return CATMAID.Landmarks.list(project.id, true)
       .then(function(result) {
         self.landmarks = result;
         self.landmarkIndex = result.reduce(addToIdIndex, new Map());
@@ -291,10 +289,7 @@
 
   LandmarkWidget.prototype.updateLandmarkGroups = function() {
     var self = this;
-    return CATMAID.fetch(project.id +  "/landmarks/groups/", "GET", {
-        with_members: true,
-        with_locations: true
-      })
+    return CATMAID.Landmarks.listGroups(project.id, true, true)
       .then(function(result) {
         self.landmarkGroups = result;
         self.landmarkGroupMemberships = result.reduce(addLandmarkGroupMembership, new Map());

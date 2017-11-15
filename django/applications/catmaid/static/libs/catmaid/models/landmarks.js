@@ -12,6 +12,15 @@
   var Landmarks = {
 
     /**
+     * List all landmarks in a project, optionally with location information.
+     */
+    list: function(projectId, with_locations) {
+      return CATMAID.fetch(project.id +  "/landmarks/", "GET", {
+          with_locations: with_locations
+        });
+    },
+
+    /**
      * Create a new landmark with the specified name.
      */
     add: function(projectId, name) {
@@ -34,6 +43,16 @@
       return CATMAID.fetch(projectId + '/landmarks/', 'DELETE', {
         landmark_ids: landmarkIds
       });
+    },
+
+    /**
+     * List all landmark groups in a project, optionally with location
+     * information. Optionally, with member and location information.
+     */
+    listGroups: function(projectId, with_members, with_locations) {
+      return CATMAID.fetch(project.id +  "/landmarks/groups/", "GET", {
+          with_locations: with_locations
+        });
     },
 
     /**

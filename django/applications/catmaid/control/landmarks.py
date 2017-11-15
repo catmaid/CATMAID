@@ -118,6 +118,67 @@ class LandmarkList(APIView):
         serializer = BasicClassInstanceSerializer(landmark)
         return Response(serializer.data)
 
+    @method_decorator(requires_user_role(UserRole.Annotate))
+    def delete(self, request, project_id):
+        """Delete a list of landmarks including the linked locations, if they
+        are not used by other landmarks.
+        ---
+        parameters:
+        - name: project_id
+          description: The project the landmark is part of.
+          type: integer
+          paramType: path
+          required: true
+        - name: landmark_ids
+          description: The landmarks to remove.
+          required: true
+          type: integer
+          paramType: form
+        - name: keep_points
+          description: Don't delete points.
+          required: false
+          type: boolean
+          defaultValue: false
+          paramType: form
+        """
+        keep_points = request.query_params.get('keep_points', 'false') == 'true'
+        landmark_ids = get_request_list(request.query_params, 'landmark_ids', map_fn=int)
+        print landmark_ids
+        print request.query_params
+        for l in landmark_ids:
+            can_edit_or_fail(request.user, l, 'class_instance')
+
+        annotated_with_relation = Relation.objects.get(project_id=project_id,
+                relation_name='annotated_with')
+
+        point_ids = set()
+        if not keep_points:
+            point_landmark_links = PointClassInstance.objects.filter(project_id=project_id,
+                    class_instance_id__in=landmark_ids, relation=annotated_with_relation)
+
+            # These are the landmark's lined points
+            point_ids = set(pll.point_id for pll in point_landmark_links)
+
+        landmark_class = Class.objects.get(project_id=project_id, class_name="landmark")
+        landmarks = ClassInstance.objects.filter(pk__in=landmark_ids,
+                project_id=project_id, class_column=landmark_class)
+
+        if len(landmark_ids) != len(landmarks):
+            raise ValueError("Could not find all landmark IDs")
+
+        landmarks.delete()
+
+        if not keep_points:
+            remaining_pll = set(PointClassInstance.objects.filter(project_id=project_id,
+                    point_id__in=point_ids,
+                    relation=annotated_with_relation).values_list('point_id', flat=True))
+            points_to_delete = point_ids - remaining_pll
+            Point.objects.filter(project_id=project_id,
+                    pk__in=points_to_delete).delete()
+
+        serializer = BasicClassInstanceSerializer(landmarks, many=True)
+        return Response(serializer.data)
+
 class LandmarkDetail(APIView):
 
     @method_decorator(requires_user_role(UserRole.Browse))

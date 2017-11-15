@@ -28,6 +28,15 @@
     },
 
     /**
+     * Delete all passed in landmarks.
+     */
+    deleteAll: function(projectId, landmarkIds) {
+      return CATMAID.fetch(projectId + '/landmarks/', 'DELETE', {
+        landmark_ids: landmarkIds
+      });
+    },
+
+    /**
      * Create a new group with the specified name.
      */
     addGroup: function(projectId, name) {
@@ -45,7 +54,9 @@
     },
 
     /**
-     * Update the landmarks linked to a particular landmark group.
+     * Update the landmarks linked to a particular landmark group. If <append>
+     * is true, the passed in member IDs will be appended if not already
+     * present.
      */
     updateGroupMembers: function(projectId, groupId, newMemberIds) {
       return CATMAID.fetch(projectId + '/landmarks/groups/' + groupId + '/', 'POST', {

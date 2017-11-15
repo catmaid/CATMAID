@@ -39,6 +39,7 @@
     // The set of currently selected landmark groups, acts as filter for
     // landmark table.
     this.selectedLandmarkGroups = new Set();
+    this.selectedLandmarks = new Set();
 
     // The current edit mode
     this.mode = 'landmarks';
@@ -191,7 +192,7 @@
           return wrapInGroupEditLink(landmark.name) + " (-)";
         }
       } else {
-        return wrapInGroupEditLink(landmark.id);
+        return wrapInGroupEditLink(landmarkId);
       }
     } else {
       return wrapInGroupEditLink(landmarkId);
@@ -652,6 +653,18 @@
           order: [],
           columns: [
             {
+              title: '<input type="checkbox" data-action="select-all-skeletons" />',
+              orderable: false,
+              render: function(data, type, row, meta) {
+                let selected = widget.selectedLandmarks.has(row.id);
+                if (type === 'display') {
+                  return '<input type="checkbox" data-action="select-landmark" value="' +
+                      row.id + '" ' + (selected ? 'checked' : '') + ' />';
+                }
+                return selected;
+              }
+            },
+            {
               data: "id",
               title: "Id",
               orderable: false,
@@ -664,7 +677,7 @@
               title: "Name",
               orderable: true,
               render: function(data, type, row, meta) {
-                if ("display") {
+                if (type === 'display') {
                   return '<a href="#" data-action="select-landmark" data-id="' +
                       row.id + '" >' + row.name + '</a>';
                 } else {
@@ -773,12 +786,32 @@
             .then(function() {
               CATMAID.msg("Success", "Landmark " + id + " successfully deleted");
               landmarkDataTable.ajax.reload();
+              widget.selectedLandmarks.delete(id);
             })
             .catch(CATMAID.handleError);
         }).on('contextmenu', '.no-context-menu', function(e) {
           e.stopPropagation();
           e.preventDefault();
           return false;
+        }).on('change', 'input[data-action=select-all-skeletons]', function() {
+          if (widget.landmarks) {
+            for (let i=0; i<widget.landmarks.length; ++i) {
+              let landmark = widget.landmarks[i];
+              if (this.checked) {
+                widget.selectedLandmarks.add(landmark.id);
+              } else {
+                widget.selectedLandmarks.delete(landmark.id);
+              }
+            }
+            widget.refresh();
+          }
+        }).on('change', 'input[data-action=select-landmark]', function() {
+          let skeletonId = parseInt(this.value, 10);
+          if (this.checked) {
+            widget.selectedLandmarks.add(skeletonId);
+          } else {
+            widget.selectedLandmarks.delete(skeletonId);
+          }
         }).on('mousedown', 'a[data-action=select-location]', function(e) {
           var index = parseInt(this.dataset.index, 10);
           var table = $(this).closest('table');
@@ -945,6 +978,31 @@
           contextMenu.show(true);
           return false;
         });
+
+        // Add custom buttons into table header
+        var deleteSelected = document.createElement('button');
+        deleteSelected.appendChild(document.createTextNode('Delete selected'));
+        deleteSelected.onclick = function() {
+          var selected = Array.from(widget.selectedLandmarks.keys());
+          if (selected.length === 0) {
+            CATMAID.warn('No landmarks selected');
+            return;
+          }
+          if (!confirm("Are you sure you want to delete " + selected.length + " landmarks?")) {
+            return;
+          }
+          CATMAID.Landmarks.deleteAll(project.id, selected)
+            .then(function(result) {
+              CATMAID.msg('Success', 'All ' + result.length + ' landmarks deleted');
+              for (let i=0; i<selected.length; ++i) {
+                widget.selectedLandmarks.delete(selected[i]);
+              }
+              widget.update();
+            });
+        };
+
+        $('div.dataTables_length', landmarkDataTable.table().container())
+            .append(deleteSelected);
       }
     },
     import: {

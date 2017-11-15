@@ -1236,6 +1236,11 @@ div.selection-table.windowContent {
   min-height: 0;
 }
 
+
+.dataTables_length button {
+  margin-left: 1em;
+}
+
 .cp-app {
   z-index: 15000;
 }

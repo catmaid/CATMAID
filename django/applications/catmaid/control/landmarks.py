@@ -347,9 +347,9 @@ class LandmarkGroupList(APIView):
         data = serializer.data
 
         if data:
+            landmarkgroup_ids = [d['id'] for d in data]
             if with_members:
                 # Get member information
-                landmarkgroup_ids = [d['id'] for d in data]
                 member_index = get_landmark_group_members(project_id,
                         landmarkgroup_ids)
                 # Append member information

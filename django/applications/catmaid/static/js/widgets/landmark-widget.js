@@ -41,6 +41,9 @@
     this.selectedLandmarkGroups = new Set();
     this.selectedLandmarks = new Set();
 
+    // All current display transformations
+    this.displayTransformations = [];
+
     // The current edit mode
     this.mode = 'landmarks';
     this.modes = ['landmarks', 'display', 'import'];
@@ -392,6 +395,23 @@
   LandmarkWidget.prototype.resetDisplay = function() {
 
   };
+
+  /**
+   * Add a new display transformation for a set of skeletons.
+   */
+  LandmarkWidget.prototype.addDisplayTransformation = function(skeletons,
+      fromGroup, toGroup) {
+    this.displayTransformations.push({
+      index: this.displayTransformations.length,
+      skeletons: skeletons,
+      fromGroup: fromGroup,
+      toGroup: toGroup
+    });
+  };
+
+  function getId(e) {
+    return e.id;
+  }
 
   LandmarkWidget.MODES = {
     landmarks: {
@@ -1252,7 +1272,137 @@
         content.appendChild(document.createElement('p'))
           .appendChild(document.createTextNode('Display landmarks and ' +
             'landmark groups at their linked locations in CATMAID\'s 3D ' +
-            'Viewer.'));
+            'Viewer. Select a target 3D Viewer and decide below which ' +
+            'source and target landmark groups to use for an input ' +
+            'Skeleton Source.'));
+
+        // Create new display transformations, which take one skeleton source
+        // as well as a source and target landmark group.
+        var newDisplayTransformationContainer = document.createElement('div');
+        newDisplayTransformationContainer.appendChild(document.createElement('h1'))
+            .appendChild(document.createTextNode('New display transformation'));
+        let newDTForm = newDisplayTransformationContainer.appendChild(
+            document.createElement('p'));
+        let sourceSelect = CATMAID.skeletonListSources.createUnboundSelect();
+        let sourceSelectSetting = CATMAID.DOM.createLabeledControl("Skeleton source",
+            sourceSelect, "Select which skeletons to virtually transform");
+        var skeletonSource = sourceSelect.value;
+        sourceSelect.onchange = function(e) {
+          skeletonSource = e.target.value;
+        };
+        $(newDTForm).append(sourceSelectSetting);
+
+        let existingDisplayTransformationsContainer = document.createElement('div');
+        existingDisplayTransformationsContainer.appendChild(document.createElement('h1'))
+            .appendChild(document.createTextNode('Existing display transformations'));
+        let existingDTTable = existingDisplayTransformationsContainer.appendChild(
+            document.createElement('table'));
+        let existingDTDataTable = $(existingDTTable).DataTable({
+          data: widget.displayTransformations,
+          order: [],
+          columns: [
+            {
+              data: 'skeletons',
+              title: 'Skeletons',
+              orderable: false,
+              render: function(data, type, row, meta) {
+                if (type === 'display') {
+                  return Object.keys(data).join(', ');
+                }
+                return data;
+              }
+            },
+
+            {
+              data: 'fromGroup',
+              title: 'Source landmark group',
+              orderable: false
+            },
+            {
+              data: 'toGroup',
+              title: 'Target landmark group',
+              orderable: false
+            },
+            {
+              title: 'Action',
+              orderable: false,
+              render: function(data, type, row, meta) {
+                return '<a href="#" data-action="delete-transformation">Delete</a>';
+              }
+            }
+          ]
+        }).on('click', 'a[data-action=delete-transformation]', function() {
+          let tr = $(this).closest('tr');
+          let data = existingDTDataTable.row(tr).data();
+          widget.displayTransformations.splice(data.index);
+          widget.update();
+        });
+
+        // Add additonal settings that need updated groups
+        widget.updateLandmarkGroups()
+            .then(function(groups) {
+              let groupOptions = groups.map(function(g) {
+                return {
+                  title: g.name,
+                  value: g.id
+                };
+              });
+
+              var fromGroup, toGroup;
+
+              // Source select
+              let sourceSelect = CATMAID.DOM.createRadioSelect('Landmark groups', groupOptions);
+              let sourceGroup = CATMAID.DOM.createLabeledControl("Source group",
+                sourceSelect, "Select the source landmark group, the space from " +
+                "which input points are transformed.");
+              sourceSelect.onchange = function(e) {
+                fromGroup = e.target.value;
+              };
+              $(newDTForm).append(sourceGroup);
+
+              // Target select
+              let targetSelect = CATMAID.DOM.createRadioSelect('Landmark groups', groupOptions);
+              let targetGroup = CATMAID.DOM.createLabeledControl("Target group",
+                targetSelect, "Select the target landmark group, the space to " +
+                "which input points are transformed.");
+              targetSelect.onchange = function(e) {
+                toGroup = e.target.value;
+              };
+              $(newDTForm).append(targetGroup);
+
+              // Add button
+              let addButton = document.createElement('button');
+              addButton.appendChild(document.createTextNode('Add transformation'));
+              addButton.onclick = function() {
+                if (!skeletonSource) {
+                  CATMAID.error("Need a skeleton source");
+                  return;
+                }
+                let source = CATMAID.skeletonListSources.getSource(skeletonSource);
+                if (!source) {
+                  CATMAID.error("Can't find source: " + sourceSelect.value);
+                  return;
+                }
+                let skeletonModels = source.getSelectedSkeletonModels();
+
+                if (!fromGroup) {
+                  CATMAID.error("Need source landmark group");
+                  return;
+                }
+                if (!toGroup) {
+                  CATMAID.error("Need target landmark group");
+                  return;
+                }
+
+                widget.addDisplayTransformation(skeletonModels, fromGroup, toGroup);
+                CATMAID.msg("Success", "Transformation added");
+                widget.update();
+              };
+              newDTForm.appendChild(addButton);
+            });
+
+        content.appendChild(newDisplayTransformationContainer);
+        content.appendChild(existingDisplayTransformationsContainer);
       }
     }
   };

@@ -5706,7 +5706,7 @@
    * better performance.
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createLabelSpheres =
-      function(labels, scaling, shading) {
+      function(labels, scaling, shading, preventSceneUpdate) {
 
     var geometry = new CATMAID.MultiObjectInstancedBufferGeometry({
       templateGeometry: this.space.staticContent.labelspheregeometry,
@@ -5723,7 +5723,9 @@
     var material = geometry.createMaterial(shading);
 
     this.specialTagSphereCollection = new THREE.Mesh(geometry, material);
-    this.space.add(this.specialTagSphereCollection);
+    if (!preventSceneUpdate) {
+      this.space.add(this.specialTagSphereCollection);
+    }
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getLabelType = function(label, customRegEx) {
@@ -5744,7 +5746,7 @@
    * synapticTypes and synapticColors.
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createPartnerSpheres =
-      function(connectors, scaling, shading) {
+      function(connectors, scaling, shading, preventSceneUpdate) {
 
     var geometry = new CATMAID.MultiObjectInstancedBufferGeometry({
       templateGeometry: this.space.staticContent.radiusSphere,
@@ -5764,7 +5766,9 @@
     var material = geometry.createMaterial(shading);
 
     this.connectorSphereCollection = new THREE.Mesh(geometry, material);
-    this.space.add(this.connectorSphereCollection);
+    if (!preventSceneUpdate) {
+      this.space.add(this.connectorSphereCollection);
+    }
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createEdge = function(v1, v2, type) {
@@ -5775,7 +5779,8 @@
     vs.push(v1, v2);
   };
 
-  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeSphere = function(v, radius, material) {
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeSphere =
+      function(v, radius, material, preventSceneUpdate) {
     if (this.radiusVolumes.hasOwnProperty(v.node_id)) {
       // There already is a sphere or cylinder at the node
       return;
@@ -5787,10 +5792,13 @@
     mesh.position.set( v.x, v.y, v.z );
     mesh.node_id = v.node_id;
     this.radiusVolumes[v.node_id] = mesh;
-    this.space.add(mesh);
+    if (!preventSceneUpdate) {
+      this.space.add(mesh);
+    }
   };
 
-  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createCylinder = function(v1, v2, radius, material) {
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createCylinder =
+      function(v1, v2, radius, material, preventSceneUpdate) {
     if (this.radiusVolumes.hasOwnProperty(v1.node_id)) {
       // There already is a sphere or cylinder at the node
       return;
@@ -5811,7 +5819,9 @@
     mesh.node_id = v1.node_id;
 
     this.radiusVolumes[v1.node_id] = mesh;
-    this.space.add(mesh);
+    if (!preventSceneUpdate) {
+      this.space.add(mesh);
+    }
   };
 
   /**
@@ -5821,7 +5831,8 @@
    * associated when it became valid.
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.loadJson =
-      function(skeletonModel, json, options, withHistory, nodeWhitelist) {
+      function(skeletonModel, json, options, withHistory, nodeWhitelist,
+      preventSceneUpdate) {
 
     var nodes = json[0];
     var connectors = json[1];
@@ -5883,10 +5894,11 @@
       });
 
       // Update to most recent skeleton
-      this.resetToPointInTime(skeletonModel, options, null, true);
+      this.resetToPointInTime(skeletonModel, options, null, true,
+          preventSceneUpdate);
     } else {
       this.reinit_actor(skeletonModel, nodes, connectors, tags, null, options,
-          silent);
+          silent, preventSceneUpdate);
     }
   };
 
@@ -5895,7 +5907,7 @@
    * be available.
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.resetToPointInTime =
-      function(skeletonModel, options, timestamp, noCache) {
+      function(skeletonModel, options, timestamp, noCache, preventSceneUpdate) {
 
     if (!this.history) {
       throw new CATMAID.ValueError("Historic data for skeleton missing");
@@ -5939,7 +5951,8 @@
     // However, its data is only valid stating from its edition time, which
     // makes it possible that it references a parent node that was not
     // available at its creation time.
-    this.reinit_actor(skeletonModel, nodes, connectors, tags, this.history, options, true);
+    this.reinit_actor(skeletonModel, nodes, connectors, tags, this.history,
+        options, true, preventSceneUpdate);
 
     // Remember this rebuild date
     this.history.rebuildTime = timestamp;
@@ -5968,7 +5981,8 @@
    * associated when it became valid.
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor =
-      function(skeletonmodel, nodes, connectors, tags, history, options, silent) {
+      function(skeletonmodel, nodes, connectors, tags, history, options, silent,
+      preventSceneUpdate) {
     if (this.actor) {
       this.destroy();
     }
@@ -6040,7 +6054,7 @@
         if (node[6] > 0 && p[6] > 0) {
           // Create cylinder using the node's radius only (not the parent) so
           // that the geometry can be reused
-          this.createCylinder(v1, v2, node[6], material);
+          this.createCylinder(v1, v2, node[6], material, preventSceneUpdate);
           // Create skeleton line as well
           this.createEdge(v1, v2, 'neurite');
         } else {
@@ -6048,7 +6062,7 @@
           this.createEdge(v1, v2, 'neurite');
           // Create sphere
           if (node[6] > 0) {
-            this.createNodeSphere(v1, node[6], material);
+            this.createNodeSphere(v1, node[6], material, preventSceneUpdate);
           }
         }
       } else {
@@ -6067,7 +6081,7 @@
             this.space.remove(mesh);
             delete this.radiusVolumes[v1.node_id];
           }
-          this.createNodeSphere(v1, node[6], material);
+          this.createNodeSphere(v1, node[6], material, preventSceneUpdate);
         }
       }
 
@@ -6145,13 +6159,13 @@
     // Create buffer geometry for connectors
     if (partner_nodes.length > 0) {
       this.createPartnerSpheres(partner_nodes, options.skeleton_node_scaling,
-          options.neuron_material);
+          options.neuron_material, preventSceneUpdate);
     }
 
     // Create buffer geometry for labels
     if (labels.length > 0) {
       this.createLabelSpheres(labels, options.skeleton_node_scaling,
-          options.neuron_material);
+          options.neuron_material, preventSceneUpdate);
     }
 
     if (options.resample_skeletons) {

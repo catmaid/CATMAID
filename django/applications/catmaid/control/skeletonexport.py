@@ -219,7 +219,7 @@ def compact_skeleton_detail(request, project_id=None, skeleton_id=None):
     project_id = int(project_id)
     skeleton_id = int(skeleton_id)
     with_connectors = request.GET.get("with_connectors", "false") == "true"
-    with_tags = request.GET.get("with_tags", "false")
+    with_tags = request.GET.get("with_tags", "false") == "true"
     with_history = request.GET.get("with_history", "false") == "true"
     with_merge_history = request.GET.get("with_merge_history", "false") == "true"
     with_reviews = request.GET.get("with_reviews", "false") == "true"
@@ -366,7 +366,7 @@ def compact_skeleton_detail_many(request, project_id=None):
     # Sanitize
     skeleton_ids = get_request_list(request.POST, "skeleton_ids", map_fn=int)
     with_connectors = request.POST.get("with_connectors", "false") == "true"
-    with_tags = request.POST.get("with_tags", "false")
+    with_tags = request.POST.get("with_tags", "false") == "true"
     with_history = request.POST.get("with_history", "false") == "true"
     with_merge_history = request.POST.get("with_merge_history", "false") == "true"
     with_reviews = request.POST.get("with_reviews", "false") == "true"

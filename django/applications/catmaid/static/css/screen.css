@@ -531,6 +531,11 @@ table.neuron_annotations_query_fields {
   margin: 0;
 }
 
+.buttonpanel .section-header {
+  font-weight: bold;
+  padding: 0 0.3em 0 1em;
+}
+
 .buttonpanel div.hSliderView {
   display: inline-block;
   float: none;
@@ -543,6 +548,49 @@ table.neuron_annotations_query_fields {
   display: inline-flex;
   position: relative;
   top: 0.5em;
+}
+
+.buttonpanel select {
+  margin-left: 0.5em;
+  padding: 1.5px;
+}
+
+.windowContent table {
+  width: 100%;
+}
+
+.windowContent .container {
+  width: 100%;
+  display: inline-block;
+}
+
+.windowContent h1 {
+  margin: 1em 0.1em 1em 0.4em;
+  font-size: large;
+  font-weight: bold;
+}
+
+.windowContent span.file-path {
+  display: block;
+}
+
+.windowContent span.file-content {
+  display: block;
+  color: #aaa;
+}
+
+.bordered-list-elem {
+  border: 1px;
+  border-radius: 4px;
+  margin: 0 0.1em 0 0.1em;
+  padding: 0.02em 0.3em 0.02em 0.3em;
+  background-color: #eef;
+  text-decoration: none;
+}
+
+.bordered-list-elem:hover {
+  background-color: #ccc;
+  color: blue;
 }
 
 .sourcepanel {
@@ -1047,6 +1095,10 @@ a.neuron-selection-link:hover {
   float: left;
 }
 
+div#dialog-confirm ul {
+  padding: 0;
+}
+
 div#dialog-confirm select {
   width: 100%;
 }
@@ -1189,6 +1241,11 @@ div.selection-table.windowContent {
   min-height: 0;
 }
 
+
+.dataTables_length button {
+  margin-left: 1em;
+}
+
 .cp-app {
   z-index: 15000;
 }
@@ -1203,10 +1260,6 @@ div.selection-table.windowContent {
 
 .customselect-selectbox {
   position: relative;
-}
-
-.customselect-selectbox select {
-  width: 100%;
 }
 
 .customselect-overselect {

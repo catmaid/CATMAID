@@ -20,7 +20,7 @@ from catmaid.control import (authentication, user, log, message, client, common,
         cropping, data_view, ontology, classification, notifications, roi,
         clustering, volume, flytem, dvid, useranalytics, user_evaluation,
         search, graphexport, transaction, graph2, circles, analytics, review,
-        wiringdiagram, object, sampler, treenodetable, nat)
+        wiringdiagram, object, sampler, treenodetable, nat, point, landmarks)
 
 from catmaid.views import CatmaidView
 from catmaid.history import record_request_action as record_view
@@ -423,6 +423,29 @@ urlpatterns += [
     url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/remove$'.format(integer), record_view("rois.remove_link")(roi.remove_roi_link), name='remove_roi_link'),
     url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/image$'.format(integer), roi.get_roi_image, name='get_roi_image'),
     url(r'^(?P<project_id>{0})/roi/add$'.format(integer), record_view("rois.create")(roi.add_roi), name='add_roi'),
+]
+
+# General points
+UrlParser.explicit_root_paths |= set(['{project_id}/points'])
+urlpatterns += [
+    url(r'^(?P<project_id>{0})/points/$'.format(integer), point.PointList.as_view()),
+    url(r'^(?P<project_id>{0})/points/(?P<point_id>[0-9]+)/$'.format(integer), point.PointDetail.as_view()),
+]
+
+# Landmarks
+UrlParser.explicit_root_paths |= set(['{project_id}/landmarks'])
+urlpatterns += [
+    url(r'^(?P<project_id>{0})/landmarks/$'.format(integer), landmarks.LandmarkList.as_view()),
+    url(r'^(?P<project_id>{0})/landmarks/(?P<landmark_id>[0-9]+)/$'.format(integer), landmarks.LandmarkDetail.as_view()),
+    url(r'^(?P<project_id>{0})/landmarks/(?P<landmark_id>[0-9]+)/locations/$'.format(integer),
+            landmarks.LandmarkLocationList.as_view()),
+    url(r'^(?P<project_id>{0})/landmarks/(?P<landmark_id>[0-9]+)/locations/(?P<location_id>[0-9]+)/$'.format(integer),
+            landmarks.LandmarkLocationDetail.as_view()),
+    url(r'^(?P<project_id>{0})/landmarks/groups/$'.format(integer), landmarks.LandmarkGroupList.as_view()),
+    url(r'^(?P<project_id>{0})/landmarks/groups/import$'.format(integer), landmarks.LandmarkGroupImport.as_view()),
+    url(r'^(?P<project_id>{0})/landmarks/groups/(?P<landmarkgroup_id>[0-9]+)/$'.format(integer), landmarks.LandmarkGroupDetail.as_view()),
+    url(r'^(?P<project_id>{0})/landmarks/groups/(?P<landmarkgroup_id>[0-9]+)/locations/(?P<location_id>[0-9]+)/$'.format(integer),
+            landmarks.LandmarkGroupLocationList.as_view()),
 ]
 
 # Clustering

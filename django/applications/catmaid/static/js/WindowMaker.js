@@ -580,6 +580,21 @@ var WindowMaker = new function()
       };
     };
 
+    var updateLandmarkGroupColor = function(volumeId, rgb, alpha, colorChanged,
+        alphaChanged, colorHex) {
+      WA.setLandmarkGroupColor(volumeId,
+          colorChanged ? ('#' + colorHex) : null,
+          alphaChanged ? alpha : null);
+    };
+
+    var updateLandmarkGroupFaces = function(volumeId, e) {
+      var facesVisible = e.target.checked;
+      WA.setLandmarkGroupStyle(volumeId, facesVisible);
+      // Stop propagation or the general landmark group list change handler is
+      // called.
+      e.stopPropagation();
+    };
+
     var updateVolumeColor = function(volumeId, rgb, alpha, colorChanged,
         alphaChanged, colorHex) {
       WA.setVolumeColor(volumeId,
@@ -645,11 +660,68 @@ var WindowMaker = new function()
         });
     };
 
+    // Update volume list
+    var initLandmarkList = function() {
+      return CATMAID.Landmarks.listGroups(project.id).then(function(json) {
+          var landmarkGroups = json.sort(function(a, b) {
+            return CATMAID.tools.compareStrings(a.name, b.name);
+          }).map(function(landmarkGroup) {
+            return {
+              title: landmarkGroup.name,
+              value: landmarkGroup.id
+            };
+          });
+          var selectedLandmarkGroups = WA.getLoadedLandmarkGroupIds();
+          // Create actual element based on the returned data
+          var node = DOM.createCheckboxSelect('Landmark groups', landmarkGroups,
+              selectedLandmarkGroups, true);
+          // Add a selection handler
+          node.onchange = function(e) {
+            var visible = e.target.checked;
+            var landmarkGroupId = e.target.value;
+            WA.showLandmarkGroup(landmarkGroupId, visible);
+
+            // Add extra display controls for enabled volumes
+            var li = e.target.closest('li');
+            if (!li) {
+              return;
+            }
+            if (visible) {
+              var landmarkGroupControls = li.appendChild(document.createElement('span'));
+              landmarkGroupControls.setAttribute('data-role', 'landmarkGroup-controls');
+              CATMAID.DOM.appendColorButton(landmarkGroupControls, 'c',
+                'Change the color of this landmark group',
+                undefined, undefined, {
+                  initialColor: o.landmarkgroup_color,
+                  initialAlpha: o.landmarkgroup_opacity,
+                  onColorChange: updateLandmarkGroupColor.bind(null, landmarkGroupId)
+                });
+              var facesCb = CATMAID.DOM.appendCheckbox(landmarkGroupControls, "Faces",
+                  "Whether faces should be displayed for this landmark group",
+                  o.landmarkgroup_faces, updateLandmarkGroupFaces.bind(null, landmarkGroupId));
+              facesCb.style.display = 'inline';
+            } else {
+              var landmarkGroupControls = li.querySelector('span[data-role=landmarkGroup-controls]');
+              if (landmarkGroupControls) {
+                li.removeChild(landmarkGroupControls);
+              }
+            }
+          };
+          return node;
+        });
+    };
+
     // Create async selection and wrap it in container to have handle on initial
     // DOM location
     var volumeSelection = DOM.createAsyncPlaceholder(initVolumeList());
     var volumeSelectionWrapper = document.createElement('span');
     volumeSelectionWrapper.appendChild(volumeSelection);
+
+    // Create async selection and wrap it in container to have handle on initial
+    // DOM location
+    var landmarkGroupSelection = DOM.createAsyncPlaceholder(initLandmarkList());
+    var landmarkGroupSelectionWrapper = document.createElement('span');
+    landmarkGroupSelectionWrapper.appendChild(landmarkGroupSelection);
 
     // Replace volume selection wrapper children with new select
     var refreshVolumeList = function() {
@@ -665,6 +737,20 @@ var WindowMaker = new function()
           [volumeSelectionWrapper],
           ['Faces ', o.meshes_faces, function() { WA.options.meshes_faces = this.checked;}, false],
           [WA.createMeshColorButton()],
+          [landmarkGroupSelection],
+          {
+            type: 'numeric',
+            label: 'Landmark scale',
+            value: o.landmark_scale,
+            length: 3,
+            onchange: function() {
+              let value  = parseInt(this.value, 10);
+              if (value && !Number.isNaN(value)) {
+                WA.options.landmark_scale = value;
+                WA.adjustContent();
+              }
+            }
+          },
           ['Active node', o.show_active_node, function() { WA.options.show_active_node = this.checked; WA.adjustContent(); }, false],
           ['Active node on top', o.active_node_on_top, function() { WA.options.active_node_on_top = this.checked; WA.adjustContent(); }, false],
           ['Black background', o.show_background, adjustFn('show_background'), false],

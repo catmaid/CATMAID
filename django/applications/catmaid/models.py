@@ -552,6 +552,20 @@ class Treenode(UserFocusedModel):
         db_table = "treenode"
 
 
+class Point(UserFocusedModel):
+    # Repeat the columns inherited from 'location'
+    editor = models.ForeignKey(User, on_delete=models.CASCADE,
+            related_name='point_editor', db_column='editor_id')
+    location_x = models.FloatField()
+    location_y = models.FloatField()
+    location_z = models.FloatField()
+    radius = models.FloatField(default=0)
+    confidence = models.IntegerField(default=5)
+
+    class Meta:
+        db_table = "point"
+
+
 class SuppressedVirtualTreenode(UserFocusedModel):
     child = models.ForeignKey(Treenode, on_delete=models.CASCADE)
     location_coordinate = models.FloatField()
@@ -584,6 +598,17 @@ class TreenodeClassInstance(UserFocusedModel):
         db_table = "treenode_class_instance"
 
 
+class PointClassInstance(UserFocusedModel):
+    # Repeat the columns inherited from 'relation_instance'
+    relation = models.ForeignKey(Relation, on_delete=models.CASCADE)
+    # Now new columns:
+    point = models.ForeignKey(Point, on_delete=models.CASCADE)
+    class_instance = models.ForeignKey(ClassInstance, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = "point_class_instance"
+
+
 class ConnectorClassInstance(UserFocusedModel):
     # Repeat the columns inherited from 'relation_instance'
     relation = models.ForeignKey(Relation, on_delete=models.CASCADE)
@@ -607,6 +632,19 @@ class TreenodeConnector(UserFocusedModel):
     class Meta:
         db_table = "treenode_connector"
         unique_together = (('project', 'treenode', 'connector', 'relation'),)
+
+
+class PointConnector(UserFocusedModel):
+    # Repeat the columns inherited from 'relation_instance'
+    relation = models.ForeignKey(Relation, on_delete=models.CASCADE)
+    # Now new columns:
+    point = models.ForeignKey(Point, on_delete=models.CASCADE)
+    connector = models.ForeignKey(Connector, on_delete=models.CASCADE)
+    confidence = models.IntegerField(default=5)
+
+    class Meta:
+        db_table = "point_connector"
+        unique_together = (('project', 'point', 'connector', 'relation'),)
 
 
 class Review(models.Model):

@@ -1,4 +1,4 @@
-      /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
+/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   CATMAID,
@@ -41,6 +41,10 @@
     this.history = undefined;
     // Map loaded volume IDs to an array of Three.js meshes
     this.loadedVolumes = {};
+    // Map loaded landmark group IDs to an array of Three.js meshes
+    this.loadedLandmarkGroups = {};
+    // A set of loaded landmark based transformations
+    this.loadedLandmarkTransforms = {};
     // Current set of filtered connectors (if any)
     this.filteredConnectors = null;
 
@@ -832,6 +836,10 @@
     this.meshes_color = "#ffffff";
     this.meshes_opacity = 0.2;
     this.meshes_faces = false;
+    this.landmarkgroup_color = "#ffa500";
+    this.landmarkgroup_opacity = 0.2;
+    this.landmarkgroup_faces = true;
+    this.landmark_scale = 2000;
     this.show_missing_sections = false;
     this.missing_section_height = 20;
     this.show_active_node = true;
@@ -907,6 +915,37 @@
       transparent: opacity !== 1, wireframe: !this.meshes_faces, side: THREE.DoubleSide,
       depthWrite: opacity === 1});
   };
+
+  WebGLApplication.prototype.Options.prototype.createLandmarkGroupMaterial = function(color, opacity) {
+    color = color || new THREE.Color(this.landmarkgroup_color);
+    if (typeof opacity === 'undefined') opacity = this.landmarkgroup_opacity;
+    return new THREE.MeshLambertMaterial({color: color, opacity: opacity,
+      transparent: opacity !== 1, wireframe: !this.landmarkgroup_faces, side: THREE.DoubleSide,
+      depthWrite: opacity === 1});
+  };
+
+  WebGLApplication.prototype.Options.prototype.createLandmarkMaterial = function(color, opacity) {
+    var material = new THREE.SpriteMaterial({
+		    map: new THREE.CanvasTexture(generateSprite(color, opacity)),
+				blending: THREE.AdditiveBlending
+	    });
+    return material;
+  };
+
+  function generateSprite(colorr, opacity) {
+    var canvas = document.createElement( 'canvas' );
+    canvas.width = 16;
+    canvas.height = 16;
+    var context = canvas.getContext( '2d' );
+    var gradient = context.createRadialGradient( canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2 );
+    gradient.addColorStop( 0, 'rgba(255,255,255,1)' );
+    gradient.addColorStop( 0.2, 'rgba(0,255,255,1)' );
+    gradient.addColorStop( 0.4, 'rgba(0,0,64,1)' );
+    gradient.addColorStop( 1, 'rgba(0,0,0,1)' );
+    context.fillStyle = gradient;
+    context.fillRect( 0, 0, canvas.width, canvas.height );
+    return canvas;
+  }
 
 
   /** Persistent options, get replaced every time the 'ok' button is pushed in the dialog. */
@@ -1862,6 +1901,190 @@
     var existingMeshes = this.loadedVolumes[volumeId];
     if (!existingMeshes) {
       CATMAID.warn("Volume not loaded");
+      return;
+    }
+    for (var i=0; i<existingMeshes.length; ++i) {
+      var material = existingMeshes[i].material;
+      material.wireframe = !faces;
+      material.needsUpdate = true;
+    }
+    this.space.render();
+  };
+
+  /**
+   * Show or hide a stored landmark transformations.
+   */
+  WebGLApplication.prototype.showLandmarkTransform = function(landmarkTransform, visible) {
+    let landmarkTransformId = landmarkTransform.id;
+    var existingLandmarkTransform = this.loadedLandmarkTransforms[landmarkTransformId];
+    if (visible) {
+      // Bail out if the landmarkTransform in question is already visible
+      if (existingLandmarkTransform) {
+        return;
+      }
+
+      let skeletonIds = Object.keys(landmarkTransform.skeletons);
+      let options = this.options.clone();
+      options['shading_method'] = 'none';
+      options['color_method'] = 'actor-color';
+      for (let i=0, imax=skeletonIds.length; i<imax; ++i) {
+        let skeletonId = parseInt(skeletonIds[i], 10);
+        let skeletonModel = landmarkTransform.skeletons[skeletonId];
+        // Creat transformed skeleton mesh and add it to scene
+        let initPromise = landmarkTransform.nodeProvider.get(skeletonId)
+          .then((function(json) {
+            let meshes = [];
+
+            // Create virtual skeleton
+            let skeleton = new WebGLApplication.prototype.Space.prototype.Skeleton(
+                this.space, skeletonModel);
+            skeleton.loadJson(skeletonModel, json, options, false, undefined, true);
+
+            // Use colorizer with simple source shading (see above)
+            var colorizer = CATMAID.makeSkeletonColorizer(options);
+            skeleton.updateSkeletonColor(colorizer);
+
+            // Instead of displaying the skeleton using show(), we extract its
+            // mesh and add it ourselves.
+            meshes.push(skeleton.actor.neurite);
+
+            for (let j=0, jmax=meshes.length; j<jmax; ++j) {
+              this.space.scene.add(meshes[j]);
+            }
+
+            // Store mesh reference
+            this.loadedLandmarkTransforms[landmarkTransformId] = meshes;
+            this.space.render();
+          }).bind(this))
+          .catch(CATMAID.handleError);
+      }
+    } else if (existingLandmarkTransform) {
+      // Remove landmarkTransform
+      existingLandmarkTransform.forEach(function(v) {
+        this.space.scene.remove(v);
+      }, this);
+      delete this.loadedLandmarkTransforms[landmarkTransformId];
+      this.space.render();
+    }
+  };
+
+  /**
+   * Show or hide a stored landmark group with a given Id.
+   */
+  WebGLApplication.prototype.showLandmarkGroup = function(landmarkGroupId, visible) {
+    var existingLandmarkGroup = this.loadedLandmarkGroups[landmarkGroupId];
+    if (visible) {
+      // Bail out if the landmarkGroup in question is already visible
+      if (existingLandmarkGroup) {
+        CATMAID.warn("Landmark group \"" + landmarkGroupId + "\" is already visible.");
+        return;
+      }
+
+      CATMAID.Landmarks.getGroup(project.id, landmarkGroupId, true, true)
+        .then((function(landmarkGroup) {
+          // Find bounding box around locations
+          let min = { x: Infinity, y: Infinity, z: Infinity };
+          let max = { x: -Infinity, y: -Infinity, z: -Infinity };
+          let locations = landmarkGroup.locations;
+          for (var i=0, imax=locations.length; i<imax; ++i) {
+            let loc = locations[i];
+            if (loc.x < min.x) min.x = loc.x;
+            if (loc.y < min.y) min.y = loc.y;
+            if (loc.z < min.z) min.z = loc.z;
+            if (loc.x > max.x) max.x = loc.x;
+            if (loc.y > max.y) max.y = loc.y;
+            if (loc.z > max.z) max.z = loc.z;
+          }
+
+          let meshes = [];
+
+          // Create box mesh
+          let groupMaterial = this.options.createLandmarkGroupMaterial();
+          let groupGeometry = new THREE.BoxBufferGeometry(
+              max.x - min.x,
+              max.y - min.y,
+              max.z - min.z);
+          groupGeometry.translate(
+              min.x + (max.x - min.x) * 0.5,
+              min.y + (max.y - min.y) * 0.5,
+              min.z + (max.z - min.z) * 0.5);
+          meshes.push(new THREE.Mesh(groupGeometry, groupMaterial));
+
+          // Create landmark particles
+          let landmarkMaterial = this.options.createLandmarkMaterial();
+          for (var j=0, jmax=locations.length; j<jmax; ++j) {
+            let loc = locations[j];
+            let particle = new THREE.Sprite(landmarkMaterial);
+            particle.position.set(loc.x, loc.y, loc.z);
+            particle.scale.x = particle.scale.y = this.options.landmark_scale;
+            meshes.push(particle);
+          }
+
+          for (let j=0, jmax=meshes.length; j<jmax; ++j) {
+            this.space.scene.add(meshes[j]);
+          }
+
+          // Store mesh reference
+          this.loadedLandmarkGroups[landmarkGroupId] = meshes;
+          this.space.render();
+        }).bind(this))
+        .catch(CATMAID.handleError);
+    } else if (existingLandmarkGroup) {
+      // Remove landmarkGroup
+      existingLandmarkGroup.forEach(function(v) {
+        this.space.scene.remove(v);
+      }, this);
+      delete this.loadedLandmarkGroups[landmarkGroupId];
+      this.space.render();
+    }
+  };
+
+  /**
+   * Return IDs of the currently loaded landmark groups.
+   */
+  WebGLApplication.prototype.getLoadedLandmarkGroupIds = function() {
+    return Object.keys(this.loadedLandmarkGroups);
+  };
+
+  /**
+   * Set color and alpha of a loaded landmark group. Color and alpha will only
+   * be adjusted if the respective value is not null. Otherwise it is ignored.
+   *
+   * @param {Number} volumeId The ID of the landmark group to adjust.
+   * @param {String} color    The new color as hex string of the group or null.
+   * @param {Number} alpha    The new alpha of the landmark group or null.
+   */
+  WebGLApplication.prototype.setLandmarkGroupColor = function(landmarkGroupId, color, alpha) {
+    var existingMeshes = this.loadedLandmarkGroups[landmarkGroupId];
+    if (!existingMeshes) {
+      CATMAID.warn("Landmark group not loaded");
+      return;
+    }
+    for (var i=0; i<existingMeshes.length; ++i) {
+      var material = existingMeshes[i].material;
+      if (color !== null) {
+        material.color.set(color);
+        material.needsUpdate = true;
+      }
+      if (alpha !== null) {
+        material.opacity = alpha;
+        material.transparent = alpha !== 1;
+        material.depthWrite = alpha === 1;
+        material.needsUpdate = true;
+      }
+    }
+    this.space.render();
+  };
+
+  /**
+   * Set landmark group render style properties.
+   *
+   * @param {Boolean} faces    Whether mesh faces should be rendered.
+   */
+  WebGLApplication.prototype.setLandmarkGroupStyle = function(landmarkGroupsId, faces) {
+    var existingMeshes = this.loadedLandmarkGroups[landmarkGroupsId];
+    if (!existingMeshes) {
+      CATMAID.warn("Landmark group not loaded");
       return;
     }
     for (var i=0; i<existingMeshes.length; ++i) {
@@ -5542,7 +5765,7 @@
    * better performance.
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createLabelSpheres =
-      function(labels, scaling, shading) {
+      function(labels, scaling, shading, preventSceneUpdate) {
 
     var geometry = new CATMAID.MultiObjectInstancedBufferGeometry({
       templateGeometry: this.space.staticContent.labelspheregeometry,
@@ -5559,7 +5782,9 @@
     var material = geometry.createMaterial(shading);
 
     this.specialTagSphereCollection = new THREE.Mesh(geometry, material);
-    this.space.add(this.specialTagSphereCollection);
+    if (!preventSceneUpdate) {
+      this.space.add(this.specialTagSphereCollection);
+    }
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getLabelType = function(label, customRegEx) {
@@ -5580,7 +5805,7 @@
    * synapticTypes and synapticColors.
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createPartnerSpheres =
-      function(connectors, scaling, shading) {
+      function(connectors, scaling, shading, preventSceneUpdate) {
 
     var geometry = new CATMAID.MultiObjectInstancedBufferGeometry({
       templateGeometry: this.space.staticContent.radiusSphere,
@@ -5600,7 +5825,9 @@
     var material = geometry.createMaterial(shading);
 
     this.connectorSphereCollection = new THREE.Mesh(geometry, material);
-    this.space.add(this.connectorSphereCollection);
+    if (!preventSceneUpdate) {
+      this.space.add(this.connectorSphereCollection);
+    }
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createEdge = function(v1, v2, type) {
@@ -5611,7 +5838,8 @@
     vs.push(v1, v2);
   };
 
-  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeSphere = function(v, radius, material) {
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeSphere =
+      function(v, radius, material, preventSceneUpdate) {
     if (this.radiusVolumes.hasOwnProperty(v.node_id)) {
       // There already is a sphere or cylinder at the node
       return;
@@ -5623,10 +5851,13 @@
     mesh.position.set( v.x, v.y, v.z );
     mesh.node_id = v.node_id;
     this.radiusVolumes[v.node_id] = mesh;
-    this.space.add(mesh);
+    if (!preventSceneUpdate) {
+      this.space.add(mesh);
+    }
   };
 
-  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createCylinder = function(v1, v2, radius, material) {
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createCylinder =
+      function(v1, v2, radius, material, preventSceneUpdate) {
     if (this.radiusVolumes.hasOwnProperty(v1.node_id)) {
       // There already is a sphere or cylinder at the node
       return;
@@ -5647,7 +5878,9 @@
     mesh.node_id = v1.node_id;
 
     this.radiusVolumes[v1.node_id] = mesh;
-    this.space.add(mesh);
+    if (!preventSceneUpdate) {
+      this.space.add(mesh);
+    }
   };
 
   /**
@@ -5657,7 +5890,8 @@
    * associated when it became valid.
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.loadJson =
-      function(skeletonModel, json, options, withHistory, nodeWhitelist) {
+      function(skeletonModel, json, options, withHistory, nodeWhitelist,
+      preventSceneUpdate) {
 
     var nodes = json[0];
     var connectors = json[1];
@@ -5719,10 +5953,11 @@
       });
 
       // Update to most recent skeleton
-      this.resetToPointInTime(skeletonModel, options, null, true);
+      this.resetToPointInTime(skeletonModel, options, null, true,
+          preventSceneUpdate);
     } else {
       this.reinit_actor(skeletonModel, nodes, connectors, tags, null, options,
-          silent);
+          silent, preventSceneUpdate);
     }
   };
 
@@ -5731,7 +5966,7 @@
    * be available.
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.resetToPointInTime =
-      function(skeletonModel, options, timestamp, noCache) {
+      function(skeletonModel, options, timestamp, noCache, preventSceneUpdate) {
 
     if (!this.history) {
       throw new CATMAID.ValueError("Historic data for skeleton missing");
@@ -5775,7 +6010,8 @@
     // However, its data is only valid stating from its edition time, which
     // makes it possible that it references a parent node that was not
     // available at its creation time.
-    this.reinit_actor(skeletonModel, nodes, connectors, tags, this.history, options, true);
+    this.reinit_actor(skeletonModel, nodes, connectors, tags, this.history,
+        options, true, preventSceneUpdate);
 
     // Remember this rebuild date
     this.history.rebuildTime = timestamp;
@@ -5804,7 +6040,8 @@
    * associated when it became valid.
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor =
-      function(skeletonmodel, nodes, connectors, tags, history, options, silent) {
+      function(skeletonmodel, nodes, connectors, tags, history, options, silent,
+      preventSceneUpdate) {
     if (this.actor) {
       this.destroy();
     }
@@ -5876,7 +6113,7 @@
         if (node[6] > 0 && p[6] > 0) {
           // Create cylinder using the node's radius only (not the parent) so
           // that the geometry can be reused
-          this.createCylinder(v1, v2, node[6], material);
+          this.createCylinder(v1, v2, node[6], material, preventSceneUpdate);
           // Create skeleton line as well
           this.createEdge(v1, v2, 'neurite');
         } else {
@@ -5884,7 +6121,7 @@
           this.createEdge(v1, v2, 'neurite');
           // Create sphere
           if (node[6] > 0) {
-            this.createNodeSphere(v1, node[6], material);
+            this.createNodeSphere(v1, node[6], material, preventSceneUpdate);
           }
         }
       } else {
@@ -5903,7 +6140,7 @@
             this.space.remove(mesh);
             delete this.radiusVolumes[v1.node_id];
           }
-          this.createNodeSphere(v1, node[6], material);
+          this.createNodeSphere(v1, node[6], material, preventSceneUpdate);
         }
       }
 
@@ -5981,13 +6218,13 @@
     // Create buffer geometry for connectors
     if (partner_nodes.length > 0) {
       this.createPartnerSpheres(partner_nodes, options.skeleton_node_scaling,
-          options.neuron_material);
+          options.neuron_material, preventSceneUpdate);
     }
 
     // Create buffer geometry for labels
     if (labels.length > 0) {
       this.createLabelSpheres(labels, options.skeleton_node_scaling,
-          options.neuron_material);
+          options.neuron_material, preventSceneUpdate);
     }
 
     if (options.resample_skeletons) {

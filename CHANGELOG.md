@@ -13,6 +13,8 @@
   release, including required manual tasks. These changes also continue to be
   part of this change log.
 
+- Requires running of: manage.py catmaid_update_project_configuration
+
 
 ### Features and enhancements
 
@@ -32,6 +34,13 @@ Connector table:
 - Node filters are now supported.
 
 - Attachment connectors are now supported.
+
+3D viewer:
+
+- Landmarks and landmark groups can be displayed. Similarly to volumes
+  individual groups can be selected and adjusted through the "View settings"
+  tab. Apart from the color and mesh-faces option for groups, it is possible to
+  scale landmarks.
 
 Miscellaneous:
 

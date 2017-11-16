@@ -88,6 +88,14 @@
     wrapper.style.position = "absolute";
     wrapper.appendChild(container);
 
+    if (options.disableDefaultContextMenu) {
+      $(wrapper).on('contextmenu', function(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        return false;
+      });
+    }
+
     /**
      * Show the context menu at the current mouse location.
      *

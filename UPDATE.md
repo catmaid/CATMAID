@@ -5,6 +5,8 @@ and other administration related changes are listed in order.
 
 - PostgreSQL 9.6 and Postgis 2.4 are now required.
 
+- Requires running of: manage.py catmaid_update_project_configuration
+
 ## 2017.04.20
 
 - The location of the `manage.py` script changed: it moved a level up into

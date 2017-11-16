@@ -22,6 +22,8 @@
     }
   };
 
+  var MIN_NUM_MATCHES = 2;
+
   var assert = console.assert;
 
   var Matrix3x3 = {
@@ -747,7 +749,7 @@
       a12 * a12 * a00 -
       a22 * a01 * a01;
 
-    if ( det == 0 )
+    if ( det === 0 )
       throw new IllDefinedDataPointsException();
 
     var idet = 1.0 / det;
@@ -782,7 +784,7 @@
   AffineModel3D.prototype.invert = function()
   {
     var det = Matrix3x3.det( this.m00, this.m01, this.m02, this.m10, this.m11, this.m12, this.m20, this.m21, this.m22 );
-    if ( det == 0 )
+    if ( det === 0 )
     {
       this.isInvertible = false;
       return;

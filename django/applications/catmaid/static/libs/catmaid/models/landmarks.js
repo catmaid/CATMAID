@@ -167,7 +167,15 @@
 
   };
 
+  let LandmarkSkeletonTransformation = function(skeletons, fromGroupId, toGroupId) {
+    this.skeletons = skeletons;
+    this.fromGroupId = parseInt(fromGroupId, 10);
+    this.toGroupId = parseInt(toGroupId, 10);
+    this.id = CATMAID.tools.uuidv4();
+  };
+
   // Export namespace
   CATMAID.Landmarks = Landmarks;
+  CATMAID.LandmarkSkeletonTransformation = LandmarkSkeletonTransformation;
 
 })(CATMAID);

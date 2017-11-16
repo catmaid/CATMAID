@@ -44,6 +44,9 @@
     // All current display transformations
     this.displayTransformations = [];
 
+    // All currently targeted 3D Viewers
+    this.targeted3dViewerNames = new Set();
+
     // The current edit mode
     this.mode = 'landmarks';
     this.modes = ['landmarks', 'display', 'import'];
@@ -69,6 +72,7 @@
         this.handleUpdatedSkeletonSources, this);
     CATMAID.skeletonListSources.off(CATMAID.SkeletonSourceManager.EVENT_SOURCE_REMOVED,
         this.handleUpdatedSkeletonSources, this);
+    this.removeDisplay();
   };
 
   LandmarkWidget.prototype.getWidgetConfiguration = function() {
@@ -129,16 +133,40 @@
   };
 
   /**
+   * Remove virtual skeltons from 3D Viewers.
+   */
+  LandmarkWidget.prototype.removeDisplay = function() {
+    CATMAID.warn('TODO');
+  };
+
+  /**
    * Updaet display targets.
    */
   LandmarkWidget.prototype.handleUpdatedSkeletonSources = function() {
     if (!this.controls) {
       return;
     }
+
+    // Remove all references to now inavailable sources
+    for (let targetName of this.targeted3dViewerNames) {
+      let source = CATMAID.skeletonListSources.getSource(targetName);
+      if (!source) {
+        this.targeted3dViewerNames.delete(targetName);
+      }
+    }
+
     let targetSelectContainer = this.controls.querySelector('span[data-role=display-target]');
     if (targetSelectContainer) {
       this.updateTargetSelect(targetSelectContainer);
     }
+  };
+
+  LandmarkWidget.getAvailable3dViewers = function() {
+    return Object.keys(CATMAID.skeletonListSources.sources)
+        .filter(function(name) {
+          let source = CATMAID.skeletonListSources.sources[name];
+          return source && source instanceof CATMAID.WebGLApplication;
+        });
   };
 
   /**
@@ -151,11 +179,7 @@
     }
     // Get a list of current skeleton sources and create a checkbox select for
     // the available 3D Viewers.
-    var availableSources = Object.keys(CATMAID.skeletonListSources.sources)
-        .filter(function(name) {
-          let source = CATMAID.skeletonListSources.sources[name];
-          return source && source instanceof CATMAID.WebGLApplication;
-        })
+    var availableSources = LandmarkWidget.getAvailable3dViewers()
         .sort()
         .map(function(name) {
           return {
@@ -164,11 +188,24 @@
           };
         });
     var select = CATMAID.DOM.createCheckboxSelect("Target 3D viewers",
-        availableSources, undefined, true);
+        availableSources, this.targeted3dViewerNames, true);
     if (availableSources.length === 0) {
       var element = select.querySelector('select');
       element.setAttribute('disabled', '');
     }
+
+    var self = this;
+    select.onchange = function(e) {
+      let selected = e.target.checked;
+      let sourceName = e.target.value;
+      if (selected) {
+        self.targeted3dViewerNames.add(sourceName);
+      } else {
+        self.targeted3dViewerNames.delete(sourceName);
+        self.removeDisplayFrom3dViewer(sourceName);
+      }
+      self.updateDisplay();
+    };
     targetSelectContainer.appendChild(select);
   };
 
@@ -220,6 +257,26 @@
     return '<a href="#" data-action="edit-group-members">' + e + '</a>';
   }
 
+  function getLinkedGroupLocationIndices(group, landmark) {
+    // These are the possible locations, the ones linked to the landmark
+    // itself. Based on this we can find the group linked locations.
+    let groupLocations = group.locations;
+    let linkedLocations = [];
+    for (let i=0, imax=landmark.locations.length; i<imax; ++i) {
+      // Check if the landmark location is a member of this group
+      var loc = landmark.locations[i];
+      var isMember = false;
+      for (var j=0, jmax=groupLocations.length; j<jmax; ++j) {
+        let groupLocation = groupLocations[j];
+        if (groupLocation.id == loc.id) {
+          linkedLocations.push(j);
+          break;
+        }
+      }
+    }
+    return linkedLocations;
+  }
+
   /**
    * If the respective landmark is available from already retrieved data return
    * the landmark's name, otherwise return its ID.
@@ -228,22 +285,7 @@
     if (this.landmarkIndex && this.landmarkGroupIndex) {
       let landmark = this.landmarkIndex.get(landmarkId);
       if (landmark) {
-        // These are the possible locations, the ones linked to the landmark
-        // itself. Based on this we can find the group linked locations.
-        let groupLocations = group.locations;
-        let linkedLocations = [];
-        for (let i=0, imax=landmark.locations.length; i<imax; ++i) {
-          // Check if the landmark location is a member of this group
-          var loc = landmark.locations[i];
-          var isMember = false;
-          for (var j=0, jmax=groupLocations.length; j<jmax; ++j) {
-            let groupLocation = groupLocations[j];
-            if (groupLocation.id == loc.id) {
-              linkedLocations.push(i);
-              break;
-            }
-          }
-        }
+        let linkedLocations = getLinkedGroupLocationIndices(group, landmark);
         let linkedLocationsRepr = linkedLocations.map(locationIndexToString, landmark);
         if (linkedLocationsRepr.length > 0) {
           return wrapInGroupEditLink(landmark.name) + " (" + linkedLocationsRepr.join("") + ")";
@@ -391,17 +433,209 @@
 
   };
 
+  LandmarkWidget.prototype.removeLandmarkTransformation = function(transformation) {
+    let transformations = this.displayTransformations;
+    while (true) {
+      var index = -1;
+      for (let i=0; i<transformations.length; ++i) {
+        let t = transformations[i];
+        if (t.id === transformation.id) {
+          index = i;
+          break;
+        }
+      }
+      if (index === -1) {
+        break;
+      } else {
+        let t = transformations[index];
+        transformations.splice(index);
+        let target3dViewers = Array.from(this.targeted3dViewerNames).map(function(m) {
+          return CATMAID.skeletonListSources.getSource(m);
+        });
+        for (let j=0; j<target3dViewers.length; ++j) {
+          let widget = target3dViewers[j];
+          widget.showLandmarkTransform(t, false);
+        }
+      }
+    }
+  };
+
+  /**
+   * Remove all currently avilable tranforms from the passed in 3D viewer
+   * reference.
+   */
+  LandmarkWidget.prototype.removeDisplayFrom3dViewer = function(widgetName) {
+    let widget = CATMAID.skeletonListSources.getSource(widgetName);
+    if (!widget) {
+      throw new CATMAID.ValueError("Can't find widget: " + widgetName);
+    }
+    for (let i=0; i<this.displayTransformations.length; ++i) {
+      let transformation = this.displayTransformations[i];
+      widget.showLandmarkTransform(transformation, false);
+    }
+  };
+
+  /**
+   * Create skeleton models for the skeletons to transform
+   */
+  LandmarkWidget.prototype.updateDisplay = function() {
+    let target3dViewers = Array.from(this.targeted3dViewerNames).map(function(m) {
+      return CATMAID.skeletonListSources.getSource(m);
+    });
+
+    // Create a virtual skeleton representation for each input skeleton of each
+    // transformation.
+    for (let i=0; i<this.displayTransformations.length; ++i) {
+      let transformation = this.displayTransformations[i];
+      let skeletonModels = Object.keys(transformation.skeletons).reduce(function(o, s) {
+        o['transformed-' + s] = transformation.skeletons[s];
+        return o;
+      }, {});
+
+      let matches = this.getPointMatches(transformation.fromGroupId,
+          transformation.toGroupId);
+
+      if (!matches || matches.length === 0) {
+        CATMAID.warn("Found no point matches for " + (i+1) + ". transformation");
+        continue;
+      }
+
+      var mls = new CATMAID.transform.MovingLeastSquaresTransform();
+      var model = new CATMAID.transform.AffineModel3D();
+      mls.setModel(model);
+
+      try {
+        mls.setMatches(matches);
+      } catch (error) {
+        console.log(error);
+        CATMAID.warn("Could not fit model for " + (i+1) + ". transformation");
+        continue;
+      }
+
+      var treenodeLocation = [0, 0, 0];
+      var transformTreenode = function(treenodeRow) {
+        treenodeLocation[0] = treenodeRow[3];
+        treenodeLocation[1] = treenodeRow[4];
+        treenodeLocation[2] = treenodeRow[5];
+        mls.applyInPlace(treenodeLocation);
+        treenodeRow[3] = treenodeLocation[0];
+        treenodeRow[4] = treenodeLocation[1];
+        treenodeRow[5] = treenodeLocation[2];
+      };
+
+      transformation.nodeProvider = {
+        get: function(skeletonId) {
+          if (transformation.skeletonCache && transformation.skeletonCache[skeletonId]) {
+            return Promise.resolve(transformation.skeletonCache[skeletonId]);
+          } else {
+            // Get skeleton data and transform it
+            return CATMAID.fetch(project.id + '/skeletons/' + skeletonId + '/compact-detail', 'GET', {
+                with_tags: false,
+                with_connectors: false,
+                with_history: false
+              })
+              .then(function(response) {
+                // Transform points and store in cache
+                response[0].forEach(transformTreenode);
+                transformation.skeletonCache = response;
+                return response;
+              });
+          }
+        }
+      };
+
+      for (let j=0; j<target3dViewers.length; ++j) {
+        let widget = target3dViewers[j];
+        widget.showLandmarkTransform(transformation, true);
+      }
+    }
+  };
+
+  /**
+   * Get a list of two-element lists with each sub-list representingn a point
+   * match, i.e. two locations annotated with the same landmark
+   */
+  LandmarkWidget.prototype.getPointMatches = function(fromGroupId, toGroupId) {
+    if (!this.landmarkGroupIndex) {
+      throw new CATMAID.ValueError('No landmark group information found');
+    }
+    let fromGroup = this.landmarkGroupIndex.get(fromGroupId);
+    if (!fromGroup) {
+      throw new CATMAID.ValueError('Could not find "from" group: ' + fromGroupId);
+    }
+    let toGroup = this.landmarkGroupIndex.get(toGroupId);
+    if (!toGroup) {
+      throw new CATMAID.ValueError('Could not find "to" group: ' + toGroupId);
+    }
+
+    // Find landmark overlap between both groups
+    let fromLandmarkIds = new Set(fromGroup.members);
+    let toLandmarkIds = new Set(toGroup.members);
+    let sharedLandmarkIds = new Set();
+    for (let toLandmarkId of toLandmarkIds) {
+      if (fromLandmarkIds.has(toLandmarkId)) {
+        sharedLandmarkIds.add(toLandmarkId);
+      }
+    }
+
+    let matches = [];
+
+    // Find all members that have a location linked into both groups
+    for (let landmarkId of sharedLandmarkIds) {
+      let landmark = this.landmarkIndex.get(landmarkId);
+      if (!landmark) {
+        throw new CATMAID.ValueError("Could not find landmark " + landmarkId);
+      }
+
+      let linkedFromLocationIdxs = getLinkedGroupLocationIndices(fromGroup, landmark);
+      let linkedToLocationIdxs = getLinkedGroupLocationIndices(toGroup, landmark);
+
+      if (linkedFromLocationIdxs.length === 0) {
+        CATMAID.warn("Landmark " + landmarkId +
+            " has no linked location in group " + fromGroupId);
+        continue;
+      }
+
+      if (linkedToLocationIdxs.length === 0) {
+        CATMAID.warn("Landmark " + landmarkId +
+            " has no linked location in group " + toGroupId);
+        continue;
+      }
+
+      if (linkedFromLocationIdxs.length > 1) {
+        CATMAID.warn("Landmark " + landmarkId +
+            " is linked through locations in group " +
+            fromGroupId + " more than once");
+        continue;
+      }
+
+      if (linkedToLocationIdxs.length > 1) {
+        CATMAID.warn("Landmark " + landmarkId +
+            " is linked through locations in group " +
+            toGroupId + " more than once");
+        continue;
+      }
+
+      let fLoc = fromGroup.locations[linkedFromLocationIdxs[0]];
+      let tLoc = toGroup.locations[linkedToLocationIdxs[0]];
+
+      var p1 = new CATMAID.transform.Point([fLoc.x, fLoc.y, fLoc.z]);
+      var p2 = new CATMAID.transform.Point([tLoc.x, tLoc.y, tLoc.z]);
+
+      matches.push(new CATMAID.transform.PointMatch(p1, p2, 1.0));
+    }
+
+    return matches;
+  };
+
   /**
    * Add a new display transformation for a set of skeletons.
    */
   LandmarkWidget.prototype.addDisplayTransformation = function(skeletons,
-      fromGroup, toGroup) {
-    this.displayTransformations.push({
-      index: this.displayTransformations.length,
-      skeletons: skeletons,
-      fromGroup: fromGroup,
-      toGroup: toGroup
-    });
+      fromGroupId, toGroupId) {
+    let lst = new CATMAID.LandmarkSkeletonTransformation(skeletons,
+        fromGroupId, toGroupId);
+    this.displayTransformations.push(lst);
   };
 
   function getId(e) {
@@ -1260,7 +1494,14 @@
           {
             type: 'child',
             element: target3dViewerSelect
-          }
+          },
+          {
+            type: 'button',
+            label: 'Refresh display',
+            onclick: function() {
+              target.updateDisplay();
+            }
+          },
         ];
       },
       createContent: function(content, widget) {
@@ -1309,12 +1550,12 @@
             },
 
             {
-              data: 'fromGroup',
+              data: 'fromGroupId',
               title: 'Source landmark group',
               orderable: false
             },
             {
-              data: 'toGroup',
+              data: 'toGroupId',
               title: 'Target landmark group',
               orderable: false
             },
@@ -1329,7 +1570,7 @@
         }).on('click', 'a[data-action=delete-transformation]', function() {
           let tr = $(this).closest('tr');
           let data = existingDTDataTable.row(tr).data();
-          widget.displayTransformations.splice(data.index);
+          widget.removeLandmarkTransformation(data);
           widget.update();
         });
 
@@ -1346,7 +1587,7 @@
               var fromGroup, toGroup;
 
               // Source select
-              let sourceSelect = CATMAID.DOM.createRadioSelect('Landmark groups', groupOptions);
+              let sourceSelect = CATMAID.DOM.createRadioSelect('Source landmark groups', groupOptions);
               let sourceGroup = CATMAID.DOM.createLabeledControl("Source group",
                 sourceSelect, "Select the source landmark group, the space from " +
                 "which input points are transformed.");
@@ -1356,7 +1597,7 @@
               $(newDTForm).append(sourceGroup);
 
               // Target select
-              let targetSelect = CATMAID.DOM.createRadioSelect('Landmark groups', groupOptions);
+              let targetSelect = CATMAID.DOM.createRadioSelect('Target landmark groups', groupOptions);
               let targetGroup = CATMAID.DOM.createLabeledControl("Target group",
                 targetSelect, "Select the target landmark group, the space to " +
                 "which input points are transformed.");
@@ -1398,6 +1639,8 @@
 
         content.appendChild(newDisplayTransformationContainer);
         content.appendChild(existingDisplayTransformationsContainer);
+
+        widget.updateDisplay();
       }
     }
   };

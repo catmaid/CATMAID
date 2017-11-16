@@ -43,6 +43,8 @@
     this.loadedVolumes = {};
     // Map loaded landmark group IDs to an array of Three.js meshes
     this.loadedLandmarkGroups = {};
+    // A set of loaded landmark based transformations
+    this.loadedLandmarkTransforms = {};
     // Current set of filtered connectors (if any)
     this.filteredConnectors = null;
 
@@ -1907,6 +1909,63 @@
       material.needsUpdate = true;
     }
     this.space.render();
+  };
+
+  /**
+   * Show or hide a stored landmark transformations.
+   */
+  WebGLApplication.prototype.showLandmarkTransform = function(landmarkTransform, visible) {
+    let landmarkTransformId = landmarkTransform.id;
+    var existingLandmarkTransform = this.loadedLandmarkTransforms[landmarkTransformId];
+    if (visible) {
+      // Bail out if the landmarkTransform in question is already visible
+      if (existingLandmarkTransform) {
+        return;
+      }
+
+      let skeletonIds = Object.keys(landmarkTransform.skeletons);
+      let options = this.options.clone();
+      options['shading_method'] = 'none';
+      options['color_method'] = 'actor-color';
+      for (let i=0, imax=skeletonIds.length; i<imax; ++i) {
+        let skeletonId = parseInt(skeletonIds[i], 10);
+        let skeletonModel = landmarkTransform.skeletons[skeletonId];
+        // Creat transformed skeleton mesh and add it to scene
+        let initPromise = landmarkTransform.nodeProvider.get(skeletonId)
+          .then((function(json) {
+            let meshes = [];
+
+            // Create virtual skeleton
+            let skeleton = new WebGLApplication.prototype.Space.prototype.Skeleton(
+                this.space, skeletonModel);
+            skeleton.loadJson(skeletonModel, json, options, false, undefined, true);
+
+            // Use colorizer with simple source shading (see above)
+            var colorizer = CATMAID.makeSkeletonColorizer(options);
+            skeleton.updateSkeletonColor(colorizer);
+
+            // Instead of displaying the skeleton using show(), we extract its
+            // mesh and add it ourselves.
+            meshes.push(skeleton.actor.neurite);
+
+            for (let j=0, jmax=meshes.length; j<jmax; ++j) {
+              this.space.scene.add(meshes[j]);
+            }
+
+            // Store mesh reference
+            this.loadedLandmarkTransforms[landmarkTransformId] = meshes;
+            this.space.render();
+          }).bind(this))
+          .catch(CATMAID.handleError);
+      }
+    } else if (existingLandmarkTransform) {
+      // Remove landmarkTransform
+      existingLandmarkTransform.forEach(function(v) {
+        this.space.scene.remove(v);
+      }, this);
+      delete this.loadedLandmarkTransforms[landmarkTransformId];
+      this.space.render();
+    }
   };
 
   /**

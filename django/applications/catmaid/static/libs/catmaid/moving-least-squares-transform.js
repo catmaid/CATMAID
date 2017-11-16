@@ -22,8 +22,6 @@
     }
   };
 
-  var MIN_NUM_MATCHES = 2;
-
   var assert = console.assert;
 
   var Matrix3x3 = {
@@ -607,6 +605,8 @@
     this.i20 = 0.0; this.i21 = 0.0; this.i22 = 1.0; this.i23 = 0.0;
 
     this.isInvertible = true;
+
+    this.MIN_NUM_MATCHES = 4;
   };
 
   AffineModel3D.prototype = {};
@@ -672,8 +672,8 @@
    */
   AffineModel3D.prototype.fit = function( matches )
   {
-    if ( matches.length < 4 )
-      throw new NotEnoughDataPointsException( matches.length + " data points are not enough to estimate a 2d affine model, at least " + MIN_NUM_MATCHES + " data points required." );
+    if ( matches.length < this.MIN_NUM_MATCHES )
+      throw new NotEnoughDataPointsException( matches.length + " data points are not enough to estimate a 2d affine model, at least " + this.MIN_NUM_MATCHES + " data points required." );
 
     var pcx = 0.0, pcy = 0.0, pcz = 0.0;
     var qcx = 0.0, qcy = 0.0, qcz = 0.0;

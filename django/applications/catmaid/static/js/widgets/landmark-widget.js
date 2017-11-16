@@ -429,8 +429,15 @@
     this.update();
   };
 
-  LandmarkWidget.prototype.resetDisplay = function() {
-
+  /**
+   * Remove all landmark transformations.
+   */
+  LandmarkWidget.prototype.clearDisplay = function() {
+    for (let i=0; i<this.displayTransformations.length; ++i) {
+      let transformation = this.displayTransformations[i];
+      this.removeLandmarkTransformation(transformation);
+    }
+    this.update();
   };
 
   LandmarkWidget.prototype.removeLandmarkTransformation = function(transformation) {
@@ -1488,7 +1495,7 @@
             type: 'button',
             label: 'Clear display',
             onclick: function() {
-              target.resetDisplay();
+              target.clearDisplay();
             }
           },
           {

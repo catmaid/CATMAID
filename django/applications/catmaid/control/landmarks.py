@@ -143,8 +143,6 @@ class LandmarkList(APIView):
         """
         keep_points = request.query_params.get('keep_points', 'false') == 'true'
         landmark_ids = get_request_list(request.query_params, 'landmark_ids', map_fn=int)
-        print landmark_ids
-        print request.query_params
         for l in landmark_ids:
             can_edit_or_fail(request.user, l, 'class_instance')
 

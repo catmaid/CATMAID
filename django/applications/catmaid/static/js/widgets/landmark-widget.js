@@ -1559,12 +1559,30 @@
             {
               data: 'fromGroupId',
               title: 'Source landmark group',
-              orderable: false
+              orderable: false,
+              render: function(data, type, row, meta) {
+                if (widget.landmarkGroupIndex) {
+                  let group = widget.landmarkGroupIndex.get(data);
+                  if (group) {
+                    return group.name + " (" + data + ")";
+                  }
+                }
+                return data;
+              }
             },
             {
               data: 'toGroupId',
               title: 'Target landmark group',
-              orderable: false
+              orderable: false,
+              render: function(data, type, row, meta) {
+                if (widget.landmarkGroupIndex) {
+                  let group = widget.landmarkGroupIndex.get(data);
+                  if (group) {
+                    return group.name + " (" + data + ")";
+                  }
+                }
+                return data;
+              }
             },
             {
               title: 'Action',

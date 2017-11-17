@@ -1680,6 +1680,8 @@
               $(newDTForm).append(targetGroup);
 
               // Add button
+              let buttonContainer = document.createElement('div');
+              buttonContainer.classList.add('clear');
               let addButton = document.createElement('button');
               addButton.appendChild(document.createTextNode('Add transformation'));
               addButton.onclick = function() {
@@ -1707,7 +1709,8 @@
                 CATMAID.msg("Success", "Transformation added");
                 widget.update();
               };
-              newDTForm.appendChild(addButton);
+              buttonContainer.appendChild(addButton);
+              newDTForm.appendChild(buttonContainer);
             });
 
         content.appendChild(newDisplayTransformationContainer);

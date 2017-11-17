@@ -1360,32 +1360,32 @@ SkeletonAnnotations.TracingOverlay.prototype.selectNode = function(id) {
 };
 
 /**
- * Find connectors pre- and postsynaptic to the given node ID.
- * Returns an array of three arrays, containing IDs of pre, post, and
- * gap junction connectors.
+ * Find connectors linked to a treenode. Retruns an object that maps relation
+ * names (e.g. presynaptic_to) to a list of connector IDs. Only existing
+ * relation types are represented as fields.
  */
 SkeletonAnnotations.TracingOverlay.prototype.findConnectors = function(node_id) {
-  var pre = [];
-  var post = [];
-  var gj = [];
+  let connectors = {};
+  var ConnectorType = SkeletonAnnotations.TYPE_CONNECTORNODE;
   for (var id in this.nodes) {
     if (this.nodes.hasOwnProperty(id)) {
       var node = this.nodes[id];
+      if (node.type !== ConnectorType) {
+        continue;
+      }
       for (var i=0, imax=node.links.length; i<imax; ++i) {
         var link = node.links[i];
-        if (link.treenode_id == node_id) {
-          if (link.relation_name === 'presynaptic_to') {
-            pre.push(id);
-          } else if (link.relation_name === 'postsynaptic_to') {
-            post.push(id);
-          } else if (link.relation_name === 'gapjunction_with') {
-            gj.push(id);
+        if (link.treenode.id == node_id) {
+          var target = connectors[link.relation_name];
+          if (!target) {
+            target = connectors[link.relation_name] = [];
           }
+          target.push(id);
         }
       }
     }
   }
-  return [pre, post, gj];
+  return connectors;
 };
 
 /**
@@ -2069,9 +2069,9 @@ var countRelationNames = function(counts, l) {
 };
 
 var collectLinksByRelation = function(target, l) {
-  let set = target[l.relationName];
+  let set = target[l.relation_name];
   if (set === undefined) {
-    set = target[l.relationName] = [];
+    set = target[l.relation_name] = [];
   }
   set.push(l);
   return target;
@@ -4445,8 +4445,7 @@ SkeletonAnnotations.TracingOverlay.prototype.switchBetweenTerminalAndConnector =
     CATMAID.warn("Cannot switch between terminal and connector: node not loaded.");
     return;
   }
-  if (SkeletonAnnotations.TYPE_CONNECTORNODE === ob.type &&
-      CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR === ob.subtype) {
+  if (SkeletonAnnotations.TYPE_CONNECTORNODE === ob.type) {
     if (this.switchingConnectorID === ob.id &&
         this.switchingTreenodeID in this.nodes) {
       // Switch back to the terminal
@@ -4457,13 +4456,23 @@ SkeletonAnnotations.TracingOverlay.prototype.switchBetweenTerminalAndConnector =
       var postLinks = links['postsynaptic_to'];
       // Go to the postsynaptic terminal if there is only one
       if (postLinks && postLinks.length === 1) {
-        this.moveToAndSelectNode(this.nodes[postLinks[0].id]);
+        this.moveToAndSelectNode(postLinks[0].treenode.id);
       // Otherwise, go to the presynaptic terminal if there is only one
-      } else if (preLinks && preLinks.length === 1) {
-        this.moveToAndSelectNode(this.nodes[preLinks[0].id]);
+      } else if (preLinks) {
+        if (preLinks.length === 1) {
+          this.moveToAndSelectNode(preLinks[0].treenode.id);
+        } else {
+          CATMAID.msg("Oops", "Don't know which terminal to switch to");
+          return;
+        }
       } else {
-        CATMAID.msg("Oops", "Don't know which terminal to switch to");
-        return;
+        // Otherwise, select the first partner node of the first available link
+        if (ob.links.length > 0) {
+          this.moveToAndSelectNode(ob.links[0].treenode.id);
+        }  else {
+          CATMAID.warn("No partner node found");
+          return;
+        }
       }
     }
   } else if (SkeletonAnnotations.TYPE_NODE === ob.type) {
@@ -4474,25 +4483,27 @@ SkeletonAnnotations.TracingOverlay.prototype.switchBetweenTerminalAndConnector =
     } else {
       // Find a connector for the treenode 'ob'
       var cs = this.findConnectors(ob.id);
-      var preIDs = cs[0];
-      var postIDs = cs[1];
-      var gjIDs = cs[2];
-      if (1 === postIDs.length) {
+      var preLinks = cs['presynaptic_to'];
+      var postLinks = cs['postsynaptic_to'];
+      var availableRelations = Object.keys(cs);
+
+      if (postLinks && postLinks.length === 1) {
         this.switchingTreenodeID = ob.id;
-        this.switchingConnectorID = postIDs[0];
-      } else if (1 === preIDs.length) {
+        this.switchingConnectorID = postLinks[0];
+      } else if (preLinks && preLinks.length === 1) {
         this.switchingTreenodeID = ob.id;
-        this.switchingConnectorID = preIDs[0];
-      } else if (1 === gjIDs.length) {
+        this.switchingConnectorID = preLinks[0];
+      } else if (availableRelations.length > 0) {
         this.switchingTreenodeID = ob.id;
-        this.switchingConnectorID = gjIDs[0];
+        this.switchingConnectorID = cs[availableRelations[0]][0];
       } else {
-        CATMAID.msg("Oops", "Don't know which connector to switch to");
+        CATMAID.warn("No connector linked to node");
         this.switchingTreenodeID = null;
         this.switchingConnectorID = null;
-        return;
       }
-      this.moveToAndSelectNode(this.nodes[this.switchingConnectorID].id);
+      if (this.switchingConnectorID) {
+        this.moveToAndSelectNode(this.nodes[this.switchingConnectorID].id);
+      }
     }
   } else {
     CATMAID.error("Unknown node type: " + ob.type);
@@ -4517,14 +4528,14 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteConnectorNode =
         let links = connectornode.links.reduce(collectLinksByRelation, {});
         let preLinks = links['presynaptic_to'];
         let postLinks = links['postsynaptic_to'];
-        let gapjunctionLinks = links['gapjunction_with'];
+        let availableRelations = Object.keys(links);
         // If there was a presynaptic node, select it
         if (preLinks && preLinks.length > 0) {
-            self.selectNode(preLinks[0].treenode_id).catch(CATMAID.handleError);
+            self.selectNode(preLinks[0].treenode.id).catch(CATMAID.handleError);
         } else if (postLinks && postLinks.length > 0) {
-            self.selectNode(postLinks[0].treenode_id).catch(CATMAID.handleError);
-        } else if (gapjunctionLinks && gapjunctionLinks.length > 0) {
-            self.selectNode(gapjunctionLinks[0].treenode_id).catch(CATMAID.handleError);
+            self.selectNode(postLinks[0].treenode.id).catch(CATMAID.handleError);
+        } else if (availableRelations.length > 0) {
+            self.selectNode(links[availableRelations[0]][0].treenode.id).catch(CATMAID.handleError);
         } else {
             self.activateNode(null);
         }
@@ -4613,14 +4624,19 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
         // No parent. But if this node was postsynaptic or presynaptic
         // to a connector, the connector must be selected:
         // Try first connectors for which node is postsynaptic:
-        if (partners[1].length > 0) {
-          self.selectNode(partners[1][0]).catch(CATMAID.handleError);
-        // Then try connectors for which node is presynaptic
-        } else if (partners[0].length > 0) {
-          self.selectNode(partners[0][0]).catch(CATMAID.handleError);
-        // Then try connectors for which node has gap junction with
-        } else if (partners[2].length > 0) {
-          self.selectNode(partners[2][0]).catch(CATMAID.handleError);
+        let partnerRelations = Object.keys(partners);
+        if (partnerRelations.length > 0) {
+          let postLinks = partners['postsynaptic_to'];
+          let preLinks = partners['presynaptic_to'];
+          if (postLinks && postLinks.length > 0) {
+            self.selectNode(postLinks[0]).catch(CATMAID.handleError);
+          // Then try connectors for which node is presynaptic
+          } else if (preLinks && preLinks.length > 0) {
+            self.selectNode(preLinks[0]).catch(CATMAID.handleError);
+          // Then try connectors for which node has gap junction with
+          } else {
+            self.selectNode(partners[partnerRelations[0]][0]).catch(CATMAID.handleError);
+          }
         } else {
           self.activateNode(null);
         }

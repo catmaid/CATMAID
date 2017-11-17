@@ -8,7 +8,8 @@ python:
   - "2.7"
   - "3.5"
   - "3.6"
-  - "pypy-5.7.1"
+  - "pypy"
+  - "pypy3"
 addons:
   chrome: stable
   apt:

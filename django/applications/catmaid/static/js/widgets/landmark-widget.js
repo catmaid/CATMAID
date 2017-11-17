@@ -1568,6 +1568,7 @@
         // Create new display transformations, which take one skeleton source
         // as well as a source and target landmark group.
         var newDisplayTransformationContainer = document.createElement('div');
+        newDisplayTransformationContainer.classList.add('clear');
         newDisplayTransformationContainer.appendChild(document.createElement('h1'))
             .appendChild(document.createTextNode('New display transformation'));
         let newDTForm = newDisplayTransformationContainer.appendChild(
@@ -1582,6 +1583,7 @@
         $(newDTForm).append(sourceSelectSetting);
 
         let existingDisplayTransformationsContainer = document.createElement('div');
+        existingDisplayTransformationsContainer.classList.add('clear');
         existingDisplayTransformationsContainer.appendChild(document.createElement('h1'))
             .appendChild(document.createTextNode('Existing display transformations'));
         let existingDTTable = existingDisplayTransformationsContainer.appendChild(

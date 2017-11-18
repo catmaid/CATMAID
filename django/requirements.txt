@@ -17,7 +17,7 @@ matplotlib==1.4.0; platform_python_implementation != 'PyPy'
 mock==1.0.1
 msgpack_python==0.4.8
 networkx==1.7
-numpy==1.12.0
+numpy==1.13.3
 pgmagick==0.7.2; platform_python_implementation != 'PyPy'
 pillow==4.3.0
 progressbar2==3.6.2

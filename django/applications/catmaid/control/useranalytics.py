@@ -394,6 +394,10 @@ def generateReport(user_id, project_id, activeTimeThresh, start_date, end_date, 
 
     fig = plt.figure(figsize=(12,10))
 
+    # Restore defaults from matplotlib 1.5.3. Default dpi changed to 100 in
+    # matplotlib 2.0.0.
+    fig.dpi = 80
+
     # Top left plot: created and edited nodes per day
     ax1 = plt.subplot2grid((2,2), (0,0))
 
@@ -401,17 +405,18 @@ def generateReport(user_id, project_id, activeTimeThresh, start_date, end_date, 
     # makes the regular bar draw over it, so that only the difference is
     # visible, which is exactly what we want.
     if all_writes:
-        we = ax1.bar(we_timeaxis, writeEvents, color='#00AA00')
+        we = ax1.bar(we_timeaxis, writeEvents, color='#00AA00', align='edge')
 
-    an = ax1.bar(ae_timeaxis, annotationEvents, color='#0000AA')
-    rv = ax1.bar(re_timeaxis, reviewEvents, bottom=annotationEvents, color='#AA0000')
+    an = ax1.bar(ae_timeaxis, annotationEvents, color='#0000AA', align='edge')
+    rv = ax1.bar(re_timeaxis, reviewEvents, bottom=annotationEvents,
+            color='#AA0000', align='edge')
     ax1.set_xlim((start_date,end_date))
 
     if all_writes:
-        ax1.legend( (we, an, rv), ('Other changes','Annotated', 'Reviewed'), loc=2,frameon=False )
+        ax1.legend( (we, an, rv), ('Other changes','Annotated', 'Reviewed'), loc=2)
         ax1.set_ylabel('Nodes and changes')
     else:
-        ax1.legend( (an, rv), ('Annotated', 'Reviewed'), loc=2,frameon=False )
+        ax1.legend( (an, rv), ('Annotated', 'Reviewed'), loc=2 )
         ax1.set_ylabel('Nodes')
 
     yl = ax1.get_yticklabels()
@@ -423,7 +428,7 @@ def generateReport(user_id, project_id, activeTimeThresh, start_date, end_date, 
 
     # Bottom left plot: net active time per day
     ax2 = plt.subplot2grid((2,2), (1,0))
-    ax2.bar( at_timeaxis, netActiveTime, color='k')
+    ax2.bar( at_timeaxis, netActiveTime, color='k', align='edge')
     ax2.set_xlim((start_date,end_date))
     ax2.set_ylabel('Hours')
     yl = ax2.get_yticklabels()
@@ -476,7 +481,7 @@ def dailyActivePlotFigure( activebouts, ax, start_date, end_date ):
             ax.bar( bout.start.replace(hour=0,minute=0,second=0,microsecond=0),
                     np.true_divide((bout.end-bout.start).total_seconds(), 3600),
                     bottom=bout.start.hour + bout.start.minute/60.0 + bout.start.second/3600.0,
-                    alpha=0.5, color='#0000AA')
+                    alpha=0.5, color='#0000AA', align='edge', edgecolor="k")
 
     # Set Axis limits
     ax.set_ylim((0, 24))

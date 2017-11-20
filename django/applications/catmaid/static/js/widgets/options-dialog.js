@@ -19,6 +19,18 @@
   OptionsDialog.prototype = {};
 
   /**
+   * Show ValueError instances as warning, otherwise let CATMAID deal with the
+   * error.
+   */
+  function handleError(error) {
+    if (error instanceof CATMAID.ValueError) {
+      CATMAID.warn(error);
+    } else {
+      CATMAID.handleError(error);
+    }
+  }
+
+  /**
    * Takes three optional arguments; default to 300, 200, true.
    */
   OptionsDialog.prototype.show = function(width, height, modal, maxHeight, resize) {
@@ -29,20 +41,32 @@
       for (var b in this.buttons) {
         buttons[b] = (function(callback) {
           return function() {
-            CATMAID.tools.callIfFn(callback);
-            $(this).dialog("destroy");
+            try {
+              CATMAID.tools.callIfFn(callback);
+              $(this).dialog("destroy");
+            } catch (error) {
+              handleError(error);
+            }
           };
         })(this.buttons[b]);
       }
     } else {
       buttons = {
         "Cancel": function() {
-          if (self.onCancel) self.onCancel();
-          $(this).dialog("destroy");
+          try {
+            if (self.onCancel) self.onCancel();
+            $(this).dialog("destroy");
+          } catch (error) {
+            handleError(error);
+          }
         },
         "OK": function() {
-          if (self.onOK) self.onOK();
-          $(this).dialog("destroy");
+          try {
+            if (self.onOK) self.onOK();
+            $(this).dialog("destroy");
+          } catch (error) {
+            handleError(error);
+          }
         }
       };
     }
@@ -57,8 +81,12 @@
       maxHeight: CATMAID.tools.getDefined(maxHeight, fallbackMaxHeight),
       modal: modal !== undefined ? modal : true,
       close: function() {
-        if (self.onCancel) self.onCancel();
-        $(this).dialog("destroy");
+        try {
+          if (self.onCancel) self.onCancel();
+          $(this).dialog("destroy");
+        } catch (error) {
+          handleError(error);
+        }
       },
       buttons: buttons,
       resize: resize

@@ -58,7 +58,7 @@
   var makeDisc = function(radius) {
     return new PIXI.Graphics()
       .beginFill(0xFFFFFF)
-      .drawCircle(0, 0, radius)
+      .drawCircle(radius, radius, radius)
       .endFill();
   };
 
@@ -69,9 +69,11 @@
    * @param ringWeight
    */
   var makeRing = function(radius, ringWeight) {
+    let center = radius + ringWeight/2;
+
     return new PIXI.Graphics()
       .lineStyle(ringWeight, 0xFFFFFF)
-      .drawCircle(0, 0, radius);
+      .drawCircle(center, center, radius);
   };
 
   /**
@@ -83,9 +85,11 @@
    */
   var makeTarget = function(radius, ringWeight, innerRingPpn) {
     innerRingPpn = innerRingPpn || 0.5;
+    let center = radius + ringWeight/2;
+
 
     return makeRing(radius, ringWeight)
-      .drawCircle(0, 0, radius * innerRingPpn);
+      .drawCircle(center, center, radius * innerRingPpn);
   };
 
   /**
@@ -98,12 +102,15 @@
    */
   var makeCrosshair = function(radius, ringWeight, crossWeight, crossRadius) {
     crossRadius = crossRadius || radius;
+
+    let center = radius + ringWeight/2;
+
     return makeRing(radius, ringWeight)
       .lineStyle(crossWeight, 0xFFFFFF)
-      .moveTo(-crossRadius, 0)
-      .lineTo(crossRadius, 0)
-      .moveTo(0, -crossRadius)
-      .lineTo(0, crossRadius);
+      .moveTo(center - crossRadius, center)
+      .lineTo(center + crossRadius, center)
+      .moveTo(center, center - crossRadius)
+      .lineTo(center, center + crossRadius);
   };
 
   /**
@@ -114,9 +121,11 @@
    * @param bullseyeRadius
    */
   var makeBullseye = function(radius, ringWeight, bullseyeRadius) {
+    let center = radius + ringWeight/2;
+
     return makeRing(radius, ringWeight)
       .beginFill(0xFFFFFF)
-      .drawCircle(0, 0, bullseyeRadius)
+      .drawCircle(center, center, bullseyeRadius)
       .endFill();
   };
 

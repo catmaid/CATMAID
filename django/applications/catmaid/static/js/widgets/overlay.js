@@ -679,6 +679,10 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   /** Current connector selection menu, if any */
   this.connectorTypeMenu = null;
 
+  // Keep the ID of the node deleted last, which allows to provide some extra
+  // context in some situations.
+  this._lastDeletedNodeId = null;
+
   /** Cache of node list request responses. */
   this.nodeListCache = new CATMAID.LRUCache(
       SkeletonAnnotations.TracingOverlay.NODE_LIST_CACHE_CAPACITY,
@@ -4619,7 +4623,7 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
     // activate parent node when deleted
     if (wasActiveNode) {
       if (json.parent_id) {
-        self.selectNode(json.parent_id);
+        return self.selectNode(json.parent_id);
       } else {
         // No parent. But if this node was postsynaptic or presynaptic
         // to a connector, the connector must be selected:
@@ -4629,13 +4633,13 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
           let postLinks = partners['postsynaptic_to'];
           let preLinks = partners['presynaptic_to'];
           if (postLinks && postLinks.length > 0) {
-            self.selectNode(postLinks[0]).catch(CATMAID.handleError);
+            return self.selectNode(postLinks[0]).catch(CATMAID.handleError);
           // Then try connectors for which node is presynaptic
           } else if (preLinks && preLinks.length > 0) {
-            self.selectNode(preLinks[0]).catch(CATMAID.handleError);
+            return self.selectNode(preLinks[0]).catch(CATMAID.handleError);
           // Then try connectors for which node has gap junction with
           } else {
-            self.selectNode(partners[partnerRelations[0]][0]).catch(CATMAID.handleError);
+            return self.selectNode(partners[partnerRelations[0]][0]).catch(CATMAID.handleError);
           }
         } else {
           self.activateNode(null);
@@ -4648,6 +4652,19 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
 };
 
 /**
+ * Delete active node after all other queued actions finished, which also allows
+ * the active node to change before it is queried. This is useful for instance to
+ * quickly delete multiple nodes and a changed active node is required.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.deleteActiveNode = function() {
+  var self = this;
+  let deleteNode = this.submit.promise(function() {
+      return self.deleteNode(SkeletonAnnotations.getActiveNodeId());
+    });
+  return this.submit.promise(deleteNode);
+};
+
+/**
  * Delete a node with the given ID. The node can either be a connector or a
  * treenode.
  */
@@ -4657,6 +4674,11 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
 
   if (!node) {
     CATMAID.error("Could not find a node with id " + nodeId);
+    return false;
+  }
+
+  if (nodeId === this._lastDeletedNodeId) {
+    CATMAID.msg("Just a moment", "Already deleting node " + nodeId);
     return false;
   }
 
@@ -4704,18 +4726,24 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
   }
 
   if (del) {
-    var reset = (function() {
+    var lastLastDeletedNodeId = this._lastDeletedNodeId;
+    this._lastDeletedNodeId = node.id;
+    var reset = (function(deletedNodeId) {
       this.suspended = false;
+      this._lastDeletedNodeId = deletedNodeId;
     }).bind(this);
-    del.then(reset)
+    del.then(function() {
+        reset(nodeId);
+      })
       .catch(function(error) {
-        reset();
+        reset(lastLastDeletedNodeId);
         CATMAID.handleError(error);
       });
-
+    return del;
+  } else {
+    CATMAID.error("Unhandled node type: " + node.type);
+    return false;
   }
-
-  return true;
 };
 
 /**

@@ -1017,7 +1017,7 @@
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
-        activeTracingLayer.tracingOverlay.deleteNode(SkeletonAnnotations.getActiveNodeId());
+        activeTracingLayer.tracingOverlay.deleteActiveNode();
         return true;
       }
     }));

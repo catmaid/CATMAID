@@ -1453,7 +1453,8 @@
         if (e.shiftKey || e.altKey) {
           var atnID = SkeletonAnnotations.getActiveNodeId();
           if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-            return catmaidTracingOverlay.deleteNode(node.id);
+            // Delete node, but relay only a boolean result status using !!
+            return !!catmaidTracingOverlay.deleteNode(node.id);
           }
           if (atnID) {
             var atnType = SkeletonAnnotations.getActiveNodeType();
@@ -1669,7 +1670,8 @@
         // this usually refers here to the c object
         if (e.shiftKey || e.altKey) {
           if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-            return catmaidTracingOverlay.deleteNode(connectornode.id);
+            // Delete node, but relay only a boolean result status using !!
+            return !!catmaidTracingOverlay.deleteNode(connectornode.id);
           }
           if (atnID) {
             var atnType = SkeletonAnnotations.getActiveNodeType();

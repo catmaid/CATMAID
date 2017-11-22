@@ -42,6 +42,12 @@ Connector table:
   tab. Apart from the color and mesh-faces option for groups, it is possible to
   scale landmarks.
 
+Neuron history widget:
+
+- A user filter can now be applied through the respective checkbox drop down
+  element. If at least one user is selected, only events caused by those users
+  are respected.
+
 Miscellaneous:
 
 - Users can now choose alternative markers for connector nodes, which do not

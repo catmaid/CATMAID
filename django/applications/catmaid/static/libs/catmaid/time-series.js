@@ -136,12 +136,17 @@
    *
    * @param {Bool} sortExact Whether sorting needs to be microsecond precise or
    *                         millisecond sorting is okay.
+   * @param {Set}  onlyUsers Optional, set of user IDs that are allowed in the
+   *                         result. If empty or undefined, all users are
+   *                         allowed.
    */
-  TimeSeries.mergeEventSources = function(eventSources, selectedSources, sort, sortExact) {
+  TimeSeries.mergeEventSources = function(eventSources, selectedSources, sort,
+      sortExact, onlyUsers) {
     var nEvents = selectedSources.reduce(sumEventSourceLengths.bind(eventSources), 0);
     var mergedEvents = new Array(nEvents);
     var addedEvents = 0;
     var Event = TimeSeries.Event;
+    let hasUserFilter = onlyUsers && onlyUsers.size > 0;
     for (var i=0; i<selectedSources.length; ++i) {
       var sourceId = selectedSources[i];
       var source = eventSources[sourceId];
@@ -150,6 +155,12 @@
       var userIndex = source.userIndex;
       for (var j=0, jmax=events.length; j<jmax; ++j) {
         var e = events[j];
+
+        // Skip event if its user isn't allowed
+        if (hasUserFilter && !onlyUsers.has(e[userIndex])) {
+          continue;
+        }
+
         // Store each event source with normalized data:
         // [lowerBount, upperBound, [lowerBoundStr, upperBoundStr, data]]
         mergedEvents[addedEvents] = new Event(new Date(e[timeIndex]), timeIndex, userIndex, e);
@@ -175,9 +186,11 @@
    * maximum of <maxInactivity> seconds apart from each other. To count parallel
    * events of different users correctly, <mergeUsers> has to be set to false.
    * If this is the case, all events within one bout will be from the same user.
-   * This also means, bouts can overlap.
+   * This also means, bouts can overlap. The optional <onlyUsers> options can
+   * provide a set with user IDs that should explicitely be included, all other
+   * users will be excluded.
    */
-  TimeSeries.getActiveBouts = function(events, maxInactivity, mergeUsers) {
+  TimeSeries.getActiveBouts = function(events, maxInactivity, mergeUsers, onlyUsers) {
     // Convert minutes to milliseconds
     maxInactivity = maxInactivity * 60 * 1000;
     if (mergeUsers) {

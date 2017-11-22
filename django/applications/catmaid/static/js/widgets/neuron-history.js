@@ -26,6 +26,8 @@
     this.tracingTimeComponents = new Set(["nodes", "connectors", "tags", "annotations"]);
     // The time components the tracing time is represented with
     this.timeUnits = new Set(["sec", "min", "hours", "days"]);
+    // Which users to respect, if empty all users will be respected
+    this.userFilter = new Set();
     // Whether user information should be ignored (deflates times, because
     // parallel user activities are not looked at separately).
     this.mergeUsers = false;
@@ -125,6 +127,39 @@
           self.refresh();
         };
         controls.append(timeUnits);
+
+        let users = CATMAID.User.all();
+        let userOptions = Object.keys(users).sort(function(a, b) {
+          return CATMAID.tools.compareStrings(a, b);
+        }).map(function(u) {
+          return {
+            title: users[u].login,
+            value: u
+          };
+        });
+        let userFilterSelect = CATMAID.DOM.createCheckboxSelect("User filter",
+            userOptions, Array.from(this.userFilter), true);
+        userFilterSelect.onchange = function(e) {
+          var checked = e.target.checked;
+          var component = parseInt(e.target.value, 10);
+          if (checked) {
+            self.userFilter.add(component);
+          } else {
+            self.userFilter.delete(component);
+          }
+          self.refresh();
+        };
+        controls.append(userFilterSelect);
+
+        var clearUserFilter = document.createElement('input');
+        clearUserFilter.setAttribute("type", "button");
+        clearUserFilter.setAttribute("value", "Clear user filter");
+        clearUserFilter.onclick = function(e) {
+          self.userFilter.clear();
+          self.refresh();
+          $('input[type=checkbox]', userFilterSelect).prop('checked', false);
+        };
+        controls.appendChild(clearUserFilter);
 
         var mergeUsers = document.createElement('input');
         mergeUsers.setAttribute("type", "checkbox");
@@ -317,6 +352,7 @@
     var tracingTimeComponents = this.tracingTimeComponents;
     var timeUnits = this.timeUnits;
     var mergeUsers = this.mergeUsers;
+    var onlyUsers = this.userFilter;
     var skeletonPromises = skeletonIds.map(function(skeletonId, i, ids) {
       return CATMAID.fetch(project.id + "/skeletons/" + skeletonId + "/compact-detail", "GET", {
         with_user_info: true,
@@ -343,7 +379,7 @@
 
         return NeuronHistoryWidget.skeletonDetailToStats(skeletonId,
             skeletonDetail, maxInactivityTime, tracingTimeComponents,
-            timeUnits, mergeUsers, resultComponents);
+            timeUnits, mergeUsers, onlyUsers, resultComponents);
       });
     });
 
@@ -363,7 +399,7 @@
 
   NeuronHistoryWidget.skeletonDetailToStats = function(skeletonId,
       skeletonDetail, maxInactivityTime, tracingTimeComponents,
-      timeUnits, mergeUsers, resultComponents) {
+      timeUnits, mergeUsers, onlyUsers, resultComponents) {
     var result = {
       skeletonId: skeletonId
     };
@@ -387,7 +423,7 @@
       // Get sorted tracing events
       // TODO: count all writes
       var tracingEvents = TS.mergeEventSources(availableEvents,
-          Array.from(tracingTimeComponents), 'asc');
+          Array.from(tracingTimeComponents), 'asc', false, onlyUsers);
       // Calculate tracing time by finding active bouts. Each bout consists of
       // a lists of events that contribute to the reconstruction of a neuron.
       // These events are currently node edits and connector edits.
@@ -400,7 +436,8 @@
 
     if (resultComponents.has('reviewTime')) {
       // Get sorted review events
-      var reviewEvents = TS.mergeEventSources(availableEvents, ["reviews"], 'asc');
+      var reviewEvents = TS.mergeEventSources(availableEvents, ["reviews"],
+          'asc', false, onlyUsers);
       var activeReviewBouts = TS.getActiveBouts(reviewEvents, maxInactivityTime,
           mergeUsers);
       var reviewTime = TS.getTotalTime(activeReviewBouts);
@@ -412,7 +449,7 @@
       var totalTimeComponents = new Set(tracingTimeComponents);
       totalTimeComponents.add('reviews');
       var totalEvents = TS.mergeEventSources(availableEvents,
-          Array.from(totalTimeComponents), 'asc');
+          Array.from(totalTimeComponents), 'asc', false, onlyUsers);
       var activeTotalBouts = TS.getActiveBouts(totalEvents, maxInactivityTime,
           mergeUsers);
       var totalTime = TS.getTotalTime(activeTotalBouts);
@@ -494,12 +531,13 @@
       result.mergesDuringReview = "?";
     }
 
+    let hasActiveTotalBouts = activeTracingBouts && activeTracingBouts.length > 0;
     if (resultComponents.has('firstTracing')) {
-      result.firstTracingTime = activeTracingBouts ?
+      result.firstTracingTime = hasActiveTotalBouts ?
           activeTracingBouts[0].minDate : "N/A";
     }
     if (resultComponents.has('lastTracing')) {
-      result.lastTracingTime = activeTracingBouts ?
+      result.lastTracingTime = hasActiveTotalBouts ?
           activeTracingBouts[activeTracingBouts.length - 1].maxDate : "N/A";
     }
     if (resultComponents.has('firstReview')) {

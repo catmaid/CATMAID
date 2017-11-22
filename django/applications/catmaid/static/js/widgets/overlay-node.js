@@ -1730,14 +1730,15 @@
         }
       };
 
+
+      var trackedEvents = ['mousedown', 'mousemove', 'mouseup',
+          'mouseupoutside', 'click'];
+
       this.forget = function(mc, type) {
-        ['mousedown',
-         'mousemove',
-         'mouseup',
-         'mouseupoutside',
-         'click'].forEach(function (l) {
-          mc.removeAllListeners(l);
-        });
+        for (var i=0, imax=trackedEvents.length; i<imax; ++i) {
+          var eventName = trackedEvents[i];
+          mc.removeAllListeners(eventName);
+        }
       };
     })();
 

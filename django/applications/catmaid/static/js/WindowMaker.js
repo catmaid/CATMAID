@@ -1242,14 +1242,14 @@ var WindowMaker = new function()
 
     DOM.appendToTab(tabs['Export'],
         [
-          ['Export PNG', WA.exportPNG.bind(WA)],
-          ['Export SVG', WA.exportSVG.bind(WA)],
-          ['Export catalog SVG', WA.exportCatalogSVG.bind(WA)],
-          ['Export skeletons as CSV', WA.exportSkeletonsAsCSV.bind(WA)],
-          ['Export connectors as CSV', WA.exportConnectorsAsCSV.bind(WA)],
-          ['Export synapses as CSV', WA.exportSynapsesAsCSV.bind(WA)],
+          ['PNG', WA.exportPNG.bind(WA)],
+          ['SVG', WA.exportSVG.bind(WA)],
+          ['Catalog SVG', WA.exportCatalogSVG.bind(WA)],
+          ['Skeletons as CSV', WA.exportSkeletonsAsCSV.bind(WA)],
+          ['Connectors as CSV', WA.exportConnectorsAsCSV.bind(WA)],
+          ['Synapses as CSV', WA.exportSynapsesAsCSV.bind(WA)],
           ['Synapse count CSV', WA.countObjects.bind(WA)],
-          ['Export animation', WA.exportAnimation.bind(WA)],
+          ['Animation', WA.exportAnimation.bind(WA)],
         ]);
 
     content.appendChild( bar );

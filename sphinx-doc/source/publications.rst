@@ -36,6 +36,8 @@ Publications using CATMAID
 
 * Akira Fushiki, Maarten F. Zwart, Hiroshi Kohsaka1, Richard D. Fetter, Albert Cardona, Akinao Nose. `A circuit mechanism for the propagation of waves of muscle contraction in Drosophila <https://elifesciences.org/articles/13253>`_, eLife, 2016.
 
+* Philipp Schlegel, Michael J. Texada, Anton Miroschnikow, Andreas Schoofs, Sebastian Hückesfeld, Marc Peters, Casey M. Schneider-Mizell, Haluk Lacin, Feng Li. `Synaptic transmission parallels neuromodulation in a central food-intake circuiti <https://elifesciences.org/articles/16799>`_, eLife, 2016
+
 2015
 ~~~~
 

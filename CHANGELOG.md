@@ -42,6 +42,13 @@ Connector table:
   tab. Apart from the color and mesh-faces option for groups, it is possible to
   scale landmarks.
 
+- All visible skeletons can now be exported as Wavefront OBJ file. Each skeleton
+  will be rendered as a separate group, colors are preserved and written out as
+  material file (MTL). Both files can be compressed as ZIP file on the fly and it
+  is possible to generate a simple line based export as well as a mesh based
+  representation using a user definable radius. The generated ZIP file can be
+  used with services like augment.com.
+
 Neuron history widget:
 
 - A user filter can now be applied through the respective checkbox drop down

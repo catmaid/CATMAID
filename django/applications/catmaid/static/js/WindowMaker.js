@@ -1250,6 +1250,11 @@ var WindowMaker = new function()
           ['Synapses as CSV', WA.exportSynapsesAsCSV.bind(WA)],
           ['Synapse count CSV', WA.countObjects.bind(WA)],
           ['Animation', WA.exportAnimation.bind(WA)],
+          ['Skeletons as OBJ', function() {
+            // Export visible skeletons
+            let visibleSkeletons = WA.getSelectedSkeletons();
+            WA.exportObj(visibleSkeletons);
+          }]
         ]);
 
     content.appendChild( bar );

@@ -605,6 +605,245 @@
     saveAs(new Blob([rows.join('\n')], {type : 'text/csv'}), "skeleton_coordinates.csv");
   };
 
+  /**
+   * Return a new THREE.Mesh instance that adds "flesh to the bone".
+   */
+  WebGLApplication.prototype.toTriangleMeshes = function(skeletonId, material,
+      radius, radiusSegments) {
+    // Get Arbor and split into partitions
+    let skeleton = this.space.content.skeletons[skeletonId];
+    if (!skeleton) {
+      throw new CATMAID.Warning("Skeleton " + skeletonId + " is not loaded");
+    }
+    let arbor = skeleton.createArbor();
+    let partitions = arbor.partition();
+    let positions = skeleton.getPositions();
+    radius = CATMAID.tools.getDefined(radius, 10);
+    radiusSegments = CATMAID.tools.getDefined(radiusSegments, 8);
+
+    let addSphereAndEdge = function(p, i, partition) {
+      let pos = this.positions[p];
+      let hasParent = i < (partition.length - 1);
+      let isNotRoot = hasParent || this.arbor.root != p;
+      // Make sure we have an integer
+      let id = parseInt(p);
+      let nodeSphere = this.nodes.get(id);
+      if (!nodeSphere) {
+        let r = isNotRoot ? radius : (3 * radius);
+        let sphere = new THREE.SphereGeometry(r, radiusSegments, radiusSegments);
+        sphere.translate(pos.x, pos.y, pos.z);
+        this.nodes.set(id, nodeSphere);
+        this.mesh.geometry.merge(sphere);
+      }
+
+      // We are walking a skeleton segment from leaf to root, only create
+      // cylinders for nodes that have a partent in this segment.
+      if (hasParent) {
+        let parentId = partition[i + 1];
+        let parentPos = this.positions[parentId];
+        let distance = pos.distanceTo(parentPos);
+        let cylinderAxis = new THREE.Vector3().subVectors(pos, parentPos);
+        cylinderAxis.normalize();
+        var theta = Math.acos(cylinderAxis.y);
+        var rotationAxis = new THREE.Vector3();
+        rotationAxis.crossVectors(cylinderAxis, new THREE.Vector3(0, 1, 0));
+        rotationAxis.normalize();
+        // The cylinder doesn't need to be capped, because of the spheres.
+        let cylinder = new THREE.CylinderGeometry(radius, radius, distance,
+            radiusSegments, 1, true);
+        let m = new THREE.Matrix4();
+        m.makeRotationAxis(rotationAxis, -theta);
+        var position = new THREE.Vector3(
+            (pos.x + parentPos.x) / 2,
+            (pos.y + parentPos.y) / 2,
+            (pos.z + parentPos.z) / 2);
+        m.setPosition(position);
+        cylinder.applyMatrix(m);
+        this.mesh.geometry.merge(cylinder);
+      }
+    };
+
+    // For each partition create a sphere for each node (if not yet available)
+    // and connect to parent with a cylinder.
+    let meshData = partitions.reduce(function(data, partition) {
+      partition.forEach(addSphereAndEdge, data);
+      return data;
+    }, {
+      mesh: new THREE.Mesh(new THREE.Geometry(), material),
+      nodes: new Map(),
+      positions: positions,
+      arbor: arbor
+    });
+
+    return [meshData.mesh];
+  };
+
+  /**
+   * Use Three.js to export the loaded skeleton ID as OBJ file.
+   */
+  WebGLApplication.prototype.exportObj = function(skeletonIds, lines) {
+    var skeletons = skeletonIds.map(function(skeletonId) {
+      let skeleton = this.space.content.skeletons[skeletonId];
+      if (!skeleton) {
+        throw new CATMAID.Warning("Skeleton " + skeletonId + " is not loaded");
+      }
+      return skeleton;
+    }, this);
+    let packAsZip = true;
+    let exportColor = true;
+
+    let self = this;
+    let radius = 50, radiusSegments = 8;
+    let filename = "catmaid-skeleton-" + skeletonIds.join("-");
+    let doExport = function(asLines) {
+      let header = "# CATMAID v" + CATMAID.CLIENT_VERSION + "\n" +
+          "# File created: " + (new Date()) + '\n';
+      let data = [header];
+      let materialData = [header];
+      if (exportColor) {
+        data.push("mtllib " + filename + ".mtl");
+      }
+      let scene = new THREE.Scene();
+      let exporter = new THREE.OBJExporter();
+      let meshesToReAdd = [];
+      let addedMaterials = [];
+      for (let i=0; i < skeletons.length; ++i) {
+        let skeleton = skeletons[i];
+        let skeletonId = skeleton.id;
+        let mesh = skeleton.actor['neurite'];
+        let material = mesh.material;
+
+        let skeletonData;
+        if (asLines) {
+          scene.add(mesh);
+          meshesToReAdd.push(mesh);
+        } else {
+          let meshes = self.toTriangleMeshes(skeletonId, material,
+              radius, radiusSegments);
+          meshes.forEach(function(m) {
+            scene.add(m);
+          });
+        }
+
+        if (exportColor) {
+          let c = material.color;
+          let materialName = "mat_skeleton_" + skeletonId;
+          materialData.push("newmtl " + materialName + "\n" +
+            "Ka " + c.r + " " + c.g + " " + c.b + "\n" +
+            "Kd " + c.r + " " + c.g + " " + c.b + "\n");
+          addedMaterials.push(materialName);
+        }
+      }
+
+      let skeletonData = exporter.parse(scene);
+      for (let i=0; i<meshesToReAdd.length; ++i) {
+        // Needed, because we reuse the existing mesh here and it seems to be
+        // only able to be part of one scene at a time.
+        self.space.scene.add(meshesToReAdd[i]);
+      }
+
+      // Replace created "o" elemnts (object grous) with group elements
+      let nMatch = -1;
+      skeletonData = skeletonData.replace(/^o.*/mg, function() {
+        ++nMatch;
+        let groupDefinition = "\n# Skeleton " + skeletonIds[nMatch] + "\n" +
+            "g skeleton_" + skeletonIds[nMatch];
+        if (exportColor) {
+          // Add material reference to skeleton data
+          groupDefinition += "\n" + "usemtl " + addedMaterials[nMatch] + "\n";
+        }
+        return groupDefinition;
+      });
+
+      data.push(skeletonData);
+
+      data = data.join('\n');
+      materialData = materialData.join('\n');
+
+      if (packAsZip) {
+        var zip = new JSZip();
+        zip.file(filename + ".obj", data);
+        if (exportColor) {
+          zip.file(filename + ".mtl", materialData);
+        }
+        var content = zip.generate({type: "blob"});
+        saveAs(content, filename + ".zip");
+      } else {
+        saveAs(new Blob([data], {type: 'text/obj'}), filename + ".obj");
+        if (exportColor) {
+          saveAs(new Blob([materialData], {type: 'text/mtl'}), filename + ".mtl");
+        }
+      }
+    };
+
+    let dialog = new CATMAID.OptionsDialog('Select type of export', {
+        "Cancel": function() {
+          $(this).dialog("close");
+        },
+        "Lines": function() {
+          doExport(true);
+          $(this).dialog("close");
+        },
+        "Mesh": function() {
+          doExport(false);
+          $(this).dialog("close");
+        }
+      });
+
+    dialog.appendMessage("Please select whether the active skeleton should be " +
+        "exported as a simple lines or triangle mesh. These exports tend to " +
+        "become large quickly and in case of an error you might try to re-sample " +
+        "the skeleton first (Skeleton filters tab), reduce the number of skeletons " +
+        "or reduce the segment count below.");
+
+    let zipSetting = CATMAID.DOM.createCheckboxSetting(
+        "Create ZIP archive", packAsZip, "Result files can get easily bigger than 50MB " +
+        "and are therefore compressed using ZIP by default.",
+        function(e) {
+          packAsZip = this.checked;
+        });
+    dialog.appendChild(zipSetting[0]);
+
+    let colorSetting = CATMAID.DOM.createCheckboxSetting(
+        "Include color information", exportColor, "A material file (.mtl) will " +
+        "be createad and referenced from the object file.",
+        function(e) {
+          exportColor = this.checked;
+        });
+    dialog.appendChild(colorSetting[0]);
+
+    let filenameSetting = CATMAID.DOM.createInputSetting(
+        "Filename", filename, "The filename of the result file, without extension.",
+        function(e) {
+          filename = this.value;
+        });
+    $('input', filenameSetting).css('width', '25em');
+    dialog.appendChild(filenameSetting[0]);
+
+    let meshMsg = dialog.appendMessage("If a mesh result is requested, all " +
+        "skeleton line segments are represented as tubes. They come with " +
+        "additional parameters:");
+    meshMsg.classList.add('clear');
+
+    let radiusSetting = CATMAID.DOM.createNumericInputSetting(
+        "Radius", radius, 1,
+        "The radius of the generated tubes",
+        function(e) {
+          radius = parseInt(this.value, 10);
+        });
+    dialog.appendChild(radiusSetting[0]);
+
+    let radiusSegmentsSetting = CATMAID.DOM.createNumericInputSetting(
+        "Radius segments", radiusSegments, 1,
+        "The number of segments that make up a crossection of the generated tubes",
+        function(e) {
+          radiusSegments = parseInt(this.value, 10);
+        });
+    dialog.appendChild(radiusSegmentsSetting[0]);
+
+    dialog.show(600, 'auto');
+  };
+
   /** Will export only those present in the 3D View, as determined by the connector restriction option.
    * By its generic nature, it will export even connectors whose relations to the skeleton are something
    * other than pre- or postsynaptic_to. */

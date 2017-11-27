@@ -82,6 +82,13 @@
       timestamp: Date.now()
     };
     this._store.unshift(entry);
+    this.removeExcessItems();
+  };
+
+  /**
+   * Remove all items that don't fit in anymore.
+   */
+  LRUCache.prototype.removeExcessItems = function() {
     if (this._store.length > this.capacity) this._store.length = this.capacity;
   };
 

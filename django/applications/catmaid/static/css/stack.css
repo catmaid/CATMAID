@@ -70,16 +70,6 @@ div.smallMapView_hidden {
   height: 16px;
 }
 
-body {
-  border: none;
-  margin: 0;
-  padding: 0;
-  color: #000000;
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 11px;
-  line-height: 14px;
-}
-
 div.smallMapView div.smallMapToggle,
 div.smallMapView_hidden div.smallMapToggle {
   position: absolute;

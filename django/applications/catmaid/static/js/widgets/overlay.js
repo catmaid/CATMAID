@@ -686,10 +686,12 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   // context in some situations.
   this._lastDeletedNodeId = null;
 
-  /** Cache of node list request responses. */
-  this.nodeListCache = new CATMAID.LRUCache(
+  /** Cache of node list request responses, ideally in a memory aware cache. */
+  this.nodeListCache = new CATMAID.CacheBuilder.makeMemoryAwareLRUCache(
       SkeletonAnnotations.TracingOverlay.NODE_LIST_CACHE_CAPACITY,
-      SkeletonAnnotations.TracingOverlay.NODE_LIST_CACHE_LIFETIME);
+      SkeletonAnnotations.TracingOverlay.NODE_LIST_CACHE_LIFETIME,
+      SkeletonAnnotations.TracingOverlay.NODE_LIST_CACHE_MAX_MEM_FILL_RATE,
+      true);
 
   /** An accessor to the internal nodes array to get information about the
    * layer's current state */
@@ -898,6 +900,7 @@ CATMAID.asEventSource(SkeletonAnnotations.TracingOverlay.prototype);
 
 SkeletonAnnotations.TracingOverlay.NODE_LIST_CACHE_CAPACITY = 20;
 SkeletonAnnotations.TracingOverlay.NODE_LIST_CACHE_LIFETIME = 60 * 1000;
+SkeletonAnnotations.TracingOverlay.NODE_LIST_CACHE_MAX_MEM_FILL_RATE = 0.75;
 
 SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
       'tracing-overlay',

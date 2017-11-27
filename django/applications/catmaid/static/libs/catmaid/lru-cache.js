@@ -128,6 +128,72 @@
     }
   };
 
+  /**
+   * A memory aware variant of the LRU cache. It allows a maximum memory fill
+   * rate to be set. If a new item is added to the cache it is checked if adding
+   * this items would result in a higher memory fill rate than allowed. If this
+   * is the case, older items are removed until there is enough memory.
+   *
+   * @param {number}  capacity           Size of the cache.
+   * @param {number}  lifetime           Lifetime for cache entries in ms (optional).
+   * @param {number}  maxMemoryFillRatee Maximum allowed ratio of used memory
+   *                                     after a new items is added. If new
+   *                                     value would supass this, old values are
+   *                                     removed, even if the capacity setting
+   *                                     would allow them.
+   */
+  function MemoryAwareLRUCache(capacity, lifetime, maxMemoryFillRate) {
+    if (!window.performance.memory) {
+      throw new CATMAID.PreConditionError("Need window.performance.memory " +
+          "extension, available e.g. in Chrome/Chromium");
+    }
+    LRUCache.call(this, capacity, lifetime);
+    this.maxMemoryFillRate = CATMAID.tools.getDefined(maxMemoryFillRate, 1.0);
+  }
+
+  MemoryAwareLRUCache.prototype = Object.create(LRUCache.prototype);
+  MemoryAwareLRUCache.prototype.constructor = MemoryAwareLRUCache;
+
+  /**
+   * Override prototype implementation with a memory test, performed before the
+   * orginal set() is called. If the test suggests nothing should be allocated
+   * because of too little memory, skip adding this item.
+   */
+  MemoryAwareLRUCache.prototype.set = function(key, value) {
+    let memory = window.performance.memory;
+    let heapFillRate = memory.usedJSHeapSize / memory.totalJSHeapSize;
+    let limitFillRate = memory.totalJSHeapSize / memory.jsHeapSizeLimit;
+    // If both, the free space in the current heap is too small and the heap
+    // space in general takes more from the global heap limit, than adding a
+    // new item to the cache is prevented to reduce the risk of running out of
+    // memory, which is otherwise hard to catch in JavaScript.
+    var dontCache = heapFillRate > this.maxMemoryFillRate &&
+        limitFillRate > this.maxMemoryFillRate;
+
+    if (!dontCache) {
+      LRUCache.prototype.set.call(this, key, value);
+    }
+  };
+
+  /**
+   * Create cache instances with fallback options.
+   */
+  CATMAID.CacheBuilder = {
+    makeMemoryAwareLRUCache: function(capacity, lifetime, maxMemoryFillRate, fallback) {
+      let cache;
+      try {
+        return new MemoryAwareLRUCache(capacity, lifetime, maxMemoryFillRate);
+      } catch(error) {
+        if (fallback && error instanceof CATMAID.PreConditionError) {
+          return new LRUCache(capacity, lifetime);
+        }
+        throw error;
+      }
+    }
+  };
+
+
   CATMAID.LRUCache = LRUCache;
+  CATMAID.MemoryAwareLRUCache = MemoryAwareLRUCache;
 
 })(CATMAID);

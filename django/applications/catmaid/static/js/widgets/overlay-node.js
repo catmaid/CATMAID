@@ -58,7 +58,7 @@
   var makeDisc = function(radius) {
     return new PIXI.Graphics()
       .beginFill(0xFFFFFF)
-      .drawCircle(0, 0, radius)
+      .drawCircle(radius, radius, radius)
       .endFill();
   };
 
@@ -69,9 +69,11 @@
    * @param ringWeight
    */
   var makeRing = function(radius, ringWeight) {
+    let center = radius + ringWeight/2;
+
     return new PIXI.Graphics()
       .lineStyle(ringWeight, 0xFFFFFF)
-      .drawCircle(0, 0, radius);
+      .drawCircle(center, center, radius);
   };
 
   /**
@@ -83,9 +85,11 @@
    */
   var makeTarget = function(radius, ringWeight, innerRingPpn) {
     innerRingPpn = innerRingPpn || 0.5;
+    let center = radius + ringWeight/2;
+
 
     return makeRing(radius, ringWeight)
-      .drawCircle(0, 0, radius * innerRingPpn);
+      .drawCircle(center, center, radius * innerRingPpn);
   };
 
   /**
@@ -98,12 +102,15 @@
    */
   var makeCrosshair = function(radius, ringWeight, crossWeight, crossRadius) {
     crossRadius = crossRadius || radius;
+
+    let center = radius + ringWeight/2;
+
     return makeRing(radius, ringWeight)
       .lineStyle(crossWeight, 0xFFFFFF)
-      .moveTo(-crossRadius, 0)
-      .lineTo(crossRadius, 0)
-      .moveTo(0, -crossRadius)
-      .lineTo(0, crossRadius);
+      .moveTo(center - crossRadius, center)
+      .lineTo(center + crossRadius, center)
+      .moveTo(center, center - crossRadius)
+      .lineTo(center, center + crossRadius);
   };
 
   /**
@@ -114,9 +121,11 @@
    * @param bullseyeRadius
    */
   var makeBullseye = function(radius, ringWeight, bullseyeRadius) {
+    let center = radius + ringWeight/2;
+
     return makeRing(radius, ringWeight)
       .beginFill(0xFFFFFF)
-      .drawCircle(0, 0, bullseyeRadius)
+      .drawCircle(center, center, bullseyeRadius)
       .endFill();
   };
 
@@ -1351,9 +1360,7 @@
        * @param force
        */
       this.initTextures = function(force) {
-        var oldMarkerType = this.markerType;
         this.markerType = SkeletonAnnotations.TracingOverlay.Settings.session.connector_node_marker;
-        force = force && (oldMarkerType === 'disc' ^ this.markerType === 'disc');
         this.NODE_RADIUS = this.markerType === 'disc' ? 8 : 15;
         var g = this.makeMarker();
 
@@ -1365,7 +1372,10 @@
           this.NODE_TEXTURE.baseTexture = texture.baseTexture;
           oldBaseTexture.destroy();
         } else {
-          if (this.NODE_TEXTURE) console.log('Warning: Possible connector node texture leak');
+          if (this.NODE_TEXTURE) {
+            console.log('Warning: Possible connector node texture leak');
+            this.NODE_TEXTURE.destroy(true);
+          }
           this.NODE_TEXTURE = texture;
         }
       };

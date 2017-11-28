@@ -415,7 +415,7 @@
    * @return {string[]} Names of supported blend modes.
    */
   PixiLayer.prototype.getAvailableBlendModes = function () {
-    var glBlendModes = this._context.renderer.state.blendModes;
+    var glBlendModes = this._context.renderer.blendModes;
     var normBlendFuncs = glBlendModes[PIXI.BLEND_MODES.NORMAL];
     return Object.keys(PIXI.BLEND_MODES)
         .filter(function (modeKey) { // Filter modes that are not different from normal.

@@ -1854,7 +1854,7 @@
     var makeMultipleBarChart = function(skeletons, partners, container, title,
         widgetID, container_width, colorizer) {
       // Cancel drawing if there is no data
-      if (0 === Object.keys(partners).length) return null;
+      if (!partners || 0 === Object.keys(partners).length) return null;
 
       // Prepare data: (skip skeletons with less than 2 nodes)
       var a = distribution(partners, 2, skeletons);

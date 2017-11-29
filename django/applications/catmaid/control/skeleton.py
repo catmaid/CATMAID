@@ -919,8 +919,7 @@ def _skeleton_info_raw(project_id, skeletons, op, with_nodes=False):
     cursor = connection.cursor()
 
     # Obtain the IDs of the 'presynaptic_to', 'postsynaptic_to' and 'model_of' relations
-    relation_ids = get_relation_to_id_map(project_id,
-        ('presynaptic_to', 'postsynaptic_to', 'gapjunction_with', 'model_of'))
+    relation_ids = get_relation_to_id_map(project_id)
 
     # Obtain partner skeletons and their info
     incoming, incoming_reviewers = _connected_skeletons(skeletons, op,
@@ -931,6 +930,9 @@ def _skeleton_info_raw(project_id, skeletons, op, with_nodes=False):
             relation_ids['model_of'], cursor, with_nodes)
     gapjunctions, gapjunctions_reviewers = _connected_skeletons(skeletons, op,
             relation_ids.get('gapjunction_with', -1), relation_ids.get('gapjunction_with', -1),
+            relation_ids['model_of'], cursor, with_nodes)
+    attachments, attachments_reviewers = _connected_skeletons(skeletons, op,
+            relation_ids.get('attached_to', -1), relation_ids.get('close_to', -1),
             relation_ids['model_of'], cursor, with_nodes)
 
     def prepare(partners):
@@ -946,8 +948,9 @@ def _skeleton_info_raw(project_id, skeletons, op, with_nodes=False):
     prepare(incoming)
     prepare(outgoing)
     prepare(gapjunctions)
+    prepare(attachments)
 
-    return incoming, outgoing, gapjunctions, incoming_reviewers, outgoing_reviewers, gapjunctions_reviewers
+    return incoming, outgoing, gapjunctions, attachments, incoming_reviewers, outgoing_reviewers, gapjunctions_reviewers, attachments_reviewers
 
 @api_view(['POST'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -1067,15 +1070,19 @@ def skeleton_info_raw(request, project_id=None):
     op = {'AND': 'AND', 'OR': 'OR'}[op] # sanitize
     with_nodes = request.POST.get('with_nodes', 'false') == 'true'
 
-    incoming, outgoing, gapjunctions, incoming_reviewers, outgoing_reviewers, gapjunctions_reviewers = _skeleton_info_raw(project_id, skeletons, op, with_nodes)
+    incoming, outgoing, gapjunctions, attachments, incoming_reviewers, \
+    outgoing_reviewers, gapjunctions_reviewers, attachments_reviewers = \
+        _skeleton_info_raw(project_id, skeletons, op, with_nodes)
 
     return JsonResponse({
                 'incoming': incoming,
                 'outgoing': outgoing,
                 'gapjunctions': gapjunctions,
+                'attachments': attachments,
                 'incoming_reviewers': incoming_reviewers,
                 'outgoing_reviewers': outgoing_reviewers,
-                'gapjunctions_reviewers': gapjunctions_reviewers})
+                'gapjunctions_reviewers': gapjunctions_reviewers,
+                'attachments_reviewers': attachments_reviewers})
 
 
 @requires_user_role(UserRole.Browse)

@@ -69,6 +69,12 @@ New connector types:
 - To add more information about the nature of an attachment, the connector
   should be labeled, e.g. as "vesicle".
 
+Connectivity Widget:
+
+- All skeletons linked through a attached_to -> connector -> close_to
+  relationship are now shown in a separate table if the "Show attachments"
+  option is enabled.
+
 Miscellaneous:
 
 - Users can now choose alternative markers for connector nodes, which do not

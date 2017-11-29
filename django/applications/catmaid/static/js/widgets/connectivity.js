@@ -21,6 +21,8 @@
     this.autoUpdate = false;
     // Hide gap junction connections by default
     this.showGapjunctionTable = false;
+    // Hide attachment  connections by default
+    this.showAttachmentTable = false;
     // Ordering of neuron table, by default no ordering is applied
     this.currentOrder = [];
     // If no original colors are used, new skeleton models will be colored
@@ -280,6 +282,21 @@
         gapjunctionLabel.appendChild(document.createTextNode('Show gap junctions'));
         controls.appendChild(gapjunctionLabel);
 
+        var attachmentToggle = document.createElement('input');
+        attachmentToggle.setAttribute('id', 'connectivity-attachmenttable-toggle-' + this.widgetID);
+        attachmentToggle.setAttribute('type', 'checkbox');
+        if (this.showAttachmentTable) {
+          attachmentToggle.setAttribute('checked', 'checked');
+        }
+        attachmentToggle.onchange = function() {
+          self.showAttachmentTable = this.checked;
+          self.update();
+        };
+        var attachmentLabel = document.createElement('label');
+        attachmentLabel.appendChild(attachmentToggle);
+        attachmentLabel.appendChild(document.createTextNode('Show attachments'));
+        controls.appendChild(attachmentLabel);
+
         var filterRulesToggle = document.createElement('input');
         filterRulesToggle.setAttribute('id', 'connectivity-filterrules-toggle-' + this.widgetID);
         filterRulesToggle.setAttribute('type', 'checkbox');
@@ -489,7 +506,9 @@
     'incoming': {name: 'Upstream', rel: 'presynaptic_to'},
     'outgoing': {name: 'Downstream', rel: 'postsynaptic_to'},
     'gapjunctions': {name: 'Gap junction', rel: 'gapjunction_with',
-        pTitle: 'Gap junction with neuron', ctrShort: 'gj'}
+        pTitle: 'Gap junction with neuron', ctrShort: 'gj'},
+    'attachments': {name: 'Attachment', rel: 'attached_to',
+        pTitle: 'Linked to neuron', ctrShort: 'site'}
   };
 
   SkeletonConnectivity.prototype.update = function() {
@@ -508,6 +527,9 @@
     var partnerSetIds = ['incoming', 'outgoing'];
     if (this.showGapjunctionTable) {
       partnerSetIds.push('gapjunctions');
+    }
+    if (this.showAttachmentTable) {
+      partnerSetIds.push('attachments');
     }
 
     var self = this;

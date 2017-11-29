@@ -1491,6 +1491,15 @@
                 // careful, atnID is a connector
                 catmaidTracingOverlay.createLink(node.id, atnID, "abutting")
                   .catch(CATMAID.handleError);
+              } else if (atnSubType === CATMAID.Connectors.SUBTYPE_ATTACHMENT_CONNECTOR) {
+                if (!CATMAID.mayEdit()) {
+                  CATMAID.error("You lack permissions to declare node #" + node.id +
+                      " as node close to attachment connector #" + atnID);
+                  return;
+                }
+                // careful, atnID is a connector
+                catmaidTracingOverlay.createLink(node.id, atnID, "close_to")
+                  .catch(CATMAID.handleError);
               } else {
                 CATMAID.error("Unknown connector subtype: " + atnSubType);
                 return;

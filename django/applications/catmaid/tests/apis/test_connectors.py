@@ -46,6 +46,12 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                 'relation': 'attached_to',
                 'relation_id': 1026,
                 'type': 'Attachment'
+            },
+            {
+                'name': 'Close to',
+                'relation': 'close_to',
+                'relation_id': 1027,
+                'type': 'Spatial'
             }]
 
 

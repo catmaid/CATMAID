@@ -55,6 +55,20 @@ Neuron history widget:
   element. If at least one user is selected, only events caused by those users
   are respected.
 
+New connector types:
+
+- Two new connector relations are available: attached_to and close_to. Like
+  other connector relations, they can be used to link treenodes to connectors
+  and can be used with the help of  Alt + Click context menu when a treenode is
+  selected. They are available as "Attachment" and "Close to".
+
+- If If a connector has at least one attachment relation is viewed as
+  "Attachment connector" and additional clicks with such a connector selected
+  will create "Close to" edges.
+
+- To add more information about the nature of an attachment, the connector
+  should be labeled, e.g. as "vesicle".
+
 Miscellaneous:
 
 - Users can now choose alternative markers for connector nodes, which do not
@@ -87,11 +101,6 @@ Miscellaneous:
   that are not part of a group already and not part of "others" into a new
   group. To also include skeletons in "others", use a synapse threshold of zero
   in the "Filter partners" tab.
-
-- A new connector relation is available: attached_to. A new connector nod can be
-  linked using it with the help of the Alt + Click context menu and by chooising
-  "Attachment. The idea is to then tag the connector node to provide semantic
-  information, e.g. with "vesicle".
 
 - Selection Table: Open/Save (JSON) does now preserve the order of skeletons.
 

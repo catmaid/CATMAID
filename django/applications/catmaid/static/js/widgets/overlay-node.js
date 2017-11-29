@@ -1898,6 +1898,8 @@
           stroke_color = settings.gapjunction_rel_color;
         } else if (relationName === 'attached_to') {
           stroke_color = settings.attachment_rel_color;
+        } else if (relationName === 'close_to') {
+          stroke_color = settings.close_to_rel_color;
         } else {
           stroke_color = settings.other_rel_color;
         }

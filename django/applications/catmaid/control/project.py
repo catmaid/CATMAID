@@ -33,6 +33,7 @@ needed_relations = {
     'part_of': "One thing is part of something else.",
     'annotated_with': "Something is annotated by something else.",
     'has_property': 'A thing which has an arbitrary property',
+    'close_to': 'Something is spatially in the neighborhood of something else',
 }
 
 # All client datastores needed by the tracing system along their descriptions.

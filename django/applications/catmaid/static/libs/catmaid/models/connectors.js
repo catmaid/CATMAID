@@ -310,6 +310,8 @@
       return Connectors.SUBTYPE_ABUTTING_CONNECTOR;
     } else if ('attached_to' === relationName) {
       return Connectors.SUBTYPE_ATTACHMENT_CONNECTOR;
+    } else if ('close_to' === relationName) {
+      return Connectors.SUBTYPE_ATTACHMENT_CONNECTOR;
     } else {
       throw new CATMAID.ValueError('Unknown connector link relation: ' + relationName);
     }

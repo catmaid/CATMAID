@@ -967,6 +967,9 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
           attachment_rel_color: {
             default: 0xDD6602
           },
+          close_to_rel_color: {
+            default: 0xC5DD22
+          },
           other_rel_color: {
             default: 0x00C800
           },
@@ -2408,12 +2411,22 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   }
 
   // Populate ConnectorNodes
+  var attachmentRelId = Object.keys(jso[4]).reduce(function(o, rId) {
+    var relName = jso[4][rId];
+    if (relName === 'attached_to') {
+      return rId;
+    }
+    return o;
+  }, null);
   for (var i=0, max=jsonConnectors.length; i<max; ++i) {
     var a = jsonConnectors[i];
     var links = a[7];
     // Determine the connector node type. For now eveything with no or only
     // pre or post treenodes is treated as a synapse. If there are only
-    // non-directional connectors, an abutting or gap junction connector is assumed.
+    // non-directional connectors, an abutting or gap junction connector is
+    // assumed. If there is an attachment relation involved, the connector is an
+    // attachment connector.
+    var isAttachment = false;
     var subtype = CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR;
     var exclusiveRelation = null;
     for (var l=0; l<links.length; ++l) {
@@ -2422,10 +2435,14 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
         exclusiveRelation = rid;
       } else if (exclusiveRelation !== rid) {
         exclusiveRelation = false;
-        break;
+      }
+      if (attachmentRelId !== null && rid == attachmentRelId) {
+        isAttachment = true;
       }
     }
-    if (exclusiveRelation !== null) {
+    if (isAttachment) {
+      subtype = CATMAID.Connectors.SUBTYPE_ATTACHMENT_CONNECTOR;
+    } else if (exclusiveRelation !== null) {
       var relation_name = jso[4][exclusiveRelation];
       if (relation_name == "abutting") {
         subtype = CATMAID.Connectors.SUBTYPE_ABUTTING_CONNECTOR;
@@ -2875,6 +2892,11 @@ SkeletonAnnotations.TracingOverlay.prototype._createNodeOrLink = function(insert
           CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " with gap junction to active connector");
           create = this.createGapjunctionTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5,
               pos_x, pos_y, pos_z, postCreateFn);
+        } else if (CATMAID.Connectors.SUBTYPE_ATTACHMENT_CONNECTOR === atn.subtype) {
+          // create new treenode (and skeleton) close to to activated connector
+          CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " close to active connector");
+          create = this.createTreenodeWithLink(atn.id, phys_x, phys_y, phys_z, -1, 5,
+              pos_x, pos_y, pos_z, "close_to", postCreateFn);
         } else {
           return null;
         }

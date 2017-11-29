@@ -50,6 +50,10 @@ LINK_TYPES = [
         'name': 'Attachment',
         'type': 'Attachment',
         'relation': 'attached_to'
+    }, {
+        'name': 'Close to',
+        'type': 'Spatial',
+        'relation': 'close_to'
     }
 ]
 

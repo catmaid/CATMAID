@@ -114,6 +114,8 @@ Miscellaneous:
 
 - Selection Table: Open/Save (JSON) does now preserve the order of skeletons.
 
+- Tracing data should load faster.
+
 
 ### Bug fixes
 

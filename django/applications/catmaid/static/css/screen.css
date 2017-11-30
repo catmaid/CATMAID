@@ -26,13 +26,13 @@ button {
 input[type=text],
 input[type=password] {
   border: 0.5px solid #888;
-  outline: none;
+  outline: none; /* csslint allow: outline-none */
   padding: 0.1em 0.2em;
 }
 
 input[type=button],
 button,
-select{
+select {
   padding 0 0.1em 0 0.1em;
 }
 

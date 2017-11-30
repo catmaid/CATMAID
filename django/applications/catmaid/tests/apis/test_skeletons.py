@@ -271,7 +271,9 @@ class SkeletonsApiTests(CatmaidApiTestCase):
             "incoming": {"235": {"skids": {"373": [0, 0, 0, 0, 2]}, "num_nodes": 28}},
             "incoming_reviewers": [],
             "gapjunctions": {},
-            "gapjunctions_reviewers": []}
+            "gapjunctions_reviewers": [],
+            "attachments": {},
+            "attachments_reviewers": []}
         self.assertEqual(expected_result, parsed_response)
 
         # Test for conjunctive connectivity.
@@ -288,7 +290,9 @@ class SkeletonsApiTests(CatmaidApiTestCase):
             "incoming": {},
             "incoming_reviewers": [],
             "gapjunctions": {},
-            "gapjunctions_reviewers": []}
+            "gapjunctions_reviewers": [],
+            "attachments": {},
+            "attachments_reviewers": []}
         self.assertEqual(expected_result, parsed_response)
 
 

@@ -161,22 +161,9 @@ class Postgis3dNodeProvider(PostgisNodeProvider):
 
     TREENODE_STATEMENT_NAME = PostgisNodeProvider.TREENODE_STATEMENT_NAME + '_3d'
     treenode_query = '''
-        SELECT
-            t1.id,
-            t1.parent_id,
-            t1.location_x,
-            t1.location_y,
-            t1.location_z,
-            t1.confidence,
-            t1.radius,
-            t1.skeleton_id,
-            EXTRACT(EPOCH FROM t1.edition_time),
-            t1.user_id
-        FROM
-          (SELECT UNNEST(ARRAY[te.id, t.parent_id])
+        WITH bb_edge AS (
+            SELECT te.id
              FROM treenode_edge te
-             JOIN treenode t
-               ON te.id = t.id
              WHERE te.edge &&& ST_MakeLine(ARRAY[
                  ST_MakePoint({left}, {bottom}, {z2}),
                  ST_MakePoint({right}, {top}, {z1})] ::geometry[])
@@ -188,9 +175,28 @@ class Postgis3dNodeProvider(PostgisNodeProvider):
                  ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
                  {halfzdiff})
              AND te.project_id = {project_id}
-           UNION
-           SELECT UNNEST({sanitized_treenode_ids}::bigint[])
-          ) edges(edge_child_id)
+        )
+        SELECT
+            t1.id,
+            t1.parent_id,
+            t1.location_x,
+            t1.location_y,
+            t1.location_z,
+            t1.confidence,
+            t1.radius,
+            t1.skeleton_id,
+            EXTRACT(EPOCH FROM t1.edition_time),
+            t1.user_id
+        FROM (
+            SELECT id FROM bb_edge
+            UNION
+            SELECT t.parent_id
+            FROM bb_edge e
+            JOIN treenode t
+               ON t.id = e.id
+            UNION
+            SELECT UNNEST({sanitized_treenode_ids}::bigint[])
+        ) edges(edge_child_id)
         JOIN treenode t1
           ON edge_child_id = t1.id
         LIMIT {limit}
@@ -277,6 +283,14 @@ class Postgis3dBlurryNodeProvider(PostgisNodeProvider):
 
     TREENODE_STATEMENT_NAME = PostgisNodeProvider.TREENODE_STATEMENT_NAME + '_3d'
     treenode_query = '''
+        WITH bb_edge AS (
+            SELECT te.id
+            FROM treenode_edge te
+            WHERE te.edge &&& ST_MakeLine(ARRAY[
+                ST_MakePoint({left}, {bottom}, {z2}),
+                ST_MakePoint({right}, {top}, {z1})] ::geometry[])
+            AND te.project_id = {project_id}
+        )
         SELECT
             t1.id,
             t1.parent_id,
@@ -288,18 +302,16 @@ class Postgis3dBlurryNodeProvider(PostgisNodeProvider):
             t1.skeleton_id,
             EXTRACT(EPOCH FROM t1.edition_time),
             t1.user_id
-        FROM
-          (SELECT UNNEST(ARRAY[te.id, t.parent_id])
-             FROM treenode_edge te
-             JOIN treenode t
-               ON te.id = t.id
-             WHERE te.edge &&& ST_MakeLine(ARRAY[
-                 ST_MakePoint({left}, {bottom}, {z2}),
-                 ST_MakePoint({right}, {top}, {z1})] ::geometry[])
-             AND te.project_id = {project_id}
-           UNION
-           SELECT UNNEST({sanitized_treenode_ids}::bigint[])
-          ) edges(edge_child_id)
+        FROM (
+            SELECT id from bb_edge
+            UNION
+            SELECT t.parent_id
+            FROM bb_edge e
+            JOIN treenode t
+              ON t.id = e.id
+            UNION
+            SELECT UNNEST({sanitized_treenode_ids}::bigint[])
+        ) edges(edge_child_id)
         JOIN treenode t1
           ON edge_child_id = t1.id
         LIMIT {limit}
@@ -381,6 +393,21 @@ class Postgis2dNodeProvider(PostgisNodeProvider):
 
     TREENODE_STATEMENT_NAME = PostgisNodeProvider.TREENODE_STATEMENT_NAME + '_2d'
     treenode_query = """
+          WITH bb_edge AS (
+            SELECT te.id
+            FROM treenode_edge te
+            WHERE te.edge && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
+              AND floatrange(ST_ZMin(te.edge),
+                 ST_ZMax(te.edge), '[]') && floatrange({z1}, {z2}, '[)')
+              AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+                  ST_MakePoint({left},  {top},    {halfz}),
+                  ST_MakePoint({right}, {top},    {halfz}),
+                  ST_MakePoint({right}, {bottom}, {halfz}),
+                  ST_MakePoint({left},  {bottom}, {halfz}),
+                  ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
+                  {halfzdiff})
+              AND te.project_id = {project_id}
+          )
           SELECT
             t1.id,
             t1.parent_id,
@@ -392,25 +419,16 @@ class Postgis2dNodeProvider(PostgisNodeProvider):
             t1.skeleton_id,
             EXTRACT(EPOCH FROM t1.edition_time),
             t1.user_id
-          FROM
-            (SELECT UNNEST(ARRAY[te.id, t.parent_id])
-               FROM treenode_edge te
-               JOIN treenode t
-                 ON t.id = te.id
-               WHERE te.edge && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
-                 AND floatrange(ST_ZMin(te.edge),
-                    ST_ZMax(te.edge), '[]') && floatrange({z1}, {z2}, '[)')
-                 AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
-                     ST_MakePoint({left},  {top},    {halfz}),
-                     ST_MakePoint({right}, {top},    {halfz}),
-                     ST_MakePoint({right}, {bottom}, {halfz}),
-                     ST_MakePoint({left},  {bottom}, {halfz}),
-                     ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
-                     {halfzdiff})
-                 AND te.project_id = {project_id}
+          FROM (
+              SELECT id FROM bb_edge
+              UNION
+              SELECT t.parent_id
+              FROM bb_edge e
+              JOIN treenode t
+                 ON t.id = e.id
               UNION
               SELECT UNNEST({sanitized_treenode_ids}::bigint[])
-        ) edges(edge_child_id)
+          ) edges(edge_child_id)
         JOIN treenode t1
           ON edges.edge_child_id = t1.id
         LIMIT {limit};
@@ -500,6 +518,14 @@ class Postgis2dBlurryNodeProvider(PostgisNodeProvider):
 
     TREENODE_STATEMENT_NAME = PostgisNodeProvider.TREENODE_STATEMENT_NAME + '_2d_blurry'
     treenode_query = """
+          WITH bb_edge AS (
+              SELECT te.id
+              FROM treenode_edge te
+              WHERE te.edge && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
+                AND floatrange(ST_ZMin(te.edge),
+                   ST_ZMax(te.edge), '[]') && floatrange({z1}, {z2}, '[)')
+                AND te.project_id = {project_id}
+          )
           SELECT
             t1.id,
             t1.parent_id,
@@ -512,14 +538,12 @@ class Postgis2dBlurryNodeProvider(PostgisNodeProvider):
             EXTRACT(EPOCH FROM t1.edition_time),
             t1.user_id
           FROM
-            (SELECT UNNEST(ARRAY[te.id, t.parent_id])
-               FROM treenode_edge te
-               JOIN treenode t
-                 ON t.id = te.id
-               WHERE te.edge && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
-                 AND floatrange(ST_ZMin(te.edge),
-                    ST_ZMax(te.edge), '[]') && floatrange({z1}, {z2}, '[)')
-                 AND te.project_id = {project_id}
+            (SELECT id FROM bb_edge
+              UNION
+              SELECT t.parent_id
+              FROM bb_edge e
+              JOIN treenode t
+                ON t.id = e.id
               UNION
               SELECT UNNEST({sanitized_treenode_ids}::bigint[])
         ) edges(edge_child_id)

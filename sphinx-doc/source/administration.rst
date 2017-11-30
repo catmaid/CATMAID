@@ -333,7 +333,9 @@ CATMAID
 * If there are too many nodes to be displayed with usable performance, the
   number of returned nodes can be limited. This can be done by setting
   ``NODE_LIST_MAXIMUM_COUNT = <number>`` in the ``settings.py`` file to a
-  maximum number of nodes to be queried (e.g. 20000).
+  maximum number of nodes to be queried (e.g. 20000). If however a node limit is
+  not really needed and most requests don't hit it, setting
+  ``NODE_LIST_MAXIMUM_COUNT`` to ``None`` can slightly improve performance, too.
 
 * If neuron reconstruction statistics are slow to compute, consider running the
   management command ``manage.py catmaid_populate_summary_tables`` to populate

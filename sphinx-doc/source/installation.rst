@@ -227,7 +227,8 @@ details requested.  Then you should run::
 
 This will output some suggested Nginx and Apache configuration in the
 terminal, and generate the files ``django.wsgi`` and ``settings.py``
-in ``/home/alice/catmaid/django/projects/mysite``.
+in ``/home/alice/catmaid/django/projects/mysite``. An explanation of all
+possible settings in the `settings.py` file can be found :ref:`here <options>`.
 
 5. Create the database tables
 #############################
@@ -295,7 +296,7 @@ serving static files.
 #####################################
 
 You have various options for setting up CATMAID with a production webserver -
-you can choose from (at least) the following options:
+you can choose from (at least) the following two:
 
 1. Nginx and either Gevent, uWSGI or Gunicorn, in which case see
    :ref:`nginx`
@@ -313,7 +314,8 @@ won't work as expected. For more details, have a look :ref:`here <nginx-image-da
 In general you want to fine-tune your setup to improve performance. Please have
 a look at our :ref:`collection of advice <performance-tuning>` for the various
 infrastructure parts (e.g.  webserver, database, file system). This can really
-make a difference.
+make a difference. An explanation of all possible settings in the `settings.py`
+file can be found :ref:`here <options>`.
 
 11. Using the admin interface
 #############################

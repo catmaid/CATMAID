@@ -5,6 +5,7 @@ Administrator Documentation
    :maxdepth: 1
 
    installation
+   options
    administration
    Production setup <nginx>
    permissions

@@ -35,22 +35,33 @@ class PostgisNodeProvider(object):
     TREENODE_STATEMENT_NAME = 'get_treenodes_postgis'
     treenode_query = None
 
+    # Allows implementation to handle limit settings on its own
+    managed_limit = True
+
     def __init__(self, connection=None):
         """
         If PREPARED_STATEMENTS is false but you want to override that for a few queries at a time,
         include a django.db.connection in the constructor.
         """
 
+        # If a node limit is set, append the LIMIT clause to both queries
+        if self.managed_limit and settings.NODE_LIST_MAXIMUM_COUNT:
+            treenode_query_template = self.treenode_query + '\nLIMIT {limit}'
+            connector_query_template = self.connector_query + '\nLIMIT {limit}'
+        else:
+            treenode_query_template = self.treenode_query
+            connector_query_template = self.connector_query
+
         # To execute the queries directly through PsycoPg (i.e. not prepared) a
         # different parameter format is used: {left} -> %(left)s.
         treenode_query_params = ['project_id', 'left', 'top', 'z1', 'right',
                                  'bottom', 'z2', 'halfz', 'halfzdiff', 'limit', 'sanitized_treenode_ids']
-        self.treenode_query_psycopg = self.treenode_query.format(
+        self.treenode_query_psycopg = treenode_query_template.format(
             **{k: '%({})s'.format(k) for k in treenode_query_params})
 
         connector_query_params = ['project_id', 'left', 'top', 'z1', 'right',
                                   'bottom', 'z2', 'halfz', 'halfzdiff', 'limit', 'sanitized_connector_ids']
-        self.connector_query_psycopg = self.connector_query.format(
+        self.connector_query_psycopg = connector_query_template.format(
             **{k: '%({})s'.format(k) for k in connector_query_params})
 
         # Create prepared statement version
@@ -68,8 +79,8 @@ class PostgisNodeProvider(object):
             'sanitized_connector_ids': '$11',
             'sanitized_treenode_ids': '$11'
         }
-        self.treenode_query_prepare = self.treenode_query.format(**prepare_var_names)
-        self.connector_query_prepare = self.connector_query.format(**prepare_var_names)
+        self.treenode_query_prepare = treenode_query_template.format(**prepare_var_names)
+        self.connector_query_prepare = connector_query_template.format(**prepare_var_names)
 
         self.prepared_statements = bool(connection) or settings.PREPARED_STATEMENTS
 
@@ -199,7 +210,6 @@ class Postgis3dNodeProvider(PostgisNodeProvider):
         ) edges(edge_child_id)
         JOIN treenode t1
           ON edge_child_id = t1.id
-        LIMIT {limit}
     '''
 
     CONNECTOR_STATEMENT_NAME = PostgisNodeProvider.CONNECTOR_STATEMENT_NAME + '_3d'
@@ -268,7 +278,6 @@ class Postgis3dNodeProvider(PostgisNodeProvider):
         ) geoms(geom_connector_id)
       JOIN connector c
         ON (geom_connector_id = c.id)
-      LIMIT {limit}
     '''
 
 
@@ -314,7 +323,6 @@ class Postgis3dBlurryNodeProvider(PostgisNodeProvider):
         ) edges(edge_child_id)
         JOIN treenode t1
           ON edge_child_id = t1.id
-        LIMIT {limit}
     '''
 
     CONNECTOR_STATEMENT_NAME = PostgisNodeProvider.CONNECTOR_STATEMENT_NAME + '_3d'
@@ -369,7 +377,6 @@ class Postgis3dBlurryNodeProvider(PostgisNodeProvider):
         ) geoms(geom_connector_id)
       JOIN connector c
         ON (geom_connector_id = c.id)
-      LIMIT {limit}
     '''
 
 
@@ -431,7 +438,6 @@ class Postgis2dNodeProvider(PostgisNodeProvider):
           ) edges(edge_child_id)
         JOIN treenode t1
           ON edges.edge_child_id = t1.id
-        LIMIT {limit};
     """
 
     CONNECTOR_STATEMENT_NAME = PostgisNodeProvider.CONNECTOR_STATEMENT_NAME + '_2d'
@@ -500,7 +506,6 @@ class Postgis2dNodeProvider(PostgisNodeProvider):
           ) geoms(geom_connector_id)
         JOIN connector c
           ON (geom_connector_id = c.id)
-        LIMIT {limit}
     """
 
 
@@ -549,7 +554,6 @@ class Postgis2dBlurryNodeProvider(PostgisNodeProvider):
         ) edges(edge_child_id)
         JOIN treenode t1
           ON edges.edge_child_id = t1.id
-        LIMIT {limit};
     """
 
     CONNECTOR_STATEMENT_NAME = PostgisNodeProvider.CONNECTOR_STATEMENT_NAME + '_2d_blurry'
@@ -604,7 +608,6 @@ class Postgis2dBlurryNodeProvider(PostgisNodeProvider):
           ) geoms(geom_connector_id)
         JOIN connector c
           ON (geom_connector_id = c.id)
-        LIMIT {limit}
     """
 
 

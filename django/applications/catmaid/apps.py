@@ -163,7 +163,7 @@ class CATMAIDConfig(AppConfig):
         "PROFILE_SHOW_ONTOLOGY_TOOL": bool,
         "PROFILE_SHOW_ROI_TOOL": bool,
         "ROI_AUTO_CREATE_IMAGE": bool,
-        "NODE_LIST_MAXIMUM_COUNT": int,
+        "NODE_LIST_MAXIMUM_COUNT": (int, type(None)),
         "IMPORTER_DEFAULT_TILE_WIDTH": int,
         "IMPORTER_DEFAULT_TILE_HEIGHT": int,
         "IMPORTER_DEFAULT_TILE_SOURCE_TYPE": int,
@@ -187,10 +187,19 @@ class CATMAIDConfig(AppConfig):
             if not hasattr(settings, field):
                 raise ImproperlyConfigured(
                         "Please add the %s settings field" % field)
-            if not isinstance(getattr(settings, field), data_type):
+            if isinstance(data_type, (list, tuple)):
+                allowed_types = data_type
+            else:
+                allowed_types = (data_type,)
+
+            if not isinstance(getattr(settings, field), allowed_types):
                 current_type = type(getattr(settings, field))
-                raise ImproperlyConfigured("Please make sure settings field %s "
-                        "is of type %s (current type: %s)" % (field, data_type, current_type))
+                if len(allowed_types) == 1:
+                    raise ImproperlyConfigured("Please make sure settings field %s "
+                            "is of type %s (current type: %s)" % (field, data_type, allowed_types[0]))
+                else:
+                    raise ImproperlyConfigured("Please make sure settings field %s "
+                            "is of one of the types %s (current type: %s)" % (field, allowed_types, current_type))
 
         # Make sure swagger (API doc) knows about a potential sub-directory
         if not hasattr(settings, 'SWAGGER_SETTINGS'):

@@ -9,6 +9,10 @@
 - New settings field: CROPPING_VERIFY_CERTIFICATES. This controls whether SSL
   certificates should be verified during cropping and defaults to True.
 
+- The NODE_LIST_MAXIMUM_COUNT setting can now be set to None, which disables
+  node limiting. If node count limiting isn't really needed in most cases, this
+  can slighly improve query performance.
+
 - The file `UPDATE.md` will now list all administration related changes for each
   release, including required manual tasks. These changes also continue to be
   part of this change log.

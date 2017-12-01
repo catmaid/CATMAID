@@ -73,6 +73,9 @@ class Exporter():
             skeletons = ClassInstance.objects.filter(project=self.project,
                     id__in=skeleton_id_constraints)
 
+        if entities.count() == 0:
+            raise CommandError("No matching neurons found")
+
         print("Will export %s entities" % entities.count())
 
         # Export classes and relations

@@ -19,6 +19,30 @@ from catmaid.control.common import defaultdict, get_relation_to_id_map, \
 from six.moves import range, map
 
 
+def get_annotation_to_id_map(project_id, annotations, relations=None,
+                             classes=None):
+    """Get a dictionary mapping annotation names to annotation IDs in a
+    particular project."""
+    if not relations:
+        relations = get_relation_to_id_map(project_id)
+    if not classes:
+        classes = get_class_to_id_map(project_id)
+
+    name_template = ",".join("(%s)" for _ in annotations)
+    params = annotations + [project_id]
+
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT ci.name, ci.id
+        FROM class_instance ci
+        JOIN (VALUES {}) query_annotation(name)
+        ON ci.name = query_annotation.name
+        WHERE project_id = %s
+    """.format(name_template), params)
+
+    mapping = dict(cursor.fetchall())
+    return mapping
+
 def get_annotated_entities(project, params, relations, classes,
         allowed_classes=['neuron', 'annotation'], sort_by=None, sort_dir=None,
         range_start=None, range_length=None, with_annotations=True, with_skeletons=True):
@@ -38,7 +62,12 @@ def get_annotated_entities(project, params, relations, classes,
     # Get name, annotator and time constraints, if available
     name = params.get('name', "").strip()
     name_not = params.get('name_not', "false") == "true"
-    annotator_ids = set(map(int, params.getlist('annotated_by')))
+    try:
+        annotator_ids = set(map(int, params.getlist('annotated_by')))
+    except AttributeError as e:
+        # If no getlist() method is found on <params>, the passed in objects is
+        # no QueryDict, but likely a regular dict. Accept this as okay.
+        annotator_ids = set()
     start_date = params.get('annotation_date_start', "").strip()
     end_date = params.get('annotation_date_end', "").strip()
 

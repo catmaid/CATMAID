@@ -6,9 +6,11 @@ import six
 from itertools import chain
 from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
+from catmaid.control.neuron_annotations import (get_annotated_entities,
+        get_annotation_to_id_map)
 from catmaid.control.tracing import check_tracing_setup
 from catmaid.models import Class, ClassInstance, ClassInstanceClassInstance, \
-         Relation, Connector, Project, Treenode, TreenodeConnector
+        Relation, Connector, Project, Treenode, TreenodeConnector
 
 class Exporter():
 
@@ -38,40 +40,41 @@ class Exporter():
                 project=self.project).values_list('relation_name', 'id'))
 
         if not check_tracing_setup(self.project.id, classes, relations):
-            raise ValueError("Project with ID %s is no tracing project." % self.project.id)
-
-        skeleton_id_constraints = None
-        entities = ClassInstance.objects.filter(project=self.project,
-                class_column__in=[classes['neuron']])
-        skeleton_links = ClassInstanceClassInstance.objects.filter(
-                project_id=self.project.id, relation=relations['model_of'],
-                class_instance_a__class_column=classes['skeleton'])
-        skeletons = ClassInstance.objects.filter(project=self.project,
-                class_column__in=[classes['skeleton']])
+            raise CommnadError("Project with ID %s is no tracing project." % self.project.id)
 
         if self.required_annotations:
-            # Get mapping from annotations to IDs
-            a_to_id = dict(ClassInstance.objects.filter(
-                    project=self.project, class_column=classes['annotation'],
-                    name__in=self.required_annotations).values_list('name', 'id'))
-            print("Found entities with the following annotations: %s" % \
-                  ", ".join(a_to_id.keys()))
+            annotation_map = get_annotation_to_id_map(self.project.id,
+                    self.required_annotations, relations, classes)
+            annotation_ids = map(str, annotation_map.values())
+            query_params = {
+                'annotated_with': ",".join(annotation_ids),
+                'sub_annotated_with': ",".join(annotation_ids)
+            }
+            neuron_info, num_total_records = get_annotated_entities(self.project,
+                    query_params, relations, classes, ['neuron'], with_skeletons=True)
 
-            b_ids = list(six.itervalues(a_to_id))
-            entities = ClassInstance.objects.filter(project=self.project,
-                class_column=classes['neuron'],
-                cici_via_a__relation_id=relations['annotated_with'],
-                cici_via_a__class_instance_b_id__in=b_ids)
+            print("Found {} neurons with the following annotations: {}".format(
+                    num_total_records, ", ".join(self.required_annotations)))
 
-            # Get the corresponding skeleton IDs
-            skeleton_links = ClassInstanceClassInstance.objects.filter(
-                    project_id=self.project.id, relation=relations['model_of'],
-                    class_instance_a__class_column=classes['skeleton'],
-                    class_instance_b__in=entities)
-            skeleton_id_constraints = set(skeleton_links.values_list(
-                    'class_instance_a', flat=True))
+            skeleton_id_constraints = list(chain.from_iterable([n['skeleton_ids'] for n in neuron_info]))
+
+            neuron_ids = [n['id'] for n in neuron_info]
+            entities = ClassInstance.objects.filter(pk__in=neuron_ids)
+
             skeletons = ClassInstance.objects.filter(project=self.project,
                     id__in=skeleton_id_constraints)
+            skeleton_links = ClassInstanceClassInstance.objects.filter(
+                    project_id=self.project.id, relation=relations['model_of'],
+                    class_instance_a__in=skeletons, class_instance_b__in=entities)
+        else:
+            skeleton_id_constraints = None
+            entities = ClassInstance.objects.filter(project=self.project,
+                    class_column__in=[classes['neuron']])
+            skeleton_links = ClassInstanceClassInstance.objects.filter(
+                    project_id=self.project.id, relation=relations['model_of'],
+                    class_instance_a__class_column=classes['skeleton'])
+            skeletons = ClassInstance.objects.filter(project=self.project,
+                    class_column__in=[classes['skeleton']])
 
         if entities.count() == 0:
             raise CommandError("No matching neurons found")

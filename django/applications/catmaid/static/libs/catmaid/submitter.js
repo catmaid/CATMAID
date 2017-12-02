@@ -143,7 +143,11 @@ var submitterFn = function() {
       }
       var json;
       try {
-        json = JSON.parse(text);
+        if (q.raw) {
+          json = text;
+        } else {
+          json = JSON.parse(text);
+        }
       } catch (e) {
         alert(e);
         return reset(q, "Unable to parse json text: " + text + "\n for URL: " + q.url);
@@ -185,7 +189,7 @@ var submitterFn = function() {
     }
   };
 
-  var submit = function(url, method, params, fn, blockUI, replace, errCallback, quiet, id) {
+  var submit = function(url, method, params, fn, blockUI, replace, errCallback, quiet, id, raw) {
     queue.push({url: url,
           method: method,
           params: params,
@@ -194,7 +198,9 @@ var submitterFn = function() {
           replace: replace,
           errCallback: errCallback,
           quiet: quiet,
-          id: id || url});
+          id: id || url,
+          raw: raw
+    });
     // Invoke if the queue contains only the new entry
     if (1 === queue.length) {
       next();

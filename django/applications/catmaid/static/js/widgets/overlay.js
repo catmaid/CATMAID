@@ -2394,6 +2394,8 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
 
   // Keetp track of all nodes that have been added
   var addedNodes = [];
+  let nAddedTreenodes = 0;
+  let nAddedConnectors = 0;
 
   // Populate Nodes
   for (var i=0, max=jsonNodes.length; i<max; ++i) {
@@ -2408,6 +2410,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
       z, z - this.stackViewer.z, a[5], a[7], a[8], a[9]);
     this.nodes[a[0]] = newNode;
     addedNodes.push(newNode);
+    ++nAddedTreenodes;
   }
 
   // Populate ConnectorNodes
@@ -2464,17 +2467,15 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
       z, z - this.stackViewer.z, a[4], subtype, a[5], a[6]);
     this.nodes[a[0]] = newNode;
     addedNodes.push(newNode);
+    ++nAddedConnectors;
   }
-
-  // Disable any unused instances
-  var nTreeNodes = jso[0].length + (extraNodes ? extraNodes.length : 0);
-  this.graphics.disableBeyond(nTreeNodes, jso[1].length);
 
   // Now that all Node instances are in place, loop nodes again and link parents
   // and children. If virtual nodes are needed for a particular edge, insert
   // them between parent and child. These are nodes that are not actually on the
   // current section, but are created to represent the connection between a
   // child and a parent node that are not part of this section either.
+  let nAddedVirtualNodes = 0;
   for (var i=0, max=jsonNodes.length; i<max; ++i) {
     var a = jsonNodes[i];
     var n = this.nodes[a[0]];
@@ -2491,6 +2492,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     if ((n.zdiff < 0 && pn.zdiff > 0) || (n.zdiff > 0 && pn.zdiff < 0)) {
       var vn = createVirtualNode(this.graphics, n, pn, this.stackViewer);
       if (vn) {
+        ++nAddedVirtualNodes;
         n.parent = vn;
         n.parent_id = vn.id;
         pn.addChildNode(vn);
@@ -2508,6 +2510,11 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     // update the parent's children
     pn.addChildNode(n);
   }
+
+  // Disable most unused node instances, keeping a small caching buffer.
+  var nTreeNodes = nAddedTreenodes + nAddedVirtualNodes +
+      (extraNodes ? extraNodes.length : 0);
+  this.graphics.disableBeyond(nTreeNodes, nAddedConnectors);
 
   // Now that ConnectorNode and Node instances are in place,
   // set all relations

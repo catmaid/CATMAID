@@ -91,6 +91,7 @@ libraries_js = OrderedDict([
                 'raphael-custom.js', 'colorwheel.js', 'raphael.export.js']),
     ('d3', ['d3.v3.js', 'venn.js', 'mds.js', 'colorbrewer.js']),
     ('sylvester', ['sylvester.js']),
+    ('msgpack-lite', ['msgpack.min.js']),
     ('numeric', ['numeric-1.2.6.js']),
     ('three.js', ['three.js', 'controls/TrackballControls.js',
                  'camera/CombinedCamera.js', 'Detector.js',

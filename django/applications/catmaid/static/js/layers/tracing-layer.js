@@ -36,6 +36,15 @@
     }
 
     this.renderer.plugins.interaction.autoPreventDefault = false;
+
+    Object.defineProperty(this, 'binaryTracingData', {
+      get: function() {
+        return this.tracingOverlay.binaryTracingData;
+      },
+      set: function(value) {
+        this.tracingOverlay.binaryTracingData = value;
+      }
+    });
   }
 
   TracingLayer.prototype = Object.create(CATMAID.PixiLayer.prototype);
@@ -96,6 +105,26 @@
     // and resets this value. Therefore, reading out the original value isn't
     // necessarily reliable.
     return CATMAID.with(this, 'updateHidden', true, isPromise, fn, false);
+  };
+
+  TracingLayer.prototype.getLayerSettings = function() {
+    return [{
+      name: 'binaryTracingData',
+      displayName: 'Transfer tracing data binarily',
+      type: 'checkbox',
+      value: this.binaryTracingData,
+      help: 'Transferring tracing data as binary data can reduce its size and loading time.'
+    }];
+  };
+
+  TracingLayer.prototype.setLayerSetting = function(name, value) {
+    if ('binaryTracingData' === name) {
+      this.binaryTracingData = value;
+    }
+  };
+
+  TracingLayer.prototype.redraw = function() {
+    this.tracingOverlay.redraw();
   };
 
   CATMAID.TracingLayer = TracingLayer;

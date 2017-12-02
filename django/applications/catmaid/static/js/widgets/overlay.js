@@ -5,7 +5,8 @@
   project,
   requestQueue,
   submitterFn,
-  user_groups
+  user_groups,
+  msgpack
 */
 
 "use strict";
@@ -678,6 +679,8 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   this.suspended = options.suspended || false;
   /** Current connector selection menu, if any */
   this.connectorTypeMenu = null;
+  /** Transfer data binarily by default */
+  this.binaryTracingData = true;
 
   // Keep the ID of the node deleted last, which allows to provide some extra
   // context in some situations.
@@ -3149,6 +3152,11 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       labels: self.getLabelStatus()
     };
 
+    let binaryTransfer = self.binaryTracingData;
+    if (binaryTransfer) {
+      params['format'] = 'msgpack';
+    }
+
     var success = function (json) {
       // Bail if the overlay was destroyed or suspended before this callback.
       if (self.suspended) {
@@ -3202,15 +3210,28 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
         url,
         'POST',
         params,
-        function(json) {
-          self.nodeListCache.set(paramsKey, json);
-          success(json);
+        function(data) {
+          if (binaryTransfer) {
+            data = msgpack.decode(new Uint8Array(data));
+          } else {
+            data = JSON.parse(data);
+          }
+          if (!data) {
+            throw new CATMAID.ValuError("Couldn't parse response");
+          }
+          if (data.error) {
+            throw new CATMAID.ValuError("Unexpected response: " + data);
+          }
+          self.nodeListCache.set(paramsKey, data);
+          success(data);
         },
         false,
         true,
         errCallback,
         false,
-        'stack-' + self.stackViewer.getId() + '-url-' + url);
+        'stack-' + self.stackViewer.getId() + '-url-' + url,
+        true,
+        binaryTransfer ? 'arraybuffer' : undefined);
     }
   });
 };

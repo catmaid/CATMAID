@@ -237,8 +237,10 @@ Webserver
   number of times image data has to be loaded from the hard drive.
 
 * Have the webserver transfer data with GZIP. Make sure this includes JSON
-  data with the content-type `application/json`. In nginx, you can include
-  this by adding `application/json` to the `gzip_types` setting.
+  data with the content-type ``application/json`` and binary data with the
+  content-type ``application/octet-stream``. In nginx, you can include both by
+  adding ``application/json`` and ``application/octet-stream`` to the
+  ``gzip_types`` setting.
 
 * The CATMAID web-client can send large requests to the server. Increasing the
   web-server's request buffer can prevent writing such requests temporarily to

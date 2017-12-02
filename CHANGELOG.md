@@ -114,7 +114,9 @@ Miscellaneous:
 
 - Selection Table: Open/Save (JSON) does now preserve the order of skeletons.
 
-- Tracing data should load faster.
+- Tracing data should load faster due to spatial query improvements and
+  reduction of transferred data. The tracing layer transfers data now in binary
+  by default, which can be adjusted in through the tracing layer settings.
 
 
 ### Bug fixes

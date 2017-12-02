@@ -179,9 +179,9 @@ var submitterFn = function() {
 
     if (q.url) {
       if (q.replace) {
-        requestQueue.replace(q.url, q.method, q.params, handlerFn(q), q.id);
+        requestQueue.replace(q.url, q.method, q.params, handlerFn(q), q.id, q.responseType);
       } else {
-        requestQueue.register(q.url, q.method, q.params, handlerFn(q));
+        requestQueue.register(q.url, q.method, q.params, handlerFn(q), q.id, q.responseType);
       }
     } else {
       // No url: direct execution with last result
@@ -189,7 +189,7 @@ var submitterFn = function() {
     }
   };
 
-  var submit = function(url, method, params, fn, blockUI, replace, errCallback, quiet, id, raw) {
+  var submit = function(url, method, params, fn, blockUI, replace, errCallback, quiet, id, raw, responseType) {
     queue.push({url: url,
           method: method,
           params: params,
@@ -199,7 +199,8 @@ var submitterFn = function() {
           errCallback: errCallback,
           quiet: quiet,
           id: id || url,
-          raw: raw
+          raw: raw,
+          responseType: responseType
     });
     // Invoke if the queue contains only the new entry
     if (1 === queue.length) {

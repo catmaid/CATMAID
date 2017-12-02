@@ -252,7 +252,8 @@ RequestQueue = function(originUrl, csrfToken)
         m,		//!< string  method	"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD" or "OPTIONS"
         d,		//!< object  data		object with key=>value
         c,		//!< funtion callback
-        id		//!< string  id
+        id,		//!< string  id
+        responseType
     )
     {
       var removedRequest;
@@ -266,7 +267,7 @@ RequestQueue = function(originUrl, csrfToken)
           removedRequest[0].callback(200, JSON.stringify({'error': 'REPLACED'}), null);
         }
       }
-      this.register( r, m, d, c, id );
+      this.register( r, m, d, c, id, responseType );
     },
 
     /**

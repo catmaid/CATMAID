@@ -24,6 +24,10 @@ included in this changelog.
 - `GET /{project_id}/connectors/` has been replaced with
   `GET /{project_if}/connectors/links/`. Functionality is the same.
 
+- `POST /{project_id}/node/list` offers a new optional parameter "format", which
+  is set by default to 'json', but can be set to 'msgpack' to use msgpack binary
+  encoding of the result.
+
 ### Deprecations
 
 None.

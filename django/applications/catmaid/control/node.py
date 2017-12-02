@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 import json
+import msgpack
 import ujson
 
 from collections import defaultdict
@@ -729,6 +730,12 @@ def node_list_tuples(request, project_id=None, provider=None):
       required: true
       type: float
       paramType: form
+    - name: format
+      description: |
+        Either "json" (default) or "msgpack", optional.
+      required: false
+      type: string
+      paramType: form
     type:
     - type: array
       items:
@@ -746,13 +753,14 @@ def node_list_tuples(request, project_id=None, provider=None):
     params['limit'] = settings.NODE_LIST_MAXIMUM_COUNT
     params['project_id'] = project_id
     include_labels = (request.POST.get('labels', None) == 'true')
+    target_format = request.POST.get('format', 'json')
 
     return node_list_tuples_query(params, project_id, get_provider(),
-            treenode_ids, connector_ids, include_labels)
+            treenode_ids, connector_ids, include_labels, target_format)
 
 
 def node_list_tuples_query(params, project_id, node_provider, explicit_treenode_ids=tuple(),
-        explicit_connector_ids=tuple(), include_labels=False):
+        explicit_connector_ids=tuple(), include_labels=False, target_format='json'):
     """The returned JSON data is sensitive to indices in the array, so care
     must be taken never to alter the order of the variables in the SQL
     statements without modifying the accesses to said data both in this
@@ -863,11 +871,19 @@ def node_list_tuples_query(params, project_id, node_provider, explicit_treenode_
                     labels[row[0]].append(row[1])
 
         used_rel_map = {r:id_to_relation[r] for r in used_relations}
-        return HttpResponse(ujson.dumps((
-            treenodes, connectors, labels,
-            n_retrieved_nodes == params['limit'],
-            used_rel_map)),
-            content_type='application/json')
+        result = [treenodes, connectors, labels,
+                n_retrieved_nodes == params['limit'], used_rel_map]
+
+        if target_format == 'json':
+            return HttpResponse(ujson.dumps(result),
+                content_type='application/json')
+        elif target_format == 'msgpack':
+            data = msgpack.packb(result)
+            print(type(data))
+            print(data)
+            return HttpResponse(data, content_type='application/octet-stream')
+        else:
+            raise ValueError("Unknown target format: {}".format(target_format))
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))

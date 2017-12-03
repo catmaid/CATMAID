@@ -7,6 +7,11 @@ and other administration related changes are listed in order.
 
 - Requires running of: manage.py catmaid_update_project_configuration
 
+- Tracing data is now by default transmitted in a binary form, please make
+  therefore sure your web-server applies GZIP not only to the "application/json"
+  content type, but also to "application/octet-stream". For Nginx this would be
+  the gzip_types setting.
+
 ## 2017.04.20
 
 - The location of the `manage.py` script changed: it moved a level up into

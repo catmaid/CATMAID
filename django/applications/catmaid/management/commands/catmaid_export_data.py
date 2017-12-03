@@ -165,34 +165,6 @@ class Exporter():
                 self.to_serialize.append(ClassInstance.objects.filter(
                     project=self.project, id__in=extra_nids))
 
-            # Export annotations and annotation-neuron links, liked to selected
-            # entities.
-            if self.export_annotations and 'annotated_with' in relations:
-                annotation_links = ClassInstanceClassInstance.objects.filter(
-                    project_id=self.project.id, relation=relations['annotated_with'],
-                    class_instance_a__in=entities)
-                annotations = ClassInstance.objects.filter(project_id=self.project.id,
-                                                           cici_via_b__in=annotation_links)
-                self.to_serialize.append(annotations)
-                self.to_serialize.append(annotation_links)
-
-            # TODO: Export reviews
-        else:
-            # Export treenodes
-            if self.export_treenodes:
-                if skeleton_id_constraints:
-                    pass
-                else:
-                    self.to_serialize.append(Treenode.objects.filter(
-                            project=self.project))
-
-            # Export connectors and connector links
-            if self.export_connectors:
-                self.to_serialize.append(Connector.objects.filter(
-                        project=self.project))
-                self.to_serialize.append(TreenodeConnector.objects.filter(
-                        project=self.project))
-
             # Export annotations and annotation-neuron links. Include meta
             # annotations.
             if self.export_annotations and 'annotated_with' in relations:
@@ -217,12 +189,33 @@ class Exporter():
                     for a in annotations:
                         if a not in all_annotations:
                             all_annotations.add(a)
-                            working_set.add(a)
+                            working_set.append(a)
 
-                if annotations:
-                    self.to_serialize.append(annotations)
-                if annotation_links:
-                    self.to_serialize.append(annotation_links)
+                if all_annotations:
+                    self.to_serialize.append(all_annotations)
+                if all_annotation_links:
+                    self.to_serialize.append(all_annotation_links)
+
+                logger.info("Exporting {} annotations and {} annotation links: {}".format(
+                        len(all_annotations), len(all_annotation_links),
+                        ", ".join([a.name for a in all_annotations])))
+
+            # TODO: Export reviews
+        else:
+            # Export treenodes
+            if self.export_treenodes:
+                if skeleton_id_constraints:
+                    pass
+                else:
+                    self.to_serialize.append(Treenode.objects.filter(
+                            project=self.project))
+
+            # Export connectors and connector links
+            if self.export_connectors:
+                self.to_serialize.append(Connector.objects.filter(
+                        project=self.project))
+                self.to_serialize.append(TreenodeConnector.objects.filter(
+                        project=self.project))
 
             # TODO: Export reviews
 
@@ -269,7 +262,8 @@ class Command(BaseCommand):
         parser.add_argument('--notags', dest='export_tags',
             action='store_false', help='Don\'t export tags from source')
         parser.add_argument('--required-annotation', dest='required_annotations',
-            action='append', help='Name a required annotation for exported skeletons.')
+            action='append', help='Name a required annotation for exported ' +
+            'skeletons. Meta-annotations can be used as well.')
         parser.add_argument('--connector-placeholders', dest='connector_placeholders',
             action='store_true', help='Should placeholder nodes be exported')
 

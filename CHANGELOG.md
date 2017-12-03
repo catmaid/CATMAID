@@ -123,6 +123,10 @@ Miscellaneous:
   reduction of transferred data. The tracing layer transfers data now in binary
   by default, which can be adjusted in through the tracing layer settings.
 
+- The export management command will now also export meta-annotations when the
+  --annotation option is set. All meta-annotations of annotations directly
+  linked to the exported neurons are exported, too.
+
 
 ### Bug fixes
 

@@ -84,6 +84,16 @@ Connectivity Widget:
   relationship are now shown in a separate table if the "Show attachments"
   option is enabled.
 
+Export management command:
+
+- The export management command will now also export meta-annotations when the
+  --annotation option is set. All meta-annotations of annotations directly
+  linked to the exported neurons are exported, too.
+
+- Users referenced by any of the exported objects are now also exported
+  automatically. This can be disabled using the --nousers options.
+
+
 Miscellaneous:
 
 - Users can now choose alternative markers for connector nodes, which do not
@@ -122,10 +132,6 @@ Miscellaneous:
 - Tracing data should load faster due to spatial query improvements and
   reduction of transferred data. The tracing layer transfers data now in binary
   by default, which can be adjusted in through the tracing layer settings.
-
-- The export management command will now also export meta-annotations when the
-  --annotation option is set. All meta-annotations of annotations directly
-  linked to the exported neurons are exported, too.
 
 
 ### Bug fixes

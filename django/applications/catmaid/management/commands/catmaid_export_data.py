@@ -10,7 +10,7 @@ from catmaid.control.neuron_annotations import (get_annotated_entities,
         get_annotation_to_id_map)
 from catmaid.control.tracing import check_tracing_setup
 from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
-        Relation, Connector, Project, Treenode, TreenodeConnector)
+        Relation, Connector, Project, Treenode, TreenodeConnector, User)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -43,6 +43,7 @@ class Exporter():
         self.export_connectors = options['export_connectors']
         self.export_annotations = options['export_annotations']
         self.export_tags = options['export_tags']
+        self.export_users = options['export_users']
         self.required_annotations = options['required_annotations']
         self.target_file = 'export_pid_%s.json' % project.id
 
@@ -219,6 +220,24 @@ class Exporter():
 
             # TODO: Export reviews
 
+        # Export users
+        if self.export_users:
+            seen_user_ids = set()
+            # Find users involved in exported data
+            for group in self.to_serialize:
+                for o in group:
+                    if hasattr(o, 'user_id'):
+                        seen_user_ids.add(o.user_id)
+                    if hasattr(o, 'reviewer_id'):
+                        seen_user_ids.add(o.reviewer_id)
+                    if hasattr(o, 'editor_id'):
+                        seen_user_ids.add(o.editor_id)
+            users = User.objects.filter(pk__in=seen_user_ids)
+            logger.info("Exporting {} users: {}".format(len(users),
+                    ", ".join([u.username for u in users])))
+            self.to_serialize.append(users)
+
+
     def export(self):
         """ Writes all objects matching
         """
@@ -261,6 +280,10 @@ class Command(BaseCommand):
             action='store_true', help='Export tags from source')
         parser.add_argument('--notags', dest='export_tags',
             action='store_false', help='Don\'t export tags from source')
+        parser.add_argument('--users', dest='export_users', default=True,
+            action='store_true', help='Export users from source')
+        parser.add_argument('--nousers', dest='export_users',
+            action='store_false', help='Don\'t export users from source')
         parser.add_argument('--required-annotation', dest='required_annotations',
             action='append', help='Name a required annotation for exported ' +
             'skeletons. Meta-annotations can be used as well.')

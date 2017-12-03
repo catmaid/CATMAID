@@ -9,8 +9,8 @@ from django.core.management.base import BaseCommand, CommandError
 from catmaid.control.neuron_annotations import (get_annotated_entities,
         get_annotation_to_id_map)
 from catmaid.control.tracing import check_tracing_setup
-from catmaid.models import Class, ClassInstance, ClassInstanceClassInstance, \
-        Relation, Connector, Project, Treenode, TreenodeConnector
+from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
+        Relation, Connector, Project, Treenode, TreenodeConnector)
 
 import logging
 logger = logging.getLogger(__name__)

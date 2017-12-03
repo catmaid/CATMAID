@@ -12,6 +12,26 @@ from catmaid.control.tracing import check_tracing_setup
 from catmaid.models import Class, ClassInstance, ClassInstanceClassInstance, \
         Relation, Connector, Project, Treenode, TreenodeConnector
 
+
+def ask_to_continue():
+    """ Return a valid project object.
+    """
+    def ask():
+        start_export = raw_input("Continue? [y/n] ").strip()
+
+        if start_export == 'y':
+            return True
+        elif start_export == 'n':
+            return False
+        else:
+            print("Only 'y' and 'n' are allowed")
+            return None
+
+    while True:
+        c = ask()
+        if c is not None:
+            return c
+
 class Exporter():
 
     def __init__(self, project, options):
@@ -80,6 +100,9 @@ class Exporter():
             raise CommandError("No matching neurons found")
 
         print("Will export %s entities" % entities.count())
+        start_export = ask_to_continue()
+        if not start_export:
+            raise CommandError("Canceled by user")
 
         # Export classes and relations
         self.to_serialize.append(Class.objects.filter(project=self.project))
@@ -168,15 +191,36 @@ class Exporter():
                 self.to_serialize.append(TreenodeConnector.objects.filter(
                         project=self.project))
 
-            # Export annotations and annotation-neuron links
+            # Export annotations and annotation-neuron links. Include meta
+            # annotations.
             if self.export_annotations and 'annotated_with' in relations:
-                annotation_links = ClassInstanceClassInstance.objects.filter(
-                    project_id=self.project.id, relation=relations['annotated_with'],
-                    class_instance_a__in=entities)
-                annotations = ClassInstance.objects.filter(project_id=self.project.id,
-                                                           cici_via_b__in=annotation_links)
-                self.to_serialize.append(annotations)
-                self.to_serialize.append(annotation_links)
+                annotated_with = relations['annotated_with']
+                all_annotations = set()
+                all_annotation_links = set()
+                working_set = [e for e in entities]
+                while working_set:
+                    annotation_links = ClassInstanceClassInstance.objects.filter(
+                            project_id=self.project.id, relation=annotated_with,
+                            class_instance_a__in=working_set)
+                    annotations = ClassInstance.objects.filter(project_id=self.project.id,
+                            cici_via_b__in=annotation_links)
+
+                    # Reset working set to add next entries
+                    working_set = []
+
+                    for al in annotation_links:
+                        if al not in all_annotation_links:
+                            all_annotation_links.add(al)
+
+                    for a in annotations:
+                        if a not in all_annotations:
+                            all_annotations.add(a)
+                            working_set.add(a)
+
+                if annotations:
+                    self.to_serialize.append(annotations)
+                if annotation_links:
+                    self.to_serialize.append(annotation_links)
 
             # TODO: Export reviews
 

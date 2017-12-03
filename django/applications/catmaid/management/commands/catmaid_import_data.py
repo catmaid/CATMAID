@@ -7,6 +7,10 @@ from django.db import connection, transaction
 from catmaid.control.annotationadmin import copy_annotations
 from catmaid.models import Project, User
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 class FileImporter:
     def __init__(self, source, target, user, options):
         self.source = source
@@ -140,23 +144,23 @@ class Command(BaseCommand):
                 wont_import.append(t)
 
         if will_import:
-            print("Will import: " + ", ".join(will_import))
+            logger.info("Will import: " + ", ".join(will_import))
         else:
-            print("Nothing selected for import")
+            logger.info("Nothing selected for import")
             return
 
         if wont_import:
-            print("Won't import: " + ", ".join(wont_import))
+            logger.info("Won't import: " + ", ".join(wont_import))
 
         # Read soure and target
         if options['source']:
             try:
                 source = Project.objects.get(pk=int(options['source']))
-                print("Using internal importer")
+                logger.info("Using internal importer")
                 Importer = InternalImporter
             except ValueError:
                 source = options['source']
-                print("Using file importer")
+                logger.info("Using file importer")
                 Importer = FileImporter
         else:
             source = self.ask_for_project('source')
@@ -174,4 +178,4 @@ class Command(BaseCommand):
         importer = Importer(source, target, user, options)
         importer.import_data()
 
-        print("Finished import into project with ID %s" % importer.target.id)
+        logger.info("Finished import into project with ID %s" % importer.target.id)

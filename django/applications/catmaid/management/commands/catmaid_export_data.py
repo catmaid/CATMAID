@@ -12,6 +12,8 @@ from catmaid.control.tracing import check_tracing_setup
 from catmaid.models import Class, ClassInstance, ClassInstanceClassInstance, \
         Relation, Connector, Project, Treenode, TreenodeConnector
 
+import logging
+logger = logging.getLogger(__name__)
 
 def ask_to_continue():
     """ Return a valid project object.
@@ -73,7 +75,7 @@ class Exporter():
             neuron_info, num_total_records = get_annotated_entities(self.project,
                     query_params, relations, classes, ['neuron'], with_skeletons=True)
 
-            print("Found {} neurons with the following annotations: {}".format(
+            logger.info("Found {} neurons with the following annotations: {}".format(
                     num_total_records, ", ".join(self.required_annotations)))
 
             skeleton_id_constraints = list(chain.from_iterable([n['skeleton_ids'] for n in neuron_info]))
@@ -99,7 +101,7 @@ class Exporter():
         if entities.count() == 0:
             raise CommandError("No matching neurons found")
 
-        print("Will export %s entities" % entities.count())
+        print("Will export %s neurons" % entities.count())
         start_export = ask_to_continue()
         if not start_export:
             raise CommandError("Canceled by user")
@@ -122,7 +124,7 @@ class Exporter():
                 self.to_serialize.append(treenodes)
 
                 exported_tids = set(treenodes.values_list('id', flat=True))
-                print("Exporting %s treenodes" % len(exported_tids))
+                logger.info("Exporting %s treenodes" % len(exported_tids))
 
             # Export connectors and connector links
             if self.export_connectors:
@@ -133,7 +135,7 @@ class Exporter():
                 connector_ids = set(c for _,c,_ in connector_links)
                 self.to_serialize.append(Connector.objects.filter(
                         id__in=connector_ids))
-                print("Exporting %s connectors" % len(connector_ids))
+                logger.info("Exporting %s connectors" % len(connector_ids))
 
                 # Add matching connector links
                 self.to_serialize.append(TreenodeConnector.objects.filter(
@@ -145,7 +147,7 @@ class Exporter():
                     .exclude(skeleton_id__in=skeleton_id_constraints) \
                     .values_list('treenode', flat=True))
                 extra_tids = connector_tids - exported_tids
-                print("Exporting %s placeholder nodes" % len(extra_tids))
+                logger.info("Exporting %s placeholder nodes" % len(extra_tids))
                 self.to_serialize.append(Treenode.objects.filter(id__in=extra_tids))
 
                 # Add additional skeletons and neuron-skeleton links
@@ -301,13 +303,13 @@ class Command(BaseCommand):
                 wont_export.append(t)
 
         if will_export:
-            print("Will export: " + ", ".join(will_export))
+            logger.info("Will export: " + ", ".join(will_export))
         else:
-            print("Nothing selected for export")
+            logger.info("Nothing selected for export")
             return
 
         if wont_export:
-            print("Won't export: " + ", ".join(wont_export))
+            logger.info("Won't export: " + ", ".join(wont_export))
 
         # Read soure and target
         if not options['source']:
@@ -317,10 +319,10 @@ class Command(BaseCommand):
 
         # Process with export
         if (options['required_annotations']):
-            print("Needed annotations for exported skeletons: " +
+            logger.info("Needed annotations for exported skeletons: " +
                   ", ".join(options['required_annotations']))
 
         exporter = Exporter(source, options)
         exporter.export()
 
-        print("Finished export, result written to: %s" % exporter.target_file)
+        logger.info("Finished export, result written to: %s" % exporter.target_file)

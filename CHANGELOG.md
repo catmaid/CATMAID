@@ -154,6 +154,9 @@ Miscellaneous:
   reduction of transferred data. The tracing layer transfers data now in binary
   by default, which can be adjusted in through the tracing layer settings.
 
+- The catmaid_setup_tracing_for_project management command does not require a
+  --user argument anymore. If not provided, the first available admin user will
+  be used.
 
 ### Bug fixes
 

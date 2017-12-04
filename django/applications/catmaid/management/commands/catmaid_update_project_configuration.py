@@ -7,6 +7,9 @@ from catmaid.models import Project, User
 from catmaid.control.project import validate_project_setup
 from catmaid.apps import get_system_user
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class Command(BaseCommand):
     help = 'Set up the required database entries for a project'

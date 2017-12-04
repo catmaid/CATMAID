@@ -39,7 +39,13 @@ export all neurons from the project with ID ``1`` that are annotated with
 
   manage.py catmaid_export_data --source 1 --required-annotation "Kenyon cells"
 
-This will create a file called ``export_pid_1.json``.
+This will create a file called ``export_pid_<pid>.json``, which would be
+``export_pid_1.json`` in our case.
+
+Users are represented by their usernames and it is not required to export user
+model objects as well. The importer can either map to existing users or create
+new ones. If wanted, though, complete user models can be exported (and imported)
+as well by providing the ``--users`` option.
 
 Importing data
 ^^^^^^^^^^^^^^
@@ -74,6 +80,11 @@ importer can be asked to create new inactive user accounts for users that are
 referenced without having an actual user object available. To do so, use the
 ``--create-unknown-users`` option. When user mapping is enabled, users will only
 be created if they can't be mapped and can't be found in the import data.
+
+By default, the importer won't use the IDs provided from the import source and
+instead will create new rows. This default doesn't risk replacing existing data. All
+relations between objects are kept. If however needed, the use of the source
+provided IDs can be enforced by using the ``--preserve-ids`` option.
 
 Importing project and stack information
 ---------------------------------------

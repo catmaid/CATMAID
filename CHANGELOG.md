@@ -110,6 +110,11 @@ Import management command:
   users that can't be mapped and are also not included in the import data. By
   default --create-unknown-users is not set.
 
+- The importer now won't keep the IDs from the input source, but will instead
+  always create new objects. This ensures no existing data is replaced and
+  allows importing different sources into a single CATMAID instance. If the
+  original IDs have to be used, the ``--preserve-ids`` option can be used.
+
 Miscellaneous:
 
 - Users can now choose alternative markers for connector nodes, which do not

@@ -68,6 +68,7 @@ class FileImporter:
         self.create_unknown_users = options['create_unknown_users']
         self.user_map = dict(User.objects.all().values_list('username', 'id'))
         self.user_id_map = dict((v,k) for k,v in six.iteritems(self.user_map))
+        self.preserve_ids = options['preserve_ids']
 
         self.format = 'json'
 
@@ -140,6 +141,63 @@ class FileImporter:
                             "existing data or import data. Please use --user or "
                             "--create-unknown-users".format(obj_username))
 
+    def reset_ids(self, target_classes, import_objects,
+            import_objects_by_type_and_id):
+        """Reset the ID of each import object to None so that a new object will
+        be created when the object is saved. At the same time an index is
+        created that allows per-type lookups of foreign key fields
+        """
+        logger.info("Building foreign key update index")
+        # Build index for foreign key fields in models. For each type, map
+        # each foreign key name to a model class.
+        fk_index = defaultdict(dict)
+        for c in target_classes:
+            class_index = fk_index[c]
+            foreign_key_fields = [
+                    f for f in c._meta.get_fields()
+                    if f.is_relation
+                    and f.many_to_one # ForeignKey instances
+                    #if field.get_internal_type() == 'ForeignKey':
+                    and f.related_model in target_classes
+            ]
+
+            for field in foreign_key_fields:
+                class_index[field.name + '_id'] = field.related_model
+
+        logger.info("Updating foreign keys to imported objects with new IDs")
+        updated_fk_ids = 0
+        unchanged_fk_ids = 0
+        for object_type, objects in six.iteritems(import_objects):
+            fk_fields = fk_index[object_type]
+            # No need to do rest if there are no foreign keys to change to begin
+            # with.
+            if len(fk_fields) == 0:
+                continue;
+
+            for deserialized_object in objects:
+                obj = deserialized_object.object
+                obj_type = type(obj)
+                for fk_field, fk_type in six.iteritems(fk_fields):
+                    # Get import object with the former ID referenced in
+                    # this field.
+                    current_ref = getattr(obj, fk_field)
+                    # Get updated model objects of the referenced type
+                    imported_objects_by_id = import_objects_by_type_and_id[fk_type]
+                    ref_obj = imported_objects_by_id.get(current_ref)
+                    if ref_obj:
+                        # Update foreign key reference to ID of newly saved
+                        # object.
+                        setattr(obj, fk_field, ref_obj.id)
+                        updated_fk_ids += 1
+                    else:
+                        unchanged_fk_ids += 1
+
+                # Save changes, if any
+                if updated_fk_ids > 0:
+                    obj.save()
+        logger.info("{} foreign key references updated, {} did not require change".format(
+                updated_fk_ids, unchanged_fk_ids))
+
     @transaction.atomic
     def import_data(self):
         """ Imports data from a file and overrides its properties, if wanted.
@@ -180,13 +238,21 @@ class FileImporter:
         app = apps.get_app_config('catmaid')
         user_updatable_classes = set(app.get_models())
 
-        logger.info("Storing {} database objects".format(n_objects))
+        logger.info("Adjusting {} import objects to target database".format(n_objects))
+        append_only = not self.preserve_ids
         need_separate_import = []
+        objects_to_save = defaultdict(list)
+        import_objects_by_type_and_id = defaultdict(dict)
         for object_type, import_objects in six.iteritems(import_data):
             # Allow user reference updates in CATMAID objects
             if object_type not in user_updatable_classes:
                 need_separate_import.append(object_type)
                 continue
+
+            # Stores in append-only mode import IDs and links them to the
+            # respective objects. This is needed, to update foreign keys to this
+            # ID when it is replaced with a new ID.
+            objects_by_id = import_objects_by_type_and_id[object_type]
 
             # CATMAID model objects are inspected for user fields
             for deserialized_object in import_objects:
@@ -208,8 +274,29 @@ class FileImporter:
                 self.map_or_create_users(obj, import_users, mapped_user_ids,
                             mapped_user_target_ids, created_users)
 
-                # Finally save object
+                # Remove pre-defined ID and keep track of updated IDs in
+                # append-only mode (default).
+                if append_only:
+                    current_id = obj.id
+                    objects_by_id[current_id] = obj
+                    # By setting id to None, Django will create a new object and
+                    # set the new ID.
+                    obj.id = None
+
+                # Remember for saving
+                objects_to_save[object_type].append(deserialized_object)
+
+        # Finally save all objects
+        logger.info("Storing {} database objects".format(n_objects))
+        for object_type, objects in six.iteritems(objects_to_save):
+            for deserialized_object in objects:
                 deserialized_object.save()
+
+        # In append-only mode, the foreign keys to objects with changed IDs have
+        # to be updated.
+        if append_only:
+            self.reset_ids(user_updatable_classes, objects_to_save,
+                    import_objects_by_type_and_id)
 
         for other_model in need_separate_import:
             other_objects = import_data[other_model]
@@ -295,6 +382,8 @@ class Command(BaseCommand):
             action='store_true', help='Use existing user if username matches')
         parser.add_argument('--create-unknown-users', dest='create_unknown_users', default=False,
             action='store_true', help='Create new inactive users for unmapped or unknown users referenced in inport data.')
+        parser.add_argument('--preserve-ids', dest='preserve_ids', default=False,
+                action='store_true', help='Use IDs provided in import data. Warning: this can cause changes in existing data.')
 
     def ask_for_project(self, title):
         """ Return a valid project object.

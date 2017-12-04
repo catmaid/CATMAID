@@ -93,6 +93,22 @@ Export management command:
 - Users referenced by any of the exported objects are now also exported
   automatically. This can be disabled using the --nousers options.
 
+- User references are now stored as usernames rather than numerical IDs. This
+  removes the requirement of always also exporting user models, because users
+  can be mapped based on their usernames.
+
+Import management command:
+
+- The new --map-users option allows to map users referenced in the imported data
+  to already existing users in the database. This makes updating existing
+  databases easier and removes the de facto import data requirement to contain
+  user models. By default --map-users is not set.
+
+- The new --create-unknown-users option will instruct the importer to create
+  new inactive user accounts for users that aren't included as objects in the
+  imported data. If user mapping is enabled, accounts would only be created for
+  users that can't be mapped and are also not included in the import data. By
+  default --create-unknown-users is not set.
 
 Miscellaneous:
 

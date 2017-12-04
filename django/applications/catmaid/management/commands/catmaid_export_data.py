@@ -63,7 +63,7 @@ class Exporter():
                 project=self.project).values_list('relation_name', 'id'))
 
         if not check_tracing_setup(self.project.id, classes, relations):
-            raise CommnadError("Project with ID %s is no tracing project." % self.project.id)
+            raise CommandError("Project with ID %s is no tracing project." % self.project.id)
 
         if self.required_annotations:
             annotation_map = get_annotation_to_id_map(self.project.id,

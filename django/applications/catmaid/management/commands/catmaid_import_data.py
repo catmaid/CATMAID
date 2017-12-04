@@ -17,22 +17,27 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def ask_yes_no(title):
-    """Return true if yes, False if no.
+def ask_a_b(a, b, title):
+    """Return true if a, False if b.
     """
     def ask():
         selection = raw_input(title + " ").strip()
-        if selection == 'n':
-            return False
-        if selection == 'y':
+        if selection == a:
             return True
+        if selection == b:
+            return False
         return None
 
     while True:
         d = ask()
         if d is not None:
             return d
-        print("Please answer only 'y' or 'n'")
+        print("Please answer only '{}' or '{}'".format(a, b))
+
+def ask_yes_no(title):
+    """Return true if yes, False if no.
+    """
+    return ask_a_b('y', 'n', title)
 
 def ask_for_user(title):
     """ Return a valid user object.
@@ -61,8 +66,79 @@ class FileImporter:
         self.options = options
         self.user = user
         self.create_unknown_users = options['create_unknown_users']
+        self.user_map = dict(User.objects.all().values_list('username', 'id'))
+        self.user_id_map = dict((v,k) for k,v in six.iteritems(self.user_map))
 
         self.format = 'json'
+
+    def map_or_create_users(self, obj, import_users, mapped_user_ids,
+            mapped_user_target_ids, created_users):
+        """Update user information of a CATMAID model object. The parameters
+        <mapped_users>, <mapped_user_target_ids> and <created_users> are output
+        parameters and are expected to have the types set, set and dict.
+        """
+        map_users = self.options['map_users']
+        # Try to look at every user reference field in CATMAID.
+        for ref in ('user', 'reviewer', 'editor'):
+            obj_username = None
+            # If the import object has a the field without _id
+            # suffix, the user reference was already resolved by
+            # Django.
+            if hasattr(obj, ref):
+                user = getattr(obj, ref)
+                obj_username = user.username
+
+            id_ref = ref + "_id"
+            if hasattr(obj, id_ref):
+                obj_user_ref_id = getattr(obj, id_ref)
+
+                # If no username has been found yet, no model object
+                # has been attached by Django. Read the plain user
+                # ID reference as username. The corresponding
+                # exporter is expected to use Django's natural keys
+                # for user references.
+                if not obj_username:
+                    obj_username = objgetattr(obj, ref)
+
+                existing_user_id = self.user_map.get(obj_username)
+                import_user = import_users.get(obj_username)
+
+                # Map users if usernames match
+                if existing_user_id:
+                    # If a user with this username exists already, update
+                    # the user reference the existing user if --map-users is
+                    # set. Otherwise, use imported user, if available. Otherwise
+                    # complain.
+                    if map_users:
+                        setattr(obj, ref + "_id", existing_user_id)
+                        mapped_user_ids.add(obj_user_ref_id)
+                        mapped_user_target_ids.add(existing_user_id)
+                    elif import_user:
+                        raise CommandError("Referenced user \"{}\" exists "
+                                "both in database and in import data. If the "
+                                "existing user should be used, please use the "
+                                "--map-users option".format(obj_username))
+                    else:
+                        raise CommandError("Referenced user \"{}\" exists "
+                                "in database, but not in import data. If the "
+                                " existing user should be used, please use the "
+                                "--map-users option".format(obj_username))
+                elif import_user:
+                    print("works?")
+                    obj.user = import_user
+                elif self.create_unknown_users:
+                    user = created_users.get(obj_username)
+                    if not user:
+                        logger.info("Created new inactive user: " + obj_username)
+                        user = User.objects.create(username=obj_username)
+                        user.is_active = False
+                        user.save()
+                        created_users[obj_username] = user
+                    obj.user = user
+                else:
+                    raise CommandError("User \"{}\" is not found in "
+                            "existing data or import data. Please use --user or "
+                            "--create-unknown-users".format(obj_username))
 
     @transaction.atomic
     def import_data(self):
@@ -75,11 +151,8 @@ class FileImporter:
         cursor.execute('SET CONSTRAINTS ALL DEFERRED')
 
         # Get all existing users so that we can map them basedon their username.
-        map_users = self.options['map_users']
         mapped_user_ids = set()
         mapped_user_target_ids = set()
-        user_map = dict(User.objects.all().values_list('username', 'id'))
-        user_id_map = dict((v,k) for k,v in six.iteritems(user_map))
 
         # Map data types to lists of object of the respective type
         import_data = defaultdict(list)
@@ -117,86 +190,23 @@ class FileImporter:
 
             # CATMAID model objects are inspected for user fields
             for deserialized_object in import_objects:
+                obj = deserialized_object.object
                 # Override project to match target project
-                if hasattr(deserialized_object.object, 'project'):
-                    deserialized_object.object.project = self.target
+                if hasattr(obj, 'project'):
+                    obj.project = self.target
 
                 # Override all user references with pre-defined user
                 if self.user:
-                    if hasattr(deserialized_object.object, 'user_id'):
-                        deserialized_object.object.user = self.user
-                    if hasattr(deserialized_object.object, 'reviewer_id'):
-                        deserialized_object.object.reviewer = self.user
-                    if hasattr(deserialized_object.object, 'editor_id'):
-                        deserialized_object.object.editor = self.user
+                    if hasattr(obj, 'user_id'):
+                        obj.user = self.user
+                    if hasattr(obj, 'reviewer_id'):
+                        obj.reviewer = self.user
+                    if hasattr(obj, 'editor_id'):
+                        obj.editor = self.user
 
                 # Map users based on username, optionally create unmapped users.
-                if map_users:
-                    # Try to look at every user reference field in CATMAID.
-                    for ref in ('user', 'reviewer', 'editor'):
-                        obj = deserialized_object.object
-                        obj_username = None
-                        # If the import object has a the field without _id
-                        # suffix, the user reference was already resolved by
-                        # Django.
-                        if hasattr(obj, ref):
-                            user = getattr(obj, ref)
-                            obj_username = user.username
-
-                        id_ref = ref + "_id"
-                        if hasattr(obj, id_ref):
-                            obj_user_ref_id = getattr(obj, id_ref)
-
-                            # If no username has been found yet, no model object
-                            # has been attached by Django. Read the plain user
-                            # ID reference as username. The corresponding
-                            # exporter is expected to use Django's natural keys
-                            # for user references.
-                            if not obj_username:
-                                obj_username = objgetattr(obj, ref)
-
-                            # Map users if usernames match
-                            existing_user_id = user_map.get(obj_username)
-                            if existing_user_id:
-                                setattr(obj, ref + "_id", existing_user_id)
-                                mapped_user_ids.add(obj_user_ref_id)
-                                mapped_user_target_ids.add(existing_user_id)
-                            elif self.create_unknown_users:
-                                user = created_users.get(obj_username)
-                                if not user:
-                                    logger.info("Created new inactive user (couldn't map): " + obj_username)
-                                    user = User.objects.create(username=obj_username)
-                                    user.is_active = False
-                                    user.save()
-                                    created_users[obj_username] = user
-                                obj.user = user
-                            else:
-                                raise CommandError("User {} is not found in "
-                                        "existing data. Please use --user or "
-                                        "--create-unknown-users".format(obj_username))
-                else:
-                    # If no mapping is done and users are available to be
-                    # imported, try to find user in import data.
-                    for ref in ('user_id', 'reviewer_id', 'editor_id'):
-                        if hasattr(obj, ref):
-                            # Map users if usernames match
-                            obj_username = getattr(obj, ref)
-                            user = import_data.get(obj_username)
-                            if user:
-                                obj.user = user
-                            elif self.create_unknown_users:
-                                user = created_users.get(obj_username)
-                                if not user:
-                                    logger.info("Created new inactive user (otherwise unavailable): " + obj_username)
-                                    user = User.objects.create(username=obj_username)
-                                    user.is_active = False
-                                    user.save()
-                                    created_users[obj_username] = user
-                                obj.user = user
-                            else:
-                                raise CommandError("Could not find user "
-                                        "\"{}\" and was not asked to creat unknown "
-                                        "users (--create-unknown-users)".format(obj_username))
+                self.map_or_create_users(obj, import_users, mapped_user_ids,
+                            mapped_user_target_ids, created_users)
 
                 # Finally save object
                 deserialized_object.save()
@@ -210,7 +220,7 @@ class FileImporter:
                 # only created if no model is found. Therefore all other model
                 # objects can be imported.
                 if mapped_user_target_ids:
-                    mapped_usernames = set(user_id_map.get(u) for u in mapped_user_target_ids)
+                    mapped_usernames = set(self.user_id_map.get(u) for u in mapped_user_target_ids)
                     import_usernames = set(import_users.keys())
                     not_imported_usernames = import_usernames - mapped_usernames
                     already_imported_usernames  = import_usernames - not_imported_usernames
@@ -223,7 +233,7 @@ class FileImporter:
                         ignore_users = ask_yes_no("Skip those users in input "
                                 "data and don't import them? [y/n]")
                         if ignore_users:
-                            logger.info("Won't import already mapped users: " +
+                            logger.info("Won't import mapped users: " +
                                     ", ".join(already_imported_usernames))
                             other_objects = [u for u in other_objects \
                                     if u.object.username not in already_imported_usernames]

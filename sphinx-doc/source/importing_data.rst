@@ -66,7 +66,14 @@ import::
   manage.py catmaid_import_data --source export_pid_1.json --target 1
 
 The tool will ask for a user to use for all data before it actually starts the
-import.
+import. Alternatively, the import can be instructed to map users referenced in
+the input data to existing users in the database. This can be done using the
+``--map-users`` option. The import data is not required to include actual user
+models and is expected to reference users by their usernames. Therefore, the
+importer can be asked to create new inactive user accounts for users that are
+referenced without having an actual user object available. To do so, use the
+``--create-unknown-users`` option. When user mapping is enabled, users will only
+be created if they can't be mapped and can't be found in the import data.
 
 Importing project and stack information
 ---------------------------------------

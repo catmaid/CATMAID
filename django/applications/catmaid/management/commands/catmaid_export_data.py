@@ -298,7 +298,7 @@ class Command(BaseCommand):
             print("Please enter the number for the %s project:" % title)
             projects = Project.objects.all()
             for n,p in enumerate(projects):
-                print("%s: %s" % (n, p))
+                print("%s: %s (ID: %s)" % (n, p, p.id))
             selection = raw_input("Selection: ")
             try:
                 return projects[int(selection)]

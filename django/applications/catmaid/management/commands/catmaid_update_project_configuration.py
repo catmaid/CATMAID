@@ -33,4 +33,9 @@ class Command(BaseCommand):
             projects = Project.objects.filter(pk=options['projects_id'])
 
         for p in projects:
-            validate_project_setup(p.id, user.id, True)
+            try:
+                validate_project_setup(p.id, user.id, True)
+                logger.info("Validated project {} (ID: {})".format(p, p.id))
+            except Exception as e:
+                logger.error("Could not validate project setup of project " +
+                        "{} (ID: {}): {}".format(p, p.id, e))

@@ -249,7 +249,8 @@ class Exporter():
             CurrentSerializer = serializers.get_serializer(self.format)
             serializer = CurrentSerializer()
             with open(self.target_file, "w") as out:
-                serializer.serialize(data, indent=self.indent, stream=out)
+                serializer.serialize(data, indent=self.indent, stream=out,
+                        use_natural_foreign_keys=True, use_natural_primary_keys=True)
         except Exception as e:
             if self.show_traceback:
                 raise
@@ -280,7 +281,7 @@ class Command(BaseCommand):
             action='store_true', help='Export tags from source')
         parser.add_argument('--notags', dest='export_tags',
             action='store_false', help='Don\'t export tags from source')
-        parser.add_argument('--users', dest='export_users', default=True,
+        parser.add_argument('--users', dest='export_users', default=False,
             action='store_true', help='Export users from source')
         parser.add_argument('--nousers', dest='export_users',
             action='store_false', help='Don\'t export users from source')

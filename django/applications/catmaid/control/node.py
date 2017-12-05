@@ -879,8 +879,6 @@ def node_list_tuples_query(params, project_id, node_provider, explicit_treenode_
                 content_type='application/json')
         elif target_format == 'msgpack':
             data = msgpack.packb(result)
-            print(type(data))
-            print(data)
             return HttpResponse(data, content_type='application/octet-stream')
         else:
             raise ValueError("Unknown target format: {}".format(target_format))

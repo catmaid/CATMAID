@@ -1213,7 +1213,7 @@
       this.removeLink = function(link) {
         if (this.links) {
           this.links.forEach(function(l, i, array) {
-            if (l.treenode.id === link) {
+            if (l === link) {
               array.splice(i, 1);
             }
           });

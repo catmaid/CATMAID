@@ -44,10 +44,13 @@ info_file_name = "project.yaml"
 datafolder_setting = "CATMAID_IMPORT_PATH"
 base_url_setting = "IMPORTER_DEFAULT_IMAGE_BASE"
 
-def is_reachable(url):
+def is_reachable(url, accept_unauthorized=True):
     try:
         r = requests.head(url)
-        return r.status_code >= 200 and r.status_code < 400
+        return True
+        print r.status_code
+        return (r.status_code >= 200 and r.status_code < 400) or \
+            (accept_unauthorized and r.status_code == 401)
     except requests.ConnectionError:
         return False
 

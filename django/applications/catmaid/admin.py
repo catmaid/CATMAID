@@ -303,9 +303,9 @@ admin.site.register(StackMirror, StackMirrorAdmin)
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Group)
 # Register additional views
-admin.site.register_view('annotationimporter', 'Annotation data importer',
+admin.site.register_view('annotationimporter', 'Import annotations and tracing data',
                          view=ImportingWizard.as_view())
-admin.site.register_view('importer', 'Image data importer',
+admin.site.register_view('importer', 'Import projects and image stacks',
                          view=importer_admin_view)
 admin.site.register_view('useranalytics', 'User Analytics',
                          view=UseranalyticsView.as_view())
@@ -315,8 +315,8 @@ admin.site.register_view('classificationadmin',
                          'Tag Based Classification Graph Linker',
                          view=classification_admin_view)
 admin.site.register_view('groupmembershiphelper',
-                         'Group membership helper',
+                         'Manage group memberships',
                          urlname='groupmembershiphelper',
                          view=GroupMembershipHelper.as_view())
-admin.site.register_view('dvidimporter', 'DVID stack importer',
+admin.site.register_view('dvidimporter', 'Import DVID stacks',
                          view=DVIDImportWizard.as_view())

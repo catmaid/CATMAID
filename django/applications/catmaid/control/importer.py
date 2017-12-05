@@ -44,6 +44,13 @@ info_file_name = "project.yaml"
 datafolder_setting = "CATMAID_IMPORT_PATH"
 base_url_setting = "IMPORTER_DEFAULT_IMAGE_BASE"
 
+def is_reachable(url):
+    try:
+        r = requests.head(url)
+        return r.status_code >= 200 and r.status_code < 400
+    except requests.ConnectionError:
+        return False
+
 class UserProxy(User):
     """ A proxy class for the user model as we want to be able to call
     get_name() on a user object and let it return the user name.
@@ -756,6 +763,17 @@ KNOWN_PROJECT_STRATEGIES = (
     ('replace',        'Replace existing projects with new version')
 )
 
+class HostPathField(forms.CharField):
+
+    def validate(self, value):
+        host = value.strip()
+        if 0 == len(host):
+            raise ValidationError(_('No URL provided'))
+        if '://' not in host:
+            raise ValidationError(_('URL is missing protocol (http://...)'))
+        if not is_reachable(host):
+            raise ValidationError(_('URL not reachable'))
+
 class DataFileForm(forms.Form):
     """ A form to select basic properties on the data to be
     imported. Path and filter constraints can be set here.
@@ -771,12 +789,12 @@ class DataFileForm(forms.Form):
         help_text="Optionally, use a sub-folder of the data folder to narrow " \
                   "down the folders to look at. This path is <em>relative</em> " \
                   "to the data folder in use.")
-    remote_host = forms.CharField(required=False, widget=forms.TextInput(
+    remote_host = HostPathField(required=False, widget=forms.TextInput(
         attrs={'size':'40', 'class': 'import-source-setting remote-import'}),
         help_text="The URL to a remote host from which projects and stacks " \
                   "can be imported. To connect to another CATMAID server, add " \
                   "/projects/export to its URL.")
-    catmaid_host = forms.CharField(required=False, widget=forms.TextInput(
+    catmaid_host = HostPathField(required=False, widget=forms.TextInput(
         attrs={'size':'40', 'class': 'import-source-setting catmaid-host'}),
         help_text="The main URL of the remote CATMAID instance.")
     api_key = forms.CharField(required=False, widget=forms.TextInput(
@@ -806,20 +824,6 @@ class DataFileForm(forms.Form):
         widget=forms.TextInput(attrs={'size':'40'}),
         help_text="The <em>base URL</em> should give read access to the data \
                    folder in use.")
-
-    def clean(self):
-        form_data = self.cleaned_data
-
-        # Make sure URLs are provided for a remote import
-        import_from = form_data['import_from']
-        if 'remote-catmaid' == import_from:
-            if 0 == len(form_data['catmaid_host'].strip()):
-                raise ValidationError(_('No URL provided'))
-        elif 'remote' == import_from:
-            if 0 == len(form_data['remote_host'].strip()):
-                raise ValidationError(_('No URL provided'))
-
-        return form_data
 
 class ProjectSelectionForm(forms.Form):
     """ A form to select projects to import out of the

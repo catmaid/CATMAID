@@ -44,15 +44,27 @@ info_file_name = "project.yaml"
 datafolder_setting = "CATMAID_IMPORT_PATH"
 base_url_setting = "IMPORTER_DEFAULT_IMAGE_BASE"
 
-def is_reachable(url, accept_unauthorized=True):
+def is_reachable(url, auth=None):
     try:
-        r = requests.head(url)
-        return True
-        print r.status_code
-        return (r.status_code >= 200 and r.status_code < 400) or \
-            (accept_unauthorized and r.status_code == 401)
+        r = requests.head(url, auth=auth)
+        if r.status_code >= 200 and r.status_code < 400:
+            return (True, 'URL accessible')
+        else:
+            return (False, r.reason)
     except requests.ConnectionError:
-        return False
+        return (False, 'No route to host')
+
+def is_invalid_host(host, auth=None):
+    host = host.strip()
+    if 0 == len(host):
+        return 'No URL provided'
+    if '://' not in host:
+        return 'URL is missing protocol (http://...)'
+    reachable, reason = is_reachable(host, auth)
+    if not reachable:
+        return 'URL not reachable: {}'.format(reason)
+
+    return None
 
 class UserProxy(User):
     """ A proxy class for the user model as we want to be able to call
@@ -766,17 +778,6 @@ KNOWN_PROJECT_STRATEGIES = (
     ('replace',        'Replace existing projects with new version')
 )
 
-class HostPathField(forms.CharField):
-
-    def validate(self, value):
-        host = value.strip()
-        if 0 == len(host):
-            raise ValidationError(_('No URL provided'))
-        if '://' not in host:
-            raise ValidationError(_('URL is missing protocol (http://...)'))
-        if not is_reachable(host):
-            raise ValidationError(_('URL not reachable'))
-
 class DataFileForm(forms.Form):
     """ A form to select basic properties on the data to be
     imported. Path and filter constraints can be set here.
@@ -792,12 +793,12 @@ class DataFileForm(forms.Form):
         help_text="Optionally, use a sub-folder of the data folder to narrow " \
                   "down the folders to look at. This path is <em>relative</em> " \
                   "to the data folder in use.")
-    remote_host = HostPathField(required=False, widget=forms.TextInput(
+    remote_host = forms.CharField(required=False, widget=forms.TextInput(
         attrs={'size':'40', 'class': 'import-source-setting remote-import'}),
         help_text="The URL to a remote host from which projects and stacks " \
                   "can be imported. To connect to another CATMAID server, add " \
                   "/projects/export to its URL.")
-    catmaid_host = HostPathField(required=False, widget=forms.TextInput(
+    catmaid_host = forms.CharField(required=False, widget=forms.TextInput(
         attrs={'size':'40', 'class': 'import-source-setting catmaid-host'}),
         help_text="The main URL of the remote CATMAID instance.")
     api_key = forms.CharField(required=False, widget=forms.TextInput(
@@ -827,6 +828,29 @@ class DataFileForm(forms.Form):
         widget=forms.TextInput(attrs={'size':'40'}),
         help_text="The <em>base URL</em> should give read access to the data \
                    folder in use.")
+
+    def clean(self):
+        form_data = self.cleaned_data
+
+        http_auth_user = form_data['http_auth_user'].strip()
+        http_auth_pass = form_data['http_auth_pass']
+        auth = None
+        if http_auth_user and http_auth_pass:
+            auth = (http_auth_user, http_auth_pass)
+
+        # Make sure URLs are provided for a remote import
+        import_from = form_data['import_from']
+        if 'remote-catmaid' == import_from:
+            error = is_invalid_host(form_data['catmaid_host'], auth)
+            if error:
+                raise ValidationError({'catmaid_host': [error]})
+        elif 'remote' == import_from:
+            error = is_invalid_host(form_data['remote_host'], auth)
+            if error:
+                raise ValidationError({'remote_host': [error]})
+
+        return form_data
+
 
 class ProjectSelectionForm(forms.Form):
     """ A form to select projects to import out of the

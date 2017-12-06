@@ -336,7 +336,7 @@
         if (linkedLocationsRepr.length > 0) {
           return wrapInGroupEditLink(landmark.name) + " (" + linkedLocationsRepr.join("") + ")";
         } else {
-          return wrapInGroupEditLink(landmark.name) + " (none)";
+          return wrapInGroupEditLink(landmark.name) + " (-)";
         }
       } else {
         return wrapInGroupEditLink(landmarkId);

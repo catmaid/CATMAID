@@ -434,8 +434,9 @@ class Command(BaseCommand):
             action='store_true', help='Import tags from source')
         parser.add_argument('--notags', dest='import_tags',
             action='store_false', help='Don\'t import tags from source')
-        parser.add_argument('--map-users', dest='map_users', default=False,
-            action='store_true', help='Use existing user if username matches')
+        parser.add_argument('--map-users', dest='map_users', default=True,
+                type=lambda x: (str(x).lower() == 'true'), nargs='?',
+                help='Use existing user if username matches')
         parser.add_argument('--create-unknown-users', dest='create_unknown_users', default=False,
             action='store_true', help='Create new inactive users for unmapped or unknown users referenced in inport data.')
         parser.add_argument('--preserve-ids', dest='preserve_ids', default=False,

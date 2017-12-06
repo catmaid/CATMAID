@@ -112,7 +112,9 @@ Import management command:
 
 - Imported class, class instance and relation objects are skipped when
   existing objects in the target project have the same name. This makes merging
-  of projects also possible for semantic data (e.g. annotations, tags).
+  of projects also possible for semantic data (e.g. annotations, tags). The only
+  exception are neuron class instances, where two different objects are allowed
+  to have the same name.
 
 - The importer now won't keep the IDs from spatial objects in the input source,
   but will instead always create new objects. This ensures no existing data is

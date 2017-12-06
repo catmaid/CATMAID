@@ -263,6 +263,14 @@ class FileImporter:
         existing_class_instances = dict(ClassInstance.objects.filter(project_id=self.target.id) \
                 .values_list('name', 'id'))
 
+        # Find classes for neurons and skeletons in import data
+        if Class in import_data:
+            allowed_duplicate_classes = tuple(c.object.id
+                    for c in import_data.get(Class)
+                    if c.object.class_name in ('neuron', 'skeleton'))
+        else:
+            allowed_duplicate_classes = tuple()
+
         n_reused = 0
         append_only = not self.preserve_ids
         need_separate_import = []
@@ -296,6 +304,13 @@ class FileImporter:
                     existing_obj_id = existing_relations.get(obj.relation_name)
                 if is_class_instance:
                     existing_obj_id = existing_class_instances.get(obj.name)
+
+                    # Neurons (class instances of class "neuron") are a special case.
+                    # There can be multiple neurons with the same name, something that
+                    # is not allowed in other cases. In this particular case,
+                    # however, class instance reuse is not wanted.
+                    if existing_obj_id and obj.class_column_id in allowed_duplicate_classes:
+                        existing_obj_id = None
 
                 if existing_obj_id is not None:
                     # Add mapping so that existing references to it can be

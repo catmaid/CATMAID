@@ -11,7 +11,8 @@ from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection, transaction
 from catmaid.control.annotationadmin import copy_annotations
-from catmaid.models import Project, User
+from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
+        Project, Relation, User)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -253,6 +254,16 @@ class FileImporter:
         user_updatable_classes = set(app.get_models())
 
         logger.info("Adjusting {} import objects to target database".format(n_objects))
+
+        # Needed for name uniquness of classes, class_instances and relations
+        existing_classes = dict(Class.objects.filter(project_id=self.target.id) \
+                .values_list('class_name', 'id'))
+        existing_relations = dict(Relation.objects.filter(project_id=self.target.id) \
+                .values_list('relation_name', 'id'))
+        existing_class_instances = dict(ClassInstance.objects.filter(project_id=self.target.id) \
+                .values_list('name', 'id'))
+
+        n_reused = 0
         append_only = not self.preserve_ids
         need_separate_import = []
         objects_to_save = defaultdict(list)
@@ -268,9 +279,33 @@ class FileImporter:
             # ID when it is replaced with a new ID.
             objects_by_id = import_objects_by_type_and_id[object_type]
 
+            is_class = object_type == Class
+            is_class_instance = object_type == ClassInstance
+            is_relation = object_type == Relation
+
             # CATMAID model objects are inspected for user fields
             for deserialized_object in import_objects:
                 obj = deserialized_object.object
+
+                # Semantic data like classes and class instances are expected to
+                # be unique with respect to their names.
+                existing_obj_id = None
+                if is_class:
+                    existing_obj_id = existing_classes.get(obj.class_name)
+                if is_relation:
+                    existing_obj_id = existing_relations.get(obj.relation_name)
+                if is_class_instance:
+                    existing_obj_id = existing_class_instances.get(obj.name)
+
+                if existing_obj_id is not None:
+                    # Add mapping so that existing references to it can be
+                    # updated. The object itself is not marked for saving,
+                    # because it exists already.
+                    current_id = obj.id
+                    objects_by_id[current_id] = obj
+                    obj.id = existing_obj_id
+                    n_reused += 1
+                    continue
 
                 # Replace existing data if requested
                 self.override_fields(obj)
@@ -292,7 +327,8 @@ class FileImporter:
                 objects_to_save[object_type].append(deserialized_object)
 
         # Finally save all objects
-        logger.info("Storing {} database objects".format(n_objects))
+        logger.info("Storing {} database objects, reusing additional {} existing objects" \
+                .format(n_objects - n_reused, n_reused))
         for object_type, objects in six.iteritems(objects_to_save):
             for deserialized_object in objects:
                 deserialized_object.save()

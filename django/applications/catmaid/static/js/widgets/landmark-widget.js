@@ -182,7 +182,10 @@
    * Remove virtual skeltons from 3D Viewers.
    */
   LandmarkWidget.prototype.removeDisplay = function() {
-    CATMAID.warn('TODO');
+    let availableSources = LandmarkWidget.getAvailable3dViewers();
+    availableSources.forEach(function(sourceName) {
+      this.removeDisplayFrom3dViewer(sourceName);
+    }, this);
   };
 
   /**

@@ -69,6 +69,11 @@ class Exporter():
             annotation_map = get_annotation_to_id_map(self.project.id,
                     self.required_annotations, relations, classes)
             annotation_ids = map(str, annotation_map.values())
+            if not annotation_ids:
+                missing_annotations = set(self.required_annotations) - set(annotation_map.keys())
+                raise CommandError("Could not find the following annotations: " +
+                        ", ".join(missing_annotations))
+
             query_params = {
                 'annotated_with': ",".join(annotation_ids),
                 'sub_annotated_with': ",".join(annotation_ids)

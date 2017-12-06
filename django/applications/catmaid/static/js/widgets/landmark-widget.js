@@ -939,7 +939,8 @@
                 CATMAID.msg("Success", "Group updated");
                 widget.update();
               }
-            });
+            })
+            .catch(CATMAID.handleError);
         }).on('mousedown', 'a[data-action=select-location]', function(e) {
           var index = parseInt(this.dataset.index, 10);
           var landmarkId = parseInt(this.dataset.id, 10);

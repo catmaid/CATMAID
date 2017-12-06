@@ -47,25 +47,23 @@ be replaced by the source project ID.
 Users are represented by their usernames and it is not required to export user
 model objects as well. The importer can either map to existing users or create
 new ones. If wanted, though, complete user models can be exported (and imported)
-as well by providing the ``--users`` option.
+as well by providing the ``--users`` option. Be aware though that this includes
+the hashed user passwords.
 
 Importing data
 ^^^^^^^^^^^^^^
 
 The JSON file generated in the previous section can be used to import data into
-a CATMAID instance. *Currently, the importer won't change the primary key IDs in
-the input data, so be aware of potential data loss if you import into an
-instance with existing data.* For now, this is only practical to import data
-into a new CATMAID instance. To do this, the ``catmaid_import_data`` management
-command has to be used::
+a CATMAID project. This project can be non-empty or a new one and can be part of
+the source CATMAID instance or a completely different one. do this so, use the
+``catmaid_import_data`` management command::
 
   manage.py catmaid_import_data
 
 You can use the ``--help`` switch to get an overview of the available options.
-Like the exporter, the importer will ask a user if it needs more information.
-Required are currently the source file and a user. The importer does currently
-not preserve ownership if the imported models. The user (and editor and
-reviewer) is needed to override the information in the source data set.
+Like the exporter, the importer will ask a user if it needs more information. If
+no project is specified, users can select an existing one or create a new empty
+target project interactively.
 
 Assuming a file called ``export_pid_1.json`` is available and a new CATMAID
 project with ID ``1`` has been created, the following command will start the
@@ -73,20 +71,33 @@ import::
 
   manage.py catmaid_import_data --source export_pid_1.json --target 1
 
-The tool will ask for a user to use for all data before it actually starts the
-import. Alternatively, the import can be instructed to map users referenced in
-the input data to existing users in the database. This can be done using the
-``--map-users`` option. The import data is not required to include actual user
-models and is expected to reference users by their usernames. Therefore, the
-importer can be asked to create new inactive user accounts for users that are
-referenced without having an actual user object available. To do so, use the
-``--create-unknown-users`` option. When user mapping is enabled, users will only
-be created if they can't be mapped and can't be found in the import data.
+By default, the importer tries to map users referenced in the input data to
+existing users. If this is not wanted, the option ``--map-users false`` has to
+be used.
 
-By default, the importer won't use the IDs provided from the import source and
-instead will create new rows. This default doesn't risk replacing existing data. All
-relations between objects are kept. If however needed, the use of the source
-provided IDs can be enforced by using the ``--preserve-ids`` option.
+The importer looks at the ``user_id``, ``editor_id`` and ``reviewer_id``
+fields of imported objects, if available. CATMAID needs to know what to do with
+this information. Besides mapping users, CATMAID can also override all import
+data user information with a single user. Setting ``--map-users false`` and
+either selecting a user interactively oder with the help of the ``--user <id>``
+option, will accomplish this.
+
+If users are mapped and a username does not exist, the import is
+aborted---unless the ``--create-unknown-users`` option is provided. This will
+create new inactive user accounts with the provided usernames that are
+referenced from the new imported objects. The allows to not require full user
+profiles to be part of exported data.
+
+By default, the importer won't use the IDs of spatial data provided from the
+import source and instead will create new database entries. This default is
+generally useful and doesn't risk replacing existing data. All relations between
+objects are kept. If however needed, the use of the source provided IDs can be
+enforced by using the ``--preserve-ids`` option.
+
+Semantic data, like annotations and tags however are re-used if already
+available in the target project. The only exception to this are neuron and
+skeleton objects, which are technically semantic objects, but are expected to
+not be shared or reused.
 
 Importing project and stack information
 ---------------------------------------

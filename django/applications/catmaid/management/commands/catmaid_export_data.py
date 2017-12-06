@@ -45,7 +45,7 @@ class Exporter():
         self.export_tags = options['export_tags']
         self.export_users = options['export_users']
         self.required_annotations = options['required_annotations']
-        self.target_file = 'export_pid_%s.json' % project.id
+        self.target_file = options.get('file', 'export_pid_{}.json').format(project.id)
 
         self.show_traceback = True
         self.format = 'json'
@@ -270,6 +270,8 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--source', default=None,
             help='The ID of the source project')
+        parser.add_argument('--file', default=None,
+            help='Output file name, "{}" will be replaced with project ID')
         parser.add_argument('--treenodes', dest='export_treenodes', default=True,
             action='store_true', help='Export treenodes from source')
         parser.add_argument('--notreenodes', dest='export_treenodes',

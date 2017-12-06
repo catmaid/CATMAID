@@ -40,7 +40,9 @@ export all neurons from the project with ID ``1`` that are annotated with
   manage.py catmaid_export_data --source 1 --required-annotation "Kenyon cells"
 
 This will create a file called ``export_pid_<pid>.json``, which would be
-``export_pid_1.json`` in our case.
+``export_pid_1.json`` in our case. A different file name can be specified using
+the ``--file`` option and if the passed in string contains "{}", the braces will
+be replaced by the source project ID.
 
 Users are represented by their usernames and it is not required to export user
 model objects as well. The importer can either map to existing users or create

@@ -198,6 +198,20 @@ class FileImporter:
         logger.info("{} foreign key references updated, {} did not require change".format(
                 updated_fk_ids, unchanged_fk_ids))
 
+    def override_fields(self, obj):
+        # Override project to match target project
+        if hasattr(obj, 'project'):
+            obj.project = self.target
+
+        # Override all user references with pre-defined user
+        if self.user:
+            if hasattr(obj, 'user_id'):
+                obj.user = self.user
+            if hasattr(obj, 'reviewer_id'):
+                obj.reviewer = self.user
+            if hasattr(obj, 'editor_id'):
+                obj.editor = self.user
+
     @transaction.atomic
     def import_data(self):
         """ Imports data from a file and overrides its properties, if wanted.
@@ -257,18 +271,9 @@ class FileImporter:
             # CATMAID model objects are inspected for user fields
             for deserialized_object in import_objects:
                 obj = deserialized_object.object
-                # Override project to match target project
-                if hasattr(obj, 'project'):
-                    obj.project = self.target
 
-                # Override all user references with pre-defined user
-                if self.user:
-                    if hasattr(obj, 'user_id'):
-                        obj.user = self.user
-                    if hasattr(obj, 'reviewer_id'):
-                        obj.reviewer = self.user
-                    if hasattr(obj, 'editor_id'):
-                        obj.editor = self.user
+                # Replace existing data if requested
+                self.override_fields(obj)
 
                 # Map users based on username, optionally create unmapped users.
                 self.map_or_create_users(obj, import_users, mapped_user_ids,

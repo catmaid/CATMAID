@@ -123,10 +123,6 @@
     }
   };
 
-  TracingLayer.prototype.redraw = function() {
-    this.tracingOverlay.redraw();
-  };
-
   CATMAID.TracingLayer = TracingLayer;
 
 })(CATMAID);

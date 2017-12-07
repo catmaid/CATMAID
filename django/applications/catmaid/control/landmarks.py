@@ -457,7 +457,8 @@ class LandmarkGroupDetail(APIView):
     def post(self, request, project_id, landmarkgroup_id):
         """Update an existing landmark group.
 
-        Currently, only the name can be updated.
+        Currently, only the name and group members can be updated. Edit
+        permissions are only needed when removing group members.
         ---
         parameters:
         - name: project_id
@@ -483,13 +484,13 @@ class LandmarkGroupDetail(APIView):
             type: integer
           paramType: form
         """
+        needs_edit_permissions = False
         project_id = int(project_id)
         if not project_id:
             raise ValueError("Need project ID")
         landmarkgroup_id = int(landmarkgroup_id)
         if not landmarkgroup_id:
             raise ValueError("Need landmark group ID")
-        can_edit_or_fail(request.user, landmarkgroup_id, 'class_instance')
         name = request.data.get('name')
         if request.data.get('members') == 'none':
             members = []
@@ -515,6 +516,9 @@ class LandmarkGroupDetail(APIView):
             to_add = new_members - current_members
             to_remove = current_members - new_members
 
+            if to_remove:
+                needs_edit_permissions = True
+
             part_of = Relation.objects.get(project_id=project_id,
                     relation_name='part_of')
             ClassInstanceClassInstance.objects.filter(project_id=project_id,
@@ -527,6 +531,9 @@ class LandmarkGroupDetail(APIView):
                             class_instance_a_id=landmark_id,
                             class_instance_b_id=landmarkgroup_id,
                             relation=part_of, user=request.user)
+
+        if needs_edit_permissions:
+            can_edit_or_fail(request.user, landmarkgroup_id, 'class_instance')
 
         serializer = BasicClassInstanceSerializer(landmarkgroup)
         return Response(serializer.data)

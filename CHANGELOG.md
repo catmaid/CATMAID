@@ -1,5 +1,6 @@
-## Under development
+## 2017.12.07
 
+Contributors: Albert Cardona, Andrew Champion, Chris Barnes, Tom Kazimiers
 ### Notes
 
 - PostgreSQL 9.6 and Postgis 2.4 are now required.

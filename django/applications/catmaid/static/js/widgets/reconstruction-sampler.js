@@ -32,6 +32,7 @@
   ReconstructionSampler.prototype.init = function() {
     this.state = {
       'intervalLength': 5000,
+      'createIntervalBoundingNodes': true,
       'domainType': 'regular',
       'domainStartNodeType': 'root',
       'domainEndNodeType': 'downstream',
@@ -211,6 +212,15 @@
         length: 6,
         onchange: function() {
           widget.state['intervalLength'] = this.value;
+        }
+      },
+      {
+        type: 'checkbox',
+        label: 'Create bounding nodes',
+        title: 'To match the interval length exactly, missing nodes can be created at respective locations.',
+        value: widget.state['createIntervalBoundingNodes'],
+        onclick: function() {
+          widget.state['createIntervalBoundingNodes'] = this.checked;
         }
       },
       {
@@ -455,6 +465,7 @@
       CATMAID.warn("No valid interval length found");
       return;
     }
+    var createIntervalBoundingNodes = !!widget.state['createIntervalBoundingNodes'];
 
     var arbor = widget.state['arbor'];
     // Get arbor if not already cached
@@ -495,13 +506,19 @@
             domains: [fakeDomain]
           };
           let preferSmallerError = true;
-          let intervals = CATMAID.Sampling.intervalsFromModels(arbor.arbor,
-            arbor.positions, fakeDomain, intervalLength, preferSmallerError);
+          let workParser = new CATMAID.ArborParser();
+          workParser.arbor = arbor.arbor.clone();
+          workParser.positions = Object.assign({}, arbor.positions);
+          let intervalConfiguration = CATMAID.Sampling.intervalsFromModels(workParser.arbor,
+            workParser.positions, fakeDomain, intervalLength, preferSmallerError,
+            createIntervalBoundingNodes);
+          let intervals = intervalConfiguration.intervals;
 
           // Show 3D viewer confirmation dialog
           var dialog = new CATMAID.Confirmation3dDialog({
-            title: intervals.length + " interval with a length of " +
-                intervalLength + "nm each",
+            title: intervals.length + " intervals with a length of " +
+                intervalLength + "nm each, " + intervalConfiguration.addedNodes.length +
+                " new nodes are created to match intervals",
             showControlPanel: false,
             buttons: {
               "Close": function() {
@@ -516,6 +533,10 @@
           var widget = dialog.webglapp;
           var models = {};
           models[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
+
+          // Create virtual skeletons
+          let arborParsers = new Map([[skeletonId, workParser]]);
+          let nodeProvider = new CATMAID.ArborParserNodeProvider(arborParsers);
 
           // Add skeleton to 3D viewer and configure shading
           widget.addSkeletons(models, function() {
@@ -539,8 +560,7 @@
 
             return widget.updateSkeletonColors()
               .then(function() { widget.render(); });
-
-          });
+          }, nodeProvider);
         });
       })
       .catch(CATMAID.handleError);
@@ -1236,6 +1256,8 @@
       CATMAID.warn("Can't create intervals without interval length");
       return;
     }
+    var createIntervalBoundingNodes = !!widget.state['createIntervalBoundingNodes'];
+
     var arbor = widget.state['arbor'];
     // Get arbor if not already cached
     var prepare;
@@ -1260,23 +1282,31 @@
 
     var domainEnds = [];
 
+    let workParser = new CATMAID.ArborParser();
+
     // Build interval boundaries by walking downstream from domain start to end.
     // Except for the start and end node, all children of all interval nodes are
     // considered to be part of the interval.
     prepare
       .then(getDomainDetails.bind(this, project.id, domain.id))
       .then(function(domainDetails) {
-        return CATMAID.Sampling.intervalsFromModels(arbor.arbor,
-            arbor.positions, domainDetails, intervalLength,
-            preferSmallerError);
+      workParser.arbor = arbor.arbor.clone();
+      workParser.positions = Object.assign({}, arbor.positions);
+        return CATMAID.Sampling.intervalsFromModels(workParser.arbor,
+            workParser.positions, domainDetails, intervalLength,
+            preferSmallerError, createIntervalBoundingNodes);
       })
-      .then(function(intervals) {
+      .then(function(intervalConfiguration) {
         return new Promise(function(resolve, reject) {
+          let intervals = intervalConfiguration.intervals;
+          let addedNodes = intervalConfiguration.addedNodes;
+
           // Show 3D viewer confirmation dialog
           var dialog = new CATMAID.Confirmation3dDialog({
             title: "Please confirm " + intervals.length +
                 " domain interval(s) with an interval length of " +
-                intervalLength + "nm",
+                intervalLength + "nm each, " + intervalConfiguration.addedNodes.length +
+                " new nodes are created to match intervals",
             showControlPanel: false,
             shadingMethod: 'sampler-domains'
           });
@@ -1285,11 +1315,13 @@
           dialog.onOK = function() {
             CATMAID.fetch(project.id + '/samplers/domains/' +
                 domain.id + '/intervals/add-all', 'POST', {
-                    intervals: intervals
+                    intervals: intervals,
+                    added_nodes: JSON.stringify(addedNodes)
                 })
               .then(function(result) {
-                CATMAID.msg("Success", intervals.length + " interval(s) created");
-                resolve(result);
+                CATMAID.msg("Success", intervals.length + " interval(s) created, using " +
+                    result.n_added_nodes + " new node(s)");
+                resolve(result.intervals);
               })
               .catch(reject);
           };
@@ -1303,6 +1335,11 @@
           var widget = dialog.webglapp;
           var models = {};
           models[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
+
+          // Create virtual skeletons
+          let arborParsers = new Map([[skeletonId, workParser]]);
+          let nodeProvider = new CATMAID.ArborParserNodeProvider(arborParsers);
+
           widget.addSkeletons(models, function() {
             // Set new shading and coloring methods
             widget.options.color_method = 'sampler-intervals';
@@ -1313,7 +1350,7 @@
 
             // Look at center of mass of skeleton and update screen
             widget.lookAtSkeleton(skeletonId);
-          });
+          }, nodeProvider);
         });
       })
       .then(function(result) {

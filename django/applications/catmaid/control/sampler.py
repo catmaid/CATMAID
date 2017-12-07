@@ -1,3 +1,5 @@
+import json
+
 from collections import defaultdict
 
 from django.db import connection
@@ -6,12 +8,16 @@ from django.http import JsonResponse
 from catmaid.control.authentication import (requires_user_role, user_can_edit,
         can_edit_or_fail)
 from catmaid.control.common import get_request_list
-from catmaid.models import (Connector, Sampler, SamplerDomain, SamplerDomainType,
-        SamplerDomainEnd, SamplerInterval, SamplerIntervalState, SamplerState,
-        SamplerConnector, SamplerConnectorState, UserRole)
+from catmaid.models import (Class, ClassInstance, Connector, Relation, Sampler,
+        SamplerDomain, SamplerDomainType, SamplerDomainEnd, SamplerInterval,
+        SamplerIntervalState, SamplerState, SamplerConnector,
+        SamplerConnectorState, Treenode, TreenodeClassInstance, UserRole)
+from catmaid.util import Point3D, is_collinear
 
 from rest_framework.decorators import api_view
 
+
+SAMPLER_CREATED_CLASS = "sampler-created"
 
 @api_view(['GET'])
 @requires_user_role([UserRole.Browse])
@@ -762,18 +768,118 @@ def add_all_intervals(request, project_id, domain_id):
        items:
          type: string
        required: true
+     - name: added_nodes
+       description: |
+         A JSON encoded list of lists, each inner list of format: [id, child,
+         parent, x,y,z], representing an interval node filter. Matching nodes
+         will be created if collinear.
+       type: string
+       required: false
     """
     domain_id = int(domain_id)
     domain = SamplerDomain.objects.get(id=domain_id)
+    skeleton_id = domain.sampler.skeleton_id
 
     state = SamplerIntervalState.objects.get(name='untouched')
 
-    intervals = get_request_list(request.POST, 'intervals', [], map_fn=lambda x: x)
+    intervals = [(int(x[0]), int(x[1])) for x in
+            get_request_list(request.POST, 'intervals', [], map_fn=lambda x: x)]
+    interval_start_index = dict((n[0], n) for n in intervals)
+    added_nodes = json.loads(request.POST.get('added_nodes', '[]'))
+    for data in added_nodes:
+        data[0], data[1], data[2] = int(data[0]), int(data[1]), int(data[2])
+    added_node_index = dict((n[0], n) for n in added_nodes)
 
+    label_class = Class.objects.get(project=project_id, class_name='label')
+    labeled_as = Relation.objects.get(project=project_id,
+            relation_name='labeled_as')
+
+    def create_added_node(data, new_nodes):
+        # Try to get parent from newly created nodes. If not available from
+        # there, assume the node exists in the database.
+        parent = new_nodes.get(data[2])
+        if not parent:
+            parent = Treenode.objects.get(pk=data[2])
+        x, y, z = float(data[3]), float(data[4]), float(data[5])
+        n = Treenode.objects.create(project_id=project_id, parent_id=parent.id,
+                user=request.user, editor=request.user, location_x=x, location_y=y,
+                location_z=z, radius=0, confidence=5, skeleton_id=skeleton_id)
+        return n
+
+    def link_added_node(data, new_nodes):
+        # The target node has to be a new node
+        n = new_nodes[data[0]]
+        # Find child and parent of new treenode. Check first if they have been
+        # created as newly as well.
+        child = new_nodes.get(data[1])
+        if not child:
+            child = Treenode.objects.get(pk=data[1])
+        parent = new_nodes.get(data[2])
+        if not parent:
+            parent = Treenode.objects.get(pk=data[2])
+
+        # Make sure both nodes are actually child and parent
+        if not child.parent == parent:
+            raise ValueError('The provided nodes need to be child and parent')
+
+        x, y, z = n.location_x, n.location_y, n.location_z
+        child_loc = Point3D(child.location_x, child.location_y, child.location_z)
+        parent_loc = Point3D(parent.location_x, parent.location_y, parent.location_z)
+
+        new_node_loc = Point3D(x, y, z)
+        if not is_collinear(child_loc, parent_loc, new_node_loc, True, 0.001):
+            raise ValueError('New node location has to be collinear with child and parent')
+
+        # Tag new treenode with SAMPLER_CREATED_CLASS
+        label, _ = ClassInstance.objects.get_or_create(project_id=project_id,
+                name=SAMPLER_CREATED_CLASS, class_column=label_class, defaults={
+                    'user': request.user
+                })
+        TreenodeClassInstance.objects.create(project_id=project_id,
+                user=request.user, relation=labeled_as, treenode=n,
+                class_instance=label)
+
+        # Update child node. Reviews don't need to be updated, because they are
+        # only reset of a node's location changes.
+        child.parent_id = n.id
+        child.save()
+
+    # Sort intervals so that we create them in reverse. Each node needs to
+    # reference a potentially newly created parent node.
+    existing_parent_intervals = [i for i in intervals
+            if i[0] not in added_node_index]
+    # Iterate over root intervals and create child nodes until another existing
+    # node is found.
+    new_nodes = dict()
+    for root_interval in existing_parent_intervals:
+        current_interval = root_interval
+        while current_interval:
+            child_id = current_interval[1]
+            new_child_data = added_node_index.get(child_id)
+            if new_child_data:
+                new_nodes[child_id] = create_added_node(new_child_data, new_nodes)
+                current_interval = interval_start_index.get(child_id)
+            else:
+                break
+
+    # Ensure that all parents of existing children are set correctly to newly
+    # createad nodes.
+    for data in added_nodes:
+        link_added_node(data, new_nodes)
+
+    # Create actual intervals
     result_intervals = []
     for i in intervals:
         start_node = int(i[0])
         end_node = int(i[1])
+
+        added_start_node_data = added_node_index.get(start_node)
+        if added_start_node_data:
+            start_node = new_nodes[start_node].id
+
+        added_end_node_data = added_node_index.get(end_node)
+        if added_end_node_data:
+            end_node = new_nodes[end_node].id
 
         i = SamplerInterval.objects.create(
             domain=domain,
@@ -792,7 +898,10 @@ def add_all_intervals(request, project_id, domain_id):
             "project_id": i.project_id
         })
 
-    return JsonResponse(result_intervals, safe=False)
+    return JsonResponse({
+        'intervals': result_intervals,
+        'n_added_nodes': len(new_nodes)
+    })
 
 
 @api_view(['GET'])

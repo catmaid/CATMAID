@@ -1752,7 +1752,7 @@
     prepare = prepare.then((function() {
       var missingSkeletonIds = Object.keys(models).filter(function(skid) {
         return !this.space.content.skeletons[skid];
-      }, this);
+      }, this).map(Number);
 
       if (missingSkeletonIds.length > 0) {
         var options = this.options;

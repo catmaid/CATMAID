@@ -409,7 +409,7 @@
             // Get intervals for domain
             var domain = domains[j];
             CATMAID.Sampling.intervalsFromModels(arbor, positions,
-                domain, sampler.interval_length, true, intervalMap);
+                domain, sampler.interval_length, true, true, intervalMap);
           }
         }
 
@@ -785,7 +785,7 @@
         for (var i=0; i<samplers.length; ++i) {
           var sampler = samplers[i];
           CATMAID.Sampling.intervalEdges(arbor, skeleton.getPositions(),
-              sampler, true, intervalMap);
+              sampler, true, true, intervalMap);
         }
 
         // Look at all nodes of all domains. Give them a weight of 1 if they are

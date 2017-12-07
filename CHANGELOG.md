@@ -28,6 +28,10 @@ Reconstruction Sampler:
 
 - 3D previews now allow to use a white background and toggle meta spheres.
 
+- To match a given interval length, the Reconstruction Sampler will now create
+  new nodes during interval creation. This allows better sampling on long
+  straight lines without intermediate nodes.
+
 
 ### Bug fixes
 

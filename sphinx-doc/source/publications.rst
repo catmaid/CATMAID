@@ -23,7 +23,9 @@ Publications using CATMAID
 
 * William F. Tobin, Rachel I. Wilson, Wei-Chung Allen Lee. `Wiring variations that enable and constrain neural computation in a sensory microcircuit <https://elifesciences.org/articles/24838>`_, eLife, 2017.
 
-* Csaba Verasztó, Nobuo Ueda, Luis A. Bezares-Calderón, Aurora Panzera, Elizabeth A. Williams, Réza Shahidi, Gáspár Jékely. `Ciliomotor circuitry underlying whole-body coordination of ciliary activity in the Platynereis larva <http://www.biorxiv.org/content/biorxiv/early/2017/02/13/108035.full.pdf>`_, eLife, 2017.
+* Csaba Verasztó, Nobuo Ueda, Luis A. Bezares-Calderón, Aurora Panzera, Elizabeth A. Williams, Réza Shahidi, Gáspár Jékely. `Ciliomotor circuitry underlying whole-body coordination of ciliary activity in the Platynereis larva <https://elifesciences.org/articles/26000>`_, eLife, 2017.
+
+* Suguru Takagi, Benjamin T. Cocanougher, Sawako Niki, Dohjin Miyamoto, Hiroshi Kohsaka, Hokto Kazama, Richard D. Fetter, James W. Truman, Marta Zlatic, Albert Cardona, Akinao Nose `Divergent connectivity of homologous command-like neurons mediates segment-specific touch responses in Drosophila <http://www.sciencedirect.com/science/article/pii/S089662731731022X>`, Neuron, 2017.
 
 2016
 ~~~~

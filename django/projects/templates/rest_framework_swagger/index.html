@@ -27,6 +27,9 @@
       }
 
       $('head title').text('CATMAID API documentation (Swagger UI)');
+      $('span.logo__title').text('CATMAID API documentation');
+      $('img.logo__img').attr('src', '{{ STATIC_URL }}/images/catmaidlogo.svg');
+      $('a#logo').attr('href', 'http://www.catmaid.org');
 
       patchTimeout = window.setTimeout(patchUI, patchTimeoutTime);
     });

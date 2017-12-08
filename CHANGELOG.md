@@ -8,6 +8,8 @@
 
   sudo apt-get install binutils libproj-dev gdal-bin
 
+- Python 3.6 is now supported.
+
 
 ### Features and enhancements
 

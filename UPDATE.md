@@ -8,6 +8,8 @@ and other administration related changes are listed in order.
 
   sudo apt-get install binutils libproj-dev gdal-bin
 
+- Python 3.6 is now supported.
+
 ## 2017.12.07
 
 - PostgreSQL 9.6 and Postgis 2.4 are now required.

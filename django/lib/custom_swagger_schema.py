@@ -18,7 +18,7 @@ import coreapi
 class CustomSchemaGenerator(SchemaGenerator):
     def get_link(self, path, method, view):
         fields = self.get_path_fields(path, method, view)
-        existing_field_names = set(f.name for f in fields)
+        existing_field_names = [f.name for f in fields]
 
         _method_desc = None
         api_doc = None
@@ -82,7 +82,10 @@ class CustomSchemaGenerator(SchemaGenerator):
                     description=_desc,
                     type=_type
                 )
-                if not _name in existing_field_names:
+                try:
+                    existing_field_index = existing_field_names.index(_name)
+                    fields[existing_field_index] = field
+                except ValueError:
                     fields.append(field)
         else:
             fields += self.get_serializer_fields(path, method, view)

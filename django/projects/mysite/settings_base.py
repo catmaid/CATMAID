@@ -372,6 +372,12 @@ REST_FRAMEWORK = {
     ),
     'VIEW_DESCRIPTION_FUNCTION':
         'custom_rest_swagger_googledoc.get_googledocstring',
+        # Parser classes priority-wise for Swagger
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.FormParser',
+        'rest_framework.parsers.MultiPartParser',
+        'rest_framework.parsers.JSONParser',
+    ],
 }
 
 SWAGGER_SETTINGS = {

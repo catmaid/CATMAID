@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_swagger import renderers
 from rest_framework.schemas import SchemaGenerator
-from urllib.parse import urljoin
+from requests.compat import urljoin
 import yaml
 import coreapi
 

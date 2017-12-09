@@ -13,7 +13,7 @@ django-taggit==0.22.1
 djangorestframework==3.5.3
 jsonfield==2.0.2
 kombu==4.1.0
-matplotlib==2.1.0; platform_python_implementation != 'PyPy'
+matplotlib==2.1.0
 mock==1.0.1
 msgpack_python==0.4.8
 networkx==1.7
@@ -27,6 +27,6 @@ python-dateutil==2.1
 pytz==2017.3
 PyYAML==3.12
 requests==2.18.4
-scipy==1.0.0; platform_python_implementation != 'PyPy'
+scipy==1.0.0
 sqlparse==0.2.4
 ujson==1.35

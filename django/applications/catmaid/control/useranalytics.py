@@ -457,6 +457,8 @@ def generateReport(user_id, project_id, activeTimeThresh, start_date, end_date, 
     plt.setp(yl, fontsize=10)
     ax4.set_ylabel('Time (24 hr)')
 
+    plt.tight_layout()
+
     return fig
 
 def dailyActivePlotFigure( activebouts, ax, start_date, end_date ):

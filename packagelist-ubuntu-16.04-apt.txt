@@ -20,3 +20,6 @@ libblas-dev
 liblapack-dev
 pkg-config
 virtualenvwrapper
+binutils
+libproj-dev
+gdal-bin

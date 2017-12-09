@@ -7,7 +7,9 @@ cache: pip
 python:
   - "2.7"
   - "3.5"
-  - "pypy-5.7.1"
+  - "3.6"
+  - "pypy"
+  - "pypy3"
 addons:
   chrome: stable
   apt:
@@ -73,12 +75,12 @@ script:
   - $TRAVIS_BUILD_DIR/node_modules/.bin/csslint .
   - cd $TRAVIS_BUILD_DIR
   - cd django/projects
-  - python manage.py migrate --noinput
-  - python manage.py collectstatic --link --noinput
+  - python -Wall manage.py migrate --noinput
+  - python -Wall manage.py collectstatic --link --noinput
   - coverage run manage.py test catmaid.tests
   # Remove login requirement from QUnit test page
   - sed -i 's/login_required(\([^)]*\))/\1/g' ../applications/catmaid/urls.py
-  - python manage.py runserver &
+  - python -Wall manage.py runserver &
   - sleep 5
   - cd ../..
   # Run QUnit through karma in headless Chrom

@@ -26,17 +26,15 @@ except ImportError:
     except ImportError:
         raise ImportError("Need either psycopg2 or psycopg2cffi")
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # Make Django root folder available
 PROJECT_ROOT = utils.relative('..', '..')
+
 # Add all subdirectories of project, applications and lib to sys.path
 for subdirectory in ('projects', 'applications', 'lib'):
     full_path = os.path.join(PROJECT_ROOT, subdirectory)
     sys.path.insert(0, full_path)
-
-# FIXME: Newer GEOS versions won't be detected correctly in Django 1.10 and a
-# monkey patch is required. This can be removed when updating to Django 1.11.
-import custom_geos_importer
-custom_geos_importer.patch()
 
 # A list of people who get code error notifications. They will get an email
 # if DEBUG=False and a view raises an exception.
@@ -91,7 +89,6 @@ INSTALLED_APPS = (
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_swagger',
-    'custom_rest_swagger_apis',
     'channels'
 )
 
@@ -135,13 +132,10 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [ # Extra folders
-            os.path.join(PROJECT_ROOT, 'templates'),
+            os.path.join(BASE_DIR, 'templates'),
         ],
+        'APP_DIRS': True,
         'OPTIONS': {
-            'loaders': [ # Make sure extra templates are loaded first
-                'django.template.loaders.filesystem.Loader',
-                'django.template.loaders.app_directories.Loader'
-            ],
             'context_processors': [
                 'django.contrib.auth.context_processors.auth',
                 'django.template.context_processors.debug',
@@ -378,22 +372,17 @@ REST_FRAMEWORK = {
     ),
     'VIEW_DESCRIPTION_FUNCTION':
         'custom_rest_swagger_googledoc.get_googledocstring',
+        # Parser classes priority-wise for Swagger
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.FormParser',
+        'rest_framework.parsers.MultiPartParser',
+        'rest_framework.parsers.JSONParser',
+    ],
 }
 
 SWAGGER_SETTINGS = {
-    'info': {
-        'title': 'CATMAID',
-        'description': '''
-                       This is an API for accessing project, stack and
-                       annotation data for this CATMAID instance. More
-                       information is available at
-                       <a href="http://catmaid.org/page/api.html">catmaid.org</a>.
-                       ''',
-        'contact': 'catmaid@googlegroups.com',
-        'license': 'GPLv3',
-        'licenseUrl': 'https://raw.githubusercontent.com/catmaid/CATMAID/master/LICENSE',
-    },
-    'doc_expansion': 'list'
+    'DOC_EXPANSION': 'list',
+    'APIS_SORTER': 'alpha'
 }
 
 CHANNEL_LAYERS = {

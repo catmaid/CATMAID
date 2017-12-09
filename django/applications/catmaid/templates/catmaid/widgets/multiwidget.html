@@ -1,0 +1,5 @@
+{% load common %}
+
+{% for widget in widget.subwidgets %}
+  {{ labels|get:forloop.counter0 }} {% include widget.template_name %}
+{% endfor %}

@@ -3,7 +3,23 @@ and other administration related changes are listed in order.
 
 ## Under development
 
+- Three new OS package dependencies have been added (due to a Django framework
+  upgrade), make sure they are installed:
+
+  sudo apt-get install binutils libproj-dev gdal-bin
+
+- Python 3.6 is now supported.
+
+## 2017.12.07
+
 - PostgreSQL 9.6 and Postgis 2.4 are now required.
+
+- A virtualenv upgrade is required. To correctly install one updated dependency,
+  the django-rest-swagger Python package has to be removed first from from the
+  virtualenv, before the virtualenv is updated:
+
+  pip uninstall django-rest-swagger
+  pip install -r requirements.txt
 
 - Requires running of: manage.py catmaid_update_project_configuration
 

@@ -319,7 +319,9 @@ var requestQueue = new RequestQueue();
         (!isTextResponse || typeof text === 'string' || text instanceof String)) {
       return text;
     } else {
-      throw new CATMAID.Error("The server returned an unexpected status: " + status);
+      var error = new CATMAID.Error("The server returned an unexpected status: " + status);
+      error.statusCode = status;
+      throw error;
     }
   };
 

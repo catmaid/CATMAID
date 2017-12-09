@@ -1447,18 +1447,21 @@ var project;
   }
 
   CATMAID.getAuthenticationToken = function() {
-    var dialog = new CATMAID.OptionsDialog('API Authentication Token');
+    var dialog = new CATMAID.OptionsDialog('API Authentication Token', undefined, true);
     dialog.appendMessage('To retrieve your API authentication token, you must ' +
                          're-enter your password.');
     var password = dialog.appendField('Password:', 'password', '', true);
     password.setAttribute('type', 'password');
-
+    dialog.onCancel = function() {
+      $(this.dialog).dialog("destroy");
+    };
     dialog.onOK = function () {
       CATMAID.fetch('/api-token-auth/',
                     'POST',
                     {username: CATMAID.session.username,
                      password: password.value})
           .then(function (json) {
+            $(dialog.dialog).dialog("destroy");
             var resultDialog = new CATMAID.OptionsDialog('API Authentication Token');
             resultDialog.appendHTML('Your API token is');
             var container = document.createElement('p');
@@ -1493,6 +1496,13 @@ var project;
                 '<a target="_blank" href="' + CATMAID.makeURL('/apis/') + '">' +
                 'this server\'s API documentation</a>.');
             resultDialog.show(460, 280, true);
+          })
+          .catch(function(error) {
+            if (error.statusCode === 400) {
+              CATMAID.warn("Wrong password");
+            } else {
+              CATMAID.handleError(error);
+            }
           });
     };
 

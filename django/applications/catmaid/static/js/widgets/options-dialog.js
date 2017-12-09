@@ -9,11 +9,12 @@
   /**
    * Create a flexible option dialog.
    */
-  var OptionsDialog = function(title, buttons) {
+  var OptionsDialog = function(title, buttons, manualDestroy) {
     this.dialog = document.createElement('div');
     this.dialog.setAttribute("id", "dialog-confirm");
     this.dialog.setAttribute("title", title);
     this.buttons = buttons;
+    this.manualDestroy = manualDestroy;
   };
 
   OptionsDialog.prototype = {};
@@ -43,7 +44,9 @@
           return function() {
             try {
               CATMAID.tools.callIfFn(callback);
-              $(this).dialog("destroy");
+              if (!self.manualDestroy) {
+                $(this).dialog("destroy");
+              }
             } catch (error) {
               handleError(error);
             }
@@ -55,7 +58,9 @@
         "Cancel": function() {
           try {
             if (self.onCancel) self.onCancel();
-            $(this).dialog("destroy");
+            if (!self.manualDestroy) {
+              $(this).dialog("destroy");
+            }
           } catch (error) {
             handleError(error);
           }
@@ -63,7 +68,9 @@
         "OK": function() {
           try {
             if (self.onOK) self.onOK();
-            $(this).dialog("destroy");
+            if (!self.manualDestroy) {
+              $(this).dialog("destroy");
+            }
           } catch (error) {
             handleError(error);
           }

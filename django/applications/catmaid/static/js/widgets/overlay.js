@@ -1695,30 +1695,32 @@ SkeletonAnnotations.TracingOverlay.prototype.insertNodeInActiveSkeleton = functi
           if (atn.parent_id && (SkeletonAnnotations.isRealNode(atn.parent_id) ||
                                 !self.nodes.hasOwnProperty(atn.parent_id)))
           {
-            self.promiseNode(self.nodes[atn.parent_id]).then(function(parentId) {
-              // Need to fetch the parent node first.
-              self.submit(
-                  django_url + project.id + "/node/get_location",
-                  'POST',
-                  {tnid: parentId},
-                  function(json) {
-                    additionalNodes[atn.id] = {
-                      id: atn.id,
-                      x: atn.x,
-                      y: atn.y,
-                      z: atn.z,
-                      skeleton_id: atn.skeleton_id,
-                      parent: {
-                        id: atn.parent_id,
-                        x: json[1],
-                        y: json[2],
-                        z: json[3],
+            self.promiseNode(self.nodes[atn.parent_id])
+              .then(function(parentId) {
+                // Need to fetch the parent node first.
+                self.submit(
+                    django_url + project.id + "/node/get_location",
+                    'POST',
+                    {tnid: parentId},
+                    function(json) {
+                      additionalNodes[atn.id] = {
+                        id: atn.id,
+                        x: atn.x,
+                        y: atn.y,
+                        z: atn.z,
                         skeleton_id: atn.skeleton_id,
-                      }
-                    };
-                    insertNode(additionalNodes);
-                  });
-            });
+                        parent: {
+                          id: atn.parent_id,
+                          x: json[1],
+                          y: json[2],
+                          z: json[3],
+                          skeleton_id: atn.skeleton_id,
+                        }
+                      };
+                      insertNode(additionalNodes);
+                    });
+              })
+              .catch(CATMAID.handleError);
           } else insertNode(additionalNodes); // No need to fetch the parent.
         });
   });

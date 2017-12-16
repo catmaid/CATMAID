@@ -199,8 +199,11 @@
         onclick: function() {
           var skeletonId = SkeletonAnnotations.getActiveSkeletonId();
           if (skeletonId) {
+            widget.init();
             widget.state['skeletonId'] = skeletonId;
             widget.update();
+          } else {
+            CATMAID.warn("No skeleton selected");
           }
         }
       },

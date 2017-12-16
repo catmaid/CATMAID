@@ -58,6 +58,10 @@ def list_samplers(request, project_id):
             type: integer
             description: The length of individual sampler intervals for this sampler.
             required: true
+          interval_error:
+            type: float
+            description: The maximum allowed error of a single interval.
+            required: true
           state_id:
             type: integer
             description: ID of state the sampler is in.
@@ -111,7 +115,9 @@ def list_samplers(request, project_id):
            'creation_time': float(s.creation_time.strftime('%s')),
            'edition_time': float(s.edition_time.strftime('%s')),
            'interval_length': s.interval_length,
+           'interval_error': s.interval_error,
            'review_required': s.review_required,
+           'create_interval_boundaries': s.create_interval_boundaries,
            'state_id': s.sampler_state_id,
            'skeleton_id': s.skeleton_id,
            'user_id': s.user_id,
@@ -141,8 +147,19 @@ def add_sampler(request, project_id):
        type: integer
        paramType: form
        required: true
+     - name: interval_error
+       description: Maximum allowed error for a single interval.
+       type: float
+       paramType: form
+       required: false
+       default: 250
      - name: review_required
        description: Whether reviews should be enforced in this sampler
+       type: boolean
+       paramType: form
+       required: true
+     - name: create_interval_boundaries
+       description: Whether new nodes for interval boundaries should be created.
        type: boolean
        paramType: form
        required: true
@@ -159,18 +176,32 @@ def add_sampler(request, project_id):
     else:
         raise ValueError("Need interval_length parameter")
 
+    interval_error = request.POST.get('interval_error')
+    if interval_error:
+        interval_error = float(interval_error)
+    else:
+        interval_error = 250.0
+
     review_required = request.POST.get('review_required')
     if review_required:
         review_required = review_required == 'true'
     else:
         raise ValueError("Need review_required parameter")
 
+    create_interval_boundaries = request.POST.get('create_interval_boundaries')
+    if create_interval_boundaries:
+        create_interval_boundaries = create_interval_boundaries == 'true'
+    else:
+        raise ValueError("Need create_interval_boundaries parameter")
+
     sampler_state = SamplerState.objects.get(name="open");
 
     sampler = Sampler.objects.create(
         skeleton_id=skeleton_id,
         interval_length=interval_length,
+        interval_error=interval_error,
         review_required=review_required,
+        create_interval_boundaries=create_interval_boundaries,
         sampler_state=sampler_state,
         user=request.user,
         project_id=project_id)
@@ -179,7 +210,9 @@ def add_sampler(request, project_id):
         "id": sampler.id,
         "skeleton_id": sampler.skeleton_id,
         "interval_length": sampler.interval_length,
+        "interval_error": sampler.interval_error,
         "review_required": sampler.review_required,
+        "create_interval_boundaries": sampler.create_interval_boundaries,
         "sampler_state": sampler.sampler_state_id,
         "user_id": sampler.user_id,
         "project_id": sampler.project_id

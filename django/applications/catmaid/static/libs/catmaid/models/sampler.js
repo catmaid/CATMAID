@@ -63,7 +63,8 @@
    * to be collinear with child and parent locations and between them.
    */
   Sampling.intervalsFromModels = function(arbor, positions, domainDetails,
-      intervalLength, preferSmallerError, createNewNodes, targetEdgeMap) {
+      intervalLength, intervalError, preferSmallerError, createNewNodes,
+      targetEdgeMap) {
     if (!intervalLength) {
       throw new CATMAID.ValueError("Need interval length for interval creation");
     }
@@ -111,6 +112,7 @@
           if (targetEdgeMap) {
             targetEdgeMap[partition[j]] = currentInterval;
           }
+          // Node is exactly at end of interval
           if (distance > -0.0001) {
             intervals.push([partition[intervalStartIdx], partition[j]]);
             intervalStartIdx = j;
@@ -118,57 +120,93 @@
             currentInterval++;
           }
         } else {
+          // This branch represents the case the current node is already too far
+          // away to match the interval length exactly.
           var steps = intervalStartIdx - j;
-          if (createNewNodes) {
-            // Optionally, create a new node between this node and the last one.
-            // This also requires updating the arbor.
-            let dRatio = (intervalLength - lastDist) / (dist - lastDist);
-            let newPointPos = lastPos.clone().lerpVectors(lastPos, pos, dRatio);
-            // Add new point into arbor
-            if (arbor.edges[newPointId]) {
-              throw new CATMAID.PreConditionError("The temporary ID for the " +
-                  "new interval end location exists already: " + newPointId);
+          let edgeLength = dist - lastDist;
+          let distanceToLast = intervalLength - lastDist;
+          let distanceToThis = edgeLength - distanceToLast;
+          let lastIsFirst = steps === 0;
+          let thisIsLast = j === 0;
+          let selectedNode = null;
 
+          // If this or the last node is closer
+          if (distanceToLast < distanceToThis) {
+            if (distanceToLast < intervalError) {
+              // Use last node, because it is closer than this node and closer
+              // than the allowed interval error.
+              selectedNode = partition[j+1];
             }
-            let childId = partition[j];
-            let parentId = partition[j+1];
-            arbor.edges[childId] = newPointId;
-            arbor.edges[newPointId] = parentId;
-            positions[newPointId] = newPointPos;
-
-            // Insert element in currently iterated loop and move one step back
-            // (remember, we walk backwards).
-            partition.splice(j+1, 0, newPointId);
-            j++;
-
-            if (targetEdgeMap) {
-              targetEdgeMap[partition[intervalStartIdx]] = currentInterval;
-              targetEdgeMap[partition[intervalStartIdx + 1]] = currentInterval;
-            }
-
-            addedNodes.push([newPointId, childId, parentId, newPointPos.x,
-                newPointPos.y, newPointPos.z]);
-
-            intervals.push([partition[intervalStartIdx + 1], newPointId]);
-            intervalStartIdx = j;
-
-            // Prepare point ID for next point
-            newPointId++;
-          } else if (preferSmallerError && (intervalLength - lastDist) < dist && steps > 1 && j !== 0) {
-            // Optionally, make the interval smaller if this means being closer to
-            // the ideal interval length. This can only be done if the current
-            // interval has at least a length of 2.
-            intervals.push([partition[intervalStartIdx], partition[j+1]]);
-            intervalStartIdx = j + 1;
-            j++;
           } else {
-            if (targetEdgeMap) {
-              targetEdgeMap[partition[j]] = currentInterval;
-              targetEdgeMap[partition[j+1]] = currentInterval;
+            if (distanceToThis < intervalError) {
+              // Use this node, because it is closer than the last node and
+              // closer than the allowed interval error.
+              selectedNode = partition[j];
             }
-            intervals.push([partition[intervalStartIdx], partition[j]]);
-            intervalStartIdx = j;
           }
+
+          if (!selectedNode) {
+            if (createNewNodes) {
+              // Optionally, create a new node between this node and the last one.
+              // This also requires updating the arbor.
+              let dRatio = distanceToLast / edgeLength;
+              let newPointPos = lastPos.clone().lerpVectors(lastPos, pos, dRatio);
+              // Add new point into arbor
+              if (arbor.edges[newPointId]) {
+                throw new CATMAID.PreConditionError("The temporary ID for the " +
+                    "new interval end location exists already: " + newPointId);
+              }
+
+              // Insert new node into arbor
+              let childId = partition[j];
+              let parentId = partition[j+1];
+              arbor.edges[childId] = newPointId;
+              arbor.edges[newPointId] = parentId;
+              positions[newPointId] = newPointPos;
+
+              addedNodes.push([newPointId, childId, parentId, newPointPos.x,
+                  newPointPos.y, newPointPos.z]);
+
+              // Insert element in currently iterated loop and move one step back
+              // (remember, we walk backwards).
+              partition.splice(j+1, 0, newPointId);
+
+              selectedNode = newPointId;
+              j++;
+
+              // We walk the partition from end to front. Inserting the a node
+              // into the partition, requires us to go one step back to remain
+              // on the same element with our current index.
+              intervalStartIdx++;
+
+              // Prepare point ID for next point
+              newPointId++;
+            } else if (preferSmallerError && distanceToLast < distanceToThis && !lastIsFirst) {
+              // Optionally, make the interval smaller if this means being closer to
+              // the ideal interval length. This can only be done if the current
+              // interval has at least a length of 2.
+              selectedNode = partition[j+1];
+              // To properly continue from the last node with the next interval,
+              // move index back one step.
+              j++;
+            } else {
+              selectedNode = partition[j];
+            }
+          }
+
+          // If a node was found and an edge map is passed in, add the current
+          // interval for the selected node.
+          if (!selectedNode) {
+            throw new CATMAID.ValueError("Could not select node for interval creation");
+          }
+
+          if (targetEdgeMap) {
+            targetEdgeMap[selectedNode] = currentInterval;
+          }
+
+          intervals.push([partition[intervalStartIdx], selectedNode]);
+
+          intervalStartIdx = j;
           currentInterval++;
           dist = 0;
         }
@@ -213,8 +251,9 @@
     // Build intervals for each domain, based on the interval length defined in
     // the sampler.
     return sampler.domains.reduce(function(o, d) {
-      var intervalConfiguration = Sampling.intervalsFromModels(arbor, positions, d,
-          sampler.interval_length, preferSmallerError, createNewNodes, target);
+      var intervalConfiguration = Sampling.intervalsFromModels(arbor, positions,
+          d, sampler.interval_length, sampler.interval_error, preferSmallerError,
+          createNewNodes, target);
       o[d.id] = intervalConfiguration.intervals;
       return o;
     }, {});

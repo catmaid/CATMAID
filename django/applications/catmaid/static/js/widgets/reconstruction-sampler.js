@@ -32,6 +32,7 @@
   ReconstructionSampler.prototype.init = function() {
     this.state = {
       'intervalLength': 5000,
+      'intervalError': 250,
       'createIntervalBoundingNodes': true,
       'domainType': 'regular',
       'domainStartNodeType': 'root',
@@ -218,6 +219,17 @@
         }
       },
       {
+        type: 'numeric',
+        label: 'Max error (nm)',
+        title: 'If the interval error with existing nodes is bigger than this value and ' +
+            'interval boundary node creation is enabled, a new node will be created.',
+        value: widget.state['intervalError'],
+        length: 6,
+        onchange: function() {
+          widget.state['intervalError'] = Number(this.value);
+        }
+      },
+      {
         type: 'checkbox',
         label: 'Create bounding nodes',
         title: 'To match the interval length exactly, missing nodes can be created at respective locations.',
@@ -387,6 +399,19 @@
           }
         },
         {data: "interval_length", title: "Interval length", orderable: true},
+        {data: "interval_error", title: "Max error", orderable: true},
+        {
+          data: "create_interval_boundaries",
+          title: "Create interval boundaries",
+          orderable: true,
+          render: function(data, type, row, meta) {
+            if (type === 'display') {
+              return row.create_interval_boundaries ? "Yes" : "No";
+            } else {
+              return row.create_interval_boundaries;
+            }
+          }
+        },
         {
           data: "review_required",
           title: "Review required",
@@ -468,6 +493,11 @@
       CATMAID.warn("No valid interval length found");
       return;
     }
+    var intervalError = widget.state['intervalError'];
+    if (!intervalError) {
+      CATMAID.warn("No valid interval error value found");
+      return;
+    }
     var createIntervalBoundingNodes = !!widget.state['createIntervalBoundingNodes'];
 
     var arbor = widget.state['arbor'];
@@ -512,9 +542,9 @@
           let workParser = new CATMAID.ArborParser();
           workParser.arbor = arbor.arbor.clone();
           workParser.positions = Object.assign({}, arbor.positions);
-          let intervalConfiguration = CATMAID.Sampling.intervalsFromModels(workParser.arbor,
-            workParser.positions, fakeDomain, intervalLength, preferSmallerError,
-            createIntervalBoundingNodes);
+          let intervalConfiguration = CATMAID.Sampling.intervalsFromModels(
+            workParser.arbor, workParser.positions, fakeDomain, intervalLength,
+            intervalError, preferSmallerError, createIntervalBoundingNodes);
           let intervals = intervalConfiguration.intervals;
 
           // Show 3D viewer confirmation dialog
@@ -580,14 +610,26 @@
       CATMAID.warn("Can't create sampler without interval length");
       return;
     }
+    var intervalError = widget.state['intervalError'];
+    if (!intervalError) {
+      CATMAID.warn("Can't create sampler without interval error value");
+      return;
+    }
     var reviewRequired = widget.state['reviewRequired'];
     if (undefined === reviewRequired) {
       CATMAID.warn("Can't create sampler without review policy");
       return;
     }
+    var createIntervalBoundingNodes = !!widget.state['createIntervalBoundingNodes'];
+    if (undefined === createIntervalBoundingNodes) {
+      CATMAID.warn("Can't create sampler without createIntervalBoundingNodes parameter");
+      return;
+    }
     CATMAID.fetch(project.id + '/samplers/add', 'POST', {
       skeleton_id: skeletonId,
       interval_length: intervalLength,
+      interval_error: intervalError,
+      create_interval_boundaries: createIntervalBoundingNodes,
       review_required: reviewRequired
     }).then(function(result) {
       // TODO: Should probably go to next step immediately
@@ -1297,7 +1339,7 @@
       workParser.positions = Object.assign({}, arbor.positions);
         return CATMAID.Sampling.intervalsFromModels(workParser.arbor,
             workParser.positions, domainDetails, intervalLength,
-            preferSmallerError, createIntervalBoundingNodes);
+            intervalError, preferSmallerError, createIntervalBoundingNodes);
       })
       .then(function(intervalConfiguration) {
         return new Promise(function(resolve, reject) {

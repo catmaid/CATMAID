@@ -409,7 +409,8 @@
             // Get intervals for domain
             var domain = domains[j];
             CATMAID.Sampling.intervalsFromModels(arbor, positions,
-                domain, sampler.interval_length, true, true, intervalMap);
+                domain, sampler.interval_length, sampler.interval_error,
+                true, true, intervalMap);
           }
         }
 

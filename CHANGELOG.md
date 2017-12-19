@@ -30,7 +30,15 @@ Reconstruction Sampler:
 
 - To match a given interval length, the Reconstruction Sampler will now create
   new nodes during interval creation. This allows better sampling on long
-  straight lines without intermediate nodes.
+  straight lines without intermediate nodes. To disable this behavior uncheck
+  the "Create bounding nodes" setting. Newly created nodes are automatically
+  labeled with the "sampler-created" tag.
+
+- By adjusting the new interval "max error" setting, it is possible to only
+  create bounding nodes (if enabled) if the closest existing node is farther
+  away from the ideal location than the max error value. This allows better
+  reuse of existing nodes.
+
 
 
 ### Bug fixes

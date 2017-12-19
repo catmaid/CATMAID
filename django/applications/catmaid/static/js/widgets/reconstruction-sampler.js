@@ -692,7 +692,7 @@
           title: 'Root node',
           value: 'root'
         }, {
-          title: 'Taged node',
+          title: 'Tagged node',
           value: 'tag'
         }, {
           title: 'Active node',
@@ -711,7 +711,7 @@
         title: 'Select end node type of new domain',
         value: widget.state['domainEndNodeType'],
         entries: [{
-          title: 'Taged node',
+          title: 'Tagged node',
           value: 'tag'
         }, {
           title: 'Active node',

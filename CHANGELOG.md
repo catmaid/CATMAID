@@ -78,6 +78,59 @@ Connector table:
 
 - Attachment connectors are now supported.
 
+Landmarks:
+
+- The new "Landmark Widget" allows to create landmarks, form groups of them and
+  use these groups to virtually transform skeletons from one landmark group into
+  another one. This can be used e.g. to find homologues neurons. Virtual
+  skeletons can currently displayed in the 3D Viewer.
+
+- Defining landmarks and their groups is done in two stages: 1. define abstract
+  landmarks and group those abstract landmarks. 2. link locations to individual
+  landmarks and their presence in a group.
+
+- Abstract landmarks represent e.g. a feature that can be found at multiple
+  places in the data set, like the entry point of a particular neuron on the
+  left and right side of a Drosophila brain. The left and right side of the
+  brain would then be represented as groups, each one having expected abstract
+  landmarks as members.
+
+- Creating new abstract landmarks and groups can be done through the respective
+  "Name" fields and "Add" buttons in the Landmarks tab. To link an abstract
+  landmark to a group, click on either an existing landmark group member in the
+  landmark groups table or on the "(none)" placeholder. The newly opened dialog
+  will allow to associate landmarks with groups. Landmarks can be member of
+  multiple groups.
+
+- Linking locations to landmarks and the groups they are member of is done by
+  using the right click context menu on either an existing location in the
+  "Locations" column of the Landmarks table or the displayed "(none)"
+  placeholder. Currently, the location of the active node or the center of the
+  stack viewer can be linked. When using the latter option, it might be a good
+  idea to enable the display of reference lines in the Settings Widget.
+
+- To be able to use a landmark location in a transformation, the locations
+  linked to landmarks need to be associated with at least one group. If for
+  instance a physical location for the abstract landmark representing a
+  particular neuron entry point has been found for the left side of a Drosophila
+  brain, this location would be linked to the landmark itself and to the group
+  representing the left side of the brain. To link the location to the group,
+  right click the index number in the landmark's row in the Location table, the
+  context menu will allow to add the landmark to all groups the abstract
+  landmark is a member of (removal works the same way).
+
+- Virtual skeleton transformations can be created from the "Display" tab. After
+  selecting a target 3D Viewer from the drop down menu, the skeletons to create
+  transformed virtual version for, have to be selected by choosing a skeleton
+  source. With this done, a source and target landmark group can be selected.
+  Transformations are only expect to provide reasonable results if the
+  transformed skeletons are "enclosed" by the landmark group.
+
+- The "Import tab" allows to import multiple four-column CSV files into landmark
+  groups. The expected format is: Landmark name, X, Y, Z. Each file can be
+  associated with one landmark group, landmarks with the same name will be
+  matched.
+
 3D viewer:
 
 - Landmarks and landmark groups can be displayed. Similarly to volumes

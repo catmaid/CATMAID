@@ -1303,6 +1303,11 @@
       CATMAID.warn("Can't create intervals without interval length");
       return;
     }
+    var intervalError = widget.state['intervalError'];
+    if (!intervalError) {
+      CATMAID.warn("Can't create intervals without interval error");
+      return;
+    }
     var createIntervalBoundingNodes = !!widget.state['createIntervalBoundingNodes'];
 
     var arbor = widget.state['arbor'];

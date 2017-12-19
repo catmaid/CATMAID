@@ -29,15 +29,17 @@
     return "Reconstruction Sampler " + this.widgetID;
   };
 
-  ReconstructionSampler.prototype.init = function() {
+  ReconstructionSampler.prototype.init = function(state) {
+    state = state || {};
+    let get = CATMAID.tools.getDefined;
     this.state = {
-      'intervalLength': 5000,
-      'intervalError': 250,
-      'createIntervalBoundingNodes': true,
-      'domainType': 'regular',
-      'domainStartNodeType': 'root',
-      'domainEndNodeType': 'downstream',
-      'reviewRequired': true
+      'intervalLength': get(state.intervalLength, 5000),
+      'intervalError': get(state.intervalError, 250),
+      'createIntervalBoundingNodes': get(state.createIntervalBoundingNodes, true),
+      'domainType': get(state.domainType, 'regular'),
+      'domainStartNodeType': get(state.domainStartNodeType, 'root'),
+      'domainEndNodeType': get(state.domainEndNodeType, 'downstream'),
+      'reviewRequired': get(state.reviewRequired, true)
     };
     this.workflow = new CATMAID.Workflow({
       state: this.state,
@@ -200,7 +202,7 @@
         onclick: function() {
           var skeletonId = SkeletonAnnotations.getActiveSkeletonId();
           if (skeletonId) {
-            widget.init();
+            widget.init(widget.state);
             widget.state['skeletonId'] = skeletonId;
             widget.update();
           } else {
@@ -265,7 +267,7 @@
         type: 'button',
         label: 'New session',
         onclick: function() {
-          widget.init();
+          widget.init(self.state);
           widget.update();
           CATMAID.msg("Info", "Stared new sampler session");
         }

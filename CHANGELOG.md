@@ -21,6 +21,13 @@
  the production requirements, `-dev.txt` includes test (and therefore
  production) and doc.
 
+- The NODE_PROVIDER settings variable (settings.py) is replaced with the
+  NODE_PROVIDERS variable. The new variable takes a list of node provider names,
+  which are iterated as long as no result nodes are found. Replace the former
+  single string value with a list with this name as single element, e.g. if
+  the current setting reads NODE_PROVIDER = 'postgis2d', replace it with
+  NODE_PROVIDERS = ['postgis2d'].
+
 
 ### Features and enhancements
 

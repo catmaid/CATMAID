@@ -39,7 +39,7 @@ class PostgisNodeProvider(object):
     # Allows implementation to handle limit settings on its own
     managed_limit = True
 
-    def __init__(self, connection=None):
+    def __init__(self, connection=None, **kwargs):
         """
         If PREPARED_STATEMENTS is false but you want to override that for a few queries at a time,
         include a django.db.connection in the constructor.
@@ -613,18 +613,38 @@ class Postgis2dBlurryNodeProvider(PostgisNodeProvider):
 
 
 def get_provider(connection=None):
-    provider_key = settings.NODE_PROVIDER
-    if 'postgis3d' == provider_key:
-        return Postgis3dNodeProvider(connection)
-    elif 'postgis3dblurry' == provider_key:
-        return Postgis3dBlurryNodeProvider(connection)
-    elif 'postgis2d' == provider_key:
-        return Postgis2dNodeProvider(connection)
-    elif 'postgis2dblurry' == provider_key:
-        return Postgis2dBlurryNodeProvider(connection)
-    else:
-        raise ValueError('Unknown node provider: ' + provider_key)
+    provider_entries = settings.NODE_PROVIDERS
+    result_data = None
+    for entry in provider_entries:
+        options = {}
+        # An entry is allowed to be a two-tuple (name, options) to provide
+        # options to the constructor call. Otherwise a simple name string is
+        # expected.
+        if type(entry) in (list, tuple):
+            key = entry[0]
+            options = entry[1]
+        else:
+            key = entry
 
+        if 'postgis3d' == key:
+            result_data = Postgis3dNodeProvider(connection, **options)
+        elif 'postgis3dblurry' == key:
+            result_data = Postgis3dBlurryNodeProvider(connection, **options)
+        elif 'postgis2d' == key:
+            result_data = Postgis2dNodeProvider(connection, **options)
+        elif 'postgis2dblurry' == key:
+            result_data = Postgis2dBlurryNodeProvider(connection, **options)
+        else:
+            raise ValueError('Unknown node provider: ' + key)
+
+        # No need to continue with next provider if got data
+        if result_data:
+            break
+
+    if result_data is None:
+        raise ValueError('Could not find any matching node provider')
+
+    return result_data
 
 def prepare_db_statements(connection):
     provider = get_provider(connection)

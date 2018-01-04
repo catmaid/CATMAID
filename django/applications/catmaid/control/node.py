@@ -611,6 +611,13 @@ class Postgis2dBlurryNodeProvider(PostgisNodeProvider):
           ON (geom_connector_id = c.id)
     """
 
+# A map of all available node providers that can be used.
+AVAILABLE_NODE_PROVIDERS = {
+    'postgis3d': Postgis3dNodeProvider,
+    'postgis3dblurry': Postgis3dBlurryNodeProvider,
+    'postgis2d': Postgis2dNodeProvider,
+    'postgis2dblurry': Postgis2dBlurryNodeProvider,
+}
 
 def get_provider(connection=None):
     provider_entries = settings.NODE_PROVIDERS
@@ -626,14 +633,9 @@ def get_provider(connection=None):
         else:
             key = entry
 
-        if 'postgis3d' == key:
-            result_data = Postgis3dNodeProvider(connection, **options)
-        elif 'postgis3dblurry' == key:
-            result_data = Postgis3dBlurryNodeProvider(connection, **options)
-        elif 'postgis2d' == key:
-            result_data = Postgis2dNodeProvider(connection, **options)
-        elif 'postgis2dblurry' == key:
-            result_data = Postgis2dBlurryNodeProvider(connection, **options)
+        Provider = AVAILABLE_NODE_PROVIDERS.get(key)
+        if Provider:
+            result_data = Provider(connection, **options)
         else:
             raise ValueError('Unknown node provider: ' + key)
 

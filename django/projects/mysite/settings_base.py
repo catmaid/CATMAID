@@ -177,8 +177,13 @@ USE_TZ = True
 SITE_ID = 1
 
 # Defines which type of spatial query should be used for treenodes. The
-# available options are 'classic', 'postgis2d' and 'postgis3d'.
-NODE_PROVIDER = 'postgis3d'
+# available options are 'classic', 'postgis2d' and 'postgis3d'. If multiple are
+# provided, node providers are asked one after the other for a result until a
+# result is returned. Entries can either be node provider names or tuples of the
+# form (name, options) to provide options for a particular node provider.
+NODE_PROVIDERS = [
+    'postgis3d'
+]
 
 # By default, prepared statements are disabled. If connection pooling is used,
 # this can further improve performance.

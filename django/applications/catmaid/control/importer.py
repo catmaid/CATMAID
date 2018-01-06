@@ -1364,7 +1364,7 @@ def import_projects( user, pre_projects, tags, permissions,
             if remove_unref_stack_data:
               cursor.execute("""
                   SELECT s.id
-                  FROM  stack s
+                  FROM stack s
                   LEFT OUTER JOIN project_stack ps
                     ON s.id = ps.stack_id
                   WHERE

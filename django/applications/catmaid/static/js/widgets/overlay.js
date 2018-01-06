@@ -4,6 +4,7 @@
   CATMAID,
   project,
   requestQueue,
+  RequestQueue,
   submitterFn,
   user_groups,
   msgpack
@@ -679,8 +680,9 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   this.suspended = options.suspended || false;
   /** Current connector selection menu, if any */
   this.connectorTypeMenu = null;
-  /** Transfer data binarily by default */
-  this.binaryTracingData = true;
+  /** Transfer data as msgpack by default.
+   * Options: 'json', 'msgpack', 'gif', 'png' */
+  this.transferFormat = 'msgpack';
 
   // Keep the ID of the node deleted last, which allows to provide some extra
   // context in some situations.
@@ -2664,11 +2666,27 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
       height: stackViewer.viewHeight}); // resize.
 
   if (doNotUpdate) {
-    this.pixiLayer._renderIfReady();
+    this.renderIfReady();
     if (typeof completionCallback !== "undefined") {
       completionCallback();
     }
   }
+};
+
+SkeletonAnnotations.TracingOverlay.prototype.renderIfReady = function() {
+  if (this.transferFormat == 'gif' || this.transferFormat == 'png') {
+    let target = this.pixiLayer.tracingImage;
+    if (!target) {
+      target = this.pixiLayer.getTracingImage();
+    }
+    target.src = this.tracingDataUrl;
+    target.style.display = 'block';
+  } else {
+    if (this.pixiLayer.tracingImage) {
+      this.pixiLayer.tracingImage.style.display = 'none';
+    }
+  }
+  this.pixiLayer._renderIfReady();
 };
 
 /**
@@ -3121,8 +3139,14 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
     self.old_width = stackViewer.viewWidth;
     self.old_height = stackViewer.viewHeight;
 
-    var paddedHalfWidth =  (stackViewer.viewWidth  / 2 + self.padding) / stackViewer.scale,
-        paddedhalfHeight = (stackViewer.viewHeight / 2 + self.padding) / stackViewer.scale;
+    // As regular transfer is considered what transfers vector data.
+    var regularTransfer = self.transferFormat == 'json' || self.transferFormat == 'msgpack';
+
+    // No padding for image data
+    var padding = regularTransfer ? self.padding : 0;
+
+    var paddedHalfWidth =  (stackViewer.viewWidth  / 2 + padding) / stackViewer.scale,
+        paddedhalfHeight = (stackViewer.viewHeight / 2 + padding) / stackViewer.scale;
 
     var x0 = stackViewer.x - paddedHalfWidth,
         y0 = stackViewer.y - paddedhalfHeight,
@@ -3160,9 +3184,10 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       labels: self.getLabelStatus()
     };
 
-    let binaryTransfer = self.binaryTracingData;
-    if (binaryTransfer) {
-      params['format'] = 'msgpack';
+    let transferFormat = self.transferFormat;
+    let binaryTransfer = transferFormat != 'json';
+    if (transferFormat) {
+      params['format'] = transferFormat;
     }
 
     var success = function (json) {
@@ -3195,51 +3220,67 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       }
     };
 
-    // Check the node list cache for an exactly matching request. Only request
-    // from the backend if not found.
-    var paramsKey = JSON.stringify(params);
-    var json = self.nodeListCache.get(paramsKey);
+    var url = django_url + project.id + '/node/list';
+    if (regularTransfer) {
+      // Check the node list cache for an exactly matching request. Only request
+      // from the backend if not found.
+      var paramsKey = JSON.stringify(params);
+      var json = self.nodeListCache.get(paramsKey);
 
-    // Special case: allow fast sub-views of a previous view (e.g. when zooming
-    // in and back out) based on cached data. If no exact matching node list
-    // cache entry was found, try to find a cache entry that encloses the
-    // current request bounding box and that didn't have any nodes dropped.
-    var subviewsFromCache = SkeletonAnnotations.TracingOverlay.Settings.session.subviews_from_cache;
-    if (subviewsFromCache && !json) {
-      json = self.createSubViewNodeListFromCache(params);
-    }
+      // Special case: allow fast sub-views of a previous view (e.g. when zooming
+      // in and back out) based on cached data. If no exact matching node list
+      // cache entry was found, try to find a cache entry that encloses the
+      // current request bounding box and that didn't have any nodes dropped.
+      var subviewsFromCache = SkeletonAnnotations.TracingOverlay.Settings.session.subviews_from_cache;
+      if (subviewsFromCache && !json) {
+        json = self.createSubViewNodeListFromCache(params);
+      }
 
-    // Finally, if a cache entry was found, use it
-    if (json) {
-      success(json);
+      // Finally, if a cache entry was found, use it
+      if (json) {
+        success(json);
+      } else {
+        self.tracingDataUrl = url + '?' + RequestQueue.encodeObject(params);
+        self.submit(
+          url,
+          'GET',
+          params,
+          function(data, dataSize) {
+            if (transferFormat === 'msgpack') {
+              data = msgpack.decode(new Uint8Array(data));
+            } else if (transferFormat === 'png' || transferFormat == 'gif') {
+              data = new Uint8Array(data);
+            } else {
+              data = JSON.parse(data);
+            }
+            if (!data) {
+              throw new CATMAID.ValueError("Couldn't parse response");
+            }
+            if (data.error) {
+              throw new CATMAID.ValueError("Unexpected response: " + data);
+            }
+            self.nodeListCache.set(paramsKey, data, dataSize);
+            success(data);
+          },
+          false,
+          true,
+          errCallback,
+          false,
+          'stack-' + self.stackViewer.getId() + '-url-' + url,
+          true,
+          binaryTransfer ? 'arraybuffer' : undefined);
+      }
     } else {
-      var url = django_url + project.id + '/node/list';
-      self.submit(
-        url,
-        'POST',
-        params,
-        function(data, dataSize) {
-          if (binaryTransfer) {
-            data = msgpack.decode(new Uint8Array(data));
-          } else {
-            data = JSON.parse(data);
-          }
-          if (!data) {
-            throw new CATMAID.ValueError("Couldn't parse response");
-          }
-          if (data.error) {
-            throw new CATMAID.ValueError("Unexpected response: " + data);
-          }
-          self.nodeListCache.set(paramsKey, data, dataSize);
-          success(data);
-        },
+      params['view_width'] = stackViewer.viewWidth;
+      params['view_height'] = stackViewer.viewHeight;
+      self.tracingDataUrl = url + '?' + RequestQueue.encodeObject(params);
+      success([
+        [],
+        [],
+        {},
         false,
-        true,
-        errCallback,
-        false,
-        'stack-' + self.stackViewer.getId() + '-url-' + url,
-        true,
-        binaryTransfer ? 'arraybuffer' : undefined);
+        {}
+      ]);
     }
   });
 };

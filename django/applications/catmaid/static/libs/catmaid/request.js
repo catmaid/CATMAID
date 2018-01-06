@@ -12,7 +12,7 @@
 /**
  * Implements a cross browser HTTPrequest-FIFO-queue.
  */
-RequestQueue = function(originUrl, csrfToken)
+var RequestQueue = function(originUrl, csrfToken)
 {
   var self = this;
   var queue = [];		//!< queue of waiting requests
@@ -20,69 +20,6 @@ RequestQueue = function(originUrl, csrfToken)
   var spinner = null;
   // Extra headers are stored as key value pairs in an object
   var extraHeaders = {};
-
-  var encodeArray = function( a, p )
-  {
-    var q = "";
-    for ( var i = 0; i < a.length; ++i )
-    {
-      var r = p + "[" + i + "]";
-
-      switch ( typeof a[ i ] )
-      {
-      case "undefined":
-        break;
-      case "function":
-      case "object":
-        if ( a[ i ].constructor == Array && a[ i ].length > 0 )
-          q += encodeArray( a[ i ], r ) + "&";
-        else
-          q += encodeObject( a[ i ], r ) + "&";
-        break;
-      default:
-        q += r + "=" + encodeURIComponent( a[ i ] ) + "&";
-        break;
-      }
-    }
-    q = q.replace( /\&$/, "" );
-
-    return q;
-  };
-
-  var encodeObject = function( o, p )
-  {
-    var q = "";
-    for ( var k in o )
-    {
-      var r;
-      if ( p )
-        r = p + "[" + k + "]";
-      else
-        r = k;
-
-      switch ( typeof o[ k ] )
-      {
-      case "undefined":
-        break;
-      case "function":
-      case "object":
-        if (null === o[k]) {
-          break;
-        }
-        if ( o[ k ].constructor == Array && o[ k ].length > 0 )
-          q += encodeArray( o[ k ], r ) + "&";
-        else
-          q += encodeObject( o[ k ], r ) + "&";
-        break;
-      default:
-        q += r + "=" + encodeURIComponent( o[ k ] ) + "&";
-        break;
-      }
-    }
-    q = q.replace( /\&$/, "" );
-
-    return q;
-  };
 
   var showSpinner = function()
   {
@@ -213,7 +150,7 @@ RequestQueue = function(originUrl, csrfToken)
           {
             request : r,
             method : m,
-            data : encodeObject( d ),
+            data : RequestQueue.encodeObject( d ),
             callback : c,
             id : id,
             responseType: responseType
@@ -222,7 +159,7 @@ RequestQueue = function(originUrl, csrfToken)
         break;
       default:
         var request = "";
-        var encoded = encodeObject( d );
+        var encoded = RequestQueue.encodeObject( d );
         if (encoded !== "") {
           request = "?" + encoded;
         }
@@ -291,4 +228,66 @@ RequestQueue = function(originUrl, csrfToken)
 RequestQueue.csrfSafe = function (method) {
   // these HTTP methods do not require CSRF protection
   return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+};
+
+RequestQueue.encodeArray = function( a, p ) {
+  var q = "";
+  for ( var i = 0; i < a.length; ++i )
+  {
+    var r = p + "[" + i + "]";
+
+    switch ( typeof a[ i ] )
+    {
+    case "undefined":
+      break;
+    case "function":
+    case "object":
+      if ( a[ i ].constructor == Array && a[ i ].length > 0 )
+        q += RequestQueueencodeArray( a[ i ], r ) + "&";
+      else
+        q += RequestQueue.encodeObject( a[ i ], r ) + "&";
+      break;
+    default:
+      q += r + "=" + encodeURIComponent( a[ i ] ) + "&";
+      break;
+    }
+  }
+  q = q.replace( /\&$/, "" );
+
+  return q;
+};
+
+RequestQueue.encodeObject = function( o, p )
+{
+  var q = "";
+  for ( var k in o )
+  {
+    var r;
+    if ( p )
+      r = p + "[" + k + "]";
+    else
+      r = k;
+
+    switch ( typeof o[ k ] )
+    {
+    case "undefined":
+      break;
+    case "function":
+    case "object":
+      if (null === o[k]) {
+        break;
+      }
+      if ( o[ k ].constructor == Array && o[ k ].length > 0 )
+        q += RequestQueue.encodeArray( o[ k ], r ) + "&";
+      else
+        q += RequestQueue.encodeObject( o[ k ], r ) + "&";
+      break;
+    default:
+      q += r + "=" + encodeURIComponent( o[ k ] ) + "&";
+      break;
+    }
+  }
+  q = q.replace( /\&$/, "" );
+
+  return q;
 };

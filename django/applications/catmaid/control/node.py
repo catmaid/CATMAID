@@ -24,6 +24,9 @@ from catmaid.control.authentication import requires_user_role, \
         can_edit_all_or_fail
 from catmaid.control.common import get_relation_to_id_map, get_request_list
 
+from PIL import Image, ImageDraw
+from aggdraw import Draw, Pen, Brush, Font
+
 from six.moves import map as imap
 from six import add_metaclass
 
@@ -84,6 +87,8 @@ class PostgisNodeProvider(object):
         self.connector_query_prepare = connector_query_template.format(**prepare_var_names)
 
         self.prepared_statements = bool(connection) or settings.PREPARED_STATEMENTS
+
+        self.render_server_side = kwargs.get('server_side', False)
 
         # If PREPARED_STATEMENTS is true, the statements will have been prepared elsewhere
         if connection and not settings.PREPARED_STATEMENTS:
@@ -765,24 +770,37 @@ def node_list_tuples(request, project_id=None, provider=None):
       required: true
     '''
     project_id = int(project_id) # sanitize
+    if request.method == 'POST':
+        data = request.POST
+    elif request.method == 'GET':
+        data = request.GET
+    else:
+        raise ValueError("Unsupported HTTP method: " + request.method)
+
     params = {}
 
-    treenode_ids = get_request_list(request.POST, 'treenode_ids', tuple(), int)
-    connector_ids = get_request_list(request.POST, 'connector_ids', tuple(), int)
+    treenode_ids = get_request_list(data, 'treenode_ids', tuple(), int)
+    connector_ids = get_request_list(data, 'connector_ids', tuple(), int)
     for p in ('top', 'left', 'bottom', 'right', 'z1', 'z2'):
-        params[p] = float(request.POST.get(p, 0))
+        params[p] = float(data.get(p, 0))
     # Limit the number of retrieved treenodes within the section
     params['limit'] = settings.NODE_LIST_MAXIMUM_COUNT
     params['project_id'] = project_id
-    include_labels = (request.POST.get('labels', None) == 'true')
-    target_format = request.POST.get('format', 'json')
+    include_labels = (data.get('labels', None) == 'true')
+    target_format = data.get('format', 'json')
+    target_options = {
+        'view_width': int(data.get('view_width', 1000)),
+        'view_height': int(data.get('view_height', 1000)),
+    }
 
     return node_list_tuples_query(params, project_id, get_provider(),
-            treenode_ids, connector_ids, include_labels, target_format)
+            treenode_ids, connector_ids, include_labels, target_format,
+            target_options)
 
 
 def node_list_tuples_query(params, project_id, node_provider, explicit_treenode_ids=tuple(),
-        explicit_connector_ids=tuple(), include_labels=False, target_format='json'):
+        explicit_connector_ids=tuple(), include_labels=False,
+        target_format='json', target_options=None):
     """The returned JSON data is sensitive to indices in the array, so care
     must be taken never to alter the order of the variables in the SQL
     statements without modifying the accesses to said data both in this
@@ -902,11 +920,113 @@ def node_list_tuples_query(params, project_id, node_provider, explicit_treenode_
         elif target_format == 'msgpack':
             data = msgpack.packb(result)
             return HttpResponse(data, content_type='application/octet-stream')
+        elif target_format == 'png' or target_format == 'gif':
+            width = target_options['view_width']
+            height = target_options['view_height']
+            view_min_x = params['left']
+            view_min_y = params['top']
+            xscale = width / (params['right'] - params['left'])
+            yscale = height / (params['bottom'] - params['top'])
+            image = render_nodes_xy(result, params, width, height, view_min_x,
+                    view_min_y, xscale, yscale)
+            # serialize to HTTP response
+            if target_format == 'png':
+                response = HttpResponse(content_type="image/png")
+                image.save(response, "PNG")
+            else:
+                response = HttpResponse(content_type="image/gif")
+                image.save(response, 'GIF', transparency=0)
+            return response
         else:
             raise ValueError("Unknown target format: {}".format(target_format))
 
     except Exception as e:
-        raise Exception(response_on_error + ':' + str(e))
+        import traceback
+        raise Exception(response_on_error + ':' + str(e) + '\nOriginal error: ' + str(traceback.format_exc()))
+
+
+def render_nodes_xy(node_data, params, width, height, view_min_x=0, view_min_y=0,
+        xscale=1.0, yscale=1.0):
+    """Render the passed in node data to an image.
+    """
+    import random
+    background = (255, 0, 0, 0)
+    image = Image.new('RGBA', (width, height), background)
+
+    radius = 4
+    hr = radius / 2.0
+    node_pen = Pen((255, 0, 255), 1)
+    root_pen = Pen('red', 1)
+    #leaf_pen = Pen('red', 1)
+    node_brush = Brush((255, 0, 255))
+    root_brush = Brush('red')
+    #leaf_brush = Brush('red')
+
+    virtual_nodes = True
+
+    left, right = params['left'], params['right']
+    top, bottom = params['top'], params['bottom']
+    z1, z2 = params['z1'], params['z2']
+
+    # Map parents to children
+    nodes = dict()
+    treenodes = node_data[0]
+    for tn in treenodes:
+        nodes[tn[0]] = tn
+
+    draw = Draw(image)
+    # Add treenodes:
+    for tn in treenodes:
+        parent_id = tn[1]
+        x, y, z = tn[2], tn[3], tn[4]
+        xs, ys = None, None
+        virtual_node_created = False
+
+        is_outside = x < left or x >= right or y < top \
+                or y >= bottom or z < z1 or z >= z2
+
+        # If this node and its parent are outside, create a virtual node
+        # location and replace current coordinates.
+        if is_outside:
+            if virtual_nodes and parent_id:
+                parent_node = nodes.get(parent_id)
+                if parent_node:
+                    px, py, pz = parent_node[2], parent_node[3], parent_node[4]
+                    p_is_outside = px < left or px >= right or py < top \
+                            or py >= bottom or pz < z1 or pz >= z2
+
+                    # If the parent ist outside, too, find virtual node
+                    # location.
+                    if p_is_outside:
+                        dx, dy, dz = px - x, py - y, pz - z
+                        if dz > -0.0001 and dz < 0.0001:
+                            continue
+                        t = (z1 - z) / dz
+
+                        x = x + t * dx
+                        y = y + t * dy
+                        z = z1
+                        virtual_node_created = True
+
+            if not virtual_node_created:
+                continue
+
+        xs = xscale * (x - view_min_x)
+        ys = yscale * (y - view_min_y)
+
+        if parent_id:
+            pen = node_pen
+            brush = node_brush
+        else:
+            pen = root_pen
+            brush = root_brush
+
+        # Render node or virtual node
+        draw.ellipse((xs - hr, ys - hr, xs + hr, ys + hr), pen, brush)
+
+    draw.flush()
+
+    return image
 
 
 @requires_user_role(UserRole.Annotate)

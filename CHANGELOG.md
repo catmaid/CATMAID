@@ -17,6 +17,10 @@
   pip uninstall django-rest-swagger
   pip install -r requirements.txt
 
+- `requirements` files now inherit from each other: `-test.txt` includes
+ the production requirements, `-dev.txt` includes test (and therefore
+ production) and doc.
+
 
 ### Features and enhancements
 

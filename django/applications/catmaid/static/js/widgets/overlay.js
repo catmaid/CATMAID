@@ -3222,10 +3222,10 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
             data = JSON.parse(data);
           }
           if (!data) {
-            throw new CATMAID.ValuError("Couldn't parse response");
+            throw new CATMAID.ValueError("Couldn't parse response");
           }
           if (data.error) {
-            throw new CATMAID.ValuError("Unexpected response: " + data);
+            throw new CATMAID.ValueError("Unexpected response: " + data);
           }
           self.nodeListCache.set(paramsKey, data);
           success(data);

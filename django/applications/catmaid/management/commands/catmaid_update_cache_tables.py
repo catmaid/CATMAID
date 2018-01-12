@@ -3,6 +3,7 @@ import msgpack
 import psycopg2
 
 from django.core.management.base import BaseCommand, CommandError
+from django.conf import settings
 from django.db import connection
 
 from catmaid.control.node import _node_list_tuples_query, Postgis2dNodeProvider
@@ -42,6 +43,8 @@ class Command(BaseCommand):
             help='Optional minimum Z project space coordinate for cache update'),
         parser.add_argument('--max-z', dest='max_z', default='inf',
             help='Optional maximum Z project space coordinate for cache update'),
+        parser.add_argument('--node-limit', dest='node_limit',
+            default=settings.NODE_LIST_MAXIMUM_COUNT, help='Override node limit from settings'),
 
     def handle(self, *args, **options):
         cursor = connection.cursor()
@@ -77,15 +80,16 @@ class Command(BaseCommand):
             [float(options['max_x']), float(options['max_y']), float(options['max_z'])]
         ]
 
+	node_limit = int(options['node_limit'])
         data_type = options['data_type']
         for p in projects:
             self.stdout.write('Updating cache for project {}'.format(p.id))
-            self.update_cache(p.id, data_type, orientations, steps, delete, bb_limits)
+            self.update_cache(p.id, data_type, orientations, steps, node_limit, delete, bb_limits)
             self.stdout.write('Updated cache for project {}'.format(p.id))
 
         self.stdout.write('Done')
 
-    def update_cache(self, project_id, data_type, orientations, steps, delete=True, bb_limits=None):
+    def update_cache(self, project_id, data_type, orientations, steps, node_limit=None, delete=True, bb_limits=None):
         if data_type not in ('json', 'json_text', 'msgpack'):
             raise CommandError('Type must be one of: json, json_text, msgpack')
         if len(steps) != len(orientations):
@@ -143,7 +147,7 @@ class Command(BaseCommand):
             'bottom': bb[1][1],
             'z2': None,
             'project_id': project_id,
-            'limit': None
+            'limit': node_limit
         }
 
         min_z = bb[0][2]

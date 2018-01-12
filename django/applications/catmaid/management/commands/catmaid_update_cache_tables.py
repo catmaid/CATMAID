@@ -30,6 +30,18 @@ class Command(BaseCommand):
             default='xz', help='Which orientations should be generated: xy, xz, zy'),
         parser.add_argument('--step', dest='steps', nargs='+', required=True,
             help='Map section thickness (depth resultion) for each orientation (in nm)'),
+        parser.add_argument('--min-x', dest='min_x', default='-inf',
+            help='Optional minimum X project space coordinate for cache update'),
+        parser.add_argument('--max-x', dest='max_x', default='inf',
+            help='Optional maximum X project space coordinate for cache update'),
+        parser.add_argument('--min-y', dest='min_y', default='-inf',
+            help='Optional minimum Y project space coordinate for cache update'),
+        parser.add_argument('--max-y', dest='max_y', default='inf',
+            help='Optional mayimum Y project space coordinate for cache update'),
+        parser.add_argument('--min-z', dest='min_z', default='-inf',
+            help='Optional minimum Z project space coordinate for cache update'),
+        parser.add_argument('--max-z', dest='max_z', default='inf',
+            help='Optional maximum Z project space coordinate for cache update'),
 
     def handle(self, *args, **options):
         cursor = connection.cursor()
@@ -60,15 +72,20 @@ class Command(BaseCommand):
                 # Removing cache data for all projects is faster this way.
                 cursor.execute("TRUNCATE node_query_cache")
 
+        bb_limits = [
+            [float(options['min_x']), float(options['min_y']), float(options['min_z'])],
+            [float(options['max_x']), float(options['max_y']), float(options['max_z'])]
+        ]
+
         data_type = options['data_type']
         for p in projects:
             self.stdout.write('Updating cache for project {}'.format(p.id))
-            self.update_cache(p.id, data_type, orientations, steps, delete)
+            self.update_cache(p.id, data_type, orientations, steps, delete, bb_limits)
             self.stdout.write('Updated cache for project {}'.format(p.id))
 
         self.stdout.write('Done')
 
-    def update_cache(self, project_id, data_type, orientations, steps, delete=True):
+    def update_cache(self, project_id, data_type, orientations, steps, delete=True, bb_limits=None):
         if data_type not in ('json', 'json_text', 'msgpack'):
             raise CommandError('Type must be one of: json, json_text, msgpack')
         if len(steps) != len(orientations):
@@ -96,6 +113,15 @@ class Command(BaseCommand):
             return
         else:
             self.stdout.write(' -> Found bounding box: {}'.format(bb))
+
+        if bb_limits:
+            bb[0][0] = max(bb[0][0], bb_limits[0][0])
+            bb[0][1] = max(bb[0][1], bb_limits[0][1])
+            bb[0][2] = max(bb[0][2], bb_limits[0][2])
+            bb[1][0] = min(bb[1][0], bb_limits[1][0])
+            bb[1][1] = min(bb[1][1], bb_limits[1][1])
+            bb[1][2] = min(bb[1][2], bb_limits[1][2])
+            self.stdout.write(' -> Applied limits to bounding box: {}'.format(bb))
 
         if delete:
             for o in orientations:

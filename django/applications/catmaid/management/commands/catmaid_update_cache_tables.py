@@ -44,7 +44,7 @@ class Command(BaseCommand):
         parser.add_argument('--max-z', dest='max_z', default='inf',
             help='Optional maximum Z project space coordinate for cache update'),
         parser.add_argument('--node-limit', dest='node_limit',
-            default=settings.NODE_LIST_MAXIMUM_COUNT, help='Override node limit from settings'),
+            default=settings.NODE_LIST_MAXIMUM_COUNT, help='Override node limit from settings. 0 means no limit'),
 
     def handle(self, *args, **options):
         cursor = connection.cursor()
@@ -80,7 +80,10 @@ class Command(BaseCommand):
             [float(options['max_x']), float(options['max_y']), float(options['max_z'])]
         ]
 
-	node_limit = int(options['node_limit'])
+        node_limit = int(options['node_limit'])
+        if node_limit == 0:
+            node_limit = None
+
         data_type = options['data_type']
         for p in projects:
             self.stdout.write('Updating cache for project {}'.format(p.id))

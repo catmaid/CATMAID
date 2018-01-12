@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 import json
 import msgpack
 import ujson
+import psycopg2.extras
 
 from collections import defaultdict
 from abc import ABCMeta
@@ -31,8 +32,93 @@ from six.moves import map as imap
 from six import add_metaclass
 
 
+class BasicNodeProvider(object):
+
+    def __init__(self, *args, **kwargs):
+	self.enabled = kwargs.get('enabled', True)
+        self.project_id = kwargs.get('project_id')
+
+    def prepare_db_statements(connection=None):
+        pass
+
+    def matches(self, params):
+        matches = True
+	if not self.enabled:
+	    return False
+        if self.project_id:
+            matches = matches and params.get('project_id') == self.project_id
+        return matches
+
+    def get_tuples(self, params, project_id, explicit_treenode_ids,
+                explicit_connector_ids, include_labels):
+        return _node_list_tuples_query(params, project_id,
+                self, explicit_treenode_ids, explicit_connector_ids,
+                include_labels), 'json'
+
+
+class CachedJsonNodeNodeProvder(BasicNodeProvider):
+    """Retrieve cached msgpack data from the node_query_cache table.
+    """
+
+    def get_tuples(self, params, project_id, explicit_treenode_ids,
+                explicit_connector_ids, include_labels, target_format):
+        cursor = connection.cursor()
+        # For JSONB type cache, use ujson to decode, this is roughly 2x faster
+        psycopg2.extras.register_default_jsonb(loads=ujson.loads)
+        cursor.execute("""
+            SELECT json_data FROM node_query_cache
+            WHERE project_id = %s AND z = %s
+            LIMIT 1
+        """, (project_id, params['z1']))
+        rows = cursor.fetchone()
+
+        if rows and rows[0]:
+            return rows[0], 'json'
+        else:
+            return None, None
+
+
+class CachedJsonTextNodeProvder(BasicNodeProvider):
+    """Retrieve cached msgpack data from the node_query_cache table.
+    """
+
+    def get_tuples(self, params, project_id, explicit_treenode_ids,
+                explicit_connector_ids, include_labels):
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT json_text_data FROM node_query_cache
+            WHERE project_id = %s AND z = %s
+            LIMIT 1
+        """, (project_id, params['z1']))
+        rows = cursor.fetchone()
+
+        if rows and rows[0]:
+            return rows[0][2:-2], 'json_text'
+        else:
+            return None, None
+
+
+class CachedMsgpackNodeProvder(BasicNodeProvider):
+    """Retrieve cached msgpack data from the node_query_cache table.
+    """
+
+    def get_tuples(self, params, project_id, explicit_treenode_ids,
+                explicit_connector_ids, include_labels):
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT msgpack_data FROM node_query_cache
+            WHERE project_id = %s AND z = %s
+            LIMIT 1
+        """, (project_id, params['z1']))
+        rows = cursor.fetchone()
+        if rows and rows[0]:
+            return bytes(rows[0]), 'msgpack'
+        else:
+            return None, None
+
+
 @add_metaclass(ABCMeta)
-class PostgisNodeProvider(object):
+class PostgisNodeProvider(BasicNodeProvider):
     CONNECTOR_STATEMENT_NAME = 'get_connectors_postgis'
     connector_query = None
 
@@ -47,6 +133,7 @@ class PostgisNodeProvider(object):
         If PREPARED_STATEMENTS is false but you want to override that for a few queries at a time,
         include a django.db.connection in the constructor.
         """
+	super(PostgisNodeProvider, self).__init__(**kwargs)
 
         # If a node limit is set, append the LIMIT clause to both queries
         if self.managed_limit and settings.NODE_LIST_MAXIMUM_COUNT:
@@ -622,11 +709,14 @@ AVAILABLE_NODE_PROVIDERS = {
     'postgis3dblurry': Postgis3dBlurryNodeProvider,
     'postgis2d': Postgis2dNodeProvider,
     'postgis2dblurry': Postgis2dBlurryNodeProvider,
+    'cached_json': CachedJsonNodeNodeProvder,
+    'cached_json_text': CachedJsonTextNodeProvder,
+    'cached_msgpack': CachedMsgpackNodeProvder,
 }
 
-def get_provider(connection=None):
-    provider_entries = settings.NODE_PROVIDERS
-    result_data = None
+
+def get_configured_node_providers(provider_entries, connection=None):
+    node_providers = []
     for entry in provider_entries:
         options = {}
         # An entry is allowed to be a two-tuple (name, options) to provide
@@ -640,22 +730,17 @@ def get_provider(connection=None):
 
         Provider = AVAILABLE_NODE_PROVIDERS.get(key)
         if Provider:
-            result_data = Provider(connection, **options)
+            node_providers.append(Provider(connection, **options))
         else:
             raise ValueError('Unknown node provider: ' + key)
 
-        # No need to continue with next provider if got data
-        if result_data:
-            break
+    return node_providers
 
-    if result_data is None:
-        raise ValueError('Could not find any matching node provider')
-
-    return result_data
 
 def prepare_db_statements(connection):
-    provider = get_provider(connection)
-    provider.prepare_db_statements(connection)
+    node_providers = get_configured_node_providers(settings.NODE_PROVIDERS, connection)
+    for node_provider in node_providers:
+        node_provider.prepare_db_statements(connection)
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -792,15 +877,19 @@ def node_list_tuples(request, project_id=None, provider=None):
         'view_width': int(data.get('view_width', 1000)),
         'view_height': int(data.get('view_height', 1000)),
     }
+    override_provider = data.get('src')
 
-    return node_list_tuples_query(params, project_id, get_provider(),
-            treenode_ids, connector_ids, include_labels, target_format,
-            target_options)
+    if override_provider:
+        node_providers = get_configured_node_providers([override_provider])
+    else:
+        node_providers = get_configured_node_providers(settings.NODE_PROVIDERS)
+
+    return compile_node_list_result(project_id, node_providers, params,
+        treenode_ids, connector_ids, include_labels, target_format, target_options)
 
 
-def node_list_tuples_query(params, project_id, node_provider, explicit_treenode_ids=tuple(),
-        explicit_connector_ids=tuple(), include_labels=False,
-        target_format='json', target_options=None):
+def _node_list_tuples_query(params, project_id, node_provider, explicit_treenode_ids=tuple(),
+        explicit_connector_ids=tuple(), include_labels=False):
     """The returned JSON data is sensitive to indices in the array, so care
     must be taken never to alter the order of the variables in the SQL
     statements without modifying the accesses to said data both in this
@@ -913,37 +1002,93 @@ def node_list_tuples_query(params, project_id, node_provider, explicit_treenode_
         used_rel_map = {r:id_to_relation[r] for r in used_relations}
         result = [treenodes, connectors, labels,
                 n_retrieved_nodes == params['limit'], used_rel_map]
-
-        if target_format == 'json':
-            return HttpResponse(ujson.dumps(result),
-                content_type='application/json')
-        elif target_format == 'msgpack':
-            data = msgpack.packb(result)
-            return HttpResponse(data, content_type='application/octet-stream')
-        elif target_format == 'png' or target_format == 'gif':
-            width = target_options['view_width']
-            height = target_options['view_height']
-            view_min_x = params['left']
-            view_min_y = params['top']
-            xscale = width / (params['right'] - params['left'])
-            yscale = height / (params['bottom'] - params['top'])
-            image = render_nodes_xy(result, params, width, height, view_min_x,
-                    view_min_y, xscale, yscale)
-            # serialize to HTTP response
-            if target_format == 'png':
-                response = HttpResponse(content_type="image/png")
-                image.save(response, "PNG")
-            else:
-                response = HttpResponse(content_type="image/gif")
-                image.save(response, 'GIF', transparency=0)
-            return response
-        else:
-            raise ValueError("Unknown target format: {}".format(target_format))
+        return result
 
     except Exception as e:
         import traceback
         raise Exception(response_on_error + ':' + str(e) + '\nOriginal error: ' + str(traceback.format_exc()))
 
+def node_list_tuples_query(params, project_id, node_provider, explicit_treenode_ids=tuple(),
+        explicit_connector_ids=tuple(), include_labels=False,
+        target_format='json', target_options=None):
+
+    result_tuple, data_type = node_provider.get_tuples(params, project_id,
+        explicit_treenode_ids, explicit_connector_ids, include_labels,
+        target_format, target_options)
+
+    return create_node_response(result_tuple, params, target_format, target_options, data_type)
+
+def compile_node_list_result(project_id, node_providers, params, explicit_treenode_ids=tuple(),
+        explicit_connector_ids=tuple(), include_labels=False,
+        target_format='json', target_options=None):
+    """Create a valid HTTP response for the provided node query. If
+    override_provider is not passed in, the list of node_providers will be
+    iterated until a result is found.
+    """
+    result_tuple, data_type = None, None
+    for node_provider in node_providers:
+        if node_provider.matches(params):
+            result = node_provider.get_tuples(params, project_id,
+                explicit_treenode_ids, explicit_connector_ids, include_labels)
+            result_tuple, data_type =  result
+
+            if result_tuple and data_type:
+                break
+
+    if not (result_tuple and data_type):
+        raise ValueError("Could not find matching node provider for request")
+
+    return create_node_response(result_tuple, params, target_format, target_options, data_type)
+
+def create_node_response(result, params, target_format, target_options, data_type):
+    if target_format == 'json':
+        if data_type == 'json':
+            data = ujson.dumps(result)
+        elif data_type == 'json_text':
+            data = result
+        elif data_type == 'msgpack':
+            data = ujson.dumps(msgpack.unpackb(result, use_list=False))
+        else:
+            raise ValueError("Unknown data type: " + data_type)
+        return HttpResponse(data,
+            content_type='application/json')
+    elif target_format == 'msgpack':
+        if data_type == 'json':
+            data = msgpack.packb(result)
+        elif data_type == 'json_text':
+            data = msgpack.packb(ujson.loads(result))
+        elif data_type == 'msgpack':
+            data = result
+        else:
+            raise ValueError("Unknown data type: " + data_type)
+        return HttpResponse(data, content_type='application/octet-stream')
+    elif target_format == 'png' or target_format == 'gif':
+        if data_type == 'json':
+            data = result
+        elif data_type == 'json_text':
+            data = ujson.loads(result)
+        elif data_type == 'msgpack':
+            data = msgpack.unpackb(result, use_list=False)
+        else:
+            raise ValueError("Unknown data type: " + data_type)
+        width = target_options['view_width']
+        height = target_options['view_height']
+        view_min_x = params['left']
+        view_min_y = params['top']
+        xscale = width / (params['right'] - params['left'])
+        yscale = height / (params['bottom'] - params['top'])
+        image = render_nodes_xy(data, params, width, height, view_min_x,
+                view_min_y, xscale, yscale)
+        # serialize to HTTP response
+        if target_format == 'png':
+            response = HttpResponse(content_type="image/png")
+            image.save(response, "PNG")
+        else:
+            response = HttpResponse(content_type="image/gif")
+            image.save(response, 'GIF', transparency=0, optimize=True)
+        return response
+    else:
+        raise ValueError("Unknown target format: {}".format(target_format))
 
 def render_nodes_xy(node_data, params, width, height, view_min_x=0, view_min_y=0,
         xscale=1.0, yscale=1.0):

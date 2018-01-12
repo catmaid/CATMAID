@@ -67,7 +67,7 @@ class CachedJsonNodeNodeProvder(BasicNodeProvider):
         psycopg2.extras.register_default_jsonb(loads=ujson.loads)
         cursor.execute("""
             SELECT json_data FROM node_query_cache
-            WHERE project_id = %s AND z = %s
+            WHERE project_id = %s AND depth = %s
             LIMIT 1
         """, (project_id, params['z1']))
         rows = cursor.fetchone()
@@ -87,7 +87,7 @@ class CachedJsonTextNodeProvder(BasicNodeProvider):
         cursor = connection.cursor()
         cursor.execute("""
             SELECT json_text_data FROM node_query_cache
-            WHERE project_id = %s AND z = %s
+            WHERE project_id = %s AND depth = %s
             LIMIT 1
         """, (project_id, params['z1']))
         rows = cursor.fetchone()
@@ -107,7 +107,7 @@ class CachedMsgpackNodeProvder(BasicNodeProvider):
         cursor = connection.cursor()
         cursor.execute("""
             SELECT msgpack_data FROM node_query_cache
-            WHERE project_id = %s AND z = %s
+            WHERE project_id = %s AND depth = %s
             LIMIT 1
         """, (project_id, params['z1']))
         rows = cursor.fetchone()

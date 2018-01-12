@@ -231,7 +231,7 @@
             var points = filter.getNodeLocations(filteredNodes.nodes, respectRadius, filteredNodes.nNodes);
             if (0 === points.length) {
               console.log("Found zero points for compartment " + name);
-              return o;
+              return;
             }
 
             // Compute mesh

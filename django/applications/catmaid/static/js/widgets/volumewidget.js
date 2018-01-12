@@ -23,8 +23,8 @@
     // Access to the displayed DataTable
     this.datatable = null;
     this.entriesPerPage = options.entriesPerPage || 25;
-    // Default volume type
-    this.defaultVolumeType = options.defaultVolumeType || "box";
+    // volume type
+    this.newVolumeType = options.defaultVolumeType || "box";
   };
 
   VolumeManagerWidget.prototype.getName = function() {
@@ -217,11 +217,11 @@
       volumeType = getVolumeType(volume);
       volumeHelper = volumeTypes[volumeType];
     } else {
-      volumeType = this.defaultVolumeType;
+      volumeType = this.newVolumeType;
       volumeHelper = volumeTypes[volumeType];
       if (!volumeType) {
         throw CATMAID.ValueError("Couldn't find volume type: " +
-            this.defaultVolumeType);
+            this.newVolumeType);
       }
       volume = volumeHelper.createVolume({});
     }
@@ -239,8 +239,8 @@
       $addContent.append(typeSelect);
       $('select', typeSelect).on('change', function() {
         $("div.volume-properties", $content).remove();
-        var volumeHelper = volumeTypes[this.value];
-        self.editVolume(volumeHelper.createVolume({}));
+        self.newVolumeType = this.value;
+        self.editVolume();
       });
     }
 

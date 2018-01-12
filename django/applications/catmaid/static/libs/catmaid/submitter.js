@@ -65,9 +65,9 @@ var submitterFn = function() {
     next();
   };
 
-  var invoke = function(q, json) {
+  var invoke = function(q, json, dataSize) {
     try {
-      lastResult = q.fn ? q.fn(json) : json;
+      lastResult = q.fn ? q.fn(json, dataSize) : json;
     } catch (e) {
       CATMAID.error(e, e.stack);
     } finally {
@@ -134,7 +134,7 @@ var submitterFn = function() {
   };
 
   var handlerFn = function(q) {
-    return function(status, text) {
+    return function(status, text, xml, dataSize) {
       if (200 !== status) {
         return reset(q, "Unexpected request response status: " + status + "\n for URL: " + q.url);
       }
@@ -162,7 +162,7 @@ var submitterFn = function() {
           return reset(q, json);
         }
       }
-      invoke(q, json);
+      invoke(q, json, dataSize);
     };
   };
 

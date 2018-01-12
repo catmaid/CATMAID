@@ -163,7 +163,9 @@ RequestQueue = function(originUrl, csrfToken)
         var isTextResponse = (xmlHttp.responseType === '' || xmlHttp.responseType === 'text');
         var responseData = isTextResponse ? xmlHttp.responseText : xmlHttp.response;
         var responseXML = isTextResponse ? xmlHttp.responseXML : null;
-        queue[ 0 ].callback(xmlHttp.status, responseData, responseXML);
+        var dataSize = xmlHttp.responseType === 'arraybuffer' ?
+            xmlHttp.response.byteLength : xmlHttp.response.length;
+        queue[ 0 ].callback(xmlHttp.status, responseData, responseXML, dataSize);
       } catch(error) {
         // Call back with Service Unavailable error (503) for consistency with
         // other error cases and to give the caller information about the error.

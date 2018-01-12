@@ -157,9 +157,11 @@
   /**
    * Override prototype implementation with a memory test, performed before the
    * orginal set() is called. If the test suggests nothing should be allocated
-   * because of too little memory, skip adding this item.
+   * because of too little memory, skip adding this item. If <valueSize> is
+   * provided, this value is taken into consideration whether or not to cache
+   * this data.
    */
-  MemoryAwareLRUCache.prototype.set = function(key, value) {
+  MemoryAwareLRUCache.prototype.set = function(key, value, valueSize) {
     let memory = window.performance.memory;
     let heapFillRate = memory.usedJSHeapSize / memory.totalJSHeapSize;
     let limitFillRate = memory.totalJSHeapSize / memory.jsHeapSizeLimit;
@@ -169,6 +171,18 @@
     // memory, which is otherwise hard to catch in JavaScript.
     var dontCache = heapFillRate > this.maxMemoryFillRate &&
         limitFillRate > this.maxMemoryFillRate;
+
+    // And don't cache if a size estimate for the data is given that is larger
+    // than the available memory in the current heap plus 25% of how much the
+    // heap could be increased.
+    if (valueSize) {
+      var availableSpaceInCurrentHeap = memory.totalJSHeapSize - memory.usedJSHeapSize;
+      var availableExtraAllocSpace = memory.jsHeapSizeLimit - memory.totalJSHeapSize;
+      var valueSpaceExtraAllocNeed = valueSize - availableSpaceInCurrentHeap;
+      if (valueSpaceExtraAllocNeed / availableExtraAllocSpace > 0.25) {
+        dontCache = true;
+      }
+    }
 
     if (!dontCache) {
       LRUCache.prototype.set.call(this, key, value);

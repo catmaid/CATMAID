@@ -3215,7 +3215,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
         url,
         'POST',
         params,
-        function(data) {
+        function(data, dataSize) {
           if (binaryTransfer) {
             data = msgpack.decode(new Uint8Array(data));
           } else {
@@ -3227,7 +3227,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
           if (data.error) {
             throw new CATMAID.ValueError("Unexpected response: " + data);
           }
-          self.nodeListCache.set(paramsKey, data);
+          self.nodeListCache.set(paramsKey, data, dataSize);
           success(data);
         },
         false,

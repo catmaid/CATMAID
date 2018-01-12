@@ -232,6 +232,7 @@ class HistoryTableTests(TransactionTestCase):
         'taggit_taggeditem__tracking',
 
         # Regular unversioned CATMAID tables
+        'node_query_cache',
         'log',
         'treenode_edge',
         'catmaid_history_table',

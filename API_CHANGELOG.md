@@ -10,7 +10,11 @@ None.
 
 ### Modifications
 
-None.
+- `POST|GET /{project_id}/node/list` offers a new optional parameter "src", which
+  can be used to override the node provider selected by the back-end.
+
+- `POST|GET /{project_id}/node/list` offers new options for the optional
+  parameter "format": "gif" and "png" to return an imageof the tracing data.
 
 ### Deprecations
 

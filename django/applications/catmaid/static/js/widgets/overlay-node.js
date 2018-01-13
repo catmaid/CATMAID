@@ -736,6 +736,23 @@
         }
       };
 
+      // Looked up to prevent frequent namespace lookups.
+      let intersectLineWithZPlane = CATMAID.tools.intersectLineWithZPlane;
+
+      /**
+       * Get the intersection X and Y coordinate between node and and two with the
+       * plane that is @zDiff units above node two. If it happens that there is no
+       * difference in Z, node one's X and Y coordinate are returned.
+       */
+      function getIntersection(node1, node2, zDiff) {
+        if (0 === zDiff) {
+          return [node1.x, node1.y];
+        } else {
+          return intersectLineWithZPlane(node1.x, node1.y, node1.z,
+            node2.x, node2.y, node2.z, node2.z + zDiff);
+        }
+      }
+
       /** Updates the coordinates of the line from the node to the parent. */
       this.drawLineToParent = function() {
         if (!this.parent) {
@@ -762,16 +779,17 @@
           return;
         }
 
-        if (!this.line) {
-          this.line = new PIXI.Graphics();
+        let line = this.line;
+        if (!line) {
+          line = this.line = new PIXI.Graphics();
           this.overlayGlobals.skeletonElements.containers.lines.addChild(this.line);
-          this.line.node = this;
-          this.line.interactive = true;
-          this.line.on('click', ptype.mouseEventManager.edge_mc_click);
-          this.line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
-          this.line.moveTo(0, 0);
-          this.line.lineTo(0, 0);
-          this.line.hitArea = new PIXI.Polygon(0, 0, 0, 0, 0, 0, 0, 0);
+          line.node = this;
+          line.interactive = true;
+          line.on('click', ptype.mouseEventManager.edge_mc_click);
+          line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
+          line.moveTo(0, 0);
+          line.lineTo(0, 0);
+          line.hitArea = new PIXI.Polygon(0, 0, 0, 0, 0, 0, 0, 0);
         }
 
         this.line.tooShort = false;
@@ -780,16 +798,17 @@
         // GraphicsData directly to avoid needless allocation.
         // Note: aliasing this.line.currentPath.shape.points with a local
         // var prevents Chrome 55 from optimizing this function.
-        this.line.currentPath.lineWidth = this.EDGE_WIDTH;
-        this.line.currentPath.shape.points[0] = childLocation[0];
-        this.line.currentPath.shape.points[1] = childLocation[1];
-        this.line.currentPath.shape.points[2] = parentLocation[0];
-        this.line.currentPath.shape.points[3] = parentLocation[1];
-        this.line.dirty++;
-        this.line.clearDirty++;
-        this.line._spriteRect = null;
+        let linePath = line.currentPath;
+        linePath.lineWidth = this.EDGE_WIDTH;
+        linePath.shape.points[0] = childLocation[0];
+        linePath.shape.points[1] = childLocation[1];
+        linePath.shape.points[2] = parentLocation[0];
+        linePath.shape.points[3] = parentLocation[1];
+        line.dirty++;
+        line.clearDirty++;
+        line._spriteRect = null;
         var lineColor = this.colorFromZDiff();
-        this.line.tint = lineColor;
+        line.tint = lineColor;
 
         var norm = lineNormal(childLocation[0], childLocation[1],
                               parentLocation[0], parentLocation[1]);
@@ -797,14 +816,15 @@
         norm[0] *= s;
         norm[1] *= s;
         // Assign hit area to existing points array to avoid allocation.
-        this.line.hitArea.points[0] = childLocation[0]  + norm[0];
-        this.line.hitArea.points[1] = childLocation[1]  + norm[1];
-        this.line.hitArea.points[2] = parentLocation[0] + norm[0];
-        this.line.hitArea.points[3] = parentLocation[1] + norm[1];
-        this.line.hitArea.points[4] = parentLocation[0] - norm[0];
-        this.line.hitArea.points[5] = parentLocation[1] - norm[1];
-        this.line.hitArea.points[6] = childLocation[0]  - norm[0];
-        this.line.hitArea.points[7] = childLocation[1]  - norm[1];
+        let lineHitAreaPoints = line.hitArea.points;
+        lineHitAreaPoints[0] = childLocation[0]  + norm[0];
+        lineHitAreaPoints[1] = childLocation[1]  + norm[1];
+        lineHitAreaPoints[2] = parentLocation[0] + norm[0];
+        lineHitAreaPoints[3] = parentLocation[1] + norm[1];
+        lineHitAreaPoints[4] = parentLocation[0] - norm[0];
+        lineHitAreaPoints[5] = parentLocation[1] - norm[1];
+        lineHitAreaPoints[6] = childLocation[0]  - norm[0];
+        lineHitAreaPoints[7] = childLocation[1]  - norm[1];
 
         this.line.visible = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
 
@@ -820,20 +840,6 @@
           this.number_text.parent.removeChild(this.number_text);
           this.number_text.destroy();
           this.number_text = null;
-        }
-
-        /**
-         * Get the intersection X and Y coordinate between node and and two with the
-         * plane that is @zDiff units above node two. If it happens that there is no
-         * difference in Z, node one's X and Y coordinate are returned.
-         */
-        function getIntersection(node1, node2, zDiff) {
-          if (0 === zDiff) {
-            return [node1.x, node1.y];
-          } else {
-            return CATMAID.tools.intersectLineWithZPlane(node1.x, node1.y, node1.z,
-              node2.x, node2.y, node2.z, node2.z + zDiff);
-          }
         }
       };
 

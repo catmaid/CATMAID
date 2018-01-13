@@ -1163,14 +1163,16 @@
         if (this.visibilityGroups && !noCache) return this.visibilityGroups;
 
         this.visibilityGroups = [];
+        let VG = SkeletonAnnotations.VisibilityGroups;
+        let VGg = VG.groups;
 
-        var groupBooleans = Array(SkeletonAnnotations.VisibilityGroups.groups.length).fill(false);
-        var groupCounts = Array(SkeletonAnnotations.VisibilityGroups.groups.length).fill(0);
-        for (var groupID = SkeletonAnnotations.VisibilityGroups.groups.length - 1; groupID >= 0; groupID--) {
-          groupBooleans[groupID] = SkeletonAnnotations.VisibilityGroups.isNodeInGroup(groupID, this);
+        var groupBooleans = Array(VGg.length).fill(false);
+        var groupCounts = Array(VGg.length).fill(0);
+        for (var groupID = VGg.length - 1; groupID >= 0; groupID--) {
+          groupBooleans[groupID] = VG.isNodeInGroup(groupID, this);
         }
 
-        var overrideID = SkeletonAnnotations.VisibilityGroups.GROUP_IDS.OVERRIDE;
+        var overrideID = VG.GROUP_IDS.OVERRIDE;
 
         // For hidden groups, the connector is in the group if *all* linked
         // treenodes are in the group. The connector has the override group

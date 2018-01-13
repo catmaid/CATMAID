@@ -1180,10 +1180,17 @@
       this.getVisibilityGroups = function (noCache) {
         if (this.visibilityGroups && !noCache) return this.visibilityGroups;
 
-        this.visibilityGroups = [];
         let VG = SkeletonAnnotations.VisibilityGroups;
         let VGg = VG.groups;
+        let nVGg = VG.groups.length;
 
+        // If there are no visibility groups, don't bother with creating a
+        // target array.
+        if (nVGg === 0) {
+          return null;
+        }
+
+        this.visibilityGroups = [];
         var groupBooleans = Array(VGg.length).fill(false);
         var groupCounts = Array(VGg.length).fill(0);
         for (var groupID = VGg.length - 1; groupID >= 0; groupID--) {

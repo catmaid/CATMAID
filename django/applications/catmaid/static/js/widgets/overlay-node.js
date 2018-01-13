@@ -1150,6 +1150,24 @@
 
     ptype.Node.prototype = new ptype.AbstractTreenode();
 
+    function incrementFieldCount(field) {
+      // `this` is bound to target object
+      /* jshint validthis: true */
+      this[field]++;
+    }
+
+    function incrementLinkVisibilityGroupCountsCached(link) {
+      // `this` is bound to target object
+      /* jshint validthis: true */
+      link.treenode.getVisibilityGroups(false).forEach(incrementFieldCount, this);
+    }
+
+    function incrementLinkVisibilityGroupCountsUncached(link) {
+      // `this` is bound to target object
+      /* jshint validthis: true */
+      link.treenode.getVisibilityGroups(true).forEach(incrementFieldCount, this);
+    }
+
     ptype.AbstractConnectorNode = function() {
       // For drawing:
       this.markerType = SkeletonAnnotations.TracingOverlay.Settings.session.connector_node_marker;
@@ -1178,11 +1196,11 @@
         // treenodes are in the group. The connector has the override group
         // if *any* linked treenode is in the override group.
         let links = this.links;
-        links.forEach(function (link) {
-          link.treenode.getVisibilityGroups(noCache).forEach(function (groupID) {
-            groupCounts[groupID]++;
-          });
-        });
+        if (noCache) {
+          links.forEach(incrementLinkVisibilityGroupCountsUncached, groupCounts);
+        } else {
+          links.forEach(incrementLinkVisibilityGroupCountsCached, groupCounts);
+        }
 
         for (var groupID = SkeletonAnnotations.VisibilityGroups.groups.length - 1; groupID >= 0; groupID--) {
           if (groupBooleans[groupID] || (

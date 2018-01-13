@@ -5467,7 +5467,7 @@ SkeletonAnnotations.VisibilityGroups = new (function () {
    * @return {Boolean}           True if visible, false otherwise.
    */
   this.areGroupsVisible = function (groupIDs) {
-    if (groupIDs.length === 0) return true;
+    if (!groupIDs || groupIDs.length === 0) return true;
 
     for (var i = groupIDs.length - 1; i >= 0; i--) {
       if (this.groups[groupIDs[i]].visible) return true;

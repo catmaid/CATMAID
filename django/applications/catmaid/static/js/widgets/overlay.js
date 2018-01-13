@@ -3744,7 +3744,7 @@ SkeletonAnnotations.TracingOverlay.prototype.editRadius = function(treenode_id, 
       defaultRadius = self.nodes[treenode_id].radius;
 
     var dialog = new CATMAID.OptionsDialog("Edit radius");
-    var input = dialog.appendField("Radius: ", "treenode-edit-radius", defaultRadius);
+    var input = dialog.appendField("Radius: ", "treenode-edit-radius", defaultRadius, true);
     var choice = dialog.appendChoice("Apply: ", "treenode-edit-radius-scope",
       ['Only this node', 'From this node to the next branch or end node (included)',
        'From this node to the previous branch node or root (excluded)',

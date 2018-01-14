@@ -589,13 +589,17 @@
       };
 
       this.getVisibilityGroups = function (noCache) {
-        if (this.visibilityGroups && !noCache) return this.visibilityGroups;
+        if (this.visibilityGroups !== undefined && !noCache) return this.visibilityGroups;
 
-        this.visibilityGroups = [];
+        this.visibilityGroups = null;
 
         for (var groupID = SkeletonAnnotations.VisibilityGroups.groups.length - 1; groupID >= 0; groupID--) {
-          if (SkeletonAnnotations.VisibilityGroups.isNodeInGroup(groupID, this))
+          if (SkeletonAnnotations.VisibilityGroups.isNodeInGroup(groupID, this)) {
+            if (!this.visibilityGroups) {
+              this.visibilityGroups = [];
+            }
             this.visibilityGroups.push(groupID);
+          }
         }
 
         return this.visibilityGroups;
@@ -1165,7 +1169,10 @@
     function incrementLinkVisibilityGroupCountsCached(link) {
       // `this` is bound to target object
       /* jshint validthis: true */
-      link.treenode.getVisibilityGroups(false).forEach(incrementFieldCount, this);
+      let visibilityGroups = link.treenode.getVisibilityGroups(false);
+      if (visibilityGroups) {
+        visibilityGroups.forEach(incrementFieldCount, this);
+      }
     }
 
     function incrementLinkVisibilityGroupCountsUncached(link) {
@@ -1184,19 +1191,13 @@
       this.type = SkeletonAnnotations.TYPE_CONNECTORNODE;
 
       this.getVisibilityGroups = function (noCache) {
-        if (this.visibilityGroups && !noCache) return this.visibilityGroups;
+        if (this.visibilityGroups !== undefined && !noCache) return this.visibilityGroups;
 
         let VG = SkeletonAnnotations.VisibilityGroups;
         let VGg = VG.groups;
         let nVGg = VG.groups.length;
 
-        // If there are no visibility groups, don't bother with creating a
-        // target array.
-        if (nVGg === 0) {
-          return null;
-        }
-
-        this.visibilityGroups = [];
+        this.visibilityGroups = null;
         var groupBooleans = Array(VGg.length).fill(false);
         var groupCounts = Array(VGg.length).fill(0);
         for (var groupID = VGg.length - 1; groupID >= 0; groupID--) {
@@ -1219,8 +1220,12 @@
           if (groupBooleans[groupID] || (
                 groupID === overrideID ?
                 (groupCounts[groupID] > 0) :
-                (links.length > 0 && groupCounts[groupID] === links.length)))
+                (links.length > 0 && groupCounts[groupID] === links.length))) {
+            if (!this.visibilityGroups) {
+              this.visibilityGroups = [];
+            }
             this.visibilityGroups.push(groupID);
+          }
         }
 
         return this.visibilityGroups;

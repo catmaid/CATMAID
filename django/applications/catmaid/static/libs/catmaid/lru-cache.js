@@ -164,24 +164,18 @@
   MemoryAwareLRUCache.prototype.set = function(key, value, valueSize) {
     let memory = window.performance.memory;
     let heapFillRate = memory.usedJSHeapSize / memory.totalJSHeapSize;
-    let limitFillRate = memory.totalJSHeapSize / memory.jsHeapSizeLimit;
-    // If both, the free space in the current heap is too small and the heap
-    // space in general takes more from the global heap limit, than adding a
-    // new item to the cache is prevented to reduce the risk of running out of
-    // memory, which is otherwise hard to catch in JavaScript.
-    var dontCache = heapFillRate > this.maxMemoryFillRate &&
-        limitFillRate > this.maxMemoryFillRate;
+    // If the free space in the heap is too small, adding a new item to the
+    // cache is prevented to reduce the risk of running out of memory, which is
+    // otherwise hard to catch in JavaScript.
+    var dontCache = heapFillRate > this.maxMemoryFillRate;
 
     // And don't cache if a size estimate for the data is given that is larger
-    // than the available memory in the current heap plus 25% of how much the
-    // heap could be increased.
+    // than 25% of the available heap memory. The passed in data is of course
+    // alrady available in memory, but we check the effects of an additional
+    // object of that kind.
     if (valueSize) {
-      var availableSpaceInCurrentHeap = memory.totalJSHeapSize - memory.usedJSHeapSize;
-      var availableExtraAllocSpace = memory.jsHeapSizeLimit - memory.totalJSHeapSize;
-      var valueSpaceExtraAllocNeed = valueSize - availableSpaceInCurrentHeap;
-      if (valueSpaceExtraAllocNeed / availableExtraAllocSpace > 0.25) {
-        dontCache = true;
-      }
+      var availableSpaceInHeap = memory.totalJSHeapSize - memory.usedJSHeapSize;
+      dontCache = dontCache || (valueSize / availableSpaceInHeap > 0.25);
     }
 
     if (!dontCache) {

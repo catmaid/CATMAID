@@ -1111,7 +1111,7 @@
           })
           .catch(CATMAID.handleError);
       },
-      order: [],
+      order: [[0, 'asc']],
       columns: [
         {
           data: "id",

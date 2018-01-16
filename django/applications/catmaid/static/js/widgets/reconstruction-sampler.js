@@ -1206,9 +1206,8 @@
       var tr = $(this).closest('tr');
       var data =  $(table).DataTable().row(tr).data();
 
-      widget.state['interval'] = data;
-      widget.workflow.advance();
-      widget.update();
+      self.openInterval(data, widget)
+        .catch(CATMAID.handleError);
     }).on('click', 'a[data-action=review]', function() {
       var skeletonId = widget.state['skeletonId'];
       var tr = $(this).closest('tr');

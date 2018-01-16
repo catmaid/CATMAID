@@ -192,6 +192,20 @@
       strahlerShading.appendChild(strahlerShadingCb);
       strahlerShading.appendChild(document.createTextNode('Strahler index shading'));
       customOptions.appendChild(strahlerShading);
+
+      var backgroundCb = document.createElement('input');
+      backgroundCb.setAttribute('type', 'checkbox');
+      backgroundCb.setAttribute('class', 'ui-button');
+      backgroundCb.checked = true;
+      backgroundCb.onchange = function() {
+        self.webglapp.options.show_background = this.checked;
+        self.webglapp.adjustStaticContent();
+        self.onSettingChanged('show_background', this.checked);
+      };
+      var background = document.createElement('label');
+      background.appendChild(backgroundCb);
+      background.appendChild(document.createTextNode('Black background'));
+      customOptions.appendChild(background);
     }
 
     // Add extra options to the button pane

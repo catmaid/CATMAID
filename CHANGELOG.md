@@ -24,7 +24,9 @@
 
 ### Features and enhancements
 
+Reconstruction Sampler:
 
+- 3D previews now allow to use a white background.
 
 ### Bug fixes
 

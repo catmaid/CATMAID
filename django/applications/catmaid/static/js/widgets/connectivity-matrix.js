@@ -254,7 +254,7 @@
                 new Option(i, i, this.synapseThreshold === i));
         }
         synapseThresholdSelect.onchange = (function(e) {
-          this.synapseThreshold = e.target.value;
+          this.synapseThreshold = parseInt(e.target.value, 10);
           this.refresh();
         }).bind(this);
         var synapseThreshold = document.createElement('label');

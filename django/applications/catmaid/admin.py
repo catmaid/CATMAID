@@ -5,7 +5,7 @@ from django import forms
 from django.db.models import fields as db_fields, ForeignKey
 from django.core.exceptions import ValidationError
 from django.contrib import admin, messages
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.contrib.auth.models import User, Group
 from django.utils.safestring import mark_safe
 from guardian.admin import GuardedModelAdmin
@@ -277,6 +277,8 @@ class CustomUserAdmin(UserAdmin):
         return super(CustomUserAdmin, self) \
             .changelist_view(request, extra_context=extra_context)
 
+class CustomGroupAdmin(GroupAdmin):
+    list_filter = ('name',)
 
 def color(self):
     try:
@@ -301,7 +303,7 @@ admin.site.register(StackMirror, StackMirrorAdmin)
 
 # Replace the user admin view with custom view
 admin.site.register(User, CustomUserAdmin)
-admin.site.register(Group)
+admin.site.register(Group, CustomGroupAdmin)
 # Register additional views
 admin.site.register_view('annotationimporter', 'Import annotations and tracing data',
                          view=ImportingWizard.as_view())

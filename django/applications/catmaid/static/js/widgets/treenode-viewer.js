@@ -14,6 +14,10 @@
    */
   var TreenodeViewer = function(treenodeTable)
   {
+    if (!treenodeTable) {
+      throw new CATMAID.ValueError("The treenode viewer can only be opened " +
+        "together with a treenode table");
+    }
     this.widgetID = this.registerInstance();
     this.idPrefix = `treenode-viewer${this.widgetID}-`;
 

@@ -215,6 +215,11 @@
         dialog.appendMessage("Please specify a tag to use");
         tagInput = dialog.appendField("Tag", "tag-selection", "", true);
         dialog.show('auto', 'auto', false);
+
+        // Add autocompletetion to tag input
+        $(tagInput).autocomplete({
+          source: Object.keys(arborParser.tags)
+        });
       });
     },
     'downstream': function(arborParser, options) {

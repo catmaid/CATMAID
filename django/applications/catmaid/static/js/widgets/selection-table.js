@@ -1693,16 +1693,13 @@
     var filename = prompt('File name', defaultFileName);
     if (!filename) return;
 
-    // Create a list of all skeletons along with their color and opacity
-    var sortedSkeletons = this.gui.datatable.rows({order: 'current'}).data().toArray();
-    var data = sortedSkeletons.map(function(row) {
-      var skeleton = row.skeleton;
+    var data = this.filteredSkeletons().map(function(skeleton) {
       return {
         'skeleton_id': skeleton.id,
         'color': '#' + skeleton.color.getHexString(),
         'opacity': skeleton.opacity
       };
-    }, this);
+    });
 
     saveAs(new Blob([JSON.stringify(data, null, ' ')], {type: 'text/plain'}), filename);
   };

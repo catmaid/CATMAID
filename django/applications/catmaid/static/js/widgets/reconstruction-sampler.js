@@ -1275,7 +1275,9 @@
         return new Promise(function(resolve, reject) {
           // Show 3D viewer confirmation dialog
           var dialog = new CATMAID.Confirmation3dDialog({
-            title: "Please confirm " + intervals.length + " domain interval(s)",
+            title: "Please confirm " + intervals.length +
+                " domain interval(s) with an interval length of " +
+                intervalLength + "nm",
             showControlPanel: false,
             shadingMethod: 'sampler-domains'
           });

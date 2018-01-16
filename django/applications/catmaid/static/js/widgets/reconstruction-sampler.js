@@ -1354,6 +1354,7 @@
   IntervalWorkflowStep.prototype.openInterval = function(interval, widget) {
     // Update state
     widget.state['interval'] = interval;
+    widget.state['intervalStates'] = this.possibleStates;
 
     var startedStateId = null;
     for (var stateId in this.possibleStates) {
@@ -1370,6 +1371,7 @@
     return CATMAID.fetch(project.id + '/samplers/domains/intervals/' + interval.id + '/set-state',
         'POST', {state_id: startedStateId})
       .then(function(result) {
+        interval.state_id = result.interval_state_id;
         widget.workflow.advance();
         widget.update();
       });
@@ -1460,6 +1462,10 @@
     if (!interval) {
       throw new CATMAID.ValueError("Need interval for synapse workflow step");
     }
+    var intervalStates = widget.state['intervalStates'];
+    if (!intervalStates) {
+      throw new CATMAID.ValueError("Need interval states for synapse workflow step");
+    }
     var domain = widget.state['domain'];
     if (domain === undefined) {
       CATMAID.warn("Need domain for synapse workflow step");
@@ -1491,9 +1497,10 @@
     var intervalStartNodeId = interval.start_node_id;
     var intervalEndNodeId = interval.end_node_id;
     var p2 = content.appendChild(document.createElement('p'));
-    p2.innerHTML = 'Interval start: <a href="#" data-action="select-node" data-node-id="' + intervalStartNodeId +
-        '">' + intervalStartNodeId + '</a> Interval end: <a href="#" data-action="select-node" data-node-id="' +
-        intervalEndNodeId + '">' + intervalEndNodeId + '</a>';
+    p2.innerHTML = 'Interval start node: <a href="#" data-action="select-node" data-node-id="' + intervalStartNodeId +
+        '">' + intervalStartNodeId + '</a> Interval end node: <a href="#" data-action="select-node" data-node-id="' +
+        intervalEndNodeId + '">' + intervalEndNodeId + '</a> Interval ID: ' + interval.id + ' Interval state: ' +
+        intervalStates[interval.state_id].name;
 
     $('a', p2).on('click', function() {
       var nodeId = this.dataset.nodeId;

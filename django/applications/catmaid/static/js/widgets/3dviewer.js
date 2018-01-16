@@ -1341,6 +1341,7 @@
   WebGLApplication.prototype.setSkeletonPreVisibility = WebGLApplication.prototype._skeletonVizFn('Pre');
   WebGLApplication.prototype.setSkeletonPostVisibility = WebGLApplication.prototype._skeletonVizFn('Post');
   WebGLApplication.prototype.setSkeletonTextVisibility = WebGLApplication.prototype._skeletonVizFn('Text');
+  WebGLApplication.prototype.setSkeletonMetaVisibility = WebGLApplication.prototype._skeletonVizFn('Meta');
 
   /**
    * Allow only connectors that have more than one partner in the current

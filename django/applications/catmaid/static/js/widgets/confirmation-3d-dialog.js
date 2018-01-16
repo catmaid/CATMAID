@@ -177,6 +177,23 @@
       showOutputs.appendChild(document.createTextNode('Show outputs'));
       customOptions.appendChild(showOutputs);
 
+      var showMetaCb = document.createElement('input');
+      showMetaCb.setAttribute('type', 'checkbox');
+      showMetaCb.setAttribute('class', 'ui-button');
+      showMetaCb.checked = true;
+      showMetaCb.onchange = function() {
+        var skeletonIds = self.webglapp.getSelectedSkeletons();
+        for (var i=0; i<skeletonIds.length; ++i) {
+          var skeletonId = skeletonIds[i];
+          self.webglapp.setSkeletonMetaVisibility(skeletonId, this.checked);
+        }
+        self.onSettingChanged('show-outputs', this.checked);
+      };
+      var showMeta = document.createElement('label');
+      showMeta.appendChild(showMetaCb);
+      showMeta.appendChild(document.createTextNode('Show meta'));
+      customOptions.appendChild(showMeta);
+
       var strahlerShadingCb = document.createElement('input');
       strahlerShadingCb.setAttribute('type', 'checkbox');
       strahlerShadingCb.setAttribute('class', 'ui-button');

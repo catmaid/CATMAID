@@ -867,7 +867,7 @@ def set_interval_state(request, project_id, interval_id):
     interval_id = int(interval_id)
     interval = SamplerInterval.objects.get(id=interval_id)
 
-    interval_state_id = request.POST.get('state_id')
+    interval_state_id = int(request.POST.get('state_id'))
     if interval_state_id is None:
         raise ValueError("Need interval state ID")
 

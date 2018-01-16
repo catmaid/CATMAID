@@ -26,7 +26,7 @@
 
 Reconstruction Sampler:
 
-- 3D previews now allow to use a white background.
+- 3D previews now allow to use a white background and toggle meta spheres.
 
 
 ### Bug fixes

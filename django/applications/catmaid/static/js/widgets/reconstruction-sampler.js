@@ -507,7 +507,8 @@
               "Close": function() {
                 dialog.close();
               }
-            }
+            },
+            shadingMethod: 'sampler-intervals'
           });
           dialog.show();
 
@@ -917,7 +918,8 @@
           var dialog = new CATMAID.Confirmation3dDialog({
             title: "Please confirm " + domains.length + " sampler domain(s)",
             showControlPanel: false,
-            lookAt: [rootNode.x, rootNode.y, rootNode.z]
+            lookAt: [rootNode.x, rootNode.y, rootNode.z],
+            shadingMethod: 'sampler-domains'
           });
 
           // Create domains if OK is pressed
@@ -1274,7 +1276,8 @@
           // Show 3D viewer confirmation dialog
           var dialog = new CATMAID.Confirmation3dDialog({
             title: "Please confirm " + intervals.length + " domain interval(s)",
-            showControlPanel: false
+            showControlPanel: false,
+            shadingMethod: 'sampler-domains'
           });
 
           // Create intervals if OK is pressed

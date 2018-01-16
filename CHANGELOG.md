@@ -28,9 +28,10 @@ Reconstruction Sampler:
 
 - 3D previews now allow to use a white background.
 
+
 ### Bug fixes
 
-
+- Reconstruction sampler: Strahler shading color updates work now reliably.
 
 ## 2017.12.07
 

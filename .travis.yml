@@ -27,46 +27,16 @@ before_install:
   - mkdir tmp
   - travis_retry sudo apt-get update -y -qq
 install:
-  - travis_retry sudo apt-get install -y -qq $(< packagelist-ubuntu-14.04-apt.txt)
-  - travis_retry python -m pip install -U pip
-  - travis_retry travis_wait 60 pip install -q -r django/requirements.txt
-  - pip list
-  # Install additional dependencies for Travis
-  - pip install -q -r django/requirements-test.txt
+  # Install requirements for running CATMAID and its unit tests
+  - ./scripts/travis/install_requirements.sh
   - pip install coveralls flake8
   - npm install jshint csslint jsdoc karma karma-chrome-launcher karma-qunit karma-sinon qunitjs sinon
   - npm bin
   - export PATH=$(npm bin):$PATH
 before_script:
-  - sudo cp /etc/postgresql/9.5/main/pg_hba.conf /etc/postgresql/9.6/main/pg_hba.conf
-  - sudo /etc/init.d/postgresql restart
-  - psql -c 'CREATE DATABASE catmaid;' -U postgres
-  - psql -c 'CREATE EXTENSION postgis;' -U postgres catmaid
-  - export CATMAID_PATH=$(pwd)
-  - cd django
-  - cp configuration.py.example configuration.py
-  - sed -i -e "s?^\(abs_catmaid_path = \).*?\1'$(echo $CATMAID_PATH)'?g" configuration.py
-  - sed -i -e "s?^\(abs_virtualenv_python_library_path = \).*?\1'$(echo $VIRTUAL_ENV)'?g" configuration.py
-  - sed -i -e "s?^\(catmaid_database_name = \).*?\1'catmaid'?g" configuration.py
-  - sed -i -e "s?^\(catmaid_database_username = \).*?\1'postgres'?g" configuration.py
-  - sed -i -e "s?^\(catmaid_timezone = \).*?\1'America/New_York'?g" configuration.py
-  - sed -i -e "s?^\(catmaid_servername = \).*?\1'localhost:8000'?g" configuration.py
-  - cat configuration.py
-  - python create_configuration.py
-  - sed -i -e "s?^\(ALLOWED_HOSTS = \).*?\1['*']?g" projects/mysite/settings.py
-  # Enable static file serving without DEBUG = True
-  - echo "SERVE_STATIC = True" >> projects/mysite/settings.py
-  # Disable cache-busting for front-end tests
-  - echo "STATICFILES_STORAGE = 'pipeline.storage.PipelineStorage'" >> projects/mysite/settings.py
-  # Enable front-end tess
-  - echo "FRONT_END_TESTS_ENABLED = True" >> projects/mysite/settings.py
-  # Enable Selenium GUI tests, this currently works only with non-hash file names.
-  - echo "GUI_TESTS_ENABLED = True" >> projects/mysite/settings.py
-  - echo "GUI_TESTS_REMOTE = True" >> projects/mysite/settings.py
-  # Show full front-end errors by default
-  - echo "EXPAND_FRONTEND_ERRORS = True" >> projects/mysite/settings.py
-  - cat projects/mysite/settings.py
-  - cd ..
+  # Set up and start postgres, create database, write config files
+  - ./scripts/travis/setup_database.sh
+  - ./scripts/travis/configure_catmaid.sh
 script:
   - flake8 --config=.travis.flake8 --statistics --count --exit-zero -q -q django
   - jshint --config=.travis.jshintrc --exclude-path=.travis.jshintignore django/applications
@@ -83,7 +53,7 @@ script:
   - python -Wall manage.py runserver &
   - sleep 5
   - cd ../..
-  # Run QUnit through karma in headless Chrom
+  # Run QUnit through karma in headless Chrome
   - karma start karma.conf.js
 after_success:
   - cd django/projects && coveralls

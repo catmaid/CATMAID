@@ -250,8 +250,9 @@
         var max = 20;
         var synapseThresholdSelect = document.createElement('select');
         for (var i=1; i <= max; ++i) {
+          let selected = this.synapseThreshold === i;
           synapseThresholdSelect.options.add(
-                new Option(i, i, this.synapseThreshold === i));
+                new Option(i, i, selected, selected));
         }
         synapseThresholdSelect.onchange = (function(e) {
           this.synapseThreshold = parseInt(e.target.value, 10);

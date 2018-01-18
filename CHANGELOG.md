@@ -28,6 +28,11 @@ Reconstruction Sampler:
 
 - 3D previews now allow to use a white background and toggle meta spheres.
 
+Miscellaneous:
+
+- The maximum number of frames per second rendered by a stack viewer window can
+  now be adjusted through the Settings Widget > Stack view > Max frames per
+  second.
 
 ### Bug fixes
 

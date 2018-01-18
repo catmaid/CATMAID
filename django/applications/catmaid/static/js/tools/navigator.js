@@ -197,8 +197,12 @@
       }
     };
 
-    var smoothChangeSlice = function (e, step) {
-      var MIN_FRAME_TIME = 1000.0 / 60.0; // Throttle to 60 FPS.
+    var smoothChangeSlice = function (e, step, max_fps) {
+      if (!max_fps) {
+        // Throttle to 60 FPS by default.
+        max_fps = 60.0;
+      }
+      var MIN_FRAME_TIME = 1000.0 / max_fps;
       var frameTimeout = null;
       var lastFrameTime = null;
 
@@ -373,7 +377,7 @@
         run: function (e) {
           var step = e.shiftKey ? (-1 * Navigator.Settings.session.major_section_step) : -1;
           if (e.ctrlKey) {
-            smoothChangeSlice(e, step);
+            smoothChangeSlice(e, step, Navigator.Settings.session.max_fps);
           } else {
             self.slider_z.move(step);
           }
@@ -389,7 +393,7 @@
         run: function (e) {
           var step = e.shiftKey ? Navigator.Settings.session.major_section_step : 1;
           if (e.ctrlKey) {
-            smoothChangeSlice(e, step);
+            smoothChangeSlice(e, step, Navigator.Settings.session.max_fps);
           } else {
             self.slider_z.move(step);
           }
@@ -670,6 +674,9 @@
           major_section_step: {
             default: 10
           },
+          max_fps: {
+            default: 60.0
+          }
         },
         migrations: {}
       });

@@ -371,6 +371,27 @@
           'major_section_step',
           SETTINGS_SCOPE));
 
+      // Max FPS
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createNumericInputSetting(
+              "Max frames per second",
+              CATMAID.Navigator.Settings[SETTINGS_SCOPE].max_fps,
+              1,
+              "The maximum number of frames that should be computed per second. " +
+              "Controls rendering update speed limit, useful e.g. when quickly " +
+              "browsing image data with Ctrl + , or Ctrl + . or similar shortcuts.",
+              function() {
+                var newMaxFps = parseFloat(this.value);
+                CATMAID.Navigator.Settings
+                    .set(
+                      'max_fps',
+                      newMaxFps,
+                      SETTINGS_SCOPE);
+              }),
+          CATMAID.Navigator.Settings,
+          'max_fps',
+          SETTINGS_SCOPE));
+
       // Tile interpolation
       var tileInterpolation = $('<select/>');
       var interpolationModes = [

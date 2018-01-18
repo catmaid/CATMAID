@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # install ubuntu and python requirements
-set -ex
+set -ev
 
 source `dirname ${BASH_SOURCE[0]}`/travis_functions.sh
 

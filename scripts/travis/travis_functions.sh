@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 # As advised by https://twitter.com/plexus/status/499194992632811520?lang=en
 # Based on https://github.com/travis-ci/travis-build/blob/20903aad38a9db0717827275b70c8a2c53820f85/lib/travis/build/templates/header.sh
 

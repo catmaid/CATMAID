@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Write config files
-set -ex
+set -ev
 
 export CATMAID_PATH=$(pwd)
 cd django

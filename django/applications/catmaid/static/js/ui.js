@@ -27,6 +27,9 @@
     var x = 0;
     var y = 0;
 
+    // Keep track of already pressed keys
+    var currentSequence = new Set();
+
     var events = {};
     events[ "onmousemove" ] = []; //!< bound to eventCatcher
     events[ "onmousedown" ] = [];
@@ -63,6 +66,10 @@
       return false;
     };
 
+    // This list contains ket names that shouldn't be tracked on their own for
+    // key combination sequences.
+    var notRecordedKeyNames = new Set(["Alt", "Control", "Escape", "Meta", "Shift"]);
+
     /**
      * Deal wit/h key press and release in one function. If <released> is falsy,
      * the keydown handler will be called, otherwise,
@@ -92,6 +99,26 @@
       var ctrl = e.ctrlKey;
       var meta = e.metaKey;
 
+      // Track key events as long as key down events or ESC removes them from
+      // stack.
+      if (e.key === 'Escape') {
+        currentSequence.clear();
+      } else {
+        var keyName = CATMAID.UI.normalizeKeyComponents(fakeEvent).key;
+        if (!notRecordedKeyNames.has(keyName)) {
+          if (released) {
+            // It would be nice if we could reliably remove only the key name
+            // for the sequence, but unfortunately we have to consider the
+            // sequence as broken with the first key release, because it might
+            // change the key name (Shift + A) -> (release Shift) -> (a).
+            // Therefore, just clearing the sequence seems more robust.
+            currentSequence.clear();
+          } else {
+            currentSequence.add(keyName);
+          }
+        }
+      }
+
       var propagate = true;
 
       var n = fakeEvent.target.nodeName.toLowerCase();
@@ -109,7 +136,7 @@
       if (!(fromATextField || n == "textarea" || n == "area"))
       {
         // Let UI actions in closure only deal with key-down events.
-        if (!released && handleKeyPress(fakeEvent)) {
+        if (!released && handleKeyPress(fakeEvent, currentSequence)) {
           propagate = false;
         }
 
@@ -194,10 +221,11 @@
      * key code, or false otherwise.
      */
     var keyToAction = CATMAID.getKeyToActionMap(actions);
-    var handleKeyPress = function( e ) {
+    var handleKeyPress = function( e, sequence ) {
+
       var keyAction = CATMAID.UI.getMappedKeyAction(keyToAction, e);
       if (keyAction) {
-        return keyAction.run(e);
+        return keyAction.run(e, sequence);
       } else {
         return false;
       }
@@ -289,6 +317,12 @@
     this.getFrameHeight = function()
     {
       return screenHeight;
+    };
+
+    this.onblur = function(e) {
+      // Reset key sequence tracker. Without this we potentially wouldn't
+      // receive keyup events.
+      currentSequence.clear();
     };
 
     this.onresize = function( e )
@@ -532,6 +566,7 @@
 
     this.setContextMenuEnabled(contextMenuEnabled);
 
+    window.onblur = this.onblur;
     window.onresize = this.onresize;
     window.onresize();
 

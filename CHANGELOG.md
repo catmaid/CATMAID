@@ -34,9 +34,15 @@ Miscellaneous:
   now be adjusted through the Settings Widget > Stack view > Max frames per
   second.
 
+- The Open Widget dialog is now only opened with Ctrl + Space when no other keys
+  are pressed. This allows to use key combinations like Ctrl + Shift + Space + >
+  to browse smoothly through the image stack while hiding the tracing layer.
+
+
 ### Bug fixes
 
 - Reconstruction sampler: Strahler shading color updates work now reliably.
+
 
 ## 2017.12.07
 

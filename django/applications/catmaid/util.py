@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from django.utils.encoding import python_2_unicode_compatible
+
+
 # Respected precision
 epsilon = 0.001
 
 def same(a, b, eps=epsilon):
     return abs(a - b) < eps
 
+@python_2_unicode_compatible
 class Point3D:
     """A simple container to hold three coordinate values.
     """
@@ -14,6 +18,8 @@ class Point3D:
     def __init__(self, x, y, z):
         self.x, self.y, self.z = x, y, z
 
+    def __str__(self):
+        return "({}, {}, {})".format(self.x, self.y, self.z)
 
 def is_collinear(a, b, c, between=False, eps=epsilon):
     """Return true if all three points are collinear, i.e. on one line. If

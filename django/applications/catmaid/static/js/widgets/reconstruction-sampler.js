@@ -467,6 +467,10 @@
       deleteSampler(samplerId)
           .then(function() {
             datatable.ajax.reload();
+            CATMAID.Skeletons.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED, skeletonId);
+            project.getStackViewers().forEach(function(sv) {
+              sv.redraw();
+            });
           })
           .catch(CATMAID.handleError);
     }).on('click', 'a[data-action=next]', function() {
@@ -1408,6 +1412,12 @@
       })
       .then(function(result) {
         widget.update();
+        if (result && result.length > 0) {
+          CATMAID.Skeletons.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED, skeletonId);
+          project.getStackViewers().forEach(function(sv) {
+            sv.redraw();
+          });
+        }
       })
       .catch(CATMAID.handleError);
   };

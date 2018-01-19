@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import math
+
 from django.utils.encoding import python_2_unicode_compatible
 
 
@@ -31,28 +33,43 @@ def is_collinear(a, b, c, between=False, eps=epsilon):
     dz = b.z - a.z
 
     # Find a factor t for a dimension where d isn't zero
-    if 0 != dx:
-        t = (c.x - a.x) / dx
-    elif 0 != dy:
-        t = (c.y - a.y) / dy
-    elif 0 != dz:
-        t = (c.z - a.z) / dz
+    valid_t = None
+    if dx != 0:
+        tx = (c.x - a.x) / dx
+        valid_t = tx
     else:
-        raise ValueError("A and B have to be different")
+        tx = 0.0
+
+    if dy != 0:
+        ty = (c.y - a.y) / dy
+        if valid_t is None:
+            valid_t = ty
+        elif not same(ty, 0.0, eps) and not math.fabs(valid_t - ty) < eps:
+            return False
+    else:
+        ty = 0.0
+
+    if dz != 0.0:
+        tz = (c.z - a.z) / dz
+        if valid_t is None:
+            valid_t = tz
+        elif not same(tz, 0.0, eps) and not math.fabs(valid_t - tz) < eps:
+            return False
+    else:
+        tz = 0.0
 
     # Re-calculate C and check if it matches the input
-    c2x = a.x + t * dx
-    c2y = a.y + t * dy
-    c2z = a.z + t * dz
+    c2x = a.x + tx * dx
+    c2y = a.y + ty * dy
+    c2z = a.z + tz * dz
 
     # Return False if the calculated C doesn't match input
-
     if not (same(c2x, c.x, eps) and same(c2y, c.y, eps) and same(c2z, c.z, eps)):
         return False
 
     if between:
         # If C is only allowed to be between A and B, check if T is between
         # zero and one.
-        return not (t < 0.0 or t > 1.0)
+        return not (min(tx, ty, tz) < 0.0 or max(tx, ty, tz) > 1.0)
     else:
         return True

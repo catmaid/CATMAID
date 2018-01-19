@@ -30,6 +30,13 @@ if len(catmaid_subdirectory) > 0:
     if catmaid_subdirectory[0] == '/':
         exit_err("catmaid_subdirectory should not have a leading slash! Aborting.")
 
+# Use defaults for optional parameters that are not present
+current_module = sys.modules[__name__]
+if not hasattr(current_module, 'catmaid_database_host'):
+    catmaid_database_host = ''
+if not hasattr(current_module, 'catmaid_database_port'):
+    catmaid_database_port = ''
+
 in_configfile = op.join('projects/mysite/django.wsgi.example')
 out_configfile = op.join('projects/mysite/django.wsgi')
 

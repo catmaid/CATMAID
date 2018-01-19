@@ -732,7 +732,7 @@
    */
   CATMAID.UI.toKeyCombo = function(components) {
     return (components.altKey && components.key !== "Alt" ? "Alt + " : "") +
-           (components.ctrlKey && components.key !== "Ctrl" ? "Ctrl + " : "") +
+           (components.ctrlKey && components.key !== "Ctrl" && components.key !== "Control" ? "Ctrl + " : "") +
            (components.metaKey && components.key !== "Meta" ? "Meta + " : "") +
            (components.shiftKey && components.key !== "Shift" ? "Shift + " : "") +
            components.key;

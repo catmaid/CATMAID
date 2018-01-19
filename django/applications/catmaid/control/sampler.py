@@ -1,6 +1,7 @@
 import json
 
 from collections import defaultdict
+from itertools import chain
 
 from django.db import connection
 from django.http import JsonResponse
@@ -18,6 +19,8 @@ from rest_framework.decorators import api_view
 
 
 SAMPLER_CREATED_CLASS = "sampler-created"
+
+epsilon = 0.001
 
 @api_view(['GET'])
 @requires_user_role([UserRole.Browse])
@@ -222,13 +225,176 @@ def add_sampler(request, project_id):
 @requires_user_role([UserRole.Annotate])
 def delete_sampler(request, project_id, sampler_id):
     """Delete a sampler if permissions allow it.
+
+    If the sampler was created with allowing the creation of new boundary nodes,
+    these nodes are removed by default if they have not been modified since
+    their insertion. This can optionally be disabled using the
+    <delete_created_nodes> parameter.
+    ---
+    parameters:
+     - name: delete_created_nodes
+       description: |
+         Optional flag to disable automatic removal of untouched
+         nodes created for this sampler's intervals.
+       type: boolean
+       default: true
+       paramType: form
+       required: false
     """
     can_edit_or_fail(request.user, sampler_id, "catmaid_sampler")
     sampler = Sampler.objects.get(id=sampler_id)
+
+    n_deleted_nodes = 0
+    delete_created_nodes = request.POST.get('delete_created_nodes', 'true') == 'true'
+    if delete_created_nodes and sampler.create_interval_boundaries:
+        labeled_as_relation = Relation.objects.get(project=project_id, relation_name='labeled_as')
+        label_class = Class.objects.get(project=project_id, class_name='label')
+        label_class_instance = ClassInstance.objects.get(project=project_id,
+                class_column=label_class, name=SAMPLER_CREATED_CLASS)
+        # If the sampler was parameterized to created interval boundary nodes,
+        # these nodes can now be removed if they are still collinear with their
+        # child and parent node and have not been touched. These nodes are all
+        # nodes that are referenced by intervals of this sampler that have the
+        # SAMPLER_CREATED_CLASS tag with their creation time being the same as the
+        # edition time. Such nodes can only be sampler interval start/end nodes.
+        params = {
+            'project_id': project_id,
+            'sampler_id': sampler_id,
+            'labeled_as_rel': labeled_as_relation.id,
+            'label_class': label_class.id,
+            'label_class_instance': label_class_instance.id
+        }
+        cursor = connection.cursor()
+
+        # Get all created sampler interval boundary treenodes that have been
+        # created during sampler creation. The result will also contain parent
+        # and child locations. We need to set extra_float_digits to get enough
+        # precision for the location data to do a collinearity test.
+        cursor.execute("""
+            SET extra_float_digits = 3;
+
+            WITH sampler_treenode AS (
+                -- Get all treenodes linked to intervals of this sampler.
+                SELECT DISTINCT UNNEST(ARRAY[i.start_node_id, i.end_node_id]) AS id
+                FROM catmaid_samplerinterval i
+                JOIN catmaid_samplerdomain d
+                    ON i.domain_id = d.id
+                WHERE d.sampler_id = %(sampler_id)s
+            ), sampler_created_treenode AS (
+                -- Find all treenodes that were created by the sampler and are
+                -- undmodified.
+                SELECT st.id
+                FROM sampler_treenode st
+                JOIN treenode_class_instance tci
+                    ON st.id = tci.treenode_id
+                WHERE tci.relation_id = %(labeled_as_rel)s
+                AND tci.class_instance_id = %(label_class_instance)s
+            )
+            SELECT
+                t.id, t.location_x, t.location_y, t.location_z,
+                c.id, c.location_x, c.location_y, c.location_z,
+                p.id, p.location_x, p.location_y, p.location_z
+            FROM (
+                -- Make sure we look only at nodes that don't have multiple nodes.
+                SELECT st.id
+                FROM treenode tt
+                JOIN sampler_created_treenode st
+                    ON tt.parent_id = st.id
+                GROUP BY st.id
+                HAVING count(*) = 1
+
+            ) non_branch_treenodes(id)
+            JOIN treenode t
+                ON t.id = non_branch_treenodes.id
+            JOIN treenode p
+                ON p.id = t.parent_id
+            JOIN treenode c
+                ON c.parent_id = t.id
+            WHERE t.project_id = %(project_id)s;
+        """, params)
+
+        created_treenodes = [r for r in cursor.fetchall()]
+
+        if created_treenodes:
+            added_node_index = dict((n[0], n) for n in created_treenodes)
+            # Find those created treenodes that are collinear with their parent and
+            # child node. If they are, remove those nodes. Ideally, we would move
+            # the collinearity test into SQL as well.
+            nodes_to_remove = []
+            parents_to_fix = []
+            child, node, parent = Point3D(0, 0, 0), Point3D(0, 0, 0), Point3D(0, 0, 0)
+            for n in created_treenodes:
+                n_id, node.x, node.y, node.z = n[0], n[1], n[2], n[3]
+                c_id, child.x, child.y, child.z = n[4], n[5], n[6], n[7]
+                p_id, parent.x, parent.y, parent.z = n[8], n[9], n[10], n[11]
+
+                child_is_original_node = c_id not in added_node_index
+                if is_collinear(child, parent, node, True, 1.0):
+                    nodes_to_remove.append(n_id)
+                    # Only update nodes that don't get deleted anyway
+                    if child_is_original_node:
+                        parents_to_fix.append((c_id, p_id))
+                else:
+                    parents_to_fix.append((n_id, p_id))
+
+            # Update parent in formation in parent relation updates. If present
+            # parent IDs point to a removed node, the next real parent will be
+            # used instead.
+            parent_update = []
+            for n, (c_id, p_id) in enumerate(parents_to_fix):
+                parent_is_persistent = p_id not in added_node_index
+                if parent_is_persistent:
+                    parent_update.append((c_id, p_id))
+                else:
+                    # Find next existing node upstream
+                    new_parent_id = p_id
+                    while not parent_is_persistent:
+                        parent_is_persistent = new_parent_id not in nodes_to_remove
+                        node_data = added_node_index.get(new_parent_id)
+                        # An added node would be used if it is not removed, e.g.
+                        # du to not being collinear anymore.
+                        if node_data and not parent_is_persistent:
+                            new_parent_id = node_data[8]
+                        else:
+                            parent_update.append((c_id, new_parent_id))
+
+            if nodes_to_remove:
+                query_parts = []
+                params = []
+                if parent_update:
+                    update_nodes_template = ",".join("(%s, %s)" for _ in parent_update)
+                    update_nodes_flattened = list(chain.from_iterable(parent_update))
+                    query_parts.append("""
+                        UPDATE treenode
+                        SET parent_id = nodes_to_update.parent_id
+                        FROM (VALUES {}) nodes_to_update(child_id, parent_id)
+                        WHERE treenode.id = nodes_to_update.child_id;
+                    """.format(update_nodes_template))
+                    params = update_nodes_flattened
+
+                delete_nodes_template = ",".join("(%s)" for _ in nodes_to_remove)
+                query_parts.append("""
+                    DELETE
+                    FROM treenode
+                    WHERE id IN (
+                        SELECT t.id
+                        FROM treenode t
+                        JOIN (VALUES {}) to_delete(id)
+                            ON t.id = to_delete.id
+                    )
+                    RETURNING id;
+                """.format(delete_nodes_template))
+                params = params + nodes_to_remove
+
+                cursor.execute("\n".join(query_parts), params)
+                deleted_node_ids = [r[0] for r in cursor.fetchall()]
+                n_deleted_nodes = len(deleted_node_ids)
+
     sampler.delete()
 
     return JsonResponse({
-        'deleted_sampler_id': sampler_id
+        'deleted_sampler_id': sampler_id,
+        'deleted_interval_nodes': n_deleted_nodes
     })
 
 @api_view(['GET'])
@@ -837,6 +1003,7 @@ def add_all_intervals(request, project_id, domain_id):
         n = Treenode.objects.create(project_id=project_id, parent_id=parent.id,
                 user=request.user, editor=request.user, location_x=x, location_y=y,
                 location_z=z, radius=0, confidence=5, skeleton_id=skeleton_id)
+
         return n
 
     def link_added_node(data, new_nodes):
@@ -856,11 +1023,11 @@ def add_all_intervals(request, project_id, domain_id):
             raise ValueError('The provided nodes need to be child and parent')
 
         x, y, z = n.location_x, n.location_y, n.location_z
+        new_node_loc = Point3D(x, y, z)
         child_loc = Point3D(child.location_x, child.location_y, child.location_z)
         parent_loc = Point3D(parent.location_x, parent.location_y, parent.location_z)
 
-        new_node_loc = Point3D(x, y, z)
-        if not is_collinear(child_loc, parent_loc, new_node_loc, True, 0.001):
+        if not is_collinear(child_loc, parent_loc, new_node_loc, True, epsilon):
             raise ValueError('New node location has to be collinear with child and parent')
 
         # Tag new treenode with SAMPLER_CREATED_CLASS

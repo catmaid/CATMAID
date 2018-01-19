@@ -280,7 +280,8 @@
         " and all associated domains and intervals")) {
       return CATMAID.fetch(project.id + "/samplers/" + samplerId + "/delete", "POST")
         .then(function(response) {
-          CATMAID.msg("Success", "Deleted sampler " + response.deleted_sampler_id);
+          CATMAID.msg("Success", "Deleted sampler " + response.deleted_sampler_id +
+              " including " + response.deleted_interval_nodes + " unneeded nodes.");
         })
         .catch(CATMAID.handleError);
     }

@@ -204,7 +204,11 @@
         keyShortcuts: {
           'SPACE': [ 'Ctrl +  ' ]
         },
-        run: function (e) {
+        run: function (e, sequence) {
+          // Handle Ctrl + Space only if nothing else is pressed
+          if (sequence.size > 1) {
+            return false;
+          }
           // Only if Ctrl + Space is pressed, the dialog will be shown
           if (e.ctrlKey) {
             var dialog = new CATMAID.OpenWidgetDialog();

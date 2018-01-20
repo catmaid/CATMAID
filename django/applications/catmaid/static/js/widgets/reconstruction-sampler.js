@@ -466,6 +466,7 @@
       var samplerId = parseInt(this.dataset.samplerId, 10);
       deleteSampler(samplerId)
           .then(function() {
+            widget.state['samplerId'] = undefined;
             datatable.ajax.reload();
             CATMAID.Skeletons.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED, skeletonId);
             project.getStackViewers().forEach(function(sv) {

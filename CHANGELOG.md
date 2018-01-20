@@ -39,6 +39,11 @@ Reconstruction Sampler:
   away from the ideal location than the max error value. This allows better
   reuse of existing nodes.
 
+- Created interval boundary nodes are also automatically deleted on sampler
+  removal, if possible. If a created node has not been altered in any way during
+  its life time and it still forms a straight line with its parent and single
+  child, it can be removed. Otherwise the node is kept.
+
 Miscellaneous:
 
 - The maximum number of frames per second rendered by a stack viewer window can

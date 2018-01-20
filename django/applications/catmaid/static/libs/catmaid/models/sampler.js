@@ -53,10 +53,18 @@
    * interval parts continuously. This is done by first splitting a domain into
    * paritions, i.e downstream paths from root or branchpoints to leaves, in
    * order of decreasing length. cutting out individual intervals.
-   * Partions are paths from root or branch points to leaves.
+   * Partions are paths from root or branch points to leaves. Returns an object
+   * with an <intervals> field and and <addedNodes> field. The former is a list
+   * of two-element tuples which are treenodes referencing the beginning and the
+   * end of an interval. In <addedNodes> node IDs in <intervals> can be
+   * overridden and new nodes created instead. Entries in the <addedNodes> list
+   * are of the form [id, childId, parentId, x, y, z]. The new node will be
+   * created at x, y, z between the childId and parentId nodes. The location has
+   * to be collinear with child and parent locations and between them.
    */
   Sampling.intervalsFromModels = function(arbor, positions, domainDetails,
-      intervalLength, preferSmallerError, targetEdgeMap) {
+      intervalLength, intervalError, preferSmallerError, createNewNodes,
+      targetEdgeMap) {
     if (!intervalLength) {
       throw new CATMAID.ValueError("Need interval length for interval creation");
     }
@@ -66,9 +74,17 @@
     var domainArbor = CATMAID.Sampling.domainArborFromModel(arbor, domainDetails);
 
     preferSmallerError = preferSmallerError === undefined ? true : !!preferSmallerError;
+    createNewNodes = CATMAID.tools.getDefined(createNewNodes, false);
+
+    // Find an ID number that is higher than all already used ones. This is
+    // needed for artificial new nodes with realistic ids without reusing
+    // existing IDs of the sampled skeleton.
+    let newPointId = Math.max(arbor.root, Math.max.apply(Math,
+        (Object.keys(arbor.edges).map(Number)))) + 1;
 
     // Create Intervals from partitions
     var intervals = [];
+    var addedNodes = [];
     var currentInterval = 0;
     var partitions = domainArbor.partitionSorted();
     for (var i=0; i<partitions.length; ++i) {
@@ -87,34 +103,120 @@
         dist += lastPos.distanceTo(pos);
         //  If sum is greater than interval length, create new interval. If
         //  <preferSmalError>, the end/start node is either the current one
-        //  or the last one, whichever is closer to the ideal length.
-        //  Otherwise this node is used.
-        if (dist > intervalLength) {
-          var steps = intervalStartIdx - j;
-          // Optionally, make the interval smaller if this means being closer to
-          // the ideal interval length. This can only be done if the current
-          // interval has at least a length of 2.
-          if (preferSmallerError && (intervalLength - lastDist) < dist && steps > 1 && j !== 0) {
-            intervals.push([partition[intervalStartIdx], partition[j+1]]);
-            intervalStartIdx = j + 1;
-            j++;
-          } else {
-            if (targetEdgeMap) {
-              targetEdgeMap[partition[j]] = currentInterval;
-              targetEdgeMap[partition[j+1]] = currentInterval;
-            }
+        //  or the last one, whichever is closer to the ideal length. If
+        //  <createNewNodes> is truthy, new nodes will be created so that the
+        //  specified interval length will be matched. Otherwise this node is used.
+        let distance = dist - intervalLength;
+        if (distance < 0.0001) {
+          // Interval length is exactly met or not yet reached
+          if (targetEdgeMap) {
+            targetEdgeMap[partition[j]] = currentInterval;
+          }
+          // Node is exactly at end of interval
+          if (distance > -0.0001) {
             intervals.push([partition[intervalStartIdx], partition[j]]);
             intervalStartIdx = j;
+            dist = 0;
+            currentInterval++;
           }
+        } else {
+          // This branch represents the case the current node is already too far
+          // away to match the interval length exactly.
+          var steps = intervalStartIdx - j;
+          let edgeLength = dist - lastDist;
+          let distanceToLast = intervalLength - lastDist;
+          let distanceToThis = edgeLength - distanceToLast;
+          let lastIsFirst = steps === 0;
+          let thisIsLast = j === 0;
+          let selectedNode = null;
+
+          // If this or the last node is closer
+          if (distanceToLast < distanceToThis) {
+            if (distanceToLast < intervalError) {
+              // Use last node, because it is closer than this node and closer
+              // than the allowed interval error.
+              selectedNode = partition[j+1];
+            }
+          } else {
+            if (distanceToThis < intervalError) {
+              // Use this node, because it is closer than the last node and
+              // closer than the allowed interval error.
+              selectedNode = partition[j];
+            }
+          }
+
+          if (!selectedNode) {
+            if (createNewNodes) {
+              // Optionally, create a new node between this node and the last one.
+              // This also requires updating the arbor.
+              let dRatio = distanceToLast / edgeLength;
+              let newPointPos = lastPos.clone().lerpVectors(lastPos, pos, dRatio);
+              // Add new point into arbor
+              if (arbor.edges[newPointId]) {
+                throw new CATMAID.PreConditionError("The temporary ID for the " +
+                    "new interval end location exists already: " + newPointId);
+              }
+
+              // Insert new node into arbor
+              let childId = partition[j];
+              let parentId = partition[j+1];
+              arbor.edges[childId] = newPointId;
+              arbor.edges[newPointId] = parentId;
+              positions[newPointId] = newPointPos;
+
+              addedNodes.push([newPointId, childId, parentId, newPointPos.x,
+                  newPointPos.y, newPointPos.z]);
+
+              // Insert element in currently iterated loop and move one step back
+              // (remember, we walk backwards).
+              partition.splice(j+1, 0, newPointId);
+
+              selectedNode = newPointId;
+              j++;
+
+              // We walk the partition from end to front. Inserting the a node
+              // into the partition, requires us to go one step back to remain
+              // on the same element with our current index.
+              intervalStartIdx++;
+
+              // Prepare point ID for next point
+              newPointId++;
+            } else if (preferSmallerError && distanceToLast < distanceToThis && !lastIsFirst) {
+              // Optionally, make the interval smaller if this means being closer to
+              // the ideal interval length. This can only be done if the current
+              // interval has at least a length of 2.
+              selectedNode = partition[j+1];
+              // To properly continue from the last node with the next interval,
+              // move index back one step.
+              j++;
+            } else {
+              selectedNode = partition[j];
+            }
+          }
+
+          // If a node was found and an edge map is passed in, add the current
+          // interval for the selected node.
+          if (!selectedNode) {
+            throw new CATMAID.ValueError("Could not select node for interval creation");
+          }
+
+          if (targetEdgeMap) {
+            targetEdgeMap[selectedNode] = currentInterval;
+          }
+
+          intervals.push([partition[intervalStartIdx], selectedNode]);
+
+          intervalStartIdx = j;
           currentInterval++;
           dist = 0;
-        } else if (targetEdgeMap) {
-          targetEdgeMap[partition[j]] = currentInterval;
         }
       }
     }
 
-    return intervals;
+    return {
+      intervals: intervals,
+      addedNodes: addedNodes
+    };
   };
 
   /**
@@ -144,13 +246,15 @@
    * one of the intervals of the domains of the passed in sampler. Note that
    * the set of interval edges can be smaller than the domain set one.
    */
-  Sampling.intervalEdges = function(arbor, positions, sampler, preferSmallerError, target) {
+  Sampling.intervalEdges = function(arbor, positions, sampler,
+      preferSmallerError, createNewNodes, target) {
     // Build intervals for each domain, based on the interval length defined in
     // the sampler.
     return sampler.domains.reduce(function(o, d) {
-      var intervals = Sampling.intervalsFromModels(arbor, positions, d,
-          sampler.interval_length, preferSmallerError, target);
-      o[d.id] = intervals;
+      var intervalConfiguration = Sampling.intervalsFromModels(arbor, positions,
+          d, sampler.interval_length, sampler.interval_error, preferSmallerError,
+          createNewNodes, target);
+      o[d.id] = intervalConfiguration.intervals;
       return o;
     }, {});
   };

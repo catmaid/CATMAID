@@ -1033,6 +1033,8 @@ class SamplerState(models.Model):
 @python_2_unicode_compatible
 class Sampler(UserFocusedModel):
     interval_length = models.FloatField()
+    interval_error = models.FloatField()
+    create_interval_boundaries = models.BooleanField(default=True)
     review_required = models.BooleanField(default=True)
     sampler_state = models.ForeignKey(SamplerState, on_delete=models.CASCADE)
     skeleton = models.ForeignKey(ClassInstance, db_index=True, on_delete=models.CASCADE)

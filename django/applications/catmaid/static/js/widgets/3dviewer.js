@@ -1739,7 +1739,7 @@
   };
 
   /** Fetch skeletons one by one, and render just once at the end. */
-  WebGLApplication.prototype.addSkeletons = function(models, callback) {
+  WebGLApplication.prototype.addSkeletons = function(models, callback, nodeProvider) {
     // Handle multiple skeleton additions sequentially
     var prepare;
     if (this._activeLoading) {
@@ -1752,12 +1752,16 @@
     prepare = prepare.then((function() {
       var missingSkeletonIds = Object.keys(models).filter(function(skid) {
         return !this.space.content.skeletons[skid];
-      }, this);
+      }, this).map(Number);
 
       if (missingSkeletonIds.length > 0) {
         var options = this.options;
         var lean = options.lean_mode;
         var self = this;
+
+        if (!nodeProvider) {
+          nodeProvider = new CATMAID.RegularNodeProvider();
+        }
 
         // Register with the neuron name service and fetch the skeleton data
         return CATMAID.NeuronNameService.getInstance().registerAll(this, models)
@@ -1767,33 +1771,14 @@
             }
           })
           .then(function() {
-            return new Promise(function(resolve, reject) {
-              var url1 = CATMAID.makeURL(project.id + '/skeletons/');
-              var url2 = '/compact-detail';
-
-              fetchSkeletons(missingSkeletonIds,
-                function(skeletonId) {
-                  return url1 + skeletonId + url2;
-                },
-                function(skeletonId) {
-                  return {
-                      with_tags: !lean,
-                      with_connectors: !lean,
-                      with_history: false,
-                  };
-                },
-                function(skeletonId, json) {
-                  var sk = self.space.updateSkeleton(models[skeletonId], json,
-                      options, undefined, self.getActivesNodeWhitelist());
-                  if (sk) sk.show(options);
-                },
-                function(skeletonId) {
-                  // Failed loading: will be handled elsewhere via fnMissing in fetchCompactSkeletons
-                },
-                function() {
-                  resolve();
-                },
-                'GET');
+            return nodeProvider.get(project.id, missingSkeletonIds, {
+                with_tags: !lean,
+                with_connectors: !lean,
+                with_history: false
+            }, function(skeletonId, json) {
+              var sk = self.space.updateSkeleton(models[skeletonId], json,
+                  options, undefined, self.getActivesNodeWhitelist());
+              if (sk) sk.show(options);
             });
           })
           .catch(CATMAID.handleError);

@@ -1,4 +1,7 @@
+import json
+
 from collections import defaultdict
+from itertools import chain
 
 from django.db import connection
 from django.http import JsonResponse
@@ -6,12 +9,18 @@ from django.http import JsonResponse
 from catmaid.control.authentication import (requires_user_role, user_can_edit,
         can_edit_or_fail)
 from catmaid.control.common import get_request_list
-from catmaid.models import (Connector, Sampler, SamplerDomain, SamplerDomainType,
-        SamplerDomainEnd, SamplerInterval, SamplerIntervalState, SamplerState,
-        SamplerConnector, SamplerConnectorState, UserRole)
+from catmaid.models import (Class, ClassInstance, Connector, Relation, Sampler,
+        SamplerDomain, SamplerDomainType, SamplerDomainEnd, SamplerInterval,
+        SamplerIntervalState, SamplerState, SamplerConnector,
+        SamplerConnectorState, Treenode, TreenodeClassInstance, UserRole)
+from catmaid.util import Point3D, is_collinear
 
 from rest_framework.decorators import api_view
 
+
+SAMPLER_CREATED_CLASS = "sampler-created"
+
+epsilon = 0.001
 
 @api_view(['GET'])
 @requires_user_role([UserRole.Browse])
@@ -51,6 +60,10 @@ def list_samplers(request, project_id):
           interval_length:
             type: integer
             description: The length of individual sampler intervals for this sampler.
+            required: true
+          interval_error:
+            type: float
+            description: The maximum allowed error of a single interval.
             required: true
           state_id:
             type: integer
@@ -105,7 +118,9 @@ def list_samplers(request, project_id):
            'creation_time': float(s.creation_time.strftime('%s')),
            'edition_time': float(s.edition_time.strftime('%s')),
            'interval_length': s.interval_length,
+           'interval_error': s.interval_error,
            'review_required': s.review_required,
+           'create_interval_boundaries': s.create_interval_boundaries,
            'state_id': s.sampler_state_id,
            'skeleton_id': s.skeleton_id,
            'user_id': s.user_id,
@@ -135,8 +150,19 @@ def add_sampler(request, project_id):
        type: integer
        paramType: form
        required: true
+     - name: interval_error
+       description: Maximum allowed error for a single interval.
+       type: float
+       paramType: form
+       required: false
+       default: 250
      - name: review_required
        description: Whether reviews should be enforced in this sampler
+       type: boolean
+       paramType: form
+       required: true
+     - name: create_interval_boundaries
+       description: Whether new nodes for interval boundaries should be created.
        type: boolean
        paramType: form
        required: true
@@ -153,18 +179,32 @@ def add_sampler(request, project_id):
     else:
         raise ValueError("Need interval_length parameter")
 
+    interval_error = request.POST.get('interval_error')
+    if interval_error:
+        interval_error = float(interval_error)
+    else:
+        interval_error = 250.0
+
     review_required = request.POST.get('review_required')
     if review_required:
         review_required = review_required == 'true'
     else:
         raise ValueError("Need review_required parameter")
 
+    create_interval_boundaries = request.POST.get('create_interval_boundaries')
+    if create_interval_boundaries:
+        create_interval_boundaries = create_interval_boundaries == 'true'
+    else:
+        raise ValueError("Need create_interval_boundaries parameter")
+
     sampler_state = SamplerState.objects.get(name="open");
 
     sampler = Sampler.objects.create(
         skeleton_id=skeleton_id,
         interval_length=interval_length,
+        interval_error=interval_error,
         review_required=review_required,
+        create_interval_boundaries=create_interval_boundaries,
         sampler_state=sampler_state,
         user=request.user,
         project_id=project_id)
@@ -173,7 +213,9 @@ def add_sampler(request, project_id):
         "id": sampler.id,
         "skeleton_id": sampler.skeleton_id,
         "interval_length": sampler.interval_length,
+        "interval_error": sampler.interval_error,
         "review_required": sampler.review_required,
+        "create_interval_boundaries": sampler.create_interval_boundaries,
         "sampler_state": sampler.sampler_state_id,
         "user_id": sampler.user_id,
         "project_id": sampler.project_id
@@ -183,13 +225,176 @@ def add_sampler(request, project_id):
 @requires_user_role([UserRole.Annotate])
 def delete_sampler(request, project_id, sampler_id):
     """Delete a sampler if permissions allow it.
+
+    If the sampler was created with allowing the creation of new boundary nodes,
+    these nodes are removed by default if they have not been modified since
+    their insertion. This can optionally be disabled using the
+    <delete_created_nodes> parameter.
+    ---
+    parameters:
+     - name: delete_created_nodes
+       description: |
+         Optional flag to disable automatic removal of untouched
+         nodes created for this sampler's intervals.
+       type: boolean
+       default: true
+       paramType: form
+       required: false
     """
     can_edit_or_fail(request.user, sampler_id, "catmaid_sampler")
     sampler = Sampler.objects.get(id=sampler_id)
+
+    n_deleted_nodes = 0
+    delete_created_nodes = request.POST.get('delete_created_nodes', 'true') == 'true'
+    if delete_created_nodes and sampler.create_interval_boundaries:
+        labeled_as_relation = Relation.objects.get(project=project_id, relation_name='labeled_as')
+        label_class = Class.objects.get(project=project_id, class_name='label')
+        label_class_instance = ClassInstance.objects.get(project=project_id,
+                class_column=label_class, name=SAMPLER_CREATED_CLASS)
+        # If the sampler was parameterized to created interval boundary nodes,
+        # these nodes can now be removed if they are still collinear with their
+        # child and parent node and have not been touched. These nodes are all
+        # nodes that are referenced by intervals of this sampler that have the
+        # SAMPLER_CREATED_CLASS tag with their creation time being the same as the
+        # edition time. Such nodes can only be sampler interval start/end nodes.
+        params = {
+            'project_id': project_id,
+            'sampler_id': sampler_id,
+            'labeled_as_rel': labeled_as_relation.id,
+            'label_class': label_class.id,
+            'label_class_instance': label_class_instance.id
+        }
+        cursor = connection.cursor()
+
+        # Get all created sampler interval boundary treenodes that have been
+        # created during sampler creation. The result will also contain parent
+        # and child locations. We need to set extra_float_digits to get enough
+        # precision for the location data to do a collinearity test.
+        cursor.execute("""
+            SET extra_float_digits = 3;
+
+            WITH sampler_treenode AS (
+                -- Get all treenodes linked to intervals of this sampler.
+                SELECT DISTINCT UNNEST(ARRAY[i.start_node_id, i.end_node_id]) AS id
+                FROM catmaid_samplerinterval i
+                JOIN catmaid_samplerdomain d
+                    ON i.domain_id = d.id
+                WHERE d.sampler_id = %(sampler_id)s
+            ), sampler_created_treenode AS (
+                -- Find all treenodes that were created by the sampler and are
+                -- undmodified.
+                SELECT st.id
+                FROM sampler_treenode st
+                JOIN treenode_class_instance tci
+                    ON st.id = tci.treenode_id
+                WHERE tci.relation_id = %(labeled_as_rel)s
+                AND tci.class_instance_id = %(label_class_instance)s
+            )
+            SELECT
+                t.id, t.location_x, t.location_y, t.location_z,
+                c.id, c.location_x, c.location_y, c.location_z,
+                p.id, p.location_x, p.location_y, p.location_z
+            FROM (
+                -- Make sure we look only at nodes that don't have multiple nodes.
+                SELECT st.id
+                FROM treenode tt
+                JOIN sampler_created_treenode st
+                    ON tt.parent_id = st.id
+                GROUP BY st.id
+                HAVING count(*) = 1
+
+            ) non_branch_treenodes(id)
+            JOIN treenode t
+                ON t.id = non_branch_treenodes.id
+            JOIN treenode p
+                ON p.id = t.parent_id
+            JOIN treenode c
+                ON c.parent_id = t.id
+            WHERE t.project_id = %(project_id)s;
+        """, params)
+
+        created_treenodes = [r for r in cursor.fetchall()]
+
+        if created_treenodes:
+            added_node_index = dict((n[0], n) for n in created_treenodes)
+            # Find those created treenodes that are collinear with their parent and
+            # child node. If they are, remove those nodes. Ideally, we would move
+            # the collinearity test into SQL as well.
+            nodes_to_remove = []
+            parents_to_fix = []
+            child, node, parent = Point3D(0, 0, 0), Point3D(0, 0, 0), Point3D(0, 0, 0)
+            for n in created_treenodes:
+                n_id, node.x, node.y, node.z = n[0], n[1], n[2], n[3]
+                c_id, child.x, child.y, child.z = n[4], n[5], n[6], n[7]
+                p_id, parent.x, parent.y, parent.z = n[8], n[9], n[10], n[11]
+
+                child_is_original_node = c_id not in added_node_index
+                if is_collinear(child, parent, node, True, 1.0):
+                    nodes_to_remove.append(n_id)
+                    # Only update nodes that don't get deleted anyway
+                    if child_is_original_node:
+                        parents_to_fix.append((c_id, p_id))
+                else:
+                    parents_to_fix.append((n_id, p_id))
+
+            # Update parent in formation in parent relation updates. If present
+            # parent IDs point to a removed node, the next real parent will be
+            # used instead.
+            parent_update = []
+            for n, (c_id, p_id) in enumerate(parents_to_fix):
+                parent_is_persistent = p_id not in added_node_index
+                if parent_is_persistent:
+                    parent_update.append((c_id, p_id))
+                else:
+                    # Find next existing node upstream
+                    new_parent_id = p_id
+                    while not parent_is_persistent:
+                        parent_is_persistent = new_parent_id not in nodes_to_remove
+                        node_data = added_node_index.get(new_parent_id)
+                        # An added node would be used if it is not removed, e.g.
+                        # du to not being collinear anymore.
+                        if node_data and not parent_is_persistent:
+                            new_parent_id = node_data[8]
+                        else:
+                            parent_update.append((c_id, new_parent_id))
+
+            if nodes_to_remove:
+                query_parts = []
+                params = []
+                if parent_update:
+                    update_nodes_template = ",".join("(%s, %s)" for _ in parent_update)
+                    update_nodes_flattened = list(chain.from_iterable(parent_update))
+                    query_parts.append("""
+                        UPDATE treenode
+                        SET parent_id = nodes_to_update.parent_id
+                        FROM (VALUES {}) nodes_to_update(child_id, parent_id)
+                        WHERE treenode.id = nodes_to_update.child_id;
+                    """.format(update_nodes_template))
+                    params = update_nodes_flattened
+
+                delete_nodes_template = ",".join("(%s)" for _ in nodes_to_remove)
+                query_parts.append("""
+                    DELETE
+                    FROM treenode
+                    WHERE id IN (
+                        SELECT t.id
+                        FROM treenode t
+                        JOIN (VALUES {}) to_delete(id)
+                            ON t.id = to_delete.id
+                    )
+                    RETURNING id;
+                """.format(delete_nodes_template))
+                params = params + nodes_to_remove
+
+                cursor.execute("\n".join(query_parts), params)
+                deleted_node_ids = [r[0] for r in cursor.fetchall()]
+                n_deleted_nodes = len(deleted_node_ids)
+
     sampler.delete()
 
     return JsonResponse({
-        'deleted_sampler_id': sampler_id
+        'deleted_sampler_id': sampler_id,
+        'deleted_interval_nodes': n_deleted_nodes
     })
 
 @api_view(['GET'])
@@ -762,18 +967,119 @@ def add_all_intervals(request, project_id, domain_id):
        items:
          type: string
        required: true
+     - name: added_nodes
+       description: |
+         A JSON encoded list of lists, each inner list of format: [id, child,
+         parent, x,y,z], representing an interval node filter. Matching nodes
+         will be created if collinear.
+       type: string
+       required: false
     """
     domain_id = int(domain_id)
     domain = SamplerDomain.objects.get(id=domain_id)
+    skeleton_id = domain.sampler.skeleton_id
 
     state = SamplerIntervalState.objects.get(name='untouched')
 
-    intervals = get_request_list(request.POST, 'intervals', [], map_fn=lambda x: x)
+    intervals = [(int(x[0]), int(x[1])) for x in
+            get_request_list(request.POST, 'intervals', [], map_fn=lambda x: x)]
+    interval_start_index = dict((n[0], n) for n in intervals)
+    added_nodes = json.loads(request.POST.get('added_nodes', '[]'))
+    for data in added_nodes:
+        data[0], data[1], data[2] = int(data[0]), int(data[1]), int(data[2])
+    added_node_index = dict((n[0], n) for n in added_nodes)
 
+    label_class = Class.objects.get(project=project_id, class_name='label')
+    labeled_as = Relation.objects.get(project=project_id,
+            relation_name='labeled_as')
+
+    def create_added_node(data, new_nodes):
+        # Try to get parent from newly created nodes. If not available from
+        # there, assume the node exists in the database.
+        parent = new_nodes.get(data[2])
+        if not parent:
+            parent = Treenode.objects.get(pk=data[2])
+        x, y, z = float(data[3]), float(data[4]), float(data[5])
+        n = Treenode.objects.create(project_id=project_id, parent_id=parent.id,
+                user=request.user, editor=request.user, location_x=x, location_y=y,
+                location_z=z, radius=0, confidence=5, skeleton_id=skeleton_id)
+
+        return n
+
+    def link_added_node(data, new_nodes):
+        # The target node has to be a new node
+        n = new_nodes[data[0]]
+        # Find child and parent of new treenode. Check first if they have been
+        # created as newly as well.
+        child = new_nodes.get(data[1])
+        if not child:
+            child = Treenode.objects.get(pk=data[1])
+        parent = new_nodes.get(data[2])
+        if not parent:
+            parent = Treenode.objects.get(pk=data[2])
+
+        # Make sure both nodes are actually child and parent
+        if not child.parent == parent:
+            raise ValueError('The provided nodes need to be child and parent')
+
+        x, y, z = n.location_x, n.location_y, n.location_z
+        new_node_loc = Point3D(x, y, z)
+        child_loc = Point3D(child.location_x, child.location_y, child.location_z)
+        parent_loc = Point3D(parent.location_x, parent.location_y, parent.location_z)
+
+        if not is_collinear(child_loc, parent_loc, new_node_loc, True, epsilon):
+            raise ValueError('New node location has to be collinear with child and parent')
+
+        # Tag new treenode with SAMPLER_CREATED_CLASS
+        label, _ = ClassInstance.objects.get_or_create(project_id=project_id,
+                name=SAMPLER_CREATED_CLASS, class_column=label_class, defaults={
+                    'user': request.user
+                })
+        TreenodeClassInstance.objects.create(project_id=project_id,
+                user=request.user, relation=labeled_as, treenode=n,
+                class_instance=label)
+
+        # Update child node. Reviews don't need to be updated, because they are
+        # only reset of a node's location changes.
+        child.parent_id = n.id
+        child.save()
+
+    # Sort intervals so that we create them in reverse. Each node needs to
+    # reference a potentially newly created parent node.
+    existing_parent_intervals = [i for i in intervals
+            if i[0] not in added_node_index]
+    # Iterate over root intervals and create child nodes until another existing
+    # node is found.
+    new_nodes = dict()
+    for root_interval in existing_parent_intervals:
+        current_interval = root_interval
+        while current_interval:
+            child_id = current_interval[1]
+            new_child_data = added_node_index.get(child_id)
+            if new_child_data:
+                new_nodes[child_id] = create_added_node(new_child_data, new_nodes)
+                current_interval = interval_start_index.get(child_id)
+            else:
+                break
+
+    # Ensure that all parents of existing children are set correctly to newly
+    # createad nodes.
+    for data in added_nodes:
+        link_added_node(data, new_nodes)
+
+    # Create actual intervals
     result_intervals = []
     for i in intervals:
         start_node = int(i[0])
         end_node = int(i[1])
+
+        added_start_node_data = added_node_index.get(start_node)
+        if added_start_node_data:
+            start_node = new_nodes[start_node].id
+
+        added_end_node_data = added_node_index.get(end_node)
+        if added_end_node_data:
+            end_node = new_nodes[end_node].id
 
         i = SamplerInterval.objects.create(
             domain=domain,
@@ -792,7 +1098,10 @@ def add_all_intervals(request, project_id, domain_id):
             "project_id": i.project_id
         })
 
-    return JsonResponse(result_intervals, safe=False)
+    return JsonResponse({
+        'intervals': result_intervals,
+        'n_added_nodes': len(new_nodes)
+    })
 
 
 @api_view(['GET'])

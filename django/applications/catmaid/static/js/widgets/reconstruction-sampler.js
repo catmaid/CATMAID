@@ -29,13 +29,17 @@
     return "Reconstruction Sampler " + this.widgetID;
   };
 
-  ReconstructionSampler.prototype.init = function() {
+  ReconstructionSampler.prototype.init = function(state) {
+    state = state || {};
+    let get = CATMAID.tools.getDefined;
     this.state = {
-      'intervalLength': 5000,
-      'domainType': 'regular',
-      'domainStartNodeType': 'root',
-      'domainEndNodeType': 'downstream',
-      'reviewRequired': true
+      'intervalLength': get(state.intervalLength, 5000),
+      'intervalError': get(state.intervalError, 250),
+      'createIntervalBoundingNodes': get(state.createIntervalBoundingNodes, true),
+      'domainType': get(state.domainType, 'regular'),
+      'domainStartNodeType': get(state.domainStartNodeType, 'root'),
+      'domainEndNodeType': get(state.domainEndNodeType, 'downstream'),
+      'reviewRequired': get(state.reviewRequired, true)
     };
     this.workflow = new CATMAID.Workflow({
       state: this.state,
@@ -198,8 +202,11 @@
         onclick: function() {
           var skeletonId = SkeletonAnnotations.getActiveSkeletonId();
           if (skeletonId) {
+            widget.init(widget.state);
             widget.state['skeletonId'] = skeletonId;
             widget.update();
+          } else {
+            CATMAID.warn("No skeleton selected");
           }
         }
       },
@@ -211,6 +218,26 @@
         length: 6,
         onchange: function() {
           widget.state['intervalLength'] = this.value;
+        }
+      },
+      {
+        type: 'numeric',
+        label: 'Max error (nm)',
+        title: 'If the interval error with existing nodes is bigger than this value and ' +
+            'interval boundary node creation is enabled, a new node will be created.',
+        value: widget.state['intervalError'],
+        length: 6,
+        onchange: function() {
+          widget.state['intervalError'] = Number(this.value);
+        }
+      },
+      {
+        type: 'checkbox',
+        label: 'Create bounding nodes',
+        title: 'To match the interval length exactly, missing nodes can be created at respective locations.',
+        value: widget.state['createIntervalBoundingNodes'],
+        onclick: function() {
+          widget.state['createIntervalBoundingNodes'] = this.checked;
         }
       },
       {
@@ -240,7 +267,7 @@
         type: 'button',
         label: 'New session',
         onclick: function() {
-          widget.init();
+          widget.init(self.state);
           widget.update();
           CATMAID.msg("Info", "Stared new sampler session");
         }
@@ -253,7 +280,8 @@
         " and all associated domains and intervals")) {
       return CATMAID.fetch(project.id + "/samplers/" + samplerId + "/delete", "POST")
         .then(function(response) {
-          CATMAID.msg("Success", "Deleted sampler " + response.deleted_sampler_id);
+          CATMAID.msg("Success", "Deleted sampler " + response.deleted_sampler_id +
+              " including " + response.deleted_interval_nodes + " unneeded nodes.");
         })
         .catch(CATMAID.handleError);
     }
@@ -374,6 +402,19 @@
           }
         },
         {data: "interval_length", title: "Interval length", orderable: true},
+        {data: "interval_error", title: "Max error", orderable: true},
+        {
+          data: "create_interval_boundaries",
+          title: "Create interval boundaries",
+          orderable: true,
+          render: function(data, type, row, meta) {
+            if (type === 'display') {
+              return row.create_interval_boundaries ? "Yes" : "No";
+            } else {
+              return row.create_interval_boundaries;
+            }
+          }
+        },
         {
           data: "review_required",
           title: "Review required",
@@ -425,7 +466,12 @@
       var samplerId = parseInt(this.dataset.samplerId, 10);
       deleteSampler(samplerId)
           .then(function() {
+            widget.state['samplerId'] = undefined;
             datatable.ajax.reload();
+            CATMAID.Skeletons.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED, skeletonId);
+            project.getStackViewers().forEach(function(sv) {
+              sv.redraw();
+            });
           })
           .catch(CATMAID.handleError);
     }).on('click', 'a[data-action=next]', function() {
@@ -455,6 +501,12 @@
       CATMAID.warn("No valid interval length found");
       return;
     }
+    var intervalError = widget.state['intervalError'];
+    if (!intervalError) {
+      CATMAID.warn("No valid interval error value found");
+      return;
+    }
+    var createIntervalBoundingNodes = !!widget.state['createIntervalBoundingNodes'];
 
     var arbor = widget.state['arbor'];
     // Get arbor if not already cached
@@ -495,13 +547,19 @@
             domains: [fakeDomain]
           };
           let preferSmallerError = true;
-          let intervals = CATMAID.Sampling.intervalsFromModels(arbor.arbor,
-            arbor.positions, fakeDomain, intervalLength, preferSmallerError);
+          let workParser = new CATMAID.ArborParser();
+          workParser.arbor = arbor.arbor.clone();
+          workParser.positions = Object.assign({}, arbor.positions);
+          let intervalConfiguration = CATMAID.Sampling.intervalsFromModels(
+            workParser.arbor, workParser.positions, fakeDomain, intervalLength,
+            intervalError, preferSmallerError, createIntervalBoundingNodes);
+          let intervals = intervalConfiguration.intervals;
 
           // Show 3D viewer confirmation dialog
           var dialog = new CATMAID.Confirmation3dDialog({
-            title: intervals.length + " interval with a length of " +
-                intervalLength + "nm each",
+            title: intervals.length + " intervals with a length of " +
+                intervalLength + "nm each, " + intervalConfiguration.addedNodes.length +
+                " new nodes are created to match intervals",
             showControlPanel: false,
             buttons: {
               "Close": function() {
@@ -516,6 +574,10 @@
           var widget = dialog.webglapp;
           var models = {};
           models[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
+
+          // Create virtual skeletons
+          let arborParsers = new Map([[skeletonId, workParser]]);
+          let nodeProvider = new CATMAID.ArborParserNodeProvider(arborParsers);
 
           // Add skeleton to 3D viewer and configure shading
           widget.addSkeletons(models, function() {
@@ -539,8 +601,7 @@
 
             return widget.updateSkeletonColors()
               .then(function() { widget.render(); });
-
-          });
+          }, nodeProvider);
         });
       })
       .catch(CATMAID.handleError);
@@ -557,14 +618,26 @@
       CATMAID.warn("Can't create sampler without interval length");
       return;
     }
+    var intervalError = widget.state['intervalError'];
+    if (!intervalError) {
+      CATMAID.warn("Can't create sampler without interval error value");
+      return;
+    }
     var reviewRequired = widget.state['reviewRequired'];
     if (undefined === reviewRequired) {
       CATMAID.warn("Can't create sampler without review policy");
       return;
     }
+    var createIntervalBoundingNodes = !!widget.state['createIntervalBoundingNodes'];
+    if (undefined === createIntervalBoundingNodes) {
+      CATMAID.warn("Can't create sampler without createIntervalBoundingNodes parameter");
+      return;
+    }
     CATMAID.fetch(project.id + '/samplers/add', 'POST', {
       skeleton_id: skeletonId,
       interval_length: intervalLength,
+      interval_error: intervalError,
+      create_interval_boundaries: createIntervalBoundingNodes,
       review_required: reviewRequired
     }).then(function(result) {
       // TODO: Should probably go to next step immediately
@@ -625,7 +698,7 @@
           title: 'Root node',
           value: 'root'
         }, {
-          title: 'Taged node',
+          title: 'Tagged node',
           value: 'tag'
         }, {
           title: 'Active node',
@@ -644,7 +717,7 @@
         title: 'Select end node type of new domain',
         value: widget.state['domainEndNodeType'],
         entries: [{
-          title: 'Taged node',
+          title: 'Tagged node',
           value: 'tag'
         }, {
           title: 'Active node',
@@ -754,7 +827,7 @@
         },
         {
           data: "creation_time",
-          title: "Created on (UTC(",
+          title: "Created on (UTC)",
           searchable: true,
           orderable: true,
           render: function(data, type, row, meta) {
@@ -1236,6 +1309,13 @@
       CATMAID.warn("Can't create intervals without interval length");
       return;
     }
+    var intervalError = widget.state['intervalError'];
+    if (!intervalError) {
+      CATMAID.warn("Can't create intervals without interval error");
+      return;
+    }
+    var createIntervalBoundingNodes = !!widget.state['createIntervalBoundingNodes'];
+
     var arbor = widget.state['arbor'];
     // Get arbor if not already cached
     var prepare;
@@ -1260,23 +1340,31 @@
 
     var domainEnds = [];
 
+    let workParser = new CATMAID.ArborParser();
+
     // Build interval boundaries by walking downstream from domain start to end.
     // Except for the start and end node, all children of all interval nodes are
     // considered to be part of the interval.
     prepare
       .then(getDomainDetails.bind(this, project.id, domain.id))
       .then(function(domainDetails) {
-        return CATMAID.Sampling.intervalsFromModels(arbor.arbor,
-            arbor.positions, domainDetails, intervalLength,
-            preferSmallerError);
+      workParser.arbor = arbor.arbor.clone();
+      workParser.positions = Object.assign({}, arbor.positions);
+        return CATMAID.Sampling.intervalsFromModels(workParser.arbor,
+            workParser.positions, domainDetails, intervalLength,
+            intervalError, preferSmallerError, createIntervalBoundingNodes);
       })
-      .then(function(intervals) {
+      .then(function(intervalConfiguration) {
         return new Promise(function(resolve, reject) {
+          let intervals = intervalConfiguration.intervals;
+          let addedNodes = intervalConfiguration.addedNodes;
+
           // Show 3D viewer confirmation dialog
           var dialog = new CATMAID.Confirmation3dDialog({
             title: "Please confirm " + intervals.length +
                 " domain interval(s) with an interval length of " +
-                intervalLength + "nm",
+                intervalLength + "nm each, " + intervalConfiguration.addedNodes.length +
+                " new nodes are created to match intervals",
             showControlPanel: false,
             shadingMethod: 'sampler-domains'
           });
@@ -1285,11 +1373,13 @@
           dialog.onOK = function() {
             CATMAID.fetch(project.id + '/samplers/domains/' +
                 domain.id + '/intervals/add-all', 'POST', {
-                    intervals: intervals
+                    intervals: intervals,
+                    added_nodes: JSON.stringify(addedNodes)
                 })
               .then(function(result) {
-                CATMAID.msg("Success", intervals.length + " interval(s) created");
-                resolve(result);
+                CATMAID.msg("Success", intervals.length + " interval(s) created, using " +
+                    result.n_added_nodes + " new node(s)");
+                resolve(result.intervals);
               })
               .catch(reject);
           };
@@ -1303,6 +1393,11 @@
           var widget = dialog.webglapp;
           var models = {};
           models[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
+
+          // Create virtual skeletons
+          let arborParsers = new Map([[skeletonId, workParser]]);
+          let nodeProvider = new CATMAID.ArborParserNodeProvider(arborParsers);
+
           widget.addSkeletons(models, function() {
             // Set new shading and coloring methods
             widget.options.color_method = 'sampler-intervals';
@@ -1313,11 +1408,17 @@
 
             // Look at center of mass of skeleton and update screen
             widget.lookAtSkeleton(skeletonId);
-          });
+          }, nodeProvider);
         });
       })
       .then(function(result) {
         widget.update();
+        if (result && result.length > 0) {
+          CATMAID.Skeletons.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED, skeletonId);
+          project.getStackViewers().forEach(function(sv) {
+            sv.redraw();
+          });
+        }
       })
       .catch(CATMAID.handleError);
   };

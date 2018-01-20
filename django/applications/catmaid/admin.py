@@ -5,9 +5,11 @@ from django import forms
 from django.db.models import fields as db_fields, ForeignKey
 from django.core.exceptions import ValidationError
 from django.contrib import admin, messages
+from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.contrib.auth.models import User, Group
 from django.utils.safestring import mark_safe
+from django.utils.translation import ugettext_lazy as _
 from guardian.admin import GuardedModelAdmin
 from catmaid.models import (Project, DataView, Stack, ProjectStack, UserProfile,
         BrokenSlice, StackClassInstance, Relation, ClassInstance, Class,
@@ -67,6 +69,42 @@ class BrokenSliceModelForm(forms.ModelForm):
     class Meta:
         model = BrokenSlice
         fields = '__all__'
+
+class GroupAdminForm(forms.ModelForm):
+    """A simple group admin form which adds a user edit control similar to the
+    permission control. The base version of this code was available here:
+    https://stackoverflow.com/questions/6097210
+    """
+    users = forms.ModelMultipleChoiceField(
+        queryset=User.objects.all(),
+        required=False,
+        widget=FilteredSelectMultiple(
+            verbose_name=_('Users'),
+            is_stacked=False
+        )
+    )
+
+    class Meta:
+        model = Group
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super(GroupAdminForm, self).__init__(*args, **kwargs)
+
+        if self.instance and self.instance.pk:
+            self.fields['users'].initial = self.instance.user_set.all()
+
+    def save(self, commit=True):
+        group = super(GroupAdminForm, self).save(commit=False)
+
+        if commit:
+            group.save()
+
+        if group.pk:
+            group.user_set = self.cleaned_data['users']
+            self.save_m2m()
+
+        return group
 
 
 class BrokenSliceAdmin(GuardedModelAdmin):
@@ -277,7 +315,12 @@ class CustomUserAdmin(UserAdmin):
         return super(CustomUserAdmin, self) \
             .changelist_view(request, extra_context=extra_context)
 
+class UserSetInline(admin.TabularInline):
+    model = User.groups.through
+    raw_id_fields = ('user',)  # optional, if you have too many users
+
 class CustomGroupAdmin(GroupAdmin):
+    form = GroupAdminForm
     list_filter = ('name',)
 
 def color(self):

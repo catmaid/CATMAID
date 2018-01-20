@@ -35,7 +35,7 @@ from six import add_metaclass
 class BasicNodeProvider(object):
 
     def __init__(self, *args, **kwargs):
-	self.enabled = kwargs.get('enabled', True)
+        self.enabled = kwargs.get('enabled', True)
         self.project_id = kwargs.get('project_id')
 
     def prepare_db_statements(connection=None):
@@ -43,8 +43,8 @@ class BasicNodeProvider(object):
 
     def matches(self, params):
         matches = True
-	if not self.enabled:
-	    return False
+        if not self.enabled:
+            return False
         if self.project_id:
             matches = matches and params.get('project_id') == self.project_id
         return matches
@@ -133,7 +133,7 @@ class PostgisNodeProvider(BasicNodeProvider):
         If PREPARED_STATEMENTS is false but you want to override that for a few queries at a time,
         include a django.db.connection in the constructor.
         """
-	super(PostgisNodeProvider, self).__init__(**kwargs)
+        super(PostgisNodeProvider, self).__init__(**kwargs)
 
         # If a node limit is set, append the LIMIT clause to both queries
         if self.managed_limit and settings.NODE_LIST_MAXIMUM_COUNT:

@@ -827,7 +827,7 @@
         },
         {
           data: "creation_time",
-          title: "Created on (UTC(",
+          title: "Created on (UTC)",
           searchable: true,
           orderable: true,
           render: function(data, type, row, meta) {

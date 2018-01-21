@@ -15,9 +15,9 @@ from catmaid.control import (authentication, user, log, message, client, common,
         annotations, textlabel, label, link, connector, neuron, node, treenode,
         suppressed_virtual_treenode, skeleton, skeletonexport, treenodeexport,
         cropping, data_view, ontology, classification, notifications, roi,
-        clustering, volume, noop, useranalytics, user_evaluation,
-        search, graphexport, transaction, graph2, circles, analytics, review,
-        wiringdiagram, object, sampler, nat, point, landmarks)
+        clustering, volume, noop, useranalytics, user_evaluation, search,
+        graphexport, transaction, graph2, circles, analytics, review,
+        wiringdiagram, object, sampler, similarity, nat, point, landmarks)
 
 from catmaid.views import CatmaidView
 from catmaid.history import record_request_action as record_view
@@ -316,6 +316,10 @@ urlpatterns += [
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/connectorarchive/export$', treenodeexport.export_connectors),
     url(r'^(?P<project_id>\d+)/treenodearchive/export$', treenodeexport.export_treenodes),
+]
+
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/similarity/configs/$', similarity.ConfigurationList.as_view()),
 ]
 
 # Cropping

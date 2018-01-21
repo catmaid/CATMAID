@@ -11,7 +11,7 @@ from django import forms
 from django.conf import settings
 from django.contrib.auth.models import User, Group
 from django.contrib.gis.db import models as spatial_models
-from django.contrib.postgres.fields import JSONField
+from django.contrib.postgres.fields import JSONField, ArrayField
 from django.core.validators import RegexValidator
 from django.db import connection, models
 from django.db.models import Q
@@ -948,6 +948,146 @@ class StackGroupClassInstance(models.Model):
 
     class Meta:
         db_table = "stack_group_class_instance"
+
+
+# The default values for the histogram bins for both absolute dot product and
+# distance (in um). They are stored in own field For better readability and
+# reuse.
+NblastConfigDefaultDotBreaks = list(n/10 for n in range(11))
+NblastConfigDefaultDistanceBreaks = (0, 0.75, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 7,
+        8, 9, 10, 12, 14, 16, 20, 25, 30, 40, 500)
+
+
+class PointSet(UserFocusedModel):
+    """Store a set of points.
+    """
+    name = models.TextField()
+    description = models.TextField()
+    points = ArrayField(models.FloatField())
+
+    class Meta:
+        db_table = "point_set"
+
+
+class NblastSample(UserFocusedModel):
+    """Store binned distance and dot product information of the sample neuron
+    set in a histogram as well as a probability density based on it.
+    """
+    name = models.TextField()
+    sample_neurons = ArrayField(models.IntegerField())
+    sample_pointclouds = ArrayField(models.IntegerField())
+    sample_pointsets = ArrayField(models.IntegerField())
+    histogram = ArrayField(ArrayField(models.IntegerField()))
+    probability = ArrayField(ArrayField(models.FloatField()))
+
+    class Meta:
+        db_table = "nblast_sample"
+
+
+class NblastConfig(UserFocusedModel):
+    """A NBLAST configuration that defines histogram binning and which
+    NblastSample entries define the match sampling and the random sampling.
+    Based on those it can keep a base scoring matrix. Referential integretry
+    (delete cascade) is taken care of by the database.
+    """
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+    creation_time = models.DateTimeField(default=timezone.now)
+    edition_time = models.DateTimeField(default=timezone.now)
+    project = models.ForeignKey(Project, on_delete=models.DO_NOTHING)
+
+    name = models.TextField()
+    status = models.TextField()
+    distance_breaks = ArrayField(models.FloatField(
+            default=NblastConfigDefaultDotBreaks))
+    dot_breaks = ArrayField(models.FloatField(
+            default=NblastConfigDefaultDistanceBreaks))
+    match_sample = models.ForeignKey(NblastSample, on_delete=models.DO_NOTHING,
+            related_name='match_config_set')
+    random_sample = models.ForeignKey(NblastSample, on_delete=models.DO_NOTHING,
+            related_name='random_config_set')
+    scoring = ArrayField(ArrayField(models.FloatField()))
+    resample_step = models.FloatField(default=1000)
+    tangent_neighbors = models.IntegerField(default=5)
+
+    class Meta:
+        db_table = "nblast_config"
+
+
+class NblastSkeletonSourceType(models.Model):
+
+    name = models.TextField(primary_key=True)
+    description = models.TextField(default="")
+
+    class Meta:
+        db_table = "nblast_skeleton_source_type"
+
+
+class NblastSimilarity(UserFocusedModel):
+    """A model to represent computed similarity matrices for a particular
+    configuration using a set of query and target skeleton IDs. Referential
+    integretry (delete cascade) is taken care of by the database.
+    """
+    name = models.TextField()
+    status = models.TextField()
+    config = models.ForeignKey(NblastConfig, on_delete=models.DO_NOTHING)
+    query_skeletons = ArrayField(models.IntegerField())
+    target_skeletons = ArrayField(models.IntegerField())
+    scoring = ArrayField(ArrayField(models.FloatField()))
+    query_type = models.ForeignKey(NblastSkeletonSourceType,
+        related_name='query_type_set')
+    target_type = models.ForeignKey(NblastSkeletonSourceType,
+        related_name='target_type_set')
+
+    class Meta:
+        db_table = "nblast_similarity"
+
+
+class PointCloud(UserFocusedModel):
+    """A point cloud. Its points are linked through the point_cloud_point
+    relation.
+    """
+
+    name = models.TextField()
+    description = models.TextField(default="")
+    source_path = models.TextField(default="")
+
+    class Meta:
+        db_table = 'pointcloud'
+
+
+class PointCloudPoint(models.Model):
+    """Links a point to a pointcloud for a particular project.
+    """
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    pointcloud = models.ForeignKey(PointCloud, on_delete=models.CASCADE)
+    point = models.ForeignKey(Point, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'pointcloud_point'
+
+
+class ImageData(UserFocusedModel):
+    """A piece of image data that can be linked to other entities.
+    """
+    name = models.TextField()
+    description = models.TextField(default="")
+    source_path = models.TextField(default="")
+    content_type = models.TextField()
+    image = spatial_models.BinaryField()
+
+    class Meta:
+        db_table = 'image_data'
+
+
+class PointCloudImageData(models.Model):
+    """Links a piece of image data to a point cloud.
+    """
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    pointcloud = models.ForeignKey(PointCloud, on_delete=models.CASCADE)
+    image_data = models.ForeignKey(ImageData, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'pointcloud_image_data'
 
 
 # ------------------------------------------------------------------------

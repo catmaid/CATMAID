@@ -1,25 +1,42 @@
 # -*- coding: utf-8 -*-
 
+import logging
 import os
+import re
 import subprocess
+import numpy
 
 from datetime import datetime
+from itertools import chain
 
 from django.conf import settings
 from django.http import JsonResponse, HttpResponse
 
 from catmaid.control.common import get_request_bool, urljoin
 from catmaid.control.authentication import requires_user_role
-from catmaid.models import Message, User, UserRole
+from catmaid.models import (Message, User, UserRole, NblastConfig,
+        NblastConfigDefaultDistanceBreaks, NblastConfigDefaultDotBreaks)
 
 from celery.task import task
 
 from rest_framework.authtoken.models import Token
 
+logger = logging.getLogger(__name__)
+rnat_enaled = True
+
+try:
+    from rpy2.robjects.packages import importr
+    import rpy2.robjects as robjects
+except ImportError:
+    rnat_enaled = False
+    logger.warning('CATMAID was unable to load the Rpy2 library, which is an '
+            'optional dependency. Nblast support is therefore disabled.')
+
 
 # The path were server side exported files get stored in
 output_path = os.path.join(settings.MEDIA_ROOT,
     settings.MEDIA_EXPORT_SUBDIRECTORY)
+
 
 class CleanUpHTTPResponse(HttpResponse):
     """Remove a file after it has been sent as a HTTP response.
@@ -180,4 +197,371 @@ def export_skeleton_as_nrrd(skeleton_id, source_ref, target_ref, user_id, mirror
         "errors": errors,
         "nrrd_path": nrrd_path,
         "nrrd_name": nrrd_name
+    }
+
+
+def compute_scoring_matrix(project_id, user_id, matching_skeleton_ids,
+        random_skeleton_ids, distbreaks=NblastConfigDefaultDistanceBreaks,
+        dotbreaks=NblastConfigDefaultDotBreaks, resample_step=1000,
+        tangent_neighbors=5):
+    """Create NBLAST scoring matrix for a set of matching skeleton IDs and a set
+    of random skeleton IDs. Matching skeletons are skeletons with a similar
+    morphology, e.g. KCy in FAFB.
+
+    The following R script is executed through Rpy2:
+
+    library(catmaid)
+    library(nat)
+    library(nat.nblast)
+
+    conn = catmaid_login({server_params})
+
+    # To debug add .progress='text' to function calls
+
+    # Get neurons
+    # nb also convert from nm to um, resample to 1µm spacing and use k=5
+    # nearest neighbours of each point to define tangent vector
+    matching_neurons = read.neurons.catmaid({matching_ids}, conn=conn)
+    nonmatching_neurons = read.neurons.catmaid({nonmatching_ids}, conn=conn)
+
+    # Create dotprop instances and resample
+    matching_neurons.dps = dotprops(matching_neurons/1e3, k={k}, resample=1)
+    nonmatching_neurons.dps = dotprops(nonmatching_neurons/1e3, k={k}, resample=1)
+
+    distbreaks = {distbreaks}
+    dotbreaks = {dotbreaks}
+
+    match.dd <- calc_dists_dotprods(matching_neurons.dps, subset=NULL,
+                                   ignoreSelf=TRUE)
+    # generate random set of neuron pairs of same length as the matching set
+    non_matching_subset = neuron_pairs(nonmatching_neurons.dps, n=length(match.dd))
+    rand.dd <- calc_dists_dotprods(nonmatching_neurons.dps, subset=NULL,
+                                   ignoreSelf=TRUE)
+
+    match.prob <- calc_prob_mat(match.dd, distbreaks=distbreaks,
+                                dotprodbreaks=dotbreaks, ReturnCounts=FALSE)
+
+    rand.prob <- calc_prob_mat(rand.dd, distbreaks=distbreaks,
+                               dotprodbreaks=dotbreaks, ReturnCounts=FALSE)
+
+    smat = calc_score_matrix(match.prob, rand.prob, logbase=2, epsilon=1e-6)
+
+    Using:
+        'server_params': ", ".join(server_params),
+        'matching_ids': matching_skeleton_ids,
+        'nonmatching_ids': random_skeleton_ids,
+        'distbreaks': distbreaks,
+        'dotbreaks': dotbreaks,
+        'k': tangent_neighbors
+    """
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    similarity = None
+    matching_histogram = None
+    random_histogram = None
+    matching_probability = None
+    random_probability = None
+    errors = []
+    try:
+        token, _ = Token.objects.get_or_create(user_id=user_id)
+
+        server_params = {
+            'server': settings.CATMAID_FULL_URL,
+            'token': token.key
+        }
+
+        if hasattr(settings, 'CATMAID_HTTP_AUTH_USER') and settings.CATMAID_HTTP_AUTH_USER:
+            server_params['authname'] = settings.CATMAID_HTTP_AUTH_USER
+            server_params['authpassword'] = settings.CATMAID_HTTP_AUTH_PASS
+
+        rcatmaid = importr('catmaid')
+        rnat = importr('nat')
+        rnblast = importr('nat.nblast')
+
+        conn = rcatmaid.catmaid_login(**server_params)
+
+        # Get neurons
+        # nb also convert from nm to um, resample to 1µm spacing and use k=5
+        # nearest neighbours of each point to define tangent vector
+        logger.debug('Fetching matching skeletons')
+        matching_neurons = rcatmaid.read_neurons_catmaid(
+                robjects.IntVector(matching_skeleton_ids), **{
+                    'conn': conn,
+                    '.progress': 'none',
+                    'OmitFailures': True,
+                })
+        logger.debug('Fetching random skeletons')
+        nonmatching_neurons = rcatmaid.read_neurons_catmaid(
+                robjects.IntVector(random_skeleton_ids), **{
+                    'conn': conn,
+                    '.progress': 'none',
+                    'OmitFailures': True,
+                })
+
+        # Create dotprop instances and resample
+        logger.debug('Computing matching skeleton stats')
+        matching_neurons_dps = rnat.dotprops(matching_neurons.ro / 1e3, **{
+                    'k': tangent_neighbors,
+                    'resample': 1,
+                    '.progress': 'none',
+                    'OmitFailures': True,
+                })
+
+        logger.debug('Computing random skeleton stats')
+        nonmatching_neurons_dps = rnat.dotprops(nonmatching_neurons.ro / 1e3, **{
+                    'k': tangent_neighbors,
+                    'resample': 1,
+                    '.progress': 'none',
+                    'OmitFailures': True,
+                })
+
+
+        logger.debug('Computing matching tangent information')
+        match_dd = rnblast.calc_dists_dotprods(matching_neurons_dps,
+                subset=robjects.NULL, ignoreSelf=True)
+        # generate random set of neuron pairs of same length as the matching set
+        non_matching_subset = rnblast.neuron_pairs(nonmatching_neurons_dps, n=len(match_dd))
+        logger.debug('Computing random tangent information')
+        rand_dd = rnblast.calc_dists_dotprods(nonmatching_neurons_dps,
+                subset=robjects.NULL, ignoreSelf=True)
+
+        rdistbreaks = robjects.FloatVector(distbreaks)
+        rdotbreaks = robjects.FloatVector(dotbreaks)
+
+        logger.debug('Computing matching skeleton probability distribution')
+        match_hist = rnblast.calc_prob_mat(match_dd, distbreaks=rdistbreaks,
+                dotprodbreaks=rdotbreaks, ReturnCounts=True)
+
+        logger.debug('Computing random skeleton probability distribution')
+        rand_hist = rnblast.calc_prob_mat(rand_dd, distbreaks=rdistbreaks,
+                dotprodbreaks=rdotbreaks, ReturnCounts=True)
+
+        logger.debug('Scaling')
+        match_prob = match_hist.ro / robjects.r['sum'](match_hist)
+        rand_prob = rand_hist.ro / robjects.r['sum'](rand_hist)
+
+        logger.debug('Computing scoring matrix')
+        smat = rnblast.calc_score_matrix(match_prob, rand_prob, logbase=2, epsilon=1e-6)
+
+        logger.debug('Done')
+
+        # Get data into Python, the resulting array is in column-first order,
+        # i.e. the outer array contains one array per column.
+        similarity = numpy.asarray(smat).tolist()
+        matching_histogram = numpy.asarray(match_hist).tolist()
+        random_histogram = numpy.asarray(rand_hist).tolist()
+        matching_probability = numpy.asarray(match_prob).tolist()
+        random_probability = numpy.asarray(rand_prob).tolist()
+
+    except (IOError, OSError, ValueError) as e:
+        errors.append(str(e))
+
+    return {
+        "errors": errors,
+        "similarity": similarity,
+        "matching_histogram": matching_histogram,
+        "random_histogram": random_histogram,
+        "matching_probability": matching_probability,
+        "random_probability": random_probability
+    }
+
+
+def compute_all_by_all_skeleton_similarity(project_id, user_id,
+        nblast_config_id, skeleton_ids=None, jobs=1):
+    """Compute complete all-to-all similarity matrix for the passed in nblast
+    configuration.
+    """
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    similarity = None
+    errors = []
+    warnings = []
+
+    # If no skeletons are given, use all available with a certain minimum size.
+    cursor = connection.cursor()
+    min_size = settings.NBLAST_ALL_BY_ALL_MIN_SIZE
+    if not skeleton_ids:
+        cursor.execute("""
+            SELECT id from class_instance
+            WHERE class_id =
+            AND
+        """)
+
+
+    try:
+        token, _ = Token.objects.get_or_create(user_id=user_id)
+
+        server_params = [
+            'server="{}"'.format(settings.CATMAID_FULL_URL),
+            'token="{}"'.format(token.key)
+        ]
+
+        if settings.CATMAID_HTTP_AUTH_USER:
+            server_params.append('authname="{}"'.format(settings.CATMAID_HTTP_AUTH_USER))
+            server_params.append('authpassword="{}"'.format(settings.CATMAID_HTTP_AUTH_PASS))
+
+        skeleton_ids = []
+
+        r_script = """
+        library(catmaid)
+        library(nat.nblast)
+
+        conn = catmaid_login({server_params})
+
+        #' # Parallelise NBLASTing across 4 cores using doMC package
+        #' library(doMC)
+        #' registerDoMC(4)
+        #' scores.norm2=nblast(kcs20, kcs20, normalised=TRUE, .parallel=TRUE)
+        #' stopifnot(all.equal(scores.norm2, scores.norm))
+
+        # nb also convert from nm to um, resample to 1µm spacing and use k=5
+        # nearest neighbours of each point to define tangent vector
+        neurons = read.neurons.catmaid(c({skeleton_ids}), OmitFailures=T, conn=conn)
+        neurons.dps = dotprops(neurons/1e3, k=5, resample=1)
+
+        # Compute all-by-all similarity using a neuronlist x with all neurons to
+        # compare. Needs similarity matrix 'smat', a neuron database 'db',
+        neurons.aba = nblast_allbyall.neuronlist(neurons.dps, smat, FALSE, 'raw')
+
+        # TODO: Store neurons.aba. It is a matrix, indexed one-based like [1][1]
+        # for first element.
+
+        """.format(**{
+            'server_params': ", ".join(server_params),
+            'skeleton_ids': ",".join(skeleton_ids),
+        })
+
+        # Call R, allow Rprofile.site file
+        cmd = "R --no-save --no-restore --no-init-file --no-environ"
+        pipe = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE)
+        stdout, stderr = pipe.communicate(input=r_script)
+
+        if not os.path.exists(nrrd_path):
+            raise ValueError("No output file created")
+
+    except (IOError, OSError, ValueError) as e:
+        errors.append(str(e))
+        # Delete the file if parts of it have been written already
+        if os.path.exists(nrrd_path):
+            os.remove(nrrd_path)
+
+    return {
+        "errors": errors,
+        "warnings": warnings
+    }
+
+
+def nblast(project_id, config_id, query_skeleton_ids, target_skeleton_ids):
+    """Create NBLAST score for forward similarity from query skeleton to target
+    skeleton. This is executing essentially the following R script:
+
+    library(catmaid)
+    library(nat.nblast)
+
+    conn = catmaid_login({server_params})
+
+    # Load skeletons as dotprops. If multiple neurons should be compared,
+    # they should be in neuronlist format.
+    query = catmaid::read.neurons.catmaid({query_skeleton_id}, conn=conn)
+    target = catmaid::read.neurons.catmaid({target_skeleton_id}, conn=conn)
+    query_dp = dotprops(query, resample=1, k=5)
+    target_dp = dotprops(target, resample=1, k=5)
+    neurons.similarity = nblast_allbyall.neuronlist(neurons.dps, smat, FALSE, 'raw')
+    """
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    similarity = None
+    errors = []
+    try:
+        config = NblastConfig.objects.get(project_id=project_id, pk=config_id)
+        token, _ = Token.objects.get_or_create(user_id=config.user_id)
+
+        server_params = {
+            'server': settings.CATMAID_FULL_URL,
+            'token': token.key
+        }
+
+        if hasattr(settings, 'CATMAID_HTTP_AUTH_USER') and settings.CATMAID_HTTP_AUTH_USER:
+            server_params['authname'] = settings.CATMAID_HTTP_AUTH_USER
+            server_params['authpassword'] = settings.CATMAID_HTTP_AUTH_PASS
+
+        rcatmaid = importr('catmaid')
+        rnat = importr('nat')
+        rnblast = importr('nat.nblast')
+
+        conn = rcatmaid.catmaid_login(**server_params)
+        nblast_params = {}
+
+        config = NblastConfig.objects.get(project_id=project_id, pk=config_id)
+
+        if settings.MAX_PARALLEL_ASYNC_WORKERS > 1:
+            #' # Parallelise NBLASTing across 4 cores using doMC package
+            rdomc = importr('doMC')
+            rdomc.registerDoMC(settings.MAX_PARALLEL_ASYNC_WORKERS)
+            nblast_params['.parallel'] = True
+
+        logger.debug('Fetching query skeletons')
+        query_skeletons = rcatmaid.read_neurons_catmaid(
+                robjects.IntVector(query_skeleton_ids), **{
+                    'conn': conn,
+                    '.progress': 'none',
+                    'OmitFailures': True,
+                })
+        logger.debug('Fetching target skeletons')
+        target_skeletons = rcatmaid.read_neurons_catmaid(
+                robjects.IntVector(target_skeleton_ids), **{
+                    'conn': conn,
+                    '.progress': 'none',
+                    'OmitFailures': True,
+                })
+
+        logger.debug('Computing query skeleton stats')
+        query_skeletons_dps = rnat.dotprops(query_skeletons.ro / 1e3, **{
+                    'k': config.tangent_neighbors,
+                    'resample': 1,
+                    '.progress': 'none'
+                })
+
+        logger.debug('Computing random skeleton stats')
+        target_skeletons_dps = rnat.dotprops(target_skeletons.ro / 1e3, **{
+                    'k': config.tangent_neighbors,
+                    'resample': 1,
+                    '.progress': 'none'
+                })
+
+        # Restore R matrix for use with nat.nblast.
+        Matrix = robjects.r.matrix
+        cells = list(chain.from_iterable(config.scoring))
+        dist_bins = len(config.distance_breaks) - 1
+        smat = Matrix(robjects.FloatVector(cells), nrow=dist_bins, byrow=True)
+
+        # Set relevant attributes on similarity matrix. The nat.nblast code
+        # expects this.
+        rdistbreaks = robjects.FloatVector(config.distance_breaks)
+        rdotbreaks = robjects.FloatVector(config.dot_breaks)
+        smat.do_slot_assign('distbreaks', rdistbreaks)
+        smat.do_slot_assign('dotprodbreaks', rdotbreaks)
+
+        logger.debug('Computing score')
+        # Use defaults also used in nat.nblast.
+        nblast_params['smat'] = smat
+        nblast_params['NNDistFun'] = rnblast.lodsby2dhist
+        scores = rnblast.NeuriteBlast(query_skeletons_dps, target_skeletons_dps, **nblast_params);
+
+        # NBLAST by default will simplify the result in cases where there is
+        # only a one to one correspondence. Fix this to our expectation to have
+        # lists for both rows and columns.
+        if type(scores) == robjects.vectors.FloatVector:
+            similarity = [numpy.asarray(scores).tolist()]
+        else:
+            # Scores are returned with query skeletons as columns, but we want them
+            # as rows, because it matches our expected queries more. Therefore
+            # we have to transpose it using the 't()' R function.
+            similarity = numpy.asarray(robjects.r['t'](scores)).tolist()
+
+        logger.debug('Done')
+
+    except (IOError, OSError, ValueError) as e:
+        errors.append(str(e))
+
+    return {
+        "errors": errors,
+        "similarity": similarity
     }

@@ -406,3 +406,6 @@ CATMAID_HTTP_AUTH_PASS = None
 # Whether or not to create default data views in the initial migration. This is
 # mainly useful for setups using the JaneliaRender or DVID middleware.
 CREATE_DEFAULT_DATAVIEWS = True
+
+# NBLAST support
+NBLAST_ALL_BY_ALL_MIN_SIZE = 10

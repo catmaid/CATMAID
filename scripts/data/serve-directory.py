@@ -51,6 +51,27 @@ def main():
         return
 
     print("Starting {} server in folder {}".format(protocol, cwd))
+
+    # Print URL to each folder in the directory
+    sub_directories = [o for o in os.listdir(cwd)
+                       if os.path.isdir(os.path.join(cwd, o))
+                       and not o.startswith('.')]
+    if not sub_directories:
+        print("Warning: found no sub-directories to serve")
+    else:
+        if len(sub_directories) == 1:
+            print("The URL below should provide access to the folder " +
+                  "'{}' and can be used in CATMAID as custom mirror.".format(sub_directories[0]))
+        else:
+            print("Multiple local directories are available. Below you will " +
+                  "find a valid URL for each one that can be used in CATMAID as " +
+                  "a custom mirror.")
+
+        print('')
+        for sd in sub_directories:
+            print("https://localhost:{}/{}/".format(port, sd))
+        print('')
+
     server = Server(('localhost', port), CORSRequestHandler, cert_path)
     server.serve_forever()
 

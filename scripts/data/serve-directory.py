@@ -72,6 +72,19 @@ def main():
             print("https://localhost:{}/{}/".format(port, sd))
         print('')
 
+    # If there is a metadata.txt file in this folder, print it:
+    metadata_file = os.path.join(cwd, 'metadata.txt')
+    if os.path.isfile(metadata_file):
+        print("A metadata file was found, which should provide additional " +
+              "information for the custom mirror setup in CATMAID")
+        print('')
+        try:
+            with open(metadata_file, 'r') as f:
+                print(f.read())
+        except IOError:
+            print("Could not read metadata file 'metadata.txt'")
+        print('')
+
     server = Server(('localhost', port), CORSRequestHandler, cert_path)
     server.serve_forever()
 

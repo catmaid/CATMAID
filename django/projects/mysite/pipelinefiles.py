@@ -187,8 +187,9 @@ javascript_updater = PipelineSpecUpdater(JAVASCRIPT)
 
 for app_name in KNOWN_EXTENSIONS:
     try:
-        app_pipelinefiles = import_module(app_name + '.pipelinefiles')
+        app = import_module(app_name)
         installed_extensions.append(app_name)
+        app_pipelinefiles = import_module(app_name + '.pipelinefiles')
     except ImportError:
         continue
 

@@ -13,12 +13,11 @@ which interface with mainline CATMAID without having to change it.
 Overview
 --------
 
-CATMAID extensions are Django apps which form standalone python modules. When that
-module is made available to the python environment and added to ``INSTALLED_APPS``
-in your local ``settings.py``, Django can pick up any database models, API endpoints,
-and static files associated with the app, and code in the app can interact with code
-in mainline CATMAID. This modular approach allows much greater interoperability
-between different versions of CATMAID and the extension.
+CATMAID extensions are python modules which work as Django apps. When that
+module is made available to the python environment, Django can pick up any database
+models, API endpoints, and static files associated with the app, and code in the app
+can interact with code in mainline CATMAID. This modular approach allows much greater
+interoperability between different versions of CATMAID and the extension.
 
 In the documentation below, we use a fictional extension called ``myextension``.
 
@@ -31,10 +30,6 @@ Installing an Extension
     from PyPI, or cloning the repo and using ``pip`` to install from the local \
     ``setup.py``
 
-#. Let Django know you've installed it by adding \
-    ``INSTALLED_APPS += (myextension.apps.MyextensionConfig, )`` (note the capital \
-    M and the comma!) to your ``settings.py`` \
-
 #. Run ``python manage.py migrate`` to update the database as necessary. WARNING: \
     it is possible for a migration to irreversibly change or delete data in your \
     existing database.
@@ -44,8 +39,17 @@ Installing an Extension
 
 API endpoints should be available at ``BASE_URL/ext/myextension/...``
 
+*N.B. CATMAID will only recognise extensions it knows about - i.e. those listed in*
+*``KNOWN_EXTENSIONS`` in ``CATMAID/django/projects/pipelinefiles.py``. Check this if*
+*it doesn't seem to be working.*
+
 Creating an extension
 ---------------------
+
+To quickstart development, you may find this `cookiecutter <https://github.com/audreyr/cookiecutter>`_
+template valuable:
+`clbarnes/CATMAID-ext-cookiecutter <https://github.com/clbarnes/CATMAID-ext-cookiecutter>`_. To do
+it yourself:
 
 #. Decide on a name! We'll use ``myextension`` here.
 
@@ -72,12 +76,7 @@ Creating an extension
 
 #. Develop away! For testing purposes, you will need to `install <extension-install_>`_ \
     the extension in your CATMAID environment - it's convenient to use ``pip install -e`` \
-    to install the module in editable mode and ``python manage.py collectstatic -l``. \
-    Don't forget to add it to ``INSTALLED_APPS``.
-
-To quickstart development, you may find this `cookiecutter <https://github.com/audreyr/cookiecutter>`_
-template valuable:
-`clbarnes/CATMAID-ext-cookiecutter <https://github.com/clbarnes/CATMAID-ext-cookiecutter>`_.
+    to install the module in editable mode and ``python manage.py collectstatic -l``.
 
 Examples
 --------
@@ -88,6 +87,7 @@ Community Standards
 -------------------
 
 - See the :doc:`contributing <contributing>` page.
+- Don't pick an extension name which may clash with other python modules.
 - Don't write any migrations which will change data or database tables in the underlying \
     CATMAID installation.
 - Be aware of CATMAID's namespace - don't add dependencies or tables which could cause \

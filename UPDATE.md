@@ -10,6 +10,9 @@ and other administration related changes are listed in order.
 
 - Python 3.6 is now supported.
 
+- CATMAID extensions no longer require users to manually update their
+  `INSTALLED_APPS` in `settings.py`. Remove if they are already in use.
+
 ## 2017.12.07
 
 - PostgreSQL 9.6 and Postgis 2.4 are now required.

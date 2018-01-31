@@ -507,8 +507,8 @@
     },
     // Looks for soma tags on root nodes and make sure there is only one root
     // and only one soma tag in use on a neuron.
-    "nuclei": {
-      name: "Only nuclei",
+    "soma": {
+      name: "Only soma",
       prepare: ["arbor", "tags"],
       filter: function(skeletonId, neuron, input, options) {
         var skeleton = input.skeletons[skeletonId];
@@ -899,7 +899,7 @@
           });
       $(container).append($tag);
     },
-    'nuclei': function(container, options) {
+    'soma': function(container, options) {
       // Nuclei has no additional options
     },
     'subarbor': function(container, options) {

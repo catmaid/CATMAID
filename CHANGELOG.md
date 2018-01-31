@@ -54,6 +54,9 @@ Miscellaneous:
   are pressed. This allows to use key combinations like Ctrl + Shift + Space + >
   to browse smoothly through the image stack while hiding the tracing layer.
 
+- The active node can now be moved in Z by holding the `Alt` key and
+  using `,`/`.`. The stack viewer follows the node.
+
 
 ### Bug fixes
 

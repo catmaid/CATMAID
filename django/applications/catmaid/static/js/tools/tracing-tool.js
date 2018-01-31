@@ -1340,6 +1340,60 @@
       }
     }));
 
+    /**
+     * Factory which returns a function which will move the active node in Z.
+     *
+     * @param step
+     * @returns {Function}
+     */
+    const createNodeZMover = function (step) {
+      return function (e) {
+        const activeNode = SkeletonAnnotations.atn;
+
+        if (!CATMAID.mayEdit()) {
+          CATMAID.statusBar.replaceLast("You don't have permission to move node #" + activeNode.id);
+          return;
+        }
+
+        const newZs = activeStackViewer.validZDistanceByStep(activeStackViewer.z, step) + activeStackViewer.z;
+        const xp = activeStackViewer.primaryStack.stackToProjectX(newZs, activeNode.y, activeNode.x);
+        const yp = activeStackViewer.primaryStack.stackToProjectY(newZs, activeNode.y, activeNode.x);
+        const zp = activeStackViewer.primaryStack.stackToProjectZ(newZs, activeNode.y, activeNode.x);
+
+        const treenodesToUpdate = [];
+        const connectorsToUpdate = [];
+
+        const nodeInfo = [activeNode.id, xp, yp, zp];
+
+        if (activeNode.type === SkeletonAnnotations.TYPE_NODE) {
+          treenodesToUpdate.push(nodeInfo);
+        } else {
+          connectorsToUpdate.push(nodeInfo);
+        }
+
+        const tracingOverlay = activeStackViewer.getLayersOfType(CATMAID.TracingLayer)[0].tracingOverlay;
+        const command = new CATMAID.UpdateNodesCommand(
+          tracingOverlay.state, project.id, treenodesToUpdate, connectorsToUpdate
+        );
+        CATMAID.commands.execute(command)
+          .then(function() {
+            tracingOverlay.moveTo(zp, yp, xp);
+          })
+          .catch(CATMAID.handleError);
+      };
+    };
+
+    this.addAction(new CATMAID.Action({
+      helpText: "With <kbd>Alt</kbd> help, move selected node up in Z",
+      keyShortcuts: {',': ['Alt + ,']},
+      run: createNodeZMover(-1)
+    }));
+
+    this.addAction(new CATMAID.Action({
+      helpText: "With <kbd>Alt</kbd> help, move selected node down in Z",
+      keyShortcuts: {'.': ['Alt + .']},
+      run: createNodeZMover(1)
+    }));
 
     var keyToAction = CATMAID.getKeyToActionMap(actions);
 

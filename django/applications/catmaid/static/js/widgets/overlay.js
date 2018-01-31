@@ -2576,14 +2576,17 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     }
   }
 
-  // Warn about nodes not retrieved because of limit
+  // Provide loading status updated. Warn about nodes not retrieved because of
+  // limit.
+  let msg = "Loaded " + nAddedTreenodes + " nodes, " + nAddedConnectors +
+      " connectors and " + nAddedVirtualNodes + " virtual nodes";
   if (true === jso[3]) {
-    var msg = "Did not retrieve all visible nodes--too many! Zoom in to " +
-      "constrain the field of view.";
-    CATMAID.statusBar.replaceLast("*WARNING*: " + msg);
+    msg = "Warning: Did not retrieve all visible nodes--too many! Zoom in to " +
+      "constrain the field of view. " + msg;
     CATMAID.warn(msg);
     this.trigger(this.EVENT_HIT_NODE_DISPLAY_LIMIT);
   }
+  CATMAID.statusBar.replaceLast(msg);
 };
 
 /**

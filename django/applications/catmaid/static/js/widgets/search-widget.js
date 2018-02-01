@@ -47,6 +47,36 @@
     $('#search-results', this.content).append($('<i/>').text(message));
   };
 
+
+  let addNodeEntry = function(node, i) {
+    let attributes = {
+      'data-action': 'select-node',
+      'data-id': '' + node.id,
+      'data-x': node.x,
+      'data-y': node.y,
+      'data-z': node.z,
+      'href': '#'
+    };
+    let oneBasedIndex = i + 1;
+    this.append($('<a/>').attr(attributes)
+      .text("[" + oneBasedIndex + "]")).append("&nbsp;");
+    if (oneBasedIndex % 20 === 0) {
+      this.append('<br />');
+    }
+  };
+
+  let selectNode = function(e) {
+    var z = parseFloat(this.dataset.z);
+    var y = parseFloat(this.dataset.y);
+    var x = parseFloat(this.dataset.x);
+    var id = parseInt(this.dataset.id);
+    SkeletonAnnotations.staticMoveTo(z, y, x)
+      .then(function() {
+        return SkeletonAnnotations.staticSelectNode(id);
+      })
+      .catch(CATMAID.handleError);
+  };
+
   SearchWidget.prototype.search = function() {
     var searchTerm = $('input[name=search-box]', this.content).val();
     if(searchTerm === '') {
@@ -118,51 +148,45 @@
             }
             row.append(tdd);
           } else if (data[i].class_name === 'label') {
+
+            var td = $('<td/>');
             // Create a link that will then query, when clicked, for the list of nodes
             // that point to the label, and show a list [1], [2], [3] ... clickable,
             // or better, insert a table below this row with x,y,z,parent skeleton, parent neuron.
-            if (data[i].hasOwnProperty('nodes')) {
-              var td = $('<td/>');
-              row.append(td);
-              data[i].nodes.reduce(function(index, node) {
-                // Local copies
-                var z = parseInt(node.z);
-                var y = parseInt(node.y);
-                var x = parseInt(node.x);
-                var id = parseInt(node.id);
-                var skid = parseInt(node.skid);
-                td.append(
-                  $('<a/>').attr({'id': '' + id})
-                           .attr({'href': '#'})
-                           .click(function(event) {
-                             SkeletonAnnotations.staticMoveTo(z, y, x)
-                                .then(function() {
-                                  return SkeletonAnnotations.staticSelectNode(id, skid);
-                                })
-                                .catch(CATMAID.handleError);
-                             return false;
-                           })
-                           .text("[" + index + "]")
-                  ).append("&nbsp;");
-                if( index % 20 === 0)
-                  td.append('<br />');
-                return index + 1;
-              }, 1);
-            } else {
+            let treenodes = data[i].hasOwnProperty('nodes');
+            if (treenodes) {
+              td.append('<em>Treenodes:</em> ');
+              data[i].nodes.forEach(addNodeEntry, td);
+            }
+
+            let connectors = data[i].hasOwnProperty('connectors');
+            if (connectors) {
+              if (treenodes) {
+                td.append('<br />');
+              }
+              td.append('<em>Connectors:</em> ');
+              data[i].connectors.forEach(addNodeEntry, td);
+            }
+
+            if (!treenodes && !connectors) {
               // no nodes, option to remove the label
               actionLink = $('<a/>');
               actionLink.attr({'id': ''+data[i].id});
               actionLink.attr({'href': '#'});
               actionLink.click(removelabel(data[i].id));
               actionLink.text("Remove label");
-              row.append($('<td/>').append(actionLink));
+              td.append(actionLink);
             }
+
+            row.append(td);
           } else {
             row.append($('<td/>').text('IMPLEMENT ME'));
           }
           row.append($('<td/>').text(i+1));
           tbody.append(row);
         }
+
+        tbody.on('click', 'a[data-action=select-node]', selectNode);
     });
   };
 

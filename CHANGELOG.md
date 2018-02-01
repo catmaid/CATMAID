@@ -60,6 +60,8 @@ Miscellaneous:
 - The active node can now be moved in Z by holding the `Alt` key and
   using `,`/`.`. The stack viewer follows the node.
 
+- Node Search: tagged connector nodes are now shown as well.
+
 
 ### Bug fixes
 

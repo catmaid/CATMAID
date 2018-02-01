@@ -5,28 +5,14 @@ import json
 
 from django.http import HttpResponse
 
-from catmaid.models import UserRole, ClassInstance, TreenodeClassInstance
+from catmaid.models import (UserRole, ClassInstance, ConnectorClassInstance,
+        TreenodeClassInstance)
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def search(request, project_id=None):
-    def format_node_data(node):
-        '''
-        Formats node data for our json output.
-
-        When we start using Django 1.4, we can use prefetch_related instead of using
-        .values('treenode__xxx'), and will then be able to access a proper location
-        object.
-        '''
-        return {
-            'id': node['treenode'],
-            'x': int(node['treenode__location_x']),
-            'y': int(node['treenode__location_y']),
-            'z': int(node['treenode__location_z']),
-            'skid': node['treenode__skeleton']}
-
     search_string = request.GET.get('substring', "")
 
     ids = set()
@@ -66,6 +52,7 @@ def search(request, project_id=None):
             matching_labels.add(row['name'])
             label_rows[row['id']] = row
 
+    # Find treenodes with label
     node_query = TreenodeClassInstance.objects.filter(
         project=project_id,
         treenode__project=project_id,
@@ -86,7 +73,42 @@ def search(request, project_id=None):
         if not nodes:
             nodes = []
             row_with_node['nodes'] = nodes
-        nodes.append(format_node_data(node))
+        nodes.append({
+            'id': node['treenode'],
+            'x': node['treenode__location_x'],
+            'y': node['treenode__location_y'],
+            'z': node['treenode__location_z'],
+            'skid': node['treenode__skeleton']
+        })
+
+
+    # Find connectors with label
+    connector_query = ConnectorClassInstance.objects.filter(
+        project=project_id,
+        connector__project=project_id,
+        relation=relation_map['labeled_as'],
+        class_instance__name__in=matching_labels)\
+    .order_by('-connector__id')\
+    .values('connector',
+        'connector__location_x',
+        'connector__location_y',
+        'connector__location_z',
+        'class_instance__name',
+        'class_instance__id')
+
+    for connector in connector_query:
+        row_with_node = label_rows[connector['class_instance__id']]
+        connectors = row_with_node.get('connectors', None)
+        if not connectors:
+            connectors = []
+            row_with_node['connectors'] = connectors
+        connectors.append({
+            'id': connector['connector'],
+            'x': connector['connector__location_x'],
+            'y': connector['connector__location_y'],
+            'z': connector['connector__location_z']
+        })
+
 
     return HttpResponse(json.dumps(rows))
 

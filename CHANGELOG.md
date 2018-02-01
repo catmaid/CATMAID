@@ -21,6 +21,9 @@
  the production requirements, `-dev.txt` includes test (and therefore
  production) and doc.
 
+- CATMAID extensions no longer require users to manually edit their
+  `INSTALLED_APPS` in `settings.py`. Remove if they are already in use.
+
 
 ### Features and enhancements
 

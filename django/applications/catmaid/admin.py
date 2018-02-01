@@ -218,6 +218,14 @@ class StackGroupAdmin(GuardedModelAdmin):
     actions = (duplicate_action,)
 
 
+class ProjectStackAdmin(admin.ModelAdmin):
+    list_display = ('id', '__str__', 'project', 'stack', 'orientation', 'translation')
+    search_fields = ('id', '__str__', 'project', 'stack', 'orientation')
+    list_display_links = ('id', '__str__')
+    save_as = True
+    actions = (duplicate_action,)
+
+
 class StackMirrorAdmin(GuardedModelAdmin):
     form = StackMirrorForm
     list_display = ('title', 'stack', 'position', 'image_base')
@@ -341,7 +349,7 @@ admin.site.register(Project, ProjectAdmin)
 admin.site.register(DataView, DataViewAdmin)
 admin.site.register(Stack, StackAdmin)
 admin.site.register(StackGroup, StackGroupAdmin)
-admin.site.register(ProjectStack)
+admin.site.register(ProjectStack, ProjectStackAdmin)
 admin.site.register(StackMirror, StackMirrorAdmin)
 
 # Replace the user admin view with custom view

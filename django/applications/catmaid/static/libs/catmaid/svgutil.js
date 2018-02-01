@@ -657,9 +657,12 @@
    */
   SVGUtil.addStyles = function(xml, styles)
   {
-    // Prepend CSS embedded in CDATA section
+    // Create style tag with same namesapce as input XML.
     var styleTag = xml.createElement('style');
     styleTag.setAttribute('type', 'text/css');
+    styleTag.setAttribute('xmlns', xml.firstChild.namespaceURI);
+
+    // Prepend CSS embedded in CDATA section.
     styleTag.appendChild(xml.createCDATASection(styles));
 
     // Add style tag to SVG node in XML document (first child if there are

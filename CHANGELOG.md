@@ -72,6 +72,9 @@ Miscellaneous:
 
 - Reconstruction sampler: Strahler shading color updates work now reliably.
 
+- 3D Viewer: SVG export styles are correctly applied again, the exported data
+  isn't transparent anymore.
+
 
 ## 2017.12.07
 

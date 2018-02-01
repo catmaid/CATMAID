@@ -47,6 +47,13 @@ Reconstruction Sampler:
   its life time and it still forms a straight line with its parent and single
   child, it can be removed. Otherwise the node is kept.
 
+Node Search:
+
+- Tagged connector nodes are now shown in search results.
+
+- Annotation search results allow now to open the Neuron Navigator page for the
+  respective annotation.
+
 Miscellaneous:
 
 - The maximum number of frames per second rendered by a stack viewer window can
@@ -59,8 +66,6 @@ Miscellaneous:
 
 - The active node can now be moved in Z by holding the `Alt` key and
   using `,`/`.`. The stack viewer follows the node.
-
-- Node Search: tagged connector nodes are now shown as well.
 
 
 ### Bug fixes

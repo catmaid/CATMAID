@@ -77,6 +77,14 @@
       .catch(CATMAID.handleError);
   };
 
+  let searchAnnotation = function() {
+    let annotation = this.dataset.annotation;
+    let annotationId = parseInt(this.dataset.annotationId, 10);
+    var navigator = new CATMAID.NeuronNavigator();
+    WindowMaker.create('neuron-navigator', navigator);
+    navigator.set_annotation_node(annotation, annotationId);
+  };
+
   SearchWidget.prototype.search = function() {
     var searchTerm = $('input[name=search-box]', this.content).val();
     if(searchTerm === '') {
@@ -130,7 +138,8 @@
           row.append($('<td/>').text(data[i].id));
           row.append($('<td/>').text(data[i].name));
           row.append($('<td/>').text(data[i].class_name));
-          if (data[i].class_name === 'neuron' || data[i].class_name === 'skeleton') {
+          let className = data[i].class_name;
+          if (className === 'neuron' || className === 'skeleton') {
             var tdd = $('<td/>');
             var actionLink = $('<a/>');
             actionLink.attr({'id': ''+data[i].id});
@@ -147,8 +156,7 @@
               tdd.append(actionLink);
             }
             row.append(tdd);
-          } else if (data[i].class_name === 'label') {
-
+          } else if (className === 'label') {
             var td = $('<td/>');
             // Create a link that will then query, when clicked, for the list of nodes
             // that point to the label, and show a list [1], [2], [3] ... clickable,
@@ -179,6 +187,18 @@
             }
 
             row.append(td);
+          } else if (className == 'annotation') {
+            var td = $('<td/>');
+            let link = $('<a />')
+              .attr({
+                'href': '#',
+                'data-annotation': data[i].name,
+                'data-annotation-id': data[i].id,
+                'data-action': 'search-annotation'
+              })
+              .text('List targets');
+            td.append(link);
+            row.append(td);
           } else {
             row.append($('<td/>').text('IMPLEMENT ME'));
           }
@@ -186,7 +206,9 @@
           tbody.append(row);
         }
 
-        tbody.on('click', 'a[data-action=select-node]', selectNode);
+        tbody
+          .on('click', 'a[data-action=select-node]', selectNode)
+          .on('click', 'a[data-action=search-annotation]', searchAnnotation);
     });
   };
 

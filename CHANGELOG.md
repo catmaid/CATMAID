@@ -72,6 +72,9 @@ Miscellaneous:
 
 - Reconstruction sampler: Strahler shading color updates work now reliably.
 
+- Reconstruction sampler: connectors in neighboring intervals are now not
+  included anymore in connector listing.
+
 - 3D Viewer: SVG export styles are correctly applied again, the exported data
   isn't transparent anymore.
 

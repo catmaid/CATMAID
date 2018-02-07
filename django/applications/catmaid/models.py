@@ -23,6 +23,7 @@ from django.utils.encoding import python_2_unicode_compatible
 
 from guardian.shortcuts import get_objects_for_user
 from taggit.managers import TaggableManager
+from rest_framework.authtoken.models import Token
 
 from .fields import Double3DField, Integer3DField, RGBAField
 
@@ -1203,13 +1204,16 @@ def create_user_profile(sender, instance, created, **kwargs):
 post_save.connect(create_user_profile, sender=User)
 
 def add_user_to_default_groups(sender, instance, created, **kwargs):
-    if created and settings.NEW_USER_DEFAULT_GROUPS:
-        for group in settings.NEW_USER_DEFAULT_GROUPS:
-            try:
-                g = Group.objects.get(name=group)
-                g.user_set.add(instance)
-            except Group.DoesNotExist:
-                logging.getLogger(__name__).info("Default group %s does not exist" % group)
+    if created:
+        if settings.NEW_USER_DEFAULT_GROUPS:
+            for group in settings.NEW_USER_DEFAULT_GROUPS:
+                try:
+                    g = Group.objects.get(name=group)
+                    g.user_set.add(instance)
+                except Group.DoesNotExist:
+                    logging.getLogger(__name__).info("Default group %s does not exist" % group)
+        # Create token
+        Token.objects.create(user=instance)
 
 # Connect the User model's post save signal to default group assignment
 post_save.connect(add_user_to_default_groups, sender=User)

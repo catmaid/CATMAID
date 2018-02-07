@@ -67,6 +67,9 @@ Miscellaneous:
 - The active node can now be moved in Z by holding the `Alt` key and
   using `,`/`.`. The stack viewer follows the node.
 
+- Filters: a Reconstruction Sampler Domain node filer is now available. The
+  required node ID can be optained from the Reconstruction Sampler Widget.
+
 
 ### Bug fixes
 

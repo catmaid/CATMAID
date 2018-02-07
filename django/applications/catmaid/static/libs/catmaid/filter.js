@@ -172,7 +172,8 @@
         needsPartners = neededInput.has("partners"),
         needsTags = neededInput.has("tags"),
         needsTime = neededInput.has("time"),
-        needsIntervals = neededInput.has("intervals");
+        needsIntervals = neededInput.has("intervals"),
+        needsDomains = neededInput.has("domains");
 
     if (needsArbor || needsTags || needsPartners) {
       if (input.skeletons === undefined) { input.skeletons = {}; }
@@ -192,6 +193,35 @@
       }
       volumeIds = Array.from(volumeIds);
       prepareActions.push(CATMAID.SkeletonFilter.loadVolumes(volumeIds, input.volumes));
+    }
+
+    if (needsDomains) {
+      if (input.domains === undefined) { input.domains = []; }
+      if (input.domainIndex === undefined) { input.domainIndex = {}; }
+
+      var volumeIds = new Set();
+      for (var i=0; i<rules.length; ++i) {
+        var volumeId = rules[i].options['volumeId'];
+        if (volumeId !== undefined) {
+          volumeIds.add(volumeId);
+        }
+      }
+      var domainRetrieval = Promise.resolve();
+      var nRules = rules.length;
+      for (var i=0; i<nRules; ++i) {
+        var domainId = rules[i].options['domainId'];
+        if (domainId !== undefined) {
+          domainRetrieval = domainRetrieval
+            .then(function(interval) {
+              return CATMAID.fetch(project.id + '/samplers/domains/' +
+                  domainId + '/details');
+            })
+            .then(function(domain) {
+              input.domain = domain;
+            });
+        }
+      }
+      prepareActions.push(domainRetrieval);
     }
 
     if (needsIntervals) {
@@ -824,6 +854,22 @@
         return includedNodes;
       }
     },
+    'sampler-domain': {
+      name: "Sampler domain",
+      prepare: ['arbor', 'domains'],
+      filter: function(skeletonId, neuron, input, options) {
+        let skeleton = input.skeletons[skeletonId];
+        let arbor = skeleton.arbor;
+        let domain = input.domain;
+        try {
+          let domainArbor = CATMAID.Sampling.domainArbor(arbor, domain.start_node_id,
+              domain.ends.map(function(end) { return end.node_id; }));
+          return domainArbor.nodes();
+        } catch (error) {
+          return {};
+        }
+      }
+    },
     'sampler-interval': {
       name: "Sampler interval",
       prepare: ['arbor', 'intervals'],
@@ -1172,6 +1218,17 @@
             options.strahlerValue = parseInt(this.value, 10);
           });
       $(container).append($tag);
+    },
+    'sampler-domain': function(container, options) {
+      var domainId = document.createElement('input');
+      domainId.setAttribute('type', 'number');
+      domainId.onchange = function() {
+        options.domainId = parseInt(this.value);
+      };
+      var domainIdLabel = document.createElement('label');
+      domainIdLabel.appendChild(document.createTextNode('Domain ID'));
+      domainIdLabel.appendChild(domainId);
+      container.appendChild(domainIdLabel);
     },
     'sampler-interval': function(container, options) {
       var intervalId = document.createElement('input');

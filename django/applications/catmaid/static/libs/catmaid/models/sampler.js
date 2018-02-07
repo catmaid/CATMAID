@@ -418,10 +418,15 @@
         continue;
       }
 
+      // Don't include children of boundary nodes
+      if (boundaryNodes.has(currentNodeId)) {
+        continue;
+      }
+
       var children = allSuccessors[currentNodeId];
       for (var i=0; i<children.length; ++i) {
         var childId = parseInt(children[i], 10);
-        // Don't include nodes that are off limit
+        // Don't include children of boundary nodes
         if (boundaryNodes.has(childId)) {
           continue;
         }

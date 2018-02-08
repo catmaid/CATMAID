@@ -40,6 +40,8 @@
     this.edge_threshold = 1;
     this.edge_confidence_threshold = 1;
 
+    this.selectedLinkTypes = new Set(['synaptic-connector']);
+
     this.setState('color_mode', 'source');
 
     // stores re-layout timeout when resizing
@@ -3541,6 +3543,14 @@
          this.update();
        }
     }, this);
+  };
+
+  GroupGraph.prototype.setLinkTypeVisibility = function(linkType, visible) {
+    if (visible) {
+      this.selectedLinkTypes.add(linkType);
+    } else {
+      this.selectedLinkTypes.delete(linkType);
+    }
   };
 
   /**

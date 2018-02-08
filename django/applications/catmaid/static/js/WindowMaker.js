@@ -1434,6 +1434,65 @@ var WindowMaker = new function()
         GG.filterEdges($('#graph_edge_threshold' + GG.widgetID).val(),
                        $('#graph_edge_confidence_threshold' + GG.widgetID).val()); };
 
+    // Update volume list
+    var initLinkTypeList = function() {
+      return CATMAID.Connectors.linkTypes(project.id)
+        .then(function(json) {
+          var linkTypes = json.sort(function(a, b) {
+            return CATMAID.tools.compareStrings(a.type, b.type);
+          }).filter(function(lt, i, a) {
+            // Remove duplicates
+            return a.indexOf(lt) === i;
+          }).map(function(lt) {
+            return {
+              title: lt.type,
+              value: lt.type_id
+            };
+          });
+          var selectedLinkTypes = GG.selectedLinkTypes;
+          // Create actual element based on the returned data
+          var node = DOM.createCheckboxSelect('Link types', linkTypes,
+              selectedLinkTypes, true);
+          // Add a selection handler
+          node.onchange = function(e) {
+            var visible = e.target.checked;
+            var linkTypeId = e.target.value;
+            GG.setLinkTypeVisibility(linkTypeId, visible);
+
+            // Add extra display controls for enabled volumes
+            var li = e.target.closest('li');
+            if (!li) {
+              return;
+            }
+            if (visible) {
+              var volumeControls = li.appendChild(document.createElement('span'));
+              volumeControls.setAttribute('data-role', 'volume-controls');
+              CATMAID.DOM.appendColorButton(volumeControls, 'c',
+                'Change the color of this volume',
+                undefined, undefined, {
+                  initialColor: o.meshes_color,
+                  initialAlpha: o.meshes_opacity,
+                  onColorChange: updateVolumeColor.bind(null, volumeId)
+                });
+              var facesCb = CATMAID.DOM.appendCheckbox(volumeControls, "Faces",
+                  "Whether faces should be displayed for this volume",
+                  o.meshes_faces, updateVolumeFaces.bind(null, volumeId));
+              facesCb.style.display = 'inline';
+            } else {
+              var volumeControls = li.querySelector('span[data-role=volume-controls]');
+              if (volumeControls) {
+                li.removeChild(volumeControls);
+              }
+            }
+          };
+          return node;
+        });
+    };
+
+    var linkTypeSelection = DOM.createAsyncPlaceholder(initLinkTypeList());
+    var linkTypeSelectionWrapper = document.createElement('span');
+    linkTypeSelectionWrapper.appendChild(linkTypeSelection);
+
     DOM.appendToTab(tabs['Graph'],
         [['Re-layout', GG.updateLayout.bind(GG, layout, null)],
          [' fit', true, GG.toggleLayoutFit.bind(GG), true],
@@ -1444,6 +1503,7 @@ var WindowMaker = new function()
          [document.createTextNode(' synapses ')],
          [document.createTextNode(' - Filter synapses below confidence ')],
          [edgeConfidence],
+         {type: 'child', element: visibleLinkTypes}
         ]);
 
     DOM.appendToTab(tabs['Selection'],

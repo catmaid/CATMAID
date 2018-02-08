@@ -22,6 +22,10 @@
     }
   };
 
+  Workflow.prototype.setState = function(state) {
+    this.state = state;
+  };
+
   Workflow.prototype.advance = function() {
     this.selectStep(this.currentStepIndex + 1);
   };

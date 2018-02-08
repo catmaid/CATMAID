@@ -16,6 +16,17 @@
    */
   var ReconstructionSampler = function() {
     this.widgetID = this.registerInstance();
+
+    this.workflow = new CATMAID.Workflow({
+      steps: [
+        new BackboneWorkflowStep(),
+        new DomainWorkflowStep(),
+        new IntervalWorkflowStep(),
+        new SynapseWorkflowStep(),
+        new PartnerWorkflowStep()
+       ]
+    });
+
     this.init();
 
     // Listen to active node change events
@@ -41,16 +52,8 @@
       'domainEndNodeType': get(state.domainEndNodeType, 'downstream'),
       'reviewRequired': get(state.reviewRequired, true)
     };
-    this.workflow = new CATMAID.Workflow({
-      state: this.state,
-      step: 0,
-      steps: [
-        new BackboneWorkflowStep(),
-        new DomainWorkflowStep(),
-        new IntervalWorkflowStep(),
-        new SynapseWorkflowStep()
-       ]
-    });
+    this.workflow.setState(this.state);
+    this.workflow.selectStep(0);
   };
 
   ReconstructionSampler.prototype.destroy = function() {

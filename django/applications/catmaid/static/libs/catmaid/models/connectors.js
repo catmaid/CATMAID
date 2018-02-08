@@ -101,7 +101,7 @@
     info: function(projectId, connectorId) {
       CATMAID.requirePermission(projectId, 'can_browse',
           'You don\'t have have permission to get connector details');
-      var url = projectId + '/connector/' + connectorId + '/detail';
+      var url = projectId + '/connectors/' + connectorId + '/';
 
       return CATMAID.fetch(url, 'GET')
         .then(function(result) {

@@ -1558,7 +1558,8 @@
   };
 
   SynapseWorkflowStep.prototype.isComplete = function(state) {
-    return !!state['synapseSelected'];
+    return state['connectorId'] !== undefined &&
+        state['connectorSourceNodeId'] !== undefined;
   };
 
   SynapseWorkflowStep.prototype.updateContent = function(content, widget) {
@@ -1648,14 +1649,14 @@
       })
       .then(function() {
         self.datatables = [
-          self.makeConnectorTable(inputTable, interval, skeletonId, "presynaptic_to"),
-          self.makeConnectorTable(outputTable, interval, skeletonId, "postsynaptic_to")
+          self.makeConnectorTable(widget, inputTable, interval, skeletonId, "presynaptic_to"),
+          self.makeConnectorTable(widget, outputTable, interval, skeletonId, "postsynaptic_to")
         ];
       })
       .catch(CATMAID.handleError);
   };
 
-  SynapseWorkflowStep.prototype.makeConnectorTable = function(table, interval, skeletonId, relation) {
+  SynapseWorkflowStep.prototype.makeConnectorTable = function(widget, table, interval, skeletonId, relation) {
     var self = this;
     var intervalId = interval.id;
     var datatable = $(table).DataTable({
@@ -1773,9 +1774,12 @@
         {
           title: "Action",
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
-            return '<a href="#" data-action="exclude" data-node-id="' + row.id + '">exclude</a> ' +
-            '<a href="#" data-action="reset" data-node-id="' + row.id + '">reset</a>';
+            return '<a href="#" data-action="select" data-connector-id="' + row.id +
+                '" data-node-id="' + row.treenode_id + '">select</a> ' +
+                '<a href="#" data-action="exclude" data-node-id="' + row.id + '">exclude</a> ' +
+                '<a href="#" data-action="reset" data-node-id="' + row.id + '">reset</a>';
           }
         }
       ],
@@ -1958,8 +1962,11 @@
         interval.id + '/connectors/' + connector.id + '/set-state',
         'POST', {state_id: startedStateId})
       .then(function(result) {
-        widget.update();
         SkeletonAnnotations.staticMoveToAndSelectNode(connector.id);
+        widget.state['connectorId'] = connector.id;
+        widget.state['connectorSourceNodeId'] = connector.treenode_id;
+        widget.workflow.advance();
+        widget.update();
       });
   };
 
@@ -2010,6 +2017,228 @@
     } else {
       CATMAID.warn("Could not find interval nodes");
     }
+    this.highlightActiveNode();
+  };
+
+  /**
+   * Pick a synaptic partner at random from the selected connector.
+   */
+  var PartnerWorkflowStep = function() {
+    CATMAID.WorkflowStep.call(this, "Partner");
+    this.partners = [];
+  };
+
+  PartnerWorkflowStep.prototype = Object.create(CATMAID.WorkflowStep);
+  PartnerWorkflowStep.prototype.constructor = CATMAID.WorkflowStep;
+
+  PartnerWorkflowStep.prototype.activate = function(state) { };
+
+  PartnerWorkflowStep.prototype.createControls = function(widget) {
+    var self = this;
+    return [
+      {
+        type: 'button',
+        label: 'Pick random partner',
+        title: "Select a random partner of the selected synapse",
+        onclick: function() {
+          self.pickRandomPartner(widget);
+        }
+      },
+      {
+        type: 'button',
+        label: 'Refresh',
+        title: "Reload the partner listing",
+        onclick: function() {
+          widget.update();
+        }
+      }
+    ];
+  };
+
+  PartnerWorkflowStep.prototype.isComplete = function(state) {
+    return !!state['partnerSelected'];
+  };
+
+  PartnerWorkflowStep.prototype.updateContent = function(content, widget) {
+    var connectorId = widget.state['connectorId'];
+    if (!connectorId) {
+      throw new CATMAID.ValueError("Need synapse/connector ID for partner workflow step");
+    }
+    var sourceNodeId = widget.state['connectorSourceNodeId'];
+    if (!sourceNodeId) {
+      throw new CATMAID.ValueError("Need source node ID for partner workflow step");
+    }
+
+    var p = content.appendChild(document.createElement('p'));
+    var msg = 'Add all synaptic partners to the selected connector. ' +
+        'Once this is done, press the "Pick random partner" button and ' +
+        'reconstruct the partner skeleton to identification.';
+    p.appendChild(document.createTextNode(msg));
+
+    var p2 = content.appendChild(document.createElement('p'));
+    p2.innerHTML = 'Connector node: <a href="#" data-action="select-node" data-node-id="' + connectorId +
+        '">' + connectorId + '</a> Source node: <a href="#" data-action="select-node" data-node-id="' +
+        sourceNodeId + '">' + sourceNodeId + '</a>';
+
+    $('a', p2).on('click', function() {
+      var nodeId = this.dataset.nodeId;
+      SkeletonAnnotations.staticMoveToAndSelectNode(nodeId);
+    });
+
+    // Get review information for interval
+
+    // Create a data table with all available partners
+    var partnerHeader = content.appendChild(document.createElement('h3'));
+    partnerHeader.appendChild(document.createTextNode('Partners'));
+    partnerHeader.style.clear = 'both';
+    var partnerTable = document.createElement('table');
+    content.appendChild(partnerTable);
+
+    var self = this;
+
+    // Get current partner set. Don't use the cached ones.
+    var prepare = CATMAID.Connectors.info(project.id, connectorId)
+      .then(function(result) {
+        widget.state['connector'] = result;
+        self.partners = result.partners.filter(function(p) {
+          return p.partner_id != sourceNodeId;
+        });
+      });
+    // Create up-to-date version of interval nodes
+    Promise.all([prepare, this.ensureMetadata()])
+      .then(function() {
+        self.datatables = [
+          self.makePartnerTable(widget, partnerTable, widget.state['connector'], sourceNodeId),
+        ];
+      })
+      .catch(CATMAID.handleError);
+  };
+
+  PartnerWorkflowStep.prototype.makePartnerTable = function(widget, table, connector, sourceNodeId) {
+    var self = this;
+    var connectorId = connector.id;
+    var connectorPartners = connector.partners;
+    var datatable = $(table).DataTable({
+      dom: "lrphtip",
+      autoWidth: false,
+      paging: true,
+      lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+      ajax: function(data, callback, settings) {
+        callback({
+          draw: data.draw,
+          data: self.partners
+        });
+      },
+      order: [],
+      columns: [
+        {
+          data: "skeleton_id",
+          title: "Skeleton",
+          orderable: false,
+          class: "cm-center",
+          render: function(data, type, row, meta) {
+            if (type === "display") {
+              return '<a href="#" data-action="select-skeleton" data-skeleton-id="' +
+                  row.skeleton_id + '">' + row.skeleton_id + '</a>';
+            } else {
+              return row.skeleton_id;
+            }
+          }
+        },
+        {
+          data: "partner_id",
+          title: "Partner node",
+          orderable: true,
+          class: "cm-center",
+          render: function(data, type, row, meta) {
+            if (type === "display") {
+              return '<a href="#" data-action="select-node" data-node-id="' +
+                  row.partner_id + '">' + row.partner_id + '</a>';
+            } else {
+              return row.partner_id;
+            }
+          }
+        },
+        {
+          data: "relation_name",
+          title: "Relation",
+          orderable: true,
+          class: "cm-center",
+          render: function(data, type, row, meta) {
+            return row.relation_name;
+          }
+        }
+      ],
+      createdRow: function( row, data, dataIndex ) {
+        row.setAttribute('data-node-id', data.partner_id);
+      },
+      drawCallback: function(settings) {
+        highlightActiveNode.call(this);
+      }
+    });
+
+    datatable.on('click', 'a[data-action=select-node]', function() {
+      var nodeId = this.dataset.nodeId;
+      SkeletonAnnotations.staticMoveToAndSelectNode(nodeId);
+    });
+
+    return datatable;
+  };
+
+  var highlightActivePartnerNode = function() {
+    $('tr', this.table).removeClass('highlight');
+    if (SkeletonAnnotations.getActiveNodeType() === SkeletonAnnotations.TYPE_NODE) {
+      var activeNodeId = SkeletonAnnotations.getActiveNodeId();
+      $('tr[data-node-id=' + activeNodeId + ']', this.table).addClass('highlight');
+    }
+  };
+
+  PartnerWorkflowStep.prototype.highlightActiveNode = function() {
+    if (this.datatables && this.datatables.length > 0) {
+      for (var i=0; i<this.datatables.length; ++i) {
+        highlightActivePartnerNode.call(this.datatables[i]);
+      }
+    }
+  };
+
+  PartnerWorkflowStep.prototype.refreshTables = function() {
+    if (this.datatables && this.datatables.length > 0) {
+      for (var i=0; i<this.datatables.length; ++i) {
+        this.datatables[i].ajax.reload();
+      }
+    }
+  };
+
+  PartnerWorkflowStep.prototype.ensureMetadata = function() {
+    if (this.possibleStates) {
+      return Promise.resolve();
+    }
+  };
+
+  PartnerWorkflowStep.prototype.pickRandomPartner = function(widget) {
+    let connector = widget.state['connector'];
+    if (!connector) {
+      CATMAID.warn('No connector selected');
+      return;
+    }
+
+    let partners = this.partners;
+    if (!partners || partners.length === 0) {
+      CATMAID.warn("No partners found");
+      return;
+    }
+
+    // Select random partners. For now, use uniform distribution
+    var partner = partners[Math.floor(Math.random() * partners.length)];
+    CATMAID.msg("Success", "Selected node " + partner.partner_id + " in skeleton " +
+        partner.skeleton_id);
+    SkeletonAnnotations.staticMoveToAndSelectNode(partner.partner_id);
+  };
+
+  /**
+   * Warn users if they step out of looked at interval.
+   */
+  PartnerWorkflowStep.prototype.handleActiveNodeChange = function(widget, node) {
     this.highlightActiveNode();
   };
 

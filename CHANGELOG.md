@@ -47,6 +47,10 @@ Reconstruction Sampler:
   its life time and it still forms a straight line with its parent and single
   child, it can be removed. Otherwise the node is kept.
 
+- A new "Partner" step has been added. After a connector is selected at random,
+  users are now asked to add all partner nodes to the synapse and let the widget
+  choose a partner site for them.
+
 Node Search:
 
 - Tagged connector nodes are now shown in search results.

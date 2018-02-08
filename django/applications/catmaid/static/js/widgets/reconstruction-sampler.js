@@ -1714,6 +1714,7 @@
           data: "id",
           title: "Connector",
           orderable: false,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             if (type === "display") {
               return '<a href="#" data-action="select-node" data-node-id="' +
@@ -1727,6 +1728,7 @@
           data: "user_id",
           title: "User",
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             return CATMAID.User.safe_get(row.user_id).login;
           }
@@ -1734,6 +1736,7 @@
         {
           data: "edition_time",
           title: "Last edited on (UTC)",
+          class: "cm-center",
           orderable: true,
           render: function(data, type, row, meta) {
             return formatDate(new Date(row.edition_time));
@@ -1743,6 +1746,7 @@
           data: "treenode_id",
           title: "Treenode",
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             if (type === "display") {
               return '<a href="#" data-action="select-node" data-node-id="' +
@@ -1755,6 +1759,7 @@
         {
           title: "State",
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             var samplerConnector = self.samplerConnectors[row.id];
             if (samplerConnector) {
@@ -1812,6 +1817,23 @@
     }).on('click', 'a[data-action=reset]', function() {
       var connectorId = this.dataset.nodeId;
       setState(connectorId, 'untouched');
+    }).on('click', 'a[data-action=select]', function() {
+      widget.state['connectorId'] = parseInt(this.dataset.connectorId, 10);
+      widget.state['connectorSourceNodeId'] = parseInt(this.dataset.nodeId, 10);
+      widget.workflow.advance();
+      widget.update();
+    }).on('dblclick', 'tr', function(e) {
+      var data = datatable.row(this).data();
+      if (data) {
+        var table = $(this).closest('table');
+        var tr = $(this).closest('tr');
+        var data =  $(table).DataTable().row(tr).data();
+
+        widget.state['connectorId'] = parseInt(data.id, 10);
+        widget.state['connectorSourceNodeId'] = parseInt(data.treenode_id, 10);
+        widget.workflow.advance();
+        widget.update();
+      }
     });
 
     datatable.on('click', 'a[data-action=select-node]', function() {

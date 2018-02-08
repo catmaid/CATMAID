@@ -1491,7 +1491,7 @@
     reviewWidget.startSkeletonToReview(skeletonId);
   };
 
-/**
+  /**
    * Pick a synapse at random from the traced interval (input, output, or
    * either, depending on the goals).
    */

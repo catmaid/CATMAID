@@ -182,7 +182,7 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
 
     if not relations:
         relations = get_relation_to_id_map(project_id, (source_link, target_link), cursor)
-    source_rel_id, target_rel_id = relations[target_link], relations[target_link]
+    source_rel_id, target_rel_id = relations[source_link], relations[target_link]
 
     # Fetch synapses of all skeletons
     cursor.execute('''

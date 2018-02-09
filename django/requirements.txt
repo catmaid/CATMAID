@@ -15,7 +15,7 @@ jsonfield==2.0.2
 kombu==4.1.0
 matplotlib==2.1.0
 mock==1.0.1
-msgpack_python==0.4.8
+msgpack_python==0.5.4
 networkx==1.7
 numpy==1.13.3
 pgmagick==0.7.2; platform_python_implementation != 'PyPy'

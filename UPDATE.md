@@ -8,7 +8,14 @@ and other administration related changes are listed in order.
 
   sudo apt-get install binutils libproj-dev gdal-bin
 
-- Python 3.6 is now supported.
+- Python 3.6 is now supported. Make sure to update your settings.py by replacing
+  the line
+
+  COOKIE_SUFFIX = hashlib.md5(CATMAID_URL).hexdigest()
+
+  with the following line:
+
+  COOKIE_SUFFIX = hashlib.md5(CATMAID_URL.encode('utf-8')).hexdigest()
 
 - CATMAID extensions no longer require users to manually update their
   `INSTALLED_APPS` in `settings.py`. Remove if they are already in use.

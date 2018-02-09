@@ -8,7 +8,14 @@
 
   sudo apt-get install binutils libproj-dev gdal-bin
 
-- Python 3.6 is now supported.
+- Python 3.6 is now supported. Make sure to update your settings.py by replacing
+  the line
+
+  COOKIE_SUFFIX = hashlib.md5(CATMAID_URL).hexdigest()
+
+  with the following line:
+
+  COOKIE_SUFFIX = hashlib.md5(CATMAID_URL.encode('utf-8')).hexdigest()
 
 - A virtualenv upgrade is required. To correctly install one updated dependency,
   the django-rest-swagger Python package has to be removed first from from the

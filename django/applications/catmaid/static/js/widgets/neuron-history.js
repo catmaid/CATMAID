@@ -33,6 +33,10 @@
     this.mergeUsers = false;
     // Will store a datatable instance
     this.table = null;
+    // Optional start of time window for changes to respect
+    this.timeWindowStart = null;
+    // Optional end of time window for changes to respect
+    this.timeWindowEnd = null;
   };
 
   NeuronHistoryWidget.prototype = new InstanceRegistry();
@@ -173,6 +177,22 @@
         mergeUsersLabel.appendChild(document.createTextNode('Merge parallel events'));
         mergeUsersLabel.setAttribute('title', 'If true, parallel user activity won\'t be counted separately.');
         controls.appendChild(mergeUsersLabel);
+
+        var startDateField = CATMAID.DOM.createDateField(null, 'Start',
+            'No change before this date will be respected. If empty, all changes are respected.',
+            '', false, function() {
+              self.timeWindowStart = this.value.length > 0 ?
+                  new Date(Date.parse(this.value)) : null;
+            }, null, 'YYYY-MM-DD hh:mm', true);
+        controls.appendChild(startDateField);
+
+        var endDateField = CATMAID.DOM.createDateField(null, 'End',
+            'No change after this date will be respected. If empty, all changes are respected.',
+            '', false, function() {
+              self.timeWindowEnd = this.value.length > 0 ?
+                  new Date(Date.parse(this.value)) : null;
+            }, null, 'YYYY-MM-DD hh:mm', true);
+        controls.appendChild(endDateField);
       },
       createContent: function(content) {
         var self = this;
@@ -353,6 +373,8 @@
     var timeUnits = this.timeUnits;
     var mergeUsers = this.mergeUsers;
     var onlyUsers = this.userFilter;
+    var timeWindowStart = this.timeWindowStart;
+    var timeWindowEnd = this.timeWindowEnd;
     var skeletonPromises = skeletonIds.map(function(skeletonId, i, ids) {
       return CATMAID.fetch(project.id + "/skeletons/" + skeletonId + "/compact-detail", "GET", {
         with_user_info: true,
@@ -378,8 +400,9 @@
           'connectorBeftorAfterReview']);
 
         return NeuronHistoryWidget.skeletonDetailToStats(skeletonId,
-            skeletonDetail, maxInactivityTime, tracingTimeComponents,
-            timeUnits, mergeUsers, onlyUsers, resultComponents);
+            skeletonDetail, maxInactivityTime, tracingTimeComponents, timeUnits,
+            mergeUsers, onlyUsers, resultComponents, timeWindowStart,
+            timeWindowEnd);
       });
     });
 
@@ -398,8 +421,8 @@
   };
 
   NeuronHistoryWidget.skeletonDetailToStats = function(skeletonId,
-      skeletonDetail, maxInactivityTime, tracingTimeComponents,
-      timeUnits, mergeUsers, onlyUsers, resultComponents) {
+      skeletonDetail, maxInactivityTime, tracingTimeComponents, timeUnits,
+      mergeUsers, onlyUsers, resultComponents, timeWindowStart, timeWindowEnd) {
     var result = {
       skeletonId: skeletonId
     };
@@ -423,7 +446,8 @@
       // Get sorted tracing events
       // TODO: count all writes
       var tracingEvents = TS.mergeEventSources(availableEvents,
-          Array.from(tracingTimeComponents), 'asc', false, onlyUsers);
+          Array.from(tracingTimeComponents), 'asc', false, onlyUsers,
+          timeWindowStart, timeWindowEnd);
       // Calculate tracing time by finding active bouts. Each bout consists of
       // a lists of events that contribute to the reconstruction of a neuron.
       // These events are currently node edits and connector edits.
@@ -437,7 +461,7 @@
     if (resultComponents.has('reviewTime')) {
       // Get sorted review events
       var reviewEvents = TS.mergeEventSources(availableEvents, ["reviews"],
-          'asc', false, onlyUsers);
+          'asc', false, onlyUsers, timeWindowStart, timeWindowEnd);
       var activeReviewBouts = TS.getActiveBouts(reviewEvents, maxInactivityTime,
           mergeUsers);
       var reviewTime = TS.getTotalTime(activeReviewBouts);
@@ -449,7 +473,8 @@
       var totalTimeComponents = new Set(tracingTimeComponents);
       totalTimeComponents.add('reviews');
       var totalEvents = TS.mergeEventSources(availableEvents,
-          Array.from(totalTimeComponents), 'asc', false, onlyUsers);
+          Array.from(totalTimeComponents), 'asc', false, onlyUsers,
+          timeWindowStart, timeWindowEnd);
       var activeTotalBouts = TS.getActiveBouts(totalEvents, maxInactivityTime,
           mergeUsers);
       var totalTime = TS.getTotalTime(activeTotalBouts);

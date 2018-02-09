@@ -139,14 +139,20 @@
    * @param {Set}  onlyUsers Optional, set of user IDs that are allowed in the
    *                         result. If empty or undefined, all users are
    *                         allowed.
+   * @param {Date} timeWindowStart Optional, only changes after this date are
+   *                               allowed. If undefined, no lower limit is set.
+   * @param {Date} timeWindowEnd   Optional, only changes before this date are
+   *                               allowed. If undefined, no upper limit is set.
    */
   TimeSeries.mergeEventSources = function(eventSources, selectedSources, sort,
-      sortExact, onlyUsers) {
+      sortExact, onlyUsers, timeWindowStart, timeWindowEnd) {
     var nEvents = selectedSources.reduce(sumEventSourceLengths.bind(eventSources), 0);
     var mergedEvents = new Array(nEvents);
     var addedEvents = 0;
     var Event = TimeSeries.Event;
     let hasUserFilter = onlyUsers && onlyUsers.size > 0;
+    let hasLowerDateFilter = !!timeWindowStart;
+    let hasUpperDateFilter = !!timeWindowEnd;
     for (var i=0; i<selectedSources.length; ++i) {
       var sourceId = selectedSources[i];
       var source = eventSources[sourceId];
@@ -161,9 +167,18 @@
           continue;
         }
 
+        // Skip event if it doesn't match date filter
+        var time = new Date(e[timeIndex]);
+        if (hasLowerDateFilter && time < timeWindowStart) {
+          continue;
+        }
+        if (hasUpperDateFilter && time > timeWindowEnd) {
+          continue;
+        }
+
         // Store each event source with normalized data:
         // [lowerBount, upperBound, [lowerBoundStr, upperBoundStr, data]]
-        mergedEvents[addedEvents] = new Event(new Date(e[timeIndex]), timeIndex, userIndex, e);
+        mergedEvents[addedEvents] = new Event(time, timeIndex, userIndex, e);
         ++addedEvents;
       }
     }

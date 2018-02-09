@@ -65,6 +65,13 @@ Node Search:
 - Annotation search results allow now to open the Neuron Navigator page for the
   respective annotation.
 
+Graph Widget:
+
+- It is now possible to show links of all connector types. By default, only
+  synaptic connectors are available, but this can be changed using the "Link
+  types" drop down control in the Graph tab. There also the edge color for
+  particular link types can be set.
+
 Miscellaneous:
 
 - The maximum number of frames per second rendered by a stack viewer window can

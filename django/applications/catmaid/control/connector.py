@@ -57,6 +57,29 @@ LINK_TYPES = [
     }
 ]
 
+KNOWN_LINK_PAIRS = {
+    'synaptic-connector': {
+        'source': 'presynaptic_to',
+        'target': 'postsynaptic_to'
+    },
+    'abutting-connector': {
+        'source': 'abutting',
+        'target': 'abutting'
+    },
+    'gapjunction-connector': {
+        'source': 'gapjunction_with',
+        'target': 'gapjunction_with'
+    },
+    'attachment-connector': {
+        'source': 'attached_to',
+        'target': 'close_to'
+    },
+    'spatial-connector': {
+        'source': 'attached_to',
+        'target': 'close_to'
+    }
+}
+
 LINK_RELATION_NAMES = [r['relation'] for r in LINK_TYPES]
 
 @api_view(['GET'])

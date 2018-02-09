@@ -74,6 +74,9 @@ Miscellaneous:
 - Filters: a Reconstruction Sampler Domain node filer is now available. The
   required node ID can be optained from the Reconstruction Sampler Widget.
 
+- Neuron History: a lower and upper bound for the time window in which changes
+  are respected and counted can now be set.
+
 
 ### Bug fixes
 

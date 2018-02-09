@@ -7,7 +7,7 @@ Django==1.11.10
 django-adminplus==0.5
 django-formtools==2.1
 django-guardian==1.4.9
-django-pipeline==1.6.13
+django-pipeline==1.6.14
 django-rest-swagger==2.1.2
 django-taggit==0.22.1
 djangorestframework==3.5.3

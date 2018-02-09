@@ -9,6 +9,7 @@ DB_PASS=${DB_PASS:-catmaid_password}
 DB_CONNECTIONS=${DB_CONNECTIONS:-50}
 DB_CONF_FILE=${DB_CONF_FILE:-"/etc/postgresql/9.6/main/postgresql.conf"}
 DB_FORCE_TUNE=${DB_FORCE_TUNE:-false}
+DB_TUNE=${DB_TUNE:-true}
 AVAILABLE_MEMORY=`awk '/MemTotal/ { printf "%.3f \n", $2/1024 }' /proc/meminfo`
 INSTANCE_MEMORY=${INSTANCE_MEMORY:-$AVAILABLE_MEMORY}
 CM_EXAMPLE_PROJECTS=${CM_EXAMPLE_PROJECTS:-true}
@@ -94,10 +95,11 @@ if [ "$1" = 'standalone' ]; then
       echo "Updating Postgres access configuration"
       sed -i "/# DO NOT DISABLE!/ilocal ${DB_NAME} ${DB_USER} md5" /etc/postgresql/9.6/main/pg_hba.conf
   fi
+  if [ "$DB_TUNE" = true ]; then
   echo "Tuning Postgres server configuration"
-  CONNECTIONS=${DB_CONNECTIONS} CONF_FILE=${DB_CONF_FILE} FORCE_PGTUNE=${DB_FORCE_TUNE} \
-    python /home/scripts/database/pg_tune.py
-  service postgresql restart
+    CONNECTIONS=${DB_CONNECTIONS} CONF_FILE=${DB_CONF_FILE} FORCE_PGTUNE=${DB_FORCE_TUNE} python /home/scripts/database/pg_tune.py
+    service postgresql restart
+  fi
   echo "Starting Nginx"
   service nginx start
   init_catmaid

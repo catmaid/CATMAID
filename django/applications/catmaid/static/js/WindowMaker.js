@@ -1438,11 +1438,14 @@ var WindowMaker = new function()
     var initLinkTypeList = function() {
       return CATMAID.Connectors.linkTypes(project.id)
         .then(function(json) {
+          var seenLinkTypes = new Set();
           var linkTypes = json.sort(function(a, b) {
             return CATMAID.tools.compareStrings(a.type, b.type);
           }).filter(function(lt, i, a) {
             // Remove duplicates
-            return a.indexOf(lt) === i;
+            let isNew = !seenLinkTypes.has(lt.type);
+            seenLinkTypes.add(lt.type);
+            return isNew;
           }).map(function(lt) {
             return {
               title: lt.type,
@@ -1458,6 +1461,7 @@ var WindowMaker = new function()
             var visible = e.target.checked;
             var linkTypeId = e.target.value;
             GG.setLinkTypeVisibility(linkTypeId, visible);
+            GG.update();
 
             // Add extra display controls for enabled volumes
             var li = e.target.closest('li');
@@ -1465,23 +1469,19 @@ var WindowMaker = new function()
               return;
             }
             if (visible) {
-              var volumeControls = li.appendChild(document.createElement('span'));
-              volumeControls.setAttribute('data-role', 'volume-controls');
-              CATMAID.DOM.appendColorButton(volumeControls, 'c',
-                'Change the color of this volume',
+              var linkTypeControls = li.appendChild(document.createElement('span'));
+              linkTypeControls.setAttribute('data-role', 'link-type-controls');
+              CATMAID.DOM.appendColorButton(linkTypeControls, 'c',
+                'Change the color of this link type',
                 undefined, undefined, {
-                  initialColor: o.meshes_color,
-                  initialAlpha: o.meshes_opacity,
-                  onColorChange: updateVolumeColor.bind(null, volumeId)
+                  initialColor: GG.getLinkTypeColor(linkTypeId),
+                  initialAlpha: GG.getLinkTypeOpacity(linkTypeId),
+                  onColorChange: GG.updateLinkTypeColor.bind(GG, linkTypeId)
                 });
-              var facesCb = CATMAID.DOM.appendCheckbox(volumeControls, "Faces",
-                  "Whether faces should be displayed for this volume",
-                  o.meshes_faces, updateVolumeFaces.bind(null, volumeId));
-              facesCb.style.display = 'inline';
             } else {
-              var volumeControls = li.querySelector('span[data-role=volume-controls]');
-              if (volumeControls) {
-                li.removeChild(volumeControls);
+              var linkTypeControls = li.querySelector('span[data-role=link-type-controls]');
+              if (linkTypeControls) {
+                li.removeChild(linkTypeControls);
               }
             }
           };
@@ -1503,7 +1503,7 @@ var WindowMaker = new function()
          [document.createTextNode(' synapses ')],
          [document.createTextNode(' - Filter synapses below confidence ')],
          [edgeConfidence],
-         {type: 'child', element: visibleLinkTypes}
+         {type: 'child', element: linkTypeSelectionWrapper}
         ]);
 
     DOM.appendToTab(tabs['Selection'],

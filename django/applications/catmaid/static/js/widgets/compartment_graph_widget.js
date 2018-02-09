@@ -28,8 +28,6 @@
     this.color_circles_of_hell_upstream = this.colorCirclesOfHell.bind(this, true);
     this.color_circles_of_hell_downstream = this.colorCirclesOfHell.bind(this, false);
 
-    this.edge_color = '#555';
-    this.edge_opacity = 1.0;
     this.edge_text_color = '#555';
     this.edge_text_opacity = 1.0;
     // Edge width is computed as edge_min_width + edge_width_function(weight)
@@ -41,6 +39,16 @@
     this.edge_confidence_threshold = 1;
 
     this.selectedLinkTypes = new Set(['synaptic-connector']);
+    this.linkTypeColors = new Map([
+      ['synaptic-connector', {
+        'color': '#555',
+        'opacity': 1.0
+      }],
+      ['default', {
+        'color': '#ff9e25',
+        'opacity': 1.0
+      }]
+    ]);
 
     this.setState('color_mode', 'source');
 
@@ -449,15 +457,14 @@
     var edgeLabelFnSelect = dialog.appendChoice("Edge label:", "edge_label_strategy",
         edgeLabelFnNames, edgeLabelFnValues, this.edge_label_strategy);
 
-    var newEdgeColor = this.edge_color;
+    var newEdgeColor = this.linkTypeColors.get('synaptic-connector').color;
     var colorButton = document.createElement('button');
     colorButton.appendChild(document.createTextNode('edge color'));
     CATMAID.ColorPicker.enable(colorButton, {
-      initialColor: this.edge_color,
-      onColorChange: function(rgb, alpha, colorChanged, alphaChanged) {
+      initialColor: newEdgeColor,
+      onColorChange: function(rgb, alpha, colorChanged, alphaChanged, colorHex) {
         if (colorChanged) {
-          newEdgeColor = CATMAID.tools.rgbToHex(Math.round(rgb.r * 255),
-              Math.round(rgb.g * 255), Math.round(rgb.b * 255));
+          newEdgeColor = "#" + colorHex;
         }
       }
     });
@@ -467,10 +474,9 @@
     textColorButton.appendChild(document.createTextNode('edge text color'));
     CATMAID.ColorPicker.enable(textColorButton, {
       initialColor: this.edge_text_color,
-      onColorChange: function(rgb, alpha, colorChanged, alphaChanged) {
+      onColorChange: function(rgb, alpha, colorChanged, alphaChanged, colorHex) {
         if (colorChanged) {
-          newEdgeTextColor = CATMAID.tools.rgbToHex(Math.round(rgb.r * 255),
-              Math.round(rgb.g * 255), Math.round(rgb.b * 255));
+          newEdgeTextColor = "#" + colorHex;
         }
       }
     });
@@ -530,7 +536,7 @@
         this.edge_label_strategy = new_edge_label_strategy;
       }
 
-      this.edge_color = newEdgeColor;
+      this.linkTypeColors.get('synaptic-connector').color = newEdgeColor;
       this.edge_text_color = newEdgeTextColor;
       if (needsReload) {
         this.update();
@@ -783,10 +789,38 @@
     }
     var edgeLabelOptions = {
       edge_confidence_threshold: this.edge_confidence_threshold,
+      originIndex: {},
+      relationMap: {}
     };
-    if (edgeLabelStrategy.requires && edgeLabelStrategy.requires.has('originIndex')) {
-      edgeLabelOptions.originIndex = rawData.overall_counts;
-      edgeLabelOptions.relationMap = rawData.relation_map;
+    for (let linkType in rawData) {
+      if (edgeLabelStrategy.requires && edgeLabelStrategy.requires.has('originIndex')) {
+        let linkTypeData = rawData[linkType];
+        let overallCounts = linkTypeData.overall_counts;
+        let targetOverallCounts = edgeLabelOptions.originIndex;
+        for (let nodeId in overallCounts) {
+          let nodeData = overallCounts[nodeId];
+          let targetNodeData = targetOverallCounts[nodeId];
+          if (!targetNodeData) {
+            targetNodeData = targetOverallCounts[nodeId] = {};
+          }
+          for (let relationId in nodeData) {
+            let relationData = nodeData[relationId];
+            let targetRelationData = targetNodeData[relationId];
+            if (!targetRelationData) {
+              targetRelationData = targetNodeData[relationId] = [0, 0, 0, 0, 0];
+            }
+            for (let i=0; i<5; ++i) {
+              targetRelationData[i] += relationData[i];
+            }
+          }
+        }
+        for (let relationName in linkTypeData.relation_map) {
+          if (edgeLabelOptions[relationName] === undefined) {
+            let relationId = linkTypeData.relation_map[relationName];
+            edgeLabelOptions.relationMap[relationName] = relationId;
+          }
+        }
+      }
     }
     return edgeLabelOptions;
   };
@@ -816,22 +850,24 @@
     // A neuron that is split cannot be part of a group anymore: makes no sense.
     // Neither by confidence nor by synapse clustering.
 
-    var edge_color = this.edge_color;
+    var getEdgeColor = this.getLinkTypeColor.bind(this);
     var edge_text_color = this.edge_text_color;
     var edge_confidence_threshold = this.edge_confidence_threshold;
     var edgeLabelStrategy = edgeLabelStrategies[this.edge_label_strategy];
     var edgeLabelOptions = this.makeEdgeLabelOptions(json);
-    var asEdge = function(edge) {
+    var asEdge = function(edge, linkTypeId) {
         var count = _filterSynapses(edge[2], edge_confidence_threshold);
         edgeLabelOptions.count = count;
         edgeLabelOptions.sourceId = edge[0];
         edgeLabelOptions.targetId = edge[1];
         edgeLabelOptions.synapses = edge[2];
         var value = edgeLabelStrategy.run(edgeLabelOptions);
+        var edge_color = getEdgeColor(linkTypeId);
         return {data: {directed: true,
                        arrow: 'triangle',
                        id: edge[0] + '_' + edge[1],
                        label: value,
+                       link_type: linkTypeId,
                        color: edge_color,
                        label_color: edge_text_color,
                        source: edge[0],
@@ -1213,6 +1249,7 @@
         edgeLabelOptions.sourceId = source_id;
         edgeLabelOptions.targetId = target_id;
         var value = edgeLabelStrategy.run(edgeLabelOptions);
+        var edge_color = getEdgeColor('synaptic-connector');
         elements.edges.push({data: {directed: true,
                                     arrow: 'triangle',
                                     color: edge_color,
@@ -1227,15 +1264,24 @@
     });
 
     // Add all other edges
-    json.edges.forEach((function(e) {
+    let addEdgeToGraph = (function(e, linkTypeId) {
       var n1 = e[0], n2 = e[1];
       // Skip edges that are part of subgraphs
       if (this.subgraphs[n1] || this.subgraphs[n2]) return;
       // Only allow edges that link existing models
       if (n1 in models && n2 in models) {
-        elements.edges.push(asEdge(e));
+        elements.edges.push(asEdge(e, linkTypeId));
       }
-    }).bind(this));
+    }).bind(this);
+    let linkTypeIds = Object.keys(json);
+    linkTypeIds.forEach(function(linkTypeId) {
+      let linkType = json[linkTypeId];
+      let linkTypeEdges = linkType.edges;
+      for (let i=0, imax=linkTypeEdges.length; i<imax; ++i) {
+        addEdgeToGraph(linkTypeEdges[i], linkTypeId);
+      }
+      linkType.edges.forEach(addEdgeToGraph);
+    });
 
     // Group neurons, if any groups exist, skipping splitted neurons
     var to_lock = this._regroup(elements, this.subgraphs, models,
@@ -1641,7 +1687,8 @@
         "POST",
         {
           skeleton_ids: skeleton_ids,
-          with_overall_counts: with_overall_counts
+          with_overall_counts: with_overall_counts,
+          link_types: Array.from(this.selectedLinkTypes)
         },
         (function (status, text) {
             if (200 !== status) return;
@@ -1689,22 +1736,27 @@
       this.cy.startBatch();
     }
 
+    for (let linkTypeId of this.selectedLinkTypes) {
+      let linkTypeEdges = this.cy.edges().filter(function(i, edge) {
+        return edge.data('link_type') == linkTypeId && edge.data('directed');
+      });
+      let linkTypeColor = this.getLinkTypeColor(linkTypeId);
+      linkTypeEdges.css('line-color', linkTypeColor);
+      linkTypeEdges.css('opacity', this.getLinkTypeOpacity(linkTypeId));
+      linkTypeEdges.data('color', linkTypeColor);
+    }
     var directed = this.cy.edges().filter(function(i, edge) {
       return edge.data('directed');
     });
-    directed.css('line-color', this.edge_color);
-    directed.css('color', this.edge_text_color);
-    directed.css('opacity', this.edge_opacity);
     directed.css('text-opacity', this.edge_text_opacity);
+    directed.css('color', this.edge_text_color);
 
     var min = this.edge_min_width,
-        color = this.edge_color,
         labelColor = this.edge_text_color,
         edgeWidth = this.edgeWidthFn();
 
     this.cy.edges().each(function(i, edge) {
       if (edge.data('directed')) {
-        edge.data('color', color);
         edge.data('label_color', labelColor);
         edge.data('width', min + edgeWidth(edge.data('weight')));
       }
@@ -3550,6 +3602,41 @@
       this.selectedLinkTypes.add(linkType);
     } else {
       this.selectedLinkTypes.delete(linkType);
+    }
+  };
+
+  GroupGraph.prototype.getLinkTypeColor = function(linkTypeId) {
+    let linkType = this.linkTypeColors.get(linkTypeId);
+    return linkType ? linkType.color : this.linkTypeColors.get('default').color;
+  };
+
+  GroupGraph.prototype.getLinkTypeOpacity = function(linkTypeId) {
+    let linkType = this.linkTypeColors.get(linkTypeId);
+    return linkType ? linkType.opacity : this.linkTypeColors.get('default').opacity;
+  };
+
+  /**
+   * Update an existing link type color configuration or create a new one if no
+   * configuration exists for the passed in link type ID. Only truthy passed in
+   * values will be set.
+   */
+  GroupGraph.prototype.updateLinkTypeColor = function(linkTypeId, color, opacity, colorChanged, alphaChanged, colorHex) {
+    let linkType = this.linkTypeColors.get(linkTypeId);
+    if (linkType) {
+      if (colorChanged) {
+        linkType.color = '#' + colorHex;
+      }
+      if (alphaChanged) {
+        linkType.opacity = opacity;
+      }
+      return false;
+    } else {
+      linkType = {};
+      linkType.color = colorChanged ? ('#' + colorHex) : this.linkTypeColors.get('default').color;
+      linkType.opacity = alphaChanged ? opacity : this.linkTypeColors.get('default').opacity;
+      this.linkTypeColors.set(linkTypeId, linkType);
+      this.updateEdgeGraphics(true);
+      return true;
     }
   };
 

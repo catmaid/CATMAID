@@ -20,7 +20,8 @@ from django.http import HttpResponse
 
 from catmaid.models import Relation, UserRole
 from catmaid.control.authentication import requires_user_role
-from catmaid.control.common import get_relation_to_id_map
+from catmaid.control.common import get_relation_to_id_map, get_request_list
+from catmaid.control.connector import KNOWN_LINK_PAIRS
 from catmaid.control.review import get_treenodes_to_reviews
 from catmaid.control.tree_util import simplify, find_root, reroot, partition, \
         spanning_tree, cable_length
@@ -121,7 +122,9 @@ def split_by_synapse_domain(bandwidth, locations, arbors, treenode_connector, mi
     return arbors2, minis
 
 
-def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, expand, compute_risk, cable_spread, path_confluence):
+def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
+        expand, compute_risk, cable_spread, path_confluence,
+        pre_rel='presynaptic_to', post_rel='postsynaptic_to'):
     """ Assumes all skeleton_ids belong to project_id. """
     skeletons_string = ",".join(str(int(x)) for x in skeleton_ids)
     cursor = connection.cursor()
@@ -154,7 +157,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, e
     FROM treenode_connector
     WHERE skeleton_id IN (%s)
       AND (relation_id = %s OR relation_id = %s)
-    ''' % (skeletons_string, relations['presynaptic_to'], relations['postsynaptic_to']))
+    ''' % (skeletons_string, relations[pre_rel], relations[post_rel]))
     connectors = defaultdict(partial(defaultdict, list))
     skeleton_synapses = defaultdict(partial(defaultdict, list))
     for row in cursor.fetchall():
@@ -169,10 +172,10 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, e
         locations = {row[0]: (row[4], row[5], row[6]) for row in rows}
         treenode_connector = defaultdict(list)
         for connector_id, pp in six.iteritems(connectors):
-            for treenode_id in chain.from_iterable(pp[relations['presynaptic_to']]):
-                treenode_connector[treenode_id].append((connector_id, "presynaptic_to"))
-            for treenode_id in chain.from_iterable(pp[relations['postsynaptic_to']]):
-                treenode_connector[treenode_id].append((connector_id, "postsynaptic_to"))
+            for treenode_id in chain.from_iterable(pp[relations[pre_rel]]):
+                treenode_connector[treenode_id].append((connector_id, pre_rel))
+            for treenode_id in chain.from_iterable(pp[relations[post_rel]]):
+                treenode_connector[treenode_id].append((connector_id, post_rel))
         arbors_to_expand = {skid: ls for skid, ls in six.iteritems(arbors) if skid in expand}
         expanded_arbors, minis = split_by_synapse_domain(bandwidth, locations, arbors_to_expand, treenode_connector, minis)
         arbors.update(expanded_arbors)
@@ -213,11 +216,11 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, e
 
     # Define edges between arbors, with number of synapses as an edge property
     for c in six.itervalues(connectors):
-        for pre_treenode, pre_skeleton in c[relations['presynaptic_to']]:
+        for pre_treenode, pre_skeleton in c[relations[pre_rel]]:
             for pre_arbor in arbors.get(pre_skeleton, ()):
                 if pre_treenode in pre_arbor:
                     # Found the DiGraph representing an arbor derived from the skeleton to which the presynaptic treenode belongs.
-                    for post_treenode, post_skeleton in c[relations['postsynaptic_to']]:
+                    for post_treenode, post_skeleton in c[relations[post_rel]]:
                         for post_arbor in arbors.get(post_skeleton, ()):
                             if post_treenode in post_arbor:
                                 # Found the DiGraph representing an arbor derived from the skeleton to which the postsynaptic treenode belongs.
@@ -236,8 +239,8 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, e
         # Compute synapse centrality of every node in every arbor that has synapses
         for skeleton_id, arbors in six.iteritems(whole_arbors):
             synapses = skeleton_synapses[skeleton_id]
-            pre = synapses[relations['presynaptic_to']]
-            post = synapses[relations['postsynaptic_to']]
+            pre = synapses[relations[pre_rel]]
+            post = synapses[relations[post_rel]]
             for arbor in arbors:
                 # The subset of synapses that belong to the fraction of the original arbor
                 pre_sub = tuple(treenodeID for treenodeID in pre if treenodeID in arbor)
@@ -325,26 +328,47 @@ def skeleton_graph(request, project_id=None):
     path_confluence = int(request.POST.get('path_confluence', 10)) # a count
     compute_risk = 1 == int(request.POST.get('risk', 0))
     expand = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('expand['))
+    link_types = get_request_list(request.POST, 'link_types', None)
+    by_link_type = bool(link_types)
+    if not by_link_type:
+        link_types = ['synaptic-connector']
 
-    circuit = _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, expand, compute_risk, cable_spread, path_confluence)
-    package = {'nodes': [{'data': props} for props in six.itervalues(circuit.node)],
-               'edges': []}
-    edges = package['edges']
-    for g1, g2, props in circuit.edges_iter(data=True):
-        id1 = circuit.node[g1]['id']
-        id2 = circuit.node[g2]['id']
-        data = {'id': '%s_%s' % (id1, id2),
-                'source': id1,
-                'target': id2,
-                'weight': props['c'],
-                'label': str(props['c']) if props['directed'] else None,
-                'directed': props['directed'],
-                'arrow': props['arrow']}
-        if compute_risk:
-            data['risk'] = props.get('risk')
-        edges.append({'data': data})
+    for link_type in link_types:
+        pair = KNOWN_LINK_PAIRS.get(link_type)
+        if not pair:
+            raise ValueError("Unknown link type: " + link_type)
 
-    return HttpResponse(json.dumps(package))
+        source_rel = pair['source']
+        target_rel = pair['target']
+
+        circuit = _skeleton_graph(project_id, skeleton_ids,
+                confidence_threshold, bandwidth, expand, compute_risk,
+                cable_spread, path_confluence, source_rel, target_rel)
+        package = {'nodes': [{'data': props} for props in six.itervalues(circuit.node)],
+                   'edges': []}
+        edges = package['edges']
+        for g1, g2, props in circuit.edges_iter(data=True):
+            id1 = circuit.node[g1]['id']
+            id2 = circuit.node[g2]['id']
+            data = {'id': '%s_%s' % (id1, id2),
+                    'source': id1,
+                    'target': id2,
+                    'weight': props['c'],
+                    'label': str(props['c']) if props['directed'] else None,
+                    'directed': props['directed'],
+                    'arrow': props['arrow']}
+            if compute_risk:
+                data['risk'] = props.get('risk')
+            edges.append({'data': data})
+
+        if by_link_type:
+            if not result:
+                result = {}
+            result[link_type] = package
+        else:
+            result = package
+
+    return HttpResponse(json.dumps(result))
 
 class Counts():
     def __init__(self):

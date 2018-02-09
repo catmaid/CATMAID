@@ -72,6 +72,9 @@ Graph Widget:
   types" drop down control in the Graph tab. There also the edge color for
   particular link types can be set.
 
+- The edge color button in the option dialog has been replaced with a link type
+  drop down which allows to set color and visibility per connection type.
+
 Miscellaneous:
 
 - The maximum number of frames per second rendered by a stack viewer window can

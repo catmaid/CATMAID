@@ -457,17 +457,10 @@
     var edgeLabelFnSelect = dialog.appendChoice("Edge label:", "edge_label_strategy",
         edgeLabelFnNames, edgeLabelFnValues, this.edge_label_strategy);
 
-    var newEdgeColor = this.linkTypeColors.get('synaptic-connector').color;
-    var colorButton = document.createElement('button');
-    colorButton.appendChild(document.createTextNode('edge color'));
-    CATMAID.ColorPicker.enable(colorButton, {
-      initialColor: newEdgeColor,
-      onColorChange: function(rgb, alpha, colorChanged, alphaChanged, colorHex) {
-        if (colorChanged) {
-          newEdgeColor = "#" + colorHex;
-        }
-      }
-    });
+    var linkTypeSelection = CATMAID.DOM.createAsyncPlaceholder(
+        CATMAID.GroupGraph.initLinkTypeList(this));
+    var linkTypeSelectionWrapper = document.createElement('span');
+    linkTypeSelectionWrapper.appendChild(linkTypeSelection);
 
     var newEdgeTextColor = this.edge_text_color;
     var textColorButton = document.createElement('button');
@@ -482,7 +475,7 @@
     });
 
     var p = document.createElement('p');
-    p.appendChild(colorButton);
+    p.appendChild(linkTypeSelectionWrapper);
     p.appendChild(textColorButton);
     dialog.dialog.appendChild(p);
 
@@ -536,7 +529,6 @@
         this.edge_label_strategy = new_edge_label_strategy;
       }
 
-      this.linkTypeColors.get('synaptic-connector').color = newEdgeColor;
       this.edge_text_color = newEdgeTextColor;
       if (needsReload) {
         this.update();
@@ -547,6 +539,80 @@
 
     dialog.show(440, 'auto', true);
   };
+
+    // Update volume list
+  GroupGraph.initLinkTypeList = function(target) {
+    return CATMAID.Connectors.linkTypes(project.id)
+      .then(function(json) {
+        var seenLinkTypes = new Set();
+        var linkTypes = json.sort(function(a, b) {
+          return CATMAID.tools.compareStrings(a.type, b.type);
+        }).filter(function(lt, i, a) {
+          // Remove duplicates
+          let isNew = !seenLinkTypes.has(lt.type);
+          seenLinkTypes.add(lt.type);
+          return isNew;
+        }).map(function(lt) {
+          return {
+            title: lt.type,
+            value: lt.type_id
+          };
+        });
+        var selectedLinkTypes = target.selectedLinkTypes;
+        // Create actual element based on the returned data
+        var node = CATMAID.DOM.createCheckboxSelect('Link types', linkTypes,
+            selectedLinkTypes, true);
+
+        // Add color buttons for already display options
+        $('input:checked', node).each(function(e) {
+          var li = this.closest('li');
+          if (!li) {
+            return;
+          }
+          var linkTypeId = this.value;
+          var linkTypeControls = li.appendChild(document.createElement('span'));
+          linkTypeControls.setAttribute('data-role', 'link-type-controls');
+          CATMAID.DOM.appendColorButton(linkTypeControls, 'c',
+            'Change the color of this link type',
+            undefined, undefined, {
+              initialColor: target.getLinkTypeColor(linkTypeId),
+              initialAlpha: target.getLinkTypeOpacity(linkTypeId),
+              onColorChange: target.updateLinkTypeColor.bind(target, linkTypeId)
+            });
+        });
+
+        // Add a selection handler
+        node.onchange = function(e) {
+          var visible = e.target.checked;
+          var linkTypeId = e.target.value;
+          target.setLinkTypeVisibility(linkTypeId, visible);
+          target.update();
+
+          // Add extra display controls for enabled volumes
+          var li = e.target.closest('li');
+          if (!li) {
+            return;
+          }
+          if (visible) {
+            var linkTypeControls = li.appendChild(document.createElement('span'));
+            linkTypeControls.setAttribute('data-role', 'link-type-controls');
+            CATMAID.DOM.appendColorButton(linkTypeControls, 'c',
+              'Change the color of this link type',
+              undefined, undefined, {
+                initialColor: target.getLinkTypeColor(linkTypeId),
+                initialAlpha: target.getLinkTypeOpacity(linkTypeId),
+                onColorChange: target.updateLinkTypeColor.bind(target, linkTypeId)
+              });
+          } else {
+            var linkTypeControls = li.querySelector('span[data-role=link-type-controls]');
+            if (linkTypeControls) {
+              li.removeChild(linkTypeControls);
+            }
+          }
+        };
+        return node;
+      });
+    };
 
   GroupGraph.prototype.init = function() {
     var options = {

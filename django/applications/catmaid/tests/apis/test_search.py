@@ -48,11 +48,13 @@ class SearchApiTests(CatmaidApiTestCase):
                 {"id":465, "name":"tubby bye bye", "class_name":"driver_line"},
                 {"id":4, "name":"Fragments", "class_name":"group"},
                 {"id":364, "name":"Isolated synaptic terminals", "class_name":"group"},
-                {"id":2353, "name":"synapse with more targets", "class_name":"label"},
+                {"id":2353, "name":"synapse with more targets", "class_name":"label",
+                    "connectors": [{"id": 432, "x": 2640, "y": 3450, "z": 0}]},
                 {"id":2345, "name":"t", "class_name":"label"},
                 {"id":351, "name":"TODO", "class_name":"label", "nodes":[
                     {"id":349, "x":3580, "y":3350, "z":252, "skid":1},
-                    {"id":261, "x":2820, "y":1345, "z":0, "skid":235}]},
+                    {"id":261, "x":2820, "y":1345, "z":0, "skid":235}],
+                    "connectors": [{"y": 3450.0, u"x": 2640.0, u"z": 0.0, u"id": 432}]},
                 {"id":2342, "name":"uncertain end", "class_name":"label", "nodes":[
                     {"id":403, "x":7840, "y":2380, "z":0, "skid":373}]},
                 {"id":374, "name":"downstream-A", "class_name":"neuron"},
@@ -86,7 +88,8 @@ class SearchApiTests(CatmaidApiTestCase):
                 {"id":454, "name":"and", "class_name":"driver_line"},
                 {"id":4, "name":"Fragments", "class_name":"group"},
                 {"id":364, "name":"Isolated synaptic terminals", "class_name":"group"},
-                {"id":2353, "name":"synapse with more targets", "class_name":"label"},
+                {"id":2353, "name":"synapse with more targets", "class_name":"label",
+                    "connectors": [{"id": 432, "x": 2640, "y": 3450, "z": 0}]},
                 {"id":2342, "name":"uncertain end", "class_name":"label", "nodes":[
                     {"id":403, "x":7840, "y":2380, "z":0, "skid":373}]},
                 {"id":233, "name":"branched neuron", "class_name":"neuron"},

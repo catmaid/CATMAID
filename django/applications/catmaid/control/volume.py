@@ -15,6 +15,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from six.moves import map
 
 num = '[-+]?[0-9]*\.?[0-9]+'
 bbox_re = r'BOX3D\(({0})\s+({0})\s+({0}),\s*({0})\s+({0})\s+({0})\)'.format(num)
@@ -245,7 +246,7 @@ def volume_detail(request, project_id, volume_id):
         bbox_matches = re.search(bbox_re, volume[8])
         if not bbox_matches or len(bbox_matches.groups()) != 6:
             raise ValueError("Couldn't create bounding box for geometry")
-        bbox = map(float, bbox_matches.groups())
+        bbox = list(map(float, bbox_matches.groups()))
 
         volume = {
             'id': volume[0],

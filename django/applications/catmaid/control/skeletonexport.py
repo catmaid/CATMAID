@@ -38,7 +38,7 @@ from six.moves import map, zip
 try:
     from exportneuroml import neuroml_single_cell, neuroml_network
 except ImportError:
-    logging.getLogger(__name__).warn("NeuroML module could not be loaded.")
+    logging.getLogger(__name__).warning("NeuroML module could not be loaded.")
 
 
 def default(obj):

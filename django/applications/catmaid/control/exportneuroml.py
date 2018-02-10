@@ -15,7 +15,7 @@ try:
     from neuroml import Cell, Segment, SegmentParent, Morphology, \
             NeuroMLDocument, Point3DWithDiam
 except ImportError:
-    logging.getLogger(__name__).warn("NeuroML module could not be loaded.")
+    logging.getLogger(__name__).warning("NeuroML module could not be loaded.")
 
 
 def neuroml_single_cell(skeleton_id, nodes, pre, post):

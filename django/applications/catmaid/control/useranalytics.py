@@ -72,8 +72,12 @@ def plot_useranalytics(request):
     """
     time_zone = pytz.utc
 
-    userid = request.GET.get('userid', -1)
+    userid = request.GET.get('userid', None)
+    if not (userid and userid.strip()):
+        raise ValueError("Need user ID")
     project_id = request.GET.get('project_id', None)
+    if not (project_id and project_id.strip()):
+        raise ValueError("Need project ID")
     project = get_object_or_404(Project, pk=project_id) if project_id else None
     all_writes = request.GET.get('all_writes', 'false') == 'true'
     maxInactivity = int(request.GET.get('max_inactivity', 3))

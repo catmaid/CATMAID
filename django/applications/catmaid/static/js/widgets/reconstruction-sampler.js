@@ -214,6 +214,15 @@
         }
       },
       {
+        type: 'button',
+        label: 'New session',
+        onclick: function() {
+          widget.init(self.state);
+          widget.update();
+          CATMAID.msg("Info", "Stared new sampler session");
+        }
+      },
+      {
         type: 'numeric',
         label: 'Interval length (nm)',
         title: 'Default length of intervals created in domains of this sampler',
@@ -264,15 +273,6 @@
         label: 'New sampler for active backbone',
         onclick: function() {
           self.createNewSampler(widget);
-        }
-      },
-      {
-        type: 'button',
-        label: 'New session',
-        onclick: function() {
-          widget.init(self.state);
-          widget.update();
-          CATMAID.msg("Info", "Stared new sampler session");
         }
       }
     ];

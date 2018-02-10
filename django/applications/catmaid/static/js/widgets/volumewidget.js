@@ -144,7 +144,7 @@
 
         // Display a volume if clicked
         var self = this;
-        $(table).on('click', 'td', function() {
+        $(table).on('click', 'tbody td', function() {
           var tr = $(this).closest("tr");
           var volume = self.datatable.row(tr).data();
           self.loadVolume(volume.id)

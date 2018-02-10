@@ -26,6 +26,12 @@
    */
   function Project( pid ) {
 
+    this.interpolatableSections = {
+      'x': [],
+      'y': [],
+      'z': []
+    };
+
     // A general purpurse clipboard.
     var clipboard = null;
 
@@ -604,6 +610,18 @@
   Project.EVENT_STACKVIEW_CLOSED = 'project_stackview_closed';
   Project.EVENT_STACKVIEW_FOCUS_CHANGED = 'project_stackview_focus_changed';
   Project.EVENT_LOCATION_CHANGED = 'project_location_changed';
+
+  Project.prototype.updateInterpolatableLocations = function() {
+    var self = this;
+    return CATMAID.fetch(this.id + '/interpolatable-sections/')
+      .then(function(result) {
+        if (result['x'] && result['y'] && result['z']) {
+          self.interpolatableSections = result;
+        } else {
+          CATMAID.warn("Could not load interpolatable sections for project " + self.id);
+        }
+      });
+  };
 
   function ClipboardElement(type, data) {
     this.type = type;

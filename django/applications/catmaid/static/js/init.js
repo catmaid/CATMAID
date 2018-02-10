@@ -1347,7 +1347,8 @@ var project;
       // Update all datastores to reflect the active project before triggering
       // any events. This is necessary so that settings are correct when
       // updating for the project change.
-      return CATMAID.DataStoreManager.reloadAll().then(function () {
+      return Promise.all([project.updateInterpolatableLocations(),
+          CATMAID.DataStoreManager.reloadAll()]).then(function () {
         CATMAID.Init.trigger(CATMAID.Init.EVENT_PROJECT_CHANGED, project);
 
         // Update the projects stack menu. If there is more than one stack

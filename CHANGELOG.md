@@ -75,6 +75,11 @@ Graph Widget:
 - The edge color button in the option dialog has been replaced with a link type
   drop down which allows to set color and visibility per connection type.
 
+3D Viewer:
+
+- Stored interpolatable sections are now loaded by default. Additional project
+  space sections can be configured from the Skeleton filters tab.
+
 Miscellaneous:
 
 - The maximum number of frames per second rendered by a stack viewer window can
@@ -96,6 +101,10 @@ Miscellaneous:
 
 - On CATMAID front-pages (project overview) the keys 0-9 can now be used to open
   the n-th stackgroup or stack, stackgroups have precedence.
+
+- Sections in which nodes should be interpolated for various displays can now be
+  persisted in the database using the "interpolatable sections" data model from
+  the admin interface.
 
 
 ### Bug fixes

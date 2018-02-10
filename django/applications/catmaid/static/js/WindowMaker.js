@@ -909,6 +909,87 @@ var WindowMaker = new function()
             title: 'Specify a list of sections that should be used for interpolation'
           },
           {
+            type: 'text',
+            label: 'X',
+            length: 5,
+            value: o.interpolated_sections_x.join(", "),
+            title: 'Sections at these X project coordinates in a ZY view will be interpolated',
+            onchange: function() {
+              try {
+                this.classList.remove('ui-state-error');
+                WA.options.interpolated_sections_x = this.value.split(',').map(
+                    function(s) {
+                      s = s.trim();
+                      if (s.length === 0) {
+                        return s;
+                      }
+                      var val = parseInt(s, 10);
+                      if (isNaN(val)) {
+                        throw new CATMAID.ValueError("No number: " + s.trim());
+                      }
+                      return val;
+                    });
+                WA.updateLocationFiltering();
+              } catch(e) {
+                this.classList.add('ui-state-error');
+              }
+            }
+          },
+          {
+            type: 'text',
+            label: 'Y',
+            length: 5,
+            value: o.interpolated_sections_y.join(", "),
+            title: 'Sections at these Y project coordinates in an XZ view will be interpolated',
+            onchange: function() {
+              try {
+                this.classList.remove('ui-state-error');
+                WA.options.interpolated_sections_y = this.value.split(',').map(
+                    function(s) {
+                      s = s.trim();
+                      if (s.length === 0) {
+                        return s;
+                      }
+                      var val = parseInt(s, 10);
+                      if (isNaN(val)) {
+                        throw new CATMAID.ValueError("No number: " + s.trim());
+                      }
+                      return val;
+                    });
+                WA.updateLocationFiltering();
+              } catch(e) {
+                this.classList.add('ui-state-error');
+              }
+            }
+          },
+          {
+            type: 'text',
+            label: 'Z',
+            length: 5,
+            value: o.interpolated_sections_z.join(", "),
+            title: 'Sections at these Z project coordinates in an XY view will be interpolated',
+            onchange: function() {
+              try {
+                this.classList.remove('ui-state-error');
+                WA.options.interpolated_sections_z = this.value.split(',').map(
+                    function(s) {
+                      s = s.trim();
+                      if (s.length === 0) {
+                        return s;
+                      }
+                      var val = parseInt(s, 10);
+                      if (isNaN(val)) {
+                        throw new CATMAID.ValueError("No number: " + s.trim());
+                      }
+                      return val;
+                    });
+                WA.updateLocationFiltering();
+              } catch(e) {
+                this.classList.add('ui-state-error');
+              }
+            }
+          },
+          {
             type: 'checkbox',
             label: 'Interpolate broken sections',
             value: o.interpolate_broken_sections,

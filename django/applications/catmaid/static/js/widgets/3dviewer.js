@@ -53,7 +53,7 @@
     // A set of nodes allowed by node filters
     this.allowedNodes = new Set();
 
-    this.options = new WebGLApplication.prototype.OPTIONS.clone();
+    this.options = this.getInitialOptions();
 
     // Listen to changes of the active node
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
@@ -69,6 +69,14 @@
   WebGLApplication.prototype.constructor = WebGLApplication;
 
   $.extend(WebGLApplication.prototype, new InstanceRegistry());
+
+  WebGLApplication.prototype.getInitialOptions = function() {
+    let options = new WebGLApplication.prototype.OPTIONS.clone();
+    options.interpolated_sections_x = Array.from(project.interpolatableSections.x);
+    options.interpolated_sections_y = Array.from(project.interpolatableSections.y);
+    options.interpolated_sections_z = Array.from(project.interpolatableSections.z);
+    return options;
+  };
 
   WebGLApplication.prototype.init = function(canvasWidth, canvasHeight, container) {
     if (this.initialized) {
@@ -1133,6 +1141,9 @@
     this.use_native_resolution = true;
     this.interpolate_sections = false;
     this.interpolated_sections = [];
+    this.interpolated_sections_x = [];
+    this.interpolated_sections_y = [];
+    this.interpolated_sections_z = [];
     this.interpolate_broken_sections = false;
     this.apply_filter_rules = true;
   };
@@ -6139,13 +6150,31 @@
         wrongSections = wrongSections.concat(focusedStack.broken_slices);
       }
 
+      let wrongProjectXs = [];
+      let ix = options.interpolated_sections_x;
+      for (let i=0, imax=ix.length; i<imax; ++i) {
+        wrongProjectXs.push(ix[i]);
+      }
+
+      let wrongProjectYs = [];
+      let iy = options.interpolated_sections_y;
+      for (let i=0, imax=iy.length; i<imax; ++i) {
+        wrongProjectYs.push(iy[i]);
+      }
+
       var wrongProjectZs = wrongSections.map(function(s) {
         var projectZ = focusedStack.stackToProjectZ(s, 0, 0);
         return projectZ;
       });
 
+      let iz = options.interpolated_sections_z;
+      for (let i=0, imax=iz.length; i<imax; ++i) {
+        wrongProjectZs.push(iz[i]);
+      }
+
       if (wrongProjectZs.length > 0) {
-        nodes = interpolateNodesAtZ(nodes, wrongProjectZs);
+        nodes = interpolateNodes(nodes, wrongProjectXs, wrongProjectYs,
+            wrongProjectZs);
       }
     }
 
@@ -6487,11 +6516,14 @@
 
   /**
    * Update the node location of all nodes in the passed in node list (as
-   * obtained from the compact-skeleton API) at the given project Z locations so
-   * that they are moved to the interpolated X/Y location of all neighboring
-   * nodes.
+   * obtained from the compact-skeleton API) at the given project X, Y and Z
+   * locations so that they are moved to the interpolated X/Y location of all
+   * neighboring nodes (.
    */
-  var interpolateNodesAtZ = function(nodes, zLocations) {
+  var interpolateNodes = function(nodes, xLocations, yLocations, zLocations) {
+    if ((xLocations && xLocations.length > 0) || (yLocations && yLocations.length > 0)) {
+      CATMAID.warn('Currently only Z based interpolation is supported');
+    }
     // Iterate over all nodes to find the ones matching the problematic sections.
     // Each node is an array of treenode ID (0), parent ID (1), user ID (2), x
     // (3), y (4), z (5), radius (6), confidence (7).

@@ -920,9 +920,9 @@ class StackGroup(models.Model):
 
 
 class StackStackGroup(models.Model):
-    group_relation = models.ForeignKey(StackGroupRelation)
-    stack = models.ForeignKey(Stack)
-    stack_group = models.ForeignKey(StackGroup)
+    group_relation = models.ForeignKey(StackGroupRelation, on_delete=models.CASCADE)
+    stack = models.ForeignKey(Stack, on_delete=models.CASCADE)
+    stack_group = models.ForeignKey(StackGroup, on_delete=models.CASCADE)
     position = models.IntegerField(default=0)
 
     class Meta:

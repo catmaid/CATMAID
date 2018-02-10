@@ -156,6 +156,16 @@
   };
 
   /**
+   * Remove all displayed volumes.
+   */
+  VolumeManagerWidget.prototype.destroy = function() {
+    if (this.currentContext) {
+      CATMAID.tools.callIfFn(this.currentContext.onExit);
+      this.currentContext = null;
+    }
+  };
+
+  /**
    * Update volume listing.
    */
   VolumeManagerWidget.prototype.redraw = function(container) {

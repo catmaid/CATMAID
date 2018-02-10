@@ -94,6 +94,9 @@ Miscellaneous:
 - Neuron History: a lower and upper bound for the time window in which changes
   are respected and counted can now be set.
 
+- On CATMAID front-pages (project overview) the keys 0-9 can now be used to open
+  the n-th stackgroup or stack, stackgroups have precedence.
+
 
 ### Bug fixes
 

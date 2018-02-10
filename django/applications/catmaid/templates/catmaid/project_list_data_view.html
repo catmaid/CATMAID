@@ -49,7 +49,7 @@
             {% if show_stackgroups and stackgroups_of|get:p.id %}
                 <dd><dl>
                 {% for sg in stackgroups_of|get:p.id|dictsort:"id" %}
-                    <dt data-type="stackgroup"><a href="?pid={{ p.id }}&tool=navigator&sg={{ sg.id }}"
+                    <dt data-type="stackgroup"><a data-type="stackgroup" href="?pid={{ p.id }}&tool=navigator&sg={{ sg.id }}"
                         onclick="CATMAID.openStackGroup({{p.id}},
                         {{sg.id}});return false">{{ sg.title }}</a></dt>
                 {% endfor %}
@@ -58,7 +58,7 @@
             {% if show_stacks and stacks_of|get:p.id %}
                 {% for s in stacks_of|get:p.id|dictsort:"id" %}
                     <dd data-type="stack"><dl><dt>
-                      <a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
+                      <a data-type="stack" href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
                           onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}});return false">{{ s.title }}
                           </a>
                     </dt>
@@ -68,7 +68,7 @@
                     {% if show_mirrors %}
                       {% for m in s.stackmirror_set.all %}
                         <dd data-type="stackmirror">
-                          <a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
+                          <a data-type="stackmirror" href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
                               onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}}, undefined, {{forloop.counter0}});return false">{{ m.title }}</a>
                         </dd>
                       {% endfor %}

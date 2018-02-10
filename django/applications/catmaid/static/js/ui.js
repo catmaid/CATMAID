@@ -153,6 +153,8 @@
           if (handledBy(project, fakeEvent, released)) {
             propagate = false;
           }
+        } else if (handledBy(CATMAID.client, fakeEvent, released)) {
+          propagate = false;
         }
       }
 

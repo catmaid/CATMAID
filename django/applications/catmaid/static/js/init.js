@@ -1166,6 +1166,15 @@ var project;
       .catch(CATMAID.handleError);
   };
 
+  Client.prototype.handleKeyPress = function(e) {
+    if (this.current_dataview) {
+      if (CATMAID.tools.isFn(this.current_dataview.handleKeyPress)) {
+        return this.current_dataview.handleKeyPress(e);
+      }
+    }
+    return false;
+  };
+
   // Export Client
   CATMAID.Client = Client;
 

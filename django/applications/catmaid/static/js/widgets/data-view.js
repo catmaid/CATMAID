@@ -87,6 +87,32 @@
     return new DataViewType(options);
   };
 
+  let nonZeroDigits = new Set([1,2,3,4,5,6,7,8,9]);
+
+  DataView.prototype.handleKeyPress = function(e) {
+    let projects = CATMAID.client.projects;
+    let asNumber = parseInt(e.key);
+    if (nonZeroDigits.has(asNumber)) {
+      let stackGroupAnchors = $('a[data-type=stackgroup]');
+      if (asNumber > 0 && asNumber <= stackGroupAnchors.length) {
+        let a = stackGroupAnchors[asNumber];
+        a.click();
+        // Open stack group
+        CATMAID.msg("Success", "Opening stack group \"" + $(a).text() + "\"");
+        return true;
+      }
+      let stackAnchors = $('a[data-type=stack]');
+      if (asNumber > 0 && asNumber <= stackAnchors.length) {
+        let a = stackAnchors[asNumber];
+        a.click();
+        // Open stack
+        CATMAID.msg("Success", "Opening stack \"" + $(a).text() + "\"");
+        return true;
+      }
+    }
+    return false;
+  };
+
 
   // Export data view
   CATMAID.DataView = DataView;
@@ -259,11 +285,12 @@
     return Promise.resolve();
   };
 
-  function createProjectMemberEntry(member, target, handler) {
+  function createProjectMemberEntry(member, target, type, handler) {
     var dd = document.createElement("dd");
     var a = document.createElement("a");
     var ddc = document.createElement("dd");
     a.href = "#";
+    a.dataset.type = type;
     a.onclick = handler;
     a.appendChild(document.createTextNode(member.title));
     dd.appendChild(a);
@@ -326,7 +353,7 @@
           if (stackRegEx && !stackRegEx.test(sg.title)) {
             continue;
           }
-          createProjectMemberEntry(sg, pp,
+          createProjectMemberEntry(sg, pp, 'stackgroup',
               CATMAID.openStackGroup.bind(window, p.id, sg.id, false, undefined));
           ++matchingStackGroups;
         }
@@ -340,7 +367,7 @@
           if (stackRegEx && !stackRegEx.test(s.title)) {
             continue;
           }
-          createProjectMemberEntry(s, pp,
+          createProjectMemberEntry(s, pp, 'stack',
               CATMAID.openProjectStack.bind(window, p.id, s.id, false, undefined));
           ++matchingStacks;
         }

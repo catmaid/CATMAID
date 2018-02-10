@@ -967,14 +967,14 @@
   /**
    * Create a new numeric field based on the passed in configuration.
    */
-  DOM.createNumericField = function(id, label, title, value, postlabel, onchangeFn, length, placeholder) {
-    return DOM.createTextField(id, label, title, value, postlabel, onchangeFn, length, placeholder);
+  DOM.createNumericField = function(id, label, title, value, postlabel, onchangeFn, length, placeholder, disabled) {
+    return DOM.createTextField(id, label, title, value, postlabel, onchangeFn, length, placeholder, disabled);
   };
 
   /**
    * Create a new text field based on the passed in configuration.
    */
-  DOM.createTextField = function(id, label, title, value, postlabel, onchangeFn, length, placeholder) {
+  DOM.createTextField = function(id, label, title, value, postlabel, onchangeFn, length, placeholder, disabled) {
     var nf = document.createElement('input');
     if (id) nf.setAttribute('id', id);
     nf.setAttribute('type', 'text');
@@ -982,6 +982,10 @@
 
     if (placeholder) {
       nf.setAttribute('placeholder', placeholder);
+    }
+
+    if (disabled !== undefined) {
+      nf.disabled = !!disabled;
     }
 
     if (length) nf.setAttribute('size', length);
@@ -1110,7 +1114,8 @@
           case 'numeric':
             return CATMAID.DOM.appendNumericField(tab, e.label, e.title, e.value, e.postlabel, e.onchange, e.length, e.placeholder);
           case 'text':
-            return CATMAID.DOM.appendTextField(tab, e.label, e.title, e.value, e.postlabel, e.onchange, e.length, e.placeholder);
+            return CATMAID.DOM.appendTextField(tab, e.id, e.label, e.title, e.value,
+                e.postlabel, e.onchange, e.length, e.placeholder, e.disabled);
           case 'date':
             return CATMAID.DOM.appendDateField(tab, e.label, e.title, e.value,
                 e.postlabel, e.onchange, e.length, e.placeholder, e.time);
@@ -1191,8 +1196,8 @@
   /**
    * Append a new text input field to another element.
    */
-  DOM.appendTextField = function(div, label, title, value, postlabel, onchangeFn, length, placeholder) {
-    var field = DOM.createTextField(undefined, label, title, value, postlabel, onchangeFn, length, placeholder);
+  DOM.appendTextField = function(div, id, label, title, value, postlabel, onchangeFn, length, placeholder, disabled) {
+    var field = DOM.createTextField(id, label, title, value, postlabel, onchangeFn, length, placeholder, disabled);
     div.appendChild(field);
     return field;
   };

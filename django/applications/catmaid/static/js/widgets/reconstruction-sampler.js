@@ -50,7 +50,11 @@
       'domainType': get(state.domainType, 'regular'),
       'domainStartNodeType': get(state.domainStartNodeType, 'root'),
       'domainEndNodeType': get(state.domainEndNodeType, 'downstream'),
-      'reviewRequired': get(state.reviewRequired, true)
+      'reviewRequired': get(state.reviewRequired, true),
+      'interpolateLocations': get(state.interpolateLocations, true),
+      'interpolatableX': get(state.interpolatableX, project.interpolatableSections.x),
+      'interpolatableY': get(state.interpolatableY, project.interpolatableSections.y),
+      'interpolatableZ': get(state.interpolatableZ, project.interpolatableSections.z)
     };
     this.workflow.setState(this.state);
     this.workflow.selectStep(0);
@@ -259,6 +263,102 @@
         value: widget.state['reviewRequired'],
         onclick: function() {
           widget.state['reviewRequired'] = this.checked;
+        }
+      },
+      {
+        type: 'checkbox',
+        label: 'Interpolate locations',
+        value: widget.state['interpolateLocations'],
+        onclick: function() {
+          widget.state['interpolateLocations'] = this.checked;
+          $('input#catmaid-sampler-interpolate-x-' + widget.widgetID + ',' +
+            'input#catmaid-sampler-interpolate-y-' + widget.widgetID + ',' +
+            'input#catmaid-sampler-interpolate-z-' + widget.widgetID).prop('disabled', !this.checked);
+        },
+        title: 'If checked, nodes at the respective sections in the displayed reference stack are placed at an interpolated location'
+      },
+      {
+        type: 'text',
+        label: 'X',
+        length: 5,
+        value: widget.state['interpolatableX'].join(", "),
+        title: 'Nodes at these X project coordinates will be interpolated.',
+        id: 'catmaid-sampler-interpolate-x-' + widget.widgetID,
+        disabled: !widget.state['interpolateLocations'],
+        onchange: function() {
+          try {
+            this.classList.remove('ui-state-error');
+            widget.state['interpolatableX'] = this.value.split(',').map(
+                function(s) {
+                  s = s.trim();
+                  if (s.length === 0) {
+                    return s;
+                  }
+                  var val = parseInt(s, 10);
+                  if (isNaN(val)) {
+                    throw new CATMAID.ValueError("No number: " + s.trim());
+                  }
+                  return val;
+                });
+          } catch(e) {
+            this.classList.add('ui-state-error');
+          }
+        }
+      },
+      {
+        type: 'text',
+        label: 'Y',
+        length: 5,
+        value: widget.state['interpolatableY'].join(", "),
+        title: 'Nodes at these Y project coordinates will be interpolated.',
+        id: 'catmaid-sampler-interpolate-y-' + widget.widgetID,
+        disabled: !widget.state['interpolateLocations'],
+        onchange: function() {
+          try {
+            this.classList.remove('ui-state-error');
+            widget.state['interpolatableY'] = this.value.split(',').map(
+                function(s) {
+                  s = s.trim();
+                  if (s.length === 0) {
+                    return s;
+                  }
+                  var val = parseInt(s, 10);
+                  if (isNaN(val)) {
+                    throw new CATMAID.ValueError("No number: " + s.trim());
+                  }
+                  return val;
+                });
+          } catch(e) {
+            this.classList.add('ui-state-error');
+          }
+        }
+      },
+      {
+        type: 'text',
+        label: 'Z',
+        length: 5,
+        value: widget.state['interpolatableZ'].join(", "),
+        title: 'Sections at these Z project coordinates in an XY view will be interpolated',
+        id: 'catmaid-sampler-interpolate-z-' + widget.widgetID,
+        disabled: !widget.state['interpolateLocations'],
+        onchange: function() {
+          try {
+            this.classList.remove('ui-state-error');
+            widget.state['interpolatableY'] = this.value.split(',').map(
+                function(s) {
+                  s = s.trim();
+                  if (s.length === 0) {
+                    return s;
+                  }
+                  var val = parseInt(s, 10);
+                  if (isNaN(val)) {
+                    throw new CATMAID.ValueError("No number: " + s.trim());
+                  }
+                  return val;
+                });
+          } catch(e) {
+            this.classList.add('ui-state-error');
+          }
         }
       },
       {

@@ -95,7 +95,7 @@
     if (nonZeroDigits.has(asNumber)) {
       let stackGroupAnchors = $('a[data-type=stackgroup]');
       if (asNumber > 0 && asNumber <= stackGroupAnchors.length) {
-        let a = stackGroupAnchors[asNumber];
+        let a = stackGroupAnchors[asNumber - 1];
         a.click();
         // Open stack group
         CATMAID.msg("Success", "Opening stack group \"" + $(a).text() + "\"");
@@ -103,7 +103,7 @@
       }
       let stackAnchors = $('a[data-type=stack]');
       if (asNumber > 0 && asNumber <= stackAnchors.length) {
-        let a = stackAnchors[asNumber];
+        let a = stackAnchors[asNumber - 1];
         a.click();
         // Open stack
         CATMAID.msg("Success", "Opening stack \"" + $(a).text() + "\"");

@@ -58,6 +58,10 @@ Reconstruction Sampler:
   users are now asked to add all partner nodes to the synapse and let the widget
   choose a partner site for them.
 
+- Sections that should be interpolated (e.g. because of large tracing data
+  shifts due to image data shifts) are now respected and not over-sampled
+  anymore.
+
 Node Search:
 
 - Tagged connector nodes are now shown in search results.

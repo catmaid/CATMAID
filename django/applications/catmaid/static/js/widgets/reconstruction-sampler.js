@@ -611,6 +611,27 @@
     }
     var createIntervalBoundingNodes = !!widget.state['createIntervalBoundingNodes'];
 
+    var interpolateSections = widget.state['interpolateLocations'];
+    if (interpolateSections === undefined) {
+      CATMAID.warn("Can't create domain without section interpolation information");
+      return;
+    }
+    var interpolatableX = widget.state['interpolatableX'];
+    if (!interpolatableX) {
+      CATMAID.warn("No valid X interpolatable list found");
+      return;
+    }
+    var interpolatableY = widget.state['interpolatableY'];
+    if (!interpolatableX) {
+      CATMAID.warn("No valid Y interpolatable list found");
+      return;
+    }
+    var interpolatableZ = widget.state['interpolatableZ'];
+    if (!interpolatableX) {
+      CATMAID.warn("No valid Z interpolatable list found");
+      return;
+    }
+
     var arbor = widget.state['arbor'];
     // Get arbor if not already cached
     var prepare;
@@ -653,6 +674,11 @@
           let workParser = new CATMAID.ArborParser();
           workParser.arbor = arbor.arbor.clone();
           workParser.positions = Object.assign({}, arbor.positions);
+
+          // Interpolate positions
+          workParser.arbor.interpolatePositions(workParser.positions,
+              interpolatableX, interpolatableY, interpolatableZ);
+
           let intervalConfiguration = CATMAID.Sampling.intervalsFromModels(
             workParser.arbor, workParser.positions, fakeDomain, intervalLength,
             intervalError, preferSmallerError, createIntervalBoundingNodes);
@@ -669,7 +695,8 @@
                 dialog.close();
               }
             },
-            shadingMethod: 'sampler-intervals'
+            shadingMethod: 'sampler-intervals',
+            interpolateSections: interpolateSections
           });
           dialog.show();
 
@@ -1051,6 +1078,11 @@
       CATMAID.warn("Can't create domain without domain type");
       return;
     }
+    var interpolateSections = widget.state['interpolateLocations'];
+    if (interpolateSections === undefined) {
+      CATMAID.warn("Can't create domain without section interpolation information");
+      return;
+    }
 
     var domainFactory = CATMAID.Sampling.DomainFactories[domainType];
     if (!domainFactory) {
@@ -1095,7 +1127,8 @@
             title: "Please confirm " + domains.length + " sampler domain(s)",
             showControlPanel: false,
             lookAt: [rootNode.x, rootNode.y, rootNode.z],
-            shadingMethod: 'sampler-domains'
+            shadingMethod: 'sampler-domains',
+            interpolateSections: interpolateSections
           });
 
           // Create domains if OK is pressed
@@ -1419,6 +1452,22 @@
     }
     var createIntervalBoundingNodes = !!widget.state['createIntervalBoundingNodes'];
 
+    var interpolatableX = widget.state['interpolatableX'];
+    if (!interpolatableX) {
+      CATMAID.warn("No valid X interpolatable list found");
+      return;
+    }
+    var interpolatableY = widget.state['interpolatableY'];
+    if (!interpolatableX) {
+      CATMAID.warn("No valid Y interpolatable list found");
+      return;
+    }
+    var interpolatableZ = widget.state['interpolatableZ'];
+    if (!interpolatableX) {
+      CATMAID.warn("No valid Z interpolatable list found");
+      return;
+    }
+
     var arbor = widget.state['arbor'];
     // Get arbor if not already cached
     var prepare;
@@ -1451,8 +1500,12 @@
     prepare
       .then(getDomainDetails.bind(this, project.id, domain.id))
       .then(function(domainDetails) {
-      workParser.arbor = arbor.arbor.clone();
-      workParser.positions = Object.assign({}, arbor.positions);
+          workParser.arbor = arbor.arbor.clone();
+          workParser.positions = Object.assign({}, arbor.positions);
+
+          // Interpolate positions
+          workParser.arbor.interpolatePositions(workParser.positions,
+              interpolatableX, interpolatableY, interpolatableZ);
         return CATMAID.Sampling.intervalsFromModels(workParser.arbor,
             workParser.positions, domainDetails, intervalLength,
             intervalError, preferSmallerError, createIntervalBoundingNodes);

@@ -1977,3 +1977,107 @@ Arbor.prototype.approximateTwigRoots = function(strahler_cut) {
   }
   return roots;
 };
+
+/**
+ * Modify the passed in positions by walking down the arbor and check each
+ * position if it should be interpolated. If so the respective coordinate is
+ * updated.
+ */
+Arbor.prototype.interpolatePositions = function(positions, interpolatableX,
+    interpolatableY, interpolatableZ) {
+  let successors = this.allSuccessors();
+  let nodes = this.childrenArray();
+  let averageChildPosition = { 'x': 0, 'y': 0, 'z': 0 };
+  interpolatableX = interpolatableX && interpolatableX.length > 0 ? interpolatableX : false;
+  interpolatableY = interpolatableY && interpolatableY.length > 0 ? interpolatableY : false;
+  interpolatableZ = interpolatableZ && interpolatableZ.length > 0 ? interpolatableZ : false;
+
+  for (let i=0, imax=nodes.length; i<imax; ++i) {
+    let nodeId = nodes[i];
+    let position = positions[nodeId],
+      nodeX = position.x, nodeY = position.y,
+      nodeZ = position.z;
+
+    let interpolateX = false, interpolateY = false, interpolateZ = false;
+
+    if (interpolatableX) {
+      for (let ix=0, ixmax=interpolatableX.length; ix<ixmax; ++ix) {
+        let x = interpolatableX[ix];
+        if (Math.abs(nodeX - x) < 0.0001) {
+          interpolateX = true;
+          break;
+        }
+      }
+    }
+
+    if (interpolatableY) {
+      for (let iy=0, iymax=interpolatableY.length; iy<iymax; ++iy) {
+        let y = interpolatableY[iy];
+        if (Math.abs(nodeY - y) < 0.0001) {
+          interpolateY = true;
+          break;
+        }
+      }
+    }
+
+    if (interpolatableZ) {
+      for (let iz=0, izmax=interpolatableZ.length; iz<izmax; ++iz) {
+        let z = interpolatableZ[iz];
+        if (Math.abs(nodeZ - z) < 0.0001) {
+          interpolateZ = true;
+          break;
+        }
+      }
+    }
+
+    // If no interpolation needs to be done for this node, continue with next
+    // node.
+    if (!(interpolateX || interpolateY || interpolateZ)) {
+      continue;
+    }
+
+    let children = successors[nodeId];
+    if (!children || children.length === 0) {
+      continue;
+    }
+
+    // Find an average child position
+    averageChildPosition.x = 0;
+    averageChildPosition.y = 0;
+    averageChildPosition.z = 0;
+    for (let j=0; j<children.length; ++j) {
+      let childId = children[j];
+      let childPosition = positions[childId];
+      averageChildPosition.x += childPosition.x;
+      averageChildPosition.y += childPosition.y;
+      averageChildPosition.z += childPosition.z;
+    }
+    averageChildPosition.x = averageChildPosition.x / children.length;
+    averageChildPosition.y = averageChildPosition.y / children.length;
+    averageChildPosition.z = averageChildPosition.z / children.length;
+
+    // If this node is the root node, use the child information
+    let parentId = this.edges[nodeId];
+    let parentPosition;
+    if (!parentId || parentId == nodeId) {
+      parentPosition = averageChildPosition;
+    } else {
+      parentPosition = positions[parentId];
+    }
+
+    if (interpolatableX) {
+      position.setY((averageChildPosition.y + parentPosition.y) * 0.5);
+      position.setZ((averageChildPosition.z + parentPosition.z) * 0.5);
+    }
+
+    if (interpolatableY) {
+      position.setX((averageChildPosition.x + parentPosition.x) * 0.5);
+      position.setZ((averageChildPosition.z + parentPosition.z) * 0.5);
+    }
+
+    if (interpolatableZ) {
+      position.setX((averageChildPosition.x + parentPosition.x) * 0.5);
+      position.setY((averageChildPosition.y + parentPosition.y) * 0.5);
+    }
+  }
+};

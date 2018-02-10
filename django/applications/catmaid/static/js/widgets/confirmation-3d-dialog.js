@@ -46,6 +46,7 @@
     this.shadingMethod = options.shadingMethod;
     this.colorMethod = options.colorMethod;
     this.lookAt = CATMAID.tools.getDefined(options.lookAt, 'active');
+    this.interpolateSections = CATMAID.tools.getDefined(options.interpolateSections, true);
 
     // Confirmation options
     if (CATMAID.tools.isFn(options.confirm)) {
@@ -123,6 +124,10 @@
 
     if (this.coloringMethod) {
       this.webglapp.options.color_method = this.colorMethod;
+    }
+
+    if (this.interpolateSections !== undefined) {
+      this.webglapp.options.interpolate_sections = this.interpolateSections;
     }
 
     if (this.lookAt === 'active') {
@@ -227,7 +232,7 @@
       var interpolateCb = document.createElement('input');
       interpolateCb.setAttribute('type', 'checkbox');
       interpolateCb.setAttribute('class', 'ui-button');
-      interpolateCb.checked = self.webglapp.options.interpolate_sections;
+      interpolateCb.checked = self.interpolateSections;
       interpolateCb.onchange = function() {
         self.webglapp.options.interpolate_sections = this.checked;
         self.onSettingChanged('interpolate_sections', this.checked);

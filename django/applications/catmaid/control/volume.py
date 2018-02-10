@@ -17,7 +17,8 @@ from rest_framework.response import Response
 
 from six.moves import map
 
-num = '[-+]?[0-9]*\.?[0-9]+'
+
+num = '[-+]?[0-9]*.?[0-9]+'
 bbox_re = r'BOX3D\(({0})\s+({0})\s+({0}),\s*({0})\s+({0})\s+({0})\)'.format(num)
 
 def get_req_coordinate(request_dict, c):

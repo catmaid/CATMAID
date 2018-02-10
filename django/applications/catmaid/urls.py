@@ -472,7 +472,7 @@ if settings.FRONT_END_TESTS_ENABLED:
 # readability. Therefore, they are all declared in this general statement.
 urlpatterns += [
     # User analytics and proficiency
-    url(r'^useranalytics$', useranalytics.plot_useranalytics),
+    url(r'^(?P<project_id>\d+)/useranalytics$', useranalytics.plot_useranalytics),
     url(r'^(?P<project_id>\d+)/userproficiency$', user_evaluation.evaluate_user),
 
     url(r'^(?P<project_id>\d+)/graphexport/json$', graphexport.export_jsongraph),

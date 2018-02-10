@@ -101,7 +101,7 @@
       contentID: "user-analytics-content",
       createContent: function(content) {
         var img = document.createElement('img');
-        img.src = CATMAID.makeURL('useranalytics');
+        img.src = CATMAID.makeURL(project.id + '/useranalytics');
         img.setAttribute('data-name', "useranalyticsimg");
         content.appendChild(img);
       },
@@ -145,9 +145,9 @@
           project_id = project.id;
 
       var img = document.querySelector('#user-analytics-content img[data-name=useranalyticsimg]');
-      img.src = CATMAID.makeURL('useranalytics' + "?userid=" + userId +
-          '&project_id=' + project_id) + "&start=" + start + "&end=" + end +
-          '&all_writes=' + allWrites + '&max_inactivity=' + maxInactivity;
+      img.src = CATMAID.makeURL(project.id + '/useranalytics' + "?userid=" + userId) +
+        "&start=" + start + "&end=" + end + '&all_writes=' + allWrites + '&max_inactivity=' +
+        maxInactivity;
     } catch (e) {
       CATMAID.error(e);
       console.log(e, e.stack);

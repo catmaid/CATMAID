@@ -14,7 +14,8 @@ from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.views.decorators.cache import never_cache
 
-from catmaid.models import Connector, Project, Treenode, Review
+from catmaid.control.authentication import requires_user_role
+from catmaid.models import Connector, Project, Treenode, Review, UserRole
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +67,8 @@ class Bout(object):
                 (self.nrEvents, self.start, self.end)
 
 @never_cache
-def plot_useranalytics(request):
+@requires_user_role(UserRole.Browse)
+def plot_useranalytics(request, project_id):
     """ Creates a PNG image containing different plots for analzing the
     performance of individual users over time.
     """
@@ -75,9 +77,6 @@ def plot_useranalytics(request):
     userid = request.GET.get('userid', None)
     if not (userid and userid.strip()):
         raise ValueError("Need user ID")
-    project_id = request.GET.get('project_id', None)
-    if not (project_id and project_id.strip()):
-        raise ValueError("Need project ID")
     project = get_object_or_404(Project, pk=project_id) if project_id else None
     all_writes = request.GET.get('all_writes', 'false') == 'true'
     maxInactivity = int(request.GET.get('max_inactivity', 3))

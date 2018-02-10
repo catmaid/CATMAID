@@ -6,7 +6,8 @@ included in this changelog.
 
 ### Additions
 
-None.
+- `GET /{project_id}/useranalytics`:
+  Replaces `GET /useranalytics`.
 
 ### Modifications
 
@@ -18,7 +19,8 @@ None.
 
 ### Removals
 
-None.
+- `GET /useranalytics`:
+  Has been replaced with `GET /{project_id}/useranalytics`.
 
 
 ## 2017.12.07

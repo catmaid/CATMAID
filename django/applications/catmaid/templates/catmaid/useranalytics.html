@@ -32,7 +32,7 @@ End date: <input type="text" id="end_date" />
 <label><input type="checkbox" id="all_writes" />All writes</label>
 <button id="refresh" >Refresh</button>
 <br />
-<img src="{{ CATMAID_URL }}useranalytics" id="useranalyticsimg" />
+<img src="{{ CATMAID_URL }}/all/useranalytics" id="useranalyticsimg" />
 
 <script type="text/javascript">
   var STATIC_URL_JS = '{{ STATIC_URL|escapejs }}';
@@ -106,9 +106,8 @@ End date: <input type="text" id="end_date" />
             project_id = $('#project').val();
 
         document.getElementById("useranalyticsimg").src =
-            "{{ CATMAID_URL }}useranalytics" +
+            "{{ CATMAID_URL }}" + project_id + "/useranalytics" +
             "?userid=" + $('#logtable_username').val() +
-            (project_id === 'all' ? '' : '&project_id=' + project_id) +
             "&start=" + start +
             "&end=" + end +
             "&all_writes=" + allWrites +

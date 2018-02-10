@@ -529,15 +529,6 @@ var project;
    * active project stays open.
    */
   Client.prototype.refresh = function() {
-    var backgroundDataView = !!project;
-
-    // Update data view display, in the background if a project is open
-    if (this.current_dataview) {
-      CATMAID.client.switch_dataview(this.current_dataview, backgroundDataView);
-    } else {
-      CATMAID.client.load_default_dataview(backgroundDataView);
-    }
-
     if (project) {
       // Close an active project, if the active user doesn't have permission to
       // browse it.
@@ -736,7 +727,8 @@ var project;
 
       var projectUpdate = CATMAID.client.updateProjects()
         .then(function() {
-          CATMAID.client.refresh();
+          var backgroundDataView = !!project;
+          CATMAID.client.load_default_dataview(backgroundDataView);
         })
         .catch(CATMAID.handleError);
 
@@ -1144,11 +1136,14 @@ var project;
       container.removeChild(container.firstChild);
     }
 
+    let self = this;
     dataview.createContent(container)
       .then(function() {
         dataview.refresh();
         // Revalidate content to lazy-load
         CATMAID.client.blazy.revalidate();
+
+        self.current_dataview = dataview;
       });
 
     // Make sure container is visible

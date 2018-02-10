@@ -10,8 +10,9 @@ from django.db import connection
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 
-from catmaid.models import (BrokenSlice, Class, ClientDatastore, Project,
-        ProjectStack, Relation, Stack, StackGroup, StackStackGroup, UserRole)
+from catmaid.models import (BrokenSlice, Class, ClientDatastore,
+        InterpolatableSection, Project, ProjectStack, Relation, Stack,
+        StackGroup, StackStackGroup, UserRole)
 from catmaid.control.authentication import requires_user_role
 
 from rest_framework.decorators import api_view
@@ -443,3 +444,37 @@ def delete_projects_and_stack_data(projects):
         stack_groups.delete()
         project_stack_relations.delete()
         p.delete()
+
+
+@api_view(['GET'])
+@requires_user_role(UserRole.Browse)
+def interpolatable_sections(request, project_id):
+    """Get all section locations for all orientations.
+    ---
+    type:
+      x:
+        type: array
+        items:
+            type: float
+        required: true
+      y:
+        type: array
+        items:
+            type: float
+        required: true
+      z:
+        type: array
+        items:
+            type: float
+        required: true
+    """
+    coords = [[], [], []]
+    for l in InterpolatableSection.objects.filter(
+            project_id=project_id).values_list('orientation', 'location_coordinate'):
+        coords[l[0]].append(l[1])
+
+    return JsonResponse({
+        'x': coords[2],
+        'y': coords[1],
+        'z': coords[0]
+    })

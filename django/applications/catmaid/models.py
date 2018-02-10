@@ -418,6 +418,28 @@ class BrokenSlice(models.Model):
         return "Broken section {} in stack {}".format(self.index, self.stack)
 
 
+@python_2_unicode_compatible
+class InterpolatableSection(models.Model):
+    """Opposed to the broken slice, an interpolated slice is not supposed to be
+    removed, but data on it can be interpolated if the user chooses so to
+    improve visualization. In general, data has to be expected at this location.
+    And this of course requires additional data for the data to be interpolated.
+    This is for instance useful if a section is shifted or partially defect and
+    kept in the stack. The client can the for instance interpolate skeletons in
+    the 3D Viewer for this particular section.
+    """
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, db_index=True)
+    location_coordinate = models.FloatField(db_index=True)
+    orientation = models.SmallIntegerField(choices=((0, 'z'), (1, 'y'), (2, 'x')))
+
+    class Meta:
+        db_table = "interpolatable_section"
+
+    def __str__(self):
+        return "Interpoaltable location {} in orientation {}".format(
+                self.location_coordinate, self.orientation)
+
+
 class ClassClass(models.Model):
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User, on_delete=models.CASCADE)

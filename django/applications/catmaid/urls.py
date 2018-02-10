@@ -88,6 +88,7 @@ urlpatterns += [
 urlpatterns += [
     url(r'^projects/$', project.projects),
     url(r'^projects/export$', project.export_projects),
+    url(r'^(?P<project_id>\d+)/interpolatable-sections/$', project.interpolatable_sections),
 ]
 
 # General stack model access

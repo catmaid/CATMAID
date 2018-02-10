@@ -11,9 +11,9 @@ from django.contrib.auth.models import User, Group
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from guardian.admin import GuardedModelAdmin
-from catmaid.models import (Project, DataView, Stack, ProjectStack, UserProfile,
-        BrokenSlice, StackClassInstance, Relation, ClassInstance, Class,
-        StackGroup, StackStackGroup, StackMirror)
+from catmaid.models import (Project, DataView, Stack, InterpolatableSection,
+        ProjectStack, UserProfile, BrokenSlice, StackClassInstance, Relation,
+        ClassInstance, Class, StackGroup, StackStackGroup, StackMirror)
 from catmaid.control.importer import importer_admin_view
 from catmaid.control.classificationadmin import classification_admin_view
 from catmaid.control.annotationadmin import ImportingWizard
@@ -69,6 +69,7 @@ class BrokenSliceModelForm(forms.ModelForm):
     class Meta:
         model = BrokenSlice
         fields = '__all__'
+
 
 class GroupAdminForm(forms.ModelForm):
     """A simple group admin form which adds a user edit control similar to the
@@ -155,6 +156,16 @@ class BrokenSliceAdmin(GuardedModelAdmin):
                 msg = 'All %s extra broken slice entries were already ' \
                     'present.' % str(num_extra_slices)
                 messages.add_message(request, messages.INFO, msg)
+
+
+class InterpolatableSectionAdmin(admin.ModelAdmin):
+    list_display = ('project', 'orientation', 'location_coordinate')
+    search_fields = ('project', 'orientation', 'location_coordinate')
+    list_editable = ('orientation', 'location_coordinate',)
+
+    class Meta:
+        model = InterpolatableSection
+        fields = '__all__'
 
 
 class StackMirrorForm(forms.ModelForm):
@@ -345,6 +356,7 @@ User.color = color
 
 # Add model admin views
 admin.site.register(BrokenSlice, BrokenSliceAdmin)
+admin.site.register(InterpolatableSection, InterpolatableSectionAdmin)
 admin.site.register(Project, ProjectAdmin)
 admin.site.register(DataView, DataViewAdmin)
 admin.site.register(Stack, StackAdmin)

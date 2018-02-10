@@ -878,6 +878,10 @@ var WindowMaker = new function()
             onclick: function() {
               WA.options.interpolate_sections = this.checked;
               WA.updateLocationFiltering();
+              $('input#catmaid-3dviewer-interpolate-x-' + WA.widgetID + ',' +
+                'input#catmaid-3dviewer-interpolate-y-' + WA.widgetID + ',' +
+                'input#catmaid-3dviewer-interpolate-z-' + WA.widgetID + ',' +
+                'input#catmaid-3dviewer-interpolate-xy-sections-' + WA.widgetID).prop('disabled', !this.checked);
             },
             title: 'If checked, nodes at the respective sections in the displayed reference stack are placed at an interpolated location'
           },
@@ -886,6 +890,8 @@ var WindowMaker = new function()
             label: 'on sections',
             length: 5,
             value: o.interpolated_sections.join(', '),
+            id: 'catmaid-3dviewer-interpolate-xy-sections-' + WA.widgetID,
+            disabled: !o.interpolate_sections,
             onchange: function() {
               try {
                 this.classList.remove('ui-state-error');
@@ -914,6 +920,8 @@ var WindowMaker = new function()
             length: 5,
             value: o.interpolated_sections_x.join(", "),
             title: 'Sections at these X project coordinates in a ZY view will be interpolated',
+            id: 'catmaid-3dviewer-interpolate-x-' + WA.widgetID,
+            disabled: !o.interpolate_sections,
             onchange: function() {
               try {
                 this.classList.remove('ui-state-error');
@@ -941,6 +949,8 @@ var WindowMaker = new function()
             length: 5,
             value: o.interpolated_sections_y.join(", "),
             title: 'Sections at these Y project coordinates in an XZ view will be interpolated',
+            id: 'catmaid-3dviewer-interpolate-y-' + WA.widgetID,
+            disabled: !o.interpolate_sections,
             onchange: function() {
               try {
                 this.classList.remove('ui-state-error');
@@ -968,6 +978,8 @@ var WindowMaker = new function()
             length: 5,
             value: o.interpolated_sections_z.join(", "),
             title: 'Sections at these Z project coordinates in an XY view will be interpolated',
+            id: 'catmaid-3dviewer-interpolate-z-' + WA.widgetID,
+            disabled: !o.interpolate_sections,
             onchange: function() {
               try {
                 this.classList.remove('ui-state-error');

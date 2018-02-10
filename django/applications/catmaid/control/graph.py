@@ -55,7 +55,7 @@ def split_by_confidence_and_add_edges(confidence_threshold, digraphs, rows):
                 digraphs[row[3]].add_edge(row[1], row[0])
         for skid, digraph in six.iteritems(digraphs):
             if skid in to_split:
-                arbors[skid] = weakly_connected_component_subgraphs(digraph)
+                arbors[skid] = list(weakly_connected_component_subgraphs(digraph))
             else:
                 arbors[skid] = [digraph]
 

@@ -320,7 +320,7 @@ def populate_connectors(chunkIDs, chunks, cs, connectors):
 
 
 def subgraphs(digraph, skeleton_id):
-    chunks = weakly_connected_component_subgraphs(digraph)
+    chunks = list(weakly_connected_component_subgraphs(digraph))
     if 1 == len(chunks):
         chunkIDs = (str(skeleton_id),)
     else:

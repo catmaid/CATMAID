@@ -366,7 +366,7 @@ def compartmentalize_skeletongroup( skeleton_id_list, project_id, **kwargs ):
         elif 'edgecount' in kwargs:
             edgecount_filtering( skeleton, kwargs['edgecount'] )
 
-        subgraphs = nx.weakly_connected_component_subgraphs( skeleton.graph )
+        subgraphs = list(nx.weakly_connected_component_subgraphs( skeleton.graph))
         compartment_graph_of_skeletons[ skeleton_id ] = subgraphs
 
         for i,subg in enumerate(subgraphs):

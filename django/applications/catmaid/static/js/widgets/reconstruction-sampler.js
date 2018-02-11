@@ -1650,8 +1650,8 @@
    */
   var SynapseWorkflowStep = function() {
     CATMAID.WorkflowStep.call(this, "Synapse");
-    this.sampleInputConnectors = true;
-    this.sampleOutputConnectors = true;
+    this.sampleDownstreamConnectors = true;
+    this.sampleUpstreamConnectors = true;
     this.connectorData = {};
     this.intervalTreenodes = new Set();
   };
@@ -1667,20 +1667,20 @@
     return [
       {
         type: 'checkbox',
-        label: 'Input syanpses',
-        title: 'Consider synapses that are pre-synaptic to this interval for sampling',
-        value: this.sampleInputConnectors,
+        label: 'Downstream syanpses',
+        title: 'Consider synapses that are post-synaptic to this interval for sampling',
+        value: this.sampleDownstreamConnectors,
         onclick: function() {
-          self.sampleInputConnectors = this.checked;
+          self.sampleDownstreamConnectors = this.checked;
         }
       },
       {
         type: 'checkbox',
-        label: 'Ouput syanpses',
-        title: 'Consider synapses that are post-synaptic to this interval for sampling',
-        value: this.sampleOutputConnectors,
+        label: 'Upstream syanpses',
+        title: 'Consider synapses that are pre-synaptic to this interval for sampling',
+        value: this.sampleUpstreamConnectors,
         onclick: function() {
-          self.sampleOutputConnectors = this.checked;
+          self.sampleUpstreamConnectors = this.checked;
         }
       },
       {
@@ -1747,9 +1747,10 @@
           'Reconstruct interval to completion and have it reviewed. ' :
           'Reconstruct interval to completion. ') +
         'A warning is shown if you select a node outside the interval. ' +
-        'Create seed nodes for all input synapses; only create one or a few ' +
-        'seed nodes for each output synapse. Once this is done, select a ' +
-        '(random) synapse to continue. Below is a list of connectors in this interval.';
+        'Create all upstream and downstream connectors, creating partner ' +
+        'seed nodes can be done immediately or deferred to the next step. ' +
+        'Once this is done, select a (random) synapse to continue. Below ' +
+        'is a list of connectors in this interval.';
     p.appendChild(document.createTextNode(msg));
 
     var intervalStartNodeId = interval.start_node_id;
@@ -1770,17 +1771,17 @@
     var skeletonId = widget.state['skeletonId'];
 
     // Create a data table with all available domains or a filtered set
-    var inputHeader = content.appendChild(document.createElement('h3'));
-    inputHeader.appendChild(document.createTextNode('Input connectors'));
-    inputHeader.style.clear = 'both';
-    var inputTable = document.createElement('table');
-    content.appendChild(inputTable);
+    var downstreamHeader = content.appendChild(document.createElement('h3'));
+    downstreamHeader.appendChild(document.createTextNode('Downstream connectors'));
+    downstreamHeader.style.clear = 'both';
+    var downstreamTable = document.createElement('table');
+    content.appendChild(downstreamTable);
 
-    var outputHeader = content.appendChild(document.createElement('h3'));
-    outputHeader.appendChild(document.createTextNode('Output connectors'));
-    outputHeader.style.clear = 'both';
-    var outputTable = document.createElement('table');
-    content.appendChild(outputTable);
+    var upstreamHeader = content.appendChild(document.createElement('h3'));
+    upstreamHeader.appendChild(document.createTextNode('Upstream connectors'));
+    upstreamHeader.style.clear = 'both';
+    var upstreamTable = document.createElement('table');
+    content.appendChild(upstreamTable);
 
     // Get current arbor. Don't use the cached one, because the user is expected
     // to change the arbor in this step.
@@ -1802,8 +1803,8 @@
       })
       .then(function() {
         self.datatables = [
-          self.makeConnectorTable(widget, inputTable, interval, skeletonId, "presynaptic_to"),
-          self.makeConnectorTable(widget, outputTable, interval, skeletonId, "postsynaptic_to")
+          self.makeConnectorTable(widget, downstreamTable, interval, skeletonId, "presynaptic_to"),
+          self.makeConnectorTable(widget, upstreamTable, interval, skeletonId, "postsynaptic_to")
         ];
       })
       .catch(CATMAID.handleError);
@@ -2065,20 +2066,20 @@
 
     // Ignore non-excluded, non-abandoned
     var connectors = [];
-    var incomingConnectors = this.connectorData['presynaptic_to'];
-    if (this.sampleInputConnectors && incomingConnectors) {
-      for (var i=0; i<incomingConnectors.length; ++i) {
-        var connector = incomingConnectors[i];
+    var downstreamConnectors = this.connectorData['presynaptic_to'];
+    if (this.sampleDownstreamConnectors && downstreamConnectors) {
+      for (var i=0; i<downstreamConnectors.length; ++i) {
+        var connector = downstreamConnectors[i];
         var sc = this.samplerConnectors[connector.id];
         if (!(sc && this.possibleStates[sc.state_id].name === "excluded")) {
           connectors.push(connector);
         }
       }
     }
-    var outgoingConnectors = this.connectorData['postsynaptic_to'];
-    if (this.sampleOutputConnectors && outgoingConnectors) {
-      for (var i=0; i<outgoingConnectors.length; ++i) {
-        var connector = outgoingConnectors[i];
+    var upstreamConnectors = this.connectorData['postsynaptic_to'];
+    if (this.sampleUpstreamConnectors && upstreamConnectors) {
+      for (var i=0; i<upstreamConnectors.length; ++i) {
+        var connector = upstreamConnectors[i];
         var sc = this.samplerConnectors[connector.id];
         if (!(sc && this.possibleStates[sc.state_id].name === "excluded")) {
           connectors.push(connector);

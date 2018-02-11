@@ -420,7 +420,7 @@
     content.appendChild(table);
 
     var datatable = $(table).DataTable({
-      dom: "lrphtip",
+      dom: "lrfhtip",
       autoWidth: false,
       paging: true,
       lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
@@ -908,7 +908,7 @@
     content.appendChild(table);
 
     var datatable = $(table).DataTable({
-      dom: "lrphtip",
+      dom: "lrfhtip",
       autoWidth: false,
       paging: true,
       lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
@@ -1303,7 +1303,7 @@
     content.appendChild(table);
 
     var datatable = $(table).DataTable({
-      dom: "lrphtip",
+      dom: "lrfhtip",
       autoWidth: false,
       paging: true,
       lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
@@ -1814,7 +1814,7 @@
     var self = this;
     var intervalId = interval.id;
     var datatable = $(table).DataTable({
-      dom: "lrphtip",
+      dom: "lrfhtip",
       autoWidth: false,
       paging: true,
       lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
@@ -2273,7 +2273,7 @@
     var connectorId = connector.id;
     var connectorPartners = connector.partners;
     var datatable = $(table).DataTable({
-      dom: "lrphtip",
+      dom: "lrfhtip",
       autoWidth: false,
       paging: true,
       lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],

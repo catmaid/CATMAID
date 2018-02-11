@@ -26,6 +26,8 @@ import sh
 import sys
 
 from datetime import date
+from six.moves import input
+
 
 def confirm(question, default="yes"):
     valid_options = {"yes": True, "y": True, "no": False, "n": False}
@@ -40,7 +42,7 @@ def confirm(question, default="yes"):
 
     while True:
         sys.stdout.write("{} {} ".format(question, prompt))
-        choice = raw_input().lower()
+        choice = input().lower()
         if default is not None and choice == '':
             return valid_options[default]
         elif choice in valid_options:
@@ -62,7 +64,7 @@ def log(message, newline=True):
 def rlinput(prompt, prefill=''):
    readline.set_startup_hook(lambda: readline.insert_text(prefill))
    try:
-      return raw_input(prompt)
+      return input(prompt)
    finally:
       readline.set_startup_hook()
 

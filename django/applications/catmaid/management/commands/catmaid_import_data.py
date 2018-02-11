@@ -14,6 +14,8 @@ from catmaid.control.annotationadmin import copy_annotations
 from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
         Project, Relation, User)
 
+from six.moves import input
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -22,7 +24,7 @@ def ask_a_b(a, b, title):
     """Return true if a, False if b.
     """
     def ask():
-        selection = raw_input(title + " ").strip()
+        selection = input(title + " ").strip()
         if selection == a:
             return True
         if selection == b:
@@ -49,7 +51,7 @@ def ask_for_user(title):
         for n,u in enumerate(users):
             print("%s: %s (ID %s)" % (n, u, u.id))
         print(title)
-        selection = raw_input("Please enter the number of the user wanted: ")
+        selection = input("Please enter the number of the user wanted: ")
         try:
             return users[int(selection)]
         except (ValueError, IndexError):
@@ -451,10 +453,10 @@ class Command(BaseCommand):
             projects = Project.objects.all()
             for n,p in enumerate(projects):
                 print("%s: %s (ID %s)" % (n, p, p.id))
-            selection = raw_input("Selection: ").strip()
+            selection = input("Selection: ").strip()
             try:
                 if selection == 'n':
-                    new_project_name = raw_input("Name of new project: ").strip()
+                    new_project_name = input("Name of new project: ").strip()
                     return Project.objects.create(title=new_project_name)
                 return projects[int(selection)]
             except (ValueError, IndexError):

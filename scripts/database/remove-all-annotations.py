@@ -13,6 +13,7 @@ import sys
 import psycopg2
 import os
 from common import db_connection, conf
+from six.moves import input
 
 if len(sys.argv) != 1:
     print("Usage:", sys.argv[0], file=sys.stderr)
@@ -23,7 +24,7 @@ c = db_connection.cursor()
 print("""Warning: this script removes all annotations from all projects
 in the database '%s'""" % (conf['database'],),)
 print("To continue, type 'Yes' followed by Enter.")
-reply = raw_input()
+reply = input()
 if reply != 'Yes':
     sys.exit(2)
 

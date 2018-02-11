@@ -24,6 +24,9 @@ import os
 import yaml
 import re
 
+from six.moves import input
+
+
 try:
 	conf = yaml.load(open(os.path.join(os.environ['HOME'], '.catmaid-db')))
 except:
@@ -48,7 +51,7 @@ conn = psycopg2.connect(host=conf['host'], database=conf['database'],
 c = conn.cursor()
 
 # Group name
-groupname = raw_input("Insert the group name that should get access to selected projects: ")
+groupname = input("Insert the group name that should get access to selected projects: ")
 select = 'SELECT g.id FROM "auth_group" g WHERE g.name = %s'
 c.execute(select, (groupname,) )
 row = c.fetchone()
@@ -62,7 +65,7 @@ else:
 project_constraints = False
 
 # Should only public projects be considered?
-only_public_projects = raw_input("Should only public projects be considered? y/[n]: ")
+only_public_projects = input("Should only public projects be considered? y/[n]: ")
 if only_public_projects in ('y', 'yes', 'Ja', 'Yo'):
 	print("\tOnly public projects will be considered.")
 	only_public_projects = True
@@ -76,7 +79,7 @@ while True:
 	# Should there be any filter on the stacks of the projects?
 	print( "You can now add a filter for stacks, associated with the a project. A project is ignored," )
 	print( "when *no* stack of a project matches the filter. By default all stacks are matched." )
-	stack_filter = raw_input("Please add a regex filter if you want (default: .*): ")
+	stack_filter = input("Please add a regex filter if you want (default: .*): ")
 	if len(stack_filter) == 0:
 		stack_filter = ".*"
 
@@ -113,7 +116,7 @@ while True:
 
 	# Try again if no projects did match?
 	if len(projects) == 0:
-		try_again = raw_input( "Sorry, no projects were found, try again? [y]/n: ")
+		try_again = input( "Sorry, no projects were found, try again? [y]/n: ")
 		if try_again in ('n', 'no', 'nop', 'nope'):
 			print("Canceled on user request.")
 			sys.exit(1)
@@ -122,7 +125,7 @@ while True:
 		print( "Selected the following projects:" )
 		for p in projects:
 			print( "\t" + projects[p] + " (ID: " + str(p) + ")" )
-		go_on = raw_input("Should I continue with these selected projects? [y]/n: ")
+		go_on = input("Should I continue with these selected projects? [y]/n: ")
 		if go_on not in ('n', 'no', 'nop', 'nope'):
 			break
 
@@ -149,7 +152,7 @@ else:
 	for n, r in enumerate(rows):
 		print( str(n) + ") " + r[1] )
 	# Get a list of wanted permissions
-	permissions = raw_input( "Insert all permissions as comma seperated list (e.g. 1,2,3): " )
+	permissions = input( "Insert all permissions as comma seperated list (e.g. 1,2,3): " )
 	permissions = permissions.replace(" ", "").split(",")
 	permissions = [rows[int(p)][0] for p in permissions]
 	if len(permissions) == 0:

@@ -8,6 +8,8 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import connection, transaction
 from catmaid.models import Project
 
+from six.moves import input
+
 
 class DryRunRollback(Exception):
     pass
@@ -36,7 +38,7 @@ class Command(BaseCommand):
         else:
             self.stdout.write('This will make changes to the database')
 
-        run = raw_input('Continue? [y/N]: ')
+        run = input('Continue? [y/N]: ')
         if run not in ('Y', 'y'):
             self.stdout.write('Canceled on user request')
             return

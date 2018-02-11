@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import six
-
 from itertools import chain
 from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
@@ -12,6 +10,8 @@ from catmaid.control.tracing import check_tracing_setup
 from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
         Relation, Connector, Project, Treenode, TreenodeConnector, User)
 
+from six.moves import input
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ def ask_to_continue():
     """ Return a valid project object.
     """
     def ask():
-        start_export = raw_input("Continue? [y/n] ").strip()
+        start_export = input("Continue? [y/n] ").strip()
 
         if start_export == 'y':
             return True
@@ -306,7 +306,7 @@ class Command(BaseCommand):
             projects = Project.objects.all()
             for n,p in enumerate(projects):
                 print("%s: %s (ID: %s)" % (n, p, p.id))
-            selection = raw_input("Selection: ")
+            selection = input("Selection: ")
             try:
                 return projects[int(selection)]
             except (IndexError, ValueError) as e:

@@ -513,15 +513,20 @@
       // Review relative arbors
       var arborParserBeforeReview, arborParserAfterReview;
       if (reviewAvailable) {
-        arborParserBeforeReview = TS.getArborBeforePointInTime(history.nodes, history.connectors, firstReviewTime);
+        // The firstReviewTime parameter is already limited by timeWindowStart
+        // and timeWindowEnd
+        arborParserBeforeReview = TS.getArborBeforePointInTime(history.nodes,
+            history.connectors, timeWindowStart, firstReviewTime);
         // TODO: Is it okay to take "now" as reference or do we need the last
         // review time? I.e. is the final arbor the interesting one or the one
         // right after review?
-        arborParserAfterReview = TS.getArborBeforePointInTime(history.nodes, history.connectors, new Date());
+        arborParserAfterReview = TS.getArborBeforePointInTime(history.nodes, history.connectors,
+            timeWindowStart, timeWindowEnd);
       } else {
         // Without reviews, the arbor at its current state is the one before
         // reviews.
-        arborParserBeforeReview = TS.getArborBeforePointInTime(history.nodes, history.connectors, new Date());
+        arborParserBeforeReview = TS.getArborBeforePointInTime(history.nodes, history.connectors,
+            timeWindowStart, timeWindowEnd);
       }
 
       // Cable length information

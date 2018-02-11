@@ -6249,8 +6249,8 @@
     // duplicate IDs and timestamps for each element. The first step is
     // therefore to find all nodes, connectors and tags that were valid at the
     // passed in timestamp.
-    var nodesInfo = CATMAID.TimeSeries.getDataUntil(this.history.nodes, timestamp);
-    var connectorsInfo = CATMAID.TimeSeries.getDataUntil(this.history.connectors, timestamp);
+    var nodesInfo = CATMAID.TimeSeries.getDataInWindow(this.history.nodes, null, timestamp);
+    var connectorsInfo = CATMAID.TimeSeries.getDataInWindow(this.history.connectors, null, timestamp);
     var nodes = nodesInfo[0];
     var connectors = connectorsInfo[0];
 

@@ -377,7 +377,9 @@
    * next time stamp a change happens. Returned is a list of the following form:
    * [nodes, nextChangeDate].
    */
-  TimeSeries.getDataUntil = function(elements, timestamp) {
+  TimeSeries.getDataInWindow = function(elements, timeWindowStart, timeWindowEnd) {
+    timeWindowStart = timeWindowStart ? timeWindowStart : new Date(0);
+    timeWindowEnd = timeWindowEnd ? timeWindowEnd : new Date();
     return Object.keys(elements).reduce(function(o, n) {
       var versions = elements[n];
       var match = null;
@@ -385,8 +387,8 @@
       for (var i=0; i<versions.length; ++i) {
         var validFrom = versions[i][0];
         var validTo = versions[i][1];
-        if (validTo === null || validTo > timestamp) {
-          if (validFrom <= timestamp) {
+        if (validTo === null || validTo > timeWindowEnd) {
+          if (validFrom <= timeWindowEnd && validFrom >= timeWindowStart) {
             match = i;
             break;
           } else {
@@ -411,12 +413,15 @@
   /**
    * Get a new arbor parser instance valid at the given point in time.
    */
-  TimeSeries.getArborBeforePointInTime = function(nodeHistory, connectorHistory, timestamp) {
-    var nodes = TimeSeries.getDataUntil(nodeHistory, timestamp)[0];
+  TimeSeries.getArborBeforePointInTime = function(nodeHistory, connectorHistory,
+      timeWindowStart, timeWindowEnd) {
+    var nodes = TimeSeries.getDataInWindow(nodeHistory, timeWindowStart,
+        timeWindowEnd)[0];
     var parser = new CATMAID.ArborParser();
     var parser =  parser.tree(nodes);
     if (connectorHistory) {
-      var connectors = TimeSeries.getDataUntil(connectorHistory, timestamp)[0];
+      var connectors = TimeSeries.getDataInWindow(connectorHistory,
+          timeWindowStart, timeWindowEnd)[0];
       parser.connectors(connectors);
     }
     return parser;

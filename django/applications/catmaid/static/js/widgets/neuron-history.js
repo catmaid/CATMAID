@@ -178,7 +178,7 @@
         mergeUsersLabel.setAttribute('title', 'If true, parallel user activity won\'t be counted separately.');
         controls.appendChild(mergeUsersLabel);
 
-        var startDateField = CATMAID.DOM.createDateField(null, 'Start',
+        var startDateField = CATMAID.DOM.createDateField(null, 'Start (UTC)',
             'No change before this date will be respected. If empty, all changes are respected.',
             '', false, function() {
               self.timeWindowStart = this.value.length > 0 ?
@@ -186,7 +186,7 @@
             }, null, 'YYYY-MM-DD hh:mm', true);
         controls.appendChild(startDateField);
 
-        var endDateField = CATMAID.DOM.createDateField(null, 'End',
+        var endDateField = CATMAID.DOM.createDateField(null, 'End (UTC)',
             'No change after this date will be respected. If empty, all changes are respected.',
             '', false, function() {
               self.timeWindowEnd = this.value.length > 0 ?

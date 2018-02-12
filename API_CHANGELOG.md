@@ -11,7 +11,9 @@ included in this changelog.
 
 ### Modifications
 
-None.
+- `GET /{project_id}/samplers/`:
+  Accepts now also a boolean with_intervals parameter to return information on
+  each instantiated interval in each returned domain. Implies with_domains.
 
 ### Deprecations
 

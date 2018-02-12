@@ -41,6 +41,12 @@ def list_samplers(request, project_id):
        type: boolean
        paramType: form
        required: false
+     - name: with_intervals
+       description: Optional flag to include all intervals of all domains. Implies with_domains.
+       type: boolean
+       paramType: form
+       required: false
+       default: false
     models:
       sampler_entity:
         id: sampler_entity
@@ -86,7 +92,8 @@ def list_samplers(request, project_id):
         required: true
     """
     skeleton_ids = get_request_list(request.GET, 'skeleton_ids', map_fn=int)
-    with_domains = bool(request.GET.get('with_domains', False))
+    with_intervals = request.GET.get('with_intervals', False) == "true"
+    with_domains = with_intervals or (request.GET.get('with_domains', False) == "true")
 
     samplers = Sampler.objects.all()
     if skeleton_ids:
@@ -96,9 +103,12 @@ def list_samplers(request, project_id):
     if with_domains:
         domain_query = SamplerDomain.objects.filter(sampler__in=samplers) \
                 .prefetch_related('samplerdomainend_set')
+        if with_intervals:
+            domain_query = domain_query.prefetch_related('samplerinterval_set')
+
         for domain in domain_query:
             domain_ends = domain.samplerdomainend_set.all()
-            domains[domain.sampler_id].append({
+            domain_data = {
                 "id": domain.id,
                 "sampler_id": domain.sampler_id,
                 "type_id": domain.domain_type_id,
@@ -110,7 +120,13 @@ def list_samplers(request, project_id):
                     "id": e.id,
                     "node_id": e.end_node_id
                 } for e in domain_ends]
-            })
+            }
+            if with_intervals:
+                domain_data['intervals'] = [[
+                    i.id, i.start_node_id, i.end_node_id, i.interval_state_id
+                ] for i in domain.samplerinterval_set.all()]
+
+            domains[domain.sampler_id].append(domain_data)
 
     def exportSampler(s):
         s = {

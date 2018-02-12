@@ -1700,6 +1700,22 @@
     var self = this;
     return [
       {
+        type: 'button',
+        label: 'Refresh',
+        title: "Reload the synapse listing",
+        onclick: function() {
+          widget.update();
+        }
+      },
+      {
+        type: 'button',
+        label: 'Review interval',
+        title: "Review the selected interval in a new review widget",
+        onclick: function() {
+          self.reviewCurrentInterval(widget);
+        }
+      },
+      {
         type: 'checkbox',
         label: 'Downstream syanpses',
         title: 'Consider synapses that are post-synaptic to this interval for sampling',
@@ -1719,26 +1735,10 @@
       },
       {
         type: 'button',
-        label: 'Review interval',
-        title: "Review the selected interval in a new review widget",
-        onclick: function() {
-          self.reviewCurrentInterval(widget);
-        }
-      },
-      {
-        type: 'button',
         label: 'Pick random synapse',
         title: "Select a random non-abandoned, non-excluded synapse to continue with",
         onclick: function() {
           self.pickRandomSynapse(widget);
-        }
-      },
-      {
-        type: 'button',
-        label: 'Refresh',
-        title: "Reload the synapse listing",
-        onclick: function() {
-          widget.update();
         }
       }
     ];
@@ -2226,18 +2226,18 @@
     return [
       {
         type: 'button',
-        label: 'Pick random partner',
-        title: "Select a random partner of the selected synapse",
-        onclick: function() {
-          self.pickRandomPartner(widget);
-        }
-      },
-      {
-        type: 'button',
         label: 'Refresh',
         title: "Reload the partner listing",
         onclick: function() {
           widget.update();
+        }
+      },
+      {
+        type: 'button',
+        label: 'Pick random partner',
+        title: "Select a random partner of the selected synapse",
+        onclick: function() {
+          self.pickRandomPartner(widget);
         }
       }
     ];

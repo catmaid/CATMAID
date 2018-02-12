@@ -2210,7 +2210,7 @@
         var connector = downstreamConnectors[i];
         var sc = this.samplerConnectors[connector.id];
         if (!sc) {
-          throw new CATMAID.ValueErroro("Couldn't find connector data for downstream connector " + connector.id);
+          throw new CATMAID.ValueError("Couldn't find connector data for downstream connector " + connector.id);
         }
         let state = this.possibleStates[sc.state_id].name;
         if (state !== "excluded" && state !== "abandoned") {
@@ -2224,7 +2224,7 @@
         var connector = upstreamConnectors[i];
         var sc = this.samplerConnectors[connector.id];
         if (!sc) {
-          throw new CATMAID.ValueErroro("Couldn't find connector data for upstream connector " + connector.id);
+          throw new CATMAID.ValueError("Couldn't find connector data for upstream connector " + connector.id);
         }
         let state = this.possibleStates[sc.state_id].name;
         if (state !== "excluded" && state !== "abandoned") {

@@ -6025,12 +6025,12 @@
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getLabelType = function(label, customRegEx) {
     label = label.toLowerCase();
-    if (-1 !== label.indexOf('todo')) {
+    if (customRegEx && customRegEx.test(label)) {
+      return 'custom';
+    } else if (-1 !== label.indexOf('todo')) {
       return 'todo';
     } else if (-1 !== label.indexOf('uncertain')) {
       return 'uncertain';
-    } else if (customRegEx && customRegEx.test(label)) {
-      return 'custom';
     } else {
       return null;
     }

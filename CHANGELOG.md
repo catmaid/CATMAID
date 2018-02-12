@@ -86,6 +86,9 @@ Graph Widget:
 - Stored interpolatable sections are now loaded by default. Additional project
   space sections can be configured from the Skeleton filters tab.
 
+- Custom tags can now also apply to predefined labels like TODO or
+  uncertain_end.
+
 Miscellaneous:
 
 - The maximum number of frames per second rendered by a stack viewer window can

@@ -1405,7 +1405,7 @@
           title: "Action",
           orderable: false,
           render: function(data, type, row, meta) {
-            return '<a href="#" data-action="next">Open</a> <a href="#" data-action="review">Review</a>';
+            return '<a href="#" data-action="next">Open</a> <a href="#" data-action="review">Review</a> <a href="#" data-action="reset">Reset</a>';
           }
         }
       ],
@@ -1433,11 +1433,42 @@
       var tr = $(this).closest('tr');
       var data =  $(table).DataTable().row(tr).data();
       return reviewInterval(skeletonId, data);
+    }).on('click', 'a[data-action=reset]', function() {
+      var table = $(this).closest('table');
+      var tr = $(this).closest('tr');
+      var data =  $(table).DataTable().row(tr).data();
+      self.setIntervalState(data.id, 'untouched', widget);
     });
   };
 
   var getDomainDetails = function(projectId, domainId) {
     return CATMAID.fetch(projectId + '/samplers/domains/' + domainId + '/details');
+  };
+
+  IntervalWorkflowStep.prototype.setIntervalState = function(intervalId, state, widget) {
+    let stateId = null;
+    Object.keys(this.possibleStates).some(function(s) {
+      if (this[s].name === state) {
+        stateId = this[s].id;
+        return true;
+      }
+      return false;
+    }, this.possibleStates);
+    if (stateId === null) {
+      throw new CATMAID.ValueError("Could not find 'untouched' state ID");
+    }
+
+    return CATMAID.fetch(project.id + '/samplers/domains/intervals/' + intervalId +
+        '/set-state', 'POST', {
+          'state_id':  stateId
+        })
+      .then(function(response) {
+        CATMAID.msg("Success", "Marked interval " + intervalId + " as " + state);
+        if (widget) {
+          widget.update();
+        }
+      })
+      .catch(CATMAID.handleError);
   };
 
   IntervalWorkflowStep.prototype.createNewIntervals = function(widget) {
@@ -1713,6 +1744,40 @@
         title: "Review the selected interval in a new review widget",
         onclick: function() {
           self.reviewCurrentInterval(widget);
+        }
+      },
+      {
+        type: 'button',
+        label: 'Mark interval complete',
+        title: "If all synaptic partners have been explored from an interval, it can be marked as completed.",
+        onclick: function() {
+          if (confirm("Is this interval reconstructed to completion and are all synaptic partners explored?")) {
+            var interval = widget.state['interval'];
+            if (!interval) {
+              throw new CATMAID.ValueError("No interval found");
+            }
+            let completedStateId = null;
+            Object.keys(self.possibleStates).some(function(s) {
+              if (this[s].name === 'completed') {
+                completedStateId = this[s].id;
+                return true;
+              }
+              return false;
+            }, self.possibleStates);
+            if (completedStateId === null) {
+              throw new CATMAID.ValueError("Could not find 'completed' state ID");
+            }
+
+            CATMAID.fetch(project.id + '/samplers/domains/intervals/' + interval.id +
+                '/set-state', 'POST', {
+                  'state_id':  completedStateId
+                })
+              .then(function(response) {
+                CATMAID.msg("Success", "Marked interval " + interval.id + " as completed");
+                widget.update();
+              })
+              .catch(CATMAID.handleError);
+          }
         }
       },
       {

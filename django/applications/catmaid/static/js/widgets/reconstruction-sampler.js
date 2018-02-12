@@ -2209,11 +2209,14 @@
       for (var i=0; i<downstreamConnectors.length; ++i) {
         var connector = downstreamConnectors[i];
         var sc = this.samplerConnectors[connector.id];
-        if (!sc) {
-          throw new CATMAID.ValueError("Couldn't find connector data for downstream connector " + connector.id);
-        }
-        let state = this.possibleStates[sc.state_id].name;
-        if (state !== "excluded" && state !== "abandoned") {
+        // If no SamplerConnector is found, assume the connector is untouched
+        // and can be sampled.
+        if (sc) {
+          let state = this.possibleStates[sc.state_id].name;
+          if (state !== "excluded" && state !== "abandoned") {
+            connectors.push(connector);
+          }
+        } else {
           connectors.push(connector);
         }
       }
@@ -2223,11 +2226,14 @@
       for (var i=0; i<upstreamConnectors.length; ++i) {
         var connector = upstreamConnectors[i];
         var sc = this.samplerConnectors[connector.id];
-        if (!sc) {
-          throw new CATMAID.ValueError("Couldn't find connector data for upstream connector " + connector.id);
-        }
-        let state = this.possibleStates[sc.state_id].name;
-        if (state !== "excluded" && state !== "abandoned") {
+        // If no SamplerConnector is found, assume the connector is untouched
+        // and can be sampled.
+        if (sc) {
+          let state = this.possibleStates[sc.state_id].name;
+          if (state !== "excluded" && state !== "abandoned") {
+            connectors.push(connector);
+          }
+        } else {
           connectors.push(connector);
         }
       }

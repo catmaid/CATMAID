@@ -1632,22 +1632,27 @@
     // Ignore intervals that are marked as complete
     if (this.ignoreCompleted) {
       let completedStateId = null;
-      Object.keys(this.possibleStates).some(function(s) {
-        if (this[s].name === 'completed') {
-          completedStateId = this[s].id;
-          return true;
+      let abandonedStateId = null;
+      for (var stateId in this.possibleStates) {
+        if (this.possibleStates[stateId].name === 'completed') {
+          completedStateId = this.possibleStates[stateId].id;
         }
-        return false;
-      }, this.possibleStates);
+        if (this.possibleStates[stateId].name === 'abandoned') {
+          abandonedStateId = this.possibleStates[stateId].id;
+        }
+      }
       if (completedStateId === null) {
         throw new CATMAID.ValueError("Could not find 'completed' state ID");
       }
+      if (abandonedStateId === null) {
+        throw new CATMAID.ValueError("Could not find 'abandoned' state ID");
+      }
       intervals = intervals.filter(function(interval) {
-        return interval.state_id !== completedStateId;
+        return interval.state_id !== completedStateId && interval.state_id !== abandonedStateId;
       });
 
       if (intervals.length === 0) {
-        CATMAID.warn("All intervals are marked completed");
+        CATMAID.warn("All intervals are marked completed or abandoned");
         return;
       }
     }
@@ -1756,27 +1761,21 @@
             if (!interval) {
               throw new CATMAID.ValueError("No interval found");
             }
-            let completedStateId = null;
-            Object.keys(self.possibleStates).some(function(s) {
-              if (this[s].name === 'completed') {
-                completedStateId = this[s].id;
-                return true;
-              }
-              return false;
-            }, self.possibleStates);
-            if (completedStateId === null) {
-              throw new CATMAID.ValueError("Could not find 'completed' state ID");
+            self.setIntervalState(interval.id, 'completed', widget);
+          }
+        }
+      },
+      {
+        type: 'button',
+        label: 'Abandon interval',
+        title: "If an interval is abandoned, it won't be completed anymore.",
+        onclick: function() {
+          if (confirm("Are you sure this interval should be marked as abandoned?")) {
+            var interval = widget.state['interval'];
+            if (!interval) {
+              throw new CATMAID.ValueError("No interval found");
             }
-
-            CATMAID.fetch(project.id + '/samplers/domains/intervals/' + interval.id +
-                '/set-state', 'POST', {
-                  'state_id':  completedStateId
-                })
-              .then(function(response) {
-                CATMAID.msg("Success", "Marked interval " + interval.id + " as completed");
-                widget.update();
-              })
-              .catch(CATMAID.handleError);
+            self.setIntervalState(interval.id, 'abandoned', widget);
           }
         }
       },
@@ -1807,6 +1806,32 @@
         }
       }
     ];
+  };
+
+  SynapseWorkflowStep.prototype.setIntervalState = function(intervalId, state, widget) {
+    let stateId = null;
+    Object.keys(this.possibleIntervalStates).some(function(s) {
+      if (this[s].name === state) {
+        stateId = this[s].id;
+        return true;
+      }
+      return false;
+    }, this.possibleIntervalStates);
+    if (stateId === null) {
+      throw new CATMAID.ValueError("Could not find '" + state + "' state ID");
+    }
+
+    CATMAID.fetch(project.id + '/samplers/domains/intervals/' + intervalId +
+        '/set-state', 'POST', {
+          'state_id':  stateId
+        })
+      .then(function(response) {
+        CATMAID.msg("Success", "Marked interval " + intervalId + " as " + state);
+        if (widget) {
+          widget.update();
+        }
+      })
+      .catch(CATMAID.handleError);
   };
 
   SynapseWorkflowStep.prototype.isComplete = function(state) {
@@ -2126,18 +2151,32 @@
   };
 
   SynapseWorkflowStep.prototype.ensureMetadata = function() {
+    let promises = [];
     if (this.possibleStates) {
-      return Promise.resolve();
+      promises.push(Promise.resolve());
     } else {
       var self = this;
-      return CATMAID.fetch(project.id + '/samplers/connectors/states/')
+      promises.push(CATMAID.fetch(project.id + '/samplers/connectors/states/')
         .then(function(result) {
           self.possibleStates = result.reduce(function(o, is) {
             o[is.id] = is;
             return o;
           }, {});
-        });
+        }));
     }
+    if (this.possibleIntervalStates) {
+      promises.push(Promise.resolve());
+    } else {
+      var self = this;
+      promises.push(CATMAID.fetch(project.id + '/samplers/domains/intervals/states/')
+        .then(function(result) {
+          self.possibleIntervalStates = result.reduce(function(o, is) {
+            o[is.id] = is;
+            return o;
+          }, {});
+        }));
+    }
+    return Promise.all(promises);
   };
 
   SynapseWorkflowStep.prototype.reviewCurrentInterval = function(widget) {

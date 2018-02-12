@@ -2209,7 +2209,11 @@
       for (var i=0; i<downstreamConnectors.length; ++i) {
         var connector = downstreamConnectors[i];
         var sc = this.samplerConnectors[connector.id];
-        if (!(sc && this.possibleStates[sc.state_id].name === "excluded")) {
+        if (!sc) {
+          throw new CATMAID.ValueErroro("Couldn't find connector data for downstream connector " + connector.id);
+        }
+        let state = this.possibleStates[sc.state_id].name;
+        if (state !== "excluded" && state !== "abandoned") {
           connectors.push(connector);
         }
       }
@@ -2219,7 +2223,11 @@
       for (var i=0; i<upstreamConnectors.length; ++i) {
         var connector = upstreamConnectors[i];
         var sc = this.samplerConnectors[connector.id];
-        if (!(sc && this.possibleStates[sc.state_id].name === "excluded")) {
+        if (!sc) {
+          throw new CATMAID.ValueErroro("Couldn't find connector data for upstream connector " + connector.id);
+        }
+        let state = this.possibleStates[sc.state_id].name;
+        if (state !== "excluded" && state !== "abandoned") {
           connectors.push(connector);
         }
       }
@@ -2334,6 +2342,24 @@
         title: "Reload the partner listing",
         onclick: function() {
           widget.update();
+        }
+      },
+      {
+        type: 'button',
+        label: 'Mark connector complete',
+        title: "If all synaptic partners have been explored from a conncetor, it can be marked as completed.",
+        onclick: function() {
+          if (confirm("Are all synaptic partners of this connector explored?")) {
+            var interval = widget.state['interval'];
+            if (!interval) {
+              throw new CATMAID.ValueError("Need interval for partner workflow step");
+            }
+            var connectorId = widget.state['connectorId'];
+            if (!connectorId) {
+              throw new CATMAID.ValueError("Need connector ID for partner workflow step");
+            }
+            self.setConnectorState(interval.id, connectorId, 'completed', widget);
+          }
         }
       },
       {
@@ -2501,9 +2527,45 @@
     }
   };
 
+  PartnerWorkflowStep.prototype.setConnectorState = function(intervalId, connectorId, stateName, widget) {
+    var stateId;
+    for (var sid in this.possibleStates) {
+      var state = this.possibleStates[sid];
+      if (state && state.name === stateName) {
+        stateId = sid;
+        break;
+      }
+    }
+    if (stateId === undefined) {
+      throw new CATMAID.ValueError("Couldn't find ID of state '" + stateName + "'");
+    }
+
+    CATMAID.fetch(project.id + '/samplers/domains/intervals/' + intervalId +
+        '/connectors/' + connectorId + '/set-state', 'POST', {
+          'state_id':  stateId
+        })
+      .then(function(response) {
+        CATMAID.msg("Success", "Connector " + connectorId + " is now " + stateName);
+        if (widget) {
+          widget.update();
+        }
+      })
+      .catch(CATMAID.handleError);
+  };
+
   PartnerWorkflowStep.prototype.ensureMetadata = function() {
+    let promises = [];
     if (this.possibleStates) {
       return Promise.resolve();
+    } else {
+      var self = this;
+      return CATMAID.fetch(project.id + '/samplers/connectors/states/')
+        .then(function(result) {
+          self.possibleStates = result.reduce(function(o, is) {
+            o[is.id] = is;
+            return o;
+          }, {});
+        });
     }
   };
 

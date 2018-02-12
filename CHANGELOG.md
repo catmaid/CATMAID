@@ -62,6 +62,8 @@ Reconstruction Sampler:
   shifts due to image data shifts) are now respected and not over-sampled
   anymore.
 
+- Completed intervals can now be optionally excluded from random selection.
+
 Node Search:
 
 - Tagged connector nodes are now shown in search results.

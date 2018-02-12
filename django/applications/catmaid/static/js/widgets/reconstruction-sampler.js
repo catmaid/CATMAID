@@ -1236,6 +1236,8 @@
     this.possibleStates = null;
     // All available domains for the current domain
     this.availableIntervals = [];
+    // Ignore completed intervals for random selection
+    this.ignoreCompleted = true;
   };
 
   IntervalWorkflowStep.prototype = Object.create(CATMAID.WorkflowStep);
@@ -1248,6 +1250,15 @@
   IntervalWorkflowStep.prototype.createControls = function(widget) {
     var self = this;
     return [{
+      type: 'checkbox',
+      label: 'Ignore completed',
+      title: 'Whether to include completed intervals in random selection',
+      value: this.ignoreCompleted,
+      onclick: function() {
+        self.ignoreCompleted = this.checked;
+      }
+    },
+    {
       type: 'button',
       label: 'Create intervals',
       title: 'Create a new set of intervals for the current domain',
@@ -1585,6 +1596,29 @@
     if (!intervals || 0 === intervals.length) {
       CATMAID.warn("No intervals available");
       return;
+    }
+
+    // Ignore intervals that are marked as complete
+    if (this.ignoreCompleted) {
+      let completedStateId = null;
+      Object.keys(this.possibleStates).some(function(s) {
+        if (this[s].name === 'completed') {
+          completedStateId = this[s].id;
+          return true;
+        }
+        return false;
+      }, this.possibleStates);
+      if (completedStateId === null) {
+        throw new CATMAID.ValueError("Could not find 'completed' state ID");
+      }
+      intervals = intervals.filter(function(interval) {
+        return interval.state_id !== completedStateId;
+      });
+
+      if (intervals.length === 0) {
+        CATMAID.warn("All intervals are marked completed");
+        return;
+      }
     }
 
     // For now, use uniform distribution

@@ -7,7 +7,6 @@ import pytz
 import re
 import six
 
-from operator import itemgetter
 from datetime import datetime, timedelta
 from collections import defaultdict
 from itertools import chain
@@ -438,7 +437,7 @@ def contributor_statistics_multiple(request, project_id=None, skeleton_ids=None)
         seen = set()
         min_review_bins = set()
         multi_review_bins = 0
-        for reviewer, treenodes in sorted(six.iteritems(rev), key=itemgetter(1), reverse=True):
+        for reviewer, treenodes in sorted(six.iteritems(rev), key=lambda x: len(x[1]), reverse=True):
             reviewer_bins = set()
             for treenode, timestamp in six.iteritems(treenodes):
                 time_bin = int((timestamp - epoch).total_seconds() / 20)

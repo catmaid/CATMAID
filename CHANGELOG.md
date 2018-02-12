@@ -126,6 +126,9 @@ Miscellaneous:
 - 3D Viewer: SVG export styles are correctly applied again, the exported data
   isn't transparent anymore.
 
+- 3D Viewer: custom label matches are now always given precedence when multiple
+  labels are matched on a node.
+
 
 ## 2017.12.07
 

@@ -6326,7 +6326,7 @@
 
     // Collect all labels first, before creating its geometry
     var partner_nodes = [];
-    var labels = [];
+    var labels = new Map();
 
     // Create edges between all skeleton nodes
     // and a sphere on the node if radius > 0
@@ -6400,7 +6400,12 @@
 
       if (!lean && node[7] < 5) {
         // Edge with confidence lower than 5
-        labels.push([v1, this.space.staticContent.labelColors.uncertain]);
+        let nodeLabels = labels.get(v1);
+        if (!nodeLabels) {
+          nodeLabels = [];
+          labels.set(v1, nodeLabels);
+        }
+        nodeLabels.add('uncertain');
       }
     }, this);
 
@@ -6461,7 +6466,18 @@
           // Find used label Type for each labeled node
           this.tags[tag].forEach(function(nodeID) {
             if (!this.specialTagSpheres[nodeID] && (!(silent && !vs[nodeID]))) {
-              labels.push([vs[nodeID], this.space.staticContent.labelColors[labelType]]);
+              let node = vs[nodeID];
+              let nodeLabels = labels.get(node);
+              if (!nodeLabels) {
+                nodeLabels = [];
+                labels.set(node, nodeLabels);
+              }
+              if (labelType === 'custom') {
+                // Promote custom tag matches to make sure they are displayed
+                nodeLabels.unshift(labelType);
+              } else {
+                nodeLabels.push(labelType);
+              }
             }
           }, this);
         }
@@ -6476,8 +6492,14 @@
     }
 
     // Create buffer geometry for labels
-    if (labels.length > 0) {
-      this.createLabelSpheres(labels, options.skeleton_node_scaling,
+    if (labels.size > 0) {
+      let displayedLabels = Array.from(labels).map(function(l) {
+        // Select first label, if multiple
+        let labelType = l[1][0];
+        let color = this[labelType];
+        return [l[0], color];
+      }, this.space.staticContent.labelColors);
+      this.createLabelSpheres(displayedLabels, options.skeleton_node_scaling,
           options.neuron_material, preventSceneUpdate);
     }
 

@@ -67,6 +67,10 @@
 
   ConnectorViewer.prototype.destroy = function() {
     this.stackViewerGrid.closeStackViewers();
+    for (let i=0; i<this.skelSources.length; ++i) {
+      this.skelSources[i].destroy();
+    }
+    this.resultSkeletonSource.destroy();
     this.unregisterInstance();
   };
 

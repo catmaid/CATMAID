@@ -2130,7 +2130,11 @@
     $('tr', this.table).removeClass('highlight');
     if (SkeletonAnnotations.getActiveNodeType() === SkeletonAnnotations.TYPE_CONNECTORNODE) {
       var activeNodeId = SkeletonAnnotations.getActiveNodeId();
-      $('tr[data-node-id=' + activeNodeId + ']', this.table).addClass('highlight');
+      // Don't try to highlight virtual nodes, they are not shown in the table
+      // and don't fit to our selector expression.
+      if (SkeletonAnnotations.isRealNode(activeNodeId)) {
+        $('tr[data-node-id=' + activeNodeId + ']', this.table).addClass('highlight');
+      }
     }
   };
 
@@ -2513,7 +2517,11 @@
     $('tr', this.table).removeClass('highlight');
     if (SkeletonAnnotations.getActiveNodeType() === SkeletonAnnotations.TYPE_NODE) {
       var activeNodeId = SkeletonAnnotations.getActiveNodeId();
-      $('tr[data-node-id=' + activeNodeId + ']', this.table).addClass('highlight');
+      // Don't try to highlight virtual nodes, they are not shown in the table
+      // and don't fit to our selector expression.
+      if (SkeletonAnnotations.isRealNode(activeNodeId)) {
+        $('tr[data-node-id=' + activeNodeId + ']', this.table).addClass('highlight');
+      }
     }
   };
 

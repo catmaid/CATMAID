@@ -540,7 +540,7 @@
     dialog.show(440, 'auto', true);
   };
 
-    // Update volume list
+    // Update link type list
   GroupGraph.initLinkTypeList = function(target) {
     return CATMAID.Connectors.linkTypes(project.id)
       .then(function(json) {

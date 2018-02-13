@@ -61,7 +61,7 @@ class CachedJsonNodeNodeProvder(BasicNodeProvider):
     """
 
     def get_tuples(self, params, project_id, explicit_treenode_ids,
-                explicit_connector_ids, include_labels, target_format):
+                explicit_connector_ids, include_labels):
         cursor = connection.cursor()
         # For JSONB type cache, use ujson to decode, this is roughly 2x faster
         psycopg2.extras.register_default_jsonb(loads=ujson.loads)
@@ -1013,8 +1013,7 @@ def node_list_tuples_query(params, project_id, node_provider, explicit_treenode_
         target_format='json', target_options=None):
 
     result_tuple, data_type = node_provider.get_tuples(params, project_id,
-        explicit_treenode_ids, explicit_connector_ids, include_labels,
-        target_format, target_options)
+        explicit_treenode_ids, explicit_connector_ids, include_labels)
 
     return create_node_response(result_tuple, params, target_format, target_options, data_type)
 

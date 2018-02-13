@@ -1943,51 +1943,55 @@ def _list_skeletons(project_id, created_by=None, reviewed_by=None, from_date=Non
     if created_by and reviewed_by:
         raise ValueError("Please specify node creator or node reviewer")
 
+    params = {
+        'project_id': project_id,
+    }
+
     if reviewed_by:
-        params = [project_id, reviewed_by]
+        params['reviewed_by'] = reviewed_by
         query = '''
             SELECT DISTINCT r.skeleton_id
             FROM review r
-            WHERE r.project_id=%s AND r.reviewer_id=%s
+            WHERE r.project_id=%(project_id)s
+            AND r.reviewer_id=%(reviewed_by)s
         '''
 
         if from_date:
-            params.append(from_date.isoformat())
-            query += " AND r.review_time >= %s"
+            params['from_date'] = from_date.isoformat()
+            query += " AND r.review_time >= %(from_date)s"
         if to_date:
             to_date = to_date + timedelta(days=1)
-            params.append(to_date.isoformat())
-            query += " AND r.review_time < %s"
+            params['to_date'] = to_date.isoformat()
+            query += " AND r.review_time < %(to_date)s"
     else:
-        params = [project_id]
         query = '''
             SELECT DISTINCT skeleton_id
             FROM treenode t
-            WHERE t.project_id=%s
+            WHERE t.project_id=%(project_id)s
         '''
 
     if created_by:
-        params.append(created_by)
-        query += " AND t.user_id=%s"
+        params['created_by'] = created_by
+        query += " AND t.user_id=%(created_by)s"
 
         if from_date:
-            params.append(from_date.isoformat())
-            query += " AND t.creation_time >= %s"
+            params['from_date'] = from_date.isoformat()
+            query += " AND t.creation_time >= %(from_date)s"
         if to_date:
             to_date = to_date + timedelta(days=1)
-            params.append(to_date.isoformat())
-            query += " AND t.creation_time < %s"
+            params['to_date'] = to_date.isoformat()
+            query += " AND t.creation_time < %(to_date)s"
 
     if nodecount_gt > 0:
-        params.append(nodecount_gt)
+        params['nodecount_gt'] = nodecount_gt
         query = '''
             SELECT sub.skeleton_id
             FROM (
                 SELECT t.skeleton_id AS skeleton_id, COUNT(*) AS count
-                FROM (%s) q JOIN treenode t ON q.skeleton_id = t.skeleton_id
+                FROM ({}) q JOIN treenode t ON q.skeleton_id = t.skeleton_id
                 GROUP BY t.skeleton_id
-            ) AS sub WHERE sub.count > %%s
-        ''' % query
+            ) AS sub WHERE sub.count > %(nodecount_gt)s
+        '''.format(query)
 
     cursor = connection.cursor()
     cursor.execute(query, params)

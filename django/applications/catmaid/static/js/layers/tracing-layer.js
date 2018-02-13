@@ -37,12 +37,12 @@
 
     this.renderer.plugins.interaction.autoPreventDefault = false;
 
-    Object.defineProperty(this, 'binaryTracingData', {
+    Object.defineProperty(this, 'transferFormat', {
       get: function() {
-        return this.tracingOverlay.binaryTracingData;
+        return this.tracingOverlay.transferFormat;
       },
       set: function(value) {
-        this.tracingOverlay.binaryTracingData = value;
+        this.tracingOverlay.transferFormat = value;
       }
     });
   }
@@ -74,6 +74,10 @@
     CATMAID.PixiLayer.prototype.setOpacity.call(this, val);
 
     this.tracingOverlay.paper.style('display', this.visible ? 'inherit' : 'none');
+
+    if (this.tracingImage) {
+      this.tracingImage.style.opacity = val;
+    }
   };
 
   /** */
@@ -92,6 +96,11 @@
     this.tracingOverlay.destroy();
 
     CATMAID.PixiLayer.prototype.unregister.call(this);
+
+    if (this.tracingImage) {
+      let view = this.stackViewer.getLayersView();
+      view.removeChild(this.tracingImage);
+    }
   };
 
   /**
@@ -109,18 +118,35 @@
 
   TracingLayer.prototype.getLayerSettings = function() {
     return [{
-      name: 'binaryTracingData',
-      displayName: 'Transfer tracing data binarily',
-      type: 'checkbox',
-      value: this.binaryTracingData,
-      help: 'Transferring tracing data as binary data can reduce its size and loading time.'
+      name: 'transferFormat',
+      displayName: 'Tracing data transfer mode',
+      type: 'select',
+      value: this.transferFormat,
+      options: [
+        ['json', 'JSON'],
+        ['msgpack', 'Msgpack'],
+        ['gif', 'GIF image'],
+        ['png', 'PNG image']
+      ],
+      help: 'Transferring tracing data as msgpack or image can reduce its size and loading time. Image data doesn\'t allow much interaction.'
     }];
   };
 
   TracingLayer.prototype.setLayerSetting = function(name, value) {
-    if ('binaryTracingData' === name) {
-      this.binaryTracingData = value;
+    if ('transferFormat' === name) {
+      this.transferFormat = value;
+      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     }
+  };
+
+  TracingLayer.prototype.getTracingImage = function() {
+    let view = this.stackViewer.getLayersView();
+    if (!this.tracingImage) {
+      this.tracingImage = new Image();
+      this.tracingImage.classList.add('tracing-data');
+      view.appendChild(this.tracingImage);
+    }
+    return this.tracingImage;
   };
 
   CATMAID.TracingLayer = TracingLayer;

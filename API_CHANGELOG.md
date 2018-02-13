@@ -15,6 +15,12 @@ included in this changelog.
   Accepts now also a boolean with_intervals parameter to return information on
   each instantiated interval in each returned domain. Implies with_domains.
 
+- `POST|GET /{project_id}/node/list` offers a new optional parameter "src", which
+  can be used to override the node provider selected by the back-end.
+
+- `POST|GET /{project_id}/node/list` offers new options for the optional
+  parameter "format": "gif" and "png" to return an imageof the tracing data.
+
 ### Deprecations
 
 None.

@@ -6405,7 +6405,7 @@
           nodeLabels = [];
           labels.set(v1, nodeLabels);
         }
-        nodeLabels.add('uncertain');
+        nodeLabels.push('uncertain');
       }
     }, this);
 

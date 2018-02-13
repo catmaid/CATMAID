@@ -1349,7 +1349,6 @@
       for (let i=0, imax=linkTypeEdges.length; i<imax; ++i) {
         addEdgeToGraph(linkTypeEdges[i], linkTypeId);
       }
-      linkType.edges.forEach(addEdgeToGraph);
     });
 
     // Group neurons, if any groups exist, skipping splitted neurons

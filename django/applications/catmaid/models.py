@@ -1157,6 +1157,18 @@ class StatsSummary(models.Model):
         return "Stats summary for {} on {}".format(
                     self.user, self.date)
 
+class NodeQueryCache(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    orientation = models.IntegerField(default=0, null=False)
+    depth = models.FloatField(null=True)
+    json_data = JSONField(blank=True, null=True)
+    json_text_data = models.TextField(blank=True, null=True)
+    msgpack_data = models.BinaryField(null=True)
+
+    class Meta:
+        db_table = "node_query_cache"
+
+
 @python_2_unicode_compatible
 class UserProfile(models.Model):
     """ A class that stores a set of custom user preferences.

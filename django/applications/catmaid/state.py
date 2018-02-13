@@ -16,7 +16,7 @@ class StateMatchingError(Exception):
         self.unmatched_state = state
 
     def __str__(self):
-        return "{}: {}".format(self.message,
+        return "{}: {}".format(self.args[0],
             str(self.unmatched_state) or "(no details found)")
 
 

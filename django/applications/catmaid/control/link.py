@@ -38,7 +38,7 @@ def create_link(request, project_id=None):
             treenode=from_id,
             relation=relation.id)
     except ObjectDoesNotExist as e:
-        return HttpResponse(json.dumps({'error': e.message}))
+        return HttpResponse(json.dumps({'error': str(e)}))
 
     if links.count() > 0:
         return HttpResponse(json.dumps({'error': "A relation '%s' between these two elements already exists!" % link_type}))

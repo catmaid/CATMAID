@@ -49,6 +49,33 @@
   };
 
   /**
+   * The passed in interval map will be update with nodes from the arbor that
+   * are coved by the passed in interval list.
+   */
+  Sampling.updateIntervalMap = function(arbor, intervals, targetEdgeMap) {
+    for (var i=0, imax=intervals.length; i<imax; ++i) {
+      let interval = intervals[i];
+      let intervalId = interval[0];
+      let startNodeId = interval[1];
+      let endNodeId = interval[2];
+      // Try to walk from interval end to start, assuming that an interval
+      // starts closer to root than it ends.
+      let currentNodeId = endNodeId;
+      while (true) {
+        targetEdgeMap[currentNodeId] = intervalId;
+        currentNodeId = arbor.edges[currentNodeId];
+        if (currentNodeId == startNodeId) {
+          targetEdgeMap[startNodeId] = interval[0];
+          break;
+        }
+        if (!currentNodeId) {
+          throw new CATMAID.ValueError("Arrived at root node without finding interval start");
+        }
+      }
+    }
+  };
+
+  /**
    * Intervals are created by traversing a domain downstream and cutting out
    * interval parts continuously. This is done by first splitting a domain into
    * paritions, i.e downstream paths from root or branchpoints to leaves, in

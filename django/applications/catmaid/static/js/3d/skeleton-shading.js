@@ -123,10 +123,25 @@
    * Return a promise that resolves once all sampler domains for all input
    * skeletons are loaded and stored in each skeleton's 'samplers' field.
    */
-  var initSamplerDomains = function(skeletons) {
+  var initSamplerDomains = function(skeletons, with_intervals) {
     // Find the subset of skeletons that don't have their sampler domains loaded
     var skeletonIds = Object.keys(skeletons).filter(function(skid) {
-      return !skeletons[skid].samplers;
+      let samplers = skeletons[skid].samplers;
+      if (!samplers) {
+        return true;
+      }
+      if (with_intervals) {
+        for (let s=0, smax=samplers.length; s<smax; ++s) {
+          let sampler = samplers[s];
+          for (let d=0, dmax=sampler.domains.length; d<dmax; ++d) {
+            let domain = sampler.domains[d];
+            if (domain.intervals === undefined) {
+              return true;
+            }
+          }
+        }
+      }
+      return false;
     });
 
     if (skeletonIds.length === 0) {
@@ -135,7 +150,8 @@
 
     var params = {
       "skeleton_ids": skeletonIds,
-      "with_domains": true
+      "with_domains": true,
+      "with_intervals": !!with_intervals
     };
     return CATMAID.fetch(project.id +  "/samplers/", "GET", params)
       .then(function(samplers) {
@@ -154,6 +170,10 @@
           skeletons[skeletonId].setSamplers(skeletonSamplers[skeletonId]);
         }
       });
+  };
+
+  var initSamplerIntervals = function(skeleton) {
+    return initSamplerDomains(skeleton, true);
   };
 
   /**
@@ -371,7 +391,7 @@
       }
     },
     'sampler-intervals': {
-      prepare: initSamplerDomains,
+      prepare: initSamplerIntervals,
       vertexColorizer: function(skeleton, options) {
         var notComputableColor = options.notComputableColor;
         var arbor = skeleton.createArbor();
@@ -398,6 +418,11 @@
           return new THREE.Color(rgb);
         });
 
+        var getColor= function(intervalId, nodeId) {
+          let intervalColorIndex = parseInt(intervalId, 10) % nColors;
+          return colorSet[intervalColorIndex];
+        };
+
         var nAddedDomains = 0;
         var nSamplers = samplers.length;
         var intervalMap = {};
@@ -408,9 +433,17 @@
           for (var j=0; j<nDomains; ++j) {
             // Get intervals for domain
             var domain = domains[j];
-            CATMAID.Sampling.intervalsFromModels(arbor, positions,
-                domain, sampler.interval_length, sampler.interval_error,
-                true, true, intervalMap);
+            if (!domain.intervals || domain.intervals.length === 0) {
+              let addedIntervals = CATMAID.Sampling.intervalsFromModels(
+                  arbor, positions, domain, sampler.interval_length,
+                  sampler.interval_error, true, true, intervalMap);
+              domain.intervals = addedIntervals.intervals.map(function(ai) {
+                return [null, parseInt(ai[0], 10), parseInt(ai[1], 10), null];
+              });
+            } else if (intervalMap) {
+              // Update interval map with existing intervals
+              CATMAID.Sampling.updateIntervalMap(arbor, domain.intervals, intervalMap);
+            }
           }
         }
 
@@ -420,8 +453,7 @@
           if (intervalId === undefined) {
             return notComputableColor;
           } else {
-            var intervalColorIndex = parseInt(intervalId, 10) % nColors;
-            return colorSet[intervalColorIndex];
+            return getColor(intervalId, vertex.node_id);
           }
         };
       }
@@ -769,7 +801,7 @@
       }
     },
     'sampler-intervals': {
-      prepare: initSamplerDomains,
+      prepare: initSamplerIntervals,
       weights: function(skeleton, options) {
         var arbor = skeleton.createArbor();
         var samplers = skeleton.samplers;

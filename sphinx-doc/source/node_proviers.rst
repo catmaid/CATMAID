@@ -51,6 +51,7 @@ the available node providers:
       ``node_query_cache`` table. It is stored as msgpack encoded binary
       database object.
 
+
 Cached node queries
 -------------------
 
@@ -68,6 +69,18 @@ subset. A typical call could look like this::
 The ``--step`` parameter sets the section thickness, i.e. Z resolution in ``xy``
 orientation. A ``--node-limit`` of 0 will remove any existing node limits. The
 type ``msgpack`` turned out to be the fastest one in our tests so far.
+
+It makes sense to automate this process to run once every night. This can be
+done with a cron-job or with predefined :ref:`Celery tasks` <celery tasks>,
+which can be added to ``settings.py`` like this::
+
+  CELERY_BEAT_SCHEDULE['update-node-query-cache'] = {
+    'task': 'update_node_query_cache',
+    'schedule': crontab(hour=0, minute=30)
+  }
+
+This would require Celery Beat to run. If it does, it  would update all caches
+defined in ``NODE_PROVIDERS`` every night at 00:30.
 
 
 Using multiple node providers
@@ -138,5 +151,3 @@ results. The following options are available for all node providers:
   ``max_depth``
       Which maximum depth the query bounding box can have for this node provider
       (in project coordinates).
-
-

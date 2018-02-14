@@ -6,8 +6,8 @@ from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 from django.db import connection
 
-from catmaid.control.node import (_node_list_tuples_query, Postgis2dNodeProvider,
-        ORIENTATIONS)
+from catmaid.control.node import (_node_list_tuples_query, update_cache,
+        Postgis2dNodeProvider, ORIENTATIONS)
 from catmaid.models import Project
 
 
@@ -51,9 +51,9 @@ class Command(BaseCommand):
 
         orientations = options['orientations']
         if type(orientations) in (list, tuple):
-            orientations = [ORIENTATIONS[o] for o in orientations]
+            orientations = [o for o in orientations]
         else:
-            orientations = [0]
+            orientations = ['xy']
 
         steps = options['steps']
         if not steps:
@@ -79,112 +79,16 @@ class Command(BaseCommand):
             node_limit = None
 
         data_type = options['data_type']
-        for p in projects:
-            self.stdout.write('Updating cache for project {}'.format(p.id))
-            self.update_cache(p.id, data_type, orientations, steps, node_limit, delete, bb_limits)
-            self.stdout.write('Updated cache for project {}'.format(p.id))
 
-        self.stdout.write('Done')
-
-    def update_cache(self, project_id, data_type, orientations, steps, node_limit=None, delete=True, bb_limits=None):
         if data_type not in ('json', 'json_text', 'msgpack'):
             raise CommandError('Type must be one of: json, json_text, msgpack')
         if len(steps) != len(orientations):
             raise CommandError('Need one depth resolution flag per orientation')
 
-        cursor = connection.cursor()
+        for p in projects:
+            self.stdout.write('Updating cache for project {}'.format(p.id))
+            update_cache(p.id, data_type, orientations, steps, node_limit,
+                    delete, bb_limits, log=self.stdout.write)
+            self.stdout.write('Updated cache for project {}'.format(p.id))
 
-        self.stdout.write(' -> Finding tracing data bounding box')
-        cursor.execute("""
-            SELECT ARRAY[ST_XMin(bb.box), ST_YMin(bb.box), ST_ZMin(bb.box)],
-                   ARRAY[ST_XMax(bb.box), ST_YMax(bb.box), ST_ZMax(bb.box)]
-            FROM (
-                SELECT ST_3DExtent(edge) box FROM treenode_edge
-                WHERE project_id = %(project_id)s
-            ) bb;
-        """, {
-            'project_id': project_id
-        })
-        row = cursor.fetchone()
-        if not row:
-            raise CommandError("Could not compute bounding box of project {}".format(project_id))
-        bb = [row[0], row[1]]
-        if None in bb[0] or None in bb[1]:
-            self.stdout.write(' -> Found no valid bounding box, skipping project: {}'.format(bb))
-            return
-        else:
-            self.stdout.write(' -> Found bounding box: {}'.format(bb))
-
-        if bb_limits:
-            bb[0][0] = max(bb[0][0], bb_limits[0][0])
-            bb[0][1] = max(bb[0][1], bb_limits[0][1])
-            bb[0][2] = max(bb[0][2], bb_limits[0][2])
-            bb[1][0] = min(bb[1][0], bb_limits[1][0])
-            bb[1][1] = min(bb[1][1], bb_limits[1][1])
-            bb[1][2] = min(bb[1][2], bb_limits[1][2])
-            self.stdout.write(' -> Applied limits to bounding box: {}'.format(bb))
-
-        if delete:
-            for o in orientations:
-                self.stdout.write(' -> Deleting existing cache entries in orientation {}'.format(project_id, o))
-                cursor.execute("""
-                    DELETE FROM node_query_cache
-                    WHERE project_id = %(project_id)s
-                    AND orientation = %(orientation)s
-                """, {
-                    'project_id': project_id,
-                    'orientation': o
-                })
-
-        params = {
-            'left': bb[0][0],
-            'top': bb[0][1],
-            'z1': None,
-            'right': bb[1][0],
-            'bottom': bb[1][1],
-            'z2': None,
-            'project_id': project_id,
-            'limit': node_limit
-        }
-
-        min_z = bb[0][2]
-        max_z = bb[1][2]
-
-        data_types = [data_type]
-        update_json_cache = 'json' in data_types
-        update_json_text_cache = 'json_text' in data_types
-        update_msgpack_cache = 'msgpack' in data_types
-
-        provider = Postgis2dNodeProvider()
-        types = ', '.join(data_types)
-
-        for o, step in zip(orientations, steps):
-            self.stdout.write(' -> Populating cache for orientation {} with depth resolution {} for types: {}'.format(o, step, types))
-            z = min_z
-            while z < max_z:
-                params['z1'] = z
-                params['z2'] = z + step
-                result_tuple = _node_list_tuples_query(params, project_id, provider)
-
-                if update_json_cache:
-                    data = ujson.dumps(result_tuple)
-                    cursor.execute("""
-                        INSERT INTO node_query_cache (project_id, orientation, depth, json_data)
-                        VALUES (%s, %s, %s, %s)
-                    """, (project_id, o, z, json.dumps(result_tuple)))
-
-                if update_json_text_cache:
-                    data = ujson.dumps(result_tuple)
-                    cursor.execute("""
-                        INSERT INTO node_query_cache (project_id, orientation, depth, json_text_data)
-                        VALUES (%s, %s, %s, %s)
-                    """, (project_id, o, z, json.dumps(result_tuple)))
-
-                if update_msgpack_cache:
-                    data = msgpack.packb(result_tuple)
-                    cursor.execute("""
-                        INSERT INTO node_query_cache (project_id, orientation, depth, msgpack_data)
-                        VALUES (%s, %s, %s, %s)
-                    """, (project_id, o, z, psycopg2.Binary(data)))
-
-                z += step
+        self.stdout.write('Done')

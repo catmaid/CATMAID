@@ -38,6 +38,10 @@
   the current setting reads NODE_PROVIDER = 'postgis2d', replace it with
   NODE_PROVIDERS = ['postgis2d'].
 
+- Three new types of cache backed node providers have been added: cached_json,
+  cached_json_text, cached_msgpack. Tests suggest that cached_msgpack is the
+  fastest.
+
 
 ### Features and enhancements
 

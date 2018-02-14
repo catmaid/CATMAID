@@ -745,6 +745,14 @@ AVAILABLE_NODE_PROVIDERS = {
 }
 
 
+# The database cache identifier for each cache node provider
+CACHE_NODE_PROVIDER_DATA_TYPES = {
+    'cached_json': 'json',
+    'cached_json_text': 'json_text',
+    'cached_msgpack': 'msgpack',
+}
+
+
 def get_configured_node_providers(provider_entries, connection=None):
     node_providers = []
     for entry in provider_entries:
@@ -765,6 +773,146 @@ def get_configured_node_providers(provider_entries, connection=None):
             raise ValueError('Unknown node provider: ' + key)
 
     return node_providers
+
+
+def update_node_query_cache(node_providers=None):
+    if not node_providers:
+        config = settings.NODE_PROVIDERS
+
+    for np in node_providers:
+        if type(np) in (list, tyuple):
+            key = np[0]
+            options = np[1]
+        else:
+            key = np
+            options = {}
+
+        project_id = options.get('project_id')
+        if project_id:
+            project_ids = [project_id]
+        else:
+            project_ids = list(Project.object.all().values_list('id'))
+
+        for project_id in project_ids:
+            data_type = CACHE_NODE_PROVIDER_DATA_TYPES.get(key)
+            if not data_type:
+                log("Skipping project: " + project_id)
+                continue
+            orientation = [options.get('orientation', 'xy')]
+            step = options.get('step')
+            if not steps:
+                raise ValueError("Need 'step' parameter in node provider configuration")
+            node_limit = options.get('node_limit', 0)
+            update_cache(project_id, data_type, orientations, steps=step,
+                    node_limit=node_limit)
+
+
+def update_cache(project_id, data_type, orientations, steps,
+        node_limit=None, delete=True, bb_limits=None, log=print):
+    if data_type not in ('json', 'json_text', 'msgpack'):
+        raise ValueError('Type must be one of: json, json_text, msgpack')
+    if len(steps) != len(orientations):
+        raise ValueError('Need one depth resolution flag per orientation')
+
+    orientation_ids = list(map(lambda x: ORIENTATIONS[x], orientations))
+
+    cursor = connection.cursor()
+
+    log(' -> Finding tracing data bounding box')
+    cursor.execute("""
+        SELECT ARRAY[ST_XMin(bb.box), ST_YMin(bb.box), ST_ZMin(bb.box)],
+               ARRAY[ST_XMax(bb.box), ST_YMax(bb.box), ST_ZMax(bb.box)]
+        FROM (
+            SELECT ST_3DExtent(edge) box FROM treenode_edge
+            WHERE project_id = %(project_id)s
+        ) bb;
+    """, {
+        'project_id': project_id
+    })
+    row = cursor.fetchone()
+    if not row:
+        raise CommandError("Could not compute bounding box of project {}".format(project_id))
+    bb = [row[0], row[1]]
+    if None in bb[0] or None in bb[1]:
+        log(' -> Found no valid bounding box, skipping project: {}'.format(bb))
+        return
+    else:
+        log(' -> Found bounding box: {}'.format(bb))
+
+    if bb_limits:
+        bb[0][0] = max(bb[0][0], bb_limits[0][0])
+        bb[0][1] = max(bb[0][1], bb_limits[0][1])
+        bb[0][2] = max(bb[0][2], bb_limits[0][2])
+        bb[1][0] = min(bb[1][0], bb_limits[1][0])
+        bb[1][1] = min(bb[1][1], bb_limits[1][1])
+        bb[1][2] = min(bb[1][2], bb_limits[1][2])
+        log(' -> Applied limits to bounding box: {}'.format(bb))
+
+    if delete:
+        for n, o in enumerate(orientations):
+            orientation_id = orientation_ids[n]
+            log(' -> Deleting existing cache entries in orientation {}'.format(project_id, o))
+            cursor.execute("""
+                DELETE FROM node_query_cache
+                WHERE project_id = %(project_id)s
+                AND orientation = %(orientation)s
+            """, {
+                'project_id': project_id,
+                'orientation': o
+            })
+
+    params = {
+        'left': bb[0][0],
+        'top': bb[0][1],
+        'z1': None,
+        'right': bb[1][0],
+        'bottom': bb[1][1],
+        'z2': None,
+        'project_id': project_id,
+        'limit': node_limit
+    }
+
+    min_z = bb[0][2]
+    max_z = bb[1][2]
+
+    data_types = [data_type]
+    update_json_cache = 'json' in data_types
+    update_json_text_cache = 'json_text' in data_types
+    update_msgpack_cache = 'msgpack' in data_types
+
+    provider = Postgis2dNodeProvider()
+    types = ', '.join(data_types)
+
+    for o, step in zip(orientations, steps):
+        log(' -> Populating cache for orientation {} with depth resolution {} for types: {}'.format(o, step, types))
+        z = min_z
+        while z < max_z:
+            params['z1'] = z
+            params['z2'] = z + step
+            result_tuple = _node_list_tuples_query(params, project_id, provider)
+
+            if update_json_cache:
+                data = ujson.dumps(result_tuple)
+                cursor.execute("""
+                    INSERT INTO node_query_cache (project_id, orientation, depth, json_data)
+                    VALUES (%s, %s, %s, %s)
+                """, (project_id, o, z, json.dumps(result_tuple)))
+
+            if update_json_text_cache:
+                data = ujson.dumps(result_tuple)
+                cursor.execute("""
+                    INSERT INTO node_query_cache (project_id, orientation, depth, json_text_data)
+                    VALUES (%s, %s, %s, %s)
+                """, (project_id, o, z, json.dumps(result_tuple)))
+
+            if update_msgpack_cache:
+                data = msgpack.packb(result_tuple)
+                cursor.execute("""
+                    INSERT INTO node_query_cache (project_id, orientation, depth, msgpack_data)
+                    VALUES (%s, %s, %s, %s)
+                """, (project_id, o, z, psycopg2.Binary(data)))
+
+            z += step
 
 
 def prepare_db_statements(connection):

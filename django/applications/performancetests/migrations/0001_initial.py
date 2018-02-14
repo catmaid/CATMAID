@@ -53,7 +53,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='testresult',
             name='view',
-            field=models.ForeignKey(to='performancetests.TestView'),
+            field=models.ForeignKey(to='performancetests.TestView', on_delete=models.CASCADE),
             preserve_default=True,
         ),
     ]

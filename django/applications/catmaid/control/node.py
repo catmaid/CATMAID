@@ -29,7 +29,7 @@ from PIL import Image, ImageDraw
 from aggdraw import Draw, Pen, Brush, Font
 
 from six.moves import map as imap
-from six import add_metaclass
+from six import add_metaclass, print
 
 
 ORIENTATIONS = {

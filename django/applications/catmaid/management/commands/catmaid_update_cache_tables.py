@@ -6,15 +6,9 @@ from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 from django.db import connection
 
-from catmaid.control.node import _node_list_tuples_query, Postgis2dNodeProvider
+from catmaid.control.node import (_node_list_tuples_query, Postgis2dNodeProvider,
+        ORIENTATIONS)
 from catmaid.models import Project
-
-
-ORIENTATIONS = {
-    'xy': 0,
-    'xz': 1,
-    'zy': 2
-}
 
 
 class Command(BaseCommand):

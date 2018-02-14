@@ -32,6 +32,12 @@ from six.moves import map as imap
 from six import add_metaclass
 
 
+ORIENTATIONS = {
+    'xy': 0,
+    'xz': 1,
+    'zy': 2
+}
+
 class BasicNodeProvider(object):
 
     def __init__(self, *args, **kwargs):

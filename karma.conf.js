@@ -16,6 +16,8 @@ module.exports = function(config) {
       'django/static/js/libs/catmaid-lib.js',
       // Include CATMAID front-end
       'django/static/js/catmaid.js',
+      // Execute potential setup code
+      'django/static/js/tests/pretest.js',
       // Include front-end tests
       'django/applications/catmaid/static/js/tests/*.js'
     ],

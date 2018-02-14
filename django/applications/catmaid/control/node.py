@@ -912,7 +912,7 @@ def node_list_tuples(request, project_id=None, provider=None):
     # dimension. This dimension is used do some queries.
     orientation = data.get('orientation')
     width = params['width'] = params.get('right') - params.get('left')
-    height = params['height'] = params.get('bottom') - params.get('bottom')
+    height = params['height'] = params.get('bottom') - params.get('top')
     depth = params['depth'] = params.get('z2') - params.get('z1')
     if not orientation:
         if depth < width:

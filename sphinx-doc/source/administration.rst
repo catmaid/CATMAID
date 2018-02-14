@@ -330,7 +330,9 @@ CATMAID
   type can help performance. By default CATMAID uses the so called ``postgis3d``
   node provider as query strategy. This can be changed to the alternative
   ``postgis2d`` node provider by adding ``NODE_PROVIDER = 'postgis2d'`` to the
-  ``settings.py`` file.
+  ``settings.py`` file. It is also possible to cache larger field of views on
+  tracing data and only update this cache periodically. This can improve
+  performance dramatically. Read more about it :ref:`here <node_providers>`.
 
 * If there are too many nodes to be displayed with usable performance, the
   number of returned nodes can be limited. This can be done by setting

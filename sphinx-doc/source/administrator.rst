@@ -8,6 +8,7 @@ Administrator Documentation
    options
    administration
    Production setup <nginx>
+   Node providers <node_providers>
    permissions
    celery
    websockets

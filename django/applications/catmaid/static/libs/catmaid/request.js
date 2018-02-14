@@ -243,7 +243,7 @@ RequestQueue.encodeArray = function( a, p ) {
     case "function":
     case "object":
       if ( a[ i ].constructor == Array && a[ i ].length > 0 )
-        q += RequestQueueencodeArray( a[ i ], r ) + "&";
+        q += RequestQueue.encodeArray( a[ i ], r ) + "&";
       else
         q += RequestQueue.encodeObject( a[ i ], r ) + "&";
       break;

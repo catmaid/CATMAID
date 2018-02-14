@@ -43,6 +43,13 @@ class BasicNodeProvider(object):
     def __init__(self, *args, **kwargs):
         self.enabled = kwargs.get('enabled', True)
         self.project_id = kwargs.get('project_id')
+        self.orientation = kwargs.get('orientation')
+        self.min_width = kwargs.get('min_width')
+        self.min_height = kwargs.get('min_height')
+        self.min_depth = kwargs.get('min_depth')
+        self.max_width = kwargs.get('max_width')
+        self.max_height = kwargs.get('max_height')
+        self.max_depth = kwargs.get('max_depth')
 
     def prepare_db_statements(connection=None):
         pass
@@ -53,6 +60,23 @@ class BasicNodeProvider(object):
             return False
         if self.project_id:
             matches = matches and params.get('project_id') == self.project_id
+        # Orientation means this node provider will only be used if the query
+        # bounding box is
+        if self.orientation:
+            matches = matches and params.get('orientation') == self.orientation
+        if self.min_width:
+            matches = matches and self.min_width <= params['width']
+        if self.min_height:
+            matches = matches and self.min_height <= params['height']
+        if self.min_depth:
+            matches = matches and self.min_depth <= params['depth']
+        if self.max_width:
+            matches = matches and self.max_width <= params['width']
+        if self.max_height:
+            matches = matches and self.max_height <= params['height']
+        if self.max_depth:
+            matches = matches and self.max_depth <= params['depth']
+
         return matches
 
     def get_tuples(self, params, project_id, explicit_treenode_ids,
@@ -884,6 +908,26 @@ def node_list_tuples(request, project_id=None, provider=None):
         'view_height': int(data.get('view_height', 1000)),
     }
     override_provider = data.get('src')
+    # The orientation parameter is used to override the dominant depth
+    # dimension. This dimension is used do some queries.
+    orientation = data.get('orientation')
+    width = params['width'] = params.get('right') - params.get('left')
+    height = params['height'] = params.get('bottom') - params.get('bottom')
+    depth = params['depth'] = params.get('z2') - params.get('z1')
+    if not orientation:
+        if depth < width:
+            if depth < height:
+                orientation = 'xy'
+            else:
+                orientation = 'xz'
+        else:
+            if depth < heigth:
+                orientation = 'zy'
+            elif width < height:
+                orientation = 'zy'
+            else:
+                orientation = 'xz'
+    params['orientation'] = orientation
 
     if override_provider:
         node_providers = get_configured_node_providers([override_provider])

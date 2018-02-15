@@ -29,7 +29,7 @@ from PIL import Image, ImageDraw
 from aggdraw import Draw, Pen, Brush, Font
 
 from six.moves import map as imap
-from six import add_metaclass, print
+from six import add_metaclass, print_
 
 
 ORIENTATIONS = {
@@ -808,7 +808,7 @@ def update_node_query_cache(node_providers=None):
 
 
 def update_cache(project_id, data_type, orientations, steps,
-        node_limit=None, delete=True, bb_limits=None, log=print):
+        node_limit=None, delete=True, bb_limits=None, log=print_):
     if data_type not in ('json', 'json_text', 'msgpack'):
         raise ValueError('Type must be one of: json, json_text, msgpack')
     if len(steps) != len(orientations):

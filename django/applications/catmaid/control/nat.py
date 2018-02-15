@@ -165,7 +165,7 @@ def export_skeleton_as_nrrd(skeleton_id, source_ref, target_ref, user_id, mirror
 
         # Call R, allow Rprofile.site file
         cmd = "R --no-save --no-restore --no-init-file --no-environ"
-        pipe = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE)
+        pipe = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, encoding='utf8')
         stdout, stderr = pipe.communicate(input=r_script)
 
         if not os.path.exists(nrrd_path):

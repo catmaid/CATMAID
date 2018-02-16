@@ -775,7 +775,7 @@ def get_configured_node_providers(provider_entries, connection=None):
     return node_providers
 
 
-def update_node_query_cache(node_providers=None):
+def update_node_query_cache(node_providers=None, log=_print):
     if not node_providers:
         node_providers = settings.NODE_PROVIDERS
 
@@ -804,7 +804,7 @@ def update_node_query_cache(node_providers=None):
                 raise ValueError("Need 'step' parameter in node provider configuration")
             node_limit = options.get('node_limit', 0)
             update_cache(project_id, data_type, orientations, steps,
-                    node_limit=node_limit)
+                    node_limit=node_limit, log=log)
 
 
 def update_cache(project_id, data_type, orientations, steps,

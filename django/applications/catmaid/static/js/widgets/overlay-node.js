@@ -462,7 +462,7 @@
       this.createGraphics = function() {
         this.createCircle();
         this.createRadiusGraphics();
-        this.drawEdges();
+        this.drawEdges(false);
       };
 
       this.shouldDisplay = function() {

@@ -4714,7 +4714,7 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
     var nodeId = node.id;
 
     node.obliterate();
-    node.drawEdges();
+    node.drawEdges(false);
     self.pixiLayer._renderIfReady();
 
     CATMAID.statusBar.replaceLast("Deleted node #" + nodeId);

@@ -4940,7 +4940,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getState = function(nodeId) {
   for (var cid in node.connectors) {
     var connector = this.nodes[cid];
     var link = node.connectors[cid];
-      links.push([cid, connector.edition_time_iso_str, link.relation_id]);
+    links.push([cid, connector.edition_time_iso_str, link.relation_id]);
   }
 
   return CATMAID.getNeighborhoodState(nodeId, node.edition_time_iso_str, parentId,

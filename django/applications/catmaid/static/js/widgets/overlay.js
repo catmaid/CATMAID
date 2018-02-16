@@ -4886,7 +4886,7 @@ SkeletonAnnotations.TracingOverlay.prototype.toggleVirtualNodeSuppression = func
           undefined,
           CATMAID.jsonResponseHandler(function () {
             var node = self.nodes[childId];
-            if (node) delete node.suppressed;
+            if (node) node.suppressed = undefined;
             self.recolorAllNodes();
             CATMAID.info('Unsuppressed virtual parent of ' + childId + ' at ' +
                          orientationName + '=' + coordinate);

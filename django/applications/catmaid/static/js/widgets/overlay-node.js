@@ -945,7 +945,7 @@
         this.skeleton_id = skeleton_id;
         this.edition_time = edition_time;
         this.user_id = user_id;
-        delete this.suppressed;
+        this.suppressed = undefined;
 
         if (this.c) {
           if (!this.shouldDisplay()) {
@@ -1107,7 +1107,7 @@
           sce.line.destroy();
         }
         sce.label.remove();
-        delete this.surroundingCircleElements;
+        this.surroundingCircleElements = undefined;
 
         this.overlayGlobals.tracingOverlay.redraw();
         // Execute callback, if any, with radius in stack coordinates as argument

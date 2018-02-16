@@ -791,7 +791,7 @@ def update_node_query_cache(node_providers=None):
         if project_id:
             project_ids = [project_id]
         else:
-            project_ids = list(Project.object.all().values_list('id'))
+            project_ids = list(Project.objects.all().values_list('id', flat=True))
 
         for project_id in project_ids:
             data_type = CACHE_NODE_PROVIDER_DATA_TYPES.get(key)

@@ -228,20 +228,6 @@
       background.appendChild(backgroundCb);
       background.appendChild(document.createTextNode('Black background'));
       customOptions.appendChild(background);
-
-      var interpolateCb = document.createElement('input');
-      interpolateCb.setAttribute('type', 'checkbox');
-      interpolateCb.setAttribute('class', 'ui-button');
-      interpolateCb.checked = self.interpolateSections;
-      interpolateCb.onchange = function() {
-        self.webglapp.options.interpolate_sections = this.checked;
-        self.onSettingChanged('interpolate_sections', this.checked);
-        self.webglapp.updateLocationFiltering();
-      };
-      var interpolate = document.createElement('label');
-      interpolate.appendChild(interpolateCb);
-      interpolate.appendChild(document.createTextNode('Interpolate sections'));
-      customOptions.appendChild(interpolate);
     }
 
     // Add extra options to the button pane

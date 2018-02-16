@@ -858,7 +858,7 @@ def update_cache(project_id, data_type, orientations, steps,
                 AND orientation = %(orientation)s
             """, {
                 'project_id': project_id,
-                'orientation': o
+                'orientation': orientation_id
             })
 
     params = {

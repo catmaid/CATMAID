@@ -50,6 +50,7 @@ def basic_graph(project_id, skeleton_ids, relations=None,
       AND t1.connector_id = t2.connector_id
       AND t2.skeleton_id IN (%(skids)s)
       AND t2.relation_id = %(target_rel)s
+      AND t1.id <> t2.id
     ''' % {'skids': ','.join(map(str, skeleton_ids)),
            'source_rel': source_rel_id,
            'target_rel': target_rel_id})
@@ -83,6 +84,7 @@ def basic_graph(project_id, skeleton_ids, relations=None,
       AND tc2.relation_id = %s
       AND tc1.skeleton_id IN skeletons
       AND tc2.skeleton_id IN skeletons
+      AND tc1.id <> tc2.id
     ''' % (",".join(str(int(skid)) for skid in skeleton_ids), int(project_id), preID, postID))
     """
 

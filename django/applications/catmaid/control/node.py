@@ -777,7 +777,7 @@ def get_configured_node_providers(provider_entries, connection=None):
 
 def update_node_query_cache(node_providers=None):
     if not node_providers:
-        config = settings.NODE_PROVIDERS
+        node_providers = settings.NODE_PROVIDERS
 
     for np in node_providers:
         if type(np) in (list, tyuple):

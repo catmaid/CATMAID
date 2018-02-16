@@ -780,7 +780,7 @@ def update_node_query_cache(node_providers=None):
         node_providers = settings.NODE_PROVIDERS
 
     for np in node_providers:
-        if type(np) in (list, tyuple):
+        if type(np) in (list, tuple):
             key = np[0]
             options = np[1]
         else:

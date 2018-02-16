@@ -870,6 +870,7 @@
         this.parent = null;
         this.parent_id = null;
         this.children = null;
+        this.numberOfChildren = 0;
         this.connectors = null;
         this.visibilityGroups = null;
         if (this.c) {
@@ -1152,6 +1153,9 @@
       this.c = null; // The circle for drawing and interacting with the node.
       this.radiusGraphics = null; // The circle for visualing skeleton radius.
       this.line = null; // The line element that represents an edge between nodes
+      this.visibilityGroups = null;
+      this.number_text = null;
+      this.suppressed = undefined;
     };
 
     ptype.Node.prototype = new ptype.AbstractTreenode();
@@ -1429,6 +1433,7 @@
       this.links = [];
       this.edges = [];
       this.c = null; // The circle for drawing
+      this.visibilityGroups = null;
     };
 
     ptype.ConnectorNode.prototype = new ptype.AbstractConnectorNode();

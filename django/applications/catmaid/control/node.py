@@ -798,12 +798,12 @@ def update_node_query_cache(node_providers=None):
             if not data_type:
                 log("Skipping project: " + project_id)
                 continue
-            orientation = [options.get('orientation', 'xy')]
-            step = options.get('step')
-            if not step:
+            orientations = [options.get('orientation', 'xy')]
+            steps = [options.get('step')]
+            if not steps:
                 raise ValueError("Need 'step' parameter in node provider configuration")
             node_limit = options.get('node_limit', 0)
-            update_cache(project_id, data_type, orientations, steps=step,
+            update_cache(project_id, data_type, orientations, steps,
                     node_limit=node_limit)
 
 

@@ -419,7 +419,7 @@
         });
 
         var getColor= function(intervalId, nodeId) {
-          let intervalColorIndex = parseInt(intervalId, 10) % nColors;
+          let intervalColorIndex = Math.abs(parseInt(intervalId, 10)) % nColors;
           return colorSet[intervalColorIndex];
         };
 
@@ -437,8 +437,10 @@
               let addedIntervals = CATMAID.Sampling.intervalsFromModels(
                   arbor, positions, domain, sampler.interval_length,
                   sampler.interval_error, true, true, intervalMap);
-              domain.intervals = addedIntervals.intervals.map(function(ai) {
-                return [null, parseInt(ai[0], 10), parseInt(ai[1], 10), null];
+              addedIntervals.intervals.map(function(ai, i) {
+                // use the negative index as ID for now. There should not be
+                // any collissions.
+                return [-1 * i, parseInt(ai[0], 10), parseInt(ai[1], 10), null];
               });
             } else if (intervalMap) {
               // Update interval map with existing intervals

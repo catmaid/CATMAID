@@ -884,6 +884,7 @@ def update_cache(project_id, data_type, orientations, steps,
     types = ', '.join(data_types)
 
     for o, step in zip(orientations, steps):
+        orientation_id = ORIENTATIONS[o]
         log(' -> Populating cache for orientation {} with depth resolution {} for types: {}'.format(o, step, types))
         z = min_z
         while z < max_z:
@@ -896,21 +897,21 @@ def update_cache(project_id, data_type, orientations, steps,
                 cursor.execute("""
                     INSERT INTO node_query_cache (project_id, orientation, depth, json_data)
                     VALUES (%s, %s, %s, %s)
-                """, (project_id, o, z, json.dumps(result_tuple)))
+                """, (project_id, orientation_id, z, json.dumps(result_tuple)))
 
             if update_json_text_cache:
                 data = ujson.dumps(result_tuple)
                 cursor.execute("""
                     INSERT INTO node_query_cache (project_id, orientation, depth, json_text_data)
                     VALUES (%s, %s, %s, %s)
-                """, (project_id, o, z, json.dumps(result_tuple)))
+                """, (project_id, orientation_id, z, json.dumps(result_tuple)))
 
             if update_msgpack_cache:
                 data = msgpack.packb(result_tuple)
                 cursor.execute("""
                     INSERT INTO node_query_cache (project_id, orientation, depth, msgpack_data)
                     VALUES (%s, %s, %s, %s)
-                """, (project_id, o, z, psycopg2.Binary(data)))
+                """, (project_id, orientation_id, z, psycopg2.Binary(data)))
 
             z += step
 

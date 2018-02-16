@@ -77,7 +77,7 @@ class CatmaidRelease(object):
 
     def __init__(self, catmaid_folder):
         self.git = sh.git.bake(_cwd=catmaid_folder)
-        self.project_root = self.git("rev-parse", "--show-toplevel").stdout.replace('\n', '')
+        self.project_root = self.git("rev-parse", "--show-toplevel").stdout.decode('utf-8').replace('\n', '')
         log("CATMAID directory: {}".format(self.project_root))
 
         # Determine release name
@@ -125,7 +125,7 @@ class CatmaidRelease(object):
             new_contributor_list = -1 == contributor_start
             if new_contributor_list:
                 log("Getting contributors from Git history since HEAD of master (couldn't find it in CHANGELOG.md)")
-                contributor_list = self.git("--no-pager", "log", "--format='%aN'", "master..").stdout
+                contributor_list = self.git("--no-pager", "log", "--format='%aN'", "master..").stdout.decode('utf-8')
                 contributor_list = [n.strip("\'") for n in set(contributor_list.strip('\n').split('\n'))]
                 contributor_list = ", ".join(contributor_list)
             else:

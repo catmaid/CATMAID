@@ -4181,7 +4181,7 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseSuppressedVirtualNodes = fun
   }
 
   var node = this.nodes[nodeId];
-  if (node && node.hasOwnProperty('suppressed')) {
+  if (node && node.suppressed) {
     return Promise.resolve(node.suppressed || []);
   } else {
     // Request suppressed virtual treenodes from backend.
@@ -4208,7 +4208,7 @@ SkeletonAnnotations.TracingOverlay.prototype.isVirtualNodeSuppressed = function 
 
   var childID = SkeletonAnnotations.getChildOfVirtualNode(vnID);
   var child = this.nodes[childID];
-  if (child && child.hasOwnProperty('suppressed')) {
+  if (child && child.suppressed) {
     var vnCoords = SkeletonAnnotations.getVirtualNodeComponents(vnID).slice(3, 6).map(Number);
     return child.suppressed.some(function (s) {
       if (s.orientation === this.stackViewer.primaryStack.orientation) {

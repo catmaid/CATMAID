@@ -19,8 +19,8 @@ from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
 
 from catmaid import state
-from catmaid.models import UserRole, Treenode, \
-        ClassInstanceClassInstance, Review
+from catmaid.models import (UserRole, Treenode, ClassInstanceClassInstance,
+        Review, Project)
 from catmaid.control.authentication import requires_user_role, \
         can_edit_all_or_fail
 from catmaid.control.common import get_relation_to_id_map, get_request_list

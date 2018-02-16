@@ -4,7 +4,7 @@ from catmaid.control.cropping import cleanup as cropping_cleanup, process_crop_j
 from catmaid.control.nat import export_skeleton_as_nrrd_async
 from catmaid.control.treenodeexport import process_export_job
 from catmaid.control.roi import create_roi_image
-from catmaid.control.node import update_node_query_cache
+from catmaid.control.node import update_node_query_cache as do_update_node_query_cache
 from celery import shared_task
 
 
@@ -31,5 +31,5 @@ def update_node_query_cache():
     """Update the query cache of changed sections for node providers defined in
     the NODE_PROVIDERS settings variable.
     """
-    update_node_query_cache()
+    do_update_node_query_cache()
     return "Updating node query cache"

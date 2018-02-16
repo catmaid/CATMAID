@@ -796,7 +796,7 @@ def update_node_query_cache(node_providers=None, log=print_):
         for project_id in project_ids:
             data_type = CACHE_NODE_PROVIDER_DATA_TYPES.get(key)
             if not data_type:
-                log("Skipping project: " + project_id)
+                log("Skipping project: {}".format(project_id))
                 continue
             orientations = [options.get('orientation', 'xy')]
             steps = [options.get('step')]

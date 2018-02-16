@@ -775,7 +775,7 @@ def get_configured_node_providers(provider_entries, connection=None):
     return node_providers
 
 
-def update_node_query_cache(node_providers=None, log=_print):
+def update_node_query_cache(node_providers=None, log=print_):
     if not node_providers:
         node_providers = settings.NODE_PROVIDERS
 

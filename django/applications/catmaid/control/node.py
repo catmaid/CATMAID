@@ -898,6 +898,7 @@ def update_cache(project_id, data_type, orientations, steps,
                 cursor.execute("""
                     INSERT INTO node_query_cache (project_id, orientation, depth, json_data)
                     VALUES (%s, %s, %s, %s)
+                    ON CONFLICT DO UPDATE SET json_data = EXCLUDED.json_data;
                 """, (project_id, orientation_id, z, json.dumps(result_tuple)))
 
             if update_json_text_cache:
@@ -905,6 +906,7 @@ def update_cache(project_id, data_type, orientations, steps,
                 cursor.execute("""
                     INSERT INTO node_query_cache (project_id, orientation, depth, json_text_data)
                     VALUES (%s, %s, %s, %s)
+                    ON CONFLICT DO UPDATE SET json_text_data = EXCLUDED.json_text_data;
                 """, (project_id, orientation_id, z, json.dumps(result_tuple)))
 
             if update_msgpack_cache:
@@ -912,6 +914,7 @@ def update_cache(project_id, data_type, orientations, steps,
                 cursor.execute("""
                     INSERT INTO node_query_cache (project_id, orientation, depth, msgpack_data)
                     VALUES (%s, %s, %s, %s)
+                    ON CONFLICT DO UPDATE SET msgpack_data = EXCLUDED.msgpack_data;
                 """, (project_id, orientation_id, z, psycopg2.Binary(data)))
 
             z += step

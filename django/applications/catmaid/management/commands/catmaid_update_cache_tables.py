@@ -15,7 +15,7 @@ class Command(BaseCommand):
     help = "Update node query cache tables of all or individual projects."
 
     def add_arguments(self, parser):
-        parser.add_argument('--keep-data', action='store_false', dest='clean',
+        parser.add_argument('--clean', action='store_true', dest='clean',
             default=True, help='Remove all existing cache data before update'),
         parser.add_argument('--project_id', dest='project_id', nargs='+',
             default=False, help='Compute only statistics for these projects only (otherwise all)'),

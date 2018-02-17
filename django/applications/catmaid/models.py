@@ -1161,12 +1161,14 @@ class NodeQueryCache(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     orientation = models.IntegerField(default=0, null=False)
     depth = models.FloatField(null=True)
+    update_time = models.DateTimeField(default=timezone.now)
     json_data = JSONField(blank=True, null=True)
     json_text_data = models.TextField(blank=True, null=True)
     msgpack_data = models.BinaryField(null=True)
 
     class Meta:
         db_table = "node_query_cache"
+        unique_together = (('project', 'orientation', 'depth'),)
 
 
 @python_2_unicode_compatible

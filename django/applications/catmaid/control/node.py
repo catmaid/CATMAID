@@ -807,7 +807,7 @@ def update_node_query_cache(node_providers=None, log=print_):
             steps = [options.get('step')]
             if not steps:
                 raise ValueError("Need 'step' parameter in node provider configuration")
-            node_limit = options.get('node_limit', 0)
+            node_limit = options.get('node_limit', None)
             update_cache(project_id, data_type, orientations, steps,
                     node_limit=node_limit, delete=clean_cache, log=log)
 

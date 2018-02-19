@@ -812,7 +812,7 @@ def update_node_query_cache(node_providers=None, log=print_):
 
 
 def update_cache(project_id, data_type, orientations, steps,
-        node_limit=None, delete=True, bb_limits=None, log=print_):
+        node_limit=None, delete=False, bb_limits=None, log=print_):
     if data_type not in ('json', 'json_text', 'msgpack'):
         raise ValueError('Type must be one of: json, json_text, msgpack')
     if len(steps) != len(orientations):

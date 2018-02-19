@@ -794,6 +794,8 @@ def update_node_query_cache(node_providers=None, log=print_):
         else:
             project_ids = list(Project.objects.all().values_list('id', flat=True))
 
+        clean_cache = options.get('clean', False)
+
         for project_id in project_ids:
             data_type = CACHE_NODE_PROVIDER_DATA_TYPES.get(key)
             if not data_type:
@@ -805,7 +807,7 @@ def update_node_query_cache(node_providers=None, log=print_):
                 raise ValueError("Need 'step' parameter in node provider configuration")
             node_limit = options.get('node_limit', 0)
             update_cache(project_id, data_type, orientations, steps,
-                    node_limit=node_limit, log=log)
+                    node_limit=node_limit, delete=clean_cache, log=log)
 
 
 def update_cache(project_id, data_type, orientations, steps,

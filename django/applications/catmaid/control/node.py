@@ -792,7 +792,7 @@ def update_node_query_cache(node_providers=None, log=print_):
         if project_id:
             project_ids = [project_id]
         else:
-            project_ids = list(Project.objects.all().values_list('id', flat=True))
+            project_ids = list(Project.objects.all().order_by('id').values_list('id', flat=True))
 
         clean_cache = options.get('clean', False)
 

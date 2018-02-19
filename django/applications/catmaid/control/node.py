@@ -898,25 +898,28 @@ def update_cache(project_id, data_type, orientations, steps,
             if update_json_cache:
                 data = ujson.dumps(result_tuple)
                 cursor.execute("""
-                    INSERT INTO node_query_cache (project_id, orientation, depth, json_data)
-                    VALUES (%s, %s, %s, %s)
-                    ON CONFLICT DO UPDATE SET json_data = EXCLUDED.json_data;
+                    INSERT node_query_cache (project_id, orientation, depth, update_time, json_data)
+                    VALUES (%s, %s, %s, now(), %s)
+                    ON CONFLICT (project_id, orientation, depth)
+                    DO UPDATE SET json_data = EXCLUDED.json_data, update_time = EXCLUDED.update_time;
                 """, (project_id, orientation_id, z, json.dumps(result_tuple)))
 
             if update_json_text_cache:
                 data = ujson.dumps(result_tuple)
                 cursor.execute("""
-                    INSERT INTO node_query_cache (project_id, orientation, depth, json_text_data)
-                    VALUES (%s, %s, %s, %s)
-                    ON CONFLICT DO UPDATE SET json_text_data = EXCLUDED.json_text_data;
+                    INSERT INTO node_query_cache (project_id, orientation, depth, update_time, json_text_data)
+                    VALUES (%s, %s, %s, now(), %s)
+                    ON CONFLICT (project_id, orientation, depth)
+                    DO UPDATE SET json_text_data = EXCLUDED.json_text_data, update_time = EXCLUDED.update_time;
                 """, (project_id, orientation_id, z, json.dumps(result_tuple)))
 
             if update_msgpack_cache:
                 data = msgpack.packb(result_tuple)
                 cursor.execute("""
-                    INSERT INTO node_query_cache (project_id, orientation, depth, msgpack_data)
-                    VALUES (%s, %s, %s, %s)
-                    ON CONFLICT DO UPDATE SET msgpack_data = EXCLUDED.msgpack_data;
+                    INSERT INTO node_query_cache (project_id, orientation, depth, update_time, msgpack_data)
+                    VALUES (%s, %s, %s, now(), %s)
+                    ON CONFLICT (project_id, orientation, depth)
+                    DO UPDATE SET msgpack_data = EXCLUDED.msgpack_data, update_time = EXCLUDED.update_time;
                 """, (project_id, orientation_id, z, psycopg2.Binary(data)))
 
             z += step

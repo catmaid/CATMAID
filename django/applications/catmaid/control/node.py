@@ -801,6 +801,7 @@ def update_node_query_cache(node_providers=None, log=print_):
             if not data_type:
                 log("Skipping project: {}".format(project_id))
                 continue
+            log("Updating cache for project {}".format(project_id))
             orientations = [options.get('orientation', 'xy')]
             steps = [options.get('step')]
             if not steps:
@@ -816,6 +817,8 @@ def update_cache(project_id, data_type, orientations, steps,
         raise ValueError('Type must be one of: json, json_text, msgpack')
     if len(steps) != len(orientations):
         raise ValueError('Need one depth resolution flag per orientation')
+    if project_id is None:
+        raise ValueError('Need project ID')
 
     orientation_ids = list(map(lambda x: ORIENTATIONS[x], orientations))
 

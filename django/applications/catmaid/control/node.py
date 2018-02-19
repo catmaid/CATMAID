@@ -796,11 +796,12 @@ def update_node_query_cache(node_providers=None, log=print_):
 
         clean_cache = options.get('clean', False)
 
+        data_type = CACHE_NODE_PROVIDER_DATA_TYPES.get(key)
+        if not data_type:
+            log("Skipping non-caching node provider: {}".format(key))
+            continue
+
         for project_id in project_ids:
-            data_type = CACHE_NODE_PROVIDER_DATA_TYPES.get(key)
-            if not data_type:
-                log("Skipping project: {}".format(project_id))
-                continue
             log("Updating cache for project {}".format(project_id))
             orientations = [options.get('orientation', 'xy')]
             steps = [options.get('step')]

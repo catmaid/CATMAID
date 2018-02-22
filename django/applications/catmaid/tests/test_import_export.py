@@ -210,7 +210,7 @@ class ImportExportTests(TestCase):
         p1_config = {
             'project': {
                 'title': 'test-no-stacks',
-                'stacks': tuple(),
+                'stacks': list(),
             }
         }
 

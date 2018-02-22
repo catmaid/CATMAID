@@ -20,7 +20,7 @@ Introduction
 
 The most fundamental dependencies of CATMAID are:
 
-1. PostgreSQL >= 9.6 and PostGIS >= 2.4
+1. PostgreSQL >= 10 and PostGIS >= 2.4
 2. Python 2.7, 3.5, 3.6, PyPy2 or PyPy3
 3. Imagemagick (for generating image tiles)
 
@@ -39,7 +39,7 @@ done so already)::
 
 And then you can install these dependencies with::
 
-    sudo apt-get install python postgresql-9.6 imagemagick
+    sudo apt-get install python postgresql-10 imagemagick
 
 CATMAID is based on the `Django web framework
 <https://www.djangoproject.com/>`_.  If you just wish to work on

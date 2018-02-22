@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import json
 
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import JsonResponse
 
 from catmaid.models import UserRole
 from catmaid.control.stack import get_stack_info_response
@@ -23,11 +23,13 @@ def stack_info(request, project_id=None, stack_id=None):
     broken_slices = {i:1 for i in stack.broken_slices}
 
     result = get_stack_info_response(project, stack, ps, stack.mirrors, broken_slices)
-    return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="application/json")
+    return JsonResponse(result, safe=False, json_dumps_params={
+        'sort_keys': True,
+        'indent': 4
+    })
 
 def stacks(request, project_id=None):
     """ Returns a response containing the JSON object with menu information
     about the project's stacks.
     """
-    return HttpResponse(json.dumps({}, sort_keys=True, indent=4),
-        content_type="application/json")
+    return JsonResponse({})

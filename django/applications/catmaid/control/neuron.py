@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import json
 import six
 
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.db import connection
 from django.contrib.auth.models import User
@@ -35,7 +35,7 @@ def get_all_skeletons_of_neuron(request, project_id=None, neuron_id=None):
         project=p,
         cici_via_a__relation__relation_name='model_of',
         cici_via_a__class_instance_b=neuron)
-    return HttpResponse(json.dumps([x.id for x in qs]), content_type="application/json")
+    return JsonResponse([x.id for x in qs], safe=False)
 
 def _delete_if_empty(neuron_id):
     """ Delete this neuron if no class_instance is a model_of it;
@@ -143,10 +143,11 @@ def delete_neuron(request, project_id=None, neuron_id=None):
             'Deleted neuron %s and skeleton(s) %s.' % (neuron_id,
                     ', '.join([str(s) for s in skeleton_ids])))
 
-    return HttpResponse(json.dumps({
+    return JsonResponse({
         'skeleton_ids': list(skeleton_ids),
         'success': "Deleted neuron #%s as well as its skeletons and " \
-                "annotations." % neuron_id}))
+                "annotations." % neuron_id
+    })
 
 @requires_user_role(UserRole.Annotate)
 def give_neuron_to_other_user(request, project_id=None, neuron_id=None):
@@ -157,7 +158,7 @@ def give_neuron_to_other_user(request, project_id=None, neuron_id=None):
     #    or owns the neuron and the skeletons under it
     neuron = ClassInstance.objects.get(pk=neuron_id)
     if not request.user.is_superuser and neuron.user.id != request.user.id:
-        return HttpResponse(json.dumps({'error': 'You don\'t own the neuron!'}))
+        return JsonResponse({'error': 'You don\'t own the neuron!'})
 
     qs = ClassInstanceClassInstance.objects.filter(
             class_instance_b=neuron_id,
@@ -167,14 +168,14 @@ def give_neuron_to_other_user(request, project_id=None, neuron_id=None):
         skeletons[row[0]].append(row[1])
 
     if not skeletons:
-        return HttpResponse(json.dumps({'error': 'The neuron does not contain any skeletons!'}))
+        return JsonResponse({'error': 'The neuron does not contain any skeletons!'})
 
     sks = {k:v[:] for k,v in six.iteritems(skeletons)} # deep copy
     if request.user.id in sks:
         del sks[request.user.id]
     if not request.user.is_superuser and sks:
         skeleton_ids = reduce(operator.add, six.itervalues(sks))
-        return HttpResponse(json.dumps({'error': 'You don\'t own: %s' % skeleton_ids}))
+        return JsonResponse({'error': 'You don\'t own: %s' % skeleton_ids})
 
     # 2. Change neuron's and skeleton's and class_instance_class_instance relationship owner to target_user
 
@@ -190,7 +191,7 @@ def give_neuron_to_other_user(request, project_id=None, neuron_id=None):
     skeleton_ids = reduce(operator.add, six.itervalues(skeletons))
     ClassInstance.objects.filter(pk__in=skeleton_ids).update(user=target_user)
 
-    return HttpResponse(json.dumps({'success':'Moved neuron #%s to %s staging area.'}))
+    return JsonResponse({'success':'Moved neuron #%s to %s staging area.'})
 
 
 @api_view(['POST'])
@@ -246,11 +247,11 @@ def rename_neuron(request, project_id=None, neuron_id=None):
     insert_into_log(project_id, request.user.id, "rename_neuron", None,
                     "Renamed neuron with ID %s from %s to %s" % (neuron.id , old_name, new_name))
 
-    return HttpResponse(json.dumps({
+    return JsonResponse({
         'success': True,
         'renamed_neuron': neuron.id,
         'old_name': old_name
-    }))
+    })
 
 
 @api_view(['POST'])

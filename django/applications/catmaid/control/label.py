@@ -6,7 +6,7 @@ import json
 from collections import defaultdict
 
 from django.db import connection
-from django.http import HttpResponse, Http404, JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
 
 from rest_framework.decorators import api_view
@@ -81,7 +81,7 @@ def labels_all(request, project_id=None):
     """
     labels = list(ClassInstance.objects.filter(class_column__class_name='label',
         project=project_id).values_list('name', flat=True))
-    return HttpResponse(json.dumps(labels), content_type='application/json')
+    return JsonResponse(labels, safe=False)
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
@@ -196,7 +196,7 @@ def labels_for_nodes(request, project_id=None):
         for row in cursor.fetchall():
             result[row[0]].append(row[1])
 
-    return HttpResponse(json.dumps(result), content_type="text/plain")
+    return JsonResponse(result)
 
 @requires_user_role(UserRole.Annotate)
 def label_update(request, project_id=None, location_id=None, ntype=None):

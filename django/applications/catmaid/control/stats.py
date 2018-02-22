@@ -8,7 +8,7 @@ from datetime import timedelta, datetime
 from dateutil import parser as dateparser
 
 from django.conf import settings
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.db.models.aggregates import Count
 from django.db import connection, transaction
 from django.utils import timezone
@@ -212,7 +212,7 @@ def stats_summary(request, project_id=None):
             creation_time__month=startdate.month,
             creation_time__day=startdate.day,
             class_column__class_name=class_name).count()
-    return HttpResponse(json.dumps(result), content_type='application/json')
+    return JsonResponse(result)
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -245,7 +245,7 @@ def stats_history(request, project_id=None):
         'date': stat['date'],
         'count': stat['count']} for stat in stats]
 
-    return HttpResponse(json.dumps(stats), content_type='application/json')
+    return JsonResponse(stats, safe=False)
 
 def stats_user_activity(request, project_id=None):
     username = request.GET.get('username', None)
@@ -278,8 +278,8 @@ def stats_user_activity(request, project_id=None):
         .order_by('creation_time').values('creation_time')
     prelinks = [time.mktime(ele['creation_time'].timetuple()) for ele in stats_prelink]
     postlinks = [time.mktime(ele['creation_time'].timetuple()) for ele in stats_postlink]
-    return HttpResponse(json.dumps({'skeleton_nodes': timepoints,
-         'presynaptic': prelinks, 'postsynaptic': postlinks}), content_type='application/json')
+    return JsonResponse({'skeleton_nodes': timepoints,
+         'presynaptic': prelinks, 'postsynaptic': postlinks})
 
 @api_view(['GET'])
 def stats_user_history(request, project_id=None):

@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import json
 
 from django.db import connection
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
 
 from catmaid import state
@@ -38,23 +38,23 @@ def create_link(request, project_id=None):
             treenode=from_id,
             relation=relation.id)
     except ObjectDoesNotExist as e:
-        return HttpResponse(json.dumps({'error': str(e)}))
+        return JsonResponse({'error': str(e)})
 
     if links.count() > 0:
-        return HttpResponse(json.dumps({'error': "A relation '%s' between these two elements already exists!" % link_type}))
+        return JsonResponse({'error': "A relation '%s' between these two elements already exists!" % link_type})
 
     related_skeleton_count = ClassInstance.objects.filter(project=project, id=from_treenode.skeleton.id).count()
     if related_skeleton_count > 1:
         # Can never happen. What motivated this check for an error of this kind? Would imply that a treenode belongs to more than one skeleton, which was possible when skeletons owned treendoes via element_of relations rather than by the skeleton_id column.
-        return HttpResponse(json.dumps({'error': 'Multiple rows for treenode with ID #%s found' % from_id}))
+        return JsonResponse({'error': 'Multiple rows for treenode with ID #%s found' % from_id})
     elif related_skeleton_count == 0:
-        return HttpResponse(json.dumps({'error': 'Failed to retrieve skeleton id of treenode #%s' % from_id}))
+        return JsonResponse({'error': 'Failed to retrieve skeleton id of treenode #%s' % from_id})
 
     if link_type == 'presynaptic_to':
         # Enforce only one presynaptic link
         presyn_links = TreenodeConnector.objects.filter(project=project, connector=to_connector, relation=relation)
         if (presyn_links.count() != 0):
-            return HttpResponse(json.dumps({'error': 'Connector %s does not have zero presynaptic connections.' % to_id}))
+            return JsonResponse({'error': 'Connector %s does not have zero presynaptic connections.' % to_id})
 
     # The object returned in case of success
     result = {}
@@ -76,16 +76,16 @@ def create_link(request, project_id=None):
         gapjunction_links = TreenodeConnector.objects.filter(project=project, connector=to_connector,
             relation__relation_name='gapjunction_with')
         if (gapjunction_links.count() != 0):
-            return HttpResponse(json.dumps({'error': 'Connector %s cannot have both a gap junction and a postsynaptic node.' % to_id}))
+            return JsonResponse({'error': 'Connector %s cannot have both a gap junction and a postsynaptic node.' % to_id})
 
     if link_type == 'gapjunction_with':
         # Enforce only two gap junction links
         gapjunction_links = TreenodeConnector.objects.filter(project=project, connector=to_connector, relation=relation)
         synapse_links = TreenodeConnector.objects.filter(project=project, connector=to_connector, relation__relation_name__endswith='synaptic_to')
         if (gapjunction_links.count() > 1):
-            return HttpResponse(json.dumps({'error': 'Connector %s can only have two gap junction connections.' % to_id}))
+            return JsonResponse({'error': 'Connector %s can only have two gap junction connections.' % to_id})
         if (synapse_links.count() != 0):
-            return HttpResponse(json.dumps({'error': 'Connector %s is part of a synapse, and gap junction can not be added.' % to_id}))
+            return JsonResponse({'error': 'Connector %s is part of a synapse, and gap junction can not be added.' % to_id})
 
     link = TreenodeConnector(
         user=request.user,
@@ -131,12 +131,12 @@ def delete_link(request, project_id=None):
 
     deleted_link_id = link.id
     link.delete()
-    return HttpResponse(json.dumps({
+    return JsonResponse({
         'link_id': deleted_link_id,
         'link_type_id': link.relation.id,
         'link_type': link.relation.relation_name,
         'result': 'Removed treenode to connector link'
-    }))
+    })
 
 def create_connector_link(project_id, user_id, treenode_id, skeleton_id,
         links, cursor=None):

@@ -16,7 +16,7 @@ from numpy.linalg import norm
 from math import sqrt
 
 from django.db import connection
-from django.http import HttpResponse
+from django.http import JsonResponse
 
 from catmaid.models import Relation, UserRole
 from catmaid.control.authentication import requires_user_role
@@ -368,7 +368,7 @@ def skeleton_graph(request, project_id=None):
         else:
             result = package
 
-    return HttpResponse(json.dumps(result))
+    return JsonResponse(result, safe=False)
 
 class Counts():
     def __init__(self):

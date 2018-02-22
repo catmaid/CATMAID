@@ -6,7 +6,7 @@ import six
 
 from django.contrib.auth.models import Permission
 from django.db import connection, transaction
-from django.http import HttpResponse
+from django.http import JsonResponse
 from django.test import TestCase, TransactionTestCase
 from django.test.client import Client
 from guardian.shortcuts import assign_perm
@@ -50,7 +50,7 @@ class TransactionTests(TransactionTestCase):
         def insert_user():
             User(username='matri', password='boop').save()
             raise Exception()
-            return HttpResponse(json.dumps({'should not': 'return this'}))
+            return JsonResponse({'should not': 'return this'})
 
         User.objects.all().delete()
         with self.assertRaises(Exception):

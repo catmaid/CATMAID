@@ -7,7 +7,7 @@ import yaml
 from guardian.shortcuts import get_objects_for_user
 
 from django.db import connection
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 
 from catmaid.models import (BrokenSlice, Class, ClientDatastore,
@@ -92,7 +92,11 @@ def list_project_tags(request, project_id=None):
     p = get_object_or_404(Project, pk=project_id)
     tags = [ str(t) for t in p.tags.all()]
     result = {'tags':tags}
-    return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="application/json")
+    return JsonResponse(result, json_dumps_params={
+        'sort_keys': True,
+        'indent': 4
+    })
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def update_project_tags(request, project_id=None, tags=None):
@@ -111,7 +115,7 @@ def update_project_tags(request, project_id=None, tags=None):
     p.tags.set(*tags)
 
     # Return an empty closing response
-    return HttpResponse(json.dumps(""), content_type="application/json")
+    return JsonResponse("", safe=False)
 
 def get_project_qs_for_user(user):
     """ Returns the query set of projects that are administrable and
@@ -250,8 +254,10 @@ def projects(request):
             'stackgroups': stackgroups
         })
 
-    return HttpResponse(json.dumps(result, sort_keys=True, indent=4),
-            content_type="application/json")
+    return JsonResponse(result, safe=False, json_dumps_params={
+        'sort_keys': True,
+        'indent': 4
+    })
 
 @api_view(['GET'])
 def export_projects(request):
@@ -400,11 +406,12 @@ def export_projects(request):
     if 'application/yaml' in return_content_type:
         # YAML return format matches information files discussed in
         # documentation: http://www.catmaid.org/en/stable/importing_data.html
-        return HttpResponse(yaml.dump(result),
-                content_type="application/yaml")
+        return JsonResponse(result, safe=False)
     else:
-        return HttpResponse(json.dumps(result, sort_keys=True, indent=4),
-                content_type="application/json")
+        return JsonResponse(result, safe=False, json_dumps_params={
+            'sort_keys': True,
+            'indent': 4
+        })
 
 def delete_projects_and_stack_data(projects):
     """Expects a list of projects (can be a queryset) to be deleted. All stacks

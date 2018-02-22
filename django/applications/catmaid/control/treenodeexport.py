@@ -8,7 +8,7 @@ import json
 import six
 
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import JsonResponse
 from django.db.models import Count
 
 from catmaid.control.authentication import requires_user_role
@@ -477,9 +477,9 @@ def export_connectors(request, project_id=None):
     if proc.failed():
         raise Exception("Something went wrong while queuing the export: " + \
                 proc.result)
-    json_data = json.dumps({'message': 'The connector archive is currently ' \
-            'exporting. You will be notified once it is ready for download.'})
-    return HttpResponse(json_data, content_type='application/json')
+    json_data = {'message': 'The connector archive is currently ' \
+            'exporting. You will be notified once it is ready for download.'}
+    return JsonResponse(json_data)
 
 @requires_user_role(UserRole.Browse)
 def export_treenodes(request, project_id=None):
@@ -491,6 +491,6 @@ def export_treenodes(request, project_id=None):
     if proc.failed():
         raise Exception("Something went wrong while queuing the export: " + \
                 proc.result)
-    json_data = json.dumps({'message': 'The treenode archive is currently ' \
-            'exporting. You will be notified once it is ready for download.'})
-    return HttpResponse(json_data, content_type='application/json')
+    json_data = {'message': 'The treenode archive is currently ' \
+            'exporting. You will be notified once it is ready for download.'}
+    return JsonResponse(json_data)

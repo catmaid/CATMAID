@@ -11,7 +11,7 @@ from networkx import connected_components
 from functools import partial
 
 from django.db.models import Count
-from django.http import HttpResponse
+from django.http import JsonResponse
 
 from catmaid.models import Treenode, Log, Relation, TreenodeConnector, \
         UserRole, Review
@@ -381,5 +381,6 @@ def evaluate_user(request, project_id=None):
     if min_nodes < 1:
         min_nodes = 1
 
-    return HttpResponse(json.dumps(_evaluate(project_id, user_id, start_date, end_date, max_gap, min_nodes)))
+    return JsonResponse(_evaluate(project_id, user_id, start_date, end_date,
+        max_gap, min_nodes), safe=False)
 

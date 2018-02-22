@@ -6,7 +6,7 @@ import json
 import logging
 
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 
@@ -591,7 +591,7 @@ def start_asynch_process( job ):
     result = process_crop_job.delay(job)
 
     # Create closing response
-    closingResponse = HttpResponse(json.dumps(""), content_type="application/json")
+    closingResponse = JsonResponse("", safe=False)
 
     return closingResponse
 

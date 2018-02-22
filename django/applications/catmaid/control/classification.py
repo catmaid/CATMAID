@@ -12,7 +12,7 @@ from django.db import connection
 from django.db.models import Q
 from django.conf import settings
 from django.forms.widgets import CheckboxSelectMultiple
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.views.generic.base import TemplateView
 from django.shortcuts import get_object_or_404, render
 from django.contrib.contenttypes.models import ContentType
@@ -340,7 +340,7 @@ def check_classification_setup(workspace_pid, class_map=None, relation_map=None)
 def rebuild_classification_setup_view(request, workspace_pid=None, project_id=None):
     setup_classification(workspace_pid, request.user)
     all_good = check_classification_setup(workspace_pid)
-    return HttpResponse(json.dumps({'all_good': all_good}))
+    return JsonResponse({'all_good': all_good})
 
 def setup_classification(workspace_pid, user):
     """ Tests which of the needed classes and relations is missing
@@ -947,7 +947,7 @@ def classification_instance_operation(request, workspace_pid=None, project_id=No
         cici.class_instance_b_id = node_parent_id
         cici.save()
 
-        return HttpResponse(json.dumps({'class_instance_id': node.id}))
+        return JsonResponse({'class_instance_id': node.id})
 
     def remove_node():
         """ Will remove a node.
@@ -985,7 +985,7 @@ def classification_instance_operation(request, workspace_pid=None, project_id=No
             else:
                 delete_node( node_to_delete[0] )
                 response = {'status': 1, 'message': 'Removed node %s successfully.' % params['id']}
-                return HttpResponse(json.dumps(response))
+                return JsonResponse(response)
         else:
             classification_instance_operation.res_on_err \
                 = 'Failed to delete node from instance table.'
@@ -995,7 +995,7 @@ def classification_instance_operation(request, workspace_pid=None, project_id=No
             else:
                 node_to_delete.delete()
                 response = {'status': 1, 'message': 'Removed node %s successfully.' % params['id']}
-                return HttpResponse(json.dumps(response))
+                return JsonResponse(response)
 
     def rename_node():
         """ Will rename a node.
@@ -1009,7 +1009,7 @@ def classification_instance_operation(request, workspace_pid=None, project_id=No
             node.name = params['title']
             node.save()
             response = {'status': 1, 'message': 'Renamed node %s successfully.' % params['id']}
-            return HttpResponse(json.dumps(response))
+            return JsonResponse(response)
 
     try:
         # Dispatch to operation
@@ -1228,7 +1228,7 @@ def export(request, workspace_pid=None, exclusion_tags=None):
             'tags': list(tags),
         }
 
-    return HttpResponse(json.dumps(graph_to_features), content_type="application/json")
+    return JsonResponse(graph_to_features)
 
 def get_graphs_to_features(workspace_pid=None):
     """ This view returns a JSON representation of all classifications in this
@@ -1746,4 +1746,4 @@ def export_ontology(request, workspace_pid):
     for o,features in ontologies_to_features(workspace_pid).items():
         feature_dict[o] = [f.name for f in features]
 
-    return HttpResponse(json.dumps(feature_dict), content_type="application/json")
+    return JsonResponse(feature_dict)

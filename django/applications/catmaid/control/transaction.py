@@ -2,7 +2,6 @@
 from __future__ import unicode_literals
 
 from django.db import connection
-from django.http import HttpResponse
 
 from catmaid.control.authentication import requires_user_role
 from catmaid.models import UserRole

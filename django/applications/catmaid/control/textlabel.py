@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import json
 import sys
 
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.db import connection
 
 from catmaid.models import UserRole, Textlabel, TextlabelLocation
@@ -72,7 +72,7 @@ def delete_textlabel(request, project_id=None):
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
 
-    return HttpResponse(json.dumps({'message': 'Success.'}))
+    return JsonResponse({'message': 'Success.'})
 
 
 @requires_user_role(UserRole.Annotate)
@@ -115,7 +115,7 @@ def create_textlabel(request, project_id=None):
         textlabel=new_label,
         location=Double3D(float(params['x']), float(params['y']), float(params['z']))).save()
 
-    return HttpResponse(json.dumps({'tid': new_label.id}))
+    return JsonResponse({'tid': new_label.id})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def textlabels(request, project_id=None):
@@ -189,7 +189,7 @@ def textlabels(request, project_id=None):
             else:
                 tl['scaling'] = 0
 
-        return HttpResponse(json.dumps(makeJSON_legacy_list(textlabels)))
+        return JsonResponse(makeJSON_legacy_list(textlabels), safe=False)
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))

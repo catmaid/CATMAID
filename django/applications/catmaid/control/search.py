@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 import json
 
-from django.http import HttpResponse
+from django.http import JsonResponse
 
 from catmaid.models import (UserRole, ClassInstance, ConnectorClassInstance,
         TreenodeClassInstance)
@@ -110,5 +110,5 @@ def search(request, project_id=None):
         })
 
 
-    return HttpResponse(json.dumps(rows))
+    return JsonResponse(rows, safe=False)
 

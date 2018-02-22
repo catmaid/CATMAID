@@ -1261,8 +1261,7 @@ def create_node_response(result, params, target_format, target_options, data_typ
             data = ujson.dumps(msgpack.unpackb(result, use_list=False))
         else:
             raise ValueError("Unknown data type: " + data_type)
-        return HttpResponse(data,
-            content_type='application/json')
+        return HttpResponse(data, content_type='application/json')
     elif target_format == 'msgpack':
         if data_type == 'json':
             data = msgpack.packb(result)

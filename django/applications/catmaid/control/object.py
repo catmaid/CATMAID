@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 import json
 
-from django.http import HttpResponse
+from django.http import JsonResponse
 
 from catmaid.models import UserRole, ClassInstanceClassInstance
 from catmaid.control.authentication import requires_user_role
@@ -41,4 +41,7 @@ def convert_annotations_to_networkx(request, project_id=None):
     g = get_annotation_graph( project_id )
     data = json_graph.node_link_data(g)
     json_return = json.dumps(data, sort_keys=True, indent=4)
-    return HttpResponse(json_return, content_type='application/json')
+    return JsonResponse(data, safe=False, json_dumps_params={
+        'sort_keys': True,
+        'indent': 4
+    })

@@ -8,7 +8,7 @@ from collections import defaultdict
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import connection
-from django.http import HttpResponse
+from django.http import JsonResponse
 
 from guardian.utils import get_anonymous_user
 
@@ -158,17 +158,15 @@ def reviewer_whitelist(request, project_id=None):
     """
     # Ignore anonymous user
     if request.user == get_anonymous_user() or not request.user.is_authenticated:
-        return HttpResponse(json.dumps({'success': "The reviewer whitelist " +
-                "of  the anonymous user won't be updated"}),
-                content_type='application/json')
+        return JsonResponse({'success': "The reviewer whitelist " +
+                "of  the anonymous user won't be updated"})
 
     if request.method == 'GET':
         # Retrieve whitelist
         whitelist = ReviewerWhitelist.objects.filter(project_id=project_id,
                 user_id=request.user.id).values('reviewer_id', 'accept_after')
         # DjangoJSONEncoder is required to properly encode datetime to ECMA-262
-        return HttpResponse(json.dumps(list(whitelist), cls=DjangoJSONEncoder),
-                content_type='application/json')
+        return JsonResponse(list(whitelist), safe=False)
 
     # Since this is a collections resource replacing all objects, PUT would be
     # correct, but POST is used for consistency with the rest of the API.
@@ -181,6 +179,6 @@ def reviewer_whitelist(request, project_id=None):
             accept_after=t) for r,t in six.iteritems(request.POST)]
         ReviewerWhitelist.objects.bulk_create(whitelist)
 
-        return HttpResponse(
-                json.dumps({'success': 'Updated review whitelist'}),
-                content_type='application/json')
+        return JsonResponse({
+            'success': 'Updated review whitelist'
+        })

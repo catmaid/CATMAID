@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 import json
 
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render
 
@@ -26,7 +26,7 @@ def get_latest_unread_date(request):
     except IndexError:
         latest_date = None
 
-    return HttpResponse(json.dumps({'latest_unread_date': latest_date}))
+    return JsonResponse({'latest_unread_date': latest_date})
 
 
 @login_required
@@ -52,7 +52,7 @@ def list_messages(request, project_id=None):
     crs = ChangeRequest.objects.filter(recipient = request.user, status = ChangeRequest.OPEN)
     messages += [{'id': -1, 'notification_count': len(crs)}]
 
-    return HttpResponse(json.dumps(makeJSON_legacy_list(messages)))
+    return JsonResponse(makeJSON_legacy_list(messages), safe=False)
 
 
 @login_required

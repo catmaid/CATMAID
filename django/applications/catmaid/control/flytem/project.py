@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 import json
-from django.http import HttpResponse
+from django.http import JsonResponse
 from catmaid.control.flytem.models import FlyTEMProjectStacks
 
 
@@ -34,5 +34,7 @@ def projects(request):
 
     response = [v for k,v in projects.items()]
 
-    return HttpResponse(json.dumps(response, sort_keys=True, indent=2),
-                        content_type="application/json")
+    return JsonResponse(response, safe=False, json_dumps_params={
+        'sort_keys': True,
+        'indent': 2
+    })

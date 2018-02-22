@@ -11,7 +11,7 @@ from collections import defaultdict
 from django.db import connection
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponse, JsonResponse, Http404
+from django.http import JsonResponse, Http404
 
 from rest_framework.decorators import api_view
 
@@ -140,7 +140,7 @@ def graphedge_list(request, project_id=None):
             connectordata[k]['posttreenode'] = v['posttreenode'][ v['post'].index( skeletonlist[1] ) ]
             result.append(connectordata[k])
 
-    return HttpResponse(json.dumps( result ), content_type='application/json')
+    return JsonResponse(result, safe=False)
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def one_to_many_synapses(request, project_id=None):
@@ -156,7 +156,7 @@ def one_to_many_synapses(request, project_id=None):
     relation_name = request.POST.get('relation') # expecting presynaptic_to, postsynaptic_to, or gapjunction_with
 
     rows = _many_to_many_synapses([skid], skids, relation_name, project_id)
-    return HttpResponse(json.dumps(rows))
+    return JsonResponse(rows, safe=False)
 
 
 @requires_user_role(UserRole.Browse)
@@ -175,7 +175,7 @@ def many_to_many_synapses(request, project_id=None):
     relation_name = request.POST.get('relation') # expecting presynaptic_to, postsynaptic_to, or gapjunction_with
 
     rows = _many_to_many_synapses(skids1, skids2, relation_name, project_id)
-    return HttpResponse(json.dumps(rows))
+    return JsonResponse(rows, safe=False)
 
 
 def _many_to_many_synapses(skids1, skids2, relation_name, project_id):
@@ -571,7 +571,7 @@ def connector_skeletons(request, project_id=None):
     """ See _connector_skeletons """
     connector_ids = get_request_list(request.POST, 'connector_ids', map_fn=int)
     cs = tuple(six.iteritems(_connector_skeletons(connector_ids, project_id)))
-    return HttpResponse(json.dumps(cs))
+    return JsonResponse(cs, safe=False)
 
 
 def _connector_associated_edgetimes(connector_ids, project_id):
@@ -624,7 +624,8 @@ def connector_associated_edgetimes(request, project_id=None):
             )
         return millis
 
-    return HttpResponse(json.dumps(_connector_associated_edgetimes(connector_ids, project_id), default=default))
+    return JsonResponse(_connector_associated_edgetimes(connector_ids,
+        project_id), safe=False, json_dumps_params={'default': default})
 
 @requires_user_role(UserRole.Annotate)
 def create_connector(request, project_id=None):
@@ -637,7 +638,7 @@ def create_connector(request, project_id=None):
 
     parsed_confidence = int(query_parameters['confidence'])
     if parsed_confidence < 1 or parsed_confidence > 5:
-        return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
+        return JsonResponse({'error': 'Confidence not in range 1-5 inclusive.'})
 
     cursor = connection.cursor()
 
@@ -722,7 +723,7 @@ def list_completed(request, project_id):
         to_date = datetime.strptime(to_date, '%Y%m%d')
 
     response = _list_completed(project_id, completed_by, from_date, to_date)
-    return HttpResponse(json.dumps(response), content_type="application/json")
+    return JsonResponse(response, safe=False)
 
 
 def _list_completed(project_id, completed_by=None, from_date=None, to_date=None):
@@ -886,7 +887,7 @@ def connectors_info(request, project_id):
                   row[11], row[12], row[13], row[14],
                   (row[15], row[16], row[17])) for row in cursor.fetchall())
 
-    return HttpResponse(json.dumps(rows))
+    return JsonResponse(rows, safe=False)
 
 @api_view(['GET'])
 @requires_user_role([UserRole.Browse])
@@ -952,18 +953,18 @@ def connector_user_info(request, project_id):
 
     # We expect at least one result node.
     if not cursor.rowcount:
-        return HttpResponse(json.dumps({
+        return JsonResponse({
             'error': 'No treenode connector exists for treenode %s, connector %s, relation %s' %
-            (treenode_id, connector_id, relation_id)}))
+            (treenode_id, connector_id, relation_id)})
 
     # Build result. Because there is no uniqueness restriction on treenode
     # connector edges, even with the same relation, the response must handle
     # multiple rows.
-    return HttpResponse(json.dumps([{
+    return JsonResponse([{
         'user': info[1],
         'creation_time': str(info[2].isoformat()),
         'edition_time': str(info[3].isoformat()),
-    } for info in cursor.fetchall()]))
+    } for info in cursor.fetchall()], safe=False)
 
 @api_view(['GET'])
 @requires_user_role([UserRole.Browse])

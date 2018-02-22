@@ -5,7 +5,7 @@ import json
 import os.path
 
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.core.cache import cache
 
@@ -47,7 +47,7 @@ def get_roi_info(request, project_id=None, roi_id=None):
         'stack_id': roi.stack.id,
         'project_id': roi.project.id}
 
-    return HttpResponse(json.dumps(info))
+    return JsonResponse(info)
 
 def _add_roi(project_id, stack_id, user_id, x_min, x_max, y_min, y_max, z,
              zoom_level, rotation_cw):
@@ -101,7 +101,7 @@ def add_roi(request, project_id=None):
     # Build result data set
     status = {'status': "Created new ROI with ID %s." % roi.id}
 
-    return HttpResponse(json.dumps(status))
+    return JsonResponse(status)
 
 @requires_user_role(UserRole.Annotate)
 def link_roi_to_class_instance(request, project_id=None, relation_id=None,
@@ -140,7 +140,7 @@ def link_roi_to_class_instance(request, project_id=None, relation_id=None,
     # Build result data set
     status = {'status': "Created new ROI with ID %s." % roi.id}
 
-    return HttpResponse(json.dumps(status))
+    return JsonResponse(status)
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def remove_roi_link(request, project_id=None, roi_id=None):
@@ -173,7 +173,7 @@ def remove_roi_link(request, project_id=None, roi_id=None):
             "itself has not been deleted, because there are still " \
             "links to it." % roi_id}
 
-    return HttpResponse(json.dumps(status))
+    return JsonResponse(status)
 
 def create_lock_name(roi_id):
     """ Creates a name for the image creation lock.

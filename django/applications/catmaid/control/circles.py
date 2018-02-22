@@ -11,7 +11,7 @@ from functools import partial
 import math
 
 from django.db import connection
-from django.http import HttpResponse
+from django.http import JsonResponse
 
 from catmaid.models import UserRole
 from catmaid.control.authentication import requires_user_role
@@ -89,7 +89,7 @@ def circles_of_hell(request, project_id=None):
         all_circles = all_circles.union(next_circle)
 
     skeleton_ids = tuple(all_circles - first_circle)
-    return HttpResponse(json.dumps([skeleton_ids, _neuronnames(skeleton_ids, project_id)]))
+    return JsonResponse([skeleton_ids, _neuronnames(skeleton_ids, project_id)], safe=False)
 
 
 @requires_user_role(UserRole.Browse)
@@ -166,7 +166,7 @@ def find_directed_paths(request, project_id=None):
                     for path in nx.all_simple_paths(graph, source, target, cutoff=(path_length -1)):
                         all_paths.append(path)
 
-    return HttpResponse(json.dumps(all_paths))
+    return JsonResponse(all_paths, safe=False)
 
 
 @requires_user_role(UserRole.Browse)
@@ -235,5 +235,5 @@ def find_directed_path_skeletons(request, project_id=None):
     for i in range(1, max_n_hops):
         skeleton_ids = skeleton_ids.union(origin_fronts[i].intersection(target_fronts[max_n_hops -i]))
 
-    return HttpResponse(json.dumps(tuple(skeleton_ids)))
+    return JsonResponse(tuple(skeleton_ids), safe=False)
 

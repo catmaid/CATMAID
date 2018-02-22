@@ -6,7 +6,7 @@ import networkx as nx
 from networkx.readwrite import json_graph
 import six
 
-from django.http import HttpResponse
+from django.http import JsonResponse
 from django.db.models import Count
 
 from catmaid.models import Treenode, TreenodeConnector, UserRole
@@ -103,8 +103,10 @@ def export_wiring_diagram_nx(request, project_id=None):
         g.add_edge( e['source'], e['target'], {'number_of_connector': e['number_of_connector'] } )
 
     data = json_graph.node_link_data(g)
-    json_return = json.dumps(data, sort_keys=True, indent=4)
-    return HttpResponse(json_return, content_type='application/json')
+    return JsonResponse(data, safe=False, json_dumps_params={
+        'sort_keys': True,
+        'indent': 4
+    })
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -130,5 +132,7 @@ def export_wiring_diagram(request, project_id=None):
         'data':{'nodes':nodes_and_edges['nodes'],'edges':nodes_and_edges['edges']}
     }
 
-    json_return = json.dumps(data, sort_keys=True, indent=4)
-    return HttpResponse(json_return, content_type='application/json')
+    return JsonResponse(data, json_dumps_params={
+        'sort_keys': True,
+        'indent': 4
+    })

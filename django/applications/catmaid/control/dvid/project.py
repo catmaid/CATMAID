@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 import json
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import JsonResponse
 from catmaid.control.dvid.models import DVIDProjectStacks
 
 
@@ -41,5 +41,7 @@ def projects(request):
         if dvid_project['action'] or settings.DVID_SHOW_NONDISPLAYABLE_REPOS:
             projects.append(dvid_project)
 
-    return HttpResponse(json.dumps(projects, sort_keys=True, indent=2),
-                        content_type="application/json")
+    return JsonResponse(projects, safe=False, json_dumps_params={
+        'sort_keys': True,
+        'indent': 2
+    })

@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 import json
 
-from django.http import HttpResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 
 from catmaid.models import UserRole, Project
@@ -57,4 +57,5 @@ def export_jsongraph(request, project_id):
            'label': str(props['c']) if props['directed'] else None,
            'directed': props['directed'] })
 
-    return HttpResponse(json.dumps(json_graph.node_link_data(newgraph), indent=2), content_type='application/json')
+    return JsonResponse(json_graph.node_link_data(newgraph), safe=False,
+            json_dumps_params={'indent': 2})

@@ -10,7 +10,7 @@ from random import random
 
 from guardian.utils import get_anonymous_user
 
-from django.http import HttpResponse
+from django.http import JsonResponse
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import User
 
@@ -48,7 +48,7 @@ def user_list(request):
             "last_name": u.last_name,
             "color": (up.color.r, up.color.g, up.color.b) })
 
-    return HttpResponse(json.dumps(result), content_type='application/json')
+    return JsonResponse(result, safe=False)
 
 @user_passes_test(access_check)
 def user_list_datatable(request):
@@ -125,7 +125,7 @@ def user_list_datatable(request):
             user.id,
         ]]
 
-    return HttpResponse(json.dumps(response), content_type='application/json')
+    return JsonResponse(response)
 
 
 initial_colors = ((1, 0, 0, 1),
@@ -166,8 +166,8 @@ def update_user_profile(request):
     """
     # Ignore anonymous user
     if request.user == get_anonymous_user() or not request.user.is_authenticated:
-        return HttpResponse(json.dumps({'success': "The user profile of the " +
-                "anonymous user won't be updated"}), content_type='application/json')
+        return JsonResponse({'success': "The user profile of the " +
+                "anonymous user won't be updated"})
 
     for var in []:
         request_var = request.POST.get(var['name'], None)
@@ -179,8 +179,7 @@ def update_user_profile(request):
     # Save user profile
     request.user.userprofile.save()
 
-    return HttpResponse(json.dumps({'success': 'Updated user profile'}),
-            content_type='application/json')
+    return JsonResponse({'success': 'Updated user profile'})
 
 @user_passes_test(not_anonymous)
 def change_password(request, **kwargs):

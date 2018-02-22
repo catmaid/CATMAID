@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 import json
-from django.http import HttpResponse
+from django.http import JsonResponse
 
 from guardian.utils import get_anonymous_user
 
@@ -19,7 +19,7 @@ def reviewer_whitelist(request, project_id=None):
     if request.method == 'GET':
         return HttpResponse(json.dumps([]), content_type='application/json')
     else:
-        return HttpResponse(
-                json.dumps({'success': 'Updating the review whitelist is not ' +
-                            'supported for FlyTEM stacks at this time'}),
-                content_type='application/json')
+        return JsonResponse({
+            'success': 'Updating the review whitelist is not ' +
+                       'supported for FlyTEM stacks at this time'
+        })

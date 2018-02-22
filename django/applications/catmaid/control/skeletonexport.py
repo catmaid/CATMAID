@@ -777,7 +777,10 @@ def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, w
     with_time = request.GET.get("with_time", "false") == "true"
     nodes, connectors, tags = _compact_arbor(project_id, skeleton_id,
             with_nodes, with_connectors, with_tags, with_time)
-    return HttpResponse(json.dumps((nodes, connectors, tags), separators=(',', ':')))
+    return JsonResponse((nodes, connectors, tags), safe=False,
+            json_dumps_params={
+                'separators': (',', ':')
+            })
 
 
 def _treenode_time_bins(skeleton_id=None):
@@ -794,7 +797,9 @@ def _treenode_time_bins(skeleton_id=None):
 @requires_user_role([UserRole.Browse])
 def treenode_time_bins(request, project_id=None, skeleton_id=None):
     minutes = _treenode_time_bins(skeleton_id)
-    return HttpResponse(json.dumps(minutes, separators=(',', ':')))
+    return JsonResponse(minutes, safe=False, json_dumps_params={
+        'separators': (',', ':')
+    })
 
 
 @requires_user_role([UserRole.Browse])
@@ -802,7 +807,10 @@ def compact_arbor_with_minutes(request, project_id=None, skeleton_id=None, with_
     nodes, connectors, tags = _compact_arbor(project_id, skeleton_id,
             with_nodes, with_connectors, with_tags)
     minutes = _treenode_time_bins(skeleton_id)
-    return HttpResponse(json.dumps((nodes, connectors, tags, minutes), separators=(',', ':')))
+    return JsonResponse((nodes, connectors, tags, minutes), safe=False,
+            json_dumps_parms={
+                'separators': (',', ':')
+            })
 
 
 # DEPRECATED. Will be removed.
@@ -908,7 +916,14 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
 # DEPRECATED. Will be removed.
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_for_3d_viewer(request, project_id=None, skeleton_id=None):
-    return HttpResponse(json.dumps(_skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=request.POST.get('with_connectors', True), lean=int(request.POST.get('lean', 0)), all_field=request.POST.get('all_fields', False)), separators=(',', ':')))
+    return JsonResponse(_skeleton_for_3d_viewer(skeleton_id, project_id,
+            with_connectors=request.POST.get('with_connectors', True),
+            lean=int(request.POST.get('lean', 0)),
+            all_field=request.POST.get('all_fields', False)),
+            safe=False,
+            json_dumps_params={
+                'separators': (',', ':')
+            })
 
 # DEPRECATED. Will be removed.
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -927,8 +942,12 @@ def skeleton_with_metadata(request, project_id=None, skeleton_id=None):
             )
         return millis
 
-    return HttpResponse(json.dumps(_skeleton_for_3d_viewer(skeleton_id, project_id, \
-        with_connectors=True, lean=0, all_field=True), separators=(',', ':'), default=default))
+    return JsonResponse(_skeleton_for_3d_viewer(skeleton_id, project_id, \
+        with_connectors=True, lean=0, all_field=True), safe=True,
+        json_dumps_params={
+            'separators': (',', ':'),
+            'default': default
+        })
 
 def _measure_skeletons(skeleton_ids):
     if not skeleton_ids:
@@ -1084,7 +1103,7 @@ def measure_skeletons(request, project_id=None):
     skeleton_ids = tuple(int(v) for k,v in six.iteritems(request.POST) if k.startswith('skeleton_ids['))
     def asRow(skid, sk):
         return (skid, int(sk.raw_cable), int(sk.smooth_cable), sk.n_pre, sk.n_post, len(sk.nodes), sk.n_branch, sk.n_ends, sk.principal_branch_cable)
-    return HttpResponse(json.dumps([asRow(skid, sk) for skid, sk in _measure_skeletons(skeleton_ids).iteritems()]))
+    return JsonResponse([asRow(skid, sk) for skid, sk in _measure_skeletons(skeleton_ids).iteritems()], safe=False)
 
 
 def _skeleton_neuroml_cell(skeleton_id, preID, postID):
@@ -1461,8 +1480,7 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None):
         subarbor_node_id = None
 
     segments = _export_review_skeleton(project_id, skeleton_id, subarbor_node_id)
-    return HttpResponse(json.dumps(segments, cls=DjangoJSONEncoder),
-            content_type='application/json')
+    return JsonResponse(segments, safe=False)
 
 @requires_user_role(UserRole.Browse)
 def skeleton_connectors_by_partner(request, project_id):
@@ -1495,7 +1513,7 @@ def skeleton_connectors_by_partner(request, project_id):
         relation_name = 'presynaptic_to' if row[1] == pre else 'postsynaptic_to'
         partners[row[0]][relation_name][row[2]].append(row[3])
 
-    return HttpResponse(json.dumps(partners))
+    return JsonResponse(partners)
 
 
 @requires_user_role(UserRole.Browse)
@@ -1506,7 +1524,9 @@ def export_skeleton_reviews(request, project_id=None, skeleton_id=None):
     for row in Review.objects.filter(skeleton_id=int(skeleton_id)).values_list('treenode_id', 'reviewer_id', 'review_time').iterator():
         m[row[0]].append(row[1:3])
 
-    return HttpResponse(json.dumps(m, separators=(',', ':'), cls=DjangoJSONEncoder))
+    return JsonResponse(m, safe=False, json_dumps_params={
+        'separators': (',', ':')
+    })
 
 @requires_user_role(UserRole.Browse)
 def partners_by_connector(request, project_id=None):
@@ -1549,7 +1569,7 @@ GROUP BY skeleton_id
 HAVING count(*) %s 1
 ''' % (",".join(str(row[0]) for row in cursor.fetchall()), ">" if 0 == size_mode else "="))
 
-    return HttpResponse(json.dumps(tuple(row[0] for row in cursor.fetchall())))
+    return JsonResponse(tuple(row[0] for row in cursor.fetchall()), safe=False)
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
@@ -1583,4 +1603,4 @@ def neuroglancer_skeleton(request, project_id=None, skeleton_id=None):
         struct.pack_into('2I', buff, offset, *e)
         offset += 8
 
-    return HttpResponse(buff)
+    return JsonResponse(buff, safe=False)

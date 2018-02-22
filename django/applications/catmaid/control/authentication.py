@@ -21,7 +21,7 @@ from django.contrib.auth import authenticate, logout, login
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.forms import UserCreationForm
 from django.db import connection
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import _get_queryset, render
 
@@ -293,7 +293,7 @@ def get_object_permissions(request, ci_id):
         'can_edit': can_edit,
     }
 
-    return HttpResponse(json.dumps(permissions))
+    return JsonResponse(permissions)
 
 def can_edit_class_instance_or_fail(user, ci_id, name='object'):
     """ Returns true if a) the class instance is not locked or b) if the class
@@ -433,7 +433,7 @@ def all_usernames(request, project_id=None):
     cursor.execute('''
     SELECT id, username FROM auth_user WHERE id != -1 ORDER BY username DESC
     ''')
-    return HttpResponse(json.dumps(cursor.fetchall()))
+    return JsonResponse(cursor.fetchall(), safe=False)
 
 def register(request):
     # Return right away if user registration is not enabled

@@ -9,7 +9,7 @@ from catmaid.models import UserRole, Project, Volume
 from catmaid.serializers import VolumeSerializer
 
 from django.db import connection
-from django.http import HttpResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 
 from rest_framework.decorators import api_view
@@ -481,6 +481,6 @@ def intersects(request, project_id, volume_id):
 
     result = cursor.fetchone()
 
-    return HttpResponse(json.dumps({
+    return JsonResponse({
         'intersects': result[0]
-    }), content_type='application/json')
+    })

@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import json
 import six
 
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 
 from catmaid.apps import get_system_user
 from catmaid.control.authentication import requires_user_role
@@ -67,13 +67,14 @@ def check_tracing_setup_view(request, project_id=None):
     initialize = (len(mc) == len(needed_classes)) and \
                  (len(mr) == len(needed_relations))
     can_administer = request.user.has_perm('can_administer', project_id)
-    return HttpResponse(json.dumps(
-        {'needs_setup': not all_good,
-         'missing_classes': mc,
-         'missing_relations': mr,
-         'missing_classinstances': mci,
-         'has_needed_permissions': can_administer,
-         'initialize': initialize}))
+    return JsonResponse({
+        'needs_setup': not all_good,
+        'missing_classes': mc,
+        'missing_relations': mr,
+        'missing_classinstances': mci,
+        'has_needed_permissions': can_administer,
+        'initialize': initialize
+    })
 
 def check_tracing_setup(project_id, opt_class_map=None, opt_relation_map=None,
         check_root_ci=True):
@@ -129,7 +130,7 @@ def check_tracing_setup_detailed(project_id, opt_class_map=None,
 def rebuild_tracing_setup_view(request, project_id=None):
     setup_tracing(project_id, request.user)
     all_good = check_tracing_setup(project_id)
-    return HttpResponse(json.dumps({'all_good': all_good}))
+    return JsonResponse({'all_good': all_good})
 
 @requires_user_role([UserRole.Browse])
 def validate_tracing_setup(request, project_id):

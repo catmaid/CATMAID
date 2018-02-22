@@ -13,7 +13,7 @@ from numpy import subtract
 from numpy.linalg import norm
 
 from django.db import connection
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 
 from rest_framework.decorators import api_view
 

@@ -8,7 +8,7 @@ import json
 import logging
 
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 
 from ..models import UserRole, Project, Stack, ProjectStack, \
@@ -104,7 +104,11 @@ def list_stack_tags(request, project_id=None, stack_id=None):
     s = get_object_or_404(Stack, pk=stack_id)
     tags = [str(t) for t in s.tags.all()]
     result = {'tags': tags}
-    return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="application/json")
+    return JsonResponse(result, json_dumps_params={
+        'sort_keys': True,
+        'indent': 4
+    })
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def update_stack_tags(request, project_id=None, stack_id=None, tags=None):
@@ -123,12 +127,15 @@ def update_stack_tags(request, project_id=None, stack_id=None, tags=None):
     s.tags.set(*tags)
 
     # Return an empty closing response
-    return HttpResponse(json.dumps(""), content_type="application/json")
+    return JsonResponse("", safe=False)
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stack_info(request, project_id=None, stack_id=None):
     result = get_stack_info(project_id, stack_id)
-    return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="application/json")
+    return JsonResponse(result, safe=False, json_dumps_params={
+        'sort_keys': True,
+        'indent': 4
+    })
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stacks(request, project_id=None):
@@ -143,5 +150,7 @@ def stacks(request, project_id=None):
             'pid': project.id,
             'title': stack.title,
             'comment': stack.comment})
-    return HttpResponse(json.dumps(info, sort_keys=True, indent=4),
-                        content_type="application/json")
+    return JsonResponse(info, safe=False, json_dumps_params={
+        'sort_keys': True,
+        'indent': 4
+    })

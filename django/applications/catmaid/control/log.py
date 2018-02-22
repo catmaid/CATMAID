@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import json
 import logging
 
-from django.http import HttpResponse
+from django.http import JsonResponse
 from django.contrib.auth.decorators import user_passes_test
 
 from catmaid.models import UserRole, Log, ReviewerWhitelist
@@ -31,10 +31,10 @@ def log_frontent_event(request, level='info'):
         status = "error"
         status_msg = str(e)
 
-    return HttpResponse(json.dumps({
+    return JsonResponse({
         'status': status,
         'message': status_msg
-    }))
+    })
 
 def log(logger, level, msg):
     # Cancel silently if handler is not present
@@ -109,4 +109,4 @@ def list_logs(request, project_id=None):
             log.freetext
         ]]
 
-    return HttpResponse(json.dumps(response))
+    return JsonResponse(response)

@@ -9,7 +9,7 @@ import six
 from collections import defaultdict
 
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import JsonResponse
 
 from catmaid.fields import Double3D
 from catmaid.models import Log, NeuronSearch, CELL_BODY_CHOICES, \
@@ -30,7 +30,7 @@ def identity(x):
     return x
 
 def get_catmaid_version(request):
-    return HttpResponse(json.dumps({'SERVER_VERSION': settings.VERSION}), content_type='application/json')
+    return JsonResponse({'SERVER_VERSION': settings.VERSION})
 
 class parsedict(dict):
     """This is a simple wrapper, needed primarily by the request list
@@ -161,8 +161,7 @@ def json_error_response(message):
     with the key 'error' set to an error message.  This is a
     helper method to return such a structure:
     """
-    return HttpResponse(json.dumps({'error': message}),
-                        content_type='application/json')
+    return JsonResponse({'error': message})
 
 
 def order_neurons(neurons, order_by=None):

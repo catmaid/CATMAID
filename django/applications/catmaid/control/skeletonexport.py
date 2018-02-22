@@ -808,7 +808,7 @@ def compact_arbor_with_minutes(request, project_id=None, skeleton_id=None, with_
             with_nodes, with_connectors, with_tags)
     minutes = _treenode_time_bins(skeleton_id)
     return JsonResponse((nodes, connectors, tags, minutes), safe=False,
-            json_dumps_parms={
+            json_dumps_params={
                 'separators': (',', ':')
             })
 

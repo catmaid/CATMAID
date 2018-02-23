@@ -101,15 +101,18 @@ def get_review_status(skeleton_ids, project_id=None, whitelist_id=False,
 
     skeletons = {}
 
-    skids_string = ','.join(map(str, skeleton_ids))
-
     # Count nodes of each skeleton
     cursor.execute('''
-    SELECT skeleton_id, count(skeleton_id)
-    FROM treenode
-    WHERE skeleton_id IN (%s)
-    GROUP BY skeleton_id
-    ''' % skids_string)
+        SELECT skeleton_id, count(*)
+        FROM treenode t
+        JOIN (
+            SELECT * FROM UNNEST(%(skeleton_ids)s::bigint[])
+        ) query_skeleton(id)
+        ON t.skeleton_id = query_skeleton.id
+        GROUP BY skeleton_id
+    ''', {
+        'skeleton_ids': list(skeleton_ids)
+    })
     for row in cursor.fetchall():
         skeletons[row[0]] = [row[1], 0]
 
@@ -138,6 +141,7 @@ def get_review_status(skeleton_ids, project_id=None, whitelist_id=False,
         # of reviewer.
         user_filter = ""
 
+    skids_string = ','.join(map(str, skeleton_ids))
     cursor.execute('''
     SELECT skeleton_id, count(*)
     FROM (SELECT skeleton_id, treenode_id

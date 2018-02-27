@@ -105,7 +105,7 @@
         var table = $('<table/>');
         $('#search-results').append(table);
         var tbody = $('<tbody/>');
-        tbody.append('<tr><th></th><th>ID</th><th>Name</th><th>Class</th><th>Action</th><th></th></tr>');
+        tbody.append('<tr><th></th><th>ID</th><th>Name</th><th>Type</th><th>Action</th><th></th></tr>');
         table.append(tbody);
         var action = function(type) {
           return function() {

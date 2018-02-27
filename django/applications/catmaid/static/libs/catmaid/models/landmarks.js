@@ -163,6 +163,29 @@
         create_non_existing_groups: CATMAID.tools.getDefined(create_non_existing_groups, true),
         create_non_existing_landmarks: CATMAID.tools.getDefined(create_non_existing_landmarks, true)
       });
+    },
+
+    /**
+     * Return a bounding box for a passed in landmark group.
+     */
+    getBoundingBox: function(landmarkGroup) {
+      // Find bounding box around locations
+      let min = { x: Infinity, y: Infinity, z: Infinity };
+      let max = { x: -Infinity, y: -Infinity, z: -Infinity };
+      let locations = landmarkGroup.locations;
+      for (var i=0, imax=locations.length; i<imax; ++i) {
+        let loc = locations[i];
+        if (loc.x < min.x) min.x = loc.x;
+        if (loc.y < min.y) min.y = loc.y;
+        if (loc.z < min.z) min.z = loc.z;
+        if (loc.x > max.x) max.x = loc.x;
+        if (loc.y > max.y) max.y = loc.y;
+        if (loc.z > max.z) max.z = loc.z;
+      }
+      return {
+        min: min,
+        max: max
+      };
     }
 
   };

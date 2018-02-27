@@ -97,6 +97,11 @@ def get_review_status(skeleton_ids, project_id=None, whitelist_id=False,
     if not skeleton_ids:
         raise ValueError("Need at least one skeleton ID")
 
+    # We need to make sure skeletons are provides as a list like type for
+    # PsycoPg.
+    if type(skeleton_ids) not in (list, tuple):
+        skeleton_ids = list(skeleton_ids)
+
     cursor = connection.cursor()
 
     skeletons = {}
@@ -116,40 +121,52 @@ def get_review_status(skeleton_ids, project_id=None, whitelist_id=False,
     for row in cursor.fetchall():
         skeletons[row[0]] = [row[1], 0]
 
-    query_joins = ""
+    query_params = {
+        'project_id': project_id,
+        'skeleton_ids': skeleton_ids
+    }
+
+    query_joins = []
+    extra_conditions = ''
     # Optionally, add a filter
     if whitelist_id:
-        query_joins = """
-                JOIN reviewer_whitelist wl
-                  ON (wl.user_id = %s AND wl.project_id = %s
-                      AND r.reviewer_id = wl.reviewer_id
-                      AND r.review_time >= wl.accept_after)
-                  """ % (whitelist_id, project_id)
-        user_filter = ""
+        query_params['whitelist_id'] = whitelist_id
+        query_joins.append("""
+            JOIN reviewer_whitelist wl
+                ON (wl.user_id = %(whitelist_id)s AND wl.project_id = %(project_id)s
+                    AND r.reviewer_id = wl.reviewer_id
+                    AND r.review_time >= wl.accept_after)
+        """)
     elif user_ids:
-        # Count number of nodes reviewed by a certain set of users,
-        # per skeleton.
-        user_filter = " AND r.reviewer_id IN (%s)" % \
-            ",".join(map(str, user_ids))
+        # Count number of nodes reviewed by a certain set of users, per
+        # skeleton.
+        query_params['user_ids'] = list(user_ids)
+        query_joins.append("""
+            JOIN (
+                SELECT * FROM UNNEST(%(user_ids)s::int[])
+            ) allowed_user(id)
+                ON r.reviewer_id = allowed_user.id
+        """)
     elif excluding_user_ids:
         # Count number of nodes reviewed by all users excluding the
         # specified ones, per skeleton.
-        user_filter = " AND r.reviewer_id NOT IN (%s)" % \
-            ",".join(map(str, excluding_user_ids))
-    else:
-        # Count total number of reviewed nodes per skeleton, regardless
-        # of reviewer.
-        user_filter = ""
+        query_params['excluding_user_ids'] = list(excluding_user_ids)
+        extra_conditions = "WHERE NOT (r.reviewer_id = ANY (%(excluding_user_ids)s::int[]))"
 
-    skids_string = ','.join(map(str, skeleton_ids))
     cursor.execute('''
     SELECT skeleton_id, count(*)
     FROM (SELECT skeleton_id, treenode_id
-          FROM review r %s
-          WHERE skeleton_id IN (%s)%s
-          GROUP BY skeleton_id, treenode_id) AS sub
+          FROM review r
+          {}
+          JOIN (
+              SELECT * FROM UNNEST(%(skeleton_ids)s::bigint[])
+          ) query_skeleton(id)
+            ON r.skeleton_id = query_skeleton.id
+          GROUP BY skeleton_id, treenode_id
+          {}
+    ) AS sub
     GROUP BY skeleton_id
-    ''' % (query_joins, skids_string, user_filter))
+    '''.format('\n'.join(query_joins), extra_conditions), query_params)
     for row in cursor.fetchall():
         skeletons[row[0]][1] = row[1]
 

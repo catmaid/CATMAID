@@ -4,6 +4,12 @@
 
 ### Features and enhancements
 
+Landmarks:
+
+- Support transformation of nodes that cross space between landmark groups and
+  even reach into target groups. This allows to e.g. transform skeletons that
+  cross the midline. Doing this is enabled by default, but can be disabled
+  throug the "Interpolate between groups" option.
 
 
 ### Bug fixes

@@ -74,6 +74,15 @@ STYLESHEETS['catmaid'] = {
             'media': 'screen,projection',
         }
     }
+STYLESHEETS['neuroglancer'] = {
+        'source_filenames': (
+            'libs/neuroglancer/styles.css',
+        ),
+        'output_filename': 'css/neuroglancer.css',
+        'extra_context': {
+            'media': 'screen,projection',
+        }
+    }
 
 
 libraries_js = OrderedDict([
@@ -137,7 +146,10 @@ for k, v in six.iteritems(libraries_js):
 # Some libraries expect their own JavaScript files to be available under a
 # particular name. Therefore, we can't use pipeline with them and include them
 # separately. Entries follow the same pattern as above: key - path.
-non_pipeline_js = {}
+non_pipeline_js = {
+    'neuroglancer-worker': 'libs/neuroglancer/chunk_worker.bundle.js',
+    'neuroglancer-main': 'libs/neuroglancer/main.bundle.js',
+}
 
 # Even non-pipeline files have to be made known to pipeline, because it takes
 # care of collecting them into the STATIC_ROOT directory.

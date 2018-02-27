@@ -51,7 +51,9 @@
     {% endfor %}
 
     {% for f in NON_COMPRESSED_FILES %}
-      <script type="application/javascript" src="{{ STATIC_URL }}{{ f }}"></script>
+      {% if 'neuroglancer' not in f %}
+        <script type="application/javascript" src="{{ STATIC_URL }}{{ f }}"></script>
+      {% endif %}
     {% endfor %}
 
     <!-- Standalone static extension files -->

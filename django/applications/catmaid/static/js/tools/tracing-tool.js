@@ -1348,6 +1348,10 @@
      */
     const createNodeZMover = function (step) {
       return function (e) {
+        const tracingOverlay = activeStackViewer.getLayersOfType(CATMAID.TracingLayer)[0].tracingOverlay;
+
+        // force SkeletonAnnotation.atn's attributes (x and y coords) to update
+        tracingOverlay.activateNode(tracingOverlay.nodes[SkeletonAnnotations.getActiveNodeId()]);
         const activeNode = SkeletonAnnotations.atn;
 
         if (!CATMAID.mayEdit()) {
@@ -1359,8 +1363,6 @@
           CATMAID.statusBar.replaceLast("Stack viewer must be in the same z-slice to move node #" + activeNode.id);
           return Promise.resolve();
         }
-
-        const tracingOverlay = activeStackViewer.getLayersOfType(CATMAID.TracingLayer)[0].tracingOverlay;
 
         const newZs = activeStackViewer.validZDistanceByStep(activeStackViewer.z, step) + activeStackViewer.z;
         const newZp = activeStackViewer.primaryStack.stackToProjectZ(newZs, activeNode.y, activeNode.x);
@@ -1387,7 +1389,6 @@
 
         return CATMAID.commands.execute(command)
           .then(function() {
-            activeNode.z = newZs;
             tracingOverlay.moveTo(
               newZp,
               activeStackViewer.primaryStack.stackToProjectY(newZs, activeStackViewer.y, activeStackViewer.x),

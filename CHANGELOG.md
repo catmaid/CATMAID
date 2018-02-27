@@ -11,6 +11,10 @@ Landmarks:
   cross the midline. Doing this is enabled by default, but can be disabled
   throug the "Interpolate between groups" option.
 
+3D Viewer:
+
+- PNG and SVG exports offer now a filename input field.
+
 
 ### Bug fixes
 

@@ -264,7 +264,10 @@
    * new dimensions,execute the given function and return to the original
    * dimension afterwards.
    */
-  WebGLApplication.prototype.askForDimensions = function(title, fn, block) {
+  WebGLApplication.prototype.askForDimensions = function(title, defaultFileName, fn, block) {
+    if (!defaultFileName) {
+      defaultFileName = "catmaid-3d-viewer.png";
+    }
     var dialog = new CATMAID.OptionsDialog(title);
     dialog.appendMessage("Please adjust the dimensions to your liking. They " +
         "default to the current size of the 3D viewer");
@@ -272,6 +275,8 @@
         "image-width", this.space.canvasWidth);
     var imageHeightField = dialog.appendField("Image height (px): ",
         "image-height", this.space.canvasHeight);
+    var fileNameField = dialog.appendField("File name: ",
+        "filename", defaultFileName);
 
     dialog.onOK = handleOK.bind(this);
     dialog.show(350, "auto", true);
@@ -287,6 +292,7 @@
       try {
         var width = parseInt(imageWidthField.value);
         var height = parseInt(imageHeightField.value);
+        let fileName = fileNameField.value.trim();
 
         if (!width || !height) {
           throw new CATMAID.ValueError("Please use valid width and height values");
@@ -302,7 +308,7 @@
         }
 
         // Call passed in function
-        if (CATMAID.tools.isFn(fn)) fn();
+        if (CATMAID.tools.isFn(fn)) fn(fileName);
       } catch (e) {
         CATMAID.error("An error occurred", e);
       }
@@ -323,13 +329,13 @@
    * Store the current view as PNG image.
    */
   WebGLApplication.prototype.exportPNG = function() {
-    this.askForDimensions("PNG export", (function() {
+    this.askForDimensions("PNG export", "catmaid-3d-viewer.png", (function(fileName) {
       try {
         /* jshint validthis: true */ // `this` is bound to this WebGLApplication
         var imageData = this.space.view.getImageData();
         var blob = CATMAID.tools.dataURItoBlob(imageData);
         CATMAID.info("The exported PNG will have a transparent background");
-        saveAs(blob, "catmaid_3d_view.png");
+        saveAs(blob, fileName);
       } catch(e) {
         CATMAID.error("Could not export current 3D view, there was an error: " + e,
             e.stack);
@@ -341,7 +347,7 @@
    * Store the current view as SVG image.
    */
   WebGLApplication.prototype.exportSVG = function() {
-    this.askForDimensions("SVG export", (function() {
+    this.askForDimensions("SVG export", "catmid-3d-viewer.svg", (function(fileName) {
       $.blockUI({message: '<img src="' + CATMAID.staticURL +
           'images/busy.gif" /> <span id="block-export-svg">Please wait</span>'});
       var label = $('#block-export-svg');
@@ -415,7 +421,7 @@
 
         var data = new XMLSerializer().serializeToString(xml);
         var blob = new Blob([data], {type: 'text/svg'});
-        saveAs(blob, "catmaid-3d-view.svg");
+        saveAs(blob, fileName);
       });
 
       queue(false, function() {

@@ -1356,14 +1356,17 @@
         }
 
         const newZs = activeStackViewer.validZDistanceByStep(activeStackViewer.z, step) + activeStackViewer.z;
-        const xp = activeStackViewer.primaryStack.stackToProjectX(newZs, activeNode.y, activeNode.x);
-        const yp = activeStackViewer.primaryStack.stackToProjectY(newZs, activeNode.y, activeNode.x);
-        const zp = activeStackViewer.primaryStack.stackToProjectZ(newZs, activeNode.y, activeNode.x);
+        const newZp = activeStackViewer.primaryStack.stackToProjectZ(newZs, activeNode.y, activeNode.x);
+
+        const nodeInfo = [
+          activeNode.id,
+          activeStackViewer.primaryStack.stackToProjectX(newZs, activeNode.y, activeNode.x),
+          activeStackViewer.primaryStack.stackToProjectY(newZs, activeNode.y, activeNode.x),
+          newZp
+        ];
 
         const treenodesToUpdate = [];
         const connectorsToUpdate = [];
-
-        const nodeInfo = [activeNode.id, xp, yp, zp];
 
         if (activeNode.type === SkeletonAnnotations.TYPE_NODE) {
           treenodesToUpdate.push(nodeInfo);
@@ -1375,22 +1378,27 @@
         const command = new CATMAID.UpdateNodesCommand(
           tracingOverlay.state, project.id, treenodesToUpdate, connectorsToUpdate
         );
+
         CATMAID.commands.execute(command)
           .then(function() {
-            tracingOverlay.moveTo(zp, yp, xp);
+            tracingOverlay.moveTo(
+              newZp,
+              activeStackViewer.primaryStack.stackToProjectY(newZs, activeStackViewer.y, activeStackViewer.x),
+              activeStackViewer.primaryStack.stackToProjectX(newZs, activeStackViewer.y, activeStackViewer.x)
+            );
           })
           .catch(CATMAID.handleError);
       };
     };
 
     this.addAction(new CATMAID.Action({
-      helpText: "With <kbd>Alt</kbd> help, move selected node up in Z",
+      helpText: "With <kbd>Alt</kbd> held, move selected node up in Z",
       keyShortcuts: {',': ['Alt + ,']},
       run: createNodeZMover(-1)
     }));
 
     this.addAction(new CATMAID.Action({
-      helpText: "With <kbd>Alt</kbd> help, move selected node down in Z",
+      helpText: "With <kbd>Alt</kbd> held, move selected node down in Z",
       keyShortcuts: {'.': ['Alt + .']},
       run: createNodeZMover(1)
     }));

@@ -46,6 +46,8 @@
 
     // All currently targeted 3D Viewers
     this.targeted3dViewerNames = new Set();
+    // Whether to automatically interpolate between group transformations
+    this.interpolateBetweenGroups = true;
 
     // The current edit mode
     this.mode = 'landmarks';
@@ -648,6 +650,7 @@
       // For each node, check if treenode is outside of source group bounding
       // box. If so, do both a transformation from source to target group and
       // average with respect to distance to bounding box.
+      let noInterpolation = !this.interpolateBetweenGroups;
       var treenodeLocation = [0, 0, 0];
       var transformTreenode = function(treenodeRow) {
         // If in boundig box, just apply forward transform. If in target
@@ -657,7 +660,7 @@
             treenodeRow[4], treenodeRow[5]);
         // If the node is in the source bounding box, use regular source ->
         // target transformation.
-        if (fromDistanceSq === 0) {
+        if (fromDistanceSq === 0 || noInterpolation) {
           treenodeLocation[0] = treenodeRow[3];
           treenodeLocation[1] = treenodeRow[4];
           treenodeLocation[2] = treenodeRow[5];
@@ -1689,6 +1692,15 @@
               target.updateDisplay();
             }
           },
+          {
+            type: 'checkbox',
+            value: target.interpolateBetweenGroups,
+            label: 'Interpolate between groups',
+            onclick: function() {
+              target.interpolateBetweenGroups = this.checked;
+              target.updateDisplay();
+            }
+          }
         ];
       },
       createContent: function(content, widget) {

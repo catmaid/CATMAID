@@ -532,6 +532,66 @@
   };
 
   /**
+   */
+  LandmarkWidget.prototype.getMlsTransform = function(transformation, i) {
+    if (i === undefined) {
+      i = 1;
+    }
+    let matches = this.getPointMatches(transformation.fromGroupId,
+        transformation.toGroupId);
+
+    if (!matches || matches.length === 0) {
+      throw new CATMAID.ValueError("Found no point matches for " +
+          (i+1) + ". transformation");
+    }
+
+    let invMatches = this.getPointMatches(transformation.toGroupId,
+        transformation.fromGroupId);
+
+    if (!invMatches || invMatches.length === 0) {
+      throw new CATMAID.ValueError("Found no inverse point matches for " +
+          (i+1) + ". transformation");
+    }
+
+    var mls = new CATMAID.transform.MovingLeastSquaresTransform();
+    var model = new CATMAID.transform.AffineModel3D();
+    mls.setModel(model);
+
+    var invMls = new CATMAID.transform.MovingLeastSquaresTransform();
+    var invModel = new CATMAID.transform.AffineModel3D();
+    invMls.setModel(invModel);
+
+    try {
+      mls.setMatches(matches);
+    } catch (error) {
+      throw new CATMAID.ValueError("Could not fit model for " +
+          (i+1) + ". transformation");
+    }
+
+    try {
+      invMls.setMatches(invMatches);
+    } catch (error) {
+      throw new CATMAID.ValueError("Could not fit inverse model for " +
+          (i+1) + ". transformation");
+    }
+
+    return {
+      transform: mls,
+      invTransform: invMls
+    };
+  };
+
+  /**
+   * Return squared distance between an axis aligned bounding box and a point p.
+   */
+  let distanceSq = function(aaBb, x, y, z) {
+    var dx = Math.max(aaBb.min.x - x, 0, x - aaBb.max.x);
+    var dy = Math.max(aaBb.min.y - y, 0, y - aaBb.max.y);
+    var dz = Math.max(aaBb.min.z - z, 0, z - aaBb.max.z);
+    return dx*dx + dy*dy + dz * dz;
+  };
+
+  /**
    * Create skeleton models for the skeletons to transform
    */
   LandmarkWidget.prototype.updateDisplay = function() {
@@ -548,35 +608,100 @@
         return o;
       }, {});
 
-      let matches = this.getPointMatches(transformation.fromGroupId,
-          transformation.toGroupId);
-
-      if (!matches || matches.length === 0) {
-        CATMAID.warn("Found no point matches for " + (i+1) + ". transformation");
-        continue;
-      }
-
-      var mls = new CATMAID.transform.MovingLeastSquaresTransform();
-      var model = new CATMAID.transform.AffineModel3D();
-      mls.setModel(model);
-
+      let mls;
       try {
-        mls.setMatches(matches);
+        mls = this.getMlsTransform(transformation, i);
       } catch (error) {
-        console.log(error);
-        CATMAID.warn("Could not fit model for " + (i+1) + ". transformation");
+        CATMAID.warn(error ? error.message : "Unknown error");
         continue;
       }
 
+      // Landmarks are needed for bounding box computation ans visualization.
+      transformation.landmarkProvider = {
+        get: function(landmarkGroupId) {
+          if (transformation.landmarkCache && transformation.landmarkCache[landmarkGroupId]) {
+            return Promise.resolve(transformation.landmarkCache[landmarkGroupId]);
+          } else {
+            return CATMAID.Landmarks.getGroup(project.id, landmarkGroupId, true, true)
+              .then(function(landmarkGroup) {
+                if (!transformation.landmarkCache) {
+                  transformation.landmarkCache = {};
+                }
+                transformation.landmarkCache[landmarkGroupId] = landmarkGroup;
+                return landmarkGroup;
+              });
+          }
+        }
+      };
+
+      // Compute source and target landmark group boundaries
+      let prepare = Promise.all([
+          transformation.landmarkProvider.get(transformation.fromGroupId),
+          transformation.landmarkProvider.get(transformation.toGroupId)])
+        .then(function(landmarkGroups) {
+          let fromGroup = landmarkGroups[0];
+          let toGroup = landmarkGroups[1];
+          transformation.sourceAaBb = CATMAID.Landmarks.getBoundingBox(fromGroup);
+          transformation.targetAaBb = CATMAID.Landmarks.getBoundingBox(toGroup);
+        });
+
+      // For each node, check if treenode is outside of source group bounding
+      // box. If so, do both a transformation from source to target group and
+      // average with respect to distance to bounding box.
       var treenodeLocation = [0, 0, 0];
       var transformTreenode = function(treenodeRow) {
-        treenodeLocation[0] = treenodeRow[3];
-        treenodeLocation[1] = treenodeRow[4];
-        treenodeLocation[2] = treenodeRow[5];
-        mls.applyInPlace(treenodeLocation);
-        treenodeRow[3] = treenodeLocation[0];
-        treenodeRow[4] = treenodeLocation[1];
-        treenodeRow[5] = treenodeLocation[2];
+        // If in boundig box, just apply forward transform. If in target
+        // bounding box, use inverse transform. If in-between, use weighted
+        // location based on distance.
+        let fromDistanceSq = distanceSq(transformation.sourceAaBb, treenodeRow[3],
+            treenodeRow[4], treenodeRow[5]);
+        // If the node is in the source bounding box, use regular source ->
+        // target transformation.
+        if (fromDistanceSq === 0) {
+          treenodeLocation[0] = treenodeRow[3];
+          treenodeLocation[1] = treenodeRow[4];
+          treenodeLocation[2] = treenodeRow[5];
+          mls.transform.applyInPlace(treenodeLocation);
+          treenodeRow[3] = treenodeLocation[0];
+          treenodeRow[4] = treenodeLocation[1];
+          treenodeRow[5] = treenodeLocation[2];
+        } else {
+          let toDistanceSq = distanceSq(transformation.targetAaBb, treenodeRow[3],
+              treenodeRow[4], treenodeRow[5]);
+          // If the node is in the target bounding box, use exclusively the
+          // inverse transformation target -> source. Otherwise weight the
+          // distances.
+          if (toDistanceSq === 0) {
+            treenodeLocation[0] = treenodeRow[3];
+            treenodeLocation[1] = treenodeRow[4];
+            treenodeLocation[2] = treenodeRow[5];
+            mls.invTransform.applyInPlace(treenodeLocation);
+            treenodeRow[3] = treenodeLocation[0];
+            treenodeRow[4] = treenodeLocation[1];
+            treenodeRow[5] = treenodeLocation[2];
+          } else {
+            let fromToRatio = toDistanceSq / (fromDistanceSq + toDistanceSq);
+            let toFromRatio = 1.0 - fromToRatio;
+
+            // Add source part
+            let x = treenodeLocation[0] = treenodeRow[3];
+            let y = treenodeLocation[1] = treenodeRow[4];
+            let z = treenodeLocation[2] = treenodeRow[5];
+            mls.transform.applyInPlace(treenodeLocation);
+            treenodeRow[3] = fromToRatio * treenodeLocation[0];
+            treenodeRow[4] = fromToRatio * treenodeLocation[1];
+            treenodeRow[5] = fromToRatio * treenodeLocation[2];
+
+            // Add target part
+            treenodeLocation[0] = x;
+            treenodeLocation[1] = y;
+            treenodeLocation[2] = z;
+            mls.invTransform.applyInPlace(treenodeLocation);
+            treenodeRow[3] += toFromRatio * treenodeLocation[0];
+            treenodeRow[4] += toFromRatio * treenodeLocation[1];
+            treenodeRow[5] += toFromRatio * treenodeLocation[2];
+          }
+        }
       };
 
       transformation.nodeProvider = {
@@ -593,17 +718,22 @@
               .then(function(response) {
                 // Transform points and store in cache
                 response[0].forEach(transformTreenode);
-                transformation.skeletonCache = response;
+                if (!transformation.skeletonCache) {
+                  transformation.skeletonCache = {};
+                }
+                transformation.skeletonCache[skeletonId] = response;
                 return response;
               });
           }
         }
       };
 
-      for (let j=0; j<target3dViewers.length; ++j) {
-        let widget = target3dViewers[j];
-        widget.showLandmarkTransform(transformation, true);
-      }
+      prepare.then(function() {
+        for (let j=0; j<target3dViewers.length; ++j) {
+          let widget = target3dViewers[j];
+          widget.showLandmarkTransform(transformation, true);
+        }
+      }).catch(CATMAID.handleError);
     }
   };
 

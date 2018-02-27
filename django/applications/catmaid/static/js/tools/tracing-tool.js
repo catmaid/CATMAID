@@ -1352,8 +1352,15 @@
 
         if (!CATMAID.mayEdit()) {
           CATMAID.statusBar.replaceLast("You don't have permission to move node #" + activeNode.id);
-          return;
+          return Promise.resolve();
         }
+
+        if (activeStackViewer.z !== activeNode.z) {
+          CATMAID.statusBar.replaceLast("Stack viewer must be in the same z-slice to move node #" + activeNode.id);
+          return Promise.resolve();
+        }
+
+        const tracingOverlay = activeStackViewer.getLayersOfType(CATMAID.TracingLayer)[0].tracingOverlay;
 
         const newZs = activeStackViewer.validZDistanceByStep(activeStackViewer.z, step) + activeStackViewer.z;
         const newZp = activeStackViewer.primaryStack.stackToProjectZ(newZs, activeNode.y, activeNode.x);
@@ -1374,13 +1381,13 @@
           connectorsToUpdate.push(nodeInfo);
         }
 
-        const tracingOverlay = activeStackViewer.getLayersOfType(CATMAID.TracingLayer)[0].tracingOverlay;
         const command = new CATMAID.UpdateNodesCommand(
           tracingOverlay.state, project.id, treenodesToUpdate, connectorsToUpdate
         );
 
-        CATMAID.commands.execute(command)
+        return CATMAID.commands.execute(command)
           .then(function() {
+            activeNode.z = newZs;
             tracingOverlay.moveTo(
               newZp,
               activeStackViewer.primaryStack.stackToProjectY(newZs, activeStackViewer.y, activeStackViewer.x),

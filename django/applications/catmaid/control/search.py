@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import json
-
 from django.http import JsonResponse
 
 from catmaid.models import (UserRole, ClassInstance, ConnectorClassInstance,

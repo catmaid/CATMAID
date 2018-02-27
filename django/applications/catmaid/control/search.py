@@ -29,6 +29,7 @@ def search(request, project_id=None):
         oid = int(search_string)
         oid_query = ClassInstance.objects.filter(
                 pk=int(oid),
+                project_id=project_id,
                 class_column__class_name__in=('neuron', 'skeleton')
                 ).values('id', 'name', 'class_column__class_name')
         for row in oid_query:

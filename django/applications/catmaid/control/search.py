@@ -9,7 +9,7 @@ from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map
 
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Browse)
 def search(request, project_id=None):
     search_string = request.GET.get('substring', "")
 

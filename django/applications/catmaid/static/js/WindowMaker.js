@@ -822,6 +822,16 @@ var WindowMaker = new function()
               WA.setConnectorLinkVisibility(this.checked);
             },
             title: 'If checked, links between connectors and partner nodes will be visible.'
+          },
+          {
+            type: 'checkbox',
+            label: 'Ortho scale bar',
+            value: o.show_ortho_scale_bar,
+            onclick: function() {
+              WA.options.show_ortho_scale_bar = this.checked;
+              WA.space.updateScaleBar();
+            },
+            title: 'If checked, a scale bar will be shown when in orthographic mode.'
           }
         ]);
 
@@ -1361,6 +1371,9 @@ var WindowMaker = new function()
     canvas.setAttribute("id", "viewer-3d-webgl-canvas" + WA.widgetID);
     canvas.style.backgroundColor = "#000000";
     container.appendChild(canvas);
+
+    var scaleBar = document.createElement('div');
+    canvas.appendChild(scaleBar);
 
     // Add window to DOM, init WebGLView (requires element in DOM) and
     // create a staging list. The listeners are added last to prevent

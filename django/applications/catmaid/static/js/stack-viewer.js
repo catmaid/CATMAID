@@ -102,13 +102,9 @@
       }
     }).bind(this);
 
-    this._scaleBar = document.createElement( "div" );
-    this._scaleBar.className = "sliceBenchmark";
-    this._scaleBar.appendChild( document.createElement( "p" ) );
-    this._scaleBar.firstChild.appendChild( document.createElement( "span" ) );
-    this._scaleBar.firstChild.firstChild.appendChild( document.createTextNode( "test" ) );
-    this._scaleBar.style.display = this.showScaleBar ? 'initial' : 'none';
-    this._view.appendChild( this._scaleBar );
+    this._scaleBar = new CATMAID.ScaleBar(document.createElement("div"));
+    this._scaleBar.setVisibility(this.showScaleBar);
+    this._view.appendChild(this._scaleBar.getView());
 
     var controlToggle = document.createElement( "div" );
     controlToggle.className = "stackControlToggle_hidden";
@@ -321,31 +317,13 @@
   StackViewer.prototype.updateScaleBar = function (showScaleBar) {
     if (showScaleBar !== undefined && this.showScaleBar !== showScaleBar) {
       this.showScaleBar = showScaleBar;
-      this._scaleBar.style.display = showScaleBar ? 'initial' : 'none';
+      this._scaleBar.setVisibility(showScaleBar);
       this.layercontrol.refresh();
     }
-    var meter = this.scale / this.primaryStack.resolution.x;
-    var width = 0;
-    var text = "";
-    for ( var i = 0; i < StackViewer.SCALE_BAR_SIZES.length; ++i )
-    {
-      text = StackViewer.SCALE_BAR_SIZES[ i ];
-      width = StackViewer.SCALE_BAR_SIZES[ i ] * meter;
-      if ( width > Math.min( 192, this.viewWidth / 5 ) )
-        break;
-    }
-    var ui = 0;
-    while ( text >= 1000 && ui < StackViewer.SCALE_BAR_UNITS.length - 1 )
-    {
-      text /= 1000;
-      ++ui;
-    }
-    this._scaleBar.style.width = width + "px";
-    this._scaleBar.firstChild.firstChild.replaceChild(
-      document.createTextNode( text + " " + StackViewer.SCALE_BAR_UNITS[ ui ] ),
-      this._scaleBar.firstChild.firstChild.firstChild );
+    this._scaleBar.update(
+      this.scale / this.primaryStack.resolution.x,
+      this.viewWidth / 5);
   };
-
 
   /**
    * update all state informations and the screen content
@@ -1090,60 +1068,6 @@
         },
         migrations: {}
       });
-
-  /** known scale bar sizes in nanometers */
-  StackViewer.SCALE_BAR_SIZES = [
-        10,
-        20,
-        25,
-        50,
-        100,
-        200,
-        250,
-        500,
-        1000,
-        2000,
-        2500,
-        5000,
-        10000,
-        20000,
-        25000,
-        50000,
-        100000,
-        200000,
-        250000,
-        500000,
-        1000000,
-        2000000,
-        2500000,
-        5000000,
-        10000000,
-        20000000,
-        25000000,
-        50000000,
-        100000000,
-        200000000,
-        250000000,
-        500000000,
-        1000000000,
-        2000000000,
-        2500000000,
-        5000000000,
-        10000000000,
-        20000000000,
-        25000000000,
-        50000000000,
-        100000000000,
-        200000000000,
-        250000000000,
-        500000000000];
-
-  /** known scale bar units */
-  StackViewer.SCALE_BAR_UNITS = [
-        "nm",
-        unescape( "%u03BCm" ),
-        "mm",
-        "m"];
 
   CATMAID.StackViewer = StackViewer;
 

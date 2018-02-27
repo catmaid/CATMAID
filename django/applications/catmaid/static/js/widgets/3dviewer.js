@@ -1099,6 +1099,7 @@
     this.zplane_texture = true;
     this.zplane_zoomlevel = "max";
     this.zplane_opacity = 0.8;
+    this.show_ortho_scale_bar = true;
     this.custom_tag_spheres_regex = '';
     this.custom_tag_spheres_color = '#aa70ff';
     this.custom_tag_spheres_opacity = 0.6;
@@ -2326,6 +2327,9 @@
     this.stack = stack;
     this.container = container; // used by MouseControls
     this.options = options;
+    this.scaleBar = new CATMAID.ScaleBar(this.container.children[0]);
+    this.scaleBar.setVisibility(
+      this.options.show_ortho_scale_bar && this.options.camera_view == 'orthographic');
 
     this.canvasWidth = w;
     this.canvasHeight = h;
@@ -2410,6 +2414,17 @@
     return this.dimensions.min.clone().lerp(this.dimensions.max, 0.5);
   };
 
+  WebGLApplication.prototype.Space.prototype.updateScaleBar = function () {
+    if (this.options.show_ortho_scale_bar && this.options.camera_view == 'orthographic') {
+      this.scaleBar.setVisibility(true);
+      var camera = this.view.camera;
+      this.scaleBar.update(
+        this.canvasWidth / (camera.cameraO.right - camera.cameraO.left),
+        this.canvasWidth / 5);
+    } else {
+      this.scaleBar.setVisibility(false);
+    }
+  };
 
   WebGLApplication.prototype.Space.prototype.createLights = function(dimensions, center, camera) {
     var ambientLight = new THREE.AmbientLight(0x505050);
@@ -4230,6 +4245,12 @@
         }
         new_zoom = Math.max(new_zoom, 1.0);
         camera.setZoom( new_zoom );
+
+        if (camera.inOrthographicMode) {
+          this.CATMAID_view.space.scaleBar.update(
+            this.CATMAID_view.space.canvasWidth / (camera.cameraO.right - camera.cameraO.left),
+            this.CATMAID_view.space.canvasWidth / 5);
+        }
       }
 
       this.CATMAID_view.space.render();
@@ -5484,6 +5505,7 @@
       this.space.view.camera.setZoom(1.0);
       this.space.view.setCameraMode(false);
     }
+    this.space.updateScaleBar();
     this.space.render();
   };
 
@@ -6560,7 +6582,7 @@
       for (var i=0, max=nodes.length; i<max && !(parentNode && childNode); ++i) {
         var other = nodes[i];
         if (parentID === other[0]) {
-          parentNode = other; 
+          parentNode = other;
         } else if (nodeID === other[1]) {
           childNode = other;
         }

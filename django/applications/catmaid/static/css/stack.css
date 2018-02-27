@@ -247,7 +247,7 @@ div.stackControlToggle_hidden {
   cursor: move;
 }
 
-.stackViewer div.sliceBenchmark {
+div.scaleBenchmark {
   position: absolute;
   left: 32px;
   bottom: 32px;
@@ -262,7 +262,7 @@ div.stackControlToggle_hidden {
   z-index: 3;
 }
 
-.stackViewer div.sliceBenchmark p {
+div.scaleBenchmark p {
   border: none;
   margin: 0;
   margin-top: -12px;
@@ -272,7 +272,7 @@ div.stackControlToggle_hidden {
   overflow: hidden;
 }
 
-.stackViewer div.sliceBenchmark p span {
+div.scaleBenchmark p span {
   padding: 3px 6px 3px 6px;
   background: #0000FF;
 }

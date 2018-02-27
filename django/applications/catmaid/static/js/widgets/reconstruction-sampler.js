@@ -54,7 +54,8 @@
       'interpolateLocations': get(state.interpolateLocations, true),
       'interpolatableX': get(state.interpolatableX, project.interpolatableSections.x),
       'interpolatableY': get(state.interpolatableY, project.interpolatableSections.y),
-      'interpolatableZ': get(state.interpolatableZ, project.interpolatableSections.z)
+      'interpolatableZ': get(state.interpolatableZ, project.interpolatableSections.z),
+      'binaryIntervalColors': get(state.binaryIntervalColors, true)
     };
     this.workflow.setState(this.state);
     this.workflow.selectStep(0);
@@ -610,6 +611,9 @@
       return;
     }
     var createIntervalBoundingNodes = !!widget.state['createIntervalBoundingNodes'];
+    var binaryIntervalColors = !!widget.state['binaryIntervalColors'];
+    var colorMethod = binaryIntervalColors ? "binary-sampler-intervals" :
+        "multicolor-sampler-intervals";
 
     var interpolateSections = widget.state['interpolateLocations'];
     if (interpolateSections === undefined) {
@@ -695,13 +699,29 @@
                 dialog.close();
               }
             },
-            shadingMethod: 'sampler-intervals',
-            interpolateSections: interpolateSections
+            shadingMethod: colorMethod,
+            extraControls: [
+              {
+                type: 'checkbox',
+                label: 'Binary colors',
+                value: binaryIntervalColors,
+                onclick: function() {
+                  widget.state['binaryIntervalColors'] = this.checked;
+                  if (glWidget) {
+                    colorMethod = this.checked ?
+                        'binary-sampler-intervals' : 'multicolor-sampler-intervals';
+                    glWidget.options.color_method = colorMethod;
+                    glWidget.updateSkeletonColors()
+                      .then(glWidget.render.bind(glWidget));
+                  }
+                }
+              }
+            ]
           });
           dialog.show();
 
           // At the moment the 3D viewer is only accessible after display
-          var widget = dialog.webglapp;
+          var glWidget = dialog.webglapp;
           var models = {};
           models[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
 
@@ -710,9 +730,9 @@
           let nodeProvider = new CATMAID.ArborParserNodeProvider(arborParsers);
 
           // Add skeleton to 3D viewer and configure shading
-          widget.addSkeletons(models, function() {
+          glWidget.addSkeletons(models, function() {
             // Add sampling information to skeleton
-            let skeleton = widget.space.content.skeletons[skeletonId];
+            let skeleton = glWidget.space.content.skeletons[skeletonId];
             if (!skeleton) {
               throw new CATMAID.ValueError('Couldn\'t find skeleton ' +
                   skeletonId + ' in 3D viewer');
@@ -722,15 +742,15 @@
             skeleton.setSamplers([fakeSampler]);
 
             // Set new shading and coloring methods
-            widget.options.color_method = 'sampler-intervals';
-            widget.options.shading_method = 'sampler-intervals';
-            widget.options.interpolate_vertex_colots = false;
+            glWidget.options.color_method = colorMethod;
+            glWidget.options.shading_method = 'sampler-intervals';
+            glWidget.options.interpolate_vertex_colots = false;
 
             // Look at center of mass of skeleton and update screen
-            widget.lookAtSkeleton(skeletonId);
+            glWidget.lookAtSkeleton(skeletonId);
 
-            return widget.updateSkeletonColors()
-              .then(function() { widget.render(); });
+            return glWidget.updateSkeletonColors()
+              .then(function() { glWidget.render(); });
           }, nodeProvider);
         });
       })
@@ -1493,6 +1513,9 @@
       return;
     }
     var createIntervalBoundingNodes = !!widget.state['createIntervalBoundingNodes'];
+    var binaryIntervalColors = !!widget.state['binaryIntervalColors'];
+    var colorMethod = binaryIntervalColors ? "binary-sampler-intervals" :
+        "multicolor-sampler-intervals";
 
     var interpolatableX = widget.state['interpolatableX'];
     if (!interpolatableX) {
@@ -1564,7 +1587,24 @@
                 intervalLength + "nm each, " + intervalConfiguration.addedNodes.length +
                 " new nodes are created to match intervals",
             showControlPanel: false,
-            shadingMethod: 'sampler-domains'
+            shadingMethod: colorMethod,
+            extraControls: [
+              {
+                type: 'checkbox',
+                label: 'Binary colors',
+                value: binaryIntervalColors,
+                onclick: function() {
+                  widget.state['binaryIntervalColors'] = this.checked;
+                  if (glWidget) {
+                    colorMethod = this.checked ?
+                        'binary-sampler-intervals' : 'multicolor-sampler-intervals';
+                    glWidget.options.color_method = colorMethod;
+                    glWidget.updateSkeletonColors()
+                      .then(glWidget.render.bind(glWidget));
+                  }
+                }
+              }
+            ]
           });
 
           // Create intervals if OK is pressed
@@ -1588,7 +1628,7 @@
           dialog.show();
 
           // At the moment the 3D viewer is only accessible after display
-          var widget = dialog.webglapp;
+          var glWidget = dialog.webglapp;
           var models = {};
           models[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
 
@@ -1596,16 +1636,16 @@
           let arborParsers = new Map([[skeletonId, workParser]]);
           let nodeProvider = new CATMAID.ArborParserNodeProvider(arborParsers);
 
-          widget.addSkeletons(models, function() {
+          glWidget.addSkeletons(models, function() {
             // Set new shading and coloring methods
-            widget.options.color_method = 'sampler-intervals';
-            widget.options.shading_method = 'sampler-intervals';
-            widget.options.interpolate_vertex_colots = false;
-            widget.updateSkeletonColors()
-              .then(function() { widget.render(); });
+            glWidget.options.color_method = colorMethod;
+            glWidget.options.shading_method = 'sampler-intervals';
+            glWidget.options.interpolate_vertex_colots = false;
+            glWidget.updateSkeletonColors()
+              .then(function() { glWidget.render(); });
 
             // Look at center of mass of skeleton and update screen
-            widget.lookAtSkeleton(skeletonId);
+            glWidget.lookAtSkeleton(skeletonId);
           }, nodeProvider);
         });
       })

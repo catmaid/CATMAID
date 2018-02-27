@@ -50,7 +50,7 @@
 
   /**
    * The passed in interval map will be update with nodes from the arbor that
-   * are coved by the passed in interval list.
+   * are covered by the passed in interval list.
    */
   Sampling.updateIntervalMap = function(arbor, intervals, targetEdgeMap) {
     for (var i=0, imax=intervals.length; i<imax; ++i) {

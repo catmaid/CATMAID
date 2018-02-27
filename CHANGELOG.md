@@ -15,6 +15,12 @@ Landmarks:
 
 - PNG and SVG exports offer now a filename input field.
 
+Reconstruction Sampler:
+
+- Intervals are now displayed with only two colors by default, it makes
+  distinguishing many intervals easier. The previous multicolor mode can be
+  reactivated from the prview window.
+
 
 ### Bug fixes
 

@@ -136,7 +136,7 @@
           var row = $('<tr/>');
           row.append($('<td/>').text(i+1));
           row.append($('<td/>').text(data[i].id));
-          row.append($('<td/>').text(data[i].name));
+          row.append($('<td/>').text(data[i].name || '(none)'));
           row.append($('<td/>').text(data[i].class_name));
           let className = data[i].class_name;
           if (className === 'neuron' || className === 'skeleton') {
@@ -198,6 +198,19 @@
               })
               .text('List targets');
             td.append(link);
+            row.append(td);
+          } else if (className === 'treenode' || className === 'connector') {
+            let td = $('<td />')
+              .append($('<a />')
+                .attr({
+                  'href': '#',
+                  'data-action': 'select-node',
+                  'data-id': '' + data[i].id,
+                  'data-x': data[i].x,
+                  'data-y': data[i].y,
+                  'data-z': data[i].z
+                })
+                .text('Go to node'));
             row.append(td);
           } else {
             row.append($('<td/>').text('IMPLEMENT ME'));

@@ -15,6 +15,10 @@ Landmarks:
 
 - PNG and SVG exports offer now a filename input field.
 
+Miscellaneous:
+
+- Basic Search: allow search for treenode IDs and connector IDs.
+
 
 ### Bug fixes
 

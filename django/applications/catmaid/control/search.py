@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 from django.http import JsonResponse
 
 from catmaid.models import (UserRole, ClassInstance, ConnectorClassInstance,
-        TreenodeClassInstance)
+        Treenode, Connector, TreenodeClassInstance)
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map
 
@@ -20,7 +20,11 @@ def search(request, project_id=None):
     row_query = ClassInstance.objects.values('id', 'name', 'class_column__class_name').filter(
         name__icontains=search_string,
         project=project_id).order_by('class_column__class_name', 'name')
-    rows = list(row_query)
+    rows = [{
+        'id': row['id'],
+        'name': row['name'],
+        'class_name': row['class_column__class_name']
+    } for row in row_query]
     for row in rows:
         ids.add(row['id'])
 
@@ -34,9 +38,31 @@ def search(request, project_id=None):
                 ).values('id', 'name', 'class_column__class_name')
         for row in oid_query:
             if row['id'] not in ids:
-                rows.append(row)
+                rows.append({
+                    'id': row['id'],
+                    'name': row['name'],
+                    'class_name': row['class_column__class_name']
+                })
     except ValueError:
         pass
+
+    # 2.1 Try to find treenode with ID of passed in string
+    for loc_type, name in ((Treenode, 'treenode'), (Connector, 'connector')):
+        try:
+            location_id =int(search_string)
+            nodes = loc_type.objects.filter(pk=location_id,
+                    project_id=project_id).values('id', 'location_x', 'location_y', 'location_z')
+            for row in nodes:
+                if row['id'] not in ids:
+                    rows.append({
+                        'class_name': name,
+                        'id': row['id'],
+                        'x': row['location_x'],
+                        'y': row['location_y'],
+                        'z': row['location_z']
+                    })
+        except ValueError:
+            pass
 
     # 3. Query labels in treenodes. First get a list of matching labels,
     # and then find a list of treenodes for each label.
@@ -44,8 +70,6 @@ def search(request, project_id=None):
     matching_labels = set()
     label_rows = {}
     for row in rows:
-        # Change key-name of class_column__class_name for json output
-        row['class_name'] = row.pop('class_column__class_name')
         # Prepare for retrieving nodes holding text labels
         if row['class_name'] == 'label':
             matching_labels.add(row['name'])

@@ -269,12 +269,12 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
                         issues.append((0, a.id if a.skeleton_id == skeleton_id else b.id))
         if not post:
             # Type 2: presynaptic connector without postsynaptic treenodes
-            issues.append((2, iter(pre).next().id))
+            issues.append((2, next(iter(pre)).id))
         if not pre:
             # Type 3: postsynaptic connector without presynaptic treenode
-            issues.append((3, iter(post).next().id))
+            issues.append((3, next(iter(post)).id))
         else:
-            if iter(pre).next().skeleton_id != skeleton_id:
+            if next(iter(pre)).skeleton_id != skeleton_id:
                 repeats = tuple(t.id for t in post if t.skeleton_id == skeleton_id)
                 if len(repeats) > 1:
                     # Type 1: two or more times postsynaptic to the same connector
@@ -331,7 +331,7 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
     pre_connectors = []
     for connector_id in pre_connector_ids:
         c = connectors[connector_id]
-        treenode_id = iter(c[PRE]).next().id
+        treenode_id = next(iter(c[PRE])).id
         shortest_path = single_source_shortest_path(graph, treenode_id, adjacents)
         pre_treenodes = set(chain.from_iterable(six.itervalues(shortest_path)))
         post_skeletons = set(t.skeleton_id for t in c[POST])
@@ -353,7 +353,7 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
     for connector_id, c in six.iteritems(connectors):
         if connector_id in pre_connector_ids:
             continue
-        treenode_id = (t.id for t in c[POST] if t.skeleton_id == skeleton_id).next()
+        treenode_id = next(t.id for t in c[POST] if t.skeleton_id == skeleton_id)
         pre_skeletons = set(t.skeleton_id for t in c[PRE])
         shortest_path = single_source_shortest_path(graph, treenode_id, adjacents)
         post_treenodes = set(chain.from_iterable(six.itervalues(shortest_path)))

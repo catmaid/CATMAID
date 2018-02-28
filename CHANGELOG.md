@@ -404,6 +404,16 @@ TrakEM2 import managmenet command:
   The latter seems to generate better skeletons at the moment, but might require
   a bit more setup time.
 
+TrakEM2 based node transformation management command:
+
+- The new catmaid_update_tracing_data_using_trakem2_xml management command can
+  be used to transform all spatial data in a project based on the
+  transformations defined in a TrakEM2 XML file.
+
+- This command uses Java and Fiji directly using pyjnius, which needs to be set
+  up separately. The management command will expect the PYJNIUS_JAR environment
+  variable to point to it (or provided using the --pyjnius parameter).
+
 Data views:
 
 - Add the options sample_image, sample_mirror and sanmple_slice to the front-end

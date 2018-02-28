@@ -184,7 +184,7 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations):
                 edges = tree[node]
                 if edges:
                     # Replace node with its parent
-                    node = six.iterkeys(edges).next()
+                    node = next(six.iterkeys(edges))
                 merges[tree.node[node]['user_id']] += 1
 
         # Count nodes created by the reviewer, as well as
@@ -207,7 +207,7 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations):
                 for node in addition:
                     edges = tree[node]
                     if edges:
-                        parent = six.iterkeys(edges).next()
+                        parent = next(six.iterkeys(edges))
                         creator_id = tree.node[parent]['user_id']
                         if creator_id != reviewer_id:
                             appended[creator_id].append(len(addition))

@@ -53,13 +53,13 @@ def find_common_ancestor(tree, nodes, ds=None, root_node=None):
     first, second = sorted(six.iteritems({node: distances(node) for node in nodes}), key=itemgetter(1))[:2]
     # Start from the second, and bring it to an edge count equal to the first
     while second[1] < first[1]:
-        second = (tree.predecessors_iter(second[0]).next(), second[1] - 1)
+        second = (next(tree.predecessors_iter(second[0])), second[1] - 1)
     # Walk parents up for both until finding the common ancestor
     first = first[0]
     second = second[0]
     while first != second:
-        first = tree.predecessors_iter(first).next()
-        second = tree.predecessors_iter(second).next()
+        first = next(tree.predecessors_iter(first))
+        second = next(tree.predecessors_iter(second))
     return first, distances[first]
 
 def find_common_ancestors(tree, node_groups):
@@ -158,13 +158,13 @@ def spanning_tree(tree, preserve):
     spanning = DiGraph()
     preserve = set(preserve) # duplicate, will be altered
     if 1 == len(preserve):
-        spanning.add_node(iter(preserve).next())
+        spanning.add_node(next(iter(preserve)))
         return spanning
 
     if len(tree.successors(find_root(tree))) > 1:
         tree = tree.copy()
         # First end node found
-        endNode = (node for node in tree if not next(tree.successors_iter(node), None)).next()
+        endNode = next(node for node in tree if not next(tree.successors_iter(node), None))
         reroot(tree, endNode)
 
     n_seen = 0

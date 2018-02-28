@@ -303,7 +303,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
             for mini in list_mini:
                 for node in mini.nodes_iter():
                     g = mini.node[node]['g']
-                    if 1 == len(g) and g.nodes_iter(data=True).next()[1].get('branch'):
+                    if 1 == len(g) and next(g.nodes_iter(data=True))[1].get('branch'):
                         # A branch node that was preserved in the minified arbor
                         circuit.add_node(g, {'id': '%s-%s' % (skeleton_id, node),
                                              'skeleton_id': skeleton_id,
@@ -434,7 +434,7 @@ def _node_centrality_by_synapse(tree, nodes, totalOutputs, totalInputs):
     if len(tree.successors(find_root(tree))) > 1:
         # Reroot at the first end node found
         tree = tree.copy()
-        endNode = (nodeID for nodeID in six.iterkeys(nodes) if not tree.successors(nodeID)).next()
+        endNode = next(nodeID for nodeID in six.iterkeys(nodes) if not tree.successors(nodeID))
         reroot(tree, endNode)
 
     # 2. Partition into sequences, sorted from small to large

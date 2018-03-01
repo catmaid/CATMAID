@@ -75,14 +75,17 @@ def get_annotated_entities(project, params, relations, classes,
     # list of IDs, which will be treated as or-combination.
     for key in params:
         if key.startswith('annotated_with'):
-            annotation_set = frozenset(int(a) for a in params[key].split(','))
-            annotation_sets.add(annotation_set)
+            if len(params[key]) > 0:
+                annotation_set = frozenset(int(a) for a in params[key].split(','))
+                annotation_sets.add(annotation_set)
         elif key.startswith('not_annotated_with'):
-            not_annotation_set = frozenset(int(a) for a in params[key].split(','))
-            not_annotation_sets.add(not_annotation_set)
+            if len(params[key]) > 0:
+                not_annotation_set = frozenset(int(a) for a in params[key].split(','))
+                not_annotation_sets.add(not_annotation_set)
         elif key.startswith('sub_annotated_with'):
-            annotation_set = frozenset(int(a) for a in params[key].split(','))
-            annotation_sets_to_expand.add(annotation_set)
+            if len(params[key]) > 0:
+                annotation_set = frozenset(int(a) for a in params[key].split(','))
+                annotation_sets_to_expand.add(annotation_set)
 
     filters = [
         'ci.project_id = %(project_id)s',

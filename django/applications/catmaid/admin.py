@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import json
+import yaml
+
 from django import forms
+from django.http import HttpResponse
 from django.db.models import fields as db_fields, ForeignKey
 from django.core.exceptions import ValidationError
 from django.contrib import admin, messages
@@ -17,9 +21,10 @@ from catmaid.models import (Project, DataView, Stack, InterpolatableSection,
 from catmaid.control.importer import importer_admin_view
 from catmaid.control.classificationadmin import classification_admin_view
 from catmaid.control.annotationadmin import ImportingWizard
-from catmaid.control.project import delete_projects_and_stack_data
-from catmaid.views import UseranalyticsView, UserProficiencyView, \
-    GroupMembershipHelper
+from catmaid.control.project import (delete_projects_and_stack_data,
+        export_project_data)
+from catmaid.views import (UseranalyticsView, UserProficiencyView,
+        GroupMembershipHelper)
 from catmaid.views.dvid import DVIDImportWizard
 
 
@@ -45,6 +50,45 @@ def duplicate_action(modeladmin, request, queryset):
         object.id = None
         object.save()
 duplicate_action.short_description = "Duplicate selected without relations"
+
+
+def export_project_json_action(modeladmin, requet, queryset):
+    """An action that will export projects into a JSON file.
+    """
+    if len(queryset) == 0:
+        raise ValueError("No project selected")
+
+    projects = queryset
+    result = export_project_data(projects)
+
+    response = HttpResponse(json.dumps(result), content_type='application/json')
+    filename = "catmaid-projects-{}.json".format(
+            "-".join([str(p.id) for p in projects]))
+    response['Content-Disposition'] = u'attachment; filename={}'.format(filename)
+
+    return response
+
+export_project_json_action.short_description = "Export projects as JSON file"
+
+
+def export_project_yaml_action(modeladmin, requet, queryset):
+    """An action that will export projects into a YAML file.
+    """
+    if len(queryset) == 0:
+        raise ValueError("No project selected")
+
+    projects = queryset
+    result = export_project_data(projects)
+
+    response = HttpResponse(yaml.dump(result), content_type='application/yaml')
+    filename = "catmaid-projects-{}.yaml".format(
+            "-".join([str(p.id) for p in projects]))
+    response['Content-Disposition'] = u'attachment; filename={}'.format(filename)
+
+    return response
+
+export_project_yaml_action.short_description = "Export projects as YAML file"
+
 
 def delete_projects_plus_stack_data(modeladmin, request, queryset):
     """An action that expects a list of projects as queryset that will be
@@ -210,7 +254,8 @@ class ProjectAdmin(GuardedModelAdmin):
     search_fields = ['title','comment']
     inlines = [ProjectStackInline]
     save_as = True
-    actions = (duplicate_action, delete_projects_plus_stack_data)
+    actions = (duplicate_action, delete_projects_plus_stack_data,
+            export_project_json_action, export_project_yaml_action)
 
 
 class StackAdmin(GuardedModelAdmin):

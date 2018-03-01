@@ -25,6 +25,9 @@ Miscellaneous:
 
 - Basic Search: allow search for treenode IDs and connector IDs.
 
+- Project administration: selected projects can now be exported as JSON or YAML
+  file using the respective action from the drop-down menu.
+
 
 ### Bug fixes
 

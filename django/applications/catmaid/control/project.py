@@ -262,13 +262,28 @@ def projects(request):
 @api_view(['GET'])
 def export_projects(request):
     """Detailed list of projects visible to the requesting user.
-    """
-
+"""
     # Get all projects that are visisble for the current user
     projects = get_project_qs_for_user(request.user).order_by('title')
+    result = export_project_data(projects)
 
+    return_content_type = request.META.get('HTTP_ACCEPT', 'application/yaml')
+    if 'application/yaml' in return_content_type:
+        # YAML return format matches information files discussed in
+        # documentation: http://www.catmaid.org/en/stable/importing_data.html
+        return HttpResponse(yaml.dump(result),
+            content_type="application/yaml")
+    else:
+        return JsonResponse(result, safe=False, json_dumps_params={
+            'sort_keys': True,
+            'indent': 4
+        })
+
+def export_project_data(projects):
+    """Detailed list of projects visible to the requesting user.
+    """
     if 0 == len(projects):
-        return JsonResponse([], safe=False)
+        return []
 
     cursor = connection.cursor()
     project_template = ",".join(("(%s)",) * len(projects)) or "()"
@@ -402,16 +417,7 @@ def export_projects(request):
             }
         })
 
-    return_content_type = request.META.get('HTTP_ACCEPT', 'application/yaml')
-    if 'application/yaml' in return_content_type:
-        # YAML return format matches information files discussed in
-        # documentation: http://www.catmaid.org/en/stable/importing_data.html
-        return JsonResponse(result, safe=False)
-    else:
-        return JsonResponse(result, safe=False, json_dumps_params={
-            'sort_keys': True,
-            'indent': 4
-        })
+    return result
 
 def delete_projects_and_stack_data(projects):
     """Expects a list of projects (can be a queryset) to be deleted. All stacks

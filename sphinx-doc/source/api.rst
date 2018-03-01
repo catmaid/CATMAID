@@ -13,8 +13,8 @@ same HTTP API that the CATMAID client uses is exposed to other clients.
 API Documentation
 -----------------
 
-Documentation for endpoints exposed by the HTTP API is available from the
-CATMAID server itself via the ``/apis/`` page::
+Documentation for endpoints exposed by the HTTP API is available :ref:`here
+online <api-doc>` and from the CATMAID server itself via the ``/apis/`` page::
 
     http://localhost:8000/apis/
 

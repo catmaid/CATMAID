@@ -179,6 +179,13 @@ class CatmaidRelease(object):
 
         self.update_file("sphinx-doc/source/conf.py", contentfilter)
 
+        log("Updating API documentation...", False)
+        update_api_doc = sh.make.bake(_cwd=os.path.join(self.project_root, 'sphinx-doc'))
+        update_api_doc('apidoc')
+        self.git.add(os.path.join(self.project_root, 'sphinx-doc/source/_static/api'))
+        log("done")
+
+
     def update_file(self, relative_path, filterfn):
         data = None
         with open(os.path.join(self.project_root, relative_path), "r") as file:

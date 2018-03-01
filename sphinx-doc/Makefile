@@ -36,6 +36,12 @@ help:
 clean:
 	-rm -rf $(BUILDDIR)/*
 
+apidoc:
+	npm install bootprint bootprint-openapi
+	@echo
+	@echo "Requires local CATMAID server on port 8000"
+	`npm bin`/bootprint openapi http://localhost:8000/apis/v2/swagger.json source/_static/api
+
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo

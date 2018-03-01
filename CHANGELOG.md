@@ -28,6 +28,8 @@ Miscellaneous:
 - Project administration: selected projects can now be exported as JSON or YAML
   file using the respective action from the drop-down menu.
 
+- In addition to the '/apis' endpoint, the API documentation is now also
+  available as part of the general documentation.
 
 ### Bug fixes
 

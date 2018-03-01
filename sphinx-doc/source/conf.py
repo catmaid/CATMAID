@@ -49,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'CATMAID'
-copyright = u'2017, CATMAID Developers'
+copyright = u'2018, CATMAID Developers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

@@ -7,7 +7,7 @@ import yaml
 from guardian.shortcuts import get_objects_for_user
 
 from django.db import connection
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 
 from catmaid.models import (BrokenSlice, Class, ClientDatastore,

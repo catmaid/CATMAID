@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import json
 import six
 import yaml
 
 from ast import literal_eval
 from guardian.shortcuts import assign_perm
 
+from django.http import HttpResponse
 from django.test import TestCase
 from django.test.client import Client
 
@@ -326,12 +328,6 @@ class ImportExportTests(TestCase):
         for p in Project.objects.all():
             assign_perm('can_browse', self.user, p)
 
-        # Export imported data
-        self.fake_authentication()
-        response = self.client.get('/projects/export')
-        self.assertEqual(response.status_code, 200)
-        result = yaml.load(response.content.decode('utf-8'))
-
         def strip_ids(d):
             """ Recursively, strip all 'id' fields of dictionaries.
             """
@@ -344,9 +340,37 @@ class ImportExportTests(TestCase):
                 for v in d:
                     strip_ids(v)
 
-        # Results come with IDs, which we don't have in our input data. Strip
-        # them to be able to simply compare dictionaries.
-        strip_ids(result)
+        def test_result(result):
+            # Results come with IDs, which we don't have in our input data. Strip
+            # them to be able to simply compare dictionaries.
+            strip_ids(result)
 
-        for cp, p in zip(config, result):
-            self.assertDictEqual(cp, p)
+            for cp, p in zip(config, result):
+                # Convert potential stack tuples into lists (YAML parsing
+                # results in tuples).
+                if 'project' in p:
+                    if 'stacks' in p['project']:
+                        if type(p['project']['stacks']) == tuple:
+                            p['project']['stacks'] = list(p['project']['stacks'])
+                self.assertDictEqual(cp, p)
+
+        self.fake_authentication()
+
+        def parse_list(d):
+            for k in d:
+                if type(d[k]) == tuple:
+                    d[k] = list(d[k])
+            return d
+
+        # Export imported YAML data
+        response = self.client.get('/projects/export')
+        self.assertEqual(response.status_code, 200)
+        result_yaml = yaml.load(response.content.decode('utf-8'))
+        test_result(result_yaml)
+
+        # Export imported JSON data
+        response = self.client.get('/projects/export', HTTP_ACCEPT='application/json')
+        self.assertEqual(response.status_code, 200)
+        result_json = json.loads(response.content.decode('utf-8'),
+                object_hook=parse_list)
+        test_result(result_json)

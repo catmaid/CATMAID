@@ -13,6 +13,9 @@ Landmarks:
 
 3D Viewer:
 
+- A scale bar can now be displayed when in orthographic mode. The scale bar
+  can disabled via a checkbox in the View Settings tab.
+
 - PNG and SVG exports offer now a filename input field.
 
 Reconstruction Sampler:

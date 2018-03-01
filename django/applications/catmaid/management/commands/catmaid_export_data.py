@@ -10,7 +10,7 @@ from catmaid.control.tracing import check_tracing_setup
 from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
         Relation, Connector, Project, Treenode, TreenodeConnector, User)
 
-from six.moves import input
+from six.moves import input, map
 
 import logging
 logger = logging.getLogger(__name__)
@@ -68,7 +68,7 @@ class Exporter():
         if self.required_annotations:
             annotation_map = get_annotation_to_id_map(self.project.id,
                     self.required_annotations, relations, classes)
-            annotation_ids = map(str, annotation_map.values())
+            annotation_ids = list(map(str, annotation_map.values()))
             if not annotation_ids:
                 missing_annotations = set(self.required_annotations) - set(annotation_map.keys())
                 raise CommandError("Could not find the following annotations: " +

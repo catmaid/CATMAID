@@ -75,6 +75,11 @@
     }
   };
 
+  function addToTargetEdMap(nodeInfo) {
+    /* jshint validthis: true */
+    this[nodeInfo[0]] = nodeInfo[1];
+  }
+
   /**
    * Intervals are created by traversing a domain downstream and cutting out
    * interval parts continuously. This is done by first splitting a domain into
@@ -120,6 +125,7 @@
       var dist = 0, lastDist;
       var intervalStartIdx = partition.length - 1;
       var intervalStartPos = positions[partition[intervalStartIdx]];
+      var intervalNodes = [];
       // Traverse partition toward leaves, i.e. from the end of the partition
       // entries to branch points or root.
       for (var j=partition.length - 2; j>=0; --j) {
@@ -137,7 +143,11 @@
         if (distance < 0.0001) {
           // Interval length is exactly met or not yet reached
           if (targetEdgeMap) {
-            targetEdgeMap[partition[j]] = currentInterval;
+            // Rember node for potentially added interval
+            intervalNodes.push([
+              partition[j],
+              currentInterval
+            ]);
           }
           // Node is exactly at end of interval
           if (distance > -0.0001) {
@@ -145,6 +155,10 @@
             intervalStartIdx = j;
             dist = 0;
             currentInterval++;
+            if (targetEdgeMap) {
+              intervalNodes.forEach(addToTargetEdMap, targetEdgeMap);
+              intervalNodes = [];
+            }
           }
         } else {
           // This branch represents the case the current node is already too far
@@ -229,6 +243,11 @@
 
           if (targetEdgeMap) {
             targetEdgeMap[selectedNode] = currentInterval;
+          }
+
+          if (targetEdgeMap) {
+            intervalNodes.forEach(addToTargetEdMap, targetEdgeMap);
+            intervalNodes = [];
           }
 
           intervals.push([partition[intervalStartIdx], selectedNode]);

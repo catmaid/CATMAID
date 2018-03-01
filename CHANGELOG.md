@@ -18,6 +18,11 @@ Landmarks:
 
 ### Bug fixes
 
+Reconstruction Sampler:
+
+- 3D visualizations for interval preview and color mode were sometimes wrong and
+  showed additional intervals. This is fixed now. Actual interval boundaries
+  were not affected and are correct.
 
 
 ## 2018.02.16

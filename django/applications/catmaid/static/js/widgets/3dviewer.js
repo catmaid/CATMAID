@@ -2333,7 +2333,9 @@
     this.stack = stack;
     this.container = container; // used by MouseControls
     this.options = options;
-    this.scaleBar = new CATMAID.ScaleBar(this.container.children[0]);
+    // FIXME: If the expected container configuration isn't found, we create a
+    // disconnected element to not have the scale bar constructor fail.
+    this.scaleBar = new CATMAID.ScaleBar(this.container.children[0] || document.createElement('div'));
     this.scaleBar.setVisibility(
       this.options.show_ortho_scale_bar && this.options.camera_view == 'orthographic');
 

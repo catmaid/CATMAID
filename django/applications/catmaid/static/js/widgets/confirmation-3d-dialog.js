@@ -37,6 +37,7 @@
     this.showControlPanel = !!CATMAID.tools.getDefined(options.showControlPanel, true);
     this.showExtraButtons = !!CATMAID.tools.getDefined(options.showExtraButtons, true);
     this.controlPanelWidth = CATMAID.tools.getDefined(options.controlPanelWidth, 250);
+    this.extraControls = CATMAID.tools.getDefined(options.extraControls, []);
 
     if (!this.showControlPanel) {
       this.controlPanelWidth = 0;
@@ -228,6 +229,10 @@
       background.appendChild(backgroundCb);
       background.appendChild(document.createTextNode('Black background'));
       customOptions.appendChild(background);
+
+      if (this.extraControls && this.extraControls.length > 0) {
+        CATMAID.DOM.appendToTab(customOptions, this.extraControls);
+      }
     }
 
     // Add extra options to the button pane

@@ -390,76 +390,161 @@
         };
       }
     },
-    'sampler-intervals': {
+    'binary-sampler-intervals': {
       prepare: initSamplerIntervals,
       vertexColorizer: function(skeleton, options) {
-        var notComputableColor = options.notComputableColor;
-        var arbor = skeleton.createArbor();
-        var positions = skeleton.getPositions();
-        var samplers = skeleton.samplers;
-        if (!samplers) {
-          // Without samplers, there is no color computable
-          return function(vertex) { return notComputableColor; };
+        options.multicolor = false;
+        return makeSamplerIntervalColorizer(skeleton, options);
+      }
+    },
+    'multicolor-sampler-intervals': {
+      prepare: initSamplerIntervals,
+      vertexColorizer: function(skeleton, options) {
+        options.multicolor = true;
+        return makeSamplerIntervalColorizer(skeleton, options);
+      }
+    },
+  };
+
+  let makeSamplerIntervalColorizer = function(skeleton, options) {
+    var notComputableColor = options.notComputableColor;
+    var arbor = skeleton.createArbor();
+    var positions = skeleton.getPositions();
+    var samplers = skeleton.samplers;
+    if (!samplers) {
+      // Without samplers, there is no color computable
+      return function(vertex) { return notComputableColor; };
+    }
+
+    var nAddedDomains = 0;
+    var nSamplers = samplers.length;
+    var intervalMap = {};
+    for (var i=0; i<nSamplers; ++i) {
+      var sampler = samplers[i];
+      var domains = sampler.domains;
+      var nDomains = domains.length;
+      for (var j=0; j<nDomains; ++j) {
+        // Get intervals for domain
+        var domain = domains[j];
+        if (!domain.intervals || domain.intervals.length === 0) {
+          let addedIntervals = CATMAID.Sampling.intervalsFromModels(
+              arbor, positions, domain, sampler.interval_length,
+              sampler.interval_error, true, true, intervalMap);
+          let mockIntervals = addedIntervals.intervals.map(function(ai, i) {
+            // use the negative index as ID for now. There should not be
+            // any collissions.
+            return [-1 * i, parseInt(ai[0], 10), parseInt(ai[1], 10), null];
+          });
+          CATMAID.Sampling.updateIntervalMap(arbor, mockIntervals, intervalMap);
+        } else if (intervalMap) {
+          // Update interval map with existing intervals
+          CATMAID.Sampling.updateIntervalMap(arbor, domain.intervals, intervalMap);
         }
+      }
+    }
 
-        var successors = arbor.allSuccessors();
+    let getColor;
+    if (options.multicolor) {
+      var colorScheme = 'Spectral';
+      var colorizer = colorbrewer[colorScheme];
+      if (!colorizer) {
+        throw new CATMAID.ValueError('Couldn\'t find color scheme "' + colorScheme + '"');
+      }
+      var nColors = 11;
+      var colorSet = colorizer[11];
+      if (!colorSet) {
+        throw new CATMAID.ValueError('Couldn\'t find color set ' + nColors + ' for color scheme "' + colorScheme +'"');
+      }
+      colorSet = colorSet.map(function(rgb) {
+        return new THREE.Color(rgb);
+      });
 
-        var colorScheme = 'Spectral';
-        var colorizer = colorbrewer[colorScheme];
-        if (!colorizer) {
-          throw new CATMAID.ValueError('Couldn\'t find color scheme "' + colorScheme + '"');
-        }
-        var nColors = 11;
-        var colorSet = colorizer[11];
-        if (!colorSet) {
-          throw new CATMAID.ValueError('Couldn\'t find color set ' + nColors + ' for color scheme "' + colorScheme +'"');
-        }
-        colorSet = colorSet.map(function(rgb) {
-          return new THREE.Color(rgb);
-        });
+      getColor= function(intervalId, nodeId) {
+        let intervalColorIndex = Math.abs(parseInt(intervalId, 10) % nColors);
+        return colorSet[intervalColorIndex];
+      };
+    } else {
+      let colorMap = new Map();
+      let evenColor = new THREE.Color(0x1f96ff);
+      let oddColor = new THREE.Color(0xff711f);
+      // Walk all domains
+      for (var i=0; i<nSamplers; ++i) {
+        let sampler = samplers[i];
+        let domains = sampler.domains;
+        let nDomains = domains.length;
+        for (var j=0; j<nDomains; ++j) {
+          // Get domain arbor
+          let domainArbor = CATMAID.Sampling.domainArborFromModel(arbor, domain);
+          let successors = domainArbor.allSuccessors();
+          let workingSet = [domain.start_node_id];
+          let workingSetIntervalStart = [true];
+          let nextColor = evenColor;
+          while (workingSet.length > 0) {
+            let currentNodeId = workingSet.shift();
+            let isIntervalStart = workingSetIntervalStart.shift();
 
-        var getColor= function(intervalId, nodeId) {
-          let intervalColorIndex = Math.abs(parseInt(intervalId, 10)) % nColors;
-          return colorSet[intervalColorIndex];
-        };
+            let intervalId = intervalMap[currentNodeId];
+            if (intervalId === undefined || intervalId === null) {
+              // This node is part of the domain, but part of no interval. This
+              // can only happen at the end of branches and we don't have to
+              // expect more valid intervals on this branch. Therefore, we can
+              // just continue with the next working set node.
+              continue;
+            }
 
-        var nAddedDomains = 0;
-        var nSamplers = samplers.length;
-        var intervalMap = {};
-        for (var i=0; i<nSamplers; ++i) {
-          var sampler = samplers[i];
-          var domains = sampler.domains;
-          var nDomains = domains.length;
-          for (var j=0; j<nDomains; ++j) {
-            // Get intervals for domain
-            var domain = domains[j];
-            if (!domain.intervals || domain.intervals.length === 0) {
-              let addedIntervals = CATMAID.Sampling.intervalsFromModels(
-                  arbor, positions, domain, sampler.interval_length,
-                  sampler.interval_error, true, true, intervalMap);
-              addedIntervals.intervals.map(function(ai, i) {
-                // use the negative index as ID for now. There should not be
-                // any collissions.
-                return [-1 * i, parseInt(ai[0], 10), parseInt(ai[1], 10), null];
-              });
-            } else if (intervalMap) {
-              // Update interval map with existing intervals
-              CATMAID.Sampling.updateIntervalMap(arbor, domain.intervals, intervalMap);
+            let intervalColor = colorMap.get(intervalId);
+            if (!intervalColor) {
+              intervalColor = nextColor;
+              colorMap.set(intervalId, intervalColor);
+            }
+
+            // Check all succcessors of current reference node if they are part
+            // of an interval that is different from the current one. If so,
+            // assign the picked color for that interval already.
+            let succ = successors[currentNodeId];
+            if (succ && succ.length > 0) {
+              nextColor = intervalColor === evenColor ? oddColor : evenColor;
+              for (let k=0; k<succ.length; ++k) {
+                let succId = succ[k];
+
+                workingSet.push(succId);
+
+                // If the successor node is part of a new interval, pre-assign
+                // color.
+                let succIntervalId = intervalMap[succId];
+                if (succIntervalId && succIntervalId !== intervalId) {
+                  // All branches start at same node. If the current reference
+                  // node is the first one of looked at of its interval, it ...
+                  if (isIntervalStart) {
+                    colorMap.set(succIntervalId, intervalColor);
+                  } else {
+                    colorMap.set(succIntervalId, nextColor);
+                  }
+                  workingSetIntervalStart.push(true);
+                } else {
+                  workingSetIntervalStart.push(false);
+                }
+              }
             }
           }
         }
-
-        return function(vertex) {
-          // Find domain this vertex is part of
-          var intervalId = intervalMap[vertex.node_id];
-          if (intervalId === undefined) {
-            return notComputableColor;
-          } else {
-            return getColor(intervalId, vertex.node_id);
-          }
-        };
       }
-    },
+
+      getColor = function(intervalId, nodeId) {
+        let color = colorMap.get(intervalId);
+        return color === undefined ? notComputableColor : color;
+      };
+    }
+
+    return function(vertex) {
+      // Find domain this vertex is part of
+      var intervalId = intervalMap[vertex.node_id];
+      if (intervalId === undefined) {
+        return notComputableColor;
+      } else {
+        return getColor(intervalId, vertex.node_id);
+      }
+    };
   };
 
   /**

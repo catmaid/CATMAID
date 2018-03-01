@@ -527,7 +527,8 @@ var WindowMaker = new function()
      ['last-reviewed', 'Last Reviewer'],
      ['axon-and-dendrite', 'Axon and dendrite'],
      ['sampler-domains', 'Reconstrucion sampler domains'],
-     ['sampler-intervals', 'Reconstrucion sampler intervals']
+     ['binary-sampler-intervals', 'Reconstrucion sampler intervals (2 colors)'],
+     ['multicolor-sampler-intervals', 'Reconstrucion sampler intervals (11 colors)']
     ].forEach(function(e) {
        var selected = o.color_method === e[0];
        colorMenu.options.add(new Option(e[1], e[0], selected, selected));

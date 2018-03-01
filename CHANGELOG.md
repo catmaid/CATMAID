@@ -15,6 +15,12 @@ Landmarks:
 
 - PNG and SVG exports offer now a filename input field.
 
+Reconstruction Sampler:
+
+- Intervals are now displayed with only two colors by default, it makes
+  distinguishing many intervals easier. The previous multicolor mode can be
+  reactivated from the prview window.
+
 Miscellaneous:
 
 - Basic Search: allow search for treenode IDs and connector IDs.
@@ -22,6 +28,11 @@ Miscellaneous:
 
 ### Bug fixes
 
+Reconstruction Sampler:
+
+- 3D visualizations for interval preview and color mode were sometimes wrong and
+  showed additional intervals. This is fixed now. Actual interval boundaries
+  were not affected and are correct.
 
 
 ## 2018.02.16

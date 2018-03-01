@@ -21,6 +21,7 @@ needed_classes = {
     'neuron': "A neuron representation",
     'root': "The root node for the tracing system",
     'skeleton': "The representation of a skeleton",
+    'sampler-created': "Nodes that are created by the reconstruction sampler"
 }
 
 # All relations needed by the tracing system alongside their

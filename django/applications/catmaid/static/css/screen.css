@@ -1072,6 +1072,33 @@ div.review-block::after {
   fill: khaki;
 }
 
+.node.connector-linked.pre circle {
+  stroke: firebrick;
+  fill: red;
+}
+
+.node.connector-linked.pre.highlight circle {
+  stroke: red;
+}
+
+.node.connector-linked.post circle {
+  stroke: darkturquoise;
+  fill: cyan;
+}
+
+.node.connector-linked.post.highlight circle {
+  stroke: cyan;
+}
+
+.node.connector-linked.gapjunction circle {
+  stroke: purple;
+  fill: mediumorchid;
+}
+
+.node.connector-linked.highlight circle {
+  stroke: mediumorchid;
+}
+
 .node {
   font: 10px sans-serif;
 }

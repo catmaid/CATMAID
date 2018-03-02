@@ -658,7 +658,7 @@
       'tagged': tagged,
       'belowTag': belowTag,
       'strahler': strahler[id],
-      'connectorLinked': connectorPartnerNodes.has(id)
+      'connectorLinked': connectorPartnerNodes.get(id)
     };
 
     // Add children to node, if they exist
@@ -741,12 +741,12 @@
     // For now do nothing.
   };
 
-  function firstElement(list) {
-    return list[0];
+  function makeConnectorTypeElement(list) {
+    return [list[0], list[2]];
   }
 
   function getConnectorPartnerNodes(connectorNodes) {
-    return connectorNodes.map(firstElement);
+    return connectorNodes.map(makeConnectorTypeElement);
   }
 
 
@@ -770,7 +770,7 @@
     }).bind(this);
 
     var taggedNodeIds = new Set(getTaggedNodes(this.highlightTags));
-    var connectorPartnerNodes = new Set(this.showConnectorPartners ?
+    var connectorPartnerNodes = new Map(this.showConnectorPartners ?
         getConnectorPartnerNodes(this.currentSkeletonConnectors) : []);
     var blacklist = new Set(this.collapseNotABranch ? getTaggedNodes(['not a branch']): []);
     this.renderTree = this.createTreeRepresentation(this.currentSkeletonTree,
@@ -1047,8 +1047,16 @@
       .attr("id", function(d) { return "node" + d.id; })
       .attr("transform", nodeTransform)
       .classed('tagged', function(d) { return d.belowTag; })
-      .classed('connector-linked', function(d) { return d.connectorLinked; })
       .on("dblclick", nodeClickHandler.bind(this));
+
+    if (this.showConnectorPartners) {
+      node = node
+        .classed('connector-linked', function(d) { return d.connectorLinked !== undefined; })
+        .classed('pre', function(d) { return d.connectorLinked === 0; })
+        .classed('post', function(d) { return d.connectorLinked === 1; })
+        .classed('gapjunction', function(d) { return d.connectorLinked === 2; });
+    }
+
     node.append("circle")
       .attr("r", 4.5);
     styleNodeText(node.append("text")).text(nodeName);

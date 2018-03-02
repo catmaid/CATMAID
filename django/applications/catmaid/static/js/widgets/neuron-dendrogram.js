@@ -50,6 +50,11 @@
     // Factor for the default line width
     this.lineWidthFactor = 1.0;
 
+    // A set of filter rules to apply to the handled nodes
+    this.filterRules = [];
+    // Filter rules can optionally be disabled
+    this.applyFilterRules = true;
+
     // Listen to change events of the active node and skeletons
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
         this.selectActiveNode, this);
@@ -374,6 +379,10 @@
       },
       createContent: function(content) {
         this.init(content);
+      },
+      filter: {
+        rules: this.filterRules,
+        update: this.update.bind(this)
       }
     };
   };
@@ -581,6 +590,36 @@
   };
 
   /**
+   * Filter the passed in skeleton data according to the current filter setup.
+   */
+  NeuronDendrogram.prototype.filterSkeletonData = function(skeletonId, data) {
+    var hasResults = data && data[0].length > 0;
+    if (this.filterRules.length > 0 && this.applyFilterRules && hasResults) {
+      // Collect skeleton models from input
+      var skeletons = {};
+      skeletons[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
+      var filter = new CATMAID.SkeletonFilter(this.filterRules, skeletons);
+      return filter.execute()
+        .then(function(filtered) {
+          if (filtered.skeletons.size === 0) {
+            CATMAID.warn("No skeleton nodes left after filter application");
+            return Promise.resolve([[], [], {}, [], []]);
+          }
+          // Filter nodes
+          let allowedNodes = new Set(Object.keys(filtered.nodes).map(function(n) {
+            return parseInt(n, 10);
+          }));
+          data[0] = data[0].filter(function(node) {
+            // Allow also parent?
+            return allowedNodes.has(node[1]);
+          });
+          return Promise.resolve(data);
+        });
+    }
+    return Promise.resolve(data);
+  };
+
+  /**
    * Load the given skeleton.
    */
   NeuronDendrogram.prototype.loadSkeleton = function(skid)
@@ -594,25 +633,29 @@
     this.updating = true;
 
     // Retrieve skeleton data
+    let self = this;
     CATMAID.fetch(project.id + '/skeletons/' + skid + '/compact-detail', 'GET', {
         with_connectors: true,
         with_tags: true
       })
-      .then((function(data) {
-        this.reset();
-        this.currentSkeletonId = skid;
-        this.currentSkeletonTree = data[0];
-        this.currentSkeletonConnectors = data[1];
-        this.currentSkeletonTags = data[2];
+      .then(function(data) {
+        return self.filterSkeletonData(skid, data);
+      })
+      .then(function(data) {
+        self.reset();
+        self.currentSkeletonId = skid;
+        self.currentSkeletonTree = data[0];
+        self.currentSkeletonConnectors = data[1];
+        self.currentSkeletonTags = data[2];
         var ap  = new CATMAID.ArborParser().init('compact-skeleton', data);
-        this.currentArbor = ap.arbor;
-        this.update();
-        this.updating = false;
-      }).bind(this))
-      .catch((function(error) {
-        this.updating = false;
+        self.currentArbor = ap.arbor;
+        self.update();
+        self.updating = false;
+      })
+      .catch(function(error) {
+        self.updating = false;
         CATMAID.handleError(error);
-      }).bind(this));
+      });
   };
 
   /**

@@ -4,7 +4,6 @@
   CATMAID,
   InstanceRegistry,
   project,
-  requestQueue,
   SkeletonAnnotations
 */
 
@@ -595,23 +594,25 @@
     this.updating = true;
 
     // Retrieve skeleton data
-    var url = django_url + project.id + '/' + skid + '/1/1/compact-skeleton';
-    requestQueue.register(url, "GET", {}, CATMAID.jsonResponseHandler(
-          (function(data) {
-            this.reset();
-            this.currentSkeletonId = skid;
-            this.currentSkeletonTree = data[0];
-            this.currentSkeletonConnectors = data[1];
-            this.currentSkeletonTags = data[2];
-            var ap  = new CATMAID.ArborParser().init('compact-skeleton', data);
-            this.currentArbor = ap.arbor;
-            this.update();
-            this.updating = false;
-          }).bind(this),
-          (function(data) {
-            this.updating = false;
-            CATMAID.error("Neuron dendrogram: couldn't update skeleton data");
-          }).bind(this)));
+    CATMAID.fetch(project.id + '/skeletons/' + skid + '/compact-detail', 'GET', {
+        with_connectors: true,
+        with_tags: true
+      })
+      .then((function(data) {
+        this.reset();
+        this.currentSkeletonId = skid;
+        this.currentSkeletonTree = data[0];
+        this.currentSkeletonConnectors = data[1];
+        this.currentSkeletonTags = data[2];
+        var ap  = new CATMAID.ArborParser().init('compact-skeleton', data);
+        this.currentArbor = ap.arbor;
+        this.update();
+        this.updating = false;
+      }).bind(this))
+      .catch((function(error) {
+        this.updating = false;
+        CATMAID.handleError(error);
+      }).bind(this));
   };
 
   /**

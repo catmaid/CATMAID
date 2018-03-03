@@ -655,15 +655,6 @@
       // Append matrix to content
       content.appendChild(table);
 
-      // Fix table header height for rotated cells
-      var headerHeight = 0;
-      $('th.vertical-table-header div').each(function() {
-        var height = $(this).outerWidth();
-        if (height > headerHeight) headerHeight = height;
-      });
-
-      $('th.vertical-table-header').height(headerHeight + 'px');
-
       // Add a handler for openening connector selections for individual partners
       $('a[partnerIDs]', table).click(function () {
         var sourceIDs = $(this).attr('sourceIDs');
@@ -885,10 +876,12 @@
         skeletonIDs) {
       colNames.push(name);
       colSkids.push(skeletonIDs);
-      var th = createHeaderCell(name, colGroup, skeletonIDs, false);
+      /* jshint validthis: true */
+      var th = createHeaderCell(name, colGroup, skeletonIDs, false,
+          this.rotateColumnHeaders);
       /* jshint validthis: true */
       if (this.rotateColumnHeaders) {
-        th.setAttribute('class', 'vertical-table-header');
+        th.setAttribute('class', 'vertical-table-header-outer');
       }
       tableHeader.appendChild(th);
     }
@@ -906,7 +899,7 @@
     }
 
     // Chreate a cell with skeleton link
-    function createHeaderCell(name, group, skeletonIDs, isRow) {
+    function createHeaderCell(name, group, skeletonIDs, isRow, rotate) {
       // Make sure we have either a group or a single skeleton ID
       if (!group && skeletonIDs.length > 1) {
         throw new CATMAID.ValueError('Expected either a group or a single skeleton ID');
@@ -923,6 +916,9 @@
       a.appendChild(document.createTextNode(name));
       var div = document.createElement('div');
       div.appendChild(a);
+      if (rotate) {
+        div.classList.add('vertical-table-header-inner');
+      }
       var th = document.createElement('th');
       th.appendChild(div);
       if (group) {
@@ -968,7 +964,7 @@
           th.appendChild(document.createTextNode('Sum'));
           /* jshint validthis: true */
           if (rotate) {
-            th.setAttribute('class', 'vertical-table-header');
+            th.setAttribute('class', 'vertical-table-header-outer');
           }
           e.appendChild(th);
         } else if (i <= rowSums.length) {

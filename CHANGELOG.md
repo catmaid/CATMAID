@@ -34,6 +34,9 @@ Miscellaneous:
 - In addition to the '/apis' endpoint, the API documentation is now also
   available as part of the general documentation.
 
+- Connectivity Widget: partner header indexes can now optionally be replaced
+  with the neuron name and rotated by 90 degrees.
+
 ### Bug fixes
 
 Reconstruction Sampler:

@@ -28,6 +28,11 @@
     // If no original colors are used, new skeleton models will be colored
     // according to their conenctor link.
     this.useOriginalColor = false;
+    // Optionally display neuron names in column headers
+    this.showNeuronNameInHeader = false;
+    // Rotate column headers by 90 degree
+    this.rotateColumnHeaders = false;
+
     // A set of filter rules to apply to the handled skeletons
     this.filterRules = [];
     // Filter rules can optionally be disabled
@@ -267,6 +272,36 @@
         originalColorLabel.appendChild(originalColor);
         originalColorLabel.appendChild(document.createTextNode('Original color'));
         controls.appendChild(originalColorLabel);
+
+        var neuronNameHeader = document.createElement('input');
+        neuronNameHeader.setAttribute('id', 'connectivity-name-header-' + this.widgetID);
+        neuronNameHeader.setAttribute('type', 'checkbox');
+        if (this.showNeuronNameInHeader) {
+          neuronNameHeader.setAttribute('checked', 'checked');
+        }
+        neuronNameHeader.onchange = function(e) {
+          self.showNeuronNameInHeader = this.checked;
+          self.redraw();
+        };
+        var neuronNameHeaderLabel = document.createElement('label');
+        neuronNameHeaderLabel.appendChild(neuronNameHeader);
+        neuronNameHeaderLabel.appendChild(document.createTextNode('Neuron name in header'));
+        controls.appendChild(neuronNameHeaderLabel);
+
+        var rotateHeader = document.createElement('input');
+        rotateHeader.setAttribute('id', 'connectivity-rotate-header-' + this.widgetID);
+        rotateHeader.setAttribute('type', 'checkbox');
+        if (this.rotateColumnHeaders) {
+          rotateHeader.setAttribute('checked', 'checked');
+        }
+        rotateHeader.onchange = function(e) {
+          self.rotateColumnHeaders = this.checked;
+          self.redraw();
+        };
+        var rotateHeaderLabel = document.createElement('label');
+        rotateHeaderLabel.appendChild(rotateHeader);
+        rotateHeaderLabel.appendChild(document.createTextNode('Partner header 90°'));
+        controls.appendChild(rotateHeaderLabel);
 
         var gapjunctionToggle = document.createElement('input');
         gapjunctionToggle.setAttribute('id', 'connectivity-gapjunctiontable-toggle-' + this.widgetID);
@@ -770,7 +805,7 @@
      * Support function for creating a partner table.
      */
     var create_table = function(skids, skeletons, partnerSet,
-        hidePartnerThreshold, reviewFilter) {
+        hidePartnerThreshold, reviewFilter, nameInHeader, rotateHeader) {
 
       var thresholds = partnerSet.thresholds;
       var partners = partnerSet.getSynCountSortedPartners();
@@ -794,6 +829,8 @@
       // The total synapse count
       var total_synaptic_count = getSum(partners, 'synaptic_count');
 
+      let nns = CATMAID.NeuronNameService.getInstance();
+
       // The table header
       var thead = $('<thead />');
       table.append( thead );
@@ -809,7 +846,14 @@
         row = $('<tr />');
         row.append( $('<th />').text("Sum").attr('rowspan', '1').attr('colspan', '1'));
         skids.forEach(function(s, i) {
-          this.append( $('<th />').text(i+1 + ".").attr('rowspan', '1').attr('colspan', '1'));
+          let title = nameInHeader ? nns.getName(s) : ((i + 1) + '.');
+          let headerContent = $('<span />').text(title);
+          let header = $('<th />').attr('rowspan', '1').attr('colspan', '1').append(headerContent);
+          if (rotateHeader) {
+            header.addClass('vertical-table-header-outer');
+            headerContent.addClass('vertical-table-header-inner');
+          }
+          this.append(header);
         }, row);
         thead.append(row);
       }
@@ -1447,7 +1491,9 @@
     var tableContainers = this.partnerSets.map(function(partnerSet) {
       var tableContainer = $('<div />');
       var table = create_table.call(this, this.ordered_skeleton_ids,
-          this.skeletons, partnerSet, this.hidePartnerThreshold, this.reviewFilter);
+        this.skeletons, partnerSet, this.hidePartnerThreshold,
+        this.reviewFilter, this.showNeuronNameInHeader,
+        this.rotateColumnHeaders);
       tableContainer.append(table);
 
       // Initialize datatable

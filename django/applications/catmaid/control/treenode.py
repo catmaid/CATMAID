@@ -732,6 +732,53 @@ def delete_treenode(request, project_id=None):
     except Exception as e:
         raise Exception(response_on_error + ': ' + str(e))
 
+def _compact_detail_list(project_id, treenode_ids):
+    """Return a list with information on the passed in node. It has the form:
+    [ID, parent ID, x, y, z, confidence, user_id, radius, skeleton_id, user_id]
+    """
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT t.id, parent_id, location_x, location_y, location_z, confidence,
+            radius, skeleton_id, EXTRACT(EPOCH FROM edition_time), user_id
+        FROM treenode t
+        JOIN UNNEST(%(treenode_ids)s::bigint[]) query(id)
+            ON t.id = query.id
+        WHERE project_id=%(project_id)s
+    """, {
+        'project_id': project_id,
+        'treenode_ids': treenode_ids
+    })
+
+    rows = cursor.fetchall()
+    if len(rows) == 0:
+        raise ValueError("Could not find treenodes")
+
+    return rows
+
+def _compact_detail(project_id, treenode_id):
+    """Return a list with information on the passed in node. It has the form:
+    [ID, parent ID, x, y, z, confidence, user_id, radius, skeleton_id, user_id]
+    """
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT id, parent_id, location_x, location_y, location_z, confidence,
+        radius, skeleton_id, EXTRACT(EPOCH FROM edition_time), user_id
+        FROM treenode
+        WHERE id=%(treenode_id)s
+        AND project_id=%(project_id)s
+    """, {
+        'project_id': project_id,
+        'treenode_id': treenode_id
+    })
+
+    rows = cursor.fetchall()
+    if len(rows) == 0:
+        raise ValueError("Could not find treenode with ID {}".format(treenode_id))
+    if len(rows) > 1:
+        raise ValueError("Found {} treenodes with ID {}, expected one".format(len(rows), treenode_id))
+
+    return rows[0]
+
 
 def _treenode_info(project_id, treenode_id):
     c = connection.cursor()
@@ -794,6 +841,31 @@ def treenode_info(request, project_id=None, treenode_id=None):
     """
     info = _treenode_info(int(project_id), int(treenode_id))
     return JsonResponse(info)
+
+
+@api_view(['GET'])
+@requires_user_role(UserRole.Browse)
+def compact_detail(request, project_id=None, treenode_id=None):
+    """Retrieve node information in a compact form. A list of the following form
+    is returned: [ID, parent ID, x, y, z, confidence, user_id, radius,
+    skeleton_id, user_id].
+    """
+    info = _compact_detail(int(project_id), int(treenode_id))
+    return JsonResponse(info, safe=False)
+
+
+@api_view(['POST'])
+@requires_user_role(UserRole.Browse)
+def compact_detail_list(request, project_id=None):
+    """Retrieve node information in a compact form. A list of elements of the
+    following form is returned: [ID, parent ID, x, y, z, confidence, user_id,
+    radius, skeleton_id, user_id].
+    """
+    treenode_ids = get_request_list(request.POST, 'treenode_ids', None, int)
+    if not treenode_ids:
+        raise ValueError("No treenode IDs provided")
+    info = _compact_detail_list(int(project_id), treenode_ids)
+    return JsonResponse(info, safe=False)
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

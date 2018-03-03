@@ -6,7 +6,12 @@ included in this changelog.
 
 ### Additions
 
-None.
+- `POST /{project_id}/treenodes/compact-detail`:
+  Retrieve treenode information for multiple nodes in the format of regular node
+  queries, accepts a parameter "treenode_ids".
+
+- `GET /{project_id}/treenodes/{treenode_id}/compact-detail`:
+  Retrieve treenode information for a single node.
 
 ### Modifications
 

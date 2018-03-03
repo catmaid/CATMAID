@@ -2379,7 +2379,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   // Prepare existing Node and ConnectorNode instances for reuse
   this.graphics.resetCache();
 
-  // Set curently allowed section distances, to correctly account for broken
+  // Set currently allowed section distances, to correctly account for broken
   // sections.
   var sv = this.stackViewer;
   var dToSecBefore = sv.validZDistanceBefore(sv.z);
@@ -2411,7 +2411,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   for (var i=0, max=jsonNodes.length; i<max; ++i) {
     var a = jsonNodes[i];
     // a[0]: ID, a[1]: parent ID, a[2]: x, a[3]: y, a[4]: z, a[5]: confidence
-    // a[8]: user_id, a[6]: radius, a[7]: skeleton_id, a[9]: user_id
+    // a[6]: radius, a[7]: skeleton_id, a[8]: user_id, a[9]: user_id
     var z = primaryStack.projectToUnclampedStackZ(a[4], a[3], a[2]);
     let newNode = this.graphics.newNode(
       a[0], null, a[1], a[6],

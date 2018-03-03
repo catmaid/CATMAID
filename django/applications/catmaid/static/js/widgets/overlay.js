@@ -226,20 +226,22 @@ SkeletonAnnotations.getTracingOverlayBySkeletonElements = function(skeletonEleme
 };
 
 /**
- * Select a node in any of the existing TracingOverlay instances, by its ID.
- * Will return a rejected promise if the node could not be selected in all stack
+ * Select a node in any of the existing TracingOverlay instances, by its ID. By
+ * default, if a node is not found in a viewer, the node will be loaded and a
+ * resolved promise will return. If, however, <strict> is truthy, this will
+ * return a rejected promise if the node could not be selected in all stack
  * viewers. This behavior can be changed using the <singleMatchValid> parameter
  * to require only a single viewer to have the node to return a resolved
  * promise. All stack viewers are asked to select the node.
  */
-SkeletonAnnotations.staticSelectNode = function(nodeId, singleMatchValid) {
+SkeletonAnnotations.staticSelectNode = function(nodeId, singleMatchValid, strict) {
   var nFound = 0;
   var incFound = function() { ++nFound; };
   var selections = [];
   var instances = this.TracingOverlay.prototype._instances;
   for (var stackViewerId in instances) {
     if (instances.hasOwnProperty(stackViewerId)) {
-      var select = instances[stackViewerId].selectNode(nodeId);
+      var select = instances[stackViewerId].selectNode(nodeId, strict);
       selections.push(select.then(incFound));
     }
   }
@@ -1362,16 +1364,25 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
 };
 
 /**
- * Activates the given node id if it exists in the current retrieved set of
- * nodes.
+ * Tries to activates the given node id if it exists in the current retrieved
+ * set of nodes. If the passed in node is not found, it is loaded into the
+ * overlay. If the returned promise should instead become rejected, the <strict>
+ * argument can be set to true.
  */
-SkeletonAnnotations.TracingOverlay.prototype.selectNode = function(id) {
+SkeletonAnnotations.TracingOverlay.prototype.selectNode = function(id, strict) {
   var node = this.nodes[id];
   if (node) {
     this.activateNode(node);
     return Promise.resolve(node);
+  } else if (strict) {
+    return Promise.reject(new CATMAID.Warning("Could not find node " + id));
   }
-  return Promise.reject(new CATMAID.Warning("Could not find node " + id));
+
+  let self = this;
+  return this.loadExtraNodes([id])
+    .then(function() {
+      return self.selectNode(id, true);
+    });
 };
 
 /**
@@ -2589,6 +2600,43 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     this.trigger(this.EVENT_HIT_NODE_DISPLAY_LIMIT);
   }
   CATMAID.statusBar.replaceLast(msg);
+};
+
+/**
+ * This loads additional nodes into the current overlay.
+ *
+ * @returns Promise resolves when nodes are loaded
+ */
+SkeletonAnnotations.TracingOverlay.prototype.loadExtraNodes = function(extraNodes) {
+  if (!extraNodes || !extraNodes.length) {
+    throw new CATMAID.ValueError("No nodes provided");
+  }
+  let nodeIdsToLoad = extraNodes.filter(function(nodeId) {
+    return !this[nodeId];
+  }, this.nodes);
+  if (nodeIdsToLoad.length === 0) {
+    return Promise.resolve();
+  }
+  let self = this;
+  return CATMAID.fetch(project.id + '/treenodes/compact-detail', 'POST', {
+      treenode_ids: nodeIdsToLoad
+    })
+    .then(function(data) {
+      // Add to nodes array
+      let primaryStack = self.stackViewer.primaryStack;
+      for (let i=0, imax=data.length; i<imax; ++i) {
+        let a = data[i];
+        var z = primaryStack.projectToUnclampedStackZ(a[4], a[3], a[2]);
+        let newNode = self.graphics.newNode(
+          a[0], null, a[1], a[6],
+          primaryStack.projectToUnclampedStackX(a[4], a[3], a[2]),
+          primaryStack.projectToUnclampedStackY(a[4], a[3], a[2]),
+          z, z - self.stackViewer.z, a[5], a[7], a[8], a[9]);
+        self.nodes[a[0]] = newNode;
+        newNode.createGraphics();
+      }
+      self.redraw();
+    });
 };
 
 /**

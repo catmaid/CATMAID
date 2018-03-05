@@ -107,6 +107,25 @@ $.fn.dataTable.ext.oSort['hslcolor-desc']  = function(a, b) {
   return -1 * CATMAID.tools.compareHSLColors(a, b);
 };
 
+/**
+ * Add case insensitive :contains content filter.
+ * Based on: https://stackoverflow.com/questions/187537
+ */
+jQuery.expr[":"].icontains = jQuery.expr.createPseudo(function(arg) {
+    return function( elem ) {
+        return jQuery(elem).text().toUpperCase().indexOf(arg.toUpperCase()) >= 0;
+    };
+});
+
+/**
+ * A case insenstive "not" :contains.
+ */
+jQuery.expr[":"].icontainsnot = jQuery.expr.createPseudo(function(arg) {
+    return function( elem ) {
+        return jQuery(elem).text().toUpperCase().indexOf(arg.toUpperCase()) === -1;
+    };
+});
+
 
 /**
  * Three.js extensions

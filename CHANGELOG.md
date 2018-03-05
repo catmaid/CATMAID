@@ -42,6 +42,9 @@ Miscellaneous:
   be performed anymore. Left mouse button clicks/movements are handled like
   right mouse button clicks/movements.
 
+- The Keyboard/Mouse Help Widget has now a text filter, which allows to show
+  only items containing a particular text.
+
 
 ### Bug fixes
 

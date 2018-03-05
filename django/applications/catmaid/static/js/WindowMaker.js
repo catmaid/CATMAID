@@ -1751,7 +1751,7 @@ var WindowMaker = new function()
       action = actions[i];
       keys = action.getKeys();
       for( k in keys ) {
-        result += '<dt><kbd>' + k + '</kbd></dt><dd>' + action.getHelpText() + '</dd>';
+        result += '<div class="help-item"><dt><kbd>' + k + '</kbd></dt><dd>' + action.getHelpText() + '</dd></div>';
       }
     }
     return result + '</dl>';
@@ -1778,14 +1778,40 @@ var WindowMaker = new function()
       content.appendChild( container );
     }
 
+    var mainContent = document.createElement('div');
+
+    var searchForm = document.createElement('form');
+    searchForm.setAttribute('data-role', 'filter');
+    searchForm.style.marginTop="1em";
+
+    var searchInput = document.createElement('input');
+    searchInput.setAttribute('type', 'text');
+    searchInput.setAttribute('data-role', 'filter');
+    searchInput.setAttribute('placeholder', 'Filter');
+    searchInput.onkeyup = function() {
+      // Filter content
+      if (this.value.length === 0) {
+        $('div[data-content=doc]').show();
+        $('div.help-item', mainContent).show();
+        $('li', mainContent).show();
+      } else {
+        $('div[data-content=doc]').hide();
+        $('div.help-item dd:icontainsnot(' + this.value + ')', mainContent).closest('div').hide();
+        $('div.help-item dd:icontains(' + this.value + ')', mainContent).closest('div').show();
+        $('li:icontainsnot(' + this.value + ')').hide();
+        $('li:icontains(' + this.value + ')').show();
+      }
+    };
+    searchForm.appendChild(searchInput);
+
     var htmlComponents = ['<p id="keyShortcutsText">',
-      '<h4>Documentation</h4>',
+      '<div data-content="doc"><h4>Documentation</h4>',
       '<a href="' + CATMAID.makeDocURL('/') + '" target="_blank">',
       'General documentation for CATMAID release ' + CATMAID.getVersionRelease(),
       '</a><br />',
       '<a href="' + CATMAID.makeChangelogURL() + '" target="_blank">',
       'Changelog for CATMAID release ' + CATMAID.getVersionRelease(),
-      '</a>',
+      '</a></div>',
       '<h4>Global Key Help</h4>'];
 
     actions = project.getActions();
@@ -1819,7 +1845,9 @@ var WindowMaker = new function()
       html = html.replace(/Ctrl/gi, '⌘');
     }
 
-    container.innerHTML = html;
+    mainContent.innerHTML = html;
+    container.append(searchForm);
+    container.append(mainContent);
     return container;
   };
 

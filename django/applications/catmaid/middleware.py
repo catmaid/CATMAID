@@ -174,7 +174,10 @@ class ProfilingMiddleware(object):
     def __call__(self, request):
         profile = 'profile' in request.GET or 'profile' in request.POST
 
+        no_content = False
         if profile:
+            no_content = 'profile-no-content' in request.GET or \
+                    'profile-no-content' in request.POST
             request.profiler = cProfile.Profile()
             request.profiler.enable()
 
@@ -186,10 +189,13 @@ class ProfilingMiddleware(object):
             sortby = getattr(request, 'profile-sorting', 'cumulative')
             ps = pstats.Stats(request.profiler, stream=s).sort_stats(sortby)
             ps.print_stats()
-            response = JsonResponse({
-                'content': response.content,
+            data = {
                 'profile': s.getvalue()
-            })
+            }
+            if not no_content:
+                data['content'] = response.content
+
+            response = JsonResponse(data)
 
             if hasattr(request, 'profile-to-disk'):
                 labels = (request.META['REMOTE_ADDR'], datetime.now())

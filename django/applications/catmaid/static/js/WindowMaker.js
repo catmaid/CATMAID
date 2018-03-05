@@ -1778,45 +1778,48 @@ var WindowMaker = new function()
       content.appendChild( container );
     }
 
-    var keysHTML = '<p id="keyShortcutsText">';
-    keysHTML += '<h4>Documentation</h4>';
-    keysHTML += '<a href="' + CATMAID.makeDocURL('/') + '" target="_blank">';
-    keysHTML += 'General documentation for CATMAID release ' + CATMAID.getVersionRelease();
-    keysHTML += '</a><br />';
-    keysHTML += '<a href="' + CATMAID.makeChangelogURL() + '" target="_blank">';
-    keysHTML += 'Changelog for CATMAID release ' + CATMAID.getVersionRelease();
-    keysHTML += '</a>';
-    keysHTML += '<h4>Global Key Help</h4>';
+    var htmlComponents = ['<p id="keyShortcutsText">',
+      '<h4>Documentation</h4>',
+      '<a href="' + CATMAID.makeDocURL('/') + '" target="_blank">',
+      'General documentation for CATMAID release ' + CATMAID.getVersionRelease(),
+      '</a><br />',
+      '<a href="' + CATMAID.makeChangelogURL() + '" target="_blank">',
+      'Changelog for CATMAID release ' + CATMAID.getVersionRelease(),
+      '</a>',
+      '<h4>Global Key Help</h4>'];
 
     actions = project.getActions();
-    keysHTML += getHelpForActions(actions);
+    htmlComponents.push(getHelpForActions(actions));
 
     tool = project.getTool();
     if (tool) {
       if (tool.hasOwnProperty('getMouseHelp')) {
-        keysHTML += '<h4>Tool-specific Mouse Help</h4>';
-        keysHTML += tool.getMouseHelp();
+
+        htmlComponents.push('<h4>Tool-specific Mouse Help</h4>',
+            tool.getMouseHelp());
       }
 
       if (tool.hasOwnProperty('getActions')) {
-        keysHTML += '<h4>Tool-specific Key Help</h4>';
-        keysHTML += getHelpForActions(tool.getActions());
+        htmlComponents.push('<h4>Tool-specific Key Help</h4>',
+            getHelpForActions(tool.getActions()));
       }
 
       if (tool.hasOwnProperty('getUndoHelp')) {
-        keysHTML += '<h4>Undo help</h4>';
-        keysHTML += tool.getUndoHelp();
+        htmlComponents.push('<h4>Undo help</h4>',
+            tool.getUndoHelp());
       }
 
     }
-    keysHTML += '</p>';
+    htmlComponents.push('</p>');
+
+    var html = htmlComponents.join('');
 
     // If on Mac OS, replace all occurences of 'Ctrl' with '⌘'
     if ('MAC' === CATMAID.tools.getOS()) {
-      keysHTML = keysHTML.replace(/Ctrl/gi, '⌘');
+      html = html.replace(/Ctrl/gi, '⌘');
     }
 
-    container.innerHTML = keysHTML;
+    container.innerHTML = html;
     return container;
   };
 

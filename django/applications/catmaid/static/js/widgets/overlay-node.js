@@ -1487,6 +1487,13 @@
         if (catmaidTracingOverlay.ensureFocused()) {
           return;
         }
+
+        // Prevent node related click handling if the naviation mode is
+        // enabled.
+        if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.MOVE) {
+          return;
+        }
+
         var node = this.node;
         if (e.shiftKey || e.altKey) {
           var atnID = SkeletonAnnotations.getActiveNodeId();
@@ -1571,6 +1578,12 @@
         if (!o) return; // Not properly initialized with mc_start
         if (e.shiftKey) return;
         if (!checkNodeID(this)) return;
+
+        // Prevent node related mouse move handling if the naviation mode is
+        // enabled.
+        if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.MOVE) {
+          return;
+        }
 
         var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(this.node.overlayGlobals.skeletonElements);
         var node = this.node;

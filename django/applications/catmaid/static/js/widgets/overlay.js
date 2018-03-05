@@ -101,7 +101,7 @@ SkeletonAnnotations.atn.validate = (function() {
   };
 })();
 
-SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1, SELECT: 2});
+SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1, SELECT: 2, MOVE: 3});
 SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
 SkeletonAnnotations.newConnectorType = CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR;
 SkeletonAnnotations.useNewConnectorTypeAsDefault = false;
@@ -474,6 +474,7 @@ SkeletonAnnotations.getActiveStackViewerId = function() {
 SkeletonAnnotations.setTracingMode = function (mode, toggle) {
   // toggles the button correctly
   // might update the mouse pointer
+  document.getElementById("trace_button_move").className = "button";
   document.getElementById("trace_button_skeleton").className = "button";
   document.getElementById("trace_button_synapse").className = "button";
 
@@ -481,6 +482,10 @@ SkeletonAnnotations.setTracingMode = function (mode, toggle) {
     this.currentmode = this.MODES.SELECT;
   } else {
     switch (mode) {
+      case this.MODES.MOVE:
+        this.currentmode = mode;
+        document.getElementById("trace_button_move").className = "button_active";
+        break;
       case this.MODES.SKELETON:
         this.currentmode = mode;
         document.getElementById("trace_button_skeleton").className = "button_active";
@@ -489,6 +494,12 @@ SkeletonAnnotations.setTracingMode = function (mode, toggle) {
         this.currentmode = mode;
         document.getElementById("trace_button_synapse").className = "button_active";
         break;
+    }
+    var instances = this.TracingOverlay.prototype._instances;
+    for (var stackViewerId in instances) {
+      if (instances.hasOwnProperty(stackViewerId)) {
+        instances[stackViewerId].updateCursor();
+      }
     }
   }
 };
@@ -822,7 +833,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   this.view.id = "sliceTracingOverlayId" + stackViewer.getId();
   this.view.style.zIndex = 5;
   // Custom cursor for tracing
-  this.view.style.cursor ="url(" + STATIC_URL_JS + "images/svg-circle.cur) 15 15, crosshair";
+  this.updateCursor();
   this.view.onmousemove = this.createViewMouseMoveFn(this.stackViewer, this.coords);
 
   this.paper = d3.select(this.view)
@@ -1010,6 +1021,17 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
           }
         }
       });
+
+/**
+ * Update currently used mouse cursor based on the current tracing tool mode.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.updateCursor = function() {
+  if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.MOVE) {
+    this.view.style.cursor = "move";
+  } else {
+    this.view.style.cursor ="url(" + STATIC_URL_JS + "images/svg-circle.cur) 15 15, crosshair";
+  }
+};
 
 /**
  * Creates the node with the given ID, if it is only a virtual node. Otherwise,
@@ -2745,6 +2767,9 @@ SkeletonAnnotations.TracingOverlay.prototype.renderIfReady = function() {
  * if we ever need to make click-and-drag work with the left hand button too...)
  */
 SkeletonAnnotations.TracingOverlay.prototype.whenclicked = function (e) {
+  if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.MOVE) {
+    return false;
+  }
   if (this.ensureFocused()) {
     e.stopPropagation();
     return;

@@ -133,60 +133,70 @@
       var proto_onmousedown = mouseCatcher.onmousedown;
       var stackViewerBindings = {
         onmousedown: function( e ) {
-          switch ( CATMAID.ui.getMouseButton( e ) ) {
-            case 1:
+          var mouseButton = CATMAID.ui.getMouseButton(e);
+          // Left mouse click will delegate to tracing overlay
+          var fallback = false;
+          if (mouseButton === 1) {
+            if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.MOVE) {
+              fallback = true;
+            } else {
               layer.tracingOverlay.whenclicked( e );
-              break;
-            case 2:
-              // Put all tracing layers, except active, in "don't update" mode
-              setTracingLayersSuspended(true, true);
+            }
+          }
+          // Right mouse button will pan view. And so will the left mouse button
+          // if the tracing overlay returned false.
+          if (mouseButton === 2 || fallback) {
+            fallback = false;
+            // Put all tracing layers, except active, in "don't update" mode
+            setTracingLayersSuspended(true, true);
 
-              // Attach to the node limit hit event to disable node updates
-              // temporary if the limit was hit. This allows for smoother panning
-              // when many nodes are visible.
-              layer.tracingOverlay.on(layer.tracingOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
-                  disableLayerUpdate, layer);
-              // Cancel any existing update timeout, if there is one
-              if (updateTimeout) {
-                clearTimeout(updateTimeout);
-                updateTimeout = undefined;
-              }
+            // Attach to the node limit hit event to disable node updates
+            // temporary if the limit was hit. This allows for smoother panning
+            // when many nodes are visible.
+            layer.tracingOverlay.on(layer.tracingOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
+                disableLayerUpdate, layer);
+            // Cancel any existing update timeout, if there is one
+            if (updateTimeout) {
+              clearTimeout(updateTimeout);
+              updateTimeout = undefined;
+            }
 
-              // Handle mouse event
-              proto_onmousedown( e );
+            // Handle mouse event
+            proto_onmousedown( e );
 
-              CATMAID.ui.registerEvent( "onmousemove", updateStatusBar );
-              CATMAID.ui.registerEvent( "onmouseup",
-                function onmouseup (e) {
-                  CATMAID.ui.releaseEvents();
-                  CATMAID.ui.removeEvent( "onmousemove", updateStatusBar );
-                  CATMAID.ui.removeEvent( "onmouseup", onmouseup );
-                  layer.tracingOverlay.off(layer.tracingOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
-                      disableLayerUpdate, layer);
-                  if (layer.tracingOverlay.suspended) {
-                    // Wait a second before updating the view, just in case the user
-                    // continues to pan to not hit the node limit again. Then make
-                    // sure the next update is not stopped.
-                    updateTimeout = setTimeout(function() {
-                      // Wake tracing overlays up again
-                      setTracingLayersSuspended(false, false);
-                      // Recreate nodes by fetching them from the database for the new
-                      // field of view, don't exclude active layer.
-                      updateNodesInTracingLayers(false);
-                    }, 1000);
-                  } else {
+            CATMAID.ui.registerEvent( "onmousemove", updateStatusBar );
+            CATMAID.ui.registerEvent( "onmouseup",
+              function onmouseup (e) {
+                CATMAID.ui.releaseEvents();
+                CATMAID.ui.removeEvent( "onmousemove", updateStatusBar );
+                CATMAID.ui.removeEvent( "onmouseup", onmouseup );
+                layer.tracingOverlay.off(layer.tracingOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
+                    disableLayerUpdate, layer);
+                if (layer.tracingOverlay.suspended) {
+                  // Wait a second before updating the view, just in case the user
+                  // continues to pan to not hit the node limit again. Then make
+                  // sure the next update is not stopped.
+                  updateTimeout = setTimeout(function() {
                     // Wake tracing overlays up again
                     setTracingLayersSuspended(false, false);
                     // Recreate nodes by fetching them from the database for the new
-                    // field of view. The active layer can be excluded, it should be
-                    // updated through the move already.
-                    updateNodesInTracingLayers(true);
-                  }
-                });
-              break;
-            default:
-              proto_onmousedown( e );
-              break;
+                    // field of view, don't exclude active layer.
+                    updateNodesInTracingLayers(false);
+                  }, 1000);
+                } else {
+                  // Wake tracing overlays up again
+                  setTracingLayersSuspended(false, false);
+                  // Recreate nodes by fetching them from the database for the new
+                  // field of view. The active layer can be excluded, it should be
+                  // updated through the move already.
+                  updateNodesInTracingLayers(true);
+                }
+              });
+          }
+
+          // If fallback has been set to true, delegate to prototype.
+          if (fallback) {
+            proto_onmousedown( e );
           }
         }
       };
@@ -540,6 +550,16 @@
         if (!CATMAID.mayEdit())
           return false;
         SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SYNAPSE, true);
+        return true;
+      }
+    }));
+
+    this.addAction(new CATMAID.Action({
+      helpText: "Switch to navigation mode",
+      buttonName: "move",
+      buttonID: 'trace_button_move',
+      run: function (e) {
+        SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.MOVE, true);
         return true;
       }
     }));

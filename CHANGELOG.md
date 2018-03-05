@@ -37,6 +37,12 @@ Miscellaneous:
 - Connectivity Widget: partner header indexes can now optionally be replaced
   with the neuron name and rotated by 90 degrees.
 
+- Tracing tool: a move/navigation mode can now be used using the new (third)
+  button in the tracing tool bar. If enabled, no mouse based node actions will
+  be performed anymore. Left mouse button clicks/movements are handled like
+  right mouse button clicks/movements.
+
+
 ### Bug fixes
 
 Reconstruction Sampler:

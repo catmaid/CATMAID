@@ -523,20 +523,23 @@ class Postgis2dNodeProvider(PostgisNodeProvider):
 
     TREENODE_STATEMENT_NAME = PostgisNodeProvider.TREENODE_STATEMENT_NAME + '_2d'
     treenode_query = """
-          WITH bb_edge AS (
-            SELECT te.id
+          WITH z_filtered_edge AS (
+            SELECT te.id, te.edge
             FROM treenode_edge te
-            WHERE te.edge && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
-              AND floatrange(ST_ZMin(te.edge),
+            WHERE floatrange(ST_ZMin(te.edge),
                  ST_ZMax(te.edge), '[]') && floatrange({z1}, {z2}, '[)')
-              AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+              AND te.project_id = {project_id}
+          ), bb_edge AS (
+            SELECT e.id
+            FROM z_filtered_edge e
+            WHERE e.edge && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
+              AND ST_3DDWithin(e.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
                   ST_MakePoint({left},  {top},    {halfz}),
                   ST_MakePoint({right}, {top},    {halfz}),
                   ST_MakePoint({right}, {bottom}, {halfz}),
                   ST_MakePoint({left},  {bottom}, {halfz}),
                   ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
                   {halfzdiff})
-              AND te.project_id = {project_id}
           )
           SELECT
             t1.id,
@@ -646,13 +649,15 @@ class Postgis2dBlurryNodeProvider(PostgisNodeProvider):
 
     TREENODE_STATEMENT_NAME = PostgisNodeProvider.TREENODE_STATEMENT_NAME + '_2d_blurry'
     treenode_query = """
-          WITH bb_edge AS (
-              SELECT te.id
+          WITH z_filtered_edge AS (
+              SELECT te.id, te.edge
               FROM treenode_edge te
-              WHERE te.edge && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
-                AND floatrange(ST_ZMin(te.edge),
-                   ST_ZMax(te.edge), '[]') && floatrange({z1}, {z2}, '[)')
+              WHERE floatrange(ST_ZMin(te.edge), ST_ZMax(te.edge), '[]') && floatrange({z1}, {z2}, '[)')
                 AND te.project_id = {project_id}
+          ), bb_edge AS (
+              SELECT te.id
+              FROM z_filtered_edge te
+              WHERE te.edge && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
           )
           SELECT
             t1.id,

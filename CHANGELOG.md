@@ -2,6 +2,13 @@
 
 
 
+### Notes
+
+- A new management command "catmaid_find_node_provider_config" is available,
+  which can be used to compare different node providers on existing data, which
+  is useful to configure the NODE_PROVIDERS setting.
+
+
 ### Features and enhancements
 
 Landmarks:

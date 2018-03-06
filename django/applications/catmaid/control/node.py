@@ -817,6 +817,29 @@ def update_node_query_cache(node_providers=None, log=print_):
                     node_limit=node_limit, delete=clean_cache, log=log)
 
 
+def get_tracing_bounding_box(project_id, cursor=None):
+    """Return the tracing data bounding box.
+    """
+    if not cursor:
+        cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT ARRAY[ST_XMin(bb.box), ST_YMin(bb.box), ST_ZMin(bb.box)],
+               ARRAY[ST_XMax(bb.box), ST_YMax(bb.box), ST_ZMax(bb.box)]
+        FROM (
+            SELECT ST_3DExtent(edge) box FROM treenode_edge
+            WHERE project_id = %(project_id)s
+        ) bb;
+    """, {
+        'project_id': project_id
+    })
+
+    row = cursor.fetchone()
+    if not row:
+        raise ValueError("Could not compute bounding box of project {}".format(project_id))
+
+    return row
+
 def update_cache(project_id, data_type, orientations, steps,
         node_limit=None, delete=False, bb_limits=None, log=print_):
     if data_type not in ('json', 'json_text', 'msgpack'):
@@ -831,19 +854,7 @@ def update_cache(project_id, data_type, orientations, steps,
     cursor = connection.cursor()
 
     log(' -> Finding tracing data bounding box')
-    cursor.execute("""
-        SELECT ARRAY[ST_XMin(bb.box), ST_YMin(bb.box), ST_ZMin(bb.box)],
-               ARRAY[ST_XMax(bb.box), ST_YMax(bb.box), ST_ZMax(bb.box)]
-        FROM (
-            SELECT ST_3DExtent(edge) box FROM treenode_edge
-            WHERE project_id = %(project_id)s
-        ) bb;
-    """, {
-        'project_id': project_id
-    })
-    row = cursor.fetchone()
-    if not row:
-        raise CommandError("Could not compute bounding box of project {}".format(project_id))
+    row = get_tracing_bounding_box(project_id, cursor)
     bb = [row[0], row[1]]
     if None in bb[0] or None in bb[1]:
         log(' -> Found no valid bounding box, skipping project: {}'.format(bb))

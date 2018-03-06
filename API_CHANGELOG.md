@@ -15,7 +15,11 @@ included in this changelog.
 
 ### Modifications
 
-None.
+- `POST /{project_id}/annotations/query-targets`:
+  Accepts now a "annotation_reference" parameter which can either be 'id'
+  (default) or 'name'. If it is set to 'name', all annotation references in
+  annotated_with, not_annotated_with and sub_annotated_with are interpreted as
+  annotation names instead of IDs.
 
 ### Deprecations
 

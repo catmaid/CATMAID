@@ -71,20 +71,44 @@ def get_annotated_entities(project, params, relations, classes,
     start_date = params.get('annotation_date_start', "").strip()
     end_date = params.get('annotation_date_end', "").strip()
 
+    # Allow parameterization of annotations using annotation names instead of IDs.
+    annotation_reference = params.get('annotation_reference', 'id')
+    if annotation_reference not in ('id', 'name'):
+        raise ValueError("Only 'id' and 'name' are accepted for the annotation_reference parameter")
+    # If annotation_names have been passed in, find matching IDs
+    if annotation_reference == 'name':
+        # Find annotation references
+        annotation_names = set()
+        for key in params:
+            if key.startswith('annotated_with') or \
+                    key.startswith('not_annotated_with') or \
+                    key.startswith('sub_annotated_with'):
+                if len(params[key]) > 0:
+                    annotation_names |= set(params[key].split(','))
+        annotation_id_map = get_annotation_to_id_map(project.id, list(annotation_names))
+        def to_id(name):
+            id = annotation_id_map.get(name)
+            if not id:
+                raise ValueError("Unknown annotation: " + name)
+            return id
+    else:
+        def to_id(id):
+            return int(id)
+
     # Collect annotations and sub-annotation information. Each entry can be a
     # list of IDs, which will be treated as or-combination.
     for key in params:
         if key.startswith('annotated_with'):
             if len(params[key]) > 0:
-                annotation_set = frozenset(int(a) for a in params[key].split(','))
+                annotation_set = frozenset(to_id(a) for a in params[key].split(','))
                 annotation_sets.add(annotation_set)
         elif key.startswith('not_annotated_with'):
             if len(params[key]) > 0:
-                not_annotation_set = frozenset(int(a) for a in params[key].split(','))
+                not_annotation_set = frozenset(to_id(a) for a in params[key].split(','))
                 not_annotation_sets.add(not_annotation_set)
         elif key.startswith('sub_annotated_with'):
             if len(params[key]) > 0:
-                annotation_set = frozenset(int(a) for a in params[key].split(','))
+                annotation_set = frozenset(to_id(a) for a in params[key].split(','))
                 annotation_sets_to_expand.add(annotation_set)
 
     filters = [
@@ -430,6 +454,13 @@ def query_annotated_classinstances(request, project_id = None):
       - name: range_length
         description: The number of results
         type: integer
+        paramType: form
+      - name: annotation_reference
+        description: Whether annoation references are IDs or names, can be 'id' or 'name.
+        type: string
+        enum: [id, name]
+        defaultValue: id
+        required: false
         paramType: form
     models:
       annotated_entity:

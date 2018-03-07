@@ -54,6 +54,12 @@ Miscellaneous:
 - The Keyboard/Mouse Help Widget has now a text filter, which allows to show
   only items containing a particular text.
 
+- The Tracing Overlay has a new setting "Allow lazy node updates", available in
+  the Settings Widget. If enabled (default), stack viewers can skip node updates
+  if a change didn't occur in the Viewer's field of view. This is useful when
+  e.g. the Connector Viewer is open while tracing, because not all viewers get
+  update due to the addition of a node.
+
 
 ### Bug fixes
 

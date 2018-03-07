@@ -772,6 +772,20 @@
 
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createCheckboxSetting(
+              'Allow lazy node updates',
+              SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].allow_lazy_updates,
+              'If enabled, tracing layers will only update as a reaction of new ' +
+              'node creation if that node is in their view. Otherwise it won\'t ' +
+              'update, which causes edge intersections to be missed.',
+              function() {
+                SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].allow_lazy_updates = this.checked;
+              }),
+          SkeletonAnnotations.TracingOverlay.Settings,
+          'allow_lazy_updates',
+          SETTINGS_SCOPE));
+
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
               'Use cached data for matching sub-views',
               SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].subviews_from_cache,
               'If enabled, CATMAID will use already loaded tracing data when ' +

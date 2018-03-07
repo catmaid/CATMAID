@@ -1000,6 +1000,9 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
           },
           transfer_mode: {
             default: "msgpack"
+          },
+          allow_lazy_updates: {
+            default: true
           }
         },
         migrations: {
@@ -5135,11 +5138,45 @@ SkeletonAnnotations.TracingOverlay.prototype.handleNewNode = function(nodeID, px
   // If we know the new node already, do nothing. We assume it has been taken
   // care of somewhere else.
   if (this.nodes[nodeID]) return;
-  // Otherwise, trigger an update. A possible optimization would be to only
-  // update if the new node is visible in the current view. However, this
-  // would also not help if an edge to or from the node intersects with the
-  // current view. Updating always, ensures we catch also this case.
+
+  // Otherwise, trigger an update if the new node is in the current view. This
+  // doesn't catch cases where only the edge between the new node and another
+  // node crosses the view. If these cases are important, the allow_lazy_updates
+  // setting has to be set to false.
+  if (SkeletonAnnotations.TracingOverlay.Settings.session.allow_lazy_updates) {
+    if (!this.isInView(px, py, pz)) {
+      return;
+    }
+  }
+
   this.updateNodes();
+};
+
+SkeletonAnnotations.TracingOverlay.prototype.isInView = function(px, py, pz) {
+  var stackViewer = this.stackViewer;
+
+  var halfWidth =  (stackViewer.viewWidth  / 2.0) / stackViewer.scale,
+      halfHeight = (stackViewer.viewHeight / 2.0) / stackViewer.scale;
+
+  var x0 = stackViewer.x - halfWidth,
+      y0 = stackViewer.y - halfHeight,
+      z0 = stackViewer.z;
+
+  var x1 = stackViewer.x + halfWidth,
+      y1 = stackViewer.y + halfHeight,
+      z1 = stackViewer.z + 1.0;
+
+  var wx0 = stackViewer.primaryStack.stackToProjectX(z0, y0, x0),
+      wy0 = stackViewer.primaryStack.stackToProjectY(z0, y0, x0),
+      wz0 = stackViewer.primaryStack.stackToProjectZ(z0, y0, x0);
+
+  var wx1 = stackViewer.primaryStack.stackToProjectX(z1, y1, x1),
+      wy1 = stackViewer.primaryStack.stackToProjectY(z1, y1, x1),
+      wz1 = stackViewer.primaryStack.stackToProjectZ(z1, y1, x1);
+
+  return wx0 <= px && px <= wx1 &&
+         wy0 <= py && py <= wy1 &&
+         wz0 <= pz && pz <= wz1;
 };
 
 /**
@@ -5172,8 +5209,8 @@ SkeletonAnnotations.TracingOverlay.prototype.handleRemovedConnector = function(n
  *
  * @param {number} skeletonID - The ID of the skelton changed.
  */
-SkeletonAnnotations.TracingOverlay.prototype.handleChangedSkeleton = function(skeletonID) {
-  this.updateIfKnown(skeletonID);
+SkeletonAnnotations.TracingOverlay.prototype.handleChangedSkeleton = function(skeletonID, changes) {
+  this.updateIfKnown(skeletonID, changes);
 };
 
 /**
@@ -5197,9 +5234,32 @@ SkeletonAnnotations.TracingOverlay.prototype.handleDeletedSkeleton = function(sk
  * @param skeletonID {number} The ID of the skelton changed.
  * @param callback {function} An optional callback, executed after a node update
  */
-SkeletonAnnotations.TracingOverlay.prototype.updateIfKnown = function(skeletonID, callback) {
+SkeletonAnnotations.TracingOverlay.prototype.updateIfKnown = function(skeletonID, changes) {
+  // If changes are provided and lazy updates are allowed, we can skip the
+  // update if no change is in the current view. This requires all changes to
+  // have a location provided.
+  if (changes && changes.length > 0) {
+    if (SkeletonAnnotations.TracingOverlay.Settings.session.allow_lazy_updates) {
+      var needsUpdate = false;
+      for (var i=0, imax=changes.length; i<imax; ++i) {
+        var change = changes[i];
+        if (change && change.length === 4) {
+          if (this.isInView(change[1], change[2], change[3])) {
+            needsUpdate = true;
+            break;
+          }
+        } else {
+          needsUpdate = true;
+          break;
+        }
+        if (!needsUpdate) {
+          return;
+        }
+      }
+    }
+  }
   if (Object.keys(this.nodes).some(this.nodeIsPartOfSkeleton.bind(this, skeletonID))) {
-    this.updateNodes(callback);
+    this.updateNodes();
   }
 };
 

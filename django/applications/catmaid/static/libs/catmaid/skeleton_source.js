@@ -257,6 +257,21 @@
   };
 
   /**
+   * Convenience method to append lists of skeleton IDs rather than maps
+   * of ID vs SkeletonModel instances.
+   *
+   * All this method does is create the models and call this.append.
+   *
+   * This method is intended for scripting from the console.
+   */
+  SkeletonSource.prototype.appendSkeletons = function(skids) {
+    this.append(skids.reduce(function(o, skid) {
+      o[skid] = new CATMAID.SkeletonModel(skid, "", new THREE.Color(255, 0, 0));
+      return o;
+    }, {}));
+  };
+
+  /**
    * Get a list of source skeleton IDs.
    */
   SkeletonSource.prototype.getSourceSkeletons = function(silent) {

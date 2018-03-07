@@ -8,6 +8,8 @@
   which can be used to compare different node providers on existing data, which
   is useful to configure the NODE_PROVIDERS setting.
 
+- The Docker images now support the options CM_HOST and CM_PORT to configure
+  where uwsgi is listening.
 
 ### Features and enhancements
 

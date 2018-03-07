@@ -14,6 +14,8 @@ AVAILABLE_MEMORY=`awk '/MemTotal/ { printf "%.3f \n", $2/1024 }' /proc/meminfo`
 INSTANCE_MEMORY=${INSTANCE_MEMORY:-$AVAILABLE_MEMORY}
 CM_EXAMPLE_PROJECTS=${CM_EXAMPLE_PROJECTS:-true}
 CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE=${CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:-""}
+CM_HOST=${CM_HOST:-0.0.0.0}
+CM_PORT=${CM_PORT:-8000}
 
 TIMEZONE=`readlink /etc/localtime | sed "s/.*\/\(.*\)$/\1/"`
 
@@ -84,6 +86,10 @@ init_catmaid () {
   if [ "$CM_EXAMPLE_PROJECTS" = true ]; then
     python manage.py catmaid_insert_example_projects --user=1
   fi
+
+  # Make sure uWSGI runs on the correct port
+  echo "Configuring uWSGI to run on socket ${CM_HOST}:${CM_PORT}"
+  sed -i "s/socket = .*/socket = ${CM_HOST}:${CM_PORT}" /home/scripts/docker/uwsgi-catmaid.ini
 
   echo "Starting CATMAID"
   supervisord -n

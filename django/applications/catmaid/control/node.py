@@ -71,11 +71,11 @@ class BasicNodeProvider(object):
         if self.min_depth:
             matches = matches and self.min_depth <= params['depth']
         if self.max_width:
-            matches = matches and self.max_width <= params['width']
+            matches = matches and self.max_width >= params['width']
         if self.max_height:
-            matches = matches and self.max_height <= params['height']
+            matches = matches and self.max_height >= params['height']
         if self.max_depth:
-            matches = matches and self.max_depth <= params['depth']
+            matches = matches and self.max_depth >= params['depth']
 
         return matches
 

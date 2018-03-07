@@ -43,7 +43,7 @@
             json.existing_skeleton_id,
             treenodeId);
         this.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
-            json.existing_skeleton_id);
+            json.existing_skeleton_id, [[treenodeId, json.x, json.y, json.z]]);
         return json;
       }).bind(this));
     },

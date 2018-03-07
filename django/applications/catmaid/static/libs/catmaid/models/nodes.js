@@ -168,7 +168,7 @@
           CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_CREATED,
               result.treenode_id, x, y, z);
           CATMAID.Skeletons.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
-              result.skeleton_id);
+              result.skeleton_id, [[result.treenode_id, x, y, z]]);
           return result;
         });
     },
@@ -239,7 +239,7 @@
           CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_CREATED,
               result.treenode_id, x, y, z);
           CATMAID.Skeletons.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
-              result.skeleton_id);
+              result.skeleton_id, [[result.treenode_id, x, y, z]]);
           return result;
         });
     },
@@ -275,7 +275,7 @@
                 result.skeleton_id);
           } else {
             CATMAID.Skeletons.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
-                result.skeleton_id);
+                result.skeleton_id, [[nodeId, result.x, result.y, result.z]]);
           }
 
           return result;

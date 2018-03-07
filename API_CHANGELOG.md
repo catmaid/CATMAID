@@ -21,6 +21,10 @@ included in this changelog.
   annotated_with, not_annotated_with and sub_annotated_with are interpreted as
   annotation names instead of IDs.
 
+- `POST /{project_id}/skeleton/split`:
+  Returns now also the split location as fields x, y and z.
+
+
 ### Deprecations
 
 None.

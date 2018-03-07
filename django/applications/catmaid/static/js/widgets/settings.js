@@ -881,6 +881,41 @@
         SETTINGS_SCOPE
       ));
 
+      ds.append(wrapSettingsControl(
+        CATMAID.DOM.createSelectSetting(
+          'Data transfer mode',
+          {
+            'JSON': 'json',
+            'Msgpack': 'msgpack',
+            'GIF image': 'gif',
+            'PNG image': 'png'
+          },
+          "Encoding of tracing data. For large views a binary format like Msgpack can have performance benefits.",
+          function() {
+            let format = this.value;
+            SkeletonAnnotations.TracingOverlay.Settings
+              .set(
+                'transfer_mode',
+                this.value,
+                SETTINGS_SCOPE
+              )
+              .then(function() {
+                project.getStackViewers().every(function(stackViewer) {
+                  var overlay = SkeletonAnnotations.getTracingOverlay(stackViewer.getId());
+                  if (overlay) {
+                    overlay.transferFormat = format;
+                    overlay.redraw(true);
+                  }
+                });
+              });
+          },
+          SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].transfer_mode
+        ),
+        SkeletonAnnotations.TracingOverlay.Settings,
+        'transfer_mode',
+        SETTINGS_SCOPE
+      ));
+
 
       var dsNodeColors = CATMAID.DOM.addSettingsContainer(ds, "Skeleton colors", true);
       dsNodeColors.append(CATMAID.DOM.createCheckboxSetting(

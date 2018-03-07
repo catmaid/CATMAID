@@ -695,7 +695,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   this.connectorTypeMenu = null;
   /** Transfer data as msgpack by default.
    * Options: 'json', 'msgpack', 'gif', 'png' */
-  this.transferFormat = 'msgpack';
+  this.transferFormat = SkeletonAnnotations.TracingOverlay.Settings.session.transfer_mode;
 
   // Keep the ID of the node deleted last, which allows to provide some extra
   // context in some situations.
@@ -997,6 +997,9 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
           connector_node_marker: {
             // enum of 'disc', 'crosshair', 'target', 'bullseye', 'ring'
             default: 'disc'
+          },
+          transfer_mode: {
+            default: "msgpack"
           }
         },
         migrations: {

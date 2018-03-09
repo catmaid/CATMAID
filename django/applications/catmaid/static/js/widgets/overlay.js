@@ -696,6 +696,8 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   /** Transfer data as msgpack by default.
    * Options: 'json', 'msgpack', 'gif', 'png' */
   this.transferFormat = SkeletonAnnotations.TracingOverlay.Settings.session.transfer_mode;
+  /** A cached copy of the a map from IDs to relation names, set on firt load. **/
+  this.relationMap = null;
 
   // Keep the ID of the node deleted last, which allows to provide some extra
   // context in some situations.
@@ -2441,6 +2443,15 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   var jsonNodes = jso[0];
   var jsonConnectors = jso[1];
 
+  var transmittedRelations = Object.keys(jso[4]);
+  if (transmittedRelations.length > 0) {
+    // Update cached copy
+    this.relationMap = jso[4];
+  } else if (!this.relationMap) {
+    this.relationMap = {};
+  }
+  var relationMap = this.relationMap;
+
   // Keetp track of all nodes that have been added
   var addedNodes = [];
   let nAddedTreenodes = 0;
@@ -2463,8 +2474,8 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   }
 
   // Populate ConnectorNodes
-  var attachmentRelId = Object.keys(jso[4]).reduce(function(o, rId) {
-    var relName = jso[4][rId];
+  var attachmentRelId = Object.keys(relationMap).reduce(function(o, rId) {
+    var relName = relationMap[rId];
     if (relName === 'attached_to') {
       return rId;
     }
@@ -2495,7 +2506,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     if (isAttachment) {
       subtype = CATMAID.Connectors.SUBTYPE_ATTACHMENT_CONNECTOR;
     } else if (exclusiveRelation !== null) {
-      var relation_name = jso[4][exclusiveRelation];
+      var relation_name = relationMap[exclusiveRelation];
       if (relation_name == "abutting") {
         subtype = CATMAID.Connectors.SUBTYPE_ABUTTING_CONNECTOR;
       } else if (relation_name == 'gapjunction_with') {
@@ -2581,7 +2592,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
       var tnid = r[0];
       var node = this.nodes[tnid];
       if (node) {
-        var relation_name = jso[4][r[1]];
+        var relation_name = relationMap[r[1]];
         var outwards = pointsOutwards(relation_name);
         var link = this.graphics.newLinkNode(r[4], node, r[1], relation_name, r[2], r[3], outwards);
 
@@ -3260,7 +3271,8 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       z2: wz1,
       treenode_ids: treenodeIDs,
       connector_ids: connectorIDs,
-      labels: self.getLabelStatus()
+      labels: self.getLabelStatus(),
+      with_relation_map: self.relationMap ? 'none' : 'all'
     };
 
     let transferFormat = self.transferFormat;

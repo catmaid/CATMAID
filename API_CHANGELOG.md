@@ -24,6 +24,9 @@ included in this changelog.
 - `POST /{project_id}/skeleton/split`:
   Returns now also the split location as fields x, y and z.
 
+- `POST|GET /{project_id}/node/list` offers a new optional parameter
+  "with_relation_map", which controls which relation map information is
+  returned. Can be 'none', 'used' and all with 'used' being the default.
 
 ### Deprecations
 

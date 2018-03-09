@@ -3311,7 +3311,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       }
     };
 
-    var url = django_url + project.id + '/node/list';
+    var url = CATMAID.makeURL(project.id + '/node/list');
     if (regularTransfer) {
       // Check the node list cache for an exactly matching request. Only request
       // from the backend if not found.

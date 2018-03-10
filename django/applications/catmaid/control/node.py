@@ -1113,7 +1113,7 @@ def node_list_tuples(request, project_id=None, provider=None):
             else:
                 orientation = 'xz'
         else:
-            if depth < heigth:
+            if depth < height:
                 orientation = 'zy'
             elif width < height:
                 orientation = 'zy'

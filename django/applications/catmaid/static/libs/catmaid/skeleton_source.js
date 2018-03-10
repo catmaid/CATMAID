@@ -266,7 +266,7 @@
    */
   SkeletonSource.prototype.appendSkeletons = function(skids) {
     this.append(skids.reduce(function(o, skid) {
-      o[skid] = new CATMAID.SkeletonModel(skid, "", new THREE.Color(255, 0, 0));
+      o[skid] = new CATMAID.SkeletonModel(skid, "", new THREE.Color(255, 255, 0));
       return o;
     }, {}));
   };

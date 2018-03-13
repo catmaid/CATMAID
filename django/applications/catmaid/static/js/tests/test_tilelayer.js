@@ -13,7 +13,7 @@ QUnit.test('Tile layer test', function (assert) {
    */
   function create_stack(name, orientation) {
     var dim = {'x': 1000, 'y': 100, 'z': 100};
-    var res = {'x': 0.1, 'y': 0.5, 'z': 2.0};
+    var res = {'x': 0.1, 'y': 0.1, 'z': 2.0};
     var trs = {'x': 0, 'y': 0, 'z': 0};
     return new CATMAID.Stack(1, name, dim, res, trs,
         [], 3, 4, "", null, orientation,

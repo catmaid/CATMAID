@@ -311,7 +311,7 @@
   };
 
   /**
-   * update the scale bar (x-resolution) to a proper size
+   * update the scale bar (minimum planar resolution) to a proper size
    * @param showScaleBar optional boolean, whether to show the scale bar on update. Default: do not change.
    */
   StackViewer.prototype.updateScaleBar = function (showScaleBar) {
@@ -321,7 +321,7 @@
       this.layercontrol.refresh();
     }
     this._scaleBar.update(
-      this.scale / this.primaryStack.resolution.x,
+      this.scale / this.primaryStack.minPlanarRes,
       this.viewWidth / 5);
   };
 
@@ -344,14 +344,14 @@
    */
   StackViewer.prototype.getZoomExtents = function () {
     var extents = this._stacks.reduce(function (extents, stack) {
-      extents.min = Math.min(extents.min, stack.stackToProjectSX(stack.MIN_S));
-      extents.max = Math.max(extents.max, stack.stackToProjectSX(stack.MAX_S));
+      extents.min = Math.min(extents.min, stack.stackToProjectSMP(stack.MIN_S));
+      extents.max = Math.max(extents.max, stack.stackToProjectSMP(stack.MAX_S));
       return extents;
     }, {min: Infinity, max: -Infinity});
 
     return {
-      min: this.primaryStack.projectToStackSX(extents.min),
-      max: this.primaryStack.projectToStackSX(extents.max)
+      min: this.primaryStack.projectToStackSMP(extents.min),
+      max: this.primaryStack.projectToStackSMP(extents.max)
     };
   };
 
@@ -361,8 +361,8 @@
    * mouse event handled by the stack.
    */
   StackViewer.prototype.screenPosition = function () {
-    var width = this.viewWidth / this.scale;
-    var height = this.viewHeight / this.scale;
+    var width = this.viewWidth / this.scale / this.primaryStack.anisotropy.x;
+    var height = this.viewHeight / this.scale / this.primaryStack.anisotropy.y;
     var l = {
       top: this.y - height / 2,
       left: this.x - width / 2
@@ -379,7 +379,7 @@
       z : this.primaryStack.stackToProjectZ( this.z, this.y, this.x ),
       y : this.primaryStack.stackToProjectY( this.z, this.y, this.x ),
       x : this.primaryStack.stackToProjectX( this.z, this.y, this.x ),
-      s : this.primaryStack.stackToProjectSX( this.s )
+      s : this.primaryStack.stackToProjectSMP( this.s )
     };
     return l;
   };
@@ -401,12 +401,13 @@
       };
     } else {
       var pc = this.projectCoordinates();
-      var stackS = stack.projectToStackSX(pc.s);
       return {
-        xc: Math.floor(stack.projectToUnclampedStackX(pc.z, pc.y, pc.x) / Math.pow(2, stackS) - this.viewWidth / 2),
-        yc: Math.floor(stack.projectToUnclampedStackY(pc.z, pc.y, pc.x) / Math.pow(2, stackS) - this.viewHeight / 2),
+        xc: Math.floor(stack.projectToUnclampedStackX(pc.z, pc.y, pc.x)
+          / Math.pow(2, stack.projectToStackSX(pc.s)) - this.viewWidth / 2),
+        yc: Math.floor(stack.projectToUnclampedStackY(pc.z, pc.y, pc.x)
+          / Math.pow(2, stack.projectToStackSY(pc.s)) - this.viewHeight / 2),
         z:  stack.projectToUnclampedStackZ(pc.z, pc.y, pc.x),
-        s:  stackS
+        s:  stack.projectToStackSMP(pc.s)
       };
     }
   };
@@ -419,8 +420,8 @@
    *  @param stackBox {{min: {x, y, z}, max: {x, y, z}}}
    */
   StackViewer.prototype.stackViewBox = function (stackBox) {
-    var w2 = this.viewWidth / this.scale / 2;
-    var h2 = this.viewHeight / this.scale / 2;
+    var w2 = this.viewWidth / this.scale / 2 / this.primaryStack.anisotropy.x;
+    var h2 = this.viewHeight / this.scale / 2 / this.primaryStack.anisotropy.y;
 
     stackBox.min.x = this.x - w2;
     stackBox.min.y = this.y - h2;
@@ -455,8 +456,8 @@
    *  @param padScreenZ z-padding in screen coordinates (==stack coordinates as z is not scaled)
    */
   StackViewer.prototype.paddedStackViewBox = function (stackBox, padScreenX, padScreenY, padScreenZ) {
-    var w2 = ( this.viewWidth / 2 + padScreenX ) / this.scale;
-    var h2 = ( this.viewHeight / 2 + padScreenY ) / this.scale;
+    var w2 = ( this.viewWidth / 2 + padScreenX ) / this.scale / this.primaryStack.anisotropy.x;
+    var h2 = ( this.viewHeight / 2 + padScreenY ) / this.scale / this.primaryStack.anisotropy.y;
     var d2 = 0.5 + padScreenZ;
 
     stackBox.min.x = this.x - w2;
@@ -498,8 +499,8 @@
       }
     };
 
-    this.yc = Math.floor( this.y * this.scale - ( this.viewHeight / 2 ) );
-    this.xc = Math.floor( this.x * this.scale - ( this.viewWidth / 2 ) );
+    this.yc = Math.floor( this.y * this.scale * this.primaryStack.anisotropy.y - ( this.viewHeight / 2 ) );
+    this.xc = Math.floor( this.x * this.scale * this.primaryStack.anisotropy.x - ( this.viewWidth / 2 ) );
 
     // If using WebGL/Pixi, must explicitly tell all layers beforehand that a
     // a redraw is beginning.
@@ -671,7 +672,7 @@
    * @param res spatial resolution in units per pixel
    */
   StackViewer.prototype.moveToProject = function (zp, yp, xp, res, completionCallback) {
-    var sp = this.primaryStack.projectToStackSX( res );
+    var sp = this.primaryStack.projectToStackSMP( res );
 
     return this.moveTo( zp, yp, xp, sp, completionCallback );
   };
@@ -688,7 +689,7 @@
         this.primaryStack.stackToProjectZ( zs, ys, xs ),
         this.primaryStack.stackToProjectY( zs, ys, xs ),
         this.primaryStack.stackToProjectX( zs, ys, xs ),
-        this.primaryStack.stackToProjectSX( ss ),
+        this.primaryStack.stackToProjectSMP( ss ),
         completionCallback);
     } else {
       return this.moveTo(

@@ -114,8 +114,10 @@
     {
       self.stackViewer.moveToPixel(
         self.stackViewer.z,
-        self.stackViewer.y - CATMAID.ui.diffY / self.stackViewer.scale,
-        self.stackViewer.x - CATMAID.ui.diffX / self.stackViewer.scale,
+        self.stackViewer.y - CATMAID.ui.diffY / self.stackViewer.scale
+                              / self.stackViewer.primaryStack.anisotropy.y,
+        self.stackViewer.x - CATMAID.ui.diffX / self.stackViewer.scale
+                              / self.stackViewer.primaryStack.anisotropy.x,
         self.stackViewer.s );
       return true;
     };

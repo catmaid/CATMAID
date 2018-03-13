@@ -100,8 +100,8 @@
       for (var j = 0; j < cols; ++j) {
         this._tiles[i][j] = new PIXI.Sprite(emptyTex);
         this.batchContainer.addChild(this._tiles[i][j]);
-        this._tiles[i][j].position.x = j * this.tileSource.tileWidth;
-        this._tiles[i][j].position.y = i * this.tileSource.tileHeight;
+        this._tiles[i][j].position.x = j * this.tileSource.tileWidth * this.stack.anisotropy.x;
+        this._tiles[i][j].position.y = i * this.tileSource.tileHeight * this.stack.anisotropy.y;
 
         if (this.tileSource.transposeTiles.has(this.stack.orientation)) {
           this._tiles[i][j].scale.x = -1.0;
@@ -168,8 +168,8 @@
     // individual tiles.
     this.batchContainer.position.x = left;
     this.batchContainer.position.y = top;
-    this.batchContainer.scale.x = tileInfo.mag;
-    this.batchContainer.scale.y = tileInfo.mag;
+    this.batchContainer.scale.x = tileInfo.mag * this.stack.anisotropy.x;
+    this.batchContainer.scale.y = tileInfo.mag * this.stack.anisotropy.y;
     var toLoad = [];
     var loading = false;
     var y = 0;

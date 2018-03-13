@@ -80,6 +80,13 @@
       return a.position - b.position;
     });
 
+    this.minPlanarRes = Math.min(resolution.x, resolution.y);
+    /** @type {Object} Relative anisotropy of the planar dimensions. */
+    this.anisotropy = Object.keys(resolution).reduce(function (ani, dim) {
+      ani[dim] = resolution[dim] / self.minPlanarRes;
+      return ani;
+    }, {});
+
     /**
      * Project x-coordinate for stack coordinates
      */
@@ -254,17 +261,45 @@
     };
 
     /**
-     * Project x-resolution for a given zoom level.
+     * Project minimum planar resolution for a given zoom level.
+     */
+    this.stackToProjectSMP = function (s) {
+      return this.minPlanarRes * Math.pow(2, s);
+    };
+
+    /**
+     * Stack zoom level for a given minimum planar resolution.
+     */
+    this.projectToStackSMP = function (res) {
+      return Math.log(res / this.minPlanarRes) / Math.LN2;
+    };
+
+    /**
+     * Project x-coordinate resolution for a given zoom level.
      */
     this.stackToProjectSX = function (s) {
       return this.resolution.x * Math.pow(2, s);
     };
 
     /**
-     * Stack zoom level for a given x-resolution.
+     * Stack zoom level for a given x-coordinate resolution.
      */
     this.projectToStackSX = function (res) {
       return Math.log(res / this.resolution.x) / Math.LN2;
+    };
+
+    /**
+     * Project y-coordinate resolution for a given zoom level.
+     */
+    this.stackToProjectSY = function (s) {
+      return this.resolution.y * Math.pow(2, s);
+    };
+
+    /**
+     * Stack zoom level for a given y-coordinate resolution.
+     */
+    this.projectToStackSY = function (res) {
+      return Math.log(res / this.resolution.y) / Math.LN2;
     };
 
     /**

@@ -317,8 +317,8 @@
       }
     }
 
-    var effectiveTileWidth = this.tileSource.tileWidth * tileInfo.mag;
-    var effectiveTileHeight = this.tileSource.tileHeight * tileInfo.mag;
+    var effectiveTileWidth = this.tileSource.tileWidth * tileInfo.mag * this.stack.anisotropy.x;
+    var effectiveTileHeight = this.tileSource.tileHeight * tileInfo.mag * this.stack.anisotropy.y;
 
     var rows = this._tiles.length, cols = this._tiles[0].length;
 
@@ -522,8 +522,8 @@
    * @param  {number} height Height of the view in pixels.
    */
   TileLayer.prototype.resize = function (width, height) {
-    var rows = Math.ceil(height / this.tileSource.tileHeight) + 1;
-    var cols = Math.ceil(width / this.tileSource.tileWidth) + 1;
+    var cols = Math.ceil(width / this.tileSource.tileWidth / this.stack.anisotropy.x) + 1;
+    var rows = Math.ceil(height / this.tileSource.tileHeight / this.stack.anisotropy.y) + 1;
     if (this._tiles.length === 0 || this._tiles.length !== rows || this._tiles[0].length !== cols)
       this._initTiles(rows, cols);
     this.redraw();
@@ -580,7 +580,7 @@
    * @param  {function(number, number)} progressCallback
    */
   TileLayer.prototype.cacheLocations = function (locations, progressCallback) {
-    var s = this.stack.projectToStackSX(this.stackViewer.primaryStack.stackToProjectSX(this.stackViewer.s));
+    var s = this.stack.projectToStackSMP(this.stackViewer.primaryStack.stackToProjectSMP(this.stackViewer.s));
     var self = this;
 
     var tileIndices = locations.reduce(function (tileInds, loc) {
@@ -642,8 +642,8 @@
       mag = Math.pow(2, zoom - s);
     }
 
-    var effectiveTileWidth = this.tileSource.tileWidth * mag;
-    var effectiveTileHeight = this.tileSource.tileHeight * mag;
+    var effectiveTileWidth = this.tileSource.tileWidth * mag * this.stack.anisotropy.x;
+    var effectiveTileHeight = this.tileSource.tileHeight * mag * this.stack.anisotropy.y;
 
     var fr = Math.floor(yc / effectiveTileHeight);
     var fc = Math.floor(xc / effectiveTileWidth);

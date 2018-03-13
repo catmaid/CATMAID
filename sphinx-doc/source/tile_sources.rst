@@ -262,6 +262,43 @@ Tile source types are listed by the enumeration integer ID referenced by
    For multi-channel images, a comma separated list can be used as parameter
    value (e.g. color=cyan,magenta).
 
+10. H2N5 tiles
+**************
+
+   This type supports loading tiles from the
+   `H2N5 <https://github.com/aschampion/h2n5>`_ server, which dynamically
+   slices tiles from `N5 tensor files <https://github.com/saalfeldlab/n5>`_.
+
+   The URL format for this source is::
+
+    <sourceBaseUrl>.<fileExtension>
+
+   However, unlike other sources, ``sourceBaseUrl`` is not a valid URL on its
+   own. It contains several substitution strings the CATMAID replaces on each
+   tile request. This is necessary to support n-dimensional volumes. The
+   substitution strings are:
+
+   ``%SCALE_DATASET%`` (optional)
+      Where to insert the dataset name for different scale levels. Currently
+      these are ``s0``, ``s1``, etc., but in the future may be read from the
+      N5 attributes of the parent dataset of where this substitution string
+      appears.
+
+   ``%AXIS_0%``
+      Position in the coordinates part of the H2N5 URL to replace with
+      ``col * tileWidth``
+
+   ``%AXIS_1%``
+      Position in the coordinates part of the H2N5 URL to replace with
+      ``row * tileHeight``
+
+   ``%AXIS_2%``
+      Position in the coordinates part of the H2N5 URL to replace with
+      ``pixelPosition.z``
+
+   While ``%AXIS_0%`` and ``%AXIS_1%`` could be inferred by parsing the URL
+   for the slicing dimensions, note that ``%AXIS_2%`` could not.
+
 Backend Representation
 ----------------------
 

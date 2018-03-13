@@ -109,7 +109,8 @@
       '6': CATMAID.DVIDImageblkTileSource,
       '7': CATMAID.RenderServTileSource,
       '8': CATMAID.DVIDImagetileTileSource,
-      '9': CATMAID.FlixServerTileSource
+      '9': CATMAID.FlixServerTileSource,
+      '10': CATMAID.H2N5TileSource
     };
 
     var TileSource = tileSources[tileSourceType];
@@ -463,6 +464,39 @@
         {name: 'quality', displayName: 'Quality', type: 'number', range: [0, 100],
           value: this.quality, help: 'Image quality in range 0-100, use comma for multiple channels'}
       ];
+  };
+
+
+  /**
+   * Tile source type for the H2N5 tile server.
+   * See https://github.com/aschampion/h2n5
+   *
+   * Source type: 10
+   */
+  CATMAID.H2N5TileSource = function () {
+    CATMAID.AbstractTileSource.apply(this, arguments);
+
+    // Scale levels are stored in difference N5 datasets. In the future, the
+    // names of these datasets may be read from the attributes of the parent
+    // dataset on construction. For now, the convention s0, s1, ..., is used.
+    this.scaleLevelPath = {
+      get: function (zoomLevel) {
+        return 's' + zoomLevel;
+      }
+    };
+  };
+
+  CATMAID.H2N5TileSource.prototype = Object.create(CATMAID.AbstractTileSource.prototype);
+
+  CATMAID.H2N5TileSource.prototype.getTileURL = function(
+      project, stack, slicePixelPosition, col, row, zoomLevel) {
+
+    return this.baseURL
+      .replace('%SCALE_DATASET%', this.scaleLevelPath.get(zoomLevel))
+      .replace('%AXIS_0%', col * this.tileWidth)
+      .replace('%AXIS_1%', row * this.tileHeight)
+      .replace('%AXIS_2%', slicePixelPosition[0])
+      + '.' + this.fileExtension;
   };
 
 

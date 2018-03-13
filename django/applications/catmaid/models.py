@@ -89,7 +89,8 @@ TILE_SOURCE_TYPES = (
     (6, '6: DVID imageblk voxels'),
     (7, '7: Render service'),
     (8, '8: DVID imagetile tiles'),
-    (9, '9: FlixServer tiles')
+    (9, '9: FlixServer tiles'),
+    (10, '10: H2N5 tiles'),
 )
 
 @python_2_unicode_compatible

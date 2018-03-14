@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 import copy
 import json
 import six
+import logging
 
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -25,8 +26,9 @@ from catmaid.control.common import cursor_fetch_dictionary, \
         get_relation_to_id_map, get_class_to_id_map, get_request_list
 
 # Python 2 and 3 compatible map iterator
-from six.moves import map
+from six.moves import map, filter
 
+logger = logging.getLogger(__name__)
 
 
 LINK_TYPES = [
@@ -93,10 +95,18 @@ def connector_types(request, project_id):
     """
     relation_map = get_relation_to_id_map(project_id)
 
-    types = copy.deepcopy(LINK_TYPES)
-    for t in types:
-        t['relation_id'] = relation_map[t['relation']]
+    def set_id(t):
+        relation_id = relation_map.get(t['relation'])
+        # If the relation doesn't exist in the database, don't return it. Add it
+        # to the log though:
+        if relation_id is None:
+            logger.info("Tracing relation {} not found in database".format(t['relation']))
+            return False
+        else:
+            t['relation_id'] = relation_id
+            return True
 
+    types = list(filter(set_id, copy.deepcopy(LINK_TYPES)))
     return JsonResponse(types, safe=False)
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

@@ -1591,13 +1591,71 @@
         .catch(CATMAID.handleError);
     };
 
+    var addSettingsFilter = function(container, searchContainer) {
+      var searchForm = document.createElement('form');
+      searchForm.setAttribute('data-role', 'filter');
+      searchForm.style.marginTop="1em";
+      searchForm.style.marginLeft="1em";
+      searchForm.style.display="inline-block";
+
+      var searchInput = document.createElement('input');
+      searchInput.setAttribute('type', 'text');
+      searchInput.setAttribute('data-role', 'filter');
+      searchInput.setAttribute('placeholder', 'Filter');
+      var visibleSettingBoxes = null;
+      searchInput.onkeyup = function() {
+        // Filter content
+        if (this.value.length === 0) {
+          $('div.setting', searchContainer).show();
+          // Apply former expansion configuration
+          if (visibleSettingBoxes && visibleSettingBoxes.length > 0) {
+            $('.extend-box-open', searchContainer)
+                .attr('class', 'extend-box-closed')
+                .closest('.settings-container')
+                  .find('.content').animate({
+                    height: 'hide',
+                    opacity: 'hide'
+                  }, {
+                    duration: 100
+                  });
+            visibleSettingBoxes.children('.extend-box-closed').attr('class', 'extend-box-open');
+            visibleSettingBoxes.children('.content').animate({
+                opacity: 'show',
+                height: 'show'
+            });
+            visibleSettingBoxes = null;
+          }
+        } else {
+          // Expand all setting blocks
+          if (!visibleSettingBoxes) {
+            visibleSettingBoxes = $(".extend-box-open", searchContainer).closest('.settings-container');
+            var invisibleBoxes = $(".extend-box-closed", searchContainer).closest('.settings-container');
+            $('.extend-box-closed', invisibleBoxes).attr('class', 'extend-box-open');
+            $('.content', invisibleBoxes).animate({
+              opacity: 'show',
+              height: 'show'
+            }, {
+              duration: 100
+            });
+          }
+          $('div.setting:icontainsnot(' + this.value + ')', searchContainer).hide();
+          $('div.setting:icontains(' + this.value + ')', searchContainer).show();
+        }
+      };
+      searchForm.appendChild(searchInput);
+      container.appendChild(searchForm);
+    };
 
     var SETTINGS_SCOPE = 'session';
 
     var refresh = (function () {
       $(space).empty();
 
-      addSettingsScopeSelect(space);
+      let buttonContainer = document.createElement('p');
+      buttonContainer.style.margin = ".5em .5em 1em .5em";
+      addSettingsScopeSelect(buttonContainer);
+      addSettingsFilter(buttonContainer, space);
+      space.appendChild(buttonContainer);
 
       // Add all settings
       addGeneralSettings(space);

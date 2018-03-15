@@ -2726,7 +2726,7 @@
         var h = node.height();
         var shape = renderer.nodeShapes[data.shape].points;
         svg.drawLabeledPolygonPath(pos.x, pos.y, w, h, shape,
-           templateShapeStyle, data.label, dx, fy, templateTextStyle);
+           templateShapeStyle, data.label, dx, dy, templateTextStyle);
       } else {
         CATMAID.warn('Could not export graph element. Unknown shape: ' + data.shape);
       }

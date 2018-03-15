@@ -10,6 +10,11 @@ Publications using CATMAID
 `````````````````````````````````````
 *The following publications used CATMAID for neural circuit reconstruction or other tasks. Please get in touch with us if your publication is missing.*
 
+2018
+~~~~
+
+* Tatsuya C. Murakami, Tomoyuki Mano, Shu Saikawa, Shuhei A. Horiguchi, Daichi Shigeta, Kousuke Baba, Hiroshi Sekiya, Yoshihiro Shimizu, Kenji F. Tanaka, Hiroshi Kiyonari, Masamitsu Iino, Hideki Mochizuki, Kazuki Tainaka & Hiroki R. Ueda. `A three-dimensional single-cell-resolution whole-brain atlas using CUBIC-X expansion microscopy and tissue clearing <https://www.nature.com/articles/s41593-018-0109-1>`_, Nature Neuroscience, 2018.
+
 2017
 ~~~~
 

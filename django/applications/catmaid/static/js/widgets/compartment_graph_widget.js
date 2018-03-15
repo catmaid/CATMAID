@@ -2713,7 +2713,7 @@
       if      ("center" === halign) { dx = 0;          templateTextStyle["text-anchor"] = "middle"; }
       else if ("right"  === halign) { dx =   w/2 + 1;  templateTextStyle["text-anchor"] = "start";  }
       else if ("left"   === halign) { dx = -(w/2 + 1); templateTextStyle["text-anchor"] = "end";   }
-      if      ("center" === valign) { dy = labelHeight/2; }
+      if      ("center" === valign) { dy = labelHeight/3; }
       else if ("bottom" === valign) { dy =   h/2 + 1 + labelHeight; }
       else if ("top"    === valign) { dy = -(h/2 + 1);  }
 

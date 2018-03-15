@@ -2553,7 +2553,7 @@
     var dialog = new CATMAID.OptionsDialog("SVG Export", {
       'Illustrator SVG': function() {
         self.exportSVG({
-          arrowOnSeperateLine: true
+          arrowOnSeparateLine: true
         });
       },
       'Regular SVG': function() {

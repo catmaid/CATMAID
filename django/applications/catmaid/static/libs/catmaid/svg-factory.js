@@ -306,7 +306,7 @@
       }
       // The only way to convince Adobe Illustrator to read line markings and a
       // line seems to be by adding an invisible second line with the marker.
-      if (options.arrowOnSeperateLine) {
+      if (options.arrowOnSeparateLine) {
         arrow = line.cloneNode();
         arrow.style.stroke = 'none';
         arrow.style.fill = 'none';
@@ -316,7 +316,7 @@
       }
 
       // Additionally, shink the actual line a little bit, so that it doesn't
-      // overlap with the error head.
+      // overlap with the arrow head.
       if (options.arrowLineShrinking) {
         var vx = x2 - x1, vy = y2 - y1;
         var l = Math.sqrt(vx*vx + vy * vy);

@@ -3,10 +3,23 @@
 
 (function(CATMAID) {
 
+    var singleton = null;
+
     /**
      * Creates a simple login dialog.
      */
-    var LoginDialog = function(text, callback) {
+    var LoginDialog = function(text, callback, force) {
+      var id = "login-dialog";
+
+      // If there is already a login dialog, don't create a new one, return
+      // existing one.
+      if (singleton && !force) {
+        return singleton;
+      }
+
+      // Update singleton
+      singleton = this;
+
       this.dialog = new CATMAID.OptionsDialog("Permission required");
       if (text) {
         this.dialog.appendMessage(text);
@@ -26,6 +39,10 @@
       // If OK is pressed, the dialog should cause a (re-)login
       this.dialog.onOK = function() {
         CATMAID.client.login($(user_field).val(), $(pass_field).val(), callback);
+        singleton = null;
+      };
+      this.dialog.onCancel = function() {
+        singleton = null;
       };
     };
 

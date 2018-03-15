@@ -2717,18 +2717,16 @@
       else if ("bottom" === valign) { dy =   h/2 + 1 + labelHeight; }
       else if ("top"    === valign) { dy = -(h/2 + 1);  }
 
-      // TODO use dx, dy
-
       if (data.shape === 'ellipse') {
         var r = node.width() / 2.0;
         svg.drawLabeledCircle(pos.x, pos.y, r, templateShapeStyle,
-            data.label, 0, -1.5 * r, templateTextStyle);
+            data.label, dx, dy, templateTextStyle);
       } else if (data.shape in renderer.nodeShapes) {
         var w = node.width();
         var h = node.height();
         var shape = renderer.nodeShapes[data.shape].points;
         svg.drawLabeledPolygonPath(pos.x, pos.y, w, h, shape,
-           templateShapeStyle, data.label, dx, -0.75 * h, templateTextStyle);
+           templateShapeStyle, data.label, dx, fy, templateTextStyle);
       } else {
         CATMAID.warn('Could not export graph element. Unknown shape: ' + data.shape);
       }

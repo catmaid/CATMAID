@@ -2571,17 +2571,12 @@
     dialog.show('400', 'auto', true);
   };
 
-  GroupGraph.prototype.exportSVG = function(options) {
+  GroupGraph.prototype.generateSVG = function(options) {
     options = options || {};
-
-    if (0 === this.cy.nodes().size()) {
-      CATMAID.warn("Load a graph first!");
-      return;
-    }
 
     var cy = this.cy;
 
-    // Manually create SVG for graph, which is easier than making Cytoscapt.js
+    // Manually create SVG for graph, which is easier than making Cytoscape.js
     var div= $('#graph_widget' + this.widgetID),
         width = div.width(),
         height = div.height(),
@@ -2614,7 +2609,7 @@
 
     var templateLineOptions = {
       'edgeType': 'haystack',
-      'arrowOnSeperateLine': CATMAID.getOption(options, 'arrowOnSeperateLine', false),
+      'arrowOnSeparateLine': CATMAID.getOption(options, 'arrowOnSeparateLine', false),
       'arrowLineShrinking': CATMAID.getOption(options, 'arrowLineShrinking', true),
       'refX': CATMAID.getOption(options, 'arrowRefX', undefined)
     };
@@ -2706,6 +2701,23 @@
       templateShapeStyle['stroke-width'] = style['border-width'];
       templateShapeStyle['opacity'] = CATMAID.tools.getDefined(style['opacity'], '1');
 
+      // Determine label position and style
+      var valign = style["text-valign"];
+      var halign = style["text-halign"];
+      var w = node.width();
+      var h = node.height();
+      var labelHeight = node._private.rstyle.labelHeight;
+      // Label position relative to node position
+      var dx = 0;
+      var dy = 0;
+      if      ("center" === halign) { dx = 0;          templateTextStyle["text-anchor"] = "middle"; }
+      else if ("right"  === halign) { dx =   w/2 + 1;  templateTextStyle["text-anchor"] = "start";  }
+      else if ("left"   === halign) { dx = -(w/2 + 1); templateTextStyle["text-anchor"] = "end";   }
+      if      ("center" === valign) { dy = labelHeight/2; }
+      else if ("bottom" === valign) { dy =   h/2 + 1 + labelHeight; }
+      else if ("top"    === valign) { dy = -(h/2 + 1);  }
+
+      // TODO use dx, dy
 
       if (data.shape === 'ellipse') {
         var r = node.width() / 2.0;
@@ -2716,12 +2728,22 @@
         var h = node.height();
         var shape = renderer.nodeShapes[data.shape].points;
         svg.drawLabeledPolygonPath(pos.x, pos.y, w, h, shape,
-           templateShapeStyle, data.label, 0, -0.75 * h, templateTextStyle);
+           templateShapeStyle, data.label, dx, -0.75 * h, templateTextStyle);
       } else {
         CATMAID.warn('Could not export graph element. Unknown shape: ' + data.shape);
       }
     });
 
+    return svg;
+  };
+
+  GroupGraph.prototype.exportSVG = function() {
+    if (0 === this.cy.nodes().size()) {
+      CATMAID.warn("Load a graph first!");
+      return;
+    }
+
+    var svg = this.generateSVG();
     svg.save("graph-" + this.widgetID + ".svg");
   };
 

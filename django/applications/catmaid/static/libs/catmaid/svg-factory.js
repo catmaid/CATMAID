@@ -221,8 +221,6 @@
     var text = document.createElementNS(namespaces.svg, 'text');
     text.setAttribute('x', x);
     text.setAttribute('y', y);
-    text.setAttribute('text-anchor', 'middle');
-
     text.appendChild(document.createTextNode(content));
 
     if (style) {

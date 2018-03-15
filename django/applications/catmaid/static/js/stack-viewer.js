@@ -42,6 +42,8 @@
     this.y = Math.floor( primaryStack.MAX_Y / 2 );
     this.x = Math.floor( primaryStack.MAX_X / 2 );
     this.s = primaryStack.MAX_S;
+    this.plane = new THREE.Plane(this.normal(), 0);
+    this._updatePlane();
 
     this.old_z = -1;
     this.old_y = this.y;
@@ -320,15 +322,14 @@
       this._scaleBar.setVisibility(showScaleBar);
       this.layercontrol.refresh();
     }
-    this._scaleBar.update(
-      this.scale / this.primaryStack.minPlanarRes,
-      this.viewWidth / 5);
+    this._scaleBar.update(this.pxPerNm(), this.viewWidth / 5);
   };
 
   /**
    * update all state informations and the screen content
    */
   StackViewer.prototype.update = function (completionCallback, errorCallback) {
+    this._updatePlane();
     this.overview.redraw();
     if (this.s !== this.old_s) this.updateScaleBar();
 
@@ -337,6 +338,13 @@
     if( this._tool ) {
       this._tool.redraw();
     }
+  };
+
+  StackViewer.prototype._updatePlane = function () {
+    this.plane.constant = new THREE.Vector3(
+        this.primaryStack.stackToProjectX(this.z, 0, 0),
+        this.primaryStack.stackToProjectY(this.z, 0, 0),
+        this.primaryStack.stackToProjectZ(this.z, 0, 0)).length();
   };
 
   /**
@@ -483,6 +491,29 @@
   StackViewer.prototype.createPaddedStackViewBox = function (padScreenX, padScreenY, padScreenZ) {
     return this.paddedStackViewBox({min: {}, max: {}}, padScreenX, padScreenY, padScreenZ);
   };
+
+
+  // TODO:
+  // XYZ
+  StackViewer.prototype.normal = function () {
+    switch (this.primaryStack.orientation) {
+      case CATMAID.Stack.ORIENTATION_XY:
+        return new THREE.Vector3(0, 0, -1);
+        break;
+      case CATMAID.Stack.ORIENTATION_XZ:
+        return new THREE.Vector3(0, -1, 0);
+        break;
+      case CATMAID.Stack.ORIENTATION_ZY:
+        return new THREE.Vector3(-1, 0, 0);
+        break;
+    }
+  }
+
+
+  // TODO
+  StackViewer.prototype.pxPerNm = function () {
+    return this.scale / this.primaryStack.minPlanarRes;
+  }
 
 
   /**

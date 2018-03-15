@@ -190,13 +190,11 @@
     // All graphics elements scale automatcally.
     // If in screen scale mode, where the size of all elements should
     // stay the same (regardless of zoom level), counter acting this is required.
-    var resScale = Math.max(this.stackViewer.primaryStack.resolution.x,
-       this.stackViewer.primaryStack.resolution.y);
     var dynamicScale = screenScale ? (1 / this.stackViewer.scale) : false;
 
     this.graphics.scale(
         SkeletonAnnotations.TracingOverlay.Settings.session.scale,
-        resScale,
+        this.stackViewer.primaryStack.minPlanarRes,
         dynamicScale);
 
     // In case of a zoom level change and screen scaling is selected, update

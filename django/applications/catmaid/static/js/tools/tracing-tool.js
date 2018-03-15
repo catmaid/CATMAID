@@ -1002,7 +1002,9 @@
           }
           if (selectedNode) {
             // If this layer has a node close by, activate it
-            if (activeTracingLayer.stackViewer.z === selectedNode.node.z) {
+            var z = activeTracingLayer.stackViewer.primaryStack.projectToStackZ(
+                selectedNode.node.z, selectedNode.node.y, selectedNode.node.x);
+            if (activeTracingLayer.stackViewer.z === z) {
               SkeletonAnnotations.staticSelectNode(selectedNode.id, true)
                 .catch(CATMAID.handleError);
             } else {

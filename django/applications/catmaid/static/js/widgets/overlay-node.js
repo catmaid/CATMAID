@@ -246,9 +246,9 @@
       parent,     // the parent node, if present within the subset of nodes retrieved for display; otherwise null.
       parent_id,  // the id of the parent node, or null if it is root
       radius,
-      x,          // the x coordinate in stack coordinates
-      y,          // the y coordinate in stack coordinates
-      z,          // the z coordinate in stack coordinates
+      x,          // the x coordinate in project coordinates
+      y,          // the y coordinate in project coordinates
+      z,          // the z coordinate in project coordinates
       zdiff,      // the difference in Z from the current slice in stack space
       confidence,
       skeleton_id,// the id of the skeleton this node is an element of
@@ -271,9 +271,9 @@
      * See "newNode" for explanations. */
     this.newConnectorNode = function(
       id,         // unique id for the node from the database
-      x,          // the x coordinate in stack coordinates
-      y,          // the y coordinate in stack coordinates
-      z,          // the z coordinate in stack coordinates
+      x,          // the x coordinate in project coordinates
+      y,          // the y coordinate in project coordinates
+      z,          // the z coordinate in project coordinates
       zdiff,      // the difference in Z from the current slice in stack space
       confidence,
       subtype,
@@ -381,7 +381,7 @@
       this.scaling = 1.0;
       this.baseScale = 1.0;
       this.stackScaling = 1.0;
-      this.resolutionScale = 1.0;
+      // this.resolutionScale = 1.0;
       this.radiiVisibility = RADII_VISIBILITY.indexOf('none');
       // Store current section distance to next and previous sections. These can
       // be changed to correct for broken nodes.
@@ -389,6 +389,36 @@
       this.dToSecAfter = 1;
 
       this.markerType = 'disc';
+
+      this.planeX = function () {
+        switch (this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.orientation) {
+          case CATMAID.Stack.ORIENTATION_ZY:
+            return 'z';
+            break;
+          default:
+            return 'x';
+        }
+      };
+
+      this.planeY = function () {
+        switch (this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.orientation) {
+          case CATMAID.Stack.ORIENTATION_XZ:
+            return 'z';
+            break;
+          default:
+            return 'y';
+        }
+      };
+
+      this.planeZ = function () {
+        switch (this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.orientation) {
+          case CATMAID.Stack.ORIENTATION_XZ:
+            return 'y';
+            break;
+          default:
+            return 'z';
+        }
+      };
 
       /**
        * Create the node graphics elements.
@@ -411,9 +441,12 @@
           ptype.mouseEventManager.attach(this.c, this.type);
         }
 
-        this.c.x = this.x;
-        this.c.y = this.y;
+        this.c.x = this[this.planeX()];
+        this.c.y = this[this.planeY()];
         this.c.scale.set(this.stackScaling);
+        // this.c.scale.set(
+        //     this.stackScaling / this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.anisotropy.x,
+        //     this.stackScaling / this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.anisotropy.y);
 
         this.c.tint = this.color();
 
@@ -445,11 +478,11 @@
 
           this.radiusGraphics.clear();
           this.radiusGraphics.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
-          this.radiusGraphics.drawCircle(0, 0, this.radius / this.resolutionScale);
+          this.radiusGraphics.drawCircle(0, 0, this.radius);
           this.radiusGraphics.tint = this.c.tint;
           this.radiusGraphics.visible = this.c.visible;
-          this.radiusGraphics.x = this.x;
-          this.radiusGraphics.y = this.y;
+          this.radiusGraphics.x = this[this.planeX()];
+          this.radiusGraphics.y = this.planeY();
         } else if (this.radiusGraphics) {
           this.radiusGraphics.parent.removeChild(this.radiusGraphics);
           this.radiusGraphics.destroy();
@@ -504,10 +537,10 @@
 
       this.scale = function(baseScale, resScale, dynamicScale) {
         var oldScaling = this.scaling;
-        this.resolutionScale = resScale;
+        // this.resolutionScale = resScale;
         this.baseScale = baseScale;
-        this.stackScaling = baseScale * (dynamicScale ? dynamicScale : 1);
-        this.scaling = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
+        this.stackScaling = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
+        this.scaling = baseScale * (dynamicScale ? dynamicScale : 1);
         this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * this.stackScaling;//baseScale * (dynamicScale ? 1 : resScale);
         this.confidenceFontSize = this.CONFIDENCE_FONT_PT*this.stackScaling + 'pt';
         this.textResolution = resScale;
@@ -737,19 +770,23 @@
       };
 
       // Looked up to prevent frequent namespace lookups.
-      let intersectLineWithZPlane = CATMAID.tools.intersectLineWithZPlane;
+      let intersectLineWithPlane = CATMAID.tools.intersectLineWithPlane;
 
       /**
        * Get the intersection X and Y coordinate between node and and two with the
        * plane that is @zDiff units above node two. If it happens that there is no
        * difference in Z, node one's X and Y coordinate are returned.
        */
-      function getIntersection(node1, node2, zDiff) {
+      this.getIntersection = function(node1, node2, zDiff) {
         if (0 === zDiff) {
-          return [node1.x, node1.y];
+          return [node1[node1.planeX()], node1[node1.planeY()]];
         } else {
-          return intersectLineWithZPlane(node1.x, node1.y, node1.z,
-            node2.x, node2.y, node2.z, node2.z + zDiff);
+          // TODO
+          let intersection = intersectLineWithPlane(
+              node1.x, node1.y, node1.z,
+              node2.x, node2.y, node2.z,
+              this.overlayGlobals.tracingOverlay.stackViewer.plane);
+          return [intersection[node1.planeX()], intersection[node1.planeY()]];
         }
       }
 
@@ -765,9 +802,9 @@
         // If the parent or this itself is more than one slice away from the current
         // Z, draw the line only until it meets with the next non-boken slice,
         // in direction of the child or the parent, respectively.
-        var childLocation = getIntersection(this, this.parent,
+        var childLocation = this.getIntersection(this, this.parent,
             Math.max(this.dToSecBefore, Math.min(this.dToSecAfter, this.zdiff)));
-        var parentLocation = getIntersection(this.parent, this,
+        var parentLocation = this.getIntersection(this.parent, this,
             Math.max(this.dToSecBefore, Math.min(this.dToSecAfter, this.parent.zdiff)));
 
         var lengthSq = (parentLocation[0] - childLocation[0]) *
@@ -790,6 +827,9 @@
           line.moveTo(0, 0);
           line.lineTo(0, 0);
           line.hitArea = new PIXI.Polygon(0, 0, 0, 0, 0, 0, 0, 0);
+          // line.scale.set(
+          //       1 / this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.anisotropy.x,
+          //       1 / this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.anisotropy.y);
         }
 
         this.line.tooShort = false;
@@ -813,8 +853,8 @@
         var norm = lineNormal(childLocation[0], childLocation[1],
                               parentLocation[0], parentLocation[1]);
         var s = this.BASE_EDGE_WIDTH * 2.0;
-        norm[0] *= s;
-        norm[1] *= s;
+        norm[0] *= s; // / this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.anisotropy.x;
+        norm[1] *= s; // / this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.anisotropy.y;
         // Assign hit area to existing points array to avoid allocation.
         let lineHitAreaPoints = line.hitArea.points;
         lineHitAreaPoints[0] = childLocation[0]  + norm[0];
@@ -977,9 +1017,9 @@
 
         var c = new PIXI.Graphics();
         c.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
-        c.drawCircle(this.x, this.y, 0);
+        c.drawCircle(this[this.planeX()], this[this.planeY()], 0);
         this.overlayGlobals.skeletonElements.containers.nodes.addChild(c);
-        c.hitArea = new PIXI.Circle(this.x, this.y, 1000000);
+        c.hitArea = new PIXI.Circle(this[this.planeX()], this[this.planeY()], 1000000);
         c.interactive = true;
         c.visible = true;
         c.tint = color;
@@ -988,8 +1028,8 @@
         if (drawLine) {
           var line = new PIXI.Graphics();
           line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
-          line.moveTo(this.x, this.y);
-          line.lineTo(this.x + 1, this.y + 1);
+          line.moveTo(this[this.planeX()], this[this.planeY()]);
+          line.lineTo(this[this.planeX()] + 1, this[this.planeY()] + 1);
           line.tint = color;
           line.visible = true;
           this.overlayGlobals.skeletonElements.containers.lines.addChild(line);
@@ -1001,8 +1041,8 @@
         var fontSize = parseFloat(ptype.ArrowLine.prototype.confidenceFontSize) * 0.75;
         var pad = fontSize * 0.5;
         var labelShadow = label.append('rect').attr({
-            x: this.x,
-            y: this.y,
+            x: this[this.planeX()],
+            y: this[this.planeY()],
             rx: pad,
             ry: pad,
             stroke: '#000',
@@ -1010,7 +1050,7 @@
             opacity: 0.75,
             'pointer-events': 'none'});
         var labelText = label.append('text').attr({
-            x: this.x,
+            x: this.planeY(),
             y: this.y,
             'font-size': fontSize + 'pt',
             fill: '#FFF',
@@ -1065,8 +1105,9 @@
             }
             line.clear();
             line.lineStyle(self.EDGE_WIDTH, 0xFFFFFF, 1.0);
-            line.moveTo(nodeX, nodeY);
-            line.lineTo(nodeX + r.x, nodeY + r.y);
+            // TODO
+            line.moveTo(self[self.planeX()], self[self.planeY()]);
+            line.lineTo(rP[self.planeX()], rP[self.planeY()]);
             line.tint = lineColor;
           }
 
@@ -1111,7 +1152,7 @@
         this.surroundingCircleElements = undefined;
 
         this.overlayGlobals.tracingOverlay.redraw();
-        // Execute callback, if any, with radius in stack coordinates as argument
+        // Execute callback, if any, with radius in project coordinates as argument
         if (callback) {
           if (r) callback(r.x, r.y, r.z);
           else callback();
@@ -1126,9 +1167,9 @@
       parent,     // the parent node (may be null if the node is not loaded)
       parent_id,  // is null only for the root node
       radius,     // the radius
-      x,          // the x coordinate in stack coordinates
-      y,          // the y coordinate in stack coordinates
-      z,          // the z coordinate in stack coordinates
+      x,          // the x coordinate in project coordinates
+      y,          // the y coordinate in project coordinates
+      z,          // the z coordinate in project coordinates
       zdiff,      // the difference in z from the current slice
       confidence, // confidence with the parent
       skeleton_id,// the id of the skeleton this node is an element of
@@ -1412,9 +1453,9 @@
 
     ptype.ConnectorNode = function(
       id,         // unique id for the node from the database
-      x,          // the x coordinate in stack coordinates
-      y,          // the y coordinate in stack coordinates
-      z,          // the z coordinate in stack coordinates
+      x,          // the x coordinate in project coordinates
+      y,          // the y coordinate in project coordinates
+      z,          // the z coordinate in project coordinates
       zdiff,      // the difference in Z from the current slice in stack space
       confidence, // (TODO: UNUSED)
       subtype,    // the kind of connector node
@@ -1595,7 +1636,8 @@
 
         var newPosition = o.data.getLocalPosition(this.parent);
         if (!dragging) {
-          var l1Distance = Math.abs(newPosition.x - node.x) + Math.abs(newPosition.y - node.y);
+          var l1Distance = Math.abs(newPosition.x - node[node.planeX()])
+                         + Math.abs(newPosition.y - node[node.planeY()]);
           if (l1Distance > node.stackScaling * 0.5) {
             dragging = true;
             this.alpha = 0.7;
@@ -1614,11 +1656,12 @@
 
         if (o.id !== SkeletonAnnotations.getActiveNodeId()) return;
 
+        // TODO
         this.x = node.x = newPosition.x;
         this.y = node.y = newPosition.y;
         if (this.node.radiusGraphics) {
-          this.node.radiusGraphics.x = this.x;
-          this.node.radiusGraphics.y = this.y;
+          this.node.radiusGraphics.x = this[this.planeX()];
+          this.node.radiusGraphics.y = this.planeY();
         }
         node.drawEdges(true); // TODO for connector this is overkill
         // Update postsynaptic edges from connectors. Suprisingly this brute
@@ -2026,8 +2069,8 @@
       };
 
       this.scale = function(baseScale, resScale, dynamicScale) {
-        this.stackScaling = baseScale * (dynamicScale ? dynamicScale : 1);
-        this.scaling = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
+        this.stackScaling = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
+        this.scaling = baseScale * (dynamicScale ? dynamicScale : 1);
         this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * this.stackScaling;
         this.confidenceFontSize = this.CONFIDENCE_FONT_PT * this.stackScaling + 'pt';
         this.textResolution = resScale;

@@ -370,19 +370,24 @@
     this.svg.appendChild(this.createText(x, y, text, style));
   };
 
-  SVGFactory.prototype.save = function(filename) {
+  SVGFactory.prototype.ensureDefs = function() {
     // Add markers
     if (!this.defs) {
-      var self = this;
       this.defs = document.createElementNS(namespaces.svg, 'defs');
       Object.keys(this.markers).forEach(function(key) {
-        self.defs.appendChild(self.markers[key]);
-      });
+        this.defs.appendChild(this.markers[key]);
+      }, this);
       this.svg.appendChild(this.defs);
     }
+  };
+
+  SVGFactory.prototype.save = function(filename) {
+    this.ensureDefs();
 
     // Export
     var s = new XMLSerializer().serializeToString(this.svg);
+    // Insert line breaks for readibility and ease of parsing by text editors
+    s = s.replace(/</g,'\n<');
     var blob = new Blob([s], {type: svgMimeType});
     saveAs(blob, filename);
   };

@@ -786,9 +786,13 @@
               node1.x, node1.y, node1.z,
               node2.x, node2.y, node2.z,
               this.overlayGlobals.tracingOverlay.stackViewer.plane);
-          return [intersection[node1.planeX()], intersection[node1.planeY()]];
+          if (!intersection) {
+            return null;
+          } else {
+            return [intersection[node1.planeX()], intersection[node1.planeY()]];
+          }
         }
-      }
+      };
 
       /** Updates the coordinates of the line from the node to the parent. */
       this.drawLineToParent = function() {
@@ -806,6 +810,12 @@
             Math.max(this.dToSecBefore, Math.min(this.dToSecAfter, this.zdiff)));
         var parentLocation = this.getIntersection(this.parent, this,
             Math.max(this.dToSecBefore, Math.min(this.dToSecAfter, this.parent.zdiff)));
+
+        // If no intersection was found between the child-parent edge and the
+        // plane, don't draw the line.
+        if (!(childLocation && parentLocation)) {
+          return;
+        }
 
         var lengthSq = (parentLocation[0] - childLocation[0]) *
                        (parentLocation[0] - childLocation[0]) +

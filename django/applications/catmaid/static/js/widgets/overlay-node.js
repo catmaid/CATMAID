@@ -475,11 +475,11 @@
 
           this.radiusGraphics.clear();
           this.radiusGraphics.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
-          this.radiusGraphics.drawCircle(0, 0, this.radius);
+          this.radiusGraphics.drawCircle(0, 0, this.radius / this.stackScaling);
           this.radiusGraphics.tint = this.c.tint;
           this.radiusGraphics.visible = this.c.visible;
           this.radiusGraphics.x = this[this.planeX()];
-          this.radiusGraphics.y = this.planeY();
+          this.radiusGraphics.y = this[this.planeY()];
         } else if (this.radiusGraphics) {
           this.radiusGraphics.parent.removeChild(this.radiusGraphics);
           this.radiusGraphics.destroy();
@@ -1057,8 +1057,8 @@
             opacity: 0.75,
             'pointer-events': 'none'});
         var labelText = label.append('text').attr({
-            x: this.planeY(),
-            y: this.y,
+            x: this[this.planeX()],
+            y: this[this.planeY()],
             'font-size': fontSize + 'pt',
             fill: '#FFF',
             'pointer-events': 'none'});
@@ -1072,34 +1072,36 @@
         // Store current position of this node, just in case this instance will be
         // re-initialized due to an update. This also means that the circle cannot
         // be drawn while the node is changing location.
-        var nodeX = this.x;
-        var nodeY = this.y;
-        var nodeZ = this.z;
+        var nodeP = {x: this.x, y: this.y, z: this.z};
+        var planeX = this.planeX();
+        var planeY = this.planeY();
+        var planeZ = this.planeZ();
 
         // Update radius on mouse move
         c.on('mousemove', function (event) {
           var e = event.data.originalEvent;
           var rS = toStack({x: e.offsetX, y: e.offsetY});
+          var rP = stackToProject(rS);
           var r = {
-            x: rS.x - nodeX,
-            y: rS.y - nodeY,
-            z: rS.z - nodeZ
+            x: rP.x - nodeP.x,
+            y: rP.y - nodeP.y,
+            z: rP.z - nodeP.z
           };
-          var newR = Math.sqrt(Math.pow(r.x, 2) + Math.pow(r.y, 2) + Math.pow(r.z, 2));
-          c.graphicsData[0].shape.radius = newR;
+          var newRP = Math.sqrt(Math.pow(r.x, 2) + Math.pow(r.y, 2) + Math.pow(r.z, 2));
+          var newR = newRP / self.stackScaling;
+          // c.scale.set(self.stackScaling);
+          c.graphicsData[0].shape.radius = newRP;
           c.dirty++;
           c.clearDirty++; // Force re-rendering.
           // Strore also x and y components
           c.datum = r;
           // Update radius measurement label.
-          var rP = stackToProject(r);
-          var newRP = Math.sqrt(Math.pow(rP.x, 2) + Math.pow(rP.y, 2) + Math.pow(rP.z, 2));
-          labelText.attr({x: nodeX + r.x + 3 * pad, y: nodeY + r.y + 2 * pad});
+          labelText.attr({x: r[planeX] + 3 * pad, y: r[planeY] + 2 * pad});
           labelText.text(Math.round(newRP) + 'nm (' + Math.round(newR) + 'px)');
           var bbox = labelText.node().getBBox();
           labelShadow.attr({
-              x: nodeX + r.x + 2 * pad,
-              y: nodeY + r.y + 2 * pad - bbox.height,
+              x: r[planeX] + 2 * pad,
+              y: r[planeY] + 2 * pad - bbox.height,
               width: bbox.width + 2 * pad,
               height: bbox.height + pad});
 
@@ -1113,8 +1115,8 @@
             line.clear();
             line.lineStyle(self.EDGE_WIDTH, 0xFFFFFF, 1.0);
             // TODO
-            line.moveTo(self[self.planeX()], self[self.planeY()]);
-            line.lineTo(rP[self.planeX()], rP[self.planeY()]);
+            line.moveTo(nodeP[planeX], nodeP[planeY]);
+            line.lineTo(rP[planeX], rP[planeY]);
             line.tint = lineColor;
           }
 

@@ -2389,7 +2389,7 @@ function createVirtualNode(graphics, child, parent, stackViewer)
 
   if (child.radius && parent.radius) {
     // TODO
-    var a = (parent.z - z)/(parent.z - child.z);
+    var a = (parent.z - pos.z)/(parent.z - child.z);
     var r = parent.radius + a * (child.radius - parent.radius);
   } else {
     var r = -1;
@@ -3724,7 +3724,7 @@ SkeletonAnnotations.TracingOverlay.prototype.selectRadius = function(treenode_id
   var self = this;
   // References the original node the selector was created for
   var originalNode;
-  var originalZ;
+  var originalStackZ;
 
   if (no_centering) {
     toggleMeasurementTool();
@@ -3744,10 +3744,13 @@ SkeletonAnnotations.TracingOverlay.prototype.selectRadius = function(treenode_id
     return node;
   }
 
+  var stackToProject = self.stackViewer.primaryStack.stackToProject.bind(self.stackViewer.primaryStack);
+
   function toggleMeasurementTool() {
     // Keep a reference to the original node
     originalNode = self.nodes[treenode_id];
-    originalZ = originalNode.z;
+    originalStackZ = self.stackViewer.primaryStack.projectToStackZ(
+        originalNode.z, originalNode.y, originalNode.x);
     // Only allow radius edits of treenodes
     if (!(originalNode && originalNode.type === 'treenode')) {
       CATMAID.warn('Can only edit radius of treenodes');
@@ -3811,26 +3814,14 @@ SkeletonAnnotations.TracingOverlay.prototype.selectRadius = function(treenode_id
      */
     function toStack(r)
     {
-      var offsetX = self.stackViewer.x - self.stackViewer.viewWidth / self.stackViewer.scale / 2;
-      var offsetY = self.stackViewer.y - self.stackViewer.viewHeight / self.stackViewer.scale / 2;
+      var scaleX = 1 / (self.stackViewer.scale * self.stackViewer.primaryStack.anisotropy.x);
+      var scaleY = 1 / (self.stackViewer.scale * self.stackViewer.primaryStack.anisotropy.y);
+      var offsetX = self.stackViewer.x - self.stackViewer.viewWidth * scaleX / 2;
+      var offsetY = self.stackViewer.y - self.stackViewer.viewHeight * scaleY / 2;
       return {
-        x: (r.x / self.stackViewer.scale) + offsetX,
-        y: (r.y / self.stackViewer.scale) + offsetY,
-        z: originalZ  // Use an unchanging Z so that stack Z distance is ignored.
-      };
-    }
-
-    /**
-     * Transform a layer coordinate into world space.
-     */
-    function stackToProject(s)
-    {
-      // Subract the translation, since we care about distance in project space,
-      // not position.
-      return {
-        x: self.stackViewer.primaryStack.stackToProjectX(s.z, s.y, s.x) - self.stackViewer.primaryStack.translation.x,
-        y: self.stackViewer.primaryStack.stackToProjectY(s.z, s.y, s.x) - self.stackViewer.primaryStack.translation.y,
-        z: self.stackViewer.primaryStack.stackToProjectZ(s.z, s.y, s.x) - self.stackViewer.primaryStack.translation.z
+        x: r.x * scaleX + offsetX,
+        y: r.y * scaleY + offsetY,
+        z: originalStackZ  // Use an unchanging Z so that stack Z distance is ignored.
       };
     }
   }
@@ -3901,7 +3892,12 @@ SkeletonAnnotations.TracingOverlay.prototype.editRadius = function(treenode_id, 
 SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
   var self = this;
 
-  var pos = [this.coords.lastX, this.coords.lastY, this.stackViewer.z];
+  var spos = [this.coords.lastX, this.coords.lastY, this.stackViewer.z];
+  var pos = [
+    this.stackViewer.primaryStack.stackToProjectX(spos[2], spos[1], spos[0]),
+    this.stackViewer.primaryStack.stackToProjectY(spos[2], spos[1], spos[0]),
+    this.stackViewer.primaryStack.stackToProjectZ(spos[2], spos[1], spos[0]),
+  ];
   var id = 'vn-fake-fake-fake';
   var r = -1;
   var c = 5;
@@ -3926,7 +3922,8 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
 
   function toggleMeasurementTool() {
     fakeNode.createGraphics();
-    fakeNode.drawSurroundingCircle(true, toStack, stackToProject,
+    fakeNode.drawSurroundingCircle(true, toStack,
+        self.stackViewer.primaryStack.stackToProject.bind(self.stackViewer.primaryStack),
         hideCircleAndCallback);
     // Attach a handler for the ESC key to cancel selection
     $('body').on('keydown.catmaidRadiusSelect', function(event) {
@@ -3955,26 +3952,15 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
   /**
    * Transform a layer coordinate into stack space.
    */
-  function toStack (r) {
-    var offsetX = self.stackViewer.x - self.stackViewer.viewWidth / self.stackViewer.scale / 2;
-    var offsetY = self.stackViewer.y - self.stackViewer.viewHeight / self.stackViewer.scale / 2;
-    return {
-      x: (r.x / self.stackViewer.scale) + offsetX,
-      y: (r.y / self.stackViewer.scale) + offsetY,
+  function toStack(r) {
+      var scaleX = 1 / (self.stackViewer.scale * self.stackViewer.primaryStack.anisotropy.x);
+      var scaleY = 1 / (self.stackViewer.scale * self.stackViewer.primaryStack.anisotropy.y);
+      var offsetX = self.stackViewer.x - self.stackViewer.viewWidth * scaleX / 2;
+      var offsetY = self.stackViewer.y - self.stackViewer.viewHeight * scaleY / 2;
+      return {
+        x: r.x * scaleX + offsetX,
+        y: r.y * scaleY + offsetY,
       z: self.stackViewer.z
-    };
-  }
-
-  /**
-   * Transform a stack coordinate into project space.
-   */
-  function stackToProject (s) {
-    // Subract the translation, since we care about distance in project space,
-    // not position.
-    return {
-      x: self.stackViewer.primaryStack.stackToProjectX(s.z, s.y, s.x) - self.stackViewer.primaryStack.translation.x,
-      y: self.stackViewer.primaryStack.stackToProjectY(s.z, s.y, s.x) - self.stackViewer.primaryStack.translation.y,
-      z: self.stackViewer.primaryStack.stackToProjectZ(s.z, s.y, s.x) - self.stackViewer.primaryStack.translation.z
     };
   }
 };

@@ -1386,13 +1386,22 @@
           return Promise.resolve();
         }
 
+        // Get the next valid Z coordinate for the active stack and move the
+        // active node to it. To do this, we have have to first convert the
+        // active node's (project space) coordinates to stack space, move it,
+        // and then convert back.
+        const newXs = activeStackViewer.primaryStack.projectToUnclampedStackX(activeNode.z, activeNode.y, activeNode.x);
+        const newYs = activeStackViewer.primaryStack.projectToUnclampedStackY(activeNode.z, activeNode.y, activeNode.x);
         const newZs = activeStackViewer.validZDistanceByStep(activeStackViewer.z, step) + activeStackViewer.z;
-        const newZp = activeStackViewer.primaryStack.stackToProjectZ(newZs, activeNode.y, activeNode.x);
+
+        const newXp = activeStackViewer.primaryStack.stackToProjectX(newZs, newYs, newXs);
+        const newYp = activeStackViewer.primaryStack.stackToProjectY(newZs, newYs, newXs);
+        const newZp = activeStackViewer.primaryStack.stackToProjectZ(newZs, newYs, newXs);
 
         const nodeInfo = [
           activeNode.id,
-          activeStackViewer.primaryStack.stackToProjectX(newZs, activeNode.y, activeNode.x),
-          activeStackViewer.primaryStack.stackToProjectY(newZs, activeNode.y, activeNode.x),
+          newXp,
+          newYp,
           newZp
         ];
 
@@ -1413,8 +1422,8 @@
           .then(function() {
             tracingOverlay.moveTo(
               newZp,
-              activeStackViewer.primaryStack.stackToProjectY(newZs, activeStackViewer.y, activeStackViewer.x),
-              activeStackViewer.primaryStack.stackToProjectX(newZs, activeStackViewer.y, activeStackViewer.x)
+              newYp,
+              newXp
             );
           })
           .catch(CATMAID.handleError);

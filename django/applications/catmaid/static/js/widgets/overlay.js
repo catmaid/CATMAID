@@ -2421,6 +2421,9 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   var dToSecAfter = sv.validZDistanceAfter(sv.z);
   this.graphics.init(dToSecBefore, dToSecAfter);
 
+  // Look-up some frequently used objects
+  var primaryStack = this.stackViewer.primaryStack;
+
   // Add extra nodes
   if (extraNodes) {
     for (var i=0, max=extraNodes.length; i<max; ++i) {
@@ -2431,9 +2434,6 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
           n.edition_time, n.user_id);
     }
   }
-
-  // Look-up some frequently used objects
-  var primaryStack = this.stackViewer.primaryStack;
 
   var jsonNodes = jso[0];
   var jsonConnectors = jso[1];
@@ -4093,14 +4093,15 @@ SkeletonAnnotations.TracingOverlay.prototype.getNodeOnSectionAndEdge = function 
       var stack = self.stackViewer.primaryStack;
       var from = reverse ? locations[1] : locations[0],
             to = reverse ? locations[0] : locations[1],
-          toID = reverse ? childID : parentID;
+          toID = reverse ? childID : parentID,
+          fromStack = stack.projectToUnclampedStack(from),
+          toStack = stack.projectToUnclampedStack(to);
       var suppressedNodes = locations[2];
 
       // Calculate target section, respecting broken slices and suppressed
       // virtual nodes.
-      // TODO: coordinate change
-      var z = from.z;
-      var inc = from.z < to.z ? 1 : (from.z > to.z ? -1 : 0);
+      var z = fromStack.z;
+      var inc = fromStack.z < toStack.z ? 1 : (fromStack.z > toStack.z ? -1 : 0);
       var brokenSlices = stack.broken_slices;
       var suppressedZs = suppressedNodes.reduce(function (zs, s) {
         if (s.orientation === stack.orientation) {
@@ -4123,7 +4124,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getNodeOnSectionAndEdge = function 
 
       // If the target is in the section below, above or in the same section as
       // the from node, return it instead of a virtual node
-      if (Math.abs(z - to.z) < 0.0001) {
+      if (Math.abs(z - toStack.z) < 0.0001) {
         return {id: toID, x: to.x, y: to.y, z: to.z};
       }
 
@@ -4143,29 +4144,26 @@ SkeletonAnnotations.TracingOverlay.prototype.getNodeOnSectionAndEdge = function 
           var realFrom = locations[0];
           var realTo = locations[1];
           // Find intersection and return virtual node
-          var pos = CATMAID.tools.intersectLineWithZPlane(realFrom.x, realFrom.y, realFrom.z,
-              realTo.x, realTo.y, realTo.z, z);
+          var planeOffset = new THREE.Vector3(
+              stack.stackToProjectX(z, 0, 0),
+              stack.stackToProjectY(z, 0, 0),
+              stack.stackToProjectZ(z, 0, 0)).length();
+          var pos = CATMAID.tools.intersectLineWithPlane(
+              realFrom.x, realFrom.y, realFrom.z,
+              realTo.x, realTo.y, realTo.z,
+              new THREE.Plane(self.stackViewer.normal(), planeOffset));
 
-          var xp = stack.stackToProjectX(z, pos.y, pos.x);
-          var yp = stack.stackToProjectY(z, pos.y, pos.x);
-          var zp = stack.stackToProjectZ(z, pos.y, pos.x);
-
-          var vnID = SkeletonAnnotations.getVirtualNodeID(childID, parentID, xp, yp, zp);
+          var vnID = SkeletonAnnotations.getVirtualNodeID(childID, parentID, pos.x, pos.y, pos.z);
           return {
             id: vnID,
-            x: pos[0],
-            y: pos[1],
-            z: z
+            x: pos.x,
+            y: pos.y,
+            z: pos.z
           };
         });
     }).then(function(node) {
-      // Convert previous result to project cooridnates
-      return {
-        id: node.id,
-        x: self.stackViewer.primaryStack.stackToProjectX(node.z, node.y, node.x),
-        y: self.stackViewer.primaryStack.stackToProjectY(node.z, node.y, node.x),
-        z: self.stackViewer.primaryStack.stackToProjectZ(node.z, node.y, node.x)
-      };
+      // Result is in project cooridnates and has fields id, x, y, z;
+      return node;
     }).then(resolve).catch(reject);
   });
 };

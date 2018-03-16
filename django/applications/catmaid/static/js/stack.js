@@ -321,7 +321,28 @@
       s.z = this.projectToStackZ(p.z, p.y, p.x);
 
       return s;
-    }
+    };
+
+    /**
+     * Convert a project coordinate object with keys x, y, z to a unclamped
+     * stack coordinate object. If a second argument is passed in, assign to it
+     * rather than creating a new object.
+     *
+     * @param  {Object}  s An object in project coordinates.
+     * @param  {=Object} p (optional) An object to be assigned unclamped stack
+     *                     coordinates.
+     * @return {Object}    The project coordinates transformed to unclamped
+     *                     stack coordinates.
+     */
+    this.projectToUnclampedStack = function (p, s) {
+      s = s || {};
+
+      s.x = this.projectToUnclampedStackX(p.z, p.y, p.x);
+      s.y = this.projectToUnclampedStackY(p.z, p.y, p.x);
+      s.z = this.projectToUnclampedStackZ(p.z, p.y, p.x);
+
+      return s;
+    };
 
     /**
      * Convert a stack coordinate object with keys x, y, z to a project
@@ -342,7 +363,7 @@
       p.z = this.stackToProjectZ(s.z, s.y, s.x);
 
       return p;
-    }
+    };
 
     /**
      * Transfer the limiting coordinates of an orthogonal box from stack to

@@ -2385,7 +2385,7 @@ function createVirtualNode(graphics, child, parent, stackViewer)
   // The ID should be different for the the same child and parent in different
   // Z sections to distinguish virtual nodes on different sections. Therefore,
   // the complete location is part of the ID.
-  var id = SkeletonAnnotations._getVirtualNodeID(child.id, parent.id, pos[0], pos[1], pos[2]);
+  var id = SkeletonAnnotations._getVirtualNodeID(child.id, parent.id, pos.x, pos.y, pos.z);
 
   if (child.radius && parent.radius) {
     // TODO
@@ -2396,7 +2396,7 @@ function createVirtualNode(graphics, child, parent, stackViewer)
   }
   var c = 5;
 
-  var vn = graphics.newNode(id, parent, parent.id, r, pos[0], pos[1], pos[2], 0, c,
+  var vn = graphics.newNode(id, parent, parent.id, r, pos.x, pos.y, pos.z, 0, c,
       child.skeleton_id, child.edition_time, child.user_id);
 
   return vn;
@@ -4164,9 +4164,9 @@ SkeletonAnnotations.TracingOverlay.prototype.getNodeOnSectionAndEdge = function 
           var pos = CATMAID.tools.intersectLineWithZPlane(realFrom.x, realFrom.y, realFrom.z,
               realTo.x, realTo.y, realTo.z, z);
 
-          var xp = stack.stackToProjectX(z, pos[1], pos[0]);
-          var yp = stack.stackToProjectY(z, pos[1], pos[0]);
-          var zp = stack.stackToProjectZ(z, pos[1], pos[0]);
+          var xp = stack.stackToProjectX(z, pos.y, pos.x);
+          var yp = stack.stackToProjectY(z, pos.y, pos.x);
+          var zp = stack.stackToProjectZ(z, pos.y, pos.x);
 
           var vnID = SkeletonAnnotations.getVirtualNodeID(childID, parentID, xp, yp, zp);
           return {

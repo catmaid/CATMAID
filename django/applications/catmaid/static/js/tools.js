@@ -358,7 +358,7 @@ CATMAID.tools = CATMAID.tools || {};
     var intersect = plane.intersectLine(line);
 
     if (intersect) {
-      return [intersect.x, intersect.y, intersect.z];
+      return intersect;
     } else {
       return undefined;
     }

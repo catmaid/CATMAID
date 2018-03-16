@@ -303,6 +303,27 @@
     };
 
     /**
+     * Convert a stack coordinate object with keys x, y, z to a project
+     * coordinate object. If a second argument is passed in, assign to it
+     * rather than creating a new object.
+     *
+     * @param  {Object}  s An object in stack coordinates.
+     * @param  {=Object} p (optional) An object to be assigned project
+     *                     coordinates.
+     * @return {Object}    The stack coordinates transformed to project
+     *                     coordinates.
+     */
+    this.stackToProject = function (s, p) {
+      p = p || {};
+
+      p.x = this.stackToProjectX(s.z, s.y, s.x);
+      p.y = this.stackToProjectY(s.z, s.y, s.x);
+      p.z = this.stackToProjectZ(s.z, s.y, s.x);
+
+      return p;
+    }
+
+    /**
      * Transfer the limiting coordinates of an orthogonal box from stack to
      * project coordinates.  Transferred coordinates are written into
      * projectBox.  This method is faster than createStackToProjectBox because
@@ -313,13 +334,8 @@
      */
     this.stackToProjectBox = function( stackBox, projectBox )
     {
-      projectBox.min.x = self.stackToProjectX( stackBox.min.z, stackBox.min.y, stackBox.min.x );
-      projectBox.min.y = self.stackToProjectY( stackBox.min.z, stackBox.min.y, stackBox.min.x );
-      projectBox.min.z = self.stackToProjectZ( stackBox.min.z, stackBox.min.y, stackBox.min.x );
-
-      projectBox.max.x = self.stackToProjectX( stackBox.max.z, stackBox.max.y, stackBox.max.x );
-      projectBox.max.y = self.stackToProjectY( stackBox.max.z, stackBox.max.y, stackBox.max.x );
-      projectBox.max.z = self.stackToProjectZ( stackBox.max.z, stackBox.max.y, stackBox.max.x );
+      this.stackToProject(stackBox.min, projectBox.min);
+      this.stackToProject(stackBox.max, projectBox.max);
 
       return projectBox;
     };

@@ -1082,11 +1082,7 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNode = function(node)
     }
 
     var childId = matches[1];
-    var x = self.stackViewer.primaryStack.stackToProjectX(node.z, node.y, node.x);
-    var y = self.stackViewer.primaryStack.stackToProjectY(node.z, node.y, node.x);
-    var z = self.stackViewer.primaryStack.stackToProjectZ(node.z, node.y, node.x);
-
-    var command = new CATMAID.InsertNodeCommand(self.state, project.id, x, y, z,
+    var command = new CATMAID.InsertNodeCommand(self.state, project.id, node.x, node.y, node.z,
         node.parent_id, childId, node.radius, node.confidence);
     CATMAID.commands.execute(command)
       .then(function(result) {

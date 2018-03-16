@@ -4887,11 +4887,7 @@ SkeletonAnnotations.TracingOverlay.prototype.toggleVirtualNodeSuppression = func
         stack = self.stackViewer.primaryStack,
         orientation = stack.orientation,
         orientationName = ['z', 'y', 'x'][orientation],
-        coordinate = [
-            stack.stackToProjectZ,
-            stack.stackToProjectY,
-            stack.stackToProjectX
-          ][orientation](location.z, location.y, location.x);
+        coordinate = location[2 - orientation];
     var match = suppressed
         .map(function (s) {
           return s.orientation === orientation

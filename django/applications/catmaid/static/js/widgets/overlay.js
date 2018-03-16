@@ -3615,11 +3615,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToChildNode = function (treenode_
         var stack = self.stackViewer.primaryStack;
         var branchData = Object.keys(knownNode.children).map(function(childId) {
           var child = knownNode.children[childId];
-          return [[parseInt(childId),
-            stack.stackToProjectX(child.z, child.y, child.x),
-            stack.stackToProjectY(child.z, child.y, child.x),
-            stack.stackToProjectZ(child.z, child.y, child.x)
-          ]];
+          return [[parseInt(childId), child.x, child.y, child.z]];
         });
         if (branchData.length === 0) {
           // Already at a branch or end node

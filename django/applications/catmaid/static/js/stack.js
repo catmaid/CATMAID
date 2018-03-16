@@ -303,6 +303,27 @@
     };
 
     /**
+     * Convert a project coordinate object with keys x, y, z to a stack
+     * coordinate object. If a second argument is passed in, assign to it
+     * rather than creating a new object.
+     *
+     * @param  {Object}  s An object in project coordinates.
+     * @param  {=Object} p (optional) An object to be assigned stack
+     *                     coordinates.
+     * @return {Object}    The project coordinates transformed to stack
+     *                     coordinates.
+     */
+    this.projectToStack = function (p, s) {
+      s = s || {};
+
+      s.x = this.projectToStackX(p.z, p.y, p.x);
+      s.y = this.projectToStackY(p.z, p.y, p.x);
+      s.z = this.projectToStackZ(p.z, p.y, p.x);
+
+      return s;
+    }
+
+    /**
      * Convert a stack coordinate object with keys x, y, z to a project
      * coordinate object. If a second argument is passed in, assign to it
      * rather than creating a new object.

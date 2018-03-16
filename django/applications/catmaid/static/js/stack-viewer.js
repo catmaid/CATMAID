@@ -433,11 +433,11 @@
 
     stackBox.min.x = this.x - w2;
     stackBox.min.y = this.y - h2;
-    stackBox.min.z = this.z - 0.5;
+    stackBox.min.z = this.z;
 
     stackBox.max.x = this.x + w2;
     stackBox.max.y = this.y + h2;
-    stackBox.max.z = this.z + 0.5;
+    stackBox.max.z = this.z + 1;
 
     return stackBox;
   };

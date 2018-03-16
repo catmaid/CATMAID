@@ -4823,14 +4823,7 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
     return false;
   }
 
-  var viewBox = this.stackViewer.primaryStack.createStackToProjectBox(
-        this.stackViewer.createStackViewBox());
-  if (node.z < viewBox.min.z ||
-      node.y < viewBox.min.y ||
-      node.x < viewBox.min.x ||
-      node.z > viewBox.max.z ||
-      node.y > viewBox.max.y ||
-      node.x > viewBox.max.x) {
+  if (!this.isInView(node.x, node.y, node.z)) {
     CATMAID.msg("Error",
                 "Can not delete nodes outside the current view area. " +
                 "Press A to bring the node into view then try again.");
@@ -5104,30 +5097,12 @@ SkeletonAnnotations.TracingOverlay.prototype.handleNewNode = function(nodeID, px
 };
 
 SkeletonAnnotations.TracingOverlay.prototype.isInView = function(px, py, pz) {
-  var stackViewer = this.stackViewer;
+  var vb = this.stackViewer.primaryStack.createStackToProjectBox(
+      this.stackViewer.createStackViewBox());
 
-  var halfWidth =  (stackViewer.viewWidth  / 2.0) / stackViewer.scale,
-      halfHeight = (stackViewer.viewHeight / 2.0) / stackViewer.scale;
-
-  var x0 = stackViewer.x - halfWidth,
-      y0 = stackViewer.y - halfHeight,
-      z0 = stackViewer.z;
-
-  var x1 = stackViewer.x + halfWidth,
-      y1 = stackViewer.y + halfHeight,
-      z1 = stackViewer.z + 1.0;
-
-  var wx0 = stackViewer.primaryStack.stackToProjectX(z0, y0, x0),
-      wy0 = stackViewer.primaryStack.stackToProjectY(z0, y0, x0),
-      wz0 = stackViewer.primaryStack.stackToProjectZ(z0, y0, x0);
-
-  var wx1 = stackViewer.primaryStack.stackToProjectX(z1, y1, x1),
-      wy1 = stackViewer.primaryStack.stackToProjectY(z1, y1, x1),
-      wz1 = stackViewer.primaryStack.stackToProjectZ(z1, y1, x1);
-
-  return wx0 <= px && px <= wx1 &&
-         wy0 <= py && py <= wy1 &&
-         wz0 <= pz && pz <= wz1;
+  return vb.min.x <= px && px <= vb.max.x &&
+         vb.min.y <= py && py <= vb.max.y &&
+         vb.min.z <= pz && pz <= vb.max.z;
 };
 
 /**

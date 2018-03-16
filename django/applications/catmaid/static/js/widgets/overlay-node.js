@@ -394,7 +394,6 @@
         switch (this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.orientation) {
           case CATMAID.Stack.ORIENTATION_ZY:
             return 'z';
-            break;
           default:
             return 'x';
         }
@@ -404,7 +403,6 @@
         switch (this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.orientation) {
           case CATMAID.Stack.ORIENTATION_XZ:
             return 'z';
-            break;
           default:
             return 'y';
         }
@@ -414,7 +412,6 @@
         switch (this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.orientation) {
           case CATMAID.Stack.ORIENTATION_XZ:
             return 'y';
-            break;
           default:
             return 'z';
         }

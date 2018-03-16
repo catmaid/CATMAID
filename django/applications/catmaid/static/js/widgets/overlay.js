@@ -5044,25 +5044,18 @@ SkeletonAnnotations.TracingOverlay.prototype.importActiveNode = function(node) {
     return;
   }
 
-  // Get project coordinates
-  var x = sourceStackViewer.primaryStack.stackToProjectX(node.z, node.y, node.x);
-  var y = sourceStackViewer.primaryStack.stackToProjectY(node.z, node.y, node.x);
-  var z = sourceStackViewer.primaryStack.stackToProjectZ(node.z, node.y, node.x);
-
   // Get stack coordinates for target stack
-  var xs = this.stackViewer.primaryStack.projectToUnclampedStackX(z, y, x);
-  var ys = this.stackViewer.primaryStack.projectToUnclampedStackY(z, y, x);
-  var zs = this.stackViewer.primaryStack.projectToUnclampedStackZ(z, y, x);
+  var zs = this.stackViewer.primaryStack.projectToUnclampedStackZ(node.z, node.y, node.x);
 
   if (SkeletonAnnotations.TYPE_NODE === node.type) {
     // Create new treenode. There is no need to include a parent node for this
     // imported node at the moment.
     this.nodes[node.id] = this.graphics.newNode(node.id, null, node.parent_id,
-        node.radius, xs, ys, zs, zs - this.stackViewer.z, node.confidence,
+        node.radius, node.x, node.y, node.z, zs - this.stackViewer.z, node.confidence,
         node.skeleton_id, node.edition_time, node.user_id);
   } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
     this.nodes[node.id] = this.graphics.newConnectorNode(
-        node.id, xs, ys, zs, zs - this.stackViewer.z, node.confidence,
+        node.id, node.x, node.y, node.x, zs - this.stackViewer.z, node.confidence,
         node.subtype, node.edition_time, node.user_id);
   }
 };

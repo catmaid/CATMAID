@@ -1114,7 +1114,6 @@
             }
             line.clear();
             line.lineStyle(self.EDGE_WIDTH, 0xFFFFFF, 1.0);
-            // TODO
             line.moveTo(nodeP[planeX], nodeP[planeY]);
             line.lineTo(rP[planeX], rP[planeY]);
             line.tint = lineColor;

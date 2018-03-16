@@ -493,8 +493,10 @@
   };
 
 
-  // TODO:
-  // XYZ
+  /**
+   * Normal of the view plane in project space.
+   * @return {THREE.Vector3} Unit length plane normal.
+   */
   StackViewer.prototype.normal = function () {
     switch (this.primaryStack.orientation) {
       case CATMAID.Stack.ORIENTATION_XY:
@@ -510,7 +512,11 @@
   }
 
 
-  // TODO
+  /**
+   * Pixels per nanometer of the minimal planar resolution at the current
+   * scale.
+   * @return {number}
+   */
   StackViewer.prototype.pxPerNm = function () {
     return this.scale / this.primaryStack.minPlanarRes;
   }

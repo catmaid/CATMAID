@@ -1666,11 +1666,11 @@
         if (o.id !== SkeletonAnnotations.getActiveNodeId()) return;
 
         // TODO
-        this.x = node.x = newPosition.x;
-        this.y = node.y = newPosition.y;
+        this.x = node[node.planeX()] = newPosition.x;
+        this.y = node[node.planeY()] = newPosition.y;
         if (this.node.radiusGraphics) {
-          this.node.radiusGraphics.x = this[this.planeX()];
-          this.node.radiusGraphics.y = this.planeY();
+          this.node.radiusGraphics.x = node[node.planeX()];
+          this.node.radiusGraphics.y = node[node.planeY()];
         }
         node.drawEdges(true); // TODO for connector this is overkill
         // Update postsynaptic edges from connectors. Suprisingly this brute

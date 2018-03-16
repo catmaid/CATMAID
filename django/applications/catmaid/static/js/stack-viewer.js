@@ -501,15 +501,12 @@
     switch (this.primaryStack.orientation) {
       case CATMAID.Stack.ORIENTATION_XY:
         return new THREE.Vector3(0, 0, -1);
-        break;
       case CATMAID.Stack.ORIENTATION_XZ:
         return new THREE.Vector3(0, -1, 0);
-        break;
       case CATMAID.Stack.ORIENTATION_ZY:
         return new THREE.Vector3(-1, 0, 0);
-        break;
     }
-  }
+  };
 
 
   /**
@@ -519,7 +516,7 @@
    */
   StackViewer.prototype.pxPerNm = function () {
     return this.scale / this.primaryStack.minPlanarRes;
-  }
+  };
 
 
   /**

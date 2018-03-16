@@ -3721,6 +3721,7 @@ SkeletonAnnotations.TracingOverlay.prototype.selectRadius = function(treenode_id
   // References the original node the selector was created for
   var originalNode;
   var originalStackZ;
+  var stackToProject = self.stackViewer.primaryStack.stackToProject.bind(self.stackViewer.primaryStack);
 
   if (no_centering) {
     toggleMeasurementTool();
@@ -3739,8 +3740,6 @@ SkeletonAnnotations.TracingOverlay.prototype.selectRadius = function(treenode_id
     }
     return node;
   }
-
-  var stackToProject = self.stackViewer.primaryStack.stackToProject.bind(self.stackViewer.primaryStack);
 
   function toggleMeasurementTool() {
     // Keep a reference to the original node
@@ -3796,9 +3795,7 @@ SkeletonAnnotations.TracingOverlay.prototype.selectRadius = function(treenode_id
             completionCallback(undefined);
             return;
           }
-          // Convert pixel radius components to nanometers
-          var p = stackToProject({x: rx, y: ry, z: rz}),
-              pr = Math.round(Math.sqrt(Math.pow(p.x, 2) + Math.pow(p.y, 2) + Math.pow(p.z, 2)));
+          var pr = Math.round(Math.sqrt(Math.pow(rx, 2) + Math.pow(ry, 2) + Math.pow(rz, 2)));
           // Callback with the selected radius
           completionCallback(pr);
         });
@@ -3901,6 +3898,7 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
   var fakeNode = this.graphics.newNode(id, null, null, r, pos[0], pos[1], pos[2], 0, c,
       null, false, '1');
 
+  var stackToProject = self.stackViewer.primaryStack.stackToProject.bind(self.stackViewer.primaryStack);
   toggleMeasurementTool();
 
   function displayRadius(rx, ry, rz) {
@@ -3908,18 +3906,17 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
       return;
     }
     // Convert pixel radius components to nanometers
-    var p = stackToProject({x: rx, y: ry, z: rz}),
-        pr = Math.round(Math.sqrt(Math.pow(p.x, 2) + Math.pow(p.y, 2) + Math.pow(p.z, 2)));
+    var s = self.stackViewer.primaryStack.projectToStack({x: rx, y: ry, z: rz}),
+        pr = Math.round(Math.sqrt(Math.pow(rx, 2) + Math.pow(ry, 2) + Math.pow(rz, 2)));
     CATMAID.statusBar.replaceLast(
         'Distance: ' + pr + 'nm ' +
-        '(Project nm X: ' + p.x + ' Y: ' + p.y + ' Z: ' + p.z + ') ' +
-        '(Stack px X: ' + rx + ' Y: ' + ry + ' Z: ' + rz + ')');
+        '(Project nm X: ' + rx + ' Y: ' + ry + ' Z: ' + rz + ') ' +
+        '(Stack px X: ' + s.x + ' Y: ' + s.y + ' Z: ' + s.z + ')');
   }
 
   function toggleMeasurementTool() {
     fakeNode.createGraphics();
-    fakeNode.drawSurroundingCircle(true, toStack,
-        self.stackViewer.primaryStack.stackToProject.bind(self.stackViewer.primaryStack),
+    fakeNode.drawSurroundingCircle(true, toStack, stackToProject,
         hideCircleAndCallback);
     // Attach a handler for the ESC key to cancel selection
     $('body').on('keydown.catmaidRadiusSelect', function(event) {

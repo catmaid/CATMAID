@@ -475,7 +475,7 @@
 
           this.radiusGraphics.clear();
           this.radiusGraphics.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
-          this.radiusGraphics.drawCircle(0, 0, this.radius / this.stackScaling);
+          this.radiusGraphics.drawCircle(0, 0, this.radius);
           this.radiusGraphics.tint = this.c.tint;
           this.radiusGraphics.visible = this.c.visible;
           this.radiusGraphics.x = this[this.planeX()];
@@ -1139,7 +1139,8 @@
 
       /**
        * Remove a surrounding circle, if it is present. The callback function, if
-       * any, will be called with the last radius of the circle.
+       * any, will be called with the last radius of the circle in project
+       * coordinates.
        */
       this.removeSurroundingCircle = function(callback) {
         if (!this.surroundingCircleElements) {

@@ -341,10 +341,20 @@
   };
 
   StackViewer.prototype._updatePlane = function () {
-    this.plane.constant = new THREE.Vector3(
-        this.primaryStack.stackToProjectX(this.z, 0, 0),
-        this.primaryStack.stackToProjectY(this.z, 0, 0),
-        this.primaryStack.stackToProjectZ(this.z, 0, 0)).length();
+    switch (this.primaryStack.orientation) {
+      case CATMAID.Stack.ORIENTATION_XY:
+        this.plane.constant = this.primaryStack.stackToProjectZ(this.z, 0, 0);
+        break;
+      case CATMAID.Stack.ORIENTATION_XZ:
+        this.plane.constant = this.primaryStack.stackToProjectY(this.z, 0, 0);
+        break;
+      case CATMAID.Stack.ORIENTATION_ZY:
+        this.plane.constant = this.primaryStack.stackToProjectX(this.z, 0, 0);
+        break;
+      default:
+        throw new CATMAID.ValueError("Unknown stack orientation: " +
+            this.primaryStack.orientation);
+    }
   };
 
   /**

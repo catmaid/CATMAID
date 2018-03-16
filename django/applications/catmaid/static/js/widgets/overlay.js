@@ -4173,7 +4173,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getNodeOnSectionAndEdge = function 
 /**
  * Promise the location of a node. Either by using the client side copy, if
  * available. Or by querying the backend. The location coordinates are returned
- * in stack space. If a vitual node ID is provided, its location and ID is
+ * in project space. If a vitual node ID is provided, its location and ID is
  * returned, too.
  */
 SkeletonAnnotations.TracingOverlay.prototype.promiseNodeLocation = function (
@@ -4197,15 +4197,14 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNodeLocation = function (
   // In case of a vitual node, both child and parent are retrieved and the
   // virtual node position is calculated.
   if (isVirtual) {
-    var stack = this.stackViewer.primaryStack;
     var x = parseFloat(SkeletonAnnotations.getXOfVirtualNode(nodeID));
     var y = parseFloat(SkeletonAnnotations.getYOfVirtualNode(nodeID));
     var z = parseFloat(SkeletonAnnotations.getZOfVirtualNode(nodeID));
     return Promise.resolve({
       id: nodeID,
-      x: stack.projectToUnclampedStackX(z, y, x),
-      y: stack.projectToUnclampedStackY(z, y, x),
-      z: stack.projectToUnclampedStackZ(z, y, x)
+      x: x,
+      y: y,
+      z: z
     });
   }
 
@@ -4215,12 +4214,11 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNodeLocation = function (
     var url = django_url + project.id + "/node/get_location";
     self.submit(url, 'POST', {tnid: nodeID}, resolve, true, false, reject);
   }).then(function(json) {
-    var stack = self.stackViewer.primaryStack;
     return {
       id: json[0],
-      x: stack.projectToUnclampedStackX(json[3], json[2], json[1]),
-      y: stack.projectToUnclampedStackY(json[3], json[2], json[1]),
-      z: stack.projectToUnclampedStackZ(json[3], json[2], json[1])
+      x: json[1],
+      y: json[2],
+      z: json[3]
     };
   });
 };

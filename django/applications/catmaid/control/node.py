@@ -1247,7 +1247,7 @@ def _node_list_tuples_query(params, project_id, node_provider,
         if with_relation_map == 'used':
             export_relation_map = {r:id_to_relation[r] for r in used_relations}
         elif with_relation_map == 'all':
-            export_relation_map = relation_map
+            export_relation_map = id_to_relation
         else:
             export_relation_map = {}
 

@@ -405,18 +405,6 @@ SkeletonAnnotations.getActiveNodeSubType = function() {
 };
 
 /**
- * Returns the positon of the active node in unscaled stack space coordinates.
- * If there is no active node, null is returned.
- */
-SkeletonAnnotations.getActiveNodePosition = function() {
-  if (null === this.atn.id) {
-    return null;
-  } else {
-    return {'x': this.atn.x, 'y': this.atn.y, 'z': this.atn.z};
-  }
-};
-
-/**
  * Returns the positon of the active node in world coordinates. If there is no
  * active node, null is returned.
  */
@@ -424,18 +412,8 @@ SkeletonAnnotations.getActiveNodePositionW = function() {
   if (null === this.atn.id) {
     return null;
   } else {
-    var stack = project.getStackViewer(this.atn.stack_viewer_id);
-    return {'x': stack.primaryStack.stackToProjectX(this.atn.z, this.atn.y, this.atn.x),
-            'y': stack.primaryStack.stackToProjectY(this.atn.z, this.atn.y, this.atn.x),
-            'z': stack.primaryStack.stackToProjectZ(this.atn.z, this.atn.y, this.atn.x)};
+    return {x: this.atn.x, y: this.atn.y, z: this.atn.z};
   }
-};
-
-/**
- * Get A THREE.Vector3 representation of the active treenode's location.
- */
-SkeletonAnnotations.getActiveNodeVector3 = function() {
-  return new THREE.Vector3(this.atn.x, this.atn.y, this.atn.z);
 };
 
 /**

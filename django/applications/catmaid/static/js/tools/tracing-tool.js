@@ -1381,7 +1381,9 @@
           return Promise.resolve();
         }
 
-        if (activeStackViewer.z !== activeNode.z) {
+        const oldZs = activeStackViewer.primaryStack.projectToStackZ(activeNode.z, activeNode.y, activeNode.x);
+
+        if (activeStackViewer.z !== oldZs) {
           CATMAID.statusBar.replaceLast("Stack viewer must be in the same z-slice to move node #" + activeNode.id);
           return Promise.resolve();
         }

@@ -91,15 +91,23 @@ QUnit.test('Utilities test', function( assert ) {
 
   // Test Z plane intersection function
   (function() {
-    var i1 = CATMAID.tools.intersectLineWithZPlane(-1, 1, 1, 1, 2, 3, 0);
-    assert.deepEqual(i1, [-2, 0.5],
-        "CATMAID.tools.intersectLineWithZPlane finds intersection with " +
+    var i1 = CATMAID.tools.intersectLineWithPlane(-3, 0, -1, 1, 2, 3,
+        new THREE.Plane(new THREE.Vector3(0, 0, -1), 0));
+    assert.deepEqual(i1, new THREE.Vector3(-2, 0.5, 0),
+        "CATMAID.tools.intersectLineWithPlane finds intersection with " +
         "proper values");
 
-    var i2 = CATMAID.tools.intersectLineWithZPlane(0, 0, 0, 0, 0, 0, 0);
-    assert.deepEqual(i2, [NaN, NaN],
-        "CATMAID.tools.intersectLineWithZPlane fails to find intersection " +
-        "if all values are the same");
+    var i2 = CATMAID.tools.intersectLineWithPlane(0, 0, 0, 0, 0, 0,
+        new THREE.Plane(new THREE.Vector3(0, 0, -1), 0));
+    assert.deepEqual(i2, new THREE.Vector3(0, 0, 0),
+        "CATMAID.tools.intersectLineWithPlane returns the line segment " +
+        "origin if all values are the same");
+
+    var i3 = CATMAID.tools.intersectLineWithPlane(-1, 1, 1, 1, 2, 3,
+        new THREE.Plane(new THREE.Vector3(0, 0, -1), 0));
+    assert.deepEqual(i3, undefined,
+        "CATMAID.tools.intersectLineWithPlane returns undefined if the " +
+        "line segment does not intersect the plane");
   })();
 
 

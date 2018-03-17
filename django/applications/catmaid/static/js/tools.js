@@ -353,15 +353,7 @@ CATMAID.tools = CATMAID.tools || {};
         new THREE.Vector3(x1, y1, z1),
         new THREE.Vector3(x2, y2, z2));
 
-    // var plane = new THREE.Plane(new THREE.Vector3(norm[0], norm[1], norm[2]), p);
-
-    var intersect = plane.intersectLine(line);
-
-    if (intersect) {
-      return intersect;
-    } else {
-      return undefined;
-    }
+    return plane.intersectLine(line);
   };
 
   /**

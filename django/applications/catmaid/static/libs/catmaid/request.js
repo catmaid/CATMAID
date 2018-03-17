@@ -101,7 +101,7 @@ var RequestQueue = function(originUrl, csrfToken)
         var responseData = isTextResponse ? xmlHttp.responseText : xmlHttp.response;
         var responseXML = isTextResponse ? xmlHttp.responseXML : null;
         var dataSize = xmlHttp.responseType === 'arraybuffer' ?
-            xmlHttp.response.byteLength : xmlHttp.response.length;
+            responseData.byteLength : responseData.length;
         queue[ 0 ].callback(xmlHttp.status, responseData, responseXML, dataSize);
       } catch(error) {
         // Call back with Service Unavailable error (503) for consistency with

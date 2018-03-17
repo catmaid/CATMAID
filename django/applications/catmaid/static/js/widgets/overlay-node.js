@@ -778,11 +778,15 @@
         if (0 === zDiff) {
           return [node1[node1.planeX()], node1[node1.planeY()]];
         } else {
-          // TODO
+          let sv = this.overlayGlobals.tracingOverlay.stackViewer;
+          let plane = sv.plane.clone();
+          plane.constant += sv.primaryStack.resolution.z *
+            (sv.primaryStack.projectToStackZ(node2.z, node2.y, node2.x)
+            - sv.z + zDiff);
           let intersection = intersectLineWithPlane(
               node1.x, node1.y, node1.z,
               node2.x, node2.y, node2.z,
-              this.overlayGlobals.tracingOverlay.stackViewer.plane);
+              plane);
           if (!intersection) {
             return null;
           } else {

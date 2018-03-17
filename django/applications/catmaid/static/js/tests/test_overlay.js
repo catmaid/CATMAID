@@ -60,7 +60,8 @@ QUnit.test('Tracing overlay test', function( assert ) {
           canEdit: function () { return true; },
           type: SkeletonAnnotations.TYPE_NODE,
           obliterate: function() {},
-          drawEdges: function() {}
+          drawEdges: function() {},
+          x: 0, y:0, z:0
         }
       };
       this.nodeIDsNeedingSync = new Set([41, 42]);

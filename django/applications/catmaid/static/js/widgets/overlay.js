@@ -1488,6 +1488,7 @@ SkeletonAnnotations.TracingOverlay.prototype.activateNearestNode = function (res
 
   var nearestnode = this.getClosestNode(this.coords.lastX,
                                         this.coords.lastY,
+                                        this.stackViewer.z,
                                         Number.MAX_VALUE,
                                         respectVirtualNodes).node;
   var stackZ = this.stackViewer.primaryStack.stackToProjectZ(nearestnode.z, nearestnode.y, nearestnode.x);
@@ -1528,7 +1529,7 @@ SkeletonAnnotations.validNodeTest = function(respectVirtualNodes)
  * virtual nodes.
  */
 SkeletonAnnotations.TracingOverlay.prototype.getClosestNode = function (
-    xs, ys, radius, respectVirtualNodes)
+    xs, ys, zs, radius, respectVirtualNodes)
 {
   var xdiff,
       ydiff,
@@ -1539,9 +1540,9 @@ SkeletonAnnotations.TracingOverlay.prototype.getClosestNode = function (
       node,
       nodeid;
 
-  var x = this.stackViewer.primaryStack.stackToProjectX(this.stackViewer.z, ys, xs),
-      y = this.stackViewer.primaryStack.stackToProjectY(this.stackViewer.z, ys, xs),
-      z = this.stackViewer.primaryStack.stackToProjectZ(this.stackViewer.z, ys, xs);
+  var x = this.stackViewer.primaryStack.stackToProjectX(zs, ys, xs),
+      y = this.stackViewer.primaryStack.stackToProjectY(zs, ys, xs),
+      z = this.stackViewer.primaryStack.stackToProjectZ(zs, ys, xs);
 
   if (typeof respectVirtualNodes === 'undefined') respectVirtualNodes = true;
 
@@ -2705,18 +2706,7 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
 
   var stackViewBox = stackViewer.createStackViewBox();
   var projectViewBox = stackViewer.primaryStack.createStackToProjectBox(stackViewBox);
-  var planeDims;
-  switch (stackViewer.primaryStack.orientation) {
-    case CATMAID.Stack.ORIENTATION_XY:
-      planeDims = {x: 'x', y: 'y'};
-      break;
-    case CATMAID.Stack.ORIENTATION_XZ:
-      planeDims = {x: 'x', y: 'z'};
-      break;
-    case CATMAID.Stack.ORIENTATION_ZY:
-      planeDims = {x: 'z', y: 'y'};
-      break;
-  }
+  var planeDims = stackViewer.primaryStack.getPlaneDimensions();
 
   this.pixiLayer.batchContainer.scale.set(stackViewer.pxPerNm());
   this.pixiLayer.batchContainer.position.set(
@@ -3081,6 +3071,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNewOrExtendActiveSkeleton =
     var respectVirtualNodes = true;
     var nearestnode = this.getClosestNode(this.coords.lastX,
                                           this.coords.lastY,
+                                          this.stackViewer.z,
                                           searchRadius,
                                           respectVirtualNodes);
     if (nearestnode === null) {

@@ -91,7 +91,7 @@
   SkeletonProjectionLayer.prototype.constructor = SkeletonProjectionLayer;
 
   SkeletonProjectionLayer.prototype.treenodeReference = 'treenodeCircle';
-  SkeletonProjectionLayer.prototype.NODE_RADIUS = 8;
+  SkeletonProjectionLayer.prototype.NODE_RADIUS = 3;
 
   /**
    * Update options of this layer, giving preference to option fields in the
@@ -214,10 +214,11 @@
       }, this);
     }
 
-    this.batchContainer.scale.set(this.stackViewer.scale);
+    var planeDims = this.stackViewer.primaryStack.getPlaneDimensions();
+    this.batchContainer.scale.set(this.stackViewer.pxPerNm());
     this.batchContainer.position.set(
-        -stackViewBox.min.x*this.stackViewer.scale,
-        -stackViewBox.min.y*this.stackViewer.scale);
+        -projectViewBox.min[planeDims.x] * this.stackViewer.pxPerNm(),
+        -projectViewBox.min[planeDims.y] * this.stackViewer.pxPerNm());
 
     this._renderIfReady();
 
@@ -345,20 +346,11 @@
           skeletonIds,
           function(skid) {
             // Get arbor with nodes and connectors, but without tags
-            return django_url + project.id + '/' + skid + '/1/1/0/compact-arbor';
+            return CATMAID.makeURL(project.id + '/' + skid + '/1/1/0/compact-arbor');
           },
           function(skid) { return {}; },
           function(skid, json) {
             var ap = new CATMAID.ArborParser().init('compact-arbor', json);
-            // Trasnform positons into stack space. This makes lookup later on
-            // quicker.
-            var stack = self.stackViewer.primaryStack;
-            for (var nodeID in ap.positions) {
-              var pos = ap.positions[nodeID];
-              pos.set(stack.projectToStackX(pos.z, pos.y, pos.x),
-                      stack.projectToStackY(pos.z, pos.y, pos.x),
-                      stack.projectToStackZ(pos.z, pos.y, pos.x));
-            }
             targetMap.set(skid, ap);
           },
           function(skid) {
@@ -406,12 +398,15 @@
     // Return, if there is no node
     if (!arborParserMap) return;
 
-    var currentStackZ = this.stackViewer.z;
+    var normalDimension = this.stackViewer.primaryStack.getNormalDimension();
+    var currentProjectPlane = this.stackViewer.plane;
+
     arborParserMap.forEach(function(ap, skid) {
       // Find a good reference node for current Z. Take the closest node to the
       // current section.
       var nodeId = this.currentReferenceNodes.has(skid) ?
-        this.currentReferenceNodes.get(skid) : getClosestNodeInZ(ap, currentStackZ);
+        this.currentReferenceNodes.get(skid) : getClosestNodeInNormalDir(ap,
+            normalDimension, currentProjectPlane);
       if (null !== nodeId) {
         // Add projection to D3 paper
         this._createProjection(nodeId, ap, skeletonModels[skid]);
@@ -463,7 +458,9 @@
       opacity: material.opacity(this, arbor, downstream),
       edgeWidth: this.graphics.Node.prototype.EDGE_WIDTH || 2,
       showEdges: this.options.showEdges,
-      showNodes: this.options.showNodes
+      showNodes: this.options.showNodes,
+      planeDims: this.stackViewer.primaryStack.getPlaneDimensions(),
+      normalDim: this.stackViewer.primaryStack.getNormalDimension()
     };
 
     // Render downstream nodes
@@ -496,18 +493,21 @@
 
     // render node that are not in this layer
     var stack = this.stackViewer.primaryStack;
-    // Positions are already transformed into stack space
+    // Positions are in project space
     var pos = this.positions[n];
-    var opacity = this.opacity(n, pos, pos.z);
-    var color = this.color(n, pos, pos.z);
+    var opacity = this.opacity(n, pos, pos[this.normalDim]);
+    var color = this.color(n, pos, pos[this.normalDim]);
 
-    // Display only nodes and edges not on the current section
-    if (pos.z !== this.stackViewer.z) {
+    // Display only nodes and edges not in current section
+    var normalPlaneDistance = pos[this.normalDim] - this.stackViewer.plane.constant;
+    var nodeIsInSection = normalPlaneDistance > -0.0001 &&
+        normalPlaneDistance < stack.resolution[this.normalDim];
+    if (!nodeIsInSection) {
       if (this.showNodes) {
         var c = new PIXI.Sprite(this.graphics.Node.prototype.NODE_TEXTURE);
         c.anchor.set(0.5);
-        c.x = pos.x;
-        c.y = pos.y;
+        c.x = pos[this.planeDims.x];
+        c.y = pos[this.planeDims.y];
         c.scale.set(this.graphics.Node.prototype.stackScaling);
         c.tint = color;
         c.alpha = opacity;
@@ -520,8 +520,8 @@
           var pos2 = this.positions[e];
           var edge = new PIXI.Graphics();
           edge.lineStyle(this.edgeWidth, 0xFFFFFF, opacity);
-          edge.moveTo(pos.x, pos.y);
-          edge.lineTo(pos2.x, pos2.y);
+          edge.moveTo(pos[this.planeDims.x], pos[this.planeDims.y]);
+          edge.lineTo(pos2[this.planeDims.x], pos2[this.planeDims.y]);
           edge.tint = color;
           this.graphics.containers.lines.addChild(edge);
         }
@@ -533,10 +533,14 @@
    * Get the node closest to the given position in a certain radius around it,
    * if any.
    */
-  SkeletonProjectionLayer.prototype.getClosestNode = function(x, y, radius) {
+  SkeletonProjectionLayer.prototype.getClosestNode = function(xs, ys, zs, radius) {
     var nearestnode = null;
     var nearestpos = null;
     var mindistsq = radius * radius;
+    var x = this.stackViewer.primaryStack.stackToProjectX(zs, ys, xs),
+        y = this.stackViewer.primaryStack.stackToProjectY(zs, ys, xs),
+        z = this.stackViewer.primaryStack.stackToProjectZ(zs, ys, xs);
+
     // Find a node close to this location
     this.currentProjections.forEach(function(ap, skid) {
       var positions = ap.positions;
@@ -544,7 +548,8 @@
         var pos = positions[nodeID];
         var xdiff = x - pos.x;
         var ydiff = y - pos.y;
-        var distsq = xdiff*xdiff + ydiff*ydiff;
+        var zdiff = z - pos.z;
+        var distsq = xdiff*xdiff + ydiff*ydiff + zdiff*zdiff;
         if (distsq < mindistsq) {
           mindistsq = distsq;
           nearestnode = nodeID;
@@ -560,19 +565,20 @@
   };
 
   /**
-   * Starting from the root, get the closest node to a given Z. Nodes in the
-   * given arbor parser have to be in stack space already.
+   * Starting from the root, get the closest node to a given normal direction
+   * distance (e.g. Z for XY views). Nodes in the given arbor parser have to be
+   * in stack space already.
    */
-  var getClosestNodeInZ = function(arborParser, z) {
+  var getClosestNodeInNormalDir = function(arborParser, normalDim, normalDist) {
     var nearestnode = null;
     var mindist = Number.MAX_VALUE;
     // Find a node close to this location
     var positions = arborParser.positions;
     for (var nodeID in positions) {
       var pos = positions[nodeID];
-      var zdiff = Math.abs(z - pos.z);
-      if (zdiff < mindist) {
-        mindist = zdiff;
+      var ndiff = Math.abs(normalDist - pos[normalDim]);
+      if (ndiff < mindist) {
+        mindist = ndiff;
         nearestnode = nodeID;
         // Stop if distance is zero
         if (mindist < 0.0001) {
@@ -621,7 +627,7 @@
 
       var relMaxStrahler = maxStrahler - minStrahler + 1;
 
-      return function(node, pos, zStack) {
+      return function(node, pos, z) {
         // Normalize Strahler to min/max range
         var s = strahler[node] - minStrahler + 1;
         return (s > 0 &&  s <= relMaxStrahler) ? s / maxStrahler: 0;
@@ -653,7 +659,7 @@
 
       var relMaxStrahler = maxStrahler - minStrahler + 1;
 
-      return function(node, pos, zStack) {
+      return function(node, pos, z) {
         // Normalize Strahler to min/max range
         var s = strahler[node] - minStrahler + 1;
         return (s > 0 && s <= relMaxStrahler) ? 1 : 0;
@@ -675,9 +681,11 @@
     "zdistance": function(layer, arbor, subarbor) {
       var falloff = layer.options.distanceFalloff;
       var stackViewer = layer.stackViewer;
-      return function(node, pos, zStack) {
-        var zDist = Math.abs(zStack - stackViewer.z);
-        return Math.max(0, 1 - falloff * zDist);
+      var normalRes = stackViewer.primaryStack.resolution[
+          stackViewer.primaryStack.getNormalDimension()];
+      return function(node, pos, z) {
+        var zDist = Math.abs(z - stackViewer.plane.constant);
+        return Math.max(0, 1 - falloff * zDist / normalRes);
       };
     },
 
@@ -686,7 +694,7 @@
      */
     "skeletoncolorgradient": {
       "opacity": function(layer, arbor, subarbor) {
-        return function(node, pos, zStack) {
+        return function(node, pos, z) {
           return 1;
         };
       },
@@ -696,9 +704,9 @@
         var from = CATMAID.tools.cssColorToRGB(
             SkeletonAnnotations.TracingOverlay.Settings.session.active_skeleton_color);
         var to = CATMAID.tools.cssColorToRGB(color);
-        return function(node, pos, zStack) {
+        return function(node, pos, z) {
           // Merge colors
-          var zDist = Math.abs(zStack - stackViewer.z);
+          var zDist = Math.abs(z - stackViewer.plane.constant);
           var factor = Math.max(0, 1 - falloff * zDist);
           var invFactor = 1 - factor;
           var r = Math.round((from.r * factor + to.r * invFactor) * 255);

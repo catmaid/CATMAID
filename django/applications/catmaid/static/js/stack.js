@@ -406,6 +406,52 @@
     };
 
     /**
+     * Get a mapping of stack space X and Y dimensions to project space
+     * dimensions.
+     */
+    switch ( orientation )
+    {
+      case CATMAID.Stack.ORIENTATION_XZ:
+        this.getPlaneDimensions = function() {
+          return {x: 'x', y: 'z'};
+        };
+        break;
+      case CATMAID.Stack.ORIENTATION_ZY:
+        this.getPlaneDimensions = function() {
+          return {x: 'z', y: 'y'};
+        };
+        break;
+      default:
+        this.getPlaneDimensions = function() {
+          return {x: 'x', y: 'y'};
+        };
+        break;
+    }
+
+    /**
+     * Get the project space dimension of the normal direction relative to this
+     * stack's plane.
+     */
+    switch ( orientation )
+    {
+      case CATMAID.Stack.ORIENTATION_XZ:
+        this.getNormalDimension = function() {
+          return 'y';
+        };
+        break;
+      case CATMAID.Stack.ORIENTATION_ZY:
+        this.getNormalDimension = function() {
+          return 'x';
+        };
+        break;
+      default:
+        this.getNormalDimension = function() {
+          return 'z';
+        };
+        break;
+    }
+
+    /**
      * Return whether a given section number is marked as broken.
      *
      * @param  {Number}  section Stack z coordinate of the section to check

@@ -986,13 +986,14 @@
           // a better way to get the current mouse position.
           var x = activeTracingLayer.tracingOverlay.coords.lastX;
           var y = activeTracingLayer.tracingOverlay.coords.lastY;
+          var z = activeTracingLayer.tracingOverlay.stackViewer.z;
           // Only allow nodes that are screen space 50px or closer
           var r = 100.0 / activeStackViewer.scale;
           for (var i = layerOrder.length - 1; i >= 0; --i) {
             // Read layers from top to bottom
             var l = layers.get(layerOrder[i]);
             if (CATMAID.tools.isFn(l.getClosestNode)) {
-              var candidateNode = l.getClosestNode(x, y, r);
+              var candidateNode = l.getClosestNode(x, y, z, r);
               if (candidateNode && (!selectedNode || candidateNode.distsq < selectedNode.distsq)) {
                 selectedNode = candidateNode;
               }

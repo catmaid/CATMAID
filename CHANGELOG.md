@@ -62,6 +62,8 @@ Miscellaneous:
 
 - Selection Table: Skeletons can now be imported from CSV files.
 
+- The skeleton projection layer works now with orthogonal views.
+
 
 ### Bug fixes
 

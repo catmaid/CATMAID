@@ -2704,32 +2704,32 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
   }
 
   var stackViewBox = stackViewer.createStackViewBox();
-  var projectCoordinates = stackViewer.primaryStack.createStackToProjectBox(stackViewBox);
-  var rotatedProjectCoordiantes;
+  var projectViewBox = stackViewer.primaryStack.createStackToProjectBox(stackViewBox);
+  var planeDims;
   switch (stackViewer.primaryStack.orientation) {
     case CATMAID.Stack.ORIENTATION_XY:
-      rotatedProjectCoordiantes = {x: projectCoordinates.min.x, y: projectCoordinates.min.y};
+      planeDims = {x: 'x', y: 'y'};
       break;
     case CATMAID.Stack.ORIENTATION_XZ:
-      rotatedProjectCoordiantes = {x: projectCoordinates.min.x, y: projectCoordinates.min.z};
+      planeDims = {x: 'x', y: 'z'};
       break;
     case CATMAID.Stack.ORIENTATION_ZY:
-      rotatedProjectCoordiantes = {x: projectCoordinates.min.z, y: projectCoordinates.min.y};
+      planeDims = {x: 'z', y: 'y'};
       break;
   }
 
   this.pixiLayer.batchContainer.scale.set(stackViewer.pxPerNm());
   this.pixiLayer.batchContainer.position.set(
-      -rotatedProjectCoordiantes.x * stackViewer.pxPerNm(),
-      -rotatedProjectCoordiantes.y * stackViewer.pxPerNm());
+      -projectViewBox.min[planeDims.x] * stackViewer.pxPerNm(),
+      -projectViewBox.min[planeDims.y] * stackViewer.pxPerNm());
 
   // Use project coordinates for the SVG's view box
   this.paper.attr({
       viewBox: [
-          stackViewBox.min.x,
-          stackViewBox.min.y,
-          stackViewBox.max.x - stackViewBox.min.x,
-          stackViewBox.max.y - stackViewBox.min.y].join(' '),
+          projectViewBox.min[planeDims.x],
+          projectViewBox.min[planeDims.y],
+          projectViewBox.max[planeDims.x] - projectViewBox.min[planeDims.x],
+          projectViewBox.max[planeDims.y] - projectViewBox.min[planeDims.y]].join(' '),
       width: stackViewer.viewWidth,     // Width and height only need to be updated on
       height: stackViewer.viewHeight}); // resize.
 
@@ -5286,11 +5286,14 @@ SkeletonAnnotations.Tag = new (function() {
   this.handleTagbox = function(atn, tracingOverlay) {
     SkeletonAnnotations.atn.promise().then((function() {
       var atnID = SkeletonAnnotations.getActiveNodeId();
-      var stack = project.getStackViewer(atn.stack_viewer_id);
-      var screenOrigin = stack.screenPosition();
+      var stackViewer = tracingOverlay.stackViewer;
+      var stack = stackViewer.primaryStack;
+      var screenOrigin = stackViewer.screenPosition();
       var screenPos = [
-        stack.scale * (atn.x - screenOrigin.left),
-        stack.scale * (atn.y - screenOrigin.top),
+        stackViewer.scale * stack.anisotropy.x *
+          (stack.projectToUnclampedStackX(atn.z, atn.y, atn.x) - screenOrigin.left),
+        stackViewer.scale * stack.anisotropy.y *
+          (stack.projectToUnclampedStackY(atn.z, atn.y, atn.x) - screenOrigin.top),
       ];
       this.tagbox = $("<div class='tagBox' id='tagBoxId" + atnID +
           "' style='z-index: 8; border: 1px solid #B3B2B2; padding: 5px; left: " +
@@ -5407,7 +5410,7 @@ SkeletonAnnotations.Tag = new (function() {
       CATMAID.msg('BEWARE', 'Close tagbox first before you tag another node!');
       return;
     }
-    if (tracingOverlay.stackViewer.z !== atn.z) {
+    if (!tracingOverlay.isInView(atn.x, atn.y, atn.z)) {
       var self = this;
       tracingOverlay.goToNode(atn.id,
           function() {

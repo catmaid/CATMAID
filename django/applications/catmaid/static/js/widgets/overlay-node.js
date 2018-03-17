@@ -1043,8 +1043,10 @@
         }
 
         // Create a label to measure current radius of the circle.
-        var label = this.overlayGlobals.tracingOverlay.paper.append('g').classed('radiuslabel', true).attr({
-            'pointer-events': 'none'});
+        var label = this.overlayGlobals.tracingOverlay.paper
+            .append('g')
+            .classed('radiuslabel', true)
+            .attr({ 'pointer-events': 'none'});
         var fontSize = parseFloat(ptype.ArrowLine.prototype.confidenceFontSize) * 0.75;
         var pad = fontSize * 0.5;
         var labelShadow = label.append('rect').attr({
@@ -1096,12 +1098,12 @@
           // Strore also x and y components
           c.datum = r;
           // Update radius measurement label.
-          labelText.attr({x: r[planeX] + 3 * pad, y: r[planeY] + 2 * pad});
+          labelText.attr({x: rP[planeX] + 3 * pad, y: rP[planeY] + 2 * pad});
           labelText.text(Math.round(newRP) + 'nm (' + Math.round(newR) + 'px)');
           var bbox = labelText.node().getBBox();
           labelShadow.attr({
-              x: r[planeX] + 2 * pad,
-              y: r[planeY] + 2 * pad - bbox.height,
+              x: rP[planeX] + 2 * pad,
+              y: rP[planeY] + 2 * pad - bbox.height,
               width: bbox.width + 2 * pad,
               height: bbox.height + pad});
 

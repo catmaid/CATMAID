@@ -80,9 +80,6 @@ QUnit.test('Tracing overlay test', function( assert ) {
       });
       this.selectNode = function() {};
       this.submit = submitterFn();
-      this.pix2physX = function() { return 0; };
-      this.pix2physY = function() { return 0; };
-      this.pix2physZ = function() { return 0; };
       var space = {
         min: {x: -Infinity, y: -Infinity, z: -Infinity},
         max: {x: Infinity, y: Infinity, z: Infinity}

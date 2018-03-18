@@ -442,35 +442,6 @@
       });
   };
 
-  /**
-   * Parse a single file as CSV and return a promise once complete with the
-   * file's content.
-   */
-  LandmarkWidget.prototype.parseCSVFile = function(file, nLinesToSkip) {
-    return new Promise(function(resolve, reject) {
-      let reader = new FileReader();
-      reader.onload = function(e) {
-        // Split text into individual lines
-        var lines = e.target.result.split(/[\n\r]/);
-        // Remove first N lines
-        if (nLinesToSkip && nLinesToSkip > 0) {
-          lines = lines.slice(nLinesToSkip);
-        }
-        // Split individual lines
-        lines = lines.map(function(l) {
-          return l.split(',');
-        }).filter(function(l) {
-          return l.length === 4;
-        });
-
-        resolve(lines);
-      };
-      reader.onerror = reject;
-      reader.onabort = reject;
-      reader.readAsText(file);
-    });
-  };
-
   LandmarkWidget.prototype.resetImportView = function() {
     this.filesToImport = [];
     let fileButton = document.querySelector('input#csv-import-' + this.widgetID);
@@ -829,6 +800,10 @@
 
   function getId(e) {
     return e.id;
+  }
+
+  function hasFourElements(l) {
+    return l.length === 4;
   }
 
   LandmarkWidget.MODES = {
@@ -1603,7 +1578,8 @@
           let parsePromises = [];
           for (let i=0; i<widget.filesToImport.length; ++i) {
             let file = widget.filesToImport[i];
-            let promise = widget.parseCSVFile(file, widget.importCSVLineSkip);
+            let promise = CATMAID.parseCSVFile(file, ',',
+                widget.importCSVLineSkip, hasFourElements);
             parsePromises.push(promise);
           }
 

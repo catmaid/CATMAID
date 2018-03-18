@@ -308,7 +308,7 @@
      * rather than creating a new object.
      *
      * @param  {Object}  s An object in project coordinates.
-     * @param  {=Object} p (optional) An object to be assigned stack
+     * @param  {Object=} p (optional) An object to be assigned stack
      *                     coordinates.
      * @return {Object}    The project coordinates transformed to stack
      *                     coordinates.
@@ -329,7 +329,7 @@
      * rather than creating a new object.
      *
      * @param  {Object}  s An object in project coordinates.
-     * @param  {=Object} p (optional) An object to be assigned unclamped stack
+     * @param  {Object=} p (optional) An object to be assigned unclamped stack
      *                     coordinates.
      * @return {Object}    The project coordinates transformed to unclamped
      *                     stack coordinates.
@@ -350,7 +350,7 @@
      * rather than creating a new object.
      *
      * @param  {Object}  s An object in stack coordinates.
-     * @param  {=Object} p (optional) An object to be assigned project
+     * @param  {Object=} p (optional) An object to be assigned project
      *                     coordinates.
      * @return {Object}    The stack coordinates transformed to project
      *                     coordinates.

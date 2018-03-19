@@ -1,6 +1,11 @@
 Some CATMAID versions require manual changes to an existing setup. Below these
 and other administration related changes are listed in order.
 
+## Under development
+
+- Postgres 10+ is now required.
+
+
 ## 2018.02.16
 
 - Three new OS package dependencies have been added (due to a Django framework

@@ -1991,12 +1991,10 @@ def _list_skeletons(project_id, created_by=None, reviewed_by=None, from_date=Non
     if nodecount_gt > 0:
         params['nodecount_gt'] = nodecount_gt
         query = '''
-            SELECT sub.skeleton_id
-            FROM (
-                SELECT t.skeleton_id AS skeleton_id, COUNT(*) AS count
-                FROM ({}) q JOIN treenode t ON q.skeleton_id = t.skeleton_id
-                GROUP BY t.skeleton_id
-            ) AS sub WHERE sub.count > %(nodecount_gt)s
+            SELECT s.skeleton_id
+            FROM ({}) q JOIN catmaid_skeleton_summary s
+            ON q.skeleton_id = s.skeleton_id
+            WHERE s.num_nodes > %(nodecount_gt)s
         '''.format(query)
 
     cursor = connection.cursor()

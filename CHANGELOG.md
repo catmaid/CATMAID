@@ -77,9 +77,13 @@ Miscellaneous:
 
 - Added H2N5 tile source type.
 
-- Obtaining review information through the /{project_id}/skeletons/review-status
-  API and connectivity information through /{project_id}/skeletons/connectivity
-  is now much faster.
+- Some APIs are much faster now: 1. Obtaining review info for skeletons with
+  /{project_id}/skeletons/review-status, 2. API and connectivity information
+  through /{project_id}/skeletons/connectivity, 3. Listing skeletons with a
+  minimum node count with /{project_ids}/skeletons/. In consequence the
+  following widgets became faster too: Connecticity Widget, Selecting skeleton
+  counts in the Statistics Widget, Review count based coloring (e.g. in Graph
+  Widget)
 
 
 ### Bug fixes

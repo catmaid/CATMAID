@@ -1684,10 +1684,7 @@ SkeletonAnnotations.TracingOverlay.prototype.insertNodeInActiveSkeleton = functi
       this.promiseNodes(insertion.node, insertion.node.parent)
         .then((function(nids) {
           var stack = this.stackViewer.primaryStack;
-          this.createNode(nids[1], nids[0], phys_x, phys_y, phys_z, -1, 5,
-              stack.projectToUnclampedStackX(phys_z, phys_y, phys_x),
-              stack.projectToUnclampedStackY(phys_z, phys_y, phys_x),
-              stack.projectToUnclampedStackZ(phys_z, phys_y, phys_x));
+          this.createNode(nids[1], nids[0], phys_x, phys_y, phys_z, -1, 5);
           }).bind(this));
     }
   }).bind(this);

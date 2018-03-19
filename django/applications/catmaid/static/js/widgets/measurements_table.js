@@ -184,7 +184,7 @@
 
       if (0 === Object.keys(to_remove).length) return;
 
-      var rows = this.table.fnGetData().filter(function(row) {
+      var rows = this.table.data().filter(function(row) {
         return !to_remove.hasOwnProperty(row[1]);
       });
 

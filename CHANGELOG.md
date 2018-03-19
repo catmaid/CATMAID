@@ -80,11 +80,12 @@ Miscellaneous:
 
 ### Bug fixes
 
-Reconstruction Sampler:
+- Reconstruction Sampler: 3D visualizations for interval preview and color mode
+  were sometimes wrong and showed additional intervals. This is fixed now.
+  Actual interval boundaries were not affected and are correct.
 
-- 3D visualizations for interval preview and color mode were sometimes wrong and
-  showed additional intervals. This is fixed now. Actual interval boundaries
-  were not affected and are correct.
+- Measurement table: no error is shown anymore after merging two listed
+  skeletons.
 
 
 ## 2018.02.16

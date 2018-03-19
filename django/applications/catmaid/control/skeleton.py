@@ -902,8 +902,8 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2,
 
     # Count nodes of each partner skeleton
     cursor.execute('''
-    SELECT skeleton_id, count(skeleton_id)
-    FROM treenode
+    SELECT skeleton_id, num_nodes
+    FROM catmaid_skeleton_summary
     WHERE skeleton_id = ANY(%s::integer[])
     GROUP BY skeleton_id
     ''', (partner_skids,))

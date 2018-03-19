@@ -1525,7 +1525,7 @@
    * Does not consider the case that some skeleton IDs don't exist. Will fail gracefully.
    */
   SynapseFractions.prototype.loadFromFiles = function(files) {
-      if (!CATMAID.isValidJSONFile(files)) {
+      if (!CATMAID.containsSingleValidFile(files, 'json')) {
         return;
       }
 

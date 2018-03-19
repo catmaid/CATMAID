@@ -167,6 +167,22 @@
     return input;
   };
 
+  OptionsDialog.prototype.appendNumericField = function(title, fieldID,
+      initialValue, min, max, step, submitOnEnter) {
+    var input = this.appendField(title, fieldID, initialValue, submitOnEnter);
+    input.setAttribute('type', 'number');
+    if (min !== undefined) {
+      input.setAttribute('min', min);
+    }
+    if (max !== undefined) {
+      input.setAttribute('max', max);
+    }
+    if (step !== undefined) {
+      input.setAttribute('step', step);
+    }
+    return input;
+  };
+
   OptionsDialog.prototype.appendCheckbox = function(title, checkboxID, selected, helptext) {
     var p = document.createElement('p');
     var checkbox = document.createElement('input');

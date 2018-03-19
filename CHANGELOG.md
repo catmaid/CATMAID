@@ -77,6 +77,9 @@ Miscellaneous:
 
 - Added H2N5 tile source type.
 
+- Obtaining review information through the /{project_id}/skeletons/review-status
+  API is now much faster.
+
 
 ### Bug fixes
 

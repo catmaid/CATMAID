@@ -106,14 +106,14 @@ def get_review_status(skeleton_ids, project_id=None, whitelist_id=False,
 
     skeletons = {}
 
-    # Count nodes of each skeleton
+    # Get node count for each skeleton
     cursor.execute('''
-        SELECT skeleton_id, count(*)
-        FROM treenode t
+        SELECT skeleton_id, num_nodes
+        FROM catmaid_skeleton_summary s
         JOIN (
             SELECT * FROM UNNEST(%(skeleton_ids)s::bigint[])
         ) query_skeleton(id)
-        ON t.skeleton_id = query_skeleton.id
+        ON s.skeleton_id = query_skeleton.id
         GROUP BY skeleton_id
     ''', {
         'skeleton_ids': list(skeleton_ids)

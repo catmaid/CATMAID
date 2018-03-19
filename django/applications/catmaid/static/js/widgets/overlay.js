@@ -2781,11 +2781,11 @@ SkeletonAnnotations.TracingOverlay.prototype.whenclicked = function (e) {
 
   if (!handled) {
     var atn = SkeletonAnnotations.atn;
-    var insert = e.altKey && e.ctrlKey;
+    var insert = e.altKey && (e.ctrlKey || e.metaKey);
     var link = e.shiftKey;
     var postLink = e.altKey;
     // e.metaKey should correspond to the command key on Mac OS
-    var deselect = (!insert && e.ctrlKey) || e.metaKey ||
+    var deselect = (!insert && (e.ctrlKey || e.metaKey)) ||
       (insert && (null === atn.id || SkeletonAnnotations.TYPE_NODE !== atn.type));
 
     if (deselect) {

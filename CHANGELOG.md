@@ -80,10 +80,11 @@ Miscellaneous:
 - Some APIs are much faster now: 1. Obtaining review info for skeletons with
   /{project_id}/skeletons/review-status, 2. API and connectivity information
   through /{project_id}/skeletons/connectivity, 3. Listing skeletons with a
-  minimum node count with /{project_ids}/skeletons/. In consequence the
+  minimum node count with /{project_ids}/skeletons/ 4. Getting skeleton node
+  count with /{project_id}/skeleton/{skeleton_id}/node_count. In consequence the
   following widgets became faster too: Connecticity Widget, Selecting skeleton
   counts in the Statistics Widget, Review count based coloring (e.g. in Graph
-  Widget)
+  Widget). Opening the Merge Dialog is also faster due to this change.
 
 
 ### Bug fixes

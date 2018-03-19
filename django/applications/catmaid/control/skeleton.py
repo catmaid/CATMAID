@@ -22,7 +22,8 @@ from django.views.decorators.cache import never_cache
 from rest_framework.decorators import api_view
 
 from catmaid.models import (Project, UserRole, Class, ClassInstance, Review,
-        ClassInstanceClassInstance, Relation, Sampler, Treenode, TreenodeConnector)
+        ClassInstanceClassInstance, Relation, Sampler, Treenode,
+        TreenodeConnector, SkeletonSummary)
 from catmaid.objects import Skeleton, SkeletonGroup, \
         compartmentalize_skeletongroup_by_edgecount, \
         compartmentalize_skeletongroup_by_confidence
@@ -511,8 +512,9 @@ def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):
     if not skeleton_id:
         skeleton_id = Treenode.objects.get(pk=treenode_id).skeleton_id
     skeleton_id = int(skeleton_id)
+
     return JsonResponse({
-        'count': Treenode.objects.filter(skeleton_id=skeleton_id).count(),
+        'count': SkeletonSummary.objects.get(skeleton_id=skeleton_id).num_nodes,
         'skeleton_id': skeleton_id})
 
 def _get_neuronname_from_skeletonid( project_id, skeleton_id ):

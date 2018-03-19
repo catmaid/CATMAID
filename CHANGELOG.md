@@ -11,6 +11,10 @@
 - The Docker images now support the options CM_HOST and CM_PORT to configure
   where uwsgi is listening.
 
+- When using the Javascript console, node positions returned from tracing
+  overlays are now in project space coordinates (physical nm), not stack space
+  voxel coordinates. Transformation to project space is no longer necessary.
+
 ### Features and enhancements
 
 Landmarks:
@@ -61,6 +65,15 @@ Miscellaneous:
   update due to the addition of a node.
 
 - Selection Table: Skeletons can now be imported from CSV files.
+
+- The skeleton projection layer works now with orthogonal views.
+
+- Stacks can now be created whose planar axes have anisotropic resolution.
+  The stack viewer will display these stacks correctly by scaling tiles
+  separately along each axis. The tracing overlay is also compatible with these
+  stacks in all orthoviews.
+
+- Added H2N5 tile source type.
 
 
 ### Bug fixes

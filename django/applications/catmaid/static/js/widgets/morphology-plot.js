@@ -367,7 +367,7 @@
 
   MorphologyPlot.prototype._computeCenter = function(center_mode, arbor, positions, connectors) {
     if ('Root node' === center_mode) return positions[arbor.root];
-    if ('Active node' === center_mode) return SkeletonAnnotations.getActiveNodeVector3();
+    if ('Active node' === center_mode) return SkeletonAnnotations.getActiveNodeProjectVector3();
     if ('First branch node' === center_mode) {
       var node = arbor.nextBranchNode(arbor.root);
       return positions[null === node ? arbor.root : node];

@@ -246,9 +246,9 @@
       parent,     // the parent node, if present within the subset of nodes retrieved for display; otherwise null.
       parent_id,  // the id of the parent node, or null if it is root
       radius,
-      x,          // the x coordinate in stack coordinates
-      y,          // the y coordinate in stack coordinates
-      z,          // the z coordinate in stack coordinates
+      x,          // the x coordinate in project coordinates
+      y,          // the y coordinate in project coordinates
+      z,          // the z coordinate in project coordinates
       zdiff,      // the difference in Z from the current slice in stack space
       confidence,
       skeleton_id,// the id of the skeleton this node is an element of
@@ -271,9 +271,9 @@
      * See "newNode" for explanations. */
     this.newConnectorNode = function(
       id,         // unique id for the node from the database
-      x,          // the x coordinate in stack coordinates
-      y,          // the y coordinate in stack coordinates
-      z,          // the z coordinate in stack coordinates
+      x,          // the x coordinate in project coordinates
+      y,          // the y coordinate in project coordinates
+      z,          // the z coordinate in project coordinates
       zdiff,      // the difference in Z from the current slice in stack space
       confidence,
       subtype,
@@ -381,7 +381,7 @@
       this.scaling = 1.0;
       this.baseScale = 1.0;
       this.stackScaling = 1.0;
-      this.resolutionScale = 1.0;
+      // this.resolutionScale = 1.0;
       this.radiiVisibility = RADII_VISIBILITY.indexOf('none');
       // Store current section distance to next and previous sections. These can
       // be changed to correct for broken nodes.
@@ -389,6 +389,33 @@
       this.dToSecAfter = 1;
 
       this.markerType = 'disc';
+
+      this.planeX = function () {
+        switch (this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.orientation) {
+          case CATMAID.Stack.ORIENTATION_ZY:
+            return 'z';
+          default:
+            return 'x';
+        }
+      };
+
+      this.planeY = function () {
+        switch (this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.orientation) {
+          case CATMAID.Stack.ORIENTATION_XZ:
+            return 'z';
+          default:
+            return 'y';
+        }
+      };
+
+      this.planeZ = function () {
+        switch (this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.orientation) {
+          case CATMAID.Stack.ORIENTATION_XZ:
+            return 'y';
+          default:
+            return 'z';
+        }
+      };
 
       /**
        * Create the node graphics elements.
@@ -411,9 +438,12 @@
           ptype.mouseEventManager.attach(this.c, this.type);
         }
 
-        this.c.x = this.x;
-        this.c.y = this.y;
+        this.c.x = this[this.planeX()];
+        this.c.y = this[this.planeY()];
         this.c.scale.set(this.stackScaling);
+        // this.c.scale.set(
+        //     this.stackScaling / this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.anisotropy.x,
+        //     this.stackScaling / this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.anisotropy.y);
 
         this.c.tint = this.color();
 
@@ -445,11 +475,11 @@
 
           this.radiusGraphics.clear();
           this.radiusGraphics.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
-          this.radiusGraphics.drawCircle(0, 0, this.radius / this.resolutionScale);
+          this.radiusGraphics.drawCircle(0, 0, this.radius);
           this.radiusGraphics.tint = this.c.tint;
           this.radiusGraphics.visible = this.c.visible;
-          this.radiusGraphics.x = this.x;
-          this.radiusGraphics.y = this.y;
+          this.radiusGraphics.x = this[this.planeX()];
+          this.radiusGraphics.y = this[this.planeY()];
         } else if (this.radiusGraphics) {
           this.radiusGraphics.parent.removeChild(this.radiusGraphics);
           this.radiusGraphics.destroy();
@@ -504,10 +534,10 @@
 
       this.scale = function(baseScale, resScale, dynamicScale) {
         var oldScaling = this.scaling;
-        this.resolutionScale = resScale;
+        // this.resolutionScale = resScale;
         this.baseScale = baseScale;
-        this.stackScaling = baseScale * (dynamicScale ? dynamicScale : 1);
-        this.scaling = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
+        this.stackScaling = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
+        this.scaling = baseScale * (dynamicScale ? dynamicScale : 1);
         this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * this.stackScaling;//baseScale * (dynamicScale ? 1 : resScale);
         this.confidenceFontSize = this.CONFIDENCE_FONT_PT*this.stackScaling + 'pt';
         this.textResolution = resScale;
@@ -576,6 +606,13 @@
         // Still set new node object in any case, since
         // node objects can be reused for different IDs
         this.children[childNode.id] = childNode;
+      };
+
+      this.removeChildNode = function (childNode) {
+        if (this.children.hasOwnProperty(childNode.id)) {
+          -- this.numberOfChildren;
+          delete this.children[childNode.id];
+        }
       };
 
       this.linkConnector = function(connectorId, link) {
@@ -737,21 +774,33 @@
       };
 
       // Looked up to prevent frequent namespace lookups.
-      let intersectLineWithZPlane = CATMAID.tools.intersectLineWithZPlane;
+      let intersectLineWithPlane = CATMAID.tools.intersectLineWithPlane;
 
       /**
        * Get the intersection X and Y coordinate between node and and two with the
        * plane that is @zDiff units above node two. If it happens that there is no
        * difference in Z, node one's X and Y coordinate are returned.
        */
-      function getIntersection(node1, node2, zDiff) {
+      this.getIntersection = function(node1, node2, zDiff) {
         if (0 === zDiff) {
-          return [node1.x, node1.y];
+          return [node1[node1.planeX()], node1[node1.planeY()]];
         } else {
-          return intersectLineWithZPlane(node1.x, node1.y, node1.z,
-            node2.x, node2.y, node2.z, node2.z + zDiff);
+          let sv = this.overlayGlobals.tracingOverlay.stackViewer;
+          let plane = sv.plane.clone();
+          plane.constant += sv.primaryStack.resolution.z *
+            (sv.primaryStack.projectToStackZ(node2.z, node2.y, node2.x)
+            - sv.z + zDiff);
+          let intersection = intersectLineWithPlane(
+              node1.x, node1.y, node1.z,
+              node2.x, node2.y, node2.z,
+              plane);
+          if (!intersection) {
+            return null;
+          } else {
+            return [intersection[node1.planeX()], intersection[node1.planeY()]];
+          }
         }
-      }
+      };
 
       /** Updates the coordinates of the line from the node to the parent. */
       this.drawLineToParent = function() {
@@ -765,10 +814,16 @@
         // If the parent or this itself is more than one slice away from the current
         // Z, draw the line only until it meets with the next non-boken slice,
         // in direction of the child or the parent, respectively.
-        var childLocation = getIntersection(this, this.parent,
+        var childLocation = this.getIntersection(this, this.parent,
             Math.max(this.dToSecBefore, Math.min(this.dToSecAfter, this.zdiff)));
-        var parentLocation = getIntersection(this.parent, this,
+        var parentLocation = this.getIntersection(this.parent, this,
             Math.max(this.dToSecBefore, Math.min(this.dToSecAfter, this.parent.zdiff)));
+
+        // If no intersection was found between the child-parent edge and the
+        // plane, don't draw the line.
+        if (!(childLocation && parentLocation)) {
+          return;
+        }
 
         var lengthSq = (parentLocation[0] - childLocation[0]) *
                        (parentLocation[0] - childLocation[0]) +
@@ -790,6 +845,9 @@
           line.moveTo(0, 0);
           line.lineTo(0, 0);
           line.hitArea = new PIXI.Polygon(0, 0, 0, 0, 0, 0, 0, 0);
+          // line.scale.set(
+          //       1 / this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.anisotropy.x,
+          //       1 / this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.anisotropy.y);
         }
 
         this.line.tooShort = false;
@@ -813,8 +871,8 @@
         var norm = lineNormal(childLocation[0], childLocation[1],
                               parentLocation[0], parentLocation[1]);
         var s = this.BASE_EDGE_WIDTH * 2.0;
-        norm[0] *= s;
-        norm[1] *= s;
+        norm[0] *= s; // / this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.anisotropy.x;
+        norm[1] *= s; // / this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.anisotropy.y;
         // Assign hit area to existing points array to avoid allocation.
         let lineHitAreaPoints = line.hitArea.points;
         lineHitAreaPoints[0] = childLocation[0]  + norm[0];
@@ -977,9 +1035,9 @@
 
         var c = new PIXI.Graphics();
         c.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
-        c.drawCircle(this.x, this.y, 0);
+        c.drawCircle(this[this.planeX()], this[this.planeY()], 0);
         this.overlayGlobals.skeletonElements.containers.nodes.addChild(c);
-        c.hitArea = new PIXI.Circle(this.x, this.y, 1000000);
+        c.hitArea = new PIXI.Circle(this[this.planeX()], this[this.planeY()], 1000000);
         c.interactive = true;
         c.visible = true;
         c.tint = color;
@@ -988,21 +1046,23 @@
         if (drawLine) {
           var line = new PIXI.Graphics();
           line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
-          line.moveTo(this.x, this.y);
-          line.lineTo(this.x + 1, this.y + 1);
+          line.moveTo(this[this.planeX()], this[this.planeY()]);
+          line.lineTo(this[this.planeX()] + 1, this[this.planeY()] + 1);
           line.tint = color;
           line.visible = true;
           this.overlayGlobals.skeletonElements.containers.lines.addChild(line);
         }
 
         // Create a label to measure current radius of the circle.
-        var label = this.overlayGlobals.tracingOverlay.paper.append('g').classed('radiuslabel', true).attr({
-            'pointer-events': 'none'});
+        var label = this.overlayGlobals.tracingOverlay.paper
+            .append('g')
+            .classed('radiuslabel', true)
+            .attr({ 'pointer-events': 'none'});
         var fontSize = parseFloat(ptype.ArrowLine.prototype.confidenceFontSize) * 0.75;
         var pad = fontSize * 0.5;
         var labelShadow = label.append('rect').attr({
-            x: this.x,
-            y: this.y,
+            x: this[this.planeX()],
+            y: this[this.planeY()],
             rx: pad,
             ry: pad,
             stroke: '#000',
@@ -1010,8 +1070,8 @@
             opacity: 0.75,
             'pointer-events': 'none'});
         var labelText = label.append('text').attr({
-            x: this.x,
-            y: this.y,
+            x: this[this.planeX()],
+            y: this[this.planeY()],
             'font-size': fontSize + 'pt',
             fill: '#FFF',
             'pointer-events': 'none'});
@@ -1025,34 +1085,36 @@
         // Store current position of this node, just in case this instance will be
         // re-initialized due to an update. This also means that the circle cannot
         // be drawn while the node is changing location.
-        var nodeX = this.x;
-        var nodeY = this.y;
-        var nodeZ = this.z;
+        var nodeP = {x: this.x, y: this.y, z: this.z};
+        var planeX = this.planeX();
+        var planeY = this.planeY();
+        var planeZ = this.planeZ();
 
         // Update radius on mouse move
         c.on('mousemove', function (event) {
           var e = event.data.originalEvent;
           var rS = toStack({x: e.offsetX, y: e.offsetY});
+          var rP = stackToProject(rS);
           var r = {
-            x: rS.x - nodeX,
-            y: rS.y - nodeY,
-            z: rS.z - nodeZ
+            x: rP.x - nodeP.x,
+            y: rP.y - nodeP.y,
+            z: rP.z - nodeP.z
           };
-          var newR = Math.sqrt(Math.pow(r.x, 2) + Math.pow(r.y, 2) + Math.pow(r.z, 2));
-          c.graphicsData[0].shape.radius = newR;
+          var newRP = Math.sqrt(Math.pow(r.x, 2) + Math.pow(r.y, 2) + Math.pow(r.z, 2));
+          var newR = newRP / self.stackScaling;
+          // c.scale.set(self.stackScaling);
+          c.graphicsData[0].shape.radius = newRP;
           c.dirty++;
           c.clearDirty++; // Force re-rendering.
           // Strore also x and y components
           c.datum = r;
           // Update radius measurement label.
-          var rP = stackToProject(r);
-          var newRP = Math.sqrt(Math.pow(rP.x, 2) + Math.pow(rP.y, 2) + Math.pow(rP.z, 2));
-          labelText.attr({x: nodeX + r.x + 3 * pad, y: nodeY + r.y + 2 * pad});
+          labelText.attr({x: rP[planeX] + 3 * pad, y: rP[planeY] + 2 * pad});
           labelText.text(Math.round(newRP) + 'nm (' + Math.round(newR) + 'px)');
           var bbox = labelText.node().getBBox();
           labelShadow.attr({
-              x: nodeX + r.x + 2 * pad,
-              y: nodeY + r.y + 2 * pad - bbox.height,
+              x: rP[planeX] + 2 * pad,
+              y: rP[planeY] + 2 * pad - bbox.height,
               width: bbox.width + 2 * pad,
               height: bbox.height + pad});
 
@@ -1065,8 +1127,8 @@
             }
             line.clear();
             line.lineStyle(self.EDGE_WIDTH, 0xFFFFFF, 1.0);
-            line.moveTo(nodeX, nodeY);
-            line.lineTo(nodeX + r.x, nodeY + r.y);
+            line.moveTo(nodeP[planeX], nodeP[planeY]);
+            line.lineTo(rP[planeX], rP[planeY]);
             line.tint = lineColor;
           }
 
@@ -1090,7 +1152,8 @@
 
       /**
        * Remove a surrounding circle, if it is present. The callback function, if
-       * any, will be called with the last radius of the circle.
+       * any, will be called with the last radius of the circle in project
+       * coordinates.
        */
       this.removeSurroundingCircle = function(callback) {
         if (!this.surroundingCircleElements) {
@@ -1111,7 +1174,7 @@
         this.surroundingCircleElements = undefined;
 
         this.overlayGlobals.tracingOverlay.redraw();
-        // Execute callback, if any, with radius in stack coordinates as argument
+        // Execute callback, if any, with radius in project coordinates as argument
         if (callback) {
           if (r) callback(r.x, r.y, r.z);
           else callback();
@@ -1126,9 +1189,9 @@
       parent,     // the parent node (may be null if the node is not loaded)
       parent_id,  // is null only for the root node
       radius,     // the radius
-      x,          // the x coordinate in stack coordinates
-      y,          // the y coordinate in stack coordinates
-      z,          // the z coordinate in stack coordinates
+      x,          // the x coordinate in project coordinates
+      y,          // the y coordinate in project coordinates
+      z,          // the z coordinate in project coordinates
       zdiff,      // the difference in z from the current slice
       confidence, // confidence with the parent
       skeleton_id,// the id of the skeleton this node is an element of
@@ -1412,9 +1475,9 @@
 
     ptype.ConnectorNode = function(
       id,         // unique id for the node from the database
-      x,          // the x coordinate in stack coordinates
-      y,          // the y coordinate in stack coordinates
-      z,          // the z coordinate in stack coordinates
+      x,          // the x coordinate in project coordinates
+      y,          // the y coordinate in project coordinates
+      z,          // the z coordinate in project coordinates
       zdiff,      // the difference in Z from the current slice in stack space
       confidence, // (TODO: UNUSED)
       subtype,    // the kind of connector node
@@ -1595,7 +1658,8 @@
 
         var newPosition = o.data.getLocalPosition(this.parent);
         if (!dragging) {
-          var l1Distance = Math.abs(newPosition.x - node.x) + Math.abs(newPosition.y - node.y);
+          var l1Distance = Math.abs(newPosition.x - node[node.planeX()])
+                         + Math.abs(newPosition.y - node[node.planeY()]);
           if (l1Distance > node.stackScaling * 0.5) {
             dragging = true;
             this.alpha = 0.7;
@@ -1614,11 +1678,12 @@
 
         if (o.id !== SkeletonAnnotations.getActiveNodeId()) return;
 
-        this.x = node.x = newPosition.x;
-        this.y = node.y = newPosition.y;
+        // TODO
+        this.x = node[node.planeX()] = newPosition.x;
+        this.y = node[node.planeY()] = newPosition.y;
         if (this.node.radiusGraphics) {
-          this.node.radiusGraphics.x = this.x;
-          this.node.radiusGraphics.y = this.y;
+          this.node.radiusGraphics.x = node[node.planeX()];
+          this.node.radiusGraphics.y = node[node.planeY()];
         }
         node.drawEdges(true); // TODO for connector this is overkill
         // Update postsynaptic edges from connectors. Suprisingly this brute
@@ -2026,8 +2091,8 @@
       };
 
       this.scale = function(baseScale, resScale, dynamicScale) {
-        this.stackScaling = baseScale * (dynamicScale ? dynamicScale : 1);
-        this.scaling = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
+        this.stackScaling = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
+        this.scaling = baseScale * (dynamicScale ? dynamicScale : 1);
         this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * this.stackScaling;
         this.confidenceFontSize = this.CONFIDENCE_FONT_PT * this.stackScaling + 'pt';
         this.textResolution = resScale;

@@ -392,7 +392,7 @@
       }
 
       for (var stackViewer of self.stackViewers) {
-        self.moveStackViewer(stackViewer, {s: self.sourceStackViewer.primaryStack.stackToProjectSX(val)});
+        self.moveStackViewer(stackViewer, {s: self.sourceStackViewer.primaryStack.stackToProjectSMP(val)});
       }
     };
 
@@ -411,7 +411,7 @@
           z: target.coords.z,
           y: target.coords.y,
           x: target.coords.x,
-          s: self.sourceStackViewer.primaryStack.stackToProjectSX(zoomVal)
+          s: self.sourceStackViewer.primaryStack.stackToProjectSMP(zoomVal)
         });
       });
     };
@@ -666,7 +666,7 @@
       'z' in coords ? coords.z : currentCoords.z,
       'y' in coords ? coords.y : currentCoords.y,
       'x' in coords ? coords.x : currentCoords.x,
-      's' in coords ? coords.s : this.sourceStackViewer.primaryStack.stackToProjectSX(this.sourceStackViewer.s),
+      's' in coords ? coords.s : this.sourceStackViewer.primaryStack.stackToProjectSMP(this.sourceStackViewer.s),
       typeof completionCallback === "function" ? completionCallback : undefined
     );
   };

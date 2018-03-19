@@ -75,7 +75,7 @@
 
       if ( stackViewers.length > 1 ) {
         self.moveToProject( self.coordinates.z, self.coordinates.y, self.coordinates.x,
-            lastFocusedStackViewer.primaryStack.stackToProjectSX( lastFocusedStackViewer.s ));
+            lastFocusedStackViewer.primaryStack.stackToProjectSMP( lastFocusedStackViewer.s ));
       } else {
         var c = stackViewer.projectCoordinates();
         self.moveTo( c.z, c.y, c.x );

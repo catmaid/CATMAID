@@ -80,6 +80,13 @@
       return a.position - b.position;
     });
 
+    this.minPlanarRes = Math.min(resolution.x, resolution.y);
+    /** @type {Object} Relative anisotropy of the planar dimensions. */
+    this.anisotropy = Object.keys(resolution).reduce(function (ani, dim) {
+      ani[dim] = resolution[dim] / self.minPlanarRes;
+      return ani;
+    }, {});
+
     /**
      * Project x-coordinate for stack coordinates
      */
@@ -254,17 +261,108 @@
     };
 
     /**
-     * Project x-resolution for a given zoom level.
+     * Project minimum planar resolution for a given zoom level.
+     */
+    this.stackToProjectSMP = function (s) {
+      return this.minPlanarRes * Math.pow(2, s);
+    };
+
+    /**
+     * Stack zoom level for a given minimum planar resolution.
+     */
+    this.projectToStackSMP = function (res) {
+      return Math.log(res / this.minPlanarRes) / Math.LN2;
+    };
+
+    /**
+     * Project x-coordinate resolution for a given zoom level.
      */
     this.stackToProjectSX = function (s) {
       return this.resolution.x * Math.pow(2, s);
     };
 
     /**
-     * Stack zoom level for a given x-resolution.
+     * Stack zoom level for a given x-coordinate resolution.
      */
     this.projectToStackSX = function (res) {
       return Math.log(res / this.resolution.x) / Math.LN2;
+    };
+
+    /**
+     * Project y-coordinate resolution for a given zoom level.
+     */
+    this.stackToProjectSY = function (s) {
+      return this.resolution.y * Math.pow(2, s);
+    };
+
+    /**
+     * Stack zoom level for a given y-coordinate resolution.
+     */
+    this.projectToStackSY = function (res) {
+      return Math.log(res / this.resolution.y) / Math.LN2;
+    };
+
+    /**
+     * Convert a project coordinate object with keys x, y, z to a stack
+     * coordinate object. If a second argument is passed in, assign to it
+     * rather than creating a new object.
+     *
+     * @param  {Object}  s An object in project coordinates.
+     * @param  {Object=} p (optional) An object to be assigned stack
+     *                     coordinates.
+     * @return {Object}    The project coordinates transformed to stack
+     *                     coordinates.
+     */
+    this.projectToStack = function (p, s) {
+      s = s || {};
+
+      s.x = this.projectToStackX(p.z, p.y, p.x);
+      s.y = this.projectToStackY(p.z, p.y, p.x);
+      s.z = this.projectToStackZ(p.z, p.y, p.x);
+
+      return s;
+    };
+
+    /**
+     * Convert a project coordinate object with keys x, y, z to a unclamped
+     * stack coordinate object. If a second argument is passed in, assign to it
+     * rather than creating a new object.
+     *
+     * @param  {Object}  s An object in project coordinates.
+     * @param  {Object=} p (optional) An object to be assigned unclamped stack
+     *                     coordinates.
+     * @return {Object}    The project coordinates transformed to unclamped
+     *                     stack coordinates.
+     */
+    this.projectToUnclampedStack = function (p, s) {
+      s = s || {};
+
+      s.x = this.projectToUnclampedStackX(p.z, p.y, p.x);
+      s.y = this.projectToUnclampedStackY(p.z, p.y, p.x);
+      s.z = this.projectToUnclampedStackZ(p.z, p.y, p.x);
+
+      return s;
+    };
+
+    /**
+     * Convert a stack coordinate object with keys x, y, z to a project
+     * coordinate object. If a second argument is passed in, assign to it
+     * rather than creating a new object.
+     *
+     * @param  {Object}  s An object in stack coordinates.
+     * @param  {Object=} p (optional) An object to be assigned project
+     *                     coordinates.
+     * @return {Object}    The stack coordinates transformed to project
+     *                     coordinates.
+     */
+    this.stackToProject = function (s, p) {
+      p = p || {};
+
+      p.x = this.stackToProjectX(s.z, s.y, s.x);
+      p.y = this.stackToProjectY(s.z, s.y, s.x);
+      p.z = this.stackToProjectZ(s.z, s.y, s.x);
+
+      return p;
     };
 
     /**
@@ -278,13 +376,8 @@
      */
     this.stackToProjectBox = function( stackBox, projectBox )
     {
-      projectBox.min.x = self.stackToProjectX( stackBox.min.z, stackBox.min.y, stackBox.min.x );
-      projectBox.min.y = self.stackToProjectY( stackBox.min.z, stackBox.min.y, stackBox.min.x );
-      projectBox.min.z = self.stackToProjectZ( stackBox.min.z, stackBox.min.y, stackBox.min.x );
-
-      projectBox.max.x = self.stackToProjectX( stackBox.max.z, stackBox.max.y, stackBox.max.x );
-      projectBox.max.y = self.stackToProjectY( stackBox.max.z, stackBox.max.y, stackBox.max.x );
-      projectBox.max.z = self.stackToProjectZ( stackBox.max.z, stackBox.max.y, stackBox.max.x );
+      this.stackToProject(stackBox.min, projectBox.min);
+      this.stackToProject(stackBox.max, projectBox.max);
 
       return projectBox;
     };
@@ -311,6 +404,52 @@
         max: {x: MAX_X, y: MAX_Y, z: MAX_Z}
       };
     };
+
+    /**
+     * Get a mapping of stack space X and Y dimensions to project space
+     * dimensions.
+     */
+    switch ( orientation )
+    {
+      case CATMAID.Stack.ORIENTATION_XZ:
+        this.getPlaneDimensions = function() {
+          return {x: 'x', y: 'z'};
+        };
+        break;
+      case CATMAID.Stack.ORIENTATION_ZY:
+        this.getPlaneDimensions = function() {
+          return {x: 'z', y: 'y'};
+        };
+        break;
+      default:
+        this.getPlaneDimensions = function() {
+          return {x: 'x', y: 'y'};
+        };
+        break;
+    }
+
+    /**
+     * Get the project space dimension of the normal direction relative to this
+     * stack's plane.
+     */
+    switch ( orientation )
+    {
+      case CATMAID.Stack.ORIENTATION_XZ:
+        this.getNormalDimension = function() {
+          return 'y';
+        };
+        break;
+      case CATMAID.Stack.ORIENTATION_ZY:
+        this.getNormalDimension = function() {
+          return 'x';
+        };
+        break;
+      default:
+        this.getNormalDimension = function() {
+          return 'z';
+        };
+        break;
+    }
 
     /**
      * Return whether a given section number is marked as broken.

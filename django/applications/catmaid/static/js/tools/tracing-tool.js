@@ -811,9 +811,7 @@
                 var respectVirtualNodes = true;
                 var node = activeTracingLayer.tracingOverlay.nodes[atnID];
                 var selectedIDs = activeTracingLayer.tracingOverlay.findAllNodesWithinRadius(
-                    activeStackViewer.primaryStack.stackToProjectX(node.z, node.y, node.x),
-                    activeStackViewer.primaryStack.stackToProjectY(node.z, node.y, node.x),
-                    activeStackViewer.primaryStack.stackToProjectZ(node.z, node.y, node.x),
+                    node.x, node.y, node.z,
                     radius, respectVirtualNodes, true);
                 selectedIDs = selectedIDs.map(function (nodeID) {
                     return activeTracingLayer.tracingOverlay.nodes[nodeID].skeleton_id;
@@ -988,13 +986,14 @@
           // a better way to get the current mouse position.
           var x = activeTracingLayer.tracingOverlay.coords.lastX;
           var y = activeTracingLayer.tracingOverlay.coords.lastY;
+          var z = activeTracingLayer.tracingOverlay.stackViewer.z;
           // Only allow nodes that are screen space 50px or closer
           var r = 100.0 / activeStackViewer.scale;
           for (var i = layerOrder.length - 1; i >= 0; --i) {
             // Read layers from top to bottom
             var l = layers.get(layerOrder[i]);
             if (CATMAID.tools.isFn(l.getClosestNode)) {
-              var candidateNode = l.getClosestNode(x, y, r);
+              var candidateNode = l.getClosestNode(x, y, z, r);
               if (candidateNode && (!selectedNode || candidateNode.distsq < selectedNode.distsq)) {
                 selectedNode = candidateNode;
               }
@@ -1002,7 +1001,9 @@
           }
           if (selectedNode) {
             // If this layer has a node close by, activate it
-            if (activeTracingLayer.stackViewer.z === selectedNode.node.z) {
+            var z = activeTracingLayer.stackViewer.primaryStack.projectToStackZ(
+                selectedNode.node.z, selectedNode.node.y, selectedNode.node.x);
+            if (activeTracingLayer.stackViewer.z === z) {
               SkeletonAnnotations.staticSelectNode(selectedNode.id, true)
                 .catch(CATMAID.handleError);
             } else {
@@ -1379,18 +1380,29 @@
           return Promise.resolve();
         }
 
-        if (activeStackViewer.z !== activeNode.z) {
+        const oldZs = activeStackViewer.primaryStack.projectToStackZ(activeNode.z, activeNode.y, activeNode.x);
+
+        if (activeStackViewer.z !== oldZs) {
           CATMAID.statusBar.replaceLast("Stack viewer must be in the same z-slice to move node #" + activeNode.id);
           return Promise.resolve();
         }
 
+        // Get the next valid Z coordinate for the active stack and move the
+        // active node to it. To do this, we have have to first convert the
+        // active node's (project space) coordinates to stack space, move it,
+        // and then convert back.
+        const newXs = activeStackViewer.primaryStack.projectToUnclampedStackX(activeNode.z, activeNode.y, activeNode.x);
+        const newYs = activeStackViewer.primaryStack.projectToUnclampedStackY(activeNode.z, activeNode.y, activeNode.x);
         const newZs = activeStackViewer.validZDistanceByStep(activeStackViewer.z, step) + activeStackViewer.z;
-        const newZp = activeStackViewer.primaryStack.stackToProjectZ(newZs, activeNode.y, activeNode.x);
+
+        const newXp = activeStackViewer.primaryStack.stackToProjectX(newZs, newYs, newXs);
+        const newYp = activeStackViewer.primaryStack.stackToProjectY(newZs, newYs, newXs);
+        const newZp = activeStackViewer.primaryStack.stackToProjectZ(newZs, newYs, newXs);
 
         const nodeInfo = [
           activeNode.id,
-          activeStackViewer.primaryStack.stackToProjectX(newZs, activeNode.y, activeNode.x),
-          activeStackViewer.primaryStack.stackToProjectY(newZs, activeNode.y, activeNode.x),
+          newXp,
+          newYp,
           newZp
         ];
 
@@ -1411,8 +1423,8 @@
           .then(function() {
             tracingOverlay.moveTo(
               newZp,
-              activeStackViewer.primaryStack.stackToProjectY(newZs, activeStackViewer.y, activeStackViewer.x),
-              activeStackViewer.primaryStack.stackToProjectX(newZs, activeStackViewer.y, activeStackViewer.x)
+              newYp,
+              newXp
             );
           })
           .catch(CATMAID.handleError);

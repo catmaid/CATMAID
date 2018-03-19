@@ -60,7 +60,8 @@ QUnit.test('Tracing overlay test', function( assert ) {
           canEdit: function () { return true; },
           type: SkeletonAnnotations.TYPE_NODE,
           obliterate: function() {},
-          drawEdges: function() {}
+          drawEdges: function() {},
+          x: 0, y:0, z:0
         }
       };
       this.nodeIDsNeedingSync = new Set([41, 42]);
@@ -80,16 +81,19 @@ QUnit.test('Tracing overlay test', function( assert ) {
       });
       this.selectNode = function() {};
       this.submit = submitterFn();
-      this.pix2physX = function() { return 0; };
-      this.pix2physY = function() { return 0; };
-      this.pix2physZ = function() { return 0; };
+      var space = {
+        min: {x: -Infinity, y: -Infinity, z: -Infinity},
+        max: {x: Infinity, y: Infinity, z: Infinity}
+      };
       this.stackViewer = {
-        createStackViewBox: function () {
-          return {
-            min: {x: -Infinity, y: -Infinity, z: -Infinity},
-            max: {x: Infinity, y: Infinity, z: Infinity}
-          };
-        }
+          createStackViewBox: function () {
+            return space;
+          },
+          primaryStack: {
+            createStackToProjectBox: function() {
+              return space;
+            }
+          }
       };
       this.pixiLayer = {
         _renderIfReady: CATMAID.noop

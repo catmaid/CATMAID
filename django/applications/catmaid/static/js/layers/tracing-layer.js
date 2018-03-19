@@ -66,8 +66,8 @@
     return this.tracingOverlay.updateNodeCoordinatesInDB();
   };
 
-  TracingLayer.prototype.getClosestNode = function (x, y, radius, respectVirtualNodes) {
-    return this.tracingOverlay.getClosestNode(x, y, radius, respectVirtualNodes);
+  TracingLayer.prototype.getClosestNode = function (x, y, z, radius, respectVirtualNodes) {
+    return this.tracingOverlay.getClosestNode(x, y, z, radius, respectVirtualNodes);
   };
 
   TracingLayer.prototype.setOpacity = function (val) {

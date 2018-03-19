@@ -240,6 +240,7 @@ class HistoryTableTests(TransactionTestCase):
         'connector_geom',
         'catmaid_transaction_info',
         'catmaid_stats_summary',
+        'catmaid_skeleton_summary',
 
         # Regular unversioned non-CATMAID tables
         'djkombu_queue',

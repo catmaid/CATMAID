@@ -15,6 +15,8 @@
   overlays are now in project space coordinates (physical nm), not stack space
   voxel coordinates. Transformation to project space is no longer necessary.
 
+- Postgres 10+ is now required.
+
 ### Features and enhancements
 
 Landmarks:

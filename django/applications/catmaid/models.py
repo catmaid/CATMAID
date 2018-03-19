@@ -1137,6 +1137,31 @@ class SamplerDomainEnd(models.Model):
         return "End: {}".format(self.end_node_id)
 
 @python_2_unicode_compatible
+class SkeletonSummary(models.Model):
+    """Holds summary information on individual skeletons. Data insertion and
+    updates are managed by the database through triggers. The skeleton field
+    primary key is just a foreign key, but Django emits a warning (fields.W342)
+    if no OneToOneField is used. Since this results in the same SQL and has no
+    downsides, the OneToOneField is used.
+    """
+
+    class Meta:
+        db_table = "catmaid_skeleton_summary"
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    skeleton = models.OneToOneField(ClassInstance, on_delete=models.CASCADE,
+            db_index=True, primary_key=True)
+    last_summary_update = models.DateTimeField(default=timezone.now)
+    original_creation_time = models.DateTimeField(default=timezone.now)
+    last_edition_time = models.DateTimeField(default=timezone.now)
+    num_nodes = models.IntegerField(null=False, default=0)
+    cable_length = models.FloatField(null=False, default=0)
+
+    def __str__(self):
+        return "Skeleton {} summary ({} nodes, {} nm)".format(
+                self.skeleton_id, self.num_nodes, self.cable_length)
+
+@python_2_unicode_compatible
 class StatsSummary(models.Model):
     class Meta:
         db_table = "catmaid_stats_summary"

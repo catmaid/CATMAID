@@ -10,14 +10,10 @@ python:
   - "3.6"
   - "pypy"
   - "pypy3"
+services:
+  - postgresql
 addons:
   chrome: stable
-  apt:
-    sources:
-    - precise-pgdg-9.6
-    packages:
-    - postgresql-9.6
-    - postgresql-contrib-9.6
   postgresql: 9.6
   sauce_connect:
     username: catmaid
@@ -26,6 +22,7 @@ addons:
 before_install:
   - mkdir tmp
   - travis_retry sudo apt-get update -y -qq
+  - bash scripts/travis/install_postgres.sh
 install:
   # Install requirements for running CATMAID and its unit tests
   - ./scripts/travis/install_requirements.sh

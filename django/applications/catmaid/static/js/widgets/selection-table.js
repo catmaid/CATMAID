@@ -84,19 +84,31 @@
         update.onclick = this.update.bind(this);
         buttons.appendChild(update);
 
+        var csvFileButton = buttons.appendChild(CATMAID.DOM.createFileButton(
+            'st-file-dialog-' + this.widgetID, false, function(evt) {
+              self.loadFromCSVFile(evt.target.files)
+                .then(function() {
+                  evt.target.value = '';
+                });
+            }));
+        var openCSV = document.createElement('input');
+        openCSV.setAttribute("type", "button");
+        openCSV.setAttribute("value", "Open CSV");
+        openCSV.onclick = function() { csvFileButton.click(); };
+        buttons.appendChild(openCSV);
+
         var fileButton = buttons.appendChild(CATMAID.DOM.createFileButton(
             'st-file-dialog-' + this.widgetID, false, function(evt) {
-              self.loadFromFiles(evt.target.files);
+              self.loadFromJSONFiles(evt.target.files);
             }));
         var open = document.createElement('input');
         open.setAttribute("type", "button");
-        open.setAttribute("value", "Open");
-        open.onclick = function() { fileButton.click(); };
-        buttons.appendChild(open);
+        open.setAttribute("value", "Open JSON");
+        open.onclick = function() { fileButton.click(); }; buttons.appendChild(open);
 
         var save = document.createElement('input');
         save.setAttribute("type", "button");
-        save.setAttribute("value", "Save");
+        save.setAttribute("value", "Save JSON");
         save.onclick = this.saveToFile.bind(this);
         buttons.appendChild(save);
 
@@ -1632,11 +1644,131 @@
     return [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)];
   };
 
+  SelectionTable.prototype.loadFromCSVFile = function(files) {
+    if (!CATMAID.containsSingleValidFile(files, 'csv')) {
+      return Promise.reject();
+    }
+    let csvFile = files[0];
+    let nLinesToSkip = 0;
+    var self = this;
+
+    return CATMAID.parseCSVFile(csvFile, ',', nLinesToSkip)
+      .then(function(csvLines) {
+        if (csvLines.length === 0) {
+          CATMAD.warn('CSV file does not contain any usable lines');
+          return;
+        }
+
+        // Show dialog with first three lines
+        let dialog = new CATMAID.OptionsDialog("Import CSV");
+        dialog.appendMessage("The first two lines of the file you are going to " +
+            "import are shown below. Please select the appropriate import options.");
+        let tableContainer = document.createElement('div');
+        tableContainer.classList.add('help');
+        let table = document.createElement('table');
+        table.style.width = "100%";
+        let nPreviewRows = csvLines.length > 1 ? 2 : 1;
+        for (var i=0; i<nPreviewRows; ++i) {
+          let tr = document.createElement('tr');
+          let data = csvLines[i];
+          for (var j=0; j<data.length; ++j) {
+            let td = document.createElement('td');
+            td.appendChild(document.createTextNode(data[j]));
+            tr.appendChild(td);
+          }
+          table.appendChild(tr);
+        }
+        tableContainer.appendChild(table);
+        dialog.appendChild(tableContainer);
+
+        // Get maximum skeleton column number from first row
+        var nColumns = csvLines[0].length;
+
+        // Add option to change line skipping
+        var lineSkipField = dialog.appendNumericField(
+            'Skip first n lines', 'csv-import-line-skip',
+            0, 0, csvLines.length - 1, 1);
+        // Add option to select column to read skeleton IDs from
+        var skeletonIdColumnField = dialog.appendNumericField(
+            'Skeleton ID column (1 indexed)', 'csv-import-skeleton-col',
+            1, 1, nColumns, 1);
+
+        dialog.onOK = function() {
+          let lineSkip = parseInt(lineSkipField.value, 10);
+          let skeletonIdColumn = parseInt(skeletonIdColumnField.value, 10) - 1;
+          if ((csvLines.length - lineSkip) <= 0) {
+            CATMAD.warn('CSV file does not contain any usable lines');
+            return;
+          }
+
+          // Make sure all skeletons have at least a skeleton ID
+          var validSkeletons = csvLines.filter(function(row, i) {
+            var val = row[skeletonIdColumn];
+            if (i < lineSkip || val === undefined) {
+              return false;
+            }
+            if (val.length) {
+              val = val.replace(/["']/, '');
+            }
+            val = parseInt(val, 10);
+            if (Number.isNaN(val)) {
+              return false;
+            }
+            // Store parsed ID in CSV row
+            row[skeletonIdColumn] = val;
+            return true;
+          });
+          var skeletonIds = validSkeletons.map(function(row) {
+            return row[skeletonIdColumn];
+          });
+
+          if (skeletonIds.length === 0) {
+            CATMAID.wan('CSV file does not contain any usable lines');
+            return;
+          }
+          // Get names
+          CATMAID.fetch(project.id + '/skeleton/neuronnames', 'POST',
+              {skids: skeletonIds})
+            .then(function(json) {
+              // Check if there are skeletons missing
+              var foundSkeletons = skeletonIds.filter(function(skid) {
+                return undefined !== json[skid];
+              });
+              var missing = skeletonIds.length - foundSkeletons.length;
+              if (missing> 0) {
+                if (missing === skeletonIds.length) {
+                  CATMAID.warn("Could not find any of the " + missing + " passed in skeleton IDs");
+                  return;
+                } else {
+                  CATMAID.warn("Could not load " + missing + " missing skeleton" +
+                      (1 === missing ? "" : "s"));
+                }
+              }
+
+              // Create models for valid skeletons
+              var models = foundSkeletons.reduce(function(m, skeletonId) {
+                var model = new CATMAID.SkeletonModel(skeletonId, "",
+                    new THREE.Color(self.batchColor));
+                model.opacity = self.batchOpacity;
+                m[skeletonId] = model;
+                return m;
+              }, {});
+
+              // Load models, respecting their order
+              self._append(models, skeletonIds);
+          });
+        };
+
+        dialog.show('500', 'auto');
+      })
+      .catch(CATMAID.handleError);
+  };
+
   /**
    * Open a list of skeletons including their colors from a file.
    */
-  SelectionTable.prototype.loadFromFiles = function(files) {
-      if (!CATMAID.isValidJSONFile(files)) {
+  SelectionTable.prototype.loadFromJSONFiles = function(files) {
+      if (!CATMAID.containsSingleValidFile(files, 'json')) {
         return;
       }
 

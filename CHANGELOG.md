@@ -60,6 +60,8 @@ Miscellaneous:
   e.g. the Connector Viewer is open while tracing, because not all viewers get
   update due to the addition of a node.
 
+- Selection Table: Skeletons can now be imported from CSV files.
+
 
 ### Bug fixes
 

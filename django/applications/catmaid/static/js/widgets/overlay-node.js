@@ -608,6 +608,13 @@
         this.children[childNode.id] = childNode;
       };
 
+      this.removeChildNode = function (childNode) {
+        if (this.children.hasOwnProperty(childNode.id)) {
+          -- this.numberOfChildren;
+          delete this.children[childNode.id];
+        }
+      };
+
       this.linkConnector = function(connectorId, link) {
         this.connectors[connectorId] = link;
       };

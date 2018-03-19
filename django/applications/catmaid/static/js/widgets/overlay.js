@@ -4717,10 +4717,14 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
       for (var childId in children) {
         var child = children[childId];
         child.parent = parent;
+        child.parent_id = node.parent_id;
+        if (parent) {
+          parent.addChildNode(child);
+        }
       }
     }
     if (parent) {
-      delete parent.children[node.id];
+      parent.removeChildNode(node);
     }
 
     // Store node ID before node gets reset
@@ -4728,6 +4732,7 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
 
     node.obliterate();
     node.drawEdges(false);
+    if (parent) parent.drawEdges(true);
     self.pixiLayer._renderIfReady();
 
     CATMAID.statusBar.replaceLast("Deleted node #" + nodeId);

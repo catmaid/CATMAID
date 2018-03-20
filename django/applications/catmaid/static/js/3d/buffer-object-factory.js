@@ -22,6 +22,10 @@
     var templateLength = templateGeometry.vertices.length;
     var objectLength = isInstance ? 1 : templateLength;
 
+    if (!templateGeometry.boundingSphere) {
+      templateGeometry.computeBoundingSphere();
+    }
+
     this.BufferObject = function(id, position, scale, material) {
       this.start = this.objectLength * nCreatedObjects;
       this.id = id;
@@ -435,7 +439,7 @@
     this.scale = scaling;
     var scaleMatrix = new THREE.Matrix4();
     scaleMatrix.makeScale(scaling, scaling, scaling);
-    scaleMatrix.applyToVector3Array(vertices);
+    applyMatrix4ToVector3Array(scaleMatrix, vertices);
 
     this.setIndex(new THREE.BufferAttribute(indices, 1));
     this.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
@@ -599,7 +603,7 @@
     // call of computeBoundingBox() or computeBoundingSphere() won't be enough,
     // because the actual vertex positions are only calculated on the GPU.
     this.boundingBox.setFromArray(offsets);
-    this.boundingSphere.copy(this.boundingBox.getBoundingSphere());
+    this.boundingSphere.copy(this.boundingBox.getBoundingSphere(new THREE.Sphere()));
   };
 
   /**
@@ -613,13 +617,29 @@
 
     var scaleMatrix = new THREE.Matrix4();
     scaleMatrix.makeScale(scaleRatio, scaleRatio, scaleRatio);
-    scaleMatrix.applyToVector3Array(vertices);
+    applyMatrix4ToVector3Array(scaleMatrix, vertices);
 
     attribute.needsUpdate = true;
 
     // Update bounding sphere
     this.boundingSphere.radius *= scaleRatio;
   };
+
+  var applyMatrix4ToVector3Array = function() {
+    var v1;
+    return function (matrix4, array, offset, length ) {
+      if ( v1 === undefined ) v1 = new THREE.Vector3();
+      if ( offset === undefined ) offset = 0;
+      if ( length === undefined ) length = array.length;
+
+      for ( var i = 0, j = offset; i < length; i += 3, j += 3 ) {
+        v1.fromArray( array, j );
+        v1.applyMatrix4( matrix4 );
+        v1.toArray( array, j );
+      }
+      return array;
+    };
+  }();
 
 
   // Export

@@ -44,7 +44,7 @@
       return color;
     }
     // Else, play a variation on the color's hue (+/- 0.25) and saturation (from 0.5 to 1)
-    var hsl = color.getHSL();
+    var hsl = color.getHSL({});
     color.setHSL((hsl.h + (Math.random() - 0.5) / 2.0) % 1.0,
                  Math.max(0.5, Math.min(1.0, (hsl.s + (Math.random() - 0.5) * 0.3))),
                  hsl.l);

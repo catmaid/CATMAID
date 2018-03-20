@@ -348,12 +348,12 @@ CATMAID.tools = CATMAID.tools || {};
    * Return the intersection of the line given by the two points with
    * a THREE.js plane.
    */
-  tools.intersectLineWithPlane = function(x1, y1, z1, x2, y2, z2, plane) {
+  tools.intersectLineWithPlane = function(x1, y1, z1, x2, y2, z2, plane, target) {
     var line = new THREE.Line3(
         new THREE.Vector3(x1, y1, z1),
         new THREE.Vector3(x2, y2, z2));
 
-    return plane.intersectLine(line);
+    return plane.intersectLine(line, target);
   };
 
   /**

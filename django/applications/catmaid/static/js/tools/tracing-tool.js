@@ -55,6 +55,42 @@
       return command;
     };
 
+    /**
+     * Get the node closest to the last cursor position in the active stack
+     * viewer. All layers are respected and the closest node ID is returned,
+     * limited by a maximum distance in pixels.
+     *
+     * @param {Number} maxDistancePx (Optional) The maximum distance of a node
+     *                               to the cursor position.
+     * @returns The ID of the cloesest node or null if no node was found.
+     */
+    var getClosestNode = function(maxDistancePx) {
+      maxDistancePx = CATMAID.tools.getDefined(maxDistancePx, 100.0);
+      // Give all layers a chance to activate a node
+      var selectedNode = null;
+      var layers = activeStackViewer.getLayers();
+      var layerOrder = activeStackViewer.getLayerOrder();
+      // TODO: Don't use internal objects of the tracing overlay, i.e. find
+      // a better way to get the current mouse position.
+      var x = activeTracingLayer.tracingOverlay.coords.lastX;
+      var y = activeTracingLayer.tracingOverlay.coords.lastY;
+      var z = activeTracingLayer.tracingOverlay.stackViewer.z;
+      // Only allow nodes that are screen space 50px or closer
+      var r = maxDistancePx / activeStackViewer.scale;
+      for (var i = layerOrder.length - 1; i >= 0; --i) {
+        // Read layers from top to bottom
+        var l = layers.get(layerOrder[i]);
+        if (CATMAID.tools.isFn(l.getClosestNode)) {
+          var candidateNode = l.getClosestNode(x, y, z, r);
+          if (candidateNode && (!selectedNode || candidateNode.distsq < selectedNode.distsq)) {
+            selectedNode = candidateNode;
+          }
+        }
+      }
+
+      return selectedNode;
+    };
+
     this.resize = function(width, height) {
       self.prototype.resize( width, height );
       return;
@@ -978,27 +1014,8 @@
         if (!CATMAID.mayView())
           return false;
         if (!(e.ctrlKey || e.metaKey || e.shiftKey)) {
-          // Give all layers a chance to activate a node
-          var selectedNode = null;
-          var layers = activeStackViewer.getLayers();
-          var layerOrder = activeStackViewer.getLayerOrder();
-          // TODO: Don't use internal objects of the tracing overlay, i.e. find
-          // a better way to get the current mouse position.
-          var x = activeTracingLayer.tracingOverlay.coords.lastX;
-          var y = activeTracingLayer.tracingOverlay.coords.lastY;
-          var z = activeTracingLayer.tracingOverlay.stackViewer.z;
           // Only allow nodes that are screen space 50px or closer
-          var r = 100.0 / activeStackViewer.scale;
-          for (var i = layerOrder.length - 1; i >= 0; --i) {
-            // Read layers from top to bottom
-            var l = layers.get(layerOrder[i]);
-            if (CATMAID.tools.isFn(l.getClosestNode)) {
-              var candidateNode = l.getClosestNode(x, y, z, r);
-              if (candidateNode && (!selectedNode || candidateNode.distsq < selectedNode.distsq)) {
-                selectedNode = candidateNode;
-              }
-            }
-          }
+          var selectedNode = getClosestNode(100.0);
           if (selectedNode) {
             // If this layer has a node close by, activate it
             var z = activeTracingLayer.stackViewer.primaryStack.projectToStackZ(

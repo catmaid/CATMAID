@@ -43,6 +43,9 @@ Miscellaneous:
 
 - Basic Search: allow search for treenode IDs and connector IDs.
 
+- The `P` shortcut (peek) will now show the closest skeleton to the cursor in
+  all open 3D Viewers. To show the active skeleton use `Shift + P`.
+
 - Project administration: selected projects can now be exported as JSON or YAML
   file using the respective action from the drop-down menu.
 

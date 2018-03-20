@@ -1328,13 +1328,24 @@
     }));
 
     this.addAction(new CATMAID.Action({
-      helpText: "Peek: show the active skeleton in all open 3D viewers (while held)",
-      keyShortcuts: { 'P': [ 'p' ] },
+      helpText: "Peek: show closest skeleton in all open 3D viewers, while held (<kbd>Shift</kbd>: show active skeleton)",
+      keyShortcuts: { 'P': [ 'p', 'Shift + P' ] },
       run: function (e) {
         if (self.peekingSkeleton) return;
-        var skid = SkeletonAnnotations.getActiveSkeletonId();
-        if (skid === null) return;
+
+        var skid = null;
+        if (e.shiftKey) {
+          skid = SkeletonAnnotations.getActiveSkeletonId();
+        } else {
+          var match = getClosestNode(100.0);
+          if (match) {
+            skid = match.node.skeleton_id;
+          }
+        }
+
+        if (!skid) return;
         self.peekingSkeleton = skid;
+
         var skeletonModels = {};
         skeletonModels[skid] = new CATMAID.SkeletonModel(
             skid,
@@ -1368,7 +1379,7 @@
         var target = e.target;
         var oldListener = target.onkeyup;
         target.onkeyup = function (e) {
-          if (e.key === 'p') {
+          if (e.key === 'p' || e.key === 'P') {
             target.onkeyup = oldListener;
             removePeekingSkeleton();
           } else if (oldListener) oldListener(e);

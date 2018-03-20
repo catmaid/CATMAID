@@ -833,16 +833,6 @@ var WindowMaker = new function()
               WA.space.updateScaleBar();
             },
             title: 'If checked, a scale bar will be shown when in orthographic mode.'
-          },
-          {
-            type: 'checkbox',
-            label: 'Active node rulers',
-            value: o.show_active_node_rulers,
-            onclick: function() {
-              WA.options.show_active_node_rulers = this.checked;
-              WA.space.updateActiveNodeRulers();
-            },
-            title: 'If checked, a coordinate frame will be shown at the activ node.'
           }
         ]);
 

@@ -846,6 +846,16 @@ var WindowMaker = new function()
           ['Line width', o.skeleton_line_width, null, function() { WA.updateSkeletonLineWidth(this.value); }, 4],
           {
             type: 'checkbox',
+            label: 'Volumetric lines',
+            value: o.triangulated_lines,
+            onclick: function() {
+              WA.options.triangulated_lines = this.checked;
+              WA.reloadSkeletons(WA.getSelectedSkeletons());
+            },
+            title: 'If checked, lines will be rendered as triangle mesh, which allows more robust line width adjustment.'
+          },
+          {
+            type: 'checkbox',
             label: 'Flat neuron material',
             value: o.neuron_material === 'basic',
             onclick: function() {

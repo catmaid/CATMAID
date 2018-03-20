@@ -214,9 +214,106 @@
     ShaderLambertMaterial;
 
 
+  var SimplePickingMaterial = function(options) {
+
+    THREE.ShaderMaterial.call(this);
+
+    this.vertexShader = SimplePickingMaterial.posVertexShader;
+    this.fragmentShader = SimplePickingMaterial.makePositionShader(options.direction);
+    this.uniforms = {
+      cameraNear: { value: options.cameraNear },
+      cameraFar:  { value: options.cameraFar },
+      // TODO: Has no effect on windows systems, due to ANGLE limitations, see:
+      // https://threejs.org/docs/api/materials/ShaderMaterial.html
+      linewidth: options.linewidth,
+    };
+  };
+
+  SimplePickingMaterial.prototype = Object.create(THREE.ShaderMaterial.prototype);
+  SimplePickingMaterial.prototype.constructor = SimplePickingMaterial;
+
+  SimplePickingMaterial.makePositionShader = function(field) {
+    if (!("x" === field || "y" === field || "z" === field)) {
+      throw new CATMAID.Error("Unknown field: " + field);
+    }
+
+    return [
+      "#include <common>",
+      "#include <uv_pars_fragment>",
+      "#include <map_pars_fragment>",
+      "#include <alphamap_pars_fragment>",
+      "#include <logdepthbuf_pars_fragment>",
+      "#include <clipping_planes_pars_fragment>",
+      "#include <clipping_planes_fragment>",
+      "varying vec4 worldPosition;",
+      CATMAID.ShaderLib.encodeFloat,
+
+      "void main() {",
+      "  #include <logdepthbuf_fragment>",
+      "  #include <map_fragment>",
+      "  #include <alphamap_fragment>",
+      "  #include <alphatest_fragment>",
+
+      "  gl_FragColor = encode_float(worldPosition." + field + ");",
+      "}",
+    ].join("\n");
+  };
+
+  SimplePickingMaterial.posVertexShader = [
+    "#include <common>",
+    "#include <uv_pars_vertex>",
+    "#include <morphtarget_pars_vertex>",
+    "#include <skinning_pars_vertex>",
+    "#include <logdepthbuf_pars_vertex>",
+    "#include <clipping_planes_pars_vertex>",
+    "varying vec4 worldPosition;",
+
+    "void main() {",
+    "  worldPosition = modelMatrix * vec4(position, 1.0);",
+    "  #include <uv_vertex>",
+    "  #include <skinbase_vertex>",
+    "  #include <begin_vertex>",
+    "  #include <morphtarget_vertex>",
+    "  #include <skinning_vertex>",
+    "  #include <project_vertex>",
+    "  #include <logdepthbuf_vertex>",
+    "  #include <clipping_planes_vertex>",
+    "}"
+  ].join("\n");
+
+  CATMAID.PickingLineMaterial = {
+    INSERTION_LOCATIONS: {
+      vertexDeclarations: {
+        shader: 'vertex',
+        regex: /void\s+main\(\s*\)\s+\{/,
+        replacement: 'void main() {'},
+      vertexBegin: {
+        shader: 'vertex',
+        regex: /#include\s+<begin_vertex>/,
+        replacement: '#include <begin_vertex>;'},
+      vertexEnd: {
+        shader: 'vertex',
+        regex: /\}(?=[^\}]*$)/,
+        replacement: '}'},
+      fragmentDeclarations: {
+        shader: 'fragment',
+        regex: /void\s+main\(\s*\)\s+\{/,
+        replacement: 'void main() {'},
+      fragmentColor: {
+        shader: 'fragment',
+        regex: /gl_FragColor\s*=\s*vec4\(\s*diffuseColor.rgb,\s*diffuseColor\.a\s*\);/,
+        replacement: ''},
+      fragmentEnd: {
+        shader: 'fragment',
+        regex: /\}(?=[^\}]*$)/,
+        replacement: '}'}
+    }
+  };
+
   // Exports
   CATMAID.ShaderLineBasicMaterial = ShaderLineBasicMaterial;
   CATMAID.ShaderMeshBasicMaterial = ShaderMeshBasicMaterial;
   CATMAID.ShaderLambertMaterial = ShaderLambertMaterial;
+  CATMAID.SimplePickingMaterial = SimplePickingMaterial;
 
 })(CATMAID);

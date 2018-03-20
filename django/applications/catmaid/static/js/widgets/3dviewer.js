@@ -1024,8 +1024,8 @@
           post = null,
           filter = function(sk) {
             if (2 == skeleton_mode) return true;
-            else if (0 === skeleton_mode) return sk.geometry['neurite'].vertices.length > 1;
-            else if (1 == skeleton_mode) return 1 === sk.geometry['neurite'].vertices.length;
+            else if (0 === skeleton_mode) return sk.getVertexCount() > 1;
+            else if (1 == skeleton_mode) return 1 === sk.getVertexCount();
           };
       // Restrict by synaptic relation
       switch (synapse_mode) {
@@ -1052,7 +1052,7 @@
           Object.keys(skeletons).forEach(function(skid) {
             if (active_skid == skid) return; // == to enable string vs int comparison
             var s = skeletons[skid];
-            if (s.visible && filter(s) && s.geometry['neurite'].vertices.some(function(v) {
+            if (s.visible && filter(s) && s.someVertex(function(v) {
               return va.distanceToSquared(v) < distanceSq;
             })) {
               near.push(skid);
@@ -1190,6 +1190,7 @@
     this.smooth_skeletons_sigma = 200; // nm
     this.resample_skeletons = false;
     this.resampling_delta = 3000; // nm
+    this.triangulated_lines = true;
     this.skeleton_line_width = 3;
     this.skeleton_node_scaling = 1.0;
     this.invert_shading = false;
@@ -2686,6 +2687,12 @@
     this.staticContent.setSize(canvasWidth, canvasHeight);
     if (this.view.controls) {
       this.view.controls.handleResize();
+    }
+    for (var skeletonId in this.content.skeletons) {
+      var skeleton = this.content.skeletons[skeletonId];
+      if (skeleton.line_material.resolution) {
+        skeleton.line_material.resolution.set(canvasWidth, canvasHeight);
+      }
     }
   };
 
@@ -4899,13 +4906,13 @@
       var skeletonColor = new THREE.Color(color);
 
       // Re-color skeletons
-      skeletonProperties.colors = skeleton.geometry['neurite'].colors;
       skeletonProperties.vertexColors = skeleton.line_material.vertexColors;
       skeletonProperties.actorColor = skeleton.actor['neurite'].material.color;
       skeletonProperties.opacity = skeleton.actor['neurite'].material.opacity;
       skeletonProperties.transparent = skeleton.actor['neurite'].material.transparent;
+      skeletonProperties.vertexShader = skeleton.line_material.vertexShader;
+      skeletonProperties.fragmentShader = skeleton.line_material.fragmentShader;
 
-      skeleton.geometry['neurite'].colors = [];
       skeleton.line_material.vertexColors = THREE.NoColors;
       skeleton.line_material.needsUpdate = true;
 
@@ -4998,121 +5005,78 @@
 
     // Find world location of clicked fragment
     var originalOverrideMaterial = this.scene.overrideMaterial;
-    var posVertexShader = [
-      "#include <common>",
-      "#include <uv_pars_vertex>",
-      "#include <morphtarget_pars_vertex>",
-      "#include <skinning_pars_vertex>",
-      "#include <logdepthbuf_pars_vertex>",
-      "#include <clipping_planes_pars_vertex>",
-      "varying vec4 worldPosition;",
-
-      "void main() {",
-      "  worldPosition = modelMatrix * vec4(position, 1.0);",
-      "  #include <uv_vertex>",
-      "  #include <skinbase_vertex>",
-      "  #include <begin_vertex>",
-      "  #include <morphtarget_vertex>",
-      "  #include <skinning_vertex>",
-      "  #include <project_vertex>",
-      "  #include <logdepthbuf_vertex>",
-      "  #include <clipping_planes_vertex>",
-      "}"
-    ].join("\n");
-
-    // Original by Mikola Lysenko. MIT License (c) 2014, from:
-    // https://github.com/mikolalysenko/glsl-read-float/blob/master/index.glsl
-    var encodeFloat = [
-      "#define FLOAT_MAX  1.70141184e38",
-      "#define FLOAT_MIN  1.17549435e-38",
-      "",
-      "lowp vec4 encode_float(highp float v) {",
-      "  highp float av = abs(v);",
-      "",
-      "  //Handle special cases",
-      "  if(av < FLOAT_MIN) {",
-      "    return vec4(0.0, 0.0, 0.0, 0.0);",
-      "  } else if(v > FLOAT_MAX) {",
-      "    return vec4(127.0, 128.0, 0.0, 0.0) / 255.0;",
-      "  } else if(v < -FLOAT_MAX) {",
-      "    return vec4(255.0, 128.0, 0.0, 0.0) / 255.0;",
-      "  }",
-      "",
-      "  highp vec4 c = vec4(0,0,0,0);",
-      "",
-      "  //Compute exponent and mantissa",
-      "  highp float e = floor(log2(av));",
-      "  highp float m = av * pow(2.0, -e) - 1.0;",
-      "  ",
-      "  //Unpack mantissa",
-      "  c[1] = floor(128.0 * m);",
-      "  m -= c[1] / 128.0;",
-      "  c[2] = floor(32768.0 * m);",
-      "  m -= c[2] / 32768.0;",
-      "  c[3] = floor(8388608.0 * m);",
-      "  ",
-      "  //Unpack exponent",
-      "  highp float ebias = e + 127.0;",
-      "  c[0] = floor(ebias / 2.0);",
-      "  ebias -= c[0] * 2.0;",
-      "  c[1] += floor(ebias) * 128.0; ",
-      "",
-      "  //Unpack sign bit",
-      "  c[0] += 128.0 * step(0.0, -v);",
-      "",
-      "  //Scale back to range",
-      "  return c / 255.0;",
-      "}"
-    ].join("\n");
-
-    function makePositionShader(field) {
-      if (!("x" === field || "y" === field || "z" === field)) {
-        throw new CATMAID.Error("Unknown field: " + field);
+    var originalShaders = new Map();
+    let skeletons = this.content.skeletons;
+    if (o.triangulated_lines) {
+      for (let skeletonId in skeletons) {
+        let skeleton = skeletons[skeletonId];
+        originalShaders.set(skeleton.id, {
+          vertexShader: skeleton.line_material.vertexShader,
+          fragmentShader: skeleton.line_material.fragmentShader,
+          skeleton: skeleton
+        });
       }
-
-      return [
-        "#include <common>",
-        "#include <uv_pars_fragment>",
-        "#include <map_pars_fragment>",
-        "#include <alphamap_pars_fragment>",
-        "#include <logdepthbuf_pars_fragment>",
-        "#include <clipping_planes_pars_fragment>",
-        "#include <clipping_planes_fragment>",
-        "varying vec4 worldPosition;",
-        encodeFloat,
-
-        "void main() {",
-        "  #include <logdepthbuf_fragment>",
-        "  #include <map_fragment>",
-        "  #include <alphamap_fragment>",
-        "  #include <alphatest_fragment>",
-
-        "  gl_FragColor = encode_float(worldPosition." + field + ");",
-        "}",
-      ].join("\n");
     }
-
-    // Create template shader material, fragment shader will be added further down
-    var postMaterial = new THREE.ShaderMaterial({
-      vertexShader: posVertexShader,
-      uniforms: {
-        cameraNear: { value: camera.near },
-        cameraFar:  { value: camera.far },
-      },
-      // TODO: Has no effect on windows systems, due to ANGLE limitations, see:
-      // https://threejs.org/docs/api/materials/ShaderMaterial.html
-      linewidth: o.skeleton_line_width
-    });
-
-    // Override material with custom shaders
-    this.scene.overrideMaterial = postMaterial;
 
     // Get clicked fragment position
     var position = ["x", "y", "z"].map(function(c) {
-      postMaterial.fragmentShader = makePositionShader(c);
-      postMaterial.needsUpdate = true;
 
-      this.view.renderer.render(this.scene, camera, this.pickingTexture);
+      // In the case of buffer geometries (which are used by triangulated
+      // lines), we can't use a generic override material, because the rending
+      // really depends on the shader implementation.
+      var postMaterial;
+      if (o.triangulated_lines) {
+        // Iterate over all skeletons and slighly adjust shader programs to
+        // render 3D location information. An override material doesn't work,
+        // because buffer geometries are in use (which store vertices as part
+        // of the material.
+        for (let skeletonData of originalShaders.values()) {
+          let newVertexShader = skeletonData.vertexShader;
+          newVertexShader = CATMAID.insertSnippetIntoShader(newVertexShader,
+              CATMAID.PickingLineMaterial.INSERTION_LOCATIONS['vertexDeclarations'],
+              'varying vec4 worldPosition;\n');
+          newVertexShader = CATMAID.insertSnippetIntoShader(newVertexShader,
+              CATMAID.PickingLineMaterial.INSERTION_LOCATIONS['vertexEnd'],
+              'worldPosition = modelMatrix * vec4(instanceStart, 1.0);\n');
+
+          let newFragmentShader = skeletonData.fragmentShader;
+          newFragmentShader = CATMAID.insertSnippetIntoShader(newFragmentShader,
+              CATMAID.PickingLineMaterial.INSERTION_LOCATIONS['fragmentDeclarations'],
+              [
+                'varying vec4 worldPosition;',
+                CATMAID.ShaderLib.encodeFloat,
+                '\n'
+              ].join('\n'));
+          newFragmentShader = CATMAID.insertSnippetIntoShader(newFragmentShader,
+              CATMAID.PickingLineMaterial.INSERTION_LOCATIONS['fragmentEnd'],
+              'gl_FragColor = encode_float(worldPosition.' + c + ');\n');
+
+          //postMaterial.addUniforms({
+          //  cameraNear: { value: camera.near },
+          //  cameraFar:  { value: camera.far },
+          //});
+          let skeleton = skeletonData.skeleton;
+          skeleton.line_material.vertexShader = newVertexShader;
+          skeleton.line_material.fragmentShader = newFragmentShader;
+          skeleton.line_material.needsUpdate = true;
+        }
+
+        this.view.renderer.render(this.scene, camera, this.pickingTexture);
+      } else {
+        postMaterial = new CATMAID.SimplePickingMaterial({
+          cameraNear: camera.near,
+          cameraFar:  camera.far,
+          direction: c,
+          // TODO: Has no effect on windows systems, due to ANGLE limitations,
+          // see: https://threejs.org/docs/api/materials/ShaderMaterial.html
+          linewidth: o.skeleton_line_width,
+        });
+
+        // Override material with custom shaders
+        this.scene.overrideMaterial = postMaterial;
+
+        this.view.renderer.render(this.scene, camera, this.pickingTexture);
+      }
 
       // Read pixel under cursor
       gl.readPixels(x + offsetX, this.pickingTexture.height - y + offsetY,
@@ -5129,15 +5093,24 @@
       return decodeFloat(pixelBuffer);
     }, this);
 
-    // Reset override material to original state
-    this.scene.overrideMaterial = originalOverrideMaterial;
+    if (o.triangulated_lines) {
+      // Reset overwritten shaders
+      for (let skeletonData of originalShaders.values()) {
+        let skeleton = skeletonData.skeleton;
+        skeleton.line_material.vertexShader = skeletonData.vertexShader;
+        skeleton.line_material.fragmentShader = skeletonData.fragmentShader;
+        skeleton.line_material.needsUpdate = true;
+      }
+    } else {
+      // Reset override material to original state
+      this.scene.overrideMaterial = originalOverrideMaterial;
+    }
 
     // Reset materials
     mapToPickables(this, this.content.skeletons, function(skeleton) {
       skeleton.actor.neurite.visible = originalVisibility[skeleton.id];
       var skeletonProperties = skeletonMap[skeleton.id];
       if (skeletonProperties) {
-        skeleton.geometry['neurite'].colors = skeletonProperties.colors;
         skeleton.line_material.vertexColors = skeletonProperties.vertexColors;
         skeleton.actor['neurite'].material.color = skeletonProperties.actorColor;
         skeleton.actor['neurite'].material.opacity = skeletonProperties.opacity;
@@ -5415,6 +5388,11 @@
     this.axon = null;
     // Optional history information
     this.history = null;
+    // A later set flag if lines are renderd as meshes
+    this.triangulated_lines = false;
+    // Keep track of node meta data like node IDs in a list ordered the same way
+    // as skeleton nodes.
+    this.nodeMetaData = null;
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype = {};
@@ -5439,22 +5417,44 @@
       console.log('Can not initialize skeleton object');
       return;
     }
+    this.triangulated_lines = options.triangulated_lines;
+
     this.actorColor = this.skeletonmodel.color.clone();
     var CTYPES = this.CTYPES;
-    this.line_material = new THREE.LineBasicMaterial({color: 0xffff00, opacity: 1.0, linewidth: options.skeleton_line_width});
+
+    if (options.triangulated_lines) {
+      this.line_material = new THREE.LineMaterial({
+        color: 0xffff00,
+        linewidth: options.skeleton_line_width,
+        resolution: new THREE.Vector2(this.space.canvasWidth, this.space.canvasHeight)
+      });
+      this.line_material.uniforms.resolution.needsUpdate = true;
+    } else {
+      this.line_material = new THREE.LineBasicMaterial({
+        color: 0xffff00,
+        opacity: 1.0,
+        linewidth: options.skeleton_line_width
+      });
+    }
 
     // Optional override material for a particular skeleton
     this.overrideMaterial = null;
 
+    var GeometryType = options.triangulated_lines ?
+          THREE.LineSegmentsGeometry : THREE.Geometry;
+
     // Connector links
     this.geometry = {};
-    this.geometry[CTYPES[0]] = new THREE.Geometry();
+    this.geometry[CTYPES[0]] = new GeometryType();
     this.geometry[CTYPES[1]] = new THREE.Geometry();
     this.geometry[CTYPES[2]] = new THREE.Geometry();
     this.geometry[CTYPES[3]] = new THREE.Geometry();
 
+    var MeshType = options.triangulated_lines ?
+          THREE.LineSegments2 : THREE.LineSegments;
+
     this.actor = {}; // has three keys (the CTYPES), each key contains the edges of each type
-    this.actor[CTYPES[0]] = new THREE.LineSegments(this.geometry[CTYPES[0]], this.line_material);
+    this.actor[CTYPES[0]] = new MeshType(this.geometry[CTYPES[0]], this.line_material);
     this.actor[CTYPES[1]] = new THREE.LineSegments(this.geometry[CTYPES[1]], this.space.staticContent.connectorLineColors[CTYPES[1]]);
     this.actor[CTYPES[2]] = new THREE.LineSegments(this.geometry[CTYPES[2]], this.space.staticContent.connectorLineColors[CTYPES[2]]);
     this.actor[CTYPES[3]] = new THREE.LineSegments(this.geometry[CTYPES[3]], this.space.staticContent.connectorLineColors[CTYPES[3]]);
@@ -5475,6 +5475,36 @@
     this.connectoractor = null;
     this.connectorgeometry = {};
     this.connectorSelection = null;
+  };
+
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getVertexCount = function() {
+    let geometry = this.geometry['neurite'];
+    if (geometry.isBufferGeometry) {
+      var start = geometry.attributes.instanceStart;
+      return start.data.count;
+    } else {
+      return geometry.vertices.length;
+    }
+  };
+
+  /**
+   * The functionality of Array.some() for skeleton nodes.
+   */
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.someVertex = function(f) {
+    let geometry = this.geometry['neurite'];
+    if (geometry.isBufferGeometry) {
+        // Test each vertex
+        var start = geometry.attributes.instanceStart;
+        let pos = new THREE.Vector3();
+        for (var i = 0, imax = start.count; i < imax; ++i) {
+          pos.fromBufferAttribute(start, i);
+          if (f(pos)) {
+            return true;
+          }
+        }
+    } else {
+      return geometry['neurite'].vertices.some(f);
+    }
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.destroy = function(collection) {
@@ -5631,6 +5661,7 @@
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createTextMeshes = function() {
     // Sort out tags by node: some nodes may have more than one
     var nodeIDTags = {};
+    let taggedNodeIds = new Set();
     for (var tag in this.tags) {
       if (this.tags.hasOwnProperty(tag)) {
         this.tags[tag].forEach(function(nodeID) {
@@ -5639,6 +5670,7 @@
           } else {
             nodeIDTags[nodeID] = [tag];
           }
+          taggedNodeIds.add(nodeID);
         });
       }
     }
@@ -5664,10 +5696,7 @@
     }
 
     // Find Vector3 of tagged nodes
-    var vs = this.geometry['neurite'].vertices.reduce(function(o, v) {
-      if (v.node_id in nodeIDTags) o[v.node_id] = v;
-      return o;
-    }, {});
+    var vs = this.getPositions(taggedNodeIds);
 
     // Create meshes for the tags for all nodes that need them, reusing the geometries
     var cache = this.space.staticContent.textGeometryCache,
@@ -5819,8 +5848,9 @@
   /** For skeletons with a single node will return an Arbor without edges and with a null root,
    * given that it has no edges, and therefore no vertices, at all. */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createArbor = function() {
-    return new Arbor().addEdges(this.geometry['neurite'].vertices,
-                                function(v) { return v.node_id; });
+    let metaData = this.nodeMetaData;
+    return new Arbor().addEdges(metaData,
+        function(v, i) { return metaData[i].node_id; });
   };
 
   /** Second argument 'arbor' is optional. */
@@ -5836,26 +5866,74 @@
     return arbor.upstreamArbor(cuts);
   };
 
-  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getPositions = function() {
-    var vs = this.geometry['neurite'].vertices,
-        p = {};
-    for (var i=0; i<vs.length; ++i) {
-      var v = vs[i];
-      p[v.node_id] = v;
+  /**
+   * Return a mapping of node IDs to positions.
+   *
+   * @params {Number[]} nodeIds (optional) Limit result mapping to the passed in
+   *                                       node ID set.
+   */
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getPositions = function(nodeIds) {
+    let metaData = this.nodeMetaData;
+    if (this.geometry['neurite'].isBufferGeometry) {
+      let result = {};
+      if (nodeIds) {
+        for (let i=0, imax=metaData.length; i<imax; ++i) {
+          let node = metaData[i];
+          if (node && nodeIds.has(node.node_id)) {
+            result[node.node_id] = new THREE.Vector3(node.x, node.y, node.z);
+          }
+        }
+      } else {
+        for (let i=0, imax=metaData.length; i<imax; ++i) {
+          let node = this.nodeMetaData[i];
+          result[node.node_id] = new THREE.Vector3(node.x, node.y, node.z);
+        }
+      }
+      return result;
+    } else {
+      if (nodeIds) {
+        return this.geometry['neurite'].vertices.reduce(function(o, v, i) {
+          let nodeId = metaData[i].node_id;
+          if (nodeIds.has(nodeId)) o[nodeId] = v;
+          return o;
+        }, {});
+      } else {
+        return this.geometry['neurite'].vertices.reduce(function(o, v, i) {
+          let nodeId = metaData[i].node_id;
+          o[nodeId] = v;
+          return o;
+        }, {});
+      }
     }
-    return p;
   };
 
+  function createArborFromVertices(vertexList, metaData) {
+    return new Arbor().addEdges(vertexList,
+        function(v, i) { return metaData[i].node_id; });
+  }
+
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getCenterOfMass = function() {
-    var nVertices = this.geometry['neurite'].vertices.length;
+    var nVertices = this.getVertexCount();
     if (!nVertices) {
       throw new CATMAID.ValueError("No vertices found for skeleton");
     }
     var weight = 1.0 / nVertices;
-    return this.geometry['neurite'].vertices.reduce(function(center, pos) {
-      center.addScaledVector(pos, weight);
+
+    if (this.geometry['neurite'].isBufferGeometry) {
+      let start = this.geometry['neurite'].attributes.instanceStart;
+      let center = new THREE.Vector3();
+      let pos = new THREE.Vector3();
+      for (var i=0, imax=start.count; i<imax; ++i) {
+        pos.fromBufferAttribute(start, i);
+        center.addScaledVector(pos, weight);
+      }
       return center;
-    }, new THREE.Vector3());
+    } else {
+      return this.geometry['neurite'].vertices.reduce(function(center, pos) {
+        center.addScaledVector(pos, weight);
+        return center;
+      }, new THREE.Vector3());
+    }
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setSamplers = function(samplers) {
@@ -5912,17 +5990,19 @@
 
       var seen = {};
       var last = null;
-      this.geometry['neurite'].colors = this.geometry['neurite'].vertices.map(function(vertex, i) {
+      // Map segment vertices to their colors. Each vertex is stored twice if it
+      // is both beginning and end of two segments.
+      let newVertexColors = this.nodeMetaData.map(function(md, i) {
         var node_id;
         if (interpolate) {
-          node_id = vertex.node_id;
+          node_id = md.node_id;
         } else {
           // Vertices are organized as pairs of child and parent for each
           // segment. If colors should not be interpolated, each parent gets
           // the color of its child (last). Otherwise, pairs of parents and
           // children will share a color.
           var isChild = (i % 2) === 0;
-          node_id = isChild ? vertex.node_id : last;
+          node_id = isChild ? md.node_id : last;
         }
 
         var color = seen[node_id];
@@ -5933,7 +6013,7 @@
         var weight = node_weights[node_id];
         weight = undefined === weight? 1.0 : weight * 0.9 + 0.1;
 
-        var baseColor = pickColor(vertex);
+        var baseColor = pickColor(md);
         color = new THREE.Color(baseColor.r * weight,
                                 baseColor.g * weight,
                                 baseColor.b * weight);
@@ -5951,8 +6031,21 @@
         return color;
       }, this);
 
-      this.geometry['neurite'].colorsNeedUpdate = true;
-      this.actor['neurite'].material.color = new THREE.Color().setHex(0xffffff);
+      if (this.geometry['neurite'].isBufferGeometry) {
+        let flattenedColors = new Float32Array(newVertexColors.length * 3);
+        for (let i=0, imax=newVertexColors.length; i<imax; ++i) {
+          flattenedColors[3 * i    ] = newVertexColors[i].r;
+          flattenedColors[3 * i + 1] = newVertexColors[i].g;
+          flattenedColors[3 * i + 2] = newVertexColors[i].b;
+        }
+        this.geometry['neurite'].setColors(flattenedColors);
+      } else {
+        this.geometry['neurite'].colors = newVertexColors;
+        this.geometry['neurite'].colorsNeedUpdate = true;
+      }
+      // Setting the diffuse color to FFF is needed, because individual vertex
+      // colors are multiplied with the diffuse color in the fragment shader.
+      this.actor['neurite'].material.color.set(0xffffff);
 
       if (!colorizer.vertexColors) {
         this.actor['neurite'].material.opacity = this.opacity;
@@ -5965,15 +6058,21 @@
       this.actor['neurite'].material.needsUpdate = true; // TODO repeated, it's the line_material
 
     } else {
-      // Display the entire skeleton with a single color.
-      this.geometry['neurite'].colors = [];
+
       this.line_material.vertexColors = THREE.NoColors;
       this.line_material.needsUpdate = true;
 
       this.actor['neurite'].material.color = this.actorColor;
-      this.actor['neurite'].material.opacity = this.opacity;
       this.actor['neurite'].material.transparent = this.opacity !== 1;
-      this.actor['neurite'].material.needsUpdate = true; // TODO repeated it's the line_material
+
+      // Display the entire skeleton with a single color.
+      if (this.geometry['neurite'].isBufferGeometry) {
+        this.actor['neurite'].material.uniforms.opacity.value = this.opacity;
+      } else {
+        this.geometry['neurite'].colors = [];
+
+        this.actor['neurite'].material.opacity = this.opacity;
+      }
 
       var material = new colorizer.SkeletonMaterial({
         color: this.actorColor,
@@ -6408,8 +6507,12 @@
       // Only add geometry to the scene that has at least one vertex. Not every
       // CTYPE actor is actually used, so this case can happen. Adding empty
       // geometry causes renderer warnings, which we want to avoid.
-      if (actor && actor.geometry.vertices.length > 0) {
-        this.space.add(this.actor[t]);
+      if (actor) {
+        var nNodes = actor.geometry.isBufferGeometry ?
+            actor.geometry.index.count : actor.geometry.vertices.length;
+        if (nNodes > 0) {
+          this.space.add(this.actor[t]);
+        }
       }
     }, this);
   };
@@ -6614,17 +6717,16 @@
     }
   };
 
-  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createEdge = function(v1, v2, type) {
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createEdge = function(v1, v2, target) {
     // Create edge between child (id1) and parent (id2) nodes:
     // Takes the coordinates of each node, transforms them into the space,
     // and then adds them to the parallel lists of vertices and vertexIDs
-    var vs = this.geometry[type].vertices;
-    vs.push(v1, v2);
+    target.vertices.push(v1, v2);
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeSphere =
-      function(v, radius, material, preventSceneUpdate) {
-    if (this.radiusVolumes.hasOwnProperty(v.node_id)) {
+      function(v, nodeId, radius, material, preventSceneUpdate) {
+    if (this.radiusVolumes.hasOwnProperty(nodeId)) {
       // There already is a sphere or cylinder at the node
       return;
     }
@@ -6633,16 +6735,16 @@
     // Scale the mesh to bring about the correct radius
     mesh.scale.x = mesh.scale.y = mesh.scale.z = radius;
     mesh.position.set( v.x, v.y, v.z );
-    mesh.node_id = v.node_id;
-    this.radiusVolumes[v.node_id] = mesh;
+    mesh.node_id = nodeId;
+    this.radiusVolumes[nodeId] = mesh;
     if (!preventSceneUpdate) {
       this.space.add(mesh);
     }
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createCylinder =
-      function(v1, v2, radius, material, preventSceneUpdate) {
-    if (this.radiusVolumes.hasOwnProperty(v1.node_id)) {
+      function(v1, v2, nodeId, radius, material, preventSceneUpdate) {
+    if (this.radiusVolumes.hasOwnProperty(nodeId)) {
       // There already is a sphere or cylinder at the node
       return;
     }
@@ -6659,9 +6761,9 @@
     mesh.quaternion.copy(arrow.quaternion);
     mesh.position.addVectors(v1, direction.multiplyScalar(0.5));
 
-    mesh.node_id = v1.node_id;
+    mesh.node_id = nodeId;
 
-    this.radiusVolumes[v1.node_id] = mesh;
+    this.radiusVolumes[nodeId] = mesh;
     if (!preventSceneUpdate) {
       this.space.add(mesh);
     }
@@ -6863,7 +6965,7 @@
     // TODO could request them from the server when necessary
     this.tags = tags;
 
-    // Cache for reusing Vector3d instances
+    // Cache for reusing Vector3d instances and node meta data
     var vs = {};
 
     // Reused for all meshes
@@ -6876,9 +6978,16 @@
     var partner_nodes = [];
     var labels = new Map();
 
+    var edgeGeometry = this.triangulated_lines ?
+          new THREE.Geometry() : this.geometry['neurite'];
+
+    // Keeps track of node meta data like node ID and user ID.
+    let nodeMetaData = this.nodeMetaData = [];
+    let idToMetaData = new Map();
+
     // Create edges between all skeleton nodes
     // and a sphere on the node if radius > 0
-    nodes.forEach(function(node) {
+    nodes.forEach(function(node, i) {
       // node[0]: treenode ID
       // node[1]: parent ID
       // node[2]: user ID
@@ -6898,32 +7007,55 @@
         v1 = vs[node[0]];
         if (!v1) {
           v1 = new THREE.Vector3(node[3], node[4], node[5]);
-          v1.node_id = node[0];
-          v1.user_id = node[2];
           vs[node[0]] = v1;
         }
         var p = nodeProps[node[1]];
         var v2 = vs[p[0]];
         if (!v2) {
           v2 = new THREE.Vector3(p[3], p[4], p[5]);
-          v2.node_id = p[0];
-          v2.user_id = p[2];
           vs[p[0]] = v2;
         }
+
+        // Add node meta data
+        let metaChild = idToMetaData.get(node[0]);
+        if (!metaChild) {
+          metaChild = {
+            'node_id': node[0],
+            'parent_id': node[1],
+            'user_id': node[2],
+            'x': node[3],
+            'y': node[4],
+            'z': node[5],
+          };
+          idToMetaData.set(node[0], metaChild);
+        }
+        let metaParent = idToMetaData.get(node[1]);
+        if (!metaParent) {
+          metaParent = {
+            'node_id': p[0],
+            'parent_id': p[1],
+            'user_id': p[2],
+            'x': p[3],
+            'y': p[4],
+            'z': p[5],
+          };
+          idToMetaData.set(p[0], metaParent);
+        }
+        nodeMetaData.push(metaChild, metaParent);
 
         var nodeID = node[0];
         if (node[6] > 0 && p[6] > 0) {
           // Create cylinder using the node's radius only (not the parent) so
           // that the geometry can be reused
-          this.createCylinder(v1, v2, node[6], material, preventSceneUpdate);
+          this.createCylinder(v1, v2, node[0], node[6], material, preventSceneUpdate);
           // Create skeleton line as well
-          this.createEdge(v1, v2, 'neurite');
+          this.createEdge(v1, v2, edgeGeometry);
         } else {
           // Create line
-          this.createEdge(v1, v2, 'neurite');
+          this.createEdge(v1, v2, edgeGeometry);
           // Create sphere
           if (node[6] > 0) {
-            this.createNodeSphere(v1, node[6], material, preventSceneUpdate);
+            this.createNodeSphere(v1, node[0], node[6], material, preventSceneUpdate);
           }
         }
       } else {
@@ -6931,18 +7063,16 @@
         v1 = vs[node[0]];
         if (!v1) {
           v1 = new THREE.Vector3(node[3], node[4], node[5]);
-          v1.node_id = node[0];
-          v1.user_id = node[2];
           vs[node[0]] = v1;
         }
         if (node[6] > 0) {
           // Clear the slot for a sphere at the root
-          var mesh = this.radiusVolumes[v1.node_id];
+          var mesh = this.radiusVolumes[node[0]];
           if (mesh) {
             this.space.remove(mesh);
-            delete this.radiusVolumes[v1.node_id];
+            delete this.radiusVolumes[node[0]];
           }
-          this.createNodeSphere(v1, node[6], material, preventSceneUpdate);
+          this.createNodeSphere(v1, node[0], node[6], material, preventSceneUpdate);
         }
       }
 
@@ -6960,21 +7090,31 @@
     // Special case, if there is only a single node
     if (nodes.length === 1) {
       var nodeId = nodes[0][0];
-      this.geometry['neurite'].vertices.push(vs[nodeId]);
+      edgeGeometry.vertices.push(vs[nodeId]);
     }
 
     if (options.smooth_skeletons) {
-      var arbor = this.createArbor();
+      var arbor = createArborFromVertices(edgeGeometry.vertices, nodeMetaData);
       if (arbor.root) {
         var smoothed = arbor.smoothPositions(vs, options.smooth_skeletons_sigma),
-            vertices = this.geometry['neurite'].vertices;
-        // Iterate only unique vertices: the children
+            vertices = edgeGeometry.vertices;
+        // Iterate only even vertices: the children
         for (var i=0; i<vertices.length; i+=2) {
           var v = vertices[i]; // i: child, i+1: parent
-          v.copy(smoothed[v.node_id]);
+          let nodeId = nodeMetaData[i].node_id;
+          v.copy(smoothed[nodeId]);
         }
         // Root should not change position, but for completeness and future-proofing:
         vs[arbor.root].copy(smoothed[arbor.root]);
+
+        // Update meta data
+        for (let i=0; i<vertices.length; ++i) {
+          let v = vertices[i];
+          let md = nodeMetaData[i];
+          md.x = v.x;
+          md.y = v.y;
+          md.z = v.z;
+        }
       }
     }
 
@@ -6993,7 +7133,7 @@
       v1.node_id = con[1];
       var v2 = vs[con[0]];
       if (v1 && v2) {
-        this.createEdge(v1, v2, this.synapticTypes[type]);
+        this.createEdge(v1, v2, this.geometry[this.synapticTypes[type]]);
         var defaultMaterial = this.space.staticContent.synapticColors[type] ||
           this.space.staticContent.synapticColors.default;
         partner_nodes.push([v2, defaultMaterial, type]);
@@ -7064,29 +7204,72 @@
       }
       // WARNING: node IDs no longer resemble actual skeleton IDs.
       // All node IDs will now have negative values to avoid accidental similarities.
-      var arbor = this.createArbor();
+      var arbor = createArborFromVertices(edgeGeometry.vertices, nodeMetaData);
       if (arbor.root) {
         var res = arbor.resampleSlabs(vs, options.smooth_skeletons_sigma, options.resampling_delta, 2);
-        var vs = this.geometry['neurite'].vertices;
+        var vs = edgeGeometry.vertices;
         // Remove existing lines
         vs.length = 0;
         // Add all new lines
         var edges = res.arbor.edges,
             positions = res.positions;
-        Object.keys(edges).forEach(function(nodeID) {
+        var idToResampledMetaData = {};
+        nodeMetaData = this.nodeMetaData = [];
+
+        Object.keys(edges).forEach(function(nodeID, i) {
           // Fix up Vector3 instances
-          var v_child = positions[nodeID];
-          v_child.user_id = -1;
-          v_child.node_id = -nodeID;
-          // Add line
-          vs.push(v_child);
-          vs.push(positions[edges[nodeID]]); // parent
+          let v_child = positions[nodeID];
+          let v_parent = positions[edges[nodeID]];
+          // Add line from child to parent
+          vs.push(v_child, v_parent);
+
+          let parentId = edges[nodeID];
+          let childMetaData = idToResampledMetaData[nodeID];
+          if (!childMetaData) {
+            childMetaData = {
+              'node_id': -nodeID,
+              'parent_id': parentId ? -parentId : parentId,
+              'user_id': -1,
+              'x': v_child.x,
+              'y': v_child.y,
+              'z': v_child.z,
+            };
+            idToResampledMetaData[nodeID] = childMetaData;
+          }
+
+          let parentMetaData = idToResampledMetaData[parentId];
+          let parentParentId = edges[parentId];
+          if (!parentMetaData) {
+            parentMetaData = {
+              'node_id': -parentId,
+              'parent_id': parentParentId ? -parentParentId : parentParentId,
+              'user_id': -1,
+              'x': v_parent.x,
+              'y': v_parent.y,
+              'z': v_parent.z,
+            };
+            idToResampledMetaData[nodeID] = parentMetaData;
+          }
+
+          nodeMetaData.push(childMetaData, parentMetaData);
         });
-        // Fix up root
-        var v_root = positions[res.arbor.root];
-        v_root.user_id = -1;
-        v_root.node_id = -res.arbor.root;
+        // Fix up root is not needed, its meta data is updated through edges
+        // above.
+        // var v_root = positions[res.arbor.root];
       }
+    }
+
+    // Mesh based lines need to be added as a whole
+    if (this.geometry['neurite'].isBufferGeometry) {
+      this.geometry['neurite'].setPositions(
+          edgeGeometry.vertices.reduce(function(l, v, i) {
+            l[i * 3] = v.x;
+            l[i * 3 + 1] = v.y;
+            l[i * 3 + 2] = v.z;
+            return l;
+          }, new Array(edgeGeometry.vertices.length * 3)));
+      this.actor['neurite'].computeLineDistances();
+      this.actor['neurite'].scale.set(1, 1, 1);
     }
   };
 

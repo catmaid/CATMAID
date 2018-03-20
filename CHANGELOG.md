@@ -30,6 +30,11 @@ Volume widget:
 
 3D Viewer:
 
+- The line width of skeletons can be adjusted again on platforms other than
+  Linux. This Requires "Volumetric lines" in the "View settings" tab to be
+  enabled (it is by default). Unchecking this option brings back the previous
+  line rendering behavior.
+
 - The new "Focus skeleton" button in the "View" tab will look at the active
   skeleton's center of mass from the current camea location.
 

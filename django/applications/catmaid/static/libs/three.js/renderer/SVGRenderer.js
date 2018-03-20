@@ -375,7 +375,13 @@ THREE.SVGRenderer = function () {
 
 		if ( material.isLineBasicMaterial ) {
 
-			var style = 'fill:none;stroke:' + getSvgColor( material.color, material.opacity ) + ';stroke-width:' + material.linewidth + ';stroke-linecap:' + material.linecap;
+			// If vertex colors are used, color edge by the color of first vertex
+			var color = (material.vertexColors === THREE.NoColors) ?
+					material.color : element.vertexColors[0];
+
+			var style = 'fill:none;stroke:' + getSvgColor(color, material.opacity) +
+					';stroke-width:' + material.linewidth + '; stroke-opacity: ' + material.opacity +
+					';stroke-linecap:' + material.linecap  + '; stroke-linejoin: ' + material.linejoin;
 
 			if ( material.isLineDashedMaterial ) {
 

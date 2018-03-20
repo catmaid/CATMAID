@@ -1395,20 +1395,40 @@
 
       // Tracing settings
       ds = CATMAID.DOM.addSettingsContainer(container, "Tracing");
-      ds.append(CATMAID.DOM.createCheckboxSetting("Edit radius after node creation",
-        SkeletonAnnotations.setRadiusAfterNodeCreation, "The visual radius " +
-        "editing tool will be shown right after a node has been created.",
-        function() {
-          SkeletonAnnotations.setRadiusAfterNodeCreation = this.checked;
-        }));
-      ds.append(CATMAID.DOM.createCheckboxSetting("Use connector type created last as new default",
-        SkeletonAnnotations.useNewConnectorTypeAsDefault,
-        "If enabled, the type of newly created connectors (synaptic, abutting, " +
-        "gap-junction) will be used as new default. This default is used with " +
-        "regular Shift+Click",
-        function() {
-          SkeletonAnnotations.useNewConnectorTypeAsDefault = this.checked;
-        }));
+
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Edit radius after node creation",
+              SkeletonAnnotations.Settings[SETTINGS_SCOPE].set_radius_after_node_creation,
+              "The visual radius editing tool will be shown right after a node has been created.",
+              function() {
+                SkeletonAnnotations.Settings
+                    .set(
+                      'set_radius_after_node_creation',
+                      this.checked,
+                      SETTINGS_SCOPE);
+              }),
+          SkeletonAnnotations.Settings,
+          'set_radius_after_node_creation',
+          SETTINGS_SCOPE));
+
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Use connector type created last as new default",
+              SkeletonAnnotations.Settings[SETTINGS_SCOPE].make_last_connector_type_default,
+              "If enabled, the type of newly created connectors (synaptic, abutting, " +
+              "gap-junction) will be used as new default. This default is used with " +
+              "regular Shift+Click",
+              function() {
+                SkeletonAnnotations.Settings
+                    .set(
+                      'make_last_connector_type_default',
+                      this.checked,
+                      SETTINGS_SCOPE);
+              }),
+          SkeletonAnnotations.Settings,
+          'make_last_connector_type_default',
+          SETTINGS_SCOPE));
 
       var connectorTypesPlaceholder = document.createElement('div');
       ds.append(connectorTypesPlaceholder);
@@ -1466,14 +1486,23 @@
           'skip_suppressed_virtual_nodes',
           SETTINGS_SCOPE));
       ds.append($('<div/>').addClass('setting').text());
-      ds.append(CATMAID.DOM.createInputSetting("Default new neuron name",
-          SkeletonAnnotations.defaultNewNeuronName,
-          "Every occurrence of '{nX}' in the default name with X being a " +
-          "number is replaced by a number that is automatically incremented " +
-          "(starting from X) to the smallest unique value in the project.",
-          function () {
-            SkeletonAnnotations.defaultNewNeuronName = $(this).val();
-          }));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createInputSetting(
+              "Default new neuron name",
+              SkeletonAnnotations.Settings[SETTINGS_SCOPE].new_neuron_name,
+              "Every occurrence of '{nX}' in the default name with X being a " +
+              "number is replaced by a number that is automatically incremented " +
+              "(starting from X) to the smallest unique value in the project.",
+              function () {
+                SkeletonAnnotations.Settings
+                    .set(
+                      'new_neuron_name',
+                      $(this).val(),
+                      SETTINGS_SCOPE);
+              }),
+          SkeletonAnnotations.Settings,
+          'new_neuron_name',
+          SETTINGS_SCOPE));
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createInputSetting(
               "Personal tag set",
@@ -1493,14 +1522,22 @@
           'personal_tag_set',
           SETTINGS_SCOPE));
 
-      ds.append(CATMAID.DOM.createCheckboxSetting("Merge annotations of " +
-        "single-node skeletons without asking",
-        SkeletonAnnotations.quickSingleNodeSkeletonMerge, "If true, no merge dialog " +
-        "will be shown for single-node skeletons with annotations. Instead, all " +
-        "annotations will be merged without asking.",
-        function() {
-          SkeletonAnnotations.quickSingleNodeSkeletonMerge = this.checked;
-        }));
+      ds.append(wrapSettingsControl(
+        CATMAID.DOM.createCheckboxSetting("Merge annotations of " +
+            "single-node skeletons without asking",
+            SkeletonAnnotations.Settings[SETTINGS_SCOPE].quick_single_node_merge,
+            "If true, no merge dialog will be shown for single-node skeletons " +
+            "with annotations. Instead, all annotations will be merged without asking.",
+            function() {
+                SkeletonAnnotations.Settings
+                    .set(
+                      'quick_single_node_merge',
+                      this.checked,
+                      SETTINGS_SCOPE);
+            }),
+            SkeletonAnnotations.Settings,
+            'quick_single_node_merge',
+            SETTINGS_SCOPE));
 
       var autoAnnotationChange = function() {
           var annotationName = this.value;

@@ -76,6 +76,19 @@ SkeletonAnnotations.Settings = new CATMAID.Settings(
         },
         personal_tag_set: {
           default: []
+        },
+        // Don't show merging UI for single node skeletons
+        quick_single_node_merge: {
+          default: true
+        },
+        make_last_connector_type_default: {
+          default: false
+        },
+        set_radius_after_node_creation: {
+          default: false
+        },
+        new_neuron_name: {
+          default: ''
         }
       },
       migrations: {}
@@ -104,11 +117,6 @@ SkeletonAnnotations.atn.validate = (function() {
 SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1, SELECT: 2, MOVE: 3});
 SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
 SkeletonAnnotations.newConnectorType = CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR;
-SkeletonAnnotations.useNewConnectorTypeAsDefault = false;
-SkeletonAnnotations.setRadiusAfterNodeCreation = false;
-SkeletonAnnotations.defaultNewNeuronName = '';
-// Don't show merging UI for single node skeletons
-SkeletonAnnotations.quickSingleNodeSkeletonMerge = true;
 
 CATMAID.asEventSource(SkeletonAnnotations);
 
@@ -1943,7 +1951,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
                * there are some. Otherwise merge the single not without showing
                * the dialog.
                */
-              var noUI = SkeletonAnnotations.quickSingleNodeSkeletonMerge;
+              var noUI = SkeletonAnnotations.Settings.session.quick_single_node_merge;
 
               if (noUI) {
                 // Not specifying an annotation map will cause the combined
@@ -2174,7 +2182,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
   var self = this;
   var command = new CATMAID.CreateNodeCommand(this.state,
       project.id, phys_x, phys_y, phys_z, -1, radius, confidence,
-      undefined, SkeletonAnnotations.defaultNewNeuronName);
+      undefined, SkeletonAnnotations.Settings.session.new_neuron_name);
   return CATMAID.commands.execute(command)
     .then(function(jso) {
       var nid = parseInt(jso.treenode_id);
@@ -2214,7 +2222,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
   // Check if we want the newly create node to be a model of an existing empty neuron
   var selneuron = project.selectedObjects.selectedneuron;
   var useneuron = null === selneuron ? -1 : selneuron;
-  var neuronname = null === selneuron ? SkeletonAnnotations.defaultNewNeuronName : '';
+  var neuronname = null === selneuron ? SkeletonAnnotations.Settings.session.new_neuron_name : '';
 
   var self = this;
 
@@ -2878,7 +2886,7 @@ SkeletonAnnotations.TracingOverlay.prototype._createNodeOrLink = function(insert
 
   // If activated, edit the node radius right after it was created.
   var postCreateFn;
-  if (SkeletonAnnotations.setRadiusAfterNodeCreation) {
+  if (SkeletonAnnotations.Settings.session.set_radius_after_node_creation) {
     // Edit radius without showing the dialog and without centering.
     postCreateFn = function(overlay, node) { overlay.editRadius(node.id, false, true, true); };
   }
@@ -2903,7 +2911,7 @@ SkeletonAnnotations.TracingOverlay.prototype._createNodeOrLink = function(insert
         var newConnectorType = SkeletonAnnotations.newConnectorType;
 
         var createConnector = function(linkType, connectorType, msg) {
-          if (SkeletonAnnotations.useNewConnectorTypeAsDefault) {
+          if (SkeletonAnnotations.Settings.session.make_last_connector_type_default) {
             SkeletonAnnotations.newConnectorType = connectorType;
           }
           if (msg) {

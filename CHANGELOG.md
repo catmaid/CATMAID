@@ -26,6 +26,11 @@ Landmarks:
   cross the midline. Doing this is enabled by default, but can be disabled
   throug the "Interpolate between groups" option.
 
+- Virtual transformed skeletons are now also shown on a separate layer in all
+  open Stack Viewers. Nodes of those skeletons can currently not selected. To
+  disable the Landmark Layer, uncheck the "Show landmark layers" checkbox in the
+  Display tab's button panel.
+
 3D Viewer:
 
 - A scale bar can now be displayed when in orthographic mode. The scale bar

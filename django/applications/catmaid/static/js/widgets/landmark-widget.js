@@ -48,6 +48,8 @@
     this.targeted3dViewerNames = new Set();
     // Whether to automatically interpolate between group transformations
     this.interpolateBetweenGroups = true;
+    // Whether to show landmark layers
+    this.showLandmarkLayers = true;
 
     // The current edit mode
     this.mode = 'landmarks';
@@ -188,6 +190,11 @@
     availableSources.forEach(function(sourceName) {
       this.removeDisplayFrom3dViewer(sourceName);
     }, this);
+
+    project.getStackViewers().forEach(function(sv) {
+      sv.removeLayer('landmarklayer');
+      sv.redraw();
+    });
   };
 
   /**
@@ -275,6 +282,8 @@
     // Update actual content
     let mode = LandmarkWidget.MODES[this.mode];
     mode.createContent(this.content, this);
+
+    this.updateLandmarkLayers();
   };
 
   LandmarkWidget.prototype.setMode = function(mode) {
@@ -504,6 +513,65 @@
     }
   };
 
+  // Get all relevant skeleton projection options
+  LandmarkWidget.prototype.getLandmarkLayerOptions = function() {
+    return {
+      "visible": this.showLandmarkLayers,
+      "scale": 1.0
+    };
+  }
+
+  /**
+   * Makes sure all active landmark display transformations are shown as layers.
+   */
+  LandmarkWidget.prototype.updateLandmarkLayers = function() {
+    var options = this.getLandmarkLayerOptions();
+    // Create a skeleton projection layer for all stack viewers that
+    // don't have one already.
+    let transformations = new Set(this.displayTransformations);
+    project.getStackViewers().forEach(function(sv) {
+      var layer = sv.getLayer('landmarklayer');
+      if (options.visible) {
+        if (!layer) {
+          // Create new if not already present
+          layer = new CATMAID.LandmarkLayer(sv, options);
+          sv.addLayer('landmarklayer', layer);
+        }
+
+        // Update existing instance
+        let layerTransformations = new Set(layer.displayTransformations);
+        // Remove layer transformations that are not part of the widget
+        let nRemoved = 0;
+        for (let t of layerTransformations) {
+          if (!transformations.has(t)) {
+            layerTransformations.delete(t);
+            ++nRemoved;
+          }
+        }
+        // Add display transformations not yet part of layer
+        let nAdded = 0;
+        for (let t of transformations) {
+          if (!layerTransformations.has(t)) {
+            layerTransformations.add(t);
+            ++nAdded;
+          }
+        }
+
+        layer.displayTransformations = Array.from(layerTransformations);
+
+        if (nRemoved !== 0 || nAdded !== 0) {
+          layer.update();
+        }
+
+        // Update other options and display
+        layer.updateOptions(options, false);
+      } else if (layer) {
+        sv.removeLayer('landmarklayer');
+        sv.redraw();
+      }
+    });
+  };
+
   /**
    */
   LandmarkWidget.prototype.getMlsTransform = function(transformation, i) {
@@ -680,25 +748,33 @@
 
       transformation.nodeProvider = {
         get: function(skeletonId) {
-          if (transformation.skeletonCache && transformation.skeletonCache[skeletonId]) {
-            return Promise.resolve(transformation.skeletonCache[skeletonId]);
-          } else {
-            // Get skeleton data and transform it
-            return CATMAID.fetch(project.id + '/skeletons/' + skeletonId + '/compact-detail', 'GET', {
-                with_tags: false,
-                with_connectors: false,
-                with_history: false
-              })
-              .then(function(response) {
-                // Transform points and store in cache
-                response[0].forEach(transformTreenode);
-                if (!transformation.skeletonCache) {
-                  transformation.skeletonCache = {};
-                }
-                transformation.skeletonCache[skeletonId] = response;
-                return response;
-              });
+          if (!transformation.loading) {
+            if (transformation.skeletonCache && transformation.skeletonCache[skeletonId]) {
+              transformation.loading = Promise.resolve(transformation.skeletonCache[skeletonId]);
+            } else {
+              // Get skeleton data and transform it
+              transformation.loading = CATMAID.fetch(project.id + '/skeletons/' + skeletonId + '/compact-detail', 'GET', {
+                  with_tags: false,
+                  with_connectors: false,
+                  with_history: false
+                })
+                .then(function(response) {
+                  // If the source group ID is the same as the target group ID,
+                  // don't transform at all.
+                  if (transformation.fromGroupId !== transformation.toGroupId) {
+                    // Transform points and store in cache
+                    response[0].forEach(transformTreenode);
+                  }
+                  if (!transformation.skeletonCache) {
+                    transformation.skeletonCache = {};
+                  }
+                  transformation.skeletonCache[skeletonId] = response;
+                  return response;
+                });
+            }
           }
+
+          return transformation.loading
         }
       };
 
@@ -1666,6 +1742,15 @@
             label: 'Refresh display',
             onclick: function() {
               target.updateDisplay();
+            }
+          },
+          {
+            type: 'checkbox',
+            value: target.showLandmarkLayers,
+            label: 'Show landmark layers',
+            onclick: function() {
+              target.showLandmarkLayers = this.checked;
+              target.updateLandmarkLayers();
             }
           },
           {

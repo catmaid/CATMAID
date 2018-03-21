@@ -600,23 +600,36 @@
 
   WebGLApplication.prototype.exportSkeletonsAsCSV = function() {
     var sks = this.space.content.skeletons,
-        rows = ["neuron, skeleton_id, treenode_id, parent_treenode_id, x, y, z, r"];
+        getName = CATMAID.NeuronNameService.getInstance().getName,
+        rows = ["skeleton_id, treenode_id, parent_treenode_id, x, y, z, r"];
     Object.keys(sks).forEach(function(skid) {
       var sk = sks[skid];
       if (!sk.visible) return;
       var vs = sk.getPositions(),
           arbor = sk.createArbor(),
           edges = arbor.edges,
-          name = CATMAID.NeuronNameService.getInstance().getName(skid);
+          name = getName(skid);
       edges[arbor.root] = ''; // rather than null
       Object.keys(vs).forEach(function(tnid) {
         var v = vs[tnid];
         var mesh = sk.radiusVolumes[tnid];
         var r = mesh ? mesh.scale.x : 0; // See createNodeSphere and createCylinder
-        rows.push('"' + name + '", ' + skid + "," + tnid + "," + edges[tnid]  + "," + v.x + "," + v.y + "," + v.z + "," + r);
+        rows.push(skid + "," + tnid + "," + edges[tnid]  + "," + v.x + "," + v.y + "," + v.z + "," + r);
       });
     });
     saveAs(new Blob([rows.join('\n')], {type : 'text/csv'}), "skeleton_coordinates.csv");
+  };
+
+  WebGLApplication.prototype.exportNames = function() {
+    var sks = this.space.content.skeletons,
+        getName = CATMAID.NeuronNameService.getInstance().getName,
+        rows = ['"skeleton_id", "neuron_name"'];
+    Object.keys(sks).forEach(function(skid) {
+      var sk = sks[skid];
+      if (!sk.visible) return;
+      rows.push(skid + ', "' + getName(skid) + '"');
+    });
+    saveAs(new Blob([rows.join('\n')], {type: 'text/csv'}), "skeleton_names.csv");
   };
 
   /**

@@ -1350,6 +1350,7 @@ var WindowMaker = new function()
           ['SVG', WA.exportSVG.bind(WA)],
           ['Catalog SVG', WA.exportCatalogSVG.bind(WA)],
           ['Skeletons as CSV', WA.exportSkeletonsAsCSV.bind(WA)],
+          ['Neuron names', WA.exportNames.bind(WA)],
           ['Connectors as CSV', WA.exportConnectorsAsCSV.bind(WA)],
           ['Synapses as CSV', WA.exportSynapsesAsCSV.bind(WA)],
           ['Synapse count CSV', WA.countObjects.bind(WA)],

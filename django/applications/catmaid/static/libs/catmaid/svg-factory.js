@@ -96,7 +96,7 @@
    * Parse a style object and create a SVG compatible syle string.
    */
   SVGFactory.prototype.createSvgStyle = function(styles) {
-    return Object.keys(styles).map(flattenStyle, styles).join(';');
+    return Object.keys(styles).map(flattenStyle, styles).join(';') + ";";
   };
 
   /**

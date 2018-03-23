@@ -510,20 +510,18 @@
     };
 
 
+    /**
+     * Display both project and stack space center coordinates in the status
+     * bar.
+     */
     var updateStatusBar = function(e) {
-      var m = CATMAID.ui.getMouse(e, activeTracingLayer.tracingOverlay.view, true);
-      var offX, offY, pos_x, pos_y;
-      if (m) {
-        offX = m.offsetX;
-        offY = m.offsetY;
-
-        // TODO pos_x and pos_y never change
-        var stackViewer = activeStackViewer;
-        // TODO pos_x and pos_y never change
-        pos_x = stackViewer.primaryStack.translation.x + (stackViewer.x + (offX - stackViewer.viewWidth  / 2) / stackViewer.scale) * stackViewer.primaryStack.resolution.x;
-        pos_y = stackViewer.primaryStack.translation.x + (stackViewer.y + (offY - stackViewer.viewHeight / 2) / stackViewer.scale) * stackViewer.primaryStack.resolution.y;
-        CATMAID.statusBar.replaceLast("[" + pos_x.toFixed(3) + ", " + pos_y.toFixed(3) + "]" + " stack x,y: " + stackViewer.x + ", " + stackViewer.y);
-      }
+      CATMAID.statusBar.replaceLast("Project: " +
+          project.coordinates.x.toFixed(3) + ", " +
+          project.coordinates.y.toFixed(3) + ", " +
+          project.coordinates.z.toFixed(3) + " Stack: " +
+          activeStackViewer.x.toFixed(3) + ", " +
+          activeStackViewer.y.toFixed(3) + ", " +
+          activeStackViewer.z.toFixed(3));
       return true;
     };
 

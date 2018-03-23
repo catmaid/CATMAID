@@ -1261,19 +1261,27 @@ SkeletonAnnotations.TracingOverlay.prototype.getStackViewer = function() {
 
 /**
  * Stores the current mouse coordinates in unscaled stack coordinates in the
- * @coords parameter.
+ * @coords parameter and updates the status bar with the stack and project
+ * coordinates of the mouse cursor.
  */
 SkeletonAnnotations.TracingOverlay.prototype.createViewMouseMoveFn = function(stackViewer, coords) {
+  var pCoords = {'x': 0, 'y': 0, 'z': 0};
+  var sCoords = {'x': 0, 'y': 0, 'z': 0};
   return function(e) {
     var m = CATMAID.ui.getMouse(e, stackViewer.getView(), true);
     if (m) {
       var screenPosition = stackViewer.screenPosition();
       coords.lastX = screenPosition.left + m.offsetX / stackViewer.scale / stackViewer.primaryStack.anisotropy.x;
       coords.lastY = screenPosition.top  + m.offsetY / stackViewer.scale / stackViewer.primaryStack.anisotropy.y;
+      sCoords.x = coords.lastX;
+      sCoords.y = coords.lastY;
+      sCoords.z = stackViewer.z;
+      stackViewer.primaryStack.stackToProject(sCoords, pCoords);
       // This function is called often, so the least memory consuming way should
       // be used to create the status bar update.
-      CATMAID.statusBar.printCoords('['+ Math.round(coords.lastX) + ", " +
-          Math.round(coords.lastY) + ", " + Math.round(stackViewer.z) +']');
+      CATMAID.statusBar.printCoords('S: ['+ coords.lastX.toFixed(1) + ", " +
+          coords.lastY.toFixed(1) + ", " + stackViewer.z.toFixed(1) +'] px, P: [' +
+          pCoords.x.toFixed(1) + ', ' + pCoords.y.toFixed(1) + ', ' + pCoords.z.toFixed(1) + '] nm');
     }
     return true; // Bubble mousemove events.
   };

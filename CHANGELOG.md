@@ -81,6 +81,9 @@ Miscellaneous:
 
 - Selection Table: Skeletons can now be imported from CSV files.
 
+- The status bar shows now both stack space and project space coordinates of the
+  mouse cursor.
+
 - The skeleton projection layer works now with orthogonal views.
 
 - Stacks can now be created whose planar axes have anisotropic resolution.

@@ -41,7 +41,8 @@ div.console #coordinates {
   margin-right: 8px;
   margin-left: 6px;
   font-family: sans-serif;
-  font-size: 15px;
+  font-size: small;
+  color: #444;
 }
 
 div.console:hover pre {

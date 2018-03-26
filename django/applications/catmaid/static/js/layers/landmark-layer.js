@@ -24,9 +24,15 @@
     CATMAID.PixiLayer.call(this);
     this.displayTransformations = [];
 
+    // A set of custom models that allows custom coloring of nodes
+    this.skeletonDisplayModels = {};
+
     CATMAID.PixiLayer.prototype._initBatchContainer.call(this);
-    this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements(
-      {pixiLayer: this, stackViewer: stackViewer},
+    this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements({
+        pixiLayer: this,
+        stackViewer: stackViewer,
+        skeletonDisplayModels: this.skeletonDisplayModels
+      },
       this.batchContainer);
   };
 
@@ -38,9 +44,35 @@
    */
   LandmarkLayer.options = {
     // A color that is used instead of a skeleton color
-    overrideColor: null,
+    overrideColor: false,
     // An extra scaling factor to apply to nodes and edge.
     scale: 1.0
+  };
+
+  /**
+   * Update current node coloring.
+   */
+  LandmarkLayer.prototype.initColors = function() {
+    if (this.options.overrideColor) {
+      this.skeletonDisplayModels = {};
+      if (this.graphics) {
+        this.graphics.overlayGlobals.skeletonDisplayModels = this.skeletonDisplayModels;
+      }
+      for (let n in this.nodes) {
+        let node = this.nodes[n];
+        let model = this.skeletonDisplayModels[n.skeleton_id];
+        if (!model) {
+          this.skeletonDisplayModels[node.skeleton_id] = new CATMAID.SkeletonModel(
+              n.skeleton_id, '', new THREE.Color(this.options.overrideColor));
+        }
+      }
+    } else {
+      // Reset color override models
+      this.skeletonDisplayModels = {};
+      if (this.graphics) {
+        this.graphics.overlayGlobals.skeletonDisplayModels = this.skeletonDisplayModels;
+      }
+    }
   };
 
   /**
@@ -48,9 +80,33 @@
    * passed in object. If a known object key isn't available, the default can
    * optionally be set.
    */
-  LandmarkLayer.prototype.updateOptions = function(options, setDefaults) {
+  LandmarkLayer.prototype.updateOptions = function(options, setDefaults, redraw) {
+    let overrideColorsChanged = this.options.overrideColor !== options.overrideColor;
+    let overrideColorsEnabled = overrideColorsChanged && !this.options.overrideColor;
+    let overrideColorsDisabled = overrideColorsChanged && !options.overrideColor;
+
     CATMAID.mergeOptions(this.options, options || {}, LandmarkLayer.options,
         setDefaults);
+
+    if (overrideColorsChanged) {
+      if (overrideColorsEnabled || overrideColorsDisabled) {
+        this.initColors(options);
+      } else {
+        // Update color
+        for (let m in this.skeletonDisplayModels) {
+          this.skeletonDisplayModels[m].color.setStyle(options.overrideColor);
+        }
+      }
+
+      // Update colors
+      for (let n in this.nodes) {
+        this.nodes[n].updateColors();
+      }
+    }
+
+    if (redraw) {
+      this._renderIfReady();
+    }
   };
 
   /* Iterface methods */
@@ -346,6 +402,13 @@
           for (var i=0, imax=addedNodes.length; i<imax; ++i) {
             addedNodes[i].createGraphics();
           }
+
+          // Update colors
+          self.initColors();
+          for (let n in self.nodes) {
+            self.nodes[n].updateColors();
+          }
+
           self.redraw();
         }
       })

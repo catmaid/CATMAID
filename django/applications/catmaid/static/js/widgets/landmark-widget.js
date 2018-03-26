@@ -50,6 +50,11 @@
     this.interpolateBetweenGroups = true;
     // Whether to show landmark layers
     this.showLandmarkLayers = true;
+    // Whether skeleton colors should be overridden
+    this.overrideColor = true;
+    // Override color and alpha, used if overrideColor is true.
+    this._overrideColor = '#3FFFD8';
+    this._overrideAlpha = 0.8;
 
     // The current edit mode
     this.mode = 'landmarks';
@@ -517,9 +522,11 @@
   LandmarkWidget.prototype.getLandmarkLayerOptions = function() {
     return {
       "visible": this.showLandmarkLayers,
-      "scale": 1.0
+      "scale": 1.0,
+      "overrideColor": this.overrideColor ? this._overrideColor : false,
+      "overrideAlpha": this.overrideColor ? this._overrideAlpha : false,
     };
-  }
+  };
 
   /**
    * Makes sure all active landmark display transformations are shown as layers.
@@ -564,7 +571,7 @@
         }
 
         // Update other options and display
-        layer.updateOptions(options, false);
+        layer.updateOptions(options, false, true);
       } else if (layer) {
         sv.removeLayer('landmarklayer');
         sv.redraw();
@@ -774,7 +781,7 @@
             }
           }
 
-          return transformation.loading
+          return transformation.loading;
         }
       };
 
@@ -1725,6 +1732,18 @@
         let target3dViewerSelect = document.createElement('span');
         target3dViewerSelect.setAttribute('data-role', 'display-target');
         target.updateTargetSelect(target3dViewerSelect);
+
+        let colorButton = document.createElement('span');
+        CATMAID.DOM.appendColorButton(colorButton, 'c',
+            'Override color for landmark display',
+            undefined, function(colorRGB, alpha, colorChanged, alphaChanged, colorHex) {
+              target._overrideColor = '#' + colorHex;
+              target._overrideAlpha = alpha;
+              target.updateLandmarkLayers();
+            }, {
+              initialColor: target._overrideColor,
+              initialAlpha: target._overrideAlpha
+            });
         return [
           {
             type: 'button',
@@ -1761,6 +1780,19 @@
               target.interpolateBetweenGroups = this.checked;
               target.updateDisplay();
             }
+          },
+          {
+            type: 'checkbox',
+            value: target.overrideColor,
+            label: 'Override color',
+            onclick: function() {
+              target.overrideColor = this.checked;
+              target.updateLandmarkLayers();
+            }
+          },
+          {
+            type: 'child',
+            element: colorButton
           }
         ];
       },

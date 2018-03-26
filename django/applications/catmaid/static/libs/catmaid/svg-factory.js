@@ -62,8 +62,8 @@
     this.markers[id] = marker;
   };
 
-  SVGFactory.prototype.getMarkerId = function(color, width, height, refX, refY) {
-    var hash = color + '-' + width + '-' + height + '-' + refX + '-' + refY;
+  SVGFactory.prototype.getMarkerId = function(type, color, width, height, refX, refY) {
+    var hash = type + '-' + color + '-' + width + '-' + height + '-' + refX + '-' + refY;
     var markerId = this.markerIds[hash];
     return markerId === undefined ? ('marker-' + Object.keys(this.markers).length) : markerId;
   };
@@ -349,7 +349,7 @@
     var arrow = null;
     if (options.arrow && options.arrow !== 'none') {
       var color = style.stroke || '#000';
-      var arrowId = this.getMarkerId(color, options.arrowWidth,
+      var arrowId = this.getMarkerId(options.arrow, color, options.arrowWidth,
             options.arrowHeight, options.refX, options.refY);
       if (!this.markers[arrowId]) {
         var arrowStyle = {

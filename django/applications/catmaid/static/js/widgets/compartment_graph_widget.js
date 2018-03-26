@@ -2666,6 +2666,7 @@
           x2 = rscratch.arrowEndX,
           y2 = rscratch.arrowEndY;
 
+      // "arrow" here means "end marker"
       if (data.arrow && data.arrow !== 'none') {
         templateLineOptions['arrow'] = data.arrow;
         templateLineOptions['arrowStyle'] = templateLineStyle;
@@ -2676,7 +2677,9 @@
           templateLineOptions['arrowUnit'] = 'userSpaceOnUse';
           templateLineOptions['arrowWidth'] = d;
         } else {
-          CATMAID.warn('Could not export graph element. Unknown arrow: ' + data.arrow);
+          // For circle, tee:
+          templateLineOptions['arrowLineShrinking'] = false;
+          //CATMAID.warn('Could not export graph element. Unknown arrow: ' + data.arrow);
         }
       } else {
         templateLineOptions['arrow'] = undefined;

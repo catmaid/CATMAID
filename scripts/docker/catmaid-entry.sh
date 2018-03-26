@@ -96,10 +96,10 @@ init_catmaid () {
 }
 
 if [ "$1" = 'standalone' ]; then
-  if ! grep -Fxq "local ${DB_NAME} ${DB_USER} md5" /etc/postgresql/9.6/main/pg_hba.conf
+  if ! grep -Fxq "local ${DB_NAME} ${DB_USER} md5" ${DB_CONF_FILE/postgresql.conf/}pg_hba.conf
   then
       echo "Updating Postgres access configuration"
-      sed -i "/# DO NOT DISABLE!/ilocal ${DB_NAME} ${DB_USER} md5" /etc/postgresql/9.6/main/pg_hba.conf
+      sed -i "/# DO NOT DISABLE!/ilocal ${DB_NAME} ${DB_USER} md5" ${DB_CONF_FILE/postgresql.conf/}pg_hba.conf
   fi
   if [ "$DB_TUNE" = true ]; then
   echo "Tuning Postgres server configuration"

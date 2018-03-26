@@ -137,6 +137,87 @@
    * Adjust rendering to current field of view.
    */
   LandmarkLayer.prototype.redraw = function(completionCallback) {
+    // If there are nodes available, find the ones on the current section
+    if (this._currentZIndex.size > 0) {
+      let zIndex = this._currentZIndex;
+      let currentZ = this.stackViewer.z;
+      let nextZ = this.stackViewer.z + 1;
+      let primaryStack = this.stackViewer.primaryStack;
+      // Render intersection of each available skeleton with the current
+      // section.
+      let nodesOnSection = zIndex.get(this.stackViewer.z);
+
+      if (!nodesOnSection || nodesOnSection.size === 0) {
+        return;
+      }
+
+      this.nodes = {};
+      // Prepare existing Node and ConnectorNode instances for reuse
+      this.graphics.resetCache();
+      var addedNodes = [];
+
+      // Add regular nodes
+      for (let a of nodesOnSection) {
+        // Add all nodes along with their parents and children
+        // [id, parent_id, user_id, location_x, location_y, location_z, radius, confidence].
+        var stackZ = primaryStack.projectToUnclampedStackZ(a[5], a[4], a[3]);
+        let newNode = this.graphics.newNode(a[0], null, a[1], a[6],
+            a[3], a[4], a[5], stackZ - currentZ, a[7], a[8],
+            0, a[2]);
+        this.nodes[a[0]] = newNode;
+        addedNodes.push(newNode);
+      }
+
+      // Add virtual nodes and link parent with children
+      for (let b of nodesOnSection) {
+        var n = this.nodes[b[0]];
+        var pn = this.nodes[b[1]]; // parent Node
+
+        // Neither virtual nodes or other parent/child links need to be created if
+        // there is no parent node.
+        if (!pn) {
+          continue;
+        }
+
+        // Virtual nodes can only exists if both parent and child are not on the
+        // current section and not both above or below.
+        if ((n.zdiff < 0 && pn.zdiff > 0) || (n.zdiff > 0 && pn.zdiff < 0)) {
+          var vn = CATMAID.createVirtualNode(this.graphics, n, pn, this.stackViewer);
+          if (vn) {
+            n.parent = vn;
+            n.parent_id = vn.id;
+            pn.addChildNode(vn);
+            vn.addChildNode(n);
+            this.nodes[vn.id] = vn;
+            addedNodes.push(vn);
+            continue;
+          }
+        }
+
+        // If no virtual node was inserted, link parent and child normally.
+        n.parent = pn;
+        // update the parent's children
+        pn.addChildNode(n);
+      }
+
+      // Draw node edges and circles, including the ones for virtual nodes.
+      for (var i=0, imax=addedNodes.length; i<imax; ++i) {
+        addedNodes[i].createGraphics();
+      }
+
+      // Update colors
+      this.initColors();
+      for (let n in this.nodes) {
+        this.nodes[n].updateColors();
+      }
+    } else {
+      for (let skeletonId in this.nodes) {
+        this.nodes[skeletonId].obliterate();
+      }
+      this.nodes = {};
+    }
+
+
     // Get current field of view in stack space
     var stackViewBox = this.stackViewer.createStackViewBox();
     var projectViewBox = this.stackViewer.primaryStack.createStackToProjectBox(stackViewBox);
@@ -332,86 +413,7 @@
           }
         }
 
-        if (availableSkeletonData.size === 0) {
-          for (let skeletonId in self.nodes) {
-            self.nodes[skeletonId].obliterate();
-          }
-          self.nodes = {};
-          self.redraw();
-        } else {
-          let currentZ = self.stackViewer.z;
-          let nextZ = self.stackViewer.z + 1;
-          let primaryStack = self.stackViewer.primaryStack;
-          // Render intersection of each available skeleton with the current
-          // section.
-          let nodesOnSection = zIndex.get(self.stackViewer.z);
-
-          if (!nodesOnSection || nodesOnSection.size === 0) {
-            return;
-          }
-
-          self.nodes = {};
-          // Prepare existing Node and ConnectorNode instances for reuse
-          self.graphics.resetCache();
-          var addedNodes = [];
-
-          // Add regular nodes
-          for (let a of nodesOnSection) {
-            // Add all nodes along with their parents and children
-            // [id, parent_id, user_id, location_x, location_y, location_z, radius, confidence].
-            var stackZ = primaryStack.projectToUnclampedStackZ(a[5], a[4], a[3]);
-            let newNode = self.graphics.newNode(a[0], null, a[1], a[6],
-                a[3], a[4], a[5], stackZ - currentZ, a[7], a[8],
-                0, a[2]);
-            self.nodes[a[0]] = newNode;
-            addedNodes.push(newNode);
-          }
-
-          // Add virtual nodes and link parent with children
-          for (let b of nodesOnSection) {
-            var n = self.nodes[b[0]];
-            var pn = self.nodes[b[1]]; // parent Node
-
-            // Neither virtual nodes or other parent/child links need to be created if
-            // there is no parent node.
-            if (!pn) {
-              continue;
-            }
-
-            // Virtual nodes can only exists if both parent and child are not on the
-            // current section and not both above or below.
-            if ((n.zdiff < 0 && pn.zdiff > 0) || (n.zdiff > 0 && pn.zdiff < 0)) {
-              var vn = CATMAID.createVirtualNode(self.graphics, n, pn, self.stackViewer);
-              if (vn) {
-                n.parent = vn;
-                n.parent_id = vn.id;
-                pn.addChildNode(vn);
-                vn.addChildNode(n);
-                self.nodes[vn.id] = vn;
-                addedNodes.push(vn);
-                continue;
-              }
-            }
-
-            // If no virtual node was inserted, link parent and child normally.
-            n.parent = pn;
-            // update the parent's children
-            pn.addChildNode(n);
-          }
-
-          // Draw node edges and circles, including the ones for virtual nodes.
-          for (var i=0, imax=addedNodes.length; i<imax; ++i) {
-            addedNodes[i].createGraphics();
-          }
-
-          // Update colors
-          self.initColors();
-          for (let n in self.nodes) {
-            self.nodes[n].updateColors();
-          }
-
-          self.redraw();
-        }
+        self.redraw();
       })
       .catch(CATMAID.handleError);
   };

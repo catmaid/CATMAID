@@ -55,6 +55,8 @@
     // Override color and alpha, used if overrideColor is true.
     this._overrideColor = '#3FFFD8';
     this._overrideAlpha = 0.8;
+    // A node scaling factor to help distinguish nodes from regular ones.
+    this.nodeScaling = 1.5;
 
     // The current edit mode
     this.mode = 'landmarks';
@@ -522,7 +524,7 @@
   LandmarkWidget.prototype.getLandmarkLayerOptions = function() {
     return {
       "visible": this.showLandmarkLayers,
-      "scale": 1.0,
+      "scale": this.nodeScaling,
       "overrideColor": this.overrideColor ? this._overrideColor : false,
       "overrideAlpha": this.overrideColor ? this._overrideAlpha : false,
     };
@@ -1765,6 +1767,15 @@
           },
           {
             type: 'checkbox',
+            value: target.interpolateBetweenGroups,
+            label: 'Interpolate between groups',
+            onclick: function() {
+              target.interpolateBetweenGroups = this.checked;
+              target.updateDisplay();
+            }
+          },
+          {
+            type: 'checkbox',
             value: target.showLandmarkLayers,
             label: 'Show landmark layers',
             onclick: function() {
@@ -1773,12 +1784,16 @@
             }
           },
           {
-            type: 'checkbox',
-            value: target.interpolateBetweenGroups,
-            label: 'Interpolate between groups',
-            onclick: function() {
-              target.interpolateBetweenGroups = this.checked;
-              target.updateDisplay();
+            type: 'numeric',
+            value: target.nodeScaling,
+            label: 'Node scaling',
+            length: 3,
+            onchange: function() {
+              let val = parseFloat(this.value);
+              if (!Number.isNaN(val)) {
+                target.nodeScaling = val;
+                target.updateLandmarkLayers();
+              }
             }
           },
           {

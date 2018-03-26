@@ -105,7 +105,7 @@
     }
 
     if (redraw) {
-      this._renderIfReady();
+      this.redraw();
     }
   };
 
@@ -147,16 +147,17 @@
     // stay the same (regardless of zoom level), counter acting this is required.
     var dynamicScale = screenScale ? (1 / this.stackViewer.scale) : false;
 
+    let userScaleFactor = this.options.scale;
     this.graphics.scale(
-        SkeletonAnnotations.TracingOverlay.Settings.session.scale,
+        SkeletonAnnotations.TracingOverlay.Settings.session.scale * userScaleFactor,
         this.stackViewer.primaryStack.minPlanarRes,
         dynamicScale);
 
     // In case of a zoom level change and screen scaling is selected, update
     // edge width.
-    if (this.displayTransformations.length > 0 && this.stackViewer.s !== this.lastScale) {
+    if (this.displayTransformations.length > 0 && (userScaleFactor * this.stackViewer.s) !== this.lastScale) {
       // Remember current zoom level
-      this.lastScale = this.stackViewer.s;
+      this.lastScale = userScaleFactor * this.stackViewer.s;
       // Update edge width
       var edgeWidth = this.graphics.Node.prototype.EDGE_WIDTH || 2;
       this.graphics.containers.lines.children.forEach(function (line) {

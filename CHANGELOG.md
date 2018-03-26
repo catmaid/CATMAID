@@ -31,6 +31,9 @@ Landmarks:
   disable the Landmark Layer, uncheck the "Show landmark layers" checkbox in the
   Display tab's button panel.
 
+- The color and extra scaling for nodes on Landmark Layers can be adjusted from
+  the widget.
+
 3D Viewer:
 
 - A scale bar can now be displayed when in orthographic mode. The scale bar

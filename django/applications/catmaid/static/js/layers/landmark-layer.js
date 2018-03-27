@@ -396,6 +396,10 @@
               let node = nodeMap.get(nodes[k][0]);
               let nodeStackZ = stackZMap.get(node[0]);
 
+              if (!(node && nodeStackZ !== undefined)) {
+                throw new CATMAID.ValueError("Could not find node or its stack space Z coordinate");
+              }
+
               // Add node to Z index
               let zBucket = zIndex.get(nodeStackZ);
               if (!zBucket) {

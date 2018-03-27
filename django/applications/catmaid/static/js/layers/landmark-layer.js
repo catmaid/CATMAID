@@ -200,6 +200,9 @@
         pn.addChildNode(n);
       }
 
+      // Disable most unused node instances, keeping a small caching buffer.
+      this.graphics.disableBeyond(addedNodes.length, 0);
+
       // Draw node edges and circles, including the ones for virtual nodes.
       for (var i=0, imax=addedNodes.length; i<imax; ++i) {
         addedNodes[i].createGraphics();

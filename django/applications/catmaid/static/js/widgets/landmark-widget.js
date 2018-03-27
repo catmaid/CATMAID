@@ -60,7 +60,7 @@
 
     // The current edit mode
     this.mode = 'landmarks';
-    this.modes = ['landmarks', 'display', 'import'];
+    this.modes = ['landmarks', 'edit', 'display', 'import'];
 
     // Some parts of the widget need to update when skeleton sources are added
     // or removed.
@@ -1563,6 +1563,80 @@
 
         $('div.dataTables_length', landmarkDataTable.table().container())
             .append(deleteSelected);
+      }
+    },
+    edit: {
+      title: 'Edit landmarks',
+      createControls: function(target) {
+        let existingLandmarkGroupSection = document.createElement('span');
+        existingLandmarkGroupSection.classList.add('section-header');
+        existingLandmarkGroupSection.appendChild(document.createTextNode('Select landmark group'));
+        let newLandmarkGroupSection = document.createElement('span');
+        newLandmarkGroupSection.classList.add('section-header');
+        newLandmarkGroupSection.appendChild(document.createTextNode('or add landmark group'));
+
+        let landmarkGroupSelector = CATMAID.DOM.createAsyncPlaceholder(
+            target.updateLandmarkGroups()
+              .then(function(result) {
+                var groups = [{
+                  title: '(none)',
+                  value: '-1'
+                }].concat(result.map(function(g) {
+                  return {
+                    title: g['name'],
+                    value: g['id']
+                  };
+                }));
+                var node = CATMAID.DOM.createSelect(undefined, groups);
+                return node;
+              })
+              .catch(CATMAID.handleError));
+        let landmarkGroupSelectorWrapper = document.createElement('span');
+        landmarkGroupSelectorWrapper.appendChild(landmarkGroupSelector);
+
+        let state = {};
+        return [
+          {
+            type: 'child',
+            element: existingLandmarkGroupSection
+          },
+          {
+            type: 'child',
+            element: landmarkGroupSelectorWrapper
+          },
+          {
+            type: 'child',
+            element: newLandmarkGroupSection
+          },
+          {
+            type: 'text',
+            label: 'Name',
+            title: 'The name of the new landmark group',
+            value: '',
+            length: 8,
+            onchange: function() {
+              state.newLandmarkGroupName = this.value;
+            }
+          },
+          {
+            type: 'button',
+            label: 'Add and select group',
+            onclick: function() {
+              CATMAID.Landmarks.addGroup(project.id, state.newLandmarkGroupName)
+                .then(function(newGroup) {
+                  CATMAID.msg("Success", "Added landmark group " + newGroup.id);
+                  target.update();
+                })
+                .catch(CATMAID.handleError);
+            }
+          }
+        ];
+      },
+      createContent: function(content, widget) {
+        let editContent = document.createElement('div');
+        editContent.classList.add('windowContent');
+        editContent.dataset.msg = "Please select an existing landmark group or add a new one.";
+        content.appendChild(editContent);
       }
     },
     import: {

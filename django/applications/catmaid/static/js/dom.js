@@ -294,6 +294,9 @@
 
       // Save settings button
       if (widget && stateSaving) {
+        var saveStateLabel = document.createElement('span');
+        saveStateLabel.appendChild(document.createTextNode('Widget state: '));
+        panel.appendChild(saveStateLabel);
         var saveStateButton = document.createElement('button');
         saveStateButton.appendChild(document.createTextNode('Save settings'));
         saveStateButton.onclick = function() {

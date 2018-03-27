@@ -71,6 +71,7 @@
   };
 
   LandmarkWidget.prototype = {};
+  LandmarkWidget.prototype.constructor = LandmarkWidget;
   $.extend(LandmarkWidget.prototype, new InstanceRegistry());
 
   LandmarkWidget.prototype.getName = function() {
@@ -1983,7 +1984,33 @@
     name: "Landmarks",
     description: "Show and manage landmark locations",
     key: "landmarks",
-    creator: LandmarkWidget
+    creator: LandmarkWidget,
+    state: {
+      getState: function(widget) {
+        return {
+          importAllowNonEmptyGroups: widget.importAllowNonEmptyGroups,
+          importCreateNonExistingGroups: widget.importCreateNonExistingGroups,
+          importReuseExistingLandmarks: widget.importReuseExistingLandmarks,
+          interpolateBetweenGroups: widget.interpolateBetweenGroups,
+          showLandmarkLayers: widget.showLandmarkLayers,
+          overrideColor: widget.overrideColor,
+          overrideColorHex: widget._overrideColor,
+          overrideColorAlpha: widget._overrideAlpha,
+          nodeScaling: widget.nodeScaling
+        };
+      },
+      setState: function(widget, state) {
+        CATMAID.tools.copyIfDefined(state, widget, 'importReuseExistingLandmarks');
+        CATMAID.tools.copyIfDefined(state, widget, 'importCreateNonExistingGroups');
+        CATMAID.tools.copyIfDefined(state, widget, 'importReuseExistingLandmarks');
+        CATMAID.tools.copyIfDefined(state, widget, 'interpolateBetweenGroups');
+        CATMAID.tools.copyIfDefined(state, widget, 'showLandmarkLayers');
+        CATMAID.tools.copyIfDefined(state, widget, 'overrideColor');
+        CATMAID.tools.copyIfDefined(state, widget, 'overrideColorHex');
+        CATMAID.tools.copyIfDefined(state, widget, 'overrideColorAlpha');
+        CATMAID.tools.copyIfDefined(state, widget, 'nodeScaling');
+      }
+    }
   });
 
 })(CATMAID);

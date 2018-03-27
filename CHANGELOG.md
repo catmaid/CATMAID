@@ -34,6 +34,8 @@ Landmarks:
 - The color and extra scaling for nodes on Landmark Layers can be adjusted from
   the widget.
 
+- State saving is now supported.
+
 3D Viewer:
 
 - A scale bar can now be displayed when in orthographic mode. The scale bar

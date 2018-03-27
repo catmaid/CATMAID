@@ -308,7 +308,9 @@
     }
 
     if (nearestnode) {
-      CATMAID.msg("Virtual skeleton", "Landmark layer skeleton nodes can't be selected");
+      CATMAID.msg("Virtual skeleton",
+          "Landmark layer skeleton nodes can't be selected. Mapped node #" +
+          nearestnode.id + " is closest.");
     }
 
     return null;

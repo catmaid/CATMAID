@@ -415,8 +415,23 @@
               }
 
               // Add parent node, if this is no root
-              if (node[1]) {
-                zBucket.add(nodeMap.get(node[1]));
+              let parentId = node[1];
+              if (parentId) {
+                let parentNode = nodeMap.get(parentId);
+                zBucket.add(parentNode);
+                // Add parent and this node also to every section between them.
+                let parentStackZ = stackZMap.get(parentId);
+                let zDiff = nodeStackZ - parentStackZ;
+                let zStep = zDiff > 0 ? -1 : 1;
+                for (let z=nodeStackZ; z !== parentStackZ; z += zStep) {
+                  let isectZBucket = zIndex.get(z);
+                  if (!isectZBucket) {
+                    isectZBucket = new Set();
+                    zIndex.set(z, isectZBucket);
+                  }
+                  isectZBucket.add(node);
+                  isectZBucket.add(parentNode);
+                }
               }
             }
           }

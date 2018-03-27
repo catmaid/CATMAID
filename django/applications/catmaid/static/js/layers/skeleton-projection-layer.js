@@ -55,7 +55,6 @@
    * The set of options and defaults.
    */
   SkeletonProjectionLayer.options = {
-    opacity: 1.0,
     // Indicate if skeleton should be simplified
     simplify: false,
     // Indicate coloiring mode
@@ -83,7 +82,7 @@
    * Update default options
    */
   SkeletonProjectionLayer.updateDefaultOptions = function(options) {
-    mergeOptions(SkeletonProjectionLayer.options, options || {},
+    CATMAID.mergeOptions(SkeletonProjectionLayer.options, options || {},
         SkeletonProjectionLayer.options, true);
   };
 
@@ -99,7 +98,7 @@
    * optionally be set.
    */
   SkeletonProjectionLayer.prototype.updateOptions = function(options, setDefaults) {
-    mergeOptions(this.options, options || {}, SkeletonProjectionLayer.options,
+    CATMAID.mergeOptions(this.options, options || {}, SkeletonProjectionLayer.options,
         setDefaults);
     // Replace source subscription only if source isn't part of current
     // subscriptions or if there is no subscribed source at the moment.
@@ -408,7 +407,6 @@
         this.currentReferenceNodes.get(skid) : getClosestNodeInNormalDir(ap,
             normalDimension, currentProjectPlane);
       if (null !== nodeId) {
-        // Add projection to D3 paper
         this._createProjection(nodeId, ap, skeletonModels[skid]);
       }
     }, this);
@@ -714,22 +712,6 @@
           var b = Math.round((from.b * factor + to.b * invFactor) * 255);
           return "rgb(" + r + "," + g + "," + b + ")";
         };
-      }
-    }
-  };
-
-  /**
-   * Merge source fields into key if they appear in defaults, if a default does
-   * not exist in the source, set it optionally to the default.
-   */
-  var mergeOptions = function(target, source, defaults, setDefaults) {
-    // Only allow options that are defined in the default option list
-    for (var key in defaults) {
-      if (source.hasOwnProperty(key)) {
-        target[key] = source[key];
-      } else if (setDefaults &&
-          defaults.hasOwnProperty(key)) {
-        target[key] = defaults[key];
       }
     }
   };

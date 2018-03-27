@@ -583,4 +583,20 @@ var requestQueue = new RequestQueue();
     });
   };
 
+  /**
+   * Merge source fields into key if they appear in defaults, if a default does
+   * not exist in the source, set it optionally to the default.
+   */
+  CATMAID.mergeOptions = function(target, source, defaults, setDefaults) {
+    // Only allow options that are defined in the default option list
+    for (var key in defaults) {
+      if (source.hasOwnProperty(key)) {
+        target[key] = source[key];
+      } else if (setDefaults &&
+          defaults.hasOwnProperty(key)) {
+        target[key] = defaults[key];
+      }
+    }
+  };
+
 })(CATMAID);

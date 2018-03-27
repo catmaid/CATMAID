@@ -2344,8 +2344,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesInDB = functio
  * This function expects child and parent to be real nodes and does no further
  * checks in this regard for performance reasons.
  */
-function createVirtualNode(graphics, child, parent, stackViewer)
-{
+CATMAID.createVirtualNode = function(graphics, child, parent, stackViewer) {
   // Make sure child and parent are at different sections
   if (stackViewer.primaryStack.projectToUnclampedStackZ(child.z, child.y, child.x) ===
       stackViewer.primaryStack.projectToUnclampedStackZ(parent.z, parent.y, parent.x)) {
@@ -2380,7 +2379,7 @@ function createVirtualNode(graphics, child, parent, stackViewer)
       child.skeleton_id, child.edition_time, child.user_id);
 
   return vn;
-}
+};
 
 /**
  * Recreate all nodes (or reuse existing ones if possible).
@@ -2511,6 +2510,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   // current section, but are created to represent the connection between a
   // child and a parent node that are not part of this section either.
   let nAddedVirtualNodes = 0;
+  
   for (var i=0, max=jsonNodes.length; i<max; ++i) {
     var a = jsonNodes[i];
     var n = this.nodes[a[0]];
@@ -2525,7 +2525,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     // Virtual nodes can only exists if both parent and child are not on the
     // current section and not both above or below.
     if ((n.zdiff < 0 && pn.zdiff > 0) || (n.zdiff > 0 && pn.zdiff < 0)) {
-      var vn = createVirtualNode(this.graphics, n, pn, this.stackViewer);
+      var vn = CATMAID.createVirtualNode(this.graphics, n, pn, this.stackViewer);
       if (vn) {
         ++nAddedVirtualNodes;
         n.parent = vn;
@@ -2539,8 +2539,6 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     }
 
     // If no virtual node was inserted, link parent and child normally.
-    var n = this.nodes[a[0]];
-    // if parent exists, update the references
     n.parent = pn;
     // update the parent's children
     pn.addChildNode(n);

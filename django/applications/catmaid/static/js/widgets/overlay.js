@@ -1166,7 +1166,7 @@ SkeletonAnnotations.TracingOverlay.prototype.executeDependentOnNodeCount =
     function(node_id, fn_one, fn_more)
 {
   this.submit(
-      django_url + project.id + '/skeleton/node/' + node_id + '/node_count',
+      CATMAID.makeURL(project.id + '/skeleton/node/' + node_id + '/node_count'),
       'POST',
       {},
       function(json) {
@@ -1183,8 +1183,7 @@ SkeletonAnnotations.TracingOverlay.prototype.executeDependentOnNodeCount =
  */
 SkeletonAnnotations.TracingOverlay.prototype.executeIfSkeletonEditable = function(
     skeleton_id, fn) {
-  var url = django_url + project.id + '/skeleton/' + skeleton_id +
-      '/permissions';
+  var url = CATMAID.makeURL(project.id + '/skeleton/' + skeleton_id + '/permissions');
   requestQueue.register(url, 'POST', null,
      CATMAID.jsonResponseHandler(function(permissions) {
         // Check permissions
@@ -1207,7 +1206,7 @@ SkeletonAnnotations.TracingOverlay.prototype.renameNeuron = function(skeletonID)
   if (!skeletonID) return;
   var self = this;
   this.submit(
-      django_url + project.id + '/skeleton/' + skeletonID + '/neuronname',
+      CATMAID.makeURL(project.id + '/skeleton/' + skeletonID + '/neuronname'),
       'POST',
       {},
       function(json) {
@@ -1707,7 +1706,7 @@ SkeletonAnnotations.TracingOverlay.prototype.insertNodeInActiveSkeleton = functi
 
   atn.promise().then(function(atnId) {
     self.submit(
-        django_url + project.id + '/treenodes/' + atnId + '/next-branch-or-end',
+        CATMAID.makeURL(project.id + '/treenodes/' + atnId + '/next-branch-or-end'),
         'POST',
         undefined,
         function(json) {
@@ -1733,7 +1732,7 @@ SkeletonAnnotations.TracingOverlay.prototype.insertNodeInActiveSkeleton = functi
               .then(function(parentId) {
                 // Need to fetch the parent node first.
                 self.submit(
-                    django_url + project.id + "/node/get_location",
+                    CATMAID.makeURL(project.id + "/node/get_location"),
                     'POST',
                     {tnid: parentId},
                     function(json) {
@@ -1887,7 +1886,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
   this.promiseNodes(this.nodes[fromid], this.nodes[toid]).then(function(nids) {
     var fromid = nids[0], toid=nids[1];
     self.submit(
-      django_url + project.id + '/treenodes/' + toid + '/info',
+      CATMAID.makeURL(project.id + '/treenodes/' + toid + '/info'),
       'GET',
       undefined,
       function(json) {
@@ -3633,7 +3632,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToChildNode = function (treenode_
     } else {
       return new Promise(function(resolve, reject) {
         self.submit(
-            django_url + project.id + "/treenodes/" + queryNode + "/children",
+            CATMAID.makeURL(project.id + "/treenodes/" + queryNode + "/children"),
             'POST',
             undefined,
             function(json) {
@@ -3983,7 +3982,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getNodeLocation = function (nodeId)
   } else if (SkeletonAnnotations.isRealNode(nodeId)) {
     var self = this;
     return new Promise(function(resolve, reject) {
-      self.submit(django_url + project.id + "/node/get_location",
+      self.submit(CATMAID.makeURL(project.id + "/node/get_location"),
           'POST', {tnid: nodeId},
           function(json) {
             // json[0], [1], [2], [3]: id, x, y, z
@@ -4183,7 +4182,7 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNodeLocation = function (
   // Request location from backend
   var self = this;
   return new Promise(function(resolve, reject) {
-    var url = django_url + project.id + "/node/get_location";
+    var url = CATMAID.makeURL(project.id + "/node/get_location");
     self.submit(url, 'POST', {tnid: nodeID}, resolve, true, false, reject);
   }).then(function(json) {
     return {
@@ -4215,7 +4214,7 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseSuppressedVirtualNodes = fun
     // Request suppressed virtual treenodes from backend.
     var self = this;
     return new Promise(function(resolve, reject) {
-      var url = django_url + project.id + "/treenodes/" + nodeId + "/suppressed-virtual/";
+      var url = CATMAID.makeURL(project.id + "/treenodes/" + nodeId + "/suppressed-virtual/");
       requestQueue.register(url, 'GET', undefined, CATMAID.jsonResponseHandler(resolve, reject));
     }).then(function (json) {
       var node = self.nodes[nodeId];
@@ -4282,7 +4281,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToLastEditedNode = function(skele
   }
   var self = this;
   this.submit(
-    django_url + project.id + '/nodes/most-recent',
+    CATMAID.makeURL(project.id + '/nodes/most-recent'),
     'POST',
     params,
     function (json) {
@@ -4319,7 +4318,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNextOpenEndNode = function(node
     // TODO could be done by inspecting the graph locally if it is loaded in the
     // 3D viewer or treenode table (but either source may not be up to date)
     this.submit(
-        django_url + project.id + '/skeletons/' + skid + '/open-leaves',
+        CATMAID.makeURL(project.id + '/skeletons/' + skid + '/open-leaves'),
         'POST',
         {treenode_id: nodeID},
         function (json) {
@@ -4396,7 +4395,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNearestMatchingTag = function (
       }
       var skeletonId = SkeletonAnnotations.getActiveSkeletonId();
       self.submit(
-          django_url + project.id + '/skeletons/' + skeletonId + '/find-labels',
+          CATMAID.makeURL(project.id + '/skeletons/' + skeletonId + '/find-labels'),
           'POST',
           { treenode_id: nodeId,
             label_regex: self.nextNearestMatchingTag.query },
@@ -4412,7 +4411,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNearestMatchingTag = function (
     } else {
       var projectCoordinates = self.stackViewer.projectCoordinates();
       self.submit(
-          django_url + project.id + '/nodes/find-labels',
+          CATMAID.makeURL(project.id + '/nodes/find-labels'),
           'POST',
           { x: projectCoordinates.x,
             y: projectCoordinates.y,
@@ -4532,7 +4531,7 @@ SkeletonAnnotations.TracingOverlay.prototype.printTreenodeInfo = function(nodeID
   } else {
     CATMAID.status(prefix + " (loading authorship information)");
 
-    var url = django_url + project.id + '/node/user-info';
+    var url = CATMAID.makeURL(project.id + '/node/user-info');
 
     this.submit(url, 'POST', {node_ids: [nodeID]}, function(json) {
         var info = json[nodeID];

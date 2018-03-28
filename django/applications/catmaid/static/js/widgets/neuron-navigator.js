@@ -5,7 +5,6 @@
   Arbor,
   InstanceRegistry,
   project,
-  requestQueue,
   SkeletonAnnotations,
   WindowMaker
 */
@@ -146,19 +145,21 @@
 
   NeuronNavigator.prototype.set_neuron_node_from_skeleton = function(skeleton_id)
   {
-    requestQueue.register(django_url + project.id + '/skeleton/' +
-        skeleton_id + '/neuronname', 'POST', {}, CATMAID.jsonResponseHandler((function(json) {
-            var n = {
-              'name': json.neuronname,
-              'skeleton_ids': [skeleton_id],
-              'id': json.neuronid
-            };
-            var home_node = new NeuronNavigator.HomeNode(this.widgetID);
-            home_node.link(this, null);
-            var node = new NeuronNavigator.NeuronNode(n);
-            node.link(this, home_node);
-            this.select_node(node);
-        }).bind(this)));
+    CATMAID.fetch(project.id + '/skeleton/' + skeleton_id + '/neuronname',
+        'POST', {})
+      .then((function(json) {
+        var n = {
+          'name': json.neuronname,
+          'skeleton_ids': [skeleton_id],
+          'id': json.neuronid
+        };
+        var home_node = new NeuronNavigator.HomeNode(this.widgetID);
+        home_node.link(this, null);
+        var node = new NeuronNavigator.NeuronNode(n);
+        node.link(this, home_node);
+        this.select_node(node);
+      }).bind(this))
+      .catch(CATMAID.handleError);
   };
 
   NeuronNavigator.prototype.select_node = function(node)
@@ -902,7 +903,7 @@
       "bServerSide": true,
       "bAutoWidth": false,
       "iDisplayLength": Number.isInteger(displayLength) ? displayLength : -1,
-      "sAjaxSource": django_url + project.id + '/annotations/table-list',
+      "sAjaxSource": CATMAID.makeURL(project.id + '/annotations/table-list'),
       "fnServerData": function (sSource, aoData, fnCallback) {
           if (filters.is_meta) {
             if (filters.annotates) {
@@ -1060,7 +1061,7 @@
       "bServerSide": true,
       "bAutoWidth": false,
       "iDisplayLength": this.possibleLengths[0],
-      "sAjaxSource": django_url + 'user-table-list',
+      "sAjaxSource": CATMAID.makeURL('user-table-list'),
       "fnServerData": function (sSource, aoData, fnCallback) {
           // Annotation filter -- we are requesting users that have
           // used a certain annotation
@@ -1235,33 +1236,34 @@
         }
 
         // Request data from back-end
-        requestQueue.register(django_url + project.id + '/annotations/query-targets',
-            'POST', params, CATMAID.jsonResponseHandler(function(json) {
-              // Format result so that DataTables can understand it
-              var result = {
-                draw: data.draw,
-                recordsTotal: json.totalRecords,
-                recordsFiltered: json.totalRecords,
-                data: json.entities
-              };
+        CATMAID.fetch(project.id + '/annotations/query-targets', 'POST', params)
+          .then(function(json) {
+            // Format result so that DataTables can understand it
+            var result = {
+              draw: data.draw,
+              recordsTotal: json.totalRecords,
+              recordsFiltered: json.totalRecords,
+              data: json.entities
+            };
 
-              if (json.error) {
-                if (-1 !== json.error.indexOf('invalid regular expression')) {
-                  searchInput.css('background-color', 'salmon');
-                  CATMAID.warn(json.error);
-                } else {
-                  CATMAID.error(json.error, json.detail);
-                }
-                result.error = json.error;
+            if (json.error) {
+              if (-1 !== json.error.indexOf('invalid regular expression')) {
+                searchInput.css('background-color', 'salmon');
+                CATMAID.warn(json.error);
+              } else {
+                CATMAID.error(json.error, json.detail);
               }
+              result.error = json.error;
+            }
 
-              // Let datatables know about new data
-              dtCallback(result);
+            // Let datatables know about new data
+            dtCallback(result);
 
-              if (callback && !json.error ) {
-                callback(json);
-              }
-            }));
+            if (callback && !json.error ) {
+              callback(json);
+            }
+          })
+          .catch(CATMAID.handleError);
       },
       "lengthMenu": [
           this.possibleLengths,
@@ -2119,17 +2121,14 @@
     container.append(root_button);
 
     root_button.onclick = (function() {
-      requestQueue.register(django_url + project.id + '/skeletons/' + this.skeleton_ids[0] + '/root', 'GET', undefined, function (status, text) {
-        if (200 !== status) return;
-        var json = JSON.parse(text);
-        if (json.error) return new CATMAID.ErrorDialog(json.error,
-            json.detail).show();
-        SkeletonAnnotations.staticMoveTo(json.z, json.y, json.x)
+      CATMAID.fetch(project.id + '/skeletons/' + this.skeleton_ids[0] + '/root')
+        .then(function(json) {
+          return SkeletonAnnotations.staticMoveTo(json.z, json.y, json.x)
             .then(function() {
               return SkeletonAnnotations.staticSelectNode(json.root_id);
-            })
-            .catch(CATMAID.handleError);
-      });
+            });
+        })
+        .catch(CATMAID.handleError);
     }).bind(this);
 
     var delete_button = document.createElement('input');
@@ -2249,15 +2248,9 @@
 
     // Manually request compact-json object for skeleton
     var loader_fn = function(skeleton_id) {
-      requestQueue.register(django_url + project.id +
-          '/' + skeleton_id + '/0/1/compact-skeleton', 'POST', {},
-          function(status, text) {
-            if (200 !== status) return;
-            var json = JSON.parse(text);
-            if (json.error) {
-              new CATMAID.ErrorDialog(json.error, json.detail).show();
-              return;
-            }
+      CATMAID.fetch(project.id + '/' + skeleton_id + '/0/1/compact-skeleton',
+          'POST', {})
+        .then(function(json) {
             var nodes = json[0],
                 tags = json[2],
                 arbor = new Arbor();
@@ -2282,7 +2275,8 @@
               eb.ends.length + 1, // count the soma
               eb.ends.length + 1 - n_tagged_ends,
             ]);
-          });
+          })
+        .catch(CATMAID.handleError);
     };
 
     var num_loaded = this.skeleton_ids.reduce(function(o, sk_id) {
@@ -2436,27 +2430,20 @@
       var node_content = $(document.createElement('div'));
       container.append(node_content);
 
-      requestQueue.register(django_url + project.id + '/skeleton/' +
-          this.current_skid + '/neuronname', 'POST', {}, (function(status, text) {
-            if (200 !== status) {
-              alert("Unexpected status code: " + status);
-            } else {
-              var json = JSON.parse(text);
-              if (json.error) {
-                new CATMAID.ErrorDialog(json.error, json.detail).show();
-              } else {
-                this.skeleton_ids = [this.current_skid];
-                this.neuron_id = json.neuronid;
-                // Update the neuron name
-                this.neuron_name = json.neuronname;
-                // Call neuron node content creation. The neuron ID changed and we
-                // want the content to reflect that. Therefore, the filters have
-                // to be re-created.
-                NeuronNavigator.NeuronNode.prototype.add_content.call(this,
-                    node_content, this.get_filter_set());
-              }
-            }
-      }).bind(this));
+      CATMAID.fetch(project.id + '/skeleton/' + this.current_skid + '/neuronname',
+          'POST', {})
+        .then((function(json) {
+          this.skeleton_ids = [this.current_skid];
+          this.neuron_id = json.neuronid;
+          // Update the neuron name
+          this.neuron_name = json.neuronname;
+          // Call neuron node content creation. The neuron ID changed and we
+          // want the content to reflect that. Therefore, the filters have
+          // to be re-created.
+          NeuronNavigator.NeuronNode.prototype.add_content.call(this,
+              node_content, this.get_filter_set());
+        }).bind(this))
+        .catch(CATMAID.handleError);
     } else {
       // Reset neuron data
       this.neuron_id = -1;

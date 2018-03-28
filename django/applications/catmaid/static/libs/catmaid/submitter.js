@@ -16,7 +16,7 @@
  *  
  *  ... then submit requests like:
  *
- *  submit(django_url + '/skeleton_id/' + skeleton_id,
+ *  submit(CATMAID.makeURL('/skeleton_id/' + skeleton_id),
  *     'POST',
  *     {all: true},
  *     function(json) { alert('Continuation OK! JSON reply: ' + json); });

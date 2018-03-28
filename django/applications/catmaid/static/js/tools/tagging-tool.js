@@ -26,10 +26,16 @@ function TaggingTool()
      */
     this.retrieve_project_tags = function()
     {
-        var project = self.stackViewer.getProject();
-        var pid = project.id;
-        requestQueue.register(django_url + pid + '/tags/list',
-            'GET', undefined, self.retrieve_project_tags_handler);
+        var projectId = self.stackViewer.getProject().id;
+        CATMAID.fetch(projectId + '/tags/list')
+          .then(function(result) {
+            var tags = result.tags.join(', ');
+            self.input_project_tags.value = tags;
+            self.input_project_tags.disabled = false;
+            self.project_tags_ready = true;
+            self.initial_project_tags = self.trim_elements( tags );
+          })
+          .catch(CATMAID.handleError);
     };
 
     /**
@@ -38,11 +44,17 @@ function TaggingTool()
      */
     this.retrieve_stack_tags = function()
     {
-        var project = self.stackViewer.getProject();
-        var pid = project.id;
+        var projectId = self.stackViewer.getProject().id;
         var sid = self.stackViewer.primaryStack.id;
-        requestQueue.register(django_url + pid + '/stack/' + sid + '/tags/list',
-            'GET', undefined, self.retrieve_stack_tags_handler);
+        CATMAID.fetch(projectId + '/stack/' + sid + '/tags/list')
+          .then(function(result) {
+            var tags = result.tags.join(', ');
+            self.input_stack_tags.value = tags;
+            self.input_stack_tags.disabled = false;
+            self.stack_tags_ready = true;
+            self.initial_stack_tags = self.trim_elements( tags );
+          })
+          .catch(CATMAID.handleError);
     };
 
     /**
@@ -55,50 +67,6 @@ function TaggingTool()
         var outer_trim = list_string.replace(/^\s+|\s+$/g, "");
         var inner_trim = outer_trim.replace(/\s*,\s*/g, ",");
         return inner_trim;
-    };
-
-    /**
-     * If the project tags could be retrieved, this handler will
-     * display them in the project tags input box. Otherwise an
-     * error is displayed.
-     */
-    this.retrieve_project_tags_handler = function( status, text, xml )
-    {
-        if ( 200 === status && text )
-        {
-            var e = JSON.parse(text);
-            var tags = e.tags.join(', ');
-            self.input_project_tags.value = tags;
-            self.input_project_tags.disabled = false;
-            self.project_tags_ready = true;
-            self.initial_project_tags = self.trim_elements( tags );
-        }
-        else
-        {
-            self.input_project_tags.value = "(Sorry, couldn't retrieve tags)";
-        }
-    };
-
-    /**
-     * If the stack tags could be retrieved, this handler will
-     * display them in the stack tags input box. Otherwise an
-     * error is displayed.
-     */
-    this.retrieve_stack_tags_handler = function( status, text, xml )
-    {
-        if ( 200 === status && text )
-        {
-            var e = JSON.parse(text);
-            var tags = e.tags.join(', ');
-            self.input_stack_tags.value = tags;
-            self.input_stack_tags.disabled = false;
-            self.stack_tags_ready = true;
-            self.initial_stack_tags = self.trim_elements( tags );
-        }
-        else
-        {
-            self.input_stack_tags.value = "(Sorry, couldn't retrieve tags)";
-        }
     };
 
     /**
@@ -138,7 +106,7 @@ function TaggingTool()
         // trigger the actual updates
         if (project_tags_changed)
         {
-            var url = django_url + pid + '/tags/';
+            var url = pid + '/tags/';
             if (project_tags.length > 0)
             {
                 url += project_tags + '/update';
@@ -147,13 +115,21 @@ function TaggingTool()
             {
                 url += 'clear';
             }
-            requestQueue.register(url, 'GET', undefined,
-                self.update_project_tags_handler);
             self.update_states.project = "pending";
+            CATMAID.fetch(url)
+              .then(function(json) {
+                self.update_states.project = "done";
+                // update the project tags
+                self.retrieve_project_tags();
+              })
+              .catch(function(e) {
+                self.update_states.project = "error";
+                CATMAID.handleError(e);
+              });
         }
         if (stack_tags_changed)
         {
-            var url = django_url + pid + '/stack/' + sid + '/tags/';
+            var url = pid + '/stack/' + sid + '/tags/';
             if (stack_tags.length > 0)
             {
                 url += stack_tags + '/update';
@@ -162,9 +138,17 @@ function TaggingTool()
             {
                 url += 'clear';
             }
-            requestQueue.register(url, 'GET', undefined,
-                self.update_stack_tags_handler);
             self.update_states.stack = "pending";
+            CATMAID.fetch(url)
+              .then(function() {
+                self.update_states.stack = "done";
+                // update the stack tags
+                self.retrieve_stack_tags();
+              })
+              .catch(function(e) {
+                self.update_states.stack = "error";
+                CATMAID.handleError(e);
+              });
         }
 
         // see if all updates went well
@@ -236,34 +220,6 @@ function TaggingTool()
         {
             // try again in 200ms
             setTimeout(self.check_updates, 200);
-        }
-    };
-
-    this.update_project_tags_handler = function( status, text, xml )
-    {
-        if ( 200 === status )
-        {
-            self.update_states.project = "done";
-            // update the project tags
-            self.retrieve_project_tags();
-        }
-        else
-        {
-            self.update_states.project = "error";
-        }
-    };
-
-    this.update_stack_tags_handler = function( status, text, xml )
-    {
-        if ( 200 === status )
-        {
-            self.update_states.stack = "done";
-            // update the stack tags
-            self.retrieve_stack_tags();
-        }
-        else
-        {
-            self.update_states.stack = "error";
         }
     };
 

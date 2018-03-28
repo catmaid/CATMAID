@@ -894,7 +894,7 @@
     fetchSkeletons(
         this.getSelectedSkeletons(),
         function(skid) {
-          return django_url + project.id + '/' + skid + '/0/1/0/compact-arbor';
+          return CATMAID.makeURL(project.id + '/' + skid + '/0/1/0/compact-arbor');
         },
         function(skid) { return {}; }, // POST
         function(skid, json) {
@@ -5690,7 +5690,7 @@
       } else if ('axon-and-dendrite' === options.connector_color || 'synapse-clustering' === options.connector_color) {
         fetchSkeletons(
             skeletons.map(function(skeleton) { return skeleton.id; }),
-            function(skid) { return django_url + project.id + '/' + skid + '/0/1/0/compact-arbor'; },
+            function(skid) { return CATMAID.makeURL(project.id + '/' + skid + '/0/1/0/compact-arbor'); },
             function(skid) { return {}; },
             (function(skid, json) { self.content.skeletons[skid].completeUpdateConnectorColor(options, json); }).bind(self),
             function(skid) { CATMAID.msg("Error", "Failed to load synapses for: " + skid); },

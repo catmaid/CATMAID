@@ -706,8 +706,8 @@
               // Show preview in mouse-in handler
               var roi_id = $(this).attr('roi_id');
               var no_cache = "?v=" + (new Date()).getTime();
-              var roi_img_url = django_url + project.id +
-                "/roi/" + roi_id + "/image" + no_cache;
+              var roi_img_url = CATMAID.makeURL(project.id +
+                "/roi/" + roi_id + "/image" + no_cache);
               $("body").append("<p id='imagepreview'><img src='" +
                 roi_img_url + "' alt='Image preview' /></p>");
               $("#imagepreview")
@@ -882,18 +882,15 @@
         // The actual creation and linking of the ROI happens in
         // the back-end. Create URL for initiating this:
         var roi_url = self.get_cls_url(project.id,
-          "/stack/" + tool.stackViewer.primaryStack.id + "/linkroi/" + node_id + "/");
-        // Make Ajax call and handle response in callback
-        requestQueue.register(roi_url, 'POST', data,
-          CATMAID.jsonResponseHandler(
-            function(json) {
-              if (json.status) {
-                self.show_status("Success", json.status);
-              } else {
-                CATMAID.error("The server returned an unexpected response.");
-              }
-              tree.jstree("refresh", -1);
-            }));
+          "/stack/" + tool.stackViewer.primaryStack.id + "/linkroi/" + node_id + "/", true);
+        CATMAID.fetch(roi_url, 'POST', data)
+          .then(function(json) {
+            CATMAID.msg("Success", "ROI linked");
+          })
+          .catch(CATMAID.handleError)
+          .then(function() {
+            tree.jstree("refresh", -1);
+          });
       };
 
       // Open the navigator tool as replacement
@@ -940,20 +937,14 @@
         return false;
       }
       // Remove the ROI
-      var roi_remove_url = django_url + project.id +
-        "/roi/" + roi_id + "/remove";
-      // Make Ajax call and handle response in callback
-      requestQueue.register(roi_remove_url, 'GET', null,
-        self.create_error_aware_callback(
-          function(status, text, xml) {
-            var result = JSON.parse(text);
-            if (result.status) {
-              self.show_status("Success", result.status);
-            } else {
-              alert("The server returned an unexpected response.");
-            }
-            tree.jstree("refresh", -1);
-          }));
+      CATMAID.fetch(project.id + "/roi/" + roi_id + "/remove")
+        .then(function(result) {
+          self.show_status("Success", result.status);
+        })
+        .catch(CATMAID.handleError)
+        .then(function() {
+          tree.jstree("refresh", -1);
+        });
     };
 
     /**
@@ -962,8 +953,7 @@
      */
     this.display_roi = function(roi_id) {
       // Get properties of the requested ROI
-      var url = django_url + project.id + "/roi/" + roi_id + "/info";
-      CATMAID.fetch(django_url + project.id + "/roi/" + roi_id + "/info")
+      CATMAID.fetch(project.id + "/roi/" + roi_id + "/info")
         .then(function(roi) {
           if (!project) {
             console.log("There is currently no project definition available.");

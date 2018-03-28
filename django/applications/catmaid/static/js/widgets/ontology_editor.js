@@ -652,19 +652,15 @@
         function(new_name) {
           self.display_wait_message(
             "Renaming relation. Just a moment...");
-          // rename relation with AJAX call
-          requestQueue.register(django_url + pid + '/ontology/relations/rename',
-            'POST',
-            { "relid": rel_id,
-              "newname": new_name, },
-            function(status, data, text) {
+          CATMAID.fetch(pid + '/ontology/relations/rename', 'POST',
+              {"relid": rel_id, "newname": new_name})
+            .then(function() {
+              self.refresh_tree(tree_id);
+              CATMAID.msg("Success", "The relation has been renamed.");
+            })
+            .catch(CATMAID.handleError)
+            .then(function() {
               self.hide_wait_message();
-              self.handle_operation_response(status, data, text,
-                function() {
-                  self.refresh_tree(tree_id);
-                  self.show_error_status( "Success",
-                    "The relation has been renamed." );
-                });
             });
         });
     };
@@ -678,19 +674,15 @@
         function(new_name) {
           self.display_wait_message(
             "Renaming class. Just a moment...");
-            // rename relation with AJAX call
-            requestQueue.register(django_url + pid + '/ontology/classes/rename',
-              'POST',
-              { "classid": class_id,
-                "newname": new_name, },
-              function(status, data, text) {
+            CATMAID.fetch(pid + '/ontology/classes/rename', 'POST',
+                {"classid": class_id, "newname": new_name,})
+              .then(function() {
+                self.refresh_tree(tree_id);
+                CATMAID.msg("Success", "The class has been removed.");
+              })
+              .catch(CATMAID.handleError)
+              .then(function() {
                 self.hide_wait_message();
-                self.handle_operation_response(status, data, text,
-                  function() {
-                    self.refresh_tree(tree_id);
-                    self.show_error_status( "Success",
-                      "The class has been renamed." );
-                  });
               });
         });
     };
@@ -701,16 +693,15 @@
     this.remove_relation_handler = function(pid, relation_id, tree_id) {
       var self = this;
       self.display_wait_message("Removing relation. Just a moment...");
-      // make relation with Ajax call
-      requestQueue.register(django_url + pid + '/ontology/relations/remove',
-        'POST', { "relid": relation_id },
-        function(status, data, text) {
+      CATMAID.fetch(pid + '/ontology/relations/remove', 'POST',
+          {"relid": relation_id})
+        .then(function() {
+          self.refresh_tree(tree_id);
+          CATMAID.msg("Success", "The relation has been removed.");
+        })
+        .catch(CATMAID.handleError)
+        .then(function() {
           self.hide_wait_message();
-          self.handle_operation_response(status, data, text,
-            function() {
-              self.refresh_tree(tree_id);
-              self.show_error_status( "Success", "The relation has been removed." );
-            });
         });
     };
 
@@ -720,32 +711,30 @@
     this.remove_all_relations_handler = function(pid, tree_id) {
       var self = this;
       self.display_wait_message("Removing all relations. Just a moment...");
-      // make relation with Ajax call
-      requestQueue.register(django_url + pid + '/ontology/relations/removeall',
-        'GET', null,
-        function(status, data, text) {
+      CATMAID.fetch(pid + '/ontology/relations/removeall')
+        .then(function(jsonData) {
+          var refresh = true;
+          // output some status
+          var deleted = jsonData['deleted_relations'].length;
+          var not_deleted = jsonData['not_deleted_relations'].length;
+          if (not_deleted === 0) {
+            self.show_error_status( "Success", "All " + deleted + " relations have been removed." );
+          } else if (deleted === 0) {
+            refresh = false;
+            self.show_error_status( "No success", "No relation could be removed due to their use by in some class links." );
+          } else {
+            var total = deleted + not_deleted;
+            var msg = not_deleted + " of " + total + " relations could not be removed due to their use in some class links.";
+            self.show_error_status( "Partial success", msg );
+          }
+          // refresh tree
+          if (refresh) {
+            self.refresh_tree(tree_id);
+          }
+        })
+        .catch(CATMAID.handleError)
+        .then(function() {
           self.hide_wait_message();
-          self.handle_operation_response(status, data, text,
-            function( jsonData ) {
-              var refresh = true;
-              // output some status
-              var deleted = jsonData['deleted_relations'].length;
-              var not_deleted = jsonData['not_deleted_relations'].length;
-              if (not_deleted === 0) {
-                self.show_error_status( "Success", "All " + deleted + " relations have been removed." );
-              } else if (deleted === 0) {
-                refresh = false;
-                self.show_error_status( "No success", "No relation could be removed due to their use by in some class links." );
-              } else {
-                var total = deleted + not_deleted;
-                var msg = not_deleted + " of " + total + " relations could not be removed due to their use in some class links.";
-                self.show_error_status( "Partial success", msg );
-              }
-              // refresh tree
-              if (refresh) {
-                self.refresh_tree(tree_id);
-              }
-            });
         });
     };
 
@@ -809,17 +798,16 @@
     this.remove_class_handler = function (pid, class_id, tree_id) {
       var self = this;
       self.display_wait_message("Removing class. Just a moment...");
-      // remove class with Ajax call
-      requestQueue.register(django_url + pid + '/ontology/classes/remove',
-        'POST', { "classid": class_id },
-        function(status, data, text) {
+      CATMAID.fetch(pid + '/ontology/classes/remove', 'POST',
+          {"classid": class_id})
+        .then(function() {
+          self.refresh_trees();
+          CATMAID.msg("Success", "The class has been removed.");
+        })
+        .catch(CATMAID.handleError)
+        .then(function() {
           self.hide_wait_message();
-          self.handle_operation_response(status, data, text,
-            function() {
-              self.refresh_trees();
-              self.show_error_status( "Success", "The class has been removed." );
-            });
-          });
+        });
     };
 
     /**
@@ -828,33 +816,31 @@
     this.remove_all_classes_handler = function (pid, class_id, tree_id) {
       var self = this;
       this.display_wait_message("Removing all classes. Just a moment...");
-      // remove classes with Ajax call
-      requestQueue.register(django_url + pid + '/ontology/classes/removeall',
-        'POST', null,
-        function(status, data, text) {
+      CATMAID.fetch(pid + '/ontology/classes/removeall', 'POST')
+        .then(function(jsonData) {
+          var refresh = true;
+          // output some status
+          var deleted = jsonData['deleted_classes'].length;
+          var not_deleted = jsonData['not_deleted_classes'].length;
+          if (not_deleted === 0) {
+            self.show_error_status( "Success", "All " + deleted + " classes have been removed." );
+          } else if (deleted === 0) {
+            refresh = false;
+            self.show_error_status( "No success", "No class could be removed due to relations to other classes." );
+          } else {
+            var total = deleted + not_deleted;
+            var msg = not_deleted + " of " + total + " classes could not be removed due to relations to other classes.";
+            self.show_error_status( "Partial success", msg );
+          }
+          // refresh tree
+          if (refresh) {
+            self.refresh_trees();
+          }
+        })
+        .catch(CATMAID.handleError)
+        .then(function() {
           self.hide_wait_message();
-          self.handle_operation_response(status, data, text,
-            function( jsonData ) {
-              var refresh = true;
-              // output some status
-              var deleted = jsonData['deleted_classes'].length;
-              var not_deleted = jsonData['not_deleted_classes'].length;
-              if (not_deleted === 0) {
-                self.show_error_status( "Success", "All " + deleted + " classes have been removed." );
-              } else if (deleted === 0) {
-                refresh = false;
-                self.show_error_status( "No success", "No class could be removed due to relations to other classes." );
-              } else {
-                var total = deleted + not_deleted;
-                var msg = not_deleted + " of " + total + " classes could not be removed due to relations to other classes.";
-                self.show_error_status( "Partial success", msg );
-              }
-              // refresh tree
-              if (refresh) {
-                self.refresh_trees();
-              }
-            });
-          });
+        });
     };
 
     /**
@@ -895,29 +881,22 @@
           'classbid': classbid,
           'relid': relid
         };
-        requestQueue.register(CATMAID.makeURL(pid + '/ontology/links/add'),
-          'POST', postdata,
-          function(status, data, text) {
+        CATMAID.fetch(pid + '/ontology/links/add', 'POST', postdata)
+          .then(function(jsonData) {
+            if (!jsonData['class_class_id']) {
+              alert( "Can't understand server response: " + data );
+            }
+            self.refresh_trees();
+          })
+          .catch(CATMAID.handleError)
+          .then(function() {
             self.hide_wait_message();
-            self.handle_operation_response(status, data, text,
-              function( jsonData ) {
-                if (!jsonData['class_class_id'])
-                {
-                  alert( "Can't understand server response: " + data );
-                }
-                self.refresh_trees();
-              });
           });
       });
+
       // get currently available classes and fill class select box
-      requestQueue.register(CATMAID.makeURL(pid + '/ontology/classes'),
-        'GET', undefined,
-        function(status, data, text) {
-          if (status !== 200) {
-            self.show_error_msg( status, text );
-            return;
-          }
-          var classes = JSON.parse(data);
+      CATMAID.fetch(pid + '/ontology/classes')
+        .then(function(classes) {
           // sort classes
           var sorted_classes = [];
           $.each(classes, function (key, value) {
@@ -949,14 +928,8 @@
           } else {
             $('#ontology_add_dialog #target_rel').css("display", "none");
             // request current relations
-            requestQueue.register(CATMAID.makeURL(pid + '/ontology/relations'),
-              'GET', undefined,
-              function(status, data, text) {
-                if (status !== 200) {
-                  self.show_error_msg( status, text );
-                  return;
-                }
-                var relations = JSON.parse(data);
+            CATMAID.fetch(pid + '/ontology/relations')
+              .then(function(relations) {
                 // populate class select box
                 var relation_select = $('#ontology_add_dialog #relid');
                 relation_select.empty();
@@ -964,11 +937,14 @@
                   relation_select.append($('<option></option>').attr("value", value).text(key + " (" + value + ")"));
                 });
                 $('#ontology_add_dialog #select_rel').css("display", "block");
-              });
+              })
+              .catch(CATMAID.handleError);
             // show dialog
             $.blockUI({ message: $('#ontology_add_dialog') });
           }
-        });
+        })
+        .catch(CATMAID.handleError);
+
       // fill target object
       $('#ontology_add_dialog #target_object').css("display", "block");
       $('#ontology_add_dialog #target_object #name').html(classbname);
@@ -980,23 +956,23 @@
     this.remove_link_handler = function(pid, link_id, tree_id) {
       var self = this;
       this.display_wait_message("Removing class-class link. Just a moment...");
-      // remove class with Ajax call
-      requestQueue.register(CATMAID.makeURL(pid + '/ontology/links/remove'),
-        'POST', { "ccid": link_id },
-        function(status, data, text) {
+      CATMAID.fetch(pid + '/ontology/links/remove', 'POST', { "ccid": link_id })
+        .then(function(jsonData) {
+          self.refresh_tree(tree_id);
+          // give out some information
+          if (jsonData.deleted_link == link_id) {
+            self.show_error_status( "Success", "The class-class link has been removed." );
+          } else {
+            var msg = "Something went wrong: Should have removed link " +
+                link_id + ", but server says link " + jsonData.deleted_link +
+                " got removed.";
+            self.show_error_status( "Problem", msg );
+          }
+        })
+        .catch(CATMAID.handleError)
+        .then(function() {
           self.hide_wait_message();
-          self.handle_operation_response(status, data, text,
-            function( jsonData ) {
-              self.refresh_tree(tree_id);
-              // give out some information
-              if (jsonData.deleted_link == link_id) {
-                self.show_error_status( "Success", "The class-class link has been removed." );
-              } else {
-                var msg = "Something went wrong: Should have removed link " + link_id + ", but server says link " + jsonData.deleted_link + " got removed.";
-                self.show_error_status( "Problem", msg );
-              }
-            });
-          });
+        });
     };
 
     /**
@@ -1006,22 +982,19 @@
     this.remove_selected_links_handler = function(pid, rel_id, class_b_id, tree_id) {
       var self = this;
       this.display_wait_message("Removing selected class-class links. Just a moment...");
-      // remove class with Ajax call
-      requestQueue.register(CATMAID.makeURL(pid + '/ontology/links/removeselected'),
-        'POST', {
-           "relid": rel_id,
-           "classbid": class_b_id },
-        function(status, data, text) {
+      CATMAID.fetch(pid + '/ontology/links/removeselected', 'POST',
+          {"relid": rel_id, "classbid": class_b_id})
+        .then(function(jsonData) {
+          self.refresh_tree(tree_id);
+          // give out some information
+          var num_deleted_links = jsonData.deleted_links.length;
+          var msg = num_deleted_links + " class-class link(s) have been removed.";
+          self.show_error_status( "Success", msg );
+        })
+        .catch(CATMAID.handleError)
+        .then(function() {
           self.hide_wait_message();
-          self.handle_operation_response(status, data, text,
-            function( jsonData ) {
-              self.refresh_tree(tree_id);
-              // give out some information
-              var num_deleted_links = jsonData.deleted_links.length;
-              var msg = num_deleted_links + " class-class link(s) have been removed.";
-              self.show_error_status( "Success", msg );
-            });
-          });
+        });
     };
 
     /**
@@ -1030,20 +1003,17 @@
     this.remove_all_links_handler = function(pid, tree_id) {
       var self = this;
       this.display_wait_message("Removing all class-class links. Just a moment...");
-      // remove class with Ajax call
-      requestQueue.register(CATMAID.makeURL(pid + '/ontology/links/removeall'),
-        'POST', null,
-        function(status, data, text) {
+      CATMAID.fetch(pid + '/ontology/links/removeall', 'POST')
+        .then(function() {
+          self.refresh_tree(tree_id);
+          // give out some information
+          var num_deleted_links = jsonData.deleted_links.length;
+          CATMAID.msg( "Success", num_deleted_links + " class-class link(s) have been removed.");
+        })
+        .catch(CATMAID.handleError)
+        .then(function() {
           self.hide_wait_message();
-          self.handle_operation_response(status, data, text,
-            function( jsonData ) {
-              self.refresh_tree(tree_id);
-              // give out some information
-              var num_deleted_links = jsonData.deleted_links.length;
-              var msg = num_deleted_links + " class-class link(s) have been removed.";
-              self.show_error_status( "Success", msg );
-            });
-          });
+        });
     };
 
     /**
@@ -1083,34 +1053,28 @@
              "linkid": node.ccid,
              "cardinality": $('#cardinality_val').val(),
              "cardinalitytype": $('#cardinality_type').val(),
-             "restriction": "cardinality"};
-          requestQueue.register(CATMAID.makeURL(pid + '/ontology/restrictions/add'),
-            'POST', postdata,
-            function(status, data, text) {
+             "restriction": "cardinality"
+          };
+          CATMAID.fetch(pid + '/ontology/restrictions/add', 'POST', postdata)
+            .then(function(jsonData) {
+              if (!jsonData['new_restriction'])
+              {
+                alert( "Can't understand server response: " + data );
+              } else {
+                var r_id = jsonData.new_restriction;
+                var msg = "A new restriction with ID " + r_id + " has been created.";
+                self.show_error_status( "Success", msg );
+              }
+              self.refresh_trees();
+            })
+            .catch(CATMAID.handleError)
+            .then(function() {
               self.hide_wait_message();
-              self.handle_operation_response(status, data, text,
-                function( jsonData ) {
-                  if (!jsonData['new_restriction'])
-                  {
-                    alert( "Can't understand server response: " + data );
-                  } else {
-                    var r_id = jsonData.new_restriction;
-                    var msg = "A new restriction with ID " + r_id + " has been created.";
-                    self.show_error_status( "Success", msg );
-                  }
-                  self.refresh_trees();
-                });
             });
         });
         // get currently available cardinality restriction types for type select box
-        requestQueue.register(CATMAID.makeURL(pid + '/ontology/restrictions/cardinality/types'),
-          'GET', undefined,
-          function(status, data, text) {
-            if (status !== 200) {
-              self.show_error_msg( status, text );
-              return;
-            }
-            var json_data = JSON.parse(data);
+        CATMAID.fetch(pid + '/ontology/restrictions/cardinality/types')
+          .then(function(json_data) {
             var types = json_data.types;
             // populate type select box
             var type_select = $('#cardinality_restriction_dialog #cardinality_type');
@@ -1124,25 +1088,24 @@
             $('#cardinality_restriction_dialog #input_value').css("display", "block");
             // show dialog
             $.blockUI({ message: $('#cardinality_restriction_dialog') });
-          });
+          })
+          .catch(CATMAID.handleError);
       } else {
         // add restriction with Ajax call
-        requestQueue.register(CATMAID.makeURL(pid + '/ontology/restrictions/add'),
-          'POST', {
+        CATMAID.fetch(pid + '/ontology/restrictions/add', 'POST', {
              "linkid": node.ccid,
              "cardinality": cardinality,
              "cardinalitytype": 0,
-             "restriction": "cardinality" },
-          function(status, data, text) {
-            self.handle_operation_response(status, data, text,
-              function( jsonData ) {
-                self.refresh_trees();
-                // give out some information
-                var r_id = jsonData.new_restriction;
-                var msg = "A new restriction with ID " + r_id + " has been created.";
-                self.show_error_status( "Success", msg );
-              });
-            });
+             "restriction": "cardinality"
+            })
+          .then(function(jsonData) {
+            self.refresh_trees();
+            // give out some information
+            var r_id = jsonData.new_restriction;
+            var msg = "A new restriction with ID " + r_id + " has been created.";
+            self.show_error_status( "Success", msg );
+          })
+          .catch(CATMAID.handleError);
       }
     };
 
@@ -1152,18 +1115,16 @@
     this.remove_restriction = function(pid, node, rid) {
       var self = this;
       // add restriction with Ajax call
-      requestQueue.register(CATMAID.makeURL(pid + '/ontology/restrictions/remove'),
-        'POST', { 'restrictionid': rid },
-        function(status, data, text) {
-          self.handle_operation_response(status, data, text,
-            function( jsonData ) {
-              self.refresh_trees();
-              // give out some information
-              var r_id = jsonData.removed_restriction;
-              var msg = "The restriction with ID " + r_id + " has been removed.";
-              self.show_error_status( "Success", msg );
-            });
-          });
+      CATMAID.fetch(pid + '/ontology/restrictions/remove', 'POST',
+          {'restrictionid': rid})
+        .then(function(jsonData) {
+          self.refresh_trees();
+          // give out some information
+          var r_id = jsonData.removed_restriction;
+          var msg = "The restriction with ID " + r_id + " has been removed.";
+          self.show_error_status( "Success", msg );
+        })
+        .catch(CATMAID.handleError);
     };
 
     /**

@@ -32,11 +32,15 @@
 
   // initialize roi button
   this.button_roi_apply = document.getElementById( "button_roi_apply" );
-  this.button_roi_apply.onclick = this.createRoi.bind(this, function(result) {
-    if (result.status) {
-      CATMAID.msg("Success", result.status);
-    }
-  });
+  this.button_roi_apply.onclick = function() {
+    self.createRoi()
+      .then(function(result) {
+        if (result.status) {
+          CATMAID.msg("Success", result.status);
+        }
+      })
+      .catch(CATMAID.handleError);
+  };
 
   // bind event handlers to current calling context
   this.onmousedown_bound = this.onmousedown.bind(this);
@@ -412,7 +416,7 @@
     return false;
   };
 
-  RoiTool.prototype.createRoi = function(callback)
+  RoiTool.prototype.createRoi = function()
   {
     // Collect relevant information
     var cb = this.getCropBox();
@@ -426,12 +430,7 @@
       rotation_cw: cb.rotation_cw,
       stack: this.stackViewer.primaryStack.id
     };
-    // The actual creation and linking of the ROI happens in
-    // the back-end. Create URL for initiating this:
-    var roi_url = django_url + project.id + "/roi/add";
-    // Make Ajax call and handle response in callback
-    requestQueue.register(roi_url, 'POST', data,
-      CATMAID.jsonResponseHandler(callback));
+    return CATMAID.fetch(project.id + '/roi/add', 'POST', data);
   };
 
   // Export tool into CATMAID namespace

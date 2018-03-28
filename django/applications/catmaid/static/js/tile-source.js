@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
  CATMAID,
- django_url,
  Stack,
  */
 
@@ -234,7 +233,7 @@
 
   CATMAID.HDF5TileSource.prototype.getTileURL = function (
       project, stack, slicePixelPosition, col, row, zoomLevel) {
-    return django_url + project.id + '/stack/' + stack.id + '/tile?' +
+    return CATMAID.makeURL(project.id + '/stack/' + stack.id + '/tile?' +
         $.param({
           x: col * this.tileWidth,
           y: row * this.tileHeight,
@@ -247,7 +246,7 @@
           file_extension: this.fileExtension,
           basename: this.baseURL,
           type:'all'
-        });
+        }));
   };
 
 

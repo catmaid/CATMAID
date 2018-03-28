@@ -262,7 +262,7 @@ annotations, neuron name, connectors or partner neurons.
 
     dialog.onOK = function() {
       jQuery.ajax({
-        url: django_url + project.id + url,
+        url: CATMAID.makeURL(project.id + url),
         type: "POST",
         dataType: "text",
         data: { skeleton_list: selectionTables[choiceST.selectedIndex].getSelectedSkeletons() },
@@ -487,7 +487,7 @@ annotations, neuron name, connectors or partner neurons.
       post.mode = choice.selectedIndex;
 
       jQuery.ajax({
-        url: django_url + project.id + "/neuroml/neuroml_level3_v181",
+        url: CATMAID.makeURL(project.id + "/neuroml/neuroml_level3_v181"),
         type: "POST",
         dataType: "text",
         data: post,

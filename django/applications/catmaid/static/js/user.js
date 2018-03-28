@@ -180,30 +180,13 @@
       }
     }
     // Make the current set persistent
-    requestQueue.register(django_url + 'user-profile/update',
-        'POST',
-        options_to_save,
-        function (status, text, xml) {
-          if (status == 200 && text) {
-              var e = JSON.parse(text);
-              if (e.error) {
-                new CATMAID.ErrorDialog("Couldn't update user settings!",
-                    e.error).show();
-                if (error) {
-                    error();
-                }
-              } else if (success){
-                  success();
-              }
-          } else {
-              new CATMAID.ErrorDialog("Couldn't update user settings!",
-                  "Updating the user profile returned an unexpected status: " +
-                  status).show();
-              if (error) {
-                  error();
-              }
-          }
-        });
+    CATMAID.fetch('user-profile/update', 'POST', options_to_save)
+      .then(success)
+      .catch(function(e) {
+        CATMAID.warn("Couldn't update user settings!");
+        error();
+        CATMAID.handleError(e);
+      });
   };
 
   // Make both User and Userprofile available in CATMAID namespace

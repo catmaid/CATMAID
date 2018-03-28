@@ -265,7 +265,7 @@
 
     fetchSkeletons(
         skids,
-        function(skid) { return django_url + project.id + '/' + skid + '/1/1/1/compact-arbor'; },
+        function(skid) { return CATMAID.makeURL(project.id + '/' + skid + '/1/1/1/compact-arbor'); },
         function(skid) { return {}; }, // POST
         (function(post_skid, json) {
           // register

@@ -79,7 +79,7 @@
           "bProcessing": true,
           "bServerSide": false,
           "bAutoWidth": false,
-          "sAjaxSource": django_url + project.id + '/notifications/list',
+          "sAjaxSource": CATMAID.makeURL(project.id + '/notifications/list'),
           "fnServerData": function (sSource, aoData, fnCallback) {
             $.ajax({
               "dataType": 'json',

@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   InstanceRegistry,
-  requestQueue
 */
 
 (function(CATMAID) {
@@ -44,7 +43,7 @@
    */
   OntologySearch.prototype.getURL = function(subUrl)
   {
-    return django_url + 'classification/' + this.workspacePid + subUrl;
+    return 'classification/' + this.workspacePid + subUrl;
   };
 
   /**
@@ -101,23 +100,15 @@
    */
   OntologySearch.prototype.renderToContent = function(container, url, patch)
   {
-
-    requestQueue.register(url,
-      'GET', undefined,
-      function(status, data, text) {
-        if (status !== 200) {
-          new CATMAID.ErrorDialog("Couldn't fetch requested content", "The " +
-              "server returned an unexpected status (" + status + ") " + "with " +
-              "error message:\n" + text).show();
-        } else {
-          $(container).html("<p>" + data + "</p>");
-          // patch the data if requested
-          if (patch)
-          {
-            patch(container);
-          }
+    CATMAID.fetch(url, 'GET', undefined, true)
+      .then(function(data) {
+        $(container).html("<p>" + data + "</p>");
+        // patch the data if requested
+        if (patch) {
+          patch(container);
         }
-      });
+      })
+      .catch(CATMAID.handleError);
   };
 
   // Move widget into CATMAID namespace

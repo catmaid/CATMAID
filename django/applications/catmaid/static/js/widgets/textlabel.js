@@ -46,8 +46,7 @@ function TextlabelTool()
    * create a textlabel on the server
    */
   var createTextlabel = function (tlx, tly, tlz, tlr, scale) {
-    //requestQueue.register('model/textlabel.create.php', 'POST', {
-    requestQueue.register(django_url + project.id + '/textlabel/create', 'POST', {
+    let params = {
       pid: project.id,
       x: tlx,
       y: tly,
@@ -60,20 +59,13 @@ function TextlabelTool()
       scaling: (document.getElementById("fontscaling").checked ? 1 : 0),
       font_size: (document.getElementById("fontscaling").checked ? Math.max(16 / scale, parseInt(document.getElementById("fontsize").value)) : parseInt(document.getElementById("fontsize").value)) * tlr,
       font_style: (document.getElementById("fontstylebold").checked ? "bold" : "")
-    }, function (status, text, xml) {
-      CATMAID.statusBar.replaceLast(text);
-      if (status == 200) {
-        // icon_text_apply.style.display = "none";
+    };
+
+    CATMAID.fetch(project.id + '/textlabel/create', 'POST', params)
+      .then(function() {
         self.updateTextlabels();
-        if (text && text != " ") {
-          var e = JSON.parse(text);
-          if (e.error) {
-            alert(e.error);
-          } else {}
-        }
-      }
-      return true;
-    });
+      })
+      .catch(CATMAID.handleError);
   };
 
   var createTextlabelLayer = function( parentStackViewer )
@@ -436,11 +428,8 @@ Textlabel = function(
   var apply = function( e )
   {
     icon_apply.style.display = "block";
-    requestQueue.replace(
-      //"model/textlabel.update.php",
-            django_url + project.id + '/textlabel/update',
-      "POST",
-      {
+
+    let params = {
         pid : project.id,
         tid : self.id,
         text : self.text,
@@ -457,48 +446,36 @@ Textlabel = function(
         font_style : self.fontStyle,
         font_name : self.fontName,
         offset_left : self.offset.left,
-        offset_top : self.offset.top },
-      function( status, text, xml )
-      {
-        if ( status == 200 )
-        {
-          icon_apply.style.display = "none";
-          if ( text && text != " " )
-          {
-            var e = JSON.parse(text);
-            if ( e.error )
-            {
-              alert( e.error );
-            }
-            else
-            {
-            }
-          }
-        }
-        return true;
-      },
-      "textlabel_" + this.id );
+        offset_top : self.offset.top
+    };
+
+    CATMAID.fetch(project.id + '/textlabel/update', "POST", params, false,
+        "textlabel_" + this.id, true)
+      .then(function() {
+        icon_apply.style.display = 'none';
+        CATMAID.msg("Success", "Text label updated");
+      })
+      .catch(CATMAID.handleError);
   };
 
   var close = function( e )
   {
     icon_apply.style.display = "block";
 
-    requestQueue.register(
-            django_url + project.id + '/textlabel/delete',
-      'POST',
-      {
-        pid : project.id,
-        tid : self.id,
-        x : self.location.x,
-        y : self.location.y,
-        z : self.location.z
-      },
-      function () {
+    let params = {
+      pid : project.id,
+      tid : self.id,
+      x : self.location.x,
+      y : self.location.y,
+      z : self.location.z
+    } ;
+
+    CATMAID.fetch(project.id + '/textlabel/delete', 'POST', params)
+      .then(function () {
         icon_apply.style.display = 'none';
         window.resize();
-      }); // TODO: what is the proper way to call updateTextlabels of the tool?
-            // the window.onresize solution calls onresize about 6 times
+      })
+      .catch(CATMAID.handleError);
   };
 
   /**
@@ -843,39 +820,21 @@ TextlabelLayer = function(
     var coordinates = stackViewer.projectCoordinates();
     var resolution = stackViewer.primaryStack.resolution;
 
-    requestQueue.register(
-            django_url + project.id + '/textlabel/all',
-      'POST',
-      {
-        pid : stackViewer.getProject().getId(),
-        sid : stackViewer.primaryStack.id,
-        z : coordinates.z,
-        top : y,
-        left : x,
-        width : width,
-        height : height,
-        //scale : ( stack.getMode() == Stack.EDIT_TEXT ? 1 : scale ), // should we display all textlabels when being in text-edit mode?  could be really cluttered
-        scale : scale,
-        resolution : resolution.y
-      },
-      handle_update );
-  };
+    let params = {
+      pid : stackViewer.getProject().getId(),
+      sid : stackViewer.primaryStack.id,
+      z : coordinates.z,
+      top : y,
+      left : x,
+      width : width,
+      height : height,
+      //scale : ( stack.getMode() == Stack.EDIT_TEXT ? 1 : scale ), // should we display all textlabels when being in text-edit mode?  could be really cluttered
+      scale : scale,
+      resolution : resolution.y
+    };
 
-  /**
-   * handle an update-textlabels-request answer
-   *
-   */
-  var handle_update = function( status, text, xml )
-  {
-    var check = $('#textlabeleditable').prop("checked");
-    if ( 200 === status )
-    {
-      //alert( "data: " + text );
-      var e = JSON.parse(text);
-      if ( e.error )
-        alert( e.error );
-      else
-      {
+    CATMAID.fetch(project.id + '/textlabel/all', 'POST', params)
+      .then(function(e) {
         var stackWindowFrame = stackWindow.getFrame();
         //! remove old text labels
         while ( textlabels.length > 0 )
@@ -909,8 +868,10 @@ TextlabelLayer = function(
             t.redraw( pl, pt, new_scale );
           }
         }
-      }
-    }
+      })
+      .catch(CATMAID.handleError)
+      .then(function() {
+        var check = $('#textlabeleditable').prop("checked");
+      });
   };
-
 };

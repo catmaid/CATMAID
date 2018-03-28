@@ -168,7 +168,7 @@
           "bServerSide": true,
           "bAutoWidth": false,
           "iDisplayLength": CATMAID.pageLengthOptions[0],
-          "sAjaxSource": django_url + project.id + '/logs/list',
+          "sAjaxSource": CATMAID.makeURL(project.id + '/logs/list'),
           "fnServerData": function (sSource, aoData, fnCallback) {
               var user_id = $('#logtable_username').val();
               if (!isNaN(user_id)) {

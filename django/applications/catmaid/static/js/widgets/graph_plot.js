@@ -5,7 +5,6 @@
   fetchSkeletons,
   InstanceRegistry,
   project,
-  requestQueue,
   SynapseClustering
 */
 
@@ -368,29 +367,26 @@
 
     // fetch connectivity data, create adjacency matrix and plot it
     // register with name service before we go about the plot
-    requestQueue.register(django_url + project.id + '/skeletons/confidence-compartment-subgraph',
-        'POST',
-        {skeleton_ids: skids},
-        (function(status, text) {
-          if (200 !== status) return;
-          var json = JSON.parse(text);
-          if (json.error) { alert(json.error); return; }
-          // Create adjacency matrix
-          var AdjM = this.ids.map(function(id) { return new Uint32Array(this.ids.length); }, this);
-          // Create indices from skeleton ID to group index in this.ids array
-          var indices = this.models.reduce(function(o, ms, i) {
-            return ms.reduce(function(o, model) {
-              o[model.id] = i;
-              return o;
-            }, o);
-          }, {});
-          // Populate adjacency matrix, accumulating edge synapse counts for groups
-          json.edges.forEach(function(edge) {
-            AdjM[indices[edge[0]]][indices[edge[1]]] += edge[2].reduce(function (s, c) { return s + c; }, 0);
-          });
-          // Update data and GUI
-          this.plot(this.ids, this.names, this.models, AdjM);
-      }).bind(this));
+    CATMAID.fetch(project.id + '/skeletons/confidence-compartment-subgraph',
+        'POST', {skeleton_ids: skids})
+      .then((function(json) {
+        // Create adjacency matrix
+        var AdjM = this.ids.map(function(id) { return new Uint32Array(this.ids.length); }, this);
+        // Create indices from skeleton ID to group index in this.ids array
+        var indices = this.models.reduce(function(o, ms, i) {
+          return ms.reduce(function(o, model) {
+            o[model.id] = i;
+            return o;
+          }, o);
+        }, {});
+        // Populate adjacency matrix, accumulating edge synapse counts for groups
+        json.edges.forEach(function(edge) {
+          AdjM[indices[edge[0]]][indices[edge[1]]] += edge[2].reduce(function (s, c) { return s + c; }, 0);
+        });
+        // Update data and GUI
+        this.plot(this.ids, this.names, this.models, AdjM);
+      }).bind(this))
+      .catch(CATMAID.handleError);
   };
 
   /**
@@ -646,7 +642,7 @@
     fetchSkeletons(
         Object.keys(this.getSkeletonModels()).map(Number),
         function(skid) {
-          return django_url + project.id + '/' + skid + '/1/1/' + (reroot_at_soma ? 1 : 0) + '/compact-arbor';
+          return CATMAID.makeURL(project.id + '/' + skid + '/1/1/' + (reroot_at_soma ? 1 : 0) + '/compact-arbor');
         },
         function(skid) { return {}; },
         function(skid, json) {

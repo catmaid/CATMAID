@@ -296,7 +296,7 @@
     fetchSkeletons(
         skeleton_ids,
         function(skid) {
-          return django_url + project.id + '/treenode/table/' + skid + '/content';
+          return CATMAID.makeURL(project.id + '/treenode/table/' + skid + '/content');
         },
         function(skid) { return {}; }, // post
         (function(skid, json) {

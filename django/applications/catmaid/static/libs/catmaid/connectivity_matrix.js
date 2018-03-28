@@ -2,8 +2,7 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   CATMAID,
-  project,
-  requestQueue
+  project
 */
 
 (function(CATMAID) {
@@ -43,19 +42,13 @@
   ConnectivityMatrix.prototype.refresh = function() {
     // Return a promise that is fullfilled, if the table is ready
     var self = this;
-    return new Promise(function(resolve, reject) {
-      requestQueue.register(
-          CATMAID.makeURL(project.id + '/skeleton/connectivity_matrix'),
-          'POST',
-          {
-            'rows': self.rowSkeletonIDs,
-            'columns': self.colSkeletonIDs
-          },
-          CATMAID.jsonResponseHandler(function(json) {
-            self.setConnectivityMatrixFromData(json);
-            resolve();
-          }, reject));
-    });
+    return CATMAID.fetch(project.id + '/skeleton/connectivity_matrix', 'POST', {
+          'rows': self.rowSkeletonIDs,
+          'columns': self.colSkeletonIDs
+        })
+      .then(function(json) {
+        self.setConnectivityMatrixFromData(json);
+      });
   };
 
   /**

@@ -16,26 +16,21 @@
      * appends the passed string to it. The combined result is returned.
      */
     this.get_clustering_url = function( sub_url ) {
-      return django_url + 'clustering/' + self.workspace_pid + sub_url;
+      return 'clustering/' + self.workspace_pid + sub_url;
     };
 
     this.render_to_content = function( container, url, patch )
     {
       // display the clustering selection
-      requestQueue.register(url,
-        'GET', undefined,
-        function(status, data, text) {
-          if (status !== 200) {
-            alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
-          } else {
-            container.innerHTML = "<p>" + data + "</p>";
-            // patch the data if requested
-            if (patch)
-            {
-              patch( container );
-            }
+      CATMAID.fetch(url, 'GET', undefined, true)
+        .then(function(data) {
+          container.innerHTML = "<p>" + data + "</p>";
+          // patch the data if requested
+          if (patch) {
+            patch( container );
           }
-        });
+        })
+        .catch(CATMAID.handleError);
     };
 
     var addBox = function(name, id, content, container, closed) {
@@ -862,8 +857,7 @@
 
       // get the view from Django
       container.innerHTML = "<p>Please select the features that should be used for clustering.</p>";
-      self.render_to_content(container,
-        self.get_clustering_url('/setup'), self.patch_clustering_setup);
+      self.render_to_content(container, self.get_clustering_url('/setup'), self.patch_clustering_setup);
     };
   };
 

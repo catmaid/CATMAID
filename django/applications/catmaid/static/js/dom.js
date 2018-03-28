@@ -1040,7 +1040,7 @@
     }
   };
 
-  DOM.createSelect = function(id, items, selectedValue) {
+  DOM.createSelect = function(id, items, selectedValue, onChange) {
     var select = document.createElement('select');
     if (id) {
       select.setAttribute("id", id);
@@ -1064,6 +1064,9 @@
       }
       select.appendChild(option);
     });
+    if (CATMAID.tools.isFn(onChange)) {
+      select.addEventListener("change", onChange);
+    }
     return select;
   };
 

@@ -977,7 +977,8 @@
   /**
    * Create a new text field based on the passed in configuration.
    */
-  DOM.createTextField = function(id, label, title, value, postlabel, onchangeFn, length, placeholder, disabled) {
+  DOM.createTextField = function(id, label, title, value, postlabel, onchangeFn,
+      length, placeholder, disabled, onEnterFn) {
     var nf = document.createElement('input');
     if (id) nf.setAttribute('id', id);
     nf.setAttribute('type', 'text');
@@ -993,6 +994,11 @@
 
     if (length) nf.setAttribute('size', length);
     if (onchangeFn) nf.onchange = onchangeFn;
+    if (onEnterFn) {
+      nf.addEventListener('keyup', function(e) {
+        if (e.keyCode === 13) onEnterFn.call(this, e);
+      });
+    }
     if (label || postlabel) {
       var labelEl = document.createElement('label');
       labelEl.setAttribute('title', title);
@@ -1118,7 +1124,7 @@
             return CATMAID.DOM.appendNumericField(tab, e.label, e.title, e.value, e.postlabel, e.onchange, e.length, e.placeholder);
           case 'text':
             return CATMAID.DOM.appendTextField(tab, e.id, e.label, e.title, e.value,
-                e.postlabel, e.onchange, e.length, e.placeholder, e.disabled);
+                e.postlabel, e.onchange, e.length, e.placeholder, e.disabled, e.onenter);
           case 'date':
             return CATMAID.DOM.appendDateField(tab, e.label, e.title, e.value,
                 e.postlabel, e.onchange, e.length, e.placeholder, e.time);
@@ -1199,8 +1205,10 @@
   /**
    * Append a new text input field to another element.
    */
-  DOM.appendTextField = function(div, id, label, title, value, postlabel, onchangeFn, length, placeholder, disabled) {
-    var field = DOM.createTextField(id, label, title, value, postlabel, onchangeFn, length, placeholder, disabled);
+  DOM.appendTextField = function(div, id, label, title, value, postlabel,
+      onchangeFn, length, placeholder, disabled, onEnterFn) {
+    var field = DOM.createTextField(id, label, title, value, postlabel,
+        onchangeFn, length, placeholder, disabled, onEnterFn);
     div.appendChild(field);
     return field;
   };

@@ -45,6 +45,14 @@ class BasicUITest(StaticLiveServerTestCase):
         if created:
             cls.created_models.append(cls.anon_user)
 
+        cls.admin, created = User.objects.get_or_create(username='admin',
+                defaults={'email': 'test@my.mail'})
+        cls.admin.set_password('admin')
+        cls.admin.is_superuser = True
+        cls.admin.save()
+        if created:
+            cls.created_models.append(cls.admin)
+
         cls.user, created = User.objects.get_or_create(username='test',
                 defaults={'email': 'test@my.mail'})
         cls.user.set_password('test')

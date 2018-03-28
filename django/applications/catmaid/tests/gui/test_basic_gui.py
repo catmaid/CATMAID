@@ -181,6 +181,21 @@ class BasicUITest(StaticLiveServerTestCase):
         """
         return self.live_server_url + path
 
+    def login(self):
+        """Login test user on loaded page.
+        """
+        account = WebDriverWait(self.selenium, 10).until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR, '#account')))
+        password = WebDriverWait(self.selenium, 10).until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR, '#password')))
+
+        login = WebDriverWait(self.selenium, 10).until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR, '#login')))
+
+        account.send_keys("test")
+        password.send_keys("test")
+        login.send_keys(Keys.RETURN)
+
     @skipUnless(settings.GUI_TESTS_ENABLED, "GUI tests are disabled")
     def test_home_page_login_logout(self):
         """Test if the test server is reachable, the index page can be parsed
@@ -223,17 +238,7 @@ class BasicUITest(StaticLiveServerTestCase):
         self.assertTrue("CATMAID" in self.selenium.title)
 
         # Login
-        account = WebDriverWait(self.selenium, 10).until(
-                EC.visibility_of_element_located((By.CSS_SELECTOR, '#account')))
-        password = WebDriverWait(self.selenium, 10).until(
-                EC.visibility_of_element_located((By.CSS_SELECTOR, '#password')))
-
-        login = WebDriverWait(self.selenium, 10).until(
-                EC.visibility_of_element_located((By.CSS_SELECTOR, '#login')))
-
-        account.send_keys("test")
-        password.send_keys("test")
-        login.send_keys(Keys.RETURN)
+        self.login()
 
         logout = WebDriverWait(self.selenium, 10).until(
                 EC.visibility_of_element_located((By.CSS_SELECTOR, 'a#logout')))

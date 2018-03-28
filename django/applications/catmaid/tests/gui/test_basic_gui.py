@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import os, re
+import os, re, logging
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -18,6 +18,9 @@ from catmaid.control.project import insert_example_projects
 from catmaid.models import User, DataView, DataViewType
 
 from guardian.utils import get_anonymous_user
+
+
+logger = logging.getLogger(__name__)
 
 
 class BasicUITest(StaticLiveServerTestCase):
@@ -134,7 +137,7 @@ class BasicUITest(StaticLiveServerTestCase):
             if settings.GUI_TESTS_REMOTE:
                 # Let saucelabs.com know about the outcome of this test
                 id = self.selenium.session_id
-                print('Link to remote Selenium GUI test job: https://saucelabs.com/jobs/{}'.format(id))
+                logger.info('Link to remote Selenium GUI test job: https://saucelabs.com/jobs/{}'.format(id))
 
                 from sauceclient import SauceClient
                 username = os.environ["SAUCE_USERNAME"]

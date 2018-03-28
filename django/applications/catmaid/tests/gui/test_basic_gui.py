@@ -49,6 +49,15 @@ class BasicUITest(StaticLiveServerTestCase):
         if created:
             cls.created_models.append(cls.user)
 
+        # Make all tools visible to user
+        userprofile = cls.user.userprofile
+        userprofile.show_text_label_tool = True
+        userprofile.show_text_label_tool = True
+        userprofile.show_cropping_tool = True
+        userprofile.show_tracing_tool = True
+        userprofile.show_ontology_tool = True
+        userprofile.show_roi_tool = True
+
         # Create example project
         insert_example_projects(cls.user.id)
 

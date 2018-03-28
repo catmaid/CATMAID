@@ -6,7 +6,6 @@
   fetchSkeletons,
   InstanceRegistry,
   project,
-  requestQueue,
   SkeletonAnnotations,
   SkeletonRegistry,
   submitterFn,
@@ -1076,19 +1075,16 @@
       if (near) {
         newSelection(near);
       } else if (query) {
-        requestQueue.register(django_url + project.id + '/skeletons/' + query, "POST", post,
-          function(status, text) {
-            if (200 !== status) return;
-            var json = JSON.parse(text);
-            if (json.error) return new CATMAID.ErrorDialog(
-                "Could not fetch skeletons.", json.error);
+        CATMAID.fetch(project.id + '/skeletons/' + query, "POST", post)
+          .then(function(json) {
             if (json.skeletons) {
               if (json.reached_limit) CATMAID.warn("Too many: loaded only a subset");
               newSelection(json.skeletons);
             } else {
               newSelection(json);
             }
-          });
+          })
+          .catch(CATMAID.handleError);
       }
     }).bind(this);
 
@@ -5679,26 +5675,18 @@
 
         if (skids.length > 1) $.blockUI();
 
-        requestQueue.register(django_url + project.id + "/skeleton/connectors-by-partner",
-            "POST",
-            {skids: skids},
-            (function(status, text) {
-              try {
-                if (200 !== status) return;
-                var json = JSON.parse(text);
-                if (json.error) return alert(json.error);
-
-                skeletons.forEach(function(skeleton) {
-                  skeleton.completeUpdateConnectorColor(options, json[skeleton.id]);
-                });
-
-                done();
-              } catch (e) {
-                console.log(e, e.stack);
-                alert(e);
-              }
-              $.unblockUI();
-            }).bind(self));
+        CATMAID.fetch(project.id + "/skeleton/connectors-by-partner", "POST",
+            {skids: skids})
+          .then(function(json) {
+            skeletons.forEach(function(skeleton) {
+              skeleton.completeUpdateConnectorColor(options, json[skeleton.id]);
+            });
+            done();
+          })
+          .catch(CATMAID.handleError)
+          .then(function() {
+            $.unblockUI();
+          });
       } else if ('axon-and-dendrite' === options.connector_color || 'synapse-clustering' === options.connector_color) {
         fetchSkeletons(
             skeletons.map(function(skeleton) { return skeleton.id; }),

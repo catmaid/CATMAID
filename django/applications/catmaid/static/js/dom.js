@@ -1058,7 +1058,7 @@
       }
       option.text = text;
       option.value = value;
-      if (option.value === selectedValue) {
+      if (option.value == selectedValue) {
         option.defaultSelected = true;
         option.selected = true;
       }

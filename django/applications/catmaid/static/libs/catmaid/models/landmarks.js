@@ -97,9 +97,20 @@
      * is true, the passed in member IDs will be appended if not already
      * present.
      */
-    updateGroupMembers: function(projectId, groupId, newMemberIds) {
+    updateGroupMembers: function(projectId, groupId, newMemberIds, append) {
       return CATMAID.fetch(projectId + '/landmarks/groups/' + groupId + '/', 'POST', {
-        members: newMemberIds.length === 0 ? 'none' : newMemberIds
+        members: newMemberIds.length === 0 ? 'none' : newMemberIds,
+        append_members: !!append
+      });
+    },
+
+    /**
+     * Link a landmark to a particular landmark group.
+     */
+    addGroupMember: function(projectId, groupId, newMemberId) {
+      return CATMAID.fetch(projectId + '/landmarks/groups/' + groupId + '/', 'POST', {
+        members: [newMemberId],
+        append_members: true
       });
     },
 

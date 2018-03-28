@@ -534,7 +534,8 @@ table.neuron_annotations_query_fields {
   clear: both;
 }
 
-.buttonpanel input {
+.buttonpanel input,
+.buttonpanel button {
   vertical-align: middle;
   margin-left: 0.3em;
 }
@@ -1422,4 +1423,11 @@ img.missing-image:before {
 .widget-list .dataTables_info {
   padding-left: 0.4em;
   padding-top: 0.6em;
+}
+
+.landmark-group-name-overlay {
+  float: right;
+  color: #ccc;
+  font-size: 200%;
+  margin: 0.7em;
 }

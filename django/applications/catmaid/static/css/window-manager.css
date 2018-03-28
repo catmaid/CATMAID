@@ -90,7 +90,7 @@ div.windowContent[data-msg]:before {
   width: 100%;
   color: grey;
   text-align: center;
-  font-size: large;
+  font-size: x-large;
   position: absolute;
   top: 50%;
   transform: translate(0, -50%);

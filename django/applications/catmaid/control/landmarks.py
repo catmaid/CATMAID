@@ -482,6 +482,14 @@ class LandmarkGroupDetail(APIView):
           items:
             type: integer
           paramType: form
+        - name: append_members
+          description: |
+            Whether the existing members should be extended by the
+            passed in members. No members will be removed.
+          required: false
+          default: false
+          type: boolean
+          paramType: form
         """
         needs_edit_permissions = False
         project_id = int(project_id)
@@ -495,6 +503,8 @@ class LandmarkGroupDetail(APIView):
             members = []
         else:
             members = get_request_list(request.data, 'members', map_fn=int)
+
+        append_members = request.data.get('append_members', 'false') == 'true'
 
         if not name and members == None:
             raise ValueError('Need name or members parameter for update')
@@ -513,17 +523,18 @@ class LandmarkGroupDetail(APIView):
                         [landmarkgroup_id]).get(landmarkgroup_id, []))
             new_members = set(members)
             to_add = new_members - current_members
-            to_remove = current_members - new_members
+            to_remove = set() if append_members else current_members - new_members
+
+            part_of = Relation.objects.get(project_id=project_id,
+                    relation_name='part_of')
 
             if to_remove:
                 needs_edit_permissions = True
 
-            part_of = Relation.objects.get(project_id=project_id,
-                    relation_name='part_of')
-            ClassInstanceClassInstance.objects.filter(project_id=project_id,
-                    class_instance_a__in=to_remove,
-                    class_instance_b_id=landmarkgroup_id,
-                    relation=part_of).delete()
+                ClassInstanceClassInstance.objects.filter(project_id=project_id,
+                        class_instance_a__in=to_remove,
+                        class_instance_b_id=landmarkgroup_id,
+                        relation=part_of).delete()
 
             for landmark_id in to_add:
                 ClassInstanceClassInstance.objects.create(project_id=project_id,

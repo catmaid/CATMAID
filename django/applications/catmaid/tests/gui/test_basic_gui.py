@@ -14,6 +14,7 @@ from unittest import skipUnless
 from django.conf import settings
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 
+from catmaid.control.project import insert_example_projects
 from catmaid.models import User, DataView, DataViewType
 
 from guardian.utils import get_anonymous_user
@@ -47,6 +48,9 @@ class BasicUITest(StaticLiveServerTestCase):
         cls.user.save()
         if created:
             cls.created_models.append(cls.user)
+
+        # Create example project
+        insert_example_projects(cls.user.id)
 
         dvt, created = DataViewType.objects.get_or_create(
                 code_type='project_list_data_view',

@@ -1753,7 +1753,7 @@
       version: 0,
       entries: {
         detailed_review_colors: {
-          default: false
+          default: true
         }
       },
       migrations: {}

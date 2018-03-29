@@ -90,6 +90,10 @@ Miscellaneous:
   current location" allows to conveniently create a cube with a configurable
   edge length at the current location.
 
+- Detailed review colors are now enabled by default. To get the old behavior
+  back, adjust your settings (admins can do this for the whole project or
+  server).
+
 - Stacks can now be created whose planar axes have anisotropic resolution.
   The stack viewer will display these stacks correctly by scaling tiles
   separately along each axis. The tracing overlay is also compatible with these

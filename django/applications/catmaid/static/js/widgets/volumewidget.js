@@ -663,27 +663,68 @@
     "box": {
       name: "Box",
       createSettings: function(volume) {
+        var $settings = $('<div />');
+        var $content = CATMAID.DOM.addSettingsContainer($settings,
+            "Box settings", false);
+
+        // Regular box properties
         var minX = function(e) { volume.set("minX", Number(this.value)); };
         var minY = function(e) { volume.set("minY", Number(this.value)); };
         var minZ = function(e) { volume.set("minZ", Number(this.value)); };
         var maxX = function(e) { volume.set("maxX", Number(this.value)); };
         var maxY = function(e) { volume.set("maxY", Number(this.value)); };
         var maxZ = function(e) { volume.set("maxZ", Number(this.value)); };
-        var $settings = $('<div />');
-        var $content = CATMAID.DOM.addSettingsContainer($settings,
-            "Box settings", false);
-        $content.append(CATMAID.DOM.createInputSetting("Min X", volume.minX,
-              "X coordinate of the boxes minimum corner.", minX));
-        $content.append(CATMAID.DOM.createInputSetting("Min Y", volume.minY,
-              "Y coordinate of the boxes minimum corner.", minY));
-        $content.append(CATMAID.DOM.createInputSetting("Min Z", volume.minZ,
-              "Z coordinate of the boxes minimum corner.", minZ));
-        $content.append(CATMAID.DOM.createInputSetting("Max X", volume.maxX,
-              "X coordinate of the boxes maximum corner.", maxX));
-        $content.append(CATMAID.DOM.createInputSetting("Max Y", volume.maxY,
-              "Y coordinate of the boxes maximum corner.", maxY));
-        $content.append(CATMAID.DOM.createInputSetting("Max Z", volume.maxZ,
-              "Z coordinate of the boxes maximum corner.", maxZ));
+
+        let inputMinX = CATMAID.DOM.createInputSetting("Min X", volume.minX,
+             "X coordinate of the boxes minimum corner.", minX);
+        let inputMinY = CATMAID.DOM.createInputSetting("Min Y", volume.minY,
+             "Y coordinate of the boxes minimum corner.", minY);
+        let inputMinZ = CATMAID.DOM.createInputSetting("Min Z", volume.minZ,
+             "Z coordinate of the boxes minimum corner.", minZ);
+        let inputMaxX = CATMAID.DOM.createInputSetting("Max X", volume.maxX,
+             "X coordinate of the boxes maximum corner.", maxX);
+        let inputMaxY = CATMAID.DOM.createInputSetting("Max Y", volume.maxY,
+             "Y coordinate of the boxes maximum corner.", maxY);
+        let inputMaxZ = CATMAID.DOM.createInputSetting("Max Z", volume.maxZ,
+             "Z coordinate of the boxes maximum corner.", maxZ);
+
+        // Helper to create a cube at the current location with a particular
+        // edge length.
+        let cubeEdgeInput = CATMAID.DOM.createNumericInputSetting(
+            "Cube at current location", 0, 1,
+            "Optional, edge length in nm for a cube created at the current location");
+        var cubeButton = document.createElement('button');
+        cubeButton.onclick = function(e) {
+          let edgeLength = parseFloat(cubeEdgeInput.find('input').val());
+          if (!edgeLength || Number.isNaN(edgeLength)) {
+            CATMAID.warn("No valid edge length, can't create cube");
+            return;
+          }
+          let halfLength = edgeLength / 2.0;
+
+          // Fill input fields
+          inputMinX.find('input').val(project.coordinates.x - halfLength).trigger("change");
+          inputMinY.find('input').val(project.coordinates.y - halfLength).trigger("change");
+          inputMinZ.find('input').val(project.coordinates.x - halfLength).trigger("change");
+          inputMaxX.find('input').val(project.coordinates.x + halfLength).trigger("change");
+          inputMaxY.find('input').val(project.coordinates.y + halfLength).trigger("change");
+          inputMaxZ.find('input').val(project.coordinates.x + halfLength).trigger("change");
+
+          CATMAID.msg("Success", "Defined cube at location (" + project.x +
+            ", " + project.y + ", " + project.z + ") with edge length " +
+            edgeLength + "nm");
+        };
+        cubeButton.appendChild(document.createTextNode('Define cube at current location'));
+        $content.append(cubeEdgeInput);
+        $content.append(CATMAID.DOM.createLabeledControl("", cubeButton,
+              "If an edge length has been defined, this will populate the min/max fields to define a cube at the current location"));
+
+        $content.append(inputMinX);
+        $content.append(inputMinY);
+        $content.append(inputMinZ);
+        $content.append(inputMaxX);
+        $content.append(inputMaxY);
+        $content.append(inputMaxZ);
 
         return $settings;
       },

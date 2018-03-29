@@ -86,6 +86,10 @@ Miscellaneous:
 
 - The skeleton projection layer works now with orthogonal views.
 
+- Volume widget: when creating box volumes, the new button "Define cube at
+  current location" allows to conveniently create a cube with a configurable
+  edge length at the current location.
+
 - Stacks can now be created whose planar axes have anisotropic resolution.
   The stack viewer will display these stacks correctly by scaling tiles
   separately along each axis. The tracing overlay is also compatible with these

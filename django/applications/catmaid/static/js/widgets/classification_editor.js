@@ -1022,7 +1022,9 @@
           };
           if (pid_changes) {
             container = $('#' + content_div_id).detach();
-            CATMAID.openProjectStack(roi.project_id, roi.stack_id).then(callback);
+            CATMAID.openProjectStack(roi.project_id, roi.stack_id)
+              .then(callback)
+              .catch(CATMAID.handleError);
           } else {
             callback();
           }

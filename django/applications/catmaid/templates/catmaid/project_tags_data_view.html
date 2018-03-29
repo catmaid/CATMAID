@@ -55,12 +55,12 @@
 						<a {% if highlight %}class="highlight" {% endif %}
 								data-type="stack"
 								href="?pid={{ p.id }}&tool=navigator&sid0={{ stacks.0.id }}&s0=1"
-								onclick="CATMAID.openProjectStack({{p.id}},{{stacks.0.id}});return false">{{ p.title }}</a><br />
+								onclick="CATMAID.openProjectStack({{p.id}},{{stacks.0.id}}).catch(CATMAID.handleError);return false">{{ p.title }}</a><br />
 					{% elif sample_images %}
 						{% for s in stacks %}
 							{% with slice=s|get_slice:sample_slice %}
 							<a data-type="stack" href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
-									onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}});return false">
+									onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}}).catch(CATMAID.handleError);return false">
 								{% with s.stackmirror_set.all|dictsort:'position'|get:sample_mirror_index as mirror %}
 									<img class="lazy"
 										data-src="{{ mirror.image_base }}{{ slice }}/small.{{ mirror.file_extension }}"
@@ -77,7 +77,7 @@
 							<dt>{{ p.title }}</dt>
 							{% for s in stacks %}
 							<dd><a data-type="stack" {% if highlight %}class="highlight" {% endif %}
-								href="#" onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}})"
+								href="#" onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}}).catch(CATMAID.handleError)"
 								title="{{ s.comment }}">{{ s.title }}</a>
 							</dd>
 							{% endfor %}

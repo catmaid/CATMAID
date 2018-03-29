@@ -21,7 +21,7 @@
       {% for sg in stackgroups_of|get:p.id|dictsort:'id' %}
           <td class="stackname, stackgroup">
           <a data-type="stackgroup" href="?pid={{ p.id }}&tool=navigator&sg={{ sg.id }}"
-            onclick="CATMAID.openStackGroup({{p.id}}, {{sg.id}}, false);return false"
+            onclick="CATMAID.openStackGroup({{p.id}}, {{sg.id}}).catch(CATMAID.handleError);return false"
             title="Stack group #{{ sg.id }}">{{ sg.title }}</a>
         </td>
       {% endfor %}
@@ -37,7 +37,7 @@
           {% elif s.stackmirror_set.all|length %}
             <figure>
             <a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
-                onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}});return false">
+                onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}}).catch(CATMAID.handleError);return false">
               {% with s.stackmirror_set.all|dictsort:'position'|get:sample_mirror_index as mirror %}
                 <img class="lazy"
                   data-src="{{ mirror.image_base }}{{ slice }}/small.{{ mirror.file_extension }}"
@@ -54,7 +54,7 @@
         {% else %}
           <td class="stackname">
             <a data-type="stack" href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
-                onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}});return false" title="{{s.comment}}">
+                onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}}).catch(CATMAID.handleError);return false" title="{{s.comment}}">
               {{ s.title }}</a>
         {% endif %}
         {% if show_mirrors %}
@@ -62,7 +62,7 @@
           {% for m in s.stackmirror_set.all %}
             <dd data-type="stack">
               <a data-type="stack" href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
-                  onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}}, undefined, {{forloop.counter0}});return false">{{ m.title }}</a>
+                  onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}}, undefined, {{forloop.counter0}}).catch(CATMAID.handleError);return false">{{ m.title }}</a>
             </dd>
           {% endfor %}
           </dl>

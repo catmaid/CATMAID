@@ -391,6 +391,15 @@ var project;
             // initialization hack
             SkeletonAnnotations.init_active_skeleton_id = init_active_skeleton_id;
           }
+        })
+        .catch(function(e) {
+          // Handle login errors explicitely to re-init the web client
+          // after login.
+          if (e instanceof CATMAID.PermissionError) {
+            new CATMAID.LoginDialog(e.error, CATMAID.initWebClient).show();
+          } else {
+            CATMAID.handleError(e);
+          }
         });
 
         // Open stacks one after another and move to the requested location. Load
@@ -404,7 +413,7 @@ var project;
               // Open stack and queue test/loading for next one
               var sid = sids.shift();
               var s = ss.shift();
-              return CATMAID.openProjectStack(pid, sid, useExistingStackViewer, undefined, noLayout)
+              return CATMAID.openProjectStack(pid, sid, useExistingStackViewer, undefined, noLayout, false)
                 .then(function() {
                   // Moving every stack is not really necessary, but for now a
                   // convenient way to apply the requested scale to each stack.
@@ -484,7 +493,7 @@ var project;
               'title': s.title,
               'comment': s.comment,
               'note': '',
-              'action': CATMAID.openProjectStack.bind(window, p.id, s.id, false, undefined, false)
+              'action': CATMAID.openProjectStack.bind(window, p.id, s.id, false, undefined, false, true)
             };
             return o;
           }, {});
@@ -493,7 +502,7 @@ var project;
               'title': sg.title,
               'comment': sg.comment,
               'note': '',
-              'action': CATMAID.openStackGroup.bind(window, p.id, sg.id, false)
+              'action': CATMAID.openStackGroup.bind(window, p.id, sg.id, true)
             };
             return o;
           }, {});
@@ -1178,16 +1187,17 @@ var project;
   // Export Client
   CATMAID.Client = Client;
 
-
   /**
    * Open the given a specific stack group in a project.
    *
-   * @param  {number}    pid       ID of the project to open.
-   * @param  {number}    sgid      ID of the stack group to open.
-   *
+   * @param {number}  pid          ID of the project to open.
+   * @param {number}  sgid         ID of the stack group to open.
+   * @param {boolean} handleErrors (optional) If true, errors are handled
+   *                               internally and even in the case of errors a
+   *                               resolved promise is returned
    * @returns promise that will be resolved on success
    */
-  CATMAID.openStackGroup = function(pid, sgid) {
+  CATMAID.openStackGroup = function(pid, sgid, handleErrors) {
     var request = CATMAID.fetch(pid + "/stackgroup/" + sgid + "/info", "GET")
       .then(function(json) {
         if (!json.stacks || 0 === json.stacks.length) {
@@ -1263,6 +1273,9 @@ var project;
       }
     });
 
+    if (handleErrors) {
+      request = request.catch(CATMAID.handleError);
+    }
     return request;
   };
 
@@ -1280,9 +1293,13 @@ var project;
    *                                     the first available.
    * @param  {boolean} noLayout          Falsy to layout all available stack
    *                                     viewers (default).
+   * @param  {boolean} handleErrors      (optional) If true, errors are handled
+   *                                     internally and even in the case of
+   *                                     errors a resolved promise is returned
    * @return {Promise}                   A promise yielding the stack viewer.
    */
-  CATMAID.openProjectStack = function(projectID, stackID, useExistingViewer, mirrorIndex, noLayout) {
+  CATMAID.openProjectStack = function(projectID, stackID, useExistingViewer,
+      mirrorIndex, noLayout, handleErrors) {
     if (project && project.id != projectID) {
       project.destroy();
     }
@@ -1308,16 +1325,12 @@ var project;
 
     // Catch any error, but return original rejected promise
     open.catch(function(e) {
-        CATMAID.ui.releaseEvents();
-        // Handle login errors explicitely to re-init the web client after
-        // re-login.
-        if (e && e.permission_error) {
-          new CATMAID.LoginDialog(e.error, CATMAID.initWebClient).show();
-        } else {
-          return Promise.reject(e);
-        }
-      });
+      CATMAID.ui.releaseEvents();
+    });
 
+    if (handleErrors) {
+      open = open.catch(CATMAID.handleError);
+    }
     return open;
   };
 
@@ -1367,11 +1380,11 @@ var project;
                     action: [{
                         title: 'Open in new viewer',
                         note: '',
-                        action: CATMAID.openProjectStack.bind(window, s.pid, s.id, false, undefined, true)
+                        action: CATMAID.openProjectStack.bind(window, s.pid, s.id, false, undefined, true, true)
                       },{
                         title: 'Add to focused viewer',
                         note: '',
-                        action: CATMAID.openProjectStack.bind(window, s.pid, s.id, true, undefined, true)
+                        action: CATMAID.openProjectStack.bind(window, s.pid, s.id, true, undefined, true, true)
                       }
                     ]
                   }

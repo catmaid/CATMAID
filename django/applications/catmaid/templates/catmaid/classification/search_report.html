@@ -24,7 +24,8 @@
           {% for p in tprojects %}
             {% with stacks=pid_to_sids|get:p.id %}
               {% if stacks %}
-              <a href="#" onclick="javascript:CATMAID.openProjectStack({{p.id}},{{stacks.0}});">{{ p.title }}</a><br />
+              <a href="#"
+                onclick="javascript:CATMAID.openProjectStack({{p.id}},{{stacks.0}}, false).catch(CATMAID.handleError);">{{ p.title }}</a><br />
               {% else %}
                 {{ p.title }}
               {% endif %}

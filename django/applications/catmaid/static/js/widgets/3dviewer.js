@@ -1155,7 +1155,7 @@
     this.animation_history_reset_after_stop = false;
     this.strahler_cut = 2;
     this.use_native_resolution = true;
-    this.interpolate_sections = false;
+    this.interpolate_sections = true;
     this.interpolated_sections = [];
     this.interpolated_sections_x = [];
     this.interpolated_sections_y = [];

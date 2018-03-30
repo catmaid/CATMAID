@@ -705,10 +705,10 @@
           // Fill input fields
           inputMinX.find('input').val(project.coordinates.x - halfLength).trigger("change");
           inputMinY.find('input').val(project.coordinates.y - halfLength).trigger("change");
-          inputMinZ.find('input').val(project.coordinates.x - halfLength).trigger("change");
+          inputMinZ.find('input').val(project.coordinates.z - halfLength).trigger("change");
           inputMaxX.find('input').val(project.coordinates.x + halfLength).trigger("change");
           inputMaxY.find('input').val(project.coordinates.y + halfLength).trigger("change");
-          inputMaxZ.find('input').val(project.coordinates.x + halfLength).trigger("change");
+          inputMaxZ.find('input').val(project.coordinates.z + halfLength).trigger("change");
 
           CATMAID.msg("Success", "Defined cube at location (" + project.x +
             ", " + project.y + ", " + project.z + ") with edge length " +

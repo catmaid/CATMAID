@@ -2603,7 +2603,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
         // Only add labels for nodes in current section
         if (node && node.shouldDisplay()) {
           this.labels[nid] = new CATMAID.OverlayLabel(
-              nid, this.paper, node[node.planeX()], node[node.planeY()],
+              nid, this.paper, node[node.planeX], node[node.planeY],
               fontSize, m[nid], node.isVisible());
         }
       }

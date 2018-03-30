@@ -34,7 +34,7 @@
        */
       createSkeletonElements: function(tracingOverlay, pixiContainer, skeletonDisplayModels) {
         // Add prototype
-        SkeletonElements.prototype = createSkeletonElementsPrototype();
+        SkeletonElements.prototype = createSkeletonElementsPrototype(tracingOverlay);
 
         return new SkeletonElements(tracingOverlay, pixiContainer, skeletonDisplayModels);
       }
@@ -389,32 +389,36 @@
 
       this.markerType = 'disc';
 
-      this.planeX = function () {
-        switch (this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.orientation) {
+      // Compute the planar X, Y and Z dimensions in stack space for the tracing
+      // overlay of this prototype hierarchy. We don't expect this to change
+      // during the lifetime of a SkeletonElements instance.
+
+      this.planeX = (function () {
+        switch (tracingOverlay.stackViewer.primaryStack.orientation) {
           case CATMAID.Stack.ORIENTATION_ZY:
             return 'z';
           default:
             return 'x';
         }
-      };
+      })();
 
-      this.planeY = function () {
-        switch (this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.orientation) {
+      this.planeY = (function () {
+        switch (tracingOverlay.stackViewer.primaryStack.orientation) {
           case CATMAID.Stack.ORIENTATION_XZ:
             return 'z';
           default:
             return 'y';
         }
-      };
+      })();
 
-      this.planeZ = function () {
-        switch (this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.orientation) {
+      this.planeZ = (function () {
+        switch (tracingOverlay.stackViewer.primaryStack.orientation) {
           case CATMAID.Stack.ORIENTATION_XZ:
             return 'y';
           default:
             return 'z';
         }
-      };
+      })();
 
       /**
        * Create the node graphics elements.
@@ -437,8 +441,8 @@
           ptype.mouseEventManager.attach(this.c, this.type);
         }
 
-        this.c.x = this[this.planeX()];
-        this.c.y = this[this.planeY()];
+        this.c.x = this[this.planeX];
+        this.c.y = this[this.planeY];
         this.c.scale.set(this.stackScaling);
         // this.c.scale.set(
         //     this.stackScaling / this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.anisotropy.x,
@@ -477,8 +481,8 @@
           this.radiusGraphics.drawCircle(0, 0, this.radius);
           this.radiusGraphics.tint = this.c.tint;
           this.radiusGraphics.visible = this.c.visible;
-          this.radiusGraphics.x = this[this.planeX()];
-          this.radiusGraphics.y = this[this.planeY()];
+          this.radiusGraphics.x = this[this.planeX];
+          this.radiusGraphics.y = this[this.planeY];
         } else if (this.radiusGraphics) {
           this.radiusGraphics.parent.removeChild(this.radiusGraphics);
           this.radiusGraphics.destroy();
@@ -783,7 +787,7 @@
        */
       this.getIntersection = function(node1, node2, zDiff) {
         if (0 === zDiff) {
-          return [node1[node1.planeX()], node1[node1.planeY()]];
+          return [node1[node1.planeX], node1[node1.planeY]];
         } else {
           let sv = this.overlayGlobals.tracingOverlay.stackViewer;
           let plane = sv.plane.clone();
@@ -797,7 +801,7 @@
           if (!intersection) {
             return null;
           } else {
-            return [intersection[node1.planeX()], intersection[node1.planeY()]];
+            return [intersection[node1.planeX], intersection[node1.planeY]];
           }
         }
       };
@@ -1035,9 +1039,9 @@
 
         var c = new PIXI.Graphics();
         c.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
-        c.drawCircle(this[this.planeX()], this[this.planeY()], 0);
+        c.drawCircle(this[this.planeX], this[this.planeY], 0);
         this.overlayGlobals.skeletonElements.containers.nodes.addChild(c);
-        c.hitArea = new PIXI.Circle(this[this.planeX()], this[this.planeY()], 1000000);
+        c.hitArea = new PIXI.Circle(this[this.planeX], this[this.planeY], 1000000);
         c.interactive = true;
         c.visible = true;
         c.tint = color;
@@ -1046,8 +1050,8 @@
         if (drawLine) {
           var line = new PIXI.Graphics();
           line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
-          line.moveTo(this[this.planeX()], this[this.planeY()]);
-          line.lineTo(this[this.planeX()] + 1, this[this.planeY()] + 1);
+          line.moveTo(this[this.planeX], this[this.planeY]);
+          line.lineTo(this[this.planeX] + 1, this[this.planeY] + 1);
           line.tint = color;
           line.visible = true;
           this.overlayGlobals.skeletonElements.containers.lines.addChild(line);
@@ -1061,8 +1065,8 @@
         var fontSize = parseFloat(ptype.ArrowLine.prototype.confidenceFontSize) * 0.75;
         var pad = fontSize * 0.5;
         var labelShadow = label.append('rect').attr({
-            x: this[this.planeX()],
-            y: this[this.planeY()],
+            x: this[this.planeX],
+            y: this[this.planeY],
             rx: pad,
             ry: pad,
             stroke: '#000',
@@ -1070,8 +1074,8 @@
             opacity: 0.75,
             'pointer-events': 'none'});
         var labelText = label.append('text').attr({
-            x: this[this.planeX()],
-            y: this[this.planeY()],
+            x: this[this.planeX],
+            y: this[this.planeY],
             'font-size': fontSize + 'pt',
             fill: '#FFF',
             'pointer-events': 'none'});
@@ -1086,9 +1090,9 @@
         // re-initialized due to an update. This also means that the circle cannot
         // be drawn while the node is changing location.
         var nodeP = {x: this.x, y: this.y, z: this.z};
-        var planeX = this.planeX();
-        var planeY = this.planeY();
-        var planeZ = this.planeZ();
+        var planeX = this.planeX;
+        var planeY = this.planeY;
+        var planeZ = this.planeZ;
 
         // Update radius on mouse move
         c.on('mousemove', function (event) {
@@ -1658,8 +1662,8 @@
 
         var newPosition = o.data.getLocalPosition(this.parent);
         if (!dragging) {
-          var l1Distance = Math.abs(newPosition.x - node[node.planeX()])
-                         + Math.abs(newPosition.y - node[node.planeY()]);
+          var l1Distance = Math.abs(newPosition.x - node[node.planeX])
+                         + Math.abs(newPosition.y - node[node.planeY]);
           if (l1Distance > node.stackScaling * 0.5) {
             dragging = true;
             this.alpha = 0.7;
@@ -1679,11 +1683,11 @@
         if (o.id !== SkeletonAnnotations.getActiveNodeId()) return;
 
         // TODO
-        this.x = node[node.planeX()] = newPosition.x;
-        this.y = node[node.planeY()] = newPosition.y;
+        this.x = node[node.planeX] = newPosition.x;
+        this.y = node[node.planeY] = newPosition.y;
         if (this.node.radiusGraphics) {
-          this.node.radiusGraphics.x = node[node.planeX()];
-          this.node.radiusGraphics.y = node[node.planeY()];
+          this.node.radiusGraphics.x = node[node.planeX];
+          this.node.radiusGraphics.y = node[node.planeY];
         }
         node.drawEdges(true); // TODO for connector this is overkill
         // Update postsynaptic edges from connectors. Suprisingly this brute

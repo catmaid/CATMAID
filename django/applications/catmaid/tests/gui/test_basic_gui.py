@@ -255,10 +255,11 @@ class BasicUITest(StaticLiveServerTestCase):
                 EC.invisibility_of_element_located((By.CSS_SELECTOR, 'a#login')))
         self.assertFalse(login.is_displayed(), "Login button is invisible")
 
-        # Open demo project
+        # Open demo project, the contains() operator is only available in XPATH
+        # for the Selenium web driver.
         project_link = WebDriverWait(self.selenium, 10).until(
-                EC.visibility_of_element_located((By.CSS_SELECTOR,
-                    "td:contains('FIB') a:nth-child(1)")))
+                EC.visibility_of_element_located((By.XPATH,
+                    "//a[contains(text(), 'FIB')]")))
         self.assertTrue(project_link.is_displayed(), "Project link displayed")
         project_link.send_keys(Keys.RETURN)
 

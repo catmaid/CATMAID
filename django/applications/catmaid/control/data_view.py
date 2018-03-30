@@ -121,9 +121,7 @@ def get_default_data_view( request ):
     """ Return the data view that is marked as the default. If there
     is more than one view marked as default, the first one is returned.
     """
-    print('getting default data view')
     default = DataView.objects.filter(is_default=True)[0]
-    print('default dv: ' + str(default))
 
     return get_data_view( request, default.id )
 

@@ -69,9 +69,7 @@ class BasicUITest(StaticLiveServerTestCase):
         userprofile.show_ontology_tool = True
         userprofile.show_roi_tool = True
 
-        # Create example project
-        insert_example_projects(cls.user.id)
-
+        # Create basic data view
         dvt, created = DataViewType.objects.get_or_create(
                 code_type='project_list_data_view',
                 defaults={'title': 'Project list'})
@@ -82,6 +80,9 @@ class BasicUITest(StaticLiveServerTestCase):
                 data_view_type=dvt, is_default=True)
         if created:
             cls.created_models.append(dv)
+
+        # Create example project
+        insert_example_projects(cls.user.id)
 
     @classmethod
     def remove_test_data(cls):

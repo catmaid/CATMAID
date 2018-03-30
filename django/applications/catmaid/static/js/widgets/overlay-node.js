@@ -154,9 +154,9 @@
     }, {});
 
     this.cache = {
-      nodePool: new this.ElementPool(100, 1.2),
-      connectorPool: new this.ElementPool(20, 1.2),
-      arrowPool: new this.ElementPool(50, 1.2),
+      nodePool: new ElementPool(100, 1.2),
+      connectorPool: new ElementPool(20, 1.2),
+      arrowPool: new ElementPool(50, 1.2),
 
       clear: function() {
         this.nodePool.clear();
@@ -298,59 +298,8 @@
 
   ////// Definition of classes used in SkeletonElements
 
-  var createSkeletonElementsPrototype = function() {
+  var createSkeletonElementsPrototype = function(tracingOverlay) {
     var ptype = {};
-
-      /** For reusing objects such as DOM elements, which are expensive to insert and remove. */
-    ptype.ElementPool = function(reserveSize, reserveProportion) {
-      this.pool = [];
-      this.nextIndex = 0;
-      this.reserveSize = reserveSize;
-      this.reserveProportion = reserveProportion;
-    };
-
-    $.extend(ptype.ElementPool.prototype, {
-        reset: function() {
-          this.nextIndex = 0;
-        },
-
-        obliterateFn: function(element) {
-          element.obliterate();
-        },
-
-        disableFn: function(element) {
-          element.disable();
-        },
-
-        clear: function() {
-          this.pool.splice(0).forEach(this.obliterateFn);
-          this.reset();
-        },
-
-        disableBeyond: function(newLength) {
-          if (newLength < this.pool.length) {
-            var reserve = Math.max(newLength + this.reserveSize,
-                                   Math.floor(newLength * this.reserveProportion));
-            // Drop elements beyond new length plus reserve
-            if (this.pool.length > reserve) {
-              this.pool.splice(reserve).forEach(this.obliterateFn);
-            }
-            // Disable elements from cut off to new ending of node pool array
-            this.pool.slice(newLength).forEach(this.disableFn);
-          }
-        },
-
-        next: function() {
-          return this.nextIndex < this.pool.length ?
-            this.pool[this.nextIndex++] : null;
-        },
-
-        /** Append a new element at the end, implying that all other elements are in use. */
-        push: function(element) {
-          this.pool.push(element);
-          this.nextIndex += 1;
-        }
-      });
 
     /**
      * Add a epoch based time field and a corresponding _iso_str version to a
@@ -1336,7 +1285,7 @@
       /** Disables the ArrowLine object and removes entries from the lines list. */
       this.removeConnectorArrows = function() {
         if (this.edges) {
-          var disable = ptype.ElementPool.prototype.disableFn;
+          var disable = ElementPool.prototype.disableFn;
           for (var i=0, imax=this.edges.length; i<imax; ++i) {
             disable(this.edges[i]);
           }
@@ -2174,4 +2123,61 @@
 
     return ptype;
   };
+
+
+  /**
+   * A simple pool for reusing objects such as DOM elements, which are expensive
+   * to insert and remove.
+   */
+  var ElementPool = function(reserveSize, reserveProportion) {
+    this.pool = [];
+    this.nextIndex = 0;
+    this.reserveSize = reserveSize;
+    this.reserveProportion = reserveProportion;
+  };
+
+  ElementPool.prototype.reset = function() {
+    this.nextIndex = 0;
+  };
+
+  ElementPool.prototype.obliterateFn = function(element) {
+    element.obliterate();
+  };
+
+  ElementPool.prototype.disableFn = function(element) {
+    element.disable();
+  };
+
+  ElementPool.prototype.clear = function() {
+    this.pool.splice(0).forEach(this.obliterateFn);
+    this.reset();
+  };
+
+  ElementPool.prototype.disableBeyond = function(newLength) {
+    if (newLength < this.pool.length) {
+      var reserve = Math.max(newLength + this.reserveSize,
+                             Math.floor(newLength * this.reserveProportion));
+      // Drop elements beyond new length plus reserve
+      if (this.pool.length > reserve) {
+        this.pool.splice(reserve).forEach(this.obliterateFn);
+      }
+      // Disable elements from cut off to new ending of node pool array
+      this.pool.slice(newLength).forEach(this.disableFn);
+    }
+  };
+
+  ElementPool.prototype.next = function() {
+    return this.nextIndex < this.pool.length ?
+      this.pool[this.nextIndex++] : null;
+  };
+
+  /**
+   * Append a new element at the end, implying that all other elements are in
+   * use.
+   */
+  ElementPool.prototype.push = function(element) {
+    this.pool.push(element);
+    this.nextIndex += 1;
+  };
+
 })(CATMAID);

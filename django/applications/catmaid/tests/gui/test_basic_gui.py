@@ -15,8 +15,9 @@ from django.conf import settings
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 
 from catmaid.control.project import insert_example_projects
-from catmaid.models import User, DataView, DataViewType
+from catmaid.models import User, DataView, DataViewType, Project
 
+from guardian.shortcuts import assign_perm
 from guardian.utils import get_anonymous_user
 
 
@@ -83,6 +84,11 @@ class BasicUITest(StaticLiveServerTestCase):
 
         # Create example project
         insert_example_projects(cls.user.id)
+
+        # Let user see all projects
+        for project in Project.objects.all():
+            assign_perm('can_browse', cls.user, project)
+            assign_perm('can_annotate', cls.user, project)
 
     @classmethod
     def remove_test_data(cls):

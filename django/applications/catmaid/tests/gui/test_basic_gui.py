@@ -72,7 +72,7 @@ class BasicUITest(StaticLiveServerTestCase):
 
         # Create basic data view
         dvt, created = DataViewType.objects.get_or_create(
-                code_type='project_list_data_view',
+                code_type='simple_project_list_data_view',
                 defaults={'title': 'Project list'})
         if created:
             cls.created_models.append(dvt)

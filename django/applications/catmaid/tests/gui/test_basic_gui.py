@@ -255,6 +255,14 @@ class BasicUITest(StaticLiveServerTestCase):
                 EC.invisibility_of_element_located((By.CSS_SELECTOR, 'a#login')))
         self.assertFalse(login.is_displayed(), "Login button is invisible")
 
+        # Open demo project
+        project_link = WebDriverWait(self.selenium, 10).until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR,
+                    "td:contains('FIB') a:nth-child(1)")))
+        self.assertTrue(project_link.is_displayed(), "Project link displayed")
+        project_link.send_keys(Keys.RETURN)
+
+
         # Logout
         logout.send_keys(Keys.RETURN)
         logout = WebDriverWait(self.selenium, 10).until(
@@ -263,19 +271,3 @@ class BasicUITest(StaticLiveServerTestCase):
         login = WebDriverWait(self.selenium, 10).until(
                 EC.visibility_of_element_located((By.CSS_SELECTOR, 'a#login')))
         self.assertTrue(login.is_displayed(), "Login button is displayed")
-
-
-    @skipUnless(settings.GUI_TESTS_ENABLED, "GUI tests are disabled")
-    def test_widget_loading(self):
-        """Test if each registered widget can be started without error.
-        """
-        self.selenium.get(self.make_url("/"))
-        self.login()
-
-        # Open demo project
-        project_link = WebDriverWait(self.selenium, 10).until(
-                EC.visibility_of_element_located((By.CSS_SELECTOR,
-                    "td:contains('FIB') a:nth-child(1)")))
-        self.assertTrue(project_link.is_displayed(), "Project link displayed")
-        project_link.send_keys(Keys.RETURN)
-

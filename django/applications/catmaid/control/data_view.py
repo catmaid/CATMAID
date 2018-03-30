@@ -105,7 +105,12 @@ def get_default_properties( request ):
         if all_views.count() > 0:
             result = dataview_to_dict(all_views[0])
         else:
-            result = {}
+            result = {
+                'title': 'Default data view',
+                'type': 'simple_project_list_data_view',
+                'config': '{}',
+                'note': ''
+            }
 
     return JsonResponse(result)
 

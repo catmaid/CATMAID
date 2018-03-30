@@ -1169,6 +1169,7 @@ var project;
     var self = this;
     CATMAID.DataViews.getDefaultConfig()
       .then(function(config) {
+        console.log(config);
         var dataview = CATMAID.DataView.makeDataView(config);
         self.switch_dataview(dataview, background);
       })

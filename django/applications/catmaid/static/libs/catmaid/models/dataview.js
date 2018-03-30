@@ -47,6 +47,7 @@
       var url = 'dataviews/default';
       return CATMAID.fetch(url, 'GET', undefined)
         .then(function(config) {
+          console.log('dataviews/default: ' + config);
           config.config = config.config ? JSON.parse(config.config) : {};
           return config;
         });

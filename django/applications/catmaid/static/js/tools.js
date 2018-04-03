@@ -703,7 +703,7 @@ CATMAID.tools = CATMAID.tools || {};
     var value = +number; // cast
     if (Number.isNaN(value) || value < min || value > max) {
       if (errorMessage) {
-        CATMAID.warn(errorMsg);
+        CATMAID.warn(errorMessage);
       }
       return null;
     }

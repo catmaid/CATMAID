@@ -204,8 +204,12 @@
       this._layout = eval(spec);
     } catch (error) {
       CATMAID.warn("Can't parse layout: " + spec + ", using default");
-      var defaultLayout = CATMAID.Layout.Settings.schema.entries['default_layouts'].default;
-      this._layout = eval(defaultLayout);
+      var defaultLayouts = CATMAID.Layout.Settings.schema.entries['default_layouts'].default;
+      if (!defaultLayouts || !defaultLayouts.length) {
+        this._layout = eval("h(v(XY, XZ), v(ZY, o(F1)))");
+      } else {
+        this._layout = eval(defaultLayouts[0]);
+      }
     }
   };
 

@@ -204,7 +204,7 @@
       this._layout = eval(spec);
     } catch (error) {
       CATMAID.warn("Can't parse layout: " + spec + ", using default");
-      var defaultLayout = CATMAID.Layout.Settings.schema.entries['default_layout'].default;
+      var defaultLayout = CATMAID.Layout.Settings.schema.entries['default_layouts'].default;
       this._layout = eval(defaultLayout);
     }
   };

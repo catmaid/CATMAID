@@ -1596,36 +1596,45 @@
       var dsTracingWarnings = CATMAID.DOM.addSettingsContainer(ds,
           "Warnings", true);
 
-      var twVolumeSelect = CATMAID.DOM.createSelectSetting("New nodes not in " +
-          "volume", {"None": "none"}, "A warning will be shown when new " +
-          "nodes are created outside of the selected volume", function(e) {
-            var volumeID = null;
-
-            // Add new handler if, needed
-            if (-1 !== this.selectedIndex) {
-              var o = this.options[this.selectedIndex];
-              if ("none" !== o.value) {
-                volumeID = o.value;
+      let initVolumeList = function() {
+        return CATMAID.Volumes.listAll(project.id)
+          .then(function(json) {
+            var volumes = json.sort(function(a, b) {
+              return CATMAID.tools.compareStrings(a.name, b.name);
+            }).map(function(volume) {
+              return {
+                title: volume.name + " (#" + volume.id + ")",
+                value: volume.id
+              };
+            });
+            var selectedVolumeId = SkeletonAnnotations.getNewNodeVolumeWarning();
+            // Create actual element based on the returned data
+            var node = CATMAID.DOM.createRadioSelect('Volumes', volumes,
+                selectedVolumeId, true);
+            // Add a selection handler
+            node.onchange = function(e) {
+              let volumeId = null;
+              if (e.srcElement.value !== "none") {
+                volumeId = parseInt(e.srcElement.value, 10);
               }
-            }
+              // Remove existing handler and new one if selected
+              SkeletonAnnotations.setNewNodeVolumeWarning(volumeId);
+            };
 
-            // Remove existing handler and new one if selected
-            SkeletonAnnotations.setNewNodeVolumeWarning(volumeID);
+            return node;
           });
-      dsTracingWarnings.append(twVolumeSelect);
+      };
 
-      // Get volumes
-      CATMAID.fetch(project.id + "/volumes/")
-        .then(function(json) {
-          var currentWarningVolumeID = SkeletonAnnotations.getNewNodeVolumeWarning();
-          var select = twVolumeSelect.find("select")[0];
-          json.forEach(function(volume) {
-            var name = volume.name + " (#" + volume.id + ")";
-            var selected = currentWarningVolumeID == volume.id ? true : undefined;
-            select.options.add(new Option(name, volume.id, selected, selected));
-          });
-        })
-        .catch(CATMAID.handleError);
+      // Create async selection and wrap it in container to have handle on initial
+      // DOM location
+      var volumeSelection = CATMAID.DOM.createAsyncPlaceholder(initVolumeList());
+      var volumeSelectionWrapper = document.createElement('span');
+      volumeSelectionWrapper.appendChild(volumeSelection);
+      var volumeSelectionSetting = CATMAID.DOM.createLabeledControl(
+          "New nodes not in volume", volumeSelectionWrapper,
+          "A warning will be shown when new " +
+          "nodes are created outside of the selected volume");
+      dsTracingWarnings.append(volumeSelectionSetting);
     };
 
     var addSettingsFilter = function(container, searchContainer) {

@@ -1078,22 +1078,24 @@
    * Shows and hides reference lines that meet on the center of each slice.
    */
   StackViewer.prototype.showReferenceLines = function (show) {
-    this._vert.style.visibility = show ? "visible" : "hidden";
-    this._horr.style.visibility = show ? "visible" : "hidden";
+    this._vert.style.display = show ? "block" : "none";
+    this._horr.style.display = show ? "block" : "none";
   };
 
   /**
    * Pulsate reference lines using jQuery UI
    */
   StackViewer.prototype.pulseateReferenceLines = function (times, delay) {
-    var visible = this._vert.style.visibility === "visible";
+    var visible = this._vert.style.display !== "none";
     var halfDelay = delay * 0.5;
     this.showReferenceLines(true);
     var refLines = $(this._vert).add(this._horr);
     for (var i=0; i<times; ++i) {
       refLines = refLines.fadeOut(halfDelay).fadeIn(halfDelay);
     }
-    refLines = refLines.fadeOut(delay);
+    refLines = refLines.fadeOut(delay, (function() {
+      this.showReferenceLines(visible);
+    }).bind(this));
   };
 
   StackViewer.Settings = new CATMAID.Settings(

@@ -1425,9 +1425,13 @@ img.missing-image:before {
   padding-top: 0.6em;
 }
 
+.landmark-group-name {
+  margin: 0.5em;
+}
+
 .landmark-group-name-overlay {
   float: right;
   color: #ccc;
   font-size: 200%;
-  margin: 0.7em;
+  margin: 0.5em;
 }

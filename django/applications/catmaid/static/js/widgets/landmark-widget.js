@@ -1763,8 +1763,10 @@
         }
 
         // Name
-        let landmarkGroupName = content.appendChild( document.createElement('span'));
-        landmarkGroupName.classList.add('landmark-group-name-overlay');
+        let landmarkGroupNameOverlay = content.appendChild( document.createElement('span'));
+        landmarkGroupNameOverlay.classList.add('landmark-group-name-overlay');
+        let landmarkGroupName = content.appendChild( document.createElement('div'));
+        landmarkGroupName.classList.add('landmark-group-name');
 
         // Regular editing controls
 
@@ -1867,7 +1869,9 @@
         landmarkGroupDetails
           .then(function() {
             let landmarkGroup = widget.landmarkGroupIndex.get(widget.editLandmarkGroup);
-            landmarkGroupName.appendChild(document.createTextNode(landmarkGroup.name));
+            landmarkGroupName.appendChild(document.createTextNode(
+                "Selected landmark group: " + landmarkGroup.name));
+            landmarkGroupNameOverlay.appendChild(document.createTextNode(landmarkGroup.name));
 
             // Get a list of known landmarks and init autocomplete
             let knownLandmarks = widget.landmarks.map(function(landmark) {

@@ -826,11 +826,14 @@
    * @param title        {String}   A title showing as the first element of the select
    * @param options      {Object[]} A list of {title: <>, value: <>} objects.
    * @param selectedKey  {String}   (Optional) the key that should be selected initially
+   * @param showFilter   {Bool}     Whether to show a filter input field.
    *
    * @returns a wrapper around the select element
    */
-  DOM.createRadioSelect = function(title, options, selectedKey) {
+  DOM.createRadioSelectPanel = function(title, options, selectedKey, showFilter) {
+    var container = document.createElement('div');
     var radiobuttons = document.createElement('ul');
+    var entryIndex = new Map();
     for (var i=0; i<options.length; ++i) {
       var o = options[i];
       var entry = document.createElement('label');
@@ -844,6 +847,16 @@
         radiobutton.checked = true;
       }
       radiobuttons.appendChild(entry);
+
+      // Save in index
+      if (showFilter) {
+        var labelElements = entryIndex.get(o.title);
+        if (!labelElements) {
+          labelElements = [];
+          entryIndex.set(o.title, labelElements);
+        }
+        labelElements.push(entry);
+      }
     }
     radiobuttons.onclick = function(e) {
       // Cancel bubbling
@@ -851,7 +864,55 @@
       if (e.stopPropagation) e.stopPropagation();
     };
 
-    return CATMAID.DOM.createCustomContentSelect(title, radiobuttons);
+    var entryKeys = Array.from(entryIndex.keys());
+
+    if (showFilter) {
+      var filterInput = document.createElement('input');
+      filterInput.setAttribute('placeholder', 'Filter');
+      filterInput.setAttribute('type', 'text');
+      filterInput.onclick = function(e) {
+        e.cancelBubble = true;
+        if (e.stopPropagation) e.stopPropagation();
+      };
+      filterInput.onkeyup = function(e) {
+        var filterTerm = this.value;
+        var keys = entryKeys;
+        var regex = new RegExp(CATMAID.tools.escapeRegEx(filterTerm), 'i');
+        for (var i=0, max=keys.length; i<max; ++i) {
+          var key = keys[i];
+          var elements = entryIndex.get(key);
+          var match = key.match(regex);
+          for (var j=0, jmax=elements.length; j<jmax; ++j) {
+            var element = elements[j];
+            element.style.display = match ? 'block' : 'none';
+          }
+          e.cancelBubble = true;
+          if (e.stopPropagation) e.stopPropagation();
+        }
+      };
+      container.appendChild(filterInput);
+    }
+    container.appendChild(radiobuttons);
+
+    return container;
+  };
+
+
+  /**
+   * Create a new select element that when clicked (or optionally hovered) shows
+   * a custom list in a DIV container below it. This custom list provides a
+   * radio element for each entry.
+   *
+   * @param title        {String}   A title showing as the first element of the select
+   * @param options      {Object[]} A list of {title: <>, value: <>} objects.
+   * @param selectedKey  {String}   (Optional) the key that should be selected initially
+   * @param showFilter   {Bool}     Whether to show a filter input field.
+   *
+   * @returns a wrapper around the select element
+   */
+  DOM.createRadioSelect = function(title, options, selectedKey, showFilter) {
+    var container = DOM.createRadioSelectPanel(title, options, selectedKey, showFilter);
+    return CATMAID.DOM.createCustomContentSelect(title, container);
   };
 
   /**

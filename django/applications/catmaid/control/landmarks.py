@@ -8,7 +8,8 @@ from django.db import connection
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 
-from catmaid.control.authentication import requires_user_role, can_edit_or_fail
+from catmaid.control.authentication import (requires_user_role, can_edit_or_fail,
+        can_edit_all_or_fail)
 from catmaid.control.common import (get_request_list, get_class_to_id_map,
         get_relation_to_id_map, get_request_list)
 from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
@@ -1004,4 +1005,102 @@ class LandmarkLocationDetail(APIView):
             'landmark_id': pci.class_instance_id,
             'point_id': pci.point_id,
             'deleted_point': deleted_point
+        })
+
+
+class LandmarkAndGroupkLocationDetail(APIView):
+
+    @method_decorator(requires_user_role(UserRole.Annotate))
+    def delete(self, request, project_id, landmark_id, group_id):
+        """Delete the link between a location and a landmark and a group and a
+        location, if and only if both exist. If the last link to a location is
+        deleted, the location is removed as well.
+        ---
+        parameters:
+          - name: project_id
+            description: Project of landmark group
+            type: integer
+            paramType: path
+            required: true
+          - name: landmark_id
+            description: The landmark to unlink from
+            type: integer
+            paramType: path
+            required: true
+          - name: group_id
+            description: The group to unlink from
+            paramType: path
+            type: integer
+            required: true
+          - name: keep_points
+            description: Wheter only links should be deleted and points should be kept.
+            paramType: path
+            type: boolean
+            required: true
+        """
+        can_edit_or_fail(request.user, landmark_id, 'class_instance')
+        landmark = ClassInstance.objects.get(project_id=project_id, pk=int(landmark_id))
+        keep_points = request.data.get('keep_points', 'false') == 'true'
+
+        landmarkgroup_class = Class.objects.get(project_id=project_id, class_name='landmarkgroup')
+        landmarkgroup = get_object_or_404(ClassInstance, pk=group_id,
+                project_id=project_id, class_column=landmarkgroup_class)
+
+        # Get sharead points
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT p.id, lm_link.id, lg_link.id
+            FROM point p
+            JOIN point_class_instance lm_link
+                ON lm_link.point_id = p.id
+                AND lm_link.class_instance_id = %(landmark_id)s
+            JOIN point_class_instance lg_link
+                ON lg_link.point_id = p.id
+                AND lg_link.class_instance_id = %(group_id)s
+            WHERE p.project_id = %(project_id)s
+                AND lm_link.project_id = %(project_id)s
+                AND lg_link.project_id = %(project_id)s
+        """, {
+            'landmark_id': landmark.id,
+            'group_id': landmarkgroup.id,
+            'project_id': project_id
+        })
+        rows = cursor.fetchall()
+        shared_point_ids = [r[0] for r in rows]
+        lm_link_ids = [r[1] for r in rows]
+        lg_link_ids = [r[2] for r in rows]
+
+        # Make sure the user has the right permissions
+        can_edit_all_or_fail(request.user, lm_link_ids, 'point_class_instance')
+        can_edit_all_or_fail(request.user, lg_link_ids, 'point_class_instance')
+
+        # Delete links to shared point
+        PointClassInstance.objects.filter(id__in=lm_link_ids).delete()
+        PointClassInstance.objects.filter(id__in=lg_link_ids).delete()
+
+        # If point isn't referenced by other class instances, remove it as well
+        n_deleted_points = 0
+        if not keep_points:
+            cursor.execute("""
+                DELETE FROM point
+                WHERE id IN (
+                    SELECT p.id
+                    FROM point p
+                    LEFT JOIN point_class_instance pci
+                        ON pci.point_id = p.id
+                    JOIN UNNEST((%(point_ids)s::bigint[])) q(id)
+                        ON q.id = p.id
+                    WHERE pci.id IS NULL
+                )
+                RETURNING id;
+            """, {
+                'point_ids': shared_point_ids
+            })
+            n_deleted_points = cursor.fetchone()[0]
+
+        return Response({
+            'shared_point_ids': shared_point_ids,
+            'landmark_link_ids': lm_link_ids,
+            'group_link_ids': lg_link_ids,
+            'n_deleted_points': n_deleted_points
         })

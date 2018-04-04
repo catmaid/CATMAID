@@ -55,6 +55,24 @@
     },
 
     /**
+     * Delete all locations (including their links) that are shared between a
+     * group and a (conceptual) landmark in a project.
+     *
+     * @param {Number}  projectId  The project to operate in.
+     * @param {Number}  groupId    The landmark group locations are linked to.
+     * @param {Number}  landmarkId The landmark locations are linked to.
+     * @param {Boolean} keepPoints (optional) Whether to keep unlinked points
+     *                             after link deletion.
+     * @returns {Promise} Resolves when all succeeds.
+     */
+    deleteSharedLocationLinks: function(projectId, groupId, landmarkId, keepPoints) {
+      return CATMAID.fetch(projectId + '/landmarks/' + landmarkId +
+          '/groups/' + groupId + '/', 'DELETE', {
+            'keep_points': !!keepPoints
+          });
+    },
+
+    /**
      * List all landmark groups in a project, optionally with location
      * information. Optionally, with member and location information.
      */

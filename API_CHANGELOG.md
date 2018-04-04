@@ -13,6 +13,10 @@ included in this changelog.
 - `GET /{project_id}/treenodes/{treenode_id}/compact-detail`:
   Retrieve treenode information for a single node.
 
+- `DELETE /{project_id}/landmarks/{landmark_id}/groups/{group_id}/`:
+  Delete landmark location links to the same locations from a landmark and
+  group.
+
 ### Modifications
 
 - `POST /{project_id}/annotations/query-targets`:

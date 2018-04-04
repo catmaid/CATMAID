@@ -970,6 +970,7 @@
           CATMAID.ui.removeEvent("onmousedown", onmousedown);
         } else {
           customContent.style.display = 'block';
+          customContent.scrollIntoView();
 
           // Enable general UI click handler to close drop down if the mouse was
           // clicked outside of the control.

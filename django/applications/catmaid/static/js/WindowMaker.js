@@ -628,7 +628,7 @@ var WindowMaker = new function()
           // Add a selection handler
           node.onchange = function(e) {
             var visible = e.target.checked;
-            var volumeId = e.target.value;
+            var volumeId = parseInt(e.target.value, 10);
             WA.showVolume(volumeId, visible);
 
             // Add extra display controls for enabled volumes

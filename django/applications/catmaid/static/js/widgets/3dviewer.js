@@ -39,7 +39,7 @@
     // The current history animation, if any
     this.history = undefined;
     // Map loaded volume IDs to an array of Three.js meshes
-    this.loadedVolumes = {};
+    this.loadedVolumes = new Map();
     // Map loaded landmark group IDs to an array of Three.js meshes
     this.loadedLandmarkGroups = {};
     // A set of loaded landmark based transformations
@@ -2068,7 +2068,7 @@
    * Show or hide a stored volume with a given Id.
    */
   WebGLApplication.prototype.showVolume = function(volumeId, visible) {
-    var existingVolume = this.loadedVolumes[volumeId];
+    var existingVolume = this.loadedVolumes.get(volumeId);
     if (visible) {
       // Bail out if the volume in question is already visible
       if (existingVolume) {
@@ -2090,7 +2090,7 @@
               return mesh;
             }, this);
             // Store mesh reference
-            this.loadedVolumes[volumeId] = addedMeshes;
+            this.loadedVolumes.set(volumeId, addedMeshes);
             this.space.render();
           } else {
             CATMAID.warn("Couldn't parse volume \"" + volumeId + "\"");
@@ -2102,7 +2102,7 @@
       existingVolume.forEach(function(v) {
         this.space.scene.remove(v);
       }, this);
-      delete this.loadedVolumes[volumeId];
+      this.loadedVolumes.delete(volumeId);
       this.space.render();
     }
   };
@@ -2111,7 +2111,7 @@
    * Return IDs of the currently loaded volumes.
    */
   WebGLApplication.prototype.getLoadedVolumeIds = function() {
-    return Object.keys(this.loadedVolumes);
+    return this.loadedVolumes.keys();
   };
 
   /**
@@ -2123,7 +2123,7 @@
    * @param {Number} alpha    The new alpha of the volume or null.
    */
   WebGLApplication.prototype.setVolumeColor = function(volumeId, color, alpha) {
-    var existingMeshes = this.loadedVolumes[volumeId];
+    var existingMeshes = this.loadedVolumes.get(volumeId);
     if (!existingMeshes) {
       CATMAID.warn("Volume not loaded");
       return;
@@ -2150,7 +2150,7 @@
    * @param {Boolean} faces    Whether mesh faces should be rendered.
    */
   WebGLApplication.prototype.setVolumeStyle = function(volumeId, faces) {
-    var existingMeshes = this.loadedVolumes[volumeId];
+    var existingMeshes = this.loadedVolumes.get(volumeId);
     if (!existingMeshes) {
       CATMAID.warn("Volume not loaded");
       return;

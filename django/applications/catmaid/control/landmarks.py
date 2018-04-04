@@ -1070,33 +1070,34 @@ class LandmarkAndGroupkLocationDetail(APIView):
         lm_link_ids = [r[1] for r in rows]
         lg_link_ids = [r[2] for r in rows]
 
-        # Make sure the user has the right permissions
-        can_edit_all_or_fail(request.user, lm_link_ids, 'point_class_instance')
-        can_edit_all_or_fail(request.user, lg_link_ids, 'point_class_instance')
-
-        # Delete links to shared point
-        PointClassInstance.objects.filter(id__in=lm_link_ids).delete()
-        PointClassInstance.objects.filter(id__in=lg_link_ids).delete()
-
-        # If point isn't referenced by other class instances, remove it as well
         n_deleted_points = 0
-        if not keep_points:
-            cursor.execute("""
-                DELETE FROM point
-                WHERE id IN (
-                    SELECT p.id
-                    FROM point p
-                    LEFT JOIN point_class_instance pci
-                        ON pci.point_id = p.id
-                    JOIN UNNEST((%(point_ids)s::bigint[])) q(id)
-                        ON q.id = p.id
-                    WHERE pci.id IS NULL
-                )
-                RETURNING id;
-            """, {
-                'point_ids': shared_point_ids
-            })
-            n_deleted_points = cursor.fetchone()[0]
+        if rows:
+            # Make sure the user has the right permissions
+            can_edit_all_or_fail(request.user, lm_link_ids, 'point_class_instance')
+            can_edit_all_or_fail(request.user, lg_link_ids, 'point_class_instance')
+
+            # Delete links to shared point
+            PointClassInstance.objects.filter(id__in=lm_link_ids).delete()
+            PointClassInstance.objects.filter(id__in=lg_link_ids).delete()
+
+            # If point isn't referenced by other class instances, remove it as well
+            if not keep_points:
+                cursor.execute("""
+                    DELETE FROM point
+                    WHERE id IN (
+                        SELECT p.id
+                        FROM point p
+                        LEFT JOIN point_class_instance pci
+                            ON pci.point_id = p.id
+                        JOIN UNNEST((%(point_ids)s::bigint[])) q(id)
+                            ON q.id = p.id
+                        WHERE pci.id IS NULL
+                    )
+                    RETURNING id;
+                """, {
+                    'point_ids': shared_point_ids
+                })
+                n_deleted_points = cursor.fetchone()[0]
 
         return Response({
             'shared_point_ids': shared_point_ids,

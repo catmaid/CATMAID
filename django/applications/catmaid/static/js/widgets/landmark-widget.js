@@ -1800,6 +1800,19 @@
           return CATMAID.Landmarks.add(project.id, landmarkName);
         };
 
+        let selectLocation = function(loc) {
+          project.moveTo(loc.z, loc.y, loc.x)
+            .then(function() {
+              // Biefly flash new location
+              var nFlashes = 3;
+              var delay = 100;
+              project.getStackViewers().forEach(function(s) {
+                s.pulseateReferenceLines(nFlashes, delay);
+              });
+            })
+            .catch(CATMAID.handleError);
+        };
+
         let linkLocation = function(loc) {
           let landmarkGroupId = widget.editLandmarkGroup;
           // Get landmark
@@ -1995,7 +2008,8 @@
               width: "10%",
               orderable: false,
               render: function(data, type, row, meta) {
-                return '<a href="#" data-id="' +
+                return '<a href="#" data-id="' + row.id +
+                    '" data-action="select-location">Go to</a> <a href="#" data-id="' +
                     row.id + '" data-action="delete">Delete</a>';
               }
             }
@@ -2005,17 +2019,13 @@
           if (e.which === 1) {
             var table = $(this).closest('table');
             var data =  $(table).DataTable().row(this).data();
-            project.moveTo(data.z, data.y, data.x)
-              .then(function() {
-                // Biefly flash new location
-                var nFlashes = 3;
-                var delay = 100;
-                project.getStackViewers().forEach(function(s) {
-                  s.pulseateReferenceLines(nFlashes, delay);
-                });
-              })
-              .catch(CATMAID.handleError);
+            selectLocation(loc);
           }
+        }).on('click', 'a[data-action=select-location]', function() {
+          let table = $(this).closest('table');
+          let tr = $(this).closest('tr');
+          let loc =  $(table).DataTable().row(tr).data();
+          selectLocation(loc);
         }).on('click', 'a[data-action=delete]', function() {
           if (!confirm("Are you sure you want to delete the landmark anad its location from this group?")) {
             return;

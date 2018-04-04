@@ -2455,7 +2455,7 @@
               var fromGroup, toGroup;
 
               // Source select
-              let sourceSelect = CATMAID.DOM.createRadioSelect('Source landmark groups', groupOptions);
+              let sourceSelect = CATMAID.DOM.createRadioSelect('Source landmark groups', groupOptions, undefined, true);
               let sourceGroup = CATMAID.DOM.createLabeledControl("Source group",
                 sourceSelect, "Select the source landmark group, the space from " +
                 "which input points are transformed.");
@@ -2465,7 +2465,7 @@
               $(newDTForm).append(sourceGroup);
 
               // Target select
-              let targetSelect = CATMAID.DOM.createRadioSelect('Target landmark groups', groupOptions);
+              let targetSelect = CATMAID.DOM.createRadioSelect('Target landmark groups', groupOptions, undefined, true);
               let targetGroup = CATMAID.DOM.createLabeledControl("Target group",
                 targetSelect, "Select the target landmark group, the space to " +
                 "which input points are transformed.");

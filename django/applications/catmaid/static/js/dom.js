@@ -953,17 +953,28 @@
     customContent.appendChild(content);
     container.appendChild(customContent);
 
+    var onmousedown = function() {
+      toggleExpansion();
+    };
+
     // The function responsible for hiding and showing all controls has a
     // private state variable and an IIFE is used to encapsulate it (to reduce
     // closure size).
     var toggleExpansion = (function(context) {
       var expanded = false;
-      return function(e) {
+      return function() {
         var customContent = context.querySelector('div.customselect-content');
         if (expanded) {
           customContent.style.display = 'none';
+          CATMAID.ui.releaseEvents();
+          CATMAID.ui.removeEvent("onmousedown", onmousedown);
         } else {
           customContent.style.display = 'block';
+
+          // Enable general UI click handler to close drop down if the mouse was
+          // clicked outside of the control.
+          CATMAID.ui.catchEvents();
+          CATMAID.ui.registerEvent("onmousedown", onmousedown);
         }
         expanded = !expanded;
       };
@@ -972,7 +983,7 @@
     // Expand whe the container is clicked
     container.onclick = toggleExpansion;
     toggleSelect.onclick = function(e) {
-      toggleExpansion(e);
+      toggleExpansion();
       return false; // Don't bubble up
     };
 

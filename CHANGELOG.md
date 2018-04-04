@@ -127,6 +127,9 @@ Miscellaneous:
 - Measurement table: no error is shown anymore after merging two listed
   skeletons.
 
+- Radio button drop-downs and checkbox drop-downs now hide on a mouse click
+  outside of the control.
+
 
 ## 2018.02.16
 

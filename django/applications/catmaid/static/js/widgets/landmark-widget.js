@@ -1805,15 +1805,8 @@
           // Get landmark
           return promiseLandmark()
             .then(function(landmark) {
-              return CATMAID.Landmarks.linkNewLocationToLandmark(project.id, landmark.id, loc)
-                .then(function(link) {
-                  return CATMAID.Landmarks.addLandmarkLocationToGroup(project.id,
-                      landmarkGroupId, link.point_id);
-                })
-                .then(function() {
-                  return CATMAID.Landmarks.addGroupMember(project.id,
-                      landmarkGroupId, landmark.id);
-                });
+              return CATMAID.Landmarks.linkNewLocationToLandmarkAndGroup(project.id,
+                  landmarkGroupId, landmark.id, loc);
             })
             .then(function() {
               newLandmarkInput.value = "";

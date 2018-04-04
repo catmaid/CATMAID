@@ -129,6 +129,28 @@
     },
 
     /**
+     * Link a new location to both a landmark and a group plus making sure the
+     * landmark is a member of the group.
+     *
+     * @param {Number} projectId  The project of the group.
+     * @param {Number} groupId    The landmark group to update.
+     * @param {Number} landmarkId the landmark to update.
+     * @param {Object} location   The XYZ project space location to use
+     * @returns {Promise} Resolves when all work is done.
+     */
+    linkNewLocationToLandmarkAndGroup: function(projectId, groupId, landmarkId, location) {
+      return CATMAID.Landmarks.linkNewLocationToLandmark(projectId, landmarkId, location)
+        .then(function(link) {
+          return CATMAID.Landmarks.addLandmarkLocationToGroup(projectId,
+              groupId, link.point_id);
+        })
+        .then(function() {
+          return CATMAID.Landmarks.addGroupMember(projectId,
+              groupId, landmarkId);
+        });
+    },
+
+    /**
      * Delete the link between the passed in landmark and location.
      */
     deleteLocationLink: function(projectId, landmarkId, locationId) {

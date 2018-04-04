@@ -2023,7 +2023,7 @@
           if (e.which === 1) {
             var table = $(this).closest('table');
             var data =  $(table).DataTable().row(this).data();
-            selectLocation(loc);
+            selectLocation(data);
           }
         }).on('click', 'a[data-action=select-location]', function() {
           let table = $(this).closest('table');

@@ -2001,6 +2001,22 @@
               }
             }
           ],
+        }).on('dblclick', 'tr', function(e) {
+          // If left mouse button was used, move to location.
+          if (e.which === 1) {
+            var table = $(this).closest('table');
+            var data =  $(table).DataTable().row(this).data();
+            project.moveTo(data.z, data.y, data.x)
+              .then(function() {
+                // Biefly flash new location
+                var nFlashes = 3;
+                var delay = 100;
+                project.getStackViewers().forEach(function(s) {
+                  s.pulseateReferenceLines(nFlashes, delay);
+                });
+              })
+              .catch(CATMAID.handleError);
+          }
         }).on('click', 'a[data-action=delete]', function() {
           if (!confirm("Are you sure you want to delete the landmark anad its location from this group?")) {
             return;

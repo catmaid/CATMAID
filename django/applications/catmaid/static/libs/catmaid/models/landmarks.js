@@ -150,17 +150,35 @@
      * Link a new location to both a landmark and a group plus making sure the
      * landmark is a member of the group.
      *
-     * @param {Number} projectId  The project of the group.
-     * @param {Number} groupId    The landmark group to update.
-     * @param {Number} landmarkId the landmark to update.
-     * @param {Object} location   The XYZ project space location to use
+     * @param {Number}  projectId  The project of the group.
+     * @param {Number}  groupId    The landmark group to update.
+     * @param {Number}  landmarkId the landmark to update.
+     * @param {Object}  location   The XYZ project space location to use
+     * @param {Boolean} clear      (optional) If existing group location links
+     *                             and landmark location links to the same
+     *                             location should be removed before adding new
+     *                             ones. Defaults to false.
      * @returns {Promise} Resolves when all work is done.
      */
-    linkNewLocationToLandmarkAndGroup: function(projectId, groupId, landmarkId, location) {
-      return CATMAID.Landmarks.linkNewLocationToLandmark(projectId, landmarkId, location)
+    linkNewLocationToLandmarkAndGroup: function(projectId, groupId, landmarkId,
+        location, clear) {
+      let prepare = [];
+      if (clear) {
+        // If the landmark to link is already linked to the passed in group and
+        // the <clear> flag is set, remove all landmark locations linked to both
+        // and only both.
+        prepare.push(CATMAID.Landmarks.deleteSharedLocationLinks(projectId,
+            groupId, landmarkId));
+      }
+
+      return Promise.all(prepare)
+        .then(function() {
+          return CATMAID.Landmarks.linkNewLocationToLandmark(projectId, landmarkId,
+              location, clear);
+        })
         .then(function(link) {
           return CATMAID.Landmarks.addLandmarkLocationToGroup(projectId,
-              groupId, link.point_id);
+              groupId, link.point_id, clear);
         })
         .then(function() {
           return CATMAID.Landmarks.addGroupMember(projectId,

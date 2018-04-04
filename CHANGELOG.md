@@ -33,8 +33,10 @@ Landmarks:
   disable the Landmark Layer, uncheck the "Show landmark layers" checkbox in the
   Display tab's button panel.
 
-- The new "Edit landmars" tab provides a simpler interface to add new landmark
-  locations to landmark groups.
+- The new "Edit landmark" tab provides a simpler interface to add new landmark
+  locations to landmark groups. If the option "Update existing landmark
+  locations" is selected, new landmark locations will replace existing ones
+  shared between the provided landmark and the selected group.
 
 - The color and extra scaling for nodes on Landmark Layers can be adjusted from
   the widget.

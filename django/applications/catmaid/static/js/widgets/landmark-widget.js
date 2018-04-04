@@ -69,6 +69,8 @@
     this.editLandmarkGroup = null;
     // Whether reference lines are on by default
     this.editShowReferenceLines = true;
+    // Wheter a landmark location should be updated when it already exists.
+    this.editUpdateExistingLandmarkLocations = false;
 
     // The current edit mode
     this.mode = 'landmarks';
@@ -1744,6 +1746,14 @@
                 s.showReferenceLines(showReferenceLines);
               });
             }
+          },
+          {
+            type: 'checkbox',
+            label: 'Update existing landmark locations',
+            value: target.editUpdateExistingLandmarkLocations,
+            onclick: function() {
+              target.editUpdateExistingLandmarkLocations = this.checked;
+            }
           }
         ];
       },
@@ -1796,10 +1806,16 @@
           let existingLandmark = widget.landmarkNameIndex.get(landmarkName.toLowerCase());
           if (existingLandmark) {
             CATMAID.msg("Existing landmark", "Using known landmark name");
-            return Promise.resolve(existingLandmark);
+            return Promise.all([Promise.resolve(existingLandmark), false]);
           }
           CATMAID.msg("New landmark", "Creating new landmark");
-          return CATMAID.Landmarks.add(project.id, landmarkName);
+          return Promise.all([
+              CATMAID.Landmarks.add(project.id, landmarkName)
+                .then(function(l) {
+                    l.locations = [];
+                    return l;
+                 }),
+              true]);
         };
 
         let selectLocation = function(loc) {
@@ -1817,11 +1833,29 @@
 
         let linkLocation = function(loc) {
           let landmarkGroupId = widget.editLandmarkGroup;
+          let group = widget.landmarkGroupIndex.get(landmarkGroupId);
+          if (!group) {
+            throw new CATMAID.ValueError("Could not find data for landmark group " +
+                landmarkGroupId);
+          }
           // Get landmark
           return promiseLandmark()
-            .then(function(landmark) {
+            .then(function(landmarkInfo) {
+              let landmark = landmarkInfo[0];
+              let landmarkNewInGroup = landmarkInfo[1];
+              // If this landmark name alraedy exists in this group, update the
+              // existing node's the location or, if disabled, show a warning
+              // and abort.
+              let linkedLocations = getLinkedGroupLocationIndices(group, landmark);
+
+              if (!widget.editUpdateExistingLandmarkLocations &&
+                  linkedLocations.length > 0) {
+                throw new CATMAID.Warning('The landmark "' + landmark.name +
+                    '" is already has a location link with this group');
+              }
               return CATMAID.Landmarks.linkNewLocationToLandmarkAndGroup(project.id,
-                  landmarkGroupId, landmark.id, loc);
+                  landmarkGroupId, landmark.id, loc,
+                  widget.editUpdateExistingLandmarkLocations);
             })
             .then(function() {
               newLandmarkInput.value = "";

@@ -17,7 +17,7 @@ from rest_framework.decorators import api_view
 
 from catmaid import state
 from catmaid.models import UserRole, Treenode, ClassInstance, \
-        TreenodeConnector, Location
+        TreenodeConnector, Location, SamplerInterval
 from catmaid.control.authentication import requires_user_role, \
         can_edit_class_instance_or_fail, can_edit_or_fail
 from catmaid.control.common import get_relation_to_id_map, \
@@ -649,6 +649,11 @@ def delete_treenode(request, project_id=None):
     links = list(TreenodeConnector.objects.filter(project_id=project_id,
             treenode_id=treenode_id).values_list('id', 'relation_id',
             'connector_id', 'confidence'))
+
+    n_sampler_refs = SamplerInterval.objects.filter(start_node=treenode).count() + \
+            SamplerInterval.objects.filter(end_node=treenode).count()
+    if (n_sampler_refs > 0):
+        raise ValueError("Can't delete node, it is used in at least one sampler interval")
 
     response_on_error = ''
     deleted_neuron = False

@@ -1080,9 +1080,12 @@ class SamplerIntervalState(models.Model):
 class SamplerInterval(UserFocusedModel):
     domain = models.ForeignKey('SamplerDomain', db_index=True, on_delete=models.CASCADE)
     interval_state = models.ForeignKey(SamplerIntervalState, db_index=True, on_delete=models.CASCADE)
-    start_node = models.ForeignKey(Treenode, on_delete=models.CASCADE,
+    # Integrety od start and end node are handled by the database. We don't want
+    # cascading deletes, because sampler nodes should not be touched while the
+    # sampler is active.
+    start_node = models.ForeignKey(Treenode, on_delete=models.DO_NOTHING,
             related_name="sampler_interval_start_node_set")
-    end_node = models.ForeignKey(Treenode, on_delete=models.CASCADE,
+    end_node = models.ForeignKey(Treenode, on_delete=models.DO_NOTHING,
             related_name="sampler_interval_end_node_set")
 
     def __str__(self):

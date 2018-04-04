@@ -50,6 +50,8 @@ Landmarks:
 
 - PNG and SVG exports offer now a filename input field.
 
+- Loaded volumes are now stored along with their styling in the widget state.
+
 Reconstruction Sampler:
 
 - Intervals are now displayed with only two colors by default, it makes

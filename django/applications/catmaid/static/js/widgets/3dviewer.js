@@ -2067,7 +2067,7 @@
   /**
    * Show or hide a stored volume with a given Id.
    */
-  WebGLApplication.prototype.showVolume = function(volumeId, visible) {
+  WebGLApplication.prototype.showVolume = function(volumeId, visible, color, opacity, faces) {
     var existingVolume = this.loadedVolumes.get(volumeId);
     if (visible) {
       // Bail out if the volume in question is already visible
@@ -2083,7 +2083,8 @@
           var loader = new THREE.VRMLLoader();
           var scene = loader.parse(vrml);
           if (scene.children) {
-            var material = this.options.createMeshMaterial();
+            var material = this.options.createMeshMaterial(color, opacity);
+            material.wireframe = !faces;
             var addedMeshes = scene.children.map(function(mesh) {
               mesh.material = material;
               this.space.scene.add(mesh);
@@ -7706,13 +7707,37 @@
       // Remove font, because it is too big for cookie storage
       var state = widget.options.clone();
       delete state['font'];
-      return { options: state };
+      // Add volume information
+      let volumes = JSON.stringify(
+          Array.from(widget.loadedVolumes.keys()).reduce(function(o, v) {
+            let meshes = widget.loadedVolumes.get(v);
+            for (let i=0, imax=meshes.length; i<imax; ++i) {
+              let mesh = meshes[i];
+              o.push({
+                'id': v,
+                'color': mesh.material.color.getStyle(),
+                'opacity': mesh.material.opacity,
+                'wireframe': mesh.material.wireframe
+              });
+            }
+            return o;
+          }, []));
+      return {
+        options: state,
+        volumes: volumes
+      };
     },
     setState: function(widget, state) {
       if (state.options) {
         for (var field in widget.options) {
           CATMAID.tools.copyIfDefined(state.options, widget.options, field);
         }
+      }
+      if (state.volumes) {
+        let volumes = JSON.parse(state.volumes);
+        volumes.forEach(function(v) {
+          widget.showVolume(v.id, true, v.color, v.opacity, !v.wireframe);
+        });
       }
     }
   });

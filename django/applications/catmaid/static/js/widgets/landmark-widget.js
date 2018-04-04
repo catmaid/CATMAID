@@ -1923,6 +1923,7 @@
               title: '<input type="checkbox" data-action="select-all-landmarks" />',
               orderable: false,
               class: "cm-center",
+              width: "5%",
               render: function(data, type, row, meta) {
                 let selected = widget.selectedLandmarks.has(row.id);
                 if (type === 'display') {
@@ -1935,6 +1936,7 @@
             {
               data: "id",
               title: "Id",
+              width: "10%",
               orderable: true,
               class: "cm-center",
               render: function(data, type, row, meta) {
@@ -1976,24 +1978,28 @@
             {
               data: "x",
               title: "X",
+              width: "10%",
               orderable: true,
               class: "no-context-menu cm-center"
             },
             {
               data: "y",
               title: "Y",
+              width: "10%",
               orderable: true,
               class: "no-context-menu cm-center"
             },
             {
               data: "z",
               title: "Z",
+              width: "10%",
               orderable: true,
               class: "no-context-menu cm-center"
             },
             {
               title: "Action",
               class: "cm-center",
+              width: "10%",
               orderable: false,
               render: function(data, type, row, meta) {
                 return '<a href="#" data-id="' +

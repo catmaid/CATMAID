@@ -4695,13 +4695,13 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteConnectorNode =
  * local objects.
  */
 SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
-    function(node, wasActiveNode) {
+    function(node, wasActiveNode, handleError) {
   var self = this;
   // Make sure all other pending tasks are done before the node is deleted.
   return this.submit.then(function() {
     var command = new CATMAID.RemoveNodeCommand(self.state, project.id, node.id);
     return CATMAID.commands.execute(command);
-  }).then(function(json) {
+  }, handleError).then(function(json) {
     // nodes not refreshed yet: node still contains the properties of the deleted node
     // ensure the node, if it had any changes, these won't be pushed to the database: doesn't exist anymore
     self.nodeIDsNeedingSync.delete(node.id);
@@ -4778,8 +4778,7 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
       }
     }
   })
-  .promise()
-  .catch(CATMAID.handleError);
+  .promise();
 };
 
 /**
@@ -4836,6 +4835,16 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
   // Unset active node to avoid actions that involve the deleted node
   var isActiveNode = (node.id === SkeletonAnnotations.getActiveNodeId());
 
+  var reset = (function(deletedNodeId) {
+    this.suspended = false;
+    this._lastDeletedNodeId = deletedNodeId;
+  }).bind(this);
+
+  var handleError= function() {
+    reset(null);
+    return true;
+  };
+
   // Call actual delete methods defined below (which are callable due to
   // hoisting)
   var del;
@@ -4846,23 +4855,18 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
       break;
     case SkeletonAnnotations.TYPE_NODE:
       this.suspended = true;
-      del = this._deleteTreenode(node, isActiveNode);
+      del = this._deleteTreenode(node, isActiveNode, handleError);
       break;
   }
 
   if (del) {
     var lastLastDeletedNodeId = this._lastDeletedNodeId;
     this._lastDeletedNodeId = node.id;
-    var reset = (function(deletedNodeId) {
-      this.suspended = false;
-      this._lastDeletedNodeId = deletedNodeId;
-    }).bind(this);
     del.then(function() {
         reset(nodeId);
       })
       .catch(function(error) {
         reset(lastLastDeletedNodeId);
-        CATMAID.handleError(error);
       });
     return del;
   } else {

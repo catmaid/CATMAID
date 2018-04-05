@@ -1053,7 +1053,8 @@
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
-        activeTracingLayer.tracingOverlay.deleteActiveNode();
+        activeTracingLayer.tracingOverlay.deleteActiveNode()
+          .catch(CATMAID.handleError);
         return true;
       }
     }));

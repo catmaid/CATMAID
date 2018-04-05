@@ -34,7 +34,8 @@ needed_relations = {
     'postsynaptic_to': "Something is postsynaptic to something else.",
     'abutting': "Two things abut against each other",
     'gapjunction_with': "Something has a gap junction with something else",
-    'attached_to': "Something is considered attached/linked to something else"
+    'attached_to': "Something is considered attached/linked to something else",
+    'adjacent_to': { 'description': "Next to each other", 'isreciprocal': True },
 }
 
 # Expected sampler states, sampler interval sates and sampler domain types
@@ -157,11 +158,18 @@ def setup_tracing(project_id, user=None):
         available_classes[c] = class_object
     # Add missing relations
     for r in needed_relations:
+        defaults = {
+            'user': user,
+        }
+        if type(needed_relations[r]) in six.string_types:
+            defaults['description'] = needed_relations[r]
+        else:
+            defaults.update(needed_relations[r])
+
         Relation.objects.get_or_create(
             relation_name=r,
             project_id=project_id,
-            defaults={'user': user,
-                      'description': needed_relations[r]})
+            defaults=defaults)
     # Add missing sampler states
     for sn, sd in six.iteritems(needed_sampler_states):
         SamplerState.objects.get_or_create(

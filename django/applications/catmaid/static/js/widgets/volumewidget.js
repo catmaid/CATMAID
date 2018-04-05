@@ -745,7 +745,7 @@
           boxTool.register(stack);
           boxTool.createCropBoxByWorld(
               volume.minX, volume.minY, Math.abs(volume.maxX - volume.minX),
-              Math.abs(volume.maxY - volume.minY), 0);
+              Math.abs(volume.maxY - volume.minY), 0, volume.minZ, volume.maxZ);
 
           var onUpdate = function(field, newValue, oldValue) {
             boxTool.cropBox.top = volume.minY;

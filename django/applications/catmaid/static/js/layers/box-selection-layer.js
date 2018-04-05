@@ -24,6 +24,7 @@
 
       this.redraw = function(completionCallback)
       {
+          let svProjectCoords = stackViewer.projectCoordinates();
           var cropBoxBB = tool.getCropBoxBoundingBox(stackViewer);
 
           // Size and positioning
@@ -32,6 +33,17 @@
           view.style.top = cropBoxBB.top_px + "px";
           view.style.width = cropBoxBB.width_px  + "px";
           view.style.height = cropBoxBB.height_px  + "px";
+
+          // If z1 and z2 are set, the box is only rendered if the linked
+          // stack viewer's Z is between them. Like the rest of this layer, it
+          // assumes an XY orientation and doesn't work with ortho stacks.
+          if (cropBoxBB.z1 !== undefined && cropBoxBB.z2 !== undefined) {
+            if (svProjectCoords.z < cropBoxBB.z1 || svProjectCoords.z >= cropBoxBB.z2) {
+              view.style.display = 'none';
+            } else {
+              view.style.display = 'block';
+            }
+          }
 
           // Rotation
           var rotation_cmd = "rotate(" + cropBoxBB.rotation_cw + "deg)";

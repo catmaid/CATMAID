@@ -81,7 +81,9 @@
                left_px : left_px, top_px : top_px,
                right_px : right_px, bottom_px : bottom_px,
                width_px : width_px, height_px : height_px,
-               rotation_cw: this.cropBox.rotation_cw };
+               rotation_cw: this.cropBox.rotation_cw,
+               z1: this.cropBox.z1,
+               z2: this.cropBox.z2 };
   };
 
   /**
@@ -147,7 +149,7 @@
    * first.
    */
   BoxSelectionTool.prototype.createCropBoxByWorld = function( worldX,
-      worldY, worldWidth, worldHeight, rotation_cw )
+      worldY, worldWidth, worldHeight, rotation_cw, z1, z2)
   {
       var view = this.stackViewer.getView();
       if ( this.cropBox )
@@ -160,6 +162,8 @@
       this.cropBox.top = worldY + this.stackViewer.primaryStack.translation.y;
       this.cropBox.right = this.cropBox.left + worldWidth;
       this.cropBox.bottom = this.cropBox.top + worldHeight;
+      this.cropBox.z1 = z1;
+      this.cropBox.z2 = z2;
       this.cropBox.xdist = 0;
       this.cropBox.ydist = 0;
       this.cropBox.xorigin = this.cropBox.left;

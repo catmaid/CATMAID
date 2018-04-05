@@ -126,6 +126,10 @@ Miscellaneous:
   were sometimes wrong and showed additional intervals. This is fixed now.
   Actual interval boundaries were not affected and are correct.
 
+- Reconstruction Sampler: Individual intervals are not silently deleted anymore
+  if referenced start or end node is deleted. As consequence interval start and
+  end nodes can't be deleted anymore.
+
 - Measurement table: no error is shown anymore after merging two listed
   skeletons.
 

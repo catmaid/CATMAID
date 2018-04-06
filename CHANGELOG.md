@@ -36,7 +36,9 @@ Landmarks:
 - The new "Edit landmark" tab provides a simpler interface to add new landmark
   locations to landmark groups. If the option "Update existing landmark
   locations" is selected, new landmark locations will replace existing ones
-  shared between the provided landmark and the selected group.
+  shared between the provided landmark and the selected group. The lower
+  section of this tab allows to edit links between landmark groups, which can
+  be used for rule based display transformations.
 
 - The color and extra scaling for nodes on Landmark Layers can be adjusted from
   the widget.

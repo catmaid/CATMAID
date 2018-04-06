@@ -216,6 +216,33 @@
     },
 
     /**
+     * Add a new link between two landmark groups using a particular relation.
+     * The semantics are determinded by the relation and the fact it follows the
+     * pattern <subject> <prediate> <object> is the same as <groupAId>
+     * <relationId> <groupBId>. If a particular relation is used already between
+     * two groups, the existing one is returned. A flag in the result indicates
+     * whether a new link has been created.
+     */
+    addLandmarkGroupLink: function(projectId, groupAId, groupBId, relationId) {
+      return CATMAID.fetch(projectId + '/landmarks/groups/links/', 'PUT', {
+        'group_1_id': groupAId,
+        'group_2_id': groupBId,
+        'relation_id': relationId
+      });
+    },
+
+    /**
+     * Delete a specific landmark group link.
+     *
+     * @param {integer} projectId The project the link is part of.
+     * @param {integer} linkId    The link to delete.
+     * @returns {Promise} Resolves with basic properties of the deleted link.
+     */
+    deleteLandmarkGroupLink: function(projectId, linkId) {
+      return CATMAID.fetch(projectId + '/landmarks/groups/links/' + linkId + '/', 'DELETE');
+    },
+
+    /**
      * Import and link landmarks, landmark groups and locations. The passed in
      * <data> parameter is a list of two-element lists, each representing a
      * group along with its linked landmark and locations. The group is

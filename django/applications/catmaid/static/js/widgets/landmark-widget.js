@@ -16,7 +16,7 @@
     this.widgetID = this.registerInstance();
     this.idPrefix = `landmark-widget${this.widgetID}-`;
 
-    // The displayed data table
+    // The displayed data tables
     this.landmarkDataTable = null;
 
     // Data caches
@@ -71,6 +71,11 @@
     this.editShowReferenceLines = true;
     // Wheter a landmark location should be updated when it already exists.
     this.editUpdateExistingLandmarkLocations = false;
+    // Whether the currently edited group should default to group A in a new
+    // group link configuration.
+    this.editGroupDefaultsToAInLink = true;
+    // The default landmark group relation.
+    this.editLinkRelation = 'adjacent_to';
 
     // The current edit mode
     this.mode = 'landmarks';
@@ -1754,6 +1759,14 @@
             onclick: function() {
               target.editUpdateExistingLandmarkLocations = this.checked;
             }
+          },
+          {
+            type: 'checkbox',
+            label: 'Edited group defaults to A for new link',
+            value: target.editGroupDefaultsToAInLink,
+            onclick: function() {
+              target.editGroupDefaultsToAInLink = this.checked;
+            }
           }
         ];
       },
@@ -2099,12 +2112,128 @@
         });
 
         // Controls to put this group into relation with another group.
-        var landmarkGroupRelationsHeader = content.appendChild(document.createElement('h1'));
-        landmarkGroupRelationsHeader.appendChild(document.createTextNode('Landmark groups relations'));
-        content.appendChild(landmarkGroupRelationsHeader);
+        var landmarkGroupLinksHeader = content.appendChild(document.createElement('h1'));
+        landmarkGroupLinksHeader.appendChild(document.createTextNode('Add new landmark group link'));
+        content.appendChild(landmarkGroupLinksHeader);
 
-        // Tools to add new relation
+        // Select source group and default select currently edited group
+        let newGroupLinkPanel = content.appendChild(document.createElement('div'));
+        newGroupLinkPanel.classList.add('buttonpanel');
 
+        // Group A select
+        let groupASelectWrapper = newGroupLinkPanel.appendChild(document.createElement('span'));
+        let groupASelect = null;
+
+        // Relation
+        let relationSelectWrapper = newGroupLinkPanel.appendChild(document.createElement('span'));
+        let relationSelect = null;
+
+        // Group B select
+        let groupBSelectWrapper = newGroupLinkPanel.appendChild(document.createElement('span'));
+        let groupBSelect = null;
+
+        // Once data is available, fill in actual link related controls
+        landmarkGroupDetails
+          .then(function() {
+            let landmarkGroupOptions = Array.from(widget.landmarkGroupIndex.keys()).map(function(lg) {
+              let g = widget.landmarkGroupIndex.get(lg);
+              return {
+                title: g.name,
+                value: g.id
+              };
+            });
+            let groupADefault = widget.editGroupDefaultsToAInLink ?
+                widget.editLandmarkGroup : undefined;
+            let labeledGroupASelect = CATMAID.DOM.createLabeledControl('Group A:',
+                CATMAID.DOM.createSelect('landmarkgroups-edit-group-a' + widget.widgetID,
+                landmarkGroupOptions, groupADefault, CATMAID.noop)).get(0);
+            groupASelect = $('select', labeledGroupASelect).get(0);
+            groupASelectWrapper.appendChild(labeledGroupASelect);
+            if (groupADefault) {
+              groupASelect.setAttribute('disabled', 'true');
+            }
+
+            let groupBDefault = widget.editGroupDefaultsToAInLink ?
+                undefined : widget.editLandmarkGroup;
+            let labeledGroupBSelect = CATMAID.DOM.createLabeledControl('with Group B:',
+                CATMAID.DOM.createSelect('landmarkgroups-edit-group-b' + widget.widgetID,
+                landmarkGroupOptions, groupBDefault, function() {
+
+                })).get(0);
+            groupBSelect = $('select', labeledGroupBSelect).get(0);
+            groupBSelectWrapper.appendChild(labeledGroupBSelect);
+            if (groupBDefault) {
+              groupBSelect.setAttribute('disabeld', 'true');
+            }
+          })
+          .catch(CATMAID.handleError);
+
+        // Load available relations and fill select element
+        CATMAID.Relations.list(project.id)
+          .then(function(relationMap) {
+            let relationNames = Object.keys(relationMap);
+            let invRelationMap = relationNames.reduce(function(o, name) {
+              o[relationMap[name]] = name;
+              return o;
+            }, {});
+            let relations = relationNames.map(function(name) {
+              return { title: name, value: relationMap[name] };
+            });
+            let defaultRelation = relationMap[widget.editLinkRelation];
+            // Relation select
+            let labeledRelationSelect = CATMAID.DOM.createLabeledControl(
+              'in Relation: ', CATMAID.DOM.createSelect('landmarkgroups-edit-relation' + widget.widgetID,
+              relations, defaultRelation, function() {
+                widget.editLinkRelation = invRelationMap[this.value];
+              })).get(0);
+            relationSelect = $('select', labeledRelationSelect).get(0);
+            relationSelectWrapper.appendChild(labeledRelationSelect);
+          })
+          .catch(CATMAID.handleError);
+
+        // Switch button
+        let switchGroupsButton = newGroupLinkPanel.appendChild(document.createElement('button'));
+        switchGroupsButton.appendChild(document.createTextNode('Switch'));
+        switchGroupsButton.onclick = function(e) {
+          let groupAId = groupASelect.value;
+          let groupBId = groupBSelect.value;
+          groupASelect.value = groupBId;
+          groupBSelect.value = groupAId;
+          if (groupAId == widget.editLandmarkGroup) {
+            groupASelect.removeAttribute('disabled');
+            groupBSelect.setAttribute('disabled', 'true');
+          } else {
+            groupASelect.setAttribute('disabled', 'true');
+            groupBSelect.removeAttribute('disabled');
+          }
+        };
+
+        // Add button
+        var addLinkButton = newGroupLinkPanel.appendChild(document.createElement('button'));
+        addLinkButton.appendChild(document.createTextNode('Add new group link'));
+        addLinkButton.onclick = function(e) {
+          let edtitedGroupIsSubject = true;
+
+          let groupAId = parseInt(groupASelect.value, 10);
+          let groupBId = parseInt(groupBSelect.value, 10);
+          let relationId = parseInt(relationSelect.value, 10);
+          CATMAID.Landmarks.addLandmarkGroupLink(project.id, groupAId,
+              groupBId, relationId)
+            .then(function(result) {
+              if (result.created) {
+                CATMAID.msg("Success", "Create new landmark group link");
+              } else {
+                CATMAID.msg("Existing link used", "No new landmark group link created");
+              }
+              widget.update();
+            })
+            .catch(CATMAID.handleError);
+        };
+
+        // Controls to put this group into relation with another group.
+        var landmarkGroupLinksHeader = content.appendChild(document.createElement('h1'));
+        landmarkGroupLinksHeader.appendChild(document.createTextNode('Landmark group links'));
+        content.appendChild(landmarkGroupLinksHeader);
 
         // List existing relations
         var relationMap = new Map();
@@ -2213,17 +2342,24 @@
               width: "10%",
               orderable: false,
               render: function(data, type, row, meta) {
-                return '<a href="#" data-id="' + row.id +
-                    '" data-action="select-location">Go to</a> <a href="#" data-id="' +
+                return '<a href="#" data-id="' +
                     row.id + '" data-action="delete">Delete</a>';
               }
             }
           ],
         }).on('click', 'a[data-action=delete]', function() {
-          let groupName = "TODO";
-          if (!confirm("Are you sure you want to delete the link to group " + partnerGroupName + "?")) {
+          var table = $(this).closest('table');
+          var tr = $(this).closest('tr');
+          var link =  $(table).DataTable().row(tr).data();
+          if (!confirm("Are you sure you want to delete the link to group " + link.name + "?")) {
             return;
           }
+          CATMAID.Landmarks.deleteLandmarkGroupLink(project.id, link.id)
+            .then(function(result) {
+              CATMAID.msg("Success", "Deleted landmark group link #" + link.id);
+              widget.update();
+            })
+            .catch(CATMAID.handleError);
         });
       }
     },

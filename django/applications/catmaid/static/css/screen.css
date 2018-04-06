@@ -534,6 +534,17 @@ table.neuron_annotations_query_fields {
   clear: both;
 }
 
+.buttonpanel .setting {
+  float: unset;
+  min-width: unset;
+  max-width: unset;
+  display: inline-block;
+}
+
+.buttonpanel .setting .description {
+  width: unset;
+}
+
 .buttonpanel input,
 .buttonpanel button {
   vertical-align: middle;
@@ -570,7 +581,8 @@ table.neuron_annotations_query_fields {
   top: 0.5em;
 }
 
-.buttonpanel select {
+.buttonpanel select,
+.buttonpanel .setting select {
   margin-left: 0.5em;
 }
 
@@ -949,7 +961,7 @@ div.review-block::after {
 
 .setting .description {
   width: 15em;
-  display: inline-block
+  display: inline-block;
 }
 
 .setting .help {

@@ -1171,3 +1171,121 @@ class LandmarkAndGroupkLocationDetail(APIView):
             'group_link_ids': lg_link_ids,
             'n_deleted_points': n_deleted_points
         })
+
+class LandmarkGroupLinks(APIView):
+
+    @method_decorator(requires_user_role(UserRole.Annotate))
+    def put(self, request, project_id):
+        """Link a location group to another landmark group. If the passed in
+        groups already are in relation to each other using the passed in
+        relation, no new link is created. Instead, the existing link will be
+        returned. A flag in the result indicates whether the returned object is
+        new.
+        ---
+        parameters:
+          - name: project_id
+            description: Project of landmark group
+            type: integer
+            paramType: path
+            required: true
+          - name: group_1_id
+            description: The first landmark group, has role of subject.
+            type: integer
+            paramType: form
+            required: true
+          - name: relation_id
+            description: The relation between group 1 and 2, has role of predicate.
+            type: integer
+            paramType: form
+            required: true
+          - name: group_2_id
+            description: The first landmark group, has role of object.
+            type: integer
+            paramType: form
+            required: true
+        """
+        group_1_id = request.data.get('group_1_id')
+        group_1 = ClassInstance.objects.get(id=group_1_id, project_id=project_id)
+        group_2_id = request.data.get('group_2_id')
+        group_2 = ClassInstance.objects.get(id=group_2_id, project_id=project_id)
+        relation_id = request.data.get('relation_id')
+
+        cici, created = ClassInstanceClassInstance.objects.get_or_create(
+                project_id=project_id,
+                class_instance_a=group_1,
+                class_instance_b=group_2,
+                relation_id=relation_id,
+                defaults={
+                    'user': request.user,
+                })
+
+        return Response({
+            'id': cici.id,
+            'group_1_id': cici.class_instance_a_id,
+            'group_2_id': cici.class_instance_b_id,
+            'relation_id': cici.relation_id,
+            'created': created
+        })
+
+
+class LandmarkGroupLinkDetail(APIView):
+
+    @method_decorator(requires_user_role(UserRole.Annotate))
+    def delete(self, request, project_id, link_id):
+        """Delete the link between two landmark groups. Won't delete links that
+        don't connect to landmark groups.
+        ---
+        parameters:
+          - name: project_id
+            description: Project of landmark group
+            type: integer
+            paramType: path
+            required: true
+          - name: link_id
+            description: The link to delete
+            type: integer
+            paramType: path
+            required: true
+        """
+        can_edit_or_fail(request.user, link_id, 'class_instance_class_instance')
+
+        cursor = connection.cursor()
+        cursor.execute("""
+            DELETE FROM class_instance_class_instance
+            WHERE id IN (
+                WITH landmark_class AS (
+                    SELECT id
+                    FROM class
+                    WHERE project_id = %(project_id)s
+                    AND class_name = 'landmarkgroup'
+                )
+                SELECT cici.id
+                FROM landmark_class lc, class_instance_class_instance cici
+                JOIN class_instance ci_a
+                    ON cici.class_instance_a = ci_a.id
+                JOIN class_instance ci_b
+                    ON cici.class_instance_b = ci_b.id
+                WHERE cici.project_id = %(project_id)s
+                AND cici.id = %(link_id)s
+                AND ci_a.class_id = lc.id
+                AND ci_b.class_id = lc.id
+            )
+            RETURNING id, class_instance_a, class_instance_b, relation_id
+        """, {
+            'project_id': project_id,
+            'link_id': link_id
+        })
+
+        deleted_rows = list(cursor.fetchall())
+        if len(deleted_rows) > 1:
+            raise ValueError("Would delete more than one link, aborting.")
+        if len(deleted_rows) == 0:
+            raise ValueError("Could not find any link between groups with ID " + link_id)
+        deleted_link = deleted_rows[0]
+
+        return Response({
+            'id': deleted_link[0],
+            'group_1_id': deleted_link[1],
+            'group_2_id': deleted_link[2],
+            'relation_id': deleted_link[3],
+        })

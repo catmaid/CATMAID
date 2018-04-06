@@ -17,6 +17,12 @@ included in this changelog.
   Delete landmark location links to the same locations from a landmark and
   group.
 
+- `PUT /{project_id}/landmarks/groups/links/`:
+  Add new links between groups, e.g. "adjacent_to".
+
+- `DELETE /{project_id}/landmarks/groups/links/{link_id}/`:
+  Delete a single landmark group link.
+
 ### Modifications
 
 - `POST /{project_id}/annotations/query-targets`:

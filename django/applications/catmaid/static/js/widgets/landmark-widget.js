@@ -2065,7 +2065,7 @@
           let loc =  $(table).DataTable().row(tr).data();
           selectLocation(loc);
         }).on('click', 'a[data-action=delete]', function() {
-          if (!confirm("Are you sure you want to delete the landmark anad its location from this group?")) {
+          if (!confirm("Are you sure you want to delete the landmark and its location from this group?")) {
             return;
           }
           let table = $(this).closest('table');

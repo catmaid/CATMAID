@@ -1553,7 +1553,8 @@
     return Promise.all([
       CATMAID.annotations.update(),
       CATMAID.NeuronNameService.getInstance().refresh(),
-      SkeletonAnnotations.VisibilityGroups.refresh()
+      SkeletonAnnotations.VisibilityGroups.refresh(),
+      SkeletonAnnotations.FastMergeMode.refresh()
     ]);
   };
 

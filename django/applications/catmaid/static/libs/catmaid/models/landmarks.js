@@ -76,10 +76,11 @@
      * List all landmark groups in a project, optionally with location
      * information. Optionally, with member and location information.
      */
-    listGroups: function(projectId, with_members, with_locations) {
+    listGroups: function(projectId, with_members, with_locations, with_relations) {
       return CATMAID.fetch(project.id +  "/landmarks/groups/", "GET", {
-          with_members: with_members,
-          with_locations: with_locations
+          with_members: !!with_members,
+          with_locations: !!with_locations,
+          with_relations: !!with_relations
         });
     },
 

@@ -470,7 +470,7 @@
 
   LandmarkWidget.prototype.updateLandmarkGroups = function() {
     var self = this;
-    return CATMAID.Landmarks.listGroups(project.id, true, true)
+    return CATMAID.Landmarks.listGroups(project.id, true, true, true)
       .then(function(result) {
         self.landmarkGroups = result;
         self.landmarkGroupMemberships = result.reduce(addLandmarkGroupMembership, new Map());
@@ -2103,6 +2103,128 @@
         landmarkGroupRelationsHeader.appendChild(document.createTextNode('Landmark groups relations'));
         content.appendChild(landmarkGroupRelationsHeader);
 
+        // Tools to add new relation
+
+
+        // List existing relations
+        var relationMap = new Map();
+        var relationTable = document.createElement('table');
+        var relationTableWrapper = document.createElement('div');
+        relationTableWrapper.classList.add('container');
+        relationTableWrapper.appendChild(relationTable);
+        content.appendChild(relationTableWrapper);
+        var relationDataTable = $(relationTable).DataTable({
+          dom: "lfrtip",
+          autoWidth: false,
+          paging: true,
+          lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+          ajax: function(data, callback, settings) {
+            landmarkGroupDetails
+              .then(function(result) {
+                let group = widget.landmarkGroupIndex.get(widget.editLandmarkGroup);
+                let groupData;
+                if (group) {
+                  groupData = group.relations;
+                  relationMap = new Map(group.used_relations);
+                } else {
+                  CATMAID.warn('Could not find data for landmark group #' + widget.editLandmarkGroup);
+                  groupData = [];
+                }
+
+                // Populate index that maps location IDs to landmarks.
+                makeLocationLandmarkIndex(group, widget.landmarkIndex, locationLandmarkIndex);
+
+                // Call table update
+                callback({
+                  draw: data.draw,
+                  data: groupData,
+                  recordsTotal: groupData.length,
+                  recordsFiltered: groupData.length
+                });
+              })
+              .catch(CATMAID.handleError);
+          },
+          order: [],
+          columns: [
+            {
+              title: '<input type="checkbox" data-action="select-all-relations" />',
+              orderable: false,
+              class: "cm-center",
+              width: "5%",
+              render: function(data, type, row, meta) {
+                let selected = widget.selectedLandmarks.has(row.id);
+                if (type === 'display') {
+                  return '<input type="checkbox" data-action="select-relation" value="' +
+                      row.id + '" ' + (selected ? 'checked' : '') + ' />';
+                }
+                return selected;
+              }
+            },
+            {
+              data: "id",
+              title: "Link ID",
+              width: "10%",
+              orderable: true,
+              class: "cm-center",
+              render: function(data, type, row, meta) {
+                return row.id;
+              }
+            },
+            {
+              title: "Landmark group 1",
+              orderable: true,
+              class: "cm-center",
+              render: function(data, type, row, meta) {
+                let group = widget.landmarkGroupIndex.get(row.subject_id);
+                if (type === 'display') {
+                  return '<a href="#" data-action="select-landmark-group" data-id="' +
+                      group.id + '" >' + group.name + ' (' + group.id + ')</a>';
+                } else {
+                  return group.name;
+                }
+              }
+            },
+            {
+              title: "Relation",
+              orderable: true,
+              class: "cm-center",
+              render: function(data, type, row, meta) {
+                let relationName = relationMap.get(row.relation_id);
+                return relationName;
+              }
+            },
+            {
+              title: "Landmark group 2",
+              orderable: true,
+              class: "cm-center",
+              render: function(data, type, row, meta) {
+                let group = widget.landmarkGroupIndex.get(row.object_id);
+                if (type === 'display') {
+                  return '<a href="#" data-action="select-landmark-group" data-id="' +
+                      group.id + '" >' + group.name + ' (' + group.id + ')</a>';
+                } else {
+                  return group.name;
+                }
+              }
+            },
+            {
+              title: "Action",
+              class: "cm-center",
+              width: "10%",
+              orderable: false,
+              render: function(data, type, row, meta) {
+                return '<a href="#" data-id="' + row.id +
+                    '" data-action="select-location">Go to</a> <a href="#" data-id="' +
+                    row.id + '" data-action="delete">Delete</a>';
+              }
+            }
+          ],
+        }).on('click', 'a[data-action=delete]', function() {
+          let groupName = "TODO";
+          if (!confirm("Are you sure you want to delete the link to group " + partnerGroupName + "?")) {
+            return;
+          }
+        });
       }
     },
     import: {

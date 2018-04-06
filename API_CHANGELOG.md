@@ -32,6 +32,10 @@ included in this changelog.
   "with_relation_map", which controls which relation map information is
   returned. Can be 'none', 'used' and all with 'used' being the default.
 
+- `GET /{project_id}/landmarks/groups/`:
+  Accepts a new optional parameter "with_relations", to include relations
+  between landmark groups in the results. Default is false.
+
 ### Deprecations
 
 None.

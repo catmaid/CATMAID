@@ -334,9 +334,15 @@ class LandmarkGroupList(APIView):
             required: false
             defaultValue: false
             paramType: form
+          - name: with_relations
+            description: Whether to return relations to other groups
+            required: false
+            defaultValue: false
+            paramType: form
         """
         with_members = request.query_params.get('with_members', 'false') == 'true'
         with_locations = request.query_params.get('with_locations', 'false') == 'true'
+        with_relations = request.query_params.get('with_relations', 'false') == 'true'
         landmarkgroup_class = Class.objects.get(project_id=project_id, class_name="landmarkgroup")
         landmarkgroups = ClassInstance.objects.filter(project_id=project_id,
                 class_column=landmarkgroup_class).order_by('id')
@@ -362,6 +368,16 @@ class LandmarkGroupList(APIView):
                 # Append location information
                 for group in data:
                     group['locations'] = location_index[group['id']]
+
+            if with_relations:
+                # Add a relations field for a list of objects, each having the
+                # fields relation_id, relation_name, target_id.
+                relation_index, used_relations = make_landmark_relation_index(project_id,
+                        landmarkgroup_ids)
+                used_relations_list = [[k,v] for k,v in used_relations.items()]
+                for group in data:
+                    group['relations'] = relation_index[group['id']]
+                    group['used_relations'] = used_relations_list
 
         return Response(data)
 
@@ -809,6 +825,48 @@ def get_landmark_group_locations(project_id, landmarkgroup_ids):
             'z': r[4]
         })
     return location_index
+
+def make_landmark_relation_index(project_id, landmarkgroup_ids):
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT cici.id, lg.id, cici.relation_id, r.relation_name,
+            cici.class_instance_a, cici.class_instance_b
+        FROM class_instance_class_instance cici
+        JOIN UNNEST(%(landmarkgroup_ids)s::integer[]) lg(id)
+            ON lg.id = cici.class_instance_a
+            OR lg.id = cici.class_instance_b
+        JOIN relation r
+            ON r.id = cici.relation_id
+        JOIN class_instance ci_a
+            ON cici.class_instance_a = ci_a.id
+        JOIN class_instance ci_b
+            ON cici.class_instance_b = ci_b.id
+        JOIN (
+            SELECT id
+            FROM class
+            WHERE project_id = %(project_id)s
+            AND class_name = 'landmarkgroup'
+        ) cls(id)
+            ON cls.id = ci_a.class_id
+            AND cls.id = ci_b.class_id
+        WHERE cici.project_id = %(project_id)s
+    """, {
+        'landmarkgroup_ids': landmarkgroup_ids,
+        'project_id': project_id,
+    })
+    relation_index = defaultdict(list)
+    relation_map = dict()
+    for r in cursor.fetchall():
+        if r[2] not in relation_map:
+            relation_map[r[2]] = r[3]
+        relation_index[r[1]].append({
+            'id': r[0],
+            'relation_id': r[2],
+            'subject_id': r[4],
+            'object_id': r[5]
+        })
+
+    return relation_index, relation_map
 
 class LandmarkLocationList(APIView):
 

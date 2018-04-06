@@ -1261,7 +1261,9 @@
    */
   DOM.appendCheckbox = function(div, label, title, value, onclickFn, left, id) {
     var labelEl = document.createElement('label');
-    labelEl.setAttribute('title', title);
+    if (title) {
+      labelEl.setAttribute('title', title);
+    }
     var elems = DOM.createCheckbox(label, value, onclickFn, id);
     if (left) elems.reverse();
     elems.forEach(function(elem) { labelEl.appendChild(elem); });

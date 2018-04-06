@@ -64,7 +64,7 @@ connection pooling and communicates efficiently with Nginx.
     (replace this with ``/`` if you don't run in a subdirectory)::
 
        server {
-         listen 8080;
+         listen 80;
          server_name <CATMAID-HOST>;
        
          # Give access to Django's static files

@@ -470,7 +470,7 @@
 
   LandmarkWidget.prototype.updateLandmarkGroups = function() {
     var self = this;
-    return CATMAID.Landmarks.listGroups(project.id, true, true, true)
+    return CATMAID.Landmarks.listGroups(project.id, true, true, true, true)
       .then(function(result) {
         self.landmarkGroups = result;
         self.landmarkGroupMemberships = result.reduce(addLandmarkGroupMembership, new Map());
@@ -2124,7 +2124,7 @@
                 let group = widget.landmarkGroupIndex.get(widget.editLandmarkGroup);
                 let groupData;
                 if (group) {
-                  groupData = group.relations;
+                  groupData = group.links;
                   relationMap = new Map(group.used_relations);
                 } else {
                   CATMAID.warn('Could not find data for landmark group #' + widget.editLandmarkGroup);

@@ -334,8 +334,13 @@ class LandmarkGroupList(APIView):
             required: false
             defaultValue: false
             paramType: form
+          - name: with_links
+            description: Whether to return links to other groups
+            required: false
+            defaultValue: false
+            paramType: form
           - name: with_relations
-            description: Whether to return relations to other groups
+            description: Whether to return a map of used relation IDs to their names
             required: false
             defaultValue: false
             paramType: form
@@ -343,6 +348,7 @@ class LandmarkGroupList(APIView):
         with_members = request.query_params.get('with_members', 'false') == 'true'
         with_locations = request.query_params.get('with_locations', 'false') == 'true'
         with_relations = request.query_params.get('with_relations', 'false') == 'true'
+        with_links = request.query_params.get('with_links', 'false') == 'true'
         landmarkgroup_class = Class.objects.get(project_id=project_id, class_name="landmarkgroup")
         landmarkgroups = ClassInstance.objects.filter(project_id=project_id,
                 class_column=landmarkgroup_class).order_by('id')
@@ -369,15 +375,17 @@ class LandmarkGroupList(APIView):
                 for group in data:
                     group['locations'] = location_index[group['id']]
 
-            if with_relations:
+            if with_relations or with_links:
                 # Add a relations field for a list of objects, each having the
                 # fields relation_id, relation_name, target_id.
                 relation_index, used_relations = make_landmark_relation_index(project_id,
                         landmarkgroup_ids)
                 used_relations_list = [[k,v] for k,v in used_relations.items()]
                 for group in data:
-                    group['relations'] = relation_index[group['id']]
-                    group['used_relations'] = used_relations_list
+                    if with_links:
+                        group['links'] = relation_index[group['id']]
+                    if with_relations:
+                        group['used_relations'] = used_relations_list
 
         return Response(data)
 

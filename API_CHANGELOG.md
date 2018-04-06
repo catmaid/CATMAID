@@ -33,8 +33,8 @@ included in this changelog.
   returned. Can be 'none', 'used' and all with 'used' being the default.
 
 - `GET /{project_id}/landmarks/groups/`:
-  Accepts a new optional parameter "with_relations", to include relations
-  between landmark groups in the results. Default is false.
+  Accepts the new optional parameter "with_links" and "with_relations", to
+  include links between landmark groups along with a map of used relations..
 
 ### Deprecations
 

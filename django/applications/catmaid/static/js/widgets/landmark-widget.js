@@ -971,6 +971,29 @@
     this.displayTransformations.push(lst);
   };
 
+  /**
+   * Add new display transformations based on a target relation. This will
+   * currently explore all landmark groups that are transitively linked to the
+   * source group. Only links with the passed in relation ID will be respected.
+   */
+  LandmarkWidget.prototype.addDisplayTransformationRule = function(getSkeletonModels,
+      fromGroupId, relationId) {
+    // Get all transitively linked target groups from back-end. Add a
+    // transformation for each.
+    var self = this;
+    return CATMAID.Landmarks.getTransitivelyLinkedGroups(project.id, fromGroupId, relationId)
+      .then(function(groups) {
+        for (let i=0; i<groups.length; ++i) {
+          let toGroupId = groups[i];
+          let skeletons = getSkeletonModels();
+          let lst = new CATMAID.LandmarkSkeletonTransformation(skeletons,
+              fromGroupId, toGroupId);
+          self.displayTransformations.push(lst);
+        }
+      })
+      .catch(CATMAID.handleError);
+  };
+
   function getId(e) {
     return e.id;
   }
@@ -2732,6 +2755,34 @@
               };
               $(newDTForm).append(targetGroup);
 
+              // Target relation select
+              let targetRelationWrapper = document.createElement('span');
+              $(newDTForm).append(targetRelationWrapper);
+
+              let displayTargetRelation = null;
+
+              CATMAID.Relations.list(project.id)
+                .then(function(relationMap) {
+                  let relationNames = Object.keys(relationMap);
+                  let invRelationMap = relationNames.reduce(function(o, name) {
+                    o[relationMap[name]] = name;
+                    return o;
+                  }, {});
+                  let relationOptions = relationNames.map(function(name) {
+                    return { title: name, value: relationMap[name] };
+                  });
+                  let targetRelationSelect = CATMAID.DOM.createRadioSelect(
+                      'Group link relation', relationOptions, undefined, true);
+                  let targetRelationGroup = CATMAID.DOM.createLabeledControl('Target relation',
+                    targetRelationSelect, 'Select a relation that links valid target ' +
+                    'landmark groups. This rull will be applied recursively.');
+                  targetRelationSelect.onchange = function(e) {
+                    displayTargetRelation = e.srcElement.value;
+                  };
+                  $(targetRelationWrapper).append(targetRelationGroup);
+                })
+                .catch(CATMAID.handleError);
+
               // Add button
               let buttonContainer = document.createElement('div');
               buttonContainer.classList.add('clear');
@@ -2747,20 +2798,35 @@
                   CATMAID.error("Can't find source: " + sourceSelect.value);
                   return;
                 }
-                let skeletonModels = source.getSelectedSkeletonModels();
 
                 if (!fromGroup) {
                   CATMAID.error("Need source landmark group");
                   return;
                 }
-                if (!toGroup) {
-                  CATMAID.error("Need target landmark group");
-                  return;
-                }
 
-                widget.addDisplayTransformation(skeletonModels, fromGroup, toGroup);
-                CATMAID.msg("Success", "Transformation added");
-                widget.update();
+                if (displayTargetRelation) {
+                  let getSkeletonModels = source.getSelectedSkeletonModels.bind(source);
+                  widget.addDisplayTransformationRule(getSkeletonModels, fromGroup,
+                      displayTargetRelation)
+                    .then(function() {
+                      widget.updateDisplay();
+                      widget.update();
+                    })
+                    .catch(CATMAID.handleError);
+                  CATMAID.msg("Success", "Transformation rule applied");
+                } else {
+                  if (!toGroup) {
+                    CATMAID.error("Need target landmark group");
+                    return;
+                  }
+
+                  let skeletonModels = source.getSelectedSkeletonModels();
+                  widget.addDisplayTransformation(skeletonModels, fromGroup,
+                      toGroup, displayTargetRelation);
+                  CATMAID.msg("Success", "Transformation added");
+                  widget.updateDisplay();
+                  widget.update();
+                }
               };
               buttonContainer.appendChild(addButton);
               newDTForm.appendChild(buttonContainer);

@@ -243,6 +243,21 @@
     },
 
     /**
+     * Return a list of landmark groups that are linked through a chain of group
+     * links of the passed in relation type.
+     *
+     * @param {Number} projectId   The project the groups and relation ae part of
+     * @param {Number} fromGroupId The source group for initial links.
+     * @param {Number} relationId  The relation a valid group links has to have
+     * @returns {Promise} Resolves with a list of landmark groups.
+     */
+    getTransitivelyLinkedGroups: function(projectId, fromGroupId, relationId) {
+      return CATMAID.fetch(projectId + '/landmarks/groups/' + fromGroupId + '/transitively-linked', 'GET', {
+          'relation_id': relationId
+        });
+    },
+
+    /**
      * Import and link landmarks, landmark groups and locations. The passed in
      * <data> parameter is a list of two-element lists, each representing a
      * group along with its linked landmark and locations. The group is

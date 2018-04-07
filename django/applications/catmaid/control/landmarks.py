@@ -1289,3 +1289,143 @@ class LandmarkGroupLinkDetail(APIView):
             'group_2_id': deleted_link[2],
             'relation_id': deleted_link[3],
         })
+
+
+class LandmarkGroupLinkage(APIView):
+
+    @method_decorator(requires_user_role(UserRole.Browse))
+    def get(self, request, project_id, landmarkgroup_id):
+        """Get a list of landmark groups that are transitively linked to the
+        input group with the passed in relation.
+        ---
+        parameters:
+          - name: project_id
+            description: Project of landmark groups
+            type: integer
+            paramType: path
+            required: true
+          - name: landmarkgroup_id
+            description: The starting landmark group
+            type: integer
+            paramType: path
+            required: true
+          - name: relation_id
+            description: The relation a valid group link has to have
+            type: integer
+            paramType: form
+            required: true
+          - name: max_depth
+            description: (optional) Maximum number of hops from the source group. 0 to disable.
+            type: integer
+            paramType: form
+            required: false
+            defaultValue: 0
+        """
+        relation_id = request.query_params.get('relation_id')
+        if not relation_id:
+            raise ValueError("Please provide a relation ID")
+        relation = Relation.objects.get(id=relation_id)
+
+        max_depth = int(request.query_params.get('max_depth', 0))
+        max_depth_constraint = 'AND %(max_depth)s > depth' if max_depth else ''
+
+        # If the relation is reciprocal, we can't rely on order
+        group_ids = None
+        cursor = connection.cursor()
+        if relation.isreciprocal:
+            cursor.execute("""
+                -- This assumes a reciprocal relation, direction is ignored.
+                WITH RECURSIVE linked_group_paths(leaf, path, depth) AS (
+                    SELECT CASE WHEN cici.class_instance_a = %(group_id)s
+                        THEN cici.class_instance_b
+                        ELSE cici.class_instance_a END AS leaf,
+                        ARRAY[ROW(cici.class_instance_a, cici.class_instance_b)] AS path,
+                        1 AS depth
+                    FROM class_instance_class_instance cici
+                    WHERE cici.project_id = %(project_id)s
+                        AND cici.relation_id = %(relation_id)s
+                        AND (cici.class_instance_a = %(group_id)s
+                        OR cici.class_instance_b = %(group_id)s)
+
+                    UNION ALL
+
+                    SELECT CASE WHEN cici.class_instance_a = g.leaf
+                        THEN cici.class_instance_b
+                        ELSE cici.class_instance_a END,
+                        path || ROW(cici.class_instance_a, cici.class_instance_b),
+                        depth + 1
+                    FROM linked_group_paths g
+                    JOIN class_instance_class_instance cici
+                        ON g.leaf IN (cici.class_instance_a, cici.class_instance_b)
+                        AND ROW(cici.class_instance_a, cici.class_instance_b) <> ALL(path)
+                    WHERE cici.project_id = %(project_id)s
+                        AND cici.relation_id = %(relation_id)s
+                        {}
+                )
+                SELECT ci.id
+                FROM (
+                    SELECT id FROM class WHERE project_id = %(project_id)s
+                        AND class_name = 'landmarkgroup'
+                ) lg(id), class_instance ci
+                JOIN (
+                    SELECT DISTINCT leaf FROM linked_group_paths
+                ) lci(id)
+                    ON ci.id = lci.id
+                WHERE ci.class_id = lg.id
+
+            """.format(max_depth_constraint), {
+                'project_id': project_id,
+                'group_id': landmarkgroup_id,
+                'relation_id': relation_id,
+                'max_depth': max_depth
+            })
+
+            group_ids = [r[0] for r in cursor.fetchall()]
+        else:
+            cursor.execute("""
+                -- This assumes a reciprocal relation, direction is ignored.
+                WITH RECURSIVE linked_group_paths(leaf, path, depth) AS (
+                    SELECT cici.class_instance_b AS leaf,
+                        ARRAY[ROW(cici.class_instance_a, cici.class_instance_b)] AS path,
+                        1 AS depth
+                    FROM class_instance_class_instance cici
+                    WHERE cici.project_id = %(project_id)s
+                        AND cici.relation_id = %(relation_id)s
+                        AND cici.class_instance_a = %(group_id)s
+
+                    UNION ALL
+
+                    SELECT cici.class_instance_b,
+                        path || ROW(cici.class_instance_a, cici.class_instance_b),
+                        depth + 1
+                    FROM linked_group_paths g
+                    JOIN class_instance_class_instance cici
+                        ON g.leaf = cici.class_instance_a
+                        AND ROW(cici.class_instance_a, cici.class_instance_b) <> ALL(path)
+                    WHERE cici.project_id = %(project_id)s
+                        AND cici.relation_id = %(relation_id)s
+                        {}
+                )
+                SELECT ci.id
+                FROM (
+                    SELECT id FROM class WHERE project_id = %(project_id)s
+                        AND class_name = 'landmarkgroup'
+                ) lg(id), class_instance ci
+                JOIN (
+                    SELECT DISTINCT leaf FROM linked_group_paths
+                ) lci(id)
+                    ON ci.id = lci.id
+                WHERE ci.class_id = lg.id
+
+            """.format(max_depth_constraint), {
+                'project_id': project_id,
+                'group_id': landmarkgroup_id,
+                'relation_id': relation_id,
+                'max_depth': max_depth
+            })
+
+            group_ids = [r[0] for r in cursor.fetchall()]
+
+
+
+        return Response(group_ids)

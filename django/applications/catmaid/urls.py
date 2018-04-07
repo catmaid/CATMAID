@@ -441,6 +441,8 @@ urlpatterns += [
     url(r'^(?P<project_id>{0})/landmarks/groups/links/(?P<link_id>[0-9]+)/$'.format(integer),
             landmarks.LandmarkGroupLinkDetail.as_view()),
     url(r'^(?P<project_id>{0})/landmarks/groups/(?P<landmarkgroup_id>[0-9]+)/$'.format(integer), landmarks.LandmarkGroupDetail.as_view()),
+    url(r'^(?P<project_id>{0})/landmarks/groups/(?P<landmarkgroup_id>[0-9]+)/transitively-linked$'.format(integer),
+        landmarks.LandmarkGroupLinkage.as_view()),
     url(r'^(?P<project_id>{0})/landmarks/groups/(?P<landmarkgroup_id>[0-9]+)/locations/(?P<location_id>[0-9]+)/$'.format(integer),
             landmarks.LandmarkGroupLocationList.as_view()),
 ]

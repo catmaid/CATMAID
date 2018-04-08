@@ -333,6 +333,9 @@
     // Find intersections with current stack Z and
     for (let i=0; i<this.displayTransformations.length; ++i) {
       let transform = this.displayTransformations[i];
+      if (!transform.nodeProvider) {
+        continue;
+      }
       let skeletonIds = Object.keys(transform.skeletons);
       skeletonIds.reduce(makeDataPromise, {
         target: dataRetrievalJobs,

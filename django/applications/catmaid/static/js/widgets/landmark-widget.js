@@ -793,8 +793,8 @@
       // box. If so, do both a transformation from source to target group and
       // average with respect to distance to bounding box.
       let noInterpolation = !this.interpolateBetweenGroups;
-      var treenodeLocation = [0, 0, 0];
-      var transformTreenode = function(treenodeRow) {
+      let treenodeLocation = [0, 0, 0];
+      let transformTreenode = function(treenodeRow) {
         // If in boundig box, just apply forward transform. If in target
         // bounding box, use inverse transform. If in-between, use weighted
         // location based on distance.

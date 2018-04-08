@@ -40,6 +40,13 @@ Landmarks:
   section of this tab allows to edit links between landmark groups, which can
   be used for rule based display transformations.
 
+- As an alternative to selcting a target landmark group explicitely to create a
+  display transformation, it is now possible to instead select a target relation
+  in the Display tab. Doing so will automatically create all display
+  transformations from the source group to all landmark groups transitively
+  linked to the source group using the selected relation. The reciprocity of
+  relations is respected.
+
 - The color and extra scaling for nodes on Landmark Layers can be adjusted from
   the widget.
 

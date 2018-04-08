@@ -50,6 +50,8 @@ Landmarks:
 - The color and extra scaling for nodes on Landmark Layers can be adjusted from
   the widget.
 
+- All 3D Viewers are now enabled by default as transformation display target.
+
 - State saving is now supported.
 
 3D Viewer:

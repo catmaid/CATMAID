@@ -51,8 +51,9 @@
     // All current display transformations
     this.displayTransformations = [];
 
-    // All currently targeted 3D Viewers
-    this.targeted3dViewerNames = new Set();
+    // All currently available 3D Viewers and whether they are a render target
+    // for landmark transformations.
+    this.targeted3dViewerNames = new Map();
     // Whether to automatically interpolate between group transformations
     this.interpolateBetweenGroups = true;
     // Whether to show landmark layers
@@ -246,7 +247,7 @@
     }
 
     // Remove all references to now inavailable sources
-    for (let targetName of this.targeted3dViewerNames) {
+    for (let targetName of this.targeted3dViewerNames.keys()) {
       let source = CATMAID.skeletonListSources.getSource(targetName);
       if (!source) {
         this.targeted3dViewerNames.delete(targetName);
@@ -285,8 +286,16 @@
             value: name
           };
         });
+    // Add unknown 3D Viewers as visible by default
+    for (let i=0; i<availableSources.length; ++i) {
+      let name = availableSources[i].value;
+      if (!this.targeted3dViewerNames.has(name)) {
+        this.targeted3dViewerNames.set(name, true);
+      }
+    }
+    // Add HTML controls
     var select = CATMAID.DOM.createCheckboxSelect("Target 3D viewers",
-        availableSources, this.targeted3dViewerNames, true);
+        availableSources, this.targeted3dViewerNames.keys(), true);
     if (availableSources.length === 0) {
       var element = select.querySelector('select');
       element.setAttribute('disabled', '');
@@ -296,10 +305,8 @@
     select.onchange = function(e) {
       let selected = e.target.checked;
       let sourceName = e.target.value;
-      if (selected) {
-        self.targeted3dViewerNames.add(sourceName);
-      } else {
-        self.targeted3dViewerNames.delete(sourceName);
+      self.targeted3dViewerNames.set(sourceName, selected);
+      if (!selected) {
         self.removeDisplayFrom3dViewer(sourceName);
       }
       self.updateDisplay();
@@ -559,7 +566,7 @@
    * Remove all landmark transformations.
    */
   LandmarkWidget.prototype.clearDisplay = function() {
-    let target3dViewers = Array.from(this.targeted3dViewerNames).map(function(m) {
+    let target3dViewers = Array.from(this.targeted3dViewerNames.keys()).map(function(m) {
         return CATMAID.skeletonListSources.getSource(m);
       });
     while (this.displayTransformations.length > 0) {
@@ -588,7 +595,7 @@
       } else {
         let t = transformations[index];
         transformations.splice(index, 1);
-        let target3dViewers = Array.from(this.targeted3dViewerNames).map(function(m) {
+        let target3dViewers = Array.from(this.targeted3dViewerNames.keyss()).map(function(m) {
           return CATMAID.skeletonListSources.getSource(m);
         });
         for (let j=0; j<target3dViewers.length; ++j) {
@@ -739,7 +746,7 @@
    * Create skeleton models for the skeletons to transform
    */
   LandmarkWidget.prototype.updateDisplay = function() {
-    let target3dViewers = Array.from(this.targeted3dViewerNames).map(function(m) {
+    let target3dViewers = Array.from(this.targeted3dViewerNames.keys()).map(function(m) {
       return CATMAID.skeletonListSources.getSource(m);
     });
 

@@ -79,8 +79,8 @@
     this.editLinkRelation = 'adjacent_to';
 
     // The current edit mode
-    this.mode = 'landmarks';
-    this.modes = ['landmarks', 'edit', 'display', 'import'];
+    this.mode = 'display';
+    this.modes = ['display', 'landmarks', 'edit', 'import'];
 
     // Some parts of the widget need to update when skeleton sources are added
     // or removed.

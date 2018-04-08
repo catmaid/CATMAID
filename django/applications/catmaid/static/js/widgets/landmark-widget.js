@@ -2383,6 +2383,9 @@
               widget.update();
             })
             .catch(CATMAID.handleError);
+        }).on('click', 'a[data-action=select-landmark-group]', function() {
+          widget.editLandmarkGroup = parseInt(this.dataset.id);
+          widget.setMode('edit');
         });
       }
     },

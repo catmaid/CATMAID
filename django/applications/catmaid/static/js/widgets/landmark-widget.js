@@ -581,7 +581,7 @@
         break;
       } else {
         let t = transformations[index];
-        transformations.splice(index);
+        transformations.splice(index, 1);
         let target3dViewers = Array.from(this.targeted3dViewerNames).map(function(m) {
           return CATMAID.skeletonListSources.getSource(m);
         });

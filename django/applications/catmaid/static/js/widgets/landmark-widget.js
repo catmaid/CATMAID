@@ -559,9 +559,15 @@
    * Remove all landmark transformations.
    */
   LandmarkWidget.prototype.clearDisplay = function() {
-    for (let i=0; i<this.displayTransformations.length; ++i) {
-      let transformation = this.displayTransformations[i];
-      this.removeLandmarkTransformation(transformation);
+    let target3dViewers = Array.from(this.targeted3dViewerNames).map(function(m) {
+        return CATMAID.skeletonListSources.getSource(m);
+      });
+    while (this.displayTransformations.length > 0) {
+      let transformation = this.displayTransformations.pop();
+      for (let j=0; j<target3dViewers.length; ++j) {
+        let widget = target3dViewers[j];
+        widget.showLandmarkTransform(transformation, false);
+      }
     }
     this.update();
   };

@@ -326,8 +326,16 @@
       tabs.tabs('option', 'active', widgetIndex);
     }
 
-    // Update actual content
     let mode = LandmarkWidget.MODES[this.mode];
+
+    // Reset reference lines to global setting, but allow mode definition to
+    // override it.
+    project.getStackViewers().forEach(function(s) {
+      s.showReferenceLines(
+          CATMAID.StackViewer.Settings.session.display_stack_reference_lines);
+    });
+
+    // Update actual content
     mode.createContent(this.content, this);
 
     this.updateLandmarkLayers();

@@ -1031,6 +1031,15 @@
     return placeholder;
   };
 
+  DOM.createLabeledAsyncPlaceholder = function(label, promise, helptext) {
+    var placeholder = CATMAID.DOM.createAsyncPlaceholder(promise);
+    var wrapper = document.createElement('span');
+    wrapper.appendChild(placeholder);
+    var labeledWrapper = CATMAID.DOM.createLabeledControl(
+        label, wrapper, helptext);
+    return labeledWrapper;
+  };
+
 	DOM.createCheckbox = function(label, value, onclickFn, id) {
 		var cb = document.createElement('input');
 		cb.setAttribute('type', 'checkbox');

@@ -1750,13 +1750,9 @@
 
       // Create async selection and wrap it in container to have handle on initial
       // DOM location
-      var volumeSelection = CATMAID.DOM.createAsyncPlaceholder(initVolumeList());
-      var volumeSelectionWrapper = document.createElement('span');
-      volumeSelectionWrapper.appendChild(volumeSelection);
-      var volumeSelectionSetting = CATMAID.DOM.createLabeledControl(
-          "New nodes not in volume", volumeSelectionWrapper,
-          "A warning will be shown when new " +
-          "nodes are created outside of the selected volume");
+      var volumeSelectionSetting = CATMAID.DOM.createLabeledAsyncPlaceholder(
+        "New nodes not in volume", initVolumeList(),
+        "A warning will be shown when new nodes are created outside of the selected volume");
       dsTracingWarnings.append(volumeSelectionSetting);
     };
 

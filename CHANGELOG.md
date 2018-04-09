@@ -26,7 +26,7 @@ Landmarks:
 - Support transformation of nodes that cross space between landmark groups and
   even reach into target groups. This allows to e.g. transform skeletons that
   cross the midline. Doing this is enabled by default, but can be disabled
-  throug the "Interpolate between groups" option.
+  through the "Interpolate between groups" option.
 
 - Virtual transformed skeletons are now also shown on a separate layer in all
   open Stack Viewers. Nodes of those skeletons can currently not selected. To
@@ -40,7 +40,7 @@ Landmarks:
   section of this tab allows to edit links between landmark groups, which can
   be used for rule based display transformations.
 
-- As an alternative to selcting a target landmark group explicitely to create a
+- As an alternative to selecting a target landmark group explicitly to create a
   display transformation, it is now possible to instead select a target relation
   in the Display tab. Doing so will automatically create all display
   transformations from the source group to all landmark groups transitively
@@ -66,8 +66,8 @@ Landmarks:
 Reconstruction Sampler:
 
 - Intervals are now displayed with only two colors by default, it makes
-  distinguishing many intervals easier. The previous multicolor mode can be
-  reactivated from the prview window.
+  distinguishing many intervals easier. The previous multi-color mode can be
+  reactivated from the preview window.
 
 Tracing general:
 
@@ -134,7 +134,7 @@ Miscellaneous:
   through /{project_id}/skeletons/connectivity, 3. Listing skeletons with a
   minimum node count with /{project_ids}/skeletons/ 4. Getting skeleton node
   count with /{project_id}/skeleton/{skeleton_id}/node_count. In consequence the
-  following widgets became faster too: Connecticity Widget, Selecting skeleton
+  following widgets became faster too: Connectivity Widget, Selecting skeleton
   counts in the Statistics Widget, Review count based coloring (e.g. in Graph
   Widget). Opening the Merge Dialog is also faster due to this change.
 

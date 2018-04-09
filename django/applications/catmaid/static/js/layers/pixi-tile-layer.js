@@ -168,8 +168,8 @@
     // individual tiles.
     this.batchContainer.position.x = left;
     this.batchContainer.position.y = top;
-    this.batchContainer.scale.x = tileInfo.mag * this.stack.anisotropy.x;
-    this.batchContainer.scale.y = tileInfo.mag * this.stack.anisotropy.y;
+    this.batchContainer.scale.x = tileInfo.mag.x * this.stack.anisotropy.x;
+    this.batchContainer.scale.y = tileInfo.mag.y * this.stack.anisotropy.y;
     var toLoad = [];
     var loading = false;
     var y = 0;

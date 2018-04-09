@@ -22,7 +22,7 @@
       resolution,         //!< {Array} physical resolution in units/pixel [x, y, z, ...]
       translation,        //!< @todo replace by an affine transform
       skip_planes,        //!< {Array} planes to be excluded from the stack's view [[z,t,...], [z,t,...], ...]
-      num_zoom_levels,      //!< {int} that defines the number of available non-artificial zoom levels
+      zoom_factors,
       max_zoom_level,       //!< {int} that defines the maximum available zoom level
       description,         //!< {String} of arbitrary meta data
       metadata,
@@ -59,16 +59,24 @@
     self.MAX_Z = MAX_Z;
 
     //! estimate the zoom levels
-    if ( num_zoom_levels < 0 ) {
+    if (!Array.isArray(zoom_factors)) {
+      zoom_factors = [];
       self.MAX_S = 0;
       var max_dim = Math.max( MAX_X, MAX_Y );
       var min_size = 1024;
-      while ( max_dim / Math.pow( 2, self.MAX_S ) > min_size )
+      while ( max_dim / Math.pow( 2, self.MAX_S ) > min_size ) {
+        // By default, assume factor 2 downsampling in x, y, and no downsampling in z.
+        zoom_factors.push([
+          Math.pow(2, self.MAX_S),
+          Math.pow(2, self.MAX_S),
+          1]);
         ++self.MAX_S;
+      }
     } else {
-      self.MAX_S = num_zoom_levels;
+      self.MAX_S = zoom_factors.length - 1;
     }
     self.MIN_S = max_zoom_level;
+    self.zoom_factors = zoom_factors;
 
     self.description = description;
     self.metadata = metadata;

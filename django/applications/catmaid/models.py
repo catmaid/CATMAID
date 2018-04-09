@@ -12,7 +12,7 @@ from django import forms
 from django.conf import settings
 from django.contrib.auth.models import User, Group
 from django.contrib.gis.db import models as spatial_models
-from django.contrib.postgres.fields import JSONField
+from django.contrib.postgres.fields import ArrayField, JSONField
 from django.core.validators import RegexValidator
 from django.db import connection, models
 from django.db.models import Q
@@ -102,11 +102,9 @@ class Stack(models.Model):
             "nanometers.")
     comment = models.TextField(blank=True, null=True,
             help_text="A comment that describes the image data.")
-    num_zoom_levels = models.IntegerField(default=-1,
-            help_text="The number of zoom levels a stack has data for. A "
-            "value of -1 lets CATMAID dynamically determine the actual value "
-            "so that at this value the largest extent (X or Y) won't be "
-            "smaller than 1024 pixels. Values larger -1 will be used directly.")
+    zoom_factors = ArrayField(Integer3DField(),
+            blank=True, null=True,
+            help_text="TODO")
     description = models.TextField(default='', blank=True,
             help_text="Arbitrary text that is displayed alongside the stack.")
     metadata = JSONField(blank=True, null=True)
@@ -122,6 +120,11 @@ class Stack(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def num_zoom_levels(self):
+        """Number of zoom levels, or -1 if determined automatically."""
+        return -1 if self.zoom_factors is None else len(self.zoom_factors) - 1
 
 
 @python_2_unicode_compatible

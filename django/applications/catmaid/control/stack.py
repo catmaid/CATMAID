@@ -60,6 +60,7 @@ def get_stack_info_response(p, s, ps, mirror_data, broken_slices):
         'pid': p.id,
         'ptitle': p.title,
         'stitle': s.title,
+        'zoom_factors': s.zoom_factors,
         'num_zoom_levels': int(s.num_zoom_levels),
         'translation': {
             'x': ps.translation.x,

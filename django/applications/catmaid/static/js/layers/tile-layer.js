@@ -317,8 +317,8 @@
       }
     }
 
-    var effectiveTileWidth = this.tileSource.tileWidth * tileInfo.mag * this.stack.anisotropy.x;
-    var effectiveTileHeight = this.tileSource.tileHeight * tileInfo.mag * this.stack.anisotropy.y;
+    var effectiveTileWidth = this.tileSource.tileWidth * tileInfo.mag.x * this.stack.anisotropy.x;
+    var effectiveTileHeight = this.tileSource.tileHeight * tileInfo.mag.y * this.stack.anisotropy.y;
 
     var rows = this._tiles.length, cols = this._tiles[0].length;
 
@@ -620,7 +620,7 @@
   TileLayer.prototype.tilesForLocation = function (xc, yc, z, s, efficiencyThreshold) {
     if (typeof efficiencyThreshold === 'undefined') efficiencyThreshold = 0.0;
     var zoom = s;
-    var mag = 1.0;
+    var mag = {x: 1.0, y: 1.0};
     var artificialZoom = false;
     /* If the zoom is negative we zoom in digitally. For this
      * we take the zero zoom level and adjust the tile properties.
@@ -639,11 +639,21 @@
        * resolution and negative for non-integral zooms within
        * image resolution.
        */
-      mag = Math.pow(2, zoom - s);
+      if (zoom == this.stack.MAX_S) {
+        mag = {
+          x: Math.pow(2, zoom - s),
+          y: Math.pow(2, zoom - s),
+        };
+      } else {
+        mag = {
+          x: Math.pow(this.stack.zoom_factors[zoom + 1][0] / this.stack.zoom_factors[zoom][0], zoom - s),
+          y: Math.pow(this.stack.zoom_factors[zoom + 1][1] / this.stack.zoom_factors[zoom][1], zoom - s),
+        };
+      }
     }
 
-    var effectiveTileWidth = this.tileSource.tileWidth * mag * this.stack.anisotropy.x;
-    var effectiveTileHeight = this.tileSource.tileHeight * mag * this.stack.anisotropy.y;
+    var effectiveTileWidth = this.tileSource.tileWidth * mag.x * this.stack.anisotropy.x;
+    var effectiveTileHeight = this.tileSource.tileHeight * mag.y * this.stack.anisotropy.y;
 
     var fr = Math.floor(yc / effectiveTileHeight);
     var fc = Math.floor(xc / effectiveTileWidth);
@@ -702,7 +712,7 @@
       lastCol:   lc,
       top:       top,
       left:      left,
-      z:         z,
+      z:         Math.round(z / stack.zoom_factors[zoom][2]),
       zoom:      zoom,
       mag:       mag
     };

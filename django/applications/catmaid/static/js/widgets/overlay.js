@@ -2651,9 +2651,24 @@ SkeletonAnnotations.TracingOverlay.prototype.loadExtraNodes = function(extraNode
   if (!extraNodes || !extraNodes.length) {
     throw new CATMAID.ValueError("No nodes provided");
   }
-  let nodeIdsToLoad = extraNodes.filter(function(nodeId) {
-    return !this[nodeId];
-  }, this.nodes);
+  let nodes = this.nodes;
+  let nodeIdsToLoad = extraNodes.reduce(function(target, nodeId) {
+    if (SkeletonAnnotations.isRealNode(nodeId)) {
+      if (!nodes[nodeId]) {
+        target.push(nodeId);
+      }
+    } else {
+       let parentId = SkeletonAnnotations.getParentOfVirtualNode(nodeId);
+       let childId = SkeletonAnnotations.getChildOfVirtualNode(nodeId);
+       if (nodes[parentId]) {
+         target.push(parentId);
+       }
+       if (nodes[childId]) {
+         target.push(childId);
+       }
+    }
+    return target;
+  }, []);
   if (nodeIdsToLoad.length === 0) {
     return Promise.resolve();
   }

@@ -69,6 +69,14 @@ Reconstruction Sampler:
   distinguishing many intervals easier. The previous multicolor mode can be
   reactivated from the prview window.
 
+Tracing general:
+
+- The settings widget allows now to configure a "fast merge mode" to allow
+  particular groups of skeletons to be merged without confirmation. Similarly to
+  Visibility Groups, these Fast Merge Groups can be defined in terms of a
+  universal match (all skeletons), a required meta-annotation or a creator ID.
+  All annotations are taken over from a skeleton merged in without confirmation.
+
 Miscellaneous:
 
 - Basic Search: allow search for treenode IDs and connector IDs.

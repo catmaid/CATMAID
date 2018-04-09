@@ -89,6 +89,9 @@ SkeletonAnnotations.Settings = new CATMAID.Settings(
         },
         new_neuron_name: {
           default: ''
+        },
+        fast_merge_mode: {
+          default: {universal: 'none'}
         }
       },
       migrations: {}
@@ -638,6 +641,7 @@ SkeletonAnnotations.getZOfVirtualNode = SkeletonAnnotations.getVirtualNodeCompon
   };
 
 })();
+
 
 /**
  * Maintain a skeleton source for the active skeleton. Widgets can register to
@@ -1904,14 +1908,14 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
           self.executeIfSkeletonEditable(to_skid, function() {
             // The function used to instruct the backend to do the merge
             var merge = function(annotation_set, fromId, toId) {
-              self.submit.then(function() {
+              return self.submit.then(function() {
                 // Suspend tracing layer during join to avoid unnecessary
                 // reloads.
                 self.suspended = true;
                 // Join skeletons
                 var command = new CATMAID.JoinSkeletonsCommand(self.state, project.id,
                     nodes[fromId], nodes[toId], annotation_set);
-                CATMAID.commands.execute(command)
+                return CATMAID.commands.execute(command)
                   .catch(CATMAID.handleError)
                   .then(function(result) {
                     // Activate tracing layer again and update the view
@@ -1929,27 +1933,42 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
 
             // A method to use when the to-skeleton has multiple nodes
             var merge_multiple_nodes = function() {
-              var to_color = new THREE.Color(1, 0, 1);
-              var to_model = new CATMAID.SkeletonModel(
-                  to_skid, json.neuron_name, to_color);
-              // Extend the display with the newly created line
-              var extension = {};
-              var p = self.nodes[SkeletonAnnotations.getActiveNodeId()],
-                  c = self.nodes[toid];
-              extension[from_skid] = [
-                  new THREE.Vector3(p.x, p.y, p.z),
-                  new THREE.Vector3(c.x, c.y, c.z)
-              ];
-              var dialog = new CATMAID.SplitMergeDialog({
-                model1: from_model,
-                model2: to_model,
-                extension: extension,
-                keepOrder: false,
-                merge: function(fromId, toId) {
-                  merge(dialog.get_combined_annotation_set(), fromId, toId);
-                }
-              });
-              dialog.show(extension);
+              // If a fast merge mode is enabled, check if this operation
+              // matches the settings and don't show the UI if this is the case.
+              let noConfirmation = SkeletonAnnotations.FastMergeMode.isNodeMatched(
+                  self.nodes[toid]);
+
+              if (noConfirmation) {
+                // Providing no annotation set, will result in all annotations
+                // to be taken over.
+                merge(undefined, from_skid, to_skid)
+                  .then(function() {
+                    CATMAID.msg("Success", "Merged skeleton " + to_skid +
+                        " into skeleton " + from_skid + " without confirmation");
+                  });
+              } else {
+                var to_color = new THREE.Color(1, 0, 1);
+                var to_model = new CATMAID.SkeletonModel(
+                    to_skid, json.neuron_name, to_color);
+                // Extend the display with the newly created line
+                var extension = {};
+                var p = self.nodes[SkeletonAnnotations.getActiveNodeId()],
+                    c = self.nodes[toid];
+                extension[from_skid] = [
+                    new THREE.Vector3(p.x, p.y, p.z),
+                    new THREE.Vector3(c.x, c.y, c.z)
+                ];
+                var dialog = new CATMAID.SplitMergeDialog({
+                  model1: from_model,
+                  model2: to_model,
+                  extension: extension,
+                  keepOrder: false,
+                  merge: function(fromId, toId) {
+                    merge(dialog.get_combined_annotation_set(), fromId, toId);
+                  }
+                });
+                dialog.show(extension);
+              }
             };
 
             // A method to use when the to-skeleton has only a single node
@@ -5433,6 +5452,69 @@ SkeletonAnnotations.Tag = new (function() {
   };
 })();
 
+SkeletonAnnotations.FastMergeMode = new (function() {
+
+  this.state = {
+    metaAnnotationName: null,
+    creatorID: null,
+    skeletonIDs: new Set(),
+    matchAll: false,
+    callback: (function (metaAnnotationName, skeletonIDs) {
+      this.state.skeletonIDs = skeletonIDs;
+    }).bind(this),
+  };
+
+  /**
+   * Reset the event listener configuration for the currently set merge mode.
+   */
+  this.setFilters = function(modeSetting) {
+    let state = this.state;
+
+    if (state.metaAnnotationName !== null) {
+      CATMAID.annotatedSkeletons.unregister(state.metaAnnotationName, state.callback, true);
+    }
+
+    state.skeletonIDs = new Set();
+    state.metaAnnotationName = null;
+    state.creatorID = null;
+    state.matchAll = false;
+    if (modeSetting.hasOwnProperty('metaAnnotationName')) {
+      state.metaAnnotationName = modeSetting.metaAnnotationName;
+      CATMAID.annotatedSkeletons.register(state.metaAnnotationName, state.callback, true);
+    } else if (modeSetting.hasOwnProperty('creatorID')) {
+      state.creatorID = modeSetting.creatorID;
+    } else if (modeSetting.hasOwnProperty('universal')) {
+      state.matchAll = modeSetting.universal === 'all';
+    }
+  };
+
+  /**
+   * Refresh any meta-annotation-based filters from the backed.
+   */
+  this.refresh = function () {
+    var jobs = [];
+    if (this.state.metaAnnotationName) {
+      jobs.push(CATMAID.annotatedSkeletons.refresh(this.state.metaAnnotationName, true));
+    }
+    return Promise.all(jobs);
+  };
+
+  /**
+   * Predicate for whether a tracing overlay node is matched by a filter.
+   *
+   * @param  {Object}  node    Tracing overlay treenode or connector node.
+   * @return {Boolean}         True if matched, false otherwise.
+   */
+  this.isNodeMatched = function (node) {
+    var state = this.state;
+
+    if (state.matchAll) return true;
+    else if (state.creatorID) return node.user_id === state.creatorID;
+    else return state.skeletonIDs.has(node.skeleton_id);
+  };
+
+})();
+
 
 /**
  * Controls the visibility of groups of skeleton IDs defined by filters.
@@ -5560,6 +5642,9 @@ CATMAID.Init.on(CATMAID.Init.EVENT_PROJECT_CHANGED, function () {
     SkeletonAnnotations.TracingOverlay.Settings.session.visibility_groups.forEach(function (group, i) {
       SkeletonAnnotations.VisibilityGroups.setGroup(i, group);
     });
+    SkeletonAnnotations.FastMergeMode.refresh();
+    SkeletonAnnotations.FastMergeMode.setFilters(
+        SkeletonAnnotations.Settings.session.fast_merge_mode);
   });
 });
 

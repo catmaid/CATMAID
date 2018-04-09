@@ -77,12 +77,17 @@ Tracing general:
   universal match (all skeletons), a required meta-annotation or a creator ID.
   All annotations are taken over from a skeleton merged in without confirmation.
 
+- The `P` shortcut (peek) will now show the closest skeleton to the cursor in
+  all open 3D Viewers. To show the active skeleton use `Shift + P`.
+
+- A move/navigation mode can now be used using the new (third) button in the
+  tracing tool bar. If enabled, no mouse based node actions will be performed
+  anymore. Left mouse button clicks/movements are handled like right mouse
+  button clicks/movements.
+
 Miscellaneous:
 
 - Basic Search: allow search for treenode IDs and connector IDs.
-
-- The `P` shortcut (peek) will now show the closest skeleton to the cursor in
-  all open 3D Viewers. To show the active skeleton use `Shift + P`.
 
 - Project administration: selected projects can now be exported as JSON or YAML
   file using the respective action from the drop-down menu.
@@ -92,11 +97,6 @@ Miscellaneous:
 
 - Connectivity Widget: partner header indexes can now optionally be replaced
   with the neuron name and rotated by 90 degrees.
-
-- Tracing tool: a move/navigation mode can now be used using the new (third)
-  button in the tracing tool bar. If enabled, no mouse based node actions will
-  be performed anymore. Left mouse button clicks/movements are handled like
-  right mouse button clicks/movements.
 
 - The Keyboard/Mouse Help Widget has now a text filter, which allows to show
   only items containing a particular text.

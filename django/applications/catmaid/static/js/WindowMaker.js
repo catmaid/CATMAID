@@ -1494,7 +1494,7 @@ var WindowMaker = new function()
     addWindowConfigButton(win, GG);
 
     var tabs = DOM.addTabGroup(bar, GG.widgetID, ['Main', 'Grow', 'Graph',
-        'Selection', 'Subgraphs', 'Align', 'Export']);
+        'Selection', 'Selections', 'Subgraphs', 'Align', 'Export']);
 
     DOM.appendToTab(tabs['Main'],
         [[document.createTextNode('From')],
@@ -1579,6 +1579,23 @@ var WindowMaker = new function()
          [document.createTextNode(' - ')],
          ['Invert', GG.invertSelection.bind(GG)],
         ]);
+
+    DOM.appendToTab(tabs['Selections'],
+        [['Create selection', GG.createSelection.bind(GG)],
+         {type: 'checkbox',
+          label: 'prevent overlaps',
+          title: '',
+          value: true,
+          onclick: GG.togglePreventSelectionOverlaps.bind(GG),
+          id: "gg_prevent_overlaps" + GG.widgetID},
+         [DOM.createSelect("gg_selections" + GG.widgetID, [])],
+         ['Select', GG.activateSelection.bind(GG, true)],
+         ['Deselect', GG.activateSelection.bind(GG, false)],
+         ['Remove', GG.removeSelection.bind(GG)],
+         ['Select all', GG.activateAllSelections.bind(GG)],
+         [document.createTextNode(' - ')],
+        ]);
+        
 
     DOM.appendToTab(tabs['Align'],
         [[document.createTextNode('Align: ')],

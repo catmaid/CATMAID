@@ -63,6 +63,11 @@
     this.selection = {entries: {},
                       counter: 0};
 
+    // Variables related to the "Selections" tab for managing multiple selections
+    this.selections = {};
+    this.prevent_selection_overlaps = true;
+    //
+
     this.grid_snap = false;
     this.grid_side = 10; // px
 
@@ -3771,6 +3776,109 @@
       }
     }
   };
+
+  GroupGraph.prototype.hideEdges = function() {
+    this.cy.edges().hide();
+  };
+
+  /** Return an object with the name and the set of node ids in the selection activated in the UI pulldown menu. */
+  GroupGraph.prototype.getActiveSelection = function() {
+    if (!this.selections) return null;
+    var select = $("#gg_selections" + this.widgetID)[0];
+    if (0 === select.options.length) return null;
+    var name = select.options[select.selectedIndex].text;
+    return {
+      index: select.selectedIndex,
+      name: name,
+      ids: this.selections[name]
+    };
+  };
+
+  GroupGraph.prototype.togglePreventSelectionOverlaps = function() {
+    this.prevent_selection_overlaps = !this.prevent_selection_overlaps;
+  };
+
+  /** Create a new selection, can be overlapping. */
+  GroupGraph.prototype.createSelection = function() {
+    var existing_ids = {};
+    // Prevent overlaps with existing selections if specified by the checkbox
+    if (this.selections && this.prevent_selection_overlaps) {
+      Object.keys(this.selections).forEach(function(name) {
+        $.extend(existing_ids, this.selections[name]);
+      }, this);
+    }
+    // Collect node ids
+    var ids = {};
+    var to_deselect = [];
+    this.cy.nodes().each(function(i, node) {
+      if (node.selected()) {
+        if (existing_ids[node.id()]) {
+          // for clarity, deselect the node that won't be part of this selection
+          to_deselect.push(node);
+        } else {
+          ids[node.id()] = true;
+        }
+      }
+    });
+    // Check preconditions: valid name and at least one node selected
+    if (0 === Object.keys(ids).length) {
+      return CATMAID.warn("Select at least one node!");
+    }
+    if (to_deselect.length > 0 && !confirm("Some nodes already belong to other selections and will be deselected: continue?")) {
+       return;
+    }
+    var name = prompt("Name: ", "");
+    if (!name) {
+      return CATMAID.warn("Need a name for the selection!");
+    }
+    if (this.selections && this.selections[name]) {
+      return CATMAID.warn("Name already exists!");
+    }
+    // For clarity, deselect the nodes that won't be part of this selection
+    if (to_deselect.length > 0) {
+      to_deselect.forEach(function(node) { node.deselect(); });
+    }
+    // Create the new selection
+    if (!this.selections) this.selections = {};
+    this.selections[name] = ids;
+    var select = $("#gg_selections" + this.widgetID)[0];
+    select.append(new Option(name, name));
+  };
+
+  /** Select or deselect the nodes for the selection chosen in the pulldown menu. */
+  GroupGraph.prototype.activateSelection = function(activate) {
+    var sel = this.getActiveSelection();
+    if (!sel) return;
+    this.cy.nodes().each(function(i, node) {
+      if (sel.ids[node.id()]) {
+        if (activate) node.select();
+        else node.unselect();
+      }
+    });
+  };
+
+  GroupGraph.prototype.activateAllSelections = function() {
+    if (!this.selections) return;
+    var ids = {};
+    Object.keys(this.selections).forEach(function(name) {
+      $.extend(ids, this.selections[name]);
+    }, this);
+    this.cy.nodes().each(function(i, node) {
+      if (ids[node.id()]) node.select();
+    });
+  };
+
+  GroupGraph.prototype.removeSelection = function() {
+    var sel = this.getActiveSelection();
+    if (!sel) return;
+    // Remove data structure
+    delete this.selections[name];
+    // Update UI
+    var select = $("#gg_selections" + this.widgetID)[0];
+    select.remove(sel.index);
+  };
+
+
 
   // Export Graph Widget
   CATMAID.GroupGraph = GroupGraph;

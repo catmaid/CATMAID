@@ -155,6 +155,9 @@ Miscellaneous:
 - Radio button drop-downs and checkbox drop-downs now hide on a mouse click
   outside of the control.
 
+- Review: fix node selection error appearing during review of some virtual
+  nodes.
+
 
 ## 2018.02.16
 

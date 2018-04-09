@@ -5,6 +5,8 @@ from django import forms
 from django.forms.widgets import Widget
 from six import string_types
 
+import catmaid.fields
+
 
 class Swatch(Widget):
     """A simple widget that shows a color field for the RGBAWidget."""
@@ -113,3 +115,42 @@ class RGBAWidget(LabeledMultiWidget):
             elif isinstance(value, RGBA):
                 return [value.r, value.g, value.b, value.a]
         return [None, None, None, None]
+
+class DownsampleFactorsWidget(forms.MultiWidget):
+    """
+    A widget that displays increasingly customized and complex options for
+    entering downsampling factors.
+    """
+
+    template_name = "catmaid/widgets/downsamplefactors.html"
+
+    choices = (
+                    (0, 'CATMAID default'),
+                    (1, 'XY downsampling only'),
+                    (2, 'Custom downsampling'),
+                )
+
+    def __init__(self, attrs=None, **kwargs):
+        widgets = (
+            forms.RadioSelect(attrs, choices=DownsampleFactorsWidget.choices),
+            forms.NumberInput(attrs={'min': '0'}),
+            forms.TextInput(attrs),
+        )
+
+        super(DownsampleFactorsWidget, self).__init__(widgets,
+                attrs, **kwargs)
+
+    def decompress(self, value):
+        if value is None or value[0] is None:
+            return [0, None, None]
+        elif value[0] == catmaid.fields.DownsampleFactorsField.planar_default(len(value[0]) - 1):
+            return [1, len(value[0]) - 1, value[1]]
+        else:
+            return [2, len(value[0]) - 1, value[1]]
+
+    def get_context(self, name, value, attrs):
+        # Django doesn't play well with MultiValueFields/MultiWidgets whose
+        # normalization type is a list, so will not try to decompress list
+        # values by default.
+        value = self.decompress(value)
+        return super(DownsampleFactorsWidget, self).get_context(name, value, attrs)

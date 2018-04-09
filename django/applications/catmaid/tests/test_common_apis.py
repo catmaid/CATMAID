@@ -107,7 +107,6 @@ class InsertionTest(TestCase):
         s.title = "Example Stack"
         s.dimension = Integer3D(x=2048, y=1536, z=460)
         s.resolution = Double3D(x=5.0001, y=5.0002, z=9.0003)
-        s.num_zoom_levels = -1
         s.save()
 
         sm = StackMirror()

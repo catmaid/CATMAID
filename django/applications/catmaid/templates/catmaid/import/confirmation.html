@@ -39,7 +39,7 @@
             <th>Stack Dimension</th>
             <th>Stack Resolution</th>
             <th>Stack Name</th>
-            <th>Stack Zoom Levels</th>
+            <th>Stack Zoom Factors</th>
             <th>Tile size (w x h)</th>
             <th>Stack Extension</th>
             <th>Stack Image Base</th>
@@ -64,7 +64,7 @@
                   <td>{{ s.dimension }}</td>
                   <td>{{ s.resolution }}</td>
                   <td>{{ s.title }}</td>
-                  <td>{{ s.num_zoom_levels }}</td>
+                  <td>{{ s.downsample_factors }}</td>
                   <td></td>
                   <td></td>
                   <td></td>
@@ -157,7 +157,7 @@
         </tr>
     </table></p>
     </div>
-    
+
     <div class="submit-row">
     <p>
       {{ wizard.management_form }}

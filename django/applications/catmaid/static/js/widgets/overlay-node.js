@@ -393,9 +393,6 @@
         this.c.x = this[this.planeX];
         this.c.y = this[this.planeY];
         this.c.scale.set(this.stackScaling);
-        // this.c.scale.set(
-        //     this.stackScaling / this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.anisotropy.x,
-        //     this.stackScaling / this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.anisotropy.y);
 
         this.c.tint = this.color();
 
@@ -798,9 +795,6 @@
           line.moveTo(0, 0);
           line.lineTo(0, 0);
           line.hitArea = new PIXI.Polygon(0, 0, 0, 0, 0, 0, 0, 0);
-          // line.scale.set(
-          //       1 / this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.anisotropy.x,
-          //       1 / this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.anisotropy.y);
         }
 
         this.line.tooShort = false;
@@ -824,8 +818,8 @@
         var norm = lineNormal(childLocation[0], childLocation[1],
                               parentLocation[0], parentLocation[1]);
         var s = this.BASE_EDGE_WIDTH * 2.0;
-        norm[0] *= s; // / this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.anisotropy.x;
-        norm[1] *= s; // / this.overlayGlobals.tracingOverlay.stackViewer.primaryStack.anisotropy.y;
+        norm[0] *= s;
+        norm[1] *= s;
         // Assign hit area to existing points array to avoid allocation.
         let lineHitAreaPoints = line.hitArea.points;
         lineHitAreaPoints[0] = childLocation[0]  + norm[0];

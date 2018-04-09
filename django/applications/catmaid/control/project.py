@@ -323,7 +323,7 @@ def export_project_data(projects):
     # Get all relevant stacks
     cursor.execute("""
         SELECT ps.project_id, ps.stack_id, s.title,
-            s.dimension, s.resolution, s.num_zoom_levels, s.metadata, s.comment,
+            s.dimension, s.resolution, s.downsample_factors, s.metadata, s.comment,
             s.attribution, s.description, s.canary_location,
             s.placeholder_color,
             ARRAY(SELECT index FROM broken_slice WHERE stack_id = s.id ORDER BY index),
@@ -345,14 +345,14 @@ def export_project_data(projects):
         stack = {
             'id': row[1],
             'title': row[2],
-            'dimension': row[3],
+            'dimension': str(row[3]),
             'resolution': row[4],
-            'zoomlevels': row[5],
+            'downsample_factors': None if row[5] is None else str(row[5]),
             'metadata': row[6],
             'comment': row[7],
             'attribution': row[8],
             'description': row[9],
-            'canary_location': row[10],
+            'canary_location': str(row[10]),
             'placeholder_color': row[11],
             'mirrors': stack_mirror_index.get(row[1], []),
             'broken_sections': row[12],

@@ -15,6 +15,7 @@ from catmaid.models import (
     StackStackGroup, StackGroupRelation,
 )
 from catmaid.control import dvid
+from catmaid.fields import DownsampleFactorsField
 
 TEMPLATES = {
     'server': 'catmaid/dvidimport/server.html',
@@ -107,6 +108,7 @@ class DVIDImportWizard(SessionWizardView):
                      stack_data['dimension']['z'])
         resolution = (stack_data['resolution']['x'], stack_data['resolution']['y'],
                      stack_data['resolution']['z'])
+        downsample_factors = DownsampleFactorsField.planar_default(stack_data['num_zoom_levels'])
 
         ortho_stacks = self.get_cleaned_data_for_step('confirm')['ortho_stacks']
         new_project = self.get_cleaned_data_for_step('confirm')['new_project']
@@ -124,7 +126,7 @@ class DVIDImportWizard(SessionWizardView):
                 comment=comment,
                 dimension=dimension,
                 resolution=resolution,
-                num_zoom_levels=stack_data['zoom_levels'],
+                downsample_factors=downsample_factors,
                 description=description)
             stack.save()
             mirror = StackMirror.objects.create(

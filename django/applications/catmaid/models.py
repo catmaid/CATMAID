@@ -25,7 +25,7 @@ from guardian.shortcuts import get_objects_for_user
 from taggit.managers import TaggableManager
 from rest_framework.authtoken.models import Token
 
-from .fields import Double3DField, Integer3DField, RGBAField
+from .fields import Double3DField, Integer3DField, RGBAField, DownsampleFactorsField
 
 from .control.user import distinct_user_color
 
@@ -102,11 +102,8 @@ class Stack(models.Model):
             "nanometers.")
     comment = models.TextField(blank=True, null=True,
             help_text="A comment that describes the image data.")
-    num_zoom_levels = models.IntegerField(default=-1,
-            help_text="The number of zoom levels a stack has data for. A "
-            "value of -1 lets CATMAID dynamically determine the actual value "
-            "so that at this value the largest extent (X or Y) won't be "
-            "smaller than 1024 pixels. Values larger -1 will be used directly.")
+    downsample_factors = DownsampleFactorsField(
+            help_text="Downsampling factors along each dimensions for each zoom level.")
     description = models.TextField(default='', blank=True,
             help_text="Arbitrary text that is displayed alongside the stack.")
     metadata = JSONField(blank=True, null=True)
@@ -122,6 +119,11 @@ class Stack(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def num_zoom_levels(self):
+        """Number of zoom levels, or -1 if determined automatically."""
+        return -1 if self.downsample_factors is None else len(self.downsample_factors) - 1
 
 
 @python_2_unicode_compatible

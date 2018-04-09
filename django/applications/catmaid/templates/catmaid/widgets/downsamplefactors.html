@@ -1,0 +1,19 @@
+{% load common %}
+
+<ul>
+	{% for group, options, index in widget.subwidgets.0.optgroups %}
+		<li>
+			{% for option in options %}
+				{# TODO: `wrap_label` behavior will change in the next Django version. #}
+				{% include option.template_name with widget=option wrap_label=True %}
+			{% endfor %}
+			{% if index == 1 %}
+				{% include widget.subwidgets.1.template_name with widget=widget.subwidgets.1 %}
+				<label for="widget.subwidgets.1.attrs.id">Number of zoom levels</label>
+			{% endif %}
+			{% if index == 2 %}
+				{% include widget.subwidgets.1.template_name with widget=widget.subwidgets.2 %}
+			{% endif %}
+		</li>
+	{% endfor %}
+</ul>

@@ -43,6 +43,7 @@ class FlyTEMStack:
         self.project = project_id
         self.id = stack_id
         self.title = stack_id
+        self.downsample_factors = None
         self.num_zoom_levels = -1
 
         # default resolution in case render stack does not have it defined in metadata

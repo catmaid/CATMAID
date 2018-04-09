@@ -752,6 +752,8 @@
             boxTool.cropBox.bottom = volume.maxY;
             boxTool.cropBox.left = volume.minX;
             boxTool.cropBox.right = volume.maxX;
+            boxTool.cropBox.z1 = volume.minZ;
+            boxTool.cropBox.z2 = volume.maxZ;
             boxTool.updateCropBox();
           };
 

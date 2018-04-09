@@ -100,8 +100,8 @@
       for (var j = 0; j < cols; ++j) {
         this._tiles[i][j] = new PIXI.Sprite(emptyTex);
         this.batchContainer.addChild(this._tiles[i][j]);
-        this._tiles[i][j].position.x = j * this.tileSource.tileWidth * this.stack.anisotropy.x;
-        this._tiles[i][j].position.y = i * this.tileSource.tileHeight * this.stack.anisotropy.y;
+        this._tiles[i][j].position.x = j * this.tileSource.tileWidth * this._anisotropy.x;
+        this._tiles[i][j].position.y = i * this.tileSource.tileHeight * this._anisotropy.y;
 
         if (this.tileSource.transposeTiles.has(this.stack.orientation)) {
           this._tiles[i][j].scale.x = -1.0;
@@ -124,6 +124,11 @@
         scaledStackPosition.z,
         scaledStackPosition.s,
         this.efficiencyThreshold);
+
+    if (this._anisotropy.x !== tileInfo.anisotropy.x ||
+        this._anisotropy.y !== tileInfo.anisotropy.y) {
+      return this.resize(this.stackViewer.viewWidth, this.stackViewer.viewHeight, completionCallback, blocking);
+    }
 
     // By default all needed tiles are shown. This can be changed so that all
     // tiles are hidden, e.g. if the current location is on a broken slice and
@@ -168,8 +173,8 @@
     // individual tiles.
     this.batchContainer.position.x = left;
     this.batchContainer.position.y = top;
-    this.batchContainer.scale.x = tileInfo.mag.x * this.stack.anisotropy.x;
-    this.batchContainer.scale.y = tileInfo.mag.y * this.stack.anisotropy.y;
+    this.batchContainer.scale.x = tileInfo.mag * tileInfo.anisotropy.x;
+    this.batchContainer.scale.y = tileInfo.mag * tileInfo.anisotropy.y;
     var toLoad = [];
     var loading = false;
     var y = 0;
@@ -262,9 +267,9 @@
   };
 
   /** @inheritdoc */
-  PixiTileLayer.prototype.resize = function (width, height) {
+  PixiTileLayer.prototype.resize = function (width, height, completionCallback, blocking) {
     CATMAID.PixiLayer.prototype.resize.call(this, width, height);
-    CATMAID.TileLayer.prototype.resize.call(this, width, height);
+    CATMAID.TileLayer.prototype.resize.call(this, width, height, completionCallback, blocking);
   };
 
   /** @inheritdoc */

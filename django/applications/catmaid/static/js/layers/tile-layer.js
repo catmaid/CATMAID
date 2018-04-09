@@ -299,6 +299,11 @@
         scaledStackPosition.s,
         this.efficiencyThreshold);
 
+    if (this._anisotropy.x !== tileInfo.anisotropy.x ||
+        this._anisotropy.y !== tileInfo.anisotropy.y) {
+      return this.resize(this.stackViewer.viewWidth, this.stackViewer.viewHeight, completionCallback, blocking);
+    }
+
     // By default all needed tiles are shown. This can be changed so that all
     // tiles are hidden, e.g. if the current location is on a broken slice and
     // CATMAID is configured to hide these sections.
@@ -317,8 +322,8 @@
       }
     }
 
-    var effectiveTileWidth = this.tileSource.tileWidth * tileInfo.mag.x * this.stack.anisotropy.x;
-    var effectiveTileHeight = this.tileSource.tileHeight * tileInfo.mag.y * this.stack.anisotropy.y;
+    var effectiveTileWidth = this.tileSource.tileWidth * tileInfo.mag * tileInfo.anisotropy.x;
+    var effectiveTileHeight = this.tileSource.tileHeight * tileInfo.mag * tileInfo.anisotropy.y;
 
     var rows = this._tiles.length, cols = this._tiles[0].length;
 
@@ -521,12 +526,13 @@
    * @param  {number} width  Width of the view in pixels.
    * @param  {number} height Height of the view in pixels.
    */
-  TileLayer.prototype.resize = function (width, height) {
-    var cols = Math.ceil(width / this.tileSource.tileWidth / this.stack.anisotropy.x) + 1;
-    var rows = Math.ceil(height / this.tileSource.tileHeight / this.stack.anisotropy.y) + 1;
+  TileLayer.prototype.resize = function (width, height, completionCallback, blocking) {
+    this._anisotropy = this.stack.anisotropy(Math.ceil(this.stackViewer.s));
+    var cols = Math.ceil(width / this.tileSource.tileWidth / this._anisotropy.x) + 1;
+    var rows = Math.ceil(height / this.tileSource.tileHeight / this._anisotropy.y) + 1;
     if (this._tiles.length === 0 || this._tiles.length !== rows || this._tiles[0].length !== cols)
       this._initTiles(rows, cols);
-    this.redraw();
+    this.redraw(completionCallback, blocking);
   };
 
   /**
@@ -620,14 +626,13 @@
   TileLayer.prototype.tilesForLocation = function (xc, yc, z, s, efficiencyThreshold) {
     if (typeof efficiencyThreshold === 'undefined') efficiencyThreshold = 0.0;
     var zoom = s;
-    var mag = {x: 1.0, y: 1.0};
-    var artificialZoom = false;
+    var mag = 1.0;
+
     /* If the zoom is negative we zoom in digitally. For this
      * we take the zero zoom level and adjust the tile properties.
      * This way we let the browser do the zooming work.
      */
     if (zoom < 0 || zoom % 1 !== 0) {
-      artificialZoom = true;
       /* For nonintegral zoom levels the ceiling is used to select
        * source image zoom level. While using the floor would allow
        * better image quality, it would requiring dynamically
@@ -639,21 +644,16 @@
        * resolution and negative for non-integral zooms within
        * image resolution.
        */
-      if (zoom == this.stack.MAX_S) {
-        mag = {
-          x: Math.pow(2, zoom - s),
-          y: Math.pow(2, zoom - s),
-        };
+      if (s < 0 || zoom === this.stack.MAX_S) {
+        mag = Math.pow(2, zoom - s);
       } else {
-        mag = {
-          x: Math.pow(this.stack.zoom_factors[zoom + 1][0] / this.stack.zoom_factors[zoom][0], zoom - s),
-          y: Math.pow(this.stack.zoom_factors[zoom + 1][1] / this.stack.zoom_factors[zoom][1], zoom - s),
-        };
+        mag = this.stack.effectiveZoomFactor(zoom) / this.stack.effectiveZoomFactor(s);
       }
     }
 
-    var effectiveTileWidth = this.tileSource.tileWidth * mag.x * this.stack.anisotropy.x;
-    var effectiveTileHeight = this.tileSource.tileHeight * mag.y * this.stack.anisotropy.y;
+    var anisotropy = this.stack.anisotropy(zoom);
+    var effectiveTileWidth = this.tileSource.tileWidth * mag * anisotropy.x;
+    var effectiveTileHeight = this.tileSource.tileHeight * mag * anisotropy.y;
 
     var fr = Math.floor(yc / effectiveTileHeight);
     var fc = Math.floor(xc / effectiveTileWidth);
@@ -702,8 +702,10 @@
     lr = Math.floor((yc + this.stackViewer.viewHeight - efficiencyThreshold * effectiveTileHeight) / effectiveTileHeight);
 
     // Clamp last tile coordinates within the slice edges.
-    lc = Math.min(lc, Math.floor((this.stack.dimension.x * Math.pow(2, -zoom) - 1) / this.tileSource.tileWidth));
-    lr = Math.min(lr, Math.floor((this.stack.dimension.y * Math.pow(2, -zoom) - 1) / this.tileSource.tileHeight));
+    lc = Math.min(lc, Math.floor((this.stack.dimension.x / this.stack.zoom_factors[zoom].x - 1)
+                      / this.tileSource.tileWidth));
+    lr = Math.min(lr, Math.floor((this.stack.dimension.y * this.stack.zoom_factors[zoom].y - 1)
+                      / this.tileSource.tileHeight));
 
     return {
       firstRow:  fr,
@@ -712,9 +714,10 @@
       lastCol:   lc,
       top:       top,
       left:      left,
-      z:         Math.round(z / stack.zoom_factors[zoom][2]),
+      z:         Math.round(z / this.stack.zoom_factors[zoom].z),
       zoom:      zoom,
-      mag:       mag
+      mag:       mag,
+      anisotropy: anisotropy
     };
   };
 

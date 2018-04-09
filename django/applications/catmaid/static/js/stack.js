@@ -60,17 +60,17 @@
 
     //! estimate the zoom levels
     if (!Array.isArray(zoom_factors)) {
-      zoom_factors = [];
+      zoom_factors = [{x: 1, y: 1, z: 1}];
       self.MAX_S = 0;
       var max_dim = Math.max( MAX_X, MAX_Y );
       var min_size = 1024;
       while ( max_dim / Math.pow( 2, self.MAX_S ) > min_size ) {
         // By default, assume factor 2 downsampling in x, y, and no downsampling in z.
-        zoom_factors.push([
-          Math.pow(2, self.MAX_S),
-          Math.pow(2, self.MAX_S),
-          1]);
         ++self.MAX_S;
+        zoom_factors.push({
+          x: Math.pow(2, self.MAX_S),
+          y: Math.pow(2, self.MAX_S),
+          z: 1});
       }
     } else {
       self.MAX_S = zoom_factors.length - 1;
@@ -90,10 +90,62 @@
 
     this.minPlanarRes = Math.min(resolution.x, resolution.y);
     /** @type {Object} Relative anisotropy of the planar dimensions. */
-    this.anisotropy = Object.keys(resolution).reduce(function (ani, dim) {
-      ani[dim] = resolution[dim] / self.minPlanarRes;
-      return ani;
-    }, {});
+    // this.anisotropy = Object.keys(resolution).reduce(function (ani, dim) {
+    //   ani[dim] = resolution[dim] / self.minPlanarRes;
+    //   return ani;
+    // }, {});
+
+    this.anisotropy = function (s) {
+      if (s === 0) {
+        return {
+          x: this.resolution.x / this.minPlanarRes,
+          y: this.resolution.y / this.minPlanarRes,
+        };
+      }
+
+      var zoom = Math.min(this.MAX_S, Math.max(0, Math.ceil(s)));
+      var factors = {
+        x: this.zoom_factors[zoom].x,
+        y: this.zoom_factors[zoom].y,
+      };
+
+      if (s < 0 || s > this.MAX_S) {
+        factors.x /= Math.pow(2, zoom - s);
+        factors.y /= Math.pow(2, zoom - s);
+      } else if (s !== zoom) {
+        var nextFactors = {
+          x: this.zoom_factors[zoom - 1].x,
+          y: this.zoom_factors[zoom - 1].y,
+        };
+        factors.x /= Math.pow(factors.x / nextFactors.x, zoom - s);
+        factors.y /= Math.pow(factors.y / nextFactors.y, zoom - s);
+      }
+
+      let ezf = this.effectiveZoomFactor(s);
+
+      factors.x *= this.resolution.x / (ezf * this.minPlanarRes);
+      factors.y *= this.resolution.y / (ezf * this.minPlanarRes);
+
+      return factors;
+    };
+
+    this.effectiveZoomFactor = function (s) {
+      var zoom = Math.min(this.MAX_S, Math.max(0, Math.ceil(s)));
+      var factor = Math.max(
+        this.zoom_factors[zoom].x,
+        this.zoom_factors[zoom].y);
+
+      if (s < 0 || s > this.MAX_S) {
+        factor /= Math.pow(2, zoom - s);
+      } else if (s !== zoom) {
+        var nextFactor = Math.max(
+          this.zoom_factors[zoom - 1].x,
+          this.zoom_factors[zoom - 1].y);
+        factor /= Math.pow(factor / nextFactor, zoom - s);
+      }
+
+      return factor;
+    };
 
     /**
      * Project x-coordinate for stack coordinates

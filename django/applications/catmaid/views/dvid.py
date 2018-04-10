@@ -124,7 +124,7 @@ class DVIDImportWizard(SessionWizardView):
                 comment=comment,
                 dimension=dimension,
                 resolution=resolution,
-                num_zoom_levels=stack_data['zoom_levels'],
+                zoom_levels=stack_data['zoom_factors'],
                 description=description)
             stack.save()
             mirror = StackMirror.objects.create(

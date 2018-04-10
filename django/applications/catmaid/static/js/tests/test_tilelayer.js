@@ -16,7 +16,9 @@ QUnit.test('Tile layer test', function (assert) {
     var res = {'x': 0.1, 'y': 0.1, 'z': 2.0};
     var trs = {'x': 0, 'y': 0, 'z': 0};
     return new CATMAID.Stack(1, name, dim, res, trs,
-        [], 3, 4, "", null, orientation,
+        [],
+        [{x: 1, y: 1, z: 1}, {x: 2, y: 2, z: 1}, {x: 4, y: 4, z: 1}, {x: 8, y: 8, z: 1},],
+        4, "", null, orientation,
         {x: 0, y: 0, z: 0},
         {r: 0, g: 0, b: 0, a: 1},
         [{
@@ -47,7 +49,8 @@ QUnit.test('Tile layer test', function (assert) {
     left:     0,
     z:         1,
     zoom:      0,
-    mag:       1
+    mag:       1,
+    anisotropy: {x: 1, y: 1},
   };
   assert.deepEqual(tileInd, expected, 'Generates correct tile indices for ' +
       'simple, tile-aligned view at 0 scale');
@@ -62,7 +65,8 @@ QUnit.test('Tile layer test', function (assert) {
     left:     0,
     z:         1,
     zoom:      2,
-    mag:       1
+    mag:       1,
+    anisotropy: {x: 1, y: 1},
   };
   assert.deepEqual(tileInd, expected, 'Generates correct tile indices for ' +
       'simple, tile-aligned view at 2 scale');
@@ -77,7 +81,8 @@ QUnit.test('Tile layer test', function (assert) {
     left:     0,
     z:         1,
     zoom:      1,
-    mag:       1
+    mag:       1,
+    anisotropy: {x: 1, y: 1},
   };
   assert.deepEqual(tileInd, expected, 'Truncates tile indices for y stack ' +
       'boundaries');
@@ -92,7 +97,8 @@ QUnit.test('Tile layer test', function (assert) {
     left:     0,
     z:         1,
     zoom:      1,
-    mag:       1
+    mag:       1,
+    anisotropy: {x: 1, y: 1},
   };
   assert.deepEqual(tileInd, expected, 'Truncates tile indices for x stack ' +
       'boundaries');
@@ -107,7 +113,8 @@ QUnit.test('Tile layer test', function (assert) {
     left:     0,
     z:         1,
     zoom:      0,
-    mag:       2
+    mag:       2,
+    anisotropy: {x: 1, y: 1},
   };
   assert.deepEqual(tileInd, expected, 'Truncates tile indices for view ' +
       'boundaries for fractional zoom');

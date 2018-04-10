@@ -258,12 +258,23 @@ class ProjectAdmin(GuardedModelAdmin):
             export_project_json_action, export_project_yaml_action)
 
 
+class StackForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(StackForm, self).__init__(*args, **kwargs)
+        self.fields['zoom_factors'].delimiter = '|'
+
+    class Meta:
+        model = Stack
+        fields = '__all__'
+
+
 class StackAdmin(GuardedModelAdmin):
     list_display = ('title', 'dimension', 'resolution',)
     search_fields = ['title', 'comment']
     inlines = [ProjectStackInline, StackStackGroupInline, StackMirrorInline]
     save_as = True
     actions = (duplicate_action,)
+    form = StackForm
 
 
 class StackGroupAdmin(GuardedModelAdmin):

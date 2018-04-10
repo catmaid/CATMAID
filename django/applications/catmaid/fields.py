@@ -2,14 +2,86 @@
 from __future__ import unicode_literals
 from six import string_types
 
+import psycopg2
+from psycopg2.extensions import register_adapter, adapt, AsIs
+import six
 import re
+
 from django import forms
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.dispatch import receiver, Signal
+from django.db import connection, models
 from django.utils.encoding import python_2_unicode_compatible
 
 
 from catmaid.widgets import Double3DWidget, Integer3DWidget, RGBAWidget
+
+
+# ------------------------------------------------------------------------
+# Classes to support PostgreSQL composite types. Adapted from:
+# http://schinckel.net/2014/09/24/using-postgres-composite-types-in-django/
+
+class CompositeFactory(psycopg2.extras.CompositeCaster):
+    def make(self, values):
+        return self.composite_python_class(**dict(six.moves.zip(self.attnames, values)))
+
+_missing_types = {}
+
+class CompositeMeta(type):
+    def __init__(cls, name, bases, clsdict):
+        super(CompositeMeta, cls).__init__(name, bases, clsdict)
+        cls.register_composite()
+
+    def register_composite(cls):
+        klass = cls()
+        db_type = klass.db_type(connection)
+        if db_type:
+            try:
+                cls.python_type = psycopg2.extras.register_composite(
+                    str(db_type),
+                    connection.cursor().cursor,
+                    globally=True,
+                    factory=klass.factory_class()
+                ).type
+            except psycopg2.ProgrammingError:
+                _missing_types[db_type] = cls
+            else:
+                def adapt_composite(composite):
+                    # For safety, `composite_python_class` must have the same
+                    # attributes as the namedtuple `python_type`'s fields, so
+                    # that those can be escaped rather than relying on
+                    # `__str__`.
+                    return AsIs("(%s)::%s" % (
+                        ", ".join([
+                            adapt(getattr(composite, field)).getquoted() for field in cls.python_type._fields
+                        ]), db_type
+                    ))
+
+                register_adapter(cls.composite_python_class, adapt_composite)
+
+
+@six.add_metaclass(CompositeMeta)
+class CompositeField(models.Field):
+    """Base class for PostgreSQL composite fields.
+
+    Rather than use psycopg2's default namedtuple types, adapt to a custom
+    Python type in `composite_python_class` that takes fields as init kwargs.
+    """
+
+    def factory_class(self):
+        newclass = type(
+            str('%sFactory' % type(self.composite_python_class).__name__),
+            (CompositeFactory,),
+            {'composite_python_class': self.composite_python_class})
+        return newclass
+
+
+composite_type_created = Signal(providing_args=['name'])
+
+@receiver(composite_type_created)
+def register_composite_late(sender, db_type, **kwargs):
+    _missing_types.pop(db_type).register_composite()
+
 
 # ------------------------------------------------------------------------
 # Classes to support the integer3d compound type:
@@ -36,7 +108,11 @@ class Integer3D(object):
     def __str__(self):
         return "(%d, %d, %d)" % (self.x, self.y, self.z)
 
-class Integer3DField(models.Field):
+    def to_dict(self):
+        return {'x': self.x, 'y': self.y, 'z': self.z}
+
+class Integer3DField(CompositeField):
+    composite_python_class = Integer3D
 
     def formfield(self, **kwargs):
         defaults = {'form_class': Integer3DFormField}
@@ -45,12 +121,6 @@ class Integer3DField(models.Field):
 
     def db_type(self, connection):
         return 'integer3d'
-
-    def from_db_value(self, value, expression, connection, context):
-        if value is None:
-            return value
-
-        return Integer3D.from_str(value)
 
     def to_python(self, value):
         if isinstance(value, Integer3D):
@@ -65,8 +135,7 @@ class Integer3DField(models.Field):
             return Integer3D.from_str(value)
 
     def get_db_prep_value(self, value, connection, prepared=False):
-        value = self.to_python(value)
-        return "(%d,%d,%d)" % (value.x, value.y, value.z)
+        return self.to_python(value)
 
 
 # ------------------------------------------------------------------------
@@ -206,7 +275,7 @@ class Integer3DFormField(forms.MultiValueField):
 
     def compress(self, data_list):
         if data_list:
-            return data_list
+            return Integer3D(*data_list)
         return [None, None, None]
 
 class Double3DFormField(forms.MultiValueField):

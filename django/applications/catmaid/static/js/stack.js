@@ -89,11 +89,6 @@
     });
 
     this.minPlanarRes = Math.min(resolution.x, resolution.y);
-    /** @type {Object} Relative anisotropy of the planar dimensions. */
-    // this.anisotropy = Object.keys(resolution).reduce(function (ani, dim) {
-    //   ani[dim] = resolution[dim] / self.minPlanarRes;
-    //   return ani;
-    // }, {});
 
     this.anisotropy = function (s) {
       if (s === 0) {

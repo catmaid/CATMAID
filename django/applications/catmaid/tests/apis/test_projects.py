@@ -144,7 +144,7 @@ class ProjectsApiTests(CatmaidApiTestCase):
                         literal_eval(s['dimension']))
                 self.assertEqual(literal_eval(str(stack.resolution)),
                         literal_eval(s['resolution']))
-                self.assertEqual(stack.num_zoom_levels, s['zoomlevels'])
+                self.assertEqual(stack.zoom_factors, s['zoom_factors'])
                 self.assertEqual(stack.metadata, s['metadata'])
                 self.assertEqual(stack.comment, s['comment'])
                 self.assertEqual(stack.attribution, s['attribution'])

@@ -45,7 +45,7 @@ class ImportExportTests(TestCase):
         """Import a set of new projects, stacks and stack groups. This tests
         only the actual import. Retrieving the data to import from different
         sources is not part of this test.
-        """ 
+        """
         project_url = 'https://catmaid-test/'
         data_folder = '/tmp/catmaid-test/'
         existing_projects = list(Project.objects.all())
@@ -224,7 +224,7 @@ class ImportExportTests(TestCase):
                     'title': 'test-stack-1',
                     'dimension': '(7,17,23)',
                     'resolution': '(2,3,5)',
-                    'zoomlevels': -1,
+                    'zoom_factors': None,
                     'orientation': 0,
                     'translation': '(0,0,0)',
                     'metadata': '',
@@ -249,7 +249,7 @@ class ImportExportTests(TestCase):
                     'dimension': '(7,17,23)',
                     'metadata': '',
                     'resolution': '(2,3,5)',
-                    'zoomlevels': -1,
+                    'zoom_factors': None,
                     'orientation': 0,
                     'translation': '(0,0,0)',
                     'attribution': None,
@@ -272,7 +272,7 @@ class ImportExportTests(TestCase):
                     'dimension': '(4,34,9)',
                     'metadata': 'Test meta data',
                     'resolution': '(1,2,3)',
-                    'zoomlevels': -1,
+                    'zoom_factors': None,
                     'orientation': 0,
                     'translation': '(0,0,0)',
                     'attribution': None,

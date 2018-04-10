@@ -607,18 +607,35 @@ def check_annotations_on_join(project_id, user, from_neuron_id, to_neuron_id,
 @requires_user_role(UserRole.Annotate)
 def split_skeleton(request, project_id=None):
     """ The split is only possible if the neuron is not locked or if it is
-    locked by the current user or if the current user belongs to the group
-    of the user who locked it. Of course, the split is also possible if
-    the current user is a super-user. Also, all reviews of the treenodes in the
-    new neuron are updated to refer to the new skeleton.
+    locked by the current user or if the current user belongs to the group of
+    the user who locked it. Of course, the split is also possible if the
+    current user is a super-user. Also, all reviews of the treenodes in the new
+    neuron are updated to refer to the new skeleton.
+
+    If upstream_annotation_map or downstream_annotation_map are not defined,
+    this is interpreted as keeping all annotations for the respective skeleton.
     """
     treenode_id = int(request.POST['treenode_id'])
     treenode = Treenode.objects.get(pk=treenode_id)
     skeleton_id = treenode.skeleton_id
     project_id = int(project_id)
-    upstream_annotation_map = json.loads(request.POST.get('upstream_annotation_map'))
-    downstream_annotation_map = json.loads(request.POST.get('downstream_annotation_map'))
+    upstream_annotation_map = request.POST.get('upstream_annotation_map')
+    downstream_annotation_map = request.POST.get('downstream_annotation_map')
     cursor = connection.cursor()
+
+    if not upstream_annotation_map or not downstream_annotation_map:
+        annotation_query = create_annotation_query(project_id,
+            {'skeleton_id': skeleton_id})
+
+    if not upstream_annotation_map:
+        upstream_annotation_map = frozenset(a.name for a in annotation_query)
+    else:
+        upstream_annotation_map = json.loads(upstream_annotation_map)
+
+    if not downstream_annotation_map:
+        downstream_annotation_map = frozenset(a.name for a in annotation_query)
+    else:
+        downstream_annotation_map = json.loads(downstream_annotation_map)
 
     # Make sure this skeleton is not used in a sampler
     n_samplers = Sampler.objects.filter(skeleton_id=skeleton_id).count()

@@ -981,13 +981,16 @@
     var positions = {},
         selected = {},
         hidden = {},
-        locked = {};
+        locked = {},
+        arrow_shapes = {};
     this.cy.nodes().each(function(i, node) {
       var id = node.id();
       positions[id] = node.position();
       if (node.selected()) selected[id] = true;
       if (node.hidden()) hidden[id] = true;
       if (node.locked()) locked[id] = true;
+      var s = node.data('arrowshape');
+      arrow_shapes[id] = s ? s : 'triangle';
     });
 
     // Store visibility and selection state of edges as well
@@ -1411,6 +1414,13 @@
       if (id in hidden) edge.addClass('hidden');
       // Hide edge if under threshold
       if (edge.data('weight') < edge_threshold) edge.addClass('hidden');
+      // Restore arrow shape
+      var s = arrow_shapes[edge.source().id()];
+      if (s) {
+        edge.data('arrow', s);
+        edge.style({'target-arrow-shape': s,
+                    'target-arrow-color': edge.style('background-color')});
+      }
     });
 
     // If hide labels, hide them
@@ -1831,13 +1841,18 @@
 
     // For directed edges only
     var mode = this.getEdgeColorMode();
+    var arrowShapeFn = function(node) {
+      var s = node.data('arrowshape');
+      return s ? s : 'triangle';
+    };
 
     this.cy.edges().each(function(i, edge) {
       if (edge.data('directed')) {
         if ("source" === mode || "target" === mode) {
           labelColor = edge[mode]().style()['background-color'];
           edge.style({'line-color': labelColor,
-                      'target-arrow-color': labelColor});
+                      'target-arrow-color': labelColor,
+                      'target-arrow-shape': arrowShapeFn(edge.source())});
         }
         edge.data('label_color', labelColor);
         edge.data('width', min + edgeWidth(edge.data('weight')));
@@ -3894,6 +3909,24 @@
   GroupGraph.prototype.getEdgeColorMode = function(evt) {
       var select = evt ? evt.target : $('#gg_edge_color_choice' + this.widgetID)[0];
       return select.options[select.selectedIndex].value;
+  };
+
+  GroupGraph.prototype.setArrowShapeToSelectedNodes = function() {
+    var select = $('#gg_edge_arrow_shape' + this.widgetID)[0];
+    var shape = select.options[select.selectedIndex].text;
+    var nodes = this.cy.nodes().filter(function(i, node) { return node.selected(); }).toArray();
+    if (0 === nodes.length) return CATMAID.warn("Select source nodes first!");
+    this.cy.startBatch();
+    this.cy.edges().each(function(i, edge) {
+      var node = edge.source();
+      if (node.selected()) {
+        node.data('arrowshape', shape); // storing the arrow shape in the source node
+        edge.data('arrow', shape);
+        edge.style({'target-arrow-shape': shape,
+                    'target-arrow-color': edge.style('background-color')});
+      }
+    });
+    this.cy.endBatch();
   };
 
   // Export Graph Widget

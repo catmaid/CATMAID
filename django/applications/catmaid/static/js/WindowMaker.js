@@ -1563,7 +1563,14 @@ var WindowMaker = new function()
          [document.createTextNode(' synapses ')],
          [document.createTextNode(' - Filter synapses below confidence ')],
          [edgeConfidence],
-         {type: 'child', element: linkTypeSelectionWrapper}
+         {type: 'child', element: linkTypeSelectionWrapper},
+         [document.createTextNode(' - Arrow shape: ')],
+         [DOM.createSelect(
+           'gg_edge_arrow_shape' + GG.widgetID,
+           ["triangle", "tee", "circle", "square", "diamond", "vee", "triangle-tee", "triangle-cross", "triangle-backcurve", "none"],
+           "triangle",
+           null)],
+         ['Set', GG.setArrowShapeToSelectedNodes.bind(GG)],
         ]);
 
     DOM.appendToTab(tabs['Selection'],

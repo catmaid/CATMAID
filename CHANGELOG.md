@@ -47,6 +47,10 @@ Landmarks:
   linked to the source group using the selected relation. The reciprocity of
   relations is respected.
 
+- The new "Create groups" tab provides an option to create landmark groups along
+  with required landmarks from the bounding boxes of two volumes. This allow to
+  quickly create simple landmark group mappings.
+
 - The color and extra scaling for nodes on Landmark Layers can be adjusted from
   the widget.
 

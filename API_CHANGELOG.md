@@ -27,6 +27,10 @@ included in this changelog.
   Get a list of landmark groups that are linked to the referenced group using a
   passed in relation, respects reciprocal relations.
 
+- `POST /{project_id}/landmarks/groups/materialize`:
+  Create pairs of landmark groups along with their landmarks based on a simple
+  description.
+
 ### Modifications
 
 - `POST /{project_id}/annotations/query-targets`:

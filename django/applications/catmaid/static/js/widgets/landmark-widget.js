@@ -78,9 +78,12 @@
     // The default landmark group relation.
     this.editLinkRelation = 'adjacent_to';
 
+    // Whether to allow use of existing landmarks
+    this.groupsReuseExistingLandmarks = false;
+
     // The current edit mode
     this.mode = 'display';
-    this.modes = ['display', 'landmarks', 'edit', 'import'];
+    this.modes = ['display', 'landmarks', 'edit', 'groups', 'import'];
 
     // Some parts of the widget need to update when skeleton sources are added
     // or removed.
@@ -609,7 +612,7 @@
       } else {
         let t = transformations[index];
         transformations.splice(index, 1);
-        let target3dViewers = Array.from(this.targeted3dViewerNames.keyss()).map(function(m) {
+        let target3dViewers = Array.from(this.targeted3dViewerNames.keys()).map(function(m) {
           return CATMAID.skeletonListSources.getSource(m);
         });
         for (let j=0; j<target3dViewers.length; ++j) {
@@ -1019,6 +1022,77 @@
         }
       })
       .catch(CATMAID.handleError);
+  };
+
+  let boundingBoxToArray = function(bb, mirrorAxis) {
+    let minX = 'min', maxX = 'max',
+        minY = 'min', maxY = 'max',
+        minZ = 'min', maxZ = 'max';
+
+    if (mirrorAxis === 'x') {
+      minX = 'max';
+      maxX = 'min';
+    } else if (mirrorAxis === 'y') {
+      minY = 'max';
+      maxY = 'min';
+    } else if (mirrorAxis === 'z') {
+      minZ = 'max';
+      maxZ = 'min';
+    }
+
+    return [
+        [bb[minX].x, bb[minY].y, bb[minZ].z],
+        [bb[minX].x, bb[minY].y, bb[maxZ].z],
+        [bb[minX].x, bb[maxY].y, bb[minZ].z],
+        [bb[minX].x, bb[maxY].y, bb[maxZ].z],
+        [bb[maxX].x, bb[minY].y, bb[minZ].z],
+        [bb[maxX].x, bb[minY].y, bb[maxZ].z],
+        [bb[maxX].x, bb[maxY].y, bb[minZ].z],
+        [bb[maxX].x, bb[maxY].y, bb[maxZ].z]
+    ];
+  };
+
+  /**
+   * Create a new pair of landmark groups based on the volume configuration.
+   */
+  LandmarkWidget.prototype.createLandmarkGroupsFromVolumes = function(volumeAId,
+      volumeBId, groupAName, groupBName, landmarkPrefix, mirrorAxis, relations,
+      reuseExistingLandmarks) {
+    return Promise.all([
+        CATMAID.Volumes.get(project.id, volumeAId),
+        CATMAID.Volumes.get(project.id, volumeBId)
+      ])
+      .then(function(bbs) {
+        let a = bbs[0].bbox;
+        let b = bbs[1].bbox;
+
+        // Each bounding box has a min and max field, representing its corners.
+        // Generate all eight points for each bounding box. The corners of the
+        // reference box are walked in the following order, starting with the
+        // minimum corner:
+        let landmarksGroupA = boundingBoxToArray(a);
+        let landmarksGroupB = boundingBoxToArray(b, mirrorAxis);
+
+        if (!landmarkPrefix || landmarkPrefix.length === 0) {
+          landmarkPrefix = groupAName + ' - ' + groupBName + ' - ';
+        }
+
+        let landmarks = landmarksGroupA.map(function(locA, i) {
+          let name = landmarkPrefix + i;
+          let locB = landmarksGroupB[i];
+          return [name, locA[0], locA[1], locA[2], locB[0], locB[1], locB[2]];
+        });
+
+        let links;
+        if (relations) {
+          links = Array.from(relations).map(function(relation) {
+            return [groupAName, relation, groupBName];
+          });
+        }
+
+        return CATMAID.Landmarks.materialize(project.id, groupAName, groupBName,
+            landmarks, links, reuseExistingLandmarks);
+      });
   };
 
   function getId(e) {
@@ -2866,6 +2940,236 @@
         content.appendChild(existingDisplayTransformationsContainer);
 
         widget.updateDisplay();
+      }
+    },
+    groups: {
+      title: 'Create groups',
+      createControls: function(target) {
+        return [
+          {
+            type: 'checkbox',
+            label: 'Re-use existing landmarks',
+            onclick: function(e) {
+              target.groupsReuseExistingLandmarks = this.checked;
+            },
+            value: target.groupsReuseExistingLandmarks
+          }
+        ];
+      },
+      createContent: function(content, widget) {
+        // Option to create a mirrored pair of landmark groups based on two
+        // volumes.
+        let volumeBasedLandmarksHeader = content.appendChild(document.createElement('h1'));
+        volumeBasedLandmarksHeader.appendChild(document.createTextNode('Volume based landmark mapping'));
+        content.appendChild(volumeBasedLandmarksHeader);
+
+        let volumeMap = new Map();
+
+        let volumeOptions = CATMAID.Volumes.listAll(project.id)
+            .then(function(json) {
+              return json.sort(function(a, b) {
+                return CATMAID.tools.compareStrings(a.name, b.name);
+              }).map(function(volume) {
+                // Side effect: create volume map
+                volumeMap.set(volume.id, volume);
+
+                // Map volumes to radio select config
+                return {
+                  title: volume.name + " (#" + volume.id + ")",
+                  value: volume.id
+                };
+              });
+            });
+
+        let initVolumeList = function(name, handler) {
+          return volumeOptions
+            .then(function(volumes) {
+              // Create actual element based on the returned data
+              var node = CATMAID.DOM.createRadioSelect('Volumes', volumes,
+                  undefined, true);
+              // Add a selection handler
+              node.onchange = function(e) {
+                let volumeId = null;
+                if (e.srcElement.value !== "none") {
+                  volumeId = parseInt(e.srcElement.value, 10);
+                }
+                if (CATMAID.tools.isFn(handler)) {
+                  handler.call(this, volumeId);
+                }
+              };
+
+              return node;
+            });
+        };
+
+        // State info whether individual fields have been changed by user
+        let landmarkPrefixChanged = false, groupNameAChanged = false, groupNameBChanged;
+        let getLandmarkPrefixSuggestion = function() {
+          return groupNameA + ' - ' + groupNameB;
+        };
+
+        let groupSettings = content.appendChild(document.createElement('p'));
+
+        // Volume A
+        let volumeA = null;
+        let volumeASelectionSetting = groupSettings.appendChild(
+            CATMAID.DOM.createLabeledAsyncPlaceholder(
+                "Volume A", initVolumeList('a', function(volumeId) {
+                  volumeA = volumeId;
+                  // Set group A name data, if not manually changed.
+                  if (!groupNameAChanged) {
+                    groupNameA = volumeMap.get(volumeId).name;
+                    $('input', groupNameASetting).val(groupNameA);
+                  }
+                  if (!landmarkPrefixChanged) {
+                    $('input', landmarkPrefixSetting).val(getLandmarkPrefixSuggestion());
+                  }
+                }),
+                "The first volume, it's bounding box corners will make up the landmark locations of group A.").get(0));
+
+        // Group name A
+        var groupNameA = '';
+        var groupNameASetting = groupSettings.appendChild(
+            CATMAID.DOM.createInputSetting('Group A name', groupNameA,
+                'The name of new landmark group, representing volume A.', function() {
+                  groupNameA = this.value;
+                  groupNameAChanged = this.value.length !== 0;
+                  if (!landmarkPrefixChanged) {
+                    $('input', landmarkPrefixSetting).val(getLandmarkPrefixSuggestion());
+                  }
+                }).get(0));
+
+        // Volume B
+        let volumeB = null;
+        let volumeBSelectionSetting = groupSettings.appendChild(
+            CATMAID.DOM.createLabeledAsyncPlaceholder(
+                "Volume B", initVolumeList('b', function(volumeId) {
+                  volumeB = volumeId;
+                  // Set group B name data, if not manually changed.
+                  if (!groupNameBChanged) {
+                    groupNameB = volumeMap.get(volumeId).name;
+                    $('input', groupNameBSetting).val(groupNameB);
+                  }
+                  if (!landmarkPrefixChanged) {
+                    $('input', landmarkPrefixSetting).val(getLandmarkPrefixSuggestion());
+                  }
+                }),
+                "The second volume, it's bounding box corners will make up the landmark locations of group B.").get(0));
+
+        // Group name B
+        var groupNameB = '';
+        var groupNameBSetting = groupSettings.appendChild(
+            CATMAID.DOM.createInputSetting('Group B name', groupNameB,
+                'The name of new landmark group, representing volume B.', function() {
+                  groupNameB = this.value;
+                  groupNameBChanged = this.value.length !== 0;
+                  if (!landmarkPrefixChanged) {
+                    $('input', landmarkPrefixSetting).val(getLandmarkPrefixSuggestion());
+                  }
+                }).get(0));
+
+        // Landmark name prefix
+        var landmarkPrefix = '';
+        var landmarkPrefixSetting = groupSettings.appendChild(
+            CATMAID.DOM.createInputSetting('Landmark name prefix', '',
+                'This will be put infront of every newly created landmark.', function() {
+                  landmarkPrefix = this.value;
+                  landmarkPrefixChanged = this.value.length !== 0;
+                }).get(0));
+
+        // Mirror axis
+        let mirrorAxis = 'none';
+        let mirrorAxisSetting = groupSettings.appendChild(
+            CATMAID.DOM.createSelectSetting('Mirror axis', {
+                '(none)': 'none',
+                'X axis': 'x',
+                'Y axis': 'y',
+                'Z axis': 'z'
+              },
+              'A mirror axis will cause an inversion of the mapping of ' +
+              'bounding box corners along that dimension',
+              function() {
+                mirrorAxis = this.value;
+              },
+              'none').get(0));
+
+        // Relation links
+        let relationWrapper = groupSettings.appendChild(document.createElement('span'));
+        let newGroupRelations = new Set();
+
+        CATMAID.Relations.list(project.id)
+          .then(function(relationMap) {
+            let relationNames = Object.keys(relationMap);
+            let invRelationMap = relationNames.reduce(function(o, name) {
+              o[relationMap[name]] = name;
+              return o;
+            }, {});
+            let relationOptions = relationNames.map(function(name) {
+              return { title: name, value: relationMap[name] };
+            });
+            let relationSelect = CATMAID.DOM.createCheckboxSelect(
+                'Group link relation', relationOptions, undefined, true);
+            let relationGroup = CATMAID.DOM.createLabeledControl('Relations',
+              relationSelect, 'New links using the selected relations will ' +
+              'be created between group A and group B.');
+            relationSelect.onchange = function(e) {
+              if (e.srcElement.checked) {
+                newGroupRelations.add(e.srcElement.value);
+              } else {
+                newGroupRelations.delete(e.srcElement.value);
+              }
+            };
+            $(relationWrapper).append(relationGroup);
+          })
+          .catch(CATMAID.handleError);
+
+        // Add button
+        let buttonContainer = groupSettings.appendChild(document.createElement('div'));
+        buttonContainer.classList.add('clear');
+        let addButton = buttonContainer.appendChild(document.createElement('button'));
+        addButton.appendChild(document.createTextNode('Add new landmark group pair'));
+        addButton.onclick = function() {
+          let _groupNameA = groupNameA.trim();
+          if (groupNameA.length === 0) {
+            CATMAID.warn('Please provide a valid name for group A');
+            return;
+          }
+          let _groupNameB = groupNameB.trim();
+          if (groupNameB.length === 0) {
+            CATMAID.warn('Please provide a valid name for group B');
+            return;
+          }
+
+          if (!volumeA) {
+            CATMAID.warn('Please select volume A');
+            return;
+          }
+
+          if (!volumeB) {
+            CATMAID.warn('Please select volume B');
+            return;
+          }
+
+          let _landmarkPrefix = landmarkPrefix.trim();
+
+          // Get bounding boxes
+          widget.createLandmarkGroupsFromVolumes( volumeA, volumeB, _groupNameA,
+              _groupNameB, _landmarkPrefix, mirrorAxis, newGroupRelations,
+              widget.groupsReuseExistingLandmarks)
+            .then(function() {
+              CATMAID.msg("Success", "Created new landmark group pair");
+
+              // Clear input fields
+
+              let landmarkGroupDetails = Promise.all([
+                  widget.updateLandmarkGroups(),
+                  widget.updateLandmarks()
+              ]);
+            })
+            .catch(CATMAID.handleError);
+
+          widget.updateDisplay();
+        };
       }
     }
   };

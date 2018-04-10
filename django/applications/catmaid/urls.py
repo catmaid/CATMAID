@@ -437,6 +437,7 @@ urlpatterns += [
             landmarks.LandmarkAndGroupkLocationDetail.as_view()),
     url(r'^(?P<project_id>{0})/landmarks/groups/$'.format(integer), landmarks.LandmarkGroupList.as_view()),
     url(r'^(?P<project_id>{0})/landmarks/groups/import$'.format(integer), landmarks.LandmarkGroupImport.as_view()),
+    url(r'^(?P<project_id>{0})/landmarks/groups/materialize$'.format(integer), landmarks.LandmarkGroupMaterializer.as_view()),
     url(r'^(?P<project_id>{0})/landmarks/groups/links/$'.format(integer), landmarks.LandmarkGroupLinks.as_view()),
     url(r'^(?P<project_id>{0})/landmarks/groups/links/(?P<link_id>[0-9]+)/$'.format(integer),
             landmarks.LandmarkGroupLinkDetail.as_view()),

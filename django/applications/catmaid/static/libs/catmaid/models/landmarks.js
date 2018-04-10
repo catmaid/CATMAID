@@ -191,6 +191,37 @@
     },
 
     /**
+     * Create a new pair of landmark groups based on a list of landmarks and
+     * optionally links.
+     *
+     * @param {Number}   projectId  The project to operate in.
+     * @param {String}   nameGroupA Name of landmark group A.
+     * @param {String}   nameGroupB Name of landmark group B.
+     * @param {Object[]} landmarks  A list of [name, x, y, z, x, y, z] elements,
+     *                              representing a shared landmark at locations
+     *                              (in order) for group A and B.
+     * @param {Object[]} links      (optional) A list [group_name_1, relation_name,
+     *                              group_name_2] elements, representing a
+     *                              relation between two groups. Whether group A
+     *                              and B map to 1 and 2 or vice versa depends
+     *                              on the semantics of the relation.
+     * @param {Boolean} reuseExistingLandmarks If existing landmark (names) can
+     *                              be reused, no error is thrown, when a
+     *                              landmark with the same name exists alrady.
+     * @returns {Promise} Resolves with created landmark group information.
+     */
+    materialize: function(projectId, nameGroupA, nameGroupB, landmarks, links,
+        reuseExistingLandmarks) {
+      return CATMAID.fetch(projectId + '/landmarks/groups/materialize', 'POST', {
+        'group_a_name': nameGroupA,
+        'group_b_name': nameGroupB,
+        'landmarks': landmarks,
+        'links': links,
+        'reuse_existing_landmarks': reuseExistingLandmarks
+      });
+    },
+
+    /**
      * Delete the link between the passed in landmark and location.
      */
     deleteLocationLink: function(projectId, landmarkId, locationId) {

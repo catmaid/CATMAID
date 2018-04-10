@@ -1497,3 +1497,155 @@ class LandmarkGroupLinkage(APIView):
 
 
         return Response(group_ids)
+
+
+class LandmarkGroupMaterializer(APIView):
+
+    @method_decorator(requires_user_role(UserRole.Annotate))
+    def post(self, request, project_id):
+        """Create all passed in landmarks along with a set of groups in one go.
+
+        The format for the passed in landmarks is expected to be [name, x1, y1,
+        z1, x2, y2, z2], representing a shared landmark at locations (x1, y1,
+        z1) for group A and (x2, y2, z2) for group B.
+
+        The format for the optionally passed in links is: [group_name_1,
+        relation_name, group_name_2] elements, representing a relation between
+        two groups. Whether group A and B map to 1 and 2 or vice versa depends
+        on the semantics of the relation.
+        ---
+        parameters:
+        - name: project_id
+          description: The project to operate in.
+          type: integer
+          paramType: path
+          required: true
+        - name: group_a_name
+          description: The name of landmark group A.
+          required: true
+          type: string
+          paramType: form
+        - name: group_b_name
+          description: The name of landmark group B.
+          required: true
+          type: string
+          paramType: form
+        - name: landmarks
+          description: A list of landmark definitions for group B.
+          required: true
+          type: string
+          paramType: form
+        - name: links
+          description: A list of link definitions between group A and B.
+          required: false
+          type: string
+          paramType: form
+        - name: reuse_existing_landmarks
+          description: If existing landmarks can be reused, no error will be
+                       thrown if a landmark with the same name exists alrady.
+          required: false
+          defaultValue: false
+          type: string
+          paramType: form
+        """
+        group_a_name = request.data.get('group_a_name')
+        if not group_a_name:
+            raise ValueError('Need name for group A')
+        group_b_name = request.data.get('group_b_name')
+        if not group_b_name:
+            raise ValueError('Need name for group B')
+        landmarks = get_request_list(request.data, 'landmarks')
+        if not landmarks:
+            raise ValueError('Need list of landmarks')
+        links = get_request_list(request.data, 'links')
+        reuse_existing_landmarks = request.data.get('reuse_existing_landmarks', 'false') == 'true'
+
+        classes = get_class_to_id_map(project_id)
+        relations = get_relation_to_id_map(project_id)
+        landmark_class = classes['landmark']
+        landmarkgroup_class = classes['landmarkgroup']
+        part_of_rel = relations['part_of']
+        annotated_with_rel = relations['annotated_with']
+
+        # Try to create new landmark group A
+        group_a, created = ClassInstance.objects.get_or_create(project_id=project_id,
+                name=group_a_name, class_column_id=landmarkgroup_class, defaults={
+                    'user': request.user
+                })
+        if not created:
+            raise ValueError('A landmark group with name "' + group_a_name + '" exists already')
+
+        # Try to create new landmark group B
+        group_b, created = ClassInstance.objects.get_or_create(project_id=project_id,
+                name=group_b_name, class_column_id=landmarkgroup_class, defaults={
+                    'user': request.user
+                })
+        if not created:
+            raise ValueError('A landmark group with name "' + group_b_name + '" exists already')
+
+        landmark_map = dict()
+        link_map = dict()
+
+        n_created_landmarks = 0
+        for landmark_name, x1, y1, z1, x2, y2, z2 in landmarks:
+            if landmark_name in landmark_map:
+                continue
+
+            # Get or create landmark
+            landmark, created = ClassInstance.objects.get_or_create(project_id=project_id,
+                    name=landmark_name, class_column_id=landmark_class, defaults={
+                        'user': request.user
+                    })
+
+            if created:
+                ++n_created_landmarks
+            elif not reuse_existing_landmarks:
+                raise ValueError('A landmark with name "' + landmark_name + '" exists alrady')
+
+            landmark_map[landmark_name] = landmark.id
+
+            # Link landmark to landmark groups
+            landmark_group_a_link = ClassInstanceClassInstance.objects.create(
+                    project_id=project_id, class_instance_a=landmark,
+                    relation_id=part_of_rel, class_instance_b=group_a,
+                    user=request.user)
+            landmark_group_b_link = ClassInstanceClassInstance.objects.create(
+                    project_id=project_id, class_instance_a=landmark,
+                    relation_id=part_of_rel, class_instance_b=group_b,
+                    user=request.user)
+
+            # Create points for both groups
+            point_a = Point.objects.create(project_id=project_id, location_x=x1,
+                    location_y=y1, location_z=z1, user=request.user,
+                    editor=request.user)
+            point_b = Point.objects.create(project_id=project_id, location_x=x2,
+                    location_y=y2, location_z=z2, user=request.user,
+                    editor=request.user)
+
+            # Link locations to landmark
+            location_a_landmark_link = PointClassInstance.objects.create(
+                    project_id=project_id, point=point_a, user=request.user,
+                    relation_id=annotated_with_rel, class_instance=landmark)
+            location_b_landmark_link = PointClassInstance.objects.create(
+                    project_id=project_id, point=point_b, user=request.user,
+                    relation_id=annotated_with_rel, class_instance=landmark)
+
+            # Link locations to landmark groups
+            location_a_landmark_group_link = PointClassInstance.objects.create(
+                    project_id=project_id, point=point_a, user=request.user,
+                    relation_id=annotated_with_rel, class_instance=group_a)
+            location_b_landmark_group_link = PointClassInstance.objects.create(
+                    project_id=project_id, point=point_b, user=request.user,
+                    relation_id=annotated_with_rel, class_instance=group_b)
+
+            if links:
+                for group_1, relation_name, group_2 in links:
+                    print(group_1, relation_name, group_2)
+
+        return Response({
+            'group_a_id': group_a.id,
+            'group_b_id': group_b.id,
+            'landmarks': landmark_map,
+            'created_landmarks': n_created_landmarks,
+            'links': link_map
+        })

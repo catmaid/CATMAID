@@ -36,6 +36,7 @@ needed_relations = {
     'gapjunction_with': "Something has a gap junction with something else",
     'attached_to': "Something is considered attached/linked to something else",
     'adjacent_to': { 'description': "Next to each other", 'isreciprocal': True },
+    'mirror_of': { 'description': "A mirror configuration to each other", 'isreciprocal': True },
 }
 
 # Expected sampler states, sampler interval sates and sampler domain types

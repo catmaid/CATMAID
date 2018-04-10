@@ -1849,7 +1849,7 @@
     this.cy.edges().each(function(i, edge) {
       if (edge.data('directed')) {
         if ("source" === mode || "target" === mode) {
-          labelColor = edge[mode]().style()['background-color'];
+          labelColor = edge[mode]().data('color');
           edge.style({'line-color': labelColor,
                       'target-arrow-color': labelColor,
                       'target-arrow-shape': arrowShapeFn(edge.source())});

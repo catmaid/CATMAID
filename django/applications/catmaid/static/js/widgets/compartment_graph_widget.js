@@ -2410,6 +2410,8 @@
                           'unselect': this[fnName]});
       this[fnName]();
     }
+
+    this.updateEdgeGraphics(true);
   };
 
   /** upstream: true when coloring circles upstream of node. False when coloring downstream. */

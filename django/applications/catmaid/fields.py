@@ -4,13 +4,15 @@ from six import string_types
 
 import psycopg2
 from psycopg2.extensions import register_adapter, adapt, AsIs
+from psycopg2.extras import CompositeCaster, register_composite
 import six
 import re
 
 from django import forms
 from django.core.exceptions import ValidationError
 from django.dispatch import receiver, Signal
-from django.db import connection, models
+from django.db import models
+from django.db.backends import signals as db_signals
 from django.utils.encoding import python_2_unicode_compatible
 
 
@@ -21,7 +23,7 @@ from catmaid.widgets import Double3DWidget, Integer3DWidget, RGBAWidget
 # Classes to support PostgreSQL composite types. Adapted from:
 # http://schinckel.net/2014/09/24/using-postgres-composite-types-in-django/
 
-class CompositeFactory(psycopg2.extras.CompositeCaster):
+class CompositeFactory(CompositeCaster):
     def make(self, values):
         return self.composite_python_class(**dict(six.moves.zip(self.attnames, values)))
 
@@ -29,15 +31,16 @@ _missing_types = {}
 
 class CompositeMeta(type):
     def __init__(cls, name, bases, clsdict):
+        from django.db import connection
         super(CompositeMeta, cls).__init__(name, bases, clsdict)
-        cls.register_composite()
+        cls.register_composite(connection)
 
-    def register_composite(cls):
+    def register_composite(cls, connection):
         klass = cls()
         db_type = klass.db_type(connection)
         if db_type:
             try:
-                cls.python_type = psycopg2.extras.register_composite(
+                cls.python_type = register_composite(
                     str(db_type),
                     connection.cursor().cursor,
                     globally=True,
@@ -78,9 +81,25 @@ class CompositeField(models.Field):
 
 composite_type_created = Signal(providing_args=['name'])
 
+# Necessary when running in, e.g., interactive contexts.
 @receiver(composite_type_created)
 def register_composite_late(sender, db_type, **kwargs):
-    _missing_types.pop(db_type).register_composite()
+    from django.db import connection
+    _missing_types.pop(db_type).register_composite(connection)
+
+# Necessary when running single tests, so that the composites are re-registered
+# after migration (so that the PG types exist).
+@receiver(models.signals.post_migrate)
+def register_composite_post_migrate(sender, **kwargs):
+    from django.db import connection
+    for subclass in CompositeField.__subclasses__():
+        subclass.register_composite(connection)
+
+# Necessary when running in a parallel context (production, test suites).
+@receiver(db_signals.connection_created)
+def register_composite_connection_created(sender, connection, **kwargs):
+    for subclass in CompositeField.__subclasses__():
+        subclass.register_composite(connection)
 
 
 # ------------------------------------------------------------------------

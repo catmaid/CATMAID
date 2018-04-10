@@ -3923,7 +3923,7 @@
         node.data('arrowshape', shape); // storing the arrow shape in the source node
         edge.data('arrow', shape);
         edge.style({'target-arrow-shape': shape,
-                    'target-arrow-color': edge.style('background-color')});
+                    'target-arrow-color': node.data('color')});
       }
     });
     this.cy.endBatch();

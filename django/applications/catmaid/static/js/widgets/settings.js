@@ -1596,114 +1596,22 @@
       // Fast merge mode
       var dsFastMerge = CATMAID.DOM.addSettingsContainer(ds,
           "Fast merge mode", true);
-      var dsFastMergeRadioWrapper = $('<div />').addClass('setting');
-      var fastMergeModeSettings = SkeletonAnnotations.Settings[SETTINGS_SCOPE].fast_merge_mode;
-      var fastMergeModeRadioControl = CATMAID.DOM.createRadioSetting(
-          'fast-merge-mode',
-          [{
-            id: 'fast-merge-mode-universal',
-            desc: 'Universal match',
-            checked: fastMergeModeSettings.hasOwnProperty('universal')
-          },{
-            id: 'fast-merge-mode-meta-annotation',
-            desc: 'Match meta-annotation',
-            checked: fastMergeModeSettings.hasOwnProperty('metaAnnotationName')
-          },{
-            id: 'fast-merge-mode-creator',
-            desc: 'Match by creator',
-            checked: fastMergeModeSettings.hasOwnProperty('creatorID')
-          }],
-          null,
-          function () {
-            var radioValue = $('input[type="radio"][name="fast-merge-mode"]:checked').val();
-            var fastMergeModeSetting = {};
-            switch (radioValue.split('-').slice(-1)[0]) {
-              case 'universal':
-                fastMergeModeSetting.universal = $('#fast-merge-mode-value-0').val();
-                break;
-              case 'annotation':
-                fastMergeModeSetting.metaAnnotationName = $('#fast-merge-mode-value-1').val();
-                break;
-              case 'creator':
-                var creatorValue = $('#fast-merge-mode-value-2').val();
-                fastMergeModeSetting.creatorID = parseInt(creatorValue, 10);
-                break;
-            }
-
-            SkeletonAnnotations.Settings
-              .set('fast_merge_mode', fastMergeModeSetting, SETTINGS_SCOPE)
-              .then(function() {
-                SkeletonAnnotations.FastMergeMode.setFilters(
-                    SkeletonAnnotations.Settings.session.fast_merge_mode);
-              });
-          }).addClass('setting');
-
-      // Add additional controls
-      fastMergeModeRadioControl.children().each(function (i, radio) {
-        var select;
-        var checkRadioOnChange = function (name) {
-          return function () {
-            $('#fast-merge-mode-' + name)
-                .prop('checked', true)
-                .trigger('change');
-          };
-        };
-        switch (i) {
-          case 0:
-            var selected = fastMergeModeSettings.hasOwnProperty('universal') ?
-              fastMergeModeSettings.universal : 'none';
-            select = CATMAID.DOM.createSelectSetting(
-                  '',
-                  {'All skeletons': 'all', 'No skeletons': 'none'},
-                  null,
-                  checkRadioOnChange('universal'),
-                  selected);
-            select = select.children('label').children('select');
-            break;
-          case 1:
-            var selected = fastMergeModeSettings.hasOwnProperty('metaAnnotationName') ?
-              fastMergeModeSettings.metaAnnotationName : null;
-            select = $('<input/>').attr('type', 'text')
-                .addClass("ui-corner-all").val(selected);
-            select.change(checkRadioOnChange('meta-annotation'));
-            select.autocomplete({
-              source: CATMAID.annotations.getAllNames(),
-              change: checkRadioOnChange('meta-annotation')
-            });
-            break;
-          case 2:
-            var selected = fastMergeModeSettings.hasOwnProperty('creatorID') ?
-              fastMergeModeSettings.creatorID : null;
-            var users = CATMAID.User.all();
-            users = Object.keys(users)
-                .map(function (userID) { return users[userID]; })
-                .sort(CATMAID.User.displayNameCompare)
-                .reduce(function (o, user) {
-                  o[user.getDisplayName()] = user.id;
-                  return o;
-                }, {});
-            select = CATMAID.DOM.createSelectSetting(
-                  '',
-                  users,
-                  null,
-                  checkRadioOnChange('creator'),
-                  selected);
-            select = select.children('label').children('select');
-            break;
-        }
-
-        select.attr('id', 'fast-merge-mode-value-' + i);
-        $(radio).append(select);
-      });
-
-      fastMergeModeRadioControl.prepend($('<p/>')
-            .addClass('help')
-            .append('Skeletons in this group will be merged into the active ' +
+      var dsFastMergeRadioWrapper = CATMAID.DOM.createSkeletonNodeMatcherSetting({
+            label: '',
+            id: 'fast-merge-mode',
+            settings: SkeletonAnnotations.Settings[SETTINGS_SCOPE].fast_merge_mode,
+            help: 'Skeletons in this group will be merged into the active ' +
                 'skeleton without asking for confirmation. All their annotations ' +
-                'are copied over.'));
-      //fastMergeModeRadioControl.prepend($('<h4/>').append('Fast merge mode'));
-
-      dsFastMergeRadioWrapper.append(fastMergeModeRadioControl);
+                'are copied over.',
+            updateSettings: function(newSetting) {
+              SkeletonAnnotations.Settings
+                .set('fast_merge_mode', newSetting, SETTINGS_SCOPE)
+                .then(function() {
+                  SkeletonAnnotations.FastMergeMode.setFilters(
+                      SkeletonAnnotations.Settings.session.fast_merge_mode);
+                });
+            }
+          });
 
       dsFastMerge.append(wrapSettingsControl(
           dsFastMergeRadioWrapper,

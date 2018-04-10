@@ -1334,6 +1334,127 @@
     return select;
   };
 
+  DOM.createSkeletonNodeMatcherSetting = function(options) {
+    var settings = options.settings;
+    if (!settings) {
+      throw new CATMAID.ValueError('Need settings reference');
+    }
+    var id = options.id;
+    if (!id) {
+      throw new CATMAID.ValueError('Need ID');
+    }
+    var update = options.updateSettings;
+    if (!CATMAID.tools.isFn(update)) {
+      throw new CATMAID.ValueError('Need update function');
+    }
+    var radioControl = CATMAID.DOM.createRadioSetting(
+        id,
+        [{
+          id: id + '-universal',
+          desc: 'Universal match',
+          checked: settings.hasOwnProperty('universal')
+        },{
+          id: id + '-meta-annotation',
+          desc: 'Match meta-annotation',
+          checked: settings.hasOwnProperty('metaAnnotationName')
+        },{
+          id: id + '-creator',
+          desc: 'Match by creator',
+          checked: settings.hasOwnProperty('creatorID')
+        }],
+        null,
+        function () {
+          var radioValue = $('input[type="radio"][name="' + id + '"]:checked').val();
+          var newSetting = {};
+          switch (radioValue.split('-').slice(-1)[0]) {
+            case 'universal':
+              newSetting.universal = $('#' + id + '-value-0').val();
+              break;
+            case 'annotation':
+              newSetting.metaAnnotationName = $('#' + id + '-value-1').val();
+              break;
+            case 'creator':
+              var creatorValue = $('#' + id + '-value-2').val();
+              newSetting.creatorID = parseInt(creatorValue, 10);
+              break;
+          }
+
+          update(newSetting);
+        }).addClass('setting');
+
+    // Add additional controls
+    radioControl.children().each(function (i, radio) {
+      var select;
+      var checkRadioOnChange = function (name) {
+        return function () {
+          $('#' + id + '-' + name)
+              .prop('checked', true)
+              .trigger('change');
+        };
+      };
+      switch (i) {
+        case 0:
+          var selected = settings.hasOwnProperty('universal') ?
+              settings.universal : 'none';
+          select = CATMAID.DOM.createSelectSetting(
+                '',
+                {'All skeletons': 'all', 'No skeletons': 'none'},
+                null,
+                checkRadioOnChange('universal'),
+                selected);
+          select = select.children('label').children('select');
+          break;
+        case 1:
+          var selected = settings.hasOwnProperty('metaAnnotationName') ?
+              settings.metaAnnotationName : null;
+          select = $('<input/>').attr('type', 'text')
+              .addClass("ui-corner-all").val(selected);
+          select.change(checkRadioOnChange('meta-annotation'));
+          select.autocomplete({
+            source: CATMAID.annotations.getAllNames(),
+            change: checkRadioOnChange('meta-annotation')
+          });
+          break;
+        case 2:
+          var selected = settings.hasOwnProperty('creatorID') ?
+              settings.creatorID : null;
+          var users = CATMAID.User.all();
+          users = Object.keys(users)
+              .map(function (userID) { return users[userID]; })
+              .sort(CATMAID.User.displayNameCompare)
+              .reduce(function (o, user) {
+                o[user.getDisplayName()] = user.id;
+                return o;
+              }, {});
+          select = CATMAID.DOM.createSelectSetting(
+                '',
+                users,
+                null,
+                checkRadioOnChange('creator'),
+                selected);
+          select = select.children('label').children('select');
+          break;
+      }
+
+      select.attr('id', id + '-value-' + i);
+      $(radio).append(select);
+    });
+
+    if (options.help) {
+    radioControl.prepend($('<p/>')
+          .addClass('help')
+          .append(options.help));
+    }
+
+    if (options.label) {
+      radioControl.prepend($('<h4/>').append(label));
+    }
+
+    var radioWrapper = $('<div />').addClass('setting');
+    radioWrapper.append(radioControl);
+    return radioWrapper;
+  };
+
   // Export DOM namespace
   CATMAID.DOM = DOM;
 

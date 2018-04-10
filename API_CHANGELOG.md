@@ -44,7 +44,7 @@ included in this changelog.
 
 - `GET /{project_id}/landmarks/groups/`:
   Accepts the new optional parameter "with_links" and "with_relations", to
-  include links between landmark groups along with a map of used relations..
+  include links between landmark groups along with a map of used relations.
 
 ### Deprecations
 

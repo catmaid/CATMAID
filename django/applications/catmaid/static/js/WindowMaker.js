@@ -1517,18 +1517,6 @@ var WindowMaker = new function()
             GG.loadFromJSON(evt.target.files);
           }));
 
-    var color = document.createElement('select');
-    color.setAttribute('id', 'graph_color_choice' + GG.widgetID);
-    color.options.add(new Option('source', 'source'));
-    color.options.add(new Option('review status (union)', 'union-review'));
-    color.options.add(new Option('review status (team)', 'whitelist-review'));
-    color.options.add(new Option('review status (own)', 'own-review'));
-    color.options.add(new Option('input/output', 'I/O'));
-    color.options.add(new Option('betweenness centrality', 'betweenness_centrality'));
-    color.options.add(new Option('circles of hell (upstream)', 'circles_of_hell_upstream')); // inspired by Tom Jessell's comment
-    color.options.add(new Option('circles of hell (downstream)', 'circles_of_hell_downstream'));
-    color.onchange = GG._colorize.bind(GG, color);
-
     var layout = DOM.appendSelect(tabs['Nodes'], null, null, GG.layoutStrings);
 
     var edges = document.createElement('select');
@@ -1550,7 +1538,17 @@ var WindowMaker = new function()
         [['Re-layout', GG.updateLayout.bind(GG, layout, null)],
          [' fit', true, GG.toggleLayoutFit.bind(GG), true],
          [document.createTextNode(' - Color: ')],
-         [color],
+         [DOM.createSelect('graph_color_choice' + GG.widgetID,
+           [{title: 'source', value: 'source'},
+            {title: 'review status (union)', value: 'union-review'},
+            {title: 'review status (team)', value: 'whitelist-review'},
+            {title: 'review status (own)', value: 'own-review'},
+            {title: 'input/output', value: 'I/O'},
+            {title: 'betweenness centrality', value: 'betweenness_centrality'},
+            {title: 'circles of hell (upstream)', value: 'circles_of_hell_upstream'},
+            {title: 'circles of hell (downstream)', value: 'circles_of_hell_downstream'}],
+           'source',
+            GG._colorize.bind(GG))],
         ]);
 
     DOM.appendToTab(tabs['Edges'],

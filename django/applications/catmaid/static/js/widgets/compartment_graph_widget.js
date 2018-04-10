@@ -2292,7 +2292,8 @@
     return io;
   };
 
-  GroupGraph.prototype._colorize = function(select) {
+  GroupGraph.prototype._colorize = function(evt) {
+    var select = evt.target;
     this.colorBy(select.value, select);
   };
 

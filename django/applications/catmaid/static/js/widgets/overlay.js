@@ -92,6 +92,9 @@ SkeletonAnnotations.Settings = new CATMAID.Settings(
         },
         fast_merge_mode: {
           default: {universal: 'none'}
+        },
+        fast_split_mode: {
+          default: {universal: 'none'}
         }
       },
       migrations: {}
@@ -1846,35 +1849,56 @@ SkeletonAnnotations.TracingOverlay.prototype.splitSkeleton = function(nodeId) {
     // Make sure we reference the correct node and create a model
     var name = CATMAID.NeuronNameService.getInstance().getName(node.skeleton_id);
     var model = new CATMAID.SkeletonModel(node.skeleton_id, name, new THREE.Color(1, 1, 0));
-    /* Create the dialog */
-    var dialog = new CATMAID.SplitMergeDialog({
-      model1: model,
-      splitNodeId: nodeId,
-      split: function() {
-        // Get upstream and downstream annotation set
-        var upstream_set, downstream_set;
-        if (self.upstream_is_small) {
-          upstream_set = dialog.get_under_annotation_set();
-          downstream_set = dialog.get_over_annotation_set();
-        } else {
-          upstream_set = dialog.get_over_annotation_set();
-          downstream_set = dialog.get_under_annotation_set();
+
+    let split = function(splitNode, upstreamAnnotationSet, downstreamAnnotationSet) {
+      // Call backend
+      return self.submit.promise()
+        .then(function() {
+          return self.promiseNode(splitNode);
+        }).then(function(splitNodeId) {
+          var command = new CATMAID.SplitSkeletonCommand(self.state,
+              project.id, splitNodeId, upstreamAnnotationSet,
+              downstreamAnnotationSet);
+          return CATMAID.commands.execute(command)
+            .then(function(result) {
+              return self.updateNodes(function () { self.selectNode(splitNodeId); });
+            })
+            .then(function() {
+              return splitNodeId;
+            });
+        }, CATMAID.handleError, true);
+    };
+
+    let noConfirmation = SkeletonAnnotations.FastSplitMode.isNodeMatched(node);
+    if (noConfirmation) {
+      // Split without confirmation
+      split(node)
+        .then(function(splitNodeId) {
+          CATMAID.msg('Success', 'Split neuron ' + node.skeleton_id +
+              ' at node ' + splitNodeId);
+        })
+        .catch(CATMAID.handleError);
+    } else {
+      // Show a confirmation dialog before splitting
+      var dialog = new CATMAID.SplitMergeDialog({
+        model1: model,
+        splitNodeId: nodeId,
+        split: function() {
+          // Get upstream and downstream annotation set
+          var upstream_set, downstream_set;
+          if (self.upstream_is_small) {
+            upstream_set = dialog.get_under_annotation_set();
+            downstream_set = dialog.get_over_annotation_set();
+          } else {
+            upstream_set = dialog.get_over_annotation_set();
+            downstream_set = dialog.get_under_annotation_set();
+          }
+          split(node, upstream_set, downstream_set)
+            .catch(CATMAID.handleError);
         }
-        // Call backend
-        self.submit.promise()
-          .then(function() {
-            return self.promiseNode(node);
-          }).then(function(splitNodeId) {
-            var command = new CATMAID.SplitSkeletonCommand(self.state,
-                project.id, splitNodeId, upstream_set, downstream_set);
-            CATMAID.commands.execute(command)
-              .then(function(result) {
-                self.updateNodes(function () { self.selectNode(splitNodeId); });
-              }).catch(CATMAID.handleError);
-          }, CATMAID.handleError, true);
-      }
-    });
-    dialog.show();
+      });
+      dialog.show();
+    }
   });
 };
 
@@ -5467,7 +5491,12 @@ SkeletonAnnotations.Tag = new (function() {
   };
 })();
 
+/**
+ * Both fast split and merge mode allow the configuration of filters for when
+ * split and merges can happen without user confirmation.
+ */
 SkeletonAnnotations.FastMergeMode = new CATMAID.SkeletonNodeMatcher();
+SkeletonAnnotations.FastSplitMode = new CATMAID.SkeletonNodeMatcher();
 
 /**
  * Controls the visibility of groups of skeleton IDs defined by filters.
@@ -5598,6 +5627,9 @@ CATMAID.Init.on(CATMAID.Init.EVENT_PROJECT_CHANGED, function () {
     SkeletonAnnotations.FastMergeMode.refresh();
     SkeletonAnnotations.FastMergeMode.setFilters(
         SkeletonAnnotations.Settings.session.fast_merge_mode);
+    SkeletonAnnotations.FastSplitMode.refresh();
+    SkeletonAnnotations.FastSplitMode.setFilters(
+        SkeletonAnnotations.Settings.session.fast_split_mode);
   });
 });
 

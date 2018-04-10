@@ -71,11 +71,14 @@ Reconstruction Sampler:
 
 Tracing general:
 
-- The settings widget allows now to configure a "fast merge mode" to allow
-  particular groups of skeletons to be merged without confirmation. Similarly to
-  Visibility Groups, these Fast Merge Groups can be defined in terms of a
-  universal match (all skeletons), a required meta-annotation or a creator ID.
-  All annotations are taken over from a skeleton merged in without confirmation.
+- The settings widget allows now to configure a "fast split mode" and a "fast
+  merge mode" to allow particular groups of skeletons to be split and  merged
+  without confirmation. Similarly to Visibility Groups, these Fast Split/Merge
+  Groups can be defined in terms of a universal match (all skeletons), a
+  required meta-annotation or a creator ID.  In fast split mode, all annotations
+  from the split skeletons are copied over to the split off part. In fast merge
+  mode, all annotations are taken over from a skeleton merged in without
+  confirmation.
 
 - The `P` shortcut (peek) will now show the closest skeleton to the cursor in
   all open 3D Viewers. To show the active skeleton use `Shift + P`.

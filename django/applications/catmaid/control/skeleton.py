@@ -32,8 +32,8 @@ from catmaid.control.authentication import requires_user_role, \
 from catmaid.control.common import insert_into_log, get_class_to_id_map, \
         get_relation_to_id_map, _create_relation, get_request_list
 from catmaid.control.neuron import _delete_if_empty
-from catmaid.control.neuron_annotations import create_annotation_query, \
-        _annotate_entities, _update_neuron_annotations
+from catmaid.control.neuron_annotations import (annotations_for_skeleton,
+        create_annotation_query, _annotate_entities, _update_neuron_annotations)
 from catmaid.control.review import get_review_status
 from catmaid.control.tree_util import find_root, reroot, edge_count_to_root
 
@@ -623,19 +623,20 @@ def split_skeleton(request, project_id=None):
     downstream_annotation_map = request.POST.get('downstream_annotation_map')
     cursor = connection.cursor()
 
+    # If no annotation map was specified for either winning and losing
+    # skeleton, get the current annotation data.
     if not upstream_annotation_map or not downstream_annotation_map:
-        annotation_query = create_annotation_query(project_id,
-            {'skeleton_id': skeleton_id})
+        current_annotations = annotations_for_skeleton(project_id, skeleton_id)
 
-    if not upstream_annotation_map:
-        upstream_annotation_map = frozenset(a.name for a in annotation_query)
-    else:
+    if upstream_annotation_map:
         upstream_annotation_map = json.loads(upstream_annotation_map)
-
-    if not downstream_annotation_map:
-        downstream_annotation_map = frozenset(a.name for a in annotation_query)
     else:
+        upstream_annotation_map = current_annotations
+
+    if downstream_annotation_map:
         downstream_annotation_map = json.loads(downstream_annotation_map)
+    else:
+        downstream_annotation_map = current_annotations
 
     # Make sure this skeleton is not used in a sampler
     n_samplers = Sampler.objects.filter(skeleton_id=skeleton_id).count()
@@ -741,8 +742,9 @@ def split_skeleton(request, project_id=None):
     Treenode.objects.filter(id=treenode_id).update(parent=None, editor=request.user)
 
     # Update annotations of existing neuron to have only over set
-    _update_neuron_annotations(project_id, request.user, neuron.id,
-            upstream_annotation_map)
+    if upstream_annotation_map:
+        _update_neuron_annotations(project_id, request.user, neuron.id,
+                upstream_annotation_map)
 
     # Update annotations of under skeleton
     _annotate_entities(project_id, [new_neuron.id], downstream_annotation_map)

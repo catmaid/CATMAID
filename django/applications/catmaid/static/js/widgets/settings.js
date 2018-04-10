@@ -1593,6 +1593,35 @@
           'detailed_review_colors',
           SETTINGS_SCOPE));
 
+      // Fast split mode
+      var dsFastSplit = CATMAID.DOM.addSettingsContainer(ds,
+          "Fast split mode", true);
+      var dsFastSplitRadioWrapper = CATMAID.DOM.createSkeletonNodeMatcherSetting({
+            label: '',
+            id: 'fast-split-mode',
+            settings: SkeletonAnnotations.Settings[SETTINGS_SCOPE].fast_split_mode,
+            help: 'Skeletons in this group will be split  without asking for ' +
+                'confirmation. All annotations are copied over to the new skeleton.',
+            updateSettings: function(newSetting) {
+              SkeletonAnnotations.Settings
+                .set('fast_split_mode', newSetting, SETTINGS_SCOPE)
+                .then(function() {
+                  SkeletonAnnotations.FastSplitMode.setFilters(
+                      SkeletonAnnotations.Settings.session.fast_split_mode);
+                });
+            }
+          });
+
+      dsFastSplit.append(wrapSettingsControl(
+          dsFastSplitRadioWrapper,
+          SkeletonAnnotations.Settings,
+          'fast_split_mode',
+          SETTINGS_SCOPE,
+          function () {
+            SkeletonAnnotations.FastSplitMode.setFilters(
+                SkeletonAnnotations.Settings.session.fast_split_mode);
+          }));
+
       // Fast merge mode
       var dsFastMerge = CATMAID.DOM.addSettingsContainer(ds,
           "Fast merge mode", true);

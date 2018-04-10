@@ -1467,3 +1467,40 @@ def annotations_for_entities(request, project_id=None):
         'entities': m,
         'annotations': a
     }, json_dumps_params={'separators': (',', ':')})
+
+def annotations_for_skeleton(project_id, skeleton_id, relations=None, classes=None):
+    """Get a a dictionary mapping annotations on the neuron modeled by the
+    passed in skeleton to the respective annotators.
+    """
+    if not relations:
+        relations = get_relation_to_id_map(project_id)
+    if not classes:
+        classes = get_class_to_id_map(project_id)
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT a.name, cici.user_id
+        FROM class_instance a
+        JOIN class_instance_class_instance cici
+            ON a.id = cici.class_instance_b
+        JOIN class_instance neuron
+            ON neuron.id = cici.class_instance_a
+        JOIN class_instance_class_instance skeleton_neuron
+            ON cici.class_instance_a = skeleton_neuron.class_instance_b
+        JOIN class_instance skeleton
+            ON skeleton.id = skeleton_neuron.class_instance_a
+        WHERE cici.project_id = %(project_id)s
+            AND a.class_id = %(annotation_class)s
+            AND cici.relation_id = %(annotated_with_rel)s
+            AND neuron.class_id = %(neuron_class)s
+            AND skeleton_neuron.relation_id =  %(model_of_rel)s
+            AND skeleton_neuron.class_instance_a = %(skeleton_id)s
+    """, {
+        'project_id': project_id,
+        'annotation_class': classes['annotation'],
+        'annotated_with_rel': relations['annotated_with'],
+        'neuron_class': classes['neuron'],
+        'model_of_rel': relations['model_of'],
+        'skeleton_id': skeleton_id,
+    })
+
+    return dict(cursor.fetchall())

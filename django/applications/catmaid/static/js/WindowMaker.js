@@ -1493,8 +1493,8 @@ var WindowMaker = new function()
         "<h4>How to...</h4><p><em>Hide edges/links:</em> Select an edge and use the <em>Hide</em> button in the <em>Selection</em> tab.</p>");
     addWindowConfigButton(win, GG);
 
-    var tabs = DOM.addTabGroup(bar, GG.widgetID, ['Main', 'Grow', 'Graph',
-        'Selection', 'Selections', 'Subgraphs', 'Align', 'Export']);
+    var tabs = DOM.addTabGroup(bar, GG.widgetID, ['Main', 'Grow', 'Nodes',
+        'Edges', 'Selection', 'Selections', 'Subgraphs', 'Align', 'Export']);
 
     DOM.appendToTab(tabs['Main'],
         [[document.createTextNode('From')],
@@ -1529,7 +1529,7 @@ var WindowMaker = new function()
     color.options.add(new Option('circles of hell (downstream)', 'circles_of_hell_downstream'));
     color.onchange = GG._colorize.bind(GG, color);
 
-    var layout = DOM.appendSelect(tabs['Graph'], null, null, GG.layoutStrings);
+    var layout = DOM.appendSelect(tabs['Nodes'], null, null, GG.layoutStrings);
 
     var edges = document.createElement('select');
     edges.setAttribute('id', 'graph_edge_threshold' + GG.widgetID);
@@ -1546,11 +1546,20 @@ var WindowMaker = new function()
     var linkTypeSelectionWrapper = document.createElement('span');
     linkTypeSelectionWrapper.appendChild(linkTypeSelection);
 
-    DOM.appendToTab(tabs['Graph'],
+    DOM.appendToTab(tabs['Nodes'],
         [['Re-layout', GG.updateLayout.bind(GG, layout, null)],
          [' fit', true, GG.toggleLayoutFit.bind(GG), true],
          [document.createTextNode(' - Color: ')],
          [color],
+        ]);
+
+    DOM.appendToTab(tabs['Edges'],
+        [[document.createTextNode('Color by: ')],
+         [DOM.createSelect(
+             'gg_edge_color_choice' + GG.widgetID,
+             ["source", "target", "generic"],
+             "generic",
+              GG.updateEdgeGraphics.bind(GG, true))],
          [document.createTextNode(' - Hide edges with less than ')],
          [edges],
          [document.createTextNode(' synapses ')],

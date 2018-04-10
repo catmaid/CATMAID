@@ -1815,6 +1815,7 @@
       });
       let linkTypeColor = this.getLinkTypeColor(linkTypeId);
       linkTypeEdges.css('line-color', linkTypeColor);
+      linkTypeEdges.css('target-arrow-color', linkTypeColor);
       linkTypeEdges.css('opacity', this.getLinkTypeOpacity(linkTypeId));
       linkTypeEdges.data('color', linkTypeColor);
     }
@@ -1828,8 +1829,16 @@
         labelColor = this.edge_text_color,
         edgeWidth = this.edgeWidthFn();
 
+    // For directed edges only
+    var mode = this.getEdgeColorMode();
+
     this.cy.edges().each(function(i, edge) {
       if (edge.data('directed')) {
+        if ("source" === mode || "target" === mode) {
+          labelColor = edge[mode]().style()['background-color'];
+          edge.style({'line-color': labelColor,
+                      'target-arrow-color': labelColor});
+        }
         edge.data('label_color', labelColor);
         edge.data('width', min + edgeWidth(edge.data('weight')));
       }
@@ -3878,7 +3887,11 @@
     select.remove(sel.index);
   };
 
-
+  /** @param evt Optional: undefined/null, or the event associated with the select UI element. */
+  GroupGraph.prototype.getEdgeColorMode = function(evt) {
+      var select = evt ? evt.target : $('#gg_edge_color_choice' + this.widgetID)[0];
+      return select.options[select.selectedIndex].value;
+  };
 
   // Export Graph Widget
   CATMAID.GroupGraph = GroupGraph;

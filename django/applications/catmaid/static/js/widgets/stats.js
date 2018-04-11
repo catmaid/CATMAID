@@ -533,6 +533,13 @@
       createControls: function(controls) {
         var self = this;
 
+        let refresh = controls.appendChild(document.createElement('input'));
+        refresh.setAttribute('type', 'button');
+        refresh.setAttribute('value', 'Refresh');
+        refresh.onclick = function() {
+          self.refresh_project_statistics();
+        };
+
         // If this user has has can_administer permissions in this project,
         // buttons to access additional tools are addeed.
         if (userAnalyticsAccessible(project.id)) {

@@ -97,6 +97,13 @@ Tracing general:
   anymore. Left mouse button clicks/movements are handled like right mouse
   button clicks/movements.
 
+Statistics widget:
+
+- Statistics widget: The new option "All" in the time unit selection control
+  allow to aggregate user data for the whole time range.
+
+- Add extra Refresh button to top bar.
+
 Miscellaneous:
 
 - Basic Search: allow search for treenode IDs and connector IDs.
@@ -133,9 +140,6 @@ Miscellaneous:
 - Detailed review colors are now enabled by default. To get the old behavior
   back, adjust your settings (admins can do this for the whole project or
   server).
-
-- Statistics widget: The new option "All" in the time unit selection control
-  allow to aggregate user data for the whole time range.
 
 - Stacks can now be created whose planar axes have anisotropic resolution.
   The stack viewer will display these stacks correctly by scaling tiles

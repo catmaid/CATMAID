@@ -255,6 +255,7 @@ urlpatterns += [
 # General skeleton access
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/skeletons/$', skeleton.list_skeletons),
+    url(r'^(?P<project_id>\d+)/skeletons/cable-length$', skeleton.cable_lengths),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/node_count$', skeleton.node_count),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuronname$', skeleton.neuronname),
     url(r'^(?P<project_id>\d+)/skeleton/neuronnames$', skeleton.neuronnames),
@@ -269,6 +270,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/find-labels$', skeleton.find_labels),
     url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/open-leaves$', skeleton.open_leaves),
     url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/root$', skeleton.root_for_skeleton),
+    url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/cable-length$', skeleton.cable_length),
     url(r'^(?P<project_id>\d+)/skeleton/split$', record_view("skeletons.split")(skeleton.split_skeleton)),
     url(r'^(?P<project_id>\d+)/skeleton/ancestry$', skeleton.skeleton_ancestry),
     url(r'^(?P<project_id>\d+)/skeleton/join$', record_view("skeletons.merge")(skeleton.join_skeleton)),

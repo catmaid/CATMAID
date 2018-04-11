@@ -31,6 +31,12 @@ included in this changelog.
   Create pairs of landmark groups along with their landmarks based on a simple
   description.
 
+- `GET /{project_id}/skeletons/cable-length`:
+  Get the cable length for multiple skeletons using the skeleton_ids parameter.
+
+- `GET /{project_id}/skeletons/{skeleton_id}/cable-length`:
+  Get the cable length for a single skeleton.
+
 ### Modifications
 
 - `POST /{project_id}/annotations/query-targets`:

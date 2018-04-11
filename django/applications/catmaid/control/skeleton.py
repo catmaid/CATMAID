@@ -505,7 +505,7 @@ def contributor_statistics_multiple(request, project_id=None, skeleton_ids=None)
     })
 
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Browse)
 def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):
     # Works with either the skeleton_id or the treenode_id
     p = get_object_or_404(Project, pk=project_id)
@@ -515,6 +515,32 @@ def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):
 
     return JsonResponse({
         'count': SkeletonSummary.objects.get(skeleton_id=skeleton_id).num_nodes,
+        'skeleton_id': skeleton_id})
+
+@api_view(['GET'])
+@requires_user_role(UserRole.Browse)
+def cable_length(request, project_id=None, skeleton_id=None, treenode_id=None):
+    """Get the cable length for a skeleton
+    ---
+    parameters:
+      - name: project_id
+        description: Project of landmark
+        type: integer
+        paramType: path
+        required: true
+      - name: skeleton_id
+        description: IDs of the skeleton to get the cable length for
+        required: true
+        type: integer
+        paramType: path
+    """
+    p = get_object_or_404(Project, pk=project_id)
+    if not skeleton_id:
+        skeleton_id = Treenode.objects.get(pk=treenode_id).skeleton_id
+    skeleton_id = int(skeleton_id)
+
+    return JsonResponse({
+        'cable_length': SkeletonSummary.objects.get(skeleton_id=skeleton_id).cable_length,
         'skeleton_id': skeleton_id})
 
 def _get_neuronname_from_skeletonid( project_id, skeleton_id ):
@@ -546,6 +572,36 @@ def neuronnames(request, project_id=None):
     """ Returns a JSON object with skeleton IDs as keys and neuron names as values. """
     skeleton_ids = tuple(int(v) for k,v in six.iteritems(request.POST) if k.startswith('skids['))
     return JsonResponse(_neuronnames(skeleton_ids, project_id))
+
+@api_view(['GET'])
+@requires_user_role(UserRole.Browse)
+def cable_lengths(request, project_id=None):
+    """Get the cable length of a set of skeletons.
+
+    Returns a mapping from skeleton ID to cable length.
+    ---
+    parameters:
+      - name: project_id
+        description: Project of landmark
+        type: integer
+        paramType: path
+        required: true
+      - name: skeleton_ids[]
+        description: IDs of the skeletons whose partners to find
+        required: true
+        type: array
+        items:
+          type: integer
+        paramType: form
+    """
+    skeleton_ids = get_request_list(request.GET, 'skeleton_ids', map_fn=int)
+    if not skeleton_ids:
+        raise ValueError('Need at least one skeleton ID')
+
+    cable_lengths = dict(SkeletonSummary.objects.filter(project_id=project_id,
+            skeleton_id__in=skeleton_ids).values_list('skeleton_id',
+                'cable_length'))
+    return JsonResponse(cable_lengths)
 
 def check_annotations_on_split(project_id, skeleton_id, over_annotation_set,
         under_annotation_set):

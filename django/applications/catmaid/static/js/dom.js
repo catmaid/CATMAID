@@ -1074,7 +1074,9 @@
       nf.disabled = !!disabled;
     }
 
-    if (length) nf.setAttribute('size', length);
+    if (length) {
+      nf.style.width = length + 'em';
+    }
     if (onchangeFn) nf.onchange = onchangeFn;
     if (onEnterFn) {
       nf.addEventListener('keyup', function(e) {

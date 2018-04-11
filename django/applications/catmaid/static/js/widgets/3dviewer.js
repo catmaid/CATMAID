@@ -1103,6 +1103,7 @@
     this.landmarkgroup_faces = true;
     this.landmarkgroup_text = true;
     this.landmark_scale = 2000;
+    this.text_scaling = 1.0;
     this.show_missing_sections = false;
     this.missing_section_height = 20;
     this.show_active_node = true;
@@ -2284,6 +2285,7 @@
           if (this.options.landmarkgroup_text) {
             // If landmark names should be shown, queue their rendering after
             // making sure we have a font.
+            let textScaling = this.options.text_scaling;
             return this.options.ensureFont(this.options)
               .then(function(font) {
                 let labelOptions ={
@@ -2301,7 +2303,7 @@
                   var text = new THREE.Mesh(geometry, textMaterial);
                   text.position.set(loc.x, loc.y, loc.z);
                   // We need to flip up, because our cameras' up direction is -Y.
-                  text.scale.setY(-1);
+                  text.scale.set(textScaling, -textScaling, textScaling);
                   meshes.push(text);
                 }
                 return meshes;
@@ -2675,11 +2677,12 @@
       }
     };
 
+    let textScaling = options.text_scaling;
     this._createMesh = function(tagString, material, font) {
       var geometry = this.getTagGeometry(tagString, font);
       var text = new THREE.Mesh(geometry, material);
       // We need to flip up, because our cameras' up direction is -Y.
-      text.scale.setY(-1);
+      text.scale.setY(textScaling, -textScaling, textSCaling);
       text.visible = true;
       return text;
     };
@@ -6882,6 +6885,21 @@
     this.options.skeleton_node_scaling = value;
     var sks = this.space.content.skeletons;
     Object.keys(sks).forEach(function(skid) { sks[skid].scaleNodeHandles(value); });
+    this.space.render();
+  };
+
+  WebGLApplication.prototype.updateTextScaling = function(value) {
+    value = CATMAID.tools.validateNumber(value, "Invalid text scaling value", 0);
+    if (!value) return;
+    this.options.text_scaling = value;
+
+    this.space.scene.traverse(function(node) {
+      if (node instanceof THREE.Mesh) {
+        if (node.geometry && node.geometry.type === 'TextGeometry') {
+          node.scale.set(value, -value, value);
+        }
+      }
+    });
     this.space.render();
   };
 

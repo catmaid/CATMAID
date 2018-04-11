@@ -66,6 +66,8 @@ Landmarks:
 - Landmark groups are now show with landmark name labels. This can be disabled
   from the landmark menu.
 
+- Text scaling can be adjusted from the View tab.
+
 Reconstruction Sampler:
 
 - Intervals are now displayed with only two colors by default, it makes

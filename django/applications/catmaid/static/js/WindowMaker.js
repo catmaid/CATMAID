@@ -590,7 +590,15 @@ var WindowMaker = new function()
 
     var updateLandmarkGroupFaces = function(volumeId, e) {
       var facesVisible = e.target.checked;
-      WA.setLandmarkGroupStyle(volumeId, facesVisible);
+      WA.setLandmarkGroupStyle(volumeId, "faces", facesVisible);
+      // Stop propagation or the general landmark group list change handler is
+      // called.
+      e.stopPropagation();
+    };
+
+    var updateLandmarkGroupText = function(volumeId, e) {
+      var textVisible = e.target.checked;
+      WA.setLandmarkGroupStyle(volumeId, "text", textVisible);
       // Stop propagation or the general landmark group list change handler is
       // called.
       e.stopPropagation();
@@ -701,6 +709,10 @@ var WindowMaker = new function()
                   "Whether faces should be displayed for this landmark group",
                   o.landmarkgroup_faces, updateLandmarkGroupFaces.bind(null, landmarkGroupId));
               facesCb.style.display = 'inline';
+              var namesCb = CATMAID.DOM.appendCheckbox(landmarkGroupControls, "Names",
+                  "Whether landmark names should be displayed for this landmark group",
+                  o.landmarkgroup_text, updateLandmarkGroupText.bind(null, landmarkGroupId));
+              namesCb.style.display = 'inline';
             } else {
               var landmarkGroupControls = li.querySelector('span[data-role=landmarkGroup-controls]');
               if (landmarkGroupControls) {

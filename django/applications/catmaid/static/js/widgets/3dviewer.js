@@ -1101,6 +1101,7 @@
     this.landmarkgroup_color = "#ffa500";
     this.landmarkgroup_opacity = 0.2;
     this.landmarkgroup_faces = true;
+    this.landmarkgroup_text = true;
     this.landmark_scale = 2000;
     this.show_missing_sections = false;
     this.missing_section_height = 20;
@@ -2250,7 +2251,7 @@
         return;
       }
 
-      CATMAID.Landmarks.getGroup(project.id, landmarkGroupId, true, true)
+      CATMAID.Landmarks.getGroup(project.id, landmarkGroupId, true, true, true)
         .then((function(landmarkGroup) {
           let bb = CATMAID.Landmarks.getBoundingBox(landmarkGroup);
           let min = bb.min;
@@ -2269,7 +2270,7 @@
               min.z + (max.z - min.z) * 0.5);
           meshes.push(new THREE.Mesh(groupGeometry, groupMaterial));
 
-          // Create landmark particles
+          // Create landmark particles, optionally with text tag
           let locations = landmarkGroup.locations;
           let landmarkMaterial = this.options.createLandmarkMaterial();
           for (var j=0, jmax=locations.length; j<jmax; ++j) {
@@ -2280,6 +2281,35 @@
             meshes.push(particle);
           }
 
+          if (this.options.landmarkgroup_text) {
+            // If landmark names should be shown, queue their rendering after
+            // making sure we have a font.
+            return this.options.ensureFont(this.options)
+              .then(function(font) {
+                let labelOptions ={
+                  size: 100,
+                  height: 40,
+                  curveSegments: 1,
+                  font: font
+                };
+                let textMaterial = new THREE.MeshNormalMaterial();
+                for (var j=0, jmax=locations.length; j<jmax; ++j) {
+                  let loc = locations[j];
+                  let landmarkName = loc.names.join(', ');
+                  let geometry = new THREE.TextGeometry(landmarkName, labelOptions);
+                  geometry.computeBoundingBox();
+                  var text = new THREE.Mesh(geometry, textMaterial);
+                  text.position.set(loc.x, loc.y, loc.z);
+                  // We need to flip up, because our cameras' up direction is -Y.
+                  text.scale.setY(-1);
+                  meshes.push(text);
+                }
+                return meshes;
+              });
+          }
+          return meshes;
+        }).bind(this))
+        .then((function(meshes) {
           for (let j=0, jmax=meshes.length; j<jmax; ++j) {
             this.space.scene.add(meshes[j]);
           }
@@ -2341,16 +2371,31 @@
    *
    * @param {Boolean} faces    Whether mesh faces should be rendered.
    */
-  WebGLApplication.prototype.setLandmarkGroupStyle = function(landmarkGroupsId, faces) {
+  WebGLApplication.prototype.setLandmarkGroupStyle = function(landmarkGroupsId, property, value) {
+    value = !!value;
     var existingMeshes = this.loadedLandmarkGroups[landmarkGroupsId];
     if (!existingMeshes) {
       CATMAID.warn("Landmark group not loaded");
       return;
     }
-    for (var i=0; i<existingMeshes.length; ++i) {
-      var material = existingMeshes[i].material;
-      material.wireframe = !faces;
-      material.needsUpdate = true;
+    if (property === 'faces') {
+      for (var i=0; i<existingMeshes.length; ++i) {
+        let mesh = existingMeshes[i];
+        // Apply faces/wireframe change only to landmark bounding box
+        if (mesh.geometry && mesh.geometry.type === 'BoxBufferGeometry') {
+          var material = mesh.material;
+          material.wireframe = !value;
+          material.needsUpdate = true;
+        }
+      }
+    } else if (property === 'text') {
+      for (var i=0; i<existingMeshes.length; ++i) {
+        let mesh = existingMeshes[i];
+        // Apply faces/wireframe change only to landmark bounding box
+        if (mesh.geometry && mesh.geometry.type === 'TextGeometry') {
+          mesh.visible = value;
+        }
+      }
     }
     this.space.render();
   };

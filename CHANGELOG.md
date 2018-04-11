@@ -63,6 +63,9 @@ Landmarks:
 
 - Loaded volumes are now stored along with their styling in the widget state.
 
+- Landmark groups are now show with landmark name labels. This can be disabled
+  from the landmark menu.
+
 Reconstruction Sampler:
 
 - Intervals are now displayed with only two colors by default, it makes

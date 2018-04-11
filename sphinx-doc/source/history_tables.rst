@@ -81,58 +81,65 @@ Schema migration
 ^^^^^^^^^^^^^^^^
 
 In case there are schema changes to any of the tracked live tables, the history
-tables have to be changed as well and triggers have to be regenerated.
-Currently, this happens manually, but is planned to become automated eventually
-(using Postgres DDL triggers). This means
+tables have to be changed as well and triggers have to be regenerated. Every
+column change of a table has to be reflected in the history triggers and tables.
+Ideally, this would be implemented with DDL triggers in Postgres, which is
+currentl only possible using a custom C extension. Because this would make
+CATMAID harder to install, this history table update involves some manual work
+when creating database migrations that change table columns. Before the actual
+migration can happen, the history system has to be disabled::
 
-* a) if a live table is created, a new history table has to be created for it
-  (call ``SELECT create_history_table( <tablename>::regclass,  <timecolumn>,
-  <txidcolumn> );``, with ``<timecolumn>`` being an edit reference time and
-  ``<txidcolumn>`` being a column tracking a row's transaction ID. For most
-  CATMAID tables those parameters are ``edition_time`` and ``txid``,
-  respectively. If both ``<timecolumn>`` and ``<txid>`` are ``NULL``, a tracking
-  table will be created automatically. Only providing one of the two is
-  currently not supported. To let CATMAID know if you expect this table to have
-  a history table, add the table to the appropriate list in the
-  ``HistoryTableTest`` class. This way you can also mark a table as not
-  versioned.
-* b) if a live table is renamed, the history table is renamed accordingly, use
-  the function ``history_table_name(<tablename>::regclass)`` to create the new name,
-* c) if a live table is removed, the history table should be dropped as well
+   SELECT disable_history_tracking_for_table('<table-name>'::regclass,
+          get_history_table_name('<tablel-name>'::regclass));
+   SELECT drop_history_view_for_table('<table-name>'::regclass);
 
-or
+Depending on how the columns are changed, different scenarios are expected to
+happen:
 
-* d) if a column is added, the history table should get the new column as well
-  (defaulting to ``NULL`` values for previous entries if not manually filled),
-* e) if a column is renamed, the history column should also be renamed or
-* f) if the data type of a column changes, the original column is renamed (append
-  first free "_n" suffix) and the new column is added. If no information loss is
-  present (e.g. float to double), the original history column can also just be
-  changed without backup to save storage space or
-* g) if a column is removed, the history column is removed as well.
+- If a *column is added*, a new history table column is added.
 
-These changes should be done as part of the schema modifying migration. For all
-changes except live table creation and deletion, triggers have to be
-regenerated. To do this, call ``PERFORM update_history_tracking_for_table(
-<tablename>::regclass )`` for individual tables or update all tables at once
-with ``PERFORM update_history_tracking()``. This should make sure all changes
-are baked into the trigger functions.
+- If a *column is removed*, the equivalent history table column is removed as
+  well.
 
-Below you will find an example of the migration SQL code to update the data
-type of a particular column of a table. In this particular case the ``value``
-column of the ``client_data`` table changes its type from ``text`` to ``jsonb``,
-which should be reflected directly in the history table::
+- If a *column is renamed*, no copy is performed and the renaming is applied
+  directly to the history table.
 
-    DO $$
-    BEGIN
-    -- Update history table
-    EXECUTE format(
-        'ALTER TABLE %1$s '
-        'ALTER COLUMN value '
-        'TYPE jsonb '
-        'USING value::jsonb',
-        history_table_name('client_data'::regclass));
-    -- Update triggers
-    PERFORM update_history_tracking_for_table('client_data'::regclass);
-    END
-    $$;
+- If the *data type of a column changes*, the history table column data should
+  be updated to the new data type as well, if possible. If the original data
+  needs to be preserved, the original history column is renamed (append first
+  free "_n" suffix) and the new column is added. If no information loss is
+  present (e.g. float to double), the original history column should however
+  just be changed without backup to save storage space.
+
+After both the live table and the history table have been updated, history
+tracking has to be enabled again::
+
+    SELECT create_history_view_for_table('<table-name>'::regclass);
+    SELECT enable_history_tracking_for_table('<table-name>'::regclass,
+            get_history_table_name('<table-name>'::regclass), FALSE);
+
+In addition to column changes on existing tables, operations on whole tables are
+handled like this:
+
+- If a *table is removed*, the history table and history triggers need to be
+  removed as well::
+
+    SELECT disable_history_tracking_for_table('<table-name>'::regclass,
+            get_history_table_name('<tablel-name>'::regclass));
+    SELECT drop_history_view_for_table('<table-name>'::regclass);
+    SELECT drop_history_table('<table-name>'::regclass);
+
+- If a *table is added* and its history should be tracked, history tracking has
+  to be enabled for it. To do this, call ``SELECT create_history_table(
+  <tablename>::regclass,  <timecolumn>, <txidcolumn> );``, with ``<timecolumn>``
+  being an edit reference time and ``<txidcolumn>`` being a column tracking a
+  row's transaction ID. For most CATMAID tables those parameters are
+  ``'edition_time'`` and ``'txid'``, respectively. If both ``<timecolumn>`` and
+  ``<txid>`` are ``NULL``, a tracking table will be created automatically. Only
+  providing one of the two is currently not supported. To let CATMAID know if
+  you expect this table to have a history table, add the table to the
+  appropriate list in the ``HistoryTableTest`` class. This way you can also mark
+  a table as not versioned.
+
+- If a live *table is renamed*, the history table is not renamed automatically, use
+  the function ``history_table_name(<tablename>::regclass)`` to create the new name.

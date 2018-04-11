@@ -508,6 +508,13 @@
       });
   };
 
+  LandmarkWidget.prototype.updateLandmarksAndGroups = function() {
+    return Promise.all([
+      this.updateLandmarks(),
+      this.updateLandmarkGroups()
+    ]);
+  };
+
   /**
    * Return a promise that will either resolve with a new selection of group
    * members.
@@ -1195,13 +1202,14 @@
           paging: true,
           lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
           ajax: function(data, callback, settings) {
-            widget.updateLandmarkGroups()
+            widget.updateLandmarksAndGroups()
               .then(function(result) {
+                let groups = result[1];
                 callback({
                   draw: data.draw,
-                  data: result,
-                  recordsTotal: result.length,
-                  recordsFiltered: result.length
+                  data: groups,
+                  recordsTotal: groups.length,
+                  recordsFiltered: groups.length
                 });
               })
               .catch(CATMAID.handleError);
@@ -1794,12 +1802,13 @@
             landmarkGroupSelectorWrapper.removeChild(landmarkGroupSelectorWrapper.children[0]);
           }
           let landmarkGroupSelector = CATMAID.DOM.createAsyncPlaceholder(
-              target.updateLandmarkGroups()
+              target.updateLandmarksAndGroups()
                 .then(function(result) {
+                  let availableGroups = result[1];
                   var groups = [{
                     title: '(none)',
                     value: '-1'
-                  }].concat(result.map(function(g) {
+                  }].concat(availableGroups.map(function(g) {
                     return {
                       title: g['name'],
                       value: g['id']
@@ -2032,10 +2041,7 @@
 
 
         // Promise landmark details
-        let landmarkGroupDetails = Promise.all([
-            widget.updateLandmarkGroups(),
-            widget.updateLandmarks()
-        ]);
+        let landmarkGroupDetails = widget.updateLandmarksAndGroups();
 
         landmarkGroupDetails
           .then(function() {
@@ -2828,8 +2834,9 @@
         });
 
         // Add additonal settings that need updated groups
-        widget.updateLandmarkGroups()
-            .then(function(groups) {
+        widget.updateLandmarksAndGroups()
+            .then(function(result) {
+              let groups = result[1];
               let groupOptions = groups.map(function(g) {
                 return {
                   title: g.name,
@@ -3161,10 +3168,7 @@
 
               // Clear input fields
 
-              let landmarkGroupDetails = Promise.all([
-                  widget.updateLandmarkGroups(),
-                  widget.updateLandmarks()
-              ]);
+              return widget.updateLandmarksAndGroups();
             })
             .catch(CATMAID.handleError);
 

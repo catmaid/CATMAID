@@ -49,20 +49,20 @@ backward = """
     SELECT drop_history_view_for_table('stack'::regclass);
 
     ALTER TABLE stack
-    ADD COLUMN num_zoom_levels integer DEFAULT -1 NOT NULL;
+    ADD COLUMN num_zoom_levels integer NOT NULL DEFAULT -1;
 
     UPDATE stack
-    SET num_zoom_levels = array_length(zoom_factors, 1) - 1
+    SET num_zoom_levels = coalesce(array_length(zoom_factors, 1), 0) - 1
     WHERE zoom_factors IS NOT NULL;
 
     ALTER TABLE stack
     DROP COLUMN zoom_factors;
 
     ALTER TABLE stack__history
-    ADD COLUMN num_zoom_levels integer DEFAULT -1 NOT NULL;
+    ADD COLUMN num_zoom_levels integer NOT NULL DEFAULT -1;
 
     UPDATE stack__history
-    SET num_zoom_levels = array_length(zoom_factors, 1) - 1
+    SET num_zoom_levels = coalesce(array_length(zoom_factors, 1), 0) - 1
     WHERE zoom_factors IS NOT NULL;
 
     ALTER TABLE stack__history
@@ -77,7 +77,7 @@ backward = """
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('catmaid', '0035_add_skeleton_summary_table'),
+        ('catmaid', '0036_update_sampler_interval_constraints'),
     ]
 
     operations = [

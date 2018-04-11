@@ -87,13 +87,13 @@ def register_composite_late(sender, db_type, **kwargs):
     from django.db import connection
     _missing_types.pop(db_type).register_composite(connection)
 
-# Necessary when running single tests, so that the composites are re-registered
-# after migration (so that the PG types exist).
-@receiver(models.signals.post_migrate)
-def register_composite_post_migrate(sender, **kwargs):
-    from django.db import connection
-    for subclass in CompositeField.__subclasses__():
-        subclass.register_composite(connection)
+# # Necessary when running single tests, so that the composites are re-registered
+# # after migration (so that the PG types exist).
+# @receiver(models.signals.post_migrate)
+# def register_composite_post_migrate(sender, **kwargs):
+#     from django.db import connection
+#     for subclass in CompositeField.__subclasses__():
+#         subclass.register_composite(connection)
 
 # Necessary when running in a parallel context (production, test suites).
 @receiver(db_signals.connection_created)

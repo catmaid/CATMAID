@@ -4293,6 +4293,10 @@ def add_initial_data(apps, schema_editor):
             data_view_type=project_table, config='{"sample_images":true}',
             is_default=True, position=1, comment='')
 
+    # Register composite type handlers now that the types exist in Postgres.
+    catmaid.fields.composite_type_created.send(sender=catmaid.fields.Integer3DField, db_type='integer3d')
+
+
 class Migration(migrations.Migration):
     """Migrate the database to the state of the last South migration"""
 

@@ -43,8 +43,13 @@ included in this changelog.
   returned. Can be 'none', 'used' and all with 'used' being the default.
 
 - `GET /{project_id}/landmarks/groups/`:
-  Accepts the new optional parameter "with_links" and "with_relations", to
-  include links between landmark groups along with a map of used relations.
+  Accepts the new optional parameter "with_links", "with_names" and
+  "with_relations", to include links between landmark groups along with a list
+  of linked landmark names and a map of used relations
+
+- `GET /{project_id}/landmarks/groups/{group_id}/`:
+  Accepts the new optional parameter "with_names" to include landmark names
+  along with linked landmark locations.
 
 ### Deprecations
 

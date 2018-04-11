@@ -977,6 +977,12 @@
           CATMAID.ui.catchEvents();
           CATMAID.ui.registerEvent("onmousedown", onmousedown);
         }
+        // TODO: find a better counter-action to scrollIntoView below. But
+        // currently this is needed for CATMAID windows after the custom
+        // select has been scrolled into view.
+        if (CATMAID.rootWindow) {
+          CATMAID.rootWindow.redraw();
+        }
         expanded = !expanded;
       };
     })(container);

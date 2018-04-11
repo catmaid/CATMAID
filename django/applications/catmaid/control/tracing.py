@@ -162,7 +162,8 @@ def setup_tracing(project_id, user=None):
         defaults = {
             'user': user,
         }
-        if type(needed_relations[r]) in six.string_types:
+        data_type = type(needed_relations[r])
+        if data_type in six.string_types or data_type == six.text_type:
             defaults['description'] = needed_relations[r]
         else:
             defaults.update(needed_relations[r])

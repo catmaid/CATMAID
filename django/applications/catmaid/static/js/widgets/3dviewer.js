@@ -1198,6 +1198,23 @@
     return material;
   };
 
+  WebGLApplication.prototype.Options.prototype.ensureFont = function() {
+    if (this.font) {
+      return Promise.resolve(this.font);
+    }
+
+    let self = this;
+    return new Promise(function(resolve, reject) {
+      var loader = new THREE.FontLoader();
+      var url = CATMAID.makeStaticURL('libs/three.js/fonts/helvetiker_regular.typeface.json');
+      loader.load(url, function(newFont) {
+        // Share font
+        self.font = newFont;
+        resolve(newFont);
+      }, undefined, reject);
+    });
+  };
+
   function generateSprite(colorr, opacity) {
     var canvas = document.createElement( 'canvas' );
     canvas.width = 16;
@@ -2577,22 +2594,11 @@
     this.geometryCache = {};
 
     // Load font asynchronously, text creation will wait
-    var prepare, font;
-    if (options.font) {
-      prepare = new Promise.resolve();
-      font = options.font;
-    } else {
-      prepare = new Promise(function(resolve, reject) {
-        var loader = new THREE.FontLoader();
-        var url = CATMAID.makeStaticURL('libs/three.js/fonts/helvetiker_regular.typeface.json');
-        loader.load(url, function(newFont) {
-          // Share font
-          options.font = newFont;
-          font = newFont;
-          resolve();
-        }, undefined, reject);
-      }).catch(CATMAID.handleError);
-    }
+    var font;
+    var prepare = options.ensureFont(options)
+      .then(function(loadedFont) {
+        font = loadedFont;
+      });
 
     this.getTagGeometry = function(tagString, font) {
       if (tagString in this.geometryCache) {

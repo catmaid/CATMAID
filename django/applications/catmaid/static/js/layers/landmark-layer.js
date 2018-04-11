@@ -364,7 +364,7 @@
 
           for (let j=0; j<skeletonIds.length; ++j) {
             let skeletonId = skeletonIds[j];
-            let skeletonData = transform.skeletonCache[skeletonId];
+            let skeletonData = transform.skeletonCache ? transform.skeletonCache[skeletonId] : null;
             if (!skeletonData) {
               CATMAID.warn("Couldn't find data for skeleton " + skeletonId);
               continue;

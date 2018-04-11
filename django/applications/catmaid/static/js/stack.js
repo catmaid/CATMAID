@@ -22,7 +22,7 @@
       resolution,         //!< {Array} physical resolution in units/pixel [x, y, z, ...]
       translation,        //!< @todo replace by an affine transform
       skip_planes,        //!< {Array} planes to be excluded from the stack's view [[z,t,...], [z,t,...], ...]
-      zoom_factors,
+      downsample_factors,
       max_zoom_level,       //!< {int} that defines the maximum available zoom level
       description,         //!< {String} of arbitrary meta data
       metadata,
@@ -59,24 +59,24 @@
     self.MAX_Z = MAX_Z;
 
     //! estimate the zoom levels
-    if (!Array.isArray(zoom_factors)) {
-      zoom_factors = [{x: 1, y: 1, z: 1}];
+    if (!Array.isArray(downsample_factors)) {
+      downsample_factors = [{x: 1, y: 1, z: 1}];
       self.MAX_S = 0;
       var max_dim = Math.max( MAX_X, MAX_Y );
       var min_size = 1024;
       while ( max_dim / Math.pow( 2, self.MAX_S ) > min_size ) {
         // By default, assume factor 2 downsampling in x, y, and no downsampling in z.
         ++self.MAX_S;
-        zoom_factors.push({
+        downsample_factors.push({
           x: Math.pow(2, self.MAX_S),
           y: Math.pow(2, self.MAX_S),
           z: 1});
       }
     } else {
-      self.MAX_S = zoom_factors.length - 1;
+      self.MAX_S = downsample_factors.length - 1;
     }
     self.MIN_S = max_zoom_level;
-    self.zoom_factors = zoom_factors;
+    self.downsample_factors = downsample_factors;
 
     self.description = description;
     self.metadata = metadata;
@@ -100,8 +100,8 @@
 
       var zoom = Math.min(this.MAX_S, Math.max(0, Math.ceil(s)));
       var factors = {
-        x: this.zoom_factors[zoom].x,
-        y: this.zoom_factors[zoom].y,
+        x: this.downsample_factors[zoom].x,
+        y: this.downsample_factors[zoom].y,
       };
 
       if (s < 0 || s > this.MAX_S) {
@@ -109,14 +109,14 @@
         factors.y /= Math.pow(2, zoom - s);
       } else if (s !== zoom) {
         var nextFactors = {
-          x: this.zoom_factors[zoom - 1].x,
-          y: this.zoom_factors[zoom - 1].y,
+          x: this.downsample_factors[zoom - 1].x,
+          y: this.downsample_factors[zoom - 1].y,
         };
         factors.x /= Math.pow(factors.x / nextFactors.x, zoom - s);
         factors.y /= Math.pow(factors.y / nextFactors.y, zoom - s);
       }
 
-      let ezf = this.effectiveZoomFactor(s);
+      let ezf = this.effectiveDownsampleFactor(s);
 
       factors.x *= this.resolution.x / (ezf * this.minPlanarRes);
       factors.y *= this.resolution.y / (ezf * this.minPlanarRes);
@@ -124,18 +124,18 @@
       return factors;
     };
 
-    this.effectiveZoomFactor = function (s) {
+    this.effectiveDownsampleFactor = function (s) {
       var zoom = Math.min(this.MAX_S, Math.max(0, Math.ceil(s)));
       var factor = Math.max(
-        this.zoom_factors[zoom].x,
-        this.zoom_factors[zoom].y);
+        this.downsample_factors[zoom].x,
+        this.downsample_factors[zoom].y);
 
       if (s < 0 || s > this.MAX_S) {
         factor /= Math.pow(2, zoom - s);
       } else if (s !== zoom) {
         var nextFactor = Math.max(
-          this.zoom_factors[zoom - 1].x,
-          this.zoom_factors[zoom - 1].y);
+          this.downsample_factors[zoom - 1].x,
+          this.downsample_factors[zoom - 1].y);
         factor /= Math.pow(factor / nextFactor, zoom - s);
       }
 

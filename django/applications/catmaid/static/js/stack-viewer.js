@@ -56,7 +56,7 @@
     /**
      * Ratio of screen pixels to (scale level 0) stack space pixels.
      */
-    this.scale = this.primaryStack.effectiveZoomFactor(0) / this.primaryStack.effectiveZoomFactor(this.s);
+    this.scale = this.primaryStack.effectiveDownsampleFactor(0) / this.primaryStack.effectiveDownsampleFactor(this.s);
     this.old_scale = this.scale;
 
     this.navigateWithProject = true;
@@ -660,7 +660,7 @@
       {
         var sExtents = this.getZoomExtents();
         this.s = Math.max( sExtents.min, Math.min( sExtents.max, sp ) );
-        this.scale = 1.0 / this.primaryStack.effectiveZoomFactor(this.s);
+        this.scale = 1.0 / this.primaryStack.effectiveDownsampleFactor(this.s);
       }
 
       this.x = this.primaryStack.projectToUnclampedStackX( zp, yp, xp ) + this._offset[0];

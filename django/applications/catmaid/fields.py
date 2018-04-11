@@ -9,6 +9,8 @@ import six
 import re
 
 from django import forms
+from django.contrib.postgres.fields import ArrayField
+from django.contrib.postgres.forms import SimpleArrayField
 from django.core.exceptions import ValidationError
 from django.dispatch import receiver, Signal
 from django.db import models
@@ -16,7 +18,7 @@ from django.db.backends import signals as db_signals
 from django.utils.encoding import python_2_unicode_compatible
 
 
-from catmaid.widgets import Double3DWidget, Integer3DWidget, RGBAWidget
+from catmaid.widgets import Double3DWidget, Integer3DWidget, RGBAWidget, DownsampleFactorsWidget
 
 
 # ------------------------------------------------------------------------
@@ -81,19 +83,11 @@ class CompositeField(models.Field):
 
 composite_type_created = Signal(providing_args=['name'])
 
-# Necessary when running in, e.g., interactive contexts.
+# Necessary when running in interactive contexts and from migrations.
 @receiver(composite_type_created)
 def register_composite_late(sender, db_type, **kwargs):
     from django.db import connection
     _missing_types.pop(db_type).register_composite(connection)
-
-# # Necessary when running single tests, so that the composites are re-registered
-# # after migration (so that the PG types exist).
-# @receiver(models.signals.post_migrate)
-# def register_composite_post_migrate(sender, **kwargs):
-#     from django.db import connection
-#     for subclass in CompositeField.__subclasses__():
-#         subclass.register_composite(connection)
 
 # Necessary when running in a parallel context (production, test suites).
 @receiver(db_signals.connection_created)
@@ -123,6 +117,9 @@ class Integer3D(object):
                              z=int(m.group(3), 10))
         else:
             raise ValidationError("Couldn't parse value as an Integer3D: " + str(s))
+
+    def __eq__(self, other):
+        return isinstance(other, Integer3D) and self.x == other.x and self.y == other.y and self.z == other.z
 
     def __str__(self):
         return "(%d, %d, %d)" % (self.x, self.y, self.z)
@@ -279,6 +276,30 @@ class RGBAField(models.Field):
         value = self.to_python(value)
         return "(%f,%f,%f,%f)" % (value.r, value.g, value.b, value.a)
 
+class DownsampleFactorsField(ArrayField):
+
+    def __init__(self, *args, **kwargs):
+        kwargs['blank'] = True
+        kwargs['null'] = True
+        kwargs['base_field'] = Integer3DField()
+        super(DownsampleFactorsField, self).__init__(*args, **kwargs)
+
+    def deconstruct(self):
+        name, path, args, kwargs = super(DownsampleFactorsField, self).deconstruct()
+        del kwargs['blank']
+        del kwargs['null']
+        del kwargs['base_field']
+        return name, path, args, kwargs
+
+    def formfield(self, **kwargs):
+        defaults = {'form_class': DownsampleFactorsFormField}
+        defaults.update(kwargs)
+        return super(DownsampleFactorsField, self).formfield(**defaults)
+
+    @staticmethod
+    def planar_default(num_zoom_levels):
+        return [Integer3D(2**l, 2**l, 1) for l in range(num_zoom_levels + 1)]
+
 # ------------------------------------------------------------------------
 
 class Integer3DFormField(forms.MultiValueField):
@@ -329,3 +350,38 @@ class RGBAFormField(forms.MultiValueField):
         if data_list:
             return data_list
         return [None, None, None]
+
+class DownsampleFactorsFormField(forms.MultiValueField):
+    from catmaid.widgets import DownsampleFactorsWidget
+
+    widget = DownsampleFactorsWidget
+
+    def __init__(self, *args, **kwargs):
+        fields = (
+            forms.ChoiceField(
+                choices=DownsampleFactorsWidget.choices,
+                widget=forms.RadioSelect),
+            forms.IntegerField(label='Number of zoom levels'),
+            SimpleArrayField(
+                Integer3DFormField(),
+                label='Factors array',
+                delimiter='|',
+                max_length=kwargs['max_length']),
+        )
+        del kwargs['max_length']
+        del kwargs['base_field']
+        super(DownsampleFactorsFormField, self).__init__(fields, *args, **kwargs)
+
+    def compress(self, data_list):
+        if data_list:
+            choice = int(data_list[0])
+            if choice == 0:
+                return None
+            elif choice == 1:
+                return DownsampleFactorsField.planar_default(data_list[1])
+            elif choice == 2:
+                return data_list[2]
+        return None
+
+    def prepare_value(self, value):
+        return (value, self.fields[2].prepare_value(value))

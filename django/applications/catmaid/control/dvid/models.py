@@ -25,7 +25,7 @@ class DVIDStack:
         dvid_url = settings.DVID_URL.rstrip('/')
         levels = stack_data['Extended']['Levels']
         r = levels['0']['Resolution']
-        self.zoom_factors = [
+        self.downsample_factors = [
             [a / b for (a, b) in zip(levels[str(k)]['Resolution'], r)]
             for k in sorted(map(int, levels.keys()))] # Convert to int to prevent lexographic sort.
         self.num_zoom_levels = len(levels.keys()) - 1

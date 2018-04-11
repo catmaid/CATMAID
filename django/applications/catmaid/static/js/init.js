@@ -1419,7 +1419,7 @@ var project;
           e.resolution,
           e.translation,    //!< @todo replace by an affine transform
           e.broken_slices,
-          e.zoom_factors,
+          e.downsample_factors,
           -2,
           e.description,
           e.metadata,

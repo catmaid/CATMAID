@@ -156,7 +156,7 @@ class PreStack(object):
         self.resolution = info_object['resolution']
         self.metadata = info_object['metadata'] if 'metadata' in info_object else ""
 
-        self.zoom_factors = info_object.get('zoom_factors')
+        self.downsample_factors = info_object.get('downsample_factors')
 
         self.comment = info_object.get('comment')
         self.attribution = info_object.get('attribution')
@@ -1175,7 +1175,7 @@ def import_projects( user, pre_projects, tags, permissions,
                     'title': s.title,
                     'dimension': s.dimension,
                     'resolution': s.resolution,
-                    'zoom_factors': s.zoom_factors,
+                    'downsample_factors': s.downsample_factors,
                     'metadata': s.metadata,
                     'comment': s.comment,
                     'attribution': s.attribution,

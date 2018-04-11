@@ -647,7 +647,7 @@
       if (s < 0 || zoom === this.stack.MAX_S) {
         mag = Math.pow(2, zoom - s);
       } else {
-        mag = this.stack.effectiveZoomFactor(zoom) / this.stack.effectiveZoomFactor(s);
+        mag = this.stack.effectiveDownsampleFactor(zoom) / this.stack.effectiveDownsampleFactor(s);
       }
     }
 
@@ -702,9 +702,9 @@
     lr = Math.floor((yc + this.stackViewer.viewHeight - efficiencyThreshold * effectiveTileHeight) / effectiveTileHeight);
 
     // Clamp last tile coordinates within the slice edges.
-    lc = Math.min(lc, Math.floor((this.stack.dimension.x / this.stack.zoom_factors[zoom].x - 1)
+    lc = Math.min(lc, Math.floor((this.stack.dimension.x / this.stack.downsample_factors[zoom].x - 1)
                       / this.tileSource.tileWidth));
-    lr = Math.min(lr, Math.floor((this.stack.dimension.y / this.stack.zoom_factors[zoom].y - 1)
+    lr = Math.min(lr, Math.floor((this.stack.dimension.y / this.stack.downsample_factors[zoom].y - 1)
                       / this.tileSource.tileHeight));
 
     return {
@@ -714,7 +714,7 @@
       lastCol:   lc,
       top:       top,
       left:      left,
-      z:         Math.floor(z / this.stack.zoom_factors[zoom].z),
+      z:         Math.floor(z / this.stack.downsample_factors[zoom].z),
       zoom:      zoom,
       mag:       mag,
       anisotropy: anisotropy

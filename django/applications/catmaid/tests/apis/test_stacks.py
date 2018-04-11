@@ -61,7 +61,7 @@ class StacksApiTests(CatmaidApiTestCase):
                 "y": 0.0,
                 "z": 0.0
             },
-            "zoom_factors": None,
+            "downsample_factors": None,
         }
 
         self.assertEqual(expected_result, parsed_response)

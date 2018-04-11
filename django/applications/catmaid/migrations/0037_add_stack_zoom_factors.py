@@ -13,10 +13,10 @@ forward = """
     SELECT drop_history_view_for_table('stack'::regclass);
 
     ALTER TABLE stack
-    ADD COLUMN zoom_factors integer3d[] DEFAULT NULL;
+    ADD COLUMN downsample_factors integer3d[] DEFAULT NULL;
 
     UPDATE stack
-    SET zoom_factors = ARRAY(
+    SET downsample_factors = ARRAY(
         SELECT (1 << s, 1 << s, 1)::integer3d
         FROM generate_series(0, num_zoom_levels) AS r(s)
     )
@@ -26,10 +26,10 @@ forward = """
     DROP COLUMN num_zoom_levels;
 
     ALTER TABLE stack__history
-    ADD COLUMN zoom_factors integer3d[] DEFAULT NULL;
+    ADD COLUMN downsample_factors integer3d[] DEFAULT NULL;
 
     UPDATE stack__history
-    SET zoom_factors = ARRAY(
+    SET downsample_factors = ARRAY(
         SELECT (1 << s, 1 << s, 1)::integer3d
         FROM generate_series(0, num_zoom_levels) AS r(s)
     )
@@ -52,21 +52,21 @@ backward = """
     ADD COLUMN num_zoom_levels integer NOT NULL DEFAULT -1;
 
     UPDATE stack
-    SET num_zoom_levels = coalesce(array_length(zoom_factors, 1), 0) - 1
-    WHERE zoom_factors IS NOT NULL;
+    SET num_zoom_levels = coalesce(array_length(downsample_factors, 1), 0) - 1
+    WHERE downsample_factors IS NOT NULL;
 
     ALTER TABLE stack
-    DROP COLUMN zoom_factors;
+    DROP COLUMN downsample_factors;
 
     ALTER TABLE stack__history
     ADD COLUMN num_zoom_levels integer NOT NULL DEFAULT -1;
 
     UPDATE stack__history
-    SET num_zoom_levels = coalesce(array_length(zoom_factors, 1), 0) - 1
-    WHERE zoom_factors IS NOT NULL;
+    SET num_zoom_levels = coalesce(array_length(downsample_factors, 1), 0) - 1
+    WHERE downsample_factors IS NOT NULL;
 
     ALTER TABLE stack__history
-    DROP COLUMN zoom_factors;
+    DROP COLUMN downsample_factors;
 
     SELECT create_history_view_for_table('stack'::regclass);
     SELECT enable_history_tracking_for_table('stack'::regclass,
@@ -91,12 +91,9 @@ class Migration(migrations.Migration):
                 ),
                 migrations.AddField(
                     model_name='stack',
-                    name='zoom_factors',
-                    field=django.contrib.postgres.fields.ArrayField(
-                        base_field=catmaid.fields.Integer3DField(),
-                        blank=True,
-                        help_text='TODO',
-                        null=True,
+                    name='downsample_factors',
+                    field=catmaid.fields.DownsampleFactorsField(
+                        help_text='Downsampling factors along each dimensions for each zoom level.',
                         size=None),
                 ),
             ],

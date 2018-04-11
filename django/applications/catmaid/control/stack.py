@@ -60,7 +60,7 @@ def get_stack_info_response(p, s, ps, mirror_data, broken_slices):
         'pid': p.id,
         'ptitle': p.title,
         'stitle': s.title,
-        'zoom_factors': [zf.to_dict() for zf in s.zoom_factors] if s.zoom_factors else None,
+        'downsample_factors': [zf.to_dict() for zf in s.downsample_factors] if s.downsample_factors else None,
         'num_zoom_levels': int(s.num_zoom_levels),
         'translation': {
             'x': ps.translation.x,

@@ -55,6 +55,10 @@ included in this changelog.
   Accepts the new optional parameter "with_names" to include landmark names
   along with linked landmark locations.
 
+- `GET /{project_id}/stats/user-history`:
+  Returns actual node count in "new_treenodes" field, cable length is returned
+  in "new_cable_length" field (previously new_treenodes).
+
 ### Deprecations
 
 None.

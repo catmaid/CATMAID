@@ -34,11 +34,17 @@
       }
 
       var entry = '', points = 0;
+      if( data.hasOwnProperty('new_cable_length') && data['new_cable_length'] > 0 ) {
+        entry += wrapWithLink(data['new_cable_length'].toLocaleString(), 'created') + ' /';
+        points += data['new_cable_length'];
+      } else {
+        entry += '0 /';
+      }
       if( data.hasOwnProperty('new_treenodes') && data['new_treenodes'] > 0 ) {
         entry += wrapWithLink(data['new_treenodes'].toLocaleString(), 'created') + ' /';
         points += data['new_treenodes'];
       } else {
-        entry += '0 /';
+        entry += ' 0 /';
       }
       if( data.hasOwnProperty('new_connectors') && data['new_connectors'] > 0 ) {
         entry += ' ' + wrapWithLink(data['new_connectors'].toLocaleString(), 'connectors') + ' /';
@@ -127,6 +133,7 @@
           // Print statistics cells, wrt. time interval
           for (var i = 0; i < data['days'].length; i=i+timeinterval) {
             var intervalData = {
+              new_cable_length: 0,
               new_treenodes: 0,
               new_connectors: 0,
               new_reviewed_nodes: 0,
@@ -143,6 +150,7 @@
                 // Add current day's data
                 var datekey = data['days'][i + j];
                 var stats = data['stats_table'][uid][datekey];
+                intervalData.new_cable_length += stats.new_cable_length || 0;
                 intervalData.new_treenodes += stats.new_treenodes || 0;
                 intervalData.new_connectors += stats.new_connectors || 0;
                 intervalData.new_reviewed_nodes += stats.new_reviewed_nodes || 0;
@@ -581,7 +589,7 @@
           '</p>' +
           '<div class="clear">' +
             '<br />' +
-            'per cell values: new cable length (nm) / completed connector links / reviewed nodes' +
+            'per cell values: new cable length (nm) / new nodes / completed connector links / reviewed nodes' +
             '<table cellpadding="0" cellspacing="0" border="1" class="project-stats"' +
                 'id="project_stats_history_table">' +
             '</table>' +

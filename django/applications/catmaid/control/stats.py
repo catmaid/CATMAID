@@ -314,6 +314,10 @@ def stats_user_history(request, project_id=None):
         id: stats_user_history_cell
         properties:
           new_treenodes:
+            description: Number of nodes created
+            type: integer
+            required: true
+          new_cable_length:
             description: Cable length created
             type: integer
             required: true
@@ -417,7 +421,9 @@ def stats_user_history(request, project_id=None):
 
     cursor = connection.cursor()
 
-    treenode_stats = select_cable_stats(cursor, project_id,
+    treenode_stats = select_node_stats(cursor, project_id,
+            start_date_utc, end_date_utc, time_zone)
+    cable_stats = select_cable_stats(cursor, project_id,
             start_date_utc, end_date_utc, time_zone)
     connector_stats = select_connector_stats(cursor, project_id,
             start_date_utc, end_date_utc, time_zone)
@@ -428,6 +434,11 @@ def stats_user_history(request, project_id=None):
         user_id = str(di[0])
         date = di[1].strftime('%Y%m%d')
         stats_table[user_id][date]['new_treenodes'] = di[2]
+
+    for di in cable_stats:
+        user_id = str(di[0])
+        date = di[1].strftime('%Y%m%d')
+        stats_table[user_id][date]['new_cable_length'] = di[2]
 
     for di in connector_stats:
         user_id = str(di[0])

@@ -102,6 +102,9 @@ Statistics widget:
 - Statistics widget: The new option "All" in the time unit selection control
   allow to aggregate user data for the whole time range.
 
+- The number of newly created treenodes is now displayed alongside the cable
+  length in the contribution table.
+
 - Add extra Refresh button to top bar.
 
 Miscellaneous:

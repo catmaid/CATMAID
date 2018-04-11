@@ -334,6 +334,11 @@ class LandmarkGroupList(APIView):
             required: false
             defaultValue: false
             paramType: form
+          - name: with_names
+            description: Whether to return location with their landmark names
+            required: false
+            defaultValue: false
+            paramType: form
           - name: with_links
             description: Whether to return links to other groups
             required: false
@@ -349,6 +354,7 @@ class LandmarkGroupList(APIView):
         with_locations = request.query_params.get('with_locations', 'false') == 'true'
         with_relations = request.query_params.get('with_relations', 'false') == 'true'
         with_links = request.query_params.get('with_links', 'false') == 'true'
+        with_names = request.query_params.get('with_names', 'false') == 'true'
         landmarkgroup_class = Class.objects.get(project_id=project_id, class_name="landmarkgroup")
         landmarkgroups = ClassInstance.objects.filter(project_id=project_id,
                 class_column=landmarkgroup_class).order_by('id')
@@ -370,7 +376,7 @@ class LandmarkGroupList(APIView):
                 # Get linked locations, which represent instances of
                 # landmark in this landmark group.
                 location_index = get_landmark_group_locations(project_id,
-                        landmarkgroup_ids)
+                        landmarkgroup_ids, with_names)
                 # Append location information
                 for group in data:
                     group['locations'] = location_index[group['id']]
@@ -450,10 +456,16 @@ class LandmarkGroupDetail(APIView):
           required: false
           defaultValue: false
           paramType: form
+        - name: with_names
+          description: Whether to return linked landmark names
+          required: false
+          defaultValue: false
+          paramType: form
         """
         landmarkgroup_id = int(landmarkgroup_id)
         with_members = request.query_params.get('with_members', 'false') == 'true'
         with_locations = request.query_params.get('with_locations', 'false') == 'true'
+        with_names = request.query_params.get('with_names', 'false') == 'true'
         landmarkgroup_class = Class.objects.get(project_id=project_id, class_name='landmarkgroup')
         landmarkgroup = get_object_or_404(ClassInstance, pk=landmarkgroup_id,
                 project_id=project_id, class_column=landmarkgroup_class)
@@ -471,7 +483,8 @@ class LandmarkGroupDetail(APIView):
             if with_locations:
                 # Get linked locations, which represent instances of
                 # landmark in this landmark group.
-                location_index = get_landmark_group_locations(project_id, [landmarkgroup_id])
+                location_index = get_landmark_group_locations(project_id,
+                        [landmarkgroup_id], with_names)
                 # Append location information
                 data['locations'] = location_index[landmarkgroup_id]
 
@@ -807,32 +820,87 @@ def get_landmark_group_members(project_id, landmarkgroup_ids):
         member_index[r[1]].append(r[0])
     return member_index
 
-def get_landmark_group_locations(project_id, landmarkgroup_ids):
+def get_landmark_group_locations(project_id, landmarkgroup_ids, with_names=False):
     cursor = connection.cursor()
-    landmarkgroups_template = ','.join(['(%s)' for _ in landmarkgroup_ids])
-    cursor.execute("""
-        SELECT pci.point_id, pci.class_instance_id, p.location_x,
-            p.location_y, p.location_z
-        FROM point_class_instance pci
-        JOIN (VALUES {}) landmarkgroup(id)
-            ON pci.class_instance_id = landmarkgroup.id
-        JOIN point p
-            ON p.id = pci.point_id
-        WHERE pci.relation_id = (
-            SELECT id from relation
-            WHERE relation_name = 'annotated_with' AND project_id = %s
-        ) AND pci.project_id = %s
-    """.format(landmarkgroups_template),
-        landmarkgroup_ids + [project_id, project_id])
-    location_index = defaultdict(list)
-    for r in cursor.fetchall():
-        location_index[r[1]].append({
-            'id': r[0],
-            'x': r[2],
-            'y': r[3],
-            'z': r[4]
+    if with_names:
+        cursor.execute("""
+            SELECT p.id, plg.class_instance_id, p.location_x, p.location_y,
+                p.location_z, plg.names
+            FROM (
+                SELECT pci.point_id, pci.class_instance_id, array_agg(l.name) as names
+                FROM point_class_instance pci
+                JOIN UNNEST(%(landmarkgroup_ids)s::integer[]) landmarkgroup(id)
+                    ON pci.class_instance_id = landmarkgroup.id
+                LEFT JOIN point_class_instance pci_l
+                    ON pci_l.point_id = pci.point_id
+                JOIN class_instance l
+                    ON pci_l.class_instance_id = l.id
+                JOIN class_instance_class_instance l_lg
+                    ON l_lg.class_instance_a = l.id
+                    AND l_lg.class_instance_b = pci.class_instance_id
+                WHERE pci.relation_id = (
+                    SELECT id from relation
+                    WHERE relation_name = 'annotated_with'
+                    AND project_id = %(project_id)s
+                )
+                AND pci_l.relation_id = pci.relation_id
+                AND pci.project_id = %(project_id)s
+                AND pci_l.project_id = %(project_id)s
+                AND l.class_id = (
+                    SELECT id FROM class
+                    WHERE class_name = 'landmark'
+                    AND project_id = %(project_id)s
+                )
+                AND l_lg.relation_id = (
+                    SELECT id from relation
+                    WHERE relation_name = 'part_of'
+                    AND project_id = %(project_id)s
+                )
+                GROUP BY pci.id
+            ) plg
+            JOIN point p
+                ON p.id = plg.point_id;
+        """, {
+            'landmarkgroup_ids': landmarkgroup_ids,
+            'project_id': project_id
         })
-    return location_index
+        location_index = defaultdict(list)
+        for r in cursor.fetchall():
+            location_index[r[1]].append({
+                'id': r[0],
+                'x': r[2],
+                'y': r[3],
+                'z': r[4],
+                'names': r[5]
+            })
+        return location_index
+    else:
+        cursor.execute("""
+            SELECT pci.point_id, pci.class_instance_id, p.location_x,
+                p.location_y, p.location_z
+            FROM point_class_instance pci
+            JOIN UNNEST(%(landmarkgroup_ids)s::integer[]) landmarkgroup(id)
+                ON pci.class_instance_id = landmarkgroup.id
+            JOIN point p
+                ON p.id = pci.point_id
+            WHERE pci.relation_id = (
+                SELECT id from relation
+                WHERE relation_name = 'annotated_with'
+                AND project_id = %(project_id)s
+            ) AND pci.project_id = %(project_id)s
+        """, {
+            'landmarkgroup_ids': landmarkgroup_ids,
+            'project_id': project_id
+        })
+        location_index = defaultdict(list)
+        for r in cursor.fetchall():
+            location_index[r[1]].append({
+                'id': r[0],
+                'x': r[2],
+                'y': r[3],
+                'z': r[4]
+            })
+        return location_index
 
 def make_landmark_relation_index(project_id, landmarkgroup_ids):
     cursor = connection.cursor()

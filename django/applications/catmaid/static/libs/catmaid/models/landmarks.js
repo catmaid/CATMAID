@@ -89,10 +89,11 @@
     /**
      * Get details on a landmark group.
      */
-    getGroup: function(projectId, groupId, with_members, with_locations) {
+    getGroup: function(projectId, groupId, with_members, with_locations, with_names) {
       return CATMAID.fetch(projectId + '/landmarks/groups/' + groupId + '/', 'GET', {
           with_members: !!with_members,
-          with_locations: !!with_locations
+          with_locations: !!with_locations,
+          with_names: !!with_names
         });
     },
 

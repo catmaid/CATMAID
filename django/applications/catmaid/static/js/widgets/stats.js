@@ -15,6 +15,8 @@
     var statisticsData = null;
     // The time interval for the contribution table, default to days
     var timeUnit = "day";
+    // The users that are currently aggregated
+    var aggregatedUsers = new Set();
 
     // Whether import activity should be included in the displayed statistics.
     this.includeImports = false;
@@ -86,10 +88,25 @@
       // Find interval remainder of timespan in days
       var intervalRemainder = data['days'].length % timeinterval;
 
+      var usernamesToIds = Object.keys(data['stats_table']).reduce(function(o, id) {
+        var u = CATMAID.User.all()[id];
+        o[u ? u.login : id] = id;
+        return o;
+      }, {});
+      var userNames = Object.keys(usernamesToIds).sort();
+      var userIds = userNames.map(function(userName) {
+        return parseInt(usernamesToIds[userName], 10);
+      });
+      var unselectedIds = userIds.filter(function(userId) {
+        return !aggregatedUsers.has(userId);
+      });
+
       // Draw table header, showing only the first day of each interval
       $('#project_stats_history_table').empty();
-      var header = '';
+      var header = '<thead>';
       header += '<tr>';
+      let selectAllChecked = unselectedIds.length === 0 ? 'checked' : '';
+      header += '<th><input type="checkbox" data-role="select-all" ' + selectAllChecked + ' /></th>';
       header += '<th>username</th>';
       for(var i = 0; i < data['days'].length; i=i+timeinterval ) {
         // Add interval start date as column header, add "+ X days" if
@@ -108,23 +125,22 @@
         }
         header += '<th>' + text + '</th>';
       }
-      header += '</tr>';
+      header += '</tr></thead>';
       $('#project_stats_history_table').append( header );
 
       // Sort by username
       var odd_row = true;
-      var usernamesToIds = Object.keys(data['stats_table']).reduce(function(o, id) {
-        var u = CATMAID.User.all()[id];
-        o[u ? u.login : id] = id;
-        return o;
-      }, {});
       // Draw table body, add up numbers for each interval
+      let tbody = $('<tbody />');
       var showUserAnalytics = userAnalyticsAccessible(project.id);
-      Object.keys(usernamesToIds).sort().forEach(function(username) {
-        var uid = usernamesToIds[username];
+      let intervals = userNames.map(function(username, i) {
+        var uid = userIds[i];
         var row = '', weekpointcount = 0;
-        row += '<tr class="' + (odd_row ? "odd" : "") + '">';
+        row += '<tr class="' + (odd_row ? "odd" : "") + '" data-user-id="' + uid + '" >';
+        let userIntervals = [];
         if( data['stats_table'].hasOwnProperty( uid ) ) {
+          let selected = aggregatedUsers.has(uid) ? 'checked' : '';
+          row += '<td><input type="checkbox" data-role="user-select" ' + selected + ' /></td>';
           if (showUserAnalytics) {
             row += '<td><a href="#" data-user-id="' + uid + '">' + username + '</a></td>';
           } else {
@@ -159,17 +175,83 @@
             var formated = get_formated_entry(intervalData);
             row += '<td>'+ formated['entry'] +'</td>';
             weekpointcount += formated['points'];
+            userIntervals.push(intervalData);
           }
         }
         row += '</tr>';
-        if( weekpointcount === 0 ) {
-          return;
-        } else {
+        if( weekpointcount > 0 ) {
           // Flip odd row marker
           odd_row = !odd_row;
           // Add row
-          $('#project_stats_history_table').append( row );
+          tbody.append( row );
         }
+
+        return [uid, userIntervals];
+      });
+      $('#project_stats_history_table').append(tbody);
+
+      // Add footer for aggregate stats of selected users
+      if (aggregatedUsers.size > 0) {
+        let aggData = new Array(Math.ceil(data['days'].length / timeinterval));
+        for (let i=0; i<intervals.length; ++i) {
+          let userId = intervals[i][0];
+          let intervalData = intervals[i][1];
+          if (!aggregatedUsers.has(userId)) {
+            continue;
+          }
+          for (let j=0; j<intervalData.length; ++j) {
+            let interval = intervalData[j];
+            let currentIntervalAgg = aggData[j];
+            if (currentIntervalAgg === undefined) {
+              currentIntervalAgg = {
+                new_cable_length: 0,
+                new_treenodes: 0,
+                new_connectors: 0,
+                new_reviewes: 0
+              };
+              aggData[j] = currentIntervalAgg;
+            }
+
+            currentIntervalAgg.new_cable_length += interval.new_cable_length;
+            currentIntervalAgg.new_treenodes += interval.new_treenodes;
+            currentIntervalAgg.new_connectors += interval.new_connectors;
+            currentIntervalAgg.new_reviewed_nodes += interval.new_reviewed_nodes;
+          }
+        }
+        let footer = $('<tfoot />');
+        let row = '<tr><th></th><th>Selected users</th>';
+        for (let i=0; i<aggData.length; ++i) {
+          // Print table cell
+          var formated = get_formated_entry(aggData[i]);
+          row += '<td>'+ formated['entry'] +'</td>';
+        }
+
+        row += '</tr>';
+        footer.append(row);
+        $('#project_stats_history_table').append(footer);
+      }
+
+      // Add handler for user aggregation toggles
+      $('#project_stats_history_table').on('change','input[data-role=user-select]', function(e) {
+        let userId = parseInt($(this).closest('tr').get(0).dataset.userId, 10);
+        if (this.checked) {
+          aggregatedUsers.add(userId);
+        } else {
+          aggregatedUsers.delete(userId);
+        }
+        update_user_history(statisticsData, timeUnit);
+      });
+      $('#project_stats_history_table').on('change','input[data-role=select-all]', function(e) {
+        if (this.checked) {
+          for (var i=0; i<userNames.length; ++i) {
+            var uid = parseInt(usernamesToIds[userNames[i]], 10);
+            aggregatedUsers.add(uid);
+          }
+        } else {
+          aggregatedUsers.clear();
+        }
+        $('#project_stats_history_table').find('input[data-role=user-select]').prop('checked', this.checked);
+        update_user_history(statisticsData, timeUnit);
       });
 
       if (showUserAnalytics) {

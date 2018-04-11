@@ -105,6 +105,9 @@ Statistics widget:
 - The number of newly created treenodes is now displayed alongside the cable
   length in the contribution table.
 
+- Each user can now be included in an aggregate statistics row at the end of the
+  table by checking the checkbox in front of the username.
+
 - Add extra Refresh button to top bar.
 
 Miscellaneous:

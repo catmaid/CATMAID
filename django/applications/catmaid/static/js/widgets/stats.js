@@ -70,8 +70,12 @@
         timeinterval = 30;
       } else if ("week" === timeunit) {
         timeinterval = 7;
-      } else {
+      } else if ("day" === timeunit) {
         timeinterval = 1;
+      } else if ("all" === timeunit) {
+        timeinterval = data['days'].length;
+      } else {
+        throw new CATMAID.ValueError("Unknown time unit: " + timeunit);
       }
       // Find interval remainder of timespan in days
       var intervalRemainder = data['days'].length % timeinterval;
@@ -85,7 +89,9 @@
         // Add interval start date as column header, add "+ X days" if
         // interval is > 1.
         var text = data['daysformatted'][i];
-        if (timeinterval > 1) {
+        if (timeunit === "all") {
+          text = "All since " + text;
+        } else if (timeinterval > 1) {
           // Show remainder instead of full interval on last column, but only if
           // there is more than one day shown.
           if (i + timeinterval < data['days'].length) {
@@ -562,6 +568,7 @@
                 '<option value="week">Week</option>' +
                 '<option value="month">Month</option>' +
                 '<option value="year">Year</option>' +
+                '<option value="all">All</option>' +
               '</select>' +
             '</div>' +
           '</p>' +

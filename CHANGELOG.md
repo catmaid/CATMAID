@@ -134,6 +134,9 @@ Miscellaneous:
   back, adjust your settings (admins can do this for the whole project or
   server).
 
+- Statistics widget: The new option "All" in the time unit selection control
+  allow to aggregate user data for the whole time range.
+
 - Stacks can now be created whose planar axes have anisotropic resolution.
   The stack viewer will display these stacks correctly by scaling tiles
   separately along each axis. The tracing overlay is also compatible with these

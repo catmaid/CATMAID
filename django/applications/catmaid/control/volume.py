@@ -243,6 +243,9 @@ def volume_detail(request, project_id, volume_id):
             (volume_id, project_id))
         volume = cursor.fetchone()
 
+        if not volume:
+            raise ValueError("Could not find volume " + volume_id)
+
         # Parse bounding box into dictionary, coming in format "BOX3D(0 0 0,1 1 1)"
         bbox_matches = re.search(bbox_re, volume[8])
         if not bbox_matches or len(bbox_matches.groups()) != 6:

@@ -21,6 +21,18 @@
 
 ### Features and enhancements
 
+Layouts:
+
+- A new "Layouts" menu is shown in the top bar when a project is opened. It
+  allows to save the current window layout under a name and will show all
+  available layouts as menu entries.
+
+- Layouts store window arrangement and window sizes, subscriptions are not yet
+  stored.
+
+- Saved layouts can also be manually configured from the "Custom layouts"
+  setting in the Settings Widget.
+
 Landmarks:
 
 - Support transformation of nodes that cross space between landmark groups and

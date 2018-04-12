@@ -48,6 +48,49 @@
     return win;
   };
 
+  const SingleNode = {
+    missingViews: function(views) {
+      if (isFn(this.a.missingViews)) {
+          this.a.missingViews(views);
+      } else {
+        views.delete(this.a);
+      }
+    },
+    minStackViewers: function() {
+      var result = isFn(this.a.minStackViewers) ?
+          this.a.minStackViewers() : (validOrientations.has(this.a) ? 1 : 0);
+      return result;
+    },
+    maxStackViewers: function() {
+      var result = isFn(this.a.maxStackViewers) ?
+          this.a.maxStackViewers() : (validOrientations.has(this.a) ? 1 : 0);
+      return result;
+    },
+    regularWindows: function() {
+      var result = isFn(this.a.regularWindows) ?
+          this.a.regularWindows() : (validOrientations.has(this.a) ? 0 : 1);
+      return result;
+    },
+    makeNode: function(windows) {
+      var a = isFn(this.a.makeNode) ?
+          this.a.makeNode(windows) : windows.get(this.a);
+      return a;
+    },
+    makeRegularWindows: function(n, target) {
+      if (n === 0) {
+        return target;
+      }
+      if (isFn(this.a.makeRegularWindows)) {
+        n = this.a.makeRegularWindows(n, target);
+      } else if (!validOrientations.has(this.a)) {
+        var win = createWindow(this.a);
+        target.set(this.a, win);
+        --n;
+      }
+      return n;
+    }
+  };
+
   const Node = {
     missingViews: function(views) {
       if (isFn(this.a.missingViews)) {
@@ -138,17 +181,31 @@
     }
   };
 
-  var VNode = function(a, b) {
+  var VNode = function(a, b, ratio) {
+    this.ratio = CATMAID.tools.getDefined(ratio, 0.5);
     this.a = a;
     this.b = b;
     this.NodeType = CMWVSplitNode;
+
+    this.makeNode = function(windows) {
+      var node = VNode.prototype.makeNode.call(this, windows);
+      node.heightRatio = this.ratio;
+      return node;
+    };
   };
   VNode.prototype = Node;
 
-  var HNode = function(a, b) {
+  var HNode = function(a, b, ratio) {
+    this.ratio = CATMAID.tools.getDefined(ratio, 0.5);
     this.a = a;
     this.b = b;
     this.NodeType = CMWHSplitNode;
+
+    this.makeNode = function(windows) {
+      var node = HNode.prototype.makeNode.call(this, windows);
+      node.widthRatio = this.ratio;
+      return node;
+    };
   };
   HNode.prototype = Node;
 
@@ -157,20 +214,41 @@
   };
   ONode.prototype = OptionalNode;
 
+  var WNode = function(a) {
+    this.a = a;
+    this.NodeType = CMWWindow;
+  };
+  WNode.prototype = SingleNode;
+
   /**
    * Functions allowed for layout specification.
    */
 
-  function v(a, b) {
-    return new VNode(a, b);
+  function v(a, b, ratio) {
+    return new VNode(a, b, ratio);
   }
 
-  function h(a, b) {
-    return new HNode(a, b);
+  function h(a, b, ratio) {
+    return new HNode(a, b, ratio);
   }
 
   function o(a) {
     return new ONode(a);
+  }
+
+  function w(a) {
+    return new WNode(a);
+  }
+
+  function layout(alias, pattern) {
+    return eval(pattern);
+  }
+
+  function getViewIndex(stackViewers) {
+    return stackViewers.reduce(function(o, s) {
+      o[s.primaryStack.orientation] = s;
+      return o;
+    }, {});
   }
 
   /**
@@ -179,10 +257,7 @@
    */
   CATMAID.layoutStackViewers = function() {
     var stackViewers = project.getStackViewers();
-    var views = stackViewers.reduce(function(o, s) {
-      o[s.primaryStack.orientation] = s;
-      return o;
-    }, {});
+    var views = getViewIndex(stackViewers);
 
     var layouts = CATMAID.Layout.Settings.session.default_layouts;
     for (var i=0; i<layouts.length; ++i) {
@@ -194,6 +269,63 @@
         break;
       }
     }
+  };
+
+  function stackViewerCountMatchesLayout(stackViewers, layout) {
+    return stackViewers.length >= layout.minStackViewers() &&
+          stackViewers.length <= layout.maxStackViewers();
+  }
+
+  function windowIsStackViewer(stackViewers, win) {
+    for (var i=0; i<stackViewers.length; ++i) {
+      var stackViewer = stackViewers[i];
+      if (stackViewer._stackWindow === win) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function closeAllButStackViewers(stackViewers) {
+    var allWindows = CATMAID.rootWindow.getWindows();
+    while (allWindows.length > 0) {
+      var win = allWindows.pop();
+      if (!windowIsStackViewer(stackViewers, win)) {
+        win.close();
+      }
+    }
+  }
+
+  /**
+   * Switch to a new layout.
+   */
+  CATMAID.switchToLayout = function(newLayout) {
+    if (!confirm("Are you sure you want close all existing widgets?")) {
+      return;
+    }
+
+    var stackViewers = project.getStackViewers();
+    var viewIndex = getViewIndex(stackViewers);
+
+    if (!stackViewerCountMatchesLayout(stackViewers, newLayout._layout)) {
+      CATMAID.warn("Can't load layout, other stack viewer configuration expected");
+      return;
+    }
+    
+    // Close all open widgets
+    closeAllButStackViewers(stackViewers);
+
+    // Now test if the layout really matches
+    var matchResult = newLayout.matches(stackViewers, viewIndex);
+    if (!matchResult.matches) {
+      CATMAID.warn("Can't load layout, other window configuration expected");
+      return;
+    }
+
+    // Run new layout
+    newLayout.run(stackViewers, viewIndex, matchResult);
+
+    return true;
   };
 
   var Layout = function(spec) {
@@ -210,6 +342,11 @@
       } else {
         this._layout = eval(defaultLayouts[0]);
       }
+    }
+
+    // Special case: only a singly orientation is passed in as spec, e.g. "XY"
+    if (this._layout === XY || this._layout === XZ || this._layout === ZY) {
+      this._layout = w(this._layout);
     }
   };
 
@@ -236,13 +373,115 @@
     return defaultLayouts;
   };
 
+  var aliasedLayout = /layout\(['"]([^'"]+)['"],\s*(.+)\)/;
+
+  /**
+   * Return an object of form { name: <name>, spec: <layout-spec> } from an
+   * input of the format "layout(<name>, <layout-spec>)".
+   */
+  Layout.parseAliasedLayout = function(aliasedLayoutSpec) {
+    if (!aliasedLayoutSpec) {
+      throw new CATMAID.ValueError('Need layout spec');
+    }
+    var match = aliasedLayoutSpec.match(aliasedLayout);
+    if (!match || match.length !== 3) {
+      throw new CATMAID.ValueError('Couldn\'t parse layout: ' + aliasedLayoutSpec);
+    }
+    return {
+      name: match[1],
+      spec: match[2]
+    };
+  };
+
+  /**
+   * Add a new user layout for the passed in rootWindow.
+   *
+   * @param {String} layoutName The name of the new layout
+   * @param {Object} win        The window to create the layout from.
+   * @returns {Promise} Resolves when new layout is successfully stored.
+   */
+  Layout.addUserLayout = function(layoutName, win) {
+    var layoutSpec = CATMAID.Layout.makeLayoutSpecForWindow(win);
+    if (!layoutSpec) {
+      return Promise.reject(new CATMAID.ValueError(
+          'Could not create layout for passed in CATMAID window'));
+    }
+    layoutSpec = 'layout(\'' + layoutName + '\', ' + layoutSpec + ')';
+    let newUserLayouts = CATMAID.Layout.Settings.session.user_layouts.concat([layoutSpec]);
+    return CATMAID.Layout.Settings
+        .set( 'user_layouts', newUserLayouts, 'session')
+        .then(function() {
+          CATMAID.Layout.trigger(CATMAID.Layout.EVENT_USER_LAYOUT_CHANGED);
+        });
+  };
+
+  /**
+   * Glue code for map().
+   */
+  function mapNodeToLayoutSpec(node) {
+    /* jshint validthis: true */
+    return nodeToLayoutSpec(node, this);
+  }
+
+  function nodeToLayoutSpec(node, stackViewerMapping) {
+    if (node instanceof CMWHSplitNode) {
+      return 'h(' + nodeToLayoutSpec(node.child1, stackViewerMapping) + ', ' +
+          nodeToLayoutSpec(node.child2, stackViewerMapping) + ', ' +
+          Number(node.widthRatio).toFixed(2) + ')';
+    } else if (node instanceof CMWVSplitNode) {
+      return 'v(' + nodeToLayoutSpec(node.child1, stackViewerMapping) + ', ' +
+          nodeToLayoutSpec(node.child2, stackViewerMapping) + ', ' +
+          Number(node.heightRatio).toFixed(2) + ')';
+    } else if (node instanceof CMWTabbedNode) {
+      return 't(' + node.children.map(mapNodeToLayoutSpec, stackViewerMapping).join(', ') + ')';
+    } else if (node instanceof CMWWindow) {
+      var stackViewer = stackViewerMapping.get(node);
+      if (stackViewer) {
+        var orientation = stackViewer.primaryStack.orientation;
+        if (orientation === CATMAID.Stack.ORIENTATION_XY) {
+          return 'XY';
+        } else if (orientation === CATMAID.Stack.ORIENTATION_ZY) {
+          return 'ZY';
+        } else if (orientation === CATMAID.Stack.ORIENTATION_XZ) {
+          return 'XZ';
+        } else {
+          throw new CATMAID.ValueError("Unknown orientation " + orientation +
+              " of node " + stackViewer);
+        }
+      }
+      // Figure out what window the current display
+      var widgetInfo = CATMAID.WindowMaker.getWidgetKeyForWindow(node);
+      if (!widgetInfo) {
+        throw new CATMAID.ValueError('Could not find key for window ' +
+            node.id + ' of type ' + node.constructor.name);
+      }
+      return "'" + widgetInfo.key + "'";
+    } else {
+      throw new CATMAID.ValueError('Unknown window type: ' + node);
+    }
+  }
+
+  function toWindowMapping(stackViewer) {
+    return [stackViewer.getWindow(), stackViewer];
+  }
+
+  /**
+   * Create a new layout specification for the passed in window or return null
+   * of this is not possible.
+   */
+  Layout.makeLayoutSpecForWindow = function(rootNode) {
+    if (!rootNode.child) {
+      return null;
+    }
+    let stackViewerWindowMapping = new Map(project.getStackViewers().map(toWindowMapping));
+    return nodeToLayoutSpec(rootNode.child, stackViewerWindowMapping);
+  };
+
   /**
    * A layout is valid if all expected views are found.
    */
   Layout.prototype.matches = function(stackViewers, views) {
     var allWindows = CATMAID.rootWindow.getWindows();
-    var minStackViewers = this._layout.minStackViewers();
-    var maxStackViewers = this._layout.maxStackViewers();
 
     // Get references to stack viewer windows
     var windows = new Map();
@@ -276,8 +515,7 @@
     return {
       matches: excessWindows === 0 &&
           missingViews.size === 0 &&
-          stackViewers.length >= minStackViewers &&
-          stackViewers.length <= maxStackViewers,
+          stackViewerCountMatchesLayout(stackViewers, this._layout),
       regularWindowsToCreate: regularWindowsToCreate,
       windows: windows
     };
@@ -291,7 +529,7 @@
       let windowsLeftToCreate = this._layout.makeRegularWindows(
           matchResult.regularWindowsToCreate, windows);
       if (windowsLeftToCreate > 0) {
-        CATMAID.warn('Could not createa ' + windowsLeftToCreate + ' regular windows');
+        CATMAID.warn('Could not create ' + windowsLeftToCreate + ' regular windows');
       }
     }
 
@@ -308,10 +546,17 @@
           // four-pane layout. On the left side XY on top of XZ, on the righ ZY
           // on top of a selection table.
           default: ["h(v(XY, XZ), v(ZY, o(F1)))"]
-        }
+        },
+        user_layouts: {
+          // Users can store custom layouts in objects of the following form:
+          // layout("A layout name", h(v(XY, XZ), v(ZY, o(F1)))).
+          default: []
+        },
       }
     });
 
+  CATMAID.asEventSource(Layout);
+  Layout.EVENT_USER_LAYOUT_CHANGED = "init_user_layouts_changed";
 
   // Export layout
   CATMAID.Layout = Layout;

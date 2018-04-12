@@ -60,6 +60,11 @@ var project;
    */
   var project_menu;
   /**
+   * A menu showing available layouts.
+   * @type {Menu}
+   */
+  var layout_menu;
+  /**
    * A menu for all stacks in the current project.
    * @type {Menu}
    */
@@ -124,6 +129,10 @@ var project;
     // Do periodic update checks
     window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
 
+    CATMAID.Layout.on(CATMAID.Layout.EVENT_USER_LAYOUT_CHANGED, function () {
+      updateLayoutMenu();
+    });
+
     this.init(options);
   };
 
@@ -143,11 +152,13 @@ var project;
         },
         confirm_project_closing: {
           default: true
-        }
+        },
+
       }
     });
 
   CATMAID.Init.on(CATMAID.Init.EVENT_PROJECT_CHANGED, function () {
+    // Load user settings
     CATMAID.Client.Settings
         .load()
         .then(function () {
@@ -171,6 +182,8 @@ var project;
           });
         });
   });
+
+
 
   // The front end's root window. This should eventually become part of Client,
   // it is already initialized by it.
@@ -329,6 +342,9 @@ var project;
 
     project_menu = new Menu();
     document.getElementById( "project_menu" ).appendChild( project_menu.getView() );
+
+    layout_menu = new Menu();
+    document.getElementById( "layout_menu" ).appendChild( layout_menu.getView() );
 
     stack_menu = new Menu();
     document.getElementById( "stack_menu" ).appendChild( stack_menu.getView() );
@@ -1334,6 +1350,55 @@ var project;
     return open;
   };
 
+  function updateLayoutMenu() {
+    var layoutMenuContent = [{
+      id: 'save-current-layout',
+      title: 'Save current layout',
+      note: '',
+      action: function() {
+        // Ask for name
+        var dialog = new CATMAID.OptionsDialog();
+        dialog.appendMessage('Please enter the name for the new layout');
+        var nameInput = dialog.appendField("Name: ", 'new-layout-name', '', true);
+        dialog.onOK = function() {
+          var layoutName =nameInput.value.trim();
+          if (layoutName.length === 0) {
+            throw new CATMAID.ValueError('Please choose a valid layout name');
+          }
+          CATMAID.Layout.addUserLayout(layoutName, CATMAID.rootWindow)
+            .then(function() {
+              CATMAID.msg('Success', 'New layout "' + layoutName + '" stored');
+            })
+            .catch(CATMAID.handleError);
+        };
+        dialog.show('auto', 'auto');
+      }
+    }];
+    var userLayouts = CATMAID.Layout.Settings.session.user_layouts;
+    if (userLayouts && userLayouts.length > 0) {
+      userLayouts.forEach(function(spec) {
+        try {
+          let info = CATMAID.Layout.parseAliasedLayout(spec);
+          layoutMenuContent.push({
+            id: 'layout-' + layoutMenuContent.length,
+            title: info.name,
+            note: '',
+            action: function() {
+              let layout = new CATMAID.Layout(info.spec);
+              if (CATMAID.switchToLayout(layout)) {
+                CATMAID.msg('Success', 'Layout ' + info.name + ' loaded');
+              }
+            }
+          });
+        } catch (error) {
+          CATMAID.warn(error);
+        }
+      });
+    }
+
+    layout_menu.update(layoutMenuContent);
+  }
+
   /**
    * Open a stack from a stack info API JSON response. Open the project or, if
    * already opened, add the stack to the opened project. If not opening a new
@@ -1363,6 +1428,13 @@ var project;
       return Promise.all([project.updateInterpolatableLocations(),
           CATMAID.DataStoreManager.reloadAll()]).then(function () {
         CATMAID.Init.trigger(CATMAID.Init.EVENT_PROJECT_CHANGED, project);
+
+        updateLayoutMenu();
+
+        // Make menus visible if a project is loaded, otherwise hide them.
+        var layoutMenuBox = document.getElementById( "layoutmenu_box" );
+        layoutMenuBox.firstElementChild.lastElementChild.style.display = "none";
+        layoutMenuBox.style.display = "block";
 
         // Update the projects stack menu. If there is more than one stack
         // linked to the current project, a submenu for easy access is

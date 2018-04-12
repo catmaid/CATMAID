@@ -106,6 +106,22 @@
   };
 
   /**
+   * Helper function to create a textarea input field with label.
+   */
+  DOM.createTextAreaSetting = function(name, val, helptext, handler, rows, cols) {
+    rows = CATMAID.tools.getDefined(rows, 4);
+    cols = CATMAID.tools.getDefined(cols, 50);
+    var input = $('<textarea/>')
+      .attr('rows', rows)
+      .attr('cols', cols)
+      .addClass("ui-corner-all").val(val);
+    if (handler) {
+      input.change(handler);
+    }
+    return CATMAID.DOM.createLabeledControl(name, input, helptext);
+  };
+
+  /**
    * Helper function to create a number input field with label.
    */
   DOM.createNumericInputSetting = function(name, val, step, helptext, handler)

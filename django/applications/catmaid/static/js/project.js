@@ -307,6 +307,7 @@
       self.id = 0;
       document.getElementById( "content" ).style.display = "block";
       document.getElementById( "stackmenu_box" ).style.display = "none";
+      document.getElementById( "layoutmenu_box" ).style.display = "none";
       document.getElementById( "stack_menu" ).style.display = "none";
       // TODO: bars should be unset by tool on unregister
       document.getElementById("toolbox_edit").style.display = "none";
@@ -317,7 +318,8 @@
 
       CATMAID.statusBar.replaceLast('');
       CATMAID.statusBar.printCoords('');
-
+      
+      this.trigger(Project.EVENT_PROJECT_DESTROYED);
       project = null;
     };
 
@@ -610,6 +612,7 @@
   Project.EVENT_STACKVIEW_CLOSED = 'project_stackview_closed';
   Project.EVENT_STACKVIEW_FOCUS_CHANGED = 'project_stackview_focus_changed';
   Project.EVENT_LOCATION_CHANGED = 'project_location_changed';
+  Project.EVENT_PROJECT_DESTROYED = 'project_project_destroyed';
 
   Project.prototype.updateInterpolatableLocations = function() {
     var self = this;

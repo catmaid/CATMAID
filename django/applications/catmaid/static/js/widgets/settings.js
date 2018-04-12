@@ -470,6 +470,41 @@
           CATMAID.Layout.Settings,
           'default_layouts',
           SETTINGS_SCOPE));
+
+      // User layouts
+      var userLayoutInput = CATMAID.DOM.createTextAreaSetting(
+          "Custom layouts",
+          CATMAID.Layout.Settings[SETTINGS_SCOPE].user_layouts.join(', '),
+          "A list of custom layouts that will be be available from the " +
+          "layouts menu. The configuration is the same as for the default " +
+          "layout, but each entry has to be wrapped in a layout() function " +
+          "to provide an alias for the layout. For instance, an entry named " +
+          "\"My layout\" with a 3D Viewer split screen woulf look like this: " +
+          "layout(\"My layout\", h(XY, X3D, ratio)). The ratio is optional " +
+          "and is expected to be in range [0,1].",
+          function() {
+            let userLayouts = CATMAID.Layout.parseLayoutSpecList(this.value);
+            CATMAID.Layout.Settings
+                .set(
+                  'user_layouts',
+                  userLayouts,
+                  SETTINGS_SCOPE)
+                 .then(function() {
+                   CATMAID.Layout.trigger(CATMAID.Layout.EVENT_USER_LAYOUT_CHANGED);    
+                 })
+                 .catch(CATMAID.handleError);
+          },
+          3,
+          70);
+      $('input', userLayoutInput)
+        .css('width', '30em')
+        .css('font-family', 'monospace');
+
+      ds.append(wrapSettingsControl(
+          userLayoutInput,
+          CATMAID.Layout.Settings,
+          'user_layouts',
+          SETTINGS_SCOPE));
     };
 
     /*

@@ -996,7 +996,7 @@ def update_cache(project_id, data_type, orientations, steps,
             if update_json_cache:
                 data = ujson.dumps(result_tuple)
                 cursor.execute("""
-                    INSERT node_query_cache (project_id, orientation, depth, update_time, json_data)
+                    INSERT INTO node_query_cache (project_id, orientation, depth, update_time, json_data)
                     VALUES (%s, %s, %s, now(), %s)
                     ON CONFLICT (project_id, orientation, depth)
                     DO UPDATE SET json_data = EXCLUDED.json_data, update_time = EXCLUDED.update_time;

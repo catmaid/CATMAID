@@ -16,7 +16,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--clean', action='store_true', dest='clean',
-            default=True, help='Remove all existing cache data before update'),
+            default=False, help='Remove all existing cache data before update'),
         parser.add_argument('--project_id', dest='project_id', nargs='+',
             default=False, help='Compute only statistics for these projects only (otherwise all)'),
         parser.add_argument('--type', dest='data_type', default="msgpack",

@@ -664,11 +664,11 @@
     if (yc >= 0)
       top  = -(yc % effectiveTileHeight);
     else
-      top  = -((yc + 1) % effectiveTileHeight) - effectiveTileHeight + 1;
+      top  = (-(yc % effectiveTileHeight) - effectiveTileHeight) % effectiveTileHeight;
     if (xc >= 0)
       left = -(xc % effectiveTileWidth);
     else
-      left = -((xc + 1) % effectiveTileWidth) - effectiveTileWidth + 1;
+      left = (-(xc % effectiveTileWidth) - effectiveTileWidth) % effectiveTileWidth;
 
     // Efficient mode: omit tiles at the periphery that are only partially
     // visible.

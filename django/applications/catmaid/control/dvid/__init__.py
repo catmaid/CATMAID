@@ -139,7 +139,7 @@ class DVIDClient:
             'dimension': dimension,
             'resolution': resolution,
             'image_base': image_base,
-            'zoom_levels': len(levels) - 1,
+            'num_zoom_levels': len(levels) - 1,
             'file_extension': 'jpg:80',
             'tile_width': tile_size[0],
             'tile_height': tile_size[1],

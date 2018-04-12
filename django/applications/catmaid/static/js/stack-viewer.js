@@ -53,7 +53,10 @@
     this.yc = 0;
     this.xc = 0;
 
-    this.scale = 1 / Math.pow( 2, this.s );
+    /**
+     * Ratio of screen pixels to (scale level 0) stack space pixels.
+     */
+    this.scale = this.primaryStack.effectiveDownsampleFactor(0) / this.primaryStack.effectiveDownsampleFactor(this.s);
     this.old_scale = this.scale;
 
     this.navigateWithProject = true;
@@ -379,8 +382,8 @@
    * mouse event handled by the stack.
    */
   StackViewer.prototype.screenPosition = function () {
-    var width = this.viewWidth / this.scale / this.primaryStack.anisotropy.x;
-    var height = this.viewHeight / this.scale / this.primaryStack.anisotropy.y;
+    var width = this.viewWidth / this.scale / this.primaryStack.anisotropy(0).x;
+    var height = this.viewHeight / this.scale / this.primaryStack.anisotropy(0).y;
     var l = {
       top: this.y - height / 2,
       left: this.x - width / 2
@@ -438,8 +441,8 @@
    *  @param stackBox {{min: {x, y, z}, max: {x, y, z}}}
    */
   StackViewer.prototype.stackViewBox = function (stackBox) {
-    var w2 = this.viewWidth / this.scale / 2 / this.primaryStack.anisotropy.x;
-    var h2 = this.viewHeight / this.scale / 2 / this.primaryStack.anisotropy.y;
+    var w2 = this.viewWidth / this.scale / 2 / this.primaryStack.anisotropy(0).x;
+    var h2 = this.viewHeight / this.scale / 2 / this.primaryStack.anisotropy(0).y;
 
     stackBox.min.x = this.x - w2;
     stackBox.min.y = this.y - h2;
@@ -474,8 +477,8 @@
    *  @param padScreenZ z-padding in screen coordinates (==stack coordinates as z is not scaled)
    */
   StackViewer.prototype.paddedStackViewBox = function (stackBox, padScreenX, padScreenY, padScreenZ) {
-    var w2 = ( this.viewWidth / 2 + padScreenX ) / this.scale / this.primaryStack.anisotropy.x;
-    var h2 = ( this.viewHeight / 2 + padScreenY ) / this.scale / this.primaryStack.anisotropy.y;
+    var w2 = ( this.viewWidth / 2 + padScreenX ) / this.scale / this.primaryStack.anisotropy(0).x;
+    var h2 = ( this.viewHeight / 2 + padScreenY ) / this.scale / this.primaryStack.anisotropy(0).y;
     var d2 = 0.5 + padScreenZ;
 
     stackBox.min.x = this.x - w2;
@@ -543,8 +546,8 @@
       }
     };
 
-    this.yc = Math.floor( this.y * this.scale * this.primaryStack.anisotropy.y - ( this.viewHeight / 2 ) );
-    this.xc = Math.floor( this.x * this.scale * this.primaryStack.anisotropy.x - ( this.viewWidth / 2 ) );
+    this.yc = Math.floor( this.y * this.scale * this.primaryStack.anisotropy(0).y - ( this.viewHeight / 2 ) );
+    this.xc = Math.floor( this.x * this.scale * this.primaryStack.anisotropy(0).x - ( this.viewWidth / 2 ) );
 
     // If using WebGL/Pixi, must explicitly tell all layers beforehand that a
     // a redraw is beginning.
@@ -657,7 +660,7 @@
       {
         var sExtents = this.getZoomExtents();
         this.s = Math.max( sExtents.min, Math.min( sExtents.max, sp ) );
-        this.scale = 1.0 / Math.pow( 2, this.s );
+        this.scale = 1.0 / this.primaryStack.effectiveDownsampleFactor(this.s);
       }
 
       this.x = this.primaryStack.projectToUnclampedStackX( zp, yp, xp ) + this._offset[0];

@@ -45,7 +45,7 @@ class ImportExportTests(TestCase):
         """Import a set of new projects, stacks and stack groups. This tests
         only the actual import. Retrieving the data to import from different
         sources is not part of this test.
-        """ 
+        """
         project_url = 'https://catmaid-test/'
         data_folder = '/tmp/catmaid-test/'
         existing_projects = list(Project.objects.all())
@@ -222,16 +222,16 @@ class ImportExportTests(TestCase):
                 'stacks': [{
                     'broken_sections': [],
                     'title': 'test-stack-1',
-                    'dimension': '(7,17,23)',
+                    'dimension': '(7, 17, 23)',
                     'resolution': '(2,3,5)',
-                    'zoomlevels': -1,
+                    'downsample_factors': None,
                     'orientation': 0,
                     'translation': '(0,0,0)',
                     'metadata': '',
                     'comment': 'Test comment',
                     'attribution': 'Test attribution',
                     'description': 'Simple test data',
-                    'canary_location': '(0,0,0)',
+                    'canary_location': '(0, 0, 0)',
                     'placeholder_color': '(0,0,0,1)',
                     'mirrors': [{
                         'title': 'test-mirror-1',
@@ -246,15 +246,15 @@ class ImportExportTests(TestCase):
                     'broken_sections': [],
                     'comment': None,
                     'title': 'test-stack-2',
-                    'dimension': '(7,17,23)',
+                    'dimension': '(7, 17, 23)',
                     'metadata': '',
                     'resolution': '(2,3,5)',
-                    'zoomlevels': -1,
+                    'downsample_factors': None,
                     'orientation': 0,
                     'translation': '(0,0,0)',
                     'attribution': None,
                     'description': '',
-                    'canary_location': '(0,0,0)',
+                    'canary_location': '(0, 0, 0)',
                     'placeholder_color': '(0.5,0.4,0.3,1)',
                     'mirrors': [{
                         'title': 'test-mirror-2',
@@ -269,15 +269,15 @@ class ImportExportTests(TestCase):
                     'broken_sections': [],
                     'comment': None,
                     'title': 'test-stack-3',
-                    'dimension': '(4,34,9)',
+                    'dimension': '(4, 34, 9)',
                     'metadata': 'Test meta data',
                     'resolution': '(1,2,3)',
-                    'zoomlevels': -1,
+                    'downsample_factors': None,
                     'orientation': 0,
                     'translation': '(0,0,0)',
                     'attribution': None,
                     'description': '',
-                    'canary_location': '(1,2,3)',
+                    'canary_location': '(1, 2, 3)',
                     'placeholder_color': '(0,0,0.3,0.1)',
                     'mirrors': [{
                         'title': 'test-mirror-3',

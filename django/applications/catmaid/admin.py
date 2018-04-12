@@ -259,7 +259,7 @@ class ProjectAdmin(GuardedModelAdmin):
 
 
 class StackAdmin(GuardedModelAdmin):
-    list_display = ('title', 'dimension', 'resolution', 'num_zoom_levels')
+    list_display = ('title', 'dimension', 'resolution',)
     search_fields = ['title', 'comment']
     inlines = [ProjectStackInline, StackStackGroupInline, StackMirrorInline]
     save_as = True

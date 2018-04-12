@@ -1277,8 +1277,8 @@ SkeletonAnnotations.TracingOverlay.prototype.createViewMouseMoveFn = function(st
     var m = CATMAID.ui.getMouse(e, stackViewer.getView(), true);
     if (m) {
       var screenPosition = stackViewer.screenPosition();
-      coords.lastX = screenPosition.left + m.offsetX / stackViewer.scale / stackViewer.primaryStack.anisotropy.x;
-      coords.lastY = screenPosition.top  + m.offsetY / stackViewer.scale / stackViewer.primaryStack.anisotropy.y;
+      coords.lastX = screenPosition.left + m.offsetX / stackViewer.scale / stackViewer.primaryStack.anisotropy(0).x;
+      coords.lastY = screenPosition.top  + m.offsetY / stackViewer.scale / stackViewer.primaryStack.anisotropy(0).y;
       sCoords.x = coords.lastX;
       sCoords.y = coords.lastY;
       sCoords.z = stackViewer.z;
@@ -2600,7 +2600,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   // current section, but are created to represent the connection between a
   // child and a parent node that are not part of this section either.
   let nAddedVirtualNodes = 0;
-  
+
   for (var i=0, max=jsonNodes.length; i<max; ++i) {
     var a = jsonNodes[i];
     var n = this.nodes[a[0]];
@@ -3880,8 +3880,8 @@ SkeletonAnnotations.TracingOverlay.prototype.selectRadius = function(treenode_id
      */
     function toStack(r)
     {
-      var scaleX = 1 / (self.stackViewer.scale * self.stackViewer.primaryStack.anisotropy.x);
-      var scaleY = 1 / (self.stackViewer.scale * self.stackViewer.primaryStack.anisotropy.y);
+      var scaleX = 1 / (self.stackViewer.scale * self.stackViewer.primaryStack.anisotropy(0).x);
+      var scaleY = 1 / (self.stackViewer.scale * self.stackViewer.primaryStack.anisotropy(0).y);
       var offsetX = self.stackViewer.x - self.stackViewer.viewWidth * scaleX / 2;
       var offsetY = self.stackViewer.y - self.stackViewer.viewHeight * scaleY / 2;
       return {
@@ -4019,8 +4019,8 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
    * Transform a layer coordinate into stack space.
    */
   function toStack(r) {
-      var scaleX = 1 / (self.stackViewer.scale * self.stackViewer.primaryStack.anisotropy.x);
-      var scaleY = 1 / (self.stackViewer.scale * self.stackViewer.primaryStack.anisotropy.y);
+      var scaleX = 1 / (self.stackViewer.scale * self.stackViewer.primaryStack.anisotropy(0).x);
+      var scaleY = 1 / (self.stackViewer.scale * self.stackViewer.primaryStack.anisotropy(0).y);
       var offsetX = self.stackViewer.x - self.stackViewer.viewWidth * scaleX / 2;
       var offsetY = self.stackViewer.y - self.stackViewer.viewHeight * scaleY / 2;
       return {
@@ -5399,9 +5399,9 @@ SkeletonAnnotations.Tag = new (function() {
       var stack = stackViewer.primaryStack;
       var screenOrigin = stackViewer.screenPosition();
       var screenPos = [
-        stackViewer.scale * stack.anisotropy.x *
+        stackViewer.scale * stack.anisotropy(0).x *
           (stack.projectToUnclampedStackX(atn.z, atn.y, atn.x) - screenOrigin.left),
-        stackViewer.scale * stack.anisotropy.y *
+        stackViewer.scale * stack.anisotropy(0).y *
           (stack.projectToUnclampedStackY(atn.z, atn.y, atn.x) - screenOrigin.top),
       ];
       this.tagbox = $("<div class='tagBox' id='tagBoxId" + atnID +

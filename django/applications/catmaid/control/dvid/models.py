@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 from django.conf import settings
 from catmaid.control.dvid import get_server_info
 
+from six.moves import map, zip
 
 class DVIDDimension:
     def __init__(self, x, y, z):
@@ -23,8 +24,11 @@ class DVIDStack:
         self.title = stack_id
         dvid_url = settings.DVID_URL.rstrip('/')
         levels = stack_data['Extended']['Levels']
-        self.num_zoom_levels = len(levels.keys()) - 1
         r = levels['0']['Resolution']
+        self.downsample_factors = [
+            [a / b for (a, b) in zip(levels[str(k)]['Resolution'], r)]
+            for k in sorted(map(int, levels.keys()))] # Convert to int to prevent lexographic sort.
+        self.num_zoom_levels = len(levels.keys()) - 1
         self.resolution = DVIDDimension(r[0], r[1], r[2])
         ts = levels['0']['TileSize']
         self.description = ''

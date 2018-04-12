@@ -2168,6 +2168,23 @@ var WindowMaker = new function()
      return $.extend(true, {}, creators[widgetKey]);
   };
 
+  /**
+   * Return a widget and its key for the passed in window if no wiget is known
+   * for the window.
+   */
+  this.getWidgetKeyForWindow = function(win) {
+    for (let key of windows.keys()) {
+      let widgetInfo = windows.get(key);
+      if (widgetInfo && widgetInfo.has(win)) {
+        return {
+          widget: widgetInfo.get(win),
+          key: key
+        };
+      }
+    }
+    return null;
+  };
+
 }();
 
 
@@ -2192,5 +2209,7 @@ var WindowMaker = new function()
   CATMAID.registerState = function(type, options) {
     WindowMaker.registerState(type, options);
   };
+
+  CATMAID.WindowMaker = WindowMaker;
 
 })(CATMAID);

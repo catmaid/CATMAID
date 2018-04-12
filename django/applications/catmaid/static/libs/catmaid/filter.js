@@ -1062,7 +1062,8 @@
             });
             var selectedVolume = options.volumeId;
             // Create actual element based on the returned data
-            var node = CATMAID.DOM.createRadioSelect('Volumes', volumes, selectedVolume);
+            var node = CATMAID.DOM.createRadioSelect('Volumes', volumes,
+                selectedVolume, true);
             // Add a selection handler
             node.onchange = function(e) {
               options.volumeId = e.target.value;

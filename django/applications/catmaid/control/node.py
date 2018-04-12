@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import copy
 import json
 import msgpack
 import ujson
@@ -86,6 +87,23 @@ class BasicNodeProvider(object):
                 include_labels, with_relation_map), 'json'
 
 
+def get_extra_nodes(params, project_id, explicit_treenode_ids,
+        explicit_connector_ids, include_labels, with_relation_map):
+    explicit_node_params = copy.deepcopy(params)
+    # Update params so tha we don't query any nodes spatially
+    explicit_node_params['left'] = float('inf')
+    explicit_node_params['right'] = float('inf')
+    explicit_node_params['top'] = float('inf')
+    explicit_node_params['bottom'] = float('inf')
+    explicit_node_params['z1'] = float('inf')
+    explicit_node_params['z2'] = float('inf')
+    explicit_node_params['halfz'] = float('inf')
+
+    node_provider = Postgis2dNodeProvider()
+    return node_provider.get_tuples(explicit_node_params, project_id,
+        explicit_treenode_ids, explicit_connector_ids, include_labels,
+        with_relation_map)
+
 class CachedJsonNodeNodeProvder(BasicNodeProvider):
     """Retrieve cached msgpack data from the node_query_cache table.
     """
@@ -103,7 +121,24 @@ class CachedJsonNodeNodeProvder(BasicNodeProvider):
         rows = cursor.fetchone()
 
         if rows and rows[0]:
-            return rows[0], 'json'
+            tuples = rows[0]
+            # If there are exta nodes required, query them explicitely using a
+            # regular Postgis 2D query. Inject the result into cached data.
+            if explicit_treenode_ids or explicit_connector_ids:
+                extra_tuples, extra_type = get_extra_nodes(params, project_id,
+                    explicit_treenode_ids, explicit_connector_ids, include_labels,
+                    with_relation_map)
+                if extra_type != 'json':
+                    raise ValueError("Unexpected type")
+
+                if len(tuples) == 5:
+                    tuples.append([extra_tuples])
+                elif len(tuples) == 6:
+                    tuples[5].append(extra_tuples)
+                else:
+                    raise ValueError("Unexpected cached JSON tuple format")
+
+            return tuples, 'json'
         else:
             return None, None
 
@@ -123,7 +158,27 @@ class CachedJsonTextNodeProvder(BasicNodeProvider):
         rows = cursor.fetchone()
 
         if rows and rows[0]:
-            return rows[0][2:-2], 'json_text'
+            tuples = rows[0]
+            # If there are exta nodes required, query them explicitely using a
+            # regular Postgis 2D query. Inject the result into cached data.
+            if explicit_treenode_ids or explicit_connector_ids:
+                extra_tuples, extra_type = get_extra_nodes(params, project_id,
+                    explicit_treenode_ids, explicit_connector_ids, include_labels,
+                    with_relation_map)
+                if extra_type != 'json':
+                    raise ValueError("Unexpected type")
+
+                extra_tuples_json = json.dumps(extra_tuples)
+                if tuples[-2] == '}':
+                    # If cached response doesn't contain any extra nodes, add a
+                    # new field
+                    tuples = tuples[0:-1] + ', [' + extra_tuples_json + ']]'
+                elif tuples[-2] == ']':
+                    tuples = tuples[0:-2] + ', ' + extra_tuples_json + ']]'
+                else:
+                    raise ValueError("Unexpected cached JSON text tuple format")
+
+            return tuples, 'json_text'
         else:
             return None, None
 
@@ -141,8 +196,31 @@ class CachedMsgpackNodeProvder(BasicNodeProvider):
             LIMIT 1
         """, (project_id, params['z1']))
         rows = cursor.fetchone()
+
         if rows and rows[0]:
-            return bytes(rows[0]), 'msgpack'
+            tuples = rows[0]
+            # If there are exta nodes required, query them explicitely using a
+            # regular Postgis 2D query. Inject the result into cached data.
+            if explicit_treenode_ids or explicit_connector_ids:
+                extra_tuples, extra_type = get_extra_nodes(params, project_id,
+                    explicit_treenode_ids, explicit_connector_ids, include_labels,
+                    with_relation_map)
+                if extra_type != 'json':
+                    raise ValueError("Unexpected type")
+
+                # To inject msgpack data, we expect a five element list, which
+                # means the first byte is '\x95'. For now an error is raised if,
+                # the first byte is something else.
+                if tuples[0] != b'\x95':
+                    raise ValueError("Unexpected cached Msgpack tuple format")
+
+                extra_msgpack = msgpack.packb(extra_tuples)
+
+                # Extend the five-element list with extra tuples by making it a
+                # six element list and just appending the extra list
+                tuples = b'\x96' + tuples[1:] + extra_msgpack
+
+            return bytes(tuples), 'msgpack'
         else:
             return None, None
 
@@ -961,9 +1039,9 @@ def node_list_tuples(request, project_id=None, provider=None):
     and connector IDs can be provided to make sure they are included in the
     result set, regardless of intersection.
 
-    Returned is an array with four entries:
+    Returned is an array with five entries, plus optionally a sixth one
 
-    [[treenodes], [connectors], {labels}, node_limit_reached, {relation_map}]
+    [[treenodes], [connectors], {labels}, node_limit_reached, {relation_map}, {exstraNodes}]
 
     The list of treenodes has elements of this form:
 

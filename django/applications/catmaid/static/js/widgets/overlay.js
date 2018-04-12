@@ -2470,11 +2470,45 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
 
   var jsonNodes = jso[0];
   var jsonConnectors = jso[1];
+  var labelData = jso[2];
+  var hitNodeLimit = jso[3];
+  var relationMap = jso[4];
+  var extraData = jso[5];
 
-  var transmittedRelations = Object.keys(jso[4]);
+  // If extra data was submitted (e.g. to augment cached data), add this data to
+  // other fields.
+  if (extraData) {
+    for (var i=0, imax=extraData.length; i<imax; ++i) {
+      let d = extraData[i];
+      // Exta treenodes
+      if (d[0] && d[0].length > 0) {
+        Array.prototype.push.apply(jsonNodes, d[0]);
+      }
+      // Extra connectors
+      if (d[1] && d[1].length > 0) {
+        Array.prototype.push.apply(jsonConnectors, d[1]);
+      }
+      // Extra labels
+      if (d[2]) {
+        for (var l in d[2]) {
+          labelData[l] = d[2][l];
+        }
+      }
+      // Extra node limit hit
+      hitNodeLimit = hitNodeLimit && d[3];
+      // Extra relation map
+      if (d[4]) {
+        for (var r in d[4]) {
+          relationMap[r] = d[4][r];
+        }
+      }
+    }
+  }
+
+  var transmittedRelations = Object.keys(relationMap);
   if (transmittedRelations.length > 0) {
     // Update cached copy
-    this.relationMap = jso[4];
+    this.relationMap = relationMap;
   } else if (!this.relationMap) {
     this.relationMap = {};
   }
@@ -2488,6 +2522,9 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   // Populate Nodes
   for (var i=0, max=jsonNodes.length; i<max; ++i) {
     var a = jsonNodes[i];
+    if (this.nodes[a[0]]) {
+      continue;
+    }
     // a[0]: ID, a[1]: parent ID, a[2]: x, a[3]: y, a[4]: z, a[5]: confidence
     // a[6]: radius, a[7]: skeleton_id, a[8]: user_id, a[9]: user_id
     var stackZ = primaryStack.projectToUnclampedStackZ(a[4], a[3], a[2]);
@@ -2509,6 +2546,9 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   }, null);
   for (var i=0, max=jsonConnectors.length; i<max; ++i) {
     var a = jsonConnectors[i];
+    if (this.nodes[a[0]]) {
+      continue;
+    }
     var links = a[7];
     // Determine the connector node type. For now eveything with no or only
     // pre or post treenodes is treated as a synapse. If there are only
@@ -2635,7 +2675,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
 
   if (this.getLabelStatus()) {
     // For every node ID
-    var m = jso[2];
+    var m = labelData;
     // Scale labels relative to confidence text labels to account for overlay scaling.
     var fontSize = parseFloat(this.graphics.ArrowLine.prototype.confidenceFontSize) * 0.75;
     var labeledNodes = Object.keys(m);
@@ -2657,7 +2697,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   // limit.
   let msg = "Loaded " + nAddedTreenodes + " nodes, " + nAddedConnectors +
       " connectors and " + nAddedVirtualNodes + " virtual nodes";
-  if (true === jso[3]) {
+  if (hitNodeLimit) {
     msg = "Warning: Did not retrieve all visible nodes--too many! Zoom in to " +
       "constrain the field of view. " + msg;
     CATMAID.warn(msg);

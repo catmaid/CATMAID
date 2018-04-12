@@ -199,6 +199,10 @@ Miscellaneous:
 - Review: fix node selection error appearing during review of some virtual
   nodes.
 
+- Tracing layer: when trying to create a second presynaptic node to a connector,
+  a warning is now shown instead of a full error dialog. Also the previously
+  created target treenode isn't created anymore in this case.
+
 
 ## 2018.02.16
 

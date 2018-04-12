@@ -2148,11 +2148,11 @@ SkeletonAnnotations.TracingOverlay.prototype.createPostsynapticTreenode = functi
 };
 
 var countRelationNames = function(counts, l) {
-  let sum = counts[l.relationName];
+  let sum = counts[l.relation_name];
   if (sum === undefined) {
     sum = 0;
   }
-  counts[l.relationName] = sum + 1;
+  counts[l.relation_name] = sum + 1;
   return counts;
 };
 

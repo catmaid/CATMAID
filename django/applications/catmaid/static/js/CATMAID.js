@@ -14,7 +14,7 @@
         return;
       }
     }
-    console.group("Undhandled CATMAID error");
+    console.group("Unhandled CATMAID error");
     // Log the error detail to the console
     console.log(detail);
 

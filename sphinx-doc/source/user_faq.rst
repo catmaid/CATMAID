@@ -20,6 +20,12 @@ or avconv::
 
   avconv -i input.webm -vcodec copy output.mov
 
+Also note that ``ffmpeg`` (or rather the H264 codec) expects the input to have
+a width and height of an even number. To crop the input movie on the fly, the
+following option can be added: ``-filter:v "crop=<width>:<height>:0:0"``,
+replacing ``<width>`` and ``<height>`` with the desired width and height in
+pixels.
+
 .. _faq-source-subscriptions:
 
 What are skeleton source subscriptions?

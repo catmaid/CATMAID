@@ -72,6 +72,9 @@ Landmarks:
 
 - Text scaling can be adjusted from the View tab.
 
+- The width and height of animation exports are now restricted to even numbers.
+  This is required by the H264 codec we refer to in our documentation.
+
 Graph widget:
 
 - The old "Graph" tab was split into two: "Nodes" and "Edges", each with

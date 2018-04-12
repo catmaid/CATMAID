@@ -7427,6 +7427,17 @@
     dialog.show(400, "auto", true);
 
     function handleOK() {
+      var width = parseInt(frameWidthField.value);
+      var height = parseInt(frameHeightField.value);
+
+      if (!width || width % 2 === 1) {
+        throw new CATMAID.Warning("Please an even number as width");
+      }
+      if (!height || height % 2 === 1) {
+        throw new CATMAID.Warning("Please an even number as height");
+      }
+
+
       /* jshint validthis: true */ // `this` is bound to this WebGLApplication
       $.blockUI({message: '<img src="' + CATMAID.staticURL +
           'images/busy.gif" /> <span>Rendering animation frame ' +
@@ -7452,9 +7463,6 @@
 
         try {
           var framerate = parseInt(framerateField.value);
-
-          var width = parseInt(frameWidthField.value);
-          var height = parseInt(frameHeightField.value);
 
           // Collect options
           var nframes;

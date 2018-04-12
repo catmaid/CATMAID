@@ -7511,11 +7511,6 @@
           var onDone = (function(frames, canceled) {
             if (canceled) {
               CATMAID.warn("Animation export canceled");
-              // Reset camera view
-              this.space.view.setView(originalCameraView.target,
-                  originalCameraView.position, originalCameraView.up,
-                  originalCameraView.zoom, originalCameraView.orthographic);
-              this.space.render();
             } else {
               // Export movie
               var output = Whammy.fromImageArray(frames, framerate);
@@ -7523,6 +7518,14 @@
 
               // Reset visibility and unblock UI
               this.space.setSkeletonVisibility(visMap);
+            }
+
+            if (options.restoreView || canceled) {
+              // Reset camera view
+              this.space.view.setView(originalCameraView.target,
+                  originalCameraView.position, originalCameraView.up,
+                  originalCameraView.zoom, originalCameraView.orthographic);
+              this.space.render();
             }
 
             if (reload) {

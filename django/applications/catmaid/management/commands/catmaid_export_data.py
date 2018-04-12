@@ -8,7 +8,8 @@ from catmaid.control.neuron_annotations import (get_annotated_entities,
         get_annotation_to_id_map)
 from catmaid.control.tracing import check_tracing_setup
 from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
-        Relation, Connector, Project, Treenode, TreenodeConnector, User)
+        Relation, Connector, Project, Treenode, TreenodeClassInstance,
+        TreenodeConnector, User)
 
 from six.moves import input, map
 
@@ -206,6 +207,22 @@ class Exporter():
                         len(all_annotations), len(all_annotation_links),
                         ", ".join([a.name for a in all_annotations])))
 
+            # Export tags
+            if self.export_tags and 'labeled_as' in relations:
+                tag_links = TreenodeClassInstance.objects.select_related('class_instance').filter(
+                        project=self.project,
+                        class_instance__class_column=classes['label'],
+                        relation_id=relations['labeled_as'],
+                        treenode__skeleton_id__in=skeleton_id_constraints)
+                tags = [t.class_instance for t in tag_links]
+                tag_names = [t.name for t in tags]
+
+                self.to_serialize.append(tags)
+                self.to_serialize.append(tag_links)
+
+                logger.info("Exporting {n_tags} tags, part of {n_links} links: {tags}".format(
+                    n_tags=len(tags), n_links=tag_links.count(), tags=', '.join(tag_names)))
+
             # TODO: Export reviews
         else:
             # Export treenodes
@@ -222,6 +239,17 @@ class Exporter():
                         project=self.project))
                 self.to_serialize.append(TreenodeConnector.objects.filter(
                         project=self.project))
+
+            # Export all tags
+            if self.export_tags:
+                tags = ClassInstance.objects.filter(project=self.project,
+                        class_column=classes['label'])
+                tag_links = TreenodeClassInstance.objects.filter(project=self.project,
+                        class_instance__class_column=classes['label'],
+                        relation_id=relations['labeled_as'])
+
+                self.to_serialize.append(tags)
+                self.to_serialize.append(tag_links)
 
             # TODO: Export reviews
 

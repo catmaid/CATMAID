@@ -830,6 +830,10 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   // Custom cursor for tracing
   this.updateCursor();
   this.view.onmousemove = this.createViewMouseMoveFn(this.stackViewer, this.coords);
+  // We don't want browser contet menus on the tracing layer
+  this.view.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+  });
 
   this.paper = d3.select(this.view)
                   .append('svg')

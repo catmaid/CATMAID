@@ -203,6 +203,8 @@ Miscellaneous:
   a warning is now shown instead of a full error dialog. Also the previously
   created target treenode isn't created anymore in this case.
 
+- Tracing layer: prevent browser context menu on tracing overlay right click.
+
 
 ## 2018.02.16
 

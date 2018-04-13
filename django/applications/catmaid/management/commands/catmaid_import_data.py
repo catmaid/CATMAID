@@ -415,7 +415,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--source', dest='source', default=None,
-            help='The ID of the source project')
+            help='The ID of the source project or the path to a file to import')
         parser.add_argument('--target', dest='target', default=None,
             help='The ID of the target project')
         parser.add_argument('--user', dest='user', default=None,

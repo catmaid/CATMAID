@@ -347,7 +347,7 @@ def export_project_data(projects):
             'title': row[2],
             'dimension': str(row[3]),
             'resolution': row[4],
-            'downsample_factors': None if row[5] is None else str(row[5]),
+            'downsample_factors': None if row[5] is None else [str(r) for r in row[5]],
             'metadata': row[6],
             'comment': row[7],
             'attribution': row[8],

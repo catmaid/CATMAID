@@ -110,15 +110,20 @@ running on ``localhost`` using the `Requests Python package
 .. code-block:: python
 
     import requests
-    from requests.auth import AuthBase
+    from requests.auth import HTTPBasicAuth
 
-    class CatmaidApiTokenAuth(AuthBase):
-        """Attaches HTTP X-Authorization Token headers to the given Request."""
-        def __init__(self, token):
+    class CatmaidApiTokenAuth(HTTPBasicAuth):
+        """Attaches HTTP X-Authorization Token headers to the given Request.
+        Optionally, Basic HTTP Authentication can be used in parallel.
+        """
+        def __init__(self, token, username=None, password=None):
+            super(CatmaidApiTokenAuth, self).__init__(username, password)
             self.token = token
 
         def __call__(self, r):
             r.headers['X-Authorization'] = 'Token {}'.format(self.token)
+            if self.username and self.password:
+                super(CatmaidApiTokenAuth, self).__call__(r)
             return r
 
     # Replace these fake values with your own.
@@ -126,7 +131,11 @@ running on ``localhost`` using the `Requests Python package
     project_id = 1
     object_ids = [42]
 
-    response = requests.post(
+    label_response = requests.get(
+            'https://localhost/{}/labels'.format(project_id),
+            auth=CatmaidApiTokenAuth(token))
+
+    annotation_response = requests.post(
             'https://localhost/{}/annotations/query'.format(project_id),
             auth=CatmaidApiTokenAuth(token),
             data={'object_ids': object_ids})

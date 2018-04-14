@@ -2642,7 +2642,7 @@
     var templateLineOptions = {
       'edgeType': 'haystack',
       'arrowOnSeparateLine': CATMAID.getOption(options, 'arrowOnSeparateLine', false),
-      'arrowLineShrinking': CATMAID.getOption(options, 'arrowLineShrinking', true),
+      'arrowLineShrinking': CATMAID.getOption(options, 'arrowLineShrinking', false),
       'refX': CATMAID.getOption(options, 'arrowRefX', undefined)
     };
 
@@ -2701,6 +2701,8 @@
       if (data.arrow && data.arrow !== 'none') {
         templateLineOptions['arrow'] = data.arrow;
         templateLineOptions['arrowStyle'] = templateLineStyle;
+
+        /*
         if (data.arrow === 'triangle') {
           // Since our arrows width are in a reather narrow ranger, setting the
           // arrow dimensions in absolute pixels is easier.
@@ -2710,6 +2712,7 @@
         } else {
           CATMAID.warn('Could not export graph element. Unknown arrow: ' + data.arrow);
         }
+        */
       } else {
         templateLineOptions['arrow'] = undefined;
       }

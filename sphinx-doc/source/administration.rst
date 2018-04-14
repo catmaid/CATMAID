@@ -158,7 +158,7 @@ following SQL can be used to disable triggers temporarily::
   SET session_replication_role = DEFAULT;
 
 
-.. _performance-tuning:
+.. _custom-code:
 
 Adding custom code
 ------------------
@@ -174,6 +174,8 @@ folder and add their filenames to the ``settings.py`` array variable
 Next you will have to instruct your web-server to make this folder available
 through the URL defined in ``STATIC_EXTENSION_URL``, which defaults to
 "/staticext/"). CATMAID will then try to load those files after its own files.
+
+.. _performance-tuning:
 
 Performance tuning
 ------------------

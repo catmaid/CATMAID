@@ -1849,11 +1849,12 @@
     this.cy.edges().each(function(i, edge) {
       if (edge.data('directed')) {
         if ("source" === mode || "target" === mode) {
-          labelColor = edge[mode]().data('color');
+          labelColor = edge[mode]().data('color'); // color of the source or target node
           edge.style({'line-color': labelColor,
                       'target-arrow-color': labelColor,
                       'target-arrow-shape': arrowShapeFn(edge.source())});
         }
+        edge.data('color', labelColor);
         edge.data('label_color', labelColor);
         edge.data('width', min + edgeWidth(edge.data('weight')));
       }
@@ -3929,7 +3930,7 @@
         node.data('arrowshape', shape); // storing the arrow shape in the source node
         edge.data('arrow', shape);
         edge.style({'target-arrow-shape': shape,
-                    'target-arrow-color': node.data('color')});
+                    'target-arrow-color': edge.data('color')});
       }
     });
     this.cy.endBatch();

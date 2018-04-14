@@ -315,7 +315,7 @@
         line.setAttribute('marker-end', 'url(#' + arrowId + ')');
       }
 
-      // Additionally, shink the actual line a little bit, so that it doesn't
+      // Additionally, shrink the actual line a little bit, so that it doesn't
       // overlap with the arrow head.
       if (options.arrowLineShrinking) {
         var vx = x2 - x1, vy = y2 - y1;

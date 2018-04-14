@@ -62,8 +62,8 @@
     this.markers[id] = marker;
   };
 
-  SVGFactory.prototype.getMarkerId = function(color, width, height, refX, refY) {
-    var hash = color + '-' + width + '-' + height + '-' + refX + '-' + refY;
+  SVGFactory.prototype.getMarkerId = function(type, color, width, height, refX, refY) {
+    var hash = type + '-' + color + '-' + width + '-' + height + '-' + refX + '-' + refY;
     var markerId = this.markerIds[hash];
     return markerId === undefined ? ('marker-' + Object.keys(this.markers).length) : markerId;
   };
@@ -86,6 +86,59 @@
     }
 
     this.addMarker(id, arrow, width, height, refX, refY, units);
+  };
+
+  SVGFactory.prototype.addTeeMarker = function(id, width, height, refX, refY, units, style) {
+    width = width === undefined ? 3.0 : width;
+    height = height === undefined ? width : height;
+    refX = refX === undefined ? width : refX;
+    refY = refY === undefined ? (0.5 * width) : refY;
+    units = units === undefined ? 'strokeWidth' : units;
+    var arrow = document.createElementNS(namespaces.svg, 'path');
+    arrow.setAttribute('d', 'M0,0 L0,' + height + ' L' +
+        width/4 + ',' + height + ' L' + width/4 + ',0 Z');
+
+    if (style) {
+      var svgStyle = this.createSvgStyle(style);
+      if (svgStyle.length > 0) {
+        arrow.setAttribute('style', svgStyle);
+      }
+    }
+
+    this.addMarker(id, arrow, width, height, refX, refY, units);
+  };
+
+
+  SVGFactory.prototype.addCircleMarker = function(id, width, height, refX, refY, units, style) {
+    width = width === undefined ? 3.0 : width;
+    height = height === undefined ? width : height;
+    refX = refX === undefined ? width : refX;
+    refY = refY === undefined ? (0.5 * width) : refY;
+    units = units === undefined ? 'strokeWidth' : units;
+
+    var circle = document.createElementNS(namespaces.svg, 'path');
+    // Unit circle defined with bezier control points, scaled by width
+    var w = width/2;
+    var path = ["m", w, w, "a",
+                 w, w, "0 0 1",
+                -w, w,
+                 w, w, "0 0 1",
+                -w,-w,
+                 w, w, "0 0 1",
+                 w,-w,
+                 w, w, "0 0 1",
+                 w, w, "z"];
+
+    circle.setAttribute('d', path.join(" "));
+
+    if (style) {
+      var svgStyle = this.createSvgStyle(style);
+      if (svgStyle.length > 0) {
+        circle.setAttribute('style', svgStyle);
+      }
+    }
+
+    this.addMarker(id, circle, width, height, refX, refY, units);
   };
 
   function flattenStyle(key) {
@@ -292,17 +345,37 @@
       }
     }
 
+    // Here "arrow" means "end marker" and can also be a circle, a tee, etc.
     var arrow = null;
     if (options.arrow && options.arrow !== 'none') {
       var color = style.stroke || '#000';
-      var arrowId = this.getMarkerId(color, options.arrowWidth,
+      var arrowId = this.getMarkerId(options.arrow, color, options.arrowWidth,
             options.arrowHeight, options.refX, options.refY);
       if (!this.markers[arrowId]) {
         var arrowStyle = {
           fill: color,
         };
-        this.addArrowMarker(arrowId, options.arrowWidth, options.arrowHeight,
-            options.refX, options.refY, options.arrowUnit, arrowStyle);
+        switch (options.arrow) {
+          case "triangle":
+            this.addArrowMarker(arrowId, options.arrowWidth, options.arrowHeight,
+                options.refX, options.refY, options.arrowUnit, arrowStyle);
+            break;
+          case "circle":
+            // Necessary to avoid shrinking and position marker at the right place, but should done elsewhere
+            options = $.extend({}, options, {arrowLineShrinking: false});
+            this.addCircleMarker(arrowId, options.arrowWidth, options.arrowHeight,
+                options.refX, options.refY, options.arrowUnit, arrowStyle);
+            break;
+          case "tee":
+            // Necessary to avoid shrinking and position marker at the right place, but should done elsewhere
+            options = $.extend({}, options, {arrowLineShrinking: false});
+            this.addTeeMarker(arrowId, options.arrowWidth, options.arrowHeight,
+                options.refX, options.refY, options.arrowUnit, arrowStyle);
+            break;
+          default:
+            console.log("Ignoring unknown end marker type: " + options.arrow);
+            break;
+        }
       }
       // The only way to convince Adobe Illustrator to read line markings and a
       // line seems to be by adding an invisible second line with the marker.

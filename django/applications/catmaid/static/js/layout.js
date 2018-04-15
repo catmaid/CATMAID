@@ -93,19 +93,24 @@
 
   SingleNode.prototype.makeNode = function(windows) {
     var a = this._a = isFn(this.a.makeNode) ?
-        this.a.makeNode(windows) : windows.get(this.a);
+        this.a.makeNode(windows) : windows.get(this.a).pop();
     return a;
   };
 
   SingleNode.prototype.makeRegularWindows = function(n, target) {
     if (n === 0) {
-      return target;
+      return 0;
     }
     if (isFn(this.a.makeRegularWindows)) {
       n = this.a.makeRegularWindows(n, target);
     } else if (!validOrientations.has(this.a)) {
       var win = createWindow(this.a);
-      target.set(this.a, win);
+      var typedWindows = target.get(this.a);
+      if (!typedWindows) {
+        typedWindows = [];
+        target.set(this.a, []);
+      }
+      typedWindows.push(win);
       --n;
     }
     return n;
@@ -191,7 +196,7 @@
     for (var i=0; i<this.children.length; ++i) {
       var c = this.children[i];
       var a = isFn(c.makeNode) ?
-          c.makeNode(windows) : windows.get(c);
+          c.makeNode(windows) : windows.get(c).pop();
       childNodes.push(a);
     }
     this._nodes = Array.from(childNodes);
@@ -200,15 +205,20 @@
 
   MultiNode.prototype.makeRegularWindows = function(n, target) {
     if (n === 0) {
-      return target;
+      return n;
     }
     for (var i=0; i<this.children.length; ++i) {
       var c = this.children[i];
       if (isFn(c.makeRegularWindows)) {
-        n = c.makeRegularWindows(n, target);
+        n = n - c.makeRegularWindows(n, target);
       } else if (!validOrientations.has(c)) {
         var win = createWindow(c);
-        target.set(c, win);
+        var typedWindows = target.get(c);
+        if (!typedWindows) {
+          typedWindows = [];
+          target.set(c, typedWindows);
+        }
+        typedWindows.push(win);
         --n;
       }
     }
@@ -290,28 +300,38 @@
 
   Node.prototype.makeNode = function(windows) {
     var a = this._a = isFn(this.a.makeNode) ?
-        this.a.makeNode(windows) : windows.get(this.a);
+        this.a.makeNode(windows) : windows.get(this.a).pop();
     var b = this._b = isFn(this.b.makeNode) ?
-        this.b.makeNode(windows) : windows.get(this.b);
+        this.b.makeNode(windows) : windows.get(this.b).pop();
     return new this.NodeType(a, b);
   };
 
   Node.prototype.makeRegularWindows = function(n, target) {
     if (n === 0) {
-      return target;
+      return 0;
     }
     if (isFn(this.a.makeRegularWindows)) {
       n = this.a.makeRegularWindows(n, target);
     } else if (!validOrientations.has(this.a)) {
       var win = createWindow(this.a);
-      target.set(this.a, win);
+      var typedWindows = target.get(this.a);
+      if (!typedWindows) {
+        typedWindows = [];
+        target.set(this.a, typedWindows);
+      }
+      typedWindows.push(win);
       --n;
     }
     if (isFn(this.b.makeRegularWindows)) {
       n = this.b.makeRegularWindows(n, target);
     } else if (!validOrientations.has(this.b)) {
       var win = createWindow(this.b);
-      target.set(this.b, win);
+      var typedWindows = target.get(this.b);
+      if (!typedWindows) {
+        typedWindows = [];
+        target.set(this.b, typedWindows);
+      }
+      typedWindows.push(win);
       --n;
     }
     return n;
@@ -396,15 +416,20 @@
 
   OptionalNode.prototype.makeNode = function(windows) {
     // At the moment no duplicate windows are allowed
-    return windows.get(this.a);
+    return windows.get(this.a).pop();
   };
 
   OptionalNode.prototype.makeRegularWindows = function(n, target) {
     if (n === 0) {
-      return;
+      return 0;
     }
     var win = createWindow(this.a);
-    target.set(this.a, win);
+    var typedWindows = target.get(this.a);
+    if (!typedWindows) {
+      typedWindows = [];
+      target.set(this.a, typedWindows);
+    }
+    typedWindows.push(win);
     return n - 1;
   };
 
@@ -674,7 +699,8 @@
    */
   function mapNodeToLayoutSpec(node) {
     /* jshint validthis: true */
-    return nodeToLayoutSpec(node, this);
+    return nodeToLayoutSpec(node, this.stackViewerWindowMapping,
+        this.subscriptionInfo);
   }
 
   function nodeToLayoutSpec(node, stackViewerMapping, subscriptionInfo) {
@@ -687,7 +713,10 @@
           nodeToLayoutSpec(node.child2, stackViewerMapping, subscriptionInfo) + ', ' +
           Number(node.heightRatio).toFixed(2) + ')';
     } else if (node instanceof CMWTabbedNode) {
-      return 't([' + node.children.map(mapNodeToLayoutSpec, stackViewerMapping).join(', ') + '])';
+      return 't([' + node.children.map(mapNodeToLayoutSpec, {
+          stackViewerMapping: stackViewerMapping,
+          subscriptionInfo: subscriptionInfo,
+        }).join(', ') + '])';
     } else if (node instanceof CMWWindow) {
       var stackViewer = stackViewerMapping.get(node);
       if (stackViewer) {
@@ -836,7 +865,12 @@
       var stackViewer = views[o];
       if (stackViewer) {
         var w = stackViewer.getWindow();
-        windows.set(o, w);
+        var typedWindows = windows.get(o);
+        if (!typedWindows) {
+          typedWindows = [];
+          windows.set(o, typedWindows);
+        }
+        typedWindows.push(w);
         seenWindows.add(w);
       }
     });
@@ -879,6 +913,7 @@
       }
     }
 
+    // Windows are consumed by makeNode().
     CATMAID.rootWindow.replaceChild(this._layout.makeNode(windows));
 
     // Set up any referenced subscriptions

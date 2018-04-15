@@ -1447,7 +1447,8 @@
   CATMAID.registerWidget({
     name: "Circuit Graph Plot",
     key: "circuit-graph-plot",
-    creator: CATMAID.CircuitGraphPlot
+    creator: CATMAID.CircuitGraphPlot,
+    description: "Plot various skeleton properties with respect to each other"
   });
 
 })(CATMAID);

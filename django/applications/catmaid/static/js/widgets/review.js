@@ -1765,7 +1765,7 @@
   CATMAID.registerWidget({
     name: "Review Widget",
     description: "Proofread a skeleton or a part of it",
-    key: "review-system",
+    key: "review-widget",
     creator: CATMAID.ReviewSystem,
     state: {
       getState: function(widget) {

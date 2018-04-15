@@ -26,7 +26,7 @@
    * the 3D Viewer.
    */
   WindowBuilder[X3D] = function() {
-    var win = WindowMaker.create('3d-webgl-view').window;
+    var win = WindowMaker.create('3d-viewer').window;
     var splitNode = win.getParent();
     return splitNode;
   };
@@ -36,8 +36,8 @@
    * created. We want to handle the Selection Table (if any) separately as well
    * as any subscriptions.
    */
-  WindowBuilder['3d-webgl-view'] = function() {
-    return WindowMaker.create('3d-webgl-view', {
+  WindowBuilder['3d-viewer'] = function() {
+    return WindowMaker.create('3d-viewer', {
       selectionTable: false,
     }).window;
   };

@@ -1350,7 +1350,7 @@
             skid,
             undefined,
             new THREE.Color(SkeletonAnnotations.TracingOverlay.Settings.session.active_node_color));
-        var viewersWithoutSkel = Array.from(WindowMaker.getOpenWindows('3d-webgl-view', true).values())
+        var viewersWithoutSkel = Array.from(WindowMaker.getOpenWindows('3d-viewer', true).values())
             .filter(function (viewer) { return !viewer.hasSkeleton(skid); });
 
         var removePeekingSkeleton = function () {
@@ -1614,7 +1614,7 @@
       buttonID: "data_button_review",
       buttonName: 'table_review',
       run: function (e) {
-        WindowMaker.show('review-system');
+        WindowMaker.show('review-widget');
         return true;
       }
     }),
@@ -1744,7 +1744,7 @@
       buttonID: "view_3d_webgl_button",
       buttonName: '3d-view-webgl',
       run: function (e) {
-        WindowMaker.create('3d-webgl-view');
+        WindowMaker.create('3d-viewer');
       }
     }),
 

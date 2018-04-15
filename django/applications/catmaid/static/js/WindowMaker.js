@@ -1973,7 +1973,7 @@ var WindowMaker = new function()
       description: 'A tool specific list of keyboard shortcuts',
       init: createKeyboardShortcutsWindow
     },
-    "3d-webgl-view": {
+    "3d-viewer": {
       name: '3D Viewer',
       description: 'Visualize neurons, synapses and image data in 3D',
       init: create3dWebGLWindow

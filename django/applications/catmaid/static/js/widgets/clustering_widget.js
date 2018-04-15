@@ -892,7 +892,7 @@
   CATMAID.registerWidget({
     name: "Clustering Widget",
     description: "Cluster semantic classifications",
-    key: "clustering-widget",
+    key: "ontology-clustering-widget",
     creator: ClusteringWidget
   });
 

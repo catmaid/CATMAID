@@ -1745,7 +1745,7 @@
   };
 
   var reviewInterval = function(skeletonId, interval) {
-    var reviewWidget = WindowMaker.create('review-system').widget;
+    var reviewWidget = WindowMaker.create('review-widget').widget;
     var strategy = CATMAID.NodeFilterStrategy['sampler-interval'];
     var rule = new CATMAID.SkeletonFilterRule(strategy, {
       'intervalId': interval.id

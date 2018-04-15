@@ -180,7 +180,7 @@
       CATMAID.warn("No connectors to show");
       return;
     }
-    WindowMaker.show('create-connector-selection');
+    WindowMaker.show('connector-selection');
     // Write the label
     $('#connector-selection-label').text(header);
 
@@ -251,7 +251,7 @@
   CATMAID.registerWidget({
     name: "Connector Selection",
     description: "A simple connector table",
-    key: "create-connector-selection",
+    key: "connector-selection",
     creator: ConnectorSelection
   });
 

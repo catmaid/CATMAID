@@ -52,7 +52,7 @@
           buttonName: 'clustering_widget',
           buttonID: "clustering_button",
           run: function (e) {
-              WindowMaker.create('clustering-widget');
+              WindowMaker.create('ontology-clustering-widget');
               return true;
           }
       }));

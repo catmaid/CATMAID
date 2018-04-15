@@ -1984,8 +1984,8 @@ var WindowMaker = new function()
       init: createGraphWindow
     },
     "connectivity-graph-plot": {
-      name: 'Graph Plot',
-      description: 'Plot',
+      name: 'Connectivity Graph Plot',
+      description: 'Plot # of upstream/downstream partners over synapse count',
       init: createConnectivityGraphPlot
     },
     "ontology-search": {

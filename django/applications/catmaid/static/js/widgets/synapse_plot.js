@@ -830,7 +830,7 @@
   // Register widget with CATMAID
   CATMAID.registerWidget({
     name: "Synapse Plot",
-    descending: "Plot synapse distribution",
+    description: "Plot synapse distribution of multiple skeletons",
     key: "synapse-plot",
     creator: CATMAID.SynapsePlot
   });

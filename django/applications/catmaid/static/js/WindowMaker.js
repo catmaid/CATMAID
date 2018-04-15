@@ -2189,6 +2189,29 @@ var WindowMaker = new function()
     return null;
   };
 
+  function windowIsStackViewer(stackViewers, win) {
+    for (var i=0; i<stackViewers.length; ++i) {
+      var stackViewer = stackViewers[i];
+      if (stackViewer._stackWindow === win) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Close all widget, leave only passed in stack viewers open.
+   */
+  this.closeAllButStackViewers = function(stackViewers) {
+    var allWindows = CATMAID.rootWindow.getWindows();
+    while (allWindows.length > 0) {
+      var win = allWindows.pop();
+      if (!windowIsStackViewer(stackViewers, win)) {
+        win.close();
+      }
+    }
+  };
+
 }();
 
 

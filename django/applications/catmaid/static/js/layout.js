@@ -430,26 +430,6 @@
           stackViewers.length <= layout.maxStackViewers();
   }
 
-  function windowIsStackViewer(stackViewers, win) {
-    for (var i=0; i<stackViewers.length; ++i) {
-      var stackViewer = stackViewers[i];
-      if (stackViewer._stackWindow === win) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  function closeAllButStackViewers(stackViewers) {
-    var allWindows = CATMAID.rootWindow.getWindows();
-    while (allWindows.length > 0) {
-      var win = allWindows.pop();
-      if (!windowIsStackViewer(stackViewers, win)) {
-        win.close();
-      }
-    }
-  }
-
   /**
    * Switch to a new layout.
    */
@@ -467,7 +447,7 @@
     }
     
     // Close all open widgets
-    closeAllButStackViewers(stackViewers);
+    CATMAID.WindowMaker.closeAllButStackViewers(stackViewers);
 
     // Now test if the layout really matches
     var matchResult = newLayout.matches(stackViewers, viewIndex);

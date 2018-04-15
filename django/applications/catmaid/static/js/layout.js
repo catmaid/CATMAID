@@ -48,143 +48,182 @@
     return win;
   };
 
-  const SingleNode = {
-    missingViews: function(views) {
-      if (isFn(this.a.missingViews)) {
-          this.a.missingViews(views);
-      } else {
-        views.delete(this.a);
-      }
-    },
-    minStackViewers: function() {
-      var result = isFn(this.a.minStackViewers) ?
-          this.a.minStackViewers() : (validOrientations.has(this.a) ? 1 : 0);
-      return result;
-    },
-    maxStackViewers: function() {
-      var result = isFn(this.a.maxStackViewers) ?
-          this.a.maxStackViewers() : (validOrientations.has(this.a) ? 1 : 0);
-      return result;
-    },
-    regularWindows: function() {
-      var result = isFn(this.a.regularWindows) ?
-          this.a.regularWindows() : (validOrientations.has(this.a) ? 0 : 1);
-      return result;
-    },
-    makeNode: function(windows) {
-      var a = isFn(this.a.makeNode) ?
-          this.a.makeNode(windows) : windows.get(this.a);
-      return a;
-    },
-    makeRegularWindows: function(n, target) {
-      if (n === 0) {
-        return target;
-      }
-      if (isFn(this.a.makeRegularWindows)) {
-        n = this.a.makeRegularWindows(n, target);
-      } else if (!validOrientations.has(this.a)) {
-        var win = createWindow(this.a);
-        target.set(this.a, win);
-        --n;
-      }
-      return n;
-    }
-  };
+  const LayaoutNode = function() {};
 
-  const Node = {
-    missingViews: function(views) {
-      if (isFn(this.a.missingViews)) {
-          this.a.missingViews(views);
-      } else {
-        views.delete(this.a);
-      }
-      if (isFn(this.b.missingViews)) {
-          this.b.missingViews(views);
-      } else {
-        views.delete(this.b);
-      }
-    },
-    minStackViewers: function() {
-      var result = isFn(this.a.minStackViewers) ?
-          this.a.minStackViewers() : (validOrientations.has(this.a) ? 1 : 0);
-      result += isFn(this.b.minStackViewers) ?
-          this.b.minStackViewers() : (validOrientations.has(this.b) ? 1 : 0);
-      return result;
-    },
-    maxStackViewers: function() {
-      var result = isFn(this.a.maxStackViewers) ?
-          this.a.maxStackViewers() : (validOrientations.has(this.a) ? 1 : 0);
-      result += isFn(this.b.maxStackViewers) ?
-          this.b.maxStackViewers() : (validOrientations.has(this.b) ? 1 : 0);
-      return result;
-    },
-    regularWindows: function() {
-      var result = isFn(this.a.regularWindows) ?
-          this.a.regularWindows() : (validOrientations.has(this.a) ? 0 : 1);
-      result += isFn(this.b.regularWindows) ?
-          this.b.regularWindows() : (validOrientations.has(this.b) ? 0 : 1);
-      return result;
-    },
-    makeNode: function(windows) {
-      var a = isFn(this.a.makeNode) ?
-          this.a.makeNode(windows) : windows.get(this.a);
-      var b = isFn(this.b.makeNode) ?
-          this.b.makeNode(windows) : windows.get(this.b);
-      return new this.NodeType(a, b);
-    },
-    makeRegularWindows: function(n, target) {
-      if (n === 0) {
-        return target;
-      }
-      if (isFn(this.a.makeRegularWindows)) {
-        n = this.a.makeRegularWindows(n, target);
-      } else if (!validOrientations.has(this.a)) {
-        var win = createWindow(this.a);
-        target.set(this.a, win);
-        --n;
-      }
-      if (isFn(this.b.makeRegularWindows)) {
-        n = this.b.makeRegularWindows(n, target);
-      } else if (!validOrientations.has(this.b)) {
-        var win = createWindow(this.b);
-        target.set(this.b, win);
-        --n;
-      }
-      return n;
-    }
-  };
+  const SingleNode = function() {};
+  SingleNode.prototype = Object.create(LayaoutNode.prototype);
+  SingleNode.prototype.constructor = SingleNode;
 
-  const OptionalNode = {
-    missingViews: function(views) {
+  SingleNode.prototype.missingViews = function(views) {
+    if (isFn(this.a.missingViews)) {
+        this.a.missingViews(views);
+    } else {
       views.delete(this.a);
-    },
-    minStackViewers: function() {
-      return 0;
-    },
-    maxStackViewers: function() {
-      return validOrientations.has(this.a) ? 1 : 0;
-    },
-    regularWindows: function() {
-      return 1;
-    },
-    makeNode: function(windows) {
-      // At the moment no duplicate windows are allowed
-      return windows.get(this.a);
-    },
-    makeRegularWindows: function(n, target) {
-      if (n === 0) {
-        return;
-      }
+    }
+  };
+
+  SingleNode.prototype.minStackViewers = function() {
+    var result = isFn(this.a.minStackViewers) ?
+        this.a.minStackViewers() : (validOrientations.has(this.a) ? 1 : 0);
+    return result;
+  };
+
+  SingleNode.prototype.maxStackViewers = function() {
+    var result = isFn(this.a.maxStackViewers) ?
+        this.a.maxStackViewers() : (validOrientations.has(this.a) ? 1 : 0);
+    return result;
+  };
+
+  SingleNode.prototype.regularWindows = function() {
+    var result = isFn(this.a.regularWindows) ?
+        this.a.regularWindows() : (validOrientations.has(this.a) ? 0 : 1);
+    return result;
+  };
+
+  SingleNode.prototype.makeNode = function(windows) {
+    var a = isFn(this.a.makeNode) ?
+        this.a.makeNode(windows) : windows.get(this.a);
+    return a;
+  };
+
+  SingleNode.prototype.makeRegularWindows = function(n, target) {
+    if (n === 0) {
+      return target;
+    }
+    if (isFn(this.a.makeRegularWindows)) {
+      n = this.a.makeRegularWindows(n, target);
+    } else if (!validOrientations.has(this.a)) {
       var win = createWindow(this.a);
       target.set(this.a, win);
-      return n - 1;
+      --n;
+    }
+    return n;
+  };
+
+
+  const Node = function() {};
+  Node.prototype = Object.create(LayaoutNode.prototype);
+  Node.prototype.constructor = Node;
+
+  Node.prototype.missingViews = function(views) {
+    if (isFn(this.a.missingViews)) {
+        this.a.missingViews(views);
+    } else {
+      views.delete(this.a);
+    }
+    if (isFn(this.b.missingViews)) {
+        this.b.missingViews(views);
+    } else {
+      views.delete(this.b);
     }
   };
+
+  Node.prototype.minStackViewers = function() {
+    var result = isFn(this.a.minStackViewers) ?
+        this.a.minStackViewers() : (validOrientations.has(this.a) ? 1 : 0);
+    result += isFn(this.b.minStackViewers) ?
+        this.b.minStackViewers() : (validOrientations.has(this.b) ? 1 : 0);
+    return result;
+  };
+
+  Node.prototype.maxStackViewers = function() {
+    var result = isFn(this.a.maxStackViewers) ?
+        this.a.maxStackViewers() : (validOrientations.has(this.a) ? 1 : 0);
+    result += isFn(this.b.maxStackViewers) ?
+        this.b.maxStackViewers() : (validOrientations.has(this.b) ? 1 : 0);
+    return result;
+  };
+
+  Node.prototype.regularWindows = function() {
+    var result = isFn(this.a.regularWindows) ?
+        this.a.regularWindows() : (validOrientations.has(this.a) ? 0 : 1);
+    result += isFn(this.b.regularWindows) ?
+        this.b.regularWindows() : (validOrientations.has(this.b) ? 0 : 1);
+    return result;
+  };
+
+  Node.prototype.makeNode = function(windows) {
+    var a = isFn(this.a.makeNode) ?
+        this.a.makeNode(windows) : windows.get(this.a);
+    var b = isFn(this.b.makeNode) ?
+        this.b.makeNode(windows) : windows.get(this.b);
+    return new this.NodeType(a, b);
+  };
+
+  Node.prototype.makeRegularWindows = function(n, target) {
+    if (n === 0) {
+      return target;
+    }
+    if (isFn(this.a.makeRegularWindows)) {
+      n = this.a.makeRegularWindows(n, target);
+    } else if (!validOrientations.has(this.a)) {
+      var win = createWindow(this.a);
+      target.set(this.a, win);
+      --n;
+    }
+    if (isFn(this.b.makeRegularWindows)) {
+      n = this.b.makeRegularWindows(n, target);
+    } else if (!validOrientations.has(this.b)) {
+      var win = createWindow(this.b);
+      target.set(this.b, win);
+      --n;
+    }
+    return n;
+  };
+
+  const OptionalNode = function() {
+    LayaoutNode.call(this);
+  };
+  OptionalNode.prototype = Object.create(LayaoutNode.prototype);
+  OptionalNode.prototype.constructor = OptionalNode;
+
+
+  OptionalNode.prototype.missingViews = function(views) {
+    views.delete(this.a);
+  };
+
+  OptionalNode.prototype.minStackViewers = function() {
+    return 0;
+  };
+
+  OptionalNode.prototype.maxStackViewers = function() {
+    return validOrientations.has(this.a) ? 1 : 0;
+  };
+
+  OptionalNode.prototype.regularWindows = function() {
+    return 1;
+  };
+
+  OptionalNode.prototype.makeNode = function(windows) {
+    // At the moment no duplicate windows are allowed
+    return windows.get(this.a);
+  };
+
+  OptionalNode.prototype.makeRegularWindows = function(n, target) {
+    if (n === 0) {
+      return;
+    }
+    var win = createWindow(this.a);
+    target.set(this.a, win);
+    return n - 1;
+  };
+
+
+  function assignNodeInfo(node, field, value) {
+    if (typeof(value) === 'object' && !(value instanceof LayaoutNode)) {
+      node[field] = value.type;
+      node.meta = value;
+    } else {
+      node[field] = value;
+      node.meta = {};
+    }
+  }
+
 
   var VNode = function(a, b, ratio) {
     this.ratio = CATMAID.tools.getDefined(ratio, 0.5);
-    this.a = a;
-    this.b = b;
+    assignNodeInfo(this, 'a', a);
+    assignNodeInfo(this, 'b', b);
     this.NodeType = CMWVSplitNode;
 
     this.makeNode = function(windows) {
@@ -193,12 +232,15 @@
       return node;
     };
   };
-  VNode.prototype = Node;
+
+  VNode.prototype = Object.create(Node.prototype);
+  VNode.prototype.constructor = VNode;
+
 
   var HNode = function(a, b, ratio) {
     this.ratio = CATMAID.tools.getDefined(ratio, 0.5);
-    this.a = a;
-    this.b = b;
+    assignNodeInfo(this, 'a', a);
+    assignNodeInfo(this, 'b', b);
     this.NodeType = CMWHSplitNode;
 
     this.makeNode = function(windows) {
@@ -207,18 +249,27 @@
       return node;
     };
   };
-  HNode.prototype = Node;
+
+  HNode.prototype = Object.create(Node.prototype);
+  HNode.prototype.constructor = HNode;
+
 
   var ONode = function(a) {
-    this.a = a;
+    OptionalNode.call(this);
+    assignNodeInfo(this, 'a', a);
   };
-  ONode.prototype = OptionalNode;
+
+  ONode.prototype = Object.create(OptionalNode.prototype);
+  ONode.prototype.constructor = ONode;
+
 
   var WNode = function(a) {
-    this.a = a;
+    assignNodeInfo(this, 'a', a);
     this.NodeType = CMWWindow;
   };
-  WNode.prototype = SingleNode;
+  WNode.prototype = Object.create(SingleNode.prototype);
+  WNode.prototype.constructor = WNode;
+
 
   /**
    * Functions allowed for layout specification.

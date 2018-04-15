@@ -340,18 +340,20 @@ var WindowMaker = new function()
   };
 
   /** Creates and returns a new 3d webgl window */
-  var create3dWebGLWindow = function()
+  var create3dWebGLWindow = function(options)
   {
     if ( !Detector.webgl ) {
       throw new CATMAID.NoWebGLAvailableError("The 3D Viewer requires WebGL, but it is not available");
     }
+
+    if (!options) options = { selectionTable: true };
 
     CATMAID.throwOnInsufficientWebGlContexts(1);
 
     // A selection table is opened alongside the 3D viewer. Initialize it first,
     // so that it will default to the last opened skeleton source to pull from
     // (which otherwise would be the 3D viewer).
-    var selectionTable = WindowMaker.create('selection-table');
+    var selectionTable = options.selectionTable ? WindowMaker.create('selection-table') : null;
 
     var WA = new CATMAID.WebGLApplication();
 
@@ -1478,18 +1480,20 @@ var WindowMaker = new function()
     // Resize WebGLView after staging list has been added
     win.callListeners( CMWWindow.RESIZE );
 
-    // Make selection table smaller so that it only occupies about 25% of the
-    // available vertical space (instead of 50%).
-    win.getParent().changeHeight(Math.abs(win.getHeight() * 0.5));
+    if (selectionTable) {
+      // Make selection table smaller so that it only occupies about 25% of the
+      // available vertical space (instead of 50%).
+      win.getParent().changeHeight(Math.abs(win.getHeight() * 0.5));
 
-    // Now that a Selection Table exists, have the 3D viewer subscribe to it and
-    // make it ignore local models. Don't make it selection based, to not reload
-    // skeletons on visibility changes.
-    var Subscription = CATMAID.SkeletonSourceSubscription;
-    WA.addSubscription(new Subscription(selectionTable.widget, true, false,
-          CATMAID.SkeletonSource.UNION, Subscription.ALL_EVENTS), true);
-    // Override existing local models if subscriptions are updated
-    WA.ignoreLocal = true;
+      // Now that a Selection Table exists, have the 3D viewer subscribe to it and
+      // make it ignore local models. Don't make it selection based, to not reload
+      // skeletons on visibility changes.
+      var Subscription = CATMAID.SkeletonSourceSubscription;
+      WA.addSubscription(new Subscription(selectionTable.widget, true, false,
+            CATMAID.SkeletonSource.UNION, Subscription.ALL_EVENTS), true);
+      // Override existing local models if subscriptions are updated
+      WA.ignoreLocal = true;
+    }
 
     return {window: win, widget: WA};
   };

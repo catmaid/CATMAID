@@ -1373,6 +1373,16 @@ var project;
         };
         dialog.show('auto', 'auto');
       }
+    }, {
+      id: 'close-all-widgets',
+      title: 'Close all widgets',
+      note: '',
+      action: function() {
+        if (!confirm('Are you sure you want to close all widgets?')) {
+          return;
+        }
+        CATMAID.WindowMaker.closeAllButStackViewers(project.getStackViewers());
+      }
     }];
     var userLayouts = CATMAID.Layout.Settings.session.user_layouts;
     if (userLayouts && userLayouts.length > 0) {

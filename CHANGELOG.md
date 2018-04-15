@@ -24,8 +24,8 @@
 Layouts:
 
 - A new "Layouts" menu is shown in the top bar when a project is opened. It
-  allows to save the current window layout under a name and will show all
-  available layouts as menu entries.
+  allows to save the current window layout under a name, it provides an option
+  to close all widgets and will show all available layouts as menu entries.
 
 - Layouts store window arrangement and window sizes, subscriptions are not yet
   stored.

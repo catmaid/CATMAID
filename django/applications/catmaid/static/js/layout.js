@@ -112,6 +112,80 @@
   };
 
 
+  const MultiNode = function() {};
+  MultiNode.prototype = Object.create(LayaoutNode.prototype);
+  MultiNode.prototype.constructor = MultiNode;
+
+  MultiNode.prototype.missingViews = function(views) {
+    for (var i=0; i<this.children.length; ++i) {
+      var c = this.children[i];
+      if (isFn(c.missingViews)) {
+          c.missingViews(views);
+      } else {
+        views.delete(c);
+      }
+    }
+  };
+
+  MultiNode.prototype.minStackViewers = function() {
+    var result = 0;
+    for (var i=0; i<this.children.length; ++i) {
+      var c = this.children[i];
+      result += isFn(c.minStackViewers) ?
+          c.minStackViewers() : (validOrientations.has(c) ? 1 : 0);
+    }
+    return result;
+  };
+
+  MultiNode.prototype.maxStackViewers = function() {
+    var result = 0;
+    for (var i=0; i<this.children.length; ++i) {
+      var c = this.children[i];
+      result += isFn(c.maxStackViewers) ?
+          c.maxStackViewers() : (validOrientations.has(c) ? 1 : 0);
+    }
+    return result;
+  };
+
+  MultiNode.prototype.regularWindows = function() {
+    var result = 0;
+    for (var i=0; i<this.children.length; ++i) {
+      var c = this.children[i];
+      result += isFn(c.regularWindows) ?
+          c.regularWindows() : (validOrientations.has(c) ? 0 : 1);
+    }
+    return result;
+  };
+
+  MultiNode.prototype.makeNode = function(windows) {
+    var childNodes = [];
+    for (var i=0; i<this.children.length; ++i) {
+      var c = this.children[i];
+      var a = isFn(c.makeNode) ?
+          c.makeNode(windows) : windows.get(c);
+      childNodes.push(a);
+    }
+    return new this.NodeType(childNodes);
+  };
+
+  MultiNode.prototype.makeRegularWindows = function(n, target) {
+    if (n === 0) {
+      return target;
+    }
+    for (var i=0; i<this.children.length; ++i) {
+      var c = this.children[i];
+      if (isFn(c.makeRegularWindows)) {
+        n = c.makeRegularWindows(n, target);
+      } else if (!validOrientations.has(c)) {
+        var win = createWindow(c);
+        target.set(c, win);
+        --n;
+      }
+    }
+    return n;
+  };
+
+
   const Node = function() {};
   Node.prototype = Object.create(LayaoutNode.prototype);
   Node.prototype.constructor = Node;
@@ -282,6 +356,20 @@
   WNode.prototype.constructor = WNode;
 
 
+  var TNode = function(a) {
+    this.children = a.map(function(c) {
+      if (typeof(c) === 'object' && !(c instanceof LayaoutNode)) {
+        return c.type;
+      } else {
+        return c;
+      }
+    });
+    this.NodeType = CMWTabbedNode;
+  };
+  TNode.prototype = Object.create(MultiNode.prototype);
+  TNode.prototype.constructor = TNode;
+
+
   /**
    * Functions allowed for layout specification.
    */
@@ -292,6 +380,10 @@
 
   function h(a, b, ratio) {
     return new HNode(a, b, ratio);
+  }
+
+  function t(children) {
+    return new TNode(children);
   }
 
   function o(a) {
@@ -495,7 +587,7 @@
           nodeToLayoutSpec(node.child2, stackViewerMapping) + ', ' +
           Number(node.heightRatio).toFixed(2) + ')';
     } else if (node instanceof CMWTabbedNode) {
-      return 't(' + node.children.map(mapNodeToLayoutSpec, stackViewerMapping).join(', ') + ')';
+      return 't([' + node.children.map(mapNodeToLayoutSpec, stackViewerMapping).join(', ') + '])';
     } else if (node instanceof CMWWindow) {
       var stackViewer = stackViewerMapping.get(node);
       if (stackViewer) {

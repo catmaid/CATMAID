@@ -33,6 +33,9 @@ Layouts:
 - Saved layouts can also be manually configured from the "Custom layouts"
   setting in the Settings Widget.
 
+- Tabbed windows are now supported in layout specs by using "t([a, b, c])" where
+  a, b, c or any other number of elements can be children of the tabbed window.
+
 Landmarks:
 
 - Support transformation of nodes that cross space between landmark groups and

@@ -27,8 +27,7 @@ Layouts:
   allows to save the current window layout under a name, it provides an option
   to close all widgets and will show all available layouts as menu entries.
 
-- Layouts store window arrangement and window sizes, subscriptions are not yet
-  stored.
+- Layouts store window arrangement and window sizes and subscriptions.
 
 - Saved layouts can also be manually configured from the "Custom layouts"
   setting in the Settings Widget.

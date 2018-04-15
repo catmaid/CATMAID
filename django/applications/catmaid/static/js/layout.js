@@ -31,6 +31,17 @@
     return splitNode;
   };
 
+  /**
+   * For a regular 3D Viewer request, make sure no extra Selection Table is
+   * created. We want to handle the Selection Table (if any) separately as well
+   * as any subscriptions.
+   */
+  WindowBuilder['3d-webgl-view'] = function() {
+    return WindowMaker.create('3d-webgl-view', {
+      selectionTable: false,
+    }).window;
+  };
+
   const createWindow = function(name) {
     var creator = WindowBuilder[name];
     if (!creator) {

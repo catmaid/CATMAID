@@ -677,14 +677,14 @@
     return nodeToLayoutSpec(node, this);
   }
 
-  function nodeToLayoutSpec(node, stackViewerMapping) {
+  function nodeToLayoutSpec(node, stackViewerMapping, subscriptionInfo) {
     if (node instanceof CMWHSplitNode) {
-      return 'h(' + nodeToLayoutSpec(node.child1, stackViewerMapping) + ', ' +
-          nodeToLayoutSpec(node.child2, stackViewerMapping) + ', ' +
+      return 'h(' + nodeToLayoutSpec(node.child1, stackViewerMapping, subscriptionInfo) + ', ' +
+          nodeToLayoutSpec(node.child2, stackViewerMapping, subscriptionInfo) + ', ' +
           Number(node.widthRatio).toFixed(2) + ')';
     } else if (node instanceof CMWVSplitNode) {
-      return 'v(' + nodeToLayoutSpec(node.child1, stackViewerMapping) + ', ' +
-          nodeToLayoutSpec(node.child2, stackViewerMapping) + ', ' +
+      return 'v(' + nodeToLayoutSpec(node.child1, stackViewerMapping, subscriptionInfo) + ', ' +
+          nodeToLayoutSpec(node.child2, stackViewerMapping, subscriptionInfo) + ', ' +
           Number(node.heightRatio).toFixed(2) + ')';
     } else if (node instanceof CMWTabbedNode) {
       return 't([' + node.children.map(mapNodeToLayoutSpec, stackViewerMapping).join(', ') + '])';
@@ -709,7 +709,30 @@
         throw new CATMAID.ValueError('Could not find key for window ' +
             node.id + ' of type ' + node.constructor.name);
       }
-      return "'" + widgetInfo.key + "'";
+
+      // If this widget contains any subscriptions, add them to the output.
+      var isSubscriptionSource = subscriptionInfo.idIndex.has(widgetInfo.widget);
+      var isSubscriptionTaget = subscriptionInfo.subscriptions.has(widgetInfo.widget) &&
+          subscriptionInfo.subscriptions.get(widgetInfo.widget).length > 0;
+      if (isSubscriptionSource || isSubscriptionTaget) {
+        var components = ['{ type: "', widgetInfo.key, '"'];
+        if (isSubscriptionSource) {
+          components.push(', id: "', subscriptionInfo.idIndex.get(widgetInfo.widget), '"');
+        }
+        if (isSubscriptionTaget) {
+          components.push(', subscriptions: [');
+          var subscriptions = subscriptionInfo.subscriptions.get(widgetInfo.widget);
+          for (var i=0; i<subscriptions.length; ++i) {
+            components.push('{ source: "',
+                subscriptionInfo.idIndex.get(subscriptions[i].source), '" }');
+          }
+          components.push(']');
+        }
+        components.push(' }');
+        return components.join('');
+      } else {
+        return "'" + widgetInfo.key + "'";
+      }
     } else {
       throw new CATMAID.ValueError('Unknown window type: ' + node);
     }
@@ -717,6 +740,74 @@
 
   function toWindowMapping(stackViewer) {
     return [stackViewer.getWindow(), stackViewer];
+  }
+
+  function getSubscriptionInfo(node, target) {
+    if (node instanceof CMWHSplitNode || node instanceof CMWVSplitNode) {
+      getSubscriptionInfo(node.child1, target);
+      getSubscriptionInfo(node.child2, target);
+    } else if (node instanceof CMWTabbedNode) {
+      for (var i=0; i<node.children.length; ++i) {
+        getSubscriptionInfo(node.children[i], target);
+      }
+    } else if (node instanceof CMWWindow) {
+      // Figure out what window the current display is
+      var widgetInfo = CATMAID.WindowMaker.getWidgetKeyForWindow(node);
+      if (!widgetInfo) {
+        return;
+      }
+
+      // Keep track of widgets per type
+      var typeCount = target.typeCount.get(widgetInfo.key);
+      if (!typeCount) {
+        typeCount = 0;
+      }
+      ++typeCount;
+      target.typeCount.set(widgetInfo.key, typeCount);
+
+      // Add widget to ID index
+      target.idIndex.set(widgetInfo.widget, widgetInfo.key + '-' + typeCount);
+    } else {
+      throw new CATMAID.ValueError('Unknown window type: ' + node);
+    }
+    return target;
+  }
+
+  function getSubscriptions(node) {
+    var subscriptionInfo = getSubscriptionInfo(node, {
+      'idIndex': new Map(),
+      'typeCount': new Map(),
+      'subscriptions': new Map(),
+      'sources': new Set(),
+    })  ;
+
+    // Add actual subscriptions. Widgets can only have subscriptions if they
+    // are registered skeleton sources.
+    for (var sourceName in CATMAID.skeletonListSources.sources) {
+      var source = CATMAID.skeletonListSources.getSource(sourceName);
+      var subscriptions = source.getSourceSubscriptions();
+      if (subscriptions) {
+        var subList = subscriptionInfo.subscriptions.get(source);
+        if (!subList) {
+          subList = [];
+          subscriptionInfo.subscriptions.set(source, subList);
+        }
+        for (var i=0; i<subscriptions.length; ++i) {
+          subList.push(subscriptions[i]);
+          subscriptionInfo.sources.add(subscriptions[i].source);
+        }
+      }
+    }
+
+    // Remove all dbIndex entry that is actually not refenced in a subscription
+    for (var indexedWidget of subscriptionInfo.idIndex) {
+      if (!subscriptionInfo.sources.has(indexedWidget)) {
+        subscriptionInfo.idIndex.delete(indexedWidget);
+        continue;
+      }
+    }
+
+    return subscriptionInfo;
   }
 
   /**
@@ -728,7 +819,8 @@
       return null;
     }
     let stackViewerWindowMapping = new Map(project.getStackViewers().map(toWindowMapping));
-    return nodeToLayoutSpec(rootNode.child, stackViewerWindowMapping);
+    return nodeToLayoutSpec(rootNode.child, stackViewerWindowMapping,
+        getSubscriptions(rootNode.child));
   };
 
   /**

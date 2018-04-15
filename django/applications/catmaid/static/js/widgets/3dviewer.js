@@ -2131,7 +2131,7 @@
    * Return IDs of the currently loaded volumes.
    */
   WebGLApplication.prototype.getLoadedVolumeIds = function() {
-    return this.loadedVolumes.keys();
+    return this.loadedVolumes ? this.loadedVolumes.keys() : [];
   };
 
   /**

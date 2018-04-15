@@ -92,7 +92,7 @@
   };
 
   SingleNode.prototype.makeNode = function(windows) {
-    var a = isFn(this.a.makeNode) ?
+    var a = this._a = isFn(this.a.makeNode) ?
         this.a.makeNode(windows) : windows.get(this.a);
     return a;
   };
@@ -109,6 +109,35 @@
       --n;
     }
     return n;
+  };
+
+  SingleNode.prototype.getSubscriptions = function(target) {
+    if (isFn(this.a.getSubscriptions)) {
+      return this.a.getSubscriptions(target);
+    }
+    if (this.meta) {
+      if (this.meta.id) {
+        if (!this._a) {
+          throw new CATMAID.ValueError("Expected created layout node A");
+        }
+        target.idIndex.set(this.meta.id, this._a);
+      }
+
+      if (this.meta.subscriptions) {
+        var sub = this.meta.subscriptions;
+        if (sub.length > 0 && !this._a) {
+          throw new CATMAID.ValueError("Expected created layout node A");
+        }
+        for (var i=0; i<sub.length; ++i) {
+          var sub = sub[i];
+          target.subscriptions.push({
+            source: sub.source,
+            target: this._a,
+          });
+        }
+      }
+    }
+    return target;
   };
 
 
@@ -165,6 +194,7 @@
           c.makeNode(windows) : windows.get(c);
       childNodes.push(a);
     }
+    this._nodes = Array.from(childNodes);
     return new this.NodeType(childNodes);
   };
 
@@ -183,6 +213,37 @@
       }
     }
     return n;
+  };
+
+  MultiNode.prototype.getSubscriptions = function(target) {
+    for (var i=0; i<this.children.length; ++i) {
+      var c = this.children[i];
+      if (isFn(c.getSubscriptions)) {
+        c.getSubscriptions(target);
+      } else if (c.meta) {
+        if (c.meta.id) {
+          if (!this._nodes[i]) {
+            throw new CATMAID.ValueError("Expected created node in multi node context");
+          }
+          target.idIndex.set(this.meta.id, this._nodes[i]);
+        }
+
+        if (c.meta.subscriptions) {
+          var sub = c.meta.subscriptions;
+          if (sub.length > 0 && !this._nodes[i]) {
+            throw new CATMAID.ValueError("Expected created node in multi node context");
+          }
+          for (var i=0; i<sub.length; ++i) {
+            var sub = sub[i];
+            target.subscriptions.push({
+              source: sub.source,
+              target: this._nodes[i],
+            });
+          }
+        }
+      }
+    }
+    return target;
   };
 
 
@@ -228,9 +289,9 @@
   };
 
   Node.prototype.makeNode = function(windows) {
-    var a = isFn(this.a.makeNode) ?
+    var a = this._a = isFn(this.a.makeNode) ?
         this.a.makeNode(windows) : windows.get(this.a);
-    var b = isFn(this.b.makeNode) ?
+    var b = this._b = isFn(this.b.makeNode) ?
         this.b.makeNode(windows) : windows.get(this.b);
     return new this.NodeType(a, b);
   };
@@ -255,6 +316,60 @@
     }
     return n;
   };
+
+  Node.prototype.getSubscriptions = function(target) {
+    if (isFn(this.a.getSubscriptions)) {
+        this.a.getSubscriptions(target);
+    }
+    if (isFn(this.b.getSubscriptions)) {
+        this.b.getSubscriptions(target);
+    }
+
+    if (this.metaA.id) {
+      if (!this._a) {
+        throw new CATMAID.ValueError("Expected created layout node A");
+      }
+      target.idIndex.set(this.metaA.id, this._a);
+    }
+
+    if (this.metaB.id) {
+      if (!this._b) {
+        throw new CATMAID.ValueError("Expected created layout node B");
+      }
+      target.idIndex.set(this.metaB.id, this._b);
+    }
+
+    if (this.metaA.subscriptions) {
+      var subA = this.metaA.subscriptions;
+      if (subA.length > 0 && !this._a) {
+        throw new CATMAID.ValueError("Expected created layout node A");
+      }
+      for (var i=0; i<subA.length; ++i) {
+        var sub = subA[i];
+        target.subscriptions.push({
+          source: sub.source,
+          target: this._a,
+        });
+      }
+    }
+
+    if (this.metaB.subscriptions) {
+      var subB = this.metaB.subscriptions;
+      if (subB.length > 0 && !this._b) {
+        throw new CATMAID.ValueError("Expected created layout node B");
+      }
+      for (var i=0; i<subB.length; ++i) {
+        var sub = subB[i];
+        target.subscriptions.push({
+          source: sub.source,
+          target: this._b,
+        });
+      }
+    }
+
+    return target;
+  };
+
 
   const OptionalNode = function() {
     LayaoutNode.call(this);
@@ -293,22 +408,27 @@
     return n - 1;
   };
 
+  OptionalNode.prototype.getSubscriptions = function(target) {
+    // No subscriptions for optional nodes for now.
+    return target;
+  };
 
-  function assignNodeInfo(node, field, value) {
+
+  function assignNodeInfo(node, field, metaField, value) {
     if (typeof(value) === 'object' && !(value instanceof LayaoutNode)) {
       node[field] = value.type;
-      node.meta = value;
+      node[metaField] = value;
     } else {
       node[field] = value;
-      node.meta = {};
+      node[metaField] = {};
     }
   }
 
 
   var VNode = function(a, b, ratio) {
     this.ratio = CATMAID.tools.getDefined(ratio, 0.5);
-    assignNodeInfo(this, 'a', a);
-    assignNodeInfo(this, 'b', b);
+    assignNodeInfo(this, 'a', 'metaA', a);
+    assignNodeInfo(this, 'b', 'metaB', b);
     this.NodeType = CMWVSplitNode;
 
     this.makeNode = function(windows) {
@@ -324,8 +444,8 @@
 
   var HNode = function(a, b, ratio) {
     this.ratio = CATMAID.tools.getDefined(ratio, 0.5);
-    assignNodeInfo(this, 'a', a);
-    assignNodeInfo(this, 'b', b);
+    assignNodeInfo(this, 'a', 'metaA',  a);
+    assignNodeInfo(this, 'b', 'metaB', b);
     this.NodeType = CMWHSplitNode;
 
     this.makeNode = function(windows) {
@@ -341,7 +461,7 @@
 
   var ONode = function(a) {
     OptionalNode.call(this);
-    assignNodeInfo(this, 'a', a);
+    assignNodeInfo(this, 'a', 'meta', a);
   };
 
   ONode.prototype = Object.create(OptionalNode.prototype);
@@ -349,7 +469,7 @@
 
 
   var WNode = function(a) {
-    assignNodeInfo(this, 'a', a);
+    assignNodeInfo(this, 'a', 'meta', a);
     this.NodeType = CMWWindow;
   };
   WNode.prototype = Object.create(SingleNode.prototype);
@@ -668,6 +788,47 @@
     }
 
     CATMAID.rootWindow.replaceChild(this._layout.makeNode(windows));
+
+    // Set up any referenced subscriptions
+    var subscriptionInfo = this._layout.getSubscriptions({
+      'idIndex': new Map(),
+      'subscriptions': [],
+    });
+    for (var i=0; i<subscriptionInfo.subscriptions.length; ++i) {
+      var sub = subscriptionInfo.subscriptions[i];
+      var Subscription = CATMAID.SkeletonSourceSubscription;
+
+      var sourceWindow = subscriptionInfo.idIndex.get(sub.source);
+      if (!sourceWindow) {
+        CATMAID.warn('Could not find source window: ' + sub.source);
+        continue;
+      }
+
+      var sourceWidget = CATMAID.WindowMaker.getWidgetKeyForWindow(sourceWindow);
+      if (!sourceWidget) {
+        CATMAID.warn('Could not find subscription source: ' + subscription.source);
+        continue;
+      }
+
+      var targetWidget = CATMAID.WindowMaker.getWidgetKeyForWindow(sub.target);
+      if (!targetWidget) {
+        CATMAID.warn('Could not find target widget');
+        continue;
+      }
+
+      var subscription = new Subscription(sourceWidget.widget,
+          CATMAID.tools.getDefined(sub.colors, true),
+          CATMAID.tools.getDefined(sub.selectionBased, false),
+          CATMAID.tools.getDefined(sub.op, CATMAID.SkeletonSource.UNION),
+          CATMAID.tools.getDefined(sub.group, Subscription.ALL_EVENTS));
+
+      targetWidget.widget.addSubscription(subscription, true);
+
+      // Override existing local models if subscriptions are updated
+      if (sub.ignoreLocal) {
+        targetWidget.widget.ignoreLocal = true;
+      }
+    }
   };
 
   Layout.Settings = new CATMAID.Settings(

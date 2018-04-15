@@ -54,12 +54,18 @@
   /**
    * Helper function to add a labeled control.
    */
-  DOM.createLabeledControl = function(name, control, helptext)
+  DOM.createLabeledControl = function(name, control, helptext, extraClass)
   {
-    var label = $('<label/>')
-      .append($('<span/>')
+    var description = $('<span/>')
         .addClass('description')
-        .append(name))
+        .append(name);
+
+    if (extraClass) {
+      description.addClass(extraClass);
+    }
+
+    var label = $('<label/>')
+      .append(description)
       .append(control);
 
     if (helptext) {
@@ -118,7 +124,7 @@
     if (handler) {
       input.change(handler);
     }
-    return CATMAID.DOM.createLabeledControl(name, input, helptext);
+    return CATMAID.DOM.createLabeledControl(name, input, helptext, 'top');
   };
 
   /**

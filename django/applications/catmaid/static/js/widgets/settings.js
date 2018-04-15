@@ -474,7 +474,7 @@
       // User layouts
       var userLayoutInput = CATMAID.DOM.createTextAreaSetting(
           "Custom layouts",
-          CATMAID.Layout.Settings[SETTINGS_SCOPE].user_layouts.join(', '),
+          CATMAID.Layout.Settings[SETTINGS_SCOPE].user_layouts.join(',\n'),
           "A list of custom layouts that will be be available from the " +
           "layouts menu. The configuration is the same as for the default " +
           "layout, but each entry has to be wrapped in a layout() function " +
@@ -483,7 +483,9 @@
           "layout(\"My layout\", h(XY, X3D, ratio)). The ratio is optional " +
           "and is expected to be in range [0,1].",
           function() {
-            let userLayouts = CATMAID.Layout.parseLayoutSpecList(this.value);
+            // Remove all new lines
+            var data = this.value.replace(/\n/g, '');
+            let userLayouts = CATMAID.Layout.parseLayoutSpecList(data);
             CATMAID.Layout.Settings
                 .set(
                   'user_layouts',

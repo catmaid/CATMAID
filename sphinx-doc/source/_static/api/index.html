@@ -285,6 +285,11 @@
         </td>
                     </tr>
                     <tr>
+                        <td><a href="#operation---project_id--skeletons-in-bounding-box-get">GET /{project_id}/skeletons/in-bounding-box</a></td>
+                        <td><p>Get a list of all skeletons that intersect with the passed in bounding</p>
+        </td>
+                    </tr>
+                    <tr>
                         <td><a href="#operation---project_id--skeletons-node-labels-post">POST /{project_id}/skeletons/node-labels</a></td>
                         <td><p>Return relationship between label IDs and skeleton IDs</p>
         </td>
@@ -297,6 +302,11 @@
                     <tr>
                         <td><a href="#operation---project_id--skeletons-within-spatial-distance-post">POST /{project_id}/skeletons/within-spatial-distance</a></td>
                         <td><p>Find skeletons within a given L-infinity distance of a treenode.</p>
+        </td>
+                    </tr>
+                    <tr>
+                        <td><a href="#operation---project_id--skeletons--skeleton_id--cable-length-get">GET /{project_id}/skeletons/{skeleton_id}/cable-length</a></td>
+                        <td><p>Get the cable length for a skeleton</p>
         </td>
                     </tr>
                     <tr>
@@ -396,6 +406,16 @@
                 </tr>
                 </thead>
                 <tbody>
+                    <tr>
+                        <td><a href="#operation---project_id--treenodes-compact-detail-post">POST /{project_id}/treenodes/compact-detail</a></td>
+                        <td><p>Retrieve node information in a compact form. A list of elements of the</p>
+        </td>
+                    </tr>
+                    <tr>
+                        <td><a href="#operation---project_id--treenodes--treenode_id--compact-detail-get">GET /{project_id}/treenodes/{treenode_id}/compact-detail</a></td>
+                        <td><p>Retrieve node information in a compact form. A list of the following form</p>
+        </td>
+                    </tr>
                     <tr>
                         <td><a href="#operation---project_id--treenodes--treenode_id--confidence-post">POST /{project_id}/treenodes/{treenode_id}/confidence</a></td>
                         <td><p>Update confidence of edge between a node to either its parent or its</p>
@@ -674,6 +694,21 @@
         </td>
                     </tr>
                     <tr>
+                        <td><a href="#operation---project_id--landmarks-groups-links--put">PUT /{project_id}/landmarks/groups/links/</a></td>
+                        <td><p>Link a location group to another landmark group. If the passed in</p>
+        </td>
+                    </tr>
+                    <tr>
+                        <td><a href="#operation---project_id--landmarks-groups-links--link_id---delete">DELETE /{project_id}/landmarks/groups/links/{link_id}/</a></td>
+                        <td><p>Delete the link between two landmark groups. Won&#39;t delete links that</p>
+        </td>
+                    </tr>
+                    <tr>
+                        <td><a href="#operation---project_id--landmarks-groups-materialize-post">POST /{project_id}/landmarks/groups/materialize</a></td>
+                        <td><p>Create all passed in landmarks along with a set of groups in one go.</p>
+        </td>
+                    </tr>
+                    <tr>
                         <td><a href="#operation---project_id--landmarks-groups--landmarkgroup_id---get">GET /{project_id}/landmarks/groups/{landmarkgroup_id}/</a></td>
                         <td><p>Get details on one particular landmarkgroup group, including its</p>
         </td>
@@ -684,11 +719,6 @@
         </td>
                     </tr>
                     <tr>
-                        <td><a href="#operation---project_id--landmarks-groups--landmarkgroup_id---delete">DELETE /{project_id}/landmarks/groups/{landmarkgroup_id}/</a></td>
-                        <td><p>Delete one particular landmark group.</p>
-        </td>
-                    </tr>
-                    <tr>
                         <td><a href="#operation---project_id--landmarks-groups--landmarkgroup_id--locations--location_id---put">PUT /{project_id}/landmarks/groups/{landmarkgroup_id}/locations/{location_id}/</a></td>
                         <td><p>Link a location to a landmark group.</p>
         </td>
@@ -696,6 +726,11 @@
                     <tr>
                         <td><a href="#operation---project_id--landmarks-groups--landmarkgroup_id--locations--location_id---delete">DELETE /{project_id}/landmarks/groups/{landmarkgroup_id}/locations/{location_id}/</a></td>
                         <td><p>Remove the link between a location and a landmark group.</p>
+        </td>
+                    </tr>
+                    <tr>
+                        <td><a href="#operation---project_id--landmarks-groups--landmarkgroup_id--transitively-linked-get">GET /{project_id}/landmarks/groups/{landmarkgroup_id}/transitively-linked</a></td>
+                        <td><p>Get a list of landmark groups that are transitively linked to the</p>
         </td>
                     </tr>
                     <tr>
@@ -711,6 +746,11 @@
                     <tr>
                         <td><a href="#operation---project_id--landmarks--landmark_id---delete">DELETE /{project_id}/landmarks/{landmark_id}/</a></td>
                         <td><p>Delete one particular landmark.</p>
+        </td>
+                    </tr>
+                    <tr>
+                        <td><a href="#operation---project_id--landmarks--landmark_id--groups--group_id---delete">DELETE /{project_id}/landmarks/{landmark_id}/groups/{group_id}/</a></td>
+                        <td><p>Delete the link between a location and a landmark and a group and a</p>
         </td>
                     </tr>
                     <tr>
@@ -2235,6 +2275,21 @@
                                             <td>
                                             </td>
                                         </tr>
+                                        <tr>
+                                            <td>
+                                                annotation_reference
+                                            </td>
+                                            <td><p>Whether annoation references are IDs or names, can be &#39;id&#39; or &#39;name.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
                                 </tbody>
                             </table>
                         </section>
@@ -3117,9 +3172,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                node_type
+                                                project_id
                                             </td>
-                                            <td><p>Either &#39;connector&#39;, &#39;treenode&#39; or &#39;location&#39;</p>
+                                            <td><p>Project containing node of interest</p>
                                         </td>
                                             <td>formData</td>
                                             <td>
@@ -3133,9 +3188,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                node_type
                                             </td>
-                                            <td><p>Project containing node of interest</p>
+                                            <td><p>Either &#39;connector&#39;, &#39;treenode&#39; or &#39;location&#39;</p>
                                         </td>
                                             <td>formData</td>
                                             <td>
@@ -3451,6 +3506,51 @@
                                             <td>
                                             </td>
                                         </tr>
+                                        <tr>
+                                            <td>
+                                                with_names
+                                            </td>
+                                            <td><p>Whether to return location with their landmark names</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                with_links
+                                            </td>
+                                            <td><p>Whether to return links to other groups</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                with_relations
+                                            </td>
+                                            <td><p>Whether to return a map of used relation IDs to their names</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
                                 </tbody>
                             </table>
                         </section>
@@ -3728,17 +3828,146 @@
                 </div>
             </div>
         
-        <span id="path---project_id--landmarks-groups--landmarkgroup_id--"></span>
-            <div id="operation---project_id--landmarks-groups--landmarkgroup_id---delete" class="swagger--panel-operation-delete panel">
+        <span id="path---project_id--landmarks-groups-links-"></span>
+            <div id="operation---project_id--landmarks-groups-links--put" class="swagger--panel-operation-put panel">
                 <div class="panel-heading">
-                    <div class="operation-summary">Delete one particular landmark group.</div>
-                    <h3 class="panel-title"><span class="operation-name">DELETE</span> <strong>/{project_id}/landmarks/groups/{landmarkgroup_id}/</strong></h3>
+                    <div class="operation-summary">Link a location group to another landmark group. If the passed in</div>
+                    <h3 class="panel-title"><span class="operation-name">PUT</span> <strong>/{project_id}/landmarks/groups/links/</strong></h3>
                         Tags:
                             <a href="#tag-landmarks">landmarks</a>
                 </div>
                 <div class="panel-body">
                     <section class="sw-operation-description">
-                        <p>Delete one particular landmark group.</p>
+                        <p>Link a location group to another landmark group. If the passed in
+            groups already are in relation to each other using the passed in
+            relation, no new link is created. Instead, the existing link will be
+            returned. A flag in the result indicates whether the returned object is
+            new.</p>
+            
+                    </section>
+            
+                        
+                            <section class="sw-request-body">
+                                
+                                    <p><span class="label label-default">application/x-www-form-urlencoded</span> 
+                        </p>
+                            </section>        
+                        <section class="sw-request-params">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th class="sw-param-name"></th>
+                                    <th class="sw-param-description"></th>
+                                    <th class="sw-param-type"></th>
+                                    <th class="sw-param-data-type"></th>
+                                    <th class="sw-param-annotation"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                        <tr>
+                                            <td>
+                                                project_id
+                                            </td>
+                                            <td><p>Project of landmark group</p>
+                                        </td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                group_1_id
+                                            </td>
+                                            <td><p>The first landmark group, has role of subject.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                relation_id
+                                            </td>
+                                            <td><p>The relation between group 1 and 2, has role of predicate.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                group_2_id
+                                            </td>
+                                            <td><p>The first landmark group, has role of object.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    
+                        <section class="sw-responses">
+                    
+                            <dl>
+                                    <dt class="sw-response-200">
+                                        200 OK
+                                    
+                                    </dt>
+                                    <dd class="sw-response-200">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                
+                                                <div class="col-md-6 sw-response-model">
+                                            </div>
+                                            
+                                            </div>                </dd>
+                            </dl>
+                        </section>
+                </div>
+            </div>
+        
+        <span id="path---project_id--landmarks-groups-links--link_id--"></span>
+            <div id="operation---project_id--landmarks-groups-links--link_id---delete" class="swagger--panel-operation-delete panel">
+                <div class="panel-heading">
+                    <div class="operation-summary">Delete the link between two landmark groups. Won&apos;t delete links that</div>
+                    <h3 class="panel-title"><span class="operation-name">DELETE</span> <strong>/{project_id}/landmarks/groups/links/{link_id}/</strong></h3>
+                        Tags:
+                            <a href="#tag-landmarks">landmarks</a>
+                </div>
+                <div class="panel-body">
+                    <section class="sw-operation-description">
+                        <p>Delete the link between two landmark groups. Won&#39;t delete links that
+            don&#39;t connect to landmark groups.</p>
             
                     </section>
             
@@ -3759,7 +3988,7 @@
                                             <td>
                                                 project_id
                                             </td>
-                                            <td><p>The project the landmark group is part of.</p>
+                                            <td><p>Project of landmark group</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -3773,9 +4002,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                landmarkgroup_id
+                                                link_id
                                             </td>
-                                            <td><p>The ID of the landmark group to delete.</p>
+                                            <td><p>The link to delete</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -3814,6 +4043,169 @@
                         </section>
                 </div>
             </div>
+        
+        <span id="path---project_id--landmarks-groups-materialize"></span>
+            <div id="operation---project_id--landmarks-groups-materialize-post" class="swagger--panel-operation-post panel">
+                <div class="panel-heading">
+                    <div class="operation-summary">Create all passed in landmarks along with a set of groups in one go.</div>
+                    <h3 class="panel-title"><span class="operation-name">POST</span> <strong>/{project_id}/landmarks/groups/materialize</strong></h3>
+                        Tags:
+                            <a href="#tag-landmarks">landmarks</a>
+                </div>
+                <div class="panel-body">
+                    <section class="sw-operation-description">
+                        <p>Create all passed in landmarks along with a set of groups in one go.</p>
+            <p>The format for the passed in landmarks is expected to be [name, x1, y1,
+            z1, x2, y2, z2], representing a shared landmark at locations (x1, y1,
+            z1) for group A and (x2, y2, z2) for group B.</p>
+            <p>The format for the optionally passed in links is: [group_name_1,
+            relation_name, group_name_2] elements, representing a relation between
+            two groups. Whether group A and B map to 1 and 2 or vice versa depends
+            on the semantics of the relation.</p>
+            
+                    </section>
+            
+                        
+                            <section class="sw-request-body">
+                                
+                                    <p><span class="label label-default">application/x-www-form-urlencoded</span> 
+                        </p>
+                            </section>        
+                        <section class="sw-request-params">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th class="sw-param-name"></th>
+                                    <th class="sw-param-description"></th>
+                                    <th class="sw-param-type"></th>
+                                    <th class="sw-param-data-type"></th>
+                                    <th class="sw-param-annotation"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                        <tr>
+                                            <td>
+                                                project_id
+                                            </td>
+                                            <td><p>The project to operate in.</p>
+                                        </td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                group_a_name
+                                            </td>
+                                            <td><p>The name of landmark group A.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                group_b_name
+                                            </td>
+                                            <td><p>The name of landmark group B.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                landmarks
+                                            </td>
+                                            <td><p>A list of landmark definitions for group B.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                links
+                                            </td>
+                                            <td><p>A list of link definitions between group A and B.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                reuse_existing_landmarks
+                                            </td>
+                                            <td><p>If existing landmarks can be reused, no error will be thrown if a landmark with the same name exists alrady.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    
+                        <section class="sw-responses">
+                    
+                            <dl>
+                                    <dt class="sw-response-201">
+                                        201 Created
+                                    
+                                    </dt>
+                                    <dd class="sw-response-201">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                
+                                                <div class="col-md-6 sw-response-model">
+                                            </div>
+                                            
+                                            </div>                </dd>
+                            </dl>
+                        </section>
+                </div>
+            </div>
+        
+        <span id="path---project_id--landmarks-groups--landmarkgroup_id--"></span>
             <div id="operation---project_id--landmarks-groups--landmarkgroup_id---get" class="swagger--panel-operation-get panel">
                 <div class="panel-heading">
                     <div class="operation-summary">Get details on one particular landmarkgroup group, including its</div>
@@ -3898,6 +4290,21 @@
                                                 with_locations
                                             </td>
                                             <td><p>Whether to return linked locations</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                with_names
+                                            </td>
+                                            <td><p>Whether to return linked landmark names</p>
                                         </td>
                                             <td>formData</td>
                                             <td>
@@ -4045,6 +4452,22 @@
                                             <td>
                                             </td>
                                         </tr>
+                                        <tr>
+                                            <td>
+                                                append_members
+                                            </td>
+                                            <td><p>Whether the existing members should be extended by the
+                                        passed in members. No members will be removed.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">boolean</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
                                 </tbody>
                             </table>
                         </section>
@@ -4102,9 +4525,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                location_id
+                                                project_id
                                             </td>
-                                            <td><p>Existing location ID</p>
+                                            <td><p>Project of landmark group</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4118,9 +4541,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                location_id
                                             </td>
-                                            <td><p>Project of landmark group</p>
+                                            <td><p>Existing location ID</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4203,9 +4626,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                location_id
+                                                project_id
                                             </td>
-                                            <td><p>Existing location ID</p>
+                                            <td><p>Project of landmark group</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4219,9 +4642,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                location_id
                                             </td>
-                                            <td><p>Project of landmark group</p>
+                                            <td><p>Existing location ID</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4247,6 +4670,130 @@
                                             </td>
                                             <td>
                                                     <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    
+                        <section class="sw-responses">
+                    
+                            <dl>
+                                    <dt class="sw-response-200">
+                                        200 OK
+                                    
+                                    </dt>
+                                    <dd class="sw-response-200">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                
+                                                <div class="col-md-6 sw-response-model">
+                                            </div>
+                                            
+                                            </div>                </dd>
+                            </dl>
+                        </section>
+                </div>
+            </div>
+        
+        <span id="path---project_id--landmarks-groups--landmarkgroup_id--transitively-linked"></span>
+            <div id="operation---project_id--landmarks-groups--landmarkgroup_id--transitively-linked-get" class="swagger--panel-operation-get panel">
+                <div class="panel-heading">
+                    <div class="operation-summary">Get a list of landmark groups that are transitively linked to the</div>
+                    <h3 class="panel-title"><span class="operation-name">GET</span> <strong>/{project_id}/landmarks/groups/{landmarkgroup_id}/transitively-linked</strong></h3>
+                        Tags:
+                            <a href="#tag-landmarks">landmarks</a>
+                </div>
+                <div class="panel-body">
+                    <section class="sw-operation-description">
+                        <p>Get a list of landmark groups that are transitively linked to the
+            input group with the passed in relation.</p>
+            
+                    </section>
+            
+                        
+                            <section class="sw-request-body">
+                                
+                                    <p><span class="label label-default">application/x-www-form-urlencoded</span> 
+                        </p>
+                            </section>        
+                        <section class="sw-request-params">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th class="sw-param-name"></th>
+                                    <th class="sw-param-description"></th>
+                                    <th class="sw-param-type"></th>
+                                    <th class="sw-param-data-type"></th>
+                                    <th class="sw-param-annotation"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                        <tr>
+                                            <td>
+                                                project_id
+                                            </td>
+                                            <td><p>Project of landmark groups</p>
+                                        </td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                landmarkgroup_id
+                                            </td>
+                                            <td><p>The starting landmark group</p>
+                                        </td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                relation_id
+                                            </td>
+                                            <td><p>The relation a valid group link has to have</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                max_depth
+                                            </td>
+                                            <td><p>(optional) Maximum number of hops from the source group. 0 to disable.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
                                             </td>
                                         </tr>
                                 </tbody>
@@ -4306,9 +4853,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                landmark_id
+                                                project_id
                                             </td>
-                                            <td><p>The ID of the landmark.</p>
+                                            <td><p>The project the landmark is part of.</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4322,9 +4869,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                landmark_id
                                             </td>
-                                            <td><p>The project the landmark is part of.</p>
+                                            <td><p>The ID of the landmark.</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4399,9 +4946,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                landmark_id
+                                                project_id
                                             </td>
-                                            <td><p>The ID of the landmark.</p>
+                                            <td><p>The project the landmark is part of.</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4415,9 +4962,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                landmark_id
                                             </td>
-                                            <td><p>The project the landmark is part of.</p>
+                                            <td><p>The ID of the landmark.</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4505,9 +5052,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                landmark_id
+                                                project_id
                                             </td>
-                                            <td><p>The ID of the landmark.</p>
+                                            <td><p>The project the landmark is part of.</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4521,9 +5068,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                landmark_id
                                             </td>
-                                            <td><p>The project the landmark is part of.</p>
+                                            <td><p>The ID of the landmark.</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4578,6 +5125,127 @@
                 </div>
             </div>
         
+        <span id="path---project_id--landmarks--landmark_id--groups--group_id--"></span>
+            <div id="operation---project_id--landmarks--landmark_id--groups--group_id---delete" class="swagger--panel-operation-delete panel">
+                <div class="panel-heading">
+                    <div class="operation-summary">Delete the link between a location and a landmark and a group and a</div>
+                    <h3 class="panel-title"><span class="operation-name">DELETE</span> <strong>/{project_id}/landmarks/{landmark_id}/groups/{group_id}/</strong></h3>
+                        Tags:
+                            <a href="#tag-landmarks">landmarks</a>
+                </div>
+                <div class="panel-body">
+                    <section class="sw-operation-description">
+                        <p>Delete the link between a location and a landmark and a group and a
+            location, if and only if both exist. If the last link to a location is
+            deleted, the location is removed as well.</p>
+            
+                    </section>
+            
+                    
+                        <section class="sw-request-params">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th class="sw-param-name"></th>
+                                    <th class="sw-param-description"></th>
+                                    <th class="sw-param-type"></th>
+                                    <th class="sw-param-data-type"></th>
+                                    <th class="sw-param-annotation"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                        <tr>
+                                            <td>
+                                                project_id
+                                            </td>
+                                            <td><p>Project of landmark group</p>
+                                        </td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                landmark_id
+                                            </td>
+                                            <td><p>The landmark to unlink from</p>
+                                        </td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                group_id
+                                            </td>
+                                            <td><p>The group to unlink from</p>
+                                        </td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                keep_points
+                                            </td>
+                                            <td><p>Wheter only links should be deleted and points should be kept.</p>
+                                        </td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">boolean</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    
+                        <section class="sw-responses">
+                    
+                            <dl>
+                                    <dt class="sw-response-204">
+                                        204 No Content
+                                    
+                                    </dt>
+                                    <dd class="sw-response-204">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                
+                                                <div class="col-md-6 sw-response-model">
+                                            </div>
+                                            
+                                            </div>                </dd>
+                            </dl>
+                        </section>
+                </div>
+            </div>
+        
         <span id="path---project_id--landmarks--landmark_id--locations-"></span>
             <div id="operation---project_id--landmarks--landmark_id--locations--put" class="swagger--panel-operation-put panel">
                 <div class="panel-heading">
@@ -4613,9 +5281,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                landmark_id
+                                                project_id
                                             </td>
-                                            <td><p>The landmark to link</p>
+                                            <td><p>Project of landmark group</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4629,9 +5297,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                landmark_id
                                             </td>
-                                            <td><p>Project of landmark group</p>
+                                            <td><p>The landmark to link</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4761,6 +5429,22 @@
                                 <tbody>
                                         <tr>
                                             <td>
+                                                project_id
+                                            </td>
+                                            <td><p>Project of landmark group</p>
+                                        </td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
                                                 landmark_id
                                             </td>
                                             <td><p>The landmark to unlink</p>
@@ -4780,22 +5464,6 @@
                                                 location_id
                                             </td>
                                             <td><p>The location to unlink</p>
-                                        </td>
-                                            <td>path</td>
-                                            <td>
-                                        <span class="json-property-type">integer</span>
-                                        <span class="json-property-range" title="Value limits"></span>
-                                        
-                                            </td>
-                                            <td>
-                                                    <span class="json-property-required"></span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                project_id
-                                            </td>
-                                            <td><p>Project of landmark group</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -5202,8 +5870,8 @@
             limited to constrain query execution time. Optionally, lists of treenodes
             and connector IDs can be provided to make sure they are included in the
             result set, regardless of intersection.</p>
-            <p>Returned is an array with four entries:</p>
-            <p>[[treenodes], [connectors], {labels}, node_limit_reached, {relation_map}]</p>
+            <p>Returned is an array with five entries, plus optionally a sixth one</p>
+            <p>[[treenodes], [connectors], {labels}, node_limit_reached, {relation_map}, {exstraNodes}]</p>
             <p>The list of treenodes has elements of this form:</p>
             <p>[id, parent_id, location_x, location_y, location_z, confidence, radius, skeleton_id, edition_time, user_id]</p>
             <p>The list connectors has elements of this form:</p>
@@ -5400,6 +6068,22 @@
                                                 format
                                             </td>
                                             <td><p>Either &quot;json&quot; (default) or &quot;msgpack&quot;, optional.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                with_relation_map
+                                            </td>
+                                            <td><p>Whether an ID to name mapping for the used relations should be included
+                                        and which extent it should have.</p>
                                         </td>
                                             <td>formData</td>
                                             <td>
@@ -6822,13 +7506,12 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                interval_id
+                                                project_id
                                             </td>
-                                            <td><p>Interval the connector is part of</p>
-                                        </td>
-                                            <td>formData</td>
+                                            <td></td>
+                                            <td>path</td>
                                             <td>
-                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-type">string</span>
                                         <span class="json-property-range" title="Value limits"></span>
                                         
                                             </td>
@@ -6838,12 +7521,13 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                interval_id
                                             </td>
-                                            <td></td>
-                                            <td>path</td>
+                                            <td><p>Interval the connector is part of</p>
+                                        </td>
+                                            <td>formData</td>
                                             <td>
-                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-type">integer</span>
                                         <span class="json-property-range" title="Value limits"></span>
                                         
                                             </td>
@@ -6924,7 +7608,7 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                interval_id
+                                                project_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -6939,7 +7623,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                interval_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -7014,13 +7698,12 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                interval_id
+                                                project_id
                                             </td>
-                                            <td><p>Interval to update state of</p>
-                                        </td>
-                                            <td>formData</td>
+                                            <td></td>
+                                            <td>path</td>
                                             <td>
-                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-type">string</span>
                                         <span class="json-property-range" title="Value limits"></span>
                                         
                                             </td>
@@ -7030,12 +7713,13 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                interval_id
                                             </td>
-                                            <td></td>
-                                            <td>path</td>
+                                            <td><p>Interval to update state of</p>
+                                        </td>
+                                            <td>formData</td>
                                             <td>
-                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-type">integer</span>
                                         <span class="json-property-range" title="Value limits"></span>
                                         
                                             </td>
@@ -7486,7 +8170,7 @@
             <p>If the sampler was created with allowing the creation of new boundary nodes,
             these nodes are removed by default if they have not been modified since
             their insertion. This can optionally be disabled using the</p>
-            <p><delete_created_nodes> parameter.</p>
+            <p>&lt;delete_created_nodes&gt; parameter.</p>
             
                     </section>
             
@@ -8695,6 +9379,193 @@
                 </div>
             </div>
         
+        <span id="path---project_id--skeletons-in-bounding-box"></span>
+            <div id="operation---project_id--skeletons-in-bounding-box-get" class="swagger--panel-operation-get panel">
+                <div class="panel-heading">
+                    <div class="operation-summary">Get a list of all skeletons that intersect with the passed in bounding</div>
+                    <h3 class="panel-title"><span class="operation-name">GET</span> <strong>/{project_id}/skeletons/in-bounding-box</strong></h3>
+                        Tags:
+                            <a href="#tag-skeletons">skeletons</a>
+                </div>
+                <div class="panel-body">
+                    <section class="sw-operation-description">
+                        <p>Get a list of all skeletons that intersect with the passed in bounding
+            box.</p>
+            
+                    </section>
+            
+                        
+                            <section class="sw-request-body">
+                                
+                                    <p><span class="label label-default">application/x-www-form-urlencoded</span> 
+                        </p>
+                            </section>        
+                        <section class="sw-request-params">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th class="sw-param-name"></th>
+                                    <th class="sw-param-description"></th>
+                                    <th class="sw-param-type"></th>
+                                    <th class="sw-param-data-type"></th>
+                                    <th class="sw-param-annotation"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                        <tr>
+                                            <td>
+                                                project_id
+                                            </td>
+                                            <td></td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                limit
+                                            </td>
+                                            <td><p>Limit the number of returned nodes.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                left
+                                            </td>
+                                            <td><p>Minimum world space X coordinate</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                top
+                                            </td>
+                                            <td><p>Minimum world space Y coordinate</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                z1
+                                            </td>
+                                            <td><p>Minimum world space Z coordinate</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                right
+                                            </td>
+                                            <td><p>Maximum world space X coordinate</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                bottom
+                                            </td>
+                                            <td><p>Maximum world space Y coordinate</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                z2
+                                            </td>
+                                            <td><p>Maximum world space Z coordinate</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    
+                        <section class="sw-responses">
+                    
+                            <dl>
+                                    <dt class="sw-response-200">
+                                        200 OK
+                                    
+                                    </dt>
+                                    <dd class="sw-response-200">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                
+                                                <div class="col-md-6 sw-response-model">
+                                            </div>
+                                            
+                                            </div>                </dd>
+                            </dl>
+                        </section>
+                </div>
+            </div>
+        
         <span id="path---project_id--skeletons-node-labels"></span>
             <div id="operation---project_id--skeletons-node-labels-post" class="swagger--panel-operation-post panel">
                 <div class="panel-heading">
@@ -9019,6 +9890,93 @@
                                     
                                     </dt>
                                     <dd class="sw-response-201">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                
+                                                <div class="col-md-6 sw-response-model">
+                                            </div>
+                                            
+                                            </div>                </dd>
+                            </dl>
+                        </section>
+                </div>
+            </div>
+        
+        <span id="path---project_id--skeletons--skeleton_id--cable-length"></span>
+            <div id="operation---project_id--skeletons--skeleton_id--cable-length-get" class="swagger--panel-operation-get panel">
+                <div class="panel-heading">
+                    <div class="operation-summary">Get the cable length for a skeleton</div>
+                    <h3 class="panel-title"><span class="operation-name">GET</span> <strong>/{project_id}/skeletons/{skeleton_id}/cable-length</strong></h3>
+                        Tags:
+                            <a href="#tag-skeletons">skeletons</a>
+                </div>
+                <div class="panel-body">
+                    <section class="sw-operation-description">
+                        <p>Get the cable length for a skeleton</p>
+            
+                    </section>
+            
+                    
+                        <section class="sw-request-params">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th class="sw-param-name"></th>
+                                    <th class="sw-param-description"></th>
+                                    <th class="sw-param-type"></th>
+                                    <th class="sw-param-data-type"></th>
+                                    <th class="sw-param-annotation"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                        <tr>
+                                            <td>
+                                                project_id
+                                            </td>
+                                            <td><p>Project of landmark</p>
+                                        </td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                skeleton_id
+                                            </td>
+                                            <td><p>IDs of the skeleton to get the cable length for</p>
+                                        </td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    
+                        <section class="sw-responses">
+                    
+                            <dl>
+                                    <dt class="sw-response-200">
+                                        200 OK
+                                    
+                                    </dt>
+                                    <dd class="sw-response-200">
                                             <div class="row">
                                                 <div class="col-md-12">
                                                     
@@ -10280,6 +11238,165 @@
                 </div>
             </div>
         
+        <span id="path---project_id--treenodes-compact-detail"></span>
+            <div id="operation---project_id--treenodes-compact-detail-post" class="swagger--panel-operation-post panel">
+                <div class="panel-heading">
+                    <div class="operation-summary">Retrieve node information in a compact form. A list of elements of the</div>
+                    <h3 class="panel-title"><span class="operation-name">POST</span> <strong>/{project_id}/treenodes/compact-detail</strong></h3>
+                        Tags:
+                            <a href="#tag-treenodes">treenodes</a>
+                </div>
+                <div class="panel-body">
+                    <section class="sw-operation-description">
+                        <p>Retrieve node information in a compact form. A list of elements of the
+            following form is returned: [ID, parent ID, x, y, z, confidence, user_id,
+            radius, skeleton_id, user_id].</p>
+            
+                    </section>
+            
+                    
+                        <section class="sw-request-params">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th class="sw-param-name"></th>
+                                    <th class="sw-param-description"></th>
+                                    <th class="sw-param-type"></th>
+                                    <th class="sw-param-data-type"></th>
+                                    <th class="sw-param-annotation"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                        <tr>
+                                            <td>
+                                                project_id
+                                            </td>
+                                            <td></td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    
+                        <section class="sw-responses">
+                    
+                            <dl>
+                                    <dt class="sw-response-201">
+                                        201 Created
+                                    
+                                    </dt>
+                                    <dd class="sw-response-201">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                
+                                                <div class="col-md-6 sw-response-model">
+                                            </div>
+                                            
+                                            </div>                </dd>
+                            </dl>
+                        </section>
+                </div>
+            </div>
+        
+        <span id="path---project_id--treenodes--treenode_id--compact-detail"></span>
+            <div id="operation---project_id--treenodes--treenode_id--compact-detail-get" class="swagger--panel-operation-get panel">
+                <div class="panel-heading">
+                    <div class="operation-summary">Retrieve node information in a compact form. A list of the following form</div>
+                    <h3 class="panel-title"><span class="operation-name">GET</span> <strong>/{project_id}/treenodes/{treenode_id}/compact-detail</strong></h3>
+                        Tags:
+                            <a href="#tag-treenodes">treenodes</a>
+                </div>
+                <div class="panel-body">
+                    <section class="sw-operation-description">
+                        <p>Retrieve node information in a compact form. A list of the following form
+            is returned: [ID, parent ID, x, y, z, confidence, user_id, radius,
+            skeleton_id, user_id].</p>
+            
+                    </section>
+            
+                    
+                        <section class="sw-request-params">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th class="sw-param-name"></th>
+                                    <th class="sw-param-description"></th>
+                                    <th class="sw-param-type"></th>
+                                    <th class="sw-param-data-type"></th>
+                                    <th class="sw-param-annotation"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                        <tr>
+                                            <td>
+                                                project_id
+                                            </td>
+                                            <td></td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                treenode_id
+                                            </td>
+                                            <td></td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    
+                        <section class="sw-responses">
+                    
+                            <dl>
+                                    <dt class="sw-response-200">
+                                        200 OK
+                                    
+                                    </dt>
+                                    <dd class="sw-response-200">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                
+                                                <div class="col-md-6 sw-response-model">
+                                            </div>
+                                            
+                                            </div>                </dd>
+                            </dl>
+                        </section>
+                </div>
+            </div>
+        
         <span id="path---project_id--treenodes--treenode_id--confidence"></span>
             <div id="operation---project_id--treenodes--treenode_id--confidence-post" class="swagger--panel-operation-post panel">
                 <div class="panel-heading">
@@ -10320,7 +11437,7 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                treenode_id
+                                                project_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -10335,7 +11452,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                treenode_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -10398,7 +11515,7 @@
                                             <td>
                                                 partner_confidences
                                             </td>
-                                            <td><p>Set different confidences to connectors in <partner_ids></p>
+                                            <td><p>Set different confidences to connectors in &lt;partner_ids&gt;</p>
                                         </td>
                                             <td>formData</td>
                                             <td>
@@ -10466,7 +11583,7 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                treenode_id
+                                                project_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -10481,7 +11598,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                treenode_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -10551,7 +11668,7 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                treenode_id
+                                                project_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -10566,7 +11683,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                treenode_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -10642,7 +11759,7 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                treenode_id
+                                                project_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -10657,7 +11774,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                treenode_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -10761,7 +11878,7 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                treenode_id
+                                                project_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -10776,7 +11893,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                treenode_id
                                             </td>
                                             <td></td>
                                             <td>path</td>

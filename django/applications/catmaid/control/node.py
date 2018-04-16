@@ -214,7 +214,7 @@ class CachedMsgpackNodeProvder(BasicNodeProvider):
                 if tuples[0] != b'\x95':
                     raise ValueError("Unexpected cached Msgpack tuple format")
 
-                extra_msgpack = msgpack.packb(extra_tuples)
+                extra_msgpack = msgpack.packb([extra_tuples])
 
                 # Extend the five-element list with extra tuples by making it a
                 # six element list and just appending the extra list

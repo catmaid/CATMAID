@@ -1776,6 +1776,13 @@
       var reader = new FileReader();
       reader.onload = function(e) {
           var skeletons = JSON.parse(e.target.result);
+
+          // Check if the parsed data structure is in fact the expected array.
+          if (!(skeletons && skeletons instanceof Array)) {
+            CATMAID.warn('File has different format than expected');
+            return;
+          }
+
           // Make sure all skeletons have at least a skeleton ID
           var validSkeletons = skeletons.filter(function(s) {
             return s.skeleton_id !== undefined;

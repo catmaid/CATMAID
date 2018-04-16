@@ -4758,6 +4758,10 @@ var SkeletonAnnotations = {};
     function toggleMeasurementTool() {
       // Keep a reference to the original node
       originalNode = self.nodes.get(treenode_id);
+      if (!originalNode) {
+        CATMAID.warn(`Could not find node ${treenode_id} on this layer`);
+        return;
+      }
       originalStackZ = self.stackViewer.primaryStack.projectToStackZ(
           originalNode.z, originalNode.y, originalNode.x);
       // Only allow radius edits of treenodes

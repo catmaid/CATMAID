@@ -76,6 +76,7 @@ InstanceRegistry.prototype.getLastInstance = function() {
 var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne, // jshint ignore:line
     fnFailedLoading, fnDone, method, binaryTransfer, api = undefined) {
   method = method || "POST";
+  var cancelationRequested = false;
   var i = 0,
       missing = [],
       unloadable = [],
@@ -122,6 +123,13 @@ var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne, // j
               CATMAID.handleError(cancelError);
               CATMAID.msg("ERROR", `Problem loading skeleton ${skeleton_id}`);
             } else {
+               // Cancel if requested
+               if (cancelationRequested) {
+                 CATMAID.warn("Canceled skeleton loading");
+                 finish();
+                 fnDone();
+                 return;
+               }
               // Next iteration
               i += 1;
               $('#counting-loaded-skeletons').text(i + " / " + skeleton_ids.length);
@@ -134,10 +142,25 @@ var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne, // j
             }
           });
       };
+
   if (skeleton_ids.length > 1) {
     $.blockUI({message: '<img src="' + STATIC_URL_JS +
       'images/busy.gif" /> <span>Loading skeletons <div id="counting-loaded-skeletons">0 / ' +
-      skeleton_ids.length + '</span>'});
+      skeleton_ids.length + '</div></span><div id="cancel-skeleton-loading"><p id="cancel-msg" style="display: none">Canceling loading after current skeleton"<p><p><input type="button" value="Cancel" ' +
+      'id="block-ui-dialog-btn"></p></div>'});
+
+      // Provide option to cancel
+      $(document).on('click', '#block-ui-dialog-btn', (function(){
+        cancelationRequested = true;
+        let cancelMsg = document.querySelector('#cancel-skeleton-loading #cancel-msg');
+        if (cancelMsg) {
+          cancelMsg.style.display = 'block';
+        }
+        let cancelBtn = document.querySelector('#cancel-skeleton-loading #block-ui-dialog-btn');
+        if (cancelBtn) {
+          cancelBtn.disabled = true;
+        }
+      }).bind(this));
   }
   if (skeleton_ids.length > 0) {
     loadOne(skeleton_ids[0]);

@@ -87,6 +87,9 @@ Miscellaneous:
 - For remote logins the API token is shown without password confirmation,
   because users usually don't know the local user's password.
 
+- Loading of skeleton morphology, e.g. when appending data to the 3D Viewer, can
+  now be canceled.
+
 ### Bug fixes
 
 - Neuron Search: neurons that don't have any annotations are now returned as

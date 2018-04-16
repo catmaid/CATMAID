@@ -127,6 +127,8 @@ Tracing general:
   anymore. Left mouse button clicks/movements are handled like right mouse
   button clicks/movements.
 
+- The Split Neuron Dialog has now "select all" checkboxes for annotations.
+
 Statistics widget:
 
 - Statistics widget: The new option "All" in the time unit selection control

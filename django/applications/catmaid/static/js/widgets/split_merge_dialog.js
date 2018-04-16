@@ -323,7 +323,25 @@
         }
         // Update dialog title
         var title = 'Split skeleton "' + model_name + '"';
-        $(this.dialog).dialog('option', 'title', title);
+        var $dialog = $(this.dialog).dialog('option', 'title', title);
+
+        // Add select-all checkoxes for annotations
+        var selectAllBig = colorBig.appendChild(document.createElement('input'));
+        selectAllBig.style.margin = '5%';
+        selectAllBig.setAttribute('type', 'checkbox');
+        selectAllBig.setAttribute('checked', 'true');
+        selectAllBig.setAttribute('title', 'Toggle annotations of remaining skeleton');
+        selectAllBig.onchange = function() {
+          $('input[type=checkbox]', contentBig).prop('checked', this.checked);
+        };
+        var selectAllSmall = colorSmall.appendChild(document.createElement('input'));
+        selectAllSmall.style.margin = '5%';
+        selectAllSmall.setAttribute('type', 'checkbox');
+        selectAllBig.setAttribute('title', 'Toggle annotations of new skeleton');
+        selectAllSmall.onchange = function() {
+          $('input[type=checkbox]', contentSmall).prop('checked', this.checked);
+        };
+
         // Add titles
         titleBig.appendChild(document.createTextNode(Math.round(over_length) +
               "nm cable in remaining skeleton"));

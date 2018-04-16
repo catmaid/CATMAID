@@ -50,7 +50,13 @@
     return namespaces;
   };
 
-  SVGFactory.prototype.addMarker = function(id, element, width, height, refX, refY, units, type) {
+  SVGFactory.prototype.addMarker = function(id, element, width, height, refX, refY, units, style, type) {
+    if (style) {
+      var svgStyle = this.createSvgStyle(style);
+      if (svgStyle.length > 0) {
+        element.setAttribute('style', svgStyle);
+      }
+    }
     var marker = document.createElementNS(this.getNamespaces().svg, 'marker');
     marker.setAttribute('id', id);
     marker.setAttribute('markerWidth', width);
@@ -111,14 +117,7 @@
         ' Z');
     */
 
-    if (style) {
-      var svgStyle = this.createSvgStyle(style);
-      if (svgStyle.length > 0) {
-        arrow.setAttribute('style', svgStyle);
-      }
-    }
-
-    this.addMarker(id, arrow, width, height, refX, refY, units, "arrow");
+    this.addMarker(id, arrow, width, height, refX, refY, units, style, "arrow");
   };
 
   SVGFactory.prototype.addTeeMarker = function(id, width, height, refX, refY, units, style) {
@@ -143,14 +142,7 @@
 
     tee.setAttribute('d', this._asSVGPath(path, true));
 
-    if (style) {
-      var svgStyle = this.createSvgStyle(style);
-      if (svgStyle.length > 0) {
-        tee.setAttribute('style', svgStyle);
-      }
-    }
-
-    this.addMarker(id, tee, width, height, refX, refY, units, "tee");
+    this.addMarker(id, tee, width, height, refX, refY, units, style, "tee");
   };
 
 
@@ -170,14 +162,9 @@
 
     circle.setAttribute('d', path.join(" "));
 
-    if (style) {
-      var svgStyle = this.createSvgStyle(style);
-      if (svgStyle.length > 0) {
-        circle.setAttribute('style', svgStyle);
-      }
-    }
+    this.addMarker(id, circle, width, height, refX, refY, units, style, "circle");
+  };
 
-    this.addMarker(id, circle, width, height, refX, refY, units, "circle");
   };
 
   SVGFactory.prototype.createAndAddMarker = function(arrowId, options, arrowStyle) {

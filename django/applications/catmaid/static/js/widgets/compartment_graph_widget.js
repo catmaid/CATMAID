@@ -1849,11 +1849,12 @@
     this.cy.edges().each(function(i, edge) {
       if (edge.data('directed')) {
         if ("source" === mode || "target" === mode) {
-          labelColor = edge[mode]().data('color');
+          labelColor = edge[mode]().data('color'); // color of the source or target node
           edge.style({'line-color': labelColor,
                       'target-arrow-color': labelColor,
                       'target-arrow-shape': arrowShapeFn(edge.source())});
         }
+        edge.data('color', labelColor);
         edge.data('label_color', labelColor);
         edge.data('width', min + edgeWidth(edge.data('weight')));
       }
@@ -2642,7 +2643,6 @@
     var templateLineOptions = {
       'edgeType': 'haystack',
       'arrowOnSeparateLine': CATMAID.getOption(options, 'arrowOnSeparateLine', false),
-      'arrowLineShrinking': CATMAID.getOption(options, 'arrowLineShrinking', true),
       'refX': CATMAID.getOption(options, 'arrowRefX', undefined)
     };
 
@@ -2698,18 +2698,19 @@
           x2 = rscratch.arrowEndX,
           y2 = rscratch.arrowEndY;
 
+      // "arrow" here means "end marker"
       if (data.arrow && data.arrow !== 'none') {
         templateLineOptions['arrow'] = data.arrow;
         templateLineOptions['arrowStyle'] = templateLineStyle;
-        if (data.arrow === 'triangle') {
-          // Since our arrows width are in a reather narrow ranger, setting the
-          // arrow dimensions in absolute pixels is easier.
-          var d = 3 * (0.5 * strokeWidth + 1.5);
-          templateLineOptions['arrowUnit'] = 'userSpaceOnUse';
-          templateLineOptions['arrowWidth'] = d;
-        } else {
-          CATMAID.warn('Could not export graph element. Unknown arrow: ' + data.arrow);
-        }
+
+        // Since our arrows width are in a reather narrow ranger, setting the
+        // arrow dimensions in absolute pixels is easier.
+        var d = 3 * (0.5 * strokeWidth + 1.5);
+        templateLineOptions['arrowUnit'] = 'userSpaceOnUse';
+        templateLineOptions['arrowWidth'] = d;
+        templateLineOptions['arrowHeight'] = d;
+        templateLineOptions['refX'] = 0; // d;
+        templateLineOptions['refY'] = 0; // 0.5 * d;
       } else {
         templateLineOptions['arrow'] = undefined;
       }
@@ -3923,7 +3924,7 @@
         node.data('arrowshape', shape); // storing the arrow shape in the source node
         edge.data('arrow', shape);
         edge.style({'target-arrow-shape': shape,
-                    'target-arrow-color': node.data('color')});
+                    'target-arrow-color': edge.data('color')});
       }
     });
     this.cy.endBatch();

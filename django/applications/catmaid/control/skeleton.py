@@ -2296,37 +2296,37 @@ def skeletons_in_bounding_box(request, project_id):
       type: integer
       defaultValue: 0
       paramType: form
-    - name: left
+    - name: minx
       description: |
         Minimum world space X coordinate
       required: true
       type: float
       paramType: form
-    - name: top
+    - name: miny
       description: |
         Minimum world space Y coordinate
       required: true
       type: float
       paramType: form
-    - name: z1
+    - name: minz
       description: |
         Minimum world space Z coordinate
       required: true
       type: float
       paramType: form
-    - name: right
+    - name: maxx
       description: |
         Maximum world space X coordinate
       required: true
       type: float
       paramType: form
-    - name: bottom
+    - name: maxy
       description: |
         Maximum world space Y coordinate
       required: true
       type: float
       paramType: form
-    - name: z2
+    - name: maxz
       description: |
         Maximum world space Z coordinate
       required: true

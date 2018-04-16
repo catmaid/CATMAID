@@ -85,11 +85,6 @@
   };
 
   SVGFactory.prototype.addArrowMarker = function(id, width, height, refX, refY, units, style) {
-    width = width === undefined ? 3.0 : width;
-    height = height === undefined ? width : height;
-    refX = refX === undefined ? 0 : refX;
-    refY = refY === undefined ? 0 : refY;
-    units = units === undefined ? 'strokeWidth' : units;
     var arrow = document.createElementNS(this.getNamespaces().svg, 'path');
     //
     //      0,height/2
@@ -127,11 +122,6 @@
   };
 
   SVGFactory.prototype.addTeeMarker = function(id, width, height, refX, refY, units, style) {
-    width = width === undefined ? 3.0 : width;
-    height = height === undefined ? width : height;
-    refX = refX === undefined ? width : refX;
-    refY = refY === undefined ? width : refY;
-    units = units === undefined ? 'strokeWidth' : units;
     var tee = document.createElementNS(this.getNamespaces().svg, 'path');
     //
     // 0,height/2    width/4,height/2
@@ -165,12 +155,6 @@
 
 
   SVGFactory.prototype.addCircleMarker = function(id, width, height, refX, refY, units, style) {
-    width = width === undefined ? 3.0 : width;
-    height = height === undefined ? width : height;
-    refX = refX === undefined ? 0 : refX;
-    refY = refY === undefined ? 0 : refY;
-    units = units === undefined ? 'strokeWidth' : units;
-
     var circle = document.createElementNS(this.getNamespaces().svg, 'path');
     // Unit circle defined with bezier control points, scaled by width
     var r = width/2;
@@ -197,23 +181,35 @@
   };
 
   SVGFactory.prototype.createAndAddMarker = function(arrowId, options, arrowStyle) {
-    switch (options.arrow) {
-      case "triangle":
-        this.addArrowMarker(arrowId, options.arrowWidth, options.arrowHeight,
-            options.refX, options.refY, options.arrowUnit, arrowStyle);
-        break;
-      case "circle":
-        this.addCircleMarker(arrowId, options.arrowWidth, options.arrowHeight,
-            options.refX, options.refY, options.arrowUnit, arrowStyle);
-        break;
-      case "tee":
-        this.addTeeMarker(arrowId, options.arrowWidth, options.arrowHeight,
-            options.refX, options.refY, options.arrowUnit, arrowStyle);
-        break;
-      default:
+    var supported = {
+      triangle: "Arrow",
+      circle: "Circle",
+      tee: "Tee",
+      square: "Square",
+    };
+
+    var type = supported[options.arrow];
+
+    if (!type) {
         console.log("Ignoring unknown end marker type: " + options.arrow);
-        break;
+        return;
     }
+
+    var width = options.arrowWidth,
+        height = options.arrowHeight,
+        refX = options.refX,
+        refY = options.refY,
+        units = options.arrowUnit;
+
+    width = width === undefined ? 3.0 : width;
+    height = height === undefined ? width : height;
+    refX = refX === undefined ? 0 : refX;
+    refY = refY === undefined ? 0 : refY;
+    units = units === undefined ? 'strokeWidth' : units;
+
+    // Invoke the type-appropriate marker constructor
+    this["add" + type + "Marker"](arrowId, width, height,
+            refX, refY, units, arrowStyle);
   };
 
   function flattenStyle(key) {

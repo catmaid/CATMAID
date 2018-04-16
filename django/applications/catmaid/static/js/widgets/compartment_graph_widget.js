@@ -3929,6 +3929,51 @@
     this.cy.endBatch();
   };
 
+  // Add state manage for Graph widget
+  CATMAID.registerState(GroupGraph, {
+    key: 'graph-widget',
+    getState: function(widget) {
+      return {
+        label_valign: widget.label_valign,
+        label_halign: widget.label_halign,
+        show_node_labels: widget.show_node_labels,
+        trim_node_labels: widget.trim_node_labels,
+        node_width: widget.node_width,
+        node_height: widget.node_height,
+        edge_text_color: widget.edge_text_color,
+        edge_text_opacity: widget.edge_text_opacity,
+        edge_min_width: widget.edge_min_width,
+        edge_width_function: widget.edge_width_function,
+        grid_snap: widget.grid_snap,
+        grid_side: widget.grid_side,
+        prevent_selection_overlaps: widget.prevent_selection_overlaps,
+        linkTypeColors: Array.from(widget.linkTypeColors)
+      };
+    },
+    setState: function(widget, state) {
+      CATMAID.tools.copyIfDefined(state, widget, 'label_valign');
+      CATMAID.tools.copyIfDefined(state, widget, 'label_halign');
+      CATMAID.tools.copyIfDefined(state, widget, 'show_node_labels');
+      CATMAID.tools.copyIfDefined(state, widget, 'trim_node_labels');
+      CATMAID.tools.copyIfDefined(state, widget, 'node_height');
+      CATMAID.tools.copyIfDefined(state, widget, 'node_height');
+      CATMAID.tools.copyIfDefined(state, widget, 'edge_text_color');
+      CATMAID.tools.copyIfDefined(state, widget, 'edge_text_opacity');
+      CATMAID.tools.copyIfDefined(state, widget, 'edge_min_width');
+      CATMAID.tools.copyIfDefined(state, widget, 'edge_width_function');
+      CATMAID.tools.copyIfDefined(state, widget, 'grid_snap');
+      CATMAID.tools.copyIfDefined(state, widget, 'gris_side');
+      CATMAID.tools.copyIfDefined(state, widget, 'prevent_selection_overlaps');
+
+      if (state.linkTypeColors) {
+        for (var i=0; i<state.linkTypeColors.length; ++i) {
+          var ltc = state.linkTypeColors[i];
+          widget.linkTypeColors[ltc[0]] = CATMAID.tools.deepCopy(ltc[1]);
+        }
+      }
+    }
+  });
+
   // Export Graph Widget
   CATMAID.GroupGraph = GroupGraph;
 

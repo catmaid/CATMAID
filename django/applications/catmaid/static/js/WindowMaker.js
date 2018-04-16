@@ -1501,6 +1501,7 @@ var WindowMaker = new function()
   var createGraphWindow = function()
   {
     var GG = new CATMAID.GroupGraph();
+    checkAndLoadWidgetState(GG);
 
     var win = new CMWWindow(GG.getName());
     var content = win.getFrame();

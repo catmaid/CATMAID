@@ -105,6 +105,8 @@ Graph widget:
   named selection. Then these can be selected or deselected.  The "Select all"
   button selects all nodes from all created selections.
 
+- Basic state saving is now supported.
+
 Reconstruction Sampler:
 
 - Intervals are now displayed with only two colors by default, it makes

@@ -699,7 +699,7 @@
    */
   function mapNodeToLayoutSpec(node) {
     /* jshint validthis: true */
-    return nodeToLayoutSpec(node, this.stackViewerWindowMapping,
+    return nodeToLayoutSpec(node, this.stackViewerMapping,
         this.subscriptionInfo);
   }
 

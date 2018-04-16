@@ -190,6 +190,19 @@
     this.addMarker(id, diamond, width, height, refX, refY, units, style, "diamond");
   };
 
+  SVGFactory.prototype.addVeeMarker = function(id, width, height, refX, refY, units, style) {
+    var vee = document.createElementNS(this.getNamespaces().svg, 'path');
+    var w2 = width / 2.0;
+    var h2 = height / 2.0;
+    var path = [[-w2, h2],
+                [ w2, 0],
+                [-w2, -h2],
+                [  0, 0]];
+    vee.setAttribute('d', this._asSVGPath(path, true));
+
+    this.addMarker(id, vee, width, height, refX, refY, units, style, "vee");
+  };
+
   SVGFactory.prototype.createAndAddMarker = function(arrowId, options, arrowStyle) {
     var supported = {
       triangle: "Arrow",
@@ -197,6 +210,7 @@
       tee: "Tee",
       square: "Square",
       diamond: "Diamond",
+      vee: "Vee",
     };
 
     var type = supported[options.arrow];
@@ -452,7 +466,12 @@
 
       // Additionally, shrink the actual line a little bit, so that it doesn't
       // overlap with the arrow head.
-      if (options.arrow === "triangle" || options.arrow === "diamond") {
+      var shrinkers = {
+        "triangle": true,
+        "diamond": true,
+        "vee": true,
+      };
+      if (shrinkers[options.arrow]) {
         var vx = x2 - x1, vy = y2 - y1;
         var l = Math.sqrt(vx*vx + vy * vy);
         var vxUnit = vx / l, vyUnit = vy / l;
@@ -473,6 +492,7 @@
             f = 0.9;
             break;
           case "diamond":
+          case "vee":
             f = 0.5;
             break;
           default:

@@ -91,16 +91,19 @@ Landmarks:
 
 Graph widget:
 
-- The old "Graph" tab was split into two: "Nodes" and "Edges", each with
-  the corresponding functionality.
+- The old "Graph" tab was split into two: "Nodes" and "Edges", each with the
+  corresponding functionality.
+
 - New feature: color edges with the same color as the source node, the target
-  node, or the general color specified in the "Properties" menu (from the
-	"Main" tab). See the "Edges" tab.
-- New feature: change the arrow shape to a circle, diamond, tee, etc. The
-  new "Set" button in the "Edges" tab applies the change to selected nodes.
-- New feature: the new "Selections" tab can record sets of nodes, stored
-  as a named selection. Then these can be selected or deselected.
-	The "Select all" button selects all nodes from all created selections.
+  node, or the general color specified in the "Properties" menu (from the "Main"
+  tab). See the "Edges" tab.
+
+- New feature: change the arrow shape to a circle, diamond, tee, etc. The new
+  "Set" button in the "Edges" tab applies the change to selected nodes.
+
+- New feature: the new "Selections" tab can record sets of nodes, stored as a
+  named selection. Then these can be selected or deselected.  The "Select all"
+  button selects all nodes from all created selections.
 
 Reconstruction Sampler:
 

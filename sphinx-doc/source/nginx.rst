@@ -35,7 +35,7 @@ connection pooling and communicates efficiently with Nginx.
       virtualenv = <path-to-virtual-env>
       chdir = <catmaid-path>/django
       socket = /run/uwsgi/app/catmaid/socket
-      mount = /<catmaid-relative-url>=<catmaid-path>/django/projects/mysite/django.wsgi
+      mount = /<catmaid-relative-url>/=<catmaid-path>/django/projects/mysite/django.wsgi
       manage-script-name = true
       workers = 2
       threads = 2
@@ -86,6 +86,11 @@ connection pooling and communicates efficiently with Nginx.
    To check this, the ``namei`` command can be very helpful, because it can list
    permissions for each path component when called like this:
    ``namei -l <CATMAID-PATH>/django/static``.
+
+   Also, it easy to miss, but important that the the relative URL in the
+   ``mount`` line of the uWSGI configuration in step 3 has to be exactly the
+   same as the uWSGI location block in the Nginx configuration in step 5,
+   including whether there is an ending slash character.
 
 .. _nginx-image-data:
 

@@ -140,6 +140,17 @@ Statistics widget:
 
 - Add extra Refresh button to top bar.
 
+Volume widget:
+
+- The new link "List skeletons" in each volume table row allows to open a new
+  Selection Table containing all skeletons the bounding box of the respective
+  volume intersects. Due to large numbers of skeletons in bigger volumes, this
+  is currently mainly useful for smaller volumes.
+
+- When creating box volumes, the new button "Define cube at
+  current location" allows to conveniently create a cube with a configurable
+  edge length at the current location.
+
 Miscellaneous:
 
 - Basic Search: allow search for treenode IDs and connector IDs.
@@ -168,10 +179,6 @@ Miscellaneous:
   mouse cursor.
 
 - The skeleton projection layer works now with orthogonal views.
-
-- Volume widget: when creating box volumes, the new button "Define cube at
-  current location" allows to conveniently create a cube with a configurable
-  edge length at the current location.
 
 - Detailed review colors are now enabled by default. To get the old behavior
   back, adjust your settings (admins can do this for the whole project or

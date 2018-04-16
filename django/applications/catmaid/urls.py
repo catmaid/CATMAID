@@ -262,6 +262,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/skeleton/node/(?P<treenode_id>\d+)/node_count$', skeleton.node_count),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review/reset-own$', record_view("skeletons.reset_own_reviews")(skeleton.reset_own_reviewer_ids)),
     url(r'^(?P<project_id>\d+)/skeletons/connectivity$', skeleton.skeleton_info_raw),
+    url(r'^(?P<project_id>\d+)/skeletons/in-bounding-box$', skeleton.skeletons_in_bounding_box),
     url(r'^(?P<project_id>\d+)/skeleton/connectivity_matrix$', skeleton.connectivity_matrix),
     url(r'^(?P<project_id>\d+)/skeletons/review-status$', skeleton.review_status),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/statistics$', skeleton.skeleton_statistics),

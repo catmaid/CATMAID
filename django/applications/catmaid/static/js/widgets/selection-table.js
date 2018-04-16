@@ -678,7 +678,7 @@
       if (!(skid in skeleton_ids)) a.push(parseInt(skid));
       return a;
     }, []);
-    CATMAID.fetch(project.id + '/skeleton/neuronnames', 'POST',
+    return CATMAID.fetch(project.id + '/skeleton/neuronnames', 'POST',
         {skids: ids})
       .then((function(json) {
         this.insertSkeletons(json, callback);

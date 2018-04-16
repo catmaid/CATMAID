@@ -37,6 +37,9 @@ included in this changelog.
 - `GET /{project_id}/skeletons/{skeleton_id}/cable-length`:
   Get the cable length for a single skeleton.
 
+- `GET /{project_id}/skeletons/in-bounding-box`:
+  Get IDs of all skeltons that intersect with the passed in bounding box.
+
 ### Modifications
 
 - `POST /{project_id}/annotations/query-targets`:

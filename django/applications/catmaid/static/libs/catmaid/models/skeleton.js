@@ -211,7 +211,32 @@
      */
     getRootNode: function(projectId, skeletonId) {
       return CATMAID.fetch(project.id + '/skeletons/' + skeletonId + '/root');
-    }
+    },
+
+    /**
+     * Get skeletons that intersedct with the defined bounding box.
+     *
+     * @param {number} projectId Project space to operte in.
+     * @param {numner} minX      Minimum X coordinate of bounding box.
+     * @param {numner} minY      Minimum Y coordinate of bounding box.
+     * @param {numner} minZ      Minimum Z coordinate of bounding box.
+     * @param {numner} maxX      Maximum X coordinate of bounding box.
+     * @param {numner} maxY      Maximum Y coordinate of bounding box.
+     * @param {numner} maxZ      Maximum Z coordinate of bounding box.
+     *
+     * @returns {Promise} Resolves with a list of intersecting skeleton Ids.
+     */
+    inBoundingBox: function(projectId, minX, minY, minZ, maxX, maxY, maxZ) {
+      return CATMAID.fetch(project.id + '/skeletons/in-bounding-box', 'GET', {
+        'minx': minX,
+        'miny': minY,
+        'minz': minZ,
+        'maxx': maxX,
+        'maxy': maxY,
+        'maxz': maxZ
+      });
+    },
+
   };
 
   // Provide some basic events

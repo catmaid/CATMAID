@@ -2231,3 +2231,125 @@ def skeletons_by_node_labels(request, project_id=None):
     """.format(interp_lst), labels + [int(project_id), labeled_as_relation.id])
 
     return JsonResponse(cursor.fetchall(), safe=False)
+
+
+def get_skeletons_in_bb_postgis2d(params):
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT DISTINCT t.skeleton_id
+          FROM (
+          SELECT te.id, te.edge
+            FROM treenode_edge te
+            WHERE floatrange(ST_ZMin(te.edge),
+                 ST_ZMax(te.edge), '[]') && floatrange(%(minz)s, %(maxz)s, '[)')
+              AND te.project_id = %(project_id)s
+          ) e
+          JOIN treenode t
+            ON t.id = e.id
+          WHERE e.edge && ST_MakeEnvelope(%(minx)s, %(miny)s, %(maxx)s, %(maxy)s)
+            AND ST_3DDWithin(e.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+                ST_MakePoint(%(minx)s, %(miny)s, %(halfz)s),
+                ST_MakePoint(%(maxx)s, %(miny)s, %(halfz)s),
+                ST_MakePoint(%(maxx)s, %(maxy)s, %(halfz)s),
+                ST_MakePoint(%(minx)s, %(maxy)s, %(halfz)s),
+                ST_MakePoint(%(minx)s, %(miny)s, %(halfz)s)]::geometry[])),
+                %(halfzdiff)s)
+    """, params)
+
+    return [r[0] for r in cursor.fetchall()]
+
+
+def get_skeletons_in_bb_postgis3d(params):
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT DISTINCT t.skeleton_id
+        FROM treenode_edge te
+        JOIN treenode t
+            ON t.id = te.id
+        WHERE te.edge &&& ST_MakeLine(ARRAY[
+            ST_MakePoint(%(minx)s, %(maxy)s, %(maxz)s),
+            ST_MakePoint(%(maxx)s, %(miny)s, %(minz)s)] ::geometry[])
+        AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+            ST_MakePoint(%(minx)s, %(miny)s, %(halfz)s),
+            ST_MakePoint(%(maxx)s, %(miny)s, %(halfz)s),
+            ST_MakePoint(%(maxx)s, %(maxy)s, %(halfz)s),
+            ST_MakePoint(%(minx)s, %(maxy)s, %(halfz)s),
+            ST_MakePoint(%(minx)s, %(miny)s, %(halfz)s)]::geometry[])),
+            %(halfzdiff)s)
+        AND te.project_id = %(project_id)s
+    """, params)
+
+    return [r[0] for r in cursor.fetchall()]
+
+
+@api_view(['GET'])
+@requires_user_role(UserRole.Browse)
+def skeletons_in_bounding_box(request, project_id):
+    """Get a list of all skeletons that intersect with the passed in bounding
+    box.
+    ---
+    parameters:
+    - name: limit
+      description: |
+        Limit the number of returned nodes.
+      required: false
+      type: integer
+      defaultValue: 0
+      paramType: form
+    - name: left
+      description: |
+        Minimum world space X coordinate
+      required: true
+      type: float
+      paramType: form
+    - name: top
+      description: |
+        Minimum world space Y coordinate
+      required: true
+      type: float
+      paramType: form
+    - name: z1
+      description: |
+        Minimum world space Z coordinate
+      required: true
+      type: float
+      paramType: form
+    - name: right
+      description: |
+        Maximum world space X coordinate
+      required: true
+      type: float
+      paramType: form
+    - name: bottom
+      description: |
+        Maximum world space Y coordinate
+      required: true
+      type: float
+      paramType: form
+    - name: z2
+      description: |
+        Maximum world space Z coordinate
+      required: true
+      type: float
+      paramType: form
+    type:
+        - type: array
+          items:
+          type: integer
+          description: array of skeleton IDs
+          required: true
+    """
+    project_id = int(project_id)
+    data = request.GET
+
+    params = {
+        'project_id': project_id,
+        'limit': data.get('limit', 0)
+    }
+    for p in ('minx', 'miny', 'minz', 'maxx', 'maxy', 'maxz'):
+        params[p] = float(data.get(p, 0))
+    params['halfzdiff'] = abs(params['maxz'] - params['minz']) * 0.5
+    params['halfz'] = params['minz'] + (params['maxz'] - params['minz']) * 0.5
+
+    skeleton_ids = get_skeletons_in_bb_postgis2d(params)
+    return JsonResponse(skeleton_ids, safe=False)

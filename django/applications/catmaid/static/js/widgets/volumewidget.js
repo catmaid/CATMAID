@@ -113,13 +113,13 @@
             {
               data: null,
               orderable: false,
-              defaultContent: '<a href="#">remove</a>'
+              defaultContent: '<a href="#" data-action="remove">Remove</a> <a href="#" data-action="list">List skeletons</a>'
             }
           ],
         });
 
         // Remove volume if 'remove' was clicked
-        $(table).on('click', 'a', function() {
+        $(table).on('click', 'a[data-action="remove"]', function() {
           var tr = $(this).closest("tr");
           var volume = self.datatable.row(tr).data();
 
@@ -138,7 +138,38 @@
               + volume.id + " (" + volume.name + ")?");
           confirmDialog.show(500,'auto');
 
-          // Prevent other events from dealing with this click
+          // Prevent event from bubbling up.
+          return false;
+        });
+
+        // Skeleton intersection list
+        $(table).on('click', 'a[data-action="list"]', function() {
+          var tr = $(this).closest("tr");
+          var volume = self.datatable.row(tr).data();
+          CATMAID.Volumes.get(project.id, volume.id)
+            .then(function(volume) {
+              let bb = volume.bbox;
+              return CATMAID.Skeletons.inBoundingBox(project.id, bb.min.x,
+                  bb.min.y, bb.min.z, bb.max.x, bb.max.y, bb.max.z);
+            })
+            .then(function(skeletonIds) {
+              if (!skeletonIds || skeletonIds.length === 0) {
+                CATMAID.warn('Found no intersecting skeletons');
+              } else {
+                var handles = CATMAID.WindowMaker.create('selection-table');
+                if (!handles) {
+                  throw new CATMAID.ValueError("Could not create Selection Table");
+                }
+                handles.widget.addSkeletons(skeletonIds)
+                  .then(function() {
+                    CATMAID.msg('Success', 'Found ' + skeletonIds.length + ' skeltons');
+                  })
+                  .catch(CATMAID.handleError);
+              }
+            })
+            .catch(CATMAID.handleError);
+
+          // Prevent event from bubbling up.
           return false;
         });
 
@@ -376,6 +407,7 @@
   VolumeManagerWidget.prototype.addVolume = function() {
     this.editVolume(null);
   };
+
 
   var getVolumeType = function(volume) {
     if (volume instanceof CATMAID.AlphaShapeVolume) {

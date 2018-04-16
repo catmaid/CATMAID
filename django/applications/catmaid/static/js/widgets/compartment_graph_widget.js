@@ -2643,7 +2643,7 @@
     var templateLineOptions = {
       'edgeType': 'haystack',
       'arrowOnSeparateLine': CATMAID.getOption(options, 'arrowOnSeparateLine', false),
-      'arrowLineShrinking': CATMAID.getOption(options, 'arrowLineShrinking', false),
+      'arrowLineShrinking': CATMAID.getOption(options, 'arrowLineShrinking', true),
       'refX': CATMAID.getOption(options, 'arrowRefX', undefined)
     };
 

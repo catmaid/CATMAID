@@ -46,8 +46,12 @@
     this.markerIds = {};
   };
 
-  SVGFactory.prototype.addMarker = function(id, element, width, height, refX, refY, units) {
-    var marker = document.createElementNS(namespaces.svg, 'marker');
+  SVGFactory.prototype.getNamespaces = function() {
+    return namespaces;
+  };
+
+  SVGFactory.prototype.addMarker = function(id, element, width, height, refX, refY, units, type) {
+    var marker = document.createElementNS(this.getNamespaces().svg, 'marker');
     marker.setAttribute('id', id);
     marker.setAttribute('markerWidth', width);
     marker.setAttribute('markerHeight', height);
@@ -56,27 +60,61 @@
     marker.setAttribute('orient', 'auto');
     marker.setAttribute('markerUnits', units);
 
+    if (type) marker.setAttribute('catmaidtype', type);
+
     marker.appendChild(element);
 
     this.defs = null;
     this.markers[id] = marker;
   };
 
+  /** Please ensure that inputs are non-null and non-undefined, or the ID will be bogus. */
   SVGFactory.prototype.getMarkerId = function(type, color, width, height, refX, refY) {
     var hash = type + '-' + color + '-' + width + '-' + height + '-' + refX + '-' + refY;
     var markerId = this.markerIds[hash];
     return markerId === undefined ? ('marker-' + Object.keys(this.markers).length) : markerId;
   };
 
+  /**
+   * Return a string representing the path in SVG form
+   * @param path An array of points, each as an array of length 2. */
+  SVGFactory.prototype._asSVGPath = function(path, closed) {
+    return 'M' + path[0].join(',') + ' '
+           + path.slice(1).map(function(p) { return 'L' + p[0] + ',' + p[1]; }).join(' ')
+           + (closed ? ' Z' : '');
+  };
+
   SVGFactory.prototype.addArrowMarker = function(id, width, height, refX, refY, units, style) {
     width = width === undefined ? 3.0 : width;
     height = height === undefined ? width : height;
-    refX = refX === undefined ? width : refX;
-    refY = refY === undefined ? (0.5 * width) : refY;
+    refX = refX === undefined ? 0 : refX;
+    refY = refY === undefined ? 0 : refY;
     units = units === undefined ? 'strokeWidth' : units;
-    var arrow = document.createElementNS(namespaces.svg, 'path');
-    arrow.setAttribute('d', 'M0,0 L0,' + height + ' L' +
-        width + ',' + (height / 2.0) + ' Z');
+    var arrow = document.createElementNS(this.getNamespaces().svg, 'path');
+    //
+    //      0,height/2
+    //       |\
+    //       | \ width,0
+    //       | /
+    //       |/
+    //      0,-height/2
+    //
+    var path = [[0,      0],
+                [0,      height / 2.0],
+                [width,  0],
+                [0,     -height / 2.0],
+                [0,      0]];
+
+    arrow.setAttribute('d', this._asSVGPath(path, true));
+
+    /*
+    arrow.setAttribute('d',
+         'M0,0' +
+        ' L0,' + (height/2.0) +
+        ' L' + width + ',0' +
+        ' L0,' + (-height/2.0) +
+        ' Z');
+    */
 
     if (style) {
       var svgStyle = this.createSvgStyle(style);
@@ -85,49 +123,66 @@
       }
     }
 
-    this.addMarker(id, arrow, width, height, refX, refY, units);
+    this.addMarker(id, arrow, width, height, refX, refY, units, "arrow");
   };
 
   SVGFactory.prototype.addTeeMarker = function(id, width, height, refX, refY, units, style) {
     width = width === undefined ? 3.0 : width;
     height = height === undefined ? width : height;
     refX = refX === undefined ? width : refX;
-    refY = refY === undefined ? (0.5 * width) : refY;
+    refY = refY === undefined ? width : refY;
     units = units === undefined ? 'strokeWidth' : units;
-    var arrow = document.createElementNS(namespaces.svg, 'path');
-    arrow.setAttribute('d', 'M0,0 L0,' + height + ' L' +
-        width/4 + ',' + height + ' L' + width/4 + ',0 Z');
+    var tee = document.createElementNS(this.getNamespaces().svg, 'path');
+    //
+    // 0,height/2    width/4,height/2
+    //            --
+    //            ||
+    //            ||
+    //            ||
+    //            --
+    // 0,-height/2   width/4,-height/2
+    //
+    
+    var w4 = width / 4.0,
+        h2 = height / 2.0;
+
+    var path = [[-w4, h2],
+                [0, h2],
+                [0, -h2],
+                [-w4, -h2]];
+
+    tee.setAttribute('d', this._asSVGPath(path, true));
 
     if (style) {
       var svgStyle = this.createSvgStyle(style);
       if (svgStyle.length > 0) {
-        arrow.setAttribute('style', svgStyle);
+        tee.setAttribute('style', svgStyle);
       }
     }
 
-    this.addMarker(id, arrow, width, height, refX, refY, units);
+    this.addMarker(id, tee, width, height, refX, refY, units, "tee");
   };
 
 
   SVGFactory.prototype.addCircleMarker = function(id, width, height, refX, refY, units, style) {
     width = width === undefined ? 3.0 : width;
     height = height === undefined ? width : height;
-    refX = refX === undefined ? width : refX;
-    refY = refY === undefined ? (0.5 * width) : refY;
+    refX = refX === undefined ? 0 : refX;
+    refY = refY === undefined ? 0 : refY;
     units = units === undefined ? 'strokeWidth' : units;
 
-    var circle = document.createElementNS(namespaces.svg, 'path');
+    var circle = document.createElementNS(this.getNamespaces().svg, 'path');
     // Unit circle defined with bezier control points, scaled by width
-    var w = width/2;
-    var path = ["m", w, w, "a",
-                 w, w, "0 0 1",
-                -w, w,
-                 w, w, "0 0 1",
-                -w,-w,
-                 w, w, "0 0 1",
-                 w,-w,
-                 w, w, "0 0 1",
-                 w, w, "z"];
+    var r = width/2;
+    var path = ["m", r, 0, "a",
+                 r, r, "0 0 1",
+                -r, r,
+                 r, r, "0 0 1",
+                -r,-r,
+                 r, r, "0 0 1",
+                 r,-r,
+                 r, r, "0 0 1",
+                 r, r, "z"];
 
     circle.setAttribute('d', path.join(" "));
 
@@ -138,7 +193,27 @@
       }
     }
 
-    this.addMarker(id, circle, width, height, refX, refY, units);
+    this.addMarker(id, circle, width, height, refX, refY, units, "circle");
+  };
+
+  SVGFactory.prototype.createAndAddMarker = function(arrowId, options, arrowStyle) {
+    switch (options.arrow) {
+      case "triangle":
+        this.addArrowMarker(arrowId, options.arrowWidth, options.arrowHeight,
+            options.refX, options.refY, options.arrowUnit, arrowStyle);
+        break;
+      case "circle":
+        this.addCircleMarker(arrowId, options.arrowWidth, options.arrowHeight,
+            options.refX, options.refY, options.arrowUnit, arrowStyle);
+        break;
+      case "tee":
+        this.addTeeMarker(arrowId, options.arrowWidth, options.arrowHeight,
+            options.refX, options.refY, options.arrowUnit, arrowStyle);
+        break;
+      default:
+        console.log("Ignoring unknown end marker type: " + options.arrow);
+        break;
+    }
   };
 
   function flattenStyle(key) {
@@ -158,7 +233,7 @@
    * The passed in style is expected to contain CSS styles.
    */
   SVGFactory.prototype.createCircle = function(cx, cy, r, style) {
-    var circle = document.createElementNS(namespaces.svg, 'circle');
+    var circle = document.createElementNS(this.getNamespaces().svg, 'circle');
     circle.setAttribute('cx', cx);
     circle.setAttribute('cy', cy);
     circle.setAttribute('r', r);
@@ -188,7 +263,7 @@
     var circle = this.createCircle(cx, cy, r, style);
     var text = this.createText(cx + labelOffsetX, cy + labelOffsetY, label,
         labelStyle);
-    var group = document.createElementNS(namespaces.svg, 'g');
+    var group = document.createElementNS(this.getNamespaces().svg, 'g');
     group.appendChild(circle);
     group.appendChild(text);
     return group;
@@ -220,7 +295,7 @@
     var polygonPath = this.createPolygonPath(cx, cy, w, h, points, style);
     var text = this.createText(cx + labelOffsetX, cy + labelOffsetY, label,
         labelStyle);
-    var group = document.createElementNS(namespaces.svg, 'g');
+    var group = document.createElementNS(this.getNamespaces().svg, 'g');
     group.appendChild(polygonPath);
     group.appendChild(text);
     return group;
@@ -252,7 +327,7 @@
     pathComponents.push('Z');
     var pointString = pathComponents.join(' ');
 
-    var path = document.createElementNS(namespaces.svg, 'path');
+    var path = document.createElementNS(this.getNamespaces().svg, 'path');
     path.setAttribute('d', pointString);
 
     if (style) {
@@ -271,7 +346,7 @@
    * Creata a SVG text element.
    */
   SVGFactory.prototype.createText = function(x, y, content, style) {
-    var text = document.createElementNS(namespaces.svg, 'text');
+    var text = document.createElementNS(this.getNamespaces().svg, 'text');
     text.setAttribute('x', x);
     text.setAttribute('y', y);
     text.appendChild(document.createTextNode(content));
@@ -296,7 +371,7 @@
       case 'self':
       case 'compound':
       case 'multibezier':
-        line = document.createElementNS(namespaces.svg, 'path');
+        line = document.createElementNS(this.getNamespaces().svg, 'path');
         var pathComponents = ['M', x1, y1];
         if (options.controlPoints.length === 2) {
           pathComponents.push('Q');
@@ -328,7 +403,7 @@
       case 'straight':
       case 'segments':
       case 'haystack':
-        line = document.createElementNS(namespaces.svg, 'line');
+        line = document.createElementNS(this.getNamespaces().svg, 'line');
         line.setAttribute('x1', x1);
         line.setAttribute('y1', y1);
         line.setAttribute('x2', x2);
@@ -355,27 +430,7 @@
         var arrowStyle = {
           fill: color,
         };
-        switch (options.arrow) {
-          case "triangle":
-            this.addArrowMarker(arrowId, options.arrowWidth, options.arrowHeight,
-                options.refX, options.refY, options.arrowUnit, arrowStyle);
-            break;
-          case "circle":
-            // Necessary to avoid shrinking and position marker at the right place, but should done elsewhere
-            options = $.extend({}, options, {arrowLineShrinking: false});
-            this.addCircleMarker(arrowId, options.arrowWidth, options.arrowHeight,
-                options.refX, options.refY, options.arrowUnit, arrowStyle);
-            break;
-          case "tee":
-            // Necessary to avoid shrinking and position marker at the right place, but should done elsewhere
-            options = $.extend({}, options, {arrowLineShrinking: false});
-            this.addTeeMarker(arrowId, options.arrowWidth, options.arrowHeight,
-                options.refX, options.refY, options.arrowUnit, arrowStyle);
-            break;
-          default:
-            console.log("Ignoring unknown end marker type: " + options.arrow);
-            break;
-        }
+        this.createAndAddMarker(arrowId, options, arrowStyle);
       }
       // The only way to convince Adobe Illustrator to read line markings and a
       // line seems to be by adding an invisible second line with the marker.
@@ -390,7 +445,7 @@
 
       // Additionally, shrink the actual line a little bit, so that it doesn't
       // overlap with the arrow head.
-      if (options.arrowLineShrinking) {
+      if (options.arrowLineShrinking) { // TODO for diamond shape it should also shrink, but half
         var vx = x2 - x1, vy = y2 - y1;
         var l = Math.sqrt(vx*vx + vy * vy);
         var vxUnit = vx / l, vyUnit = vy / l;
@@ -417,7 +472,7 @@
           labelX + options.labelOffsetX,
           labelY + options.labelOffsetY,
           options.label, options.labelStyle);
-      var group = document.createElementNS(namespaces.svg, 'g');
+      var group = document.createElementNS(this.getNamespaces().svg, 'g');
       group.appendChild(line);
       if (arrow) {
         group.appendChild(arrow);
@@ -446,7 +501,7 @@
   SVGFactory.prototype.ensureDefs = function() {
     // Add markers
     if (!this.defs) {
-      this.defs = document.createElementNS(namespaces.svg, 'defs');
+      this.defs = document.createElementNS(this.getNamespaces().svg, 'defs');
       Object.keys(this.markers).forEach(function(key) {
         this.defs.appendChild(this.markers[key]);
       }, this);

@@ -2704,19 +2704,16 @@
         templateLineOptions['arrow'] = data.arrow;
         templateLineOptions['arrowStyle'] = templateLineStyle;
 
-        /*
-        if (data.arrow === 'triangle') {
-          // Since our arrows width are in a reather narrow ranger, setting the
-          // arrow dimensions in absolute pixels is easier.
-          var d = 3 * (0.5 * strokeWidth + 1.5);
-          templateLineOptions['arrowUnit'] = 'userSpaceOnUse';
-          templateLineOptions['arrowWidth'] = d;
-        } else {
-          // For circle, tee:
-          templateLineOptions['arrowLineShrinking'] = false;
-          //CATMAID.warn('Could not export graph element. Unknown arrow: ' + data.arrow);
-        }
-        */
+        // Since our arrows width are in a reather narrow ranger, setting the
+        // arrow dimensions in absolute pixels is easier.
+        var d = 3 * (0.5 * strokeWidth + 1.5);
+        templateLineOptions['arrowUnit'] = 'userSpaceOnUse';
+        templateLineOptions['arrowWidth'] = d;
+        templateLineOptions['arrowHeight'] = d;
+        templateLineOptions['refX'] = 0; // d;
+        templateLineOptions['refY'] = 0; // 0.5 * d;
+        // Make the line shorter so that it doesn't overlap with the arrow
+        templateLineOptions['arrowLineShrinking'] = "triangle" === data.arrow;
       } else {
         templateLineOptions['arrow'] = undefined;
       }

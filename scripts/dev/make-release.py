@@ -98,11 +98,11 @@ class CatmaidRelease(object):
         self.update_documentation()
 
         # Create release commit
-        self.git.commit("-a", "-m", "Release {}".format(self.release_name))
+        self.git.commit("-a", "-S", "-m", "Release {}".format(self.release_name))
 
         # Tag commit
         log("Creating tag \"{}\"...".format(self.release_name), False)
-        self.git.tag(self.release_name, "HEAD", "-a", "-m", self.get_tag_message())
+        self.git.tag(self.release_name, "HEAD", "-s", "-a", "-m", self.get_tag_message())
         log("done")
 
     def update_changelog(self):

@@ -165,6 +165,16 @@
     this.addMarker(id, circle, width, height, refX, refY, units, style, "circle");
   };
 
+  SVGFactory.prototype.addSquareMarker = function(id, width, height, refX, refY, units, style) {
+    var square = document.createElementNS(this.getNamespaces().svg, 'path');
+    var h2 = height / 2.0;
+    var path = [[-width, h2],
+                [0, h2],
+                [0, -h2],
+                [-width, -h2]];
+    square.setAttribute('d', this._asSVGPath(path, true));
+
+    this.addMarker(id, square, width, height, refX, refY, units, style, "square");
   };
 
   SVGFactory.prototype.createAndAddMarker = function(arrowId, options, arrowStyle) {

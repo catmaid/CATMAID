@@ -177,12 +177,26 @@
     this.addMarker(id, square, width, height, refX, refY, units, style, "square");
   };
 
+  SVGFactory.prototype.addDiamondMarker = function(id, width, height, refX, refY, units, style) {
+    var diamond = document.createElementNS(this.getNamespaces().svg, 'path');
+    var w2 = width / 2.0;
+    var h2 = height / 2.0;
+    var path = [[-w2, 0],
+                [0, h2],
+                [w2, 0],
+                [0, -h2]];
+    diamond.setAttribute('d', this._asSVGPath(path, true));
+
+    this.addMarker(id, diamond, width, height, refX, refY, units, style, "diamond");
+  };
+
   SVGFactory.prototype.createAndAddMarker = function(arrowId, options, arrowStyle) {
     var supported = {
       triangle: "Arrow",
       circle: "Circle",
       tee: "Tee",
       square: "Square",
+      diamond: "Diamond",
     };
 
     var type = supported[options.arrow];
@@ -438,7 +452,7 @@
 
       // Additionally, shrink the actual line a little bit, so that it doesn't
       // overlap with the arrow head.
-      if (options.arrowLineShrinking) { // TODO for diamond shape it should also shrink, but half
+      if (options.arrow === "triangle" || options.arrow === "diamond") {
         var vx = x2 - x1, vy = y2 - y1;
         var l = Math.sqrt(vx*vx + vy * vy);
         var vxUnit = vx / l, vyUnit = vy / l;
@@ -452,7 +466,20 @@
           }
           arrowLength = options.strokeWidth * (options.arrowWidth ? options.arrowWidth : 3.0);
         }
-        var af = l - arrowLength * 0.9;
+        // Determine the fraction 'f' of the arrow length to shrink the line by:
+        var f = 0;
+        switch(options.arrow) {
+          case "triangle":
+            f = 0.9;
+            break;
+          case "diamond":
+            f = 0.5;
+            break;
+          default:
+            f = 0.0;
+            break;
+        }
+        var af = l - arrowLength * f;
         line.setAttribute('x2', x1 + af * vxUnit);
         line.setAttribute('y2', y1 + af * vyUnit);
       }

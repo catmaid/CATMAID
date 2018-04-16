@@ -2643,7 +2643,6 @@
     var templateLineOptions = {
       'edgeType': 'haystack',
       'arrowOnSeparateLine': CATMAID.getOption(options, 'arrowOnSeparateLine', false),
-      'arrowLineShrinking': CATMAID.getOption(options, 'arrowLineShrinking', true),
       'refX': CATMAID.getOption(options, 'arrowRefX', undefined)
     };
 
@@ -2712,8 +2711,6 @@
         templateLineOptions['arrowHeight'] = d;
         templateLineOptions['refX'] = 0; // d;
         templateLineOptions['refY'] = 0; // 0.5 * d;
-        // Make the line shorter so that it doesn't overlap with the arrow
-        templateLineOptions['arrowLineShrinking'] = "triangle" === data.arrow;
       } else {
         templateLineOptions['arrow'] = undefined;
       }

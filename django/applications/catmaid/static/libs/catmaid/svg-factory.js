@@ -203,6 +203,30 @@
     this.addMarker(id, vee, width, height, refX, refY, units, style, "vee");
   };
 
+  SVGFactory.prototype.addTriangleTeeMarker = function(id, width, height, refX, refY, units, style) {
+    var tee = document.createElementNS(this.getNamespaces().svg, 'path');
+    
+    var w2 = width / 2.0,
+        w4 = width / 4.0,
+        h2 = height / 2.0;
+
+    var path = [[     -w2, h2],
+                [-w2 + w4, h2],
+                [-w2 + w4, 0],
+                [       0, 0],
+                [       0, h2],
+                [   width, 0],
+                [       0, -h2],
+                [       0, 0],
+                [-w2 + w4, 0],
+                [-w2 + w4, -h2],
+                [     -w2, -h2]];
+
+    tee.setAttribute('d', this._asSVGPath(path, true));
+
+    this.addMarker(id, tee, width, height, refX, refY, units, style, "triangle-tee");
+  };
+
   SVGFactory.prototype.createAndAddMarker = function(arrowId, options, arrowStyle) {
     var supported = {
       triangle: "Arrow",
@@ -211,6 +235,7 @@
       square: "Square",
       diamond: "Diamond",
       vee: "Vee",
+      "triangle-tee": "TriangleTee",
     };
 
     var type = supported[options.arrow];
@@ -468,6 +493,7 @@
       // overlap with the arrow head.
       var shrinkers = {
         "triangle": true,
+        "triangle-tee": true,
         "diamond": true,
         "vee": true,
       };
@@ -489,6 +515,7 @@
         var f = 0;
         switch(options.arrow) {
           case "triangle":
+          case "triangle-tee":
             f = 0.9;
             break;
           case "diamond":

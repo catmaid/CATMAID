@@ -113,7 +113,9 @@
             {
               data: null,
               orderable: false,
-              defaultContent: '<a href="#" data-action="remove">Remove</a> <a href="#" data-action="list">List skeletons</a>'
+              defaultContent: '<a href="#" data-action="remove">Remove</a> ' +
+                  '<a href="#" data-action="list">List skeletons</a> ' +
+                  '<a href="#" data-action="list-connectors">List connectors</a>'
             }
           ],
         });
@@ -165,6 +167,31 @@
                     CATMAID.msg('Success', 'Found ' + skeletonIds.length + ' skeltons');
                   })
                   .catch(CATMAID.handleError);
+              }
+            })
+            .catch(CATMAID.handleError);
+
+          // Prevent event from bubbling up.
+          return false;
+        });
+
+        // Connector intersection list
+        $(table).on('click', 'a[data-action="list-connectors"]', function() {
+          var tr = $(this).closest("tr");
+          var volume = self.datatable.row(tr).data();
+          CATMAID.Volumes.get(project.id, volume.id)
+            .then(function(volume) {
+              let bb = volume.bbox;
+              return CATMAID.Connectors.inBoundingBox(project.id, bb.min.x,
+                  bb.min.y, bb.min.z, bb.max.x, bb.max.y, bb.max.z, undefined,
+                  true, true);
+            })
+            .then(function(connectorData) {
+              if (!connectorData || connectorData.length === 0) {
+                CATMAID.warn('Found no connectors in volume');
+              } else {
+                CATMAID.ConnectorList.fromRawData(connectorData);
+                CATMAID.msg('Success', 'Found ' + connectorData.length + ' connector links');
               }
             })
             .catch(CATMAID.handleError);

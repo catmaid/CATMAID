@@ -283,7 +283,44 @@
             return types[t];
           });
         });
-    }
+    },
+
+    /**
+     * Get connectors that intersedct with the defined bounding box.
+     *
+     * @param {number}  projectId      Project space to operte in.
+     * @param {numner}  minX           Minimum X coordinate of bounding box.
+     * @param {numner}  minY           Minimum Y coordinate of bounding box.
+     * @param {numner}  minZ           Minimum Z coordinate of bounding box.
+     * @param {numner}  maxX           Maximum X coordinate of bounding box.
+     * @param {numner}  maxY           Maximum Y coordinate of bounding box.
+     * @param {numner}  maxZ           Maximum Z coordinate of bounding box.
+     * @param {numner}  limit          (optional) Maximum number of connectors
+     *                                 to return or 0 to disable. Default is 0.
+     * @param {boolean} with_locations (optional) Whether to also return the
+     *                                 location of each connector. Default is
+     *                                 false.
+     * @param {boolean} with_links     (optional) Whether all matched partner
+     *                                 link information should be returned.
+     *                                 Default is false.
+     *
+     * @returns {Promise} Resolves with a list of intersecting skeleton Ids (or
+     *                    more info if requested)..
+     */
+    inBoundingBox: function(projectId, minX, minY, minZ, maxX, maxY, maxZ,
+        limit, with_locations, with_links) {
+      return CATMAID.fetch(project.id + '/connectors/in-bounding-box', 'GET', {
+        'minx': minX,
+        'miny': minY,
+        'minz': minZ,
+        'maxx': maxX,
+        'maxy': maxY,
+        'maxz': maxZ,
+        'limit': limit,
+        'with_locations': with_locations,
+        'with_links': with_links,
+      });
+    },
   };
 
   // Keeps a copy of the available connector types

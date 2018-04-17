@@ -1064,3 +1064,131 @@ def connector_detail(request, project_id, connector_id):
         'confidence': detail[4],
         'partners': [p for p in detail[5]]
     })
+
+def get_connectors_in_bb_postgis3d(params):
+    """Return a list of connector node IDs in a bounding box.
+    """
+    limit = params.get('limit', 0)
+    with_locations = params.get('with_locations', False)
+    with_links = params.get('with_links', False)
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT {distinct} c.id
+            {location_select}
+            {link_select}
+        FROM treenode_connector_edge tce
+        JOIN treenode_connector tc
+            ON tce.id = tc.id
+        JOIN connector c
+            ON c.id = tc.connector_id
+        WHERE tce.edge &&& ST_MakeLine(ARRAY[
+            ST_MakePoint(%(minx)s, %(maxy)s, %(maxz)s),
+            ST_MakePoint(%(maxx)s, %(miny)s, %(minz)s)] ::geometry[])
+        AND ST_3DDWithin(tce.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+            ST_MakePoint(%(minx)s, %(miny)s, %(halfz)s),
+            ST_MakePoint(%(maxx)s, %(miny)s, %(halfz)s),
+            ST_MakePoint(%(maxx)s, %(maxy)s, %(halfz)s),
+            ST_MakePoint(%(minx)s, %(maxy)s, %(halfz)s),
+            ST_MakePoint(%(minx)s, %(miny)s, %(halfz)s)]::geometry[])),
+            %(halfzdiff)s)
+        AND tce.project_id = %(project_id)s
+        {limit_clause}
+    """.format(**{
+        'distinct': 'DISTINCT' if not with_links else '',
+        'limit_clause': 'LIMIT'.format(params['limit']) \
+                if limit > 0 else '',
+        'location_select': ', c.location_x, c.location_y, c.location_z' \
+                if with_locations else '',
+        'link_select': ', tc.skeleton_id, tc.confidence, tc.user_id, ' \
+                'tc.treenode_id, tc.creation_time, tc.edition_time' \
+                if with_links else '',
+    }), params)
+
+    return list(cursor.fetchall())
+
+
+@api_view(['GET'])
+@requires_user_role(UserRole.Browse)
+def connectors_in_bounding_box(request, project_id):
+    """Get a list of all connector nodes that intersect with the passed in
+    bounding box.
+    ---
+    parameters:
+    - name: limit
+      description: |
+        Limit the number of returned nodes.
+      required: false
+      type: integer
+      defaultValue: 0
+      paramType: form
+    - name: minx
+      description: |
+        Minimum world space X coordinate
+      required: true
+      type: float
+      paramType: form
+    - name: miny
+      description: |
+        Minimum world space Y coordinate
+      required: true
+      type: float
+      paramType: form
+    - name: minz
+      description: |
+        Minimum world space Z coordinate
+      required: true
+      type: float
+      paramType: form
+    - name: maxx
+      description: |
+        Maximum world space X coordinate
+      required: true
+      type: float
+      paramType: form
+    - name: maxy
+      description: |
+        Maximum world space Y coordinate
+      required: true
+      type: float
+      paramType: form
+    - name: maxz
+      description: |
+        Maximum world space Z coordinate
+      required: true
+      type: float
+      paramType: form
+    - name: with_locations
+      description: |
+        Whether to return the location of each connector.
+      required: true
+      type: float
+      paramType: form
+    - name: with_links
+      description: |
+        Whether to return every individual link
+      required: true
+      type: float
+      paramType: form
+    type:
+        - type: array
+          items:
+          type: integer
+          description: array of skeleton IDs or links
+          required: true
+    """
+    project_id = int(project_id)
+    data = request.GET
+
+    params = {
+        'project_id': project_id,
+        'limit': data.get('limit', 0),
+        'with_locations': data.get('with_locations', False),
+        'with_links': data.get('with_links', False),
+    }
+    for p in ('minx', 'miny', 'minz', 'maxx', 'maxy', 'maxz'):
+        params[p] = float(data.get(p, 0))
+    params['halfzdiff'] = abs(params['maxz'] - params['minz']) * 0.5
+    params['halfz'] = params['minz'] + (params['maxz'] - params['minz']) * 0.5
+
+    connector_ids = get_connectors_in_bb_postgis3d(params)
+    return JsonResponse(connector_ids, safe=False)

@@ -4,6 +4,11 @@
 
 ### Features and enhancements
 
+Volume widget:
+
+- Add a "List connectors" link to each volume, to show all connectors in a
+  volume bounding box.
+
 Miscellaneous:
 
 - The behavior of the Ctrl modifier on section navigation with , and . can now

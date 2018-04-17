@@ -1561,14 +1561,16 @@ SkeletonAnnotations.TracingOverlay.prototype.getClosestNode = function (
       ydiff,
       zdiff,
       distsq,
-      mindistsq = radius * radius,
       nearestnode = null,
       node,
       nodeid;
 
   var x = this.stackViewer.primaryStack.stackToProjectX(zs, ys, xs),
       y = this.stackViewer.primaryStack.stackToProjectY(zs, ys, xs),
-      z = this.stackViewer.primaryStack.stackToProjectZ(zs, ys, xs);
+      z = this.stackViewer.primaryStack.stackToProjectZ(zs, ys, xs),
+      r = this.stackViewer.primaryStack.minPlanarRes * radius;
+
+  var mindistsq = r * r;
 
   if (typeof respectVirtualNodes === 'undefined') respectVirtualNodes = true;
 

@@ -1590,7 +1590,7 @@ var WindowMaker = new function()
          [document.createTextNode(' - Arrow shape: ')],
          [DOM.createSelect(
            'gg_edge_arrow_shape' + GG.widgetID,
-           ["triangle", "tee", "circle", "square", "diamond", "vee", "triangle-tee", "triangle-cross", "triangle-backcurve", "none"],
+           ["triangle", "tee", "circle", "square", "diamond", "vee", "triangle-tee", "none"], // Only available in cytoscape 3.2.11 or later: "triangle-cross", "triangle-backcurve", 
            "triangle",
            null)],
          ['Set', GG.setArrowShapeToSelectedNodes.bind(GG)],

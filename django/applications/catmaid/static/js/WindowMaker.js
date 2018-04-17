@@ -620,6 +620,33 @@ var WindowMaker = new function()
       e.stopPropagation();
     };
 
+    function setVolumeEntryVisible(li, volumeId, visible, faces, color, alpha) {
+      // Add extra display controls for enabled volumes
+      if (!li) {
+        return;
+      }
+      if (visible) {
+        var volumeControls = li.appendChild(document.createElement('span'));
+        volumeControls.setAttribute('data-role', 'volume-controls');
+        CATMAID.DOM.appendColorButton(volumeControls, 'c',
+          'Change the color of this volume',
+          undefined, undefined, {
+            initialColor: color,
+            initialAlpha: alpha,
+            onColorChange: updateVolumeColor.bind(null, volumeId)
+          });
+        var facesCb = CATMAID.DOM.appendCheckbox(volumeControls, "Faces",
+            "Whether faces should be displayed for this volume",
+            faces, updateVolumeFaces.bind(null, volumeId));
+        facesCb.style.display = 'inline';
+      } else {
+        var volumeControls = li.querySelector('span[data-role=volume-controls]');
+        if (volumeControls) {
+          li.removeChild(volumeControls);
+        }
+      }
+    }
+
     // Update volume list
     var initVolumeList = function() {
       return CATMAID.Volumes.listAll(project.id).then(function(json) {
@@ -634,7 +661,19 @@ var WindowMaker = new function()
           var selectedVolumes = WA.getLoadedVolumeIds();
           // Create actual element based on the returned data
           var node = DOM.createCheckboxSelect('Volumes', volumes,
-              selectedVolumes, true);
+              selectedVolumes, true, function(row, id, visible) {
+                let loadedVolumes = WA.loadedVolumes.get(id);
+                let faces, color, alpha;
+                if (loadedVolumes && loadedVolumes.length > 0) {
+                  // Use first volume as reference volume
+                  let loadedVolume = loadedVolumes[0];
+                  faces = !loadedVolume.material.wireframe;
+                  color = '#' + loadedVolume.material.color.getHexString();
+                  alpha = loadedVolume.material.opacity;
+                }
+                setVolumeEntryVisible(row, id, visible, faces, color, alpha);
+              });
+
           // Add a selection handler
           node.onchange = function(e) {
             var visible = e.target.checked;
@@ -642,31 +681,8 @@ var WindowMaker = new function()
             WA.showVolume(volumeId, visible, undefined, undefined,
                 o.meshes_faces);
 
-            // Add extra display controls for enabled volumes
-            var li = e.target.closest('li');
-            if (!li) {
-              return;
-            }
-            if (visible) {
-              var volumeControls = li.appendChild(document.createElement('span'));
-              volumeControls.setAttribute('data-role', 'volume-controls');
-              CATMAID.DOM.appendColorButton(volumeControls, 'c',
-                'Change the color of this volume',
-                undefined, undefined, {
-                  initialColor: o.meshes_color,
-                  initialAlpha: o.meshes_opacity,
-                  onColorChange: updateVolumeColor.bind(null, volumeId)
-                });
-              var facesCb = CATMAID.DOM.appendCheckbox(volumeControls, "Faces",
-                  "Whether faces should be displayed for this volume",
-                  o.meshes_faces, updateVolumeFaces.bind(null, volumeId));
-              facesCb.style.display = 'inline';
-            } else {
-              var volumeControls = li.querySelector('span[data-role=volume-controls]');
-              if (volumeControls) {
-                li.removeChild(volumeControls);
-              }
-            }
+            setVolumeEntryVisible(e.target.closest('li'), volumeId, visible,
+                o.meshes_faces, o.meshes_color, o.meshes_opacity);
           };
           return node;
         });

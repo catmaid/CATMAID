@@ -639,7 +639,8 @@ var WindowMaker = new function()
           node.onchange = function(e) {
             var visible = e.target.checked;
             var volumeId = parseInt(e.target.value, 10);
-            WA.showVolume(volumeId, visible);
+            WA.showVolume(volumeId, visible, undefined, undefined,
+                o.meshes_faces);
 
             // Add extra display controls for enabled volumes
             var li = e.target.closest('li');

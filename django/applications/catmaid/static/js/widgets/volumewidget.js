@@ -164,7 +164,7 @@
                 }
                 handles.widget.addSkeletons(skeletonIds)
                   .then(function() {
-                    CATMAID.msg('Success', 'Found ' + skeletonIds.length + ' skeltons');
+                    CATMAID.msg('Success', 'Found ' + skeletonIds.length + ' skeletons');
                   })
                   .catch(CATMAID.handleError);
               }

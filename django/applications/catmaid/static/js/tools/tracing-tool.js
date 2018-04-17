@@ -179,9 +179,9 @@
               layer.tracingOverlay.whenclicked( e );
             }
           }
-          // Right mouse button will pan view. And so will the left mouse button
-          // if the tracing overlay returned false.
-          if (mouseButton === 2 || fallback) {
+          // Right mouse button and middle mouse button will pan view. And soma
+          // will the left mouse button if the tracing overlay returned false.
+          if (mouseButton === 2 || mouseButton === 3 || fallback) {
             fallback = false;
             // Put all tracing layers, except active, in "don't update" mode
             setTracingLayersSuspended(true, true);

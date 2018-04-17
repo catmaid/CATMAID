@@ -1638,10 +1638,6 @@ class LandmarkGroupMaterializer(APIView):
                     project_id=project_id, point=point_b, user=request.user,
                     relation_id=annotated_with_rel, class_instance=group_b)
 
-            if links:
-                for group_1, relation_name, group_2 in links:
-                    print(group_1, relation_name, group_2)
-
         return Response({
             'group_a_id': group_a.id,
             'group_b_id': group_b.id,

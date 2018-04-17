@@ -6488,7 +6488,7 @@
     // Special case, if there is only a single node
     if (nodes.length === 1) {
       var nodeId = nodes[0][0];
-      this.geometry['neurite'].push(vs[nodeId]);
+      this.geometry['neurite'].vertices.push(vs[nodeId]);
     }
 
     if (options.smooth_skeletons) {

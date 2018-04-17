@@ -378,7 +378,7 @@
         },
         run: function (e) {
           var step = e.shiftKey ? (-1 * Navigator.Settings.session.major_section_step) : -1;
-          if (e.ctrlKey) {
+          if (Navigator.Settings.session.animate_section_change ? !e.ctrlKey : e.ctrlKey) {
             smoothChangeSlice(e, step, Navigator.Settings.session.max_fps);
           } else {
             self.slider_z.move(step);
@@ -394,7 +394,7 @@
         },
         run: function (e) {
           var step = e.shiftKey ? Navigator.Settings.session.major_section_step : 1;
-          if (e.ctrlKey) {
+          if (Navigator.Settings.session.animate_section_change ? !e.ctrlKey : e.ctrlKey) {
             smoothChangeSlice(e, step, Navigator.Settings.session.max_fps);
           } else {
             self.slider_z.move(step);
@@ -675,6 +675,9 @@
           },
           major_section_step: {
             default: 10
+          },
+          animate_section_change: {
+            default: false
           },
           max_fps: {
             default: 60.0

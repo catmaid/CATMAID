@@ -4,6 +4,11 @@
 
 ### Features and enhancements
 
+Miscellaneous:
+
+- The behavior of the Ctrl modifier on section navigation with , and . can now
+  be inverted using the "Animate section change by default" option in the
+  Settings Widget.
 
 
 ### Bug fixes

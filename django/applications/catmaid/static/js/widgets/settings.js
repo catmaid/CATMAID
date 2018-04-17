@@ -371,6 +371,23 @@
           'major_section_step',
           SETTINGS_SCOPE));
 
+      // Animated section changing
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Animate section change by default",
+              CATMAID.Navigator.Settings[SETTINGS_SCOPE].animate_section_change,
+              'If enabled, inverts the behavior of the <kbd>Ctrl</kbd> ' +
+              'modifier when changing the section with <kbd>,</kbd> and ' +
+              '<kbd>.</kbd> so the default is to smoothly animate, waiting ' +
+              'on all layers to render. Default behavior is still available ' +
+              'with <kbd>Ctrl</kbd>.',
+              function() {
+                CATMAID.Navigator.Settings[SETTINGS_SCOPE].animate_section_change = this.checked;
+              }),
+          CATMAID.Navigator.Settings,
+          'animate_section_change',
+          SETTINGS_SCOPE));
+
       // Max FPS
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createNumericInputSetting(
@@ -492,7 +509,7 @@
                   userLayouts,
                   SETTINGS_SCOPE)
                  .then(function() {
-                   CATMAID.Layout.trigger(CATMAID.Layout.EVENT_USER_LAYOUT_CHANGED);    
+                   CATMAID.Layout.trigger(CATMAID.Layout.EVENT_USER_LAYOUT_CHANGED);
                  })
                  .catch(CATMAID.handleError);
           },

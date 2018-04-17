@@ -750,7 +750,7 @@
     return target;
   };
 
-  DOM.createCheckboxSelectPanel = function(options, selectedKeys, showFilter) {
+  DOM.createCheckboxSelectPanel = function(options, selectedKeys, showFilter, rowFn) {
     var selectedSet = new Set(selectedKeys ? selectedKeys : undefined);
     var container = document.createElement('div');
     var checkboxes = document.createElement('ul');
@@ -763,7 +763,8 @@
       checkbox.setAttribute('value', o.value);
       entry.appendChild(checkbox);
       entry.appendChild(document.createTextNode(o.title));
-      if (selectedSet.has(o.value)) {
+      var selected = selectedSet.has(o.value);
+      if (selected) {
         checkbox.checked = true;
       }
       var listElement = document.createElement('li');
@@ -778,6 +779,10 @@
           entryIndex.set(o.title, labelElements);
         }
         labelElements.push(entry);
+      }
+
+      if (CATMAID.tools.isFn(rowFn)) {
+        rowFn(listElement, o.value, selected);
       }
     }
     var entryKeys = Array.from(entryIndex.keys());
@@ -832,11 +837,12 @@
    * @param selectedKeys {String[]} (Optional) list of keys that should be
    *                                selected initially
    * @param showFilter   {Bool}     Whether to show a filter input field.
+   * @param rowFn        {Function} (optional) A function that is called for each entry.
    *
    * @returns a wrapper around the select element
    */
-  DOM.createCheckboxSelect = function(title, options, selectedKeys, showFilter) {
-    var container = DOM.createCheckboxSelectPanel(options, selectedKeys, showFilter);
+  DOM.createCheckboxSelect = function(title, options, selectedKeys, showFilter, rowFn) {
+    var container = DOM.createCheckboxSelectPanel(options, selectedKeys, showFilter, rowFn);
     return CATMAID.DOM.createCustomContentSelect(title, container);
   };
 

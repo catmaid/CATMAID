@@ -103,6 +103,27 @@ does not conflict with server-level HTTP authorization.
 Example API Use
 ---------------
 
+Command line
+^^^^^^^^^^^^
+
+The perhaps easiest way to talk to the CATMAID API is to use the ``curl``
+command line tool::
+
+    curl --header 'X-Authorization: <auth-token>' -X GET '<catmaid-url>'
+
+If the CATMAID instance requires basic HTTP authentication, you can add the ``-u
+<user>:<pass>`` parameter to the ``curl`` command. For intance, to get all
+currently available node tags in a project with ID ``1`` from the CATMAID
+instance hosted at ``https://example.com/catmaid/`` using basic HTTP
+authentication with user "myuser" and password "mypass", you can do the
+following::
+
+    curl --header 'X-Authorization: 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b' \
+        -u myuser:mypass -X GET 'https://example.com/catmaid/1/labels'
+
+Python
+^^^^^^
+
 Below is a minimal example of accessing the API of a CATMAID server
 running on ``localhost`` using the `Requests Python package
 <http://docs.python-requests.org/en/latest/index.html>`_:

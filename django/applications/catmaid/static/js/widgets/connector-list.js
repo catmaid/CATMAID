@@ -227,11 +227,18 @@
    */
   ConnectorList.prototype.exportCSV = function() {
     if (!this.connectorTable) return;
-    var relation = $(`#${this.idPrefix}relation-type`).find(':selected').val();
     var header = this.connectorTable.columns().header().map(function(h) {
       return $(h).text();
     });
-    var connectorRows = this.connectorTable.rows({"order": "current"}).data();
+    // Remove "S" column
+    header.splice(5, 1);
+
+    // Use original data, but change order to match the table
+    var connectorRows = this.connectorTable.rows({"order": "current"})
+        .data().map(function(row) {
+          return [row[4], row[0], row[1], row[2], row[3], row[5], row[6],
+              row[7], row[8], row[9]];
+        });
     var csv = header.join(',') + '\n' + connectorRows.map(function(row) {
       return row.join(',');
     }).join('\n');

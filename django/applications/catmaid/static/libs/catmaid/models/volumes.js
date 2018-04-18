@@ -163,18 +163,17 @@
       // Add each face bounding box into index by splitting the extent of the
       // mesh in each dimension by <cellsPerDimension> and adding triangles into
       // their intersecting
-      var allVertices = mesh.geometry.getAttribute('position').array;
+      var faces = mesh.geometry.faces;
+      var vertexFields = ['a', 'b', 'c'];
+      var allVertices = mesh.geometry.vertices;
       var bb = new THREE.Box3();
-      // Look at 9 entries at a time, representing the three coordinates of each
-      // vertex of a face.
-      for (var i=0, max=allVertices.length; i<max; i += 9) {
+      for (var i=0, max=faces.length; i<max; ++i) {
         // Get face bounding box
+        var face = faces[i];
         var vertices = new Array(3);
         for (var j=0; j<3; ++j) {
-          vertices[j] = new THREE.Vector3(
-              allVertices[i + j*3],
-              allVertices[i + j*3 + 1],
-              allVertices[i + j*3 + 2]);
+          var vertex = allVertices[face[vertexFields[j]]];
+          vertices[j] = vertex;
         }
         bb.setFromPoints(vertices);
 

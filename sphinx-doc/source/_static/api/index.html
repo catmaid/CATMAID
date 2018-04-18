@@ -587,6 +587,11 @@
         </td>
                     </tr>
                     <tr>
+                        <td><a href="#operation---project_id--connectors-in-bounding-box-get">GET /{project_id}/connectors/in-bounding-box</a></td>
+                        <td><p>Get a list of all connector nodes that intersect with the passed in</p>
+        </td>
+                    </tr>
+                    <tr>
                         <td><a href="#operation---project_id--connectors-links--get">GET /{project_id}/connectors/links/</a></td>
                         <td><p>Get connectors linked to a set of skeletons.</p>
         </td>
@@ -2483,6 +2488,225 @@
                 </div>
             </div>
         
+        <span id="path---project_id--connectors-in-bounding-box"></span>
+            <div id="operation---project_id--connectors-in-bounding-box-get" class="swagger--panel-operation-get panel">
+                <div class="panel-heading">
+                    <div class="operation-summary">Get a list of all connector nodes that intersect with the passed in</div>
+                    <h3 class="panel-title"><span class="operation-name">GET</span> <strong>/{project_id}/connectors/in-bounding-box</strong></h3>
+                        Tags:
+                            <a href="#tag-connectors">connectors</a>
+                </div>
+                <div class="panel-body">
+                    <section class="sw-operation-description">
+                        <p>Get a list of all connector nodes that intersect with the passed in
+            bounding box.</p>
+            
+                    </section>
+            
+                        
+                            <section class="sw-request-body">
+                                
+                                    <p><span class="label label-default">application/x-www-form-urlencoded</span> 
+                        </p>
+                            </section>        
+                        <section class="sw-request-params">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th class="sw-param-name"></th>
+                                    <th class="sw-param-description"></th>
+                                    <th class="sw-param-type"></th>
+                                    <th class="sw-param-data-type"></th>
+                                    <th class="sw-param-annotation"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                        <tr>
+                                            <td>
+                                                project_id
+                                            </td>
+                                            <td></td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                limit
+                                            </td>
+                                            <td><p>Limit the number of returned nodes.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                minx
+                                            </td>
+                                            <td><p>Minimum world space X coordinate</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                miny
+                                            </td>
+                                            <td><p>Minimum world space Y coordinate</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                minz
+                                            </td>
+                                            <td><p>Minimum world space Z coordinate</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                maxx
+                                            </td>
+                                            <td><p>Maximum world space X coordinate</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                maxy
+                                            </td>
+                                            <td><p>Maximum world space Y coordinate</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                maxz
+                                            </td>
+                                            <td><p>Maximum world space Z coordinate</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                with_locations
+                                            </td>
+                                            <td><p>Whether to return the location of each connector.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                with_links
+                                            </td>
+                                            <td><p>Whether to return every individual link</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    
+                        <section class="sw-responses">
+                    
+                            <dl>
+                                    <dt class="sw-response-200">
+                                        200 OK
+                                    
+                                    </dt>
+                                    <dd class="sw-response-200">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                
+                                                <div class="col-md-6 sw-response-model">
+                                            </div>
+                                            
+                                            </div>                </dd>
+                            </dl>
+                        </section>
+                </div>
+            </div>
+        
         <span id="path---project_id--connectors-links-"></span>
             <div id="operation---project_id--connectors-links--get" class="swagger--panel-operation-get panel">
                 <div class="panel-heading">
@@ -2860,7 +3084,7 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                connector_id
+                                                project_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -2875,7 +3099,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                connector_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -3172,9 +3396,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                node_type
                                             </td>
-                                            <td><p>Project containing node of interest</p>
+                                            <td><p>Either &#39;connector&#39;, &#39;treenode&#39; or &#39;location&#39;</p>
                                         </td>
                                             <td>formData</td>
                                             <td>
@@ -3188,9 +3412,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                node_type
+                                                project_id
                                             </td>
-                                            <td><p>Either &#39;connector&#39;, &#39;treenode&#39; or &#39;location&#39;</p>
+                                            <td><p>Project containing node of interest</p>
                                         </td>
                                             <td>formData</td>
                                             <td>
@@ -4240,9 +4464,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                landmarkgroup_id
                                             </td>
-                                            <td><p>The project the landmark group is part of.</p>
+                                            <td><p>The ID of the landmark group.</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4256,9 +4480,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                landmarkgroup_id
+                                                project_id
                                             </td>
-                                            <td><p>The ID of the landmark group.</p>
+                                            <td><p>The project the landmark group is part of.</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4377,13 +4601,12 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                landmarkgroup_id
                                             </td>
-                                            <td><p>The project the landmark group is part of.</p>
-                                        </td>
+                                            <td></td>
                                             <td>path</td>
                                             <td>
-                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-type">string</span>
                                         <span class="json-property-range" title="Value limits"></span>
                                         
                                             </td>
@@ -4393,12 +4616,13 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                landmarkgroup_id
+                                                project_id
                                             </td>
-                                            <td></td>
+                                            <td><p>The project the landmark group is part of.</p>
+                                        </td>
                                             <td>path</td>
                                             <td>
-                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-type">integer</span>
                                         <span class="json-property-range" title="Value limits"></span>
                                         
                                             </td>
@@ -4525,9 +4749,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                landmarkgroup_id
                                             </td>
-                                            <td><p>Project of landmark group</p>
+                                            <td><p>The landmark group to link</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4557,9 +4781,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                landmarkgroup_id
+                                                project_id
                                             </td>
-                                            <td><p>The landmark group to link</p>
+                                            <td><p>Project of landmark group</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4626,9 +4850,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                landmarkgroup_id
                                             </td>
-                                            <td><p>Project of landmark group</p>
+                                            <td><p>The landmark group to link</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4658,9 +4882,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                landmarkgroup_id
+                                                project_id
                                             </td>
-                                            <td><p>The landmark group to link</p>
+                                            <td><p>Project of landmark group</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4735,9 +4959,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                landmarkgroup_id
                                             </td>
-                                            <td><p>Project of landmark groups</p>
+                                            <td><p>The starting landmark group</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4751,9 +4975,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                landmarkgroup_id
+                                                project_id
                                             </td>
-                                            <td><p>The starting landmark group</p>
+                                            <td><p>Project of landmark groups</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -5429,6 +5653,22 @@
                                 <tbody>
                                         <tr>
                                             <td>
+                                                location_id
+                                            </td>
+                                            <td><p>The location to unlink</p>
+                                        </td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
                                                 project_id
                                             </td>
                                             <td><p>Project of landmark group</p>
@@ -5448,22 +5688,6 @@
                                                 landmark_id
                                             </td>
                                             <td><p>The landmark to unlink</p>
-                                        </td>
-                                            <td>path</td>
-                                            <td>
-                                        <span class="json-property-type">integer</span>
-                                        <span class="json-property-range" title="Value limits"></span>
-                                        
-                                            </td>
-                                            <td>
-                                                    <span class="json-property-required"></span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                location_id
-                                            </td>
-                                            <td><p>The location to unlink</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -6609,9 +6833,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                point_id
+                                                project_id
                                             </td>
-                                            <td><p>ID of point</p>
+                                            <td><p>Project point is part of</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -6625,9 +6849,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                point_id
                                             </td>
-                                            <td><p>Project point is part of</p>
+                                            <td><p>ID of point</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -6694,9 +6918,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                point_id
+                                                project_id
                                             </td>
-                                            <td><p>ID of point</p>
+                                            <td><p>Project point is part of</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -6710,9 +6934,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                point_id
                                             </td>
-                                            <td><p>Project point is part of</p>
+                                            <td><p>ID of point</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -6785,9 +7009,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                point_id
+                                                project_id
                                             </td>
-                                            <td><p>ID of point</p>
+                                            <td><p>Project point is part of</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -6801,9 +7025,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                point_id
                                             </td>
-                                            <td><p>Project point is part of</p>
+                                            <td><p>ID of point</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -7854,7 +8078,7 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                domain_id
+                                                project_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -7869,7 +8093,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                domain_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -7944,13 +8168,12 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                domain_id
+                                                project_id
                                             </td>
-                                            <td><p>Domain to list intervals for</p>
-                                        </td>
-                                            <td>formData</td>
+                                            <td></td>
+                                            <td>path</td>
                                             <td>
-                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-type">string</span>
                                         <span class="json-property-range" title="Value limits"></span>
                                         
                                             </td>
@@ -7960,12 +8183,13 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                domain_id
                                             </td>
-                                            <td></td>
-                                            <td>path</td>
+                                            <td><p>Domain to list intervals for</p>
+                                        </td>
+                                            <td>formData</td>
                                             <td>
-                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-type">integer</span>
                                         <span class="json-property-range" title="Value limits"></span>
                                         
                                             </td>
@@ -8030,7 +8254,7 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                domain_id
+                                                project_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -8045,7 +8269,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                domain_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -9444,7 +9668,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                left
+                                                minx
                                             </td>
                                             <td><p>Minimum world space X coordinate</p>
                                         </td>
@@ -9460,7 +9684,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                top
+                                                miny
                                             </td>
                                             <td><p>Minimum world space Y coordinate</p>
                                         </td>
@@ -9476,7 +9700,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                z1
+                                                minz
                                             </td>
                                             <td><p>Minimum world space Z coordinate</p>
                                         </td>
@@ -9492,7 +9716,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                right
+                                                maxx
                                             </td>
                                             <td><p>Maximum world space X coordinate</p>
                                         </td>
@@ -9508,7 +9732,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                bottom
+                                                maxy
                                             </td>
                                             <td><p>Maximum world space Y coordinate</p>
                                         </td>
@@ -9524,7 +9748,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                z2
+                                                maxz
                                             </td>
                                             <td><p>Maximum world space Z coordinate</p>
                                         </td>
@@ -11878,6 +12102,21 @@
                                 <tbody>
                                         <tr>
                                             <td>
+                                                suppressed_id
+                                            </td>
+                                            <td></td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
                                                 project_id
                                             </td>
                                             <td></td>
@@ -11894,21 +12133,6 @@
                                         <tr>
                                             <td>
                                                 treenode_id
-                                            </td>
-                                            <td></td>
-                                            <td>path</td>
-                                            <td>
-                                        <span class="json-property-type">string</span>
-                                        <span class="json-property-range" title="Value limits"></span>
-                                        
-                                            </td>
-                                            <td>
-                                                    <span class="json-property-required"></span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                suppressed_id
                                             </td>
                                             <td></td>
                                             <td>path</td>

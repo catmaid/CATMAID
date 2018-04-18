@@ -137,9 +137,15 @@
 
     /**
      * Create an inersector object which can be used to quickly test
-     * intersection of a point with a THREE.js mesh.
+     * intersection of a point with a regular THREE.js mesh.
      */
     makeIntersector: function(mesh, cellsPerDimension) {
+      // If the cell is a buffer geometry, convert it to a regular geometry
+      // first. In the future, we can optimize this to work on buffer geometries
+      // directly.
+      var geometry = mesh.geometry.isBufferGeometry ?
+          (new THREE.Geometry()).fromBufferGeometry(mesh.geometry) : mesh.geometry;
+
       // Build 2D index of all triangle bounding boxes of the input mesh
       cellsPerDimension = cellsPerDimension === undefined ? 10 : cellsPerDimension;
       var triangleIndex = new Array(cellsPerDimension);
@@ -151,11 +157,11 @@
         }
       }
       // Make sure we hava a bounding box available.
-      if (!mesh.geometry.boundingBox) {
-        mesh.geometry.computeBoundingBox();
+      if (!geometry.boundingBox) {
+        geometry.computeBoundingBox();
       }
-      var min = mesh.geometry.boundingBox.min;
-      var max = mesh.geometry.boundingBox.max;
+      var min = geometry.boundingBox.min;
+      var max = geometry.boundingBox.max;
       var cellXEdgeLength = (max.x - min.x) / cellsPerDimension;
       var cellYEdgeLength = (max.y - min.y) / cellsPerDimension;
       var invCellXEdgeLength = 1 / cellXEdgeLength;
@@ -163,9 +169,9 @@
       // Add each face bounding box into index by splitting the extent of the
       // mesh in each dimension by <cellsPerDimension> and adding triangles into
       // their intersecting
-      var faces = mesh.geometry.faces;
+      var faces = geometry.faces;
       var vertexFields = ['a', 'b', 'c'];
-      var allVertices = mesh.geometry.vertices;
+      var allVertices = geometry.vertices;
       var bb = new THREE.Box3();
       for (var i=0, max=faces.length; i<max; ++i) {
         // Get face bounding box

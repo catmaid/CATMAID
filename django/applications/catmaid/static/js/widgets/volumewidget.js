@@ -77,7 +77,7 @@
         table.style.width = "100%";
         var header = table.createTHead();
         var hrow = header.insertRow(0);
-        var columns = ['Name', 'Comment', 'User', 'Creation time',
+        var columns = ['Name', 'Id', 'Comment', 'User', 'Creation time',
             'Editor', 'Edition time', 'Action'];
         columns.forEach(function(c) {
           hrow.insertCell().appendChild(document.createTextNode(c));
@@ -95,6 +95,7 @@
           },
           columns: [
             {data: "name"},
+            {data: "id"},
             {data: "comment"},
             {
               data: "user",

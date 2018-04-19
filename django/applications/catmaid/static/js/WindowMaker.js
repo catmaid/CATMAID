@@ -1631,6 +1631,16 @@ var WindowMaker = new function()
          ['Remove', GG.removeSelection.bind(GG)],
          ['Select all', GG.activateAllSelections.bind(GG)],
          [document.createTextNode(' - ')],
+         ['As columns', GG.alignSelectionsAsColumns.bind(GG)],
+         {type: 'checkbox',
+          label: 'hide other nodes',
+          title: 'Hide nodes not part of any selection',
+          value: true,
+          onclick: null, // TODO consider adding a function to show/hide nodes not in selections
+          id: "gg_hide_nodes_not_in_selections" + GG.widgetID},
+         [DOM.createNumericField('gg_columns_edge_opacity' + GG.widgetID, 'edge opacity:', null, '30', '%', GG.showRelevantEdgesToColumns.bind(GG), 2, GG.showRelevantEdgesToColumns.bind(GG))],
+         ['Fade edges', GG.showRelevantEdgesToColumns.bind(GG)],
+         ['Restore edges', GG.updateEdgeGraphics.bind(GG, true)],
         ]);
         
 

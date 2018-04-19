@@ -521,7 +521,10 @@
       this.grid_snap = grid_snap.checked;
 
       var edge_opacity = Number(props[0].value.trim());
-      if (!Number.isNaN(edge_opacity) && edge_opacity >= 0 && edge_opacity <= 1) this.edge_opacity = edge_opacity;
+      if (!Number.isNaN(edge_opacity) && edge_opacity >= 0 && edge_opacity <= 1) {
+        // TODO should not be the 'default' but whichever is selected in the linkTypeSelection above
+        this.linkTypeColors.get('default').opacity = edge_opacity;
+      }
       var edge_text_opacity = Number(props[1].value.trim());
       if (!Number.isNaN(edge_text_opacity) && edge_text_opacity >= 0 && edge_text_opacity <= 1) this.edge_text_opacity = edge_text_opacity;
       var edge_min_width = Number(props[2].value.trim());
@@ -1486,6 +1489,7 @@
     this.groups = {};
     this.subgraphs = {};
     this.resetPathOrigins();
+    this.resetSelections();
     if (this.cy) this.cy.elements("node").remove();
   };
 
@@ -3873,6 +3877,21 @@
     select.append(new Option(name, name));
   };
 
+  /** Change the order of the active selection in the selections pulldown menu.
+   * @param inc Either 1 or -1. */
+  GroupGraph.prototype.moveSelection = function(inc) {
+    var sel = $('#gg_selections' + this.widgetID)[0];
+    var index = sel.selectedIndex;
+    inc = inc > 0 ? 1 : -1;
+    var new_index = index + inc;
+    if (new_index < 0 || new_index >= sel.options.length) return;
+    if (inc > 0) {
+      sel.insertBefore(sel.options[index], sel.options[new_index].nextSibling);
+    } else if (inc < 0) {
+      sel.insertBefore(sel.options[index], sel.options[index].previousSibling);
+    }
+  };
+
   /** Select or deselect the nodes for the selection chosen in the pulldown menu. */
   GroupGraph.prototype.activateSelection = function(activate) {
     var sel = this.getActiveSelection();
@@ -3928,6 +3947,204 @@
       }
     });
     this.cy.endBatch();
+  };
+
+  /**
+   * Take the selections of nodes, if any,
+   * reset zoom to 100%,
+   * define small margins based on node width/height,
+   * compute the new positions of nodes in the selections
+   *   so that each selection becomes a column (even if nodes overlap because a column has too many),
+   * and hide nodes not in the selections.
+   *
+   * @param options An optional object with the margins and the intracolumn node sorting function.
+   */
+  GroupGraph.prototype.alignSelectionsAsColumns = function(options) {
+    if (!this.selections) return;
+
+    var nodesById = {};
+    this.cy.nodes().each(function(i, node) {
+      nodesById[node.id()] = node;
+    });
+
+    // Check if any selection overlaps with any other selection
+    var names = Object.keys(this.selections);
+    var warn = false;
+    if (names.length > 1) {
+      for (var i=0; i<names.length; ++i) {
+        var nodeIDs1 = Object.keys(this.selections[names[i]]);
+        for (var k=i+1; k<names.length; ++k) {
+          var s2 = this.selections[names[k]];
+          for (var g=0; g<nodeIDs1.length; ++g) {
+            if (s2[nodeIDs1[g]]) {
+              warn = true;
+              console.log("Node " + nodesById[nodeIDs1[g]].data().label + " from selection '" + names[k] + "' is also present in selection '" + names[i] + "'");
+            }
+          }
+        }
+      }
+    }
+    if (warn) CATMAID.warn("Some nodes are present in more than one selection. Check the console.");
+
+    this.cy.zoom(1.0);
+
+    var margins = options && options.margins ?
+      options.margins
+      : {top: this.node_height * 2,
+         bottom: this.node_height * 2,
+         left: this.node_width * 2,
+         right: this.node_width * 2};
+
+    // Sort: default is by node label, with natural sort of alphanumeric strings
+    var sortFn = options && options.sortFn ?
+      options.sortFn
+      : function(node1, node2) {
+        var label1 = node1.data().label;
+        var label2 = node2.data().label;
+        return label1.localeCompare(label2, undefined, {numeric: true, sensitivity: 'base'});
+      };
+
+    var width  = this.cy.width() - margins.left - margins.right;
+    var height = this.cy.height() - margins.top - margins.bottom;
+
+    var columns = this.getSelections();
+    var column_spacing = width / (columns.length - 1);
+
+    this.cy.startBatch();
+
+    for (var i=0; i<columns.length; ++i) {
+      var x = margins.left + i * column_spacing;
+      var column = Object.keys(columns[i].nodeIDs)
+        .map(function(nodeID) { return nodesById[nodeID]; })
+        .sort(sortFn);
+      var row_spacing = height / (column.length - 1);
+      column.forEach(function(node, k) {
+        node.renderedPosition({x: x, y: margins.top + k * row_spacing});
+      });
+    }
+
+    this.cy.endBatch();
+  };
+
+  /** Return the top-left and bottom-right points of the bounding box of all node positions (node centers). */
+  GroupGraph.prototype.getBounds = function() {
+    var bounds = {topleft: null,
+                  bottomright: null};
+
+    gg.cy.nodes().each(function(i, node) {
+      var position = node.position();
+      if (null == bounds.topleft) {
+        bounds.topleft = {x: position.x,
+                          y: position.y};
+      } else {
+        bounds.topleft.x = Math.min(bounds.topleft.x, position.x);
+        bounds.topleft.y = Math.min(bounds.topleft.y, position.y);
+      }
+      if (null == bounds.bottomright) {
+        bounds.bottomright = {x: position.x,
+                              y: position.y};
+      } else {
+        bounds.bottomright.x = Math.max(bounds.bottomright.x, position.x);
+        bounds.bottomright.y = Math.max(bounds.bottomright.y, position.y);
+      }
+    });
+
+    return bounds;
+  };
+
+  /** Return selections as an array, ordered like in the UI pulldown menu. */
+  GroupGraph.prototype.getSelections = function() {
+    var sel = $('#gg_selections' + this.widgetID)[0];
+    var selections = [];
+    for (var i=0; i<sel.options.length; ++i) {
+      var name = sel.options[i].text;
+      selections.push({name: name,
+                       nodeIDs: this.selections[name]});
+    }
+    return selections;
+  };
+  
+  GroupGraph.prototype.getValidatedEdgeOpacityValue = function() {
+    var opacity = $('#gg_columns_edge_opacity' + this.widgetID).val();
+    // Validate opacity value
+    opacity = Number(opacity);
+    if (Number.isNaN(opacity) || opacity < 0 || opacity > 100) {
+      CATMAID.warn("Invalid opacity! Must be in 0-100 % range.");
+      return null;
+    }
+    return opacity / 100.0;
+  };
+
+  /** Fade all edges, keeping at 100% opacity only those relevant to select nodes across columns. */
+  GroupGraph.prototype.showRelevantEdgesToColumns = function() {
+    if (0 === this.cy.nodes().filter(function(i, node) { return node.selected(); }).size()) {
+      return CATMAID.warn("Select at least one node first!");
+    }
+
+    var opacity = this.getValidatedEdgeOpacityValue();
+    if (!opacity) return;
+
+    var columns = this.getSelections();
+
+    // Column index is the same as selection index
+    var column_indices = columns.reduce(function(o, column, index) {
+      return Object.keys(column.nodeIDs).reduce(function(o, nodeID) {
+        o[nodeID] = index;
+        return o;
+      }, o);
+    }, {});
+
+    var getColumnIndex = function(node) { return column_indices[node.id()]; };
+
+    // Show edges from nodes on the column to the left of the node's column
+    var showIncommingEdges = function(node) {
+      if (!node.visible()) return;
+      var column_index = getColumnIndex(node);
+      node.connectedEdges().each(function(i, edge) {
+        if (!edge.visible()) return;
+        if (getColumnIndex(edge.source()) === column_index - 1) {
+           edge.style('opacity', 1.0);
+           if (column_index - 1 > 0) {
+             // Recurse
+             showIncommingEdges(edge.source());
+           }
+         }
+      });
+    };
+
+    // Show edges onto nodes on the column to the right of the node's column 
+    var showOutgoingEdges = function(node) {
+      if (!node.visible()) return;
+      var column_index = getColumnIndex(node);
+      node.connectedEdges().each(function(i, edge) {
+        if (!edge.visible()) return;
+        if (getColumnIndex(edge.target()) === column_index + 1) {
+           edge.style('opacity', 1.0);
+           if (column_index + 1 < columns.length -1) {
+             // Recurse
+             showOutgoingEdges(edge.target());
+           }
+         }
+      });
+    };
+
+    this.cy.startBatch();
+
+    this.cy.edges().style('opacity', opacity);
+
+    this.cy.nodes().each(function(i, node) {
+      if (node.selected()) {
+        showIncommingEdges(node);
+        showOutgoingEdges(node);
+      }
+    });
+
+    this.cy.endBatch();
+  };
+
+  GroupGraph.prototype.resetSelections = function() {
+    this.selections = {};
+    $('#gg_selections' + this.widgetID)[0].options.length = 0;
   };
 
   // Add state manage for Graph widget

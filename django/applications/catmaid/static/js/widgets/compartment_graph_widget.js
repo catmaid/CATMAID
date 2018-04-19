@@ -521,7 +521,10 @@
       this.grid_snap = grid_snap.checked;
 
       var edge_opacity = Number(props[0].value.trim());
-      if (!Number.isNaN(edge_opacity) && edge_opacity >= 0 && edge_opacity <= 1) this.edge_opacity = edge_opacity;
+      if (!Number.isNaN(edge_opacity) && edge_opacity >= 0 && edge_opacity <= 1) {
+        // TODO should not be the 'default' but whichever is selected in the linkTypeSelection above
+        this.linkTypeColors.get('default').opacity = edge_opacity;
+      }
       var edge_text_opacity = Number(props[1].value.trim());
       if (!Number.isNaN(edge_text_opacity) && edge_text_opacity >= 0 && edge_text_opacity <= 1) this.edge_text_opacity = edge_text_opacity;
       var edge_min_width = Number(props[2].value.trim());

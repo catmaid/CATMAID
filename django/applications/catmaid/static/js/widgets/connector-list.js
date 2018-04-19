@@ -58,10 +58,17 @@
       createControls: function(controls) {
         var exportCSV = document.createElement('input');
         exportCSV.setAttribute("type", "button");
-        exportCSV.setAttribute("value", "Export CSV");
+        exportCSV.setAttribute("value", "Export links as CSV");
         exportCSV.setAttribute("title", "Export a CSV file for the currently displayed table");
         exportCSV.onclick = this.exportCSV.bind(this);
         controls.appendChild(exportCSV);
+
+        var exportConnectorCSV = document.createElement('input');
+        exportConnectorCSV.setAttribute("type", "button");
+        exportConnectorCSV.setAttribute("value", "Export connectors as CSV");
+        exportConnectorCSV.setAttribute("title", "Export a CSV file including all connector IDs and locations");
+        exportConnectorCSV.onclick = this.exportConnectorCSV.bind(this);
+        controls.appendChild(exportConnectorCSV);
       },
       contentID: this.idPrefix + 'content',
       createContent: function(content) {
@@ -239,6 +246,31 @@
           return [row[4], row[0], row[1], row[2], row[3], row[5], row[6],
               row[7], row[8], row[9]];
         });
+    var csv = header.join(',') + '\n' + connectorRows.map(function(row) {
+      return row.join(',');
+    }).join('\n');
+    var blob = new Blob([csv], {type: 'text/plain'});
+    saveAs(blob, "catmaid-connector-link-list.csv");
+  };
+
+  /**
+   * Export the currently displayed connectors as CSV.
+   */
+  ConnectorList.prototype.exportConnectorCSV = function() {
+    if (!this.connectorTable) return;
+
+    let header = ['Connector ID', 'X', 'Y', 'Z'];
+
+    // Use original data, but change order to match the table
+    let seenConnectors = new Set();
+    var connectorRows = this.connectorTable.rows({"order": "current"})
+        .data().reduce(function(target, row, i) {
+          if (!seenConnectors.has(row[0])) {
+            target.push([row[0], row[1], row[2], row[3]]);
+          }
+          return target;
+        }, []);
+
     var csv = header.join(',') + '\n' + connectorRows.map(function(row) {
       return row.join(',');
     }).join('\n');

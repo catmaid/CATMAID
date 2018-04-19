@@ -1486,6 +1486,7 @@
     this.groups = {};
     this.subgraphs = {};
     this.resetPathOrigins();
+    this.resetSelections();
     if (this.cy) this.cy.elements("node").remove();
   };
 
@@ -3928,6 +3929,11 @@
       }
     });
     this.cy.endBatch();
+  };
+
+  GroupGraph.prototype.resetSelections = function() {
+    this.selections = {};
+    $('#gg_selections' + this.widgetID)[0].options.length = 0;
   };
 
   // Add state manage for Graph widget

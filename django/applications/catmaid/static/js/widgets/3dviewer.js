@@ -2682,7 +2682,7 @@
       var geometry = this.getTagGeometry(tagString, font);
       var text = new THREE.Mesh(geometry, material);
       // We need to flip up, because our cameras' up direction is -Y.
-      text.scale.setY(textScaling, -textScaling, textSCaling);
+      text.scale.setY(textScaling, -textScaling, textScaling);
       text.visible = true;
       return text;
     };

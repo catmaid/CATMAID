@@ -1096,6 +1096,16 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNode = function(node)
         // be on the safe side).
         node.id = nid;
         node.edition_time_iso_str = result.edition_time;
+        // Update edition time of any children
+        if (result.child_edition_times) {
+          for (var i=0; i<result.child_edition_times.length; ++i) {
+            var childEditInfo = result.child_edition_times[i];
+            var childNode = self.nodes[childEditInfo[0]];
+            if (childNode) {
+              childNode.edition_time_iso_str = childEditInfo[1];
+            }
+          }
+        }
         // If the virtual node was the active node before, update the active
         // node as well.
         if (SkeletonAnnotations.getActiveNodeId() == vnid) {

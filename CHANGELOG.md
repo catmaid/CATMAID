@@ -15,6 +15,9 @@ Miscellaneous:
   be inverted using the "Animate section change by default" option in the
   Settings Widget.
 
+- Split/merge dialog: the node count of the individual parts is now shown when
+  hovering over their cable length information.
+
 
 ### Bug fixes
 

@@ -229,7 +229,8 @@
             arbor2 = skeleton2.createArbor(),
             length1 = arbor1.cableLength(skeleton.getPositions()),
             length2 = arbor2.cableLength(skeleton2.getPositions()),
-            over_length, under_length, over_skeleton, under_skeleton;
+            over_length, under_length, over_skeleton, under_skeleton,
+            losingNodeCount, winningNodeCount;
 
         var keepOrder = length1 >= length2 || !this.autoOrder;
 
@@ -241,6 +242,8 @@
           under_length = length2;
           over_skeleton = skeleton;
           under_skeleton = skeleton2;
+          losingNodeCount = arbor2.countNodes();
+          winningNodeCount = arbor1.countNodes();
         } else {
           this.over_model_id = this.model2_id;
           this.under_model_id = this.model1_id;
@@ -248,6 +251,8 @@
           under_length = length1;
           over_skeleton = skeleton2;
           under_skeleton = skeleton;
+          losingNodeCount = arbor1.countNodes();
+          winningNodeCount = arbor2.countNodes();
         }
 
         var winningModel = this.models[this.over_model_id];
@@ -267,10 +272,10 @@
         // Update titles and name winning model first
         titleBig.appendChild(document.createTextNode(Math.round(over_length) +
             "nm cable in winning skeleton"));
-        titleBig.setAttribute('title', winningModel.baseName);
+        titleBig.setAttribute('title', winningModel.baseName + ' (' + winningNodeCount + ' nodes)');
         titleSmall.appendChild(document.createTextNode(Math.round(under_length) +
             "nm cable in losing skeleton"));
-        titleSmall.setAttribute('title', losingModel.baseName);
+        titleSmall.setAttribute('title', losingModel.baseName + ' (' + losingNodeCount + ' nodes)');
         // Color the small and big title boxes
         colorBig.style.backgroundColor = winningColor.getStyle();
         colorSmall.style.backgroundColor = losingColor.getStyle();
@@ -304,8 +309,11 @@
           positions[this.splitNodeId] = new THREE.Vector3(x, y, z);
         }
 
-        var length1 = arbor.subArbor(this.splitNodeId).cableLength(positions),
+        var newArbor = arbor.subArbor(this.splitNodeId),
+            length1 = newArbor.cableLength(positions),
             length2 = arbor.cableLength(positions) - length1,
+            nodeCount1 = newArbor.countNodes(),
+            nodeCount2 = arbor.countNodes() - nodeCount1,
             over_length, under_length,
             model_name = this.models[this.model1_id].baseName;
         this.upstream_is_small = length1 > length2;
@@ -313,13 +321,13 @@
         if (this.upstream_is_small) {
           over_length = length1;
           under_length = length2;
-          titleBig.setAttribute('title', "New");
-          titleSmall.setAttribute('title', model_name);
+          titleBig.setAttribute('title', "New (" + nodeCount1 + ' nodes)');
+          titleSmall.setAttribute('title', model_name + ' (' + nodeCount2 + ' nodes');
         } else {
           over_length = length2;
           under_length = length1;
-          titleBig.setAttribute('title', model_name);
-          titleSmall.setAttribute('title', "New");
+          titleBig.setAttribute('title', model_name + ' (' + nodeCount2 + ' nodes)');
+          titleSmall.setAttribute('title', "New" + ' (' + nodeCount1 + ' nodes)');
         }
         // Update dialog title
         var title = 'Split skeleton "' + model_name + '"';

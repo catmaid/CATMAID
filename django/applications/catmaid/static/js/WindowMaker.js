@@ -1626,6 +1626,8 @@ var WindowMaker = new function()
           onclick: GG.togglePreventSelectionOverlaps.bind(GG),
           id: "gg_prevent_overlaps" + GG.widgetID},
          [DOM.createSelect("gg_selections" + GG.widgetID, [])],
+         ['\u25B2', GG.moveSelection.bind(GG, -1)],
+         ['\u25BC', GG.moveSelection.bind(GG, 1)],
          ['Select', GG.activateSelection.bind(GG, true)],
          ['Deselect', GG.activateSelection.bind(GG, false)],
          ['Remove', GG.removeSelection.bind(GG)],

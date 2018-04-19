@@ -3877,6 +3877,21 @@
     select.append(new Option(name, name));
   };
 
+  /** Change the order of the active selection in the selections pulldown menu.
+   * @param inc Either 1 or -1. */
+  GroupGraph.prototype.moveSelection = function(inc) {
+    var sel = $('#gg_selections' + this.widgetID)[0];
+    var index = sel.selectedIndex;
+    inc = inc > 0 ? 1 : -1;
+    var new_index = index + inc;
+    if (new_index < 0 || new_index >= sel.options.length) return;
+    if (inc > 0) {
+      sel.insertBefore(sel.options[index], sel.options[new_index].nextSibling);
+    } else if (inc < 0) {
+      sel.insertBefore(sel.options[index], sel.options[index].previousSibling);
+    }
+  };
+
   /** Select or deselect the nodes for the selection chosen in the pulldown menu. */
   GroupGraph.prototype.activateSelection = function(activate) {
     var sel = this.getActiveSelection();

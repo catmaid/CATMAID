@@ -29,8 +29,9 @@ from catmaid.objects import Skeleton, SkeletonGroup, \
         compartmentalize_skeletongroup_by_confidence
 from catmaid.control.authentication import requires_user_role, \
         can_edit_class_instance_or_fail, can_edit_or_fail
-from catmaid.control.common import insert_into_log, get_class_to_id_map, \
-        get_relation_to_id_map, _create_relation, get_request_list
+from catmaid.control.common import (insert_into_log, get_class_to_id_map,
+        get_relation_to_id_map, _create_relation, get_request_bool,
+        get_request_list)
 from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.neuron_annotations import (annotations_for_skeleton,
         create_annotation_query, _annotate_entities, _update_neuron_annotations)
@@ -1150,7 +1151,7 @@ def skeleton_info_raw(request, project_id=None):
     skeletons = tuple(int(v) for k,v in six.iteritems(request.POST) if k.startswith('source_skeleton_ids['))
     op = str(request.POST.get('boolean_op')) # values: AND, OR
     op = {'AND': 'AND', 'OR': 'OR'}[op] # sanitize
-    with_nodes = request.POST.get('with_nodes', 'false') == 'true'
+    with_nodes = get_request_bool(request.POST, 'with_nodes', False)
 
     incoming, outgoing, gapjunctions, attachments, incoming_reviewers, \
     outgoing_reviewers, gapjunctions_reviewers, attachments_reviewers = \
@@ -1267,7 +1268,7 @@ def review_status(request, project_id=None):
         required: true
     """
     skeleton_ids = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('skeleton_ids['))
-    whitelist = bool(json.loads(request.POST.get('whitelist', 'false')))
+    whitelist = get_request_bool(request.POST, 'whitelist', False)
     whitelist_id = None
     user_ids = None
     if whitelist:

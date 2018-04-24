@@ -38,6 +38,14 @@ class parsedict(dict):
     """
     pass
 
+def get_request_bool(request_dict, name, default=None):
+    """Extract a boolean value for the passed in parameter name in the passed
+    in dictionary. The boolean paramter is expected to be a string and True is
+    returned if it matches the string "true" (case-insensitive), False otherwise.
+    """
+    value = request_dict.get(name)
+    return default if value == None else value.lower() == 'true'
+
 def get_request_list(request_dict, name, default=None, map_fn=identity):
     """Look for a list in a request dictionary where individual items are named
     with or without an index. Traditionally, the CATMAID web front-end sends

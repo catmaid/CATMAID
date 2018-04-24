@@ -16,6 +16,7 @@ from catmaid.models import Project, Class, ClassInstance, Relation, Connector, \
         ChangeRequest
 from catmaid.control.authentication import (requires_user_role, can_edit_or_fail,
         PermissionError)
+from catmaid.control.common import get_request_bool
 from catmaid.fields import Double3D
 
 
@@ -207,7 +208,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
 
     # TODO will FAIL when a tag contains a coma by itself
     new_tags = request.POST['tags'].split(',')
-    delete_existing_labels = request.POST.get('delete_existing', 'true') == 'true'
+    delete_existing_labels = get_request_bool(request.POST, 'delete_existing', True)
 
     kwargs = {'relation': labeled_as_relation,
               'class_instance__class_column__class_name': 'label'}

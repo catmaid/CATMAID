@@ -24,7 +24,8 @@ from catmaid.models import UserRole, ClassInstance, Treenode, \
         TreenodeClassInstance, ConnectorClassInstance, Review
 from catmaid.control import export_NeuroML_Level3
 from catmaid.control.authentication import requires_user_role
-from catmaid.control.common import get_relation_to_id_map, get_request_list
+from catmaid.control.common import (get_relation_to_id_map, get_request_bool,
+        get_request_list)
 from catmaid.control.review import get_treenodes_to_reviews, \
         get_treenodes_to_reviews_with_time
 
@@ -119,7 +120,7 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
     treenode_qs = treenode_qs.order_by('id')
 
     if format == 'swc':
-        linearize_ids = request.GET.get('linearize_ids', 'false') == 'true'
+        linearize_ids = get_request_bool(request.GET, 'linearize_ids', False)
         return HttpResponse(get_swc_string(treenode_qs, linearize_ids), content_type='text/plain')
     elif format == 'json':
         return JsonResponse(treenode_qs)
@@ -220,13 +221,13 @@ def compact_skeleton_detail(request, project_id=None, skeleton_id=None):
     # Sanitize
     project_id = int(project_id)
     skeleton_id = int(skeleton_id)
-    with_connectors = request.GET.get("with_connectors", "false") == "true"
-    with_tags = request.GET.get("with_tags", "false") == "true"
-    with_history = request.GET.get("with_history", "false") == "true"
-    with_merge_history = request.GET.get("with_merge_history", "false") == "true"
-    with_reviews = request.GET.get("with_reviews", "false") == "true"
-    with_annotations = request.GET.get("with_annotations", "false") == "true"
-    with_user_info = request.GET.get("with_user_info", "false") == "true"
+    with_connectors = get_request_bool(request.GET, "with_connectors", False)
+    with_tags = get_request_bool(request.GET, "with_tags", False)
+    with_history = get_request_bool(request.GET, "with_history", False)
+    with_merge_history = get_request_bool(request.GET, "with_merge_history", False)
+    with_reviews = get_request_bool(request.GET, "with_reviews", False)
+    with_annotations = get_request_bool(request.GET, "with_annotations", False)
+    with_user_info = get_request_bool(request.GET, "with_user_info", False)
 
     result = _compact_skeleton(project_id, skeleton_id, with_connectors,
                                with_tags, with_history, with_merge_history,
@@ -252,13 +253,13 @@ def compact_skeleton(request, project_id=None, skeleton_id=None,
     skeleton_id = int(skeleton_id)
     with_connectors  = int(with_connectors) != 0
     with_tags = int(with_tags) != 0
-    with_history = request.GET.get("with_history", "false").lower() == "true"
+    with_history = get_request_bool(request.GET, "with_history", False)
     # Indicate if history of merged in skeletons should also be included if
     # history is returned. Ignored if history is not retrieved.
-    with_merge_history = request.GET.get("with_merge_history", "false").lower() == "true"
-    with_reviews = request.GET.get("with_reviews", "false").lower() == "true"
-    with_annotations = request.GET.get("with_annotations", "false").lower() == "true"
-    with_user_info = request.POST.get("with_user_info", "false") == "true"
+    with_merge_history = get_request_bool(request.GET, "with_merge_history", False)
+    with_reviews = get_request_bool(request.GET, "with_reviews", False)
+    with_annotations = get_request_bool(request.GET, "with_annotations", False)
+    with_user_info = get_request_bool(request.GET, "with_user_info", False)
 
     result = _compact_skeleton(project_id, skeleton_id, with_connectors,
                                with_tags, with_history, with_merge_history,
@@ -367,13 +368,13 @@ def compact_skeleton_detail_many(request, project_id=None):
     """
     # Sanitize
     skeleton_ids = get_request_list(request.POST, "skeleton_ids", map_fn=int)
-    with_connectors = request.POST.get("with_connectors", "false") == "true"
-    with_tags = request.POST.get("with_tags", "false") == "true"
-    with_history = request.POST.get("with_history", "false") == "true"
-    with_merge_history = request.POST.get("with_merge_history", "false") == "true"
-    with_reviews = request.POST.get("with_reviews", "false") == "true"
-    with_annotations = request.POST.get("with_annotations", "false") == "true"
-    with_user_info = request.POST.get("with_user_info", "false") == "true"
+    with_connectors = get_request_bool(request.POST, "with_connectors", False)
+    with_tags = get_request_bool(request.POST, "with_tags", False)
+    with_history = get_request_bool(request.POST, "with_history", False)
+    with_merge_history = get_request_bool(request.POST, "with_merge_history", False)
+    with_reviews = get_request_bool(request.POST, "with_reviews", False)
+    with_annotations = get_request_bool(request.POST, "with_annotations", False)
+    with_user_info = get_request_bool(request.POST, "with_user_info", False)
 
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
@@ -774,7 +775,7 @@ def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,
 
 @requires_user_role(UserRole.Browse)
 def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None):
-    with_time = request.GET.get("with_time", "false") == "true"
+    with_time = get_request_bool(request.GET, "with_time", False)
     nodes, connectors, tags = _compact_arbor(project_id, skeleton_id,
             with_nodes, with_connectors, with_tags, with_time)
     return JsonResponse((nodes, connectors, tags), safe=False,

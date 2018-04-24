@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import user_passes_test
 
 from catmaid.models import UserRole, Log, ReviewerWhitelist
+from catmaid.control.common import get_request_bool
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.user import access_check
 
@@ -56,7 +57,7 @@ def list_logs(request, project_id=None):
         user_id = int(request.POST.get('user_id', -1))  # We can see logs for different users
     else:
         user_id = None
-    whitelist = bool(json.loads(request.POST.get('whitelist', 'false')))
+    whitelist = get_request_bool(request.POST, 'whitelist', False)
     operation_type = request.POST.get('operation_type', "-1")
     search_freetext = request.POST.get('search_freetext', "")
 

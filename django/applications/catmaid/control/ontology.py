@@ -11,7 +11,8 @@ from django.shortcuts import get_object_or_404
 from catmaid.models import UserRole, Relation, Class, ClassClass, Restriction, \
         CardinalityRestriction
 from catmaid.control.authentication import requires_user_role
-from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
+from catmaid.control.common import (get_relation_to_id_map, get_class_to_id_map,
+        get_request_bool)
 
 
 # Root classes can be seen as namespaces in the semantic space. Different
@@ -351,7 +352,7 @@ def add_relation_to_ontology(request, project_id=None):
     uri = request.POST.get('uri', '')
     description = request.POST.get('description', None)
     isreciprocal = bool(request.POST.get('isreciprocal', False))
-    silent = request.POST.get('silent', "false") == "true"
+    silent = get_request_bool(request.POST, 'silent', False)
 
     if name is None:
         raise Exception("Couldn't find name for new relation.")
@@ -499,7 +500,7 @@ def remove_all_relations_from_ontology(request, project_id=None):
 def add_class_to_ontology(request, project_id=None):
     name = request.POST.get('classname', None)
     description = request.POST.get('description', None)
-    silent = request.POST.get('silent', "false") == "true"
+    silent = get_request_bool(request.POST, 'silent', False)
 
     if name is None:
         raise Exception("Couldn't find name for new class.")

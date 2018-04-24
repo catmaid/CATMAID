@@ -20,7 +20,7 @@ from django.contrib.contenttypes.models import ContentType
 from formtools.wizard.views import SessionWizardView
 
 from catmaid.control.common import get_class_to_id_map, \
-        get_relation_to_id_map, insert_into_log
+        get_relation_to_id_map, insert_into_log, get_request_bool
 from catmaid.control.ontology import get_class_links_qs, get_features
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.roi import link_roi_to_class_instance
@@ -103,7 +103,7 @@ def get_classification_roots(request, project_id, workspace_pid):
     project -1). Those class instances will be returned.
     """
 
-    with_classnames = request.GET.get('with_classnames', 'false') == 'true'
+    with_classnames = get_request_bool(request.GET, 'with_classnames', False)
     id_to_class = None
     if with_classnames:
         id_to_class = {cid:cname for cid,cname in Class.objects.filter(
@@ -121,7 +121,7 @@ def get_classification_roots(request, project_id, workspace_pid):
 
         return entry
 
-    inverse = request.GET.get("inverse", "false") == "true"
+    inverse = get_request_bool(request.GET, "inverse", False)
     # Get all links
     cursor = connection.cursor()
     links_q = get_classification_links_qs(workspace_pid, project_id,

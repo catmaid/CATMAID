@@ -24,7 +24,8 @@ from catmaid.models import (UserRole, Treenode, ClassInstanceClassInstance,
         Review, Project)
 from catmaid.control.authentication import requires_user_role, \
         can_edit_all_or_fail
-from catmaid.control.common import get_relation_to_id_map, get_request_list
+from catmaid.control.common import (get_relation_to_id_map, get_request_bool,
+        get_request_list)
 
 from PIL import Image, ImageDraw
 from aggdraw import Draw, Pen, Brush, Font
@@ -1166,7 +1167,7 @@ def node_list_tuples(request, project_id=None, provider=None):
     # Limit the number of retrieved treenodes within the section
     params['limit'] = settings.NODE_LIST_MAXIMUM_COUNT
     params['project_id'] = project_id
-    include_labels = (data.get('labels', None) == 'true')
+    include_labels = get_request_bool(data, 'labels', False)
     target_format = data.get('format', 'json')
     target_options = {
         'view_width': int(data.get('view_width', 1000)),

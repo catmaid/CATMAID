@@ -9,7 +9,7 @@ from datetime import datetime
 from django.conf import settings
 from django.http import JsonResponse, HttpResponse
 
-from catmaid.control.common import urljoin
+from catmaid.control.common import get_request_bool, urljoin
 from catmaid.control.authentication import requires_user_role
 from catmaid.models import Message, User, UserRole
 
@@ -58,8 +58,8 @@ def export_nrrd(request, project_id, skeleton_id):
     """
     source_ref = request.POST['source_ref']
     target_ref = request.POST['target_ref']
-    mirror = request.POST.get('mirror', 'false') == 'true'
-    async_export = request.POST.get('async_export', 'false') =='true'
+    mirror = get_request_bool(request.POST, 'mirror', False)
+    async_export = get_request_bool(request.POST, 'async_export', False)
 
     # Make sure the output path can be written to
     if not os.path.exists(output_path) or not os.access(output_path, os.W_OK):

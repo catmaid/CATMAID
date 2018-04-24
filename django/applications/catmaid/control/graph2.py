@@ -19,7 +19,8 @@ from rest_framework.decorators import api_view
 
 from catmaid.models import UserRole
 from catmaid.control.authentication import requires_user_role
-from catmaid.control.common import get_relation_to_id_map, get_request_list
+from catmaid.control.common import (get_relation_to_id_map, get_request_bool,
+        get_request_list)
 from catmaid.control.connector import KNOWN_LINK_PAIRS
 from catmaid.control.tree_util import simplify
 from catmaid.control.synapseclustering import tree_max_density
@@ -604,7 +605,7 @@ def skeleton_graph(request, project_id=None):
     cable_spread = float(request.POST.get('cable_spread', 2500)) # in nanometers
     path_confluence = int(request.POST.get('path_confluence', 10)) # a count
     expand = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('expand['))
-    with_overall_counts = request.POST.get('with_overall_counts', 'false') == 'true'
+    with_overall_counts = get_request_bool(request.POST, 'with_overall_counts', False)
     expand = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('expand['))
     link_types = get_request_list(request.POST, 'link_types', None)
 

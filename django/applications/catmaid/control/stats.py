@@ -16,7 +16,7 @@ from django.utils import timezone
 from rest_framework.decorators import api_view
 
 from catmaid.control.authentication import requires_user_role
-from catmaid.control.common import get_relation_to_id_map
+from catmaid.control.common import get_relation_to_id_map, get_request_bool
 from catmaid.models import ClassInstance, Connector, Treenode, User, UserRole, \
         Review, Relation, TreenodeConnector
 
@@ -37,7 +37,7 @@ def stats_nodecount(request, project_id=None):
     """
     cursor = connection.cursor()
     names = dict(User.objects.values_list('id', 'username'))
-    with_imports = request.GET.get('with_imports', 'false') == 'true'
+    with_imports = get_request_bool(request.GET, 'with_imports', False)
 
     cursor.execute('''
         WITH precomputed AS (

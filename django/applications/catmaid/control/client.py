@@ -17,6 +17,7 @@ from rest_framework.views import APIView
 
 from catmaid.control.authentication import check_user_role, \
                                            requires_user_role_for_any_project
+from catmaid.control.common import get_request_bool
 from catmaid.models import ClientDatastore, ClientData, Project, UserRole
 
 
@@ -221,7 +222,7 @@ class ClientDataList(APIView):
                 raise PermissionDenied('User lacks the appropriate ' \
                                        'permissions for this project.')
 
-        ignore_user = request.data.get('ignore_user', 'false') == 'true'
+        ignore_user = get_request_bool(request.data, 'ignore_user', False)
         if ignore_user and not project_id:
             if not request.user.is_superuser:
                 raise PermissionDenied('Only super users can create instance ' \

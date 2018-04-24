@@ -11,7 +11,7 @@ from django.utils.decorators import method_decorator
 from catmaid.control.authentication import (requires_user_role, can_edit_or_fail,
         can_edit_all_or_fail)
 from catmaid.control.common import (get_request_list, get_class_to_id_map,
-        get_relation_to_id_map, get_request_list)
+        get_relation_to_id_map, get_request_bool, get_request_list)
 from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
         Relation, Point, PointClassInstance, UserRole)
 from catmaid.serializers import BasicClassInstanceSerializer
@@ -41,7 +41,7 @@ class LandmarkList(APIView):
             defaultValue: false
             paramType: form
         """
-        with_locations = request.query_params.get('with_locations', 'false') == 'true'
+        with_locations = get_request_bool(request.query_params, 'with_locations', False)
         landmark_class = Class.objects.get(project_id=project_id, class_name="landmark")
         landmarks = ClassInstance.objects.filter(project_id=project_id,
                 class_column=landmark_class).order_by('id')
@@ -141,7 +141,7 @@ class LandmarkList(APIView):
           defaultValue: false
           paramType: form
         """
-        keep_points = request.query_params.get('keep_points', 'false') == 'true'
+        keep_points = get_request_bool(request.query_params, 'keep_points', False)
         landmark_ids = get_request_list(request.query_params, 'landmark_ids', map_fn=int)
         for l in landmark_ids:
             can_edit_or_fail(request.user, l, 'class_instance')
@@ -212,7 +212,7 @@ class LandmarkDetail(APIView):
         serialized_landmark = serializer.data
 
         # Linked points use the "annotated_with" relation
-        with_locations = request.data.get('with_locations', 'false') == 'true'
+        with_locations = get_request_bool(request.data, 'with_locations', False)
         if with_locations:
             # A landmark class instance's linked locations are points using the
             # "annotated_with" relation.
@@ -350,11 +350,11 @@ class LandmarkGroupList(APIView):
             defaultValue: false
             paramType: form
         """
-        with_members = request.query_params.get('with_members', 'false') == 'true'
-        with_locations = request.query_params.get('with_locations', 'false') == 'true'
-        with_relations = request.query_params.get('with_relations', 'false') == 'true'
-        with_links = request.query_params.get('with_links', 'false') == 'true'
-        with_names = request.query_params.get('with_names', 'false') == 'true'
+        with_members = get_request_bool(request.query_params, 'with_members', False)
+        with_locations = get_request_bool(request.query_params, 'with_locations', False)
+        with_relations = get_request_bool(request.query_params, 'with_relations', False)
+        with_links = get_request_bool(request.query_params, 'with_links', False)
+        with_names = get_request_bool(request.query_params, 'with_names', False)
         landmarkgroup_class = Class.objects.get(project_id=project_id, class_name="landmarkgroup")
         landmarkgroups = ClassInstance.objects.filter(project_id=project_id,
                 class_column=landmarkgroup_class).order_by('id')
@@ -463,9 +463,9 @@ class LandmarkGroupDetail(APIView):
           paramType: form
         """
         landmarkgroup_id = int(landmarkgroup_id)
-        with_members = request.query_params.get('with_members', 'false') == 'true'
-        with_locations = request.query_params.get('with_locations', 'false') == 'true'
-        with_names = request.query_params.get('with_names', 'false') == 'true'
+        with_members = get_request_bool(request.query_params, 'with_members', False)
+        with_locations = get_request_bool(request.query_params, 'with_locations', False)
+        with_names = get_request_bool(request.query_params, 'with_names', False)
         landmarkgroup_class = Class.objects.get(project_id=project_id, class_name='landmarkgroup')
         landmarkgroup = get_object_or_404(ClassInstance, pk=landmarkgroup_id,
                 project_id=project_id, class_column=landmarkgroup_class)
@@ -542,7 +542,7 @@ class LandmarkGroupDetail(APIView):
         else:
             members = get_request_list(request.data, 'members', map_fn=int)
 
-        append_members = request.data.get('append_members', 'false') == 'true'
+        append_members = get_request_bool(request.data, 'append_members', False)
 
         if not name and members == None:
             raise ValueError('Need name or members parameter for update')
@@ -670,10 +670,10 @@ class LandmarkGroupImport(APIView):
         project_id = int(project_id)
         if not project_id:
             raise ValueError("Need project ID")
-        reuse_existing_groups = request.data.get('reuse_existing_groups', 'false') == 'true'
-        reuse_existing_landmarks = request.data.get('reuse_existing_landmarks', 'false') == 'true'
-        create_non_existing_groups = request.data.get('create_non_existing_groups', 'true') == 'true'
-        create_non_existing_landmarks = request.data.get('create_non_existing_landmarks', 'true') == 'true'
+        reuse_existing_groups = get_request_bool(request.data, 'reuse_existing_groups', False)
+        reuse_existing_landmarks = get_request_bool(request.data, 'reuse_existing_landmarks', False)
+        create_non_existing_groups = get_request_bool(request.data, 'create_non_existing_groups', True)
+        create_non_existing_landmarks = get_request_bool(request.data, 'create_non_existing_landmarks', True)
 
         # Make sure the data to import matches our expectations
         data = request.data.get('data')
@@ -1174,7 +1174,7 @@ class LandmarkAndGroupkLocationDetail(APIView):
         """
         can_edit_or_fail(request.user, landmark_id, 'class_instance')
         landmark = ClassInstance.objects.get(project_id=project_id, pk=int(landmark_id))
-        keep_points = request.data.get('keep_points', 'false') == 'true'
+        keep_points = get_request_bool(request.data, 'keep_points', False)
 
         landmarkgroup_class = Class.objects.get(project_id=project_id, class_name='landmarkgroup')
         landmarkgroup = get_object_or_404(ClassInstance, pk=group_id,
@@ -1558,7 +1558,7 @@ class LandmarkGroupMaterializer(APIView):
         if not landmarks:
             raise ValueError('Need list of landmarks')
         links = get_request_list(request.data, 'links')
-        reuse_existing_landmarks = request.data.get('reuse_existing_landmarks', 'false') == 'true'
+        reuse_existing_landmarks = get_request_bool(request.data, 'reuse_existing_landmarks', False)
 
         classes = get_class_to_id_map(project_id)
         relations = get_relation_to_id_map(project_id)

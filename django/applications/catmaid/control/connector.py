@@ -22,8 +22,9 @@ from catmaid.models import Project, Stack, ProjectStack, Connector, \
         ConnectorClassInstance, Treenode, TreenodeConnector, UserRole
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 from catmaid.control.link import create_treenode_links
-from catmaid.control.common import cursor_fetch_dictionary, \
-        get_relation_to_id_map, get_class_to_id_map, get_request_list
+from catmaid.control.common import (cursor_fetch_dictionary,
+        get_relation_to_id_map, get_class_to_id_map, get_request_bool,
+        get_request_list)
 
 # Python 2 and 3 compatible map iterator
 from six.moves import map, filter
@@ -313,8 +314,8 @@ def list_connectors(request, project_id=None):
     skeleton_ids = get_request_list(request.POST, 'skeleton_ids', map_fn=int)
     tags = get_request_list(request.POST, 'tags')
     relation_type = request.POST.get('relation_type')
-    with_tags = request.POST.get('with_tags', 'true') == 'true'
-    with_partners = request.POST.get('with_partners', 'false') == 'true'
+    with_tags = get_request_bool(request.POST, 'with_tags', True)
+    with_partners = get_request_bool(request.POST, 'with_partners', False)
 
     cursor = connection.cursor()
     class_map = get_class_to_id_map(project_id, cursor=cursor)
@@ -482,7 +483,7 @@ def list_connector_links(request, project_id=None):
         raise ValueError("At least one skeleton ID required")
 
     relation_type = request.GET.get('relation_type', 'presynaptic_to')
-    with_tags = request.GET.get('with_tags', 'true') == 'true'
+    with_tags = get_request_bool(request.GET, 'with_tags', True)
 
     cursor = connection.cursor()
     relation_map = get_relation_to_id_map(project_id, cursor=cursor)

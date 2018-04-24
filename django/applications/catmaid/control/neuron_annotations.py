@@ -4,6 +4,8 @@ from __future__ import unicode_literals
 import re
 import six
 
+from collections import defaultdict
+
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.db import connection
@@ -13,8 +15,8 @@ from rest_framework.decorators import api_view
 from catmaid.models import UserRole, Project, Class, ClassInstance, \
         ClassInstanceClassInstance, Relation, ReviewerWhitelist
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
-from catmaid.control.common import defaultdict, get_relation_to_id_map, \
-        get_class_to_id_map, get_request_list
+from catmaid.control.common import (get_relation_to_id_map,
+        get_class_to_id_map, get_request_bool, get_request_list)
 
 from six.moves import range, map
 
@@ -61,7 +63,7 @@ def get_annotated_entities(project, params, relations, classes,
 
     # Get name, annotator and time constraints, if available
     name = params.get('name', "").strip()
-    name_not = params.get('name_not', "false") == "true"
+    name_not = get_request_bool(params, 'name_not', False)
     try:
         annotator_ids = set(map(int, params.getlist('annotated_by')))
     except AttributeError as e:
@@ -513,7 +515,7 @@ def query_annotated_classinstances(request, project_id = None):
 
     range_start = request.POST.get('range_start', None)
     range_length = request.POST.get('range_length', None)
-    with_annotations = request.POST.get('with_annotations', 'false') == 'true'
+    with_annotations = get_request_bool(request.POST, 'with_annotations', False)
 
     entities, num_total_records = get_annotated_entities(p, request.POST,
             relations, classes, allowed_classes, sort_by, sort_dir, range_start,

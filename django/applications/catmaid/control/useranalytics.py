@@ -14,6 +14,7 @@ from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.views.decorators.cache import never_cache
 
+from catmaid.control.common import get_request_bool
 from catmaid.control.authentication import requires_user_role
 from catmaid.models import Connector, Project, Treenode, Review, UserRole
 
@@ -78,7 +79,7 @@ def plot_useranalytics(request, project_id):
     if not (userid and userid.strip()):
         raise ValueError("Need user ID")
     project = get_object_or_404(Project, pk=project_id) if project_id else None
-    all_writes = request.GET.get('all_writes', 'false') == 'true'
+    all_writes = get_request_bool(request.GET, 'all_writes', False)
     maxInactivity = int(request.GET.get('max_inactivity', 3))
 
     # Get the start date for the query, defaulting to 7 days ago.

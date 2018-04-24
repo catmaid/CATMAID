@@ -18,6 +18,9 @@ Miscellaneous:
 - Split/merge dialog: the node count of the individual parts is now shown when
   hovering over their cable length information.
 
+- Boolean parameters for API endpoints are no case-insensitive, allowing the use
+  of regular boolean values in requests from Python.
+
 
 ### Bug fixes
 

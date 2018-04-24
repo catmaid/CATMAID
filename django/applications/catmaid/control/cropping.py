@@ -13,7 +13,7 @@ from django.contrib.auth.decorators import login_required
 from catmaid.models import (Stack, Project, ProjectStack, Message, User,
         StackMirror)
 from catmaid.control.common import (id_generator, json_error_response,
-        get_request_list)
+        get_request_bool, get_request_list)
 from catmaid.control.tile import get_tile_source
 from catmaid.control.message import notify_user
 
@@ -633,7 +633,7 @@ def crop(request, project_id=None):
     y_max = float(request.POST['max_y'])
     z_max = float(request.POST['max_z'])
     zoom_level = float(request.POST['zoom_level'])
-    single_channel = request.POST['single_channel'] == 'true'
+    single_channel = get_request_bool(request.POST, 'single_channel', False)
     rotation_cw = float(request.GET.get('rotationcw', 0.0))
 
     # Make sure tmp dir exists and is writable

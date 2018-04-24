@@ -20,8 +20,9 @@ from catmaid.models import UserRole, Treenode, ClassInstance, \
         TreenodeConnector, Location, SamplerInterval
 from catmaid.control.authentication import requires_user_role, \
         can_edit_class_instance_or_fail, can_edit_or_fail
-from catmaid.control.common import get_relation_to_id_map, \
-        get_class_to_id_map, insert_into_log, _create_relation, get_request_list
+from catmaid.control.common import (get_relation_to_id_map,
+        get_class_to_id_map, insert_into_log, _create_relation,
+        get_request_bool, get_request_list)
 from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.node import _fetch_location, _fetch_locations
 from catmaid.control.link import create_connector_link
@@ -936,7 +937,7 @@ def update_confidence(request, project_id=None, treenode_id=None):
     state.validate_state(tnid, request.POST.get('state'),
             node=True, lock=True, cursor=cursor)
 
-    to_connector = request.POST.get('to_connector', 'false') == 'true'
+    to_connector = get_request_bool(request.POST, 'to_connector', False)
     partner_ids = get_request_list(request.POST, 'partner_ids', None, int)
     partner_confidences = get_request_list(request.POST, 'partner_confidences',
             None, int)

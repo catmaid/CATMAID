@@ -8,7 +8,7 @@ from django.http import JsonResponse
 
 from catmaid.control.authentication import (requires_user_role, user_can_edit,
         can_edit_or_fail)
-from catmaid.control.common import get_request_list
+from catmaid.control.common import get_request_bool, get_request_list
 from catmaid.models import (Class, ClassInstance, Connector, Relation, Sampler,
         SamplerDomain, SamplerDomainType, SamplerDomainEnd, SamplerInterval,
         SamplerIntervalState, SamplerState, SamplerConnector,
@@ -92,8 +92,8 @@ def list_samplers(request, project_id):
         required: true
     """
     skeleton_ids = get_request_list(request.GET, 'skeleton_ids', map_fn=int)
-    with_intervals = request.GET.get('with_intervals', False) == "true"
-    with_domains = with_intervals or (request.GET.get('with_domains', False) == "true")
+    with_intervals = get_request_bool(request.GET, 'with_intervals', False)
+    with_domains = with_intervals or (get_request_bool(request.GET, 'with_domains', False))
 
     samplers = Sampler.objects.all()
     if skeleton_ids:
@@ -261,7 +261,7 @@ def delete_sampler(request, project_id, sampler_id):
     sampler = Sampler.objects.get(id=sampler_id)
 
     n_deleted_nodes = 0
-    delete_created_nodes = request.POST.get('delete_created_nodes', 'true') == 'true'
+    delete_created_nodes = get_request_bool(request.POST, 'delete_created_nodes', True)
     if delete_created_nodes and sampler.create_interval_boundaries:
         labeled_as_relation = Relation.objects.get(project=project_id, relation_name='labeled_as')
         label_class = Class.objects.get(project=project_id, class_name='label')

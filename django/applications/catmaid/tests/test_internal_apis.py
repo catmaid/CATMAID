@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 from django.test import TestCase
 from django.contrib.auth.models import User
 from django.http.request import QueryDict
-from catmaid.control.common import get_request_list
+from catmaid.control.common import get_request_bool, get_request_list
 from catmaid.models import Project, Class, Relation, ClassInstance, \
     ClassInstanceClassInstance
 from catmaid.control.neuron_annotations import delete_annotation_if_unused
@@ -34,6 +34,23 @@ class InternalApiTestsNoDB(TestCase):
         q4 = QueryDict('a[0][0]=1&a[0][1]=2&a[0][2]=3')
         self.assertEqual(get_request_list(q4, 'a'), [['1', '2', '3']])
         self.assertEqual(get_request_list(q4, 'a', map_fn=int), [[1, 2, 3]])
+
+
+    def test_request_bool_parsing(self):
+        q1 = QueryDict('a=true&b=True&c=TRUE')
+        self.assertEqual(get_request_bool(q1, 'a', False), True)
+        self.assertEqual(get_request_bool(q1, 'b', False), True)
+        self.assertEqual(get_request_bool(q1, 'c', False), True)
+
+        q2 = QueryDict('a=false&b=False&c=FALSE')
+        self.assertEqual(get_request_bool(q2, 'a', True), False)
+        self.assertEqual(get_request_bool(q2, 'b', True), False)
+        self.assertEqual(get_request_bool(q2, 'c', True), False)
+
+        q3 = QueryDict()
+        self.assertEqual(get_request_bool(q3, 'a', True), True)
+        self.assertEqual(get_request_bool(q3, 'b', False), False)
+
 
 class InternalApiTests(CatmaidTestCase):
     fixtures = ['catmaid_testdata']

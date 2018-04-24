@@ -441,7 +441,7 @@ def add_volume(request, project_id):
 @api_view(['GET'])
 @requires_user_role([UserRole.Browse])
 def intersects(request, project_id, volume_id):
-    """Test if a point intersects with a given volume.
+    """Test if a point intersects with the bounding box of a given volume.
     ---
     parameters:
       - name: x

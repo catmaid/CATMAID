@@ -21,6 +21,9 @@ Miscellaneous:
 - Boolean parameters for API endpoints are no case-insensitive, allowing the use
   of regular boolean values in requests from Python.
 
+- 3D viewer: if the estimated size of the tiles to load for a Z plane exceeds
+  100 MB, users are asked for confirmation.
+
 
 ### Bug fixes
 

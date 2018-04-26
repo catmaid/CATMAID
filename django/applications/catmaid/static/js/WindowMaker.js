@@ -905,6 +905,9 @@ var WindowMaker = new function()
                 WA.adjustStaticContent();
               }
             }},
+          {type: 'checkbox', label: 'Data size check', value: o.zplane_size_check,
+           onclick: adjustFn('zplane_size_check'), title: 'Whether to require user ' +
+              'confirmation to load more than 100 MB of image data for the Z plane.'},
           ['Missing sections', o.show_missing_sections, adjustFn('show_missing_sections'), false],
           ['with height:', o.missing_section_height, ' %', function() {
               WA.options.missing_section_height = Math.max(0, Math.min(this.value, 100));

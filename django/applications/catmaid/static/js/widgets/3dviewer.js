@@ -1115,6 +1115,7 @@
     this.show_zplane = false;
     this.zplane_texture = true;
     this.zplane_zoomlevel = "max";
+    this.zplane_size_check = true;
     this.zplane_opacity = 0.8;
     this.show_ortho_scale_bar = true;
     this.custom_tag_spheres_regex = '';
@@ -3035,10 +3036,27 @@
         focusedStackViewer: project.focusedStackViewer,
         texture: options.zplane_texture,
         zoomlevel: options.zplane_zoomlevel,
-        opacity: options.zplane_opacity
+        opacity: options.zplane_opacity,
+        sizeCheck: options.zplane_size_check
       };
 
       if (this.zplaneChanged(zplaneOptions)) {
+        // Make sure we don't accidentally kill the user's browser by loading
+        // too many images for the Z plane. Warn if the estimated pixel count
+        // exceeds 100 MB, while expecting 3 Bytes per pixel.
+        if (zplaneOptions.texture && options.zplane_size_check) {
+          let estimatedPixelBytes = 3 * getZPlanePixelCountEstimate(
+              project.focusedStackViewer, options.zplane_zoomlevel);
+          let warningPixelBytes = 3 * 1024 * 1024 * 100;
+          if (estimatedPixelBytes > warningPixelBytes) {
+            if (!confirm("The current Z section zoom level configuration (" +
+                options.zplane_zoomlevel + ") for the active stack viewer would " +
+                "likely cause loading more than 100 MB of image data, risking " +
+                "to freeze your browser window. Continue?")) {
+              options.zplane_zoomlevel = 'max';
+            }
+          }
+        }
         this.lastZPlaneOptions = zplaneOptions;
         this.createZPlane(space, project.focusedStackViewer,
             options.zplane_texture ? options.zplane_zoomlevel : null,
@@ -3220,6 +3238,29 @@
 
     return geometry;
   };
+
+  /**
+   * Get a pixel count estimation for loading a whole Z section of all tile
+   * layers in the passed in stack viewer for the given zoom level.
+   */
+  function getZPlanePixelCountEstimate(stackViewer, textureZoomLevel) {
+    let tileLayers = stackViewer.getLayersOfType(CATMAID.TileLayer);
+    let pixelCountEstimate = 0;
+
+    for (let i=0; i<tileLayers.length; ++i) {
+      let tileLayer = tileLayers[i];
+      let stack = tileLayer.stack;
+      // Estimate number of data to be transferred.
+      let zoomLevel = "max" === textureZoomLevel ? stack.MAX_S : Math.min(stack.MAX_S, textureZoomLevel);
+      let tileSource = tileLayer.stack.createTileSourceForMirror(tileLayer.mirrorIndex);
+      let nHTiles = getNZoomedParts(stack.dimension.x, zoomLevel, tileSource.tileWidth);
+      let nVTiles = getNZoomedParts(stack.dimension.y, zoomLevel, tileSource.tileHeight);
+
+      pixelCountEstimate += nHTiles * tileSource.tileWidth * nVTiles * tileSource.tileHeight;
+    }
+
+    return pixelCountEstimate;
+  }
 
   /**
    * Destroy an existing z plane and replace it with a new one.

@@ -1,10 +1,15 @@
 FROM ubuntu:16.04
 LABEL maintainer="Andrew Champion <andrew.champion@gmail.com>, Tom Kazimiers <tom@voodoo-arts.net"
 
+# For building the image, let dpkg/apt know that we install and configure
+# non-interactively.
+ARG DEBIAN_FRONTEND=noninteractive
+
 # Install dependencies. Even though this image doesn't run its own Postgres
 # instance, make sure we install the upstream version to match the manual (and
 # make building images on top of this one easier).
 RUN apt-get update -y \
+    && apt-get install -y apt-utils \
     && apt-get install -y netcat \
     && apt-get install -y python-pip git \
     && apt-get install -y supervisor uwsgi-plugin-python \

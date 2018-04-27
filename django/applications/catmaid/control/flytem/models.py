@@ -32,10 +32,31 @@ class FlyTEMDimension:
         self.z = z
 
 
+class FlyTEMColor:
+    def __init__(self, r, g, b, a):
+        self.r = r
+        self.g = g
+        self.b = b
+        self.a = a
+
+
 class FlyTEMProject:
     def __init__(self, id):
         self.id = id
         self.title = id
+
+
+class FlyTEMStackMirror:
+    def __init__(self, id, title, image_base, file_extension, tile_source_type,
+            tile_width, tile_height, position):
+        self.id = id
+        self.title = title
+        self.image_base = image_base
+        self.file_extension = file_extension
+        self.tile_source_type = tile_source_type
+        self.tile_width = tile_width
+        self.tile_height = tile_height
+        self.position = position
 
 
 class FlyTEMStack:
@@ -50,7 +71,8 @@ class FlyTEMStack:
         r = settings.FLYTEM_STACK_RESOLUTION
         self.resolution = FlyTEMDimension(r[0], r[1], r[2])
 
-        self.mirrors = [{
+        self.mirrors = [FlyTEMStackMirror(**{
+            'id': stack_id,
             'title': 'Default',
             'image_base': '%s/project/%s/stack/%s/' % (settings.FLYTEM_SERVICE_URL, project_id, stack_id),
             'file_extension': 'jpg',
@@ -58,7 +80,7 @@ class FlyTEMStack:
             'tile_width': settings.FLYTEM_STACK_TILE_WIDTH,
             'tile_height': settings.FLYTEM_STACK_TILE_HEIGHT,
             'position': 0
-        }]
+        })]
 
         self.description = ''
 
@@ -101,6 +123,13 @@ class FlyTEMStack:
             for j in range(last + 1, i):
                 self.broken_slices.append(j)
             last = i
+
+        self.downsample_factors = []
+        self.attribution = ''
+        self.canary_location = FlyTEMDimension(0, 0, 0)
+        self.placeholder_color = FlyTEMColor(0, 0, 0, 0)
+        self.tags = []
+
 
 class FlyTEMProjectStacks:
     def __init__(self):

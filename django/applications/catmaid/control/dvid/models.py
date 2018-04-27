@@ -12,10 +12,33 @@ class DVIDDimension:
         self.y = y
         self.z = z
 
+
+class DVIDColor:
+    def __init__(self, r, g, b, a):
+        self.r = r
+        self.g = g
+        self.b = b
+        self.a = a
+
+
 class DVIDProject:
     def __init__(self, id):
         self.id = id
         self.title = id
+
+
+class DVIDStackMirror:
+    def __init__(self, id, title, image_base, file_extension, tile_source_type,
+            tile_width, tile_height, position):
+        self.id = id
+        self.title = title
+        self.image_base = image_base
+        self.file_extension = file_extension
+        self.tile_source_type = tile_source_type
+        self.tile_width = tile_width
+        self.tile_height = tile_height
+        self.position = position
+
 
 class DVIDStack:
     def __init__(self, project_id, stack_id, stack_data, source_data):
@@ -34,7 +57,8 @@ class DVIDStack:
         self.description = ''
         self.metadata = None
 
-        self.mirrors = [{
+        self.mirrors = [DVIDStackMirror(**{
+            'id': stack_id,
             'title': 'Default',
             'image_base': 'api/%s/node/%s/%s/tile/' % (dvid_url, project_id, stack_id),
             'file_extension': settings.DVID_FORMAT,
@@ -42,7 +66,7 @@ class DVIDStack:
             'tile_width': ts[0],
             'tile_height': ts[1],
             'position': 0
-        }]
+        })]
 
         # Dimensions
         min_point = source_data['Extended']['MinPoint']
@@ -54,6 +78,12 @@ class DVIDStack:
 
         # Broken slices
         self.broken_slices = []
+
+        self.downsample_factors = []
+        self.attribution = ''
+        self.canary_location = DVIDDimension(0, 0, 0)
+        self.placeholder_color = DVIDColor(0, 0, 0, 0)
+        self.tags = []
 
 class DVIDProjectStacks:
     def __init__(self):

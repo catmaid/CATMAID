@@ -28,4 +28,4 @@ def stacks(request, project_id=None):
     """ Returns a response containing the JSON object with menu information
     about the project's stacks.
     """
-    return JsonResponse({})
+    return JsonResponse([], safe=False)

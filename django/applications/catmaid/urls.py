@@ -16,7 +16,7 @@ from catmaid.control import (authentication, user, log, message, client, common,
         annotations, textlabel, label, link, connector, neuron, node, treenode,
         suppressed_virtual_treenode, skeleton, skeletonexport, treenodeexport,
         cropping, data_view, ontology, classification, notifications, roi,
-        clustering, volume, flytem, dvid, useranalytics, user_evaluation,
+        clustering, volume, flytem, dvid, noop, useranalytics, user_evaluation,
         search, graphexport, transaction, graph2, circles, analytics, review,
         wiringdiagram, object, sampler, treenodetable, nat, point, landmarks)
 
@@ -521,10 +521,12 @@ from catmaid.control.flytem import (project as flytemproject,
 urlpatterns += [
     url(r'^flytem/projects/$', flytemproject.projects),
     url(r'^(?P<project_id>.+)/user/reviewer-whitelist$', flytemreview.reviewer_whitelist),
+    url(r'^(?P<project_id>.+)/interpolatable-sections/$', noop.interpolatable_sections),
     url(r'^flytem/(?P<project_id>.+)/stack/(?P<stack_id>.+)/info$', flytem.stack.stack_info),
     url(r'^flytem/(?P<project_id>.+)/stacks$', flytemstack.stacks),
-    url(r'^flytem/(?P<project_id>.+)/annotations/$', flytem.list_annotations),
-    url(r'^flytem/client/datastores/(?P<name>[\w-]+)/$', flytem.datastore_settings),
+    url(r'^flytem/(?P<project_id>.+)/annotations/$', noop.list_annotations),
+    url(r'^flytem/(?P<project_id>.+)/annotations/query-targets$', noop.query_annotation_targets),
+    url(r'^flytem/client/datastores/(?P<name>[\w-]+)/$', noop.datastore_settings),
 ]
 
 # Patterns for DVID access
@@ -533,8 +535,10 @@ from catmaid.control.dvid import (project as dvidproject,
 urlpatterns += [
     url(r'^dvid/projects/$', dvidproject.projects),
     url(r'^(?P<project_id>.+)/user/reviewer-whitelist$', dvidreview.reviewer_whitelist),
+    url(r'^(?P<project_id>.+)/interpolatable-sections/$', noop.interpolatable_sections),
     url(r'^dvid/(?P<project_id>.+)/stack/(?P<stack_id>.+)/info$', dvidstack.stack_info),
     url(r'^dvid/(?P<project_id>.+)/stacks$', dvidstack.stacks),
-    url(r'^dvid/(?P<project_id>.+)/annotations/$', dvid.list_annotations),
-    url(r'^dvid/client/datastores/(?P<name>[\w-]+)/$', dvid.datastore_settings),
+    url(r'^dvid/(?P<project_id>.+)/annotations/$', noop.list_annotations),
+    url(r'^dvid/(?P<project_id>.+)/annotations/query-targets$', noop.query_annotation_targets),
+    url(r'^dvid/client/datastores/(?P<name>[\w-]+)/$', noop.datastore_settings),
 ]

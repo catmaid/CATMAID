@@ -161,11 +161,3 @@ def get_server_info(url):
         raise ValueError("Couldn't retrieve DVID project information from %s" % url)
 
     return json.loads(info_json)
-
-
-def list_annotations(request, project_id=None):
-    return JsonResponse({'annotations': []})
-
-
-def datastore_settings(request, name):
-    return JsonResponse([], safe=False)

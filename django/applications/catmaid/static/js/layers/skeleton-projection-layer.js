@@ -35,8 +35,10 @@
     this.skeletonSource.ignoreLocal = true;
 
     CATMAID.PixiLayer.prototype._initBatchContainer.call(this);
-    this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements(
-      {pixiLayer: this},
+    this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements({
+        pixiLayer: this,
+        stackViewer: stackViewer
+      },
       this.batchContainer);
 
     // Listen to active node change events

@@ -1,4 +1,4 @@
 #!/bin/bash
 
 # Launch uWSGI
-/usr/local/bin/uwsgi --ini /home/scripts/docker/uwsgi-catmaid.ini
+/opt/virtualenvs/catmaid/bin/uwsgi --ini /home/scripts/docker/uwsgi-catmaid.ini

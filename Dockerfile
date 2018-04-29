@@ -35,7 +35,9 @@ RUN mkdir -p /opt/virtualenvs \
 ADD . /home/
 
 # uWSGI setup
-RUN pip install uwsgi \
+RUN /bin/bash -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh \
+    && workon catmaid \
+    && pip install uwsgi" \
     && ln -s /home/scripts/docker/supervisor-catmaid.conf /etc/supervisor/conf.d/ \
     && chmod +x /home/scripts/docker/start-catmaid.sh \
     && chmod +x /home/scripts/docker/catmaid-entry.sh

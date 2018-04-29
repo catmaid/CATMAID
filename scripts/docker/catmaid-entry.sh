@@ -89,7 +89,7 @@ init_catmaid () {
 
   # Make sure uWSGI runs on the correct port
   echo "Configuring uWSGI to run on socket ${CM_HOST}:${CM_PORT}"
-  sed -i "s/socket = .*/socket = ${CM_HOST}:${CM_PORT}/" /home/scripts/docker/uwsgi-catmaid.ini
+  sed -i "s/socket = .*/socket = ${CM_HOST}:${CM_PORT}/g" /home/scripts/docker/uwsgi-catmaid.ini
 
   echo "Starting CATMAID"
   supervisord -n

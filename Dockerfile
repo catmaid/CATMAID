@@ -54,5 +54,5 @@ RUN mkdir /etc/ssl/private-copy; \
 ENTRYPOINT ["/home/scripts/docker/catmaid-entry.sh"]
 
 EXPOSE 8000
-WORKDIR /home/django/projects/mysite
+WORKDIR /home/django/projects/
 CMD ["platform"]

@@ -92,7 +92,7 @@ init_catmaid () {
   sed -i "s/socket = .*/socket = ${CM_HOST}:${CM_PORT}/g" /home/scripts/docker/uwsgi-catmaid.ini
 
   echo "Starting CATMAID"
-  supervisord -n
+  supervisord -n -c /etc/supervisor/supervisord.conf
 }
 
 if [ "$1" = 'standalone' ]; then

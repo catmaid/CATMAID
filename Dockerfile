@@ -11,23 +11,23 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y \
     && apt-get install -y apt-utils \
     && apt-get install -y netcat \
-    && apt-get install -y python-pip git \
-    && apt-get install -y supervisor uwsgi-plugin-python \
     && apt-get install -y software-properties-common \
+    && add-apt-repository ppa:jonathonf/python-3.6 \
     && add-apt-repository -y ppa:nginx/stable \
+    && add-apt-repository "deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main" \
     && apt-get install -y wget ca-certificates \
     && wget --quiet -O - https://postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
-    && add-apt-repository "deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main" \
     && apt-get update -y \
+    && apt-get install -y python3.6 python3.6-dev python-pip git \
     && apt-get install -y python-pip git \
-    && apt-get install -y nginx supervisor uwsgi-plugin-python
+    && apt-get install -y nginx supervisor
 ADD packagelist-ubuntu-16.04-apt.txt /home/
 RUN xargs apt-get install -y < /home/packagelist-ubuntu-16.04-apt.txt
 ADD django/requirements.txt /home/django/
 ENV WORKON_HOME /opt/virtualenvs
 RUN mkdir -p /opt/virtualenvs \
     && /bin/bash -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh \
-    && mkvirtualenv catmaid \
+    && mkvirtualenv catmaid -p /usr/bin/python3.6 \
     && workon catmaid \
     && pip install -U pip \
     && pip install -r /home/django/requirements.txt"

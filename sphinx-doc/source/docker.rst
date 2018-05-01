@@ -95,9 +95,25 @@ Which images containers are currently running can be seen with::
 
   docker ps
 
+Depending on whether a standalone docker image or a docker-compose setup is
+used, updating is done slighly differently.
+
+Standalone docker
+^^^^^^^^^^^^^^^^^
+
+If you want to persist changes from the currently running container, you can
+export the database first::
+
+  docker exec -u postgres catmaid /usr/bin/pg_dumpall --clean -U postgres > backup.pgsql
+
+And if you want to make sure you can go back to the old version, you could
+commit a new docker images with the current state::
+
+  docker commit catmaid catmaid:old
+
 Before updating the images, make sure to stop the containers using ``docker stop
 catmaid`` (if you didn't used ``--name`` with ``docker run``, use the container
-ID instead of "catmaid") or ``docker-compose down``, respectively.
+ID instead of "catmaid").
 
 First update the CATMAID base image::
 
@@ -106,6 +122,27 @@ First update the CATMAID base image::
 Then, to update ``catmaid-standalone`` (regular Docker) use::
 
   docker pull catmaid/catmaid-standalone
+
+If no previous state should be persisted, the docker contaienr can be started
+normally again::
+
+  docker run -p 8000:80 --name catmaid catmaid/catmaid-standalone
+
+If you however want to start the new container from a previously saved database
+dump, set the ``DB_FIXTURE`` variable to ``true`` and pipe the backup file to
+the ``docker run`` command::
+
+  cat backup.pgsql | docker run -p 8000:80 -i -e DB_FIXTURE=true --name catmaid catmaid/catmaid-standalone
+
+The database will then be initialized with the data from the ``pg_dumpall``
+image in the file ``backup.pgsql``, created above. The Docker image will
+automatically apply all missing database migrations.
+
+Docker-compose
+^^^^^^^^^^^^^^
+
+Before updating the images, make sure to stop the containers using
+``docker-compose down`` from the CATMAID docker-compose folder.
 
 Or, to update the ``catmaid-docker`` (Docker-compose) setup use::
 

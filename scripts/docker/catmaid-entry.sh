@@ -10,13 +10,13 @@ DB_CONNECTIONS=${DB_CONNECTIONS:-50}
 DB_CONF_FILE=${DB_CONF_FILE:-"/etc/postgresql/10/main/postgresql.conf"}
 DB_FORCE_TUNE=${DB_FORCE_TUNE:-false}
 DB_TUNE=${DB_TUNE:-true}
+DB_FIXTURE=${DB_FIXTURE:-false}
 AVAILABLE_MEMORY=`awk '/MemTotal/ { printf "%.3f \n", $2/1024 }' /proc/meminfo`
 INSTANCE_MEMORY=${INSTANCE_MEMORY:-$AVAILABLE_MEMORY}
 CM_EXAMPLE_PROJECTS=${CM_EXAMPLE_PROJECTS:-true}
 CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE=${CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:-""}
 CM_HOST=${CM_HOST:-0.0.0.0}
 CM_PORT=${CM_PORT:-8000}
-
 TIMEZONE=`readlink /etc/localtime | sed "s/.*\/\(.*\)$/\1/"`
 
 # Check if the first argument begins with a dash. If so, prepend "platform" to
@@ -101,11 +101,35 @@ if [ "$1" = 'standalone' ]; then
       echo "Updating Postgres access configuration in file ${DB_CONF_FILE/postgresql.conf/}pg_hba.conf"
       sed -i "/# DO NOT DISABLE!/ilocal ${DB_NAME} ${DB_USER} md5" ${DB_CONF_FILE/postgresql.conf/}pg_hba.conf
   fi
+
   if [ "$DB_TUNE" = true ]; then
   echo "Tuning Postgres server configuration"
     CONNECTIONS=${DB_CONNECTIONS} CONF_FILE=${DB_CONF_FILE} FORCE_PGTUNE=${DB_FORCE_TUNE} python /home/scripts/database/pg_tune.py
-    service postgresql restart
   fi
+
+  service postgresql restart
+
+  if [ "$DB_FIXTURE" = true ]; then
+    echo "Initializing database with data from stdin";
+    first_byte=$(dd bs=1 count=1 2>/dev/null | od -t o1 -A n)
+    if [ -z "$first_byte" ]; then
+      # If stdin is empty
+      echo "- Error: no data in stdin"
+      exit 1
+    else
+      {
+        printf "\\${first_byte# }"
+        cat
+      } | {
+        # If stdin is not empty
+        su postgres -c "psql"
+      }
+    fi
+
+    echo "Analyzing all databases";
+    su postgres -c "vacuumdb -a -z"
+  fi
+
   echo "Starting Nginx"
   service nginx start
   init_catmaid

@@ -291,6 +291,231 @@
   GroupGraph.prototype.SUBGRAPH_AXON_BACKBONE_TERMINALS = -2;
   GroupGraph.prototype.SUBGRAPH_SPLIT_AT_TAG = -3;
 
+  GroupGraph.prototype.getWidgetConfiguration = function() {
+    return {
+      subscriptionSource: [this],
+      controlsID: 'compartment_graph_window_buttons' + this.widgetID,
+      createControls: function(controls) {
+        var GG = this;
+        var tabs = CATMAID.DOM.addTabGroup(controls, GG.widgetID, ['Main', 'Grow', 'Nodes',
+            'Edges', 'Selection', 'Selections', 'Subgraphs', 'Align', 'Export']);
+
+        CATMAID.DOM.appendToTab(tabs['Main'],
+            [[document.createTextNode('From')],
+             [CATMAID.skeletonListSources.createSelect(GG)],
+             ['Append', GG.loadSource.bind(GG)],
+             ['Append as group', GG.appendAsGroup.bind(GG)],
+             ['Remove', GG.removeSource.bind(GG)],
+             ['Clear', GG.clear.bind(GG)],
+             ['Refresh', GG.update.bind(GG)],
+             [document.createTextNode(' - ')],
+             ['Group equally named', GG.groupEquallyNamed.bind(GG)],
+             [document.createTextNode(' - ')],
+             ['Properties', GG.graph_properties.bind(GG)],
+             ['Clone', GG.cloneWidget.bind(GG)],
+             ['Save', GG.saveJSON.bind(GG)],
+             ['Open...', function() { document.querySelector('#gg-file-dialog-' + GG.widgetID).click(); }]]);
+
+        tabs['Export'].appendChild(CATMAID.DOM.createFileButton(
+              'gg-file-dialog-' + GG.widgetID, false, function(evt) {
+                GG.loadFromJSON(evt.target.files);
+              }));
+
+        var layout = CATMAID.DOM.appendSelect(tabs['Nodes'], null, null, GG.layoutStrings);
+
+        var edges = document.createElement('select');
+        edges.setAttribute('id', 'graph_edge_threshold' + GG.widgetID);
+        for (var i=1; i<101; ++i) edges.appendChild(new Option(i, i));
+
+        var edgeConfidence = document.createElement('select');
+        edgeConfidence.setAttribute('id', 'graph_edge_confidence_threshold' + GG.widgetID);
+        for (var i=1; i<6; ++i) edgeConfidence.appendChild(new Option(i, i));
+        edges.onchange = edgeConfidence.onchange = function() {
+            GG.filterEdges($('#graph_edge_threshold' + GG.widgetID).val(),
+                           $('#graph_edge_confidence_threshold' + GG.widgetID).val()); };
+
+        var linkTypeSelection = CATMAID.DOM.createAsyncPlaceholder(CATMAID.GroupGraph.initLinkTypeList(GG));
+        var linkTypeSelectionWrapper = document.createElement('span');
+        linkTypeSelectionWrapper.appendChild(linkTypeSelection);
+
+        CATMAID.DOM.appendToTab(tabs['Nodes'],
+            [['Re-layout', GG.updateLayout.bind(GG, layout, null)],
+             [' fit', true, GG.toggleLayoutFit.bind(GG), true],
+             [document.createTextNode(' - Color: ')],
+             [CATMAID.DOM.createSelect('graph_color_choice' + GG.widgetID,
+               [{title: 'source', value: 'source'},
+                {title: 'review status (union)', value: 'union-review'},
+                {title: 'review status (team)', value: 'whitelist-review'},
+                {title: 'review status (own)', value: 'own-review'},
+                {title: 'input/output', value: 'I/O'},
+                {title: 'betweenness centrality', value: 'betweenness_centrality'},
+                {title: 'circles of hell (upstream)', value: 'circles_of_hell_upstream'},
+                {title: 'circles of hell (downstream)', value: 'circles_of_hell_downstream'}],
+               'source',
+                GG._colorize.bind(GG))],
+            ]);
+
+        CATMAID.DOM.appendToTab(tabs['Edges'],
+            [[document.createTextNode('Color by: ')],
+             [CATMAID.DOM.createSelect(
+                 'gg_edge_color_choice' + GG.widgetID,
+                 ["source", "target", "generic"],
+                 "generic",
+                  GG.updateEdgeGraphics.bind(GG, true))],
+             [document.createTextNode(' - Hide edges with less than ')],
+             [edges],
+             [document.createTextNode(' synapses ')],
+             [document.createTextNode(' - Filter synapses below confidence ')],
+             [edgeConfidence],
+             {type: 'child', element: linkTypeSelectionWrapper},
+             [document.createTextNode(' - Arrow shape: ')],
+             [CATMAID.DOM.createSelect(
+               'gg_edge_arrow_shape' + GG.widgetID,
+               ["triangle", "tee", "circle", "square", "diamond", "vee", "triangle-tee", "none"], // Only available in cytoscape 3.2.11 or later: "triangle-cross", "triangle-backcurve", 
+               "triangle",
+               null)],
+             ['Set', GG.setArrowShapeToSelectedNodes.bind(GG)],
+            ]);
+
+        CATMAID.DOM.appendToTab(tabs['Selection'],
+            [['Annotate', GG.annotate_skeleton_list.bind(GG)],
+             [document.createTextNode(' - ')],
+             ['Measure edge risk', GG.annotateEdgeRisk.bind(GG)],
+             [document.createTextNode(' - ')],
+             ['Group', GG.group.bind(GG)],
+             ['Ungroup', GG.ungroup.bind(GG)],
+             [document.createTextNode(' - ')],
+             ['Hide', GG.hideSelected.bind(GG)],
+             ['Show hidden', GG.showHidden.bind(GG), {id: 'graph_show_hidden' + GG.widgetID, disabled: true}],
+             ['lock', GG.applyToNodes.bind(GG, 'lock', true)],
+             ['unlock', GG.applyToNodes.bind(GG, 'unlock', true)],
+             [document.createTextNode(' - ')],
+             ['Remove', GG.removeSelected.bind(GG)],
+             [document.createTextNode(' - ')],
+             [CATMAID.DOM.createNumericField('gg_select_regex' + GG.widgetID, null, null, '', '', GG.selectByLabel.bind(GG), null)], // NOTE: actually used as text rather than being limited to numbers, despite the name
+             ['Select by regex', GG.selectByLabel.bind(GG)],
+             [document.createTextNode(' - ')],
+             ['Invert', GG.invertSelection.bind(GG)],
+            ]);
+
+        CATMAID.DOM.appendToTab(tabs['Selections'],
+            [['Create selection', GG.createSelection.bind(GG)],
+             {type: 'checkbox',
+              label: 'prevent overlaps',
+              title: '',
+              value: true,
+              onclick: GG.togglePreventSelectionOverlaps.bind(GG),
+              id: "gg_prevent_overlaps" + GG.widgetID},
+             [CATMAID.DOM.createSelect("gg_selections" + GG.widgetID, [])],
+             ['\u25B2', GG.moveSelection.bind(GG, -1)],
+             ['\u25BC', GG.moveSelection.bind(GG, 1)],
+             ['Select', GG.activateSelection.bind(GG, true)],
+             ['Deselect', GG.activateSelection.bind(GG, false)],
+             ['Remove', GG.removeSelection.bind(GG)],
+             ['Select all', GG.activateAllSelections.bind(GG)],
+             [document.createTextNode(' - ')],
+             ['As columns', GG.alignSelectionsAsColumns.bind(GG)],
+             {type: 'checkbox',
+              label: 'hide other nodes',
+              title: 'Hide nodes not part of any selection',
+              value: true,
+              onclick: null, // TODO consider adding a function to show/hide nodes not in selections
+              id: "gg_hide_nodes_not_in_selections" + GG.widgetID},
+             [CATMAID.DOM.createNumericField('gg_columns_edge_opacity' + GG.widgetID, 'edge opacity:', null, '30', '%', GG.showRelevantEdgesToColumns.bind(GG), 2, GG.showRelevantEdgesToColumns.bind(GG))],
+             ['Fade edges', GG.showRelevantEdgesToColumns.bind(GG)],
+             ['Restore edges', GG.updateEdgeGraphics.bind(GG, true)],
+            ]);
+
+        CATMAID.DOM.appendToTab(tabs['Align'],
+            [[document.createTextNode('Align: ')],
+             [' X ', GG.equalizeCoordinate.bind(GG, 'x')],
+             [' Y ', GG.equalizeCoordinate.bind(GG, 'y')],
+             [document.createTextNode(' - Distribute: ')],
+             [' X ', GG.distributeCoordinate.bind(GG, 'x')],
+             [' Y ', GG.distributeCoordinate.bind(GG, 'y')]]);
+
+        var f = function(name) {
+          var e = document.createElement('select');
+          e.setAttribute("id", "gg_n_min_" + name + GG.widgetID);
+          e.appendChild(new Option("All " + name, 0));
+          e.appendChild(new Option("No " + name, -1));
+          for (var i=1; i<51; ++i) {
+            e.appendChild(new Option(i, i));
+          }
+          e.selectedIndex = 3; // value of 2 pre or post min
+          return e;
+        };
+
+        CATMAID.DOM.appendToTab(tabs['Grow'],
+            [[document.createTextNode('Grow ')],
+             ['Circles', GG.growGraph.bind(GG)],
+             [document.createTextNode(" by ")],
+             [CATMAID.DOM.createSelect("gg_n_circles_of_hell" + GG.widgetID, [1, 2, 3, 4, 5])],
+             [document.createTextNode(" orders, limit:")],
+             [f("upstream")],
+             [f("downstream")],
+             [CATMAID.DOM.createNumericField('gg_filter_regex' + GG.widgetID, 'filter (regex):',
+                                 'Only include neighbors with annotations matching this regex.',
+                                 '', '', undefined, 4)],
+             [document.createTextNode(" - Find ")],
+             ['paths', GG.growPaths.bind(GG)],
+             [document.createTextNode(" by ")],
+             [CATMAID.DOM.createSelect("gg_n_hops" + GG.widgetID, [2, 3, 4, 5, 6])],
+             [document.createTextNode(" hops, limit:")],
+             [f("path_synapses")],
+             ['pick sources', GG.pickPathOrigins.bind(GG, 'source'), {id: 'gg_path_source' + GG.widgetID}],
+             ['X', GG.clearPathOrigins.bind(GG, 'source')],
+             ['pick targets', GG.pickPathOrigins.bind(GG, 'target'), {id: 'gg_path_target' + GG.widgetID}],
+             ['X', GG.clearPathOrigins.bind(GG, 'target')]]);
+
+        CATMAID.DOM.appendToTab(tabs['Export'],
+            [['Export GML', GG.exportGML.bind(GG)],
+             ['Export SVG', GG.showSVGOptions.bind(GG)],
+             ['Export Adjacency Matrix', GG.exportAdjacencyMatrix.bind(GG)],
+             ['Open Connectivity Matrix', GG.openConnectivityMatrix.bind(GG, false)],
+             ['Open plot', GG.openPlot.bind(GG)],
+             ['Quantify', GG.quantificationDialog.bind(GG)]]);
+
+        CATMAID.DOM.appendToTab(tabs['Subgraphs'],
+            [[document.createTextNode('Select node(s) and split by: ')],
+             ['Axon & dendrite', GG.splitAxonAndDendrite.bind(GG)],
+             ['Axon, backbone dendrite & dendritic terminals', GG.splitAxonAndTwoPartDendrite.bind(GG)],
+             ['Synapse clusters', GG.splitBySynapseClustering.bind(GG)],
+             ['Tag', GG.splitByTag.bind(GG)],
+             ['Reset', GG.unsplit.bind(GG)]]);
+
+        $(controls).tabs();
+      },
+      contentId: "graph_widget" + this.widgetID,
+      createContent: function(content) {
+        /* Create graph container and assure that it's overflow setting is set to
+         * 'hidden'. This is required, because cytoscape.js' redraw can be delayed
+         * (e.g. due to animation). When the window's size is reduced, it can happen
+         * that the cytoscape canvas is bigger than the container. The default
+         * 'auto' setting then introduces scrollbars, triggering another resize.
+         * This somehow confuses cytoscape.js and causes the graph to disappear.
+         */
+        content.style.overflow = 'hidden';
+
+        var graph = document.createElement('div');
+        graph.setAttribute("id", "cyelement" + this.widgetID);
+        graph.style.width = "100%";
+        graph.style.height = "100%";
+        graph.style.backgroundColor = "#FFFFF0";
+        content.appendChild(graph);
+      },
+      init: function() {
+        this.init();
+      },
+      helpText: [
+        '<h3>Visualize connecticity networks</h3>',
+        '<h4>How to...</h4><p><em>Hide edges/links:</em> ',
+        'Select an edge and use the <em>Hide</em> button in the ',
+        '<em>Selection</em> tab.</p>'
+      ].join('\n')
+    };
+  };
+
   GroupGraph.prototype.getName = function() {
     return "Graph " + this.widgetID;
   };
@@ -4147,49 +4372,54 @@
     $('#gg_selections' + this.widgetID)[0].options.length = 0;
   };
 
-  // Add state manage for Graph widget
-  CATMAID.registerState(GroupGraph, {
-    key: 'graph-widget',
-    getState: function(widget) {
-      return {
-        label_valign: widget.label_valign,
-        label_halign: widget.label_halign,
-        show_node_labels: widget.show_node_labels,
-        trim_node_labels: widget.trim_node_labels,
-        node_width: widget.node_width,
-        node_height: widget.node_height,
-        edge_text_color: widget.edge_text_color,
-        edge_text_opacity: widget.edge_text_opacity,
-        edge_min_width: widget.edge_min_width,
-        edge_width_function: widget.edge_width_function,
-        grid_snap: widget.grid_snap,
-        grid_side: widget.grid_side,
-        prevent_selection_overlaps: widget.prevent_selection_overlaps,
-        linkTypeColors: Array.from(widget.linkTypeColors)
-      };
-    },
-    setState: function(widget, state) {
-      CATMAID.tools.copyIfDefined(state, widget, 'label_valign');
-      CATMAID.tools.copyIfDefined(state, widget, 'label_halign');
-      CATMAID.tools.copyIfDefined(state, widget, 'show_node_labels');
-      CATMAID.tools.copyIfDefined(state, widget, 'trim_node_labels');
-      CATMAID.tools.copyIfDefined(state, widget, 'node_height');
-      CATMAID.tools.copyIfDefined(state, widget, 'node_height');
-      CATMAID.tools.copyIfDefined(state, widget, 'edge_text_color');
-      CATMAID.tools.copyIfDefined(state, widget, 'edge_text_opacity');
-      CATMAID.tools.copyIfDefined(state, widget, 'edge_min_width');
-      CATMAID.tools.copyIfDefined(state, widget, 'edge_width_function');
-      CATMAID.tools.copyIfDefined(state, widget, 'grid_snap');
-      CATMAID.tools.copyIfDefined(state, widget, 'gris_side');
-      CATMAID.tools.copyIfDefined(state, widget, 'prevent_selection_overlaps');
+  // Register widget
+  CATMAID.registerWidget({
+    name: "Graph Widget",
+    description: "",
+    key: "graph-widget",
+    creator: GroupGraph,
+    state: {
+      getState: function(widget) {
+        return {
+          label_valign: widget.label_valign,
+          label_halign: widget.label_halign,
+          show_node_labels: widget.show_node_labels,
+          trim_node_labels: widget.trim_node_labels,
+          node_width: widget.node_width,
+          node_height: widget.node_height,
+          edge_text_color: widget.edge_text_color,
+          edge_text_opacity: widget.edge_text_opacity,
+          edge_min_width: widget.edge_min_width,
+          edge_width_function: widget.edge_width_function,
+          grid_snap: widget.grid_snap,
+          grid_side: widget.grid_side,
+          prevent_selection_overlaps: widget.prevent_selection_overlaps,
+          linkTypeColors: Array.from(widget.linkTypeColors)
+        };
+      },
+      setState: function(widget, state) {
+        CATMAID.tools.copyIfDefined(state, widget, 'label_valign');
+        CATMAID.tools.copyIfDefined(state, widget, 'label_halign');
+        CATMAID.tools.copyIfDefined(state, widget, 'show_node_labels');
+        CATMAID.tools.copyIfDefined(state, widget, 'trim_node_labels');
+        CATMAID.tools.copyIfDefined(state, widget, 'node_height');
+        CATMAID.tools.copyIfDefined(state, widget, 'node_height');
+        CATMAID.tools.copyIfDefined(state, widget, 'edge_text_color');
+        CATMAID.tools.copyIfDefined(state, widget, 'edge_text_opacity');
+        CATMAID.tools.copyIfDefined(state, widget, 'edge_min_width');
+        CATMAID.tools.copyIfDefined(state, widget, 'edge_width_function');
+        CATMAID.tools.copyIfDefined(state, widget, 'grid_snap');
+        CATMAID.tools.copyIfDefined(state, widget, 'gris_side');
+        CATMAID.tools.copyIfDefined(state, widget, 'prevent_selection_overlaps');
 
-      if (state.linkTypeColors) {
-        for (var i=0; i<state.linkTypeColors.length; ++i) {
-          var ltc = state.linkTypeColors[i];
-          widget.linkTypeColors[ltc[0]] = CATMAID.tools.deepCopy(ltc[1]);
+        if (state.linkTypeColors) {
+          for (var i=0; i<state.linkTypeColors.length; ++i) {
+            var ltc = state.linkTypeColors[i];
+            widget.linkTypeColors[ltc[0]] = CATMAID.tools.deepCopy(ltc[1]);
+          }
         }
       }
-    }
+    },
   });
 
   // Export Graph Widget

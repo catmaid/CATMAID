@@ -123,7 +123,7 @@ Then, to update ``catmaid-standalone`` (regular Docker) use::
 
   docker pull catmaid/catmaid-standalone
 
-If no previous state should be persisted, the docker contaienr can be started
+If no previous state should be persisted, the docker container can be started
 normally again::
 
   docker run -p 8000:80 --name catmaid catmaid/catmaid-standalone
@@ -141,10 +141,11 @@ automatically apply all missing database migrations.
 Docker-compose
 ^^^^^^^^^^^^^^
 
-Before updating the images, the database should be backed up. The easiest way to
-do this and also be able to quickly restore in case something goes wrong, is to
-perform a file based copy of the ``volumes`` folder after stopping the databse.
-To stop the database, call the following three commands::
+Before updating the docker images, the database should be backed up. The easiest
+way to do this and also be able to quickly restore in case something goes wrong,
+is to perform a file based copy of the ``volumes`` folder after stopping the
+database. To stop the database, call the following three commands from the
+``catmaid-docker`` directory (containing the ``docker-compose.yml`` file)::
 
   PG_STOP_CMD='export PGCTL=$(which pg_ctl); su postgres -c "${PGCTL} stop"'
   docker exec -i -t catmaid-docker_db_1 /bin/bash -c "${PG_STOP_CMD}"
@@ -154,22 +155,26 @@ And then copy the complete ``volumes`` folder::
 
   sudo cp -r volumes volumes.backup
 
-Next update the docker-compose setup (``catmaid-docker``) by updating the base
-images and building all images::
+Next update your local copy of the ``docker-compose`` repository::
 
-  docker-compose pull
-  docker-compose build
+  git pull origin master
 
 Finally the docker containers have to be built and started again::
 
-  docker-compose up
+  docker-compose up --build
 
-.. note::
+In case a newly pulled docker image introduces a new Postgres version, CATMAID's
+docker-compose start-up script will detect this and abort the container
+execution with a warning. This warning says that an automatic update of the data
+files can be performed, but this will only be done if ``DB_UPDATE=true`` is set
+in the ``docker-compose.yml`` file. If you don't see such a warning, the update
+should be successful. If you see this warning, a few additional steps are
+required. First ``DB_UPDATE=true`` has to be added as environment variable of
+the ``db`` app in the ``docker-compose.yml`` file. The docker-compose setup
+needs then to be rebuilt and run::
 
-    In case of a PostgreSQL update, CATMAID's docker-compose start-up script
-    will detect this and abort the container execution with a warning. This
-    warning says that an automatic update of the data files can be performed,
-    but this will only be done if ``DB_UPDATE=true`` is set as environment
-    variable of the ``db`` app in the ``docker-compose.yml`` file. After a
-    successful upgrade, the ``DB_UPDATE`` variable should be set to ``false``
-    again.
+  docker-compose up --build
+
+After a successful upgrade, the ``DB_UPDATE`` variable should be set to
+``false`` again, to not accidentally upgrade the data files without ensuring a
+back-up has been made.

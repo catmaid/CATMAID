@@ -18,6 +18,7 @@ CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE=${CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:
 CM_HOST=${CM_HOST:-0.0.0.0}
 CM_PORT=${CM_PORT:-8000}
 TIMEZONE=`readlink /etc/localtime | sed "s/.*\/\(.*\)$/\1/"`
+PG_VERSION='10'
 
 # Check if the first argument begins with a dash. If so, prepend "platform" to
 # the list of arguments.
@@ -26,8 +27,9 @@ if [ "${1:0:1}" = '-' ]; then
 fi
 
 init_catmaid () {
+  PGBIN="/usr/lib/postgresql/${PG_VERSION}/bin"
   echo "Wait until database $DB_HOST:$DB_PORT is ready..."
-  until nc -z $DB_HOST $DB_PORT
+  until su postgres -c "${PGBIN}/pg_isready -h ${DB_HOST} -p ${DB_PORT} -q; exit \$?"
   do
       sleep 1
   done

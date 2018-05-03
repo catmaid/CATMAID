@@ -10,7 +10,6 @@ ARG DEBIAN_FRONTEND=noninteractive
 # make building images on top of this one easier).
 RUN apt-get update -y \
     && apt-get install -y apt-utils \
-    && apt-get install -y netcat \
     && apt-get install -y software-properties-common \
     && add-apt-repository ppa:jonathonf/python-3.6 \
     && add-apt-repository -y ppa:nginx/stable \

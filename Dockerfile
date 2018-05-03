@@ -18,9 +18,8 @@ RUN apt-get update -y \
     && apt-get install -y wget ca-certificates \
     && wget --quiet -O - https://postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
     && apt-get update -y \
-    && apt-get install -y python3.6 python3.6-dev python-pip git \
-    && apt-get install -y python-pip git \
-    && apt-get install -y nginx supervisor
+    && apt-get install -y python3.6 python3.6-dev git python-pip \
+    && apt-get install -y nginx supervisor \
 ADD packagelist-ubuntu-16.04-apt.txt /home/
 RUN xargs apt-get install -y < /home/packagelist-ubuntu-16.04-apt.txt
 ADD django/requirements.txt /home/django/

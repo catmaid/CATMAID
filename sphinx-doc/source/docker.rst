@@ -160,6 +160,10 @@ Next update your local copy of the ``docker-compose`` repository::
 
   git pull origin master
 
+Then update your docker images::
+
+  docker-compose pull
+
 Finally the docker containers have to be built and started again::
 
   docker-compose up --build

@@ -30,7 +30,7 @@ RUN mkdir -p /opt/virtualenvs \
     && /bin/bash -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh \
     && mkvirtualenv catmaid -p /usr/bin/python3.6 \
     && workon catmaid \
-    && pip install -U pip \
+    && pip install -U pip setuptools \
     && pip install -r /home/django/requirements.txt"
 
 ADD . /home/

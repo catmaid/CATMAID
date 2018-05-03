@@ -2,6 +2,14 @@
 
 
 
+### Notes
+
+- Both the standalone Docker image and the Docker-compose setup can now be
+  updated after a Postgres version change. This makes it possible again to use
+  CATMAID versions after 2018.02.16 with Docker. The documentation has more
+  information.
+
+
 ### Features and enhancements
 
 Volume widget:

@@ -141,11 +141,35 @@ automatically apply all missing database migrations.
 Docker-compose
 ^^^^^^^^^^^^^^
 
-Before updating the images, make sure to stop the containers using
-``docker-compose down`` from the CATMAID docker-compose folder.
+Before updating the images, the database should be backed up. The easiest way to
+do this and also be able to quickly restore in case something goes wrong, is to
+perform a file based copy of the ``volumes`` folder after stopping the databse.
+To stop the database, call the following three commands::
 
-Or, to update the ``catmaid-docker`` (Docker-compose) setup use::
+  PG_STOP_CMD='export PGCTL=$(which pg_ctl); su postgres -c "${PGCTL} stop"'
+  docker exec -i -t catmaid-docker_db_1 /bin/bash -c "${PG_STOP_CMD}"
+  docker-compose stop
+
+And then copy the complete ``volumes`` folder::
+
+  sudo cp -r volumes volumes.backup
+
+Next update the docker-compose setup (``catmaid-docker``) by updating the base
+images and building all images::
 
   docker-compose pull
+  docker-compose build
 
-Finally the docker containers have to be started again.
+Finally the docker containers have to be built and started again::
+
+  docker-compose up
+
+.. note::
+
+    In case of a PostgreSQL update, CATMAID's docker-compose start-up script
+    will detect this and abort the container execution with a warning. This
+    warning says that an automatic update of the data files can be performed,
+    but this will only be done if ``DB_UPDATE=true`` is set as environment
+    variable of the ``db`` app in the ``docker-compose.yml`` file. After a
+    successful upgrade, the ``DB_UPDATE`` variable should be set to ``false``
+    again.

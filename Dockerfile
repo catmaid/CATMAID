@@ -20,8 +20,11 @@ RUN apt-get update -y \
     && apt-get update -y \
     && apt-get install -y python3.6 python3.6-dev git python-pip \
     && apt-get install -y nginx supervisor \
+    && rm -rf /var/lib/apt/lists/*
 ADD packagelist-ubuntu-16.04-apt.txt /home/
-RUN xargs apt-get install -y < /home/packagelist-ubuntu-16.04-apt.txt
+RUN apt-get update -y  \
+    && xargs apt-get install -y < /home/packagelist-ubuntu-16.04-apt.txt \
+    && rm -rf /var/lib/apt/lists/*
 ADD django/requirements.txt /home/django/
 ENV WORKON_HOME /opt/virtualenvs
 RUN mkdir -p /opt/virtualenvs \

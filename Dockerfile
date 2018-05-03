@@ -11,7 +11,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y \
     && apt-get install -y apt-utils \
     && apt-get install -y software-properties-common \
-    && add-apt-repository ppa:jonathonf/python-3.6 \
+    && add-apt-repository ppa:deadsnakes/ppa \
     && add-apt-repository -y ppa:nginx/stable \
     && add-apt-repository "deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main" \
     && apt-get install -y wget ca-certificates \

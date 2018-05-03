@@ -6,7 +6,8 @@ Trying CATMAID with Docker
 With the help of Docker and Docker-compose it is possible to run CATMAID without
 much manual setup involved. With Docker alone, CATMAID will be available as demo
 locally, but no added data is persisted after a restart. With Docker-compose
-however, it is possible to keep added data.
+however, it is possible to keep added data. In both variants, a superuser is
+created by default with the username "admin" and the password "admin".
 
 CATMAID demo with Docker
 ------------------------

@@ -1735,7 +1735,8 @@
     var sortFn = function(a, b) {
         if (a.value === b.value) {
           // Alphabetic when equal value
-          return a.name < b.name ? -1 : 1;
+          //return a.name < b.name ? -1 : 1;
+          return a.name.localeCompare(b.name, undefined, {numeric: true, sensitivity: 'base'});
         }
         // Descending
         return a.value > b.value ? -1 : 1;

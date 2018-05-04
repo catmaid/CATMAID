@@ -153,7 +153,7 @@
               data: null,
               orderable: false,
               defaultContent: '<a href="#" data-action="remove">Remove</a> ' +
-                  '<a href="#" data-action="list">List skeletons</a> ' +
+                  '<a href="#" data-action="list-skeletons">List skeletons</a> ' +
                   '<a href="#" data-action="list-connectors">List connectors</a>'
             }
           ],
@@ -184,7 +184,7 @@
         });
 
         // Skeleton intersection list
-        $(table).on('click', 'a[data-action="list"]', function() {
+        $(table).on('click', 'a[data-action="list-skeletons"]', function() {
           var tr = $(this).closest("tr");
           var volume = self.datatable.row(tr).data();
           CATMAID.Volumes.get(project.id, volume.id)

@@ -13,7 +13,9 @@ None.
 - `GET /{project_id}/skeletons/in-bounding-box`:
   The `min_nodes` and `min_cable` parameters can be used to further filter the
   result. The `src` parameter can be 'postgis2d' and 'postgis3d', with the
-  former being the default spatial query type.
+  former being the default spatial query type. The `volume_id` parameter can
+  optionally be used to return the skeletons in the bounding box of a specific
+  volume, alternative to explicit bounding box.
 
 ### Deprecations
 

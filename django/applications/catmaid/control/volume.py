@@ -223,6 +223,42 @@ def volume_collection(request, project_id):
         volumes = Volume.objects.filter(project_id=project_id).values(*fields)
         return Response(volumes)
 
+def get_volume_details(project_id, volume_id):
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT id, project_id, name, comment, user_id, editor_id,
+            creation_time, edition_time, Box3D(geometry), ST_Asx3D(geometry)
+        FROM catmaid_volume v
+        WHERE id=%s and project_id=%s""",
+        (volume_id, project_id))
+    volume = cursor.fetchone()
+
+    if not volume:
+        raise ValueError("Could not find volume " + volume_id)
+
+    # Parse bounding box into dictionary, coming in format "BOX3D(0 0 0,1 1 1)"
+    bbox_matches = re.search(bbox_re, volume[8])
+    if not bbox_matches or len(bbox_matches.groups()) != 6:
+        raise ValueError("Couldn't create bounding box for geometry")
+    bbox = list(map(float, bbox_matches.groups()))
+
+    return {
+        'id': volume[0],
+        'project_id': volume[1],
+        'name': volume[2],
+        'comment': volume[3],
+        'user_id': volume[4],
+        'editor_id': volume[5],
+        'creation_time': volume[6],
+        'edition_time': volume[7],
+        'bbox': {
+            'min': {'x': bbox[0], 'y': bbox[1], 'z': bbox[2]},
+            'max': {'x': bbox[3], 'y': bbox[4], 'z': bbox[5]}
+        },
+        'mesh': volume[9]
+    }
+
+
 @api_view(['GET', 'POST', 'DELETE'])
 @requires_user_role([UserRole.Browse])
 def volume_detail(request, project_id, volume_id):
@@ -234,40 +270,7 @@ def volume_detail(request, project_id, volume_id):
     """
     p = get_object_or_404(Project, pk=project_id)
     if request.method == 'GET':
-        cursor = connection.cursor()
-        cursor.execute("""
-            SELECT id, project_id, name, comment, user_id, editor_id,
-                creation_time, edition_time, Box3D(geometry), ST_Asx3D(geometry)
-            FROM catmaid_volume v
-            WHERE id=%s and project_id=%s""",
-            (volume_id, project_id))
-        volume = cursor.fetchone()
-
-        if not volume:
-            raise ValueError("Could not find volume " + volume_id)
-
-        # Parse bounding box into dictionary, coming in format "BOX3D(0 0 0,1 1 1)"
-        bbox_matches = re.search(bbox_re, volume[8])
-        if not bbox_matches or len(bbox_matches.groups()) != 6:
-            raise ValueError("Couldn't create bounding box for geometry")
-        bbox = list(map(float, bbox_matches.groups()))
-
-        volume = {
-            'id': volume[0],
-            'project_id': volume[1],
-            'name': volume[2],
-            'comment': volume[3],
-            'user_id': volume[4],
-            'editor_id': volume[5],
-            'creation_time': volume[6],
-            'edition_time': volume[7],
-            'bbox': {
-                'min': {'x': bbox[0], 'y': bbox[1], 'z': bbox[2]},
-                'max': {'x': bbox[3], 'y': bbox[4], 'z': bbox[5]}
-            },
-            'mesh': volume[9]
-        }
-
+        volume = get_volume_details(p.id, volume_id)
         return Response(volume)
     elif request.method == 'POST':
         return update_volume(request, project_id=project_id, volume_id=volume_id)

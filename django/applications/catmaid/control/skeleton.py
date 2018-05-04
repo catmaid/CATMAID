@@ -37,6 +37,7 @@ from catmaid.control.neuron_annotations import (annotations_for_skeleton,
         create_annotation_query, _annotate_entities, _update_neuron_annotations)
 from catmaid.control.review import get_review_status
 from catmaid.control.tree_util import find_root, reroot, edge_count_to_root
+from catmaid.control.volume import get_volume_details
 
 
 def get_skeleton_permissions(request, project_id, skeleton_id):
@@ -2390,6 +2391,14 @@ def skeletons_in_bounding_box(request, project_id):
       defaultValue: 0
       type: float
       paramType: form
+    - name: volume_id
+      description: |
+        Alternative to manual bounding box definition. The bounding box of the
+        volume is used.
+      required: false
+      defaultValue: 0
+      type: integer
+      paramType: form
     type:
         - type: array
           items:
@@ -2404,12 +2413,26 @@ def skeletons_in_bounding_box(request, project_id):
         'project_id': project_id,
         'limit': data.get('limit', 0)
     }
-    for p in ('minx', 'miny', 'minz', 'maxx', 'maxy', 'maxz', 'float'):
-        params[p] = float(data.get(p, 0))
+
+    volume_id = data.get('volume_id')
+    if volume_id is not None:
+        volume = get_volume_details(project_id, volume_id)
+        bbmin, bbmax = volume['bbox']['min'], volume['bbox']['max']
+        params['minx'] = bbmin['x']
+        params['miny'] = bbmin['y']
+        params['minz'] = bbmin['z']
+        params['maxx'] = bbmax['x']
+        params['maxy'] = bbmax['y']
+        params['maxz'] = bbmax['z']
+    else:
+        for p in ('minx', 'miny', 'minz', 'maxx', 'maxy', 'maxz', 'float'):
+            params[p] = float(data.get(p, 0))
+
     params['halfzdiff'] = abs(params['maxz'] - params['minz']) * 0.5
     params['halfz'] = params['minz'] + (params['maxz'] - params['minz']) * 0.5
     params['min_nodes'] = int(data.get('min_nodes', 0))
     params['min_cable'] = int(data.get('min_cable', 0))
+
 
     skeleton_ids = get_skeletons_in_bb(params)
     return JsonResponse(skeleton_ids, safe=False)

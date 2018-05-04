@@ -10,7 +10,10 @@ None.
 
 ### Modifications
 
-None.
+- `GET /{project_id}/skeletons/in-bounding-box`:
+  The `min_nodes` and `min_cable` parameters can be used to further filter the
+  result. The `src` parameter can be 'postgis2d' and 'postgis3d', with the
+  former being the default spatial query type.
 
 ### Deprecations
 

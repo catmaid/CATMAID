@@ -2234,51 +2234,93 @@ def skeletons_by_node_labels(request, project_id=None):
     return JsonResponse(cursor.fetchall(), safe=False)
 
 
-def get_skeletons_in_bb_postgis2d(params):
+def get_skeletons_in_bb(params):
     cursor = connection.cursor()
-    cursor.execute("""
-        SELECT DISTINCT t.skeleton_id
-          FROM (
-          SELECT te.id, te.edge
+    extra_joins = []
+    extra_where = []
+
+    min_nodes = params.get('min_nodes', 0)
+    min_cable = params.get('min_cable', 0)
+    needs_summary = min_nodes > 0 or min_cable > 0
+    provider = params.get('src', 'postgis2d')
+    node_query = ""
+
+    if needs_summary:
+        extra_joins.append("""
+            JOIN catmaid_skeleton_summary css
+                ON css.skeleton_id = skeleton.id
+        """)
+
+    if min_nodes > 1:
+        extra_where.append("""
+            css.num_nodes >= %(min_nodes)s
+        """)
+
+    if min_cable > 0:
+        extra_where.append("""
+            css.cable_length >= %(min_cable)s
+        """)
+
+    if provider == 'postgis2d':
+        node_query = """
+            SELECT DISTINCT t.skeleton_id
+            FROM (
+              SELECT te.id, te.edge
+                FROM treenode_edge te
+                WHERE floatrange(ST_ZMin(te.edge),
+                     ST_ZMax(te.edge), '[]') && floatrange(%(minz)s, %(maxz)s, '[)')
+                  AND te.project_id = %(project_id)s
+              ) e
+              JOIN treenode t
+                ON t.id = e.id
+              WHERE e.edge && ST_MakeEnvelope(%(minx)s, %(miny)s, %(maxx)s, %(maxy)s)
+                AND ST_3DDWithin(e.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+                    ST_MakePoint(%(minx)s, %(miny)s, %(halfz)s),
+                    ST_MakePoint(%(maxx)s, %(miny)s, %(halfz)s),
+                    ST_MakePoint(%(maxx)s, %(maxy)s, %(halfz)s),
+                    ST_MakePoint(%(minx)s, %(maxy)s, %(halfz)s),
+                    ST_MakePoint(%(minx)s, %(miny)s, %(halfz)s)]::geometry[])),
+                    %(halfzdiff)s)
+        """
+    elif provider == 'postgis3d':
+        node_query = """
+            SELECT DISTINCT t.skeleton_id
             FROM treenode_edge te
-            WHERE floatrange(ST_ZMin(te.edge),
-                 ST_ZMax(te.edge), '[]') && floatrange(%(minz)s, %(maxz)s, '[)')
-              AND te.project_id = %(project_id)s
-          ) e
-          JOIN treenode t
-            ON t.id = e.id
-          WHERE e.edge && ST_MakeEnvelope(%(minx)s, %(miny)s, %(maxx)s, %(maxy)s)
-            AND ST_3DDWithin(e.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+            JOIN treenode t
+                ON t.id = te.id
+            WHERE te.edge &&& ST_MakeLine(ARRAY[
+                ST_MakePoint(%(minx)s, %(maxy)s, %(maxz)s),
+                ST_MakePoint(%(maxx)s, %(miny)s, %(minz)s)] ::geometry[])
+            AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
                 ST_MakePoint(%(minx)s, %(miny)s, %(halfz)s),
                 ST_MakePoint(%(maxx)s, %(miny)s, %(halfz)s),
                 ST_MakePoint(%(maxx)s, %(maxy)s, %(halfz)s),
                 ST_MakePoint(%(minx)s, %(maxy)s, %(halfz)s),
                 ST_MakePoint(%(minx)s, %(miny)s, %(halfz)s)]::geometry[])),
                 %(halfzdiff)s)
-    """, params)
+            AND te.project_id = %(project_id)s
+        """
+    else:
+        raise ValueError('Need valid node provider (src)')
 
-    return [r[0] for r in cursor.fetchall()]
 
+    if extra_where:
+        extra_where = 'WHERE ' + '\nAND '.join(extra_where)
 
-def get_skeletons_in_bb_postgis3d(params):
-    cursor = connection.cursor()
-    cursor.execute("""
-        SELECT DISTINCT t.skeleton_id
-        FROM treenode_edge te
-        JOIN treenode t
-            ON t.id = te.id
-        WHERE te.edge &&& ST_MakeLine(ARRAY[
-            ST_MakePoint(%(minx)s, %(maxy)s, %(maxz)s),
-            ST_MakePoint(%(maxx)s, %(miny)s, %(minz)s)] ::geometry[])
-        AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
-            ST_MakePoint(%(minx)s, %(miny)s, %(halfz)s),
-            ST_MakePoint(%(maxx)s, %(miny)s, %(halfz)s),
-            ST_MakePoint(%(maxx)s, %(maxy)s, %(halfz)s),
-            ST_MakePoint(%(minx)s, %(maxy)s, %(halfz)s),
-            ST_MakePoint(%(minx)s, %(miny)s, %(halfz)s)]::geometry[])),
-            %(halfzdiff)s)
-        AND te.project_id = %(project_id)s
-    """, params)
+    query = """
+        SELECT skeleton.id
+        FROM (
+            {node_query}
+        ) skeleton(id)
+        {extra_joins}
+        {extra_where}
+    """.format(**{
+        'extra_joins': '\n'.join(extra_joins),
+        'extra_where': extra_where,
+        'node_query': node_query,
+    })
+
+    cursor.execute(query, params)
 
     return [r[0] for r in cursor.fetchall()]
 
@@ -2333,6 +2375,21 @@ def skeletons_in_bounding_box(request, project_id):
       required: true
       type: float
       paramType: form
+    - name: min_nodes
+      description: |
+        A minimum number of nodes per result skeleton
+      required: false
+      required: false
+      defaultValue: 0
+      type: float
+      paramType: form
+    - name: min_cable
+      description: |
+        A minimum number of cable length per result skeleton
+      required: false
+      defaultValue: 0
+      type: float
+      paramType: form
     type:
         - type: array
           items:
@@ -2347,10 +2404,12 @@ def skeletons_in_bounding_box(request, project_id):
         'project_id': project_id,
         'limit': data.get('limit', 0)
     }
-    for p in ('minx', 'miny', 'minz', 'maxx', 'maxy', 'maxz'):
+    for p in ('minx', 'miny', 'minz', 'maxx', 'maxy', 'maxz', 'float'):
         params[p] = float(data.get(p, 0))
     params['halfzdiff'] = abs(params['maxz'] - params['minz']) * 0.5
     params['halfz'] = params['minz'] + (params['maxz'] - params['minz']) * 0.5
+    params['min_nodes'] = int(data.get('min_nodes', 0))
+    params['min_cable'] = int(data.get('min_cable', 0))
 
-    skeleton_ids = get_skeletons_in_bb_postgis2d(params)
+    skeleton_ids = get_skeletons_in_bb(params)
     return JsonResponse(skeleton_ids, safe=False)

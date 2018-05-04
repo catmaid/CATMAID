@@ -869,17 +869,17 @@ var WindowMaker = new function()
 
     var nodeScalingInput = DOM.appendNumericField(tabs['View settings'],
         'Node handle scaling', 'Size of handle spheres for tagged nodes.',
-              o.skeleton_node_scaling, null, function() {
+        o.skeleton_node_scaling, null, function() {
               WA.options.skeleton_node_scaling = Math.max(0, this.value) || 1.0;
               WA.adjustContent();
               WA.updateSkeletonNodeHandleScaling(this.value);
-        }, 2);
+        }, 3, undefined, false, 0.1, 0);
 
     var textScalingInput = DOM.appendNumericField(tabs['View settings'],
         'Text scaling', 'Scaling of text.', o.text_scaling, null, function() {
               let value = parseInt(this.value, 10);
               WA.updateTextScaling(value);
-            }, 2);
+        }, 3, undefined, false, 0.1, 0);
 
     DOM.appendToTab(tabs['Stacks'],
         [

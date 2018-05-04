@@ -1086,19 +1086,37 @@
   /**
    * Create a new numeric field based on the passed in configuration.
    */
-  DOM.createNumericField = function(id, label, title, value, postlabel, onchangeFn, length, placeholder, disabled) {
-    return DOM.createTextField(id, label, title, value, postlabel, onchangeFn, length, placeholder, disabled);
+  DOM.createNumericField = function(id, label, title, value, postlabel,
+      onchangeFn, length, placeholder, disabled, step, min, max) {
+    var attrs = {};
+    if (step !== undefined) {
+      attrs['step'] = step;
+    }
+    if (min !== undefined) {
+      attrs['min'] = min;
+    }
+    if (max !== undefined) {
+      attrs['max'] = max;
+    }
+    return DOM.createInput('number', id, label, title, value,
+        postlabel, onchangeFn, length, placeholder, disabled, undefined, attrs);
   };
 
   /**
-   * Create a new text field based on the passed in configuration.
+   * Create a new input field based on the passed in configuration.
    */
-  DOM.createTextField = function(id, label, title, value, postlabel, onchangeFn,
-      length, placeholder, disabled, onEnterFn) {
+  DOM.createInput = function(type, id, label, title, value, postlabel,
+      onchangeFn, length, placeholder, disabled, onEnterFn, attrs) {
     var nf = document.createElement('input');
     if (id) nf.setAttribute('id', id);
-    nf.setAttribute('type', 'text');
+    nf.setAttribute('type', type);
     nf.setAttribute('value', value);
+
+    if (attrs) {
+      for (var a in attrs) {
+        nf.setAttribute(a, attrs[a]);
+      }
+    }
 
     if (placeholder) {
       nf.setAttribute('placeholder', placeholder);
@@ -1127,6 +1145,15 @@
     } else {
       return nf;
     }
+  };
+
+  /**
+   * Create a new text field based on the passed in configuration.
+   */
+  DOM.createTextField = function(id, label, title, value, postlabel, onchangeFn,
+      length, placeholder, disabled, onEnterFn) {
+    return DOM.createInput("text", id, label, title, value, postlabel,
+        onchangeFn, length, placeholder, disabled, onEnterFn);
   };
 
   /**
@@ -1319,8 +1346,10 @@
   /**
    * Append a new numeric input field to another element.
    */
-  DOM.appendNumericField = function(div, label, title, value, postlabel, onchangeFn, length, placeholder) {
-    var field = DOM.createNumericField(undefined, label, title, value, postlabel, onchangeFn, length, placeholder);
+  DOM.appendNumericField = function(div, label, title, value, postlabel,
+      onchangeFn, length, placeholder, disabled, step, min, max) {
+    var field = DOM.createNumericField(undefined, label, title, value, postlabel,
+        onchangeFn, length, placeholder, disabled, step, min, max);
     div.appendChild(field);
     return field;
   };
@@ -1330,7 +1359,7 @@
    */
   DOM.appendTextField = function(div, id, label, title, value, postlabel,
       onchangeFn, length, placeholder, disabled, onEnterFn) {
-    var field = DOM.createTextField(id, label, title, value, postlabel,
+    var field = DOM.createInput('text', id, label, title, value, postlabel,
         onchangeFn, length, placeholder, disabled, onEnterFn);
     div.appendChild(field);
     return field;

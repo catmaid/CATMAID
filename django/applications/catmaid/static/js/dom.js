@@ -436,7 +436,7 @@
     });
   };
 
-  var stringifyConerCases = function(key, value) {
+  var stringifyCornerCases = function(key, value) {
     if (value instanceof Set) {
       return JSON.stringify(Array.from(value.values()));
     }
@@ -541,7 +541,7 @@
             {
               orderable: false,
               render: function(data, type, row, meta) {
-                return row.options ? JSON.stringify(row.options, stringifyConerCases) : "-";
+                return row.options ? JSON.stringify(row.options, stringifyCornerCases) : "-";
               }
             },
             {

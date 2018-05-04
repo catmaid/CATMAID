@@ -25,6 +25,10 @@
     this.entriesPerPage = options.entriesPerPage || 25;
     // volume type
     this.newVolumeType = options.defaultVolumeType || "box";
+    // Minimum number of nodes a volume filtered skeleton has to have.
+    this.minFilterNodes = 2;
+    // Minimum length a volume filtered skeleton has to have.
+    this.minFilterCable = 0;
   };
 
   VolumeManagerWidget.prototype.getName = function() {
@@ -64,6 +68,40 @@
         openFile.appendChild(document.createTextNode('Add from file'));
         openFile.onclick = hiddenFileButton.click.bind(hiddenFileButton);
         controls.appendChild(openFile);
+
+        let self = this;
+        CATMAID.DOM.appendNumericField(
+            controls,
+            "Min skeleton nodes", "If \"List skeletons\" is clicked for a " +
+            "volume, only skeletons with at least this many nodes will be shown.",
+            2,
+            undefined,
+            function() {
+              let value = parseInt(this.value, 10);
+              if (value === undefined || Number.isNaN(value)) {
+                CATMAID.warn("Minimum skeleton nodes need to be a number");
+                return;
+              }
+              self.minFilterNodes = value;
+            },
+            5,
+            "#");
+        CATMAID.DOM.appendNumericField(
+            controls,
+            "Min skeleton length (nm)", "If \"List skeletons\" is clicked for a " +
+            "volume, only skeletons with at least a cable length of this will be shown.",
+            0,
+            undefined,
+            function() {
+              let value = parseFloat(this.value);
+              if (value === undefined || Number.isNaN(value)) {
+                CATMAID.warn("Minimum skeleton length need to be a number");
+                return;
+              }
+              self.minFilterCable = value;
+            },
+            8,
+            "nm");
       },
 
       contentID: 'volume_manger_content',
@@ -153,7 +191,8 @@
             .then(function(volume) {
               let bb = volume.bbox;
               return CATMAID.Skeletons.inBoundingBox(project.id, bb.min.x,
-                  bb.min.y, bb.min.z, bb.max.x, bb.max.y, bb.max.z);
+                  bb.min.y, bb.min.z, bb.max.x, bb.max.y, bb.max.z,
+                  self.minFilterNodes, self.minFilterCable);
             })
             .then(function(skeletonIds) {
               if (!skeletonIds || skeletonIds.length === 0) {

@@ -223,17 +223,22 @@
      * @param {numner} maxX      Maximum X coordinate of bounding box.
      * @param {numner} maxY      Maximum Y coordinate of bounding box.
      * @param {numner} maxZ      Maximum Z coordinate of bounding box.
+     * @param {number} minNodes  (optional) Min. number of nodes in each skeleton.
+     * @param {number} minCable  (optional) Min. cable length of each skeletons.
      *
      * @returns {Promise} Resolves with a list of intersecting skeleton Ids.
      */
-    inBoundingBox: function(projectId, minX, minY, minZ, maxX, maxY, maxZ) {
+    inBoundingBox: function(projectId, minX, minY, minZ, maxX, maxY, maxZ,
+        minNodes, minCable) {
       return CATMAID.fetch(project.id + '/skeletons/in-bounding-box', 'GET', {
         'minx': minX,
         'miny': minY,
         'minz': minZ,
         'maxx': maxX,
         'maxy': maxY,
-        'maxz': maxZ
+        'maxz': maxZ,
+        'min_nodes': minNodes,
+        'min_cable': minCable,
       });
     },
 

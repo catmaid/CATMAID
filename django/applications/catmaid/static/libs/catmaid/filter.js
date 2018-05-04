@@ -6,7 +6,7 @@
   'use strict';
 
   /**
-   * A skeleton rule filters accepts or reject a skeleton. Besides a filtering
+   * A skeleton rule filter accepts or rejects a skeleton. Besides a filtering
    * strategy it has an optional list skeletons it is valid for. If this list is
    * not empty the application of this rule will be ignored for all other
    * skeletons.
@@ -18,6 +18,19 @@
     this.options = options;
     this.validOnlyForSkid = skid;
     this.validOnlyForName = name;
+  };
+
+  /**
+   * A node filter rule filters accepts or rejects a node. Besides a filtering
+   * strategy it has an optional list skeletons it is valid for. If this list is
+   * not empty the application of this rule will be ignored for all other
+   * skeletons.
+   */
+  CATMAID.NodeFilterRule = function(strategy, options, mergeMode) {
+    this.skip = false;
+    this.mergeMode = mergeMode || CATMAID.UNION;
+    this.strategy = strategy;
+    this.options = options;
   };
 
   var addToObject = function(o, key) {
@@ -1462,6 +1475,11 @@
   CATMAID.DefaultFilterRuleSets = new Map([
     ['node', new CATMAID.NodeFilterRule(CATMAID.NodeFilterStrategy['take-all'])],
     ['skeleton', new CATMAID.SkeletonFilterRule(CATMAID.SkeletonFilterStrategy['take-all'])]
+  ]);
+
+  CATMAID.FilterRules = new Map([
+    ['node', CATMAID.NodeFilterRule],
+    ['skeleton', CATMAID.SkeletonFilterRule]
   ]);
 
   var unitIcoSpherePoints = (function() {

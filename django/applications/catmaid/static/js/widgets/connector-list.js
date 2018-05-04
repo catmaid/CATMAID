@@ -36,9 +36,11 @@
    *
    * [connector_id, x, y, z, skeleton_id, confidence, creator_id, creation_time,
    * edition_time]
+   *
+   * @returns {Object} Window handle and widget instance.
    */
   ConnectorList.fromRawData = function(data) {
-    CATMAID.WindowMaker.create('connector-list', data);
+    return CATMAID.WindowMaker.create('connector-list', data);
   };
 
   $.extend(ConnectorList.prototype, new InstanceRegistry());

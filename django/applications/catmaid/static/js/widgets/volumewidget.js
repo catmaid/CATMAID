@@ -230,8 +230,13 @@
               if (!connectorData || connectorData.length === 0) {
                 CATMAID.warn('Found no connectors in volume');
               } else {
-                CATMAID.ConnectorList.fromRawData(connectorData);
-                CATMAID.msg('Success', 'Found ' + connectorData.length + ' connector links');
+                var connectorListHandles = CATMAID.ConnectorList.fromRawData(connectorData);
+                // Add a node filter for the selected volume
+                var strategy = CATMAID.NodeFilterStrategy['volume'];
+                var rule = new CATMAID.NodeFilterRule(strategy, {
+                  'volumeId': volume.id
+                });
+                connectorListHandles.widget.filterRules.push(rule);
               }
             })
             .catch(CATMAID.handleError);

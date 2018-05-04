@@ -21,7 +21,10 @@ Volume widget:
   further constrain volume based skeleton selections ("List skeletons").
 
 - The Connector List widget that is shown when clicking on "List connectors",
-  now supports connector filtering.
+  now supports connector filtering. The volume of the link's row is now
+  automatically set as filter in the new Connector List widget. This means
+  connector links in this table are now shown only if they intersect exactly
+  with the volume (and not only with the bounding box like before).
 
 - State saving is now supported.
 

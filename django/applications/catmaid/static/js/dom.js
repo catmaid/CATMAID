@@ -743,9 +743,10 @@
     var addRuleButton = document.createElement('button');
     addRuleButton.appendChild(document.createTextNode("Add new filter rule"));
     addRuleButton.onclick = function() {
+      var TypeSpecificRule = CATMAID.FilterRules.get(type);
       var typeSpecificFactories = CATMAID.FilterStrategies.get(type);
       var strategy = typeSpecificFactories[newRuleStrategy];
-      var rule = new CATMAID.SkeletonFilterRule( strategy,
+      var rule = new TypeSpecificRule( strategy,
           newRuleOptions, newRuleMergeMode, newRuleSkeletonID, newRuleSkeletonName);
 
       updateNodeFilterSettings(newRuleStrategy);

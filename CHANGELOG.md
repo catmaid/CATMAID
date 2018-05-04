@@ -20,6 +20,8 @@ Volume widget:
 - The new "Min skeleton nodes" and "Min skeleton length" options allow to
   further constrain volume based skeleton selections ("List skeletons").
 
+- State saving is now supported.
+
 Miscellaneous:
 
 - The behavior of the Ctrl modifier on section navigation with , and . can now

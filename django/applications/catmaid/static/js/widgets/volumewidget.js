@@ -889,7 +889,18 @@
     name: "Volume Manager",
     description: "List and edit volumes and create new ones",
     key: widgetKey,
-    creator: VolumeManagerWidget
+    creator: VolumeManagerWidget,
+    state: {
+      getState: function(widget) {
+        return {
+          minFilterNodes: widget.minFilterNodes,
+          minFilterCable: widget.minFilterCable
+        };
+      },
+      setState: function(widget, state) {
+        CATMAID.tools.copyIfDefined(state, widget, 'minFilterNodes');
+      }
+    }
   });
 
   // Add an action to the tracing tool that will open this widget

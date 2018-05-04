@@ -430,7 +430,7 @@ def list_connectors(request, project_id=None):
         "partners": partners
     }, safe=False)
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_connector_links(request, project_id=None):
     """Get connectors linked to a set of skeletons.
@@ -445,6 +445,8 @@ def list_connector_links(request, project_id=None):
     one array per connector link with the following content: [Linked skeleton ID,
     Connector ID, Connector X, Connector Y, Connector Z, Link confidence, Link
     creator ID, Linked treenode ID, Link edit time].
+
+    A POST handler is able to accept large lists of skeleton IDs.
     ---
     parameters:
       - name: skeleton_ids
@@ -477,13 +479,14 @@ def list_connector_links(request, project_id=None):
       tags:
          type array
     """
-    skeleton_ids = get_request_list(request.GET, 'skeleton_ids', map_fn=int)
+    data = request.POST if request.method == 'POST' else request.GET
+    skeleton_ids = get_request_list(data, 'skeleton_ids', map_fn=int)
 
     if not skeleton_ids:
         raise ValueError("At least one skeleton ID required")
 
-    relation_type = request.GET.get('relation_type', 'presynaptic_to')
-    with_tags = get_request_bool(request.GET, 'with_tags', True)
+    relation_type = data.get('relation_type', 'presynaptic_to')
+    with_tags = get_request_bool(data, 'with_tags', True)
 
     cursor = connection.cursor()
     relation_map = get_relation_to_id_map(project_id, cursor=cursor)

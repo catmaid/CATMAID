@@ -6,7 +6,9 @@ included in this changelog.
 
 ### Additions
 
-None.
+- `POST /{project_ids}/connectors/links`:
+  Accepts the same parameters as the GET variant, but allows for larger
+  skeleton_ids list.
 
 ### Modifications
 

@@ -1984,7 +1984,7 @@
       lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
       ajax: function(data, callback, settings) {
         Promise.all([
-          CATMAID.fetch(project.id + '/connectors/links/', 'GET', {
+          CATMAID.fetch(project.id + '/connectors/links/', 'POST', {
             'skeleton_ids': [skeletonId],
             'with_tags': 'false',
             'relation_type': relation

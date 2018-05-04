@@ -72,6 +72,19 @@ class ConnectorsApiTests(CatmaidApiTestCase):
         }
         self.assertEqual(expected_result, parsed_response)
 
+        # POST variant
+        response = self.client.post(
+                '/%d/connectors/links/' % self.test_project_id, {
+                    'relation_type': 'presynaptic_to',
+                    'skeleton_ids': [0]})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = {
+            'links': [],
+            'tags': {}
+        }
+        self.assertEqual(expected_result, parsed_response)
+
 
     def test_list_connector_outgoing_with_sorting(self):
         self.fake_authentication()

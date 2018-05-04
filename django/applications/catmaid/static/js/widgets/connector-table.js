@@ -180,7 +180,7 @@
               return;
             }
 
-            CATMAID.fetch(project.id +  "/connectors/links/", "GET", params)
+            CATMAID.fetch(project.id +  "/connectors/links/", "POST", params)
               .then(function(result) {
                 return self.filterResults(result);
               })

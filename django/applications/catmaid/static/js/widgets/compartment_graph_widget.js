@@ -371,7 +371,7 @@
              [document.createTextNode(' - Arrow shape: ')],
              [CATMAID.DOM.createSelect(
                'gg_edge_arrow_shape' + GG.widgetID,
-               ["triangle", "tee", "circle", "square", "diamond", "vee", "triangle-tee", "none"], // Only available in cytoscape 3.2.11 or later: "triangle-cross", "triangle-backcurve", 
+               ["triangle", "tee", "circle", "square", "diamond", "vee", "triangle-tee", "none"], // Only available in cytoscape 3.2.11 or later: "triangle-cross", "triangle-backcurve",
                "triangle",
                null)],
              ['Set', GG.setArrowShapeToSelectedNodes.bind(GG)],
@@ -2827,8 +2827,8 @@
 
     dialog.appendMessage("If you want to use the exported SVG file with Adobe " +
         "Illustrator, please use the respective export button below. Unfortunately, " +
-        "Illustrator is not standard conform and will not work properly with regular " +
-        "SVG files. We recommend Inkscape, which works will with regular SVGs.");
+        "Illustrator is not standards conformant and will not work properly with regular " +
+        "SVG files. We recommend Inkscape, which works well with regular SVGs.");
 
     dialog.show('400', 'auto', true);
   };
@@ -4288,7 +4288,7 @@
     }
     return selections;
   };
-  
+
   GroupGraph.prototype.getValidatedEdgeOpacityValue = function() {
     var opacity = $('#gg_columns_edge_opacity' + this.widgetID).val();
     // Validate opacity value
@@ -4337,7 +4337,7 @@
       });
     };
 
-    // Show edges onto nodes on the column to the right of the node's column 
+    // Show edges onto nodes on the column to the right of the node's column
     var showOutgoingEdges = function(node) {
       if (!node.visible()) return;
       var column_index = getColumnIndex(node);

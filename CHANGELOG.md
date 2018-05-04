@@ -20,6 +20,9 @@ Volume widget:
 - The new "Min skeleton nodes" and "Min skeleton length" options allow to
   further constrain volume based skeleton selections ("List skeletons").
 
+- The Connector List widget that is shown when clicking on "List connectors",
+  now supports connector filtering.
+
 - State saving is now supported.
 
 Miscellaneous:

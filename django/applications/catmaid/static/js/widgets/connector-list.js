@@ -176,7 +176,8 @@
       },
       filter: {
         rules: this.filterRules,
-        update: this.update.bind(this)
+        update: this.update.bind(this),
+        type: 'node',
       },
     };
   };
@@ -201,17 +202,18 @@
   ConnectorList.prototype.filterResults = function(data) {
     var hasResults = data && data.length > 0;
     if (this.filterRules.length > 0 && this.applyFilterRules && hasResults) {
-      // Collect skeleton models from input
-      var skeletons = data.reduce(function(o, link) {
-        var skeletonId = link[0];
-        o[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
+      // Collect connector models from input
+      var connectors = data.reduce(function(o, link) {
+        var connectorId = link[0];
+        var x = link[1], y = link[2], z = link[3];
+        o[connectorId] = new CATMAID.ConnectorModel(connectorId, x, y, z);
         return o;
-      }, {});
-      var filter = new CATMAID.SkeletonFilter(this.filterRules, skeletons);
+      }, new Map());
+      var filter = new CATMAID.NodeFilter(this.filterRules, connectors);
       return filter.execute()
         .then(function(filtered) {
-          if (filtered.skeletons.size === 0) {
-            CATMAID.warn("No skeletons left after filter application");
+          if (filtered.nodes.size === 0) {
+            CATMAID.warn("No connectors left after filter application");
             data= [];
             return Promise.resolve(data);
           }
@@ -220,8 +222,8 @@
             return parseInt(n, 10);
           }));
           data = data.filter(function(link) {
-            let treenodeId = link[7];
-            return allowedNodes.has(treenodeId);
+            let connectorId = link[0];
+            return allowedNodes.has(connectorId);
           });
           return Promise.resolve(data);
         });

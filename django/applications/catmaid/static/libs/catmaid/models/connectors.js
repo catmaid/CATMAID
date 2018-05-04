@@ -5,6 +5,21 @@
 
   "use strict";
 
+
+  /**
+   * Information on a single connector node.
+   */
+  var ConnectorModel = function(id, x, y, z, links) {
+    this.id = id;
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    this.links = links;
+  };
+
+  CATMAID.ConnectorModel = ConnectorModel;
+
+
   /**
    * This namespace provides functions to work with annotations on neurons. All
    * of them return promises.

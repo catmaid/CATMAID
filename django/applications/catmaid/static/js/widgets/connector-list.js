@@ -81,7 +81,7 @@
 
         var self = this;
         this.connectorTable = $(table).DataTable({
-          dom: "lrphtip",
+          dom: "lrfphtip",
           paging: true,
           order: [],
           lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],

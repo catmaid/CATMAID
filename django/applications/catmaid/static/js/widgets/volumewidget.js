@@ -586,8 +586,8 @@
         }
 
         // Get available filter strategeis
-        var nodeFilters = Object.keys(CATMAID.NodeFilterStrategy).reduce(function(o, p) {
-          o[CATMAID.NodeFilterStrategy[p].name] = p;
+        var nodeFilters = Object.keys(CATMAID.SkeletonFilterStrategy).reduce(function(o, p) {
+          o[CATMAID.SkeletonFilterStrategy[p].name] = p;
           return o;
         }, {});
         CATMAID.DOM.appendNewNodeFilterControls(nodeFilters, $content, function(rule, strategt) {

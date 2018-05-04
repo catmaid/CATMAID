@@ -25,6 +25,98 @@
     return o;
   };
 
+  var NodeFilter = function(rules, nodeMap) {
+    this.rules = rules;
+    this.nodeIndex = nodeMap;
+  };
+
+  function executeNodeFilterRules(rules, nodeIndex, inputMap, mapResultNode) {
+    // Collect nodes in an object to allow fast hash based key existence
+    // checks. Also collect the location of the node. Whether OR or AND is
+    // used for merging is specified as option. For the sake of simplicity, a
+    // strict left-associative combination is used.
+    var nodeCollection = {};
+    var stats = {
+      nNodes: 0
+    };
+    if (mapResultNode === undefined) {
+      mapResultNode = function() {
+        return true;
+      };
+    }
+    var mergeNodeCollection = (mergeNodeCollections).bind(nodeCollection);
+
+    var sourceNodeIds = Object.keys(nodeIndex);
+
+    // Get final set of nodes by going through all rules and apply them either
+    // to all connectors or a selected sub-set. Results of individual rules are
+    // OR-combined.
+    rules.forEach(function(rule, i) {
+
+      // Ignore the merge mode for the first rule, because it can't be merge
+      // with anything.
+      var mergeMode = i === 0 ? CATMAID.UNION : rule.mergeMode;
+
+      var allowedNodes = new Set();
+
+      // Apply rules and get back a set of valid nodes for each skeleton
+      sourceNodeIds.forEach(function(nodeId) {
+        // Get valid point list from this skeleton with the current filter
+        var node = nodeIndex[nodeId];
+        var nodeCollection = rule.strategy.filter(nodeId, node,
+            inputMap, rule.options);
+        // Merge all point sets for this rule. How this is done exactly (i.e.
+        // OR or AND) is configured separately.
+        if (nodeCollection && !CATMAID.tools.isEmpty(nodeCollection)) {
+          mergeNodeCollection(nodeId, nodeCollection, mergeMode, mapResultNode, stats);
+          // Remember this skeleton as potentially valid
+          allowedNodes.add(parseInt(nodeId, 10));
+        }
+      });
+    });
+
+    return {
+      nodes: nodeCollection,
+      nNodes: stats.nNodes,
+      input: inputMap
+    };
+  }
+
+  /**
+   * Run filter set on nodes and return a collection of matched nodes.
+   *
+   * @param {Object} skeletonArbors  Maps skeleton IDs to arbor info objects
+   */
+  NodeFilter.prototype.execute = function(mapResultNode, keepInputCache) {
+    var rules = CATMAID.NodeFilter.getActiveRules(this.rules);
+
+    var nodeIndex = this.nodeIndex;
+    var nodeIds = Object.keys(nodeIndex);
+
+    // Don't cache between executions by default
+    if (!keepInputCache) {
+      this.input = {};
+    }
+    return prepareFilterInput(nodeIds, rules, this.input)
+      .then(function(input) {
+        return executeNodeFilterRules(rules, nodeIndex, input, mapResultNode);
+      });
+  };
+
+  NodeFilter.getActiveRules = function(rules) {
+    if (!rules || 0 === rules.length) {
+      rules = CATMAID.DefaultFilterRuleSets.get('node');
+    }
+
+    return rules.filter(function(rule) {
+      return !rule.skip;
+    });
+  };
+
+  // Export
+  CATMAID.NodeFilter = NodeFilter;
+
+
   CATMAID.SkeletonFilter= function(rules, skeletonIndex) {
     this.rules = rules;
     this.skeletonIndex = skeletonIndex;
@@ -273,61 +365,82 @@
       });
   }
 
+  /**
+   * Merge another node collection into the collection represented by the
+   * current context ("this") in either UNION or INTERSECTION merge mode. The
+   * filterTargeId field of the context will be set to
+   */
+  function mergeNodeCollections(filterTargetId, other, mergeMode, mapNode, stats) {
+    var count = 0;
+    if (CATMAID.UNION === mergeMode) {
+      for (var node in other) {
+        /* jshint validthis: true */
+        var existingNode = this[node];
+        if (!existingNode) {
+          this[node] = mapNode(filterTargetId, node);
+          ++count;
+        }
+      }
+    } else if (CATMAID.INTERSECTION === mergeMode) {
+      // An intersection keeps only nodes that both the target and the
+      // other set have.
+      for (var node in this) {
+        var existingNode = other[node];
+        if (!existingNode) {
+          delete this[node];
+          --count;
+        }
+      }
+    } else {
+      throw new CATMAID.ValueError("Unknown merge mode: " + mergeMode);
+    }
+
+    if (stats) {
+      stats.nNodes += count;
+    }
+  }
+
+  /**
+   * Merge another set of filter target IDs (skeleton IDs or connector IDs) into
+   * the set represented by the context ("this") in either UNION or INTERSECTION
+   * mode.
+   */
+  function mergeFilterTargetIdSet(other, mergeMode) {
+    if (CATMAID.UNION === mergeMode) {
+      for (var filterTargetId of other) {
+        /* jshint validthis: true */
+        this.add(filterTargetId);
+      }
+    } else if (CATMAID.INTERSECTION === mergeMode) {
+      /* jshint validthis: true */
+      for (var filterTargetId of this) {
+        if (!other.has(filterTargetId)) {
+          this.delete(filterTargetId);
+        }
+      }
+    } else {
+      throw new CATMAID.ValueError("Unknown merge mode: " + mergeMode);
+    }
+  }
+
   function executeFilterRules(rules, skeletonIndex, inputMap, mapResultNode) {
     // Collect nodes in an object to allow fast hash based key existence
     // checks. Also collect the location of the node. Whether OR or AND is
     // used for merging is specified as option. For the sake of simplicity, a
     // strict left-associative combination is used.
     var nodeCollection = {};
-    var radiiCollection = {};
     var skeletonCollection = new Set();
-    var nNodes = 0;
+    var stats = {
+      nNodes: 0
+    };
     if (mapResultNode === undefined) {
       mapResultNode = function() {
         return true;
       };
     }
-    var mergeNodeCollection = (function(skeletonId, other, mergeMode, mapNode) {
-      var count = 0;
-      if (CATMAID.UNION === mergeMode) {
-        for (var node in other) {
-          var existingNode = this[node];
-          if (!existingNode) {
-            this[node] = mapNode(skeletonId, node);
-            ++count;
-          }
-        }
-      } else if (CATMAID.INTERSECTION === mergeMode) {
-        // An intersection keeps only nodes that both the target and the
-        // other set have.
-        for (var node in this) {
-          var existingNode = other[node];
-          if (!existingNode) {
-            delete this[node];
-            --count;
-          }
-        }
-      } else {
-        throw new CATMAID.ValueError("Unknown merge mode: " + mergeMode);
-      }
-      nNodes += count;
-    }).bind(nodeCollection);
+    var mergeNodeCollection = (mergeNodeCollections).bind(nodeCollection);
 
-    var mergeSkeletonCollection = (function(other, mergeMode) {
-      if (CATMAID.UNION === mergeMode) {
-        for (var skeletonId of other) {
-          this.add(skeletonId);
-        }
-      } else if (CATMAID.INTERSECTION === mergeMode) {
-        for (var skeletonId of this) {
-          if (!other.has(skeletonId)) {
-            this.delete(skeletonId);
-          }
-        }
-      } else {
-        throw new CATMAID.ValueError("Unknown merge mode: " + mergeMode);
-      }
-    }).bind(skeletonCollection);
+    var mergeSkeletonCollection = (mergeFilterTargetIdSet).bind(skeletonCollection);
 
     // Get final set of points by going through all rules and apply them
     // either to all skeletons or a selected sub-set. Results of individual
@@ -360,7 +473,7 @@
         // Merge all point sets for this rule. How this is done exactly (i.e.
         // OR or AND) is configured separately.
         if (nodeCollection && !CATMAID.tools.isEmpty(nodeCollection)) {
-          mergeNodeCollection(skid, nodeCollection, mergeMode, mapResultNode);
+          mergeNodeCollection(skid, nodeCollection, mergeMode, mapResultNode, stats);
           // Remember this skeleton as potentially valid
           allowedSkeletons.add(parseInt(skid, 10));
         }
@@ -371,11 +484,12 @@
 
     return {
       nodes: nodeCollection,
-      nNodes: nNodes,
+      nNodes: stats.nNodes,
       input: inputMap,
       skeletons: skeletonCollection
     };
   }
+
 
   /**
    * Run filter set on arbors and return a collection of matched nodes.
@@ -438,7 +552,7 @@
     var nns = CATMAID.NeuronNameService.getInstance();
 
     if (!rules || 0 === rules.length) {
-      rules = defaultFilterRuleSet;
+      rules = CATMAID.DefaultFilterRuleSets.get('skeleton');
     }
     // Extract the set of rules defining this compartment. Also validate
     // skeleton constraints if there are any.
@@ -470,11 +584,79 @@
     }, []);
   };
 
+
   /**
-   * Node filter strategies can be used in skeletotn filter rules. They select
-   * individual nodes fom skeletons/arbors.
+   * Node filter strategies can be used in skeletotn filter rules. They
+   * select individual nodes fom skeletons/arbors.
    */
   CATMAID.NodeFilterStrategy = {
+    "take-all": {
+      name: "Take all nodes",
+      prepare: ["location"],
+      filter: function(nodeId, node, input, options) {
+        return node;
+      }
+    },
+    "volume": {
+      name: "Volume",
+      prepare: ["locations", "volume"],
+      filter: function(nodeId, node, input, options) {
+        var volume = input.volumes[options.volumeId];
+        var includedNodes = {};
+        if (volume.intersector.contains(node)) {
+          includedNodes[nodeId] = node;
+        }
+        return includedNodes;
+      }
+    },
+  };
+
+  /**
+   * A collection of UI creation methods for individual node filtering
+   * strategies from CATMAID.NodeFilterStrategy members.
+   */
+  CATMAID.NodeFilterSettingFactories = {
+    'take-all': function(container, options) {
+      // Take all has no additional options
+    },
+    'volume': function(container, options) {
+      // Update volume list
+      var initVolumeList = function() {
+        return CATMAID.Volumes.listAll(project.id).then(function(json) {
+            var volumes = json.sort(function(a, b) {
+              return CATMAID.tools.compareStrings(a.name, b.name);
+            }).map(function(volume) {
+              return {
+                title: volume.name,
+                value: volume.id
+              };
+            });
+            var selectedVolume = options.volumeId;
+            // Create actual element based on the returned data
+            var node = CATMAID.DOM.createRadioSelect('Volumes', volumes,
+                selectedVolume, true);
+            // Add a selection handler
+            node.onchange = function(e) {
+              options.volumeId = e.target.value;
+            };
+            return node;
+          });
+      };
+
+      // Create async selection and wrap it in container to have handle on initial
+      // DOM location
+      var volumeSelection = CATMAID.DOM.createAsyncPlaceholder(initVolumeList());
+      var volumeSelectionWrapper = document.createElement('span');
+      $(container).append(volumeSelection);
+    },
+  };
+
+
+  /**
+   * Skeleton filter strategies can be used in skeletotn filter rules. They
+   * select individual nodes fom skeletons/arbors.
+   */
+  CATMAID.SkeletonFilterStrategy = {
     "take-all": {
       name: "Take all nodes of each skeleton",
       prepare: ["arbor"],
@@ -922,9 +1104,9 @@
 
   /**
    * A collection of UI creation methods for individual node filtering
-   * strategies from CATMAID.NodeFilterStrategy members.
+   * strategies from CATMAID.SkeletonFilterStrategy members.
    */
-  CATMAID.NodeFilterSettingFactories = {
+  CATMAID.SkeletonFilterSettingFactories = {
     'take-all': function(container, options) {
       // Take all has no additional options
     },
@@ -1271,10 +1453,16 @@
     }
   };
 
+  CATMAID.FilterStrategies = new Map([
+    ['node', CATMAID.NodeFilterStrategy],
+    ['skeleton', CATMAID.SkeletonFilterStrategy]
+  ]);
+
   // A default no-op filter rule that takes all nodes.
-  var defaultFilterRuleSet = [
-    new CATMAID.SkeletonFilterRule(CATMAID.NodeFilterStrategy['take-all'])
-  ];
+  CATMAID.DefaultFilterRuleSets = new Map([
+    ['node', new CATMAID.NodeFilterRule(CATMAID.NodeFilterStrategy['take-all'])],
+    ['skeleton', new CATMAID.SkeletonFilterRule(CATMAID.SkeletonFilterStrategy['take-all'])]
+  ]);
 
   var unitIcoSpherePoints = (function() {
     var t = (1.0 + Math.sqrt(5.0)) / 2.0;

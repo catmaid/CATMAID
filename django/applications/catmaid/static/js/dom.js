@@ -449,6 +449,7 @@
    */
   DOM.addFilterControlsToggle = function(win, title, options) {
     title = title || 'Toggle filter controls';
+    var type = CATMAID.tools.getDefined(options.type, 'skeleton');
 
     // A toggle function that also allows to recreate the UI.
     var toggle = function(recreate) {
@@ -554,7 +555,8 @@
                 } else {
                   return value;
                 }
-              }
+              },
+              visible: type === 'skeleton',
             },
             {
               orderable: false,
@@ -566,7 +568,8 @@
                 } else {
                   return value;
                 }
-              }
+              },
+              visible: type === 'skeleton',
             },
             {
               orderable: false,
@@ -626,12 +629,13 @@
         });
 
         // Get available filter strategeis
-        var nodeFilters = Object.keys(CATMAID.NodeFilterStrategy).reduce(function(o, p) {
-          o[CATMAID.NodeFilterStrategy[p].name] = p;
+        var Strategy = CATMAID.FilterStrategies.get(type);
+        var nodeFilters = Object.keys(Strategy).reduce(function(o, p) {
+          o[Strategy[p].name] = p;
           return o;
         }, {});
 
-        CATMAID.DOM.appendNewNodeFilterControls(nodeFilters, newFilterContent,
+        CATMAID.DOM.appendNewNodeFilterControls(type, nodeFilters, newFilterContent,
             function(rule, strategy) {
               filterRules.push(rule);
               CATMAID.tools.callIfFn(options.update);
@@ -640,7 +644,6 @@
               datatable.rows().invalidate();
               datatable.ajax.reload();
             });
-
 
         // Add as first element after caption and event catcher
         var eventCatcher = frame.querySelector('.eventCatcher');
@@ -664,8 +667,8 @@
         });
   };
 
-  DOM.appendNewNodeFilterControls = function(nodeFilters, target, onNewRule,
-        showMergeModeField, showSkeletonIdField, showNameField) {
+  DOM.appendNewNodeFilterControls = function(type, nodeFilters, target,
+      onNewRule, showMergeModeField, showSkeletonIdField, showNameField) {
     var $target = $(target);
     var nodeFilterSettingsContainer = document.createElement('span');
     var nodeFilterSettings = CATMAID.DOM.createLabeledControl("",
@@ -715,7 +718,15 @@
       }
 
       // Add filter specific settings
-      var createSettings = CATMAID.NodeFilterSettingFactories[strategy];
+      var SpecificFactories;
+      if (type === "node") {
+        SpecificFactories = CATMAID.NodeFilterSettingFactories;
+      } else if (type === "skeleton") {
+        SpecificFactories = CATMAID.SkeletonFilterSettingFactories;
+      } else {
+        throw new CATMAID.ValueError("Unknown filter type: " + type);
+      }
+      var createSettings = SpecificFactories[strategy];
       if (!createSettings) {
         throw new CATMAID.ValueError("Couldn't find settings method " +
             "for node filter \"" + strategy + "\"");
@@ -732,7 +743,8 @@
     var addRuleButton = document.createElement('button');
     addRuleButton.appendChild(document.createTextNode("Add new filter rule"));
     addRuleButton.onclick = function() {
-      var strategy = CATMAID.NodeFilterStrategy[newRuleStrategy];
+      var typeSpecificFactories = CATMAID.FilterStrategies.get(type);
+      var strategy = typeSpecificFactories[newRuleStrategy];
       var rule = new CATMAID.SkeletonFilterRule( strategy,
           newRuleOptions, newRuleMergeMode, newRuleSkeletonID, newRuleSkeletonName);
 

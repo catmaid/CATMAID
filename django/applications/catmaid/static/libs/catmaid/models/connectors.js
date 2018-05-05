@@ -9,12 +9,18 @@
   /**
    * Information on a single connector node.
    */
-  var ConnectorModel = function(id, x, y, z, links) {
+  var ConnectorModel = function(id, x, y, z, links, confidence, creatorId,
+      editionTime, subtype) {
     this.id = id;
     this.x = x;
     this.y = y;
     this.z = z;
     this.links = links;
+    this.subtype = subtype;
+    this.confidence = confidence;
+    this.creatorId = creatorId;
+    this.editionTime = editionTime;
+    this.subtype = subtype;
   };
 
   CATMAID.ConnectorModel = ConnectorModel;
@@ -37,10 +43,11 @@
      * @param {integer[][]} links  (Optional) A list of two-elment list, each
      *                             representing treenode ID and a relation ID
      *                             based on which new links will be created
+     * @param {string} subtype     (Optional) A subtype specification
      *
      * @returns a promise that is resolved once the connector is created
      */
-    create: function(state, projectId, x, y, z, confidence, links) {
+    create: function(state, projectId, x, y, z, confidence, links, subtype) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to create connectors');
       var url = projectId + '/connector/create';
@@ -62,8 +69,11 @@
 
       return CATMAID.fetch(url, 'POST', params)
         .then(function(result) {
+          var newConnector = new CATMAID.ConnectorModel(result.connector_id,
+              x, y, z, links, confidence, CATMAID.session.userid,
+              result.connector_edition_time, subtype);
           CATMAID.Connectors.trigger(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
-              result.connector_id, x, y, z);
+              newConnector);
           return {
             newConnectorId: result.connector_id,
             newConnectorEditTime: result.connector_edition_time,
@@ -381,10 +391,11 @@
    * @param {integer} y          The Y coordinate of the connector's location
    * @param {integer} z          The Z coordinate of the connector's location
    * @param {integer} confidence (Optional) confidence in range 1-5
+   * @param {integer} subtype    (Optional) A connector subtype
    *
    */
   CATMAID.CreateConnectorCommand = CATMAID.makeCommand(
-      function(projectId, x, y, z, confidence) {
+      function(projectId, x, y, z, confidence, subtype) {
 
     // First execution will set the original connector node that all mappings
     // will refer to.
@@ -393,7 +404,8 @@
     var exec = function(done, command, map) {
       // For a regular connector creation, no state is required
       var execState = null;
-      var create = CATMAID.Connectors.create(execState, projectId, x, y, z, confidence);
+      var create = CATMAID.Connectors.create(execState, projectId, x, y, z,
+          confidence, undefined, subtype);
       return create.then(function(result) {
         // First execution will remember the added node for redo mapping
         if (!umConnectorId) {

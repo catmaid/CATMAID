@@ -886,7 +886,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_UPDATED,
       this.handleNodeChange, this);
   CATMAID.Connectors.on(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
-      this.handleNewNode, this);
+      this.handleNewConnectorNode, this);
   CATMAID.Connectors.on(CATMAID.Connectors.EVENT_CONNECTOR_REMOVED,
       this.handleRemovedConnector, this);
   CATMAID.Connectors.on(CATMAID.Connectors.EVENT_LINK_CREATED,
@@ -1383,7 +1383,7 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
   CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_UPDATED,
       this.handleNodeChange, this);
   CATMAID.Connectors.off(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
-      this.handleNewNode, this);
+      this.handleNewConnectorNode, this);
   CATMAID.Connectors.off(CATMAID.Connectors.EVENT_CONNECTOR_REMOVED,
       this.handleRemovedConnector, this);
   CATMAID.Connectors.off(CATMAID.Connectors.EVENT_LINK_CREATED,
@@ -2123,30 +2123,20 @@ SkeletonAnnotations.TracingOverlay.prototype.createLink = function (fromid, toid
  * newly created connector.
  */
 SkeletonAnnotations.TracingOverlay.prototype.createSingleConnector = function (
-    phys_x, phys_y, phys_z, confval, subtype, completionCallback)
+    phys_x, phys_y, phys_z, confval, subtype)
 {
   var self = this;
   // Create connector
   var createConnector = CATMAID.commands.execute(
       new CATMAID.CreateConnectorCommand(project.id,
-        phys_x, phys_y, phys_z, confval));
+        phys_x, phys_y, phys_z, confval, subtype));
   return createConnector.then(function(result) {
-    // add treenode to the display and update it
-    var nn = self.graphics.newConnectorNode(result.newConnectorId,
-        phys_x, phys_y, phys_z,
-        0, 5 /* confidence */, subtype, 0, CATMAID.session.userid);
-    nn.edition_time_iso_str = result.newConnectorEditTime;
-    self.nodes[result.newConnectorId] = nn;
-    nn.createGraphics();
-    // Activate layer and emit new node event after we added to our local node
-    // set to not trigger a node update.
-    CATMAID.Connectors.trigger(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
-        result.newConnectorId, phys_x, phys_y, phys_z);
-
-    self.activateNode(nn);
-    if (typeof completionCallback !== "undefined") {
-      completionCallback(result.newConnectorId);
+    var newConnectorNode = self.nodes[result.newConnectorId];
+    if (!newConnectorNode) {
+      CATMAID.warn("Could not find new connector node in stack viewer");
+      return;
     }
+    self.activateNode(newConnectorNode);
 
     return result.newConnectorId;
   });
@@ -5211,6 +5201,38 @@ SkeletonAnnotations.TracingOverlay.prototype.handleNewNode = function(node) {
       }
     }
   }
+};
+
+/**
+ * Handle the creation of new connector nodes. Update our view by manually
+ * adding the node to our node store if it is unkown.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.handleNewConnectorNode = function(node) {
+  // If we know the new node already, do nothing. We assume it has been taken
+  // care of somewhere else.
+  if (!node || this.nodes[node.id]) return;
+
+  // Otherwise, trigger an update if the new node is in the current view. This
+  // doesn't catch cases where only the edge between the new node and another
+  // node crosses the view. If these cases are important, the allow_lazy_updates
+  // setting has to be set to false.
+  if (SkeletonAnnotations.TracingOverlay.Settings.session.allow_lazy_updates) {
+    if (!this.isInView(node.x, node.y, node.z)) {
+      return;
+    }
+  }
+
+  // add treenode to the display and update it
+  var stackZ = this.stackViewer.primaryStack.projectToUnclampedStackZ(
+      node.z, node.y, node.x);
+  var zDiff = stackZ - this.stackViewer.z;
+  var nn = this.graphics.newConnectorNode(node.id, node.x, node.y, node.z,
+      zDiff, node.confidence, node.subtype, 0, node.creatorId);
+  nn.edition_time_iso_str = node.editionTime;
+  this.nodes[node.id] = nn;
+  nn.createGraphics();
+
+  // TODO: add links
 };
 
 SkeletonAnnotations.TracingOverlay.prototype.isInView = function(px, py, pz) {

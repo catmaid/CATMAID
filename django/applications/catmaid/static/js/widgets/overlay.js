@@ -2280,9 +2280,8 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
  * i.e. not virtual. If a child ID is passed in, a new node is created between
  * this child and the parent node.
  */
-SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, childId,
-   phys_x, phys_y, phys_z, radius, confidence, afterCreate)
-{
+SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID,
+    childId, phys_x, phys_y, phys_z, radius, confidence, afterCreate) {
   if (!parentID) { parentID = -1; }
 
   // Check if we want the newly create node to be a model of an existing empty neuron
@@ -2299,46 +2298,12 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
       phys_z, parentID, radius, confidence, useneuron, neuronname);
   return CATMAID.commands.execute(command)
     .then(function(result) {
-      // add treenode to the display and update it
-      var nid = parseInt(result.treenode_id);
-      var skid = parseInt(result.skeleton_id);
-
-      // The parent will be null if there isn't one or if the parent Node
-      // object is not within the set of retrieved nodes, but the parentID
-      // will be defined.
-      var nn = self.graphics.newNode(nid, self.nodes[parentID], parentID,
-          radius, phys_x, phys_y, phys_z, 0, 5 /* confidence */, skid, 0,
-          CATMAID.session.userid);
-      nn.edition_time_iso_str = result.edition_time;
-
-      self.nodes[nid] = nn;
-      nn.createGraphics();
-
-      // Reset layer activation and emit new node event after we added to our
-      // local node set to not trigger a node update.
-      var newNode = new CATMAID.Treenode(nid, phys_x, phys_y, phys_z, parentID,
-          childId ? [childId] : undefined, result.skeleton_id, result.edition_time);
-      CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_CREATED, newNode);
-      // Append to parent and recolor
-      if (parentID) {
-        var parentNode = self.nodes[parentID];
-        if (parentNode) {
-          parentNode.addChildNode(nn);
-          parentNode.updateColors();
-        }
-      }
-
-      if (childId) {
-        var childNode = self.nodes[childId];
-        if (childNode) {
-          childNode.parent = nn;
-          childNode.drawLineToParent();
-          nn.addChildNode(childNode);
-          nn.updateColors();
-        }
-      }
-
       // Set atn to be the newly created node
+      var nn = self.nodes[result.treenode_id];
+      if (!nn) {
+        CATMAID.warn("Could not find new node");
+        return;
+      }
       self.activateNode(nn);
 
       // Invoke callback if necessary
@@ -5187,7 +5152,8 @@ SkeletonAnnotations.TracingOverlay.prototype.importActiveNode = function(node) {
 };
 
 /**
- * Handle the creation of new nodes. Update our view
+ * Handle the creation of new nodes. Update our view by manually adding the node
+ * to our node store if it is unkown.
  */
 SkeletonAnnotations.TracingOverlay.prototype.handleNewNode = function(node) {
   // If we know the new node already, do nothing. We assume it has been taken
@@ -5204,7 +5170,47 @@ SkeletonAnnotations.TracingOverlay.prototype.handleNewNode = function(node) {
     }
   }
 
-  this.updateNodes();
+  // Otherwise, add the new node to the local node store and display. This is
+  // done explicitely to avoid a full node update.
+  var nid = parseInt(node.id);
+  var skid = parseInt(node.skeletonId);
+
+  // The parent will be null if there isn't one or if the parent Node
+  // object is not within the set of retrieved nodes, but the parentID
+  // will be defined. An edition time of 0 is used initially, because it will be
+  // set to the expected format in a separate call.
+  var stackZ = this.stackViewer.primaryStack.projectToUnclampedStackZ(
+      node.z, node.y, node.x);
+  var zDiff = stackZ - this.stackViewer.z;
+  var nn = this.graphics.newNode(node.id, this.nodes[node.parentId], node.parentId,
+      node.radius, node.x, node.y, node.z, zDiff, node.confidence, node.skeletonId, 0,
+      node.creatorId);
+  nn.edition_time_iso_str = node.editionTime;
+
+  this.nodes[node.id] = nn;
+  nn.createGraphics();
+
+  // Append to parent and recolor
+  if (node.parentId) {
+    var parentNode = this.nodes[node.parentId];
+    if (parentNode) {
+      parentNode.addChildNode(nn);
+      parentNode.updateColors();
+    }
+  }
+
+  if (node.childIds && node.childIds.length > 0) {
+    for (var i=0; i<node.childIds.length; ++i) {
+      var childId = node.childIds[i];
+      var childNode = this.nodes[childId];
+      if (childNode) {
+        childNode.parent = nn;
+        childNode.drawLineToParent();
+        nn.addChildNode(childNode);
+        nn.updateColors();
+      }
+    }
+  }
 };
 
 SkeletonAnnotations.TracingOverlay.prototype.isInView = function(px, py, pz) {

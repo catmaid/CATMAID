@@ -5,14 +5,18 @@
 
   "use strict";
 
-  var Treenode = function(id, x, y, z, parentId, childIds, skeletonId, editionTime) {
+  var Treenode = function(id, x, y, z, parentId, childIds, skeletonId, radius,
+      confidence, creatorId, editionTime) {
     this.id = id;
     this.x = x;
     this.y = y;
     this.z = z;
+    this.radius = radius;
+    this.confidence = confidence;
     this.parentId = parentId;
     this.childIds = childIds;
     this.skeletonId = skeletonId;
+    this.creatorId = creatorId;
     this.editionTime = editionTime;
   };
 
@@ -179,8 +183,8 @@
       return CATMAID.fetch(url, 'POST', params)
         .then(function(result) {
           var newNode = new CATMAID.Treenode(result.treenode_id, x, y, z,
-              result.parentId, undefined, result.skeleton_id,
-              result.edition_time);
+              parentId, undefined, result.skeleton_id, radius,
+              confidence, CATMAID.session.userid, result.edition_time);
           CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_CREATED, newNode);
           CATMAID.Skeletons.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
               result.skeleton_id, [[result.treenode_id, x, y, z]]);
@@ -253,7 +257,7 @@
         .then(function(result) {
           var newNode = new CATMAID.Treenode(resul.treenode_id, x, y, z,
               parentId, childId ? [childId] : undefined, result.skeleton_id,
-              result.edition_time);
+              radius, confidence, CATMAID.session.userid, result.edition_time);
           CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_CREATED, newNode);
           CATMAID.Skeletons.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
               result.skeleton_id, [[result.treenode_id, x, y, z]]);

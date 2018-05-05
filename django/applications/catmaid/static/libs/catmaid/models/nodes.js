@@ -5,6 +5,19 @@
 
   "use strict";
 
+  var Treenode = function(id, x, y, z, parentId, childIds, skeletonId, editionTime) {
+    this.id = id;
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    this.parentId = parentId;
+    this.childIds = childIds;
+    this.skeletonId = skeletonId;
+    this.editionTime = editionTime;
+  };
+
+  CATMAID.Treenode = Treenode;
+
   /**
    * This namespace provides functions to work with annotations on neurons. All
    * of them return promises.
@@ -165,8 +178,10 @@
 
       return CATMAID.fetch(url, 'POST', params)
         .then(function(result) {
-          CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_CREATED,
-              result.treenode_id, x, y, z);
+          var newNode = new CATMAID.Treenode(result.treenode_id, x, y, z,
+              result.parentId, undefined, result.skeleton_id,
+              result.edition_time);
+          CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_CREATED, newNode);
           CATMAID.Skeletons.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
               result.skeleton_id, [[result.treenode_id, x, y, z]]);
           return result;
@@ -236,8 +251,10 @@
 
       return CATMAID.fetch(url, 'POST', params)
         .then(function(result) {
-          CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_CREATED,
-              result.treenode_id, x, y, z);
+          var newNode = new CATMAID.Treenode(resul.treenode_id, x, y, z,
+              parentId, childId ? [childId] : undefined, result.skeleton_id,
+              result.edition_time);
+          CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_CREATED, newNode);
           CATMAID.Skeletons.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
               result.skeleton_id, [[result.treenode_id, x, y, z]]);
           return result;

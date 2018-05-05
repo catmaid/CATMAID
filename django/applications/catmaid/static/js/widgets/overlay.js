@@ -595,7 +595,7 @@ SkeletonAnnotations.getZOfVirtualNode = SkeletonAnnotations.getVirtualNodeCompon
    * The actual handler checking for volume intersections between a node and a
    * volume. If it exists, a warning is shown.
    */
-  var newNodeVolumeWarningHandler = function(nodeID, px, py, pz) {
+  var newNodeVolumeWarningHandler = function(node) {
     if (!newNodeWarningVolumeID) {
       return;
     }
@@ -603,10 +603,10 @@ SkeletonAnnotations.getZOfVirtualNode = SkeletonAnnotations.getVirtualNodeCompon
     // Test for intersection with the volume
     requestQueue.register(CATMAID.makeURL(project.id + "/volumes/" +
           newNodeWarningVolumeID + "/intersect"), "GET", {
-            x: px, y: py, z: pz
+            x: node.x, y: node.y, z: node.z
           }, CATMAID.jsonResponseHandler(function(json) {
             if (!json.intersects) {
-              CATMAID.warn("Node #" + nodeID +
+              CATMAID.warn("Node #" + node.id +
                   " was created outside of volume " + newNodeWarningVolumeID);
             }
           }));
@@ -2316,8 +2316,9 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
 
       // Reset layer activation and emit new node event after we added to our
       // local node set to not trigger a node update.
-      CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_CREATED,
-          nid, phys_x, phys_y, phys_z);
+      var newNode = new CATMAID.Treenode(nid, phys_x, phys_y, phys_z, parentID,
+          childId ? [childId] : undefined, result.skeleton_id, result.edition_time);
+      CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_CREATED, newNode);
       // Append to parent and recolor
       if (parentID) {
         var parentNode = self.nodes[parentID];
@@ -5188,17 +5189,17 @@ SkeletonAnnotations.TracingOverlay.prototype.importActiveNode = function(node) {
 /**
  * Handle the creation of new nodes. Update our view
  */
-SkeletonAnnotations.TracingOverlay.prototype.handleNewNode = function(nodeID, px, py, pz) {
+SkeletonAnnotations.TracingOverlay.prototype.handleNewNode = function(node) {
   // If we know the new node already, do nothing. We assume it has been taken
   // care of somewhere else.
-  if (this.nodes[nodeID]) return;
+  if (!node || this.nodes[node.id]) return;
 
   // Otherwise, trigger an update if the new node is in the current view. This
   // doesn't catch cases where only the edge between the new node and another
   // node crosses the view. If these cases are important, the allow_lazy_updates
   // setting has to be set to false.
   if (SkeletonAnnotations.TracingOverlay.Settings.session.allow_lazy_updates) {
-    if (!this.isInView(px, py, pz)) {
+    if (!this.isInView(node.x, node.y, node.z)) {
       return;
     }
   }

@@ -78,23 +78,44 @@
   /**
    * Helper function to create a checkbox with label.
    */
-  DOM.createCheckboxSetting = function(name, checked, helptext, handler)
+  DOM.createCheckboxSetting = function(name, checked, helptext, handler, subElement)
   {
     var cb = $('<input/>').attr('type', 'checkbox');
     if (checked) {
       cb.prop('checked', checked);
     }
+
+    if (subElement) {
+      var checkBoxName = $('<span />').append(cb).append(name);
+      var disableHandler = function(event) {
+        subElement.disabled = !this.checked;
+        if (CATMAID.tools.isFn(handler)) {
+          handler.call(this, event);
+        }
+      };
+      cb.change(disableHandler);
+      if (!checked) {
+        $(subElement).prop('disabled', true);
+      }
+      return CATMAID.DOM.createLabeledControl(checkBoxName, subElement, helptext);
+    }
+
     if (handler) {
       cb.change(handler);
     }
+
+    // If no sub-element should be added, display name in one wide row.
     var label = $('<div/>')
-      .addClass('setting checkbox-row')
-      .append($('<label/>').append(cb).append(name));
+        .addClass('setting checkbox-row')
+        .append($('<label/>').append(cb).append(name));
 
     if (helptext) {
       label.append(CATMAID.DOM.createHelpText(helptext));
     }
 
+    if (subElement) {
+
+    }
     return label;
   };
 

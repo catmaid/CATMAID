@@ -538,7 +538,11 @@ def cable_length(request, project_id=None, skeleton_id=None, treenode_id=None):
     """
     p = get_object_or_404(Project, pk=project_id)
     if not skeleton_id:
-        skeleton_id = Treenode.objects.get(pk=treenode_id).skeleton_id
+        if treenode_id:
+            skeleton_id = Treenode.objects.get(pk=treenode_id).skeleton_id
+        else:
+            raise ValueError("Need skeleton ID or treenode ID")
+
     skeleton_id = int(skeleton_id)
 
     return JsonResponse({

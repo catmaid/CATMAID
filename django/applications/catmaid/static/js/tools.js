@@ -740,4 +740,11 @@ CATMAID.tools = CATMAID.tools || {};
     });
   };
 
+  /**
+   * Quote the passed in string;
+   */
+  tools.quote = function(text) {
+    return '"' + text + '"';
+  };
+
 })(CATMAID.tools);

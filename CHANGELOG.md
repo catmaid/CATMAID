@@ -50,6 +50,7 @@ Miscellaneous:
 
 ### Bug fixes
 
+- Measurements table: column headers in CSV export are now quoted.
 
 
 ## 2018.04.15

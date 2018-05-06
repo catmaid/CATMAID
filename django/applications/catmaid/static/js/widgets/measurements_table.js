@@ -315,7 +315,8 @@
   SkeletonMeasurementsTable.prototype.exportCSV = function() {
     if (!this.table) return;
     var skeletonRows = this.table.rows({search: 'applied'}).data();
-    var csv = this.labels.join(',') + '\n' + skeletonRows.map(function(row) {
+    var header = this.labels.map(CATMAID.tools.quote).join(',');
+    var csv = header + '\n' + skeletonRows.map(function(row) {
       return '"' + $(row[0]).text() + '",' + row.slice(1).join(',');
     }).join('\n');
     var blob = new Blob([csv], {type: 'text/plain'});

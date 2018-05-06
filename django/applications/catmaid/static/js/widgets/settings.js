@@ -1706,10 +1706,11 @@
                 SkeletonAnnotations.Settings.session.fast_merge_mode);
           }));
 
-      // Volume warning
+      // Warning
       var dsTracingWarnings = CATMAID.DOM.addSettingsContainer(ds,
           "Warnings", true);
 
+      // Volume warning
       let initVolumeList = function() {
         return CATMAID.Volumes.listAll(project.id)
           .then(function(json) {
@@ -1745,6 +1746,35 @@
         "New nodes not in volume", initVolumeList(),
         "A warning will be shown when new nodes are created outside of the selected volume");
       dsTracingWarnings.append(volumeSelectionSetting);
+
+
+      // Skeleton length warning
+      var skeletonLengthWarning = SkeletonAnnotations.getSkeletonLengthWarning();
+      var skeletonLengthWarningInput = document.createElement('input');
+      skeletonLengthWarningInput.classList.add('ui-corner-all');
+      skeletonLengthWarningInput.value = skeletonLengthWarning ? skeletonLengthWarning : '';
+      skeletonLengthWarningInput.addEventListener('change', function(event) {
+        var limit = parseInt(this.value, 10);
+        if (Number.isNaN(limit)) {
+          CATMAID.warn("No valid number");
+          return;
+        }
+        skeletonLengthWarning = limit;
+        SkeletonAnnotations.setNewSkeletonLengthWarning(limit);
+      });
+      var skeletonLengthWarning = CATMAID.DOM.createCheckboxSetting('Skeleton length limit',
+          !!skeletonLengthWarning, 'In nanometers. If a skeleton length warning larger ' +
+          'than zero is set, a warning will be shown after skeleton modifications, if ' +
+          'the skeleton length exceeds it.',
+          function(event) {
+            if (this.checked) {
+              SkeletonAnnotations.setNewSkeletonLengthWarning(skeletonLengthWarning);
+            } else {
+              SkeletonAnnotations.setNewSkeletonLengthWarning(null);
+            }
+          },
+          skeletonLengthWarningInput);
+      dsTracingWarnings.append(skeletonLengthWarning);
     };
 
     var addSettingsFilter = function(container, searchContainer) {

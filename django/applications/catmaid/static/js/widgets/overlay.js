@@ -643,6 +643,49 @@ SkeletonAnnotations.getZOfVirtualNode = SkeletonAnnotations.getVirtualNodeCompon
     return newNodeWarningVolumeID;
   };
 
+
+  // The cable length threshold for an active length warning.
+  var skeletonCableLengthLimit = null;
+
+  /*
+   * A 'new node created' event handler that checks the length of a skeleton and
+   * shows a warning if a threshold is reached.
+   */
+  var skeletonLengthWarningHandler = function(skeletonId) {
+    CATMAID.fetch(project.id + '/skeletons/' + skeletonId + '/cable-length')
+      .then(function(result) {
+        if (result.cable_length > skeletonCableLengthLimit) {
+          CATMAID.warn("With " + result.cable_length +
+            "nm, the new cable length of skelton " + result.skeleton_id +
+            ' is larger than the limit of ' + skeletonCableLengthLimit + 'nm.');
+        }
+      })
+      .catch(CATMAID.handleError);
+  };
+
+  /**
+   * Set length threshold for a new skeleton length warnings. If length is
+   * falsy, the warning is disabled.
+   */
+  SkeletonAnnotations.setNewSkeletonLengthWarning = function(lengthLimit) {
+    // Disable existing event oversavation, if any.
+    CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
+        skeletonLengthWarningHandler);
+
+    if (lengthLimit) {
+      // Add new listener
+      skeletonCableLengthLimit = lengthLimit;
+      CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
+          skeletonLengthWarningHandler);
+    } else {
+      skeletonCableLengthLimit = null;
+    }
+  };
+
+  SkeletonAnnotations.getSkeletonLengthWarning = function() {
+    return skeletonCableLengthLimit;
+  };
+
 })();
 
 

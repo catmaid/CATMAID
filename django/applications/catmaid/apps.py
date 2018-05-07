@@ -18,6 +18,9 @@ from django.contrib import auth
 from django.contrib.auth.management.commands import createsuperuser
 
 
+logger = logging.getLogger(__name__)
+
+
 def get_system_user(user_model=None):
     """Return a User instance of a superuser. This is either the superuser
     having the ID configured in SYSTEM_USER_ID or the superuser with the lowest
@@ -243,7 +246,7 @@ class CATMAIDConfig(AppConfig):
         try:
             Project.objects.get(pk=settings.ONTOLOGY_DUMMY_PROJECT_ID)
         except Project.DoesNotExist:
-            logging.getLogger(__name__).info("Creating ontology dummy project")
+            logger.info("Creating ontology dummy project")
             Project.objects.create(pk=settings.ONTOLOGY_DUMMY_PROJECT_ID,
                 title="Classification dummy project")
 

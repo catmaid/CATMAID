@@ -51,7 +51,7 @@ class Exporter():
         if self.target_file:
             self.target_file = self.target_file.format(project.id)
         else:
-            now = datetime.now().strftime('%Y-%m-%d-%H:%M')
+            now = datetime.now().strftime('%Y-%m-%d-%H-%M')
             self.target_file = 'catmaid-export-pid-{}-{}.json'.format(project.id, now)
 
         self.show_traceback = True

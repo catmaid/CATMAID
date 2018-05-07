@@ -203,7 +203,7 @@ class FileImporter:
 
     def override_fields(self, obj):
         # Override project to match target project
-        if hasattr(obj, 'project'):
+        if hasattr(obj, 'project_id'):
             obj.project = self.target
 
         # Override all user references with pre-defined user

@@ -238,6 +238,12 @@ class CATMAIDConfig(AppConfig):
             # This error is raised if the database is not set up when the code
             # above is executed. This can safely be ignored.
             pass
+        except ImproperlyConfigured as e:
+            # Only show this as a warning. To allow this to go through and stop
+            # the initialization requires functionality to till allow the
+            # createsuperuser management command. The superuser in CATMAID is
+            # not needed during initialization.
+            logger.warn(str(e))
 
     def init_classification(self):
         """ Creates a dummy project to store classification graphs in.

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from datetime import datetime
 from itertools import chain
 from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
@@ -46,7 +47,12 @@ class Exporter():
         self.export_tags = options['export_tags']
         self.export_users = options['export_users']
         self.required_annotations = options['required_annotations']
-        self.target_file = options.get('file', 'export_pid_{}.json').format(project.id)
+        self.target_file = options.get('file', None)
+        if self.target_file:
+            self.target_file = self.target_file.format(project.id)
+        else:
+            now = datetime.now().strftime('%Y-%m-%d-%H:%M')
+            self.target_file = 'catmaid-export-pid-{}-{}.json'.format(project.id, now)
 
         self.show_traceback = True
         self.format = 'json'

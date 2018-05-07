@@ -52,6 +52,8 @@ Miscellaneous:
 
 - Measurements table: column headers in CSV export are now quoted.
 
+- Export management command: the default output filename can be used again.
+
 
 ## 2018.04.15
 

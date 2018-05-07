@@ -439,7 +439,7 @@ class Command(BaseCommand):
         parser.add_argument('--map-users', dest='map_users', default=True,
                 type=lambda x: (str(x).lower() == 'true'), nargs='?',
                 help='Use existing user if username matches')
-        parser.add_argument('--create-unknown-users', dest='create_unknown_users', default=False,
+        parser.add_argument('--create-unknown-users', dest='create_unknown_users', default=True,
             action='store_true', help='Create new inactive users for unmapped or unknown users referenced in inport data.')
         parser.add_argument('--preserve-ids', dest='preserve_ids', default=False,
                 action='store_true', help='Use IDs provided in import data. Warning: this can cause changes in existing data.')

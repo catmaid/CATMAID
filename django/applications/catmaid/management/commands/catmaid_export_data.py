@@ -259,22 +259,32 @@ class Exporter():
 
             # TODO: Export reviews
 
-        # Export users
+        # Export users, either completely or in a reduced form
+        seen_user_ids = set()
+        # Find users involved in exported data
+        for group in self.to_serialize:
+            for o in group:
+                if hasattr(o, 'user_id'):
+                    seen_user_ids.add(o.user_id)
+                if hasattr(o, 'reviewer_id'):
+                    seen_user_ids.add(o.reviewer_id)
+                if hasattr(o, 'editor_id'):
+                    seen_user_ids.add(o.editor_id)
+        users = User.objects.filter(pk__in=seen_user_ids)
         if self.export_users:
-            seen_user_ids = set()
-            # Find users involved in exported data
-            for group in self.to_serialize:
-                for o in group:
-                    if hasattr(o, 'user_id'):
-                        seen_user_ids.add(o.user_id)
-                    if hasattr(o, 'reviewer_id'):
-                        seen_user_ids.add(o.reviewer_id)
-                    if hasattr(o, 'editor_id'):
-                        seen_user_ids.add(o.editor_id)
-            users = User.objects.filter(pk__in=seen_user_ids)
             logger.info("Exporting {} users: {}".format(len(users),
                     ", ".join([u.username for u in users])))
             self.to_serialize.append(users)
+        else:
+            # Export in reduced form
+            reduced_users = []
+            for u in users:
+                reduced_user = User(id=u.id, username=u.username,
+                        password=User.objects.make_random_password())
+                reduced_users.append(reduced_user)
+            logger.info("Exporting {} users in reduced form with random passwords: {}".format(len(reduced_users),
+                    ", ".join([u.username for u in reduced_users])))
+            self.to_serialize.append(reduced_users)
 
 
     def export(self):

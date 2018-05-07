@@ -123,6 +123,11 @@ label.checkbox-label input {
   vertical-align: middle;
 }
 
+.fa-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .cm-center {
   text-align: center;
 }
@@ -1166,6 +1171,20 @@ div#dialog-confirm ul {
 
 div#dialog-confirm select {
   width: 100%;
+}
+
+.dialog-confirm table {
+  width: 100%;
+}
+
+.dialog-confirm table i {
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+  cursor: pointer;
+}
+
+.dialog-confirm table i.fa-disabled {
+  cursor: not-allowed;
 }
 
 table.skeleton-table {

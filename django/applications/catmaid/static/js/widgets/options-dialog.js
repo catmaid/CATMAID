@@ -12,6 +12,7 @@
   var OptionsDialog = function(title, buttons, manualDestroy) {
     this.dialog = document.createElement('div');
     this.dialog.setAttribute("id", "dialog-confirm");
+    this.dialog.setAttribute("class", "dialog-confirm");
     this.dialog.setAttribute("title", title);
     this.buttons = buttons;
     this.manualDestroy = manualDestroy;
@@ -196,6 +197,113 @@
     }
     this.dialog.appendChild(p);
     return checkbox;
+  };
+
+  /**
+   * Add a table to the options dialog that includes sorting controls for each
+   * row. This table has two columns: row order controls and title. If the row
+   * order in the displayed table changes, the original input array is updated
+   * as well.
+   *
+   * @param {object[]} items  An array of objects. Each object is expected to
+   *                          have a title field, but is free to have additional
+   *                          members.
+   * @param {string}   title  (optional) A column title for the data column. By
+   *                          default, 'Item' is used.
+   * @param {boolean}  paging (optional) Whether pagination controls should be
+   *                          shown. False by default.
+   * @returns {Element} The DOM reference to the created table.
+   */
+  OptionsDialog.prototype.appendSortableTable = function(items, title, paging) {
+    // Keep a (shallow) copy of the original sorting
+    var originalData = items.slice();
+    // Annotate each items with its orignal index
+    var augmentedRows = items.map(function(d, i) {
+      return {
+        originalIndex: i,
+        data: d
+      };
+    });
+    var table = this.dialog.appendChild(document.createElement('table'));
+    var header = table.appendChild(document.createElement('thead'));
+    var headerRow = header.appendChild(document.createElement('tr'));
+    var header1 = headerRow.appendChild(document.createElement('th'));
+    var header2 = headerRow.appendChild(document.createElement('th'));
+    header2.appendChild(document.createTextNode(title || 'Item'));
+
+    var datatable = $(table).DataTable({
+      dom: paging ? 't<ip>' : 't<i>',
+      order: [],
+      data: augmentedRows,
+      autoWidth: false,
+      paging: !!paging,
+      columns: [{
+        width: '15%',
+        class: 'cm-center',
+        orderable: false,
+        render: function(data, type, row, meta) {
+          var upClasses = meta.row === 0 ? 'fa fa-caret-up fa-disabled' : 'fa fa-caret-up';
+          var downClasses = meta.row === (items.length - 1) ? 'fa fa-caret-down fa-disabled' : 'fa fa-caret-down';
+          return '<i class="' + upClasses + '" data-action="move-up" title="Move item up in list"></i>' +
+              '<i class="' + downClasses + '" data-action="move-down" title="Move item down in list"></i>';
+        }
+      }, {
+        width: '85%',
+        data: 'data.title',
+        orderable: true,
+      }]
+    }).on('click', 'i', function() {
+      var action = this.dataset.action;
+      var tr = this.closest('tr');
+      var index = datatable.row(tr).index();
+      var currentValue = items[index];
+      if (action === 'move-up') {
+        if (index === 0) {
+          return;
+        }
+        items[index] = items[index -1];
+        items[index - 1] = currentValue;
+      } else if (action === 'move-down') {
+        if (index === items.length - 1) {
+          return;
+        }
+        items[index] = items[index + 1];
+        items[index + 1] = currentValue;
+      } else {
+        throw new CATMAID.ValueError("Unknown action: " + action);
+      }
+      // Add original index information
+      var augmentedItems = items.map(function(d, i) {
+        var originalIndex = i;
+        return {
+          originalIndex: originalData.indexOf(d),
+          data: d
+        };
+      });
+      // Repopulate table
+      datatable.clear();
+      datatable.rows.add(augmentedItems);
+      datatable.draw();
+    }).on("order.dt", function(e) {
+      // Get the current order of skeletons
+      var rows = datatable.rows({order: 'current'}).data().toArray();
+      var sortedOriginalIndexes = rows.map(function(d) {
+        return d.originalIndex;
+      });
+      // Update order in input data. This is easiest done with respect to the
+      // original sorting order.
+      items.sort(function(a, b) {
+        // Get original indices (the input data indices could have changed
+        // alrady).
+        var orignalIndexA = originalData.indexOf(a);
+        var orignalIndexB = originalData.indexOf(b);
+        var newIndexA = sortedOriginalIndexes.indexOf(orignalIndexA);
+        var newIndexB = sortedOriginalIndexes.indexOf(orignalIndexB);
+        return newIndexA - newIndexB;
+      });
+    });
+
+    return table;
   };
 
   // Make option dialog available in CATMAID namespace

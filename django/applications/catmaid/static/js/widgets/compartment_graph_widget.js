@@ -486,7 +486,7 @@
 
         $(controls).tabs();
       },
-      contentId: "graph_widget" + this.widgetID,
+      contentID: "graph_widget" + this.widgetID,
       createContent: function(content) {
         /* Create graph container and assure that it's overflow setting is set to
          * 'hidden'. This is required, because cytoscape.js' redraw can be delayed

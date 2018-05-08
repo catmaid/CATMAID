@@ -4259,14 +4259,14 @@
 
     gg.cy.nodes().each(function(i, node) {
       var position = node.position();
-      if (null == bounds.topleft) {
+      if (null === bounds.topleft) {
         bounds.topleft = {x: position.x,
                           y: position.y};
       } else {
         bounds.topleft.x = Math.min(bounds.topleft.x, position.x);
         bounds.topleft.y = Math.min(bounds.topleft.y, position.y);
       }
-      if (null == bounds.bottomright) {
+      if (null === bounds.bottomright) {
         bounds.bottomright = {x: position.x,
                               y: position.y};
       } else {

@@ -961,7 +961,7 @@
       if (showUnionColumn) {
         tableHeader.push('<th>Union</th>');
       }
-      tableHeader.push('<th># nodes</th><th></th>');
+      tableHeader.push('<th>Last node by</th><th># nodes</th><th></th>');
       elements.push('<thead><tr>' + tableHeader.join('') + '</tr></thead>');
       elements.push('<tbody style="background-color: ', zeroColor, '">');
 
@@ -996,6 +996,9 @@
           elements.push('">', segment.status, '%</td>');
         }
 
+        // Last node user
+        var lastUser = CATMAID.User.safe_get(segment.sequence[0].user_id).login;
+        elements.push('<td class="nobg" align="center">', lastUser, '</td>');
         // Number of nodes
         elements.push('<td class="nobg" align="right">', segment.nr_nodes, '</td>');
         // Review button

@@ -19,6 +19,9 @@ included in this changelog.
   optionally be used to return the skeletons in the bounding box of a specific
   volume, alternative to explicit bounding box.
 
+- `GET /{project_id}/skeletons/{skeleton_id}/review`:
+  The user ID of each node is now returned as well.
+
 ### Deprecations
 
 None.

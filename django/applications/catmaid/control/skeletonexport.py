@@ -1280,7 +1280,8 @@ def _export_review_skeleton(project_id=None, skeleton_id=None,
                 t.location_y,
                 t.location_z,
                 ARRAY_AGG(svt.orientation),
-                ARRAY_AGG(svt.location_coordinate)
+                ARRAY_AGG(svt.location_coordinate),
+                t.user_id
             FROM treenode t
             LEFT OUTER JOIN suppressed_virtual_treenode svt
               ON (t.id = svt.child_id)
@@ -1310,7 +1311,9 @@ def _export_review_skeleton(project_id=None, skeleton_id=None,
                           'y': t[3],
                           'z': t[4],
                           'rids': reviews[t[0]],
-                          'sup': [[o, l] for [o, l] in zip(t[5], t[6]) if o is not None]})
+                          'sup': [[o, l] for [o, l] in zip(t[5], t[6]) if o is not None],
+                          'user_id': t[7],
+                          })
         if reviews[t[0]]:
             reviewed.add(t[0])
         if t[1]: # if parent

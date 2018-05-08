@@ -43,6 +43,10 @@ Miscellaneous:
 - 3D viewer: if the estimated size of the tiles to load for a Z plane exceeds
   100 MB, users are asked for confirmation.
 
+- Review widget: the user who created the last node of each segment is now
+  displayed in the review table. This allows to focus review on segments not
+  created by oneself.
+
 - A skeleton cable length limit can be set so that a warning is displayed if a
   change to the skeleton morphology results in a cable length larger than the
   limit. This is available in the Warnings section of the Settings Widget.

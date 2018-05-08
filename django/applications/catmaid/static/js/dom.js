@@ -210,7 +210,16 @@
     if (!visible) {
       fb.style.display = 'none';
     }
-    fb.onchange = onchangeFn;
+    fb.onchange = function(event) {
+      try {
+        if (CATMAID.tools.isFn(onchangeFn)) {
+          onchangeFn.call(this, event);
+        }
+      } finally {
+        // Reset file button. Otherwise the same file can't be loaded again.
+        this.value = '';
+      }
+    };
     return fb;
   };
 

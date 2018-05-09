@@ -860,9 +860,9 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(url)
         self.assertEqual(response.status_code, 200)
         expected_result = [{'status': '0.00', 'id': 0, 'nr_nodes': 3, 'sequence': [
-                {'y': 6550.0, 'x': 3680.0, 'z': 0.0, 'rids': [], 'sup': [], 'id': 2396},
-                {'y': 6030.0, 'x': 3110.0, 'z': 0.0, 'rids': [], 'sup': [], 'id': 2394},
-                {'y': 6080.0, 'x': 2370.0, 'z': 0.0, 'rids': [], 'sup': [], 'id': 2392}]}]
+                {'y': 6550.0, 'x': 3680.0, 'z': 0.0, 'rids': [], 'sup': [], 'user_id': 3, 'id': 2396},
+                {'y': 6030.0, 'x': 3110.0, 'z': 0.0, 'rids': [], 'sup': [], 'user_id': 3, 'id': 2394},
+                {'y': 6080.0, 'x': 2370.0, 'z': 0.0, 'rids': [], 'sup': [], 'user_id': 3, 'id': 2392}]}]
         self.assertJSONEqual(response.content.decode('utf-8'), expected_result)
 
         # Add reviews
@@ -876,9 +876,9 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(url)
         self.assertEqual(response.status_code, 200)
         expected_result = [{'status': '66.67', 'id': 0, 'nr_nodes': 3, 'sequence': [
-                {'y': 6550.0, 'x': 3680.0, 'z': 0.0, 'rids': [[3, review_time], [2, review_time]], 'sup': [], 'id': 2396},
-                {'y': 6030.0, 'x': 3110.0, 'z': 0.0, 'rids': [[3, review_time]], 'sup': [], 'id': 2394},
-                {'y': 6080.0, 'x': 2370.0, 'z': 0.0, 'rids': [], 'sup': [], 'id': 2392}]}]
+                {'y': 6550.0, 'x': 3680.0, 'z': 0.0, 'rids': [[3, review_time], [2, review_time]], 'sup': [], 'user_id': 3, 'id': 2396},
+                {'y': 6030.0, 'x': 3110.0, 'z': 0.0, 'rids': [[3, review_time]], 'sup': [], 'user_id': 3, 'id': 2394},
+                {'y': 6080.0, 'x': 2370.0, 'z': 0.0, 'rids': [], 'sup': [], 'user_id': 3, 'id': 2392}]}]
         self.assertJSONEqual(response.content.decode('utf-8'), expected_result)
 
         # Newer reviews of same nodes should duplicate reviewer ID

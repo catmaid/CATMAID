@@ -3569,7 +3569,7 @@
           var skids = {};
           var asModel = function(ob) {
             skids[ob.id] = true;
-            var color = new THREE.Color(ob.color.r, ob.color.g, ob.color.b);
+            var color = CATMAID.tools.getColor(ob.color);
             return $.extend(new CATMAID.SkeletonModel(ob.id, ob.baseName, color), ob, {color: color});
           };
           // Replace JSON of models with proper SkeletonModel instances
@@ -3580,7 +3580,7 @@
           // and group models with proper SkeletonModel instances
           Object.keys(json.groups).forEach(function(gid) {
             var g = json.groups[gid];
-            g.color = new THREE.Color(g.color.r, g.color.g, g.color.b);
+            g.color = CATMAID.tools.getColor(g.color);
             Object.keys(g.models).forEach(function(skid) {
               g.models[skid] = asModel(g.models[skid]);
             });

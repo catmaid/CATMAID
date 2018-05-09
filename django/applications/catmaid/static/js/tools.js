@@ -740,4 +740,25 @@ CATMAID.tools = CATMAID.tools || {};
     });
   };
 
+  /**
+   * Return a THREE.js Color object for the passed in value. Numbers are
+   * interpred as a hex representation, objects are expected to have the fields
+   * r, g, and b. Everything else is just passed to the THREE.Color()
+   * constructor.
+   */
+  tools.getColor = function(value) {
+    var type = typeof(value);
+    if (type === "object") {
+      return new THREE.Color(value.r, value.g, value.b);
+    } else if (type === "number") {
+      // This is done not through the constructor, because a passed in number
+      // isn't treated as hex value.
+      var color = new THREE.Color();
+      color.setHex(value);
+      return color;
+
+    }
+    return new THREE.Color(value);
+  };
+
 })(CATMAID.tools);

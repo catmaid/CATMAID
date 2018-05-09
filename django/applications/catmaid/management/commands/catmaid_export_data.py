@@ -128,16 +128,14 @@ class Exporter():
         self.to_serialize.append(skeleton_links)
         self.to_serialize.append(skeletons)
 
+        treenodes = None
         if skeleton_id_constraints:
-            # Export treenodes
+            # Export treenodes along with their skeletons and neurons
             if self.export_treenodes:
                 treenodes = Treenode.objects.filter(
                         project=self.project,
                         skeleton_id__in=skeleton_id_constraints)
                 self.to_serialize.append(treenodes)
-
-                exported_tids = set(treenodes.values_list('id', flat=True))
-                logger.info("Exporting %s treenodes" % len(exported_tids))
 
             # Export connectors and connector links
             if self.export_connectors:
@@ -236,8 +234,8 @@ class Exporter():
                 if skeleton_id_constraints:
                     pass
                 else:
-                    self.to_serialize.append(Treenode.objects.filter(
-                            project=self.project))
+                    treenodes = Treenode.objects.filter(project=self.project)
+                    self.to_serialize.append(treenodes)
 
             # Export connectors and connector links
             if self.export_connectors:
@@ -258,6 +256,29 @@ class Exporter():
                 self.to_serialize.append(tag_links)
 
             # TODO: Export reviews
+
+
+        # Export referenced neurons and skeletons
+        if treenodes:
+            treenode_skeleton_ids = set(t.skeleton_id for t in treenodes)
+            skeletons = ClassInstance.objects.filter(
+                    project=self.project,
+                    id__in=treenode_skeleton_ids)
+            self.to_serialize.append(skeletons)
+
+            neuron_links = ClassInstanceClassInstance.objects \
+                    .select_related('class_instance_b').filter(
+                            project=self.project,
+                            class_instance_a__in=treenode_skeleton_ids,
+                            relation=relations.get('model_of'))
+            self.to_serialize.append(neuron_links)
+
+            neurons = [l.class_instance_b for l in neuron_links]
+            self.to_serialize.append(neurons)
+
+            exported_tids = set(treenodes.values_list('id', flat=True))
+            logger.info("Exporting {} treenodes in {} skeletons and {} neurons".format(
+                    len(exported_tids), len(skeletons), len(neurons)))
 
         # Export users, either completely or in a reduced form
         seen_user_ids = set()

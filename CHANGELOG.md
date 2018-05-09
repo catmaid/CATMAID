@@ -58,6 +58,8 @@ Miscellaneous:
 
 - Export management command: the default output filename can be used again.
 
+- Export management command: class instances and links of skeletons and neuronsa
+  are now exported alongside treenodes.
 
 ## 2018.04.15
 

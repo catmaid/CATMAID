@@ -20,6 +20,7 @@ from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.translation import ugettext_lazy as _
 
 from guardian.shortcuts import get_objects_for_user
 from taggit.managers import TaggableManager
@@ -1284,6 +1285,72 @@ def add_user_to_default_groups(sender, instance, created, **kwargs):
 
 # Connect the User model's post save signal to default group assignment
 post_save.connect(add_user_to_default_groups, sender=User)
+
+
+class UserOptionProxy():
+
+    def __init__(self, options):
+        self.options = options
+
+    def __getattr__(self, attr):
+        return getattr(self.options, attr)
+
+    def __str__(self):
+        return "auth.user"
+
+
+class ReducedInfoUser(models.Model):
+    """
+    This abstract model is only used during export of users with minimal
+    information. It doesn't seem to be possible to use Django's serializer with
+    subsets of fields if not all fields are of the same type. This behavior is
+    however needed during export, and the only way so to do this it seems, is
+    using a custom proxxy model.
+    """
+
+    id = models.IntegerField(_('id'), primary_key=True)
+    username = models.CharField(_('username'), max_length=150)
+    password = models.CharField(_('password'), max_length=150)
+
+    def __init__(self, *args, **kwargs):
+        super(ReducedInfoUser, self).__init__(*args, **kwargs)
+
+        # Override meta class model information for export. This is needed to
+        # write out the correct model information (auth.user) for this class.
+        self._meta = UserOptionProxy(self._meta)
+
+    class Meta:
+        managed = False
+        abstract = True
+
+
+class ExportUser(models.Model):
+    """
+    This abstract model is only used during export of users with most relevant
+    information. It doesn't seem to be possible to use Django's serializer with
+    subsets of fields if not all fields are of the same type. This behavior is
+    however needed during export, and the only way so to do this it seems, is
+    using a custom proxxy model.
+    """
+
+    id = models.IntegerField(_('id'), primary_key=True)
+    username = models.CharField(_('username'), max_length=150)
+    password = models.CharField(_('password'), max_length=150)
+    first_name = models.CharField(_('first name'), max_length=30, blank=True)
+    last_name = models.CharField(_('last name'), max_length=30, blank=True)
+    email = models.EmailField(_('email address'), blank=True)
+    date_joined = models.DateTimeField(_('date joined'))
+
+    def __init__(self, *args, **kwargs):
+        super(ExportUser, self).__init__(*args, **kwargs)
+
+        # Override meta class model information for export. This is needed to
+        # write out the correct model information (auth.user) for this class.
+        self._meta = UserOptionProxy(self._meta)
+
+    class Meta:
+        managed = False
+        abstract = True
 
 
 class ChangeRequest(UserFocusedModel):

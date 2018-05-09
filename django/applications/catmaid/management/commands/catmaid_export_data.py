@@ -7,10 +7,11 @@ from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
 from catmaid.control.neuron_annotations import (get_annotated_entities,
         get_annotation_to_id_map)
+from django.contrib.auth.hashers import make_password
 from catmaid.control.tracing import check_tracing_setup
 from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
         Relation, Connector, Project, Treenode, TreenodeClassInstance,
-        TreenodeConnector, User)
+        TreenodeConnector, User, ReducedInfoUser, ExportUser)
 
 from six.moves import input, map
 
@@ -291,7 +292,10 @@ class Exporter():
                     seen_user_ids.add(o.reviewer_id)
                 if hasattr(o, 'editor_id'):
                     seen_user_ids.add(o.editor_id)
-        users = User.objects.filter(pk__in=seen_user_ids)
+        users = [ExportUser(id=u.id, username=u.username, password=u.password,
+                first_name=u.first_name, last_name=u.last_name, email=u.email,
+                date_joined=u.date_joined) \
+                for u in User.objects.filter(pk__in=seen_user_ids)]
         if self.export_users:
             logger.info("Exporting {} users: {}".format(len(users),
                     ", ".join([u.username for u in users])))
@@ -300,8 +304,8 @@ class Exporter():
             # Export in reduced form
             reduced_users = []
             for u in users:
-                reduced_user = User(id=u.id, username=u.username,
-                        password=User.objects.make_random_password())
+                reduced_user = ReducedInfoUser(id=u.id, username=u.username,
+                        password=make_password(User.objects.make_random_password()))
                 reduced_users.append(reduced_user)
             logger.info("Exporting {} users in reduced form with random passwords: {}".format(len(reduced_users),
                     ", ".join([u.username for u in reduced_users])))
@@ -318,9 +322,9 @@ class Exporter():
 
             CurrentSerializer = serializers.get_serializer(self.format)
             serializer = CurrentSerializer()
+
             with open(self.target_file, "w") as out:
-                serializer.serialize(data, indent=self.indent, stream=out,
-                        use_natural_foreign_keys=True, use_natural_primary_keys=True)
+                serializer.serialize(data, indent=self.indent, stream=out)
         except Exception as e:
             if self.show_traceback:
                 raise

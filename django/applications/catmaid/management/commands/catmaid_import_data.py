@@ -449,7 +449,7 @@ class Command(BaseCommand):
         """
         def ask():
             print("Please enter 'n' or the number of the desired %s project:" % title)
-            print("n: create new project")
+            print("n: Create new project")
             projects = Project.objects.all()
             for n,p in enumerate(projects):
                 print("%s: %s (ID %s)" % (n, p, p.id))

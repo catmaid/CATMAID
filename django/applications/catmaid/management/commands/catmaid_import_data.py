@@ -11,13 +11,19 @@ from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection, transaction
 from catmaid.control.annotationadmin import copy_annotations
-from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
-        Project, Relation, User)
+from catmaid.models import (Class, ClassClass, ClassInstance,
+        ClassInstanceClassInstance, Project, Relation, User, Treenode,
+        Connector)
 
 from six.moves import input
 
 import logging
 logger = logging.getLogger(__name__)
+
+
+# Dependency based order of central models
+ordered_save_tasks = [Project, User, Class, Relation, ClassClass,
+        ClassInstance, ClassInstanceClassInstance, Treenode, Connector]
 
 
 def ask_a_b(a, b, title):
@@ -84,17 +90,20 @@ class FileImporter:
         map_users = self.options['map_users']
         # Try to look at every user reference field in CATMAID.
         for ref in ('user', 'reviewer', 'editor'):
-            obj_username = None
-            # If the import object has a the field without _id
-            # suffix, the user reference was already resolved by
-            # Django.
-            if hasattr(obj, ref):
-                user = getattr(obj, ref)
-                obj_username = user.username
-
             id_ref = ref + "_id"
+            obj_username = None
+
             if hasattr(obj, id_ref):
                 obj_user_ref_id = getattr(obj, id_ref)
+                import_user = import_users.get(obj_user_ref_id)
+
+                if import_user:
+                    import_user = import_user.object
+
+                existing_user_id = None
+                if import_user:
+                    existing_user_id = self.user_map.get(obj_user_ref_id)
+
 
                 # If no username has been found yet, no model object
                 # has been attached by Django. Read the plain user
@@ -102,17 +111,18 @@ class FileImporter:
                 # exporter is expected to use Django's natural keys
                 # for user references.
                 if not obj_username:
-                    obj_username = objgetattr(obj, ref)
-
-                existing_user_id = self.user_map.get(obj_username)
-                import_user = import_users.get(obj_username)
+                    if import_user:
+                        obj_username = import_user.username
+                    else:
+                        raise ValueError("Could not find referenced user {} " +
+                                "in imported data".format(obj_user_ref_id))
 
                 # Map users if usernames match
                 if existing_user_id:
                     # If a user with this username exists already, update
                     # the user reference the existing user if --map-users is
-                    # set. Otherwise, use imported user, if available. Otherwise
-                    # complain.
+                    # set. If no existing user is available, use imported user,
+                    # if available. Otherwise complain.
                     if map_users:
                         setattr(obj, ref + "_id", existing_user_id)
                         mapped_user_ids.add(obj_user_ref_id)
@@ -128,7 +138,6 @@ class FileImporter:
                                 " existing user should be used, please use the "
                                 "--map-users option".format(obj_username))
                 elif import_user:
-                    print("works?")
                     obj.user = import_user
                 elif self.create_unknown_users:
                     user = created_users.get(obj_username)
@@ -165,17 +174,26 @@ class FileImporter:
             ]
 
             for field in foreign_key_fields:
-                class_index[field.name + '_id'] = field.related_model
+                # Get the database column name for this field
+                class_index[field.attname] = field.related_model
 
         logger.info("Updating foreign keys to imported objects with new IDs")
         updated_fk_ids = 0
         unchanged_fk_ids = 0
-        for object_type, objects in six.iteritems(import_objects):
+        other_tasks = set(import_objects.keys()) - set(ordered_save_tasks)
+        # Iterate objects to import and respect dependency order
+        for object_type in ordered_save_tasks + list(other_tasks):
+            objects = import_objects.get(object_type)
+            if not objects:
+                # No objects of this object type are imported
+                continue
             fk_fields = fk_index[object_type]
             # No need to do rest if there are no foreign keys to change to begin
             # with.
             if len(fk_fields) == 0:
-                continue;
+                continue
+
+            imported_parent_nodes = []
 
             for deserialized_object in objects:
                 obj = deserialized_object.object
@@ -187,17 +205,39 @@ class FileImporter:
                     # Get updated model objects of the referenced type
                     imported_objects_by_id = import_objects_by_type_and_id[fk_type]
                     ref_obj = imported_objects_by_id.get(current_ref)
+
                     if ref_obj:
                         # Update foreign key reference to ID of newly saved
-                        # object.
+                        # object. Only for treenodes this is expected to result
+                        # in not yet available data
+                        if object_type == Treenode and fk_type == Treenode:
+                            imported_parent_nodes.append((obj, current_ref))
+                        elif ref_obj.id is None:
+                            raise ValueError("The referenced {} object with import ID {} wasn't stored yet".format(
+                                    fk_type, current_ref))
                         setattr(obj, fk_field, ref_obj.id)
                         updated_fk_ids += 1
                     else:
                         unchanged_fk_ids += 1
 
-                # Save changes, if any
-                if updated_fk_ids > 0:
+                # Save objects if they should either be imported or have change
+                # foreign key fields
+                if updated_fk_ids or obj.id is None:
                     obj.save()
+
+            # Treenodes are special, because they can reference themselves. They
+            # need therefore a second iteration of reference updates after all
+            # treenodes have been saved and new IDs are available.
+            if object_type == Treenode:
+                logger.info('Mapping parent IDs of treenodes to imported data')
+                imported_objects_by_id = import_objects_by_type_and_id[Treenode]
+                for obj, parent_id in imported_parent_nodes:
+                    new_parent = imported_objects_by_id.get(parent_id)
+                    if not new_parent:
+                        raise ValueError("Could not find imported treenode {}".format(parent_id))
+                    obj.parent_id = new_parent.id
+                    obj.save()
+
         logger.info("{} foreign key references updated, {} did not require change".format(
                 updated_fk_ids, unchanged_fk_ids))
 
@@ -246,7 +286,7 @@ class FileImporter:
 
         created_users = dict()
         if import_data.get(User):
-            import_users = dict((u.object.username, u) for u in import_data.get(User))
+            import_users = dict((u.object.id, u) for u in import_data.get(User))
         else:
             import_users = dict()
 
@@ -290,8 +330,8 @@ class FileImporter:
             objects_by_id = import_objects_by_type_and_id[object_type]
 
             is_class = object_type == Class
-            is_class_instance = object_type == ClassInstance
             is_relation = object_type == Relation
+            is_class_instance = object_type == ClassInstance
 
             # CATMAID model objects are inspected for user fields
             for deserialized_object in import_objects:
@@ -343,18 +383,23 @@ class FileImporter:
                 # Remember for saving
                 objects_to_save[object_type].append(deserialized_object)
 
-        # Finally save all objects
+        # Finally save all objects. Make sure they are saved in order:
         logger.info("Storing {} database objects, reusing additional {} existing objects" \
                 .format(n_objects - n_reused, n_reused))
-        for object_type, objects in six.iteritems(objects_to_save):
-            for deserialized_object in objects:
-                deserialized_object.save()
 
         # In append-only mode, the foreign keys to objects with changed IDs have
         # to be updated.
         if append_only:
             self.reset_ids(user_updatable_classes, objects_to_save,
                     import_objects_by_type_and_id)
+
+        other_tasks = set(objects_to_save.keys()) - set(ordered_save_tasks)
+        for object_type in ordered_save_tasks + list(other_tasks):
+            objects = objects_to_save.get(object_type)
+            if objects:
+                logger.info("- Importing objects of type " + str(object_type))
+                for deserialized_object in objects:
+                    deserialized_object.save()
 
         for other_model in need_separate_import:
             other_objects = import_data[other_model]

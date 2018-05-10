@@ -1852,10 +1852,10 @@ var WindowMaker = new function()
 
   /** Always create a new instance of the widget. The caller is allowed to hand
    * in extra parameters that will be passed on to the actual creator method. */
-  this.create = function(name, init_params) {
+  this.create = function(name, options, isInstance) {
     if (creators.hasOwnProperty(name)) {
       try {
-        var handles = creators[name].init(init_params);
+        var handles = creators[name].init(options, isInstance);
         if (windows.has(name)) {
           windows.get(name).set(handles.window, handles.widget);
         } else {

@@ -3059,7 +3059,7 @@
     cm.colDimension.append(models.single);
 
     // Create UI for widget and display it
-    WindowMaker.create('connectivity-matrix', cm);
+    WindowMaker.create('connectivity-matrix', cm, true);
   };
 
   GroupGraph.prototype.openPlot = function() {

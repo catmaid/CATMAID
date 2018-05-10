@@ -424,7 +424,7 @@
     widget.rowDimension.append(rowSource.getSelectedSkeletonModels());
     widget.colDimension.append(colSource.getSelectedSkeletonModels());
 
-    WindowMaker.create('connectivity-matrix', widget);
+    WindowMaker.create('connectivity-matrix', widget, true);
   };
 
   /**
@@ -1545,5 +1545,13 @@
       WindowMaker.create('selection-table').widget.append(models);
     }
   }
+
+  // Register widget
+  CATMAID.registerWidget({
+    name: 'Connectivity Matrix',
+    key: "connectivity-matrix",
+    description: 'Aggregate partner connections and display them in a matrix',
+    creator: ConnectivityMatrixWidget
+  });
 
 })(CATMAID);

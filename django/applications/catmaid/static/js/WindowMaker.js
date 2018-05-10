@@ -334,11 +334,6 @@ var WindowMaker = new function()
     return {window: win, widget: instance};
   };
 
-  var createConnectivityMatrixWindow = function(instance) {
-    var CM = instance ? instance : new CATMAID.ConnectivityMatrixWidget();
-    return createWidget(CM);
-  };
-
   /** Creates and returns a new 3d webgl window */
   var create3dWebGLWindow = function(options)
   {
@@ -1787,11 +1782,6 @@ var WindowMaker = new function()
       name: 'Neuron Navigator',
       description: 'Traverse and constrain neuron, user and annotation networks',
       init: createNeuronNavigatorWindow
-    },
-    "connectivity-matrix": {
-      name: 'Connectivity Matrix',
-      description: 'Aggregate partner connections and display them in a matrix',
-      init: createConnectivityMatrixWindow
     },
     "html": {
       name: 'HTML Widget',

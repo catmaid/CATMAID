@@ -38,7 +38,6 @@
     this.displayOrderFields = false;
   };
 
-  ConnectivityMatrixWidget.prototype = {};
   $.extend(ConnectivityMatrixWidget.prototype, new InstanceRegistry());
 
   // Make connectivity matrix widget available in CATMAID namespace
@@ -1551,7 +1550,31 @@
     name: 'Connectivity Matrix',
     key: "connectivity-matrix",
     description: 'Aggregate partner connections and display them in a matrix',
-    creator: ConnectivityMatrixWidget
+    creator: ConnectivityMatrixWidget,
+    state: {
+      getState: function(widget) {
+        return {
+          synapseThreshold: widget.synapseThreshold,
+          color: widget.color,
+          rowSorting: widget.rowSorting,
+          colSorting: widget.colSorting,
+          rowSortingDesc: widget.rowSortingDesc,
+          colSortingDesc: widget.colSortingDesc,
+          rotateColumnHeaders: widget.rotateColumnHeaders,
+          displayOrderFields: widget.displayOrderFields
+        };
+      },
+      setState: function(widget, state) {
+        CATMAID.tools.copyIfDefined(state, widget, 'synapseThreshold');
+        CATMAID.tools.copyIfDefined(state, widget, 'color');
+        CATMAID.tools.copyIfDefined(state, widget, 'rowSorting');
+        CATMAID.tools.copyIfDefined(state, widget, 'colSorting');
+        CATMAID.tools.copyIfDefined(state, widget, 'rowSortingDesc');
+        CATMAID.tools.copyIfDefined(state, widget, 'colSortingDesc');
+        CATMAID.tools.copyIfDefined(state, widget, 'rotateColumnHeaders');
+        CATMAID.tools.copyIfDefined(state, widget, 'displayOrderFields');
+      }
+    }
   });
 
 })(CATMAID);

@@ -47,6 +47,8 @@ Miscellaneous:
   displayed in the review table. This allows to focus review on segments not
   created by oneself.
 
+- Connectivity matrix: state saving is now supported.
+
 - A skeleton cable length limit can be set so that a warning is displayed if a
   change to the skeleton morphology results in a cable length larger than the
   limit. This is available in the Warnings section of the Settings Widget.

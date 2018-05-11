@@ -1173,8 +1173,37 @@ def skeleton_info_raw(request, project_id=None):
                 'attachments_reviewers': attachments_reviewers})
 
 
+@api_view(['POST'])
 @requires_user_role(UserRole.Browse)
 def connectivity_matrix(request, project_id=None):
+    """
+    Return a sparse connectivity matrix representation for the given skeleton
+    IDs. The returned dictionary has a key for each row skeleton having
+    outgoing connections to one or more column skeletons. Each entry stores a
+    dictionary that maps the connection partners to the individual outgoing
+    synapse counts.
+    ---
+    parameters:
+      - name: project_id
+        description: Project of skeletons
+        type: integer
+        paramType: path
+        required: true
+      - name: rows
+        description: IDs of row skeletons
+        required: true
+        type: array
+        items:
+          type: integer
+        paramType: form
+      - name: columns
+        description: IDs of column skeletons
+        required: true
+        type: array
+        items:
+          type: integer
+        paramType: form
+    """
     # sanitize arguments
     project_id = int(project_id)
     rows = tuple(int(v) for k, v in six.iteritems(request.POST) if k.startswith('rows['))

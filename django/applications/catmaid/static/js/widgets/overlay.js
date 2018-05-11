@@ -732,6 +732,8 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   /** Transfer data as msgpack by default.
    * Options: 'json', 'msgpack', 'gif', 'png' */
   this.transferFormat = SkeletonAnnotations.TracingOverlay.Settings.session.transfer_mode;
+  /** Limit the requested skeletons to the N largest in terms of cable length */
+  this.nLargestSkeletonsLimit = SkeletonAnnotations.TracingOverlay.Settings.session.n_largest_skeletons_limit;
   /** A cached copy of the a map from IDs to relation names, set on firt load. **/
   this.relationMap = null;
 
@@ -1045,6 +1047,9 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
           },
           allow_lazy_updates: {
             default: true
+          },
+          n_largest_skeletons_limit: {
+            default: 0
           }
         },
         migrations: {
@@ -3351,6 +3356,10 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
     let binaryTransfer = transferFormat != 'json';
     if (transferFormat) {
       params['format'] = transferFormat;
+    }
+
+    if (self.nLargestSkeletonsLimit > 0) {
+      params['n_largest_skeletons_limit'] = self.nLargestSkeletonsLimit;
     }
 
     var success = function (json) {

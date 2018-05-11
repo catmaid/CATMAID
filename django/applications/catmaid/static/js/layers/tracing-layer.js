@@ -45,6 +45,15 @@
         this.tracingOverlay.transferFormat = value;
       }
     });
+
+    Object.defineProperty(this, 'nLargestSkeletonsLimit', {
+      get: function() {
+        return this.tracingOverlay.nLargestSkeletonsLimit;
+      },
+      set: function(value) {
+        this.tracingOverlay.nLargestSkeletonsLimit = value;
+      }
+    });
   }
 
   TracingLayer.prototype = Object.create(CATMAID.PixiLayer.prototype);
@@ -129,12 +138,23 @@
         ['png', 'PNG image']
       ],
       help: 'Transferring tracing data as msgpack or image can reduce its size and loading time. Image data doesn\'t allow much interaction.'
+    }, {
+      name: 'nLargestSkeletonsLimit',
+      displayName: 'Limit to N largest skeletons',
+      type: 'number',
+      step: 100,
+      min: 0,
+      value: this.nLargestSkeletonsLimit,
+      help: 'Limit the displayed skeletons to the N largest in terms of cable length. A value of zero disables the limit.'
     }];
   };
 
   TracingLayer.prototype.setLayerSetting = function(name, value) {
     if ('transferFormat' === name) {
       this.transferFormat = value;
+      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
+    } else if ('nLargestSkeletonsLimit' === name) {
+      this.nLargestSkeletonsLimit = value;
       this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     }
   };

@@ -328,7 +328,17 @@ class PostgisNodeProvider(BasicNodeProvider):
                     %(sanitized_treenode_ids)s)
             '''.format(self.TREENODE_STATEMENT_NAME), params)
         else:
-            cursor.execute(self.treenode_query_psycopg, params)
+            query = self.treenode_query_psycopg
+            if params['n_largest_skeletons_limit']:
+                query = self.treenode_query_psycopg.rstrip('LIMIT %(limit)s')
+                query += '''
+                    JOIN catmaid_skeleton_summary css
+                        ON css.skeleton_id = t1.skeleton_id
+                    ORDER BY css.cable_length DESC
+                    LIMIT %(n_largest_skeletons_limit)s
+                '''
+
+            cursor.execute(query, params)
 
         treenodes = cursor.fetchall()
         treenode_ids = [t[0] for t in treenodes]
@@ -1144,6 +1154,12 @@ def node_list_tuples(request, project_id=None, provider=None):
       type: string
       defaultValue: used
       paramType: form
+    - name: n_largest_skeletons_limit
+      description: |
+        Maximum number of the largest skeletons in view
+      required: false
+      type: integer
+      paramType: form
     type:
     - type: array
       items:
@@ -1166,6 +1182,7 @@ def node_list_tuples(request, project_id=None, provider=None):
         params[p] = float(data.get(p, 0))
     # Limit the number of retrieved treenodes within the section
     params['limit'] = settings.NODE_LIST_MAXIMUM_COUNT
+    params['n_largest_skeletons_limit'] = int(data.get('n_largest_skeletons_limit', 0))
     params['project_id'] = project_id
     include_labels = get_request_bool(data, 'labels', False)
     target_format = data.get('format', 'json')

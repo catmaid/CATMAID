@@ -53,6 +53,9 @@ Miscellaneous:
   change to the skeleton morphology results in a cable length larger than the
   limit. This is available in the Warnings section of the Settings Widget.
 
+- Tracing layer: a new option to show only the N largest skeletons in a field of
+  view is now available for the layer settings (and the API).
+
 
 ### Bug fixes
 

@@ -22,6 +22,11 @@ included in this changelog.
 - `GET /{project_id}/skeletons/{skeleton_id}/review`:
   The user ID of each node is now returned as well.
 
+- `POST|GET /{project_id}/node/list`:
+  Offers a new optional parameter
+  "n_largest_skeletons_limit", which can be used to constrain the returned
+  neurons to only those of the N largest skeletons in the result set.
+
 ### Deprecations
 
 None.

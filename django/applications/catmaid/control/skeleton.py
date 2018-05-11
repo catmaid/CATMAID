@@ -1231,14 +1231,17 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids):
     SELECT t1.skeleton_id, t2.skeleton_id
     FROM treenode_connector t1,
          treenode_connector t2
-    WHERE t1.skeleton_id IN (%s)
-      AND t2.skeleton_id IN (%s)
+    WHERE t1.skeleton_id = ANY(%(row_skeleton_ids)s::integer[])
+      AND t2.skeleton_id = ANY(%(col_skeleton_ids)s::integer[])
       AND t1.connector_id = t2.connector_id
-      AND t1.relation_id = %s
-      AND t2.relation_id = %s
-    ''' % (','.join(map(str, row_skeleton_ids)),
-           ','.join(map(str, col_skeleton_ids)),
-           pre_rel_id, post_rel_id))
+      AND t1.relation_id = %(pre_rel_id)s
+      AND t2.relation_id = %(post_rel_id)s
+    ''', {
+      'row_skeleton_ids': row_skeleton_ids,
+      'col_skeleton_ids': col_skeleton_ids,
+      'pre_rel_id': pre_rel_id,
+      'post_rel_id': post_rel_id
+    })
 
     # Build a sparse connectivity representation. For all skeletons requested
     # map a dictionary of partner skeletons and the number of synapses

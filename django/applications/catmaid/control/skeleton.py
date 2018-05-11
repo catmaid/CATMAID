@@ -1206,8 +1206,8 @@ def connectivity_matrix(request, project_id=None):
     """
     # sanitize arguments
     project_id = int(project_id)
-    rows = tuple(int(v) for k, v in six.iteritems(request.POST) if k.startswith('rows['))
-    cols = tuple(int(v) for k, v in six.iteritems(request.POST) if k.startswith('columns['))
+    rows = tuple(get_request_list(request.POST, 'rows', [], map_fn=int))
+    cols = tuple(get_request_list(request.POST, 'columns', [], map_fn=int))
 
     matrix = get_connectivity_matrix(project_id, rows, cols)
     return JsonResponse(matrix)

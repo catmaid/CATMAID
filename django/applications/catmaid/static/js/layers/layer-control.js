@@ -215,6 +215,13 @@
               if (setting.range && 2 === setting.range.length) {
                 input.attr('min', setting.range[0]);
                 input.attr('max', setting.range[1]);
+              } else {
+                if (setting.min) {
+                  input.attr('min', setting.min);
+                }
+                if (setting.max) {
+                  input.attr('max', setting.max);
+                }
               }
               if (setting.step) {
                 input.attr('step', setting.step);

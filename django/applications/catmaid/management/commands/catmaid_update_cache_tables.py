@@ -39,6 +39,8 @@ class Command(BaseCommand):
             help='Optional maximum Z project space coordinate for cache update'),
         parser.add_argument('--node-limit', dest='node_limit',
             default=settings.NODE_LIST_MAXIMUM_COUNT, help='Override node limit from settings. 0 means no limit'),
+        parser.add_argument('--n-largest-skeletons-limit', dest='n_largest_skeletons_limit',
+                default=None, help='Only show treenodes of the N largest skeletons in the field of view'),
 
     def handle(self, *args, **options):
         cursor = connection.cursor()
@@ -78,6 +80,10 @@ class Command(BaseCommand):
         if node_limit == 0:
             node_limit = None
 
+        n_largest_skeletons_limit = None
+        if options['n_largest_skeletons_limit']:
+            n_largest_skeletons_limit = int(options['n_largest_skeletons_limit'])
+
         data_type = options['data_type']
 
         if data_type not in ('json', 'json_text', 'msgpack'):
@@ -88,7 +94,8 @@ class Command(BaseCommand):
         for p in projects:
             self.stdout.write('Updating cache for project {}'.format(p.id))
             update_cache(p.id, data_type, orientations, steps, node_limit,
-                    delete, bb_limits, log=self.stdout.write)
+                    n_largest_skeletons_limit, delete, bb_limits,
+                    log=self.stdout.write)
             self.stdout.write('Updated cache for project {}'.format(p.id))
 
         self.stdout.write('Done')

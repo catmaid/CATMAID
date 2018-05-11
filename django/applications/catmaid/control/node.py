@@ -890,6 +890,8 @@ def update_node_query_cache(node_providers=None, log=print_):
 
         clean_cache = options.get('clean', False)
 
+        n_largest_skeletons_limit = options.get('n_largest_skeletons_limit', None)
+
         data_type = CACHE_NODE_PROVIDER_DATA_TYPES.get(key)
         if not data_type:
             log("Skipping non-caching node provider: {}".format(key))
@@ -903,7 +905,9 @@ def update_node_query_cache(node_providers=None, log=print_):
                 raise ValueError("Need 'step' parameter in node provider configuration")
             node_limit = options.get('node_limit', None)
             update_cache(project_id, data_type, orientations, steps,
-                    node_limit=node_limit, delete=clean_cache, log=log)
+                    node_limit=node_limit,
+                    n_largest_skeletons_limit=n_largest_skeletons_limit,
+                    delete=clean_cache, log=log)
 
 
 def get_tracing_bounding_box(project_id, cursor=None):
@@ -930,7 +934,8 @@ def get_tracing_bounding_box(project_id, cursor=None):
     return row
 
 def update_cache(project_id, data_type, orientations, steps,
-        node_limit=None, delete=False, bb_limits=None, log=print_):
+        node_limit=None, n_largest_skeletons_limit=None, delete=False,
+        bb_limits=None, log=print_):
     if data_type not in ('json', 'json_text', 'msgpack'):
         raise ValueError('Type must be one of: json, json_text, msgpack')
     if len(steps) != len(orientations):
@@ -983,6 +988,11 @@ def update_cache(project_id, data_type, orientations, steps,
         'project_id': project_id,
         'limit': node_limit
     }
+
+    if n_largest_skeletons_limit:
+        params['n_largest_skeletons_limit'] = int(n_largest_skeletons_limit)
+        log(' -> Limiting nodes in each section to the ones of the ' +
+                '{} largest skeletons in the field of view'.format(n_largest_skeletons_limit))
 
     min_z = bb[0][2]
     max_z = bb[1][2]

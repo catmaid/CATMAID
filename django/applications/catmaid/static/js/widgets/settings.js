@@ -774,6 +774,28 @@
                 function() {
                   return CATMAID.NeuronNameService.getInstance().loadConfigurationFromSettings();
                 }));
+
+            nnsAsyncContainer.append(wrapSettingsControl(
+                CATMAID.DOM.createCheckboxSetting(
+                    'Remove neighboring duplicates',
+                    nameServiceInstance.getRemoveDuplicates(),
+                    'If enabled, neigboring components with the same content are reduced to one.',
+                    function() {
+                      CATMAID.NeuronNameService.Settings
+                        .set(
+                          'remove_neighboring_duplicates',
+                          this.checked,
+                          SETTINGS_SCOPE)
+                        .then(function () {
+                          CATMAID.NeuronNameService.getInstance().loadConfigurationFromSettings();
+                        });
+                    }),
+                CATMAID.NeuronNameService.Settings,
+                'remove_neighboring_duplicates',
+                SETTINGS_SCOPE,
+                function() {
+                  return CATMAID.NeuronNameService.getInstance().loadConfigurationFromSettings();
+                }));
           });
 
       // Overlay settings

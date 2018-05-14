@@ -54,6 +54,9 @@
       // Whether empty components should be trimmed
       var autoTrimEmptyValues = true;
 
+      // Whether neighboring duplicate components should be removed.
+      var removeDuplicates = true;
+
       // An object mapping skeleton IDs to objects that contain the current name and
       // a list of clients, interested in the particular skeleton.
       var managedSkeletons = {};
@@ -89,6 +92,9 @@
                     },
                     auto_trim_empty: {
                       default: true
+                    },
+                    remove_neighboring_duplicates: {
+                      default: true
                     }
                   },
                   migrations: {}
@@ -99,6 +105,7 @@
             componentList = $.extend(true, [], CATMAID.NeuronNameService.Settings[scope].component_list);
             formatString = CATMAID.NeuronNameService.Settings[scope].format_string;
             autoTrimEmptyValues = CATMAID.NeuronNameService.Settings[scope].auto_trim_empty;
+            removeDuplicates = CATMAID.NeuronNameService.Settings[scope].remove_neighboring_duplicates;
             this.refresh();
           }).bind(this);
 
@@ -148,6 +155,25 @@
         getAutoTrimEmpty: function()
         {
           return autoTrimEmptyValues;
+        },
+
+        /**
+         * Mutator for the duplicate removal setting for the format string replacement.
+         */
+        setRemoveDuplicates: function(remove)
+        {
+          removeDuplicates = remove;
+
+          // Update the name representation of all neurons
+          this.refresh();
+        },
+
+        /**
+         * Accessor for the duplicate removal setting.
+         */
+        getRemoveDuplicates: function()
+        {
+          return removeDuplicates;
         },
 
         /**
@@ -526,27 +552,39 @@
                 } else return match;
               };
 
-              // If auto-trim is enabled, remove all null values and spaces
-              // around it.
-              if (CATMAID.NeuronNameService.Settings.session.auto_trim_empty) {
-                // Split format string in format components and regular
-                // components.
-                var components = formatString.split(/((?:%f|%\d+)(?:\{.*\})?)/g);
-                var lastComponentIndex = components.length - 1;
-                var leftTrimmed = false;
-                var rightTrimmed = false;
-                components = components.map(function(c) {
-                  return c.replace(componentsRegEx, replace);
-                }).map(function(c, i, mappedComponents) {
-                  // Empty elements don't need any trimming.
-                  if (c.length === 0) {
-                    return c;
-                  }
+              var removeDuplicates = CATMAID.NeuronNameService.Settings.session.remove_neighboring_duplicates;
+              var autoTrim = CATMAID.NeuronNameService.Settings.session.auto_trim_empty;
 
-                  // Left trim current component if last component is empty. If
-                  // the the name is not empty and if a right-trim operation
-                  // happend for the last non-empty element or a left trim
-                  // operation happend on the current element, retain one space.
+              // Split format string in format components and regular
+              // components.
+              var components = formatString.split(/((?:%f|%\d+)(?:\{.*\})?)/g);
+              var lastComponentIndex = components.length - 1;
+              var leftTrimmed = false;
+              var rightTrimmed = false;
+              var lastMappedElement = null;
+              components = components.map(function(c) {
+                return c.replace(componentsRegEx, replace);
+              }).filter(function(c, i, mappedComponents) {
+                if (removeDuplicates) {
+                  if (c.trim().length !== 0) {
+                    if (lastMappedElement === c) {
+                      return false;
+                    }
+                    lastMappedElement = c;
+                  }
+                }
+                return true;
+              }).map(function(c, i, mappedComponents) {
+                // Empty elements don't need any trimming.
+                if (c.length === 0) {
+                  return c;
+                }
+
+                // Left trim current component if last component is empty. If
+                // the the name is not empty and if a right-trim operation
+                // happend for the last non-empty element or a left trim
+                // operation happend on the current element, retain one space.
+                if (autoTrim) {
                   if (i > 0) {
                     var l = c.length;
                     var lastComponent = mappedComponents[i - 1];
@@ -582,13 +620,11 @@
                       rightTrimmed = false;
                     }
                   }
+                }
 
-                  return c;
-                });
-                return components.join('');
-              } else {
-                return formatString.replace(componentsRegEx, replace);
-              }
+                return c;
+              });
+              return components.join('');
             };
 
             if (skids) {

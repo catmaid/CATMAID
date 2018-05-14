@@ -61,6 +61,10 @@ Miscellaneous:
 - Tracing layer: a new option to show only the N largest skeletons in a field of
   view is now available for the layer settings (and the API).
 
+- Neuron name display: neighboring duplicate name components are now removed by
+  the default. This setting can be adjusted from the Annotation sections in the
+  Settings Widget.
+
 
 ### Bug fixes
 
@@ -70,6 +74,10 @@ Miscellaneous:
 
 - Export management command: class instances and links of skeletons and neuronsa
   are now exported alongside treenodes.
+
+- Neuron name service: missing naming components don't lead to removal of all
+  whitespace between neighbors anymore.
+
 
 ## 2018.04.15
 

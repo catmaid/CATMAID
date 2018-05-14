@@ -329,7 +329,7 @@ class PostgisNodeProvider(BasicNodeProvider):
             '''.format(self.TREENODE_STATEMENT_NAME), params)
         else:
             query = self.treenode_query_psycopg
-            if params['n_largest_skeletons_limit']:
+            if params.get('n_largest_skeletons_limit'):
                 query = self.treenode_query_psycopg.rstrip('LIMIT %(limit)s')
                 query += '''
                     JOIN catmaid_skeleton_summary css

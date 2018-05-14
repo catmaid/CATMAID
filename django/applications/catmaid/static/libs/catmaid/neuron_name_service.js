@@ -561,6 +561,16 @@
                     }
                   }
 
+                  // Add a single space if there just happened a trim to the
+                  // right just before a new left trim action. This indicates an
+                  // enclosed missing mapped component. Not doing this results
+                  // in the neighboring elements being squashed together. Since
+                  // we need to access the past right trimming information, this
+                  // is done before this information is updated.
+                  if (leftTrimmed && rightTrimmed) {
+                     c = c + ' ';
+                  }
+
                   // Right-trim current component, if next components is empty
                   if (i < lastComponentIndex) {
                     var l = c.length;

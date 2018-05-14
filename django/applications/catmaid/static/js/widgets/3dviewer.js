@@ -38,7 +38,7 @@
     this.historyRequestId = undefined;
     // The current history animation, if any
     this.history = undefined;
-    // Map loaded volume IDs to an array of Three.js meshes
+    // Map loaded volume IDs to a volume discription incl. an array of Three.js meshes
     this.loadedVolumes = new Map();
     // Map loaded landmark group IDs to an array of Three.js meshes
     this.loadedLandmarkGroups = {};
@@ -1098,6 +1098,7 @@
     this.meshes_color = "#ffffff";
     this.meshes_opacity = 0.2;
     this.meshes_faces = false;
+    this.meshes_subdiv = 0;
     this.landmarkgroup_color = "#ffa500";
     this.landmarkgroup_opacity = 0.2;
     this.landmarkgroup_faces = true;
@@ -2086,8 +2087,16 @@
 
   /**
    * Show or hide a stored volume with a given Id.
+   *
+   * @param {number} volumeId The volume to show or hide.
+   * @param {bool}   visibke  Whether or not the volume should be visible
+   * @param {string} color    Color of the referenced volume
+   * @param {number} opacity  Opacity of the referenced volume in [0,1]
+   * @param {bool}   faces    Whether to show faces or a wireframe
+   * @param {number} subdivisions (optional) Number of smoothing subdivisions
    */
-  WebGLApplication.prototype.showVolume = function(volumeId, visible, color, opacity, faces) {
+  WebGLApplication.prototype.showVolume = function(volumeId, visible, color,
+      opacity, faces, subdivisions) {
     var existingVolume = this.loadedVolumes.get(volumeId);
     if (visible) {
       // Bail out if the volume in question is already visible
@@ -2096,7 +2105,7 @@
         return;
       }
 
-      CATMAID.Volumes.get(project.id, volumeId)
+      return CATMAID.Volumes.get(project.id, volumeId)
         .then((function(volume) {
           // Convert X3D mesh to simple VRML and have Three.js load it
           var vrml = CATMAID.Volumes.x3dToVrml(volume.mesh);
@@ -2105,27 +2114,42 @@
           if (scene.children) {
             var material = this.options.createMeshMaterial(color, opacity);
             material.wireframe = !faces;
+
             var addedMeshes = scene.children.map(function(mesh) {
               mesh.material = material;
               this.space.scene.add(mesh);
               return mesh;
             }, this);
+            var originalGeometries = addedMeshes.map(function(mesh) {
+              return mesh.geometry;
+            });
             // Store mesh reference
-            this.loadedVolumes.set(volumeId, addedMeshes);
+            this.loadedVolumes.set(volumeId, {
+              meshes: addedMeshes,
+              originalGeometries: originalGeometries,
+              color: color,
+              opacity: opacity,
+              faces: faces,
+              subdivisions: subdivisions
+            });
             this.space.render();
           } else {
             CATMAID.warn("Couldn't parse volume \"" + volumeId + "\"");
           }
         }).bind(this))
-        .catch(CATMAID.handleError);
+        .then((function() {
+          // Set subdivisions
+          this.setVolumeSubdivisions(volumeId, subdivisions);
+        }).bind(this));
     } else if (existingVolume) {
       // Remove volume
-      existingVolume.forEach(function(v) {
+      existingVolume.meshes.forEach(function(v) {
         this.space.scene.remove(v);
       }, this);
       this.loadedVolumes.delete(volumeId);
       this.space.render();
     }
+    return Promise.resolve();
   };
 
   /**
@@ -2144,11 +2168,12 @@
    * @param {Number} alpha    The new alpha of the volume or null.
    */
   WebGLApplication.prototype.setVolumeColor = function(volumeId, color, alpha) {
-    var existingMeshes = this.loadedVolumes.get(volumeId);
-    if (!existingMeshes) {
+    var volume = this.loadedVolumes.get(volumeId);
+    if (!volume) {
       CATMAID.warn("Volume not loaded");
       return;
     }
+    var existingMeshes = volume.meshes;
     for (var i=0; i<existingMeshes.length; ++i) {
       var material = existingMeshes[i].material;
       if (color !== null) {
@@ -2171,16 +2196,72 @@
    * @param {Boolean} faces    Whether mesh faces should be rendered.
    */
   WebGLApplication.prototype.setVolumeStyle = function(volumeId, faces) {
-    var existingMeshes = this.loadedVolumes.get(volumeId);
-    if (!existingMeshes) {
+    var volume = this.loadedVolumes.get(volumeId);
+    if (!volume) {
       CATMAID.warn("Volume not loaded");
       return;
     }
+    var existingMeshes = volume.meshes;
+    volume.faces = faces;
     for (var i=0; i<existingMeshes.length; ++i) {
       var material = existingMeshes[i].material;
       material.wireframe = !faces;
       material.needsUpdate = true;
     }
+    this.space.render();
+  };
+
+  /**
+   * Set volume mesh subdivision number.
+   *
+   * @param {Number} subdivisions Number of mesh subdivisions.
+   */
+  WebGLApplication.prototype.setVolumeSubdivisions = function(volumeId, subdivisions) {
+    var volume = this.loadedVolumes.get(volumeId);
+    if (!volume) {
+      CATMAID.warn("Volume not loaded");
+      return;
+    }
+
+    if (subdivisions) {
+      volume.meshes.forEach(function(mesh, i) {
+        // Remove old representation
+        this.space.scene.remove(mesh);
+        // Reset to original geometry
+        var originalGeometry = volume.originalGeometries[i];
+
+        // Get regular geometry copy
+        var smoothedGeometry;
+        if (originalGeometry.isBufferGeometry) {
+          smoothedGeometry = new THREE.Geometry().fromBufferGeometry(originalGeometry);
+        } else {
+          smoothedGeometry = originalGeometry.clone();
+        }
+
+        // Operate on a regular geometry
+        smoothedGeometry.mergeVertices();
+        var modifier = new THREE.SubdivisionModifier(subdivisions);
+        modifier.modify(smoothedGeometry);
+
+        // Store as buffer geometry
+        smoothedGeometry.computeVertexNormals();
+        smoothedGeometry.computeFaceNormals();
+        mesh.geometry = new THREE.BufferGeometry().fromGeometry(smoothedGeometry);
+
+        // Add new representation
+        this.space.scene.add(mesh);
+      }, this);
+    } else {
+      volume.meshes.forEach(function(mesh, i) {
+        // Remove old representation
+        this.space.scene.remove(mesh);
+        // Reset to original geometry
+        mesh.geometry = volume.originalGeometries[i];
+        // Add new representation
+        this.space.scene.add(mesh);
+      }, this);
+    }
+
     this.space.render();
   };
 
@@ -7837,7 +7918,8 @@
       // Add volume information
       let volumes = JSON.stringify(
           Array.from(widget.loadedVolumes.keys()).reduce(function(o, v) {
-            let meshes = widget.loadedVolumes.get(v);
+            let volume = widget.loadedVolumes.get(v);
+            let meshes = volume.meshes;
             for (let i=0, imax=meshes.length; i<imax; ++i) {
               let mesh = meshes[i];
               o.push({
@@ -7863,7 +7945,8 @@
       if (state.volumes) {
         let volumes = JSON.parse(state.volumes);
         volumes.forEach(function(v) {
-          widget.showVolume(v.id, true, v.color, v.opacity, !v.wireframe);
+          widget.showVolume(v.id, true, v.color, v.opacity, !v.wireframe)
+            .catch(CATMAID.handleError);
         });
       }
     }

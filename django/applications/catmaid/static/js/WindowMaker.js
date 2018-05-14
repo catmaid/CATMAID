@@ -615,7 +615,15 @@ var WindowMaker = new function()
       e.stopPropagation();
     };
 
-    function setVolumeEntryVisible(li, volumeId, visible, faces, color, alpha) {
+    var updateVolumeSubiv = function(volumeId, e) {
+      var smooth = e.target.checked;
+      var subdiv = smooth ? 3 : 0;
+      WA.setVolumeSubdivisions(volumeId, subdiv);
+      // Stop propagation or the general volume list change handler is called.
+      e.stopPropagation();
+    };
+
+    function setVolumeEntryVisible(li, volumeId, visible, faces, color, alpha, subdiv) {
       // Add extra display controls for enabled volumes
       if (!li) {
         return;
@@ -634,6 +642,10 @@ var WindowMaker = new function()
             "Whether faces should be displayed for this volume",
             faces, updateVolumeFaces.bind(null, volumeId));
         facesCb.style.display = 'inline';
+        var subdivCb = CATMAID.DOM.appendCheckbox(volumeControls, "Subdivide",
+            "Whether meshes should be smoothed by subdivision",
+            !!subdiv, updateVolumeSubiv.bind(null, volumeId));
+        subdivCb.style.display = 'inline';
       } else {
         var volumeControls = li.querySelector('span[data-role=volume-controls]');
         if (volumeControls) {
@@ -658,15 +670,16 @@ var WindowMaker = new function()
           var node = DOM.createCheckboxSelect('Volumes', volumes,
               selectedVolumes, true, function(row, id, visible) {
                 let loadedVolumes = WA.loadedVolumes.get(id);
-                let faces, color, alpha;
+                let faces, color, alpha, subdiv;
                 if (loadedVolumes && loadedVolumes.length > 0) {
                   // Use first volume as reference volume
                   let loadedVolume = loadedVolumes[0];
                   faces = !loadedVolume.material.wireframe;
                   color = '#' + loadedVolume.material.color.getHexString();
                   alpha = loadedVolume.material.opacity;
+                  subdiv = loadedVolume.subdiv;
                 }
-                setVolumeEntryVisible(row, id, visible, faces, color, alpha);
+                setVolumeEntryVisible(row, id, visible, faces, color, alpha, subdiv);
               });
 
           // Add a selection handler
@@ -674,10 +687,11 @@ var WindowMaker = new function()
             var visible = e.target.checked;
             var volumeId = parseInt(e.target.value, 10);
             WA.showVolume(volumeId, visible, undefined, undefined,
-                o.meshes_faces);
+                o.meshes_faces)
+              .catch(CATMAID.handleError);
 
             setVolumeEntryVisible(e.target.closest('li'), volumeId, visible,
-                o.meshes_faces, o.meshes_color, o.meshes_opacity);
+                o.meshes_faces, o.meshes_color, o.meshes_opacity, o.meshes_subdiv);
           };
           return node;
         });

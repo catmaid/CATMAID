@@ -28,6 +28,11 @@ Volume widget:
 
 - State saving is now supported.
 
+3D Viewer:
+
+- Volumes can now be smoothed by subdivision. The volume option panel available
+  from the View Settings tab now contains a "Subdivide" checkbox.
+
 Miscellaneous:
 
 - The behavior of the Ctrl modifier on section navigation with , and . can now

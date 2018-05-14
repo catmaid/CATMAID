@@ -575,16 +575,16 @@
                 }
                 return true;
               }).map(function(c, i, mappedComponents) {
-                // Empty elements don't need any trimming.
-                if (c.length === 0) {
-                  return c;
-                }
-
                 // Left trim current component if last component is empty. If
                 // the the name is not empty and if a right-trim operation
                 // happend for the last non-empty element or a left trim
                 // operation happend on the current element, retain one space.
                 if (autoTrim) {
+                  // Empty elements don't need any trimming.
+                  if (c.length === 0) {
+                    return c;
+                  }
+
                   if (i > 0) {
                     var l = c.length;
                     var lastComponent = mappedComponents[i - 1];

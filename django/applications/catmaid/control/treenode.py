@@ -739,8 +739,12 @@ def delete_treenode(request, project_id=None):
         raise Exception(response_on_error + ': ' + str(e))
 
 def _compact_detail_list(project_id, treenode_ids):
-    """Return a list with information on the passed in node. It has the form:
-    [ID, parent ID, x, y, z, confidence, user_id, radius, skeleton_id, user_id]
+    """
+    Return a list with information on the passed in node. It has the form:
+
+    [ID, parent ID, x, y, z, confidence, radius, skeleton_id, edition_time, user_id]
+
+    The returned edition time is an epoch number.
     """
     cursor = connection.cursor()
     cursor.execute("""
@@ -762,8 +766,12 @@ def _compact_detail_list(project_id, treenode_ids):
     return rows
 
 def _compact_detail(project_id, treenode_id):
-    """Return a list with information on the passed in node. It has the form:
-    [ID, parent ID, x, y, z, confidence, user_id, radius, skeleton_id, user_id]
+    """
+    Return a list with information on the passed in node. It has the form:
+
+    [ID, parent ID, x, y, z, confidence, radius, skeleton_id, edition_time, user_id]
+
+    The returned edition time is an epoch number.
     """
     cursor = connection.cursor()
     cursor.execute("""
@@ -852,9 +860,13 @@ def treenode_info(request, project_id=None, treenode_id=None):
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
 def compact_detail(request, project_id=None, treenode_id=None):
-    """Retrieve node information in a compact form. A list of the following form
-    is returned: [ID, parent ID, x, y, z, confidence, user_id, radius,
-    skeleton_id, user_id].
+    """
+    Retrieve node information in a compact form. A list of the following form
+    is returned:
+
+    [ID, parent ID, x, y, z, confidence, radius, skeleton_id, edition_time, user_id]
+
+    The returned edition time is an epoch number.
     """
     info = _compact_detail(int(project_id), int(treenode_id))
     return JsonResponse(info, safe=False)
@@ -863,9 +875,13 @@ def compact_detail(request, project_id=None, treenode_id=None):
 @api_view(['POST'])
 @requires_user_role(UserRole.Browse)
 def compact_detail_list(request, project_id=None):
-    """Retrieve node information in a compact form. A list of elements of the
-    following form is returned: [ID, parent ID, x, y, z, confidence, user_id,
-    radius, skeleton_id, user_id].
+    """
+    Retrieve node information in a compact form. A list of elements of the
+    following form is returned:
+
+    [ID, parent ID, x, y, z, confidence, radius, skeleton_id, edition_time, user_id]
+
+    The returned edition time is an epoch number.
     """
     treenode_ids = get_request_list(request.POST, 'treenode_ids', None, int)
     if not treenode_ids:

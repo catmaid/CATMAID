@@ -1237,8 +1237,8 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids):
       AND t1.relation_id = %(pre_rel_id)s
       AND t2.relation_id = %(post_rel_id)s
     ''', {
-      'row_skeleton_ids': row_skeleton_ids,
-      'col_skeleton_ids': col_skeleton_ids,
+      'row_skeleton_ids': list(row_skeleton_ids),
+      'col_skeleton_ids': list(col_skeleton_ids),
       'pre_rel_id': pre_rel_id,
       'post_rel_id': post_rel_id
     })

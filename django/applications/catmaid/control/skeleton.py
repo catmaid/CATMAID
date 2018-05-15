@@ -1203,17 +1203,26 @@ def connectivity_matrix(request, project_id=None):
         items:
           type: integer
         paramType: form
+      - name: with_locations
+        description: Whether or not to return locations of connectors
+        required: false
+        default: false
+        type: boolean
+        paramType: form
     """
     # sanitize arguments
     project_id = int(project_id)
     rows = tuple(get_request_list(request.POST, 'rows', [], map_fn=int))
     cols = tuple(get_request_list(request.POST, 'columns', [], map_fn=int))
+    with_locations = get_request_bool(request.POST, 'with_locations', False)
 
-    matrix = get_connectivity_matrix(project_id, rows, cols)
+    matrix = get_connectivity_matrix(project_id, rows, cols,
+        with_locations=with_locations)
     return JsonResponse(matrix)
 
 
-def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids):
+def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids,
+        with_locations=False):
     """
     Return a sparse connectivity matrix representation for the given skeleton
     IDS. The returned dictionary has a key for each row skeleton having
@@ -1226,17 +1235,29 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids):
     post_rel_id = relation_map['postsynaptic_to']
     pre_rel_id = relation_map['presynaptic_to']
 
+    if with_locations:
+      extra_select = ', c.id, c.location_x, c.location_y, c.location_z'
+      extra_join = 'JOIN connector c ON c.id = t2.connector_id'
+    else:
+      extra_select = ''
+      extra_join = ''
+
     # Obtain all synapses made between row skeletons and column skeletons.
     cursor.execute('''
     SELECT t1.skeleton_id, t2.skeleton_id
+        {extra_select}
     FROM treenode_connector t1,
          treenode_connector t2
+        {extra_join}
     WHERE t1.skeleton_id = ANY(%(row_skeleton_ids)s::integer[])
       AND t2.skeleton_id = ANY(%(col_skeleton_ids)s::integer[])
       AND t1.connector_id = t2.connector_id
       AND t1.relation_id = %(pre_rel_id)s
       AND t2.relation_id = %(post_rel_id)s
-    ''', {
+    '''.format(**{
+      'extra_select': extra_select,
+      'extra_join': extra_join,
+    }), {
       'row_skeleton_ids': list(row_skeleton_ids),
       'col_skeleton_ids': list(col_skeleton_ids),
       'pre_rel_id': pre_rel_id,
@@ -1245,13 +1266,37 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids):
 
     # Build a sparse connectivity representation. For all skeletons requested
     # map a dictionary of partner skeletons and the number of synapses
-    # connecting to each partner.
-    outgoing = defaultdict(dict)
-    for r in cursor.fetchall():
-        source, target = r[0], r[1]
-        mapping = outgoing[source]
-        count = mapping.get(target, 0)
-        mapping[target] = count + 1
+    # connecting to each partner. If locations should be returned as well, an
+    # object with the fields 'count' and 'locations' is returned instead of a
+    # single count.
+    if with_locations:
+      outgoing = defaultdict(dict)
+      for r in cursor.fetchall():
+          source, target = r[0], r[1]
+          mapping = outgoing[source]
+          connector_id = r[2]
+          info = mapping.get(target)
+          if not info:
+            info = { 'count': 0, 'locations': {} }
+            mapping[target] = info
+          count = info['count']
+          info['count'] = count + 1
+
+          if connector_id not in info['locations']:
+            location = [r[3], r[4], r[5]]
+            info['locations'][connector_id] = {
+              'pos': location,
+              'count': 1
+            }
+          else:
+            info['locations'][connector_id]['count'] += 1
+    else:
+      outgoing = defaultdict(dict)
+      for r in cursor.fetchall():
+          source, target = r[0], r[1]
+          mapping = outgoing[source]
+          count = mapping.get(target, 0)
+          mapping[target] = count + 1
 
     return outgoing
 

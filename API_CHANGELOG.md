@@ -27,6 +27,10 @@ included in this changelog.
   "n_largest_skeletons_limit", which can be used to constrain the returned
   neurons to only those of the N largest skeletons in the result set.
 
+- `POST /{project_id}/skeleton/connectivity_matrix`:
+  The new parameter 'with_locations' includes more data in the result set. Each
+  connector and its contributions to the link count is returned as well.
+
 ### Deprecations
 
 None.

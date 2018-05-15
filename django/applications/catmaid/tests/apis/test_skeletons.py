@@ -529,6 +529,74 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.assertEqual(expected_result, parsed_response)
 
 
+    def test_skeleton_connectivity_matrix_with_locations(self):
+        self.fake_authentication()
+
+        skeleton_ids = [235, 361, 373, 2364, 2388, 2411]
+        params = {
+            'with_locations': True
+        }
+        for i, k in enumerate(skeleton_ids):
+            params['rows[%d]' % i] = k
+            params['columns[%d]' % i] = k
+        response = self.client.post(
+                '/%d/skeleton/connectivity_matrix' % (self.test_project_id,),
+                params)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = {
+            "235": {
+                "373": {
+                    "count": 2,
+                    "locations": {
+                        "356": {
+                            "pos": [6730.0, 2700.0, 0.0],
+                            "count": 1
+                        },
+                        "421": {
+                            "pos": [6260.0, 3990.0, 0.0],
+                            "count": 1
+                        }
+                    }
+                },
+                "361": {
+                    "count": 1,
+                    "locations": {
+                        "356": {
+                            "pos": [6730.0, 2700.0, 0.0],
+                            "count": 1
+                        }
+                    }
+                }
+            },
+            "2388": {
+                "2364": {
+                    "count": 1,
+                    "locations": {
+                        "2400": {
+                            "pos": [3400.0, 5620.0, 0.0],
+                            "count": 1
+                        }
+                    }
+                }
+            },
+            "2411": {
+                "2364": {
+                    "count": 1,
+                    "locations": {
+                        "2400": {
+                            "pos": [3400.0, 5620.0, 0.0],
+                            "count": 1
+                        }
+                    }
+                }
+            }
+        }
+
+
+        self.assertEqual(expected_result, parsed_response)
+
+
     def test_skeleton_list(self):
         self.fake_authentication()
 

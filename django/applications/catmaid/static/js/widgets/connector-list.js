@@ -208,7 +208,7 @@
       var connectors = data.reduce(function(o, link) {
         var connectorId = link[0];
         var x = link[1], y = link[2], z = link[3];
-        o[connectorId] = new CATMAID.ConnectorModel(connectorId, x, y, z);
+        o.set(connectorId, new CATMAID.ConnectorModel(connectorId, x, y, z));
         return o;
       }, new Map());
       var filter = new CATMAID.NodeFilter(this.filterRules, connectors);

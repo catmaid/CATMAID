@@ -59,7 +59,7 @@
     }
     var mergeNodeCollection = (mergeNodeCollections).bind(nodeCollection);
 
-    var sourceNodeIds = Object.keys(nodeIndex);
+    var sourceNodeIds = Array.from(nodeIndex.keys());
 
     // Get final set of nodes by going through all rules and apply them either
     // to all connectors or a selected sub-set. Results of individual rules are
@@ -75,7 +75,7 @@
       // Apply rules and get back a set of valid nodes for each skeleton
       sourceNodeIds.forEach(function(nodeId) {
         // Get valid point list from this skeleton with the current filter
-        var node = nodeIndex[nodeId];
+        var node = nodeIndex.get(nodeId);
         var nodeCollection = rule.strategy.filter(nodeId, node,
             inputMap, rule.options);
         // Merge all point sets for this rule. How this is done exactly (i.e.
@@ -104,7 +104,7 @@
     var rules = CATMAID.NodeFilter.getActiveRules(this.rules);
 
     var nodeIndex = this.nodeIndex;
-    var nodeIds = Object.keys(nodeIndex);
+    var nodeIds = Array.from(nodeIndex.keys());
 
     // Don't cache between executions by default
     if (!keepInputCache) {

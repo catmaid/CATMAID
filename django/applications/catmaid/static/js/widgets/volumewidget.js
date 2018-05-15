@@ -595,13 +595,16 @@
           o[CATMAID.SkeletonFilterStrategy[p].name] = p;
           return o;
         }, {});
-        CATMAID.DOM.appendNewNodeFilterControls(nodeFilters, $content, function(rule, strategt) {
-          volume.rules.push(rule);
-          // To trigger events, override with itself
-          volume.set("rules", volume.rules, true);
-          // Trigger table update
-          datatable.rows().invalidate();
-          datatable.ajax.reload();
+        CATMAID.DOM.appendNewNodeFilterControls('skeleton', nodeFilters,
+            $content, function(rule, strategt) {
+          if (datatable) {
+            volume.rules.push(rule);
+            // To trigger events, override with itself
+            volume.set("rules", volume.rules, true);
+            // Trigger table update
+            datatable.rows().invalidate();
+            datatable.ajax.reload();
+          }
         });
 
         // Get available rules

@@ -1473,8 +1473,8 @@
 
   // A default no-op filter rule that takes all nodes.
   CATMAID.DefaultFilterRuleSets = new Map([
-    ['node', new CATMAID.NodeFilterRule(CATMAID.NodeFilterStrategy['take-all'])],
-    ['skeleton', new CATMAID.SkeletonFilterRule(CATMAID.SkeletonFilterStrategy['take-all'])]
+    ['node', [new CATMAID.NodeFilterRule(CATMAID.NodeFilterStrategy['take-all'])]],
+    ['skeleton', [new CATMAID.SkeletonFilterRule(CATMAID.SkeletonFilterStrategy['take-all'])]]
   ]);
 
   CATMAID.FilterRules = new Map([

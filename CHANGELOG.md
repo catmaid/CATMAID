@@ -33,6 +33,11 @@ Volume widget:
 - Volumes can now be smoothed by subdivision. The volume option panel available
   from the View Settings tab now contains a "Subdivide" checkbox.
 
+Connectivity matrix:
+
+- Connector node filters can now be applied using the funnel icon in the widget
+  title bar.
+
 Miscellaneous:
 
 - The behavior of the Ctrl modifier on section navigation with , and . can now

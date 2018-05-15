@@ -36,6 +36,11 @@
     this.rotateColumnHeaders = false;
     // Display manual order edit controls
     this.displayOrderFields = false;
+
+    // A set of filter rules to apply to the handled connectors
+    this.filterRules = [];
+    // Filter rules can optionally be disabled
+    this.applyFilterRules = true;
   };
 
   $.extend(ConnectivityMatrixWidget.prototype, new InstanceRegistry());
@@ -82,6 +87,7 @@
        * Create widget controls.
        */
       createControls: function(controls) {
+        var self = this;
         var titles = document.createElement('ul');
         controls.appendChild(titles);
         var tabs = ['Main', 'Display'].reduce((function(o, name) {
@@ -262,6 +268,18 @@
         synapseThreshold.appendChild(synapseThresholdSelect);
         tabs['Main'].appendChild(synapseThreshold);
 
+        var applyFiltersCb = document.createElement('input');
+        applyFiltersCb.setAttribute('type', 'checkbox');
+        applyFiltersCb.checked = this.applyFilterRules;
+        applyFiltersCb.onclick = function() {
+          self.applyFilterRules= this.checked;
+          self.update();
+        };
+        var applyFilters = document.createElement('label');
+        applyFilters.appendChild(applyFiltersCb);
+        applyFilters.appendChild(document.createTextNode('Apply connector filters'));
+        tabs['Main'].appendChild(applyFilters);
+
         var exportCSV = document.createElement('input');
         exportCSV.setAttribute("type", "button");
         exportCSV.setAttribute("value", "Export CSV");
@@ -386,7 +404,13 @@
       createContent: function(container) {
         this.content = container;
         this.update();
-      }
+      },
+
+      filter: {
+        rules: this.filterRules,
+        update: this.update.bind(this),
+        type: 'node',
+      },
     };
   };
 
@@ -501,6 +525,10 @@
     var nns = CATMAID.NeuronNameService.getInstance();
     this.matrix.rowSkeletonIDs = this.rowDimension.getSelectedSkeletons();
     this.matrix.colSkeletonIDs = this.colDimension.getSelectedSkeletons();
+
+    this.matrix.filterRules.length = 0;
+    this.matrix.filterRules.push.apply(this.matrix.filterRules, this.filterRules);
+    this.matrix.applyFilterRules = this.applyFilterRules;
     this.matrix.refresh()
       .then(nns.registerAll.bind(nns, this, this.rowDimension.getSelectedSkeletonModels()))
       .then(nns.registerAll.bind(nns, this, this.colDimension.getSelectedSkeletonModels()))
@@ -1255,7 +1283,7 @@
 
     for (var i=0; i<nRows; ++i) {
       for (var j=0; j<nCols; ++j) {
-        n += matrix[r + i][c + j];
+        n += matrix[r + i][c + j].count;
       }
     }
 

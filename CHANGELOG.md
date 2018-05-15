@@ -33,6 +33,9 @@ Volume widget:
 - Volumes can now be smoothed by subdivision. The volume option panel available
   from the View Settings tab now contains a "Subdivide" checkbox.
 
+- A volume's bounding box can now be displayed using the "BB" checkbox that is
+  available for visible volumes in the volume option panel.
+
 Connectivity matrix:
 
 - Connector node filters can now be applied using the funnel icon in the widget

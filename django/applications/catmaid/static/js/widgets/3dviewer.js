@@ -1099,6 +1099,8 @@
     this.meshes_opacity = 0.2;
     this.meshes_faces = false;
     this.meshes_subdiv = 0;
+    this.meshes_boundingbox = false;
+    this.meshes_boundingbox_color = '#72ff00';
     this.landmarkgroup_color = "#ffa500";
     this.landmarkgroup_opacity = 0.2;
     this.landmarkgroup_faces = true;
@@ -2094,9 +2096,10 @@
    * @param {number} opacity  Opacity of the referenced volume in [0,1]
    * @param {bool}   faces    Whether to show faces or a wireframe
    * @param {number} subdivisions (optional) Number of smoothing subdivisions
+   * @param {bool}   bb       (optional) Whether to show the bounding box of the volume
    */
   WebGLApplication.prototype.showVolume = function(volumeId, visible, color,
-      opacity, faces, subdivisions) {
+      opacity, faces, subdivisions, bb) {
     var existingVolume = this.loadedVolumes.get(volumeId);
     if (visible) {
       // Bail out if the volume in question is already visible
@@ -2130,7 +2133,8 @@
               color: color,
               opacity: opacity,
               faces: faces,
-              subdivisions: subdivisions
+              subdivisions: subdivisions,
+              boundingBox: !!bb
             });
             this.space.render();
           } else {
@@ -2208,6 +2212,43 @@
       material.wireframe = !faces;
       material.needsUpdate = true;
     }
+    this.space.render();
+  };
+
+  /**
+   * Set visibility of the volume's bounding box.
+   *
+   * @param {Boolean} visible Whether to to display the volume's bounding box.
+   */
+  WebGLApplication.prototype.setVolumeBoundingBox = function(volumeId, visible) {
+    var volume = this.loadedVolumes.get(volumeId);
+    if (!volume) {
+      CATMAID.warn("Volume not loaded");
+      return;
+    }
+
+    if (visible === volume.boundingBox) {
+      return;
+    }
+
+    volume.boundingBox = visible;
+
+    if (volume.boundingBoxMeshes && volume.boundingBoxMeshes.length > 0) {
+      this.space.scene.remove.apply(this.space.scene, volume.boundingBoxMeshes);
+    }
+
+    if (visible) {
+      var color = this.options.meshes_boundingbox_color;
+      if (!volume.boundingBoxMeshes) {
+        volume.boundingBoxMeshes = [];
+      }
+      for (var i=0; i<volume.meshes.length; ++i) {
+        var box = new THREE.BoxHelper(volume.meshes[i], color);
+        volume.boundingBoxMeshes.push(box);
+        this.space.scene.add(box);
+      }
+    }
+
     this.space.render();
   };
 
@@ -7926,7 +7967,9 @@
                 'id': v,
                 'color': mesh.material.color.getStyle(),
                 'opacity': mesh.material.opacity,
-                'wireframe': mesh.material.wireframe
+                'wireframe': mesh.material.wireframe,
+                'subdiv': volume.subdivisions,
+                'bb': volume.boundingBox
               });
             }
             return o;
@@ -7945,7 +7988,8 @@
       if (state.volumes) {
         let volumes = JSON.parse(state.volumes);
         volumes.forEach(function(v) {
-          widget.showVolume(v.id, true, v.color, v.opacity, !v.wireframe)
+          widget.showVolume(v.id, true, v.color, v.opacity, !v.wireframe,
+              v.subdiv, v.bb)
             .catch(CATMAID.handleError);
         });
       }

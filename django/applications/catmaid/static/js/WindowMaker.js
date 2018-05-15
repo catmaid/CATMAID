@@ -623,7 +623,15 @@ var WindowMaker = new function()
       e.stopPropagation();
     };
 
-    function setVolumeEntryVisible(li, volumeId, visible, faces, color, alpha, subdiv) {
+    var updateVolumeBb = function(volumeId, e) {
+      var showBb = e.target.checked;
+      WA.setVolumeBoundingBox(volumeId, showBb);
+      // Stop propagation or the general volume list change handler is called.
+      e.stopPropagation();
+    };
+
+    function setVolumeEntryVisible(li, volumeId, visible, faces, color, alpha,
+        subdiv, bb) {
       // Add extra display controls for enabled volumes
       if (!li) {
         return;
@@ -638,14 +646,21 @@ var WindowMaker = new function()
             initialAlpha: alpha,
             onColorChange: updateVolumeColor.bind(null, volumeId)
           });
+
         var facesCb = CATMAID.DOM.appendCheckbox(volumeControls, "Faces",
             "Whether faces should be displayed for this volume",
             faces, updateVolumeFaces.bind(null, volumeId));
         facesCb.style.display = 'inline';
+
         var subdivCb = CATMAID.DOM.appendCheckbox(volumeControls, "Subdivide",
             "Whether meshes should be smoothed by subdivision",
             !!subdiv, updateVolumeSubiv.bind(null, volumeId));
         subdivCb.style.display = 'inline';
+
+        var bbCb = CATMAID.DOM.appendCheckbox(volumeControls, "BB",
+            "Whether or not to show the bounding box of this mesh",
+            !!bb, updateVolumeBb.bind(null, volumeId));
+        bbCb.style.display = 'inline';
       } else {
         var volumeControls = li.querySelector('span[data-role=volume-controls]');
         if (volumeControls) {
@@ -670,14 +685,15 @@ var WindowMaker = new function()
           var node = DOM.createCheckboxSelect('Volumes', volumes,
               selectedVolumes, true, function(row, id, visible) {
                 let loadedVolume = WA.loadedVolumes.get(id);
-                let faces, color, alpha, subdiv;
+                let faces, color, alpha, subdiv, bb;
                 if (loadedVolume) {
                   faces = loadedVolume.faces;
                   color = loadedVolume.color;
                   alpha = loadedVolume.opacity;
                   subdiv = loadedVolume.subdiv;
+                  bb = loadedVolume.boundingBox;
                 }
-                setVolumeEntryVisible(row, id, visible, faces, color, alpha, subdiv);
+                setVolumeEntryVisible(row, id, visible, faces, color, alpha, subdiv, bb);
               });
 
           // Add a selection handler
@@ -689,7 +705,8 @@ var WindowMaker = new function()
               .catch(CATMAID.handleError);
 
             setVolumeEntryVisible(e.target.closest('li'), volumeId, visible,
-                o.meshes_faces, o.meshes_color, o.meshes_opacity, o.meshes_subdiv);
+                o.meshes_faces, o.meshes_color, o.meshes_opacity,
+                o.meshes_subdiv, o.meshes_boundingbox);
           };
           return node;
         });

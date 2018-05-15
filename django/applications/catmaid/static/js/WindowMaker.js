@@ -669,14 +669,12 @@ var WindowMaker = new function()
           // Create actual element based on the returned data
           var node = DOM.createCheckboxSelect('Volumes', volumes,
               selectedVolumes, true, function(row, id, visible) {
-                let loadedVolumes = WA.loadedVolumes.get(id);
+                let loadedVolume = WA.loadedVolumes.get(id);
                 let faces, color, alpha, subdiv;
-                if (loadedVolumes && loadedVolumes.length > 0) {
-                  // Use first volume as reference volume
-                  let loadedVolume = loadedVolumes[0];
-                  faces = !loadedVolume.material.wireframe;
-                  color = '#' + loadedVolume.material.color.getHexString();
-                  alpha = loadedVolume.material.opacity;
+                if (loadedVolume) {
+                  faces = loadedVolume.faces;
+                  color = loadedVolume.color;
+                  alpha = loadedVolume.opacity;
                   subdiv = loadedVolume.subdiv;
                 }
                 setVolumeEntryVisible(row, id, visible, faces, color, alpha, subdiv);

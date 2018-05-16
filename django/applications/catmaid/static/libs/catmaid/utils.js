@@ -4,6 +4,7 @@
   Arbor,
   CATMAID,
   project,
+  msgpack,
   requestQueue
   */
 
@@ -73,7 +74,8 @@ InstanceRegistry.prototype.getLastInstance = function() {
  * Additionally, when done if any skeletons don't exist anymore, a dialog will ask to remove them from all widgets that are skeleton sources.
  *
  * If no <method> parameter is passed in, POST is assumed.*/
-var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne, fnFailedLoading, fnDone, method) {
+var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne,
+    fnFailedLoading, fnDone, method, binaryTransfer) {
   method = method || "POST";
   var i = 0,
       missing = [],
@@ -92,19 +94,24 @@ var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne, fnFa
       },
       loadOne = function(skeleton_id) {
         requestQueue.register(fnMakeURL(skeleton_id), method, fnPost(skeleton_id),
-            function(status, text) {
+            function(status, text, xml, dataSize, contentType) {
               try {
                 if (200 === status) {
-                  var json = JSON.parse(text);
-                  if (json.error) {
-                    if (0 === json.error.indexOf("Skeleton #" + skeleton_id + " doesn't exist")) {
+                  var data;
+                  if (binaryTransfer && contentType === 'application/octet-stream') {
+                    data = msgpack.decode(new Uint8Array(text));
+                  } else {
+                    data = JSON.parse(text);
+                  }
+                  if (data.error) {
+                    if (0 === data.error.indexOf("Skeleton #" + skeleton_id + " doesn't exist")) {
                       missing.push(skeleton_id);
                     } else {
                       unloadable.push(skeleton_id);
                     }
                     fnFailedLoading(skeleton_id);
                   } else {
-                    fnLoadedOne(skeleton_id, json);
+                    fnLoadedOne(skeleton_id, data);
                   }
                 } else {
                   unloadable.push(skeleton_id);
@@ -124,7 +131,9 @@ var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne, fnFa
                 console.log(e, e.stack);
                 CATMAID.msg("ERROR", "Problem loading skeleton " + skeleton_id);
               }
-            });
+            },
+            undefined,
+            binaryTransfer ? 'arraybuffer' : undefined);
       };
   if (skeleton_ids.length > 1) {
     $.blockUI({message: '<img src="' + STATIC_URL_JS +

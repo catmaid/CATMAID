@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 import array
 import json
 import logging
+import msgpack
 import networkx as nx
 import pytz
 import six
@@ -228,16 +229,21 @@ def compact_skeleton_detail(request, project_id=None, skeleton_id=None):
     with_reviews = get_request_bool(request.GET, "with_reviews", False)
     with_annotations = get_request_bool(request.GET, "with_annotations", False)
     with_user_info = get_request_bool(request.GET, "with_user_info", False)
+    return_format = request.GET.get('format', 'json')
 
     result = _compact_skeleton(project_id, skeleton_id, with_connectors,
                                with_tags, with_history, with_merge_history,
                                with_reviews, with_annotations, with_user_info)
 
-    return JsonResponse(result, safe=False,
-            json_dumps_params={
-                'separators': (',', ':'),
-                'default': default
-            })
+    if return_format == 'msgpack':
+        data = msgpack.packb(result)
+        return HttpResponse(data, content_type='application/octet-stream')
+    else:
+        return JsonResponse(result, safe=False,
+                json_dumps_params={
+                    'separators': (',', ':'),
+                    'default': default
+                })
 
 @requires_user_role(UserRole.Browse)
 def compact_skeleton(request, project_id=None, skeleton_id=None,
@@ -375,6 +381,7 @@ def compact_skeleton_detail_many(request, project_id=None):
     with_reviews = get_request_bool(request.POST, "with_reviews", False)
     with_annotations = get_request_bool(request.POST, "with_annotations", False)
     with_user_info = get_request_bool(request.POST, "with_user_info", False)
+    return_format = request.POST.get('format', 'json')
 
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
@@ -385,12 +392,18 @@ def compact_skeleton_detail_many(request, project_id=None):
                 with_connectors, with_tags, with_history, with_merge_history,
                 with_reviews, with_annotations, with_user_info)
 
-    return JsonResponse({
+    result = {
         "skeletons": skeletons
-    }, safe=False, json_dumps_params={
-        'separators': (',', ':'),
-        'default': default
-    })
+    }
+
+    if return_format == 'msgpack':
+        data = msgpack.packb(result)
+        return HttpResponse(data, content_type='application/octet-stream')
+    else:
+        return JsonResponse(result, safe=False, json_dumps_params={
+            'separators': (',', ':'),
+            'default': default
+        })
 
 
 def _compact_skeleton(project_id, skeleton_id, with_connectors=True,

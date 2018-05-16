@@ -31,6 +31,14 @@ included in this changelog.
   The new parameter 'with_locations' includes more data in the result set. Each
   connector and its contributions to the link count is returned as well.
 
+- `GET|POST /{project_id}/skeletons/compact-detail`:
+  The new parameter 'format' can now be used to returned the skeleton data in
+  different formats. Supported are 'msgpack' and 'json'.
+
+- `GET /{project_id}/skeletons/{skeleton_id}/compact-detail`:
+  The new parameter 'format' can now be used to returned the skeleton data in
+  different formats. Supported are 'msgpack' and 'json'.
+
 ### Deprecations
 
 None.

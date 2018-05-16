@@ -385,6 +385,7 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.MultiPartParser',
         'rest_framework.parsers.JSONParser',
     ],
+    'URL_FORMAT_OVERRIDE': None
 }
 
 SWAGGER_SETTINGS = {

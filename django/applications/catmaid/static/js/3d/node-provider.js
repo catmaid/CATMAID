@@ -11,6 +11,14 @@
       progressCallback, errorCallback) {
     progressCallback = progressCallback || CATMAID.noop;
     errorCallback = errorCallback || CATMAID.noop;
+    options = options || {};
+
+    // Transfer nodes in binary mode by default to save space.
+    if (!options.format && CATMAID.Client.Settings.session.binary_data_transfer) {
+      options.format = 'msgpack';
+    }
+    var binaryTransfer = options.format === 'msgpack';
+
     return new Promise(function(resolve, reject) {
       var url1 = CATMAID.makeURL(projectId + '/skeletons/');
       var url2 = '/compact-detail';
@@ -27,7 +35,8 @@
         function() {
           resolve();
         },
-        'GET');
+        'GET',
+        binaryTransfer);
     });
   };
 

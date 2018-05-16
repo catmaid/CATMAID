@@ -153,7 +153,9 @@ var project;
         confirm_project_closing: {
           default: true
         },
-
+        binary_data_transfer: {
+          default: true
+        }
       }
     });
 

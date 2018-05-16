@@ -247,6 +247,18 @@
           CATMAID.Client.Settings,
           'confirm_project_closing',
           SETTINGS_SCOPE));
+
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              'Transfer data in binary mode when possible',
+              CATMAID.Client.Settings[SETTINGS_SCOPE].binary_data_transfer,
+              'Using a binary transfer mode can speed up data loading slightly',
+              function() {
+                CATMAID.Client.Settings[SETTINGS_SCOPE].binary_data_transfer = this.checked;
+              }),
+          CATMAID.Client.Settings,
+          'binary_data_transfer',
+          SETTINGS_SCOPE));
     };
 
     /**

@@ -2388,6 +2388,8 @@ def get_skeletons_in_bb(params):
 
     if extra_where:
         extra_where = 'WHERE ' + '\nAND '.join(extra_where)
+    else:
+        extra_where = ''
 
     query = """
         SELECT skeleton.id

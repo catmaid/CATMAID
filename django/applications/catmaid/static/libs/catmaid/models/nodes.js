@@ -255,7 +255,7 @@
 
       return CATMAID.fetch(url, 'POST', params)
         .then(function(result) {
-          var newNode = new CATMAID.Treenode(resul.treenode_id, x, y, z,
+          var newNode = new CATMAID.Treenode(result.treenode_id, x, y, z,
               parentId, childId ? [childId] : undefined, result.skeleton_id,
               radius, confidence, CATMAID.session.userid, result.edition_time);
           CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_CREATED, newNode);

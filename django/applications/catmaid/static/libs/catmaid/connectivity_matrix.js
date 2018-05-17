@@ -204,6 +204,20 @@
   };
 
   /**
+   * Get a flat array of arrays containing connectivity counts.
+   */
+  ConnectivityMatrix.prototype.getFlatMatrix = function() {
+    var m = new Array(this.rowSkeletonIDs.length);
+    for (var i=0; i<this.rowSkeletonIDs.length; ++i) {
+      m[i] = new Array(this.colSkeletonIDs.length);
+      for (var j=0; j<this.colSkeletonIDs.length; ++j) {
+        m[i][j] = this.connectivityMatrix[i][j].count;
+      }
+    }
+    return m;
+  };
+
+  /**
    * Get the number of rows.
    */
   ConnectivityMatrix.prototype.getNumberOfRows = function() {

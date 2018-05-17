@@ -40,12 +40,12 @@ QUnit.test('Connectivity matrix test', function( assert ) {
     var expectedMatrix = [[3, 0, 8],
                           [0, 3, 7],
                           [12, 5, 0]];
-    assert.deepEqual(m, expectedMatrix,
+    assert.deepEqual(cm.getFlatMatrix(), expectedMatrix,
         "CATMAID.ConnectivityMatrix creates an expected matrix");
 
     // Test if creating a new matrix instance preserves the result above
     var cm2 = new CATMAID.ConnectivityMatrix();
-    assert.deepEqual(cm.connectivityMatrix, expectedMatrix,
+    assert.deepEqual(cm.getFlatMatrix(), expectedMatrix,
         "CATMAID.ConnectivityMatrix preserves matrix when new instances are created");
 
   })();

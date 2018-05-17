@@ -2325,6 +2325,7 @@ def get_skeletons_in_bb(params):
     min_cable = params.get('min_cable', 0)
     needs_summary = min_nodes > 0 or min_cable > 0
     provider = params.get('src', 'postgis2d')
+    skeleton_ids = params.get('skeleton_ids')
     node_query = ""
 
     if needs_summary:
@@ -2341,6 +2342,12 @@ def get_skeletons_in_bb(params):
     if min_cable > 0:
         extra_where.append("""
             css.cable_length >= %(min_cable)s
+        """)
+
+    if skeleton_ids:
+        extra_joins.append("""
+            JOIN UNNEST(%(skeleton_ids)s::int[]) query_skeleton(id)
+                ON query_skeleton.id = skeleton.id
         """)
 
     if provider == 'postgis2d':
@@ -2409,11 +2416,11 @@ def get_skeletons_in_bb(params):
     return [r[0] for r in cursor.fetchall()]
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 @requires_user_role(UserRole.Browse)
 def skeletons_in_bounding_box(request, project_id):
     """Get a list of all skeletons that intersect with the passed in bounding
-    box.
+    box. Optionally, only a subsed of passed in skeletons can be tested against.
     ---
     parameters:
     - name: limit
@@ -2482,15 +2489,31 @@ def skeletons_in_bounding_box(request, project_id):
       defaultValue: 0
       type: integer
       paramType: form
+    - name: skeleton_ids
+      description: |
+        An optional list of skeleton IDs that should only be tested againt. If
+        used, the result will only contain skeletons of this set.
+      required: false
+      defaultValue: 0
+      type: array
+      items:
+        type: integer
+      paramType: form
     type:
         - type: array
           items:
-          type: integer
+            type: integer
           description: array of skeleton IDs
           required: true
     """
     project_id = int(project_id)
-    data = request.GET
+
+    if request.method == 'GET':
+        data = request.GET
+    elif request.method == 'POST':
+        data = request.POST
+    else:
+        raise ValueError("Unsupported HTTP method: " + data.method)
 
     params = {
         'project_id': project_id,
@@ -2515,6 +2538,7 @@ def skeletons_in_bounding_box(request, project_id):
     params['halfz'] = params['minz'] + (params['maxz'] - params['minz']) * 0.5
     params['min_nodes'] = int(data.get('min_nodes', 0))
     params['min_cable'] = int(data.get('min_cable', 0))
+    params['skeleton_ids'] = get_request_list(data, 'skeleton_ids', map_fn=int)
 
 
     skeleton_ids = get_skeletons_in_bb(params)

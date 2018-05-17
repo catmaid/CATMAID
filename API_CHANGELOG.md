@@ -10,6 +10,10 @@ included in this changelog.
   Accepts the same parameters as the GET variant, but allows for larger
   skeleton_ids list.
 
+- `POST /{project_ids}/skeletons/in-bounding-box`:
+  Accepts the same parameters as the GET variant, but allows for larger
+  skeleton_ids list.
+
 ### Modifications
 
 - `GET /{project_id}/skeletons/in-bounding-box`:
@@ -17,7 +21,9 @@ included in this changelog.
   result. The `src` parameter can be 'postgis2d' and 'postgis3d', with the
   former being the default spatial query type. The `volume_id` parameter can
   optionally be used to return the skeletons in the bounding box of a specific
-  volume, alternative to explicit bounding box.
+  volume, alternative to explicit bounding box. Optionally, the `skeleton_ids`
+  parameter can provide a list of skeletons to test for intersections. Without
+  it, all skeletons in the project are considered.
 
 - `GET /{project_id}/skeletons/{skeleton_id}/review`:
   The user ID of each node is now returned as well.

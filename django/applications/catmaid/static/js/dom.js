@@ -1228,10 +1228,11 @@
     }
   };
 
-  DOM.createSelect = function(id, items, selectedValue, onChange) {
-    var select = document.createElement('select');
-    if (id) {
-      select.setAttribute("id", id);
+  DOM.appendOptionsToSelect = function(select, items, selectedValue, clear) {
+    if (clear) {
+      while (select.lastChild) {
+        select.removeChild(select.lastChild);
+      }
     }
     items.forEach(function(item, i) {
       var option = document.createElement("option");
@@ -1252,6 +1253,14 @@
       }
       select.appendChild(option);
     });
+  };
+
+  DOM.createSelect = function(id, items, selectedValue, onChange) {
+    var select = document.createElement('select');
+    if (id) {
+      select.setAttribute("id", id);
+    }
+    DOM.appendOptionsToSelect(select, items, selectedValue);
     if (CATMAID.tools.isFn(onChange)) {
       select.addEventListener("change", onChange);
     }
@@ -1440,6 +1449,14 @@
       div.appendChild(labelElement);
     }
     return select;
+  };
+
+  DOM.appendLabeledElement = function(target, title, element) {
+    var label = document.createElement('label');
+    label.setAttribute('title', title);
+    label.appendChild(document.createTextNode(label));
+    label.appendChild(element);
+    return label;
   };
 
   DOM.createSkeletonNodeMatcherSetting = function(options) {

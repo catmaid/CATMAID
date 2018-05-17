@@ -29,6 +29,14 @@
     this.minFilterNodes = 2;
     // Minimum length a volume filtered skeleton has to have.
     this.minFilterCable = 0;
+    // A skeleton source that is selected to provide skeleton ID constraints for
+    // listing skeletons in a volume.
+    this.selectedSkeletonConstraintSource = 'none';
+
+    CATMAID.skeletonListSources.on(CATMAID.SkeletonSourceManager.EVENT_SOURCE_ADDED,
+        this.updateSkeletonConstraintSources, this);
+    CATMAID.skeletonListSources.on(CATMAID.SkeletonSourceManager.EVENT_SOURCE_REMOVED,
+        this.updateSkeletonConstraintSources, this);
   };
 
   VolumeManagerWidget.prototype.getName = function() {
@@ -102,6 +110,19 @@
             },
             8,
             "nm");
+
+        // The skeleton source
+        var sourceSelect = CATMAID.DOM.appendSelect(
+            controls,
+            "skeleton-constraint-source-" + this.widgetID,
+            "Skeleton constraints",
+            [{title: '(none)', value: 'none'}],
+            "Only list skeletons for a volume from this skeleton source",
+            'none',
+            function(e) {
+              self.selectedSkeletonConstraintSource = this.value;
+            });
+        this.updateSkeletonConstraintSourceSelect(sourceSelect);
       },
 
       contentID: 'volume_manger_content',
@@ -190,9 +211,23 @@
           CATMAID.Volumes.get(project.id, volume.id)
             .then(function(volume) {
               let bb = volume.bbox;
+              let skeletonConstraints;
+              if (self.selectedSkeletonConstraintSource &&
+                  self.selectedSkeletonConstraintSource!== 'none') {
+                let source = CATMAID.skeletonListSources.getSource(
+                    self.selectedSkeletonConstraintSource);
+                if (!source) {
+                  throw new CATMAID.ValueError("Can't find skeleton source: " +
+                      self.selectedSkeletonConstraintSource);
+                }
+                let skeletonIds = source.getSelectedSkeletons();
+                if (skeletonIds.length > 0) {
+                  skeletonConstraints = skeletonIds;
+                }
+              }
               return CATMAID.Skeletons.inBoundingBox(project.id, bb.min.x,
                   bb.min.y, bb.min.z, bb.max.x, bb.max.y, bb.max.z,
-                  self.minFilterNodes, self.minFilterCable);
+                  self.minFilterNodes, self.minFilterCable, skeletonConstraints);
             })
             .then(function(skeletonIds) {
               if (!skeletonIds || skeletonIds.length === 0) {
@@ -266,6 +301,10 @@
       CATMAID.tools.callIfFn(this.currentContext.onExit);
       this.currentContext = null;
     }
+    SkeletonAnnotations.off(CATMAID.SkeletonSourceManager.EVENT_SOURCE_ADDED,
+        this.updateSkeletonConstraintSources, this);
+    SkeletonAnnotations.off(CATMAID.SkeletonSourceManager.EVENT_SOURCE_REMOVED,
+        this.updateSkeletonConstraintSources, this);
   };
 
   /**
@@ -277,6 +316,44 @@
     }
     // Get list of available volumes
     this.datatable.ajax.reload();
+  };
+
+  /**
+   *
+   */
+  VolumeManagerWidget.prototype.updateSkeletonConstraintSources = function() {
+    let sourceSelectSelector = "select#volume_manager_controls_skeleton-constraint-source-" + this.widgetID;
+    let sourceSelect = document.querySelector(sourceSelectSelector);
+    if (!sourceSelect) {
+      return;
+    }
+    this.updateSkeletonConstraintSourceSelect(sourceSelect);
+    this.selectedSkeletonConstraintSource = sourceSelect.value;
+  };
+
+  /**
+   * Update a particular select element with the most recent sources.
+   */
+  VolumeManagerWidget.prototype.updateSkeletonConstraintSourceSelect = function(sourceSelect) {
+    // Find index of current value in new source list
+    let availableSources = CATMAID.skeletonListSources.getSourceNames();
+    let newIndexInNewSources = -1;
+    for (let i=0; i<availableSources.length; ++i) {
+      if (availableSources[i] === this.selectedSkeletonConstraintSource) {
+        newIndexInNewSources = i;
+        break;
+      }
+    }
+    var sourceOptions = availableSources.reduce(function(o, name) {
+      o.push({
+        title: name,
+        value: name
+      });
+      return o;
+    }, [{title: '(none)', value: 'none'}]);
+
+    CATMAID.DOM.appendOptionsToSelect(sourceSelect, sourceOptions,
+        this.selectedSkeletonConstraintSource, true);
   };
 
   /**

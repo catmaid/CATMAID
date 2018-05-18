@@ -97,9 +97,9 @@
 
         var ais_choice = CATMAID.DOM.createSelect("synapse_plot_AIS_" + this.widgetID, ["Computed", "Node tagged with..."], "Computed");
 
-        var tag = CATMAID.DOM.createNumericField("synapse_count_tag" + this.widgetID,
-                                     undefined,
+        var tag = CATMAID.DOM.createTextField("synapse_count_tag" + this.widgetID,
                                      "Tag",
+                                     "",
                                      "",
                                      undefined,
                                      undefined,
@@ -135,7 +135,6 @@
              [filter],
              [document.createTextNode(' Axon initial segment: ')],
              [ais_choice],
-             [document.createTextNode(' Tag: ')],
              [tag],
              [document.createTextNode(' Jitter: ')],
              [jitter],

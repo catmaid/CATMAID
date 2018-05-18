@@ -263,7 +263,10 @@
 
         winningModel.color.copy(winningColor);
         losingModel.color.copy(losingColor);
-        this.webglapp.addSkeletons(this.models);
+        this.webglapp.addSkeletons(this.models)
+            .then((function() {
+              this.webglapp.render();
+            }).bind(this));
 
         var title = 'Merge skeleton "' + losingModel.baseName +
           '" into "' + winningModel.baseName + '"';

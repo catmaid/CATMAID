@@ -86,6 +86,9 @@ Miscellaneous:
 - Neuron name service: missing naming components don't lead to removal of all
   whitespace between neighbors anymore.
 
+- Initial skeleton coloring of merge dialog when merging from smaller into
+  larger skeletons is fixed.
+
 
 ## 2018.04.15
 

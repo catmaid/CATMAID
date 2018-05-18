@@ -838,7 +838,7 @@ var WindowMaker = new function()
             title: 'If checked, neurons will ignore light sources and appear "flat"'
           },
           {
-            type: 'numeric',
+            type: 'text',
             label: 'Custom Tags:',
             placeholder: 'Name or regex',
             title: 'Display handle spheres for nodes with tags matching this regex (must refresh 3D viewer after changing).',

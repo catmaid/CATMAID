@@ -912,7 +912,7 @@ var WindowMaker = new function()
           {type: 'checkbox', label: 'with stack images', value: o.zplane_texture,
            onclick: adjustFn('zplane_texture'), title: 'If checked, images ' +
              'of the current section of the active stack will be displayed on a Z plane.'},
-          {type: 'numeric', label: 'Z plane zoom level ', value: o.zplane_zoomlevel,
+          {type: 'text', label: 'Z plane zoom level ', value: o.zplane_zoomlevel,
            title: 'The zoom-level to use (slider value in top toolbar) for image tiles ' +
            'in a Z plane. If set to "max", the highest zoom-level available will be ' +
            'which in turn means the worst resolution available.', length: 2,

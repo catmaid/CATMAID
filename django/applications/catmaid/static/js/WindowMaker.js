@@ -417,7 +417,7 @@ var WindowMaker = new function()
           ['Save view', storeView],
           ['Fullscreen', WA.fullscreenWebGL.bind(WA)],
           [connectorRestrictions],
-          ['Refresh active skeleton', WA.updateActiveSkeleton.bind(WA)],
+          ['Refresh active skeleton', function() { WA.updateActiveSkeleton(); }],
           ['Orthographic mode', false, function() { WA.updateCameraView(this.checked); }, false],
           ['Lock view', false, function() { WA.options.lock_view = this.checked;  }, false],
         ]);

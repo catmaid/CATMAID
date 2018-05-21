@@ -1906,7 +1906,7 @@
         return;
       }
     }
-    this.updateSkeletons(skeletonId, quiet);
+    this.updateSkeleton(skeletonId, quiet);
   };
 
   /**

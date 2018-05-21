@@ -89,6 +89,9 @@ Miscellaneous:
 - Initial skeleton coloring of merge dialog when merging from smaller into
   larger skeletons is fixed.
 
+- 3D viewer: refreshing the active skeleton does not refresh all skeletons
+  anymore.
+
 
 ## 2018.04.15
 

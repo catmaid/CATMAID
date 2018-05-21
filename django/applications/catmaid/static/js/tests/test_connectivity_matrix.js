@@ -70,4 +70,16 @@ QUnit.test('Connectivity matrix test', function( assert ) {
     assert.ok(cm1.connectivityMatrix !== cm2.connectivityMatrix,
         "CATMAID.ConnectivityMatrix instances have different private matrix objects");
   })();
+
+  // Test max connection calulation
+  (function() {
+    var cm = new CATMAID.ConnectivityMatrix();
+    cm.rowSkeletonIDs = rowSkeletonIDs;
+    cm.colSkeletonIDs = colSkeletonIDs;
+    // Set connectivity matrix without asking back-end
+    cm.setConnectivityMatrixFromData(data);
+
+    assert.equal(cm.getMaxConnections(), 12,
+        "CATMAID.ConnectivityMatrix.getMaxConnections() computes correctly");
+  })();
 });

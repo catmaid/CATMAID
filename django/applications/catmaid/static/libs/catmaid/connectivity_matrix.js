@@ -239,7 +239,7 @@
     for (var i=0; i<this.rowSkeletonIDs.length; ++i) {
       for (var j=0; j<this.colSkeletonIDs.length; ++j) {
         var c = this.connectivityMatrix[i][j];
-        if (c > max) max = c;
+        if (c.count > max) max = c.count;
       }
     }
     return max;

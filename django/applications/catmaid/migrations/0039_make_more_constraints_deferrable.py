@@ -19,6 +19,24 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunSQL("""
+            -- Some older CATMAID instances seem to bot have the
+            -- treenoded_skeleton_id constraint defined on the treenode table.
+            -- Therefore, make sure it is available.
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT constraint_schema, constraint_name
+                    FROM   information_schema.referential_constraints
+                    WHERE  constraint_name = 'treenode_skeleton_id_fkey'
+                )
+                THEN
+                    ALTER TABLE ONLY treenode
+                    ADD CONSTRAINT treenode_skeleton_id_fkey FOREIGN KEY (skeleton_id)
+                    REFERENCES class_instance(id) ON DELETE CASCADE;
+                END IF;
+            END $$;
+
+            -- Update constraints
             ALTER TABLE location
             ALTER CONSTRAINT location_editor_id_fkey
             DEFERRABLE INITIALLY DEFERRED;

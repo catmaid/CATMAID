@@ -6191,10 +6191,8 @@
     this.connectorSelection = null;
   };
 
-  /**
-   *
-   */
-  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.create_connector_selection = function( common_connector_IDs ) {
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.create_connector_selection =
+      function( common_connector_IDs ) {
     this.connectorSelection = {};
     this.connectoractor = {};
     this.connectorgeometry = {};
@@ -7536,7 +7534,7 @@
 
   /**
    * Create a notification handler to be used with animations that will make
-   * an additional neuron visibile with every call.
+   * an additional neuron visible with every call.
    */
   WebGLApplication.prototype.createStepwiseVisibilityHandler = function(
       visMap, type, options) {

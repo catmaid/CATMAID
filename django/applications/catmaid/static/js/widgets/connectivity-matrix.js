@@ -90,7 +90,7 @@
         var self = this;
         var titles = document.createElement('ul');
         controls.appendChild(titles);
-        var tabs = ['Main', 'Display'].reduce((function(o, name) {
+        var tabs = ['Main', 'Groups', 'Display'].reduce((function(o, name) {
           var id = name.replace(/ /, '') + this.widgetID;
           titles.appendChild($('<li><a href="#' + id + '">' + name + '</a></li>')[0]);
           var div = document.createElement('div');
@@ -176,6 +176,9 @@
             }
           }
         };
+
+
+        // Main tab
 
         var asGroupCb = document.createElement('input');
         asGroupCb.setAttribute('type', 'checkbox');
@@ -299,6 +302,31 @@
         exportXLSX.onclick = this.exportXLSX.bind(this);
         tabs['Main'].appendChild(exportXLSX);
 
+
+        // Groups tab
+        var groupEquallyNamedRows = document.createElement('input');
+        groupEquallyNamedRows.setAttribute("type", "button");
+        groupEquallyNamedRows.setAttribute("value", "Group equally named rows");
+        groupEquallyNamedRows.setAttribute("title", "Group equally named row skeletons");
+        groupEquallyNamedRows.onclick = this.groupEquallyNamed.bind(this, true, false);
+        tabs['Groups'].appendChild(groupEquallyNamedRows);
+
+        var groupEquallyNamedCols = document.createElement('input');
+        groupEquallyNamedCols.setAttribute("type", "button");
+        groupEquallyNamedCols.setAttribute("value", "Group equally named columns");
+        groupEquallyNamedCols.setAttribute("title", "Group equally named column skeletons");
+        groupEquallyNamedCols.onclick = this.groupEquallyNamed.bind(this, false, true);
+        tabs['Groups'].appendChild(groupEquallyNamedCols);
+
+        var groupEquallyNamedBoth = document.createElement('input');
+        groupEquallyNamedBoth.setAttribute("type", "button");
+        groupEquallyNamedBoth.setAttribute("value", "Group equally named both");
+        groupEquallyNamedBoth.setAttribute("title", "Group equally named column skeletons and row skeletons");
+        groupEquallyNamedBoth.onclick = this.groupEquallyNamed.bind(this, true, true);
+        tabs['Groups'].appendChild(groupEquallyNamedBoth);
+
+
+        // Display tab
         var sortOptionNames = sortOptions.map(function(o) {
           return o.name;
         });
@@ -412,6 +440,64 @@
         type: 'node',
       },
     };
+  };
+
+  var addSkeletonModel = function(target, skeletonId) {
+    target[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
+    return target;
+  };
+
+  var groupEquallyNamedInSource = function(targetSource) {
+    var names = new Map();
+    var sourceSkeletonIds = targetSource.getSelectedSkeletons();
+    var orderedNames = [];
+    var groups = sourceSkeletonIds.reduce(function(map, skeletonId) {
+      // Get name
+      var name = CATMAID.NeuronNameService.getInstance().getName(skeletonId);
+      names.set(skeletonId, name);
+      // Find existing group for name or create new one
+      if (name in map) {
+        map[name].push(skeletonId);
+      } else {
+        map[name] = [skeletonId];
+        orderedNames.push(name);
+      }
+      return map;
+    }, {});
+
+    // Clear existing rows
+    targetSource.clear();
+
+    // Add new rows and groups
+    orderedNames.forEach(function(name) {
+      var skeletons = groups[name];
+      if (!skeletons || skeletons.length === 0) {
+        throw new CATMAID.ValueError("Expected at least one skeleton for this row");
+      }
+
+      // Build and append models
+      var models = skeletons.reduce(addSkeletonModel, {});
+      if (skeletons.length === 1) {
+        targetSource.append(models);
+      } else {
+        targetSource.appendAsGroup(models, name);
+      }
+    });
+  };
+
+  /**
+   * Group all rows and/or columns that have equal names.
+   *
+   * @params {Boolean} rows    Whether or not rows should be looked at
+   * @params {Boolean} columns Whether or not columns should be looked at
+   */
+  ConnectivityMatrixWidget.prototype.groupEquallyNamed = function(rows, columns) {
+    if (rows) {
+      groupEquallyNamedInSource(this.rowDimension);
+    }
+    if (columns) {
+      groupEquallyNamedInSource(this.colDimension);
+    }
   };
 
   /**

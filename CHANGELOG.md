@@ -41,6 +41,9 @@ Connectivity matrix:
 - Connector node filters can now be applied using the funnel icon in the widget
   title bar.
 
+- The new "Groups" tab allows to group rows, columns or both by their displayed
+  name.
+
 Miscellaneous:
 
 - The behavior of the Ctrl modifier on section navigation with , and . can now

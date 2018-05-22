@@ -6194,7 +6194,8 @@
         });
 
         var partnerSpheres = {};
-        geometry.createAll(connectors, scaling, null, function(v, m, o, bufferObject) {
+        var visible = this.connectorVisibility[type];
+        geometry.createAll(connectors, scaling, visible, null, function(v, m, o, bufferObject) {
           partnerSpheres[v.node_id] = bufferObject;
         });
 
@@ -6251,7 +6252,7 @@
       scaling: scaling
     });
 
-    geometry.createAll(labels, scaling, (function(v, m, o) {
+    geometry.createAll(labels, scaling, undefined, (function(v, m, o) {
       return !this.specialTagSpheres.hasOwnProperty(v.node_id);
     }).bind(this), (function(v, m, o, bufferObject) {
       this.specialTagSpheres[v.node_id] = bufferObject;
@@ -6291,7 +6292,7 @@
       scaling: scaling
     });
 
-    geometry.createAll(connectors, scaling, (function(v, m, o) {
+    geometry.createAll(connectors, scaling, undefined, (function(v, m, o) {
       // There already is a synaptic sphere at the node
       return !this.synapticSpheres.hasOwnProperty(v.node_id);
     }).bind(this), (function(v, m, o, bufferObject) {

@@ -1729,7 +1729,7 @@
 
   WebGLApplication.prototype.updateActiveNode = function() {
     var activeNode = this.space.content.active_node;
-    var activeNodeDisplayed = activeNode.mesh.visibile;
+    var activeNodeDisplayed = activeNode.mesh.visible;
     var activeNodeSelected = !!SkeletonAnnotations.getActiveNodeId();
 
     activeNode.setVisible(activeNodeSelected);

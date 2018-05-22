@@ -1572,23 +1572,15 @@
     // Display regular markers only if no restriction is used
     var skeletons = this.space.content.skeletons;
     var skids = Object.keys(skeletons);
+
     if (this.options.connector_filter) {
       // Hide regular connector meshes
       skids.forEach(function(skid) {
         var skeleton = skeletons[skid];
-        skeleton.setPreVisibility(false);
-        skeleton.setPostVisibility(false);
+        skeleton.setPreVisibility(false, true);
+        skeleton.setPostVisibility(false, true);
       });
-    } else {
-      // Refresh regular connector visibility from models
-      skids.forEach(function(skid) {
-        var skeleton = skeletons[skid];
-        skeleton.setPreVisibility(skeleton.skeletonmodel.pre_visible);
-        skeleton.setPostVisibility(skeleton.skeletonmodel.post_visible);
-      });
-    }
 
-    if (this.options.connector_filter) {
       var restriction = this.options.connector_filter;
 
       // Find all connector IDs referred to by more than one skeleton
@@ -1636,6 +1628,7 @@
           skeletons[skeleton_id].remove_connector_selection();
           if (skeleton_id in visible_set) {
             skeletons[skeleton_id].create_connector_selection( common );
+            skeletons[skeleton_id].updateConnectorRestictionVisibilities();
           }
         }
       }
@@ -1645,6 +1638,13 @@
       });
       // Declare that there is no filter used at the moment
       this.filteredConnectors = null;
+
+      // Refresh regular connector visibility from models
+      skids.forEach(function(skid) {
+        var skeleton = skeletons[skid];
+        skeleton.setPreVisibility(skeleton.skeletonmodel.pre_visible);
+        skeleton.setPostVisibility(skeleton.skeletonmodel.post_visible);
+      });
     }
 
     // Depending on the current settings, edges might not be visible.
@@ -5296,15 +5296,59 @@
     });
   };
 
-  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setSynapticVisibilityFn = function(type) {
-    return function(vis) {
-      this.connectorVisibility[type] = vis;
-      this.visibilityCompositeActor(type, vis);
-      for (var idx in this.synapticSpheres) {
-        if (this.synapticSpheres.hasOwnProperty(idx)
-         && this.synapticSpheres[idx].type === type) {
-          this.synapticSpheres[idx].visible = vis;
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateConnectorVisibilities = function() {
+    for (var type in this.connectorVisibility) {
+      var visible = this.connectorVisibility[type];
+      this.updateConnectorVisibility(type, visible);
+    }
+  };
+
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateConnectorVisibility = function(type, visible) {
+    this.visibilityCompositeActor(type, visible);
+
+    for (var idx in this.synapticSpheres) {
+      if (this.synapticSpheres.hasOwnProperty(idx)
+       && this.synapticSpheres[idx].type === type) {
+        this.synapticSpheres[idx].visible = visible;
+      }
+    }
+  };
+
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateConnectorRestictionVisibilities = function() {
+    for (var type in this.connectorVisibility) {
+      var visible = this.connectorVisibility[type];
+      this.updateConnectorRestictionVisibility(type, visible);
+    }
+  };
+
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateConnectorRestictionVisibility = function(type, visible) {
+    if (this.connectorSelection) {
+      this.synapticTypes.forEach(function(t) {
+        if (t !== type) {
+          return;
         }
+        var selection = this.connectorSelection[type];
+        if (selection) {
+          //selection.mesh.geometry.visible = visible;
+          //selection.mesh.visible = visible;
+          //selection.mesh.needsUpdate = true;
+          for (var nodeId in selection.objects) {
+            selection.objects[nodeId].visible = visible;
+          }
+        }
+      }, this);
+    }
+  };
+
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setSynapticVisibilityFn = function(type) {
+    return function(vis, temporary) {
+      if (!temporary) {
+        this.connectorVisibility[type] = vis;
+      }
+      if (this.connectorSelection && this.connectoractor) {
+        this.updateConnectorRestictionVisibility(type, vis);
+      } else {
+        this.updateConnectorVisibility(type, vis);
       }
     };
   };

@@ -92,6 +92,9 @@ Miscellaneous:
 - 3D viewer: refreshing the active skeleton does not refresh all skeletons
   anymore.
 
+- 3D viewer: connector restrictions like "show only shared connectors" now
+  respect the pre/post visibility toggles in the Selection Table.
+
 
 ## 2018.04.15
 

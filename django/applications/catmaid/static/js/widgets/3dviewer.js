@@ -6142,6 +6142,9 @@
         }
       }
     }
+    this.connectoractor = null;
+    this.connectorgeometry = {};
+    this.connectorSelection = null;
   };
 
   /**

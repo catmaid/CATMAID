@@ -76,6 +76,9 @@ Miscellaneous:
   the default. This setting can be adjusted from the Annotation sections in the
   Settings Widget.
 
+- CLI exporter: the new --excluded-annotation parameter can be used to exclude
+  neurons from the export based on annotations.
+
 
 ### Bug fixes
 

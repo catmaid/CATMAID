@@ -38,6 +38,11 @@ Volume widget:
 
 - Catalog export: use global neuron name for sorting and display by default.
 
+- Catalog export: support for multiple neurons per panel has been added
+  (separate from pinned neurons). The export dialog contains now a "Skeletons
+  per panel" input field. Essentially, the displayed skeletons can bow be
+  iterated in batches.
+
 Connectivity matrix:
 
 - Connector node filters can now be applied using the funnel icon in the widget

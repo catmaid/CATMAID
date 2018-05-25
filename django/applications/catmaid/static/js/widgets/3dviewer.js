@@ -467,6 +467,8 @@
     var pinSources = dialog.appendChoice("Skeletons to pin: ", "svg-catalog-pin-source",
         pinSourceOptionNames, pinSourceOptionIds);
     var displayNames = dialog.appendCheckbox('Display names', 'svg-catalog-display-names', true);
+    var nSkeletonsPerPanelControl = dialog.appendNumericField("Skeletons per panel",
+        'svg-catalog-skeletons-per-panel', '1', 1);
     var coordDigits = dialog.appendField("# Coordinate decimals", 'svg-catalog-coord-digits', '1');
     var fontsize = dialog.appendField("Fontsize: ", "svg-catalog-fontsize", '14');
     var margin = dialog.appendField("Margin: ", "svg-catalog-margin", '10');
@@ -524,6 +526,9 @@
         return !(skid in models);
       });
 
+      // Number of skeletons per panel
+      var nSkeletonsPerPanel = parseInt(nSkeletonsPerPanelControl.value, 10);
+
       // Fetch names for the sorting
       ns.registerAll(dialog, models, (function() {
         if (0 === addedPinnendSkeletons.length) {
@@ -571,6 +576,10 @@
             padding: parseInt(padding.value),
             title: title.value,
           };
+
+          if (nSkeletonsPerPanel) {
+            options.skeletonsPerPanel = nSkeletonsPerPanel;
+          }
 
           // Export catalog
           var svg = this.space.view.getSVGData(options);
@@ -4110,6 +4119,9 @@
       addedData.g.dispose();
     }
 
+    function getName(skeletonId) {
+      CATMAID.NeuronNameService.getInstance().getName(skeletonId);
+    }
     /**
      * Create an SVG catalog of the current view.
      */
@@ -4154,11 +4166,23 @@
       var visibleSkids = options['pinnedSkeletons'] || [];
 
       // Iterate over skeletons and create SVG views
-      var views = {};
-      for (var i=0, l=skeletons.length; i<l; ++i) {
-        var skid = skeletons[i];
-        // Display only current skeleton along with pinned ones
-        visibleSkids.push(skid);
+      var views = [];
+      let nSkeletonsPerPanel = options['skeletonsPerPanel'] || 1;
+      for (var i=0, l=skeletons.length; i<l; i = i + nSkeletonsPerPanel) {
+        let currentSkeletonIds = [];
+        for (let j=0; j<nSkeletonsPerPanel; ++j) {
+          // If there are less skeletons than allowd in this batch, only show
+          // what is available.
+          if (i + j >= l) {
+            break;
+          }
+          let skeletonIdx = i + j;
+          var skid = skeletons[skeletonIdx];
+          // Display only current skeleton along with pinned ones
+          visibleSkids.push(skid);
+          currentSkeletonIds.push(skid);
+        }
+
         self.space.setSkeletonVisibility(visibilityMap, visibleSkids);
 
         // Render view and replace sphere meshes of current skeleton
@@ -4180,16 +4204,16 @@
           text.setAttribute('x', svg.viewBox.baseVal.x + 5);
           text.setAttribute('y', svg.viewBox.baseVal.y + fontsize + 5);
           text.setAttribute('style', 'font-family: Arial; font-size: ' + fontsize + 'px;');
-          var name = CATMAID.NeuronNameService.getInstance().getName(skid);
-          text.appendChild(document.createTextNode(name));
+          var names = currentSkeletonIds.map(getName).join(', ');
+          text.appendChild(document.createTextNode(names));
           svg.appendChild(text);
         }
 
-        // Remove current skeleton again from visibility list
-        visibleSkids.pop();
+        // Remove current skeletons again from visibility list
+        visibleSkids.splice(-nSkeletonsPerPanel, nSkeletonsPerPanel);
 
         // Store
-        views[skid] = svg;
+        views.push(svg);
       }
 
       // Restore visibility
@@ -4207,9 +4231,8 @@
       svg.appendChild(title);
 
       // Combine all generated SVGs into one
-      for (var i=0, l=skeletons.length; i<l; ++i) {
-        var skid = skeletons[i];
-        var data = views[skid];
+      for (let i=0, l=views.length; i<l; ++i) {
+        let data = views[i];
 
         // Add a translation to current image
         var col = i % numColumns;

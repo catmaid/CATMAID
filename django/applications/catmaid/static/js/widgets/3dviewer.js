@@ -1327,7 +1327,7 @@
   };
 
   /**
-   * Store the curren view with the given name.
+   * Store the current view with the given name.
    */
   WebGLApplication.prototype.storeCurrentView = function(name, callback) {
     if (!name) {
@@ -3911,7 +3911,7 @@
    * Return SVG data of the rendered image. The rendered scene is slightly
    * modified to not include the triangle-heavy spheres. Instead, these spheres
    * are replaced with very short lines with a width that corresponds to the
-   * diameter of the sphers.
+   * diameter of the spheres.
    *
    * If createCatalog is true, a catalog representation is crated where each
    * neuron will be rendered in its own view, organized in a table.

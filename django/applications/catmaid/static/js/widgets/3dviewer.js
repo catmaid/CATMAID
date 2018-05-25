@@ -490,7 +490,7 @@
 
         // Update all annotations before, showing the dialog
         CATMAID.annotations.update(function() {
-          dialog.show();
+          dialog.show(300, 'auto');
           // Add auto complete to input field
           $(field).autocomplete({
             source: CATMAID.annotations.getAllNames()

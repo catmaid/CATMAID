@@ -542,7 +542,7 @@
                 delimiter = delimiter === undefined ? ", " : delimiter;
 
                 if (component === 'f') {
-                  return fallbackValue.join(delimiter);
+                  return fallbackValue ? fallbackValue.join(delimiter) : fallbackValue;
                 }
 
                 var index = parseInt(component, 10);

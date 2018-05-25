@@ -441,11 +441,19 @@
     var dialog = new CATMAID.OptionsDialog("Catalog export options");
     dialog.appendMessage('Adjust the catalog export settings to your liking.');
 
+    var globalNns = CATMAID.NeuronNameService.getInstance();
+
     // Create a new empty neuron name service that takes care of the sorting names
     var ns = CATMAID.NeuronNameService.newInstance(true);
     var namingOptions = ns.getOptions();
-    var namingOptionNames = namingOptions.map(function(o) { return o.name; });
-    var namingOptionIds = namingOptions.map(function(o) { return o.id; });
+    var namingOptionNames = namingOptions.reduce(function(l, o) {
+      l.push(o.name);
+      return l;
+    }, ['Global name (Neuron name service)']);
+    var namingOptionIds = namingOptions.reduce(function(l, o) {
+      l.push(o.id);
+      return l;
+    }, ['global']);
 
     // Get available skeleton list sources
     var pinSourceOptions = CATMAID.skeletonListSources.createOptions();
@@ -536,7 +544,7 @@
           // Build sorting name list
           var skeletonIds = Object.keys(models);
           var sortingNames = skeletonIds.reduce(function(o, skid) {
-            var name = ns.getName(skid);
+            var name = labelingId === 'global' ? globalNns.getName(skid) : ns.getName(skid);
             if (!name) {
               throw "No valid name found for skeleton " + skid +
                   " with labeling " + labelingId +

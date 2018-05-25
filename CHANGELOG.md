@@ -36,6 +36,8 @@ Volume widget:
 - A volume's bounding box can now be displayed using the "BB" checkbox that is
   available for visible volumes in the volume option panel.
 
+- Catalog export: use global neuron name for sorting and display by default.
+
 Connectivity matrix:
 
 - Connector node filters can now be applied using the funnel icon in the widget

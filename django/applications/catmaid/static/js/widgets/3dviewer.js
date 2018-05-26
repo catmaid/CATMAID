@@ -460,12 +460,18 @@
     var pinSourceOptionNames = ["(None)"].concat(pinSourceOptions.map(function(o) { return o.text; }));
     var pinSourceOptionIds = ['null'].concat(pinSourceOptions.map(function(o) { return o.value; }));
 
+    // Format options
+    var panelFormatNames = ['SVG', 'PNG (1 x view size)', 'PNG (2 x view size)', 'PNG (4 x view size)'];
+    var panelFormatIds = ['svg', 'png1', 'png2', 'png4'];
+
     // Add options to dialog
     var columns = dialog.appendField("# Columns: ", "svg-catalog-num-columns", '2');
     var sorting = dialog.appendChoice("Sorting name: ", "svg-catalog-sorting",
         namingOptionNames, namingOptionIds);
     var pinSources = dialog.appendChoice("Skeletons to pin: ", "svg-catalog-pin-source",
         pinSourceOptionNames, pinSourceOptionIds);
+    var panelFormats = dialog.appendChoice("Panel format: ", "svg-catalog-panel-format",
+        panelFormatNames, panelFormatIds);
     var displayNames = dialog.appendCheckbox('Display names', 'svg-catalog-display-names', true);
     var nSkeletonsPerPanelControl = dialog.appendNumericField("Skeletons per panel",
         'svg-catalog-skeletons-per-panel', '1', 1);
@@ -526,6 +532,9 @@
         return !(skid in models);
       });
 
+      // Panel format
+      var panelFormat = panelFormats.value;
+
       // Number of skeletons per panel
       var nSkeletonsPerPanel = parseInt(nSkeletonsPerPanelControl.value, 10);
 
@@ -575,6 +584,7 @@
             margin: parseInt(margin.value),
             padding: parseInt(padding.value),
             title: title.value,
+            panelFormat: panelFormat,
           };
 
           if (nSkeletonsPerPanel) {
@@ -3923,54 +3933,59 @@
     // Find all spheres
     var fields = ['radiusVolumes'];
     var skeletons = this.space.content.skeletons;
-    var visibleSpheres = Object.keys(skeletons).reduce(function(o, skeleton_id) {
-      var skeleton = skeletons[skeleton_id];
-      if (!skeleton.visible) return o;
+    let catalogExport = o['layout'] === 'catalog';
+    let needsDataReplacement = !catalogExport || o['panelFormat'] === 'svg';
+    let visibleSpheres;
+    if (needsDataReplacement) {
+      visibleSpheres = Object.keys(skeletons).reduce(function(o, skeleton_id) {
+        var skeleton = skeletons[skeleton_id];
+        if (!skeleton.visible) return o;
 
-      var meshes = [];
+        var meshes = [];
 
-      // Append all spheres
-      fields.map(function(field) {
-        return skeleton[field];
-      }).forEach(function(spheres) {
-        Object.keys(spheres).forEach(function(id) {
-          var sphere = spheres[id];
-          if (sphere.visible) {
-            this.push(sphere);
-          }
-        }, this);
-      }, meshes);
+        // Append all spheres
+        fields.map(function(field) {
+          return skeleton[field];
+        }).forEach(function(spheres) {
+          Object.keys(spheres).forEach(function(id) {
+            var sphere = spheres[id];
+            if (sphere.visible) {
+              this.push(sphere);
+            }
+          }, this);
+        }, meshes);
 
-      // Append all individual buffer objects to be able to create replacements
-      // for them. The whole buffers added below are only used to make all
-      // objects of this bufffer invisible for rendering (doesn't work with with
-      // the meshes only in SVG renderer).
-      var bufferObjects = [];
-      var bufferConnectorSpheres = skeleton['synapticSpheres'];
-      for (var id in bufferConnectorSpheres) {
-        var bo = bufferConnectorSpheres[id];
-        bufferObjects.push(bo);
-      }
-      var bufferSpheres = skeleton['specialTagSpheres'];
-      for (var id in bufferSpheres) {
-        var bo = bufferSpheres[id];
-        bufferObjects.push(bo);
-      }
+        // Append all individual buffer objects to be able to create replacements
+        // for them. The whole buffers added below are only used to make all
+        // objects of this bufffer invisible for rendering (doesn't work with with
+        // the meshes only in SVG renderer).
+        var bufferObjects = [];
+        var bufferConnectorSpheres = skeleton['synapticSpheres'];
+        for (var id in bufferConnectorSpheres) {
+          var bo = bufferConnectorSpheres[id];
+          bufferObjects.push(bo);
+        }
+        var bufferSpheres = skeleton['specialTagSpheres'];
+        for (var id in bufferSpheres) {
+          var bo = bufferSpheres[id];
+          bufferObjects.push(bo);
+        }
 
-      o.meshes[skeleton_id] = meshes;
-      o.bufferObjects[skeleton_id] = bufferObjects;
-      o.buffers[skeleton_id] = [];
-      if (skeleton.specialTagSphereCollection)
-        o.buffers[skeleton_id].push(skeleton.specialTagSphereCollection);
-      if (skeleton.connectorSphereCollection)
-        o.buffers[skeleton_id].push(skeleton.connectorSphereCollection);
+        o.meshes[skeleton_id] = meshes;
+        o.bufferObjects[skeleton_id] = bufferObjects;
+        o.buffers[skeleton_id] = [];
+        if (skeleton.specialTagSphereCollection)
+          o.buffers[skeleton_id].push(skeleton.specialTagSphereCollection);
+        if (skeleton.connectorSphereCollection)
+          o.buffers[skeleton_id].push(skeleton.connectorSphereCollection);
 
-      return o;
-    }, {
-      meshes: {},
-      bufferObjects: {},
-      buffers: {}
-    });
+        return o;
+      }, {
+        meshes: {},
+        bufferObjects: {},
+        buffers: {}
+      });
+    }
 
     // Hide the active node
     var atnVisible = self.space.content.active_node.mesh.visible;
@@ -3978,11 +3993,10 @@
 
     // Render
     var svgData = null;
-    if ('catalog' === o['layout']) {
-      svgData = createCatalogData(visibleSpheres.meshes,
-          visibleSpheres.bufferObjects, visibleSpheres.buffers, o);
+    if (catalogExport) {
+      svgData = createCatalogData(self, o, visibleSpheres);
     } else {
-      svgData = renderSkeletons(visibleSpheres.meshes,
+      svgData = renderSkeletonsSVG(visibleSpheres.meshes,
           visibleSpheres.bufferObjects, visibleSpheres.buffers);
     }
 
@@ -4122,11 +4136,20 @@
     function getName(skeletonId) {
       CATMAID.NeuronNameService.getInstance().getName(skeletonId);
     }
+
     /**
      * Create an SVG catalog of the current view.
      */
-    function createCatalogData(sphereMeshes, bufferObjects, sphereBuffers, options)
-    {
+    function createCatalogData(view, options, replacementData) {
+      let panelFormat = options['panelFormat'];
+      let needsDataReplacement = panelFormat === 'svg';
+      let sphereMeshes, bufferObjects, sphereBuffers;
+      if (needsDataReplacement) {
+        sphereMeshes = replacementData.meshes;
+        bufferObjects = replacementData.bufferObjects;
+        sphereBuffers = replacementData.buffers;
+      }
+
       // Sort skeletons
       var skeletons;
       if (options['skeletons']) {
@@ -4185,35 +4208,56 @@
 
         self.space.setSkeletonVisibility(visibilityMap, visibleSkids);
 
-        // Render view and replace sphere meshes of current skeleton
-        var spheres = visibleSkids.reduce(function(o, s) {
-          o.meshes[s] = sphereMeshes[s];
-          o.buffers[s] = sphereBuffers[s];
-          o.bufferObjects[s] = bufferObjects[s];
-          return o;
-        }, {
-          meshes: {},
-          bufferObjects: {},
-          buffers: {}
-        });
-        var svg = renderSkeletons(spheres.meshes, spheres.bufferObjects, spheres.buffers);
+        // Render view and replace sphere meshes of current skeleton, if needed
+        let panel;
+        if (panelFormat === 'svg') {
+          let spheres = visibleSkids.reduce(function(o, s) {
+            o.meshes[s] = sphereMeshes[s];
+            o.buffers[s] = sphereBuffers[s];
+            o.bufferObjects[s] = bufferObjects[s];
+            return o;
+          }, {
+            meshes: {},
+            bufferObjects: {},
+            buffers: {}
+          });
+
+          panel = renderSkeletonsSVG(spheres.meshes, spheres.bufferObjects,
+              spheres.buffers);
+        } else {
+          let panelImageWidth, panelImageHeight;
+          if (panelFormat === 'png1') {
+            panelImageWidth = imageWidth;
+            panelImageHeight = imageHeight;
+          } else if (panelFormat === 'png2') {
+            panelImageWidth = 2 * imageWidth;
+            panelImageHeight = 2 * imageHeight;
+          } else if (panelFormat === 'png4') {
+            panelImageWidth = 4 * imageWidth;
+            panelImageHeight = 4 * imageHeight;
+          } else {
+            throw new CATMAID.ValueError("Unknown panel format: " + panelFormat);
+          }
+          panel = renderSkeletonsPNG(self, namespace, panelImageWidth,
+              panelImageHeight);
+        }
 
         if (displayNames) {
           // Add name of neuron
           var text = document.createElementNS(namespace, 'text');
-          text.setAttribute('x', svg.viewBox.baseVal.x + 5);
-          text.setAttribute('y', svg.viewBox.baseVal.y + fontsize + 5);
+          text.setAttribute('x', panel.viewBox.baseVal.x + 5);
+          text.setAttribute('y', panel.viewBox.baseVal.y + fontsize + 5);
           text.setAttribute('style', 'font-family: Arial; font-size: ' + fontsize + 'px;');
           var names = currentSkeletonIds.map(getName).join(', ');
           text.appendChild(document.createTextNode(names));
-          svg.appendChild(text);
+          panel.appendChild(text);
         }
 
         // Remove current skeletons again from visibility list
         visibleSkids.splice(-nSkeletonsPerPanel, nSkeletonsPerPanel);
 
         // Store
-        views.push(svg);
+        views.push(panel);
       }
 
       // Restore visibility
@@ -4222,6 +4266,7 @@
       // Create result svg
       var svg = document.createElement('svg');
       svg.setAttribute('xmlns', namespace);
+      svg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
       svg.setAttribute('width', 2 * margin + numColumns * (imageWidth + 2 * padding));
       svg.setAttribute('height', 2 * margin + numRows * (imageHeight + 2 * padding));
 
@@ -4230,7 +4275,7 @@
       title.appendChild(document.createTextNode(options['title'] || 'CATMAID neuron catalog'));
       svg.appendChild(title);
 
-      // Combine all generated SVGs into one
+      // Combine all generated panels into one SVG
       for (let i=0, l=views.length; i<l; ++i) {
         let data = views[i];
 
@@ -4250,7 +4295,7 @@
     /**
      * Render the current scene and replace the given sphere meshes beforehand.
      */
-    function renderSkeletons(sphereMeshes, bufferObjects, bufferCollections)
+    function renderSkeletonsSVG(sphereMeshes, bufferObjects, bufferCollections)
     {
       // Hide spherical meshes of all given skeletons
       var sphereReplacemens = {};
@@ -4279,6 +4324,47 @@
       }
 
       return svgRenderer.domElement;
+    }
+
+    /**
+     * Render the current scene as PNG and return it embedded in an SVG image
+     * element.
+     */
+    function renderSkeletonsPNG(view, svgNamespace, width, height) {
+      let originalWidth = view.space.canvasWidth;
+      let originalHeight = view.space.canvasHeight;
+      let needsSizeReset = false;
+      if (width !== originalWidth || height !== originalHeight) {
+        needsSizeReset = true;
+        view.space.setSize(width, height, view.space.options);
+      }
+
+      view.space.render();
+
+      let imageData = view.space.view.getImageData('image/png');
+
+      // Restore original dimensions
+      if (needsSizeReset) {
+        view.space.setSize(originalWidth, originalHeight, view.space.options);
+        view.space.render();
+      }
+
+      // Emebed generated image in an SVG image element of the original size.
+      let svgImage = document.createElementNS(svgNamespace, 'image');
+      svgImage.setAttribute('width', originalWidth);
+      svgImage.setAttribute('height', originalHeight);
+      svgImage.setAttribute('visibility', 'visible');
+      svgImage.setAttribute('xlink:href', imageData);
+
+      let svg = document.createElementNS(svgNamespace, 'svg');
+      svg.setAttribute('xmlns', svgNamespace);
+      svg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+      svg.setAttribute('viewBox', [0, 0, originalWidth, originalHeight].join(' '));
+      svg.setAttribute('width', originalWidth);
+      svg.setAttribute('height', originalHeight);
+      svg.appendChild(svgImage);
+
+      return svg;
     }
   };
 

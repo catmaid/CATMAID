@@ -43,6 +43,10 @@ Volume widget:
   per panel" input field. Essentially, the displayed skeletons can bow be
   iterated in batches.
 
+- Catalog export: individual skeleton panels can now also be exported as PNG
+  instead of SVG, which reduces the file size, export time, parsing time. Plus
+  it allows for an exact copy of what is shown in the 3D Viewer.
+
 Connectivity matrix:
 
 - Connector node filters can now be applied using the funnel icon in the widget

@@ -4,6 +4,8 @@ from __future__ import unicode_literals
 import json
 import six
 
+from operator import itemgetter
+
 from django.shortcuts import get_object_or_404
 
 from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
@@ -1083,3 +1085,84 @@ class TreenodesApiTests(CatmaidApiTestCase):
             self.assertEqual(expected, parsed)
         self.assertEqual(expected_result[1], parsed_response[1])
         self.assertEqual(expected_result[2], parsed_response[2])
+
+    def test_compact_detail_simple(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/{}/treenodes/compact-detail'.format(self.test_project_id),
+                {
+                    'treenode_ids': [261, 417, 415]
+                })
+        self.assertEqual(response.status_code, 200)
+        expected_result = [
+                [261, 259, 2820.0, 1345.0, 0.0, 5, -1.0, 235, 1323093096.955, 3],
+                [415, 289, 5810.0, 3950.0, 0.0, 5, -1.0, 235, 1323093096.955, 3],
+                [417, 415, 4990.0, 4200.0, 0.0, 5, -1.0, 235, 1323093096.955, 3],
+        ]
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(expected_result,
+                sorted(parsed_response, key=itemgetter(0)))
+
+    def test_compact_detail_label_names_and_treenode_set(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/{}/treenodes/compact-detail'.format(self.test_project_id),
+                {
+                    'treenode_ids': [261, 417, 415],
+                    'label_names': ['TODO']
+                })
+        self.assertEqual(response.status_code, 200)
+        expected_result = [
+                [261, 259, 2820.0, 1345.0, 0.0, 5, -1.0, 235, 1323093096.955, 3],
+        ]
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(expected_result,
+                sorted(parsed_response, key=itemgetter(0)))
+
+    def test_compact_detail_label_names(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/{}/treenodes/compact-detail'.format(self.test_project_id),
+                {
+                    'label_names': ['TODO']
+                })
+        self.assertEqual(response.status_code, 200)
+        expected_result = [
+                [261, 259, 2820.0, 1345.0, 0.0, 5, -1.0, 235, 1323093096.955, 3],
+                [349, 347, 3580.0, 3350.0, 252.0, 5, -1.0, 1, 1323093096.955, 3]
+        ]
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(expected_result,
+                sorted(parsed_response, key=itemgetter(0)))
+
+    def test_compact_detail_label_id_and_treenode_set(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/{}/treenodes/compact-detail'.format(self.test_project_id),
+                {
+                    'treenode_ids': [261, 417, 415],
+                    'label_ids': [351]
+                })
+        self.assertEqual(response.status_code, 200)
+        expected_result = [
+                [261, 259, 2820.0, 1345.0, 0.0, 5, -1.0, 235, 1323093096.955, 3],
+        ]
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(expected_result,
+                sorted(parsed_response, key=itemgetter(0)))
+
+    def test_compact_detail_label_ids(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/{}/treenodes/compact-detail'.format(self.test_project_id),
+                {
+                    'label_ids': [351]
+                })
+        self.assertEqual(response.status_code, 200)
+        expected_result = [
+                [261, 259, 2820.0, 1345.0, 0.0, 5, -1.0, 235, 1323093096.955, 3],
+                [349, 347, 3580.0, 3350.0, 252.0, 5, -1.0, 1, 1323093096.955, 3]
+        ]
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(expected_result,
+                sorted(parsed_response, key=itemgetter(0)))

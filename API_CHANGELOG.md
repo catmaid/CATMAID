@@ -45,6 +45,12 @@ included in this changelog.
   The new parameter 'format' can now be used to returned the skeleton data in
   different formats. Supported are 'msgpack' and 'json'.
 
+- `POST /{project_id}/treenodes/compact-detail`:
+  The `treenode_ids` parameter is now optional and two new parameters can be
+  used instead: `label_ids` and `label_names`. They can be used to constrain the
+  result set by their labels. This effectively allows querying treenodes and
+  skeletons based on linked labels.
+
 ### Deprecations
 
 None.

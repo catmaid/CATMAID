@@ -1,4 +1,4 @@
-aggdraw==1.3.0
+aggdraw==1.3.3
 asgi_ipc==1.4.2
 celery==4.1.0
 channels==1.1.8

@@ -4134,7 +4134,7 @@
     }
 
     function getName(skeletonId) {
-      CATMAID.NeuronNameService.getInstance().getName(skeletonId);
+      return CATMAID.NeuronNameService.getInstance().getName(skeletonId);
     }
 
     /**

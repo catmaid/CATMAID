@@ -47,6 +47,9 @@ Volume widget:
   instead of SVG, which reduces the file size, export time, parsing time. Plus
   it allows for an exact copy of what is shown in the 3D Viewer.
 
+- Catalog export: in orthographic mode it is now possible to export a scale bar
+  on either none, the first or all exported panels.
+
 Connectivity matrix:
 
 - Connector node filters can now be applied using the funnel icon in the widget

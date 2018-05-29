@@ -464,6 +464,10 @@
     var panelFormatNames = ['SVG', 'PNG (1 x view size)', 'PNG (2 x view size)', 'PNG (4 x view size)'];
     var panelFormatIds = ['svg', 'png1', 'png2', 'png4'];
 
+    // Scale options
+    var orthoScaleOptionNames = ['No scale bar', 'Scale bar in first panel', 'Scale bar in all panels'];
+    var orthoScaleOptionIds = ['none', 'first-panel', 'all-panels'];
+
     // Add options to dialog
     var columns = dialog.appendField("# Columns: ", "svg-catalog-num-columns", '2');
     var sorting = dialog.appendChoice("Sorting name: ", "svg-catalog-sorting",
@@ -472,6 +476,8 @@
         pinSourceOptionNames, pinSourceOptionIds);
     var panelFormats = dialog.appendChoice("Panel format: ", "svg-catalog-panel-format",
         panelFormatNames, panelFormatIds);
+    var orthoScaleOption = dialog.appendChoice("Ortho scale bar: ", "svg-catalog-ortho-scale-bar",
+        orthoScaleOptionNames, orthoScaleOptionIds);
     var displayNames = dialog.appendCheckbox('Display names', 'svg-catalog-display-names', true);
     var nSkeletonsPerPanelControl = dialog.appendNumericField("Skeletons per panel",
         'svg-catalog-skeletons-per-panel', '1', 1);
@@ -480,6 +486,13 @@
     var margin = dialog.appendField("Margin: ", "svg-catalog-margin", '10');
     var padding = dialog.appendField("Padding: ", "svg-catalog-pading", '10');
     var title = dialog.appendField("Title: ", "svg-catalog-title", 'CATMAID neuron catalog');
+
+    // Only allow scale bar configuration in orthographic mode
+    var inOrthographicMode = this.options.camera_view === 'orthographic';
+    if (!inOrthographicMode) {
+      orthoScaleOption.setAttribute('disabled', 'disabled');
+      orthoScaleOption.setAttribute('title', 'Can only be used in orthographic mode');
+    }
 
     // Use change chandler of labeling select to ask user for annotations
     var labelingOption;
@@ -511,6 +524,8 @@
 
     dialog.show(400, 460, true);
 
+    var isBackgroundBlack = this.options.show_background;
+
     function handleOK() {
       /* jshint validthis: true */ // `this` is bound to this WebGLApplication
       $.blockUI();
@@ -534,6 +549,14 @@
 
       // Panel format
       var panelFormat = panelFormats.value;
+
+      // Ortho scale bar
+      var orthoScaleBar = orthoScaleOption.value;
+
+      // Text color ins inverse of background.
+      // TODO: The SVG export doesn't support black backgrounds currently, and
+      // is therefore treated special.
+      var textColor = isBackgroundBlack && panelFormat != 'svg' ? 'white' : 'black';
 
       // Number of skeletons per panel
       var nSkeletonsPerPanel = parseInt(nSkeletonsPerPanelControl.value, 10);
@@ -585,6 +608,8 @@
             padding: parseInt(padding.value),
             title: title.value,
             panelFormat: panelFormat,
+            orthoScaleBar: orthoScaleBar,
+            textColor: textColor,
           };
 
           if (nSkeletonsPerPanel) {
@@ -4172,10 +4197,17 @@
       var fontsize = options['fontsize'] || 14;
       var displayNames = options['displaynames'] === undefined ? true : options['displaynames'];
 
+      // Orthographic mode
+      var inOrthographicMode = self.space.options.camera_view === 'orthographic';
+      var orthoCamera = self.camera.cameraO;
+      var orthoCameraWidth = orthoCamera.right - orthoCamera.left;
+
       // Margin of whole document
       var margin = options['margin'] || 10;
       // Padding around each sub-svg
       var padding = options['padding'] || 10;
+
+      var textColor = options['textColor'] || 'black';
 
       var imageWidth = self.space.canvasWidth;
       var imageHeight = self.space.canvasHeight;
@@ -4205,6 +4237,11 @@
           visibleSkids.push(skid);
           currentSkeletonIds.push(skid);
         }
+
+        let askedToDisplayOthoScaleBar =
+            (options['orthoScaleBar'] === 'all-panels') ||
+            (options['orthoScaleBar'] === 'first-panel' && i === 0);
+        let displayOrthoScaleBar = inOrthographicMode && askedToDisplayOthoScaleBar;
 
         self.space.setSkeletonVisibility(visibilityMap, visibleSkids);
 
@@ -4242,15 +4279,70 @@
               panelImageHeight);
         }
 
+        // Add name of neuron, if enabled
         if (displayNames) {
-          // Add name of neuron
-          var text = document.createElementNS(namespace, 'text');
+          let text = document.createElementNS(namespace, 'text');
           text.setAttribute('x', panel.viewBox.baseVal.x + 5);
           text.setAttribute('y', panel.viewBox.baseVal.y + fontsize + 5);
-          text.setAttribute('style', 'font-family: Arial; font-size: ' + fontsize + 'px;');
-          var names = currentSkeletonIds.map(getName).join(', ');
+          text.setAttribute('style', 'font-family: Arial; font-size: ' +
+              fontsize + 'px; fill: ' + textColor + ';');
+          let names = currentSkeletonIds.map(getName).join(', ');
           text.appendChild(document.createTextNode(names));
           panel.appendChild(text);
+        }
+
+        // Show ortho scale bar, if it should be shown for this panel
+        if (displayOrthoScaleBar) {
+          // Create temporary scale bar
+          let scaleBar = new CATMAID.ScaleBar(document.createElement('div'));
+          scaleBar.update(imageWidth / orthoCameraWidth, panel.viewBox.baseVal.width / 5);
+
+          let xOffset = panel.viewBox.baseVal.x +
+              Math.round(panel.viewBox.baseVal.width * 0.05);
+          let yOffset = panel.viewBox.baseVal.y +
+              Math.round(panel.viewBox.baseVal.height * 0.95);
+          let strokeWidth = Math.max(2, panel.viewBox.baseVal.height * 0.002);
+
+          let scaleBarGroup = document.createElementNS(namespace, 'g');
+          let bar = document.createElementNS(namespace, 'line');
+          bar.setAttribute('x1', xOffset);
+          bar.setAttribute('y1', yOffset);
+          bar.setAttribute('x2', xOffset + scaleBar.width);
+          bar.setAttribute('y2', yOffset);
+          bar.setAttribute('stroke', textColor);
+          bar.setAttribute('stroke-width', strokeWidth);
+          scaleBarGroup.appendChild(bar);
+
+          let left = document.createElementNS(namespace, 'line');
+          left.setAttribute('x1', xOffset - (strokeWidth / 2));
+          left.setAttribute('y1', yOffset);
+          left.setAttribute('x2', xOffset - (strokeWidth / 2));
+          left.setAttribute('y2', yOffset - fontsize / 2);
+          left.setAttribute('stroke', textColor);
+          left.setAttribute('stroke-width', strokeWidth);
+          left.setAttribute('stroke-linecap', 'square');
+          scaleBarGroup.appendChild(left);
+
+          let right = document.createElementNS(namespace, 'line');
+          right.setAttribute('x1', xOffset + scaleBar.width + strokeWidth / 2);
+          right.setAttribute('y1', yOffset);
+          right.setAttribute('x2', xOffset + scaleBar.width + strokeWidth / 2);
+          right.setAttribute('y2', yOffset - fontsize / 2);
+          right.setAttribute('stroke', textColor);
+          right.setAttribute('stroke-width', strokeWidth);
+          right.setAttribute('stroke-linecap', 'square');
+          scaleBarGroup.appendChild(right);
+
+          let text = document.createElementNS(namespace, 'text');
+          text.setAttribute('x', xOffset + scaleBar.width / 2);
+          text.setAttribute('y', yOffset - strokeWidth * 3);
+          text.setAttribute('text-anchor', 'middle');
+          text.setAttribute('style', 'font-family: Arial; font-size: ' +
+              fontsize + 'px; fill: ' + textColor + ';');
+          text.appendChild(document.createTextNode(scaleBar.text));
+          scaleBarGroup.appendChild(text);
+
+          panel.appendChild(scaleBarGroup);
         }
 
         // Remove current skeletons again from visibility list

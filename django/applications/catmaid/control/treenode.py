@@ -739,7 +739,7 @@ def delete_treenode(request, project_id=None):
         raise Exception(response_on_error + ': ' + str(e))
 
 def _compact_detail_list(project_id, treenode_ids=None, label_ids=None,
-        label_names=None):
+        label_names=None, skeleton_ids=None):
     """
     Return a list with information on the passed in node IDs or on treenodes
     that match the optional label refrences. The result has the form:
@@ -748,8 +748,8 @@ def _compact_detail_list(project_id, treenode_ids=None, label_ids=None,
 
     The returned edition time is an epoch number.
     """
-    if not any((treenode_ids, label_ids, label_names)):
-        raise ValueError("No treenode IDs, label IDs or label names provided")
+    if not any((treenode_ids, label_ids, label_names, skeleton_ids)):
+        raise ValueError("No treenode IDs, label IDs, label names or skeleton IDs provided")
 
     extra_joins = []
     extra_where = []
@@ -790,10 +790,17 @@ def _compact_detail_list(project_id, treenode_ids=None, label_ids=None,
                 tci.relation_id = %(labeled_as)s
             """)
 
+    if skeleton_ids:
+        extra_joins.append("""
+            JOIN UNNEST(%(skeleton_ids)s::bigint[]) skeleton(id)
+                ON skeleton.id = t.skeleton_id
+        """)
+
     cursor = connection.cursor()
     cursor.execute("""
         SELECT t.id, t.parent_id, t.location_x, t.location_y, t.location_z, t.confidence,
-            t.radius, t.skeleton_id, EXTRACT(EPOCH FROM t.edition_time), t.user_id
+            t.radius, t.skeleton_id,
+            EXTRACT(EPOCH FROM t.edition_time), t.user_id
         FROM treenode t
         {extra_joins}
         WHERE t.project_id=%(project_id)s
@@ -807,11 +814,10 @@ def _compact_detail_list(project_id, treenode_ids=None, label_ids=None,
         'labeled_as': labeled_as,
         'label_ids': label_ids,
         'label_names': label_names,
+        'skeleton_ids': skeleton_ids
     })
 
     rows = cursor.fetchall()
-    if len(rows) == 0:
-        raise ValueError("Could not find treenodes")
 
     return rows
 
@@ -950,15 +956,20 @@ def compact_detail_list(request, project_id=None):
         A list of label names that must be linked to result treenodes.
         Alternative to explicit treenode IDs and label IDs
       required: false
+    - name: skeleton_ids
+      description: |
+        A list of skeleton IDs that result skeletons have to be part of.
+      required: false
     """
     treenode_ids = get_request_list(request.POST, 'treenode_ids', None, int)
     label_ids = get_request_list(request.POST, 'label_ids', None, int)
     label_names = get_request_list(request.POST, 'label_names')
-    if not any((treenode_ids, label_ids, label_names)):
-        raise ValueError("No treenode IDs, label IDs or label names provided")
+    skeleton_ids = get_request_list(request.POST, 'skeleton_ids', None, int)
+    if not any((treenode_ids, label_ids, label_names, skeleton_ids)):
+        raise ValueError("No treenode IDs, label IDs, label names or skeleton IDs provided")
 
     info = _compact_detail_list(int(project_id), treenode_ids, label_ids,
-            label_names)
+            label_names, skeleton_ids)
 
     return JsonResponse(info, safe=False)
 

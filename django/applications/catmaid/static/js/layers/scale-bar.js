@@ -12,11 +12,13 @@
   function ScaleBar(
     domElement
   ) {
+    this.width = 0;
+    this.text = "";
     this.view = domElement;
     this.view.className = "scaleBenchmark";
     this.view.appendChild(document.createElement("p"));
     this.view.firstChild.appendChild(document.createElement("span"));
-    this.view.firstChild.firstChild.appendChild(document.createTextNode("test"));
+    this.view.firstChild.firstChild.appendChild(document.createTextNode(this.text));
   }
 
   ScaleBar.prototype = {};
@@ -58,9 +60,11 @@
       text /= 1000;
       ++ui;
     }
+    this.text = text + " " + ScaleBar.UNITS[ui];
+    this.width = width;
     this.view.style.width = width + "px";
     this.view.firstChild.firstChild.replaceChild(
-      document.createTextNode(text + " " + ScaleBar.UNITS[ui]),
+      document.createTextNode(this.text),
       this.view.firstChild.firstChild.firstChild);
   };
 

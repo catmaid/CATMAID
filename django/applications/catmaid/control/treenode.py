@@ -945,7 +945,7 @@ def compact_detail_list(request, project_id=None):
         A list of label IDs that must be linked to result treenodes. Alternative
         to explicit treenode IDs and label names.
       required: false
-    - name: labels
+    - name: label_names
       description: |
         A list of label names that must be linked to result treenodes.
         Alternative to explicit treenode IDs and label IDs

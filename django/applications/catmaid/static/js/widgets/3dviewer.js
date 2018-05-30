@@ -4209,10 +4209,11 @@
 
       var textColor = options['textColor'] || 'black';
 
+      let nSkeletonsPerPanel = options['skeletonsPerPanel'] || 1;
       var imageWidth = self.space.canvasWidth;
       var imageHeight = self.space.canvasHeight;
       var numColumns = options['columns'] || 2;
-      var numRows = Math.ceil(skeletons.length / numColumns);
+      var numRows = Math.ceil(skeletons.length / nSkeletonsPerPanel / numColumns);
 
       // Crate a map of current visibility
       var visibilityMap = self.space.getVisibilityMap();
@@ -4222,7 +4223,6 @@
 
       // Iterate over skeletons and create SVG views
       var views = [];
-      let nSkeletonsPerPanel = options['skeletonsPerPanel'] || 1;
       for (var i=0, l=skeletons.length; i<l; i = i + nSkeletonsPerPanel) {
         let currentSkeletonIds = [];
         for (let j=0; j<nSkeletonsPerPanel; ++j) {

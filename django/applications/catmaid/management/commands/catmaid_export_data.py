@@ -48,6 +48,7 @@ class Exporter():
         self.export_tags = options['export_tags']
         self.export_users = options['export_users']
         self.required_annotations = options['required_annotations']
+        self.excluded_annotations = options['excluded_annotations']
         self.target_file = options.get('file', None)
         if self.target_file:
             self.target_file = self.target_file.format(project.id)
@@ -73,6 +74,31 @@ class Exporter():
         if not check_tracing_setup(self.project.id, classes, relations):
             raise CommandError("Project with ID %s is no tracing project." % self.project.id)
 
+        exclude_skeleton_id_constraints = set()
+        exclude_neuron_id_constraint = set()
+        if self.excluded_annotations:
+            annotation_map = get_annotation_to_id_map(self.project.id,
+                    self.excluded_annotations, relations, classes)
+            annotation_ids = list(map(str, annotation_map.values()))
+            if not annotation_ids:
+                missing_annotations = set(self.excluded_annotations) - set(annotation_map.keys())
+                raise CommandError("Could not find the following annotations: " +
+                        ", ".join(missing_annotations))
+
+            query_params = {
+                'annotated_with': ",".join(annotation_ids),
+                'sub_annotated_with': ",".join(annotation_ids)
+            }
+            neuron_info, num_total_records = get_annotated_entities(self.project,
+                    query_params, relations, classes, ['neuron'], with_skeletons=True)
+
+            logger.info("Found {} neurons with the following annotations: {}".format(
+                    num_total_records, ", ".join(self.required_annotations)))
+
+            exclude_skeleton_id_constraints = set(chain.from_iterable(
+                    [n['skeleton_ids'] for n in neuron_info]))
+            exclude_neuron_id_constraint = set(n['id'] for n in neuron_info)
+
         if self.required_annotations:
             annotation_map = get_annotation_to_id_map(self.project.id,
                     self.required_annotations, relations, classes)
@@ -93,8 +119,15 @@ class Exporter():
                     num_total_records, ", ".join(self.required_annotations)))
 
             skeleton_id_constraints = list(chain.from_iterable([n['skeleton_ids'] for n in neuron_info]))
-
             neuron_ids = [n['id'] for n in neuron_info]
+
+            # Remove excluded skeletons
+            if exclude_skeleton_id_constraints:
+                skeleton_id_constraints = [skid for skid in skeleton_id_constraints
+                                           if skid not in exclude_skeleton_id_constraints]
+                neuron_ids = [nid for nid in neuron_ids
+                              if nid not in exclude_neuron_id_constraint]
+
             entities = ClassInstance.objects.filter(pk__in=neuron_ids)
 
             skeletons = ClassInstance.objects.filter(project=self.project,
@@ -111,6 +144,11 @@ class Exporter():
                     class_instance_a__class_column=classes['skeleton'])
             skeletons = ClassInstance.objects.filter(project=self.project,
                     class_column__in=[classes['skeleton']])
+
+            if exclude_skeleton_id_constraints:
+                entities = entities.exclude(id__in=exclude_neuron_id_constraint)
+                skeleton_links = skeleton_links.exclude(class_instance_a__in=exclude_skeleton_id_constraints)
+                skeletons = skeletons.exclude(id__in=exclude_skeleton_id_constraints)
 
         if entities.count() == 0:
             raise CommandError("No matching neurons found")
@@ -130,6 +168,7 @@ class Exporter():
         self.to_serialize.append(skeletons)
 
         treenodes = None
+        connector_ids = None
         if skeleton_id_constraints:
             # Export treenodes along with their skeletons and neurons
             if self.export_treenodes:
@@ -143,7 +182,7 @@ class Exporter():
                 connector_links = TreenodeConnector.objects.filter(
                         project=self.project, skeleton_id__in=skeleton_id_constraints).values_list('id', 'connector', 'treenode')
 
-                # Add matching connecots
+                # Add matching connectors
                 connector_ids = set(c for _,c,_ in connector_links)
                 self.to_serialize.append(Connector.objects.filter(
                         id__in=connector_ids))
@@ -152,30 +191,6 @@ class Exporter():
                 # Add matching connector links
                 self.to_serialize.append(TreenodeConnector.objects.filter(
                         id__in=[l for l,_,_ in connector_links]))
-
-                # Add addition placeholde treenodes
-                connector_tids = set(TreenodeConnector.objects \
-                    .filter(project=self.project, connector__in=connector_ids) \
-                    .exclude(skeleton_id__in=skeleton_id_constraints) \
-                    .values_list('treenode', flat=True))
-                extra_tids = connector_tids - exported_tids
-                logger.info("Exporting %s placeholder nodes" % len(extra_tids))
-                self.to_serialize.append(Treenode.objects.filter(id__in=extra_tids))
-
-                # Add additional skeletons and neuron-skeleton links
-                extra_skids = set(Treenode.objects.filter(id__in=extra_tids,
-                        project=self.project).values_list('skeleton_id', flat=True))
-                self.to_serialize.append(ClassInstance.objects.filter(id__in=extra_skids))
-
-                extra_links = ClassInstanceClassInstance.objects \
-                        .filter(project=self.project,
-                                class_instance_a__in=extra_skids,
-                                relation=relations['model_of'])
-                self.to_serialize.append(extra_links)
-
-                extra_nids = extra_links.values_list('class_instance_b', flat=True)
-                self.to_serialize.append(ClassInstance.objects.filter(
-                    project=self.project, id__in=extra_nids))
 
             # Export annotations and annotation-neuron links. Include meta
             # annotations.
@@ -232,11 +247,10 @@ class Exporter():
         else:
             # Export treenodes
             if self.export_treenodes:
-                if skeleton_id_constraints:
-                    pass
-                else:
-                    treenodes = Treenode.objects.filter(project=self.project)
-                    self.to_serialize.append(treenodes)
+                treenodes = Treenode.objects.filter(project=self.project)
+                if exclude_skeleton_id_constraints:
+                    treenodes = treenodes.exclude(skeleton_id=exclude_skeleton_id_constraints)
+                self.to_serialize.append(treenodes)
 
             # Export connectors and connector links
             if self.export_connectors:
@@ -252,6 +266,8 @@ class Exporter():
                 tag_links = TreenodeClassInstance.objects.filter(project=self.project,
                         class_instance__class_column=classes['label'],
                         relation_id=relations['labeled_as'])
+                if exclude_skeleton_id_constraints:
+                    tag_links = tag_links.exclude(skeleton_id=exclude_skeleton_id_constraints)
 
                 self.to_serialize.append(tags)
                 self.to_serialize.append(tag_links)
@@ -260,6 +276,7 @@ class Exporter():
 
 
         # Export referenced neurons and skeletons
+        exported_tids = set()
         if treenodes:
             treenode_skeleton_ids = set(t.skeleton_id for t in treenodes)
             skeletons = ClassInstance.objects.filter(
@@ -280,6 +297,32 @@ class Exporter():
             exported_tids = set(treenodes.values_list('id', flat=True))
             logger.info("Exporting {} treenodes in {} skeletons and {} neurons".format(
                     len(exported_tids), len(skeletons), len(neurons)))
+
+        if skeleton_id_constraints:
+            if connector_ids:
+                # Add addition placeholder treenodes
+                connector_tids = set(TreenodeConnector.objects \
+                    .filter(project=self.project, connector__in=connector_ids) \
+                    .exclude(skeleton_id__in=skeleton_id_constraints) \
+                    .values_list('treenode', flat=True))
+                extra_tids = connector_tids - exported_tids
+                logger.info("Exporting %s placeholder nodes" % len(extra_tids))
+                self.to_serialize.append(Treenode.objects.filter(id__in=extra_tids))
+
+                # Add additional skeletons and neuron-skeleton links
+                extra_skids = set(Treenode.objects.filter(id__in=extra_tids,
+                        project=self.project).values_list('skeleton_id', flat=True))
+                self.to_serialize.append(ClassInstance.objects.filter(id__in=extra_skids))
+
+                extra_links = ClassInstanceClassInstance.objects \
+                        .filter(project=self.project,
+                                class_instance_a__in=extra_skids,
+                                relation=relations['model_of'])
+                self.to_serialize.append(extra_links)
+
+                extra_nids = extra_links.values_list('class_instance_b', flat=True)
+                self.to_serialize.append(ClassInstance.objects.filter(
+                    project=self.project, id__in=extra_nids))
 
         # Export users, either completely or in a reduced form
         seen_user_ids = set()
@@ -364,6 +407,9 @@ class Command(BaseCommand):
         parser.add_argument('--required-annotation', dest='required_annotations',
             action='append', help='Name a required annotation for exported ' +
             'skeletons. Meta-annotations can be used as well.')
+        parser.add_argument('--excluded-annotation', dest='excluded_annotations',
+            action='append', help='Name an annotation that is used to exclude ' +
+            'skeletons from the export. Meta-annotations can be used as well.')
         parser.add_argument('--connector-placeholders', dest='connector_placeholders',
             action='store_true', help='Should placeholder nodes be exported')
 
@@ -405,7 +451,7 @@ class Command(BaseCommand):
         if wont_export:
             logger.info("Won't export: " + ", ".join(wont_export))
 
-        # Read soure and target
+        # Read source
         if not options['source']:
             source = self.ask_for_project('source')
         else:
@@ -415,6 +461,9 @@ class Command(BaseCommand):
         if (options['required_annotations']):
             logger.info("Needed annotations for exported skeletons: " +
                   ", ".join(options['required_annotations']))
+        if (options['excluded_annotations']):
+            logger.info("Excluding skeletons with the following annotation: " +
+                  ", ".join(options['excluded_annotations']))
 
         exporter = Exporter(source, options)
         exporter.export()

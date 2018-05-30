@@ -1,7 +1,7 @@
 Some CATMAID versions require manual changes to an existing setup. Below these
 and other administration related changes are listed in order.
 
-## Under development
+## 2018.04.15
 
 - Postgres 10+ is now required.
 

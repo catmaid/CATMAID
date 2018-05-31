@@ -676,7 +676,7 @@
   };
 
   /**
-   * Save a DIV element with the fiven ID to the fiven filename.
+   * Save a DIV element with the given ID to the given filename.
    */
   SVGUtil.saveDivSVG = function(divID, filename) {
     var div = document.getElementById(divID);
@@ -687,6 +687,118 @@
       var blob = new Blob([xml], {type : 'text/xml'});
       saveAs(blob, filename);
     }
+  };
+
+  /**
+   * @param lines An array of objects, each with a name field, a color field, and an xy zipped x,y array of objects with x,y values. like:
+   *
+   * lines = [{name: "The name",
+   *           color: "#FF0000",
+   *           xy: [{x: 0, y: 5}, {x: 1, y: 10}, ...]},
+   *          ...,
+   *          ...];
+   */
+  SVGUtil.insertMultiLinePlot = function(container, containerID, plot_id, lines, x_label, y_label) {
+
+    // Dimensions and padding
+    var margin = {top: 20, right: 20, bottom: 30, left: 40},
+        width = container.width() - margin.left - margin.right,
+        height = container.height() - margin.top - margin.bottom;
+
+    // Define the ranges of the axes
+    var xMin = Number.MAX_VALUE,
+        xMax = 0,
+        yMin = Number.MAX_VALUE,
+        yMax = 0;
+    lines.forEach(function(line) {
+      line.xy.forEach(function(point) {
+        xMin = Math.min(xMin, point.x);
+        xMax = Math.max(xMax, point.x);
+        yMin = Math.min(yMin, point.y);
+        yMax = Math.max(yMax, point.y);
+      });
+    });
+
+    var xR = d3.scale.linear().domain(d3.extent([xMin, xMax])).nice().range([0, width]);
+    var yR = d3.scale.linear().domain(d3.extent([yMin, yMax])).nice().range([height, 0]);
+
+    // Define the data domains/axes
+    var xAxis = d3.svg.axis().scale(xR)
+                             .orient("bottom");
+    var yAxis = d3.svg.axis().scale(yR)
+                             .orient("left");
+
+    var svg = d3.select(containerID).append("svg")
+        .attr("id", plot_id)
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + ", " + margin.top + ")");
+
+    // Add an invisible layer to enable triggering zoom from anywhere, and panning
+    svg.append("rect")
+      .attr("width", width)
+      .attr("height", height)
+      .style("opacity", "0");
+
+    // Create a line function
+    var line = d3.svg.line()
+        .interpolate("basis")
+        .x(function(d) { return xR(d.x); })
+        .y(function(d) { return yR(d.y); });
+
+    // Create a 'g' group for each line
+    var elems = svg.selectAll(".state").data(lines).enter()
+      .append("g")
+      .append("path")
+      .attr("class", "line")
+      .attr("fill", "none")
+      .attr("d", function(d) { return line(d.xy); })
+      .style("stroke", function(d) { return d.color; })
+      .style("stroke-width", function(d) { return d.stroke_width; });
+
+    // Insert the graphics for the axes (after the data, so that they draw on top)
+    var xg = svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .attr("fill", "none")
+        .attr("stroke", "black")
+        .style("shape-rendering", "crispEdges")
+        .call(xAxis);
+    xg.selectAll("text")
+        .attr("fill", "black")
+        .attr("stroke", "none");
+    xg.append("text")
+        .attr("x", width)
+        .attr("y", -6)
+        .attr("fill", "black")
+        .attr("stroke", "none")
+        .attr("font-family", "sans-serif")
+        .attr("font-size", "11px")
+        .style("text-anchor", "end")
+        .text(x_label);
+
+    var yg = svg.append("g")
+        .attr("class", "y axis")
+        .attr("fill", "none")
+        .attr("stroke", "black")
+        .style("shape-rendering", "crispEdges")
+        .call(yAxis);
+    yg.selectAll("text")
+        .attr("fill", "black")
+        .attr("stroke", "none");
+    yg.append("text")
+        .attr("fill", "black")
+        .attr("stroke", "none")
+        .attr("transform", "rotate(-90)")
+        .attr("font-family", "sans-serif")
+        .attr("font-size", "11px")
+        .attr("y", 6)
+        .attr("dy", ".71em")
+        .style("text-anchor", "end")
+        .text(y_label);
+
+    return svg;
   };
 
   // Export SVG utility functions in CATMAID.svgutil sub-namespace

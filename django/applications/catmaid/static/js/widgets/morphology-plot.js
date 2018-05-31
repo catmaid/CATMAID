@@ -460,11 +460,6 @@
     // Clear existing plot if any
     container.empty();
 
-    // Dimensions and padding
-    var margin = {top: 20, right: 20, bottom: 30, left: 40},
-        width = container.width() - margin.left - margin.right,
-        height = container.height() - margin.top - margin.bottom;
-
     var zip = function(xs, ys) {
       return xs.map(function(x, i) {
         return {x: x, y: ys[i]};
@@ -472,106 +467,16 @@
     };
 
     // Package data
-    var xMin = Number.MAX_VALUE,
-        xMax = 0,
-        yMin = Number.MAX_VALUE,
-        yMax = 0,
-        data = Object.keys(this.lines).map(function(id) {
+    var data = Object.keys(this.lines).map(function(id) {
           var line = this.lines[id];
-          if (line.x.length > 0 && line.y.length > 0) {
-            xMin = Math.min(xMin, d3.min(line.x));
-            xMax = Math.max(xMax, d3.max(line.x));
-            yMin = Math.min(yMin, d3.min(line.y));
-            yMax = Math.max(yMax, d3.max(line.y));
-          }
           return {id: id,
                   name: CATMAID.NeuronNameService.getInstance().getName(id),
-                  hex: '#' + this.models[id].color.getHexString(),
-                  xy: zip(line.x, line.y)};
-        }, this);
+                  xy: zip(line.x, line.y),
+                  color: '#' + this.models[id].color.getHexString(),
+                  stroke_width: "2"};
+    }, this);
 
-    var step = $('#morphology_plot_step' + this.widgetID).val();
-
-    // Define the ranges of the axes
-    var xR = d3.scale.linear().domain(d3.extent([xMin, xMax])).nice().range([0, width]);
-    var yR = d3.scale.linear().domain(d3.extent([yMin, yMax])).nice().range([height, 0]);
-
-    // Define the data domains/axes
-    var xAxis = d3.svg.axis().scale(xR)
-                             .orient("bottom");
-    var yAxis = d3.svg.axis().scale(yR)
-                             .orient("left");
-
-    var svg = d3.select(containerID).append("svg")
-        .attr("id", "morphology_plot" + this.widgetID)
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-        .attr("transform", "translate(" + margin.left + ", " + margin.top + ")");
-
-    // Add an invisible layer to enable triggering zoom from anywhere, and panning
-    svg.append("rect")
-      .attr("width", width)
-      .attr("height", height)
-      .style("opacity", "0");
-
-    // Create a line function
-    var line = d3.svg.line()
-        .interpolate("basis")
-        .x(function(d) { return xR(d.x); })
-        .y(function(d) { return yR(d.y); });
-
-    // Create a 'g' group for each skeleton, containing the line
-    var elems = svg.selectAll(".state").data(data).enter()
-      .append("g")
-      .append("path")
-      .attr("class", "line")
-      .attr("fill", "none")
-      .attr("d", function(d) { return line(d.xy); })
-      .style("stroke", function(d) { return d.hex; });
-
-    // Insert the graphics for the axes (after the data, so that they draw on top)
-    var xg = svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
-        .attr("fill", "none")
-        .attr("stroke", "black")
-        .style("shape-rendering", "crispEdges")
-        .call(xAxis);
-    xg.selectAll("text")
-        .attr("fill", "black")
-        .attr("stroke", "none");
-    xg.append("text")
-        .attr("x", width)
-        .attr("y", -6)
-        .attr("fill", "black")
-        .attr("stroke", "none")
-        .attr("font-family", "sans-serif")
-        .attr("font-size", "11px")
-        .style("text-anchor", "end")
-        .text("distance (nm)");
-
-    var yg = svg.append("g")
-        .attr("class", "y axis")
-        .attr("fill", "none")
-        .attr("stroke", "black")
-        .style("shape-rendering", "crispEdges")
-        .call(yAxis);
-    yg.selectAll("text")
-        .attr("fill", "black")
-        .attr("stroke", "none");
-    yg.append("text")
-        .attr("fill", "black")
-        .attr("stroke", "none")
-        .attr("transform", "rotate(-90)")
-        .attr("font-family", "sans-serif")
-        .attr("font-size", "11px")
-        .attr("y", 6)
-        .attr("dy", ".71em")
-        .style("text-anchor", "end")
-        .text("value");
-
-    this.svg = svg;
+    this.svg = CATMAID.svgutil.insertMultiLinePlot(container, containerID, "morphology_plot" + this.widgetID, data, "distance (nm)", "value");
   };
 
   MorphologyPlot.prototype.createCSV = function() {

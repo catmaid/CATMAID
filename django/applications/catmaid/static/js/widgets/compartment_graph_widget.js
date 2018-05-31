@@ -508,7 +508,7 @@
         this.init();
       },
       helpText: [
-        '<h3>Visualize connecticity networks</h3>',
+        '<h3>Visualize connectivity networks</h3>',
         '<h4>How to...</h4><p><em>Hide edges/links:</em> ',
         'Select an edge and use the <em>Hide</em> button in the ',
         '<em>Selection</em> tab.</p>'

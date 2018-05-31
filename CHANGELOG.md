@@ -115,6 +115,9 @@ Miscellaneous:
 - 3D viewer: connector restrictions like "show only shared connectors" now
   respect the pre/post visibility toggles in the Selection Table.
 
+- Reconstruction sampler: during interval creation preview, only intervals from
+  the currently active domain are now shown.
+
 
 ## 2018.04.15
 

@@ -267,12 +267,17 @@
 
   /**
    * Get an edge mapping for all edges in the passed in arbor that are part of
-   * one of the domains that are part of the passed in sampler.
+   * one of the domains that are part of the passed in sampler. Optionally, only
+   * particular domains can be respected.
    */
-  Sampling.samplerEdges = function(arbor, sampler, target) {
+  Sampling.samplerEdges = function(arbor, sampler, target, allowedDomains) {
     edges = target || {};
 
     var edges = sampler.domains.reduce(function(o, d) {
+      if (allowedDomains && !allowedDomains.has(d.id)) {
+        return o;
+      }
+
       var domainArbor = CATMAID.Sampling.domainArborFromModel(arbor, d);
       // Add all edges of the domain arbor to the sampler wide edge mapping
       for (var parentId in domainArbor.edges) {

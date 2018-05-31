@@ -875,7 +875,8 @@
         var samplerEdges = {};
         for (var i=0; i<samplers.length; ++i) {
           var sampler = samplers[i];
-          CATMAID.Sampling.samplerEdges(arbor, sampler, samplerEdges);
+          CATMAID.Sampling.samplerEdges(arbor, sampler, samplerEdges,
+              options.allowed_sampler_domains);
         }
 
         // Add all nodes in all domains

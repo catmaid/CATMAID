@@ -1636,11 +1636,16 @@
           let arborParsers = new Map([[skeletonId, workParser]]);
           let nodeProvider = new CATMAID.ArborParserNodeProvider(arborParsers);
 
+          let activeDomainId = domain.id;
           glWidget.addSkeletons(models, function() {
             // Set new shading and coloring methods
             glWidget.options.color_method = colorMethod;
-            glWidget.options.shading_method = 'sampler-intervals';
+            glWidget.options.shading_method = 'sampler-domains';
             glWidget.options.interpolate_vertex_colots = false;
+
+            // Make sure only the active domain is visible
+            glWidget.options.allowed_sampler_domains = new Set([activeDomainId]);
+
             glWidget.updateSkeletonColors()
               .then(function() { glWidget.render(); });
 

@@ -312,6 +312,10 @@
         if (!activeNodeId) {
           throw new CATMAID.ValueError("No node selected");
         }
+        // Instead of virtual nodes, their children are used.
+        if (!SkeletonAnnotations.isRealNode(activeNodeId)) {
+          activeNodeId = SkeletonAnnotations.getChildOfVirtualNode(activeNodeId);
+        }
         if (!arborParser.arbor.contains(activeNodeId)) {
           throw new CATMAID.ValueError("Active node not part of specified skeleton");
         }
@@ -326,6 +330,10 @@
             var activeNodeId = SkeletonAnnotations.getActiveNodeId();
             if (!activeNodeId) {
               throw new CATMAID.ValueError("No node selected");
+            }
+            // Instead of virtual nodes, their children are used.
+            if (!SkeletonAnnotations.isRealNode(activeNodeId)) {
+              activeNodeId = SkeletonAnnotations.getChildOfVirtualNode(activeNodeId);
             }
             if (!arborParser.arbor.contains(activeNodeId)) {
               throw new CATMAID.ValueError("Active node not part of specified skeleton");

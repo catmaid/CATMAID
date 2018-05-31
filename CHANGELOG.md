@@ -86,6 +86,10 @@ Miscellaneous:
 - Tracing layer: a new option to show only the N largest skeletons in a field of
   view is now available for the layer settings (and the API).
 
+- Node filters: if a neuron name is provided for a rule, the rule is now valid
+  for all neurons with neuron names that include the provided name and not only
+  exact matches.
+
 - Neuron name display: neighboring duplicate name components are now removed by
   the default. This setting can be adjusted from the Annotation sections in the
   Settings Widget.

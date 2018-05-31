@@ -18,6 +18,7 @@
     this.options = options;
     this.validOnlyForSkid = skid;
     this.validOnlyForName = name;
+    this.validOnlyForNameExact = false;
   };
 
   /**
@@ -583,8 +584,9 @@
           }
           // Consider name only if a skeleton ID is given
           var name = rule.validOnlyForName;
-          if (name && nns.getName(skid) !== name) {
-            valid = false;
+          if (name) {
+            var nnsName = nns.getName(skid);
+            valid = rule.validOnlyForNameExact ? nnsName === name : nnsName.includes(name);
           }
         }
       }

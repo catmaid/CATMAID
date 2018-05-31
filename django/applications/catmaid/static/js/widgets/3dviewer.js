@@ -4276,14 +4276,21 @@
             throw new CATMAID.ValueError("Unknown panel format: " + panelFormat);
           }
           panel = renderSkeletonsPNG(self, namespace, panelImageWidth,
-              panelImageHeight);
+              panelImageHeight, true);
         }
+
+        let panelViewBox = panel.viewBox ? panel.viewBox.baseVal : {
+          x: 0,
+          y: 0,
+          width: imageWidth,
+          height: imageHeight,
+        };
 
         // Add name of neuron, if enabled
         if (displayNames) {
           let text = document.createElementNS(namespace, 'text');
-          text.setAttribute('x', panel.viewBox.baseVal.x + 5);
-          text.setAttribute('y', panel.viewBox.baseVal.y + fontsize + 5);
+          text.setAttribute('x', panelViewBox.x + 5);
+          text.setAttribute('y', panelViewBox.y + fontsize + 5);
           text.setAttribute('style', 'font-family: Arial; font-size: ' +
               fontsize + 'px; fill: ' + textColor + ';');
           let names = currentSkeletonIds.map(getName).join(', ');
@@ -4295,13 +4302,11 @@
         if (displayOrthoScaleBar) {
           // Create temporary scale bar
           let scaleBar = new CATMAID.ScaleBar(document.createElement('div'));
-          scaleBar.update(imageWidth / orthoCameraWidth, panel.viewBox.baseVal.width / 5);
+          scaleBar.update(imageWidth / orthoCameraWidth, panelViewBox.width / 5);
 
-          let xOffset = panel.viewBox.baseVal.x +
-              Math.round(panel.viewBox.baseVal.width * 0.05);
-          let yOffset = panel.viewBox.baseVal.y +
-              Math.round(panel.viewBox.baseVal.height * 0.95);
-          let strokeWidth = Math.max(2, panel.viewBox.baseVal.height * 0.002);
+          let xOffset = panelViewBox.x + Math.round(panelViewBox.width * 0.05);
+          let yOffset = panelViewBox.y + Math.round(panelViewBox.height * 0.95);
+          let strokeWidth = Math.max(2, panelViewBox.height * 0.002);
 
           let scaleBarGroup = document.createElementNS(namespace, 'g');
           let bar = document.createElementNS(namespace, 'line');
@@ -4372,10 +4377,17 @@
         let data = views[i];
 
         // Add a translation to current image
-        var col = i % numColumns;
-        var row = Math.floor(i / numColumns);
-        data.setAttribute('x', margin + col * imageWidth + (col * 2 + 1) * padding);
-        data.setAttribute('y', margin + row * imageHeight + (row * 2 * padding) + padding);
+        let col = i % numColumns;
+        let row = Math.floor(i / numColumns);
+        let xd = margin + col * imageWidth + (col * 2 + 1) * padding;
+        let yd = margin + row * imageHeight + (row * 2 * padding) + padding;
+
+        if (data.tagName === 'svg') {
+          data.setAttribute('x', xd);
+          data.setAttribute('y', yd);
+        } else {
+          data.setAttribute('transform', 'translate(' + xd + ',' + yd + ')');
+        }
 
         // Append the group to the SVG
         svg.appendChild(data);
@@ -4415,14 +4427,22 @@
         setVisibility(buffers, true);
       }
 
-      return svgRenderer.domElement;
+      if (asGroup) {
+        let g = document.createElementNS(svgNamespace, 'g');
+        g.setAttribute('width', originalWidth);
+        g.setAttribute('height', originalHeight);
+        g.appendChild(svgImage);
+        return g;
+      } else {
+        return svgRenderer.domElement;
+      }
     }
 
     /**
      * Render the current scene as PNG and return it embedded in an SVG image
      * element.
      */
-    function renderSkeletonsPNG(view, svgNamespace, width, height) {
+    function renderSkeletonsPNG(view, svgNamespace, width, height, asGroup) {
       let originalWidth = view.space.canvasWidth;
       let originalHeight = view.space.canvasHeight;
       let needsSizeReset = false;
@@ -4448,15 +4468,22 @@
       svgImage.setAttribute('visibility', 'visible');
       svgImage.setAttribute('xlink:href', imageData);
 
-      let svg = document.createElementNS(svgNamespace, 'svg');
-      svg.setAttribute('xmlns', svgNamespace);
-      svg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-      svg.setAttribute('viewBox', [0, 0, originalWidth, originalHeight].join(' '));
-      svg.setAttribute('width', originalWidth);
-      svg.setAttribute('height', originalHeight);
-      svg.appendChild(svgImage);
-
-      return svg;
+      if (asGroup) {
+        let g = document.createElementNS(svgNamespace, 'g');
+        g.setAttribute('width', originalWidth);
+        g.setAttribute('height', originalHeight);
+        g.appendChild(svgImage);
+        return g;
+      } else {
+        let svg = document.createElementNS(svgNamespace, 'svg');
+        svg.setAttribute('xmlns', svgNamespace);
+        svg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+        svg.setAttribute('viewBox', [0, 0, originalWidth, originalHeight].join(' '));
+        svg.setAttribute('width', originalWidth);
+        svg.setAttribute('height', originalHeight);
+        svg.appendChild(svgImage);
+        return svg;
+      }
     }
   };
 

@@ -17,14 +17,10 @@
 		//  4. "parameters": parameters of the unit for simulation, specifying:
 		//        - the sigmoid function (multiple parameters)
 		//        - the baseline input rate (defaults to zero)
-		this.units = {};
-		this.nextUnitID = 0;
+		//  4. all the parameters of the unit for simulation
 
-		// A map of connections between units, containing source unitIDs vs array of objects,
-		// each containing the target unitID and the weight of the connection (positive or negative).
-		this.connections = {};
+		this.units = [];
 
-		this.params = [];
 	};
 
 	CircuitSimulation.prototype = Object.create(CATMAID.SkeletonSource.prototype);
@@ -154,10 +150,6 @@
 		//   * name
 		//   * color
 		//  
-		//  Values of I_tonic: 2 for FBN, FB2IN, MBIN, 0 for all others
-		//
-		//  this.params !!! TODO
-		var params = this.params;
 
 
 		// Logistic function: all parameters are scalars
@@ -185,15 +177,17 @@
 			return s + I_tonic;
 		};
 
+    // A two-argument function that runs at every simulated time instance
+    // (units is bound to this.units, returning a two-arg function.)
 		// t: (scalar) current time point
 		// vr: (vector) current firing rates of all units
 		// Returns a vector: each item is a solution for each unit.
-		var dydt = function(t, vr) {
+		var dydt = (function(units, t, vr) {
 			return vr.map(function(r, i) {
-				var p = params[i];
+				var p = units[i];
 				return (-r + stim(t, p) + p.scaling * logistic(input(p.w, vr, p.I_tonic), p.k, p.th)) / p.tau;
 			});
-		};
+		}).bind(null, this.units);
 
 		// numeric.dopri parameters: (the ODE solver)
 		// x0: initial time of the simulation.
@@ -206,14 +200,14 @@
 
 		var x0 = 0;
 		var x1 = Number($('#cs_time' + this.widgetID).val());
-		var y0 = params.map(function() { return 0; }); // a vector full of zeros
+		var y0 = this.units.map(function() { return 0; }); // a vector full of zeros
 
 		var sol = numeric.dopri_nonnegative(x0, x1, y0, dydt, 1e-6, 1000, null);
 
 		this.sol = sol;
 
 		// Extract one line per unit, for plotting
-		this.lines = params.map(function(p) {
+		this.lines = this.units.map(function(p) {
 			return {name: p.name,
 				      color: p.color,
 							stroke_width: "3",
@@ -227,6 +221,7 @@
 			}
 		}, this);
 
+    // Store the result for analysis from the command line
 		this.sol = sol;
 
 		this.redraw();

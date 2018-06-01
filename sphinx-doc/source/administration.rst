@@ -5,17 +5,20 @@ Administering a CATMAID Instance
 
 This section presents information on how to update a running CATMAID
 instance and how to backup/restore its database. These administrative
-tasks might be needed from time to time. Newer CATMAID versions of
+tasks might be needed from time to time. Newer versions of
 CATMAID (obviously) often include bug fixes and new features.
 
 Updating to a newer version
 ---------------------------
 
 Before updating to a newer version, please make sure that CATMAID is
-currently not running anymore and to have a backup of your current
-database state. While not very likely to cause problems if not stopped,
-it is recommended to not have the server running during the update. At
-the end, your CATMAID instance is very likely to need a restart anyway.
+not currently running and that you have a backup of your current
+database state.
+
+You may be asked to upgrade the database in the release notes for the
+versions between your current and your target version. If this is the
+case, follow those instructions first (after doing a database backup and
+stopping CATMAID). 
 
 Updating a CATMAID instance involves several steps: First move to your
 CATMAID instance's root directory. This is also the root of CATMAID's
@@ -31,13 +34,17 @@ remote::
 
 Note that this will merge into your local branch. So if you have local
 commits that you want to keep you might want to rebase those on
-origin's master branch using the "--rebase" option.
+origin's master branch using the "--rebase" option. If you are familiar
+with git branches, you may prefer to switch to the maintenance/RELEASE
+branch for your target version (if you do this, you'll switch branches
+again the next time you do an upgrade).
 
-Have a careful look at the required update steps that need to happen to update
+Have a careful look at the required steps to update
 your current version to the target version. Both ``CHANGELOG.md`` and
-``UPDATE.md`` provide this information, the latter only in a more condensed
+``UPDATE.md`` provide this information, the latter in a more condensed
 form. It is also available :ref:`here <update>`. If there are extra steps
-required, apply them as directed.
+required, apply them as directed. You should read these for every version
+after your current version up to your target version.
 
 Then move into the Django sub-directory::
 
@@ -59,9 +66,9 @@ Collect new and changed static files::
 
    ./projects/manage.py collectstatic -l
 
-Finally, open the web-frontend of your CATMAID instance in a browser to
-start the database migration. If you don't need it anymore, you can also
-clone the virtualenv by calling::
+Finally, start the CATMAID process, and visit it in your browser to ensure
+it is functioning. When done, if you have other work to do on the system, you
+can close the virtualenv as follows::
 
    deactivate
 
@@ -77,14 +84,6 @@ clone the virtualenv by calling::
    database migrations and then continue with the release you actually want.
    With the newer version, you have to then fake the initial migration:
    ``manage.py migrate catmaid --fake 0001_initial``.
-
-.. note::
-
-   It is advisable to go through the changelog (``CHANGELOG.md`` file) for each
-   release that is either skipped or upgraded to. Sometimes settings change or
-   other adjustments are required, which the changelog will provide information
-   on for the respective release. The file ``UPDATE.md`` contains a condensed
-   list of these changes.
 
 Backup and restore the database
 -------------------------------
@@ -102,14 +101,14 @@ be restored automatically (to save space)::
     pg_dump --clean -T treenode_edge -U <CATMAID-USER> catmaid -f catmaid_dump.sql
 
 To restore the dumped database into a database named "catmaid" (which would have
-to be created like described in the basic install instructions)::
+to be created as described in the basic install instructions)::
 
     psql -U <CATMAID-USER> -d catmaid -f catmaid_dump.sql
 
 Both commands will ask for the password. Alternatively, you can use the
 scripts ``scripts/database/backup-database.py`` and
-``scripts/database/revert-database.py``, which basically do the same
-thing. Those, however, don't ask for a password, but require a
+``scripts/database/revert-database.py``, which do the same
+thing. Those don't ask for a password, but require a
 ``.pgpass`` file (see `PostgreSQL documentation
 <http://www.postgresql.org/docs/current/static/libpq-pgpass.html>`_).
 
@@ -126,12 +125,12 @@ be edited with::
   sudo crontab -e
 
 The actual crontab file is not meant to be edited directly, but only through the
-``crontab`` tool. To run the above backup  command every night at 3am, the
+``crontab`` tool. To run the above backup command every night at 3am, the
 following line would have to be added::
 
   0 3 * * * sudo -u postgres pg_dump --clean -T treenode_edge catmaid -f "/opt/backup/psql/catmaid_$(date +\%Y\%m\%d\%H\%M).sql"
 
-This would create a new file in the folder ``/opt/backup/psql`` at 3am every
+This creates a new file in the folder ``/opt/backup/psql`` at 3am every
 night. It will fail if the folder isn't available or writable. The file name
 includes the date and time the command is run and will look like
 ``catmaid_201509101007.sql``. Because ``cron`` treats ``%`` characters
@@ -217,7 +216,7 @@ Operating system and infrastructure
   until the write-out is finished should be lowered, to e.g. 1GB:
   ``vm.dirty_bytes = 107374182``.
 
-* The kernel should also be discouraged to swap cached data by setting
+* The kernel should also be discouraged from swapping cached data by setting
   ``vm.swappiness = 10``.
 
 Webserver

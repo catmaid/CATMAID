@@ -132,6 +132,10 @@ if [ "$1" = 'standalone' ]; then
     su postgres -c "vacuumdb -a -z"
   fi
 
+  echo "Linking /home/scripts/docker/nginx-catmaid.conf"
+  rm -f /etc/nginx/sites-enabled/default
+  ln -sf /home/scripts/docker/nginx-catmaid.conf /etc/nginx/sites-enabled/
+
   echo "Starting Nginx"
   service nginx start
   init_catmaid

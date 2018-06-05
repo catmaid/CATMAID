@@ -4399,7 +4399,7 @@
     /**
      * Render the current scene and replace the given sphere meshes beforehand.
      */
-    function renderSkeletonsSVG(sphereMeshes, bufferObjects, bufferCollections)
+    function renderSkeletonsSVG(sphereMeshes, bufferObjects, bufferCollections, asGroup)
     {
       // Hide spherical meshes of all given skeletons
       var sphereReplacemens = {};

@@ -202,8 +202,8 @@ Tile source types are listed by the enumeration integer ID referenced by
 *****************
 
    This tile source type retrieves image tiles from the dynamic
-   `render service <https://github.com/saalfeldlab/render/tree/ws_phase_1>`_
-   used by the FlyTEM project at Janelia Research Campus.
+   `render service <https://github.com/saalfeldlab/render>`_
+   used at Janelia Research Campus.
 
    URL format::
 

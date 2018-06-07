@@ -1,0 +1,13 @@
+{
+  "devDependencies": {
+    "sinon": "5.0.7",
+    "karma-chrome-launcher": "2.2.0",
+    "karma-sinon": "1.0.5",
+    "karma-qunit": "2.1.0",
+    "csslint": "1.0.5",
+    "qunit": "2.6.1",
+    "jshint": "2.9.5",
+    "karma": "2.0.2",
+    "jsdoc": "3.5.5"
+  }
+}

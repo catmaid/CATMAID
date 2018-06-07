@@ -192,8 +192,8 @@
         tile.position.x = x;
         tile.position.y = y;
 
-        if (c >= 0 && c <= tileInfo.lastCol &&
-            r >= 0 && r <= tileInfo.lastRow && showTiles) {
+        if (c >= tileInfo.firstCol && c <= tileInfo.lastCol &&
+            r >= tileInfo.firstRow && r <= tileInfo.lastRow && showTiles) {
           var source = this.tileSource.getTileURL(project, this.stack, slicePixelPosition,
               c, r, tileInfo.zoom);
 

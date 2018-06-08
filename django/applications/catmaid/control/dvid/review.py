@@ -21,5 +21,5 @@ def reviewer_whitelist(request, project_id=None):
     else:
         return JsonResponse({
             'success': 'Updating the review whitelist is not ' +
-                       'supported for FlyTEM stacks at this time'
+                       'supported for DVID stacks at this time'
         })

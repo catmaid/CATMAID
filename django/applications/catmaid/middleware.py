@@ -136,12 +136,12 @@ class BasicModelMapMiddleware(object):
         return self.get_response(request)
 
 
-class FlyTEMMiddleware(BasicModelMapMiddleware):
-    """Let this middleware redirect requests for stacks and projects to FlyTEM
-    render service models.
+class JaneliaRenderMiddleware(BasicModelMapMiddleware):
+    """Let this middleware redirect requests for stacks and projects to
+    Janelia render web service models.
     """
 
-    url_prefix = '/flytem'
+    url_prefix = '/janelia-render'
 
 
 class DVIDMiddleware(BasicModelMapMiddleware):

@@ -501,11 +501,21 @@ var project;
 
         self.refresh();
 
+        // maps project tags to parent menus (which are dropped if no project is tagged)
+        var tagToMenuData = {
+          '' : {
+            'title': 'untagged projects',
+            'comment': '',
+            'note': '',
+            'action': []
+          }
+        };
+
         // Prepare JSON so that a menu can be created from it. Display only
         // projects that have at least one stack linked to them.
-        var projects = json.filter(function(p) {
+        json.filter(function(p) {
           return p.stacks.length > 0;
-        }).map(function(p) {
+        }).forEach(function(p) {
           var stacks = p.stacks.reduce(function(o, s) {
             o[s.id] = {
               'title': s.title,
@@ -525,7 +535,7 @@ var project;
             return o;
           }, {});
 
-          return {
+          var projectMenuData = {
             'title': p.title,
             'note': '',
             'action': [{
@@ -533,17 +543,60 @@ var project;
               'comment': '',
               'note': '',
               'action': stacks
-            }, {
-              'title': 'Stack groups',
-              'comment': '',
-              'note': '',
-              'action': stackgroups
             }]
 
           };
+
+          // only add stackgroups sub-menu if they exist
+          if (stackgroups.length > 0) {
+            projectMenuData.action.push({
+                                          'title': 'Stack groups',
+                                          'comment': '',
+                                          'note': '',
+                                          'action': stackgroups
+                                        });
+          }
+
+          if (p.hasOwnProperty('tags')) {
+
+            // add project to parent tag menu for each of its tags
+            for (var i=0; i < p.tags.length; i++) {
+              var tag = p.tags[i];
+              var tagMenuData;
+              if (! tagToMenuData.hasOwnProperty(tag)) {
+                tagMenuData = {
+                  'title': tag + ' projects',
+                  'comment': '',
+                  'note': '',
+                  'action': []
+                };
+                tagToMenuData[tag] = tagMenuData;
+              } else {
+                tagMenuData = tagToMenuData[tag];
+              }
+
+              tagMenuData.action.push(projectMenuData);
+            }
+
+          } else {
+
+            // add project to untagged parent
+            tagToMenuData[''].action.push(projectMenuData);
+
+          }
+
         });
 
-        project_menu.update(projects);
+        // place untagged projects at top of root level
+        var menuData = tagToMenuData[''].action;
+
+        // nest remaining tag menus in tag order
+        var sortedTagList = Object.keys(tagToMenuData).sort();
+        for (var i=1; i < sortedTagList.length; i++) {
+          menuData.push(tagToMenuData[sortedTagList[i]]);
+        }
+
+        project_menu.update(menuData);
 
         return self.projects;
       })

@@ -16,7 +16,7 @@ from catmaid.control import (authentication, user, log, message, client, common,
         annotations, textlabel, label, link, connector, neuron, node, treenode,
         suppressed_virtual_treenode, skeleton, skeletonexport, treenodeexport,
         cropping, data_view, ontology, classification, notifications, roi,
-        clustering, volume, flytem, dvid, noop, useranalytics, user_evaluation,
+        clustering, volume, noop, useranalytics, user_evaluation,
         search, graphexport, transaction, graph2, circles, analytics, review,
         wiringdiagram, object, sampler, treenodetable, nat, point, landmarks)
 
@@ -516,18 +516,20 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/treenode/table/(?P<skid>\d+)/content$', treenodetable.treenode_table_content),
 ]
 
-# Patterns for FlyTEM access
-from catmaid.control.flytem import (project as flytemproject,
-        review as flytemreview, stack as flytemstack)
+# Patterns for Janelia render web service access
+from catmaid.control.janelia_render import (
+    project as janelia_render_project,
+    review as janelia_render_review,
+    stack as janelia_render_stack)
 urlpatterns += [
-    url(r'^flytem/projects/$', flytemproject.projects),
-    url(r'^(?P<project_id>.+)/user/reviewer-whitelist$', flytemreview.reviewer_whitelist),
+    url(r'^janelia-render/projects/$', janelia_render_project.projects),
+    url(r'^(?P<project_id>.+)/user/reviewer-whitelist$', janelia_render_review.reviewer_whitelist),
     url(r'^(?P<project_id>.+)/interpolatable-sections/$', noop.interpolatable_sections),
-    url(r'^flytem/(?P<project_id>.+)/stack/(?P<stack_id>.+)/info$', flytem.stack.stack_info),
-    url(r'^flytem/(?P<project_id>.+)/stacks$', flytemstack.stacks),
-    url(r'^flytem/(?P<project_id>.+)/annotations/$', noop.list_annotations),
-    url(r'^flytem/(?P<project_id>.+)/annotations/query-targets$', noop.query_annotation_targets),
-    url(r'^flytem/client/datastores/(?P<name>[\w-]+)/$', noop.datastore_settings),
+    url(r'^janelia-render/(?P<project_id>.+)/stack/(?P<stack_id>.+)/info$', janelia_render_stack.stack_info),
+    url(r'^janelia-render/(?P<project_id>.+)/stacks$', janelia_render_stack.stacks),
+    url(r'^janelia-render/(?P<project_id>.+)/annotations/$', noop.list_annotations),
+    url(r'^janelia-render/(?P<project_id>.+)/annotations/query-targets$', noop.query_annotation_targets),
+    url(r'^janelia-render/client/datastores/(?P<name>[\w-]+)/$', noop.datastore_settings),
 ]
 
 # Patterns for DVID access

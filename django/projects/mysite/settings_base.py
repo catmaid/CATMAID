@@ -314,13 +314,13 @@ INSTALLED_EXTENSIONS = tuple(pipelinefiles.installed_extensions)
 # Make Git based version of CATMAID available as a settings field
 VERSION = utils.get_version()
 
-# FlyTEM rendering service. To activate add the following lines to your
+# Janelia rendering service. To activate add the following lines to your
 # settings.py file:
-# MIDDLEWARE += ('catmaid.middleware.FlyTEMMiddleware',)
-# FLYTEM_SERVICE_URL = 'http://renderer-2.int.janelia.org:8080/render-ws/v1/owner/flyTEM'
-# FLYTEM_STACK_RESOLUTION = (4,4,40)
-# FLYTEM_STACK_TILE_WIDTH = 512
-# FLYTEM_STACK_TILE_HEIGHT = 512
+# MIDDLEWARE += ('catmaid.middleware.JaneliaRenderMiddleware',)
+# JANELIA_RENDER_SERVICE_URL = 'http://renderer.int.janelia.org:8080/render-ws/v1'
+# JANELIA_RENDER_DEFAULT_STACK_RESOLUTION = (4,4,35)
+# JANELIA_RENDER_STACK_TILE_WIDTH = 1024
+# JANELIA_RENDER_STACK_TILE_HEIGHT = 1024
 
 # DVID auto-discovery. To activate add the following lines to your settings.py
 # file:

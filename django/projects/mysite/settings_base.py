@@ -405,3 +405,7 @@ CHANNEL_LAYERS = {
 CATMAID_FULL_URL = ""
 CATMAID_HTTP_AUTH_USER = None
 CATMAID_HTTP_AUTH_PASS = None
+
+# Whether or not to create default data views in the initial migration. This is
+# mainly useful for setups using the JaneliaRender or DVID middleware.
+CREATE_DEFAULT_DATAVIEWS = True

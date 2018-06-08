@@ -4286,12 +4286,13 @@ def add_initial_data(apps, schema_editor):
             'representation returned by configured URLs.')
 
     # Create default data views
-    list_view = DataView.objects.create(title='Project list',
-            data_view_type=project_list, config='{}', is_default=False,
-            position=0, comment='')
-    table_view = DataView.objects.create(title='Project table with images',
-            data_view_type=project_table, config='{"sample_images":true}',
-            is_default=True, position=1, comment='')
+    if settings.CREATE_DEFAULT_DATAVIEWS:
+        list_view = DataView.objects.create(title='Project list',
+                data_view_type=project_list, config='{}', is_default=False,
+                position=0, comment='')
+        table_view = DataView.objects.create(title='Project table with images',
+                data_view_type=project_table, config='{"sample_images":true}',
+                is_default=True, position=1, comment='')
 
     # Register composite type handlers now that the types exist in Postgres.
     catmaid.fields.composite_type_created.send(sender=catmaid.fields.Integer3DField, db_type='integer3d')

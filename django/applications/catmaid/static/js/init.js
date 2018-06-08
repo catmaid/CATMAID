@@ -1240,6 +1240,17 @@ var project;
     var self = this;
     CATMAID.DataViews.getDefaultConfig()
       .then(function(config) {
+        // If no data view is defined on the back-end, use a default data view.
+        if (!config || !config.id || CATMAID.tools.isEmpty(config.config)) {
+          config = {
+            id: null,
+            type: 'simple_project_list_data_view',
+            config: {
+              header: false,
+              message: false
+            }
+          };
+        }
         var dataview = CATMAID.DataView.makeDataView(config);
         self.switch_dataview(dataview, background);
       })

@@ -27,7 +27,7 @@ install:
   # Install requirements for running CATMAID and its unit tests
   - ./scripts/travis/install_requirements.sh
   - pip install coveralls flake8
-  - npm install jshint csslint jsdoc karma karma-chrome-launcher karma-qunit karma-sinon qunit sinon
+  - npm install --only=dev
   - npm bin
   - export PATH=$(npm bin):$PATH
 before_script:

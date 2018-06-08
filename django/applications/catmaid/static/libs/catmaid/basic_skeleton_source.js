@@ -68,6 +68,13 @@
   };
 
   /**
+   * Return whether or not groups exist in this source.
+   */
+  BasicSkeletonSource.prototype.hasGroups = function() {
+    return !CATMAID.tools.isEmpty(this.groups);
+  };
+
+  /**
    * Append a list of skeleton models. If a model is already known, the stored
    * model is updated. If the appended skeletons should be added as a group, all
    * added skeletons that are already grouped will be removed from those groups.

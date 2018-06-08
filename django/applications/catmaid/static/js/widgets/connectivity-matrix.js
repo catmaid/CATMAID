@@ -325,6 +325,26 @@
         groupEquallyNamedBoth.onclick = this.groupEquallyNamed.bind(this, true, true);
         tabs['Groups'].appendChild(groupEquallyNamedBoth);
 
+        var ungroupRows = document.createElement('input');
+        ungroupRows.setAttribute("type", "button");
+        ungroupRows.setAttribute("value", "Ungroup rows");
+        ungroupRows.setAttribute("title", "Ungroup all grouped rows");
+        ungroupRows.onclick = this.ungroup.bind(this, true, false);
+        tabs['Groups'].appendChild(ungroupRows);
+
+        var ungroupCols = document.createElement('input');
+        ungroupCols.setAttribute("type", "button");
+        ungroupCols.setAttribute("value", "Ungroup columns");
+        ungroupCols.setAttribute("title", "Ungroup all grouped columns");
+        ungroupCols.onclick = this.ungroup.bind(this, false, true);
+        tabs['Groups'].appendChild(ungroupCols);
+
+        var ungroupBoth = document.createElement('input');
+        ungroupBoth.setAttribute("type", "button");
+        ungroupBoth.setAttribute("value", "Ungroup both");
+        ungroupBoth.setAttribute("title", "Ungroup all rows and columns");
+        ungroupBoth.onclick = this.ungroup.bind(this, true, true);
+        tabs['Groups'].appendChild(ungroupBoth);
 
         // Display tab
         var sortOptionNames = sortOptions.map(function(o) {
@@ -485,6 +505,15 @@
     });
   };
 
+  var ungroupSource = function(targetSource) {
+    // If there are groups in this source, re-add all
+    if (targetSource.hasGroups()) {
+      var skeletonModels = targetSource.getSkeletonModels();
+      targetSource.clear();
+      targetSource.append(skeletonModels);
+    }
+  };
+
   /**
    * Group all rows and/or columns that have equal names.
    *
@@ -497,6 +526,21 @@
     }
     if (columns) {
       groupEquallyNamedInSource(this.colDimension);
+    }
+  };
+
+  /**
+   * Ungroup all rows and/or columns that are currently grouped.
+   *
+   * @params {Boolean} rows    Whether or not rows should be looked at
+   * @params {Boolean} columns Whether or not columns should be looked at
+   */
+  ConnectivityMatrixWidget.prototype.ungroup = function(rows, columns) {
+    if (rows) {
+      ungroupSource(this.rowDimension);
+    }
+    if (columns) {
+      ungroupSource(this.colDimension);
     }
   };
 

@@ -522,14 +522,14 @@ from catmaid.control.janelia_render import (
     review as janelia_render_review,
     stack as janelia_render_stack)
 urlpatterns += [
-    url(r'^janeliaRender/projects/$', janelia_render_project.projects),
+    url(r'^janelia-render/projects/$', janelia_render_project.projects),
     url(r'^(?P<project_id>.+)/user/reviewer-whitelist$', janelia_render_review.reviewer_whitelist),
     url(r'^(?P<project_id>.+)/interpolatable-sections/$', noop.interpolatable_sections),
-    url(r'^janeliaRender/(?P<project_id>.+)/stack/(?P<stack_id>.+)/info$', janelia_render_stack.stack_info),
-    url(r'^janeliaRender/(?P<project_id>.+)/stacks$', janelia_render_stack.stacks),
-    url(r'^janeliaRender/(?P<project_id>.+)/annotations/$', noop.list_annotations),
-    url(r'^janeliaRender/(?P<project_id>.+)/annotations/query-targets$', noop.query_annotation_targets),
-    url(r'^janeliaRender/client/datastores/(?P<name>[\w-]+)/$', noop.datastore_settings),
+    url(r'^janelia-render/(?P<project_id>.+)/stack/(?P<stack_id>.+)/info$', janelia_render_stack.stack_info),
+    url(r'^janelia-render/(?P<project_id>.+)/stacks$', janelia_render_stack.stacks),
+    url(r'^janelia-render/(?P<project_id>.+)/annotations/$', noop.list_annotations),
+    url(r'^janelia-render/(?P<project_id>.+)/annotations/query-targets$', noop.query_annotation_targets),
+    url(r'^janelia-render/client/datastores/(?P<name>[\w-]+)/$', noop.datastore_settings),
 ]
 
 # Patterns for DVID access

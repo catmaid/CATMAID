@@ -141,7 +141,7 @@ class JaneliaRenderMiddleware(BasicModelMapMiddleware):
     Janelia render web service models.
     """
 
-    url_prefix = '/janeliaRender'
+    url_prefix = '/janelia-render'
 
 
 class DVIDMiddleware(BasicModelMapMiddleware):

@@ -15,8 +15,8 @@ def projects(request):
     for project in render_projects:
         p = {
             'id': project.id,
-            'title': project.id,
-            'comment': '<p>Owner: %s</p>' % project.owner_name,
+            'title': project.title,
+            'tags': [ project.owner_name ],
             'stacks': [],
             'stackgroups': []
         }

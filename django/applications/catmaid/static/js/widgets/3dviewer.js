@@ -1310,6 +1310,18 @@
       };
       dialog.show();
       return;
+    } else if ('x-lut' === colorMenu.value) {
+      var stack = this.space.stack;
+      this.options.xDim = stack.dimension.x * stack.resolution.x;
+      this.options.xOffset = stack.translation.x;
+    } else if ('y-lut' === colorMenu.value) {
+      var stack = this.space.stack;
+      this.options.yDim = stack.dimension.y * stack.resolution.y;
+      this.options.yOffset = stack.translation.y;
+    } else if ('z-lut' === colorMenu.value) {
+      var stack = this.space.stack;
+      this.options.zDim = stack.dimension.z * stack.resolution.z;
+      this.options.zOffset = stack.translation.z;
     }
 
     this.options.color_method = colorMenu.value;

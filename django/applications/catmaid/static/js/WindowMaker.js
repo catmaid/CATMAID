@@ -523,6 +523,9 @@ var WindowMaker = new function()
      ['own-reviewed', 'Own Reviewed'],
      ['last-reviewed', 'Last Reviewer'],
      ['axon-and-dendrite', 'Axon and dendrite'],
+     ['x-lut', 'X Width rainbow'],
+     ['y-lut', 'Y Height rainbow'],
+     ['z-lut', 'Z Depth rainbow'],
      ['sampler-domains', 'Reconstrucion sampler domains'],
      ['binary-sampler-intervals', 'Reconstrucion sampler intervals (2 colors)'],
      ['multicolor-sampler-intervals', 'Reconstrucion sampler intervals (11 colors)']

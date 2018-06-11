@@ -50,6 +50,9 @@ Volume widget:
 - Catalog export: in orthographic mode it is now possible to export a scale bar
   on either none, the first or all exported panels.
 
+- New coloring option: X/Y/Z rainbow lookup table coloring for active stack
+  dimensions.
+
 Connectivity matrix:
 
 - Connector node filters can now be applied using the funnel icon in the widget

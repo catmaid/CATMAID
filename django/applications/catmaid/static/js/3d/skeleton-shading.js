@@ -404,6 +404,45 @@
         return makeSamplerIntervalColorizer(skeleton, options);
       }
     },
+    'x-lut': {
+      vertexColorizer: function(skeleton, options) {
+        let lutResolution = options.lutResolution || 256;
+        let lut = new THREE.Lut(options.colorMap || "rainbow", lutResolution);
+        let xOffset = options.xOffset || 0;
+        let xDim = options.xDim || 0;
+        lut.setMin(xOffset);
+        lut.setMax(xDim + xOffset);
+        return function(vertex) {
+          return lut.getColor(vertex.x);
+        };
+      }
+    },
+    'y-lut': {
+      vertexColorizer: function(skeleton, options) {
+        let lutResolution = options.lutResolution || 256;
+        let lut = new THREE.Lut(options.colorMap || "rainbow", lutResolution);
+        let yOffset = options.yOffset || 0;
+        let yDim = options.yDim || 0;
+        lut.setMin(yOffset);
+        lut.setMax(yDim + yOffset);
+        return function(vertex) {
+          return lut.getColor(vertex.y);
+        };
+      }
+    },
+    'z-lut': {
+      vertexColorizer: function(skeleton, options) {
+        let lutResolution = options.lutResolution || 256;
+        let lut = new THREE.Lut(options.colorMap || "rainbow", lutResolution);
+        let zOffset = options.zOffset || 0;
+        let zDim = options.zDim || 0;
+        lut.setMin(zOffset);
+        lut.setMax(zDim + zOffset);
+        return function(vertex) {
+          return lut.getColor(vertex.z);
+        };
+      }
+    }
   };
 
   let makeSamplerIntervalColorizer = function(skeleton, options) {
@@ -1034,7 +1073,13 @@
             reviewedColor: new THREE.Color(1.0, 0.0, 1.0),
             axonColor: new THREE.Color(0, 1, 0),
             dendriteColor: new THREE.Color(0, 0, 1),
-            notComputableColor: new THREE.Color(0.4, 0.4, 0.4)
+            notComputableColor: new THREE.Color(0.4, 0.4, 0.4),
+            xDim: options.xDim,
+            xOffset: options.xOffset,
+            yDim: options.yDim,
+            yOffset: options.yOffset,
+            zDim: options.zDim,
+            zOffset: options.zOffset,
           });
         } else {
           return function(vertex) {

@@ -97,7 +97,7 @@ libraries_js = OrderedDict([
                  'camera/CombinedCamera.js', 'Detector.js',
                  'loaders/VRMLLoader.js', 'renderer/Projector.js',
                  'renderer/SVGRenderer.js', 'exporters/OBJExporter.js',
-                 'modifiers/*.js']),
+                 'math/Lut.js', 'modifiers/*.js']),
     ('threex', ['*.js']),
     ('plotly', ['*.js']),
     ('pixi.js', ['*.js']),

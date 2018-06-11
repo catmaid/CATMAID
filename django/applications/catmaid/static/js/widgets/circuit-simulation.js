@@ -1,6 +1,7 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
+  CATMAID
 */
 
 (function(CATMAID) {
@@ -10,13 +11,12 @@
 		this.widgetID = this.registerInstance();
 		CATMAID.SkeletonSource.call(this, true);
 
+    this.show_parameter_ui = true;
+
 		// A map of Unit ID vs an object containing:
 		//  1. "name": The name of the unit.
 		//  2. "skeletons": The map of skeleton IDs vs SkeletonModel
 		//  3. "color": The color of the unit.
-		//  4. "parameters": parameters of the unit for simulation, specifying:
-		//        - the sigmoid function (multiple parameters)
-		//        - the baseline input rate (defaults to zero)
 		//  4. all the parameters of the unit for simulation
 
 		this.units = [];
@@ -45,9 +45,9 @@
 						 [CATMAID.skeletonListSources.createSelect(CS)],
 						 ['Append', CS.loadSource.bind(CS)],
 						 ['Clear', CS.clear.bind(CS)],
-						 ['Parameters', CS.adjustParameters.bind(CS)],
+						 ['Show/Hide parameters', CS.toggleParametersUI.bind(CS)],
 						 ['Run', CS.run.bind(CS)],
-						 [CATMAID.DOM.createNumericField('cs_time' + CS.widgetID, 'Time:', 'Amount of simulated time, in arbitrary units', '10000', '(a.u.)', CS.run.bind(CS), 4)],
+						 [CATMAID.DOM.createNumericField('cs_time' + CS.widgetID, 'Time:', 'Amount of simulated time, in arbitrary units', '10000', '(a.u.)', CS.run.bind(CS), 6)],
 						]);
 
 				CATMAID.DOM.appendToTab(tabs['Export'],
@@ -73,8 +73,9 @@
 		this.redraw();
 	};
 
-	CircuitSimulation.prototype.adjustParameters = function() {
-		// TODO show an Options dialog with 3 numeric text boxes per unit
+	CircuitSimulation.prototype.toggleParametersUI = function() {
+    this.show_parameter_ui = !this.show_parameter_ui;
+    this.redraw();
 	};
 
 	CircuitSimulation.prototype.redraw = function() {
@@ -82,11 +83,18 @@
         container = $(containerID);
 
     // Clear existing plot if any
-    container.empty();
+    // container.empty();
+    $('#circuit_simulation' + this.widgetID).remove();
 
 		if (!this.lines || 0 == this.lines.length) return;
 
-		this.svg = CATMAID.svgutil.insertMultiLinePlot(container, containerID, "circuit_simulation" + this.widgetID, this.lines, "time (a.u.)", "activity (a.u.)");
+		this.svg = CATMAID.svgutil.insertMultiLinePlot(
+        container,
+        containerID,
+        "circuit_simulation" + this.widgetID,
+        this.lines,
+        "time (a.u.)",
+        "activity (a.u.)");
 	};
 
 	CircuitSimulation.prototype.destroy = function() {

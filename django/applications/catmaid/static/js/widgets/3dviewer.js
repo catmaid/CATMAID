@@ -8232,6 +8232,12 @@
     dialog.show(400, 300, false);
   };
 
+  var fieldCoordMapping = {
+    'interpolated_sections_x': 'x',
+    'interpolated_sections_y': 'y',
+    'interpolated_sections_z': 'z',
+  };
+
   CATMAID.registerState(WebGLApplication, {
     key: "3d-viewer",
     getState: function(widget) {
@@ -8264,7 +8270,26 @@
     setState: function(widget, state) {
       if (state.options) {
         for (var field in widget.options) {
-          CATMAID.tools.copyIfDefined(state.options, widget.options, field);
+          // The interpolatable section settings pull also information from the
+          // back-end. Merge this persisted information with the widget state
+          // information.
+          if (field === 'interpolated_sections_x' ||
+              field === 'interpolated_sections_y' ||
+              field === 'interpolated_sections_z') {
+            var existingData = project.interpolatableSections[fieldCoordMapping[field]];
+            var stateData = state.options[field];
+            if (stateData) {
+              var idx = new Set(existingData);
+              for (var i=0; i<stateData.length; ++i) {
+                if (!idx.has(stateData[i])) {
+                  existingData.push(stateData[i]);
+                }
+              }
+            }
+            widget.options[field] = existingData;
+          } else {
+            CATMAID.tools.copyIfDefined(state.options, widget.options, field);
+          }
         }
       }
       if (state.volumes) {

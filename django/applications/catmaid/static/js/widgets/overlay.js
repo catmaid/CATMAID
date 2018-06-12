@@ -5181,19 +5181,19 @@ SkeletonAnnotations.TracingOverlay.prototype.importActiveNode = function(node) {
   // Get stack coordinates for target stack
   var zs = this.stackViewer.primaryStack.projectToUnclampedStackZ(node.z, node.y, node.x);
 
+  var node;
   if (SkeletonAnnotations.TYPE_NODE === node.type) {
     // Create new treenode. There is no need to include a parent node for this
     // imported node at the moment.
-    var node = this.nodes[node.id] = this.graphics.newNode(node.id, null, node.parent_id,
+    node = this.nodes[node.id] = this.graphics.newNode(node.id, null, node.parent_id,
         node.radius, node.x, node.y, node.z, zs - this.stackViewer.z, node.confidence,
         node.skeleton_id, node.edition_time, node.user_id);
-    node.createGraphics();
   } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
-    var node = this.nodes[node.id] = this.graphics.newConnectorNode(
+    node = this.nodes[node.id] = this.graphics.newConnectorNode(
         node.id, node.x, node.y, node.x, zs - this.stackViewer.z, node.confidence,
         node.subtype, node.edition_time, node.user_id);
-    node.createGraphics();
   }
+  node.createGraphics();
 };
 
 /**

@@ -2030,9 +2030,13 @@
         var connectorRadiusPx = connector.NODE_RADIUS * connector.stackScaling;
         var nodeRadiusPx = node.NODE_RADIUS * node.stackScaling;
         if (outwards) {
-          this.update(node.x, node.y, connector.x, connector.y, relationName, confidence, connectorRadiusPx);
+          this.update(node[node.planeX], node[node.planeY],
+              connector[connector.planeX], connector[connector.planeY],
+              relationName, confidence, connectorRadiusPx);
         } else {
-          this.update(connector.x, connector.y, node.x, node.y, relationName, confidence, nodeRadiusPx, connectorRadiusPx);
+          this.update(connector[connector.planeX], connector[connector.planeY],
+              node[node.planeX], node[node.planeY], relationName, confidence,
+              nodeRadiusPx, connectorRadiusPx);
         }
         this.updateVisibility(connector);
       };

@@ -3287,7 +3287,8 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
               z: n.z,
               confidence: n.confidence,
               skeleton_id: n.skeleton_id,
-              user_id: n.user_id
+              user_id: n.user_id,
+              edition_time: n.edition_time
             }];
           }
         }

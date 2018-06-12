@@ -2763,6 +2763,7 @@ SkeletonAnnotations.TracingOverlay.prototype.loadExtraNodes = function(extraNode
     .then(function(data) {
       // Add to nodes array
       let primaryStack = self.stackViewer.primaryStack;
+      let addedNodes = new Array(data.length);
       for (let i=0, imax=data.length; i<imax; ++i) {
         let a = data[i];
         var stackZ = primaryStack.projectToUnclampedStackZ(a[4], a[3], a[2]);
@@ -2770,8 +2771,34 @@ SkeletonAnnotations.TracingOverlay.prototype.loadExtraNodes = function(extraNode
           a[0], null, a[1], a[6], a[2], a[3], a[4],
           stackZ - self.stackViewer.z, a[5], a[7], a[8], a[9]);
         self.nodes[a[0]] = newNode;
+        addedNodes[i] = newNode;
         newNode.createGraphics();
       }
+
+      // Add virtual nodes if needed
+      for (let i=0, imax=addedNodes.length; i<imax; ++i) {
+        var n = self.nodes[addedNodes[i].id];
+        var p = n.parent_id ? self.nodes[n.parent_id] : null;
+
+        if (n && p && ((n.zdiff < 0 && p.zdiff > 0) || (n.zdiff > 0 && p.zdiff < 0))) {
+          var vn = CATMAID.createVirtualNode(self.graphics, n, p, self.stackViewer);
+          if (vn) {
+            n.parent = vn;
+            n.parent_id = vn.id;
+            p.addChildNode(vn);
+            vn.addChildNode(n);
+            self.nodes[vn.id] = vn;
+            addedNodes.push(vn);
+            continue;
+          }
+
+          // If no virtual node was inserted, link parent and child normally.
+          n.parent = p;
+          // update the parent's children
+          p.addChildNode(n);
+        }
+      }
+
       self.redraw();
     });
 };

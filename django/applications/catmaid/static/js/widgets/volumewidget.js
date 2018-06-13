@@ -67,7 +67,7 @@
               if (0 === files.length) {
                 CATMAID.error("Choose at least one file!");
               } else {
-                filesforEach(this.addVolumeFromFile);
+                Array.from(files).forEach(this.addVolumeFromFile);
               }
             }).bind(this));
         controls.appendChild(hiddenFileButton);
@@ -530,7 +530,7 @@
    *
    * @param {String} files The file to load
    */
-  VolumeManagerWidget.prototype.addVolumeFromFile = function(path) {
+  VolumeManagerWidget.prototype.addVolumeFromFile = function(file) {
       var self = this;
       var reader = new FileReader();
       reader.onload = function(e) {
@@ -547,7 +547,7 @@
             }
           });
       };
-      reader.readAsText(files[0]);
+      reader.readAsText(file);
   };
 
   /**

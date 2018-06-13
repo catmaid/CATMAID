@@ -1798,51 +1798,39 @@
           return;
         }
 
-        if (new_model.selected) {
-          var gid = member_of[skeleton.id];
-          // Update node properties
-          skeleton.color = new_model.color.clone();
-          // Update node name and color if the node is not part of a group
-          if (gid) {
-            if (gid === node.id()) {
-              // The new skeleton model is part of a group (this node), and needs
-              // no further updates.
-              CATMAID.msg("Skeleton updated", "Skeleton #" + skeleton.id +
-                  " in group \"" + node.data('label') + "\" was updated");
-            } else {
-              CATMAID.msg("Group updated", "Skeleton #" + skeleton.id +
-                  " in now part of group \"" + node.data('label'));
-              // Count every existing model that is added to a new group
-              added_to_group += 1;
-            }
+        var gid = member_of[skeleton.id];
+        // Update node properties
+        skeleton.color = new_model.color.clone();
+        // Update node name and color if the node is not part of a group
+        if (gid) {
+          if (gid === node.id()) {
+            // The new skeleton model is part of a group (this node), and needs
+            // no further updates.
+            CATMAID.msg("Skeleton updated", "Skeleton #" + skeleton.id +
+                " in group \"" + node.data('label') + "\" was updated");
           } else {
-            // Update node label for singleton nodes
-            if (new_model.baseName) {
-              var name = CATMAID.NeuronNameService.getInstance().getName(new_model.id),
-                  name = name ? name : new_model.baseName,
-                  label = node.data('label');
-              if (subgraphs[new_model.id] && label.length > 0) {
-                var i_ = label.lastIndexOf(' [');
-                name = name + (-1 !== i_ ? label.substring(i_) : '');
-              }
-              node.data('label', name);
-            }
-            // Update color in the case of singleton nodes
-            node.data('color', '#' + skeleton.color.getHexString());
+            CATMAID.msg("Group updated", "Skeleton #" + skeleton.id +
+                " in now part of group \"" + node.data('label'));
+            // Count every existing model that is added to a new group
+            added_to_group += 1;
           }
-
-          set[skeleton.id] = new_model;
-
         } else {
-          // Remove
-          if (one) node.remove();
-          else {
-            // Remove model from the lists of skeletons of the node representing a group
-            skeletons.remove(skeleton);
-            removed_from_group += 1; // must reload its contribution to the group's edges
+          // Update node label for singleton nodes
+          if (new_model.baseName) {
+            var name = CATMAID.NeuronNameService.getInstance().getName(new_model.id),
+                name = name ? name : new_model.baseName,
+                label = node.data('label');
+            if (subgraphs[new_model.id] && label.length > 0) {
+              var i_ = label.lastIndexOf(' [');
+              name = name + (-1 !== i_ ? label.substring(i_) : '');
+            }
+            node.data('label', name);
           }
+          // Update color in the case of singleton nodes
+          node.data('color', '#' + skeleton.color.getHexString());
         }
 
+        set[skeleton.id] = new_model;
       }, this);
     });
 

@@ -230,7 +230,11 @@
   SynapsePlot.prototype.clear = function() {
     this.models = {};
     this.morphologies = {};
+    this.pre = {};
+    this.post = {};
     this.rows = null;
+    this.pre_models = {};
+    this.only = null;
     this.preSource.clear();
     this.redraw();
   };

@@ -1191,13 +1191,10 @@
 
     // Infer nodes from json.edges
     var elements = {},
-        seen = {},
         nodes = [],
         appendNode = (function(skid) {
-          //if (seen[skid]) return;
           if (undefined !== this.subgraphs[skid]) return; // will be added later
           var node = asNode('' + skid);
-          seen[skid] = true;
           nodes.push(node);
         }).bind(this);
 

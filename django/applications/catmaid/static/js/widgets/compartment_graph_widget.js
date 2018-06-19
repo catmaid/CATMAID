@@ -4142,7 +4142,7 @@
     var sel = this.getActiveSelection();
     if (!sel) return;
     // Remove data structure
-    delete this.selections[name];
+    delete this.selections[sel.name];
     // Update UI
     var select = $("#gg_selections" + this.widgetID)[0];
     select.remove(sel.index);

@@ -655,6 +655,8 @@
     } else if (event.key === 'j') {
       // Letter 'J' (would prefer shift+G)
       this.group();
+    } else if (event.key === 'Delete') {
+      this.removeSelected();
     }
   };
 

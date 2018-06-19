@@ -3863,6 +3863,7 @@
     this.edge_confidence_threshold = confidenceThreshold;
     var edge_threshold = this.edge_threshold;
     var edge_confidence_threshold = this.edge_confidence_threshold;
+    this.cy.startBatch();
     this.cy.edges().each(function(i, edge) {
       var props = edge.data();
       if (props.directed) {
@@ -3874,6 +3875,7 @@
         else edge.removeClass('hidden');
       }
     });
+    this.cy.endBatch();
   };
 
   /** The @text param is optional. Will otherwise use the text field with id: gg_select_regex + widgetID

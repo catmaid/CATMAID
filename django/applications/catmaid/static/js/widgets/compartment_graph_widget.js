@@ -3919,7 +3919,7 @@
     Object.keys(seen).forEach(function(name) {
        var list = seen[name];
 
-       if (list.length > 0) {
+       if (list.length > 1) {
          var position = null;
          var color = null;
          var models = list.reduce(function(o, node) {

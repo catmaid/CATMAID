@@ -425,6 +425,7 @@
              [CATMAID.DOM.createNumericField('gg_columns_edge_opacity' + GG.widgetID, 'edge opacity:', null, '30', '%', GG.showRelevantEdgesToColumns.bind(GG), 2, GG.showRelevantEdgesToColumns.bind(GG), 3)],
              ['Fade edges', GG.showRelevantEdgesToColumns.bind(GG)],
              ['Restore edges', GG.updateEdgeGraphics.bind(GG, true)],
+             ['Hide non-seq edges', GG.hideNonSequentialEdges.bind(GG)],
             ]);
 
         CATMAID.DOM.appendToTab(tabs['Align'],
@@ -4390,6 +4391,21 @@
     this.cy.startBatch();
     this.cy.edges().each(function(i, edge) {
       if (edge.source().id() === edge.target().id()) {
+        edge.hide();
+      }
+    });
+    this.cy.endBatch();
+  };
+
+  /** Hide all edges except those from selection 'i' to the selection 'i+1'. */
+  GroupGraph.prototype.hideNonSequentialEdges = function() {
+    if (!this.selections) return;
+    var getColumnIndex = this.createGetSelectionIndexFn();
+    this.cy.startBatch();
+    this.cy.edges().each(function(i, edge) {
+      var indexSrc = getColumnIndex(edge.source().id()),
+          indexTgt = getColumnIndex(edge.target().id());
+      if (undefined === indexSrc || undefined === indexTgt || indexSrc + 1 !== indexTgt) {
         edge.hide();
       }
     });

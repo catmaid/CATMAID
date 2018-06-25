@@ -364,9 +364,9 @@
                   GG.updateEdgeGraphics.bind(GG, true))],
              [document.createTextNode(' - Hide edges with less than ')],
              [edges],
-             ['Hide self edges', GG.hideSelfEdges.bind(GG)],
              [document.createTextNode(' synapses ')],
-             [document.createTextNode(' - Filter synapses below confidence ')],
+             ['Hide self edges', GG.hideSelfEdges.bind(GG)],
+             [document.createTextNode(' Filter synapses below confidence ')],
              [edgeConfidence],
              {type: 'child', element: linkTypeSelectionWrapper},
              [document.createTextNode(' - Arrow shape: ')],
@@ -4314,7 +4314,7 @@
   GroupGraph.prototype.createGetSelectionIndexFn = function() {
     return (function(sel_indices, node_ID) {
       return sel_indices[node_ID];
-    }).bind(this.getSelections().reduce(function(o, selection, index) {
+    }).bind(null, this.getSelections().reduce(function(o, selection, index) {
       return Object.keys(selection.nodeIDs).reduce(function(o, nodeID) {
         o[nodeID] = index;
         return o;

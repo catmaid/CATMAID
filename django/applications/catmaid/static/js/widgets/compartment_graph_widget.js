@@ -2882,9 +2882,15 @@
       if (edge.hidden()) {
         return;
       }
+
+      var style = edge.style();
+
+      if (0 === style.opacity) {
+        return;
+      }
+
       var data = edge.data();
       var startId = data.start;
-      var style = edge.style();
 
       var rscratch = edge._private.rscratch;
 

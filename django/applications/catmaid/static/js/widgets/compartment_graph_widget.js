@@ -4309,6 +4309,18 @@
     return opacity / 100.0;
   };
 
+  /** Returns a function that takes a nodeID as argument and returns the index of the selection the node is part of, or nothing. */
+  GroupGraph.prototype.createGetSelectionIndexFn = function() {
+    return (function(sel_indices, node_ID) {
+      return sel_indices[node_ID];
+    }).bind(this.getSelections().reduce(function(o, selection, index) {
+      return Object.keys(selection.nodeIDs).reduce(function(o, nodeID) {
+        o[nodeID] = index;
+        return o;
+      }, o);
+    }, {}));
+  };
+
   /** Fade all edges, keeping at 100% opacity only those relevant to select nodes across columns. */
   GroupGraph.prototype.showRelevantEdgesToColumns = function() {
     if (0 === this.cy.nodes().filter(function(i, node) { return node.selected(); }).size()) {
@@ -4321,22 +4333,15 @@
     var columns = this.getSelections();
 
     // Column index is the same as selection index
-    var column_indices = columns.reduce(function(o, column, index) {
-      return Object.keys(column.nodeIDs).reduce(function(o, nodeID) {
-        o[nodeID] = index;
-        return o;
-      }, o);
-    }, {});
-
-    var getColumnIndex = function(node) { return column_indices[node.id()]; };
+    var getColumnIndex = this.createGetSelectionIndexFn();
 
     // Show edges from nodes on the column to the left of the node's column
     var showIncommingEdges = function(node) {
       if (!node.visible()) return;
-      var column_index = getColumnIndex(node);
+      var column_index = getColumnIndex(node.id());
       node.connectedEdges().each(function(i, edge) {
         if (!edge.visible()) return;
-        if (getColumnIndex(edge.source()) === column_index - 1) {
+        if (getColumnIndex(edge.source().id()) === column_index - 1) {
            edge.style('opacity', 1.0);
            if (column_index - 1 > 0) {
              // Recurse
@@ -4349,10 +4354,10 @@
     // Show edges onto nodes on the column to the right of the node's column
     var showOutgoingEdges = function(node) {
       if (!node.visible()) return;
-      var column_index = getColumnIndex(node);
+      var column_index = getColumnIndex(node.id());
       node.connectedEdges().each(function(i, edge) {
         if (!edge.visible()) return;
-        if (getColumnIndex(edge.target()) === column_index + 1) {
+        if (getColumnIndex(edge.target().id()) === column_index + 1) {
            edge.style('opacity', 1.0);
            if (column_index + 1 < columns.length -1) {
              // Recurse

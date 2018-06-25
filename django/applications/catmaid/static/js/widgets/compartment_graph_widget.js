@@ -1129,112 +1129,17 @@
     return edgeLabelOptions;
   };
 
-  /** There is a model for every skeleton ID included in json.
-   *  But there could be models for which there isn't a skeleton_id in json: these are disconnected nodes. */
-  GroupGraph.prototype.updateGraph = function(json, models, morphology) {
-
-    var subgraph_skids = Object.keys(this.subgraphs);
-    if (subgraph_skids.length > 0 && !morphology) {
-      // Need to load skeleton + connectors of skids in subgraph_skids
-      var morphologies = {};
-      fetchSkeletons(
-          subgraph_skids,
-          (function(skid) {
-            var mode = this.subgraphs[skid],
-                with_tags = (mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS || mode === this.SUBGRAPH_SPLIT_AT_TAG ? 1 : 0);
-            return django_url + project.id + '/' + skid + '/1/1/' + with_tags + '/compact-arbor';
-          }).bind(this),
-          function(skid) { return {}; },
-          function(skid, json) { morphologies[skid] = json; },
-          (function(skid) { delete this.subgraphs[skid]; }).bind(this), // failed loading
-          (function() { this.updateGraph(json, models, morphologies); }).bind(this));
-      return;
-    }
-
-    // A neuron that is split cannot be part of a group anymore: makes no sense.
-    // Neither by confidence nor by synapse clustering.
-
-    var getEdgeColor = this.getLinkTypeColor.bind(this);
-    var edge_text_color = this.edge_text_color;
-    var edge_confidence_threshold = this.edge_confidence_threshold;
-    var edgeLabelStrategy = edgeLabelStrategies[this.edge_label_strategy];
-    var edgeLabelOptions = this.makeEdgeLabelOptions(json);
-    var asEdge = function(edge, linkTypeId) {
-        var count = _filterSynapses(edge[2], edge_confidence_threshold);
-        edgeLabelOptions.count = count;
-        edgeLabelOptions.sourceId = edge[0];
-        edgeLabelOptions.targetId = edge[1];
-        edgeLabelOptions.synapses = edge[2];
-        var value = edgeLabelStrategy.run(edgeLabelOptions);
-        var edge_color = getEdgeColor(linkTypeId);
-        return {data: {directed: true,
-                       arrow: 'triangle',
-                       id: edge[0] + '_' + edge[1],
-                       label: value,
-                       link_type: linkTypeId,
-                       color: edge_color,
-                       label_color: edge_text_color,
-                       source: edge[0],
-                       target: edge[1],
-                       confidence: edge[2],
-                       weight: count}};
-    };
-
-    var asNode = function(nodeID) {
-        nodeID = nodeID + '';
-        var i_ = nodeID.indexOf('_'),
-            skeleton_id = -1 === i_ ? nodeID : nodeID.substring(0, i_),
-            model = models[skeleton_id];
-        return {data: {id: nodeID, // MUST be a string, or fails
-                        skeletons: [model.clone()],
-                        label: CATMAID.NeuronNameService.getInstance().getName(model.id),
-                        node_count: 0,
-                        shape: "ellipse",
-                        color: '#' + model.color.getHexString()}};
-    };
-
-    // Infer nodes from json.edges
-    var elements = {},
-        nodes = [],
-        appendNode = (function(skid) {
-          if (undefined !== this.subgraphs[skid]) return; // will be added later
-          var node = asNode('' + skid);
-          nodes.push(node);
-        }).bind(this);
-
-    Object.keys(models).forEach(appendNode);
-
-    elements.nodes = nodes;
-    elements.edges = [];
-
-    // Store positions of current nodes and their selected state
-    var positions = {},
-        selected = {},
-        hidden = {},
-        locked = {},
-        arrow_shapes = {};
-    this.cy.nodes().each(function(i, node) {
-      var id = node.id();
-      positions[id] = node.position();
-      if (node.selected()) selected[id] = true;
-      if (node.hidden()) hidden[id] = true;
-      if (node.locked()) locked[id] = true;
-      var s = node.data('arrowshape');
-      arrow_shapes[id] = s ? s : 'triangle';
-    });
-
-    // Store visibility and selection state of edges as well
-    this.cy.edges().each(function(i, edge) {
-      var id = edge.id();
-      if (edge.selected()) selected[id] = true;
-      if (edge.hidden()) hidden[id] = true;
-    });
-
-    // Recreate subgraphs
+  /** Helper function for updateGraph. */
+  GroupGraph.prototype._recreateSubgraphs = function(morphology, models) {
     var subnodes = {},
         subedges = {}; // map of {connectorID: {pre: graph node ID,
                        //                       post: {graph node ID: counts binned by confidence}}}
-    subgraph_skids.forEach((function(skid) {
+    // Additional edges to be inserted
+    var additional = {edges: []};
+
+    var unsplittable = [];
+
+    Object.keys(morphology).forEach((function(skid) {
       var m = morphology[skid],
           ap = new CATMAID.ArborParser().init('compact-arbor', m),
           mode = this.subgraphs[skid],
@@ -1309,22 +1214,21 @@
           if (mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS && m[2].hasOwnProperty('microtubules end')) {
             splitDendrite({contains: function() { return false; }});
           } else {
-            delete this.subgraphs[skid];
-            elements.nodes.push(asNode('' + skid));
+            unsplittable.push(skid);
             return;
           }
         }
 
         for (var i=1; i<graph.length; ++i) {
           // ... connected by an undirected edge, in sequence
-          elements.edges.push({data: {directed: false,
-                                      arrow: 'none',
-                                      id: graph[i-1].data.id + '_' + graph[i].data.id,
-                                      color: common.color,
-                                      label_color: common.color,
-                                      source: graph[i-1].data.id,
-                                      target: graph[i].data.id,
-                                      weight: 10}});
+          additional.edges.push({data: {directed: false,
+                                        arrow: 'none',
+                                        id: graph[i-1].data.id + '_' + graph[i].data.id,
+                                        color: common.color,
+                                        label_color: common.color,
+                                        source: graph[i-1].data.id,
+                                        target: graph[i].data.id,
+                                        weight: 10}});
         }
       } else if (mode === this.SUBGRAPH_SPLIT_AT_TAG) {
         var cuts = m[2][this.tag_text];
@@ -1363,14 +1267,14 @@
             if (!paren) return; // root
             var source_id = keepers[paren],
                 target_id = keepers[node];
-            elements.edges.push({data: {directed: false,
-                                        arrow: 'none',
-                                        id: source_id + '_' + target_id,
-                                        color: common.color,
-                                        label_color: common.color,
-                                        source: source_id,
-                                        target: target_id,
-                                        weight: 10}});
+            additional.edges.push({data: {directed: false,
+                                          arrow: 'none',
+                                          id: source_id + '_' + target_id,
+                                          color: common.color,
+                                          label_color: common.color,
+                                          source: source_id,
+                                          target: target_id,
+                                          weight: 10}});
           });
 
         } else {
@@ -1393,8 +1297,7 @@
         });
         if (1 === clusterIDs.length) {
           // Not splittable
-          delete this.subgraphs[skid];
-          elements.nodes.push(asNode('' + skid));
+          unsplittable.push(skid);
           return;
         }
         // Relabel clusters (could be skipping indices and start at zero)
@@ -1438,14 +1341,14 @@
           if (!paren) return; // node is the root
           var parent_clusterID = roots[paren],
               target_id = skid + '_' + (undefined === parent_clusterID ? paren : parent_clusterID);
-          elements.edges.push({data: {directed: false,
-                                      arrow: 'none',
-                                      id: source_id + '_' + target_id,
-                                      color: common.color,
-                                      label_color: common.color,
-                                      source: source_id,
-                                      target: target_id,
-                                      weight: 10}});
+          additional.edges.push({data: {directed: false,
+                                        arrow: 'none',
+                                        id: source_id + '_' + target_id,
+                                        color: common.color,
+                                        label_color: common.color,
+                                        source: source_id,
+                                        target: target_id,
+                                        weight: 10}});
         });
       }
 
@@ -1522,9 +1425,6 @@
       });
     }).bind(this));
 
-    // Append all new nodes from the subgraphs
-    elements.nodes = elements.nodes.concat(Object.keys(subnodes).map(function(id) { return subnodes[id]; }));
-
     // Add up connectors to create edges for subgraph nodes
     var cedges = {};
     Object.keys(subedges).forEach(function(connectorID) {
@@ -1543,29 +1443,140 @@
       });
     });
 
-    Object.keys(cedges).forEach(function(source_id) {
+    var nodes = Object.keys(subnodes).map(function(id) { return subnodes[id]; });
+
+    var edges_raw = Object.keys(cedges).reduce(function(a, source_id) {
       var e = cedges[source_id];
-      Object.keys(e).forEach(function(target_id) {
-        var confidence = e[target_id];
-        var count = _filterSynapses(confidence, edge_confidence_threshold);
+      return Object.keys(e).reduce(function(a, target_id) {
+        var confidence = e[target_id]; // an array
+        a.push([source_id, target_id, confidence]);
+        return a;
+      }, a);
+    }, []);
+
+    return {nodes: nodes, // ready to be appended to elements.nodes
+            edges: additional.edges, // ready to be appended to elements.edges
+            edges_raw: edges_raw, // to be processed with asEdge prior to appending to elements.edges
+            unsplittable_skids: unsplittable}; // to be removed from this.subgraphs and re-added as regular nodes
+  };
+
+  /** There is a model for every skeleton ID included in json.
+   *  But there could be models for which there isn't a skeleton_id in json: these are disconnected nodes. */
+  GroupGraph.prototype.updateGraph = function(json, models, morphology) {
+
+    var subgraph_skids = Object.keys(this.subgraphs);
+    if (subgraph_skids.length > 0 && !morphology) {
+      // Need to load skeleton + connectors of skids in subgraph_skids
+      var morphologies = {};
+      fetchSkeletons(
+          subgraph_skids,
+          (function(skid) {
+            var mode = this.subgraphs[skid],
+                with_tags = (mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS || mode === this.SUBGRAPH_SPLIT_AT_TAG ? 1 : 0);
+            return django_url + project.id + '/' + skid + '/1/1/' + with_tags + '/compact-arbor';
+          }).bind(this),
+          function(skid) { return {}; },
+          function(skid, json) { morphologies[skid] = json; },
+          (function(skid) { delete this.subgraphs[skid]; }).bind(this), // failed loading
+          (function() { this.updateGraph(json, models, morphologies); }).bind(this));
+      return;
+    }
+
+    // A neuron that is split cannot be part of a group anymore: makes no sense.
+    // Neither by confidence nor by synapse clustering.
+
+    var getEdgeColor = this.getLinkTypeColor.bind(this);
+    var edge_text_color = this.edge_text_color;
+    var edgeLabelStrategy = edgeLabelStrategies[this.edge_label_strategy];
+    var edgeLabelOptions = this.makeEdgeLabelOptions(json);
+    var edge_confidence_threshold = this.edge_confidence_threshold;
+
+    var asEdge = function(edge, linkTypeId) {
+        var count = _filterSynapses(edge[2], edge_confidence_threshold);
         edgeLabelOptions.count = count;
-        edgeLabelOptions.synapses = confidence;
-        edgeLabelOptions.sourceId = source_id;
-        edgeLabelOptions.targetId = target_id;
+        edgeLabelOptions.sourceId = edge[0];
+        edgeLabelOptions.targetId = edge[1];
+        edgeLabelOptions.synapses = edge[2];
         var value = edgeLabelStrategy.run(edgeLabelOptions);
-        var edge_color = getEdgeColor('synaptic-connector');
-        elements.edges.push({data: {directed: true,
-                                    arrow: 'triangle',
-                                    color: edge_color,
-                                    label_color: edge_text_color,
-                                    id: source_id + '_' + target_id,
-                                    source: source_id,
-                                    target: target_id,
-                                    confidence: confidence,
-                                    label: value,
-                                    weight: count}});
-      });
+        var edge_color = getEdgeColor(linkTypeId);
+        return {data: {directed: true,
+                       arrow: 'triangle',
+                       id: edge[0] + '_' + edge[1],
+                       label: value,
+                       link_type: linkTypeId,
+                       color: edge_color,
+                       label_color: edge_text_color,
+                       source: edge[0],
+                       target: edge[1],
+                       confidence: edge[2],
+                       weight: count}};
+    };
+
+    var asNode = function(nodeID) {
+        nodeID = nodeID + '';
+        var i_ = nodeID.indexOf('_'),
+            skeleton_id = -1 === i_ ? nodeID : nodeID.substring(0, i_),
+            model = models[skeleton_id];
+        return {data: {id: nodeID, // MUST be a string, or fails
+                        skeletons: [model.clone()],
+                        label: CATMAID.NeuronNameService.getInstance().getName(model.id),
+                        node_count: 0,
+                        shape: "ellipse",
+                        color: '#' + model.color.getHexString()}};
+    };
+
+    // Infer nodes from json.edges
+    var elements = {},
+        nodes = [],
+        appendNode = (function(skid) {
+          if (undefined !== this.subgraphs[skid]) return; // will be added later
+          var node = asNode('' + skid);
+          nodes.push(node);
+        }).bind(this);
+
+    Object.keys(models).forEach(appendNode);
+
+    elements.nodes = nodes;
+    elements.edges = [];
+
+    // Store positions of current nodes and their selected state
+    var positions = {},
+        selected = {},
+        hidden = {},
+        locked = {},
+        arrow_shapes = {};
+    this.cy.nodes().each(function(i, node) {
+      var id = node.id();
+      positions[id] = node.position();
+      if (node.selected()) selected[id] = true;
+      if (node.hidden()) hidden[id] = true;
+      if (node.locked()) locked[id] = true;
+      var s = node.data('arrowshape');
+      arrow_shapes[id] = s ? s : 'triangle';
     });
+
+    // Store visibility and selection state of edges as well
+    this.cy.edges().each(function(i, edge) {
+      var id = edge.id();
+      if (edge.selected()) selected[id] = true;
+      if (edge.hidden()) hidden[id] = true;
+    });
+
+    // Recreate subgraphs
+    if (subgraph_skids.length > 0) {
+      var sg = this._recreateSubgraphs(morphology, models);
+
+      // Append all new nodes and edges from the subgraphs
+      elements.nodes = elements.nodes.concat(sg.nodes);
+      elements.edges = elements.edges.concat(sg.edges)
+      elements.edges = elements.edges.concat(sg.edges_raw.map(asEdge)); // 2nd arg to asEdge can be undefined
+
+      // Update nodes: some couldn't be split
+      sg.unsplittable_skids.forEach(function(skid) {
+        delete this.subgraphs[skid];
+        elements.nodes.push(asNode('' + skid));
+      }, this);
+    }
 
     // Add all other edges
     let addEdgeToGraph = (function(e, linkTypeId) {

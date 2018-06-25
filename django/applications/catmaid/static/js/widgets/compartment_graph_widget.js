@@ -364,6 +364,7 @@
                   GG.updateEdgeGraphics.bind(GG, true))],
              [document.createTextNode(' - Hide edges with less than ')],
              [edges],
+             ['Hide self edges', GG.hideSelfEdges.bind(GG)],
              [document.createTextNode(' synapses ')],
              [document.createTextNode(' - Filter synapses below confidence ')],
              [edgeConfidence],
@@ -4378,6 +4379,16 @@
   GroupGraph.prototype.resetSelections = function() {
     this.selections = {};
     $('#gg_selections' + this.widgetID)[0].options.length = 0;
+  };
+
+  GroupGraph.prototype.hideSelfEdges = function() {
+    this.cy.startBatch();
+    this.cy.edges().each(function(i, edge) {
+      if (edge.source().id() === edge.target().id()) {
+        edge.hide();
+      }
+    });
+    this.cy.endBatch();
   };
 
   // Register widget

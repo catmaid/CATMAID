@@ -1568,7 +1568,7 @@
 
       // Append all new nodes and edges from the subgraphs
       elements.nodes = elements.nodes.concat(sg.nodes);
-      elements.edges = elements.edges.concat(sg.edges)
+      elements.edges = elements.edges.concat(sg.edges);
       elements.edges = elements.edges.concat(sg.edges_raw.map(asEdge)); // 2nd arg to asEdge can be undefined
 
       // Update nodes: some couldn't be split

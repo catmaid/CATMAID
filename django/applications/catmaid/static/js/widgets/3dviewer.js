@@ -1890,9 +1890,11 @@
                 with_connectors: !lean,
                 with_history: false
             }, function(skeletonId, json) {
-              var sk = self.space.updateSkeleton(models[skeletonId], json,
-                  options, undefined, self.getActivesNodeWhitelist());
-              if (sk) sk.show(options);
+              if (self.space) {
+                var sk = self.space.updateSkeleton(models[skeletonId], json,
+                   options, undefined, self.getActivesNodeWhitelist());
+                if (sk) sk.show(options);
+              }
             });
           })
           .catch(CATMAID.handleError);
@@ -1902,11 +1904,16 @@
     // Get colorizer for all skeletons
     var colorizer = CATMAID.makeSkeletonColorizer(this.options);
     prepare = prepare.then((function() {
-      return colorizer.prepare(this.space.content.skeletons);
+      if (this.space) {
+        return colorizer.prepare(this.space.content.skeletons);
+      }
     }).bind(this));
 
     // Update skeleton properties
     var add = prepare.then((function() {
+      if (!this.space) {
+        return;
+      }
       var availableSkletons = this.space.content.skeletons;
       var inputSkeletonIds = Object.keys(models);
       var updatedSkeletons = [];
@@ -1936,7 +1943,10 @@
       }
     }).bind(this))
     .then((function() {
-      if (this.options.connector_filter) {
+      if (!this.space) {
+        return;
+      }
+      if (this.options && this.options.connector_filter) {
         this.refreshRestrictedConnectors();
       }
       CATMAID.tools.callIfFn(callback);

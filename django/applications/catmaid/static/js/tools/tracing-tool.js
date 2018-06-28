@@ -34,6 +34,9 @@
 
     var getActiveNodeTracingLayer = function() {
       var stackViewer = getActiveNodeStackViewer();
+      if (!stackViewer) {
+        return null;
+      }
       var tracingLayer = stackViewer.getLayer(getTracingLayerName(stackViewer));
       if (!tracingLayer) {
         throw new CATMAID.ValueError("Can't find tracing layer for active node");
@@ -874,8 +877,13 @@
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
+        var activeNodeId = SkeletonAnnotations.getActiveNodeId();
+        if (!activeNodeId) {
+          CATMAID.warn("No node selected");
+          return false;
+        }
         var tracingLayer = getActiveNodeTracingLayer();
-        tracingLayer.tracingOverlay.splitSkeleton(SkeletonAnnotations.getActiveNodeId());
+        tracingLayer.tracingOverlay.splitSkeleton(activeNodeId);
         return true;
       }
     }));

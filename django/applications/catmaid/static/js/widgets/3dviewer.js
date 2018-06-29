@@ -3853,6 +3853,15 @@
           "3D viewer.");
   };
 
+  var destroyRenderer = function(renderer) {
+    renderer.context.canvas.removeEventListener('webglcontextlost',
+        renderContextLost);
+    renderer.forceContextLoss();
+    renderer.context = null;
+    renderer.domElement = null;
+    renderer.dispose();
+  };
+
   /**
    * Create a new renderer and add its DOM element to the 3D viewer's container
    * element. If there is already a renderer, remove its DOM element and
@@ -3872,12 +3881,7 @@
 
       // Destroy renderer, if wanted
       if (destroyOld) {
-        this.renderer.forceContextLoss();
-        this.renderer.context.canvas.removeEventListener('webglcontextlost',
-            renderContextLost);
-        this.renderer.context = null;
-        this.renderer.domElement = null;
-        this.renderer.dispose();
+        destroyRenderer(this.renderer);
         this.renderer = null;
       }
     }
@@ -3929,6 +3933,7 @@
   WebGLApplication.prototype.Space.prototype.View.prototype.destroy = function() {
     this.mouseControls.detach(this.renderer.domElement);
     this.space.container.removeChild(this.renderer.domElement);
+    destroyRenderer(this.renderer);
     Object.keys(this).forEach(function(key) { delete this[key]; }, this);
   };
 

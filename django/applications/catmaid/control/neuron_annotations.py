@@ -186,11 +186,11 @@ def get_annotated_entities(project, params, relations, classes,
             """.format(n=n))
         if start_date:
             filters.append("""
-                cici{n}.creation_time >= %(start_date)
+                cici{n}.creation_time >= %(start_date)s
             """.format(n=n))
         if end_date:
             filters.append("""
-                cici{n}.creation_time <= %(end_date)
+                cici{n}.creation_time <= %(end_date)s
              """.format(n=n))
 
     # To exclude class instsances that are linked to particular annotation, all

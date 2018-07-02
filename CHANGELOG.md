@@ -128,6 +128,8 @@ Miscellaneous:
 - Graph Widget: when subscribed to other widgets, their skeletons are not
   removed anymore from the Graph Widget when the other widget is closed.
 
+- Neuron Search: annotation data range can be used again.
+
 
 ## 2018.04.15
 

@@ -183,6 +183,12 @@ def add_sampler(request, project_id):
        type: boolean
        paramType: form
        required: true
+     - name: leaf_segment_handling
+       description: How leaf segments should be handled, can be 'ignore', 'merge' or 'short-interval'.
+       type: string
+       paramType: form
+       required: false
+       default: ignore
     """
     skeleton_id = request.POST.get('skeleton_id')
     if skeleton_id:
@@ -214,12 +220,22 @@ def add_sampler(request, project_id):
     else:
         raise ValueError("Need create_interval_boundaries parameter")
 
+    leaf_segment_handling = request.POST.get('leaf_segment_handling')
+    if leaf_segment_handling:
+        known_leaf_modes = ('ignore', 'merge', 'short-interval', 'merge-or-create')
+        if leaf_segment_handling not in known_leaf_modes:
+            raise ValueError("The leaf_segment_handling parameter needs to " +
+                    "be one of 'ignore', 'merge' or 'short-interval'")
+    else:
+        leaf_segment_handling = 'ignore'
+
     sampler_state = SamplerState.objects.get(name="open");
 
     sampler = Sampler.objects.create(
         skeleton_id=skeleton_id,
         interval_length=interval_length,
         interval_error=interval_error,
+        leaf_segment_handling=leaf_segment_handling,
         review_required=review_required,
         create_interval_boundaries=create_interval_boundaries,
         sampler_state=sampler_state,

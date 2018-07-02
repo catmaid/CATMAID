@@ -92,11 +92,18 @@
    * overridden and new nodes created instead. Entries in the <addedNodes> list
    * are of the form [id, childId, parentId, x, y, z]. The new node will be
    * created at x, y, z between the childId and parentId nodes. The location has
-   * to be collinear with child and parent locations and between them.
+   * to be collinear with child and parent locations and between them. The
+   * leafHandling parameter allows to select a strategy for handling leaf
+   * segments, allowed are 'ignore', 'merge', 'short-interval' and
+   * 'merge-or-create'. The first one ignores leaf segments (default), the
+   * second option merges it into the last interval, the third option creates
+   * a short interval containing the whole leaf segment and the last option
+   * merges into the last segment if possible (i.e. it is not the first segment
+   * in a partition) and otherwise creates a new shorter interval.
    */
   Sampling.intervalsFromModels = function(arbor, positions, domainDetails,
       intervalLength, intervalError, preferSmallerError, createNewNodes,
-      targetEdgeMap) {
+      leafHandling, updateArborData, targetEdgeMap) {
     if (!intervalLength) {
       throw new CATMAID.ValueError("Need interval length for interval creation");
     }
@@ -141,9 +148,8 @@
         //  specified interval length will be matched. Otherwise this node is used.
         let distance = dist - intervalLength;
         if (distance < 0.0001) {
-          // Interval length is exactly met or not yet reached
+          // Rember node for potentially added interval
           if (targetEdgeMap) {
-            // Rember node for potentially added interval
             intervalNodes.push([
               partition[j],
               currentInterval
@@ -158,6 +164,51 @@
             if (targetEdgeMap) {
               intervalNodes.forEach(addToTargetEdMap, targetEdgeMap);
               intervalNodes = [];
+            }
+          // If this is the last node of the segment, allow different leaf
+          // segment handling strategies.
+          } else if (j === 0) {
+            let isFirstInterval = intervalStartIdx === (partition.length - 1);
+            let canBeMerged = leafHandling === 'merge' ||
+                leafHandling === 'merge-or-create';
+            if (canBeMerged && !isFirstInterval) {
+              // Add the collected nodes of the current interval to the last
+              // interval. This only is allowed if this interval isn't the first
+              // interval on this segment.
+              let lastEndId = intervals[intervals.length - 1][1];
+              intervals[intervals.length - 1][1] = partition[j];
+              for (let k=0; k<addedNodes.length; ++k) {
+                let n = addedNodes[k];
+                let isAddedNode = n[0] == lastEndId;
+                if (isAddedNode) {
+                  // Remove former newly added end node from partition, added
+                  // nodes and from arbor.;
+                  if (updateArborData) {
+                    arbor.edges[partition[0]] = partition[2];
+                    delete arbor.edges[lastEndId];
+                    delete positions[lastEndId];
+                  }
+                  addedNodes.splice(k, 1);
+                  partition.splice(j+1, 1);
+                  break;
+                }
+              }
+
+              if (targetEdgeMap) {
+                for (let k=0; k<intervalNodes.length; ++k) {
+                  // Reference last interval for all nodes of this leaf segmenet.
+                  let nodeInfo = intervalNodes[k];
+                  --nodeInfo[1];
+                }
+                intervalNodes.forEach(addToTargetEdMap, targetEdgeMap);
+              }
+            } else if (leafHandling === 'short-interval' ||
+                leafHandling === 'merge-or-create') {
+              // Create a new, shorter inerval
+              intervals.push([partition[intervalStartIdx], partition[j]]);
+              if (targetEdgeMap) {
+                intervalNodes.forEach(addToTargetEdMap, targetEdgeMap);
+              }
             }
           }
         } else {
@@ -201,9 +252,11 @@
               // Insert new node into arbor
               let childId = partition[j];
               let parentId = partition[j+1];
-              arbor.edges[childId] = newPointId;
-              arbor.edges[newPointId] = parentId;
-              positions[newPointId] = newPointPos;
+              if (updateArborData) {
+                arbor.edges[childId] = newPointId;
+                arbor.edges[newPointId] = parentId;
+                positions[newPointId] = newPointPos;
+              }
 
               addedNodes.push([newPointId, childId, parentId, newPointPos.x,
                   newPointPos.y, newPointPos.z]);
@@ -255,6 +308,7 @@
           intervalStartIdx = j;
           currentInterval++;
           dist = 0;
+          intervalNodes = [];
         }
       }
     }
@@ -298,13 +352,13 @@
    * the set of interval edges can be smaller than the domain set one.
    */
   Sampling.intervalEdges = function(arbor, positions, sampler,
-      preferSmallerError, createNewNodes, target) {
+      preferSmallerError, createNewNodes, updateArborData, target) {
     // Build intervals for each domain, based on the interval length defined in
     // the sampler.
     return sampler.domains.reduce(function(o, d) {
       var intervalConfiguration = Sampling.intervalsFromModels(arbor, positions,
           d, sampler.interval_length, sampler.interval_error, preferSmallerError,
-          createNewNodes, target);
+          createNewNodes, sampler.leaf_segment_handling, updateArborData, target);
       o[d.id] = intervalConfiguration.intervals;
       return o;
     }, {});

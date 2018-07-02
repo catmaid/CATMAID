@@ -55,7 +55,8 @@
       'interpolatableX': get(state.interpolatableX, project.interpolatableSections.x),
       'interpolatableY': get(state.interpolatableY, project.interpolatableSections.y),
       'interpolatableZ': get(state.interpolatableZ, project.interpolatableSections.z),
-      'binaryIntervalColors': get(state.binaryIntervalColors, true)
+      'binaryIntervalColors': get(state.binaryIntervalColors, true),
+      'leafHandling': get(state.leafHandling, 'ignore'),
     };
     this.workflow.setState(this.state);
     this.workflow.selectStep(0);
@@ -363,6 +364,28 @@
         }
       },
       {
+        type: 'select',
+        label: 'Leaf handling',
+        title: 'Select how leaf segments should be handled',
+        value: widget.state['leafHandling'],
+        entries: [{
+          title: 'Ignore leaf segment',
+          value: 'ignore'
+        }, {
+          title: 'Merge into last or create',
+          value: 'merge-or-create'
+        }, {
+          title: 'Merge into last segment',
+          value: 'merge'
+        }, {
+          title: 'Create shorter interval',
+          value: 'short-interval'
+        }],
+        onchange: function() {
+          widget.state['leafHandling'] = this.value;
+        }
+      },
+      {
         type: 'button',
         label: 'Preview intervals',
         onclick: function() {
@@ -636,6 +659,11 @@
       CATMAID.warn("No valid Z interpolatable list found");
       return;
     }
+    var leafHandling = widget.state['leafHandling'];
+    if (!leafHandling) {
+      CATMAID.warn("No valid leaf handling option found");
+      return;
+    }
 
     var arbor = widget.state['arbor'];
     // Get arbor if not already cached
@@ -662,7 +690,8 @@
                 id: null,
                 node_id: parseInt(nodeId, 10)
               };
-            })
+            }),
+            intervals: []
           };
           var fakeSampler = {
             id: null,
@@ -674,6 +703,7 @@
             skeleton_id: skeletonId,
             interval_length: intervalLength,
             interval_error: intervalError,
+            leaf_segment_handling: leafHandling,
             domains: [fakeDomain]
           };
           let preferSmallerError = true;
@@ -687,7 +717,8 @@
 
           let intervalConfiguration = CATMAID.Sampling.intervalsFromModels(
             workParser.arbor, workParser.positions, fakeDomain, intervalLength,
-            intervalError, preferSmallerError, createIntervalBoundingNodes);
+            intervalError, preferSmallerError, createIntervalBoundingNodes,
+            leafHandling, true);
           let intervals = intervalConfiguration.intervals;
 
           // Show 3D viewer confirmation dialog
@@ -785,12 +816,18 @@
       CATMAID.warn("Can't create sampler without createIntervalBoundingNodes parameter");
       return;
     }
+    var leafHandling = widget.state['leafHandling'];
+    if (undefined === leafHandling) {
+      CATMAID.warn("Can't create sampler without leafHandling parameter");
+      return;
+    }
     CATMAID.fetch(project.id + '/samplers/add', 'POST', {
       skeleton_id: skeletonId,
       interval_length: intervalLength,
       interval_error: intervalError,
       create_interval_boundaries: createIntervalBoundingNodes,
-      review_required: reviewRequired
+      review_required: reviewRequired,
+      leaf_segment_handling: leafHandling,
     }).then(function(result) {
       // TODO: Should probably go to next step immediately
       widget.update();
@@ -1534,6 +1571,11 @@
       CATMAID.warn("No valid Z interpolatable list found");
       return;
     }
+    var leafHandling = widget.state['leafHandling'];
+    if (!leafHandling) {
+      CATMAID.warn("No valid leaf handling parameter found");
+      return;
+    }
 
     var arbor = widget.state['arbor'];
     // Get arbor if not already cached
@@ -1575,7 +1617,8 @@
               interpolatableX, interpolatableY, interpolatableZ);
         return CATMAID.Sampling.intervalsFromModels(workParser.arbor,
             workParser.positions, domainDetails, intervalLength,
-            intervalError, preferSmallerError, createIntervalBoundingNodes);
+            intervalError, preferSmallerError,
+            createIntervalBoundingNodes, leafHandling, true);
       })
       .then(function(intervalConfiguration) {
         return new Promise(function(resolve, reject) {

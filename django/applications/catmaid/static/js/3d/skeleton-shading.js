@@ -468,7 +468,8 @@
         if (!domain.intervals || domain.intervals.length === 0) {
           let addedIntervals = CATMAID.Sampling.intervalsFromModels(
               arbor, positions, domain, sampler.interval_length,
-              sampler.interval_error, true, true, intervalMap);
+              sampler.interval_error, true, true, sampler.leaf_segment_handling,
+              true, intervalMap);
           let mockIntervals = addedIntervals.intervals.map(function(ai, i) {
             // use the negative index as ID for now. There should not be
             // any collissions.
@@ -945,7 +946,7 @@
         for (var i=0; i<samplers.length; ++i) {
           var sampler = samplers[i];
           CATMAID.Sampling.intervalEdges(arbor, skeleton.getPositions(),
-              sampler, true, true, intervalMap);
+              sampler, true, true, true, intervalMap);
         }
 
         // Look at all nodes of all domains. Give them a weight of 1 if they are

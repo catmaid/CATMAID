@@ -61,6 +61,18 @@ Connectivity matrix:
 - The new "Groups" tab allows to group rows, columns or both by their displayed
   name.
 
+Reconstruction sampler:
+
+- Different leaf handling strategies are now available to be selected for a
+  sampler. The behavior so far (and current default) is to just ignore leaf
+  segments that are shorter than the interval length minus the error margin.
+  Alternatively, it is now possible to merge the leaf segment into the last
+  interval, to create new shorter intervals for the leaf segments or, combining
+  both, it is possible to try to merge it into the last interval and if that's
+  not possible (e.g. on a small twig with no previous interval on the same
+  segment), then create a new short interval. This option is available in the
+  Sampler tab.
+
 Miscellaneous:
 
 - The behavior of the Ctrl modifier on section navigation with , and . can now

@@ -507,6 +507,7 @@
         },
         {data: "interval_length", title: "Interval length", orderable: true},
         {data: "interval_error", title: "Max error", orderable: true},
+        {data: "leaf_segment_handling", title: "Leaf handling", orderable: true},
         {
           data: "create_interval_boundaries",
           title: "Create interval boundaries",

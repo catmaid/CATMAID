@@ -394,7 +394,7 @@
       },
       {
         type: 'button',
-        label: 'New sampler for active backbone',
+        label: 'Create sampler for active skeleton',
         onclick: function() {
           self.createNewSampler(widget);
         }

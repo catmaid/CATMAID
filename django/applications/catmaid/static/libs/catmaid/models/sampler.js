@@ -228,6 +228,10 @@
               // Use last node, because it is closer than this node and closer
               // than the allowed interval error.
               selectedNode = partition[j+1];
+              // To properly re-evaluate this node (it hasn't been chosen to
+              // end the current interval), continue from the last node with
+              // the next potential interval, move index back one step.
+              j++;
             }
           } else {
             if (distanceToThis < intervalError) {

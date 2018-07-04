@@ -673,6 +673,7 @@
             user_id: null,
             skeleton_id: skeletonId,
             interval_length: intervalLength,
+            interval_error: intervalError,
             domains: [fakeDomain]
           };
           let preferSmallerError = true;

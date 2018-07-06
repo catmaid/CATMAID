@@ -791,14 +791,13 @@ Arbor.prototype.strahlerAnalysis = function() {
       var si = visited_branches[paren];
       if (si && si.length === n_children -1) {
         // Yes: compute strahler:
-        //  A. If all equal, increase Strahler index by one
+        //  A. if two or more children share max index, increase Strahler index by one
         //  B. Otherwise pick the largest strahler index of its children
-        var v = index; // of the current branch
+        var v = si.reduce((a, b) => Math.max(a, b)); // of the current branch
         for (var k=0, same=0; k<si.length; k++) {
           if (si[k] === v) ++same;
-          else v = Math.max(v, si[k]);
         }
-        strahler[paren] = si.length === same ? v + 1 : v;
+        strahler[paren] = same >= 2 ? v + 1 : v;
         open.push(paren);
       } else {
         // No: compute later

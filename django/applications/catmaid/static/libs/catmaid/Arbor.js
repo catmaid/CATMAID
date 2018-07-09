@@ -798,7 +798,7 @@ Arbor.prototype.strahlerAnalysis = function() {
         for (var k=0; k<si.length; k++) {
           if (si[k] === v) ++same;
         }
-        strahler[paren] = same >= 2 ? v + 1 : v;
+        strahler[paren] = same >= 2 ? v + 1 : v; // increment strahler number if there are two or more occurances of the max child index
         open.push(paren);
       } else {
         // No: compute later

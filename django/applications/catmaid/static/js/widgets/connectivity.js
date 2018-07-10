@@ -1562,10 +1562,13 @@
       $(table).siblings('.connectivity_table_actions')
         // Add custom filter/search input to support regular expressions.
         .append($('<div class="dataTables_filter">')
-          .append($('<label />')
-            .text('Filter partners:')
+          .append($('<span />')
+            .css('margin', 'auto 0.5em auto 0.5em')
+            .text('Filter:')
+          )
+          .append($('<span />')
             .attr('title', 'Starting with / enables regular expressions')
-            .append($('<input type="search" />').on('keyup', function () {
+            .append($('<input type="search" placeholder="Partner name" />').on('keyup', function () {
               var search = this.value;
               if (search.length > 0 && search[0] === '/') {
                 // Treat the input as regex.

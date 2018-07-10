@@ -812,26 +812,22 @@ table.neuron_annotations_query_fields {
 .connectivity_widget .connectivity_table_actions {
   position: relative;
   clear: both;
-  width: 100%;
+  padding: 0.5em 0.5em 0.5em 0;
+  display: flex;
+  justify-content: space-between;
 }
 
 .connectivity_widget .dataTables_filter {
   float: none;
   text-align: left;
+  display: flex;
+  align-items: center;
 }
 
 .connectivity_widget .dataTables_filter label {
   margin: 0.5em;
   padding-left: 10px;
   text-indent: 0;
-}
-
-.connectivity_widget .dataTables_export {
-  position: absolute;
-  float: none;
-  bottom: 0;
-  right: 0;
-  margin: 0.5em 0.5em 0 0;
 }
 
 .connectivity_widget .partner_table {

@@ -409,6 +409,19 @@ var WindowMaker = new function()
           ['Center active', WA.look_at_active_node.bind(WA)],
           ['Follow active', o.follow_active, function() { WA.setFollowActive(this.checked); }, false],
           ['Update active',  o.update_active, function() { WA.setUpdateActive(this.checked); }, false],
+          {
+            type: 'button',
+            label: 'Focus skeleton',
+            title: 'Look at active skeleton\'s center of mass from current camera location',
+            onclick: function() {
+              let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+              if (activeSkeletonId) {
+                WA.lookAtSkeleton(activeSkeletonId);
+              } else {
+                CATMAID.warn('No skeleton selected!');
+              }
+            }
+          },
           ['XY', WA.XYView.bind(WA)],
           ['XZ', WA.XZView.bind(WA)],
           ['ZY', WA.ZYView.bind(WA)],

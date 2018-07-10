@@ -30,6 +30,9 @@ Volume widget:
 
 3D Viewer:
 
+- The new "Focus skeleton" button in the "View" tab will look at the active
+  skeleton's center of mass from the current camea location.
+
 - Volumes can now be smoothed by subdivision. The volume option panel available
   from the View Settings tab now contains a "Subdivide" checkbox.
 

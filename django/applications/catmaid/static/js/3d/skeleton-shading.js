@@ -8,40 +8,79 @@
   /**
    * Create a new shader based material to have active node focused shading.
    */
-  var makeNearActiveNodeSplitMaterial = function(baseMaterial, cameraSpace, activeNodeDistance) {
-    var material = new CATMAID.ShaderLineBasicMaterial(baseMaterial);
+  var makeNearActiveNodeSplitMaterial = function(baseMaterial, cameraSpace,
+      activeNodeDistance, bufferGeometry) {
 
-    // Determine active node distance in the vertex shader and pass to the
-    // fragment shader as a varying.
-    material.insertSnippet(
-        'vertexDeclarations',
-        'uniform vec3 u_activeNodePosition;\n' +
+    var vertexDeclarations = 'uniform vec3 u_activeNodePosition;\n' +
         'uniform float u_horizon;\n' +
-        'varying float activeNodeDistanceDarkening;\n');
-    material.insertSnippet(
-        'vertexPosition',
-        (cameraSpace ?
+        'varying float activeNodeDistanceDarkening;\n';
+    var fragmentDeclarations = 'varying float activeNodeDistanceDarkening;\n';
+
+    if (bufferGeometry) {
+      var material =  new THREE.LineMaterial({
+        color: baseMaterial.color,
+        opacity: baseMaterial.opacity,
+        linewidth: baseMaterial.uniforms.linewidth.value,
+        resolution: new THREE.Vector2(baseMaterial.uniforms.resolution.value.x,
+            baseMaterial.uniforms.resolution.value.y),
+      });
+      var vertexPosition = (cameraSpace ?
+          'vec3 camVert = (vec4(instanceStart, 1.0) * modelMatrix).xyz - cameraPosition;\n' +
+          'vec3 camAtn = (vec4(u_activeNodePosition, 1.0) * modelMatrix).xyz - cameraPosition;\n' +
+          'float zDist = distance(dot(camVert, normalize(camAtn)), length(camAtn));\n'
+          :
+          'float zDist = distance(instanceStart.z, u_activeNodePosition.z);\n') +
+          'activeNodeDistanceDarkening = 1.0 - clamp(zDist/u_horizon, 0.0, 1.0);\n';
+      var fragmentColor = 'gl_FragColor = vec4(diffuseColor.rgb * activeNodeDistanceDarkening, diffuseColor.a);\n';
+      var newVertexShader = CATMAID.insertSnippetIntoShader(material.vertexShader,
+          CATMAID.PickingLineMaterial.INSERTION_LOCATIONS['vertexDeclarations'],
+          vertexDeclarations);
+      newVertexShader = CATMAID.insertSnippetIntoShader(newVertexShader,
+          CATMAID.PickingLineMaterial.INSERTION_LOCATIONS['vertexEnd'],
+          vertexPosition);
+      var newFragmentShader = CATMAID.insertSnippetIntoShader(material.fragmentShader,
+          CATMAID.PickingLineMaterial.INSERTION_LOCATIONS['fragmentDeclarations'],
+          fragmentDeclarations);
+      newFragmentShader = CATMAID.insertSnippetIntoShader(newFragmentShader,
+          CATMAID.PickingLineMaterial.INSERTION_LOCATIONS['fragmentColor'],
+          fragmentColor);
+
+      material.vertexShader = newVertexShader;
+      material.fragmentShader = newFragmentShader;
+      material.needsUpdate = true;
+
+      $.extend(material.uniforms, {
+          u_activeNodePosition: { type: 'v3', value: SkeletonAnnotations.getActiveNodeProjectVector3() },
+          u_horizon: { type: 'f', value: activeNodeDistance }});
+
+      return material;
+    } else {
+      var vertexPosition = (cameraSpace ?
           'vec3 camVert = (vec4(position, 1.0) * modelMatrix).xyz - cameraPosition;\n' +
           'vec3 camAtn = (vec4(u_activeNodePosition, 1.0) * modelMatrix).xyz - cameraPosition;\n' +
           'float zDist = distance(dot(camVert, normalize(camAtn)), length(camAtn));\n'
           :
           'float zDist = distance(position.z, u_activeNodePosition.z);\n') +
-          'activeNodeDistanceDarkening = 1.0 - clamp(zDist/u_horizon, 0.0, 1.0);\n');
+          'activeNodeDistanceDarkening = 1.0 - clamp(zDist/u_horizon, 0.0, 1.0);\n';
+      var fragmentColor = 'gl_FragColor = vec4(outgoingLight * activeNodeDistanceDarkening, diffuseColor.a);\n';
+      var material = new CATMAID.ShaderLineBasicMaterial(baseMaterial);
 
-    material.insertSnippet(
-        'fragmentDeclarations',
-        'varying float activeNodeDistanceDarkening;\n');
-    material.insertSnippet(
-        'fragmentColor',
-        'gl_FragColor = vec4(outgoingLight * activeNodeDistanceDarkening, diffuseColor.a);\n');
+      // Determine active node distance in the vertex shader and pass to the
+      // fragment shader as a varying.
+      material.insertSnippet('vertexDeclarations', vertexDeclarations);
+      material.insertSnippet('vertexPosition', vertexPosition);
 
-    material.addUniforms({
-        u_activeNodePosition: { type: 'v3', value: SkeletonAnnotations.getActiveNodeProjectVector3() },
-        u_horizon: { type: 'f', value: activeNodeDistance }});
+      material.insertSnippet('fragmentDeclarations', fragmentDeclarations);
+      material.insertSnippet('fragmentColor', fragmentColor);
 
-    material.refresh();
+      material.addUniforms({
+          u_activeNodePosition: { type: 'v3', value: SkeletonAnnotations.getActiveNodeProjectVector3() },
+          u_horizon: { type: 'f', value: activeNodeDistance }});
 
-    return material;
+      material.refresh();
+
+      return material;
+    }
   };
 
   /**
@@ -689,14 +728,18 @@
           up = 0.5;
           down = 0;
         }
-        var vs = skeleton.geometry['neurite'].vertices;
         var axon_nodes = skeleton.axon.edges;
-        for (var i=0; i<vs.length; i+=2) {
-          var node_id = vs[i].node_id;
+        var nodeMetaData = skeleton.nodeMetaData;
+        // This could be improved by being able to iterate only unique nodes
+        // (instead of edge ends).
+        for (var i=0; i<nodeMetaData.length; i+=2) {
+          var node_id = nodeMetaData[i].node_id;
           node_weights[node_id] = axon_nodes[node_id] ? down : up;
         }
+
         // Handle root
-        node_weights[skeleton.axon.root] = axon_nodes[node_id] ? down : up;
+        node_weights[skeleton.axon.root] = axon_nodes[skeleton.axon.root] ? down : up;
+
         return node_weights;
       }
     },
@@ -732,14 +775,14 @@
     'near_active_node_z_camera': {
       material:function(skeleton, options) {
         var material = makeNearActiveNodeSplitMaterial(skeleton.line_material, true,
-            options.distance_to_active_node);
+            options.distance_to_active_node, options.triangulated_lines);
         return material;
       }
     },
     'near_active_node_z_project': {
       material: function(skeleton, options) {
         var material = makeNearActiveNodeSplitMaterial(skeleton.line_material, false,
-            options.distance_to_active_node);
+            options.distance_to_active_node, options.triangulated_lines);
         return material;
       }
     },
@@ -1042,6 +1085,14 @@
       material: function(skeleton) {
         if (isFn(shading.material)) {
           return shading.material(skeleton, options);
+        } else if (options.triangulated_lines) {
+          return new THREE.LineMaterial({
+            color: skeleton.line_material.color,
+            opacity: skeleton.line_material.opacity,
+            linewidth: options.skeleton_line_width,
+            resolution: new THREE.Vector2(skeleton.space.canvasWidth,
+                skeleton.space.canvasHeight),
+          });
         } else {
           return new THREE.LineBasicMaterial({
             color: skeleton.line_material.color,

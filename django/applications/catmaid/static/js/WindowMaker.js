@@ -409,6 +409,19 @@ var WindowMaker = new function()
           ['Center active', WA.look_at_active_node.bind(WA)],
           ['Follow active', o.follow_active, function() { WA.setFollowActive(this.checked); }, false],
           ['Update active',  o.update_active, function() { WA.setUpdateActive(this.checked); }, false],
+          {
+            type: 'button',
+            label: 'Focus skeleton',
+            title: 'Look at active skeleton\'s center of mass from current camera location',
+            onclick: function() {
+              let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+              if (activeSkeletonId) {
+                WA.lookAtSkeleton(activeSkeletonId);
+              } else {
+                CATMAID.warn('No skeleton selected!');
+              }
+            }
+          },
           ['XY', WA.XYView.bind(WA)],
           ['XZ', WA.XZView.bind(WA)],
           ['ZY', WA.ZYView.bind(WA)],
@@ -831,6 +844,16 @@ var WindowMaker = new function()
           },
           ['Debug', o.debug, function() { WA.setDebug(this.checked); }, false],
           ['Line width', o.skeleton_line_width, null, function() { WA.updateSkeletonLineWidth(this.value); }, 4],
+          {
+            type: 'checkbox',
+            label: 'Volumetric lines',
+            value: o.triangulated_lines,
+            onclick: function() {
+              WA.options.triangulated_lines = this.checked;
+              WA.reloadSkeletons(WA.getSelectedSkeletons());
+            },
+            title: 'If checked, lines will be rendered as triangle mesh, which allows more robust line width adjustment.'
+          },
           {
             type: 'checkbox',
             label: 'Flat neuron material',

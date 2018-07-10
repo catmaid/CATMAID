@@ -137,7 +137,7 @@ jQuery.expr[":"].icontainsnot = jQuery.expr.createPseudo(function(arg) {
  *
  * TODO: Remove this workaround once issue #7361 in Three.js is resolved.
  */
-(function() {
+(function(CATMAID) {
   var originalGeometry = THREE.Geometry;
   THREE.Geometry = function() {
     // Call original constructor
@@ -163,4 +163,9 @@ jQuery.expr[":"].icontainsnot = jQuery.expr.createPseudo(function(arg) {
   };
   THREE.Geometry.prototype = originalGeometry.prototype;
   THREE.Geometry.prototype.constructor = originalGeometry.constructor;
-})();
+
+  CATMAID.THREE = {};
+  CATMAID.THREE.LineSegments2 = function() {
+
+  };
+})(CATMAID);

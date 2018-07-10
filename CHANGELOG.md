@@ -142,6 +142,8 @@ Miscellaneous:
 - 3D viewer: connector restrictions like "show only shared connectors" now
   respect the pre/post visibility toggles in the Selection Table.
 
+- 3D viewer: the initial text scaling for label text is now correctly set again.
+
 - Reconstruction sampler: during interval creation preview, only intervals from
   the currently active domain are now shown.
 

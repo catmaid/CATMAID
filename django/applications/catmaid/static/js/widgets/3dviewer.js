@@ -346,6 +346,9 @@
    * Store the current view as SVG image.
    */
   WebGLApplication.prototype.exportSVG = function() {
+    if (this.options.triangulated_lines) {
+      CATMAID.warn('Volumetric lines (View settings) need to be disabled for the SVG export to work. Try switching them off for the export.');
+    }
     this.askForDimensions("SVG export", "catmid-3d-viewer.svg", (function(fileName) {
       $.blockUI({message: '<img src="' + CATMAID.staticURL +
           'images/busy.gif" /> <span id="block-export-svg">Please wait</span>'});
@@ -438,6 +441,9 @@
    * Create an store a neuron catalog SVG for the current view.
    */
   WebGLApplication.prototype.exportCatalogSVG = function() {
+    if (this.options.triangulated_lines) {
+      CATMAID.warn('Volumetric lines (View settings) need to be disabled for the SVG export to work. Try switching them off during the export.');
+    }
     var dialog = new CATMAID.OptionsDialog("Catalog export options");
     dialog.appendMessage('Adjust the catalog export settings to your liking.');
 

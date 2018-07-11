@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 import inspect
 import six
 import catmaid.models
+import progressbar
 
 from collections import defaultdict
 from django.apps import apps
@@ -276,7 +277,9 @@ class FileImporter:
         # Read the file and sort by type
         logger.info("Loading data from {}".format(self.source))
         with open(self.source, "r") as data:
-            for deserialized_object in serializers.deserialize(self.format, data):
+            loaded_data = serializers.deserialize(self.format, data)
+            for deserialized_object in progressbar.progressbar(loaded_data,
+                    max_value=progressbar.UnknownLength, redirect_stdout=True):
                 obj = deserialized_object.object
                 import_data[type(obj)].append(deserialized_object)
                 n_objects += 1
@@ -398,10 +401,13 @@ class FileImporter:
             objects = objects_to_save.get(object_type)
             if objects:
                 logger.info("- Importing objects of type " + str(object_type))
-                for deserialized_object in objects:
+                for deserialized_object in progressbar.progressbar(objects,
+                        max_value=len(objects), redirect_stdout=True):
                     deserialized_object.save()
 
-        for other_model in need_separate_import:
+        logger.info("- Importing all other objects")
+        for other_model in progressbar.progressbar(need_separate_import,
+                max_value=len(need_separate_import), redirect_stdout=True):
             other_objects = import_data[other_model]
             if other_model == User:
                 # If user model objects are imported and users were mapped, ask

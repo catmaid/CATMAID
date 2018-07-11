@@ -2843,7 +2843,7 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
                     stackViewer.old_s === stackViewer.s &&
                     this.old_z === stackViewer.z;
   if ( doNotUpdate ) {
-    var padS = this.padding / stackViewer.scale;
+    var padS = this.applyTracingWindow ? 0 : this.padding / stackViewer.scale;
     // Don't upate if the center didn't move horizontally, but do if
     var dx = this.old_x - stackViewer.x;
     doNotUpdate = dx <= padS && dx >= -padS;

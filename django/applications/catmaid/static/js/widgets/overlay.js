@@ -734,6 +734,17 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   this.transferFormat = SkeletonAnnotations.TracingOverlay.Settings.session.transfer_mode;
   /** Limit the requested skeletons to the N largest in terms of cable length */
   this.nLargestSkeletonsLimit = SkeletonAnnotations.TracingOverlay.Settings.session.n_largest_skeletons_limit;
+  /** An optional margin in pixels that is subtracted from the left and right of
+   * the node query box, effectively not loading data in this region.*/
+  this.tracingWindowWidth = SkeletonAnnotations.TracingOverlay.Settings.session.tracing_window_width;
+  /** An optional margin in pixels that is subtracted from the top and bottom of
+   * the node query box, effectively not loading data in this region.*/
+  this.tracingWindowHeight = SkeletonAnnotations.TracingOverlay.Settings.session.tracing_window_height;
+  /** The DOM element representing the tracing window */
+  this._tracingWindowElement = document.createElement('div');
+  this._tracingWindowElement.classList.add('tracing-window');
+  /** Whether or not to show lines representing the boundary mask */
+  this.applyTracingWindow = SkeletonAnnotations.TracingOverlay.Settings.session.apply_tracing_window;
   /** A cached copy of the a map from IDs to relation names, set on firt load. **/
   this.relationMap = null;
 
@@ -893,6 +904,11 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
       this._skeletonDisplaySource.skeletonModels);
   this.graphics.setNodeRadiiVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_node_radii);
 
+  // Initialize tracing window, if any
+  if (this.apply_tracing_window) {
+    this.updateTracingWindow();
+  }
+
   // Invalidate the node list cache aggressively.
   CATMAID.Neurons.on(CATMAID.Neurons.EVENT_NEURON_DELETED,
     this.nodeListCache.clear, this.nodeListCache);
@@ -1050,7 +1066,16 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
           },
           n_largest_skeletons_limit: {
             default: 0
-          }
+          },
+          tracing_window_width: {
+            default: 300
+          },
+          tracing_window_height: {
+            default: 300
+          },
+          apply_tracing_window: {
+            default: false
+          },
         },
         migrations: {
           0: function (settings) {
@@ -3340,8 +3365,14 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
     // No padding for image data
     var padding = regularTransfer ? self.padding : 0;
 
-    var paddedHalfWidth =  (stackViewer.viewWidth  / 2 + padding) / stackViewer.scale,
-        paddedhalfHeight = (stackViewer.viewHeight / 2 + padding) / stackViewer.scale;
+    // And no padding if boundary masks are applied
+    var hPadding = self.tracingWindowWidth > 0 && self.applyTracingWindow ?
+        - ((stackViewer.viewWidth / 2) - self.tracingWindowWidth / 2) : padding;
+    var vPadding = self.tracingWindowHeight > 0 && self.applyTracingWindow ?
+        - ((stackViewer.viewHeight / 2) - self.tracingWindowHeight / 2) : padding;
+
+    var paddedHalfWidth =  (stackViewer.viewWidth  / 2 + hPadding) / stackViewer.scale,
+        paddedhalfHeight = (stackViewer.viewHeight / 2 + vPadding) / stackViewer.scale;
 
     var x0 = stackViewer.x - paddedHalfWidth,
         y0 = stackViewer.y - paddedhalfHeight,
@@ -5407,6 +5438,33 @@ SkeletonAnnotations.TracingOverlay.prototype.updateIfKnown = function(skeletonID
   }
   if (Object.keys(this.nodes).some(this.nodeIsPartOfSkeleton.bind(this, skeletonID))) {
     this.updateNodes();
+  }
+};
+
+/**
+ * Update visibility of tracing window DOM element and set its size according to
+ * the current settings.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.updateTracingWindow = function() {
+  var lineWidth = 2;
+  var lineColor = 0x00FF00;
+
+  if (this.applyTracingWindow) {
+    var screenCenterX = this.stackViewer.viewWidth / 2;
+    var screenCenterY = this.stackViewer.viewHeight / 2;
+    var halfWidth = this.tracingWindowWidth / 2;
+    var halfHeight = this.tracingWindowHeight / 2;
+
+    this._tracingWindowElement.style.left = (screenCenterX - halfWidth) + 'px';
+    this._tracingWindowElement.style.right = (screenCenterX + halfWidth) + 'px';
+    this._tracingWindowElement.style.top = (screenCenterY - halfHeight) + 'px';
+    this._tracingWindowElement.style.bottom = (screenCenterY + halfHeight) + 'px';
+    this._tracingWindowElement.style.width = this.tracingWindowWidth + 'px';
+    this._tracingWindowElement.style.height = this.tracingWindowHeight + 'px';
+
+    this.view.appendChild(this._tracingWindowElement);
+  } else if (this._tracingWindowElement.parentElement) {
+    this._tracingWindowElement.parentElement.removeChild(this._tracingWindowElement);
   }
 };
 

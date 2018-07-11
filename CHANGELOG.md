@@ -109,6 +109,11 @@ Miscellaneous:
 - Tracing layer: a new option to show only the N largest skeletons in a field of
   view is now available for the layer settings (and the API).
 
+- Tracing layer: a set of new options allows now to configure a "tracing
+  window", which will restrict tracing data loading by allowing it only in view
+  centered rectangle. Width and height can be configured independently. This is
+  useful for remote review and tracing.
+
 - Node filters: if a neuron name is provided for a rule, the rule is now valid
   for all neurons with neuron names that include the provided name and not only
   exact matches.

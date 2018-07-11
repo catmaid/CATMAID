@@ -1471,3 +1471,9 @@ img.missing-image:before {
   font-size: 200%;
   margin: 0.5em;
 }
+
+.tracing-window {
+  position: absolute;
+  color: #0f0;
+  border: 2px solid #00ff0073;
+}

@@ -54,6 +54,33 @@
         this.tracingOverlay.nLargestSkeletonsLimit = value;
       }
     });
+
+    Object.defineProperty(this, 'tracingWindowWidth', {
+      get: function() {
+        return this.tracingOverlay.tracingWindowWidth;
+      },
+      set: function(value) {
+        this.tracingOverlay.tracingWindowWidth = value;
+      }
+    });
+
+    Object.defineProperty(this, 'tracingWindowHeight', {
+      get: function() {
+        return this.tracingOverlay.tracingWindowHeight;
+      },
+      set: function(value) {
+        this.tracingOverlay.tracingWindowHeight = value;
+      }
+    });
+
+    Object.defineProperty(this, 'applyTracingWindow', {
+      get: function() {
+        return this.tracingOverlay.applyTracingWindow;
+      },
+      set: function(value) {
+        this.tracingOverlay.applyTracingWindow = value;
+      }
+    });
   }
 
   TracingLayer.prototype = Object.create(CATMAID.PixiLayer.prototype);
@@ -127,6 +154,28 @@
 
   TracingLayer.prototype.getLayerSettings = function() {
     return [{
+      name: 'applyTracingWindow',
+      displayName: 'Apply and show tracing window',
+      type: 'checkbox',
+      value: this.applyTracingWindow,
+      help: 'Whether or not to apply and show a view centered tracing window, outside of which no tracing data will be loaded.'
+    }, {
+      name: 'tracingWindowWidth',
+      displayName: 'Tracing window width',
+      type: 'number',
+      step: 10,
+      min: 0,
+      value: this.tracingWindowWidth,
+      help: 'The width of a view centered tracing window.'
+    }, {
+      name: 'tracingWindowHeight',
+      displayName: 'Tracing window height',
+      type: 'number',
+      step: 10,
+      min: 0,
+      value: this.tracingWindowHeight,
+      help: 'The height of a view centered tracing window.'
+    }, {
       name: 'transferFormat',
       displayName: 'Tracing data transfer mode',
       type: 'select',
@@ -155,6 +204,18 @@
       this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('nLargestSkeletonsLimit' === name) {
       this.nLargestSkeletonsLimit = value;
+      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
+    } else if ('tracingWindowWidth' === name) {
+      this.tracingWindowWidth = parseInt(value, 10);
+      this.tracingOverlay.updateTracingWindow();
+      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
+    } else if ('tracingWindowHeight' === name) {
+      this.tracingWindowHeight = parseInt(value, 10);
+      this.tracingOverlay.updateTracingWindow();
+      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
+    } else if ('applyTracingWindow' === name) {
+      this.applyTracingWindow = value;
+      this.tracingOverlay.updateTracingWindow();
       this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     }
   };

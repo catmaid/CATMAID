@@ -787,6 +787,7 @@ Arbor.prototype.strahlerAnalysis = function() {
       paren = this.edges[paren];
     }
     if (paren) {
+      // paren is a branch. Are all its branches minus one completed?
       var si = visited_branches[paren];
       if (si && si.length === n_children -1) {
         // Yes: compute strahler:

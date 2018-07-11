@@ -157,6 +157,10 @@ Miscellaneous:
 
 - Neuron Search: annotation data range can be used again.
 
+- The Strahler number computation no correctly increases the Strahler number
+  when two more children have the local maximum number rather than requiring all
+  children to share the same number.
+
 
 ## 2018.04.15
 

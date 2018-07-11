@@ -745,6 +745,8 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   this._tracingWindowElement.classList.add('tracing-window');
   /** Whether or not to show lines representing the boundary mask */
   this.applyTracingWindow = SkeletonAnnotations.TracingOverlay.Settings.session.apply_tracing_window;
+  /** Wheter updates can be suspended during a planar panning operation */
+  this.updateWhilePanning = SkeletonAnnotations.TracingOverlay.Settings.session.update_while_panning;
   /** A cached copy of the a map from IDs to relation names, set on firt load. **/
   this.relationMap = null;
 
@@ -1074,6 +1076,9 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
             default: 300
           },
           apply_tracing_window: {
+            default: false
+          },
+          update_while_panning: {
             default: false
           },
         },

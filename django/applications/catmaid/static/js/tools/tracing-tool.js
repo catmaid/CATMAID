@@ -186,8 +186,9 @@
           // will the left mouse button if the tracing overlay returned false.
           if (mouseButton === 2 || mouseButton === 3 || fallback) {
             fallback = false;
-            // Put all tracing layers in "don't update" mode during move
-            setTracingLayersSuspended(true, false);
+            // Put all tracing layers in "don't update" mode during move,
+            // optionally except the active layer
+            setTracingLayersSuspended(true, layer.updateWhilePanning);
 
             // Attach to the node limit hit event to disable node updates
             // temporary if the limit was hit. This allows for smoother panning

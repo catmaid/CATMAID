@@ -81,6 +81,19 @@ Reconstruction sampler:
   segment), then create a new short interval. This option is available in the
   Sampler tab.
 
+Tracing layer:
+
+- The new option "Update tracing data while panning" allows to configure weather
+  the tracing data on the layer will be updated when the view is panned around.
+
+- A set of new options allows now to configure a "tracing window", which will
+  restrict tracing data loading by allowing it only in view centered rectangle.
+  Width and height can be configured independently. This is useful for remote
+  review and tracing.
+
+- A new option to show only the N largest skeletons in a field of view is now
+  available for the layer settings (and the API).
+
 Miscellaneous:
 
 - The behavior of the Ctrl modifier on section navigation with , and . can now
@@ -105,14 +118,6 @@ Miscellaneous:
 - A skeleton cable length limit can be set so that a warning is displayed if a
   change to the skeleton morphology results in a cable length larger than the
   limit. This is available in the Warnings section of the Settings Widget.
-
-- Tracing layer: a new option to show only the N largest skeletons in a field of
-  view is now available for the layer settings (and the API).
-
-- Tracing layer: a set of new options allows now to configure a "tracing
-  window", which will restrict tracing data loading by allowing it only in view
-  centered rectangle. Width and height can be configured independently. This is
-  useful for remote review and tracing.
 
 - Node filters: if a neuron name is provided for a rule, the rule is now valid
   for all neurons with neuron names that include the provided name and not only

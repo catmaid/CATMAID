@@ -81,6 +81,15 @@
         this.tracingOverlay.applyTracingWindow = value;
       }
     });
+
+    Object.defineProperty(this, 'updateWhilePanning', {
+      get: function() {
+        return this.tracingOverlay.updateWhilePanning;
+      },
+      set: function(value) {
+        this.tracingOverlay.updateWhilePanning = value;
+      }
+    });
   }
 
   TracingLayer.prototype = Object.create(CATMAID.PixiLayer.prototype);
@@ -154,6 +163,12 @@
 
   TracingLayer.prototype.getLayerSettings = function() {
     return [{
+      name: 'updateWhilePanning',
+      displayName: 'Update tracing data while panning',
+      type: 'checkbox',
+      value: this.updateWhilePanning,
+      help: 'Whether or not to update the visible tracing data while panning the view.'
+    }, {
       name: 'applyTracingWindow',
       displayName: 'Apply and show tracing window',
       type: 'checkbox',
@@ -217,6 +232,8 @@
       this.applyTracingWindow = value;
       this.tracingOverlay.updateTracingWindow();
       this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
+    } else if ('updateWhilePanning' === name) {
+      this.updateWhilePanning = value;
     }
   };
 

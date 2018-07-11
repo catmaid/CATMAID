@@ -216,10 +216,10 @@
                 input.attr('min', setting.range[0]);
                 input.attr('max', setting.range[1]);
               } else {
-                if (setting.min) {
+                if (setting.min !== undefined) {
                   input.attr('min', setting.min);
                 }
-                if (setting.max) {
+                if (setting.max !== undefined) {
                   input.attr('max', setting.max);
                 }
               }

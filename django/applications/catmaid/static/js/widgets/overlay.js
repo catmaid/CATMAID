@@ -2903,6 +2903,9 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
       width: stackViewer.viewWidth,     // Width and height only need to be updated on
       height: stackViewer.viewHeight}); // resize.
 
+  // Make sure a potential tracing window is up-to-date.
+  this.updateTracingWindow();
+
   if (doNotUpdate) {
     this.renderIfReady();
     if (typeof completionCallback !== "undefined") {

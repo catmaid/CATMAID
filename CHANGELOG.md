@@ -61,6 +61,10 @@ Volume widget:
 - New coloring option: X/Y/Z rainbow lookup table coloring for active stack
   dimensions.
 
+- The active node respects now a node radius by default and is scaled to 1.5x
+  its size. This behavior can be disabled using the "Radius adaptive active
+  node" checkbox in the "View settings" tab.
+
 Connectivity matrix:
 
 - Connector node filters can now be applied using the funnel icon in the widget

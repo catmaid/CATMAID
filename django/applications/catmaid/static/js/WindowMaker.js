@@ -825,6 +825,7 @@ var WindowMaker = new function()
           },
           ['Active node', o.show_active_node, function() { WA.options.show_active_node = this.checked; WA.adjustContent(); }, false],
           ['Active node on top', o.active_node_on_top, function() { WA.options.active_node_on_top = this.checked; WA.adjustContent(); }, false],
+          ['Radius adaptive active node', o.active_node_respects_radius, function() { WA.options.active_node_respects_radius = this.checked; WA.adjustContent(); }, false],
           ['Black background', o.show_background, adjustFn('show_background'), false],
           ['Floor', o.show_floor, adjustFn('show_floor'), false],
           {

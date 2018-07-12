@@ -1169,6 +1169,7 @@
     this.missing_section_height = 20;
     this.show_active_node = true;
     this.active_node_on_top = false;
+    this.active_node_respects_radius = true;
     this.show_floor = true;
     this.floor_color = '#535353';
     this.show_background = true;
@@ -5342,8 +5343,12 @@
     this.mesh.position.set(pos.x, pos.y, pos.z);
 
     var radius = SkeletonAnnotations.getActiveNodeRadius();
-    radius = (radius && radius > 0) ? radius : 40 * options.skeleton_node_scaling;
-    CATMAID.tools.setXYZ(this.mesh.scale, radius);
+    if (radius && radius > 0 && options.active_node_respects_radius) {
+      radius = 1.5 * radius;
+    } else {
+      radius = 40 * options.skeleton_node_scaling;
+    }
+    this.mesh.scale.setScalar(radius);
   };
 
   WebGLApplication.prototype.Space.prototype.updateSkeleton =

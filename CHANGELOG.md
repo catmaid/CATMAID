@@ -170,6 +170,9 @@ Miscellaneous:
   when two more children have the local maximum number rather than requiring all
   children to share the same number.
 
+- Radius editing: using undo (Ctrl + Z) after editing the radius of a node works
+  now without an error message.
+
 
 ## 2018.04.15
 

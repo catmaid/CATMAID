@@ -77,13 +77,13 @@
         state: state.makeMultiNodeState(treenodeIds)
       };
 
-      return CATMAID.fetch(url, 'POST', params).then(function(json) {
+      return CATMAID.fetch(url, 'POST', params).then((function(json) {
         this.trigger(CATMAID.Nodes.EVENT_NODE_RADIUS_CHANGED, json.updated_nodes);
         return {
           // An object mapping node IDs to their old and new radius is returned.
           'updatedNodes': json.updated_nodes,
         };
-      });
+      }).bind(this));
     },
 
     /**

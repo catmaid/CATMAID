@@ -166,19 +166,32 @@ class BoxVolume(PostGISVolume):
         self.max_z = get_req_coordinate(options, "max_z")
 
     def get_geometry(self):
-        return """ST_GeomFromEWKT('POLYHEDRALSURFACE (
-            ((%(lx)s %(ly)s %(lz)s, %(lx)s %(hy)s %(lz)s, %(hx)s %(hy)s %(lz)s,
-              %(hx)s %(ly)s %(lz)s, %(lx)s %(ly)s %(lz)s)),
-            ((%(lx)s %(ly)s %(lz)s, %(lx)s %(hy)s %(lz)s, %(lx)s %(hy)s %(hz)s,
-              %(lx)s %(ly)s %(hz)s, %(lx)s %(ly)s %(lz)s)),
-            ((%(lx)s %(ly)s %(lz)s, %(hx)s %(ly)s %(lz)s, %(hx)s %(ly)s %(hz)s,
-              %(lx)s %(ly)s %(hz)s, %(lx)s %(ly)s %(lz)s)),
-            ((%(hx)s %(hy)s %(hz)s, %(hx)s %(ly)s %(hz)s, %(lx)s %(ly)s %(hz)s,
-              %(lx)s %(hy)s %(hz)s, %(hx)s %(hy)s %(hz)s)),
-            ((%(hx)s %(hy)s %(hz)s, %(hx)s %(ly)s %(hz)s, %(hx)s %(ly)s %(lz)s,
-              %(hx)s %(hy)s %(lz)s, %(hx)s %(hy)s %(hz)s)),
-            ((%(hx)s %(hy)s %(hz)s, %(hx)s %(hy)s %(lz)s, %(lx)s %(hy)s %(lz)s,
-              %(lx)s %(hy)s %(hz)s, %(hx)s %(hy)s %(hz)s)))')"""
+        return """ST_GeomFromEWKT('TIN (
+            (({0}, {2}, {1}, {0})),
+            (({1}, {2}, {3}, {1})),
+
+            (({0}, {1}, {5}, {0})),
+            (({0}, {5}, {4}, {0})),
+
+            (({2}, {6}, {7}, {2})),
+            (({2}, {7}, {3}, {2})),
+
+            (({4}, {7}, {6}, {4})),
+            (({4}, {5}, {7}, {4})),
+
+            (({0}, {6}, {2}, {0})),
+            (({0}, {4}, {6}, {0})),
+
+            (({1}, {3}, {5}, {1})),
+            (({3}, {7}, {5}, {3})))')
+        """.format(*[
+            '%({a})s %({b})s %({c})s'.format(**{
+                'a': 'hx' if i & 0b001 else 'lx',
+                'b': 'hy' if i & 0b010 else 'ly',
+                'c': 'hz' if i & 0b100 else 'lz',
+            })
+            for i in range(8)
+        ])
 
     def get_params(self):
         return {

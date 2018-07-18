@@ -8,11 +8,11 @@
   /**
    * For large volumes, manual reconstruction of large neurons is very time
    * consuming, even more so whole networks. If one is primarily interested
-   * in connectivity, the ReconstructionSampler widget can help to direct
+   * in connectivity, the Reconstruction Sampler widget can help to direct
    * reconstruction time more efficiently.
    *
    * Starting from a reconstructed backbone, domains of interest are selected
-   * ("sampelr domains"), based on e.g. bounding tags. 
+   * ("sampler domains"), based on e.g. bounding tags.
    */
   var ReconstructionSampler = function() {
     this.widgetID = this.registerInstance();
@@ -108,7 +108,7 @@
         'time reconstructing a neuron.</p>',
 
         '<p>Starting from a reconstructed backbone or a seed point, domains of ',
-        'interest are selected on it ("sampelr domains"). This can happen e.g. ',
+        'interest are selected on it ("sampler domains"). This can happen e.g. ',
         'by defining boundary tags that constrain which nodes are looked at on ',
         'a backbone.</p>',
 
@@ -681,7 +681,7 @@
     prepare
       .then(function() {
         return new Promise(function(resolve, reject) {
-          // Create a a fake sampler with a fake domain that covers the whole
+          // Create a fake sampler with a fake domain that covers the whole
           // skeleton.
           var fakeDomain = {
             start_node_id: parseInt(arbor.arbor.root),
@@ -1218,7 +1218,7 @@
               };
             };
 
-            // The defined domains are noy yet available from the back-end,
+            // The defined domains are not yet available from the back-end,
             // prepopulate the skeleton's sampler property with fake data that
             // showing the domains to be created.
             var skeletons = widget.space.content.skeletons;
@@ -1243,7 +1243,7 @@
                 // interval_length,
                 // skeleton_id,
                 // state_id,
-                // user_ud
+                // user_id
               }]);
             }
 
@@ -1265,7 +1265,7 @@
 
   /**
    * Create all passed in domains for the passed in sampler. Return a promise
-   * that resolves once all domainsa are created.
+   * that resolves once all domains are created.
    */
   function createDomains(samplerId, domainTypeId, domains) {
     var createdDomains = [];
@@ -2062,8 +2062,8 @@
             };
           });
 
-          // Parse data so that it maches the table
-          // Store data in worfklow step
+          // Parse data so that it matches the table
+          // Store data in workflow step
           self.connectorData[relation] = connectorData;
           self.samplerConnectors = samplerConnectors.reduce(function(o, c) {
             o[c.connector_id] = c;

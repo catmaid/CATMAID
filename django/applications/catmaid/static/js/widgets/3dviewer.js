@@ -6672,9 +6672,9 @@
     });
 
     geometry.createAll(labels, scaling, undefined, (function(v, m, o) {
-      return !this.specialTagSpheres.hasOwnProperty(v.node_id);
+      return !this.specialTagSpheres.hasOwnProperty(o[2]);
     }).bind(this), (function(v, m, o, bufferObject) {
-      this.specialTagSpheres[v.node_id] = bufferObject;
+      this.specialTagSpheres[o[2]] = bufferObject;
     }).bind(this));
 
     var material = geometry.createMaterial(shading);
@@ -6713,11 +6713,12 @@
 
     geometry.createAll(connectors, scaling, undefined, (function(v, m, o) {
       // There already is a synaptic sphere at the node
-      return !this.synapticSpheres.hasOwnProperty(v.node_id);
+      return !this.synapticSpheres.hasOwnProperty(o[3]);
     }).bind(this), (function(v, m, o, bufferObject) {
-      bufferObject.node_id = v.node_id;
+      let nodeId = o[3];
+      bufferObject.node_id = nodeId;
       bufferObject.type = this.synapticTypes[o[2]];
-      this.synapticSpheres[v.node_id] = bufferObject;
+      this.synapticSpheres[nodeId] = bufferObject;
     }).bind(this));
 
     var material = geometry.createMaterial(shading);
@@ -7147,7 +7148,7 @@
         this.createEdge(v1, v2, this.geometry[this.synapticTypes[type]]);
         var defaultMaterial = this.space.staticContent.synapticColors[type] ||
           this.space.staticContent.synapticColors.default;
-        partner_nodes.push([v2, defaultMaterial, type]);
+        partner_nodes.push([v2, defaultMaterial, type, con[0]]);
       } else if (!silent) {
         throw new CATMAID.ValueError("Connector loading failed, not all vertices available");
       }
@@ -7175,7 +7176,7 @@
               let nodeLabels = labels.get(node);
               if (!nodeLabels) {
                 nodeLabels = [];
-                labels.set(node, nodeLabels);
+                labels.set([nodeID, node], nodeLabels);
               }
               if (labelType === 'custom') {
                 // Promote custom tag matches to make sure they are displayed
@@ -7202,7 +7203,7 @@
         // Select first label, if multiple
         let labelType = l[1][0];
         let color = this[labelType];
-        return [l[0], color];
+        return [l[0][1], color, l[0][0]];
       }, this.space.staticContent.labelColors);
       this.createLabelSpheres(displayedLabels, options.skeleton_node_scaling,
           options.neuron_material, preventSceneUpdate);

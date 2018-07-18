@@ -970,6 +970,35 @@ Arbor.prototype.cableLength = function(positions) {
   return sum;
 };
 
+/**
+ * Return the cable length between nodes A and B in this arbor.
+ */
+Arbor.prototype.cableLengthBetweenNodes = function(positions, nodeA, nodeB) {
+  let arbor = this.clone();
+
+  // Reroot arbor to node A for easy upstream traversal from node B.
+  arbor.reroot(nodeA);
+
+  // Compuet distance from node B to upstream node A.
+  let distance = 0;
+  let childPosition = positions[nodeB];
+  let parent = arbor.edges[nodeB];
+  while (parent) {
+    let parentPosition = positions[parent];
+    distance += childPosition.distanceTo(parentPosition);
+
+    // If the current parent node is found, return with the calculated length.
+    if (parent == nodeA) {
+      return distance;
+    }
+
+    parent = arbor.edges[parent];
+    childPosition = parentPosition;
+  }
+
+  return null;
+};
+
 /** Sum the cable length by smoothing using a Gaussian convolution.
  * For simplicity, considers the root, all branch and end nodes as fixed points,
  * and will only therefore adjust slab nodes.

@@ -183,7 +183,8 @@
               orderable: false,
               defaultContent: '<a href="#" data-action="remove">Remove</a> ' +
                   '<a href="#" data-action="list-skeletons">List skeletons</a> ' +
-                  '<a href="#" data-action="list-connectors">List connectors</a>'
+                  '<a href="#" data-action="list-connectors">List connectors</a>' +
+                  '<a href="#" data-action="export-STL">Export STL</a>'
             }
           ],
         });
@@ -281,6 +282,21 @@
                 });
                 connectorListHandles.widget.filterRules.push(rule);
               }
+            })
+            .catch(CATMAID.handleError);
+
+          // Prevent event from bubbling up.
+          return false;
+        });
+
+        // Connector intersection list
+        $(table).on('click', 'a[data-action="export-STL"]', function() {
+          var tr = $(this).closest("tr");
+          var volume = self.datatable.row(tr).data();
+          CATMAID.fetch("/" + project.id + "/volumes/" + volume.id + "/export", "GET", undefined, true)
+            .then(function(volume_file) {
+              var blob = new Blob([volume_file], {type: 'model/x.stl-ascii'})
+              saveAs(blob, volume.name + '.stl');
             })
             .catch(CATMAID.handleError);
 

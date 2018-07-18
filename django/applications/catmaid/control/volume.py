@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
 
 import json
+import os
 import re
+from xml.etree import ElementTree as ET
+
+from django.conf import settings
 
 from catmaid.control.authentication import requires_user_role, user_can_edit
 from catmaid.models import UserRole, Project, Volume
 from catmaid.serializers import VolumeSerializer
 
 from django.db import connection
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 
 from rest_framework.decorators import api_view
@@ -203,6 +207,88 @@ class BoxVolume(PostGISVolume):
             "hz": self.max_z,
             "id": self.id
         }
+
+
+def _chunk(iterable, length, fn=None):
+    if not fn:
+        fn = lambda x: x
+
+    items = []
+    it = iter(iterable)
+    while True:
+        try:
+            items.append(fn(next(it)))
+        except StopIteration:
+            if items:
+                raise ValueError(
+                    "Iterable did not have a multiple of {} items ({} spare)".format(length, len(items))
+                )
+            else:
+                return
+        else:
+            if len(items) == length:
+                yield tuple(items)
+                items = []
+
+
+def _x3d_to_points(self, fn=None):
+
+    indexed_triangle_set = ET.fromstring(self.x3d)
+    assert indexed_triangle_set.tag == "IndexedTriangleSet"
+    assert len(indexed_triangle_set) == 1
+
+    coordinate = indexed_triangle_set[0]
+    assert coordinate.tag == "Coordinate"
+    assert len(coordinate) == 0
+    points_str = coordinate.attrib["point"]
+
+    for item in _chunk(points_str.split(' '), 3, fn):
+        yield item
+
+
+def _x3d_to_stl_ascii(x3d):
+    solid_fmt = """
+solid
+{}
+endsolid
+            """.strip()
+    facet_fmt = """
+facet normal 0 0 0
+outer loop
+{}
+endloop
+endfacet
+            """.strip()
+    vertex_fmt = "vertex {} {} {}"
+
+    triangle_strs = []
+    for triangle in _x3d_to_points(x3d):
+        vertices = '\n'.join(vertex_fmt.format(*point) for point in triangle)
+        triangle_strs.append(facet_fmt.format(vertices))
+
+    return solid_fmt.format('\n'.join(triangle_strs))
+
+
+VERTEX_RE = re.compile(r"\bvertex\s+(?P<x>[-+]?\d*\.?\d+([eE][-+]?\d+)?)\s+(?P<y>[-+]?\d*\.?\d+([eE][-+]?\d+)?)\s+(?P<z>[-+]?\d*\.?\d+([eE][-+]?\d+)?)\b", re.MULTILINE)
+
+
+def _stl_ascii_to_vertices(stl_str):
+    for match in VERTEX_RE.finditer(stl_str):
+        d = match.groupdict()
+        yield [float(d[dim]) for dim in 'xyz']
+
+
+def _stl_ascii_to_indexed_triangles(stl_str):
+    vertices = []
+    triangles = []
+    for triangle in _chunk(_stl_ascii_to_vertices(stl_str), 3):
+        this_triangle = []
+        for vertex in triangle:
+            this_triangle.append(len(vertices))
+            vertices.append(vertex)
+        triangles.append(this_triangle)
+
+    return vertices, triangles
 
 
 volume_type = {
@@ -453,6 +539,59 @@ def add_volume(request, project_id):
         "success": True,
         "volume_id": volume_id
     })
+
+
+@api_view(['POST'])
+@requires_user_role([UserRole.Import])
+def import_volumes(request, project_id):
+    """Import a neuron modeled by a skeleton from an uploaded file.
+
+        Currently only SWC representation is supported.
+        ---
+        consumes: multipart/form-data
+        parameters:
+          - name: file
+            required: true
+            description: A skeleton representation file to import.
+            paramType: body
+            dataType: File
+        type:
+            neuron_id:
+                type: integer
+                required: true
+                description: ID of the neuron used or created.
+            skeleton_id:
+                type: integer
+                required: true
+                description: ID of the imported skeleton.
+            node_id_map:
+                required: true
+                description: >
+                    An object whose properties are node IDs in the import file and
+                    whose values are IDs of the created nodes.
+        """
+    fnames_to_id = dict()
+    for uploadedfile in request.FILES.values():
+        if uploadedfile.size > settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:  # todo: use different setting
+            return HttpResponse(
+                'File too large. Maximum file size is {} bytes.'.format(settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE),
+                status=413)
+
+        filename = uploadedfile.name
+        name, extension = os.path.splitext(filename)
+        if extension.lower() == ".stl":
+            stl_str = uploadedfile.read().decode('utf-8')
+            vertices, triangles = _stl_ascii_to_indexed_triangles(stl_str)
+            mesh = TriangleMeshVolume(
+                project_id, request.user.id,
+                {"type": "trimesh", "title": name, "mesh": [vertices, triangles]}
+            )
+            fnames_to_id[filename] = mesh.save()
+        else:
+            return HttpResponse('File type "{}" not understood. Known file types: stl'.format(extension), status=415)
+
+    return JsonResponse(fnames_to_id)
+
 
 @api_view(['GET'])
 @requires_user_role([UserRole.Browse])

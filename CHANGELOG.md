@@ -86,7 +86,8 @@ Reconstruction sampler:
   Sampler tab.
 
 - Both the domain table and the interval table now show the cable length of each
-  domain and interval in nanometers, respectively.
+  domain and interval in nanometers, respectively. Additionally, the interval
+  tab also show the aggregated cable length of all completed intervals.
 
 Tracing layer:
 

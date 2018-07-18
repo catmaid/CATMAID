@@ -1402,12 +1402,19 @@
     a.onclick = function() {
       CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
     };
-    p3.appendChild(document.createTextNode(' Sampler: #' + samplerId +
-        ' Domain: #' + domain.id + ' Interval length: ' + intervalLength + 'nm'));
+    var completedIntervalCable = '...';
+    p3.appendChild(document.createTextNode(', Sampler: #' + samplerId +
+        ', Domain: #' + domain.id + ', Interval length: ' + intervalLength +
+        'nm, Completed interval cable: '));
+    var completedIntervalSpan = p3.appendChild(document.createElement('span'));
+    completedIntervalSpan.setAttribute('data-type', 'completed-sum');
+    completedIntervalSpan.appendChild(document.createTextNode('...'));
 
     // Create a data table with all available domains or a filtered set
     var table = document.createElement('table');
     content.appendChild(table);
+
+    var cableMap = new Map();
 
     var datatable = $(table).DataTable({
       dom: "lrfhtip",
@@ -1427,6 +1434,36 @@
                       widget.state['arbor'] = result;
                     });
                 }
+
+                let completedStateId = null;
+                for (let stateId in self.possibleStates) {
+                  if (self.possibleStates[stateId].name === 'completed') {
+                    completedStateId = parseInt(stateId, 10);
+                    break;
+                  }
+                }
+                if (completedStateId === null) {
+                  CATMAID.warn('Couldn\'t find ID of completed interval state');
+                }
+
+                // Update cable length map and find completed sum
+                cableMap.clear();
+                var completedSum = 0;
+                for (let i=0; i<result.length; ++i) {
+                  let interval = result[i];
+                  let arbor = widget.state['arbor'];
+                  let intervalLength = arbor.arbor.cableLengthBetweenNodes(arbor.positions,
+                    interval.start_node_id, interval.end_node_id);
+                  cableMap.set(interval.id, intervalLength);
+                  if (interval.state_id === completedStateId) {
+                    completedSum += intervalLength;
+                  }
+                }
+
+                // Update interval length span element
+                $(completedIntervalSpan).empty();
+                completedIntervalSpan.appendChild(document.createTextNode(
+                    Math.round(completedSum) + 'nm'));
               })
               .then(callback.bind(window, {
                 draw: data.draw,
@@ -1480,10 +1517,11 @@
           class: "cm-center",
           render: function(data, type, row, meta) {
             // Create arbor for domain and measure cable length
-            let arbor = widget.state['arbor'];
-            let intervalLength = arbor.arbor.cableLengthBetweenNodes(arbor.positions,
-              row.start_node_id, row.end_node_id);
-            return Math.round(intervalLength);
+            if (cableMap.has(row.id)) {
+              return Math.round(cableMap.get(row.id));
+            } else {
+              return '...';
+            }
           }
         },
         {

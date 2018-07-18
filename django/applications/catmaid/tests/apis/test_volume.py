@@ -142,3 +142,23 @@ class VolumeTests(CatmaidApiTestCase):
                 'min': {'x': 0, 'y': 0, 'z': 0},
                 'max': {'x': 1, 'y': 1, 'z': 1}
             })
+
+    def test_export_stl(self):
+        self.fake_authentication()
+        assign_perm('can_import', self.test_user, self.test_project)
+        with open(CUBE_PATH, 'rb') as f:
+            response = self.client.post(
+                "/{}/volumes/import".format(self.test_project_id),
+                {"cube.stl": f}
+            )
+
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(parsed_response), 1)
+        self.assertTrue("cube.stl" in parsed_response)
+
+        cube_id = parsed_response["cube.stl"]
+
+        response = self.client.get("/{}/volumes/{}/export".format(self.test_project_id, cube_id), accept="model/x.stl-ascii")
+
+        self.assertEqual(response.status_code, 200)

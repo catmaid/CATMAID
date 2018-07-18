@@ -595,6 +595,22 @@ def import_volumes(request, project_id):
 
 @api_view(['GET'])
 @requires_user_role([UserRole.Browse])
+def export_volume(request, project_id, volume_id):
+    acceptable = ['model/stl', 'model/x.stl-ascii']
+    file_type = request.META['HTTP_ACCEPT']
+    if file_type in acceptable:
+        details = get_volume_details(project_id, volume_id)
+        ascii_details = _x3d_to_stl_ascii(details['mesh'])
+        response = HttpResponse(content_type=file_type)
+        response.write(ascii_details)
+        return response
+    else:
+        return HttpResponse('File type "{}" not understood. Known file types: {}'.format(file_type, ', '.join(acceptable)), status=415)
+
+
+
+@api_view(['GET'])
+@requires_user_role([UserRole.Browse])
 def intersects(request, project_id, volume_id):
     """Test if a point intersects with the bounding box of a given volume.
     ---

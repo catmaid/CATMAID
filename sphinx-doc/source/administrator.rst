@@ -15,4 +15,5 @@ Administrator Documentation
    history_tables
    docker
    userprofiles
+   additional_backends
    admin_faq

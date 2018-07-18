@@ -1420,6 +1420,14 @@
             self.availableIntervals = result;
             widget.state['domainIntervals'] = result;
             return self.ensureMetadata()
+              .then(function() {
+                if (!widget.state['arbor']) {
+                  return CATMAID.Sampling.getArbor(skeletonId)
+                    .then(function(result) {
+                      widget.state['arbor'] = result;
+                    });
+                }
+              })
               .then(callback.bind(window, {
                 draw: data.draw,
                 data: result
@@ -1464,6 +1472,18 @@
             } else {
               return row.end_node_id;
             }
+          }
+        },
+        {
+          title: "Cable length (nm)",
+          orderable: true,
+          class: "cm-center",
+          render: function(data, type, row, meta) {
+            // Create arbor for domain and measure cable length
+            let arbor = widget.state['arbor'];
+            let intervalLength = arbor.arbor.cableLengthBetweenNodes(arbor.positions,
+              row.start_node_id, row.end_node_id);
+            return Math.round(intervalLength);
           }
         },
         {

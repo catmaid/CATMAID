@@ -94,8 +94,8 @@ class Exporter():
             neuron_info, num_total_records = get_annotated_entities(self.project,
                     query_params, relations, classes, ['neuron'], with_skeletons=True)
 
-            logger.info("Found {} neurons with the following annotations: {}".format(
-                    num_total_records, ", ".join(self.required_annotations)))
+            logger.info("Found {} neurons with the following exclusion annotations: {}".format(
+                    num_total_records, ", ".join(self.excluded_annotations)))
 
             exclude_skeleton_id_constraints = set(chain.from_iterable(
                     [n['skeleton_ids'] for n in neuron_info]))

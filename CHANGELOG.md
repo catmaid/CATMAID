@@ -85,6 +85,8 @@ Reconstruction sampler:
   segment), then create a new short interval. This option is available in the
   Sampler tab.
 
+- The domain table now shows the cable length of each domain in nanometers.
+
 Tracing layer:
 
 - The new option "Update tracing data while panning" allows to configure weather

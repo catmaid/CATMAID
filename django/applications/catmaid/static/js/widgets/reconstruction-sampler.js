@@ -985,6 +985,14 @@
           .then(function(result) {
             self.availableDomains = result;
             return self.ensureMetadata()
+              .then(function() {
+                if (!widget.state['arbor']) {
+                  return CATMAID.Sampling.getArbor(skeletonId)
+                    .then(function(result) {
+                      widget.state['arbor'] = result;
+                    });
+                }
+              })
               .then(callback.bind(window, {
                 draw: data.draw,
                 data: result
@@ -1015,6 +1023,18 @@
             } else {
               return row.start_node_id;
             }
+          }
+        },
+        {
+          title: "Cable length (nm)",
+          orderable: true,
+          class: "cm-center",
+          render: function(data, type, row, meta) {
+            // Create arbor for domain and measure cable length
+            let arbor = widget.state['arbor'];
+            let domainArbor = CATMAID.Sampling.domainArbor(arbor.arbor, row.start_node_id,
+                row.ends.map(function(end) { return end.node_id; }));
+            return Math.round(domainArbor.cableLength(arbor.positions));
           }
         },
         {

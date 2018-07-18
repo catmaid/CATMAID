@@ -318,6 +318,12 @@ var requestQueue = new RequestQueue();
     if (status >= 200 && status <= 204 &&
         (!isTextResponse || typeof text === 'string' || text instanceof String)) {
       return text;
+
+    } else if (status === 502) { // Bad Gateway
+      var error = new CATMAID.NetworkAccessError("CATMAID server unreachable",
+          "Please wait or try to reload");
+      error.statusCode = status;
+      throw error;
     } else {
       var error = new CATMAID.Error("The server returned an unexpected status: " + status);
       error.statusCode = status;

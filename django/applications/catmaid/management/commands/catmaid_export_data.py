@@ -237,7 +237,7 @@ class Exporter():
                         relation_id=relations['labeled_as'],
                         treenode__skeleton_id__in=skeleton_id_constraints)
                 tags = [t.class_instance for t in tag_links]
-                tag_names = [t.name for t in tags]
+                tag_names = sorted(set([t.name for t in tags]))
 
                 self.to_serialize.append(tags)
                 self.to_serialize.append(tag_links)

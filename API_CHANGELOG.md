@@ -51,6 +51,9 @@ included in this changelog.
   result set by their labels. This effectively allows querying treenodes and
   skeletons based on linked labels.
 
+- `GET /{project_id/samplers/{sampler_id}/domains/`:
+  Returns now also end nodes for each domain.
+
 ### Deprecations
 
 None.

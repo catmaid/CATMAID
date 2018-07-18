@@ -666,7 +666,8 @@ def list_sampler_domains(request, project_id, sampler_id):
         required: true
     """
     sampler_id = int(sampler_id)
-    domains = SamplerDomain.objects.filter(sampler_id=sampler_id)
+    domains = SamplerDomain.objects.filter(sampler_id=sampler_id) \
+            .prefetch_related('samplerdomainend_set')
 
     return JsonResponse([{
        'id': d.id,
@@ -676,6 +677,10 @@ def list_sampler_domains(request, project_id, sampler_id):
        'start_node_id': d.start_node_id,
        'type_id': d.domain_type_id,
        'user_id': d.user_id,
+       'ends': [{
+            'id': e.id,
+            'node_id': e.end_node_id,
+        } for e in d.samplerdomainend_set.all()]
     } for d in domains], safe=False)
 
 

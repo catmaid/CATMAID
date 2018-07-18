@@ -134,6 +134,10 @@ Miscellaneous:
 - CLI exporter: the new --excluded-annotation parameter can be used to exclude
   neurons from the export based on annotations.
 
+- CLI exporter: placeholder nodes are now exported as completely new skeletons
+  that are not linked to their original skeleton, unless it is part of the set
+  of exported skeletons or the --original-placeholder-context flag is provided.
+
 
 ### Bug fixes
 

@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 from datetime import datetime
 from itertools import chain
+from django.db import connection
 from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
 from catmaid.control.neuron_annotations import (get_annotated_entities,
@@ -49,6 +50,7 @@ class Exporter():
         self.export_users = options['export_users']
         self.required_annotations = options['required_annotations']
         self.excluded_annotations = options['excluded_annotations']
+        self.original_placeholder_context = options['original_placeholder_context']
         self.target_file = options.get('file', None)
         if self.target_file:
             self.target_file = self.target_file.format(project.id)
@@ -298,6 +300,16 @@ class Exporter():
             logger.info("Exporting {} treenodes in {} skeletons and {} neurons".format(
                     len(exported_tids), len(skeletons), len(neurons)))
 
+        # Get current maximum concept ID
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT MAX(id) FROM concept
+        """)
+        new_skeleton_id = cursor.fetchone()[0] + 1
+        new_neuron_id = new_skeleton_id + 1
+        new_model_of_id = new_skeleton_id + 2
+        new_concept_offset = 3
+        new_neuron_name_id = 1
         if skeleton_id_constraints:
             if connector_ids:
                 # Add addition placeholder treenodes
@@ -306,23 +318,85 @@ class Exporter():
                     .exclude(skeleton_id__in=skeleton_id_constraints) \
                     .values_list('treenode', flat=True))
                 extra_tids = connector_tids - exported_tids
-                logger.info("Exporting %s placeholder nodes" % len(extra_tids))
-                self.to_serialize.append(Treenode.objects.filter(id__in=extra_tids))
+                if self.original_placeholder_context:
+                    logger.info("Exporting %s placeholder nodes" % len(extra_tids))
+                else:
+                    logger.info("Exporting %s placeholder nodes with first new class instance ID %s" % (len(extra_tids), new_skeleton_id))
+
+                placeholder_treenodes = Treenode.objects.filter(id__in=extra_tids)
+                # Placeholder nodes will be transformed into root nodes of new
+                # skeletons.
+                new_skeleton_cis = []
+                new_neuron_cis = []
+                new_model_of_links = []
+                for pt in placeholder_treenodes:
+                    pt.parent_id = None
+
+                    if not self.original_placeholder_context:
+                        pt.skeleton_id = new_skeleton_id
+
+                        # Add class instances for both the skeleton and neuron for
+                        # the placeholder node skeleton
+                        new_skeleton_ci = ClassInstance(
+                                id = new_skeleton_id,
+                                user_id=pt.user_id,
+                                creation_time=pt.creation_time,
+                                edition_time=pt.edition_time,
+                                project_id=pt.project_id,
+                                class_column_id=classes['skeleton'],
+                                name='Placeholder Skeleton ' + str(new_neuron_name_id))
+
+                        new_neuron_ci = ClassInstance(
+                                id = new_neuron_id,
+                                user_id=pt.user_id,
+                                creation_time=pt.creation_time,
+                                edition_time=pt.edition_time,
+                                project_id=pt.project_id,
+                                class_column_id=classes['neuron'],
+                                name='Placeholder Neuron ' + str(new_neuron_name_id))
+
+
+                        new_model_of_link = ClassInstanceClassInstance(
+                                id=new_model_of_id,
+                                user_id=pt.user_id,
+                                creation_time=pt.creation_time,
+                                edition_time=pt.edition_time,
+                                project_id=pt.project_id,
+                                relation_id=relations['model_of'],
+                                class_instance_a_id=new_skeleton_id,
+                                class_instance_b_id=new_neuron_id)
+
+                        new_skeleton_id += new_concept_offset
+                        new_neuron_id += new_concept_offset
+                        new_model_of_id += new_concept_offset
+                        new_neuron_name_id += 1
+
+                        new_skeleton_cis.append(new_skeleton_ci)
+                        new_neuron_cis.append(new_neuron_ci)
+                        new_model_of_links.append(new_model_of_link)
+
+                if placeholder_treenodes and not self.original_placeholder_context:
+                    self.to_serialize.append(new_skeleton_cis)
+                    self.to_serialize.append(new_neuron_cis)
+                    self.to_serialize.append(new_model_of_links)
+
+                self.to_serialize.append(placeholder_treenodes)
 
                 # Add additional skeletons and neuron-skeleton links
-                extra_skids = set(Treenode.objects.filter(id__in=extra_tids,
-                        project=self.project).values_list('skeleton_id', flat=True))
-                self.to_serialize.append(ClassInstance.objects.filter(id__in=extra_skids))
+                if self.original_placeholder_context:
+                    extra_skids = set(Treenode.objects.filter(id__in=extra_tids,
+                            project=self.project).values_list('skeleton_id', flat=True))
+                    self.to_serialize.append(ClassInstance.objects.filter(id__in=extra_skids))
 
-                extra_links = ClassInstanceClassInstance.objects \
-                        .filter(project=self.project,
-                                class_instance_a__in=extra_skids,
-                                relation=relations['model_of'])
-                self.to_serialize.append(extra_links)
+                    extra_links = ClassInstanceClassInstance.objects \
+                            .filter(project=self.project,
+                                    class_instance_a__in=extra_skids,
+                                    relation=relations['model_of'])
+                    self.to_serialize.append(extra_links)
 
-                extra_nids = extra_links.values_list('class_instance_b', flat=True)
-                self.to_serialize.append(ClassInstance.objects.filter(
-                    project=self.project, id__in=extra_nids))
+                    extra_nids = extra_links.values_list('class_instance_b', flat=True)
+                    self.to_serialize.append(ClassInstance.objects.filter(
+                        project=self.project, id__in=extra_nids))
 
         # Export users, either completely or in a reduced form
         seen_user_ids = set()
@@ -412,6 +486,8 @@ class Command(BaseCommand):
             'skeletons from the export. Meta-annotations can be used as well.')
         parser.add_argument('--connector-placeholders', dest='connector_placeholders',
             action='store_true', help='Should placeholder nodes be exported')
+        parser.add_argument('--original-placeholder-context', dest='original_placeholder_context',
+            action='store_true', default=False, help='Whether or not exported placeholder nodes refer to their original skeltons and neurons')
 
     def ask_for_project(self, title):
         """ Return a valid project object.

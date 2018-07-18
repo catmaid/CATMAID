@@ -67,12 +67,20 @@
               if (0 === files.length) {
                 CATMAID.error("Choose at least one file!");
               } else {
-                Array.from(files).forEach(this.addVolumeFromFile);
+                this.addVolumesFromSTL(Array.from(files).filter(function(file){
+                  if (file.name.endsWith("stl")){
+                    return true;
+                  } else {
+                    this.addVolumeFromFile(file);
+                  }
+                },this));
               }
             }).bind(this));
+        hiddenFileButton.setAttribute('multiple', true);
         controls.appendChild(hiddenFileButton);
 
         var openFile = document.createElement('button');
+        openFile.setAttribute('title','Supports Json and ascii-stl files');
         openFile.appendChild(document.createTextNode('Add from file'));
         openFile.onclick = hiddenFileButton.click.bind(hiddenFileButton);
         controls.appendChild(openFile);
@@ -563,6 +571,21 @@
       };
       reader.readAsText(file);
   };
+
+  VolumeManagerWidget.prototype.addVolumesFromSTL = function(files) {
+    var self = this;
+    var data = new FormData();
+    files.forEach(function(file){
+      data.append(file.name, file, file.name)
+    });
+    return new Promise(function(resolve, reject) {
+      CATMAID.fetch(project.id + "/volumes/import", "POST", data, undefined, undefined, undefined, undefined, {"Content-type" : null})
+        .then(function(data){
+          self.redraw();
+        })
+        .catch(CATMAID.handleError);
+    });
+  }
 
   /**
    * Add a new  volume. Edit it its properties directly in the widget.

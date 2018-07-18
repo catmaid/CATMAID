@@ -484,6 +484,7 @@
           data: "id",
           title: "Id",
           orderable: false,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             return row.id;
           }
@@ -492,6 +493,7 @@
           data: "skeleton_id",
           title: "Skeleton",
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             var skeletonId = row.skeleton_id;
             var name = CATMAID.NeuronNameService.getInstance().getName(skeletonId);
@@ -507,6 +509,7 @@
           data: "user_id",
           title: "User",
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             return CATMAID.User.safe_get(row.user_id).login;
           }
@@ -516,6 +519,7 @@
           title: "Created on (UTC)",
           searchable: true,
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             return formatDate(new Date(row.creation_time * 1000));
           }
@@ -524,17 +528,19 @@
           data: "edition_time",
           title: "Last edited on (UTC)",
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             return formatDate(new Date(row.edition_time * 1000));
           }
         },
-        {data: "interval_length", title: "Interval length", orderable: true},
-        {data: "interval_error", title: "Max error", orderable: true},
-        {data: "leaf_segment_handling", title: "Leaf handling", orderable: true},
+        {data: "interval_length", title: "Interval length", orderable: true, class: 'cm-center'},
+        {data: "interval_error", title: "Max error", orderable: true, class: 'cm-center'},
+        {data: "leaf_segment_handling", title: "Leaf handling", orderable: true, class: 'cm-center'},
         {
           data: "create_interval_boundaries",
           title: "Create interval boundaries",
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             if (type === 'display') {
               return row.create_interval_boundaries ? "Yes" : "No";
@@ -547,6 +553,7 @@
           data: "review_required",
           title: "Review required",
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             if (type === 'display') {
               return row.review_required ? "Yes" : "No";
@@ -559,6 +566,7 @@
           data: "state",
           title: "State",
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             var state = self.possibleStates[row.state_id];
             return state ? state.name : ("unknown (" + row.state_id + ")");
@@ -567,6 +575,7 @@
         {
           title: "Action",
           orderable: false,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             return '<a href="#" data-action="next">Open</a> <a href="#" data-sampler-id="' +
                 row.id + '" data-action="delete">Delete</a>';
@@ -989,6 +998,7 @@
           data: "id",
           title: "Id",
           orderable: false,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             return row.id;
           }
@@ -997,6 +1007,7 @@
           data: "start_node_id",
           title: "Start",
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             if ("display") {
               return '<a href="#" data-action="select-node" data-node-id="' +
@@ -1010,6 +1021,7 @@
           data: "user_id",
           title: "User",
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             return CATMAID.User.safe_get(row.user_id).login;
           }
@@ -1019,6 +1031,7 @@
           title: "Created on (UTC)",
           searchable: true,
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             return formatDate(new Date(row.creation_time * 1000));
           }
@@ -1027,6 +1040,7 @@
           data: "edition_time",
           title: "Last edited on (UTC)",
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             return formatDate(new Date(row.edition_time * 1000));
           }
@@ -1035,6 +1049,7 @@
           data: "type",
           title: " Type",
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             var type = self.possibleTypes[row.type_id];
             return type ? type.name : ("unknown (" + row.type_id + ")");
@@ -1044,6 +1059,7 @@
           data: "parent_interval_id",
           title: " Parent interval",
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             if (row.parent_interval_id) {
               return row.parent_interval_id;
@@ -1055,6 +1071,7 @@
         {
           title: "Action",
           orderable: false,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             return '<a href="#" data-action="next">Open</a>';
           }
@@ -1396,6 +1413,7 @@
           data: "id",
           title: "Id",
           orderable: false,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             return row.id;
           }
@@ -1404,6 +1422,7 @@
           data: "start_node_id",
           title: "Start",
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             if ("display") {
               return '<a href="#" data-action="select-node" data-node-id="' +
@@ -1417,6 +1436,7 @@
           data: "end_node_id",
           title: "End",
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             if ("display") {
               return '<a href="#" data-action="select-node" data-node-id="' +
@@ -1430,6 +1450,7 @@
           data: "user_id",
           title: "User",
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             return CATMAID.User.safe_get(row.user_id).login;
           }
@@ -1439,6 +1460,7 @@
           title: "Created on (UTC)",
           searchable: true,
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             return formatDate(new Date(row.creation_time * 1000));
           }
@@ -1447,6 +1469,7 @@
           data: "edition_time",
           title: "Last edited on (UTC)",
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             return formatDate(new Date(row.edition_time * 1000));
           }
@@ -1455,6 +1478,7 @@
           data: "state_id",
           title: "State",
           orderable: true,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             var state = self.possibleStates[row.state_id];
             return state ? state.name : ("unknown (" + row.state_id + ")");
@@ -1463,6 +1487,7 @@
         {
           title: "Action",
           orderable: false,
+          class: "cm-center",
           render: function(data, type, row, meta) {
             return '<a href="#" data-action="next">Open</a> <a href="#" data-action="review">Review</a> <a href="#" data-action="reset">Reset</a>';
           }

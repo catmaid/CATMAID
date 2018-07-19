@@ -137,7 +137,7 @@ def labels_for_node(request, project_id=None, node_type=None, node_id=None):
       description: ID of node to list labels for
       required: true
     type:
-    - type: arry
+    - type: array
       items:
         type: string
       description: Labels used on a particular node

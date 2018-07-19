@@ -973,13 +973,18 @@ Arbor.prototype.cableLength = function(positions) {
 /**
  * Return the cable length between nodes A and B in this arbor.
  */
-Arbor.prototype.cableLengthBetweenNodes = function(positions, nodeA, nodeB) {
-  let arbor = this.clone();
+Arbor.prototype.cableLengthBetweenNodes = function(positions, nodeA, nodeB, noReroot) {
+  let arbor;
+  if (noReroot) {
+    // If the order of node A and B are known, rerooting can be omitted.
+    arbor = this;
+  } else {
+    // Reroot arbor to node A for easy upstream traversal from node B.
+    arbor = this.clone();
+    arbor.reroot(nodeA);
+  }
 
-  // Reroot arbor to node A for easy upstream traversal from node B.
-  arbor.reroot(nodeA);
-
-  // Compuet distance from node B to upstream node A.
+  // Compute distance from node B to upstream node A.
   let distance = 0;
   let childPosition = positions[nodeB];
   let parent = arbor.edges[nodeB];

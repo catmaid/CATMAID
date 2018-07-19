@@ -108,6 +108,9 @@ Miscellaneous:
   be inverted using the "Animate section change by default" option in the
   Settings Widget.
 
+- Connectivity widget: annotations can now be used for additional filtering per
+  partner table.
+
 - Split/merge dialog: the node count of the individual parts is now shown when
   hovering over their cable length information.
 

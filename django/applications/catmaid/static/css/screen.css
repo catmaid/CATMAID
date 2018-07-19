@@ -817,6 +817,10 @@ table.neuron_annotations_query_fields {
   justify-content: space-between;
 }
 
+.connectivity_widget .connectivity_table_actions input[type=search] {
+  margin-left: 0.2em;
+}
+
 .connectivity_widget .dataTables_filter {
   float: none;
   text-align: left;

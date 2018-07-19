@@ -40,6 +40,9 @@
     // A set of nodes allowed by node filters
     this.allowedNodes = new Set();
 
+    // A mapping from partner skeletons to annotations
+    this.annotationMapping = null;
+
     // Find default page length that is closest to 50
     this.pageLength = CATMAID.pageLengthOptions.reduce(function(bestMatch, l) {
       if (null === bestMatch || (l > bestMatch && l <= 50)) {
@@ -482,6 +485,10 @@
     return models;
   };
 
+  SkeletonConnectivity.prototype.getSkeletons = function() {
+    return Object.keys(this.getSkeletonModels()).map(m => parseInt(m, 10));
+  };
+
   /**
    * Return true if the given skeleton is a partner.
    */
@@ -567,6 +574,16 @@
       partnerSetIds.push('attachments');
     }
 
+    // Get annotation filters
+    let annotationFilterInUse = false;
+    let annotationFilterMap = this.partnerSets.reduce(function(m, p) {
+      m[p.id] = p.annotationFilter;
+      if (p.annotationFilter) {
+        annotationFilterInUse = true;
+      }
+      return m;
+    }, {});
+
     var self = this;
 
     CATMAID.fetch(project.id + '/skeletons/connectivity', 'POST', {
@@ -584,8 +601,12 @@
       // Create partner sets
       partnerSetIds.forEach(function(psId) {
         var type = partnerSetTypes[psId];
-        self.addPartnerSet(new PartnerSet(psId, type.name, type.rel,
-            json[psId], type.pTitle, type.ctrShort));
+        let ps = new PartnerSet(psId, type.name, type.rel, json[psId],
+            type.pTitle, type.ctrShort);
+        if (annotationFilterMap[psId]) {
+          ps.annotationFilter = annotationFilterMap[psId];
+        }
+        self.addPartnerSet(ps);
 
         var reviewKey = psId + '_reviewers';
         json[reviewKey].forEach(self.reviewers.add.bind(self.reviewers));
@@ -601,18 +622,24 @@
         }
       }, newModels);
 
+      var prepare = self.annotationFilterInUse ?
+          self._updateAnnotationMap() : Promise.resolve();
+
       // Make all partners known to the name service
-      CATMAID.NeuronNameService.getInstance().registerAll(self, newModels, function() {
-        self.redraw();
-        // Create model container and announce new models
-        for (var skid in newModels) {
-          newModels[skid] = self.makeSkeletonModel(skid,
-              self.isInPartnerSet(skid, 'incoming'),
-              self.isInPartnerSet(skid, 'outgoing'),
-              false);
-        }
-        self.triggerAdd(newModels);
-      });
+      prepare.then(function() {
+        CATMAID.NeuronNameService.getInstance().registerAll(self, newModels, function() {
+          self.redraw();
+          // Create model container and announce new models
+          for (var skid in newModels) {
+            newModels[skid] = self.makeSkeletonModel(skid,
+                self.isInPartnerSet(skid, 'incoming'),
+                self.isInPartnerSet(skid, 'outgoing'),
+                false);
+          }
+          self.triggerAdd(newModels);
+        });
+      })
+      .catch(CATMAID.handleError);
     })
     .catch(function(error) {
       if (error !== 'REPLACED') {
@@ -805,7 +832,8 @@
      * Support function for creating a partner table.
      */
     var create_table = function(skids, skeletons, partnerSet,
-        hidePartnerThreshold, reviewFilter, nameInHeader, rotateHeader) {
+        hidePartnerThreshold, reviewFilter, nameInHeader, rotateHeader,
+        annotationMapping) {
 
       var thresholds = partnerSet.thresholds;
       var partners = partnerSet.getSynCountSortedPartners();
@@ -959,6 +987,14 @@
           var count = filter_synapses(partner.skids[skid], thresholds.confidence[skid]);
           return count < (thresholds.count[skid] || 1);
         });
+
+        // If an annotation filter is set, only allow partners with this
+        // annotation.
+        if (partnerSet.annotationFilter) {
+          let annotations = annotationMapping.get(partner.id);
+          ignore = ignore || !annotations || annotations.indexOf(partnerSet.annotationFilter) == -1;
+        }
+
         ignore = ignore || partner.synaptic_count < thresholds.count['sum'];
         // Ignore partner if it has only fewer nodes than a threshold
         ignore = ignore || partner.num_nodes < hidePartnerThreshold;
@@ -1493,7 +1529,7 @@
       var table = create_table.call(this, this.ordered_skeleton_ids,
         this.skeletons, partnerSet, this.hidePartnerThreshold,
         this.reviewFilter, this.showNeuronNameInHeader,
-        this.rotateColumnHeaders);
+        this.rotateColumnHeaders, this.annotationMapping);
       tableContainer.append(table);
 
       // Initialize datatable
@@ -1596,6 +1632,22 @@
               }
             }))
           )
+          .append($('<span />')
+            .attr('title', 'An annotation')
+            .append($('<input type="search" placeholder="Annotation" />')
+              .on('search', function() {
+                partnerSet.annotationFilter = this.value.length === 0 ? null : this.value;
+                var prepare = partnerSet.annotationFilter ?
+                    widget._updateAnnotationMap() : Promise.resolve();
+                prepare
+                  .then(function() {
+                    widget.createConnectivityTable();
+                  })
+                  .catch(CATMAID.handleError);
+              })
+              .attr('data-role', 'annotation-filter')
+              .val(partnerSet.annotationFilter || ''))
+          )
         )
         // Add table export buttons.
         .append($('<div class="dataTables_export"></div>').append(
@@ -1658,6 +1710,10 @@
             widget.update();
           };
         })(this));
+
+    // Add annotation auto-completion
+    CATMAID.annotations.add_autocomplete_to_input(
+        $('input[data-role=annotation-filter]', tables));
 
     $('.dataTables_wrapper', tables).css('min-height', 0);
 
@@ -2045,6 +2101,38 @@
         self.update();
       })
       .catch(CATMAID.handleError);
+  };
+
+  /**
+   * Update the local annotation cache.
+   */
+  SkeletonConnectivity.prototype._updateAnnotationMap = function(force) {
+    var get;
+    if (!this.annotationMapping || force) {
+      // Get all data that is needed for the fallback list
+      get = CATMAID.fetch(project.id + '/skeleton/annotationlist', 'POST', {
+            skeleton_ids: this.getSkeletons(),
+            metaannotations: 0,
+            neuronnames: 0,
+          })
+        .then((function(json) {
+          // Store mapping and update UI
+          this.annotationMapping = new Map();
+          for (var skeletonID in json.skeletons) {
+            // We know that we want to use this for filtering, so we can store
+            // the annotation names directly.
+            var annotations = json.skeletons[skeletonID].annotations.map(function(a) {
+              return json.annotations[a.id];
+            });
+            this.annotationMapping.set(parseInt(skeletonID, 10), annotations);
+          }
+          return this.annotationMapping;
+        }).bind(this));
+    } else {
+      get = Promise.resolve(this.annotationMapping);
+    }
+
+    return get;
   };
 
   // Make skeleton connectivity widget available in CATMAID namespace

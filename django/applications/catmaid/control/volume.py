@@ -544,32 +544,25 @@ def add_volume(request, project_id):
 @api_view(['POST'])
 @requires_user_role([UserRole.Import])
 def import_volumes(request, project_id):
-    """Import a neuron modeled by a skeleton from an uploaded file.
+    """Import triangle mesh volumes from an uploaded files.
 
-        Currently only SWC representation is supported.
-        ---
-        consumes: multipart/form-data
-        parameters:
-          - name: file
-            required: true
-            description: A skeleton representation file to import.
-            paramType: body
-            dataType: File
-        type:
-            neuron_id:
-                type: integer
-                required: true
-                description: ID of the neuron used or created.
-            skeleton_id:
-                type: integer
-                required: true
-                description: ID of the imported skeleton.
-            node_id_map:
-                required: true
-                description: >
-                    An object whose properties are node IDs in the import file and
-                    whose values are IDs of the created nodes.
-        """
+    Currently only STL representation is supported.
+    ---
+    consumes: multipart/form-data
+    parameters:
+      - name: file
+        required: true
+        description: >
+            Triangle mesh file to import. Multiple files can be provided, with
+            each being imported as a mesh named by its base filename.
+        paramType: body
+        dataType: File
+    type:
+      '{base_filename}':
+        description: ID of the volume created from this file
+        type: integer
+        required: true
+    """
     fnames_to_id = dict()
     for uploadedfile in request.FILES.values():
         if uploadedfile.size > settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:  # todo: use different setting
@@ -596,6 +589,16 @@ def import_volumes(request, project_id):
 @api_view(['GET'])
 @requires_user_role([UserRole.Browse])
 def export_volume(request, project_id, volume_id, extension):
+    """Export volume as a triangle mesh file.
+
+    The extension of the endpoint and `ACCEPT` header media type are both used
+    to determine the format of the export.
+
+    Supported formats by extension and media type:
+    ##### STL
+      - `model/stl`, `model/x.stl-ascii`: ASCII STL
+
+    """
     acceptable = {
         'stl': ['model/stl', 'model/x.stl-ascii'],
     }

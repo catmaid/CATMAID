@@ -595,18 +595,24 @@ def import_volumes(request, project_id):
 
 @api_view(['GET'])
 @requires_user_role([UserRole.Browse])
-def export_volume(request, project_id, volume_id):
-    acceptable = ['model/stl', 'model/x.stl-ascii']
-    file_type = request.META['HTTP_ACCEPT']
-    if file_type in acceptable:
-        details = get_volume_details(project_id, volume_id)
-        ascii_details = _x3d_to_stl_ascii(details['mesh'])
-        response = HttpResponse(content_type=file_type)
-        response.write(ascii_details)
-        return response
+def export_volume(request, project_id, volume_id, extension):
+    acceptable = {
+        'stl': ['model/stl', 'model/x.stl-ascii'],
+    }
+    if extension.lower() in acceptable:
+        media_type = request.META['HTTP_ACCEPT']
+        if media_type in acceptable[extension]:
+            details = get_volume_details(project_id, volume_id)
+            ascii_details = _x3d_to_stl_ascii(details['mesh'])
+            response = HttpResponse(content_type=media_type)
+            response.write(ascii_details)
+            return response
+        else:
+            return HttpResponse('Media type "{}" not understood. Known types for {}: {}'.format(
+                media_type, extension, ', '.join(acceptable[extension])), status=415)
     else:
-        return HttpResponse('File type "{}" not understood. Known file types: {}'.format(file_type, ', '.join(acceptable)), status=415)
-
+        return HttpResponse('File type "{}" not understood. Known file types: {}'.format(
+            extension, ', '.join(acceptable.values())), status=415)
 
 
 @api_view(['GET'])

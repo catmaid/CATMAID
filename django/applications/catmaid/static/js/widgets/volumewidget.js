@@ -598,6 +598,7 @@
     return new Promise(function(resolve, reject) {
       CATMAID.fetch(project.id + "/volumes/import", "POST", data, undefined, undefined, undefined, undefined, {"Content-type" : null})
         .then(function(data){
+          CATMAID.msg("success", Object.keys(data).length + " mesh(s) loaded");
           self.redraw();
         })
         .catch(CATMAID.handleError);

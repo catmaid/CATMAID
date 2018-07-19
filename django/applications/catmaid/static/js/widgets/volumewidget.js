@@ -293,9 +293,9 @@
         $(table).on('click', 'a[data-action="export-STL"]', function() {
           var tr = $(this).closest("tr");
           var volume = self.datatable.row(tr).data();
-          CATMAID.fetch("/" + project.id + "/volumes/" + volume.id + "/export", "GET", undefined, true)
+          CATMAID.fetch("/" + project.id + "/volumes/" + volume.id + "/export", "GET", undefined, true, undefined, undefined, 'model/x.stl-ascii')
             .then(function(volume_file) {
-              var blob = new Blob([volume_file], {type: 'model/x.stl-ascii'})
+              var blob = new Blob([volume_file], {type: 'model/x.stl-ascii'});
               saveAs(blob, volume.name + '.stl');
             })
             .catch(CATMAID.handleError);
@@ -578,7 +578,7 @@
     var self = this;
     var data = new FormData();
     files.forEach(function(file){
-      data.append(file.name, file, file.name)
+      data.append(file.name, file, file.name);
     });
     return new Promise(function(resolve, reject) {
       $.ajax({
@@ -591,7 +591,7 @@
           self.redraw();
       });
     });
-  }
+  };
 
   /**
    * Add a new  volume. Edit it its properties directly in the widget.

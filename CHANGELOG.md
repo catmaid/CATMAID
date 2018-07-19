@@ -44,6 +44,13 @@ Volume widget:
 - A volume's bounding box can now be displayed using the "BB" checkbox that is
   available for visible volumes in the volume option panel.
 
+- New coloring option: X/Y/Z rainbow lookup table coloring for active stack
+  dimensions.
+
+- The active node respects now a node radius by default and is scaled to 1.5x
+  its size. This behavior can be disabled using the "Radius adaptive active
+  node" checkbox in the "View settings" tab.
+
 - Catalog export: use global neuron name for sorting and display by default.
 
 - Catalog export: support for multiple neurons per panel has been added
@@ -58,12 +65,8 @@ Volume widget:
 - Catalog export: in orthographic mode it is now possible to export a scale bar
   on either none, the first or all exported panels.
 
-- New coloring option: X/Y/Z rainbow lookup table coloring for active stack
-  dimensions.
-
-- The active node respects now a node radius by default and is scaled to 1.5x
-  its size. This behavior can be disabled using the "Radius adaptive active
-  node" checkbox in the "View settings" tab.
+- If the estimated size of the tiles to load for a Z plane exceeds 100 MB, users
+  are asked for confirmation.
 
 Connectivity matrix:
 
@@ -73,7 +76,7 @@ Connectivity matrix:
 - The new "Groups" tab allows to group rows, columns or both by their displayed
   name.
 
-- Connectivity matrix: state saving is now supported.
+- State saving is now supported.
 
 Reconstruction sampler:
 
@@ -116,12 +119,6 @@ Miscellaneous:
 - Split/merge dialog: the node count of the individual parts is now shown when
   hovering over their cable length information.
 
-- Boolean parameters for API endpoints are no case-insensitive, allowing the use
-  of regular boolean values in requests from Python.
-
-- 3D viewer: if the estimated size of the tiles to load for a Z plane exceeds
-  100 MB, users are asked for confirmation.
-
 - Review widget: the user who created the last node of each segment is now
   displayed in the review table. This allows to focus review on segments not
   created by oneself.
@@ -137,6 +134,9 @@ Miscellaneous:
 - Neuron name display: neighboring duplicate name components are now removed by
   the default. This setting can be adjusted from the Annotation sections in the
   Settings Widget.
+
+- Boolean parameters for API endpoints are no case-insensitive, allowing the use
+  of regular boolean values in requests from Python.
 
 - CLI exporter: the new --excluded-annotation parameter can be used to exclude
   neurons from the export based on annotations.

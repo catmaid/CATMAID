@@ -372,6 +372,9 @@ var requestQueue = new RequestQueue();
    * expects a JSON response. A promise is returned. The URL passed in needs to
    * be relative to the back-end URL.
    *
+   * @param relativeURL
+   * @param method
+   * @param data
    * @param {Boolean} raw     (Optional) If truthy, no JSON validation and
    *                          parsing is performed.
    * @param {String}  id      (Optional) An ID for the request, to be able to
@@ -380,8 +383,11 @@ var requestQueue = new RequestQueue();
    *                          is replaced by this one.
    * @param {String}  responseType (Optional) An expected response type for the
    *                               request (e.g. text or blob).
+   * @param {Object} headers  (Optional) If an object, set headers on the request
+   *                          with keys/ values like the object's. These override
+   *                          default headers and the queue's extraHeaders.
    */
-  CATMAID.fetch = function(relativeURL, method, data, raw, id, replace, responseType) {
+  CATMAID.fetch = function(relativeURL, method, data, raw, id, replace, responseType, headers) {
     method = method || 'GET';
     return new Promise(function(resolve, reject) {
       var url = CATMAID.makeURL(relativeURL);
@@ -402,7 +408,7 @@ var requestQueue = new RequestQueue();
         } catch (e) {
           reject(e);
         }
-      }, id, responseType);
+      }, id, responseType, headers);
     });
   };
 

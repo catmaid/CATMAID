@@ -60,18 +60,16 @@ var RequestQueue = function(originUrl, csrfToken)
     // Accept all content types as response. This is needed to not have Firefox
     // add its own defaults, which in turn triggers Django Rest Framework in the
     // back-end to return a website for views it covers.
-    xmlHttp.setRequestHeader( "Accept", "*/*" );
-    xmlHttp.setRequestHeader( "X-Requested-With", "XMLHttpRequest");
+    if (!("Accept" in item.headers)) xmlHttp.setRequestHeader( "Accept", "*/*" );
+    if (!("X-Requested-With" in item.headers)) xmlHttp.setRequestHeader( "X-Requested-With", "XMLHttpRequest");
     if ( item.method == "POST" || item.method == "PUT" )
     {
-      xmlHttp.setRequestHeader( "Accept", "*/*" );
-      xmlHttp.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
+      if (!("Content-type" in item.headers)) xmlHttp.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
       // xmlHttp.setRequestHeader( "Content-length", queue[ 0 ].data.length );
       // xmlHttp.setRequestHeader( "Connection", "close" );
     }
-    xmlHttp.setRequestHeader( "X-Requested-With", "XMLHttpRequest" );
     if (!RequestQueue.csrfSafe(item.method) && sameOrigin(item.request)) {
-      xmlHttp.setRequestHeader('X-CSRFToken', csrfToken);
+      if (!("X-CSRFToken" in item.headers)) xmlHttp.setRequestHeader('X-CSRFToken', csrfToken);
     }
 
     // Allow custom response types
@@ -79,7 +77,10 @@ var RequestQueue = function(originUrl, csrfToken)
 
     // Add extra headers
     for (var headerName in extraHeaders) {
-      xmlHttp.setRequestHeader(headerName, extraHeaders[headerName]);
+      if (!(headerName in item.headers)) xmlHttp.setRequestHeader(headerName, extraHeaders[headerName]);
+    }
+    for (var headerName in item.headers) {
+      if (item.headers.headerName !== null && item.headers.headerName !== undefined) xmlHttp.setRequestHeader(headerName, item.headers[headerName]);
     }
     xmlHttp.onreadystatechange = callback;
     xmlHttp.send( item.data );
@@ -140,9 +141,11 @@ var RequestQueue = function(originUrl, csrfToken)
         d,		//!< object  data		object with key=>value
         c,		//!< function callback
         id,		//!< string  id
-        responseType
+        responseType,
+        headers
     )
     {
+      headers = headers || {};
       switch( m )
       {
       case "POST":
@@ -154,7 +157,8 @@ var RequestQueue = function(originUrl, csrfToken)
             data : RequestQueue.encodeObject( d ),
             callback : c,
             id : id,
-            responseType: responseType
+            responseType: responseType,
+            headers: headers
           }
         );
         break;
@@ -171,7 +175,8 @@ var RequestQueue = function(originUrl, csrfToken)
             data : null,
             callback : c,
             id : id,
-            responseType: responseType
+            responseType: responseType,
+            headers: headers
           }
         );
       }
@@ -193,7 +198,8 @@ var RequestQueue = function(originUrl, csrfToken)
         d,		//!< object  data		object with key=>value
         c,		//!< funtion callback
         id,		//!< string  id
-        responseType
+        responseType,
+        headers
     )
     {
       var removedRequest;
@@ -207,7 +213,7 @@ var RequestQueue = function(originUrl, csrfToken)
           removedRequest[0].callback(200, JSON.stringify({'error': 'REPLACED'}), null);
         }
       }
-      this.register( r, m, d, c, id, responseType );
+      this.register( r, m, d, c, id, responseType, headers );
     },
 
     /**
@@ -260,6 +266,9 @@ RequestQueue.encodeArray = function( a, p ) {
 
 RequestQueue.encodeObject = function( o, p )
 {
+  if (o instanceof FormData) {
+    return o;
+  }
   var q = "";
   for ( var k in o )
   {

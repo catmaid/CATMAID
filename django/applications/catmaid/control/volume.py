@@ -15,7 +15,8 @@ from django.db import connection
 from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 
-from rest_framework.decorators import api_view
+from rest_framework import renderers
+from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.response import Response
 
 from six.moves import map
@@ -231,9 +232,8 @@ def _chunk(iterable, length, fn=None):
                 items = []
 
 
-def _x3d_to_points(self, fn=None):
-
-    indexed_triangle_set = ET.fromstring(self.x3d)
+def _x3d_to_points(x3d, fn=None):
+    indexed_triangle_set = ET.fromstring(x3d)
     assert indexed_triangle_set.tag == "IndexedTriangleSet"
     assert len(indexed_triangle_set) == 1
 
@@ -262,7 +262,7 @@ endfacet
     vertex_fmt = "vertex {} {} {}"
 
     triangle_strs = []
-    for triangle in _x3d_to_points(x3d):
+    for triangle in _chunk(_x3d_to_points(x3d), 3):
         vertices = '\n'.join(vertex_fmt.format(*point) for point in triangle)
         triangle_strs.append(facet_fmt.format(vertices))
 
@@ -586,7 +586,19 @@ def import_volumes(request, project_id):
     return JsonResponse(fnames_to_id)
 
 
+class AnyRenderer(renderers.BaseRenderer):
+    """A DRF renderer that returns the data directly with a wildcard media type.
+
+    This is useful for bypassing response content type negotiation.
+    """
+    media_type = '*/*'
+
+    def render(self, data, media_type=None, renderer_context=None):
+        return data
+
+
 @api_view(['GET'])
+@renderer_classes((AnyRenderer,))
 @requires_user_role([UserRole.Browse])
 def export_volume(request, project_id, volume_id, extension):
     """Export volume as a triangle mesh file.
@@ -603,7 +615,7 @@ def export_volume(request, project_id, volume_id, extension):
         'stl': ['model/stl', 'model/x.stl-ascii'],
     }
     if extension.lower() in acceptable:
-        media_type = request.META['HTTP_ACCEPT']
+        media_type = request.META.get('HTTP_ACCEPT')
         if media_type in acceptable[extension]:
             details = get_volume_details(project_id, volume_id)
             ascii_details = _x3d_to_stl_ascii(details['mesh'])

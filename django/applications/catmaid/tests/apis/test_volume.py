@@ -161,6 +161,6 @@ class VolumeTests(CatmaidApiTestCase):
 
         response = self.client.get(
             "/{}/volumes/{}/export.stl".format(self.test_project_id, cube_id),
-            accept="model/x.stl-ascii")
+            HTTP_ACCEPT="model/x.stl-ascii")
 
         self.assertEqual(response.status_code, 200)

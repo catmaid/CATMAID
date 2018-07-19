@@ -468,7 +468,7 @@ urlpatterns += [
    url(r'^(?P<project_id>\d+)/volumes/import$', volume.import_volumes),
    url(r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/$', volume.volume_detail),
    url(r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/intersect$', volume.intersects),
-   url(r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/export', volume.export_volume),
+   url(r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/export\.(?P<extension>\w+)', volume.export_volume),
 ]
 
 # Analytics

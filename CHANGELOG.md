@@ -73,6 +73,8 @@ Connectivity matrix:
 - The new "Groups" tab allows to group rows, columns or both by their displayed
   name.
 
+- Connectivity matrix: state saving is now supported.
+
 Reconstruction sampler:
 
 - Different leaf handling strategies are now available to be selected for a
@@ -123,8 +125,6 @@ Miscellaneous:
 - Review widget: the user who created the last node of each segment is now
   displayed in the review table. This allows to focus review on segments not
   created by oneself.
-
-- Connectivity matrix: state saving is now supported.
 
 - A skeleton cable length limit can be set so that a warning is displayed if a
   change to the skeleton morphology results in a cable length larger than the

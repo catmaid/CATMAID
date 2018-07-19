@@ -1,6 +1,11 @@
 Some CATMAID versions require manual changes to an existing setup. Below these
 and other administration related changes are listed in order.
 
+## 2018.07.19
+
+- This is the last CATMAID version with support for Python 2.7. Starting from
+  next version, only Python 3 will be supported.
+
 ## 2018.04.15
 
 - Postgres 10+ is now required.

@@ -9,6 +9,9 @@
   CATMAID versions after 2018.02.16 with Docker. The documentation has more
   information.
 
+- This is the last CATMAID version with support for Python 2.7. Starting from
+  next version, only Python 3 will be supported.
+
 
 ### Features and enhancements
 

@@ -73,7 +73,7 @@
                   } else {
                     this.addVolumeFromFile(file);
                   }
-                },this));
+                },this)).catch(CATMAID.handleError);
               }
             }).bind(this));
         hiddenFileButton.setAttribute('multiple', true);

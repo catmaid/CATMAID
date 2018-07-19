@@ -837,6 +837,18 @@
     };
 
     if (showFilter) {
+      var selectedFilterContainer = document.createElement('label');
+      var selectedFilter = document.createElement('input');
+      selectedFilter.setAttribute('type', 'checkbox');
+      selectedFilter.onclick = function(e) {
+        e.cancelBubble = true;
+        if (e.stopPropagation) e.stopPropagation();
+      };
+      selectedFilter.onchange = function(e) {
+        filterInput.onkeyup(e);
+      };
+      selectedFilterContainer.appendChild(selectedFilter);
+      selectedFilterContainer.appendChild(document.createTextNode('Selected Only'));
       var filterInput = document.createElement('input');
       filterInput.setAttribute('placeholder', 'Filter');
       filterInput.setAttribute('type', 'text');
@@ -851,15 +863,19 @@
         for (var i=0, max=keys.length; i<max; ++i) {
           var key = keys[i];
           var elements = entryIndex.get(key);
-          var match = key.match(regex);
+          var checkbox = elements.reduce(function (cbox, el) {
+            return cbox || $(el).find('input[type="checkbox"]').get(0);
+          }, undefined);
+          var match = (!selectedFilter.checked || checkbox.checked) && key.match(regex);
           for (var j=0, jmax=elements.length; j<jmax; ++j) {
             var element = elements[j];
             element.style.display = match ? 'block' : 'none';
           }
-          e.cancelBubble = true;
-          if (e.stopPropagation) e.stopPropagation();
         }
+        e.cancelBubble = true;
+        if (e.stopPropagation) e.stopPropagation();
       };
+      container.appendChild(selectedFilterContainer);
       container.appendChild(filterInput);
     }
     container.appendChild(checkboxes);

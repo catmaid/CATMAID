@@ -81,6 +81,9 @@ var RequestQueue = function(originUrl, csrfToken)
     for (var headerName in extraHeaders) {
       xmlHttp.setRequestHeader(headerName, extraHeaders[headerName]);
     }
+    for (var headerName in item.headers) {
+      xmlHttp.setRequestHeader(headerName, item.headers[headerName]);
+    }
     xmlHttp.onreadystatechange = callback;
     xmlHttp.send( item.data );
   };
@@ -140,7 +143,8 @@ var RequestQueue = function(originUrl, csrfToken)
         d,		//!< object  data		object with key=>value
         c,		//!< function callback
         id,		//!< string  id
-        responseType
+        responseType,
+        headers
     )
     {
       switch( m )
@@ -154,7 +158,8 @@ var RequestQueue = function(originUrl, csrfToken)
             data : RequestQueue.encodeObject( d ),
             callback : c,
             id : id,
-            responseType: responseType
+            responseType: responseType,
+            headers: headers || {}
           }
         );
         break;
@@ -171,7 +176,8 @@ var RequestQueue = function(originUrl, csrfToken)
             data : null,
             callback : c,
             id : id,
-            responseType: responseType
+            responseType: responseType,
+            headers: headers || {}
           }
         );
       }
@@ -193,7 +199,8 @@ var RequestQueue = function(originUrl, csrfToken)
         d,		//!< object  data		object with key=>value
         c,		//!< funtion callback
         id,		//!< string  id
-        responseType
+        responseType,
+        headers
     )
     {
       var removedRequest;
@@ -207,7 +214,7 @@ var RequestQueue = function(originUrl, csrfToken)
           removedRequest[0].callback(200, JSON.stringify({'error': 'REPLACED'}), null);
         }
       }
-      this.register( r, m, d, c, id, responseType );
+      this.register( r, m, d, c, id, responseType, headers );
     },
 
     /**

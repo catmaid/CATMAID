@@ -269,23 +269,35 @@ endfacet
     return solid_fmt.format('\n'.join(triangle_strs))
 
 
-VERTEX_RE = re.compile(r"\bvertex\s+(?P<x>[-+]?\d*\.?\d+([eE][-+]?\d+)?)\s+(?P<y>[-+]?\d*\.?\d+([eE][-+]?\d+)?)\s+(?P<z>[-+]?\d*\.?\d+([eE][-+]?\d+)?)\b", re.MULTILINE)
-
-
-def _stl_ascii_to_vertices(stl_str):
-    for match in VERTEX_RE.finditer(stl_str):
-        d = match.groupdict()
-        yield [float(d[dim]) for dim in 'xyz']
+class InvalidSTLError(ValueError):
+    pass
 
 
 def _stl_ascii_to_indexed_triangles(stl_str):
+    stl_items = stl_str.strip().split()
+    if stl_items[0] != "solid" or "endsolid" not in stl_items[-2:]:
+        raise InvalidSTLError("Malformed solid header/ footer")
+    start = 1 if stl_items[1] == "facet" else 2
+    stop = -1 if stl_items[-2] == "endfacet" else -2
     vertices = []
     triangles = []
-    for triangle in _chunk(_stl_ascii_to_vertices(stl_str), 3):
+    for facet in _chunk(stl_items[start:stop], 21):
+        if any([
+            facet[:2] != ("facet", "normal"),
+            facet[5:7] != ("outer", "loop"),
+            facet[-2:] != ("endloop", "endfacet")
+        ]):
+            raise InvalidSTLError("Malformed facet/loop header/footer")
+
         this_triangle = []
-        for vertex in triangle:
-            this_triangle.append(len(vertices))
-            vertices.append(vertex)
+        for vertex in _chunk(facet[7:-2], 4):
+            if vertex[0] != "vertex":
+                raise InvalidSTLError("Malformed vertex")
+            vertex_id = len(vertices)
+            vertices.append([float(item) for item in vertex[1:]])
+            this_triangle.append(vertex_id)
+        if len(this_triangle) != 3:
+            raise InvalidSTLError("Expected triangle, got {} points".format(this_triangle))
         triangles.append(this_triangle)
 
     return vertices, triangles
@@ -574,7 +586,12 @@ def import_volumes(request, project_id):
         name, extension = os.path.splitext(filename)
         if extension.lower() == ".stl":
             stl_str = uploadedfile.read().decode('utf-8')
-            vertices, triangles = _stl_ascii_to_indexed_triangles(stl_str)
+
+            try:
+                vertices, triangles = _stl_ascii_to_indexed_triangles(stl_str)
+            except InvalidSTLError as e:
+                raise ValueError("Invalid STL file ({})".format(str(e)))
+
             mesh = TriangleMeshVolume(
                 project_id, request.user.id,
                 {"type": "trimesh", "title": name, "mesh": [vertices, triangles]}

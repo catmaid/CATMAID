@@ -615,16 +615,16 @@ def export_volume(request, project_id, volume_id, extension):
         'stl': ['model/stl', 'model/x.stl-ascii'],
     }
     if extension.lower() in acceptable:
-        media_type = request.META.get('HTTP_ACCEPT')
-        if media_type in acceptable[extension]:
-            details = get_volume_details(project_id, volume_id)
-            ascii_details = _x3d_to_stl_ascii(details['mesh'])
-            response = HttpResponse(content_type=media_type)
-            response.write(ascii_details)
-            return response
-        else:
-            return HttpResponse('Media type "{}" not understood. Known types for {}: {}'.format(
-                media_type, extension, ', '.join(acceptable[extension])), status=415)
+        media_types = request.META.get('HTTP_ACCEPT', '').split(',')
+        for media_type in media_types:
+            if media_type in acceptable[extension]:
+                details = get_volume_details(project_id, volume_id)
+                ascii_details = _x3d_to_stl_ascii(details['mesh'])
+                response = HttpResponse(content_type=media_type)
+                response.write(ascii_details)
+                return response
+        return HttpResponse('Media types "{}" not understood. Known types for {}: {}'.format(
+            ', '.join(media_types), extension, ', '.join(acceptable[extension])), status=415)
     else:
         return HttpResponse('File type "{}" not understood. Known file types: {}'.format(
             extension, ', '.join(acceptable.values())), status=415)

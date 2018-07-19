@@ -7093,7 +7093,7 @@
         let nodeLabels = labels.get(v1);
         if (!nodeLabels) {
           nodeLabels = [];
-          labels.set(v1, nodeLabels);
+          labels.set([node[0], v1], nodeLabels);
         }
         nodeLabels.push('uncertain');
       }

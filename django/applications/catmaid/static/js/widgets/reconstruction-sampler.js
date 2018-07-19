@@ -1453,7 +1453,7 @@
                   let interval = result[i];
                   let arbor = widget.state['arbor'];
                   let intervalLength = arbor.arbor.cableLengthBetweenNodes(arbor.positions,
-                    interval.start_node_id, interval.end_node_id);
+                    interval.start_node_id, interval.end_node_id, true);
                   cableMap.set(interval.id, intervalLength);
                   if (interval.state_id === completedStateId) {
                     completedSum += intervalLength;

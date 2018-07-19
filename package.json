@@ -9,5 +9,9 @@
     "jshint": "2.9.5",
     "karma": "2.0.2",
     "jsdoc": "3.5.5"
+  },
+  "dependencies": {
+    "bootprint": "^1.0.2",
+    "bootprint-openapi": "^1.1.0"
   }
 }

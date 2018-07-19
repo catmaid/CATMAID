@@ -247,6 +247,25 @@
                     </tr>
                 </tbody>
             </table>
+            <h3 id="tag-skeleton" class="swagger-summary-tag">Tag: skeleton</h3>
+            
+            <p class="sw-tag-external-doc">
+            </p>
+            <table class="table table-bordered table-condensed swagger--summary">
+                <thead>
+                <tr>
+                    <th>Operation</th>
+                    <th>Description</th>
+                </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><a href="#operation---project_id--skeleton-connectivity_matrix-post">POST /{project_id}/skeleton/connectivity_matrix</a></td>
+                        <td><p>Return a sparse connectivity matrix representation for the given skeleton</p>
+        </td>
+                    </tr>
+                </tbody>
+            </table>
             <h3 id="tag-skeletons" class="swagger-summary-tag">Tag: skeletons</h3>
             
             <p class="sw-tag-external-doc">
@@ -286,6 +305,11 @@
                     </tr>
                     <tr>
                         <td><a href="#operation---project_id--skeletons-in-bounding-box-get">GET /{project_id}/skeletons/in-bounding-box</a></td>
+                        <td><p>Get a list of all skeletons that intersect with the passed in bounding</p>
+        </td>
+                    </tr>
+                    <tr>
+                        <td><a href="#operation---project_id--skeletons-in-bounding-box-post">POST /{project_id}/skeletons/in-bounding-box</a></td>
                         <td><p>Get a list of all skeletons that intersect with the passed in bounding</p>
         </td>
                     </tr>
@@ -482,7 +506,7 @@
                     </tr>
                     <tr>
                         <td><a href="#operation---project_id--volumes--volume_id--intersect-get">GET /{project_id}/volumes/{volume_id}/intersect</a></td>
-                        <td><p>Test if a point intersects with a given volume.</p>
+                        <td><p>Test if a point intersects with the bounding box of a given volume.</p>
         </td>
                     </tr>
                 </tbody>
@@ -593,6 +617,11 @@
                     </tr>
                     <tr>
                         <td><a href="#operation---project_id--connectors-links--get">GET /{project_id}/connectors/links/</a></td>
+                        <td><p>Get connectors linked to a set of skeletons.</p>
+        </td>
+                    </tr>
+                    <tr>
+                        <td><a href="#operation---project_id--connectors-links--post">POST /{project_id}/connectors/links/</a></td>
                         <td><p>Get connectors linked to a set of skeletons.</p>
         </td>
                     </tr>
@@ -2727,6 +2756,7 @@
             one array per connector link with the following content: [Linked skeleton ID,
             Connector ID, Connector X, Connector Y, Connector Z, Link confidence, Link
             creator ID, Linked treenode ID, Link edit time].</p>
+            <p>A POST handler is able to accept large lists of skeleton IDs.</p>
             
                     </section>
             
@@ -2822,6 +2852,136 @@
                                     
                                     </dt>
                                     <dd class="sw-response-200">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                
+                                                <div class="col-md-6 sw-response-model">
+                                            </div>
+                                            
+                                            </div>                </dd>
+                            </dl>
+                        </section>
+                </div>
+            </div>
+            <div id="operation---project_id--connectors-links--post" class="swagger--panel-operation-post panel">
+                <div class="panel-heading">
+                    <div class="operation-summary">Get connectors linked to a set of skeletons.</div>
+                    <h3 class="panel-title"><span class="operation-name">POST</span> <strong>/{project_id}/connectors/links/</strong></h3>
+                        Tags:
+                            <a href="#tag-connectors">connectors</a>
+                </div>
+                <div class="panel-body">
+                    <section class="sw-operation-description">
+                        <p>Get connectors linked to a set of skeletons.</p>
+            <p>The result data set includes information about linked connectors on a given
+            input set of skeletons. These links are further constrained by relation
+            type, with currently support available for: postsynaptic_to,
+            presynaptic_to, abutting, gapjunction_with.</p>
+            <p>Returned is an object containing an array of links to connectors and a set
+            of tags for all connectors found (if not disabled). The link array contains
+            one array per connector link with the following content: [Linked skeleton ID,
+            Connector ID, Connector X, Connector Y, Connector Z, Link confidence, Link
+            creator ID, Linked treenode ID, Link edit time].</p>
+            <p>A POST handler is able to accept large lists of skeleton IDs.</p>
+            
+                    </section>
+            
+                        
+                            <section class="sw-request-body">
+                                
+                                    <p><span class="label label-default">application/x-www-form-urlencoded</span> 
+                        </p>
+                            </section>        
+                        <section class="sw-request-params">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th class="sw-param-name"></th>
+                                    <th class="sw-param-description"></th>
+                                    <th class="sw-param-type"></th>
+                                    <th class="sw-param-data-type"></th>
+                                    <th class="sw-param-annotation"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                        <tr>
+                                            <td>
+                                                project_id
+                                            </td>
+                                            <td></td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                skeleton_ids
+                                            </td>
+                                            <td><p>Skeletons to list connectors for</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string[]</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                relation_type
+                                            </td>
+                                            <td><p>Relation of listed connector links</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                with_tags
+                                            </td>
+                                            <td><p>If connector tags should be fetched</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">boolean</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    
+                        <section class="sw-responses">
+                    
+                            <dl>
+                                    <dt class="sw-response-201">
+                                        201 Created
+                                    
+                                    </dt>
+                                    <dd class="sw-response-201">
                                             <div class="row">
                                                 <div class="col-md-12">
                                                     
@@ -3396,22 +3556,6 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                node_type
-                                            </td>
-                                            <td><p>Either &#39;connector&#39;, &#39;treenode&#39; or &#39;location&#39;</p>
-                                        </td>
-                                            <td>formData</td>
-                                            <td>
-                                        <span class="json-property-type">string</span>
-                                        <span class="json-property-range" title="Value limits"></span>
-                                        
-                                            </td>
-                                            <td>
-                                                    <span class="json-property-required"></span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
                                                 project_id
                                             </td>
                                             <td><p>Project containing node of interest</p>
@@ -3431,6 +3575,22 @@
                                                 node_id
                                             </td>
                                             <td><p>ID of node to list labels for</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                node_type
+                                            </td>
+                                            <td><p>Either &#39;connector&#39;, &#39;treenode&#39; or &#39;location&#39;</p>
                                         </td>
                                             <td>formData</td>
                                             <td>
@@ -4210,9 +4370,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                link_id
                                             </td>
-                                            <td><p>Project of landmark group</p>
+                                            <td><p>The link to delete</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4226,9 +4386,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                link_id
+                                                project_id
                                             </td>
-                                            <td><p>The link to delete</p>
+                                            <td><p>Project of landmark group</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4464,9 +4624,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                landmarkgroup_id
+                                                project_id
                                             </td>
-                                            <td><p>The ID of the landmark group.</p>
+                                            <td><p>The project the landmark group is part of.</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4480,9 +4640,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                landmarkgroup_id
                                             </td>
-                                            <td><p>The project the landmark group is part of.</p>
+                                            <td><p>The ID of the landmark group.</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4601,12 +4761,13 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                landmarkgroup_id
+                                                project_id
                                             </td>
-                                            <td></td>
+                                            <td><p>The project the landmark group is part of.</p>
+                                        </td>
                                             <td>path</td>
                                             <td>
-                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-type">integer</span>
                                         <span class="json-property-range" title="Value limits"></span>
                                         
                                             </td>
@@ -4616,13 +4777,12 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                landmarkgroup_id
                                             </td>
-                                            <td><p>The project the landmark group is part of.</p>
-                                        </td>
+                                            <td></td>
                                             <td>path</td>
                                             <td>
-                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-type">string</span>
                                         <span class="json-property-range" title="Value limits"></span>
                                         
                                             </td>
@@ -4749,9 +4909,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                landmarkgroup_id
+                                                project_id
                                             </td>
-                                            <td><p>The landmark group to link</p>
+                                            <td><p>Project of landmark group</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4781,9 +4941,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                landmarkgroup_id
                                             </td>
-                                            <td><p>Project of landmark group</p>
+                                            <td><p>The landmark group to link</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4850,9 +5010,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                landmarkgroup_id
+                                                project_id
                                             </td>
-                                            <td><p>The landmark group to link</p>
+                                            <td><p>Project of landmark group</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4882,9 +5042,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                landmarkgroup_id
                                             </td>
-                                            <td><p>Project of landmark group</p>
+                                            <td><p>The landmark group to link</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4959,9 +5119,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                landmarkgroup_id
+                                                project_id
                                             </td>
-                                            <td><p>The starting landmark group</p>
+                                            <td><p>Project of landmark groups</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -4975,9 +5135,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                landmarkgroup_id
                                             </td>
-                                            <td><p>Project of landmark groups</p>
+                                            <td><p>The starting landmark group</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -5380,6 +5540,22 @@
                                 <tbody>
                                         <tr>
                                             <td>
+                                                group_id
+                                            </td>
+                                            <td><p>The group to unlink from</p>
+                                        </td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
                                                 project_id
                                             </td>
                                             <td><p>Project of landmark group</p>
@@ -5399,22 +5575,6 @@
                                                 landmark_id
                                             </td>
                                             <td><p>The landmark to unlink from</p>
-                                        </td>
-                                            <td>path</td>
-                                            <td>
-                                        <span class="json-property-type">integer</span>
-                                        <span class="json-property-range" title="Value limits"></span>
-                                        
-                                            </td>
-                                            <td>
-                                                    <span class="json-property-required"></span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                group_id
-                                            </td>
-                                            <td><p>The group to unlink from</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -5653,22 +5813,6 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                location_id
-                                            </td>
-                                            <td><p>The location to unlink</p>
-                                        </td>
-                                            <td>path</td>
-                                            <td>
-                                        <span class="json-property-type">integer</span>
-                                        <span class="json-property-range" title="Value limits"></span>
-                                        
-                                            </td>
-                                            <td>
-                                                    <span class="json-property-required"></span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
                                                 project_id
                                             </td>
                                             <td><p>Project of landmark group</p>
@@ -5688,6 +5832,22 @@
                                                 landmark_id
                                             </td>
                                             <td><p>The landmark to unlink</p>
+                                        </td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                location_id
+                                            </td>
+                                            <td><p>The location to unlink</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -6005,13 +6165,12 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                neuron_id
+                                                project_id
                                             </td>
-                                            <td><p>ID of neuron to rename</p>
-                                        </td>
+                                            <td></td>
                                             <td>path</td>
                                             <td>
-                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-type">string</span>
                                         <span class="json-property-range" title="Value limits"></span>
                                         
                                             </td>
@@ -6021,12 +6180,13 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                neuron_id
                                             </td>
-                                            <td></td>
+                                            <td><p>ID of neuron to rename</p>
+                                        </td>
                                             <td>path</td>
                                             <td>
-                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-type">integer</span>
                                         <span class="json-property-range" title="Value limits"></span>
                                         
                                             </td>
@@ -6312,6 +6472,21 @@
                                             <td>formData</td>
                                             <td>
                                         <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                n_largest_skeletons_limit
+                                            </td>
+                                            <td><p>Maximum number of the largest skeletons in view</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
                                         <span class="json-property-range" title="Value limits"></span>
                                         
                                             </td>
@@ -6833,9 +7008,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                point_id
                                             </td>
-                                            <td><p>Project point is part of</p>
+                                            <td><p>ID of point</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -6849,9 +7024,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                point_id
+                                                project_id
                                             </td>
-                                            <td><p>ID of point</p>
+                                            <td><p>Project point is part of</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -6918,9 +7093,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                point_id
                                             </td>
-                                            <td><p>Project point is part of</p>
+                                            <td><p>ID of point</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -6934,9 +7109,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                point_id
+                                                project_id
                                             </td>
-                                            <td><p>ID of point</p>
+                                            <td><p>Project point is part of</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -7009,9 +7184,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                point_id
                                             </td>
-                                            <td><p>Project point is part of</p>
+                                            <td><p>ID of point</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -7025,9 +7200,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                point_id
+                                                project_id
                                             </td>
-                                            <td><p>ID of point</p>
+                                            <td><p>Project point is part of</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -7390,6 +7565,21 @@
                                                     <span class="json-property-required"></span>
                                             </td>
                                         </tr>
+                                        <tr>
+                                            <td>
+                                                leaf_segment_handling
+                                            </td>
+                                            <td><p>How leaf segments should be handled, can be &#39;ignore&#39;, &#39;merge&#39; or &#39;short-interval&#39;.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
                                 </tbody>
                             </table>
                         </section>
@@ -7714,9 +7904,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                connector_id
+                                                interval_id
                                             </td>
-                                            <td><p>Connector to set state of</p>
+                                            <td><p>Interval the connector is part of</p>
                                         </td>
                                             <td>formData</td>
                                             <td>
@@ -7745,9 +7935,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                interval_id
+                                                connector_id
                                             </td>
-                                            <td><p>Interval the connector is part of</p>
+                                            <td><p>Connector to set state of</p>
                                         </td>
                                             <td>formData</td>
                                             <td>
@@ -7832,7 +8022,7 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                interval_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -7847,7 +8037,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                interval_id
+                                                project_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -7922,12 +8112,13 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                interval_id
                                             </td>
-                                            <td></td>
-                                            <td>path</td>
+                                            <td><p>Interval to update state of</p>
+                                        </td>
+                                            <td>formData</td>
                                             <td>
-                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-type">integer</span>
                                         <span class="json-property-range" title="Value limits"></span>
                                         
                                             </td>
@@ -7937,13 +8128,12 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                interval_id
+                                                project_id
                                             </td>
-                                            <td><p>Interval to update state of</p>
-                                        </td>
-                                            <td>formData</td>
+                                            <td></td>
+                                            <td>path</td>
                                             <td>
-                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-type">string</span>
                                         <span class="json-property-range" title="Value limits"></span>
                                         
                                             </td>
@@ -8078,7 +8268,7 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                domain_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -8093,7 +8283,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                domain_id
+                                                project_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -8168,12 +8358,13 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                domain_id
                                             </td>
-                                            <td></td>
-                                            <td>path</td>
+                                            <td><p>Domain to list intervals for</p>
+                                        </td>
+                                            <td>formData</td>
                                             <td>
-                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-type">integer</span>
                                         <span class="json-property-range" title="Value limits"></span>
                                         
                                             </td>
@@ -8183,13 +8374,12 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                domain_id
+                                                project_id
                                             </td>
-                                            <td><p>Domain to list intervals for</p>
-                                        </td>
-                                            <td>formData</td>
+                                            <td></td>
+                                            <td>path</td>
                                             <td>
-                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-type">string</span>
                                         <span class="json-property-range" title="Value limits"></span>
                                         
                                             </td>
@@ -8254,7 +8444,7 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                domain_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -8269,7 +8459,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                domain_id
+                                                project_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -8790,6 +8980,133 @@
                                             </td>
                                             <td>
                                                     <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    
+                        <section class="sw-responses">
+                    
+                            <dl>
+                                    <dt class="sw-response-201">
+                                        201 Created
+                                    
+                                    </dt>
+                                    <dd class="sw-response-201">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                
+                                                <div class="col-md-6 sw-response-model">
+                                            </div>
+                                            
+                                            </div>                </dd>
+                            </dl>
+                        </section>
+                </div>
+            </div>
+        
+        <span id="path---project_id--skeleton-connectivity_matrix"></span>
+            <div id="operation---project_id--skeleton-connectivity_matrix-post" class="swagger--panel-operation-post panel">
+                <div class="panel-heading">
+                    <div class="operation-summary">Return a sparse connectivity matrix representation for the given skeleton</div>
+                    <h3 class="panel-title"><span class="operation-name">POST</span> <strong>/{project_id}/skeleton/connectivity_matrix</strong></h3>
+                        Tags:
+                            <a href="#tag-skeleton">skeleton</a>
+                </div>
+                <div class="panel-body">
+                    <section class="sw-operation-description">
+                        <p>Return a sparse connectivity matrix representation for the given skeleton
+            IDs. The returned dictionary has a key for each row skeleton having
+            outgoing connections to one or more column skeletons. Each entry stores a
+            dictionary that maps the connection partners to the individual outgoing
+            synapse counts.</p>
+            
+                    </section>
+            
+                        
+                            <section class="sw-request-body">
+                                
+                                    <p><span class="label label-default">application/x-www-form-urlencoded</span> 
+                        </p>
+                            </section>        
+                        <section class="sw-request-params">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th class="sw-param-name"></th>
+                                    <th class="sw-param-description"></th>
+                                    <th class="sw-param-type"></th>
+                                    <th class="sw-param-data-type"></th>
+                                    <th class="sw-param-annotation"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                        <tr>
+                                            <td>
+                                                project_id
+                                            </td>
+                                            <td><p>Project of skeletons</p>
+                                        </td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                rows
+                                            </td>
+                                            <td><p>IDs of row skeletons</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string[]</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                columns
+                                            </td>
+                                            <td><p>IDs of column skeletons</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string[]</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                with_locations
+                                            </td>
+                                            <td><p>Whether or not to return locations of connectors</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">boolean</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
                                             </td>
                                         </tr>
                                 </tbody>
@@ -9614,7 +9931,7 @@
                 <div class="panel-body">
                     <section class="sw-operation-description">
                         <p>Get a list of all skeletons that intersect with the passed in bounding
-            box.</p>
+            box. Optionally, only a subsed of passed in skeletons can be tested against.</p>
             
                     </section>
             
@@ -9762,6 +10079,68 @@
                                                     <span class="json-property-required"></span>
                                             </td>
                                         </tr>
+                                        <tr>
+                                            <td>
+                                                min_nodes
+                                            </td>
+                                            <td><p>A minimum number of nodes per result skeleton</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                min_cable
+                                            </td>
+                                            <td><p>A minimum number of cable length per result skeleton</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                volume_id
+                                            </td>
+                                            <td><p>Alternative to manual bounding box definition. The bounding box of the
+                                        volume is used.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                skeleton_ids
+                                            </td>
+                                            <td><p>An optional list of skeleton IDs that should only be tested againt. If
+                                        used, the result will only contain skeletons of this set.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string[]</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
                                 </tbody>
                             </table>
                         </section>
@@ -9774,6 +10153,253 @@
                                     
                                     </dt>
                                     <dd class="sw-response-200">
+                                            <div class="row">
+                                                <div class="col-md-12">
+                                                    
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                
+                                                <div class="col-md-6 sw-response-model">
+                                            </div>
+                                            
+                                            </div>                </dd>
+                            </dl>
+                        </section>
+                </div>
+            </div>
+            <div id="operation---project_id--skeletons-in-bounding-box-post" class="swagger--panel-operation-post panel">
+                <div class="panel-heading">
+                    <div class="operation-summary">Get a list of all skeletons that intersect with the passed in bounding</div>
+                    <h3 class="panel-title"><span class="operation-name">POST</span> <strong>/{project_id}/skeletons/in-bounding-box</strong></h3>
+                        Tags:
+                            <a href="#tag-skeletons">skeletons</a>
+                </div>
+                <div class="panel-body">
+                    <section class="sw-operation-description">
+                        <p>Get a list of all skeletons that intersect with the passed in bounding
+            box. Optionally, only a subsed of passed in skeletons can be tested against.</p>
+            
+                    </section>
+            
+                        
+                            <section class="sw-request-body">
+                                
+                                    <p><span class="label label-default">application/x-www-form-urlencoded</span> 
+                        </p>
+                            </section>        
+                        <section class="sw-request-params">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th class="sw-param-name"></th>
+                                    <th class="sw-param-description"></th>
+                                    <th class="sw-param-type"></th>
+                                    <th class="sw-param-data-type"></th>
+                                    <th class="sw-param-annotation"></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                        <tr>
+                                            <td>
+                                                project_id
+                                            </td>
+                                            <td></td>
+                                            <td>path</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                limit
+                                            </td>
+                                            <td><p>Limit the number of returned nodes.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                minx
+                                            </td>
+                                            <td><p>Minimum world space X coordinate</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                miny
+                                            </td>
+                                            <td><p>Minimum world space Y coordinate</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                minz
+                                            </td>
+                                            <td><p>Minimum world space Z coordinate</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                maxx
+                                            </td>
+                                            <td><p>Maximum world space X coordinate</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                maxy
+                                            </td>
+                                            <td><p>Maximum world space Y coordinate</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                maxz
+                                            </td>
+                                            <td><p>Maximum world space Z coordinate</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                                    <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                min_nodes
+                                            </td>
+                                            <td><p>A minimum number of nodes per result skeleton</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                min_cable
+                                            </td>
+                                            <td><p>A minimum number of cable length per result skeleton</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">float</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                volume_id
+                                            </td>
+                                            <td><p>Alternative to manual bounding box definition. The bounding box of the
+                                        volume is used.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">integer</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                skeleton_ids
+                                            </td>
+                                            <td><p>An optional list of skeleton IDs that should only be tested againt. If
+                                        used, the result will only contain skeletons of this set.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string[]</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    
+                        <section class="sw-responses">
+                    
+                            <dl>
+                                    <dt class="sw-response-201">
+                                        201 Created
+                                    
+                                    </dt>
+                                    <dd class="sw-response-201">
                                             <div class="row">
                                                 <div class="col-md-12">
                                                     
@@ -10159,9 +10785,9 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                skeleton_id
                                             </td>
-                                            <td><p>Project of landmark</p>
+                                            <td><p>IDs of the skeleton to get the cable length for</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -10175,9 +10801,9 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                skeleton_id
+                                                project_id
                                             </td>
-                                            <td><p>IDs of the skeleton to get the cable length for</p>
+                                            <td><p>Project of landmark</p>
                                         </td>
                                             <td>path</td>
                                             <td>
@@ -10270,7 +10896,7 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                skeleton_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -10285,7 +10911,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                skeleton_id
+                                                project_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -10472,7 +11098,7 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                skeleton_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -10487,7 +11113,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                skeleton_id
+                                                project_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -10589,7 +11215,7 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                skeleton_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -10604,7 +11230,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                skeleton_id
+                                                project_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -10686,7 +11312,7 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                skeleton_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -10701,7 +11327,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                skeleton_id
+                                                project_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -10794,7 +11420,7 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                skeleton_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -10809,7 +11435,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                skeleton_id
+                                                project_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -10894,7 +11520,7 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                project_id
+                                                skeleton_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -10909,7 +11535,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                skeleton_id
+                                                project_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -11473,12 +12099,18 @@
                 <div class="panel-body">
                     <section class="sw-operation-description">
                         <p>Retrieve node information in a compact form. A list of elements of the
-            following form is returned: [ID, parent ID, x, y, z, confidence, user_id,
-            radius, skeleton_id, user_id].</p>
+            following form is returned:</p>
+            <p>[ID, parent ID, x, y, z, confidence, radius, skeleton_id, edition_time, user_id]</p>
+            <p>The returned edition time is an epoch number.</p>
             
                     </section>
             
-                    
+                        
+                            <section class="sw-request-body">
+                                
+                                    <p><span class="label label-default">application/x-www-form-urlencoded</span> 
+                        </p>
+                            </section>        
                         <section class="sw-request-params">
                             <table class="table">
                                 <thead>
@@ -11495,8 +12127,9 @@
                                             <td>
                                                 project_id
                                             </td>
-                                            <td></td>
-                                            <td>path</td>
+                                            <td><p>Project to work in</p>
+                                        </td>
+                                            <td>formData</td>
                                             <td>
                                         <span class="json-property-type">string</span>
                                         <span class="json-property-range" title="Value limits"></span>
@@ -11504,6 +12137,68 @@
                                             </td>
                                             <td>
                                                     <span class="json-property-required"></span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                treenode_ids
+                                            </td>
+                                            <td><p>A list of treeonde IDs to return information on</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                label_ids
+                                            </td>
+                                            <td><p>A list of label IDs that must be linked to result treenodes. Alternative
+                                        to explicit treenode IDs and label names.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                label_names
+                                            </td>
+                                            <td><p>A list of label names that must be linked to result treenodes.
+                                        Alternative to explicit treenode IDs and label IDs</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                skeleton_ids
+                                            </td>
+                                            <td><p>A list of skeleton IDs that result skeletons have to be part of.</p>
+                                        </td>
+                                            <td>formData</td>
+                                            <td>
+                                        <span class="json-property-type">string</span>
+                                        <span class="json-property-range" title="Value limits"></span>
+                                        
+                                            </td>
+                                            <td>
                                             </td>
                                         </tr>
                                 </tbody>
@@ -11545,8 +12240,9 @@
                 <div class="panel-body">
                     <section class="sw-operation-description">
                         <p>Retrieve node information in a compact form. A list of the following form
-            is returned: [ID, parent ID, x, y, z, confidence, user_id, radius,
-            skeleton_id, user_id].</p>
+            is returned:</p>
+            <p>[ID, parent ID, x, y, z, confidence, radius, skeleton_id, edition_time, user_id]</p>
+            <p>The returned edition time is an epoch number.</p>
             
                     </section>
             
@@ -12102,7 +12798,7 @@
                                 <tbody>
                                         <tr>
                                             <td>
-                                                suppressed_id
+                                                project_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -12117,7 +12813,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                project_id
+                                                suppressed_id
                                             </td>
                                             <td></td>
                                             <td>path</td>
@@ -12743,14 +13439,14 @@
         <span id="path---project_id--volumes--volume_id--intersect"></span>
             <div id="operation---project_id--volumes--volume_id--intersect-get" class="swagger--panel-operation-get panel">
                 <div class="panel-heading">
-                    <div class="operation-summary">Test if a point intersects with a given volume.</div>
+                    <div class="operation-summary">Test if a point intersects with the bounding box of a given volume.</div>
                     <h3 class="panel-title"><span class="operation-name">GET</span> <strong>/{project_id}/volumes/{volume_id}/intersect</strong></h3>
                         Tags:
                             <a href="#tag-volumes">volumes</a>
                 </div>
                 <div class="panel-body">
                     <section class="sw-operation-description">
-                        <p>Test if a point intersects with a given volume.</p>
+                        <p>Test if a point intersects with the bounding box of a given volume.</p>
             
                     </section>
             

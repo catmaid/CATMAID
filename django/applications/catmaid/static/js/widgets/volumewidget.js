@@ -294,7 +294,7 @@
           var tr = $(this).closest("tr");
           var volume = self.datatable.row(tr).data();
           var headers = {Accept: ['model/x.stl-ascii', 'model/stl']};
-          CATMAID.fetch("/" + project.id + "/volumes/" + volume.id + "/export", "GET", undefined, true, undefined, undefined, undefined, headers)
+          CATMAID.fetch("/" + project.id + "/volumes/" + volume.id + "/export.stl", "GET", undefined, true, undefined, undefined, undefined, headers)
             .then(function(volume_file) {
               var blob = new Blob([volume_file], {type: 'model/x.stl-ascii'});
               saveAs(blob, volume.name + '.stl');

@@ -1067,7 +1067,9 @@ def add_all_intervals(request, project_id, domain_id):
         parent_loc = Point3D(parent.location_x, parent.location_y, parent.location_z)
 
         if not is_collinear(child_loc, parent_loc, new_node_loc, True, epsilon):
-            raise ValueError('New node location has to be collinear with child and parent')
+            raise ValueError('New node location has to be collinear with child ' +
+                    'and parent. Child: {}, New Node: {}, Parent: {}'.format(
+                            child_loc, new_node_loc, parent_loc))
 
         # Tag new treenode with SAMPLER_CREATED_CLASS
         label, _ = ClassInstance.objects.get_or_create(project_id=project_id,

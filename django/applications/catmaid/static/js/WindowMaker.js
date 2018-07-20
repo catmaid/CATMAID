@@ -708,49 +708,6 @@ var WindowMaker = new function()
       }
     }
 
-    // Update volume list
-    var initVolumeList = function() {
-      return CATMAID.Volumes.listAll(project.id).then(function(json) {
-          var volumes = json.sort(function(a, b) {
-            return CATMAID.tools.compareStrings(a.name, b.name);
-          }).map(function(volume) {
-            return {
-              title: volume.name,
-              value: volume.id
-            };
-          });
-          var selectedVolumes = WA.getLoadedVolumeIds();
-          // Create actual element based on the returned data
-          var node = DOM.createCheckboxSelect('Volumes', volumes,
-              selectedVolumes, true, function(row, id, visible) {
-                let loadedVolume = WA.loadedVolumes.get(id);
-                let faces, color, alpha, subdiv, bb;
-                if (loadedVolume) {
-                  faces = loadedVolume.faces;
-                  color = loadedVolume.color;
-                  alpha = loadedVolume.opacity;
-                  subdiv = loadedVolume.subdiv;
-                  bb = loadedVolume.boundingBox;
-                }
-                setVolumeEntryVisible(row, id, visible, faces, color, alpha, subdiv, bb);
-              });
-
-          // Add a selection handler
-          node.onchange = function(e) {
-            var visible = e.target.checked;
-            var volumeId = parseInt(e.target.value, 10);
-            WA.showVolume(volumeId, visible, undefined, undefined,
-                o.meshes_faces)
-              .catch(CATMAID.handleError);
-
-            setVolumeEntryVisible(e.target.closest('li'), volumeId, visible,
-                o.meshes_faces, o.meshes_color, o.meshes_opacity,
-                o.meshes_subdiv, o.meshes_boundingbox);
-          };
-          return node;
-        });
-    };
-
     // Update landmark list
     var initLandmarkList = function() {
       return CATMAID.Landmarks.listGroups(project.id).then(function(json) {
@@ -859,9 +816,29 @@ var WindowMaker = new function()
 
     // Create async selection and wrap it in container to have handle on initial
     // DOM location
-    var volumeSelection = DOM.createAsyncPlaceholder(initVolumeList());
-    var volumeSelectionWrapper = document.createElement('span');
-    volumeSelectionWrapper.appendChild(volumeSelection);
+    var volumeSelectionWrapper = CATMAID.createVolumeSelector({
+      mode: "checkbox",
+      selectedVolumeIds: WA.getLoadedVolumeIds(),
+      select: function(volumeId, visible, element){
+        WA.showVolume(volumeId, visible, undefined, undefined, o.meshes_faces)
+          .catch(CATMAID.handleError);
+
+        setVolumeEntryVisible(element.closest('li'), volumeId, visible,
+            o.meshes_faces, o.meshes_color, o.meshes_opacity,
+            o.meshes_subdiv, o.meshes_boundingbox);
+      },
+      rowCallback: function(row, id, visible) {
+        let loadedVolume = WA.loadedVolumes.get(id);
+        let faces, color, alpha, subdiv, bb;
+        if (loadedVolume) {
+          faces = loadedVolume.faces;
+          color = loadedVolume.color;
+          alpha = loadedVolume.opacity;
+          subdiv = loadedVolume.subdiv;
+          bb = loadedVolume.boundingBox;
+        }
+      }
+    });
 
     // Create async selection and wrap it in container to have handle on initial
     // DOM location
@@ -877,11 +854,7 @@ var WindowMaker = new function()
 
     // Replace volume selection wrapper children with new select
     var refreshVolumeList = function() {
-      while (0 !== volumeSelectionWrapper.children.length) {
-        volumeSelectionWrapper.removeChild(volumeSelectionWrapper.children[0]);
-      }
-      var volumeSelection = DOM.createAsyncPlaceholder(initVolumeList());
-      volumeSelectionWrapper.appendChild(volumeSelection);
+      volumeSelectionWrapper.refresh(WA.getLoadedVolumeIds());
     };
 
     // Replace point cloud selection wrapper children with new select

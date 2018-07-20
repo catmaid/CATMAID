@@ -1735,42 +1735,19 @@
       var dsTracingWarnings = CATMAID.DOM.addSettingsContainer(ds,
           "Warnings", true);
 
-      // Volume warning
-      let initVolumeList = function() {
-        return CATMAID.Volumes.listAll(project.id)
-          .then(function(json) {
-            var volumes = json.sort(function(a, b) {
-              return CATMAID.tools.compareStrings(a.name, b.name);
-            }).map(function(volume) {
-              return {
-                title: volume.name + " (#" + volume.id + ")",
-                value: volume.id
-              };
-            });
-            var selectedVolumeId = SkeletonAnnotations.getNewNodeVolumeWarning();
-            // Create actual element based on the returned data
-            var node = CATMAID.DOM.createRadioSelect('Volumes', volumes,
-                selectedVolumeId, true);
-            // Add a selection handler
-            node.onchange = function(e) {
-              let volumeId = null;
-              if (e.srcElement.value !== "none") {
-                volumeId = parseInt(e.srcElement.value, 10);
-              }
-              // Remove existing handler and new one if selected
-              SkeletonAnnotations.setNewNodeVolumeWarning(volumeId);
-            };
-
-            return node;
-          });
-      };
-
       // Create async selection and wrap it in container to have handle on initial
       // DOM location
-      var volumeSelectionSetting = CATMAID.DOM.createLabeledAsyncPlaceholder(
-        "New nodes not in volume", initVolumeList(),
-        "A warning will be shown when new nodes are created outside of the selected volume");
-      dsTracingWarnings.append(volumeSelectionSetting);
+      var volumeSelectionWrapper = CATMAID.createVolumeSelector({
+        mode: "radio",
+        label: "New nodes not in volume",
+        title: "A warning will be shown when new nodes are created outside of the selected volume",
+        selectedVolumeIds: [SkeletonAnnotations.getNewNodeVolumeWarning()],
+        select: function(volumeId, selected, element){
+          // Remove existing handler and new one if selected
+          SkeletonAnnotations.setNewNodeVolumeWarning(element.value !== "none"? volumeId : null);
+        }
+      });
+      dsTracingWarnings.append(volumeSelectionWrapper);
 
 
       // Skeleton length warning

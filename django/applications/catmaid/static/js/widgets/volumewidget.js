@@ -71,7 +71,7 @@
                   if (file.name.endsWith("stl")){
                     return true;
                   } else {
-                    this.addVolumeFromFile(file);
+                    this.addVolumeFromFile(file).catch(CATMAID.handleError);
                   }
                 },this)).catch(CATMAID.handleError);
               }
@@ -608,23 +608,25 @@
    * @param {String} files The file to load
    */
   VolumeManagerWidget.prototype.addVolumeFromFile = function(file) {
-      var self = this;
-      var reader = new FileReader();
-      reader.onload = function(e) {
-          var volumes = JSON.parse(e.target.result);
-          // Try to load volumes and record invalid ones
-          var invalidVolumes = volumes.filter(function(v) {
-            var volumeType = volumeTypes[v.type];
-            var properties = v.properties;
-            if (volumeType && properties) {
-              volumeType.createVolume(properties);
-            } else {
-              // Return true for invalid volume types
-              return !volumeType;
-            }
-          });
-      };
-      reader.readAsText(file);
+      return new Promise(function(resolve, reject) {
+        var self = this;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var volumes = JSON.parse(e.target.result);
+            // Try to load volumes and record invalid ones
+            var invalidVolumes = volumes.filter(function(v) {
+              var volumeType = volumeTypes[v.type];
+              var properties = v.properties;
+              if (volumeType && properties) {
+                volumeType.createVolume(properties);
+              } else {
+                // Return true for invalid volume types
+                return !volumeType;
+              }
+            });
+        };
+        reader.readAsText(file);
+      });
   };
 
   VolumeManagerWidget.prototype.addVolumesFromSTL = function(files) {

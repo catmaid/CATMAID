@@ -12,6 +12,14 @@
   CATMAID.Volume = function(options) {
     options = options || {};
     this.id = options.id || null;
+    this.project_id = options.project || null;
+    this.user_id = options.user || null;
+    this.editor_id = options.editor || null;
+    this.title = options.name || '';
+    this.comment = options.comment || '';
+    this.edition_time = options.edition_time || null;
+    this.creation_time = options.creation_time || null;
+    this.selected = options.selected || false;
   };
 
   CATMAID.Volume.prototype = {};

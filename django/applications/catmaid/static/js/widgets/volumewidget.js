@@ -156,23 +156,33 @@
         container.appendChild(tableContainer);
         this.datatable = $(table).DataTable({
           lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
-          ajax: {
-            url: CATMAID.makeURL(project.id +  "/volumes/"),
-            dataSrc: ""
+          ajax: function(data, callback, settings) {
+
+            CATMAID.fetch(project.id +  "/volumes/")
+              .then(function(volumeData) {
+                let volumes = volumeData.map(function(volume) {
+                  return new CATMAID.Volume(volume);
+                });
+                callback({
+                  draw: data.draw,
+                  data: volumes
+                });
+              })
+              .catch(CATMAID.handleError);
           },
           columns: [
-            {data: "name"},
+            {data: "title"},
             {data: "id"},
             {data: "comment"},
             {
-              data: "user",
+              data: "user_id",
               render: function(data, type, row, meta) {
                 return CATMAID.User.safe_get(data).login;
               }
             },
             {data: "creation_time"},
             {
-              data: "editor",
+              data: "editor_id",
               render: function(data, type, row, meta) {
                 return CATMAID.User.safe_get(data).login;
               }

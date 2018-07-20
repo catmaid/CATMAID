@@ -108,11 +108,33 @@ class PostGISVolume(object):
                 raise ValueError("Can't create new volume without mesh")
 
             cursor.execute("""
-                INSERT INTO catmaid_volume (user_id, project_id, editor_id, name,
-                        comment, creation_time, edition_time, geometry)
-                VALUES (%(uid)s, %(pid)s, %(uid)s, %(t)s, %(c)s, now(), now(), """ +
-                           surface + """)
-                RETURNING id;""", params)
+                WITH v AS (
+                    INSERT INTO catmaid_volume (user_id, project_id, editor_id, name,
+                            comment, creation_time, edition_time, geometry)
+                    VALUES (%(uid)s, %(pid)s, %(uid)s, %(t)s, %(c)s, now(), now(), """ +
+                               surface + """)
+                    RETURNING user_id, project_id, id
+                ), ci AS (
+                    INSERT INTO class_instance (user_id, project_id, name, class_id)
+                    SELECT %(uid)s, project_id, %(t)s, id
+                    FROM class
+                    WHERE project_id = %(pid)s AND class_name = 'volume'
+                    RETURNING id
+                ), r AS (
+                    SELECT id FROM relation
+                    WHERE project_id = %(pid)s AND relation_name = 'model_of'
+                )
+                INSERT INTO volume_class_instance
+                    (user_id, project_id, relation_id, volume_id, class_instance_id)
+                SELECT
+                    v.user_id,
+                    v.project_id,
+                    r.id,
+                    v.id,
+                    ci.id
+                FROM v, ci, r
+                RETURNING volume_id
+                """, params)
 
         return cursor.fetchone()[0]
 
@@ -405,7 +427,17 @@ def remove_volume(request, project_id, volume_id):
         raise Exception("You don't have permissions to delete this volume")
 
     cursor.execute("""
-        DELETE FROM catmaid_volume WHERE id=%s
+        WITH v AS (
+            DELETE FROM catmaid_volume WHERE id=%s RETURNING id
+        ), vci AS (
+            DELETE FROM volume_class_instance
+            USING v
+            WHERE volume_id = v.id
+            RETURNING class_instance_id
+        )
+        DELETE FROM class_instance
+        USING vci
+        WHERE id = vci.class_instance_id;
     """, (volume_id,))
 
     return Response({

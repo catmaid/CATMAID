@@ -8,6 +8,7 @@ from xml.etree import ElementTree as ET
 from django.conf import settings
 
 from catmaid.control.authentication import requires_user_role, user_can_edit
+from catmaid.control.common import get_request_list
 from catmaid.models import UserRole, Project, Volume
 from catmaid.serializers import VolumeSerializer
 
@@ -728,3 +729,34 @@ def intersects(request, project_id, volume_id):
     return JsonResponse({
         'intersects': result[0]
     })
+
+@api_view(['POST'])
+@requires_user_role([UserRole.Browse])
+def get_volume_entities(request, project_id):
+    """Retrieve a mapping of volume IDs to entity (class instance) IDs.
+    ---
+    parameters:
+      - name: volume_ids
+        description: A list of volume IDs to map
+        paramType: query
+    """
+    volume_ids = get_request_list(request.POST, 'volume_ids', map_fn=int)
+
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT vci.volume_id, vci.class_instance_id
+        FROM volume_class_instance vci
+        JOIN UNNEST(%(volume_ids)s::int[]) volume(id)
+        ON volume.id = vci.volume_id
+        WHERE project_id = %(project_id)s
+        AND relation_id = (
+            SELECT id FROM relation
+            WHERE relation_name = 'model_of'
+            AND project_id = %(project_id)s
+        )
+    """, {
+        'volume_ids': volume_ids,
+        'project_id': project_id
+    })
+
+    return JsonResponse(dict(cursor.fetchall()))

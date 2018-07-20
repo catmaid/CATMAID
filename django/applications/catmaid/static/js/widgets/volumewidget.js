@@ -85,6 +85,12 @@
         openFile.onclick = hiddenFileButton.click.bind(hiddenFileButton);
         controls.appendChild(openFile);
 
+        var annotate = document.createElement('button');
+        annotate.appendChild(document.createTextNode('Annotate'));
+        annotate.setAttribute('title', 'Annotate all selected volumes');
+        annotate.onclick = this.annotateSelectedVolumes.bind(this);
+        controls.appendChild(annotate);
+
         let self = this;
         CATMAID.DOM.appendNumericField(
             controls,
@@ -144,7 +150,7 @@
         table.style.width = "100%";
         var header = table.createTHead();
         var hrow = header.insertRow(0);
-        var columns = ['Name', 'Id', 'Comment', 'User', 'Creation time',
+        var columns = ['', 'Name', 'Id', 'Comment', 'User', 'Creation time',
             'Editor', 'Edition time', 'Action'];
         columns.forEach(function(c) {
           hrow.insertCell().appendChild(document.createTextNode(c));
@@ -171,6 +177,12 @@
               .catch(CATMAID.handleError);
           },
           columns: [
+            {
+              render: function(data, type, row, meta) {
+                return '<input type="checkbox" data-role="select" ' +
+                    (row.selected ? 'checked' : '') + ' />';
+              }
+            },
             {data: "title"},
             {data: "id"},
             {data: "comment"},
@@ -197,6 +209,12 @@
                   '<a href="#" data-action="export-STL">Export STL</a>'
             }
           ],
+        })
+        .on('change', 'input[data-role=select]', function() {
+          var table = $(this).closest('table');
+          var tr = $(this).closest('tr');
+          var data =  $(table).DataTable().row(tr).data();
+          data.selected = this.checked;
         });
 
         // Remove volume if 'remove' was clicked
@@ -331,7 +349,7 @@
 
         // Display a volume if clicked
         var self = this;
-        $(table).on('click', 'tbody td', function() {
+        $(table).on('dblclick', 'tbody td', function() {
           var tr = $(this).closest("tr");
           var volume = self.datatable.row(tr).data();
           self.loadVolume(volume.id)
@@ -622,6 +640,39 @@
     this.editVolume(null);
   };
 
+
+  /**
+   * Annotate all currently selected volumes.
+   */
+  VolumeManagerWidget.prototype.annotateSelectedVolumes = function() {
+    if (!this.datatable) {
+      return;
+    }
+
+    let allVolumes = this.datatable.rows({'search': 'applied' }).data().toArray();
+    let selectedVolumeIds = allVolumes.filter(function(v) {
+      return v.selected;
+    }).map(function(v) {
+      return v.id;
+    });
+
+    if (selectedVolumeIds.length === 0) {
+      CATMAID.warn("No volumes selected");
+      return;
+    }
+
+    // Retrieve class instance IDs for volumes
+    CATMAID.fetch(project.id + '/volumes/entities/', 'POST', {
+        volume_ids: selectedVolumeIds
+      })
+      .then(function(ciMapping) {
+        return CATMAID.annotate(Object.values(ciMapping));
+      })
+      .then(function() {
+        CATMAID.msg("Success", "Annotations added");
+      })
+      .catch(CATMAID.handleError);
+  };
 
   var getVolumeType = function(volume) {
     if (volume instanceof CATMAID.AlphaShapeVolume) {

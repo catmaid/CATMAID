@@ -719,6 +719,17 @@ class Volume(UserFocusedModel):
     geometry = spatial_models.GeometryField(dim=3, srid=0)
 
 
+class VolumeClassInstance(UserFocusedModel):
+    # Repeat the columns inherited from 'relation_instance'
+    relation = models.ForeignKey(Relation, on_delete=models.CASCADE)
+    # Now new columns:
+    volume = models.ForeignKey(Volume, on_delete=models.CASCADE)
+    class_instance = models.ForeignKey(ClassInstance, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = "volume_class_instance"
+
+
 class RegionOfInterest(UserFocusedModel):
     # Repeat the columns inherited from 'location'
     editor = models.ForeignKey(User, on_delete=models.CASCADE,

@@ -352,10 +352,31 @@ def volume_collection(request, project_id):
         # FIXME: Parsing our PostGIS geometry with GeoDjango doesn't work
         # anymore since Django 1.8. Therefore, the geometry fields isn't read.
         # See: https://github.com/catmaid/CATMAID/issues/1250
-        fields = ('id', 'name', 'comment', 'user', 'editor', 'project',
-                'creation_time', 'edition_time')
-        volumes = Volume.objects.filter(project_id=project_id).values(*fields)
-        return Response(volumes)
+
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT v.id, v.name, v.comment, v.user_id, v.editor_id, v.project_id,
+                v.creation_time, v.edition_time,
+                JSON_AGG(ann.name) FILTER (WHERE ann.name IS NOT NULL) AS annotations
+            FROM catmaid_volume v
+            LEFT JOIN volume_class_instance vci ON vci.volume_id = v.id
+            LEFT JOIN class_instance_class_instance cici
+                ON cici.class_instance_a = vci.class_instance_id
+            LEFT JOIN class_instance ann ON ann.id = cici.class_instance_b
+            WHERE v.project_id = %(pid)s
+                AND (
+                    cici.relation_id IS NULL OR
+                    cici.relation_id = (
+                        SELECT id FROM relation
+                        WHERE project_id = %(pid)s AND relation_name = 'annotated_with'
+                    )
+                )
+            GROUP BY v.id
+            """, {'pid': project_id})
+        return JsonResponse({
+            'columns': [r[0] for r in cursor.description],
+            'data': cursor.fetchall()
+        })
 
 def get_volume_details(project_id, volume_id):
     cursor = connection.cursor()

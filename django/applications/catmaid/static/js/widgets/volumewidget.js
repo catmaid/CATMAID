@@ -150,7 +150,7 @@
         table.style.width = "100%";
         var header = table.createTHead();
         var hrow = header.insertRow(0);
-        var columns = ['', 'Name', 'Id', 'Comment', 'User', 'Creation time',
+        var columns = ['', 'Name', 'Id', 'Comment', 'Annotations', 'User', 'Creation time',
             'Editor', 'Edition time', 'Action'];
         columns.forEach(function(c) {
           hrow.insertCell().appendChild(document.createTextNode(c));
@@ -166,8 +166,8 @@
 
             CATMAID.fetch(project.id +  "/volumes/")
               .then(function(volumeData) {
-                let volumes = volumeData.map(function(volume) {
-                  return new CATMAID.Volume(volume);
+                let volumes = volumeData.data.map(function(volume) {
+                  return new CATMAID.Volume(CATMAID.tools.buildObject(volumeData.columns, volume));
                 });
                 callback({
                   draw: data.draw,
@@ -186,6 +186,16 @@
             {data: "title"},
             {data: "id"},
             {data: "comment"},
+            {
+              data: "annotations",
+              render: function (data, type, row, meta) {
+                if (type === 'display') {
+                  return data.join(', ');
+                } else {
+                  return data;
+                }
+              }
+            },
             {
               data: "user_id",
               render: function(data, type, row, meta) {

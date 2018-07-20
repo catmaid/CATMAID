@@ -21,7 +21,11 @@
      */
     listAll: function(projectId) {
       var url = projectId + '/volumes/';
-      return CATMAID.fetch(url, 'GET');
+      return CATMAID.fetch(url, 'GET').then(function (volumes) {
+        return volumes.data.map(function (vol) {
+          return CATMAID.tools.buildObject(volumes.columns, vol);
+        });
+      });
     },
 
     /**

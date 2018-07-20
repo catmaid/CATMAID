@@ -184,7 +184,7 @@
                   // Remove former newly added end node from partition, added
                   // nodes and from arbor.;
                   if (updateArborData) {
-                    arbor.edges[partition[0]] = partition[2];
+                    arbor.edges[partition[intervalStartIdx - 1]] = partition[intervalStartIdx + 1];
                     delete arbor.edges[lastEndId];
                     delete positions[lastEndId];
                   }

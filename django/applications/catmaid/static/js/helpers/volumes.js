@@ -17,13 +17,13 @@
         };
       });
       if (options.mode === "radio") {
-        if (newSelectedIds.length > 1){
+        let selectedVolume = newSelectedIds || options.selectedVolumeIds;
+        if (selectedVolume.length > 1){
           throw new CATMAID.ValueError("Radio select only takes one selected volume");
         }
-        let selectedVolume = newSelectedIds[0] || options.selectedVolumeIds[0];
         // Create actual element based on the returned data
         let node = CATMAID.DOM.createRadioSelect('Volumes', volumes,
-          selectedVolume, true);
+          selectedVolume[0], true);
         // Add a selection handler
         node.onchange = function (e) {
           let volumeId = e.target.value;

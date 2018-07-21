@@ -1038,7 +1038,8 @@
             let arbor = widget.state['arbor'];
             let domainArbor = CATMAID.Sampling.domainArbor(arbor.arbor, row.start_node_id,
                 row.ends.map(function(end) { return end.node_id; }));
-            return Math.round(domainArbor.cableLength(arbor.positions));
+            let l = Math.round(domainArbor.cableLength(arbor.positions));
+            return l < 1 ? '< 1' : l;
           }
         },
         {
@@ -1522,7 +1523,8 @@
           render: function(data, type, row, meta) {
             // Create arbor for domain and measure cable length
             if (cableMap.has(row.id)) {
-              return Math.round(cableMap.get(row.id));
+              let l = Math.round(cableMap.get(row.id));
+              return l < 1 ? '< 1' : l;
             } else {
               return '...';
             }

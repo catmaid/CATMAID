@@ -1727,15 +1727,16 @@
         workParser.positions = Object.assign({}, arbor.positions);
 
         // Interpolate positions
+        let interpolatedNodes;
         if (interpolateLocations) {
-          workParser.arbor.interpolatePositions(
+          interpolatedNodes = workParser.arbor.interpolatePositions(
             workParser.positions, interpolatableX, interpolatableY,
             interpolatableZ);
         }
         return CATMAID.Sampling.intervalsFromModels(workParser.arbor,
             workParser.positions, domainDetails, intervalLength,
             intervalError, preferSmallerError,
-            createIntervalBoundingNodes, leafHandling, true);
+            createIntervalBoundingNodes, leafHandling, true, false, interpolatedNodes);
       })
       .then(function(intervalConfiguration) {
         return new Promise(function(resolve, reject) {

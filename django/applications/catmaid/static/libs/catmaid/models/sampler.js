@@ -100,10 +100,13 @@
    * a short interval containing the whole leaf segment and the last option
    * merges into the last segment if possible (i.e. it is not the first segment
    * in a partition) and otherwise creates a new shorter interval.
+   *
+   * If <nodeBlacklist> is provided, no new nodes will be created that are in
+   * the blacklist (a Map or Set)..
    */
   Sampling.intervalsFromModels = function(arbor, positions, domainDetails,
       intervalLength, intervalError, preferSmallerError, createNewNodes,
-      leafHandling, updateArborData, targetEdgeMap) {
+      leafHandling, updateArborData, targetEdgeMap, nodeBlacklist) {
     if (!intervalLength) {
       throw new CATMAID.ValueError("Need interval length for interval creation");
     }
@@ -242,7 +245,9 @@
           }
 
           if (!selectedNode) {
-            if (createNewNodes) {
+            let isBlacklisted = nodeBlacklist &&
+                (nodeBlacklist.has(partition[j]) || nodeBlacklist.has(partition[j+1]));
+            if (createNewNodes && !isBlacklisted) {
               // Optionally, create a new node between this node and the last one.
               // This also requires updating the arbor.
               let dRatio = distanceToLast / edgeLength;

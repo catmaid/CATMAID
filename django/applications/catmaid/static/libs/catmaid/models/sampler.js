@@ -127,7 +127,7 @@
     var currentInterval = 0;
     var partitions = domainArbor.partitionSorted();
     for (var i=0; i<partitions.length; ++i) {
-      var partition = partitions[i];
+      var partition = partitions[i].map(Number);
       // Walk partition toward leaves
       var dist = 0, lastDist;
       var intervalStartIdx = partition.length - 1;

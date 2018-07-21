@@ -1712,12 +1712,12 @@
     prepare
       .then(getDomainDetails.bind(this, project.id, domain.id))
       .then(function(domainDetails) {
-          workParser.arbor = arbor.arbor.clone();
-          workParser.positions = Object.assign({}, arbor.positions);
+        workParser.arbor = arbor.arbor.clone();
+        workParser.positions = Object.assign({}, arbor.positions);
 
-          // Interpolate positions
-          workParser.arbor.interpolatePositions(workParser.positions,
-              interpolatableX, interpolatableY, interpolatableZ);
+        // Interpolate positions
+        workParser.arbor.interpolatePositions(workParser.positions,
+            interpolatableX, interpolatableY, interpolatableZ);
         return CATMAID.Sampling.intervalsFromModels(workParser.arbor,
             workParser.positions, domainDetails, intervalLength,
             intervalError, preferSmallerError,

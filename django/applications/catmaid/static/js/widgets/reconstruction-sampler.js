@@ -721,8 +721,12 @@
           workParser.positions = Object.assign({}, arbor.positions);
 
           // Interpolate positions
-          workParser.arbor.interpolatePositions(workParser.positions,
-              interpolatableX, interpolatableY, interpolatableZ);
+          let interpolatedNodes;
+          if (interpolateSections) {
+            interpolatedNodes = workParser.arbor.interpolatePositions(
+                workParser.positions, interpolatableX, interpolatableY,
+                interpolatableZ);
+          }
 
           let intervalConfiguration = CATMAID.Sampling.intervalsFromModels(
             workParser.arbor, workParser.positions, fakeDomain, intervalLength,
@@ -1659,6 +1663,11 @@
     var colorMethod = binaryIntervalColors ? "binary-sampler-intervals" :
         "multicolor-sampler-intervals";
 
+    var interpolateLocations = widget.state['interpolateLocations'];
+    if (interpolateLocations === undefined) {
+      CATMAID.warn("Not specified whether to interpolate locations");
+      return;
+    }
     var interpolatableX = widget.state['interpolatableX'];
     if (!interpolatableX) {
       CATMAID.warn("No valid X interpolatable list found");
@@ -1716,8 +1725,11 @@
         workParser.positions = Object.assign({}, arbor.positions);
 
         // Interpolate positions
-        workParser.arbor.interpolatePositions(workParser.positions,
-            interpolatableX, interpolatableY, interpolatableZ);
+        if (interpolateLocations) {
+          workParser.arbor.interpolatePositions(
+            workParser.positions, interpolatableX, interpolatableY,
+            interpolatableZ);
+        }
         return CATMAID.Sampling.intervalsFromModels(workParser.arbor,
             workParser.positions, domainDetails, intervalLength,
             intervalError, preferSmallerError,

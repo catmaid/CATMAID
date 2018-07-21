@@ -235,7 +235,7 @@
         value: widget.state['intervalLength'],
         length: 6,
         onchange: function() {
-          widget.state['intervalLength'] = this.value;
+          widget.state['intervalLength'] = Number(this.value);
         }
       },
       {

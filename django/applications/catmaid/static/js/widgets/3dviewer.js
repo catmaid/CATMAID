@@ -5541,6 +5541,10 @@
    * @param collection Optional array to collect meshes to be removed
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.removeActorFromScene = function(collection) {
+    if (!this.actor) {
+      return;
+    }
+
     // Dispose of both geometry and material, unique to this Skeleton
     this.actor[this.CTYPES[0]].geometry.dispose();
     this.actor[this.CTYPES[0]].material.dispose();

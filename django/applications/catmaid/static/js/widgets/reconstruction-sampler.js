@@ -346,7 +346,7 @@
         onchange: function() {
           try {
             this.classList.remove('ui-state-error');
-            widget.state['interpolatableY'] = this.value.split(',').map(
+            widget.state['interpolatableZ'] = this.value.split(',').map(
                 function(s) {
                   s = s.trim();
                   if (s.length === 0) {

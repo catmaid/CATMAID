@@ -2032,8 +2032,8 @@ Arbor.prototype.interpolatePositions = function(positions, interpolatableX,
   for (let i=0, imax=nodes.length; i<imax; ++i) {
     let nodeId = nodes[i];
     let position = positions[nodeId],
-      nodeX = position.x, nodeY = position.y,
-      nodeZ = position.z;
+        nodeX = position.x, nodeY = position.y,
+        nodeZ = position.z;
 
     let interpolateX = false, interpolateY = false, interpolateZ = false;
 

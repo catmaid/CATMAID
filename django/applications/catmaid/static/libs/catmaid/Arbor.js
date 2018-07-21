@@ -2016,12 +2016,15 @@ Arbor.prototype.approximateTwigRoots = function(strahler_cut) {
  * Modify the passed in positions by walking down the arbor and check each
  * position if it should be interpolated. If so the respective coordinate is
  * updated.
+ *
+ * @returns A mapping of interpolated nodes to their original locations.
  */
 Arbor.prototype.interpolatePositions = function(positions, interpolatableX,
     interpolatableY, interpolatableZ) {
   let successors = this.allSuccessors();
   let nodes = this.childrenArray();
   let averageChildPosition = { 'x': 0, 'y': 0, 'z': 0 };
+  let interpolatedNodes = new Map();
   interpolatableX = interpolatableX && interpolatableX.length > 0 ? interpolatableX : false;
   interpolatableY = interpolatableY && interpolatableY.length > 0 ? interpolatableY : false;
   interpolatableZ = interpolatableZ && interpolatableZ.length > 0 ? interpolatableZ : false;
@@ -2099,6 +2102,9 @@ Arbor.prototype.interpolatePositions = function(positions, interpolatableX,
       parentPosition = positions[parentId];
     }
 
+    // Store original location
+    interpolatedNodes.set(nodeId, position.clone());
+
     if (interpolatableX) {
       position.setY((averageChildPosition.y + parentPosition.y) * 0.5);
       position.setZ((averageChildPosition.z + parentPosition.z) * 0.5);
@@ -2114,4 +2120,6 @@ Arbor.prototype.interpolatePositions = function(positions, interpolatableX,
       position.setY((averageChildPosition.y + parentPosition.y) * 0.5);
     }
   }
+
+  return interpolatedNodes;
 };

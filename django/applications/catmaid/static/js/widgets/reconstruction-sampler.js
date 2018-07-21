@@ -235,7 +235,7 @@
         value: widget.state['intervalLength'],
         length: 6,
         onchange: function() {
-          widget.state['intervalLength'] = this.value;
+          widget.state['intervalLength'] = Number(this.value);
         }
       },
       {
@@ -346,7 +346,7 @@
         onchange: function() {
           try {
             this.classList.remove('ui-state-error');
-            widget.state['interpolatableY'] = this.value.split(',').map(
+            widget.state['interpolatableZ'] = this.value.split(',').map(
                 function(s) {
                   s = s.trim();
                   if (s.length === 0) {
@@ -721,8 +721,12 @@
           workParser.positions = Object.assign({}, arbor.positions);
 
           // Interpolate positions
-          workParser.arbor.interpolatePositions(workParser.positions,
-              interpolatableX, interpolatableY, interpolatableZ);
+          let interpolatedNodes;
+          if (interpolateSections) {
+            interpolatedNodes = workParser.arbor.interpolatePositions(
+                workParser.positions, interpolatableX, interpolatableY,
+                interpolatableZ);
+          }
 
           let intervalConfiguration = CATMAID.Sampling.intervalsFromModels(
             workParser.arbor, workParser.positions, fakeDomain, intervalLength,
@@ -1034,7 +1038,8 @@
             let arbor = widget.state['arbor'];
             let domainArbor = CATMAID.Sampling.domainArbor(arbor.arbor, row.start_node_id,
                 row.ends.map(function(end) { return end.node_id; }));
-            return Math.round(domainArbor.cableLength(arbor.positions));
+            let l = Math.round(domainArbor.cableLength(arbor.positions));
+            return l < 1 ? '< 1' : l;
           }
         },
         {
@@ -1518,7 +1523,8 @@
           render: function(data, type, row, meta) {
             // Create arbor for domain and measure cable length
             if (cableMap.has(row.id)) {
-              return Math.round(cableMap.get(row.id));
+              let l = Math.round(cableMap.get(row.id));
+              return l < 1 ? '< 1' : l;
             } else {
               return '...';
             }
@@ -1659,6 +1665,11 @@
     var colorMethod = binaryIntervalColors ? "binary-sampler-intervals" :
         "multicolor-sampler-intervals";
 
+    var interpolateLocations = widget.state['interpolateLocations'];
+    if (interpolateLocations === undefined) {
+      CATMAID.warn("Not specified whether to interpolate locations");
+      return;
+    }
     var interpolatableX = widget.state['interpolatableX'];
     if (!interpolatableX) {
       CATMAID.warn("No valid X interpolatable list found");
@@ -1712,16 +1723,20 @@
     prepare
       .then(getDomainDetails.bind(this, project.id, domain.id))
       .then(function(domainDetails) {
-          workParser.arbor = arbor.arbor.clone();
-          workParser.positions = Object.assign({}, arbor.positions);
+        workParser.arbor = arbor.arbor.clone();
+        workParser.positions = Object.assign({}, arbor.positions);
 
-          // Interpolate positions
-          workParser.arbor.interpolatePositions(workParser.positions,
-              interpolatableX, interpolatableY, interpolatableZ);
+        // Interpolate positions
+        let interpolatedNodes;
+        if (interpolateLocations) {
+          interpolatedNodes = workParser.arbor.interpolatePositions(
+            workParser.positions, interpolatableX, interpolatableY,
+            interpolatableZ);
+        }
         return CATMAID.Sampling.intervalsFromModels(workParser.arbor,
             workParser.positions, domainDetails, intervalLength,
             intervalError, preferSmallerError,
-            createIntervalBoundingNodes, leafHandling, true);
+            createIntervalBoundingNodes, leafHandling, true, false, interpolatedNodes);
       })
       .then(function(intervalConfiguration) {
         return new Promise(function(resolve, reject) {

@@ -710,7 +710,7 @@
       let hasParent = i < (partition.length - 1);
       let isNotRoot = hasParent || this.arbor.root != p;
       // Make sure we have an integer
-      let id = parseInt(p);
+      let id = parseInt(p, 10);
       let nodeSphere = this.nodes.get(id);
       if (!nodeSphere) {
         let r = isNotRoot ? radius : (3 * radius);

@@ -198,7 +198,7 @@ SkeletonAnnotations.atn.set = function(node, stack_viewer_id) {
 SkeletonAnnotations.atn.promise = function()
 {
   var overlay = SkeletonAnnotations.getTracingOverlay(this.stack_viewer_id);
-  var node = overlay.nodes[this.id];
+  var node = overlay.nodes.get(this.id);
   if (!node) {
     return Promise.reject("Couldn't find node " + this.id + " in tracing layer");
   }
@@ -547,7 +547,7 @@ SkeletonAnnotations.getVirtualNodeComponents = function(nodeID)
  */
 SkeletonAnnotations.getVirtualNodeComponent = function(index, nodeID, matches)
 {
-  var matches = matches || SkeletonAnnotations.getVirtualNodeComponents(nodeID);
+  matches = matches || SkeletonAnnotations.getVirtualNodeComponents(nodeID);
   if (!matches || matches.length !== 6 || index < 1 || index > 5) {
     return null;
   }
@@ -558,13 +558,19 @@ SkeletonAnnotations.getVirtualNodeComponent = function(index, nodeID, matches)
  * Return the child component of a virtual node ID. If the node passed in, is
  * real, null is returned.
  */
-SkeletonAnnotations.getChildOfVirtualNode = SkeletonAnnotations.getVirtualNodeComponent.bind(window, 1);
+SkeletonAnnotations.getChildOfVirtualNode = function(nodeId, matches) {
+  var childId = SkeletonAnnotations.getVirtualNodeComponent(1, nodeId, matches);
+  return childId === null ? null : parseInt(childId, 10);
+};
 
 /**
  * Return the child component of a virtual node ID. If the node passed in, is
  * real, null is returned.
  */
-SkeletonAnnotations.getParentOfVirtualNode = SkeletonAnnotations.getVirtualNodeComponent.bind(window, 2);
+SkeletonAnnotations.getParentOfVirtualNode = function(nodeId, matches) {
+  var parentId = SkeletonAnnotations.getVirtualNodeComponent(2, nodeId, matches);
+  return parentId === null ? null : parseInt(parentId, 10);
+};
 
 /**
  * Return the X component of a virtual node ID. If the node passed in, is
@@ -718,7 +724,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   this.submit = submitterFn();
 
   /** The ID vs Node or ConnectorNode instance. */
-  this.nodes = {};
+  this.nodes = new Map();
   /** A set of node IDs of nodes that need to be synced to the backend. */
   this.nodeIDsNeedingSync = new Set();
   /** The DOM elements representing node labels. */
@@ -766,7 +772,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   var self = this;
   this.state = new CATMAID.GenericState({
     getNode: function(nodeId) {
-      var node = self.nodes[nodeId];
+      var node = self.nodes.get(nodeId);
       if (!node) {
         throw new CATMAID.ValueError("Couldn't find node with ID " + nodeId +
             " in tracing layer");
@@ -777,19 +783,19 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
       if (!SkeletonAnnotations.isRealNode(nodeId)) {
         nodeId = SkeletonAnnotations.getParentOfVirtualNode(nodeId);
       }
-      var node = self.nodes[nodeId];
+      var node = self.nodes.get(nodeId);
       if (!node || !node.parent) {
         return undefined;
       }
       var parent = node.parent;
       if (!SkeletonAnnotations.isRealNode(parent.id)) {
         var parentId = SkeletonAnnotations.getParentOfVirtualNode(parent.id);
-        parent = self.nodes[parentId];
+        parent = self.nodes.get(parentId);
       }
       return nodeToStateList(parent);
     },
     getChildren: function(nodeId) {
-      var node = self.nodes[nodeId];
+      var node = self.nodes.get(nodeId);
       if (!node || !node.children) {
         return undefined;
       }
@@ -804,7 +810,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
       return children;
     },
     getLinks: function(nodeId, isConnector) {
-      var node = self.nodes[nodeId];
+      var node = self.nodes.get(nodeId);
       if (!node) {
         return undefined;
       }
@@ -1132,7 +1138,7 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNode = function(node)
     // If the node is a string or a number, try to find it in the nodes cache.
     var type = typeof node;
     if ("string" === type || "number" === type) {
-      node = self.nodes[node];
+      node = self.nodes.get(node);
     }
 
     // Raise error, if no node or a node without ID was passed in
@@ -1156,7 +1162,7 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNode = function(node)
       return;
     }
 
-    var childId = matches[1];
+    var childId = SkeletonAnnotations.getChildOfVirtualNode(node.id, matches);
     var command = new CATMAID.InsertNodeCommand(self.state, project.id, node.x, node.y, node.z,
         node.parent_id, childId, node.radius, node.confidence);
     CATMAID.commands.execute(command)
@@ -1166,9 +1172,9 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNode = function(node)
             " as child of node #" + childId);
         // Update nodes
         var vnid = node.id;
-        self.nodes[nid] = self.nodes[vnid];
-        self.nodes[nid].edition_time_iso_str = result.edition_time;
-        delete self.nodes[vnid];
+        self.nodes.set(nid, self.nodes.get(vnid));
+        self.nodes.get(nid).edition_time_iso_str = result.edition_time;
+        self.nodes.delete(vnid);
         // Update node reference, passed in (which *should* be the same as
         // self.nodes[nid] referenced and updated above, but we set it just to
         // be on the safe side).
@@ -1178,7 +1184,7 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNode = function(node)
         if (result.child_edition_times) {
           for (var i=0; i<result.child_edition_times.length; ++i) {
             var childEditInfo = result.child_edition_times[i];
-            var childNode = self.nodes[childEditInfo[0]];
+            var childNode = self.nodes.get(childEditInfo[0]);
             if (childNode) {
               childNode.edition_time_iso_str = childEditInfo[1];
             }
@@ -1488,7 +1494,7 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
  * argument can be set to true.
  */
 SkeletonAnnotations.TracingOverlay.prototype.selectNode = function(id, strict) {
-  var node = this.nodes[id];
+  var node = this.nodes.get(id);
   if (node) {
     this.activateNode(node);
     return Promise.resolve(node);
@@ -1511,21 +1517,18 @@ SkeletonAnnotations.TracingOverlay.prototype.selectNode = function(id, strict) {
 SkeletonAnnotations.TracingOverlay.prototype.findConnectors = function(node_id) {
   let connectors = {};
   var ConnectorType = SkeletonAnnotations.TYPE_CONNECTORNODE;
-  for (var id in this.nodes) {
-    if (this.nodes.hasOwnProperty(id)) {
-      var node = this.nodes[id];
-      if (node.type !== ConnectorType) {
-        continue;
-      }
-      for (var i=0, imax=node.links.length; i<imax; ++i) {
-        var link = node.links[i];
-        if (link.treenode.id == node_id) {
-          var target = connectors[link.relation_name];
-          if (!target) {
-            target = connectors[link.relation_name] = [];
-          }
-          target.push(id);
+  for (var node of this.nodes.values()) {
+    if (node.type !== ConnectorType) {
+      continue;
+    }
+    for (var i=0, imax=node.links.length; i<imax; ++i) {
+      var link = node.links[i];
+      if (link.treenode.id == node_id) {
+        var target = connectors[link.relation_name];
+        if (!target) {
+          target = connectors[link.relation_name] = [];
         }
+        target.push(node.id);
       }
     }
   }
@@ -1537,10 +1540,8 @@ SkeletonAnnotations.TracingOverlay.prototype.findConnectors = function(node_id) 
  */
 SkeletonAnnotations.TracingOverlay.prototype.recolorAllNodes = function () {
   // Assumes that atn and active_skeleton_id are correct:
-  for (var nodeID in this.nodes) {
-    if (this.nodes.hasOwnProperty(nodeID)) {
-      this.nodes[nodeID].updateColors();
-    }
+  for (var node of this.nodes.values()) {
+    node.updateColors();
   }
   this.pixiLayer._renderIfReady();
 };
@@ -1550,14 +1551,12 @@ SkeletonAnnotations.TracingOverlay.prototype.recolorAllNodes = function () {
  */
 SkeletonAnnotations.TracingOverlay.prototype.updateVisibilityForAllNodes = function () {
   // Assumes that atn and active_skeleton_id are correct:
-  for (var nodeID in this.nodes) {
-    if (this.nodes.hasOwnProperty(nodeID)) {
-      this.nodes[nodeID].updateVisibility();
-    }
+  for (var node of this.nodes.values()) {
+    node.updateVisibility();
   }
   for (var nodeID in this.labels) {
     if (this.labels.hasOwnProperty(nodeID)) {
-      var node = this.nodes[nodeID];
+      var node = this.nodes.get(nodeID);
       if (node) {
         this.labels[nodeID].visibility(node.isVisible());
       }
@@ -1628,11 +1627,11 @@ SkeletonAnnotations.validNodeTest = function(respectVirtualNodes)
 {
   if (respectVirtualNodes) {
    return function(nodes, nodeId) {
-      return nodes.hasOwnProperty(nodeId);
+      return nodes.has(nodeId);
     };
   } else {
     return function(nodes, nodeId) {
-      return nodes.hasOwnProperty(nodeId) &&
+      return nodes.has(nodeId) &&
         SkeletonAnnotations.isRealNode(nodeId);
     };
   }
@@ -1665,9 +1664,8 @@ SkeletonAnnotations.TracingOverlay.prototype.getClosestNode = function (
   // Add an virual node check, if wanted
   var nodeIsValid = SkeletonAnnotations.validNodeTest(respectVirtualNodes);
 
-  for (nodeid in this.nodes) {
-    if (nodeIsValid(this.nodes, nodeid)) {
-      node = this.nodes[nodeid];
+  for (var node of this.nodes.values()) {
+    if (nodeIsValid(this.nodes, node.id)) {
       xdiff = x - node.x;
       ydiff = y - node.y;
       zdiff = z - node.z;
@@ -1697,9 +1695,9 @@ SkeletonAnnotations.TracingOverlay.prototype.findAllNodesWithinRadius = function
   // respect virual nodes, if wanted
   var nodeIsValid = SkeletonAnnotations.validNodeTest(respectVirtualNodes);
 
-  return Object.keys(this.nodes).filter((function (nodeid) {
-    if (nodeIsValid(this.nodes, nodeid)) {
-      node = this.nodes[nodeid];
+  return Array.from(this.nodes.keys()).filter(function(nodeId) {
+    if (nodeIsValid(this.nodes, nodeId)) {
+      node = this.nodes.get(nodeId);
       xdiff = x - node.x;
       ydiff = y - node.y;
       zdiff = z - node.z;
@@ -1709,7 +1707,7 @@ SkeletonAnnotations.TracingOverlay.prototype.findAllNodesWithinRadius = function
     }
 
     return false;
-  }).bind(this));
+  }, this);
 };
 
 /**
@@ -1761,7 +1759,7 @@ SkeletonAnnotations.TracingOverlay.prototype.findNearestSkeletonPoint = function
 
   var nearestReduction = function (nodes, nearest) {
     return Object.keys(nodes).reduce(function (nearest, nodeId) {
-      var node = nodes[nodeId];
+      var node = nodes.get(nodeId);
       if (nodeIsValid(nodes, node.id) &&
           node.skeleton_id === skeleton_id &&
           node.parent !== null)
@@ -1827,9 +1825,9 @@ SkeletonAnnotations.TracingOverlay.prototype.insertNodeInActiveSkeleton = functi
             return nodes;
           }, {});
           if (atn.parent_id && (SkeletonAnnotations.isRealNode(atn.parent_id) ||
-                                !self.nodes.hasOwnProperty(atn.parent_id)))
+                                !self.nodes.has(atn.parent_id)))
           {
-            self.promiseNode(self.nodes[atn.parent_id])
+            self.promiseNode(self.nodes.get(atn.parent_id))
               .then(function(parentId) {
                 // Need to fetch the parent node first.
                 self.submit(
@@ -1901,11 +1899,11 @@ SkeletonAnnotations.TracingOverlay.prototype.showLabels = function() {
  * false is returned. False, otherwise.
  */
 SkeletonAnnotations.TracingOverlay.prototype.checkLoadedAndIsNotRoot = function(nodeID) {
-  if (null === nodeID || !this.nodes.hasOwnProperty(nodeID)) {
+  if (null === nodeID || !this.nodes.has(nodeID)) {
     CATMAID.warn("Cannot find node with ID " + nodeID);
     return false;
   }
-  if (null === this.nodes[nodeID].parent_id) {
+  if (null === this.nodes.get(nodeID).parent_id) {
     CATMAID.info("Node is already root!");
     return false;
   }
@@ -1921,7 +1919,7 @@ SkeletonAnnotations.TracingOverlay.prototype.rerootSkeleton = function(nodeID) {
   if (!this.checkLoadedAndIsNotRoot(nodeID)) return;
   if (!confirm("Do you really want to to reroot the skeleton?")) return;
   var self = this;
-  this.promiseNode(this.nodes[nodeID]).then(function(nodeID) {
+  this.promiseNode(this.nodes.get(nodeID)).then(function(nodeID) {
     var command = new CATMAID.RerootSkeletonCommand(self.state, project.id, nodeID);
     CATMAID.commands.execute(command)
       .then(function () { self.updateNodes(); })
@@ -1937,7 +1935,7 @@ SkeletonAnnotations.TracingOverlay.prototype.rerootSkeleton = function(nodeID) {
 SkeletonAnnotations.TracingOverlay.prototype.splitSkeleton = function(nodeId) {
   if (!this.checkLoadedAndIsNotRoot(nodeId)) return;
   var self = this;
-  var node = self.nodes[nodeId];
+  var node = self.nodes.get(nodeId);
   // Make sure we have permissions to edit the neuron
   this.executeIfSkeletonEditable(node.skeleton_id, function() {
     // Make sure we reference the correct node and create a model
@@ -2002,10 +2000,10 @@ SkeletonAnnotations.TracingOverlay.prototype.splitSkeleton = function(nodeId) {
  */
 SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (fromid, toid) {
   if (fromid === toid) return;
-  if (!this.nodes.hasOwnProperty(toid)) return;
+  if (!this.nodes.has(toid)) return;
   var self = this;
   // Get neuron name and id of the to-skeleton
-  this.promiseNodes(this.nodes[fromid], this.nodes[toid]).then(function(nids) {
+  this.promiseNodes(this.nodes.get(fromid), this.nodes.get(toid)).then(function(nids) {
     var fromid = nids[0], toid=nids[1];
     self.submit(
       CATMAID.makeURL(project.id + '/treenodes/' + toid + '/info'),
@@ -2054,7 +2052,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
               // If a fast merge mode is enabled, check if this operation
               // matches the settings and don't show the UI if this is the case.
               let noConfirmation = SkeletonAnnotations.FastMergeMode.isNodeMatched(
-                  self.nodes[toid]);
+                  self.nodes.get(toid));
 
               if (noConfirmation) {
                 // Providing no annotation set, will result in all annotations
@@ -2070,8 +2068,8 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
                     to_skid, json.neuron_name, to_color);
                 // Extend the display with the newly created line
                 var extension = {};
-                var p = self.nodes[SkeletonAnnotations.getActiveNodeId()],
-                    c = self.nodes[toid];
+                var p = self.nodes.get(SkeletonAnnotations.getActiveNodeId()),
+                    c = self.nodes.get(toid);
                 extension[from_skid] = [
                     new THREE.Vector3(p.x, p.y, p.z),
                     new THREE.Vector3(c.x, c.y, c.z)
@@ -2160,11 +2158,11 @@ SkeletonAnnotations.TracingOverlay.prototype.createLink = function (fromid, toid
       return CATMAID.commands.execute(command)
         .then(function(result) {
           if (result.warning) CATMAID.warn(result.warning);
-          var node = self.nodes[nodeId];
+          var node = self.nodes.get(nodeId);
           if (!node) {
             return true;
           }
-          var connector = self.nodes[toid];
+          var connector = self.nodes.get(toid);
           if (!connector) {
             return true;
           }
@@ -2209,7 +2207,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createSingleConnector = function (
       new CATMAID.CreateConnectorCommand(project.id,
         phys_x, phys_y, phys_z, confval, subtype));
   return createConnector.then(function(result) {
-    var newConnectorNode = self.nodes[result.newConnectorId];
+    var newConnectorNode = self.nodes.get(result.newConnectorId);
     if (!newConnectorNode) {
       CATMAID.warn("Could not find new connector node in stack viewer");
       return;
@@ -2259,7 +2257,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createPresynapticTreenode = functio
   // also checked in the server on attempting to create a link. Here, it is
   // checked for convenience to avoid creating an isolated treenode for no
   // reason.)
-  var connectorNode = this.nodes[connectorID];
+  var connectorNode = this.nodes.get(connectorID);
   if (!connectorNode) {
     return Promise.reject(new CATMAID.ValueError("Connector #" +
         connectorID + " is not loaded. Browse to " +
@@ -2284,7 +2282,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createGapjunctionTreenode = functio
   // and that connectorID doesn't have post- or presynaptic links
   // (It is also checked in the server on attempting to create a link.
   // Here, it is checked for convenience to avoid creating an isolated treenode for no reason.)
-  var connectorNode = this.nodes[connectorID];
+  var connectorNode = this.nodes.get(connectorID);
   if (!connectorNode) {
     return Promise.reject(new CATMAID.ValueError( "Connector #" +
         connectorID + " is not loaded. Browse to " +
@@ -2327,7 +2325,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
       // Update edition time
       nn.edition_time_iso_str = jso.edition_time;
       // add node to nodes list
-      self.nodes[nid] = nn;
+      self.nodes.set(nid, nn);
       nn.createGraphics();
       // create link : new treenode postsynaptic_to or presynaptic_to
       // deactivated connectorID
@@ -2336,7 +2334,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
           if (afterCreate) {
             // Use a new node reference, because createLink() triggers an update,
             // which potentially re-initializes node objects.
-            var node = self.nodes[nid];
+            var node = self.nodes.get(nid);
             afterCreate(self, node);
           }
         });
@@ -2367,7 +2365,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID,
   return CATMAID.commands.execute(command)
     .then(function(result) {
       // Set atn to be the newly created node
-      var nn = self.nodes[result.treenode_id];
+      var nn = self.nodes.get(result.treenode_id);
       if (!nn) {
         CATMAID.warn("Could not find new node");
         return;
@@ -2394,7 +2392,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesInDB = functio
                   virtual: []};
     /* jshint validthis: true */ // "this" will be bound to the tracing overlay
     for (var nodeID of this.nodeIDsNeedingSync) {
-      var node = this.nodes[nodeID];
+      var node = this.nodes.get(nodeID);
       // only updated nodes that need sync, e.g.  when they changed position
       if (node) {
         if (SkeletonAnnotations.isRealNode(node.id)) {
@@ -2490,7 +2488,7 @@ CATMAID.createVirtualNode = function(graphics, child, parent, stackViewer) {
  */
 SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (jso, extraNodes) {
   // Reset nodes and labels
-  this.nodes = {};
+  this.nodes.clear();
   // remove labels, but do not hide them
   this.removeLabels();
 
@@ -2512,9 +2510,9 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     for (var i=0, max=extraNodes.length; i<max; ++i) {
       var n = extraNodes[i];
       var stackZ = primaryStack.projectToUnclampedStackZ(n.z, n.y, n.x);
-      this.nodes[n.id] = this.graphics.newNode(n.id, null, n.parent_id, n.radius,
+      this.nodes.set(n.id, this.graphics.newNode(n.id, null, n.parent_id, n.radius,
           n.x, n.y, n.z, stackZ - this.stackViewer.z, n.confidence, n.skeleton_id,
-          n.edition_time, n.user_id);
+          n.edition_time, n.user_id));
     }
   }
 
@@ -2572,7 +2570,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   // Populate Nodes
   for (var i=0, max=jsonNodes.length; i<max; ++i) {
     var a = jsonNodes[i];
-    if (this.nodes[a[0]]) {
+    if (this.nodes.has(a[0])) {
       continue;
     }
     // a[0]: ID, a[1]: parent ID, a[2]: x, a[3]: y, a[4]: z, a[5]: confidence
@@ -2581,7 +2579,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     let newNode = this.graphics.newNode(
       a[0], null, a[1], a[6], a[2], a[3], a[4],
       stackZ - this.stackViewer.z, a[5], a[7], a[8], a[9]);
-    this.nodes[a[0]] = newNode;
+    this.nodes.set(a[0], newNode);
     addedNodes.push(newNode);
     ++nAddedTreenodes;
   }
@@ -2596,7 +2594,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   }, null);
   for (var i=0, max=jsonConnectors.length; i<max; ++i) {
     var a = jsonConnectors[i];
-    if (this.nodes[a[0]]) {
+    if (this.nodes.has(a[0])) {
       continue;
     }
     var links = a[7];
@@ -2639,7 +2637,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     let newNode = this.graphics.newConnectorNode(
       a[0], a[1], a[2], a[3],
       stackZ - this.stackViewer.z, a[4], subtype, a[5], a[6]);
-    this.nodes[a[0]] = newNode;
+    this.nodes.set(a[0], newNode);
     addedNodes.push(newNode);
     ++nAddedConnectors;
   }
@@ -2653,8 +2651,8 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
 
   for (var i=0, max=jsonNodes.length; i<max; ++i) {
     var a = jsonNodes[i];
-    var n = this.nodes[a[0]];
-    var pn = this.nodes[a[1]]; // parent Node
+    var n = this.nodes.get(a[0]);
+    var pn = this.nodes.get(a[1]); // parent Node
 
     // Neither virtual nodes or other parent/child links need to be created if
     // there is no parent node.
@@ -2672,7 +2670,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
         n.parent_id = vn.id;
         pn.addChildNode(vn);
         vn.addChildNode(n);
-        this.nodes[vn.id] = vn;
+        this.nodes.set(vn.id, vn);
         addedNodes.push(vn);
         continue;
       }
@@ -2695,7 +2693,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   for (var i=0, max=jsonConnectors.length; i<max; ++i) {
     var a = jsonConnectors[i];
     // a[0] is the ID of the ConnectorNode
-    var connector = this.nodes[a[0]];
+    var connector = this.nodes.get(a[0]);
     // a[7]: all relations, an array of arrays, containing treenode_id,
     // relation_id, tc_confidence, tc_edition_time, tc_id
     var relations = a[7];
@@ -2703,7 +2701,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
       var r = relations[j];
       // r[0]: tnid, r[1]: relation ID r[2]: tc_confidence
       var tnid = r[0];
-      var node = this.nodes[tnid];
+      var node = this.nodes.get(tnid);
       if (node) {
         var relation_name = relationMap[r[1]];
         var outwards = pointsOutwards(relation_name);
@@ -2732,7 +2730,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     for (var i=0, imax=labeledNodes.length; i<imax; ++i) {
       var nid = labeledNodes[i];
       if (m.hasOwnProperty(nid)) {
-        var node = this.nodes[nid];
+        var node = this.nodes.get(nid);
         // Only add labels for nodes in current section
         if (node && node.shouldDisplay()) {
           this.labels[nid] = new CATMAID.OverlayLabel(
@@ -2768,16 +2766,16 @@ SkeletonAnnotations.TracingOverlay.prototype.loadExtraNodes = function(extraNode
   let nodes = this.nodes;
   let nodeIdsToLoad = extraNodes.reduce(function(target, nodeId) {
     if (SkeletonAnnotations.isRealNode(nodeId)) {
-      if (!nodes[nodeId]) {
+      if (!nodes.has(nodeId)) {
         target.push(nodeId);
       }
     } else {
        let parentId = SkeletonAnnotations.getParentOfVirtualNode(nodeId);
        let childId = SkeletonAnnotations.getChildOfVirtualNode(nodeId);
-       if (nodes[parentId]) {
+       if (nodes.has(parentId)) {
          target.push(parentId);
        }
-       if (nodes[childId]) {
+       if (nodes.has(childId)) {
          target.push(childId);
        }
     }
@@ -2800,15 +2798,15 @@ SkeletonAnnotations.TracingOverlay.prototype.loadExtraNodes = function(extraNode
         let newNode = self.graphics.newNode(
           a[0], null, a[1], a[6], a[2], a[3], a[4],
           stackZ - self.stackViewer.z, a[5], a[7], a[8], a[9]);
-        self.nodes[a[0]] = newNode;
+        self.nodes.set(a[0], newNode);
         addedNodes[i] = newNode;
         newNode.createGraphics();
       }
 
       // Add virtual nodes if needed
       for (let i=0, imax=addedNodes.length; i<imax; ++i) {
-        var n = self.nodes[addedNodes[i].id];
-        var p = n.parent_id ? self.nodes[n.parent_id] : null;
+        var n = self.nodes.get(addedNodes[i].id);
+        var p = n.parent_id ? self.nodes.get(n.parent_id) : null;
 
         if (n && p && ((n.zdiff < 0 && p.zdiff > 0) || (n.zdiff > 0 && p.zdiff < 0))) {
           var vn = CATMAID.createVirtualNode(self.graphics, n, p, self.stackViewer);
@@ -2817,7 +2815,7 @@ SkeletonAnnotations.TracingOverlay.prototype.loadExtraNodes = function(extraNode
             n.parent_id = vn.id;
             p.addChildNode(vn);
             vn.addChildNode(n);
-            self.nodes[vn.id] = vn;
+            self.nodes.set(vn.id, vn);
             addedNodes.push(vn);
             continue;
           }
@@ -3089,7 +3087,7 @@ SkeletonAnnotations.TracingOverlay.prototype._createNodeOrLink = function(insert
       }
     } else {
       if (SkeletonAnnotations.TYPE_NODE === atn.type) {
-        var targetTreenode = this.nodes[atn.id];
+        var targetTreenode = this.nodes.get(atn.id);
         var self = this;
         var newConnectorType = SkeletonAnnotations.newConnectorType;
 
@@ -3336,7 +3334,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
           treenodeIDs.push(
             SkeletonAnnotations.getChildOfVirtualNode(extraTreenodeId),
             SkeletonAnnotations.getParentOfVirtualNode(extraTreenodeId));
-          var n = self.nodes[activeNodeId];
+          var n = self.nodes.get(activeNodeId);
           if (n) {
             extraNodes = [{
               id: n.id,
@@ -3441,7 +3439,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       var nodeSelected = false;
       if (SkeletonAnnotations.hasOwnProperty('init_active_node_id')) {
         nodeSelected = true;
-        self.activateNode(self.nodes[SkeletonAnnotations.init_active_node_id]);
+        self.activateNode(self.nodes.get(SkeletonAnnotations.init_active_node_id));
         delete SkeletonAnnotations.init_active_node_id;
       }
       if (SkeletonAnnotations.hasOwnProperty('init_active_skeleton_id')) {
@@ -3581,7 +3579,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createSubViewNodeListFromCache = fu
 SkeletonAnnotations.TracingOverlay.prototype.setConfidence = function(newConfidence, toConnector) {
   var nodeID = SkeletonAnnotations.getActiveNodeId();
   if (!nodeID) return;
-  var node = this.nodes[nodeID];
+  var node = this.nodes.get(nodeID);
   if (!node || SkeletonAnnotations.TYPE_NODE !== node.type) {
     return;
   }
@@ -3746,7 +3744,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToParentNode = function(treenode_
   // Find parent of node
   var parentID;
   if (SkeletonAnnotations.isRealNode(treenode_id)) {
-    var node = this.nodes[treenode_id];
+    var node = this.nodes.get(treenode_id);
     if (!node) {
       var msg = "Could not find node with id #" + treenode_id;
       return Promise.reject(new CATMAID.Warning(msg));
@@ -3798,7 +3796,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToChildNode = function (treenode_
 
     // Don't fetch children from back-end if node is already known and is on
     // current section (where it is expected that all children area available).
-    var knownNode = this.nodes[treenode_id];
+    var knownNode = this.nodes.get(treenode_id);
     if (knownNode && knownNode.zdiff === 0) {
       return new Promise(function(resolve, reject) {
         // Fill branch cache
@@ -3894,7 +3892,7 @@ SkeletonAnnotations.TracingOverlay.prototype.selectRadius = function(treenode_id
   }
 
   function verifyNode(treenode_id) {
-    var node = self.nodes[treenode_id];
+    var node = self.nodes.get(treenode_id);
     if (!node || node !== originalNode) {
       // This can happen if e.g. the section was changed and all nodes were
       // updated.
@@ -3907,7 +3905,7 @@ SkeletonAnnotations.TracingOverlay.prototype.selectRadius = function(treenode_id
 
   function toggleMeasurementTool() {
     // Keep a reference to the original node
-    originalNode = self.nodes[treenode_id];
+    originalNode = self.nodes.get(treenode_id);
     originalStackZ = self.stackViewer.primaryStack.projectToStackZ(
         originalNode.z, originalNode.y, originalNode.x);
     // Only allow radius edits of treenodes
@@ -4008,7 +4006,7 @@ SkeletonAnnotations.TracingOverlay.prototype.editRadius = function(treenode_id, 
 
   function show_dialog(defaultRadius) {
     if (typeof defaultRadius === 'undefined')
-      defaultRadius = self.nodes[treenode_id].radius;
+      defaultRadius = self.nodes.get(treenode_id).radius;
 
     var dialog = new CATMAID.OptionsDialog("Edit radius");
     var input = dialog.appendField("Radius: ", "treenode-edit-radius", defaultRadius, true);
@@ -4033,9 +4031,9 @@ SkeletonAnnotations.TracingOverlay.prototype.editRadius = function(treenode_id, 
 
   if (no_measurement_tool) {
     if (no_centering) {
-      show_dialog(this.nodes[treenode_id].radius);
+      show_dialog(this.nodes.get(treenode_id).radius);
     } else {
-      this.goToNode(treenode_id, show_dialog(this.nodes[treenode_id].radius));
+      this.goToNode(treenode_id, show_dialog(this.nodes.get(treenode_id).radius));
     }
   } else {
     this.selectRadius(treenode_id, no_centering, no_dialog ? updateRadius : show_dialog);
@@ -4161,7 +4159,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getNodeLocation = function (nodeId)
     return Promise.reject("No node provided for selection");
   }
 
-  var node = this.nodes[nodeId];
+  var node = this.nodes.get(nodeId);
   if (node) {
     return Promise.resolve({
       x: node.x,
@@ -4344,7 +4342,7 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNodeLocation = function (
   }
 
   // Try to find
-  var node = this.nodes[nodeID];
+  var node = this.nodes.get(nodeID);
   if (node) {
     return Promise.resolve({
       id: node.id,
@@ -4396,7 +4394,7 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseSuppressedVirtualNodes = fun
     nodeId = SkeletonAnnotations.getChildOfVirtualNode(nodeId);
   }
 
-  var node = this.nodes[nodeId];
+  var node = this.nodes.get(nodeId);
   if (node && node.suppressed) {
     return Promise.resolve(node.suppressed || []);
   } else {
@@ -4406,7 +4404,7 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseSuppressedVirtualNodes = fun
       var url = CATMAID.makeURL(project.id + "/treenodes/" + nodeId + "/suppressed-virtual/");
       requestQueue.register(url, 'GET', undefined, CATMAID.jsonResponseHandler(resolve, reject));
     }).then(function (json) {
-      var node = self.nodes[nodeId];
+      var node = self.nodes.get(nodeId);
       if (node) node.suppressed = json.length ? json : [];
       return json;
     });
@@ -4423,7 +4421,7 @@ SkeletonAnnotations.TracingOverlay.prototype.isVirtualNodeSuppressed = function 
   if (SkeletonAnnotations.isRealNode(vnID));
 
   var childID = SkeletonAnnotations.getChildOfVirtualNode(vnID);
-  var child = this.nodes[childID];
+  var child = this.nodes.get(childID);
   if (child && child.suppressed) {
     var vnCoords = SkeletonAnnotations.getVirtualNodeComponents(vnID).slice(3, 6).map(Number);
     return child.suppressed.some(function (s) {
@@ -4682,7 +4680,7 @@ SkeletonAnnotations.TracingOverlay.prototype.cycleThroughNearestMatchingTags = f
 SkeletonAnnotations.TracingOverlay.prototype.printTreenodeInfo = function(nodeID, prePrefix, forceExtendedStatus) {
   if (this.isIDNull(nodeID)) return;
   var prefix = "";
-  var node = this.nodes[nodeID];
+  var node = this.nodes.get(nodeID);
   if (node) {
     if (SkeletonAnnotations.TYPE_NODE === node.type) {
       if (SkeletonAnnotations.isRealNode(node.id)) {
@@ -4759,16 +4757,16 @@ SkeletonAnnotations.TracingOverlay.prototype.switchBetweenTerminalAndConnector =
     CATMAID.info("A terminal must be selected in order to switch to its connector");
     return;
   }
-  var ob = this.nodes[atn.id];
+  var ob = this.nodes.get(atn.id);
   if (!ob) {
     CATMAID.warn("Cannot switch between terminal and connector: node not loaded.");
     return;
   }
   if (SkeletonAnnotations.TYPE_CONNECTORNODE === ob.type) {
     if (this.switchingConnectorID === ob.id &&
-        this.switchingTreenodeID in this.nodes) {
+        this.nodes.has(this.switchingTreenodeID)) {
       // Switch back to the terminal
-      this.moveToAndSelectNode(this.nodes[this.switchingTreenodeID].id);
+      this.moveToAndSelectNode(this.nodes.get(this.switchingTreenodeID).id);
     } else {
       var links = ob.links.reduce(collectLinksByRelation, {});
       var preLinks = links['presynaptic_to'];
@@ -4796,9 +4794,9 @@ SkeletonAnnotations.TracingOverlay.prototype.switchBetweenTerminalAndConnector =
     }
   } else if (SkeletonAnnotations.TYPE_NODE === ob.type) {
     if (this.switchingTreenodeID === ob.id &&
-        this.switchingConnectorID in this.nodes) {
+        this.nodes.has(this.switchingConnectorID)) {
       // Switch back to the connector
-      this.moveToAndSelectNode(this.nodes[this.switchingConnectorID].id);
+      this.moveToAndSelectNode(this.nodes.get(this.switchingConnectorID).id);
     } else {
       // Find a connector for the treenode 'ob'
       var cs = this.findConnectors(ob.id);
@@ -4821,7 +4819,7 @@ SkeletonAnnotations.TracingOverlay.prototype.switchBetweenTerminalAndConnector =
         this.switchingConnectorID = null;
       }
       if (this.switchingConnectorID) {
-        this.moveToAndSelectNode(this.nodes[this.switchingConnectorID].id);
+        this.moveToAndSelectNode(this.nodes.get(this.switchingConnectorID).id);
       }
     }
   } else {
@@ -4869,7 +4867,7 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteConnectorNode =
         }
 
         // Delete this connector from overlay (to not require a database update).
-        delete self.nodes[connectorId];
+        self.nodes.delete(connectorId);
         connectornode.obliterate();
         self.pixiLayer._renderIfReady();
 
@@ -4904,7 +4902,7 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
 
     // Delete any connector links
     for (var connectorId in node.connectors) {
-      var connector = self.nodes[connectorId];
+      var connector = self.nodes.get(connectorId);
       if (connector) {
         var link = node.connectors[connectorId];
         connector.removeLink(link);
@@ -4915,7 +4913,7 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
     // Delete this node from overlay (to not require a database update).
     var children = node.children;
     var parent = node.parent;
-    delete self.nodes[node.id];
+    self.nodes.delete(node.id);
     if (children) {
       for (var childId in children) {
         var child = children[childId];
@@ -4988,7 +4986,7 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteActiveNode = function() {
  * treenode.
  */
 SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
-  var node = this.nodes[nodeId];
+  var node = this.nodes.get(nodeId);
   var self = this;
 
   if (!node) {
@@ -5100,7 +5098,7 @@ SkeletonAnnotations.TracingOverlay.prototype.toggleVirtualNodeSuppression = func
           'DELETE',
           undefined,
           CATMAID.jsonResponseHandler(function () {
-            var node = self.nodes[childId];
+            var node = self.nodes.get(childId);
             if (node) node.suppressed = undefined;
             self.recolorAllNodes();
             CATMAID.info('Unsuppressed virtual parent of ' + childId + ' at ' +
@@ -5112,7 +5110,7 @@ SkeletonAnnotations.TracingOverlay.prototype.toggleVirtualNodeSuppression = func
           'POST',
           {orientation: orientation, location_coordinate: coordinate},
           CATMAID.jsonResponseHandler(function (json) {
-            var node = self.nodes[childId];
+            var node = self.nodes.get(childId);
             if (node && node.suppressed) node.suppressed.push(json);
             self.recolorAllNodes();
             CATMAID.info('Suppressed virtual parent of ' + childId + ' at ' +
@@ -5128,7 +5126,7 @@ SkeletonAnnotations.TracingOverlay.prototype.toggleVirtualNodeSuppression = func
  * Get a state representation for a node that is understood by the back-end.
  */
 SkeletonAnnotations.TracingOverlay.prototype.getState = function(nodeId) {
-  var node = this.nodes[nodeId];
+  var node = this.nodes.get(nodeId);
   if (!node) {
     throw new CATMAID.ValueError("Can't create state: node not found");
   }
@@ -5137,7 +5135,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getState = function(nodeId) {
   var parentEditTime;
   if (node.parent_id) {
     parentId = node.parent_id;
-    var parentNode = this.nodes[parentId];
+    var parentNode = this.nodes.get(parentId);
     if (!parentNode) {
       throw new CATMAID.ValueError("Can't create state: parent node not found");
     }
@@ -5153,7 +5151,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getState = function(nodeId) {
 
   var links = [];
   for (var cid in node.connectors) {
-    var connector = this.nodes[cid];
+    var connector = this.nodes.get(cid);
     var link = node.connectors[cid];
     links.push([cid, connector.edition_time_iso_str, link.relation_id]);
   }
@@ -5167,7 +5165,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getState = function(nodeId) {
  * provided node.
  */
 SkeletonAnnotations.TracingOverlay.prototype.getParentState = function(parentId) {
-  var node = this.nodes[parentId];
+  var node = this.nodes.get(parentId);
   if (!node) {
     throw new CATMAID.ValueError("Can't create state: node not found");
   }
@@ -5176,7 +5174,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getParentState = function(parentId)
 };
 
 SkeletonAnnotations.TracingOverlay.prototype.getEdgeState = function(childId, parentId) {
-  var node = this.nodes[parentId];
+  var node = this.nodes.get(parentId);
   if (!node) {
     throw new CATMAID.ValueError("Can't create state: parent not found");
   }
@@ -5202,8 +5200,8 @@ SkeletonAnnotations.TracingOverlay.prototype.getEdgeState = function(childId, pa
  * node to be displayed.
  */
 SkeletonAnnotations.TracingOverlay.prototype.nodeIsPartOfSkeleton = function(skeletonID, nodeID) {
-  if (!this.nodes[nodeID]) throw new CATMAID.ValueError("Node not loaded");
-  return this.nodes[nodeID].skeleton_id === skeletonID;
+  if (!this.nodes.has(nodeID)) throw new CATMAID.ValueError("Node not loaded");
+  return this.nodes.get(nodeID).skeleton_id === skeletonID;
 };
 
 /**
@@ -5234,7 +5232,7 @@ SkeletonAnnotations.TracingOverlay.prototype.importActiveNode = function(node) {
   if (!node || !node.id) {
     return;
   }
-  var knownNode = this.nodes[node.id];
+  var knownNode = this.nodes.get(node.id);
   if (knownNode) {
     return;
   }
@@ -5251,14 +5249,15 @@ SkeletonAnnotations.TracingOverlay.prototype.importActiveNode = function(node) {
   if (SkeletonAnnotations.TYPE_NODE === node.type) {
     // Create new treenode. There is no need to include a parent node for this
     // imported node at the moment.
-    node = this.nodes[node.id] = this.graphics.newNode(node.id, null, node.parent_id,
-        node.radius, node.x, node.y, node.z, zs - this.stackViewer.z, node.confidence,
+    node = this.graphics.newNode(node.id, null, node.parent_id, node.radius,
+        node.x, node.y, node.z, zs - this.stackViewer.z, node.confidence,
         node.skeleton_id, node.edition_time, node.user_id);
   } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
-    node = this.nodes[node.id] = this.graphics.newConnectorNode(
-        node.id, node.x, node.y, node.x, zs - this.stackViewer.z, node.confidence,
-        node.subtype, node.edition_time, node.user_id);
+    node = this.graphics.newConnectorNode( node.id, node.x, node.y, node.x, zs -
+        this.stackViewer.z, node.confidence, node.subtype, node.edition_time,
+        node.user_id);
   }
+  this.nodes.set(node.id, node);
   node.createGraphics();
 };
 
@@ -5269,7 +5268,7 @@ SkeletonAnnotations.TracingOverlay.prototype.importActiveNode = function(node) {
 SkeletonAnnotations.TracingOverlay.prototype.handleNewNode = function(node) {
   // If we know the new node already, do nothing. We assume it has been taken
   // care of somewhere else.
-  if (!node || this.nodes[node.id]) return;
+  if (!node || this.nodes.has(node.id)) return;
 
   // Otherwise, trigger an update if the new node is in the current view. This
   // doesn't catch cases where only the edge between the new node and another
@@ -5293,17 +5292,17 @@ SkeletonAnnotations.TracingOverlay.prototype.handleNewNode = function(node) {
   var stackZ = this.stackViewer.primaryStack.projectToUnclampedStackZ(
       node.z, node.y, node.x);
   var zDiff = stackZ - this.stackViewer.z;
-  var nn = this.graphics.newNode(node.id, this.nodes[node.parentId], node.parentId,
+  var nn = this.graphics.newNode(node.id, this.nodes.get(node.parentId), node.parentId,
       node.radius, node.x, node.y, node.z, zDiff, node.confidence, node.skeletonId, 0,
       node.creatorId);
   nn.edition_time_iso_str = node.editionTime;
 
-  this.nodes[node.id] = nn;
+  this.nodes.set(node.id, nn);
   nn.createGraphics();
 
   // Append to parent and recolor
   if (node.parentId) {
-    var parentNode = this.nodes[node.parentId];
+    var parentNode = this.nodes.get(node.parentId);
     if (parentNode) {
       parentNode.addChildNode(nn);
       parentNode.updateColors();
@@ -5313,7 +5312,7 @@ SkeletonAnnotations.TracingOverlay.prototype.handleNewNode = function(node) {
   if (node.childIds && node.childIds.length > 0) {
     for (var i=0; i<node.childIds.length; ++i) {
       var childId = node.childIds[i];
-      var childNode = this.nodes[childId];
+      var childNode = this.nodes.get(childId);
       if (childNode) {
         childNode.parent = nn;
         childNode.drawLineToParent();
@@ -5331,7 +5330,7 @@ SkeletonAnnotations.TracingOverlay.prototype.handleNewNode = function(node) {
 SkeletonAnnotations.TracingOverlay.prototype.handleNewConnectorNode = function(node) {
   // If we know the new node already, do nothing. We assume it has been taken
   // care of somewhere else.
-  if (!node || this.nodes[node.id]) return;
+  if (!node || this.nodes.has(node.id)) return;
 
   // Otherwise, trigger an update if the new node is in the current view. This
   // doesn't catch cases where only the edge between the new node and another
@@ -5350,7 +5349,7 @@ SkeletonAnnotations.TracingOverlay.prototype.handleNewConnectorNode = function(n
   var nn = this.graphics.newConnectorNode(node.id, node.x, node.y, node.z,
       zDiff, node.confidence, node.subtype, 0, node.creatorId);
   nn.edition_time_iso_str = node.editionTime;
-  this.nodes[node.id] = nn;
+  this.nodes.set(node.id, nn);
   nn.createGraphics();
 
   // TODO: add links
@@ -5369,7 +5368,7 @@ SkeletonAnnotations.TracingOverlay.prototype.isInView = function(px, py, pz) {
  * Update nodes if called with a node that is currently part of this overlay.
  */
 SkeletonAnnotations.TracingOverlay.prototype.handleNodeChange = function(nodeId) {
-  if (!this.nodes[nodeId]) return;
+  if (!this.nodes.has(nodeId)) return;
   this.updateNodes();
 };
 
@@ -5378,7 +5377,7 @@ SkeletonAnnotations.TracingOverlay.prototype.handleNodeChange = function(nodeId)
  * with a node that is currently part of this overlay.
  */
 SkeletonAnnotations.TracingOverlay.prototype.handleRemovedConnector = function(nodeId) {
-  var node = this.nodes[nodeId];
+  var node = this.nodes.get(nodeId);
   if (!node) {
     return;
   }
@@ -5444,8 +5443,12 @@ SkeletonAnnotations.TracingOverlay.prototype.updateIfKnown = function(skeletonID
       }
     }
   }
-  if (Object.keys(this.nodes).some(this.nodeIsPartOfSkeleton.bind(this, skeletonID))) {
-    this.updateNodes();
+
+  for (var nodeId of this.nodes.keys()) {
+    if (this.nodeIsPartOfSkeleton(skeletonID, nodeId)) {
+      this.updateNodes();
+      break;
+    }
   }
 };
 

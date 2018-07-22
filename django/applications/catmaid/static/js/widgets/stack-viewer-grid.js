@@ -509,7 +509,7 @@
    */
   var getNodeSet = function(stackViewer) {
     return stackViewer.getLayersOfType(CATMAID.TracingLayer).reduce(function (set, tracingLayer) {
-      return set.addAll(Object.keys(tracingLayer.tracingOverlay.nodes));
+      return set.addAll(tracingLayer.tracingOverlay.nodes.keys());
     }, new Set());
   };
 

@@ -847,12 +847,12 @@
                 if (typeof radius === 'undefined') return;
 
                 var respectVirtualNodes = true;
-                var node = activeTracingLayer.tracingOverlay.nodes[atnID];
+                var node = activeTracingLayer.tracingOverlay.nodes.get(atnID);
                 var selectedIDs = activeTracingLayer.tracingOverlay.findAllNodesWithinRadius(
                     node.x, node.y, node.z,
                     radius, respectVirtualNodes, true);
                 selectedIDs = selectedIDs.map(function (nodeID) {
-                    return activeTracingLayer.tracingOverlay.nodes[nodeID].skeleton_id;
+                    return activeTracingLayer.tracingOverlay.nodes.get(nodeID).skeleton_id;
                 }).filter(function (s) { return !isNaN(s); });
 
                 selectionCallback(selectedIDs);
@@ -1408,7 +1408,7 @@
         const tracingOverlay = activeStackViewer.getLayersOfType(CATMAID.TracingLayer)[0].tracingOverlay;
 
         // force SkeletonAnnotation.atn's attributes (x and y coords) to update
-        tracingOverlay.activateNode(tracingOverlay.nodes[SkeletonAnnotations.getActiveNodeId()]);
+        tracingOverlay.activateNode(tracingOverlay.nodes.get(SkeletonAnnotations.getActiveNodeId()));
         const activeNode = SkeletonAnnotations.atn;
 
         if (!CATMAID.mayEdit()) {

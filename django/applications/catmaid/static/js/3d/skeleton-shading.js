@@ -577,7 +577,7 @@
               colorMap.set(intervalId, intervalColor);
             }
 
-            // Check all succcessors of current reference node if they are part
+            // Check all successors of current reference node if they are part
             // of an interval that is different from the current one. If so,
             // assign the picked color for that interval already.
             let succ = successors[currentNodeId];
@@ -592,9 +592,10 @@
                 // color.
                 let succIntervalId = intervalMap[succId];
                 if (succIntervalId && succIntervalId !== intervalId) {
-                  // All branches start at same node. If the current reference
-                  // node is the first one of looked at of its interval, it ...
-                  if (isIntervalStart) {
+                  // All branches start at same node. If there are branches
+                  // (more than one successor interval), color them all the
+                  // same.
+                  if (isIntervalStart && succ.length > 1) {
                     colorMap.set(succIntervalId, intervalColor);
                   } else {
                     colorMap.set(succIntervalId, nextColor);

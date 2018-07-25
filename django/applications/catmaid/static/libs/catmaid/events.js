@@ -115,6 +115,21 @@
         var context = callbacks[i][1] === undefined ? this : callbacks[i][1];
         callback.apply(context, args);
       }
+    },
+
+    /**
+     * Returns whether this event source has listeners to any event.
+     */
+    hasListeners: function() {
+      if (!(this.hasOwnProperty('events'))) {
+        return false;
+      }
+      for (var callbacks of this.events.values()) {
+        if (callbacks.length > 0) {
+          return true;
+        }
+      }
+      return false;
     }
   };
 
@@ -128,6 +143,7 @@
     this.clear = Event.clear;
     this.clearAllEvents = Event.clearAllEvents;
     this.trigger = Event.trigger;
+    this.hasListeners = Event.hasListeners;
 
     return this;
   };

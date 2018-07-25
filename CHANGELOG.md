@@ -5,6 +5,11 @@
 ### Features and enhancements
 
 
+Miscellaneous:
+
+- Each Tracing Layer is now listed as a skeleton source. All skeletons visible
+  in their fields of view are made available to other widgets that way.
+
 
 ### Bug fixes
 

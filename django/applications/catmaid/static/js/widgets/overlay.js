@@ -715,7 +715,12 @@ var nodeToStateList = function(n) {
 SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   var options = options || {};
 
+  // The stack viewer is needed in the initial name generation of the Tile Layer
+  // as skeleton source.
   this.stackViewer = stackViewer;
+
+  CATMAID.SkeletonSource.call(this, true, true);
+
   this.pixiLayer = pixiLayer;
 
   // Register instance
@@ -976,9 +981,11 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
       this.simpleUpdateNodes, this);
 };
 
-SkeletonAnnotations.TracingOverlay.prototype = {
-  EVENT_HIT_NODE_DISPLAY_LIMIT: "tracing_hit_node_display_limit"
-};
+SkeletonAnnotations.TracingOverlay.prototype = Object.create(CATMAID.SkeletonSource.prototype);
+SkeletonAnnotations.TracingOverlay.prototype.constructor = SkeletonAnnotations.TracingOverlay;
+
+SkeletonAnnotations.TracingOverlay.prototype.EVENT_HIT_NODE_DISPLAY_LIMIT = "tracing_hit_node_display_limit";
+
 CATMAID.asEventSource(SkeletonAnnotations.TracingOverlay.prototype);
 
 SkeletonAnnotations.TracingOverlay.NODE_LIST_CACHE_CAPACITY = 20;
@@ -1413,6 +1420,7 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
   this.updateNodeCoordinatesInDB();
   this.suspended = true;
   this.unregister();
+  this.unregisterSource();
   // Show warning in case of pending request
 
   this.submit = null;
@@ -2479,6 +2487,96 @@ CATMAID.createVirtualNode = function(graphics, child, parent, stackViewer) {
   return vn;
 };
 
+SkeletonAnnotations.TracingOverlay.prototype.getName = function () {
+  if (this.stackViewer) {
+    return 'Tracing layer (' + this.stackViewer.primaryStack.title + ')';
+  } else {
+    return "Tracing layer";
+  }
+};
+
+SkeletonAnnotations.TracingOverlay.prototype.append = CATMAID.noop;
+SkeletonAnnotations.TracingOverlay.prototype.clear = CATMAID.noop;
+SkeletonAnnotations.TracingOverlay.prototype.removeSkeletons = CATMAID.noop;
+SkeletonAnnotations.TracingOverlay.prototype.updateModels = CATMAID.noop;
+
+/**
+ * Get a proxy that dynamically creates skeleton models based on the current
+ * state.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.getSkeletonModels = function () {
+  let nodes = this.nodes;
+  return new Proxy({}, {
+    get: function(target, key) {
+      // The passed in key will be a skeleton ID
+      for (var node of nodes.values()) {
+        if (node.skeleton_id == key) {
+          return new CATMAID.SkeletonModel(node.skeleton_id);
+        }
+      }
+      return undefined;
+    },
+    ownKeys: function(target) {
+      return Array.from(new Set(Array.from(nodes.values()).filter(getSkeletonId).map(getSkeletonId))).map(String);
+    },
+    getOwnPropertyDescriptor(k) {
+      return {
+        enumerable: true,
+        configurable: true,
+      };
+    },
+    has: function(target, key) {
+      for (var node of nodes.values()) {
+        if (node.skeleton_id == key) {
+          return true;
+        }
+      }
+      return false;
+    },
+  });
+};
+
+SkeletonAnnotations.TracingOverlay.prototype.getSelectedSkeletonModels = function () {
+  // Return all skeletons, because the active skeleton is taken car of
+  // explicitly.
+  return this.getSkeletonModels();
+};
+
+SkeletonAnnotations.TracingOverlay.prototype.getSkeletons = function () {
+  return Array.from(this.nodes.keys());
+};
+
+SkeletonAnnotations.TracingOverlay.prototype.getSelectedSkeletons = function () {
+  return SkeletonAnnotations.activeSkeleton.getSelectedSkeletons();
+};
+
+var getSkeletonId = function(node) {
+  return node.skeleton_id;
+};
+
+var makeSkeletonModelAccessor = function(skeletonIds) {
+  return new Proxy({}, {
+    get: function(target, key) {
+      // The passed in key will be a skeleton ID
+      if (skeletonIds.has(key)) {
+        return new CATMAID.SkeletonModel(key);
+      }
+    },
+    ownKeys: function(target) {
+      return Array.from(skeletonIds.keys()).map(String);
+    },
+    getOwnPropertyDescriptor(k) {
+      return {
+        enumerable: true,
+        configurable: true,
+      };
+    },
+    has: function(target, key) {
+      return skeletonIds.has(key);
+    },
+  });
+};
+
 /**
  * Recreate all nodes (or reuse existing ones if possible).
  *
@@ -2487,6 +2585,14 @@ CATMAID.createVirtualNode = function(graphics, child, parent, stackViewer) {
  * @param extraNodes is an array of nodes that should be added additionally
  */
 SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (jso, extraNodes) {
+  // Due to possible performance implications, the tracing layer won't signal
+  // visible node set changes if there are no listeners.
+  var triggerEvents = this.hasListeners();
+  var lastNodeIds;
+  if (triggerEvents) {
+    lastNodeIds = new Set(Array.from(this.nodes.values()).filter(getSkeletonId).map(getSkeletonId));
+  }
+
   // Reset nodes and labels
   this.nodes.clear();
   // remove labels, but do not hide them
@@ -2752,6 +2858,28 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     this.trigger(this.EVENT_HIT_NODE_DISPLAY_LIMIT);
   }
   CATMAID.statusBar.replaceLast(msg);
+
+  if (triggerEvents) {
+    var newNodeIds = new Set(Array.from(this.nodes.values()).filter(getSkeletonId).map(getSkeletonId));
+    var addedNodeIds = [];
+    for (var newNodeId of newNodeIds) {
+      if (!lastNodeIds.has(newNodeId)) {
+        addedNodeIds.push(newNodeId);
+      }
+    }
+    var removedNodeIds = [];
+    for (var lastNodeId of lastNodeIds) {
+      if (!newNodeIds.has(lastNodeId)) {
+        removedNodeIds.push(lastNodeId);
+      }
+    }
+    if (addedNodeIds.size > 0) {
+      this.trigger(this.EVENT_MODELS_ADDED, makeSkeletonModelAccessor(addedNodeIds));
+    }
+    if (removedNodeIds.size > 0) {
+      this.trigger(this.EVENT_MODELS_REMOVED, makeSkeletonModelAccessor(removedNodeIds));
+    }
+  }
 };
 
 /**

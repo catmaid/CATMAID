@@ -453,8 +453,17 @@
 
     // Get ordererd sources up to where 'name' was added
     var nameIndex = this.orderedSources.indexOf(name);
-    var selectedSourceName = this.defaultSelectLastSource && nameIndex > 0 ?
-      this.orderedSources[nameIndex - 1] : SkeletonAnnotations.activeSkeleton.getName();
+    var selectLast = this.defaultSelectLastSource && nameIndex > 0;
+    var currentIndex = nameIndex - 1;
+    while (currentIndex > 0) {
+      if (this.sources[this.orderedSources[currentIndex]].noDefaultSelection) {
+        --currentIndex;
+      } else {
+        break;
+      }
+    }
+    var selectedSourceName = selectLast ? this.orderedSources[currentIndex] :
+        SkeletonAnnotations.activeSkeleton.getName();
 
     this.createOptions().forEach(function(option, i) {
       // Ignore this option if it should be filtered.

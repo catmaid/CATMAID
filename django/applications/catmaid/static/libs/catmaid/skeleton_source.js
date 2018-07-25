@@ -8,13 +8,19 @@
   /**
    * A skeleton source is an object that manages a set of skeletons of which a
    * subset can be marked as selected.
+   *
+   * @params {Boolean} noDefaultSelection Optional, default: false, Whether or
+   *                                      not to prevent this source to appear
+   *                                      as a default selection in other
+   *                                      widgets.
    */
-  var SkeletonSource = function(register) {
+  var SkeletonSource = function(register, noDefaultSelection) {
     if (register) this.registerSource();
     this.APPEND_WARNING_THRESHOLD = 50;
     // Initialize subscriptions
     this.subscriptions = [];
     this.ignoreLocal = false;
+    this.noDefaultSelection = !!noDefaultSelection;
   };
 
   // Operations that can be used to combine multiple sources.

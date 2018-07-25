@@ -6,7 +6,9 @@ included in this changelog.
 
 ### Additions
 
-None.
+- `POST /{project_id}/skeletons/cable-length`:
+  The POST version of the already existing GET endpoint. It allows passing in
+  more skeleton IDs for which to get the cable length.
 
 ### Modifications
 

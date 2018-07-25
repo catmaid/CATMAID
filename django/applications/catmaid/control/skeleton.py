@@ -579,7 +579,7 @@ def neuronnames(request, project_id=None):
     skeleton_ids = tuple(int(v) for k,v in six.iteritems(request.POST) if k.startswith('skids['))
     return JsonResponse(_neuronnames(skeleton_ids, project_id))
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 @requires_user_role(UserRole.Browse)
 def cable_lengths(request, project_id=None):
     """Get the cable length of a set of skeletons.
@@ -600,7 +600,15 @@ def cable_lengths(request, project_id=None):
           type: integer
         paramType: form
     """
-    skeleton_ids = get_request_list(request.GET, 'skeleton_ids', map_fn=int)
+
+    if request.method == 'GET':
+        data = request.GET
+    elif request.method == 'POST':
+        data = request.POST
+    else:
+        raise ValueError("Invalid HTTP method: " + request.method)
+
+    skeleton_ids = get_request_list(data, 'skeleton_ids', map_fn=int)
     if not skeleton_ids:
         raise ValueError('Need at least one skeleton ID')
 

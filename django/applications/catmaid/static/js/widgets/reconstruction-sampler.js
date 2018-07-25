@@ -223,7 +223,7 @@
         type: 'button',
         label: 'New session',
         onclick: function() {
-          widget.init(self.state);
+          widget.init(widget.state);
           widget.update();
           CATMAID.msg("Info", "Stared new sampler session");
         }

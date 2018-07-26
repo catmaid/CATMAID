@@ -1908,6 +1908,17 @@
       ['Center (nm)', 1],
       ['Upper bound (nm)', 2]]);
 
+    // Add explanatory text
+    dsColorWrapper.append($('<div/>').addClass('setting').append([
+        'Select colors and cable length thresholds for skeleton length based ',
+        'node coloring in the tracing layer. To toggle this coloring mode, ',
+        'press <kbd>F7</kbd> or use the Tracing Tool icon button next to the ',
+        'tag display toggle. Nodes of skeletons with a length below the lower ',
+        'bound and above the upper bound, will only use the lower bound color ',
+        'and the upper bound color, respectively. Nodes of skeletons with a ',
+        'length inbetween will use an interpolated color between lower bound ',
+        'and center and upper bound and center, respectively.'].join('')));
+
     colors.forEach(function(field, label) {
       var settings = SkeletonAnnotations.TracingOverlay.Settings;
       var setting = settings[SETTINGS_SCOPE].length_color_steps;

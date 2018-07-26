@@ -59,6 +59,13 @@
     this.outputSource.removeSkeletons(Object.keys(models));
   };
 
+  /**
+   * Unregeister all listeners.
+   */
+  ColorSource.prototype.unregister = function() {
+    this.inputSource.removeSubscription(this.skeletonSouceSubscription);
+  };
+
   var SkeletonColorMode = {
     'length': {
       'colorSkeletons': function(skeletonIds, models) {

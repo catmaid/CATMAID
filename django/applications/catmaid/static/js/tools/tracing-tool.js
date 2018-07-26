@@ -946,7 +946,7 @@
         getTracingLayers().forEach(function(layer) {
           if (colorByLength) {
             var source = new CATMAID.ColorSource('length', layer.tracingOverlay);
-            layer.tracingOverlay.setColorSource(source.outputSource);
+            layer.tracingOverlay.setColorSource(source);
           } else {
             layer.tracingOverlay.setColorSource();
           }

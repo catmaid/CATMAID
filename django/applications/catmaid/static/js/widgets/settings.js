@@ -1972,7 +1972,7 @@
         var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
         if (overlay) {
           var source = new CATMAID.ColorSource('length', overlay);
-          overlay.setColorSource(source.outputSource);
+          overlay.setColorSource(source);
         }
       });
     }

@@ -760,6 +760,8 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   this.updateWhilePanning = SkeletonAnnotations.TracingOverlay.Settings.session.update_while_panning;
   /** A cached copy of the a map from IDs to relation names, set on firt load. **/
   this.relationMap = null;
+  /** An optional color source **/
+  this._colorSource = null;
 
   // Keep the ID of the node deleted last, which allows to provide some extra
   // context in some situations.
@@ -925,7 +927,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   // Initialize custom node coloring
   if (SkeletonAnnotations.TracingOverlay.Settings.session.color_by_length) {
     var source = new CATMAID.ColorSource('length', this);
-    this.setColorSource(source.outputSource);
+    this.setColorSource(source);
   }
 
   // Invalidate the node list cache aggressively.
@@ -1926,10 +1928,15 @@ SkeletonAnnotations.TracingOverlay.prototype.showLabels = function() {
  * Set a coloring source
  */
 SkeletonAnnotations.TracingOverlay.prototype.setColorSource = function(source) {
+  if (this._colorSource && CATMAID.tools.isFn(this._colorSource.unregister)) {
+    this._colorSource.unregister();
+  }
+  this._colorSource = null;
   this._skeletonDisplaySource.removeAllSubscriptions();
   if (source) {
+    this._colorSource = source;
     this._skeletonDisplaySource.addSubscription(
-        new CATMAID.SkeletonSourceSubscription(source, true, false,
+        new CATMAID.SkeletonSourceSubscription(source.outputSource, true, false,
             CATMAID.SkeletonSourceSubscription.UNION,
             CATMAID.SkeletonSourceSubscription.ALL_EVENTS),
         true);

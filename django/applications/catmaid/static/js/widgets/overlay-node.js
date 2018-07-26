@@ -124,7 +124,7 @@
     this.overlayGlobals = {
       tracingOverlay: tracingOverlay,
       skeletonElements: this,
-      skeletonDisplayModels: skeletonDisplayModels || {},
+      skeletonDisplayModels: skeletonDisplayModels || new Map(),
       hideOtherSkeletons: false
     };
 
@@ -571,7 +571,7 @@
       this.shouldDisplay = function () {
         return this.id !== this.DISABLED && this.zdiff >= 0 && this.zdiff < 1 &&
             (!this.overlayGlobals.hideOtherSkeletons ||
-             this.overlayGlobals.skeletonDisplayModels.hasOwnProperty(this.skeleton_id));
+             this.overlayGlobals.skeletonDisplayModels.has(this.skeleton_id));
       };
 
       this.getVisibilityGroups = function (noCache) {
@@ -595,7 +595,7 @@
        * @return {number}           Hex color.
        */
       this.color = function() {
-        var model = this.overlayGlobals.skeletonDisplayModels[this.skeleton_id];
+        var model = this.overlayGlobals.skeletonDisplayModels.get(this.skeleton_id);
         if (model) return this.colorCustom(model.color);
         var color;
         if (SkeletonAnnotations.getActiveNodeId() === this.id) {
@@ -658,7 +658,7 @@
        * @return {number}                Hex color.
        */
       this.colorFromZDiff = function() {
-        var model = this.overlayGlobals.skeletonDisplayModels[this.skeleton_id];
+        var model = this.overlayGlobals.skeletonDisplayModels.get(this.skeleton_id);
         if (model) return this.colorCustomFromZDiff(model.color);
         // zdiff is in sections, therefore the current section is at [0, 1) --
         // notice 0 is inclusive and 1 is exclusive.

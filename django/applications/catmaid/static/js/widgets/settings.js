@@ -1904,9 +1904,9 @@
     var dsNodeColors = CATMAID.DOM.addSettingsContainer(ds, "Skeleton length coloring", true);
     var dsColorWrapper = $('<div />').addClass('setting');
     var colors = new Map([
-      ['Lower bound (nm)', 0],
-      ['Center (nm)', 1],
-      ['Upper bound (nm)', 2]]);
+      ['Lower bound', 0],
+      ['Center', 1],
+      ['Upper bound', 2]]);
 
     // Add explanatory text
     dsColorWrapper.append($('<div/>').addClass('setting').append([

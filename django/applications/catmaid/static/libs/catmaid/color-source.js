@@ -18,6 +18,7 @@
     this.inputSource = new CATMAID.BasicSkeletonSource("Input source", {
       register: false,
       handleAddedModels: this.handleAddedModels.bind(this),
+      handleChangedModels: this.handleChangedModels.bind(this),
       handleRemovedModels: this.handleRemovedModels.bind(this),
     });
     this.inputSource.append = function(models) {
@@ -51,6 +52,19 @@
     this.colorMode.colorSkeletons(skeletonIds, models)
       .then(function() {
         self.outputSource.append(models);
+      })
+      .catch(CATMAID.handleError);
+  };
+
+  ColorSource.prototype.handleChangedModels = function(models) {
+    // Update length and color information
+    var skeletonIds = Object.keys(models).map(function(modelId) {
+      return models[modelId].id;
+    });
+    var self = this;
+    this.colorMode.colorSkeletons(skeletonIds, models)
+      .then(function() {
+        self.outputSource.updateModels(models);
       })
       .catch(CATMAID.handleError);
   };

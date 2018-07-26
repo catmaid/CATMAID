@@ -1637,13 +1637,10 @@
         // approach of iterating through all nodes is sufficiently fast.
         // TODO: A two-way map would be ergonomic and speed up ops like this.
         if (node.type === SkeletonAnnotations.TYPE_NODE) {
-          for (var connID in catmaidTracingOverlay.nodes) {
-            if (catmaidTracingOverlay.nodes.hasOwnProperty(connID)) {
-              var conn = catmaidTracingOverlay.nodes[connID];
-              if (conn.type === SkeletonAnnotations.TYPE_CONNECTORNODE) {
-                if (conn.links.some(linkedToNode, node)) {
-                  conn.drawEdges(true);
-                }
+          for (var conn of catmaidTracingOverlay.nodes.values()) {
+            if (conn.type === SkeletonAnnotations.TYPE_CONNECTORNODE) {
+              if (conn.links.some(linkedToNode, node)) {
+                conn.drawEdges(true);
               }
             }
           }

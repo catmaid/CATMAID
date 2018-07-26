@@ -47,23 +47,22 @@ QUnit.test('Tracing overlay test', function( assert ) {
     // Mock SVG overlay
     var nodeID = 42;
     var FakeOverlay = function() {
-      this.nodes = {
-        '41': {
+      this.nodes = new Map([[
+        41, {
           id: 41,
           canEdit: function () { return true; },
           type: SkeletonAnnotations.TYPE_NODE,
           obliterate: function() {},
           drawEdges: function() {}
-        },
-        '42': {
+        }], [
+        42, {
           id: 42,
           canEdit: function () { return true; },
           type: SkeletonAnnotations.TYPE_NODE,
           obliterate: function() {},
           drawEdges: function() {},
           x: 0, y:0, z:0
-        }
-      };
+        }]]);
       this.nodeIDsNeedingSync = new Set([41, 42]);
       this.state = new CATMAID.GenericState({
         getNode: function(nodeId) {

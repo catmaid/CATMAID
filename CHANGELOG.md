@@ -10,6 +10,11 @@ Miscellaneous:
 - Each Tracing Layer is now listed as a skeleton source. All skeletons visible
   in their fields of view are made available to other widgets that way.
 
+- Tracing tool: add icon button to toggle a node coloring mode in which each
+  node is colored according to the length of their respective skeleton. The
+  colors and cable length values when to use it can be set for three colors in
+  the Settings Widget in the "Skeleton length coloring" section.
+
 
 ### Bug fixes
 

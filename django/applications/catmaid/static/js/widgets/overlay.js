@@ -922,6 +922,12 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
     this.updateTracingWindow();
   }
 
+  // Initialize custom node coloring
+  if (SkeletonAnnotations.TracingOverlay.Settings.session.color_by_length) {
+    var source = new CATMAID.ColorSource('length', this);
+    this.setColorSource(source.outputSource);
+  }
+
   // Invalidate the node list cache aggressively.
   CATMAID.Neurons.on(CATMAID.Neurons.EVENT_NEURON_DELETED,
     this.nodeListCache.clear, this.nodeListCache);
@@ -1093,6 +1099,21 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
           },
           update_while_panning: {
             default: false
+          },
+          color_by_length: {
+            default: false
+          },
+          length_color_steps: {
+            default: [{
+              color: 0x12c2e9,
+              stop: 100000
+            }, {
+              color: 0xff00ff,
+              stop: 1000000
+            }, {
+              color: 0xff4e50,
+              stop: 5000000
+            }]
           },
         },
         migrations: {
@@ -1902,6 +1923,20 @@ SkeletonAnnotations.TracingOverlay.prototype.showLabels = function() {
 };
 
 /**
+ * Set a coloring source
+ */
+SkeletonAnnotations.TracingOverlay.prototype.setColorSource = function(source) {
+  this._skeletonDisplaySource.removeAllSubscriptions();
+  if (source) {
+    this._skeletonDisplaySource.addSubscription(
+        new CATMAID.SkeletonSourceSubscription(source, true, false,
+            CATMAID.SkeletonSourceSubscription.UNION,
+            CATMAID.SkeletonSourceSubscription.ALL_EVENTS),
+        true);
+  }
+};
+
+/**
  * Test if the node with the given ID is loaded and display a warning if not.
  * Test also if the node is root and display a message if so. In both cases,
  * false is returned. False, otherwise.
@@ -2505,35 +2540,12 @@ SkeletonAnnotations.TracingOverlay.prototype.updateModels = CATMAID.noop;
  * state.
  */
 SkeletonAnnotations.TracingOverlay.prototype.getSkeletonModels = function () {
-  let nodes = this.nodes;
-  return new Proxy({}, {
-    get: function(target, key) {
-      // The passed in key will be a skeleton ID
-      for (var node of nodes.values()) {
-        if (node.skeleton_id == key) {
-          return new CATMAID.SkeletonModel(node.skeleton_id);
-        }
-      }
-      return undefined;
-    },
-    ownKeys: function(target) {
-      return Array.from(new Set(Array.from(nodes.values()).filter(getSkeletonId).map(getSkeletonId))).map(String);
-    },
-    getOwnPropertyDescriptor(k) {
-      return {
-        enumerable: true,
-        configurable: true,
-      };
-    },
-    has: function(target, key) {
-      for (var node of nodes.values()) {
-        if (node.skeleton_id == key) {
-          return true;
-        }
-      }
-      return false;
-    },
-  });
+  let models = {};
+  let skeletonIds = new Set(Array.from(this.nodes.values()).filter(getSkeletonId).map(getSkeletonId));
+  for (var skeletonId of skeletonIds) {
+    models[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
+  }
+  return models;
 };
 
 SkeletonAnnotations.TracingOverlay.prototype.getSelectedSkeletonModels = function () {
@@ -2558,7 +2570,7 @@ var makeSkeletonModelAccessor = function(skeletonIds) {
   return new Proxy({}, {
     get: function(target, key) {
       // The passed in key will be a skeleton ID
-      if (skeletonIds.has(key)) {
+      if (skeletonIds.has(Number(key))) {
         return new CATMAID.SkeletonModel(key);
       }
     },
@@ -2572,7 +2584,7 @@ var makeSkeletonModelAccessor = function(skeletonIds) {
       };
     },
     has: function(target, key) {
-      return skeletonIds.has(key);
+      return skeletonIds.has(Number(key));
     },
   });
 };
@@ -2861,16 +2873,16 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
 
   if (triggerEvents) {
     var newNodeIds = new Set(Array.from(this.nodes.values()).filter(getSkeletonId).map(getSkeletonId));
-    var addedNodeIds = [];
+    var addedNodeIds = new Set();
     for (var newNodeId of newNodeIds) {
       if (!lastNodeIds.has(newNodeId)) {
-        addedNodeIds.push(newNodeId);
+        addedNodeIds.add(newNodeId);
       }
     }
-    var removedNodeIds = [];
+    var removedNodeIds = new Set();
     for (var lastNodeId of lastNodeIds) {
       if (!newNodeIds.has(lastNodeId)) {
-        removedNodeIds.push(lastNodeId);
+        removedNodeIds.add(lastNodeId);
       }
     }
     if (addedNodeIds.size > 0) {

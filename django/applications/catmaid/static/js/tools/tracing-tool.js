@@ -327,8 +327,12 @@
       // This attaches mouse handlers to the view.
       self.prototype.register(parentStackViewer, "edit_button_trace");
 
+      // Initialize button state
       document.getElementById( "trace_button_togglelabels" ).className =
           CATMAID.TracingTool.Settings.session.show_node_labels ? "button_active" : "button";
+
+      document.getElementById( "trace_button_togglecolorlength" ).className =
+          SkeletonAnnotations.TracingOverlay.Settings.session.color_by_length ? "button_active" : "button";
 
       // Try to get existing mouse bindings for this layer
       if (!bindings.has(parentStackViewer)) createMouseBindings(parentStackViewer, layer, view);
@@ -922,6 +926,34 @@
 
         document.getElementById( "trace_button_togglelabels" ).className =
             showLabels ? "button_active" : "button";
+
+        return true;
+      }
+    }));
+
+    this.addAction(new CATMAID.Action({
+      helpText: "Toggle coloring by length",
+      buttonName: "togglecolorlength",
+      buttonID: 'trace_button_togglecolorlength',
+      keyShortcuts: { "F7": [ "F7" ] },
+      run: function (e) {
+        if (!CATMAID.mayView())
+          return false;
+
+        var settings = SkeletonAnnotations.TracingOverlay.Settings;
+        var colorByLength = !settings.session.color_by_length;
+        settings.set('color_by_length', colorByLength, 'session');
+        getTracingLayers().forEach(function(layer) {
+          if (colorByLength) {
+            var source = new CATMAID.ColorSource('length', layer.tracingOverlay);
+            layer.tracingOverlay.setColorSource(source.outputSource);
+          } else {
+            layer.tracingOverlay.setColorSource();
+          }
+        });
+
+        document.getElementById( "trace_button_togglecolorlength" ).className =
+            colorByLength ? "button_active" : "button";
 
         return true;
       }
@@ -1812,7 +1844,7 @@
           },
           show_node_labels: {
             default: false
-          }
+          },
         },
         migrations: {}
       });

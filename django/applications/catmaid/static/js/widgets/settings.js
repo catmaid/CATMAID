@@ -1053,14 +1053,6 @@
         ['Root node', 'root_node_color'],
         ['Leaf node', 'leaf_node_color'],
       ]);
-
-      var updateTracingColors = function () {
-        // Update all tracing layers
-        project.getStackViewers().forEach(function(sv) {
-          var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
-          if (overlay) overlay.recolorAllNodes();
-        });
-      };
       var setColorOfTracingFields = function() {
         colors.forEach(function(field, label) {
           var input = colorControls.get(field);
@@ -1069,10 +1061,6 @@
           SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE][field] = color;
         });
         updateTracingColors();
-      };
-
-      var hexColorToStr = function(hex) {
-        return new THREE.Color(hex).getStyle();
       };
 
       var colorControls = new Map();
@@ -1099,6 +1087,9 @@
           setColorOfTracingFields();
         }
       });
+
+
+      addSkeletonLengthColoringSettings(ds, wrapSettingsControl, getScope);
 
 
       var dsSkeletonProjection = CATMAID.DOM.addSettingsContainer(ds,
@@ -1868,6 +1859,10 @@
 
     var SETTINGS_SCOPE = 'session';
 
+    function getScope() {
+      return SETTINGS_SCOPE;
+    }
+
     var refresh = (function () {
       $(space).empty();
 
@@ -1902,6 +1897,86 @@
     }).bind(this);
 
     refresh();
+  };
+
+  var addSkeletonLengthColoringSettings = function(ds, wrapSettingsControl, getScope) {
+    var SETTINGS_SCOPE = getScope();
+    var dsNodeColors = CATMAID.DOM.addSettingsContainer(ds, "Skeleton length coloring", true);
+    var dsColorWrapper = $('<div />').addClass('setting');
+    var colors = new Map([
+      ['Lower bound (nm)', 0],
+      ['Center (nm)', 1],
+      ['Upper bound (nm)', 2]]);
+
+    colors.forEach(function(field, label) {
+      var settings = SkeletonAnnotations.TracingOverlay.Settings;
+      var setting = settings[SETTINGS_SCOPE].length_color_steps;
+      var step = setting[field];
+
+
+      var color = new THREE.Color(step.color);
+      var input = CATMAID.DOM.createInputSetting('Color', color.getStyle(),
+          "The color to use at the set cable length");
+      CATMAID.ColorPicker.enable($(input).find('input'), {
+        initialColor: color.getHex(),
+        onColorChange: setSkeletonLengthColors.bind(window, getScope, field)
+      });
+      dsColorWrapper.append(input);
+      input.prepend($('<h4/>').append(label));
+      input.css('white-space', 'nowrap');
+
+      var stop = CATMAID.DOM.createNumericInputSetting('Cable length (nm)', step.stop,
+          1000, "Cable length at which this color is used", function() {
+            step.stop = parseInt(this.value, 10);
+            // A copy is needed to convince the settings system that the object cheanged.
+            settings.set('length_color_steps', CATMAID.tools.deepCopy(setting), SETTINGS_SCOPE);
+            updateTracingDepthColoring(getScope);
+          });
+      stop.css('white-space', 'nowrap');
+      dsColorWrapper.append(stop);
+
+    }, dsNodeColors);
+
+    dsNodeColors.append(wrapSettingsControl(
+        dsColorWrapper,
+        SkeletonAnnotations.TracingOverlay.Settings,
+        'length_color_steps',
+        SETTINGS_SCOPE,
+        updateTracingColors,
+        hexColorToStr));
+  };
+
+  var updateTracingColors = function () {
+    // Update all tracing layers
+    project.getStackViewers().forEach(function(sv) {
+      var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
+      if (overlay) overlay.recolorAllNodes();
+    });
+  };
+
+  var updateTracingDepthColoring = function(getScope) {
+    if (SkeletonAnnotations.TracingOverlay.Settings.session.color_by_length) {
+      // Update all tracing layers
+      project.getStackViewers().forEach(function(sv) {
+        var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
+        if (overlay) {
+          var source = new CATMAID.ColorSource('length', overlay);
+          overlay.setColorSource(source.outputSource);
+        }
+      });
+    }
+  };
+
+  var hexColorToStr = function(hex) {
+    return new THREE.Color(hex).getStyle();
+  };
+
+  var setSkeletonLengthColors = function(getScope, field, rgb, alpha, colorChanged, alphaChanged, hex) {
+    var setting = SkeletonAnnotations.TracingOverlay.Settings[getScope()].length_color_steps;
+    setting[field].color = parseInt(hex, 16);
+    // A copy is needed to convince the settings system that the object cheanged.
+    SkeletonAnnotations.TracingOverlay.Settings.set('length_color_steps', CATMAID.tools.deepCopy(setting), getScope());
+    updateTracingDepthColoring(getScope);
   };
 
   CATMAID.SettingsWidget = SettingsWidget;

@@ -903,7 +903,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements(
       this,
       pixiLayer.batchContainer,
-      this._skeletonDisplaySource.skeletonModels);
+      this._skeletonDisplaySource);
   this.graphics.setNodeRadiiVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_node_radii);
 
   // Initialize tracing window, if any

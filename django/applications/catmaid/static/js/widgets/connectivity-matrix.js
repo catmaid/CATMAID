@@ -1582,8 +1582,8 @@
       var ib = matrix.colSkeletonIDs.indexOf(b);
       var maxa = 0, maxb = 0;
       for (var i=0; i<matrix.getNumberOfRows(); ++i) {
-        if (m[i][ia] > maxa) maxa = m[i][ia];
-        if (m[i][ib] > maxb) maxb = m[i][ib];
+        if (m[i][ia].count > maxa) maxa = m[i][ia].count;
+        if (m[i][ib].count > maxb) maxb = m[i][ib].count;
       }
       return maxa === maxb ? 0 : (maxa > maxb ? 1 : -1);
     }
@@ -1601,16 +1601,16 @@
       var ib = matrix.rowSkeletonIDs.indexOf(b);
       var nCols = matrix.getNumberOfColumns();
       for (var j=0; j<nCols; ++j) {
-        aAll += m[ia][j];
-        bAll += m[ib][j];
+        aAll += m[ia][j].count;
+        bAll += m[ib][j].count;
       }
     } else {
       var ia = matrix.colSkeletonIDs.indexOf(a);
       var ib = matrix.colSkeletonIDs.indexOf(b);
       var nRows = matrix.getNumberOfRows();
       for (var j=0; j<nRows; ++j) {
-        aAll += m[j][ia];
-        bAll += m[j][ib];
+        aAll += m[j][ia].count;
+        bAll += m[j][ib].count;
       }
     }
     // Compare aggregated synapses
@@ -1625,11 +1625,11 @@
   var compareMaxInArray = function(a, b) {
     var maxa = 0;
     for (var i=0; i<a.length; ++i) {
-      if (a[i] > maxa) maxa = a[i];
+      if (a[i].count > maxa) maxa = a[i].count;
     }
     var maxb = 0;
     for (var i=0; i<b.length; ++i) {
-      if (b[i] > maxb) maxb = b[i];
+      if (b[i].count > maxb) maxb = b[i].count;
     }
     return maxa === maxb ? 0 : (maxa > maxb ? 1 : -1);
   };

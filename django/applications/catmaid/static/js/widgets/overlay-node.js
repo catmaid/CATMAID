@@ -1912,6 +1912,7 @@
 
         var x1new, y1new;
 
+        // Adjust location if a source radius is given or it is > 0
         if (srcRadius) {
           var newXdiff = (x2new - x1);
           var newYdiff = (y2new - y1);
@@ -2027,9 +2028,11 @@
         var connectorRadiusPx = connector.NODE_RADIUS * connector.stackScaling;
         var nodeRadiusPx = node.NODE_RADIUS * node.stackScaling;
         if (outwards) {
+          // Explicitly pass in a source radius of 0 to not change the parameter
+          // type, which can cause deoptimizations in V8.
           this.update(node[node.planeX], node[node.planeY],
               connector[connector.planeX], connector[connector.planeY],
-              relationName, confidence, connectorRadiusPx);
+              relationName, confidence, connectorRadiusPx, 0);
         } else {
           this.update(connector[connector.planeX], connector[connector.planeY],
               node[node.planeX], node[node.planeY], relationName, confidence,

@@ -74,6 +74,19 @@
     options.interpolated_sections_x = Array.from(project.interpolatableSections.x);
     options.interpolated_sections_y = Array.from(project.interpolatableSections.y);
     options.interpolated_sections_z = Array.from(project.interpolatableSections.z);
+
+    // If a project and a loaded stack is available, initialize the node scaling
+    // for skeletons so that it makes nodes not too big for higher resolutions
+    // and not too small for lower ones.
+    if (project && project.focusedStackViewer) {
+      let stack = project.focusedStackViewer.primaryStack;
+      options.skeleton_node_scaling = 2 * Math.min(stack.resolution.x,
+          stack.resolution.y, stack.resolution.z);
+    }
+
+    // Make the scaling factor look a bit prettier by rounding to two decimals
+    options.skeleton_node_scaling = Number(options.skeleton_node_scaling.toFixed(2));
+
     return options;
   };
 
@@ -2628,13 +2641,6 @@
     };
     // Absolute center in Space coordinates (not stack coordinates)
     this.center = this.createCenter();
-
-    // Set the node scaling for skeletons so that it makes nodes not too big for
-    // higher resolutions and not too small for lower ones.
-    options.skeleton_node_scaling = 2 * Math.min(stack.resolution.x,
-        stack.resolution.y, stack.resolution.z);
-    // Make the scaling factor look a bit prettier by rounding to two decimals
-    options.skeleton_node_scaling = Number(options.skeleton_node_scaling.toFixed(2));
 
     this.userColormap = {};
 

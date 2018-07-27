@@ -2566,7 +2566,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getSkeletons = function () {
 };
 
 SkeletonAnnotations.TracingOverlay.prototype.getSelectedSkeletons = function () {
-  return SkeletonAnnotations.activeSkeleton.getSelectedSkeletons();
+  return this.getSkeletons();
 };
 
 SkeletonAnnotations.TracingOverlay.prototype.hasSkeleton = function (skeletonId) {

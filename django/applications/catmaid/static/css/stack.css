@@ -125,7 +125,7 @@ div.LayerControl {
   top: 10px;
   left: 10px;
   width: 40em;
-  min-width: 30%;
+  min-width: 13em;
   max-width: 80%;
   height: 65%;
   overflow-x: hidden;

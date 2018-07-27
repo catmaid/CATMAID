@@ -396,7 +396,7 @@
 
         this.c.tint = this.color();
 
-        this.c.visible = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
+        this.c.visible = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups(false));
       };
 
       this.createRadiusGraphics = function () {
@@ -450,7 +450,7 @@
 
       this.isVisible = function () {
         return this.shouldDisplay() &&
-            SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
+            SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups(false));
       };
 
       this.updateVisibility = function (noCache) {
@@ -831,7 +831,7 @@
         lineHitAreaPoints[6] = childLocation[0]  - norm[0];
         lineHitAreaPoints[7] = childLocation[1]  - norm[1];
 
-        this.line.visible = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
+        this.line.visible = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups(false));
 
         if (this.confidence < 5) {
           // Create new or update
@@ -1350,7 +1350,7 @@
         }
 
         for (var i=0, imax=this.edges; i<imax; ++i) {
-          this.edges[i].updateVisibility(this);
+          this.edges[i].updateVisibility(this, false);
         }
       };
 
@@ -2035,7 +2035,7 @@
               node[node.planeX], node[node.planeY], relationName, confidence,
               nodeRadiusPx, connectorRadiusPx);
         }
-        this.updateVisibility(connector);
+        this.updateVisibility(connector, false);
       };
 
       this.scale = function(baseScale, resScale, dynamicScale) {

@@ -1583,7 +1583,7 @@ SkeletonAnnotations.TracingOverlay.prototype.recolorAllNodes = function () {
 SkeletonAnnotations.TracingOverlay.prototype.updateVisibilityForAllNodes = function () {
   // Assumes that atn and active_skeleton_id are correct:
   for (var node of this.nodes.values()) {
-    node.updateVisibility();
+    node.updateVisibility(false);
   }
   for (var nodeID in this.labels) {
     if (this.labels.hasOwnProperty(nodeID)) {

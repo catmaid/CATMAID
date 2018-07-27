@@ -4,7 +4,7 @@ imagemagick
 gcc
 gfortran
 git
-python2.7-dev
+python3.6-dev
 postgresql-common
 libpq-dev
 libgraphicsmagick++1-dev

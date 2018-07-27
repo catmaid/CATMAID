@@ -37,9 +37,15 @@ done so already)::
     wget --quiet -O - ${PG_KEY_URL} | sudo apt-key add -
     sudo apt-get update
 
+While Python 3.5 is supported, we recommend the use of Python 3.6. To be able to
+install it on Ubuntu 14.04 and 16.04, the following needs to be done::
+
+    sudo add-apt-repository ppa:deadsnakes/ppa
+    sudo apt-get update
+
 And then you can install these dependencies with::
 
-    sudo apt-get install python3 postgresql-10 imagemagick
+    sudo apt-get install python3.6 postgresql-10 imagemagick
 
 CATMAID is based on the `Django web framework
 <https://www.djangoproject.com/>`_.  If you just wish to work on
@@ -137,6 +143,11 @@ shells, for example, you will need to activate it by running::
    executable has to be created::
 
        mkvirtualenv --no-site-packages -p /usr/bin/pypy catmaid
+
+.. note::
+
+   If you are using Python 3.6 on Ubuntu 14.04 and 16.04, never uninstall Python
+   3.5, because it might break some parts of the system.
 
 Install all of the required Python packages with::
 

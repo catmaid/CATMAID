@@ -2606,6 +2606,7 @@ var makeSkeletonModelAccessor = function(skeletonIds) {
  * @param jso is an array of JSON objects, where each object may specify a Node
  *            or a ConnectorNode
  * @param extraNodes is an array of nodes that should be added additionally
+ * @returns {Bool} Whether or not a render call has already been queued.
  */
 SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (jso, extraNodes) {
   // Due to possible performance implications, the tracing layer won't signal
@@ -2882,6 +2883,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   }
   CATMAID.statusBar.replaceLast(msg);
 
+  var renderingQueued = false;
   if (triggerEvents) {
     var newNodeIds = new Set(Array.from(this.nodes.values()).filter(getSkeletonId).map(getSkeletonId));
     var addedNodeIds = new Set();
@@ -2896,13 +2898,19 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
         removedNodeIds.add(lastNodeId);
       }
     }
+    // Suspend overlay for events to prevent repeated redraws. The final
+    // createGraphics() call will update the color and a redraw happens later.
     if (addedNodeIds.size > 0) {
+      renderingQueued = true;
       this.trigger(this.EVENT_MODELS_ADDED, makeSkeletonModelAccessor(addedNodeIds));
     }
     if (removedNodeIds.size > 0) {
+      renderingQueued = true;
       this.trigger(this.EVENT_MODELS_REMOVED, makeSkeletonModelAccessor(removedNodeIds));
     }
   }
+
+  return renderingQueued;
 };
 
 /**
@@ -2988,8 +2996,10 @@ SkeletonAnnotations.TracingOverlay.prototype.loadExtraNodes = function(extraNode
  * those nodes have now been fetched.  So, if we *do* need to call updateNodes,
  * we should pass it the completionCallback.  Otherwise, just fire the
  * completionCallback at the end of this method.
+ *
+ * @params {Bool} skipRendering Whether or not node rendering can be skipped.
  */
-SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completionCallback) {
+SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completionCallback, skipRendering) {
   var stackViewer = this.stackViewer;
 
   // Don't udpate if the stack's current section or scale wasn't changed
@@ -3061,7 +3071,9 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
   this.updateTracingWindow();
 
   if (doNotUpdate) {
-    this.renderIfReady();
+    if (!skipRendering) {
+      this.renderIfReady();
+    }
     if (typeof completionCallback !== "undefined") {
       completionCallback();
     }
@@ -3584,7 +3596,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
         return;
       }
 
-      self.refreshNodesFromTuples(json, extraNodes);
+      var renderingQueued = self.refreshNodesFromTuples(json, extraNodes);
 
       // initialization hack for "URL to this view"
       var nodeSelected = false;
@@ -3602,7 +3614,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
         delete SkeletonAnnotations.init_active_skeleton_id;
       }
 
-      self.redraw();
+      self.redraw(false, undefined, renderingQueued);
       if (typeof callback !== "undefined") {
         callback();
       }

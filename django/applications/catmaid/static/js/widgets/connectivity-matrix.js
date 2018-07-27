@@ -1531,7 +1531,7 @@
       }
     },
     {
-      name: 'Synapse count',
+      name: 'Max synapse count',
       sort: function(desc, matrix, src, otherSrc, isRow, a, b) {
         var c = compareDescendingSynapseCount(matrix, src, isRow, a, b);
         return desc ? -1 * c : c;

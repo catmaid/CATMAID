@@ -21,7 +21,7 @@ Introduction
 The most fundamental dependencies of CATMAID are:
 
 1. PostgreSQL >= 10 and PostGIS >= 2.4
-2. Python 2.7, 3.5, 3.6, PyPy2 or PyPy3
+2. Python 3.5, 3.6 or PyPy3
 3. Imagemagick (for generating image tiles)
 
 To get the required PostgreSQL version for Debian-based systems, such as
@@ -39,7 +39,7 @@ done so already)::
 
 And then you can install these dependencies with::
 
-    sudo apt-get install python postgresql-10 imagemagick
+    sudo apt-get install python3 postgresql-10 imagemagick
 
 CATMAID is based on the `Django web framework
 <https://www.djangoproject.com/>`_.  If you just wish to work on
@@ -63,14 +63,14 @@ the source code is in ``/home/alice/catmaid``::
 2. Install required Python packages
 ###################################
 
-We recommend the use of Python 2.7 for production use at the moment, but Python
-3.5 should work equally well. With a few more limitations PyPy2 can be used as
-ell (no cropping, no back-end plotting, no synapse clustering, no ontology
+We recommend the use of Python 3.6 for production use at the moment, but Python
+3.5 should work equally well. With a few more limitations PyPy3 can be used as
+well (no cropping, no back-end plotting, no synapse clustering, no ontology
 clustering).
 
 We strongly recommend that you install all Python package dependencies into a
 virtualenv, so that they are isolated from the system-wide installed packages
-and can be upgraded easily.  Some of these Python packages depend on system-wide
+and can be upgraded easily. Some of these Python packages depend on system-wide
 libraries that you will need to install in advance, however. You can do this
 with one of the following commands (the one suiting best your OS):
 
@@ -110,7 +110,7 @@ and call ``source ~/.bashrc`` again::
 To create a new virtualenv for CATMAID's Python dependencies,
 you can do::
 
-    mkvirtualenv --no-site-packages -p /usr/bin/python2.7 catmaid
+    mkvirtualenv --no-site-packages -p /usr/bin/python3.6 catmaid
 
 That will create a virtualenv in ``~/.virtualenvs/catmaid/``, and
 while your virtualenv is activated, Python libraries will be

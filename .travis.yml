@@ -5,10 +5,8 @@ notifications:
 language: python
 cache: pip
 python:
-  - "2.7"
   - "3.5"
   - "3.6"
-  - "pypy"
   - "pypy3"
 services:
   - postgresql

@@ -109,7 +109,7 @@ def generateConfigFiles():
         data = re.sub('USERNAME', env.user, data)
         data = re.sub('CATMAID_PATH', 'CATMAID', data)
         data = re.sub('CATMAID_WEBURL', env.host_string, data)
-        data = re.sub('PYTHON_VERSION', 'python2.7', data)
+        data = re.sub('PYTHON_VERSION', 'python3.6', data)
 
         o.write( data )
         o.close()
@@ -121,7 +121,7 @@ def generateConfigFiles():
         data = open( in_configfile, 'r' ).read()
         data = re.sub('USERNAME', env.user, data)
         data = re.sub('CATMAID_PATH', 'CATMAID', data)
-        data = re.sub('PYTHON_VERSION', 'python2.7', data)
+        data = re.sub('PYTHON_VERSION', 'python3.6', data)
 
         o.write( data )
         o.close()

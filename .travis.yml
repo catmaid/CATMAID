@@ -21,6 +21,7 @@ before_install:
   - mkdir tmp
   - travis_retry sudo apt-get update -y -qq
   - bash scripts/travis/install_postgres.sh
+  - bash scripts/travis/install_python.sh
 install:
   # Install requirements for running CATMAID and its unit tests
   - ./scripts/travis/install_requirements.sh

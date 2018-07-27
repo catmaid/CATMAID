@@ -1,10 +1,16 @@
 Some CATMAID versions require manual changes to an existing setup. Below these
 and other administration related changes are listed in order.
 
+# Under development
+
+- Python 3 is now required for the back-end. We recommend the use of Python 3.6.
+
+
 ## 2018.07.19
 
 - This is the last CATMAID version with support for Python 2.7. Starting from
   next version, only Python 3 will be supported.
+
 
 ## 2018.04.15
 

@@ -2,6 +2,11 @@
 
 
 
+# Notes
+
+- Python 3 is now required for the back-end. We recommend the use of Python 3.6.
+
+
 ### Features and enhancements
 
 

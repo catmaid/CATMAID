@@ -1481,3 +1481,8 @@ img.missing-image:before {
   color: #0f0;
   border: 2px solid rgba(0,255,0,0.45);
 }
+
+a[data-role=url-to-clipboard] i {
+  color: #5459ff;
+  margin: 0 0.5em 0 0.5em;
+}

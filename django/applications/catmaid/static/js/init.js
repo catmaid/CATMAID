@@ -309,6 +309,11 @@ var project;
       return true;
     };
 
+    $(document.body).on('click', 'a[data-role=url-to-clipboard]', function() {
+      CATMAID.tools.copyToClipBoard(document.location.origin + '/' +
+          project.createURL());
+    });
+
     document.getElementById( "login_box" ).style.display = "block";
     document.getElementById( "logout_box" ).style.display = "none";
     document.getElementById( "session_box" ).style.display = "none";

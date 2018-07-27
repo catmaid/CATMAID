@@ -20,6 +20,9 @@ Miscellaneous:
   colors and cable length values when to use it can be set for three colors in
   the Settings Widget in the "Skeleton length coloring" section.
 
+- There is small copy-to-clipboard button left to the "URL to the view" link in
+  the upper right corner of the user interface.
+
 
 ### Bug fixes
 

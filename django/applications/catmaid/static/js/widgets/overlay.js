@@ -890,7 +890,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
    'EVENT_MODELS_CHANGED'].forEach(function (event) {
     this._skeletonDisplaySource.on(
         this._skeletonDisplaySource[event],
-        this.recolorAllNodes,
+        this.recolorAllNodes.bind(this),
         this);
   }, this);
 

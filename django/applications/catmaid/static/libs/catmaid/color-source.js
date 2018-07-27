@@ -21,10 +21,6 @@
       handleChangedModels: this.handleChangedModels.bind(this),
       handleRemovedModels: this.handleRemovedModels.bind(this),
     });
-    this.inputSource.append = function(models) {
-      this.clear();
-      CATMAID.BasicSkeletonSource.prototype.append.call(this, models);
-    };
 
     this.outputSource = new CATMAID.BasicSkeletonSource(
         "Color source for " + skeletonSource.getName(), {

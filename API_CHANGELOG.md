@@ -10,6 +10,10 @@ included in this changelog.
   The POST version of the already existing GET endpoint. It allows passing in
   more skeleton IDs for which to get the cable length.
 
+- `POST /{project_id}/skeletons/connectivity-counts`:
+  Allows to get the number connector links per relation type for each passed in
+  skeleton. Also accepts GET parameters.
+
 ### Modifications
 
 None.

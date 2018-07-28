@@ -617,6 +617,136 @@ def cable_lengths(request, project_id=None):
                 'cable_length'))
     return JsonResponse(cable_lengths)
 
+@api_view(['GET', 'POST'])
+@requires_user_role(UserRole.Browse)
+def connectivity_counts(request, project_id=None):
+    """Get the number of synapses per type for r a set of skeletons.
+
+    Returns an object with to fields. The first, `connectivity`, is a mapping
+    from skeleton ID to objects that map a relation ID to connectivity count for
+    that particular relation. The second field of the returned object,
+    `relations`, maps relation IDs used in the first field to relation names.
+    ---
+    parameters:
+      - name: project_id
+        description: Project of work in
+        type: integer
+        paramType: path
+        required: true
+      - name: count_partner_links
+        description: Whether to count partner links or links to a connector.
+        type: boolean
+        paramType: path
+        default: true
+        required: false
+      - name: source_relations[]
+        description: A list of pre-connector relations that have to be used
+        default: []
+        required: false
+        type: array
+        items:
+          type: string
+        paramType: form
+      - name: target_relations[]
+        description: A list of post-connector relations that have to be used
+        default: []
+        required: false
+        type: array
+        items:
+          type: string
+        paramType: form
+      - name: skeleton_ids[]
+        description: IDs of the skeletons whose partners to count
+        required: true
+        type: array
+        items:
+          type: integer
+        paramType: form
+    """
+
+    if request.method == 'GET':
+        data = request.GET
+    elif request.method == 'POST':
+        data = request.POST
+    else:
+        raise ValueError("Invalid HTTP method: " + request.method)
+
+    skeleton_ids = get_request_list(data, 'skeleton_ids', map_fn=int)
+    if not skeleton_ids:
+        raise ValueError('Need at least one skeleton ID')
+
+    count_partner_links = get_request_bool(data, 'count_partner_links', True)
+
+    source_relations = get_request_list(data, 'source_relations', default=[])
+    target_relations = get_request_list(data, 'target_relations', default=[])
+
+    relations = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
+
+    source_relation_ids = map(lambda r: relations[r], source_relations)
+    target_relation_ids = map(lambda r: relations[r], target_relations)
+
+    extra_select = []
+    if count_partner_links:
+        if target_relation_ids:
+            extra_target_check = """
+                AND tc2.relation_id IN ({})
+            """.format(','.join(map(str, target_relation_ids)))
+        else:
+            extra_target_check = ""
+
+        extra_select.append("""
+            JOIN treenode_connector tc2
+                ON tc.connector_id = tc2.connector_id
+                AND tc.id <> tc2.id
+                {extra_target_check}
+        """.format(extra_target_check=extra_target_check))
+
+    if source_relation_ids:
+        extra_source_check = """
+            AND tc.relation_id IN ({})
+        """.format(','.join(map(str, source_relation_ids)))
+    else:
+        extra_source_check = ""
+
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT tc.skeleton_id, tc.relation_id, COUNT(tc)
+        FROM treenode_connector tc
+        JOIN UNNEST(%(skeleton_ids)s::int[]) skeleton(id)
+            ON skeleton.id = tc.skeleton_id
+        {extra_select}
+        WHERE tc.project_id = %(project_id)s
+        {extra_source_check}
+        GROUP BY tc.skeleton_id, tc.relation_id
+    """.format(**{
+        'extra_select': '\n'.join(extra_select),
+        'extra_source_check': extra_source_check,
+    }), {
+        'project_id': project_id,
+        'skeleton_ids': skeleton_ids,
+    })
+
+    connectivity = {}
+    seen_relations = set()
+    for row in cursor.fetchall():
+        skeletton_entry = connectivity.get(row[0])
+        if not skeletton_entry:
+            skeletton_entry = {}
+            connectivity[row[0]] = skeletton_entry
+        seen_relations.add(row[1])
+        skeletton_entry[row[1]] = row[2]
+
+    if seen_relations:
+        relations = dict((v,k) for k,v in relations.items() if v in seen_relations)
+    else:
+        relations = []
+
+    return JsonResponse({
+        'connectivity': connectivity,
+        'relations': dict(relations),
+    })
+
+
 def check_annotations_on_split(project_id, skeleton_id, over_annotation_set,
         under_annotation_set):
     """ With respect to annotations, a split is only correct if one part keeps

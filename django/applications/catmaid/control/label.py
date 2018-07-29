@@ -40,7 +40,7 @@ def get_link_model(node_type):
     else:
         raise Exception('Unknown node type: "%s"', node_type)
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Annotate)
 def label_remove(request, project_id=None):
     label_id = int(request.POST['label_id'])
     if request.user.is_superuser:
@@ -64,7 +64,7 @@ def label_remove(request, project_id=None):
     raise PermissionError('Only super users can delete unreferenced labels')
 
 @api_view(['GET'])
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Browse)
 def labels_all(request, project_id=None):
     """List all labels (front-end node *tags*) in use.
 
@@ -144,7 +144,7 @@ def get_label_stats(request, project_id=None):
     return JsonResponse(cursor.fetchall(), safe=False)
 
 @api_view(['GET'])
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Browse)
 def labels_for_node(request, project_id=None, node_type=None, node_id=None):
     """List all labels (front-end node *tags*) attached to a particular node.
 
@@ -183,7 +183,7 @@ def labels_for_node(request, project_id=None, node_type=None, node_id=None):
 
     return JsonResponse([l.class_instance.name for l in qs], safe=False)
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@requires_user_role(UserRole.Browse)
 def labels_for_nodes(request, project_id=None):
     # Two POST variables, which are each an array of integers stringed together
     # with commas as separators

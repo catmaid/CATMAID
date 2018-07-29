@@ -86,6 +86,29 @@ def labels_all(request, project_id=None):
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
+def labels_all_detail(request, project_id=None):
+    """List all labels (front-end node *tags*) in use alongside their IDs.
+    ---
+    parameters:
+    - name: project_id
+      description: Project containing node of interest
+      required: true
+    type:
+    - type: array
+      items:
+        type: string
+      description: Labels used in this project
+      required: true
+    """
+    labels = ClassInstance.objects.filter(class_column__class_name='label',
+        project=project_id).values_list('id', 'name')
+    return JsonResponse([{
+        'id': l[0],
+        'name': l[1],
+    } for l in labels], safe=False)
+
+@api_view(['GET'])
+@requires_user_role(UserRole.Browse)
 def get_label_stats(request, project_id=None):
     """Get usage statistics of node labels.
 

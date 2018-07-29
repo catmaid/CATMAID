@@ -31,12 +31,24 @@
      *
      * @param {integer} projectId        The project the node is part of
      *
-     * @returns {Object} Promise that is resolved with an object mapping label
-     *                   IDs to label names.
+     * @returns {Object} Promise that is resolved with a list of available label
+     *                   names.
      */
     listAll: function(projectId) {
       var url = projectId + '/labels/';
       return CATMAID.fetch(url, 'GET');
+    },
+
+    /**
+     * Get all labels in a project.
+     *
+     * @param {integer} projectId        The project the node is part of
+     *
+     * @returns {Object} Promise that is resolved with a list of label objects,
+     *                   each with an id and name field.
+     */
+    listAllDetail: function(projectId) {
+      return CATMAID.fetch(projectId + '/labels/detail', 'GET');
     },
 
     /**

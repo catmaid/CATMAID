@@ -170,6 +170,7 @@ urlpatterns += [
 # Treenode labels
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/labels/$', label.labels_all),
+    url(r'^(?P<project_id>\d+)/labels/detail$', label.labels_all_detail),
     url(r'^(?P<project_id>\d+)/labels/stats$', label.get_label_stats),
     url(r'^(?P<project_id>\d+)/labels-for-nodes$', label.labels_for_nodes),
     url(r'^(?P<project_id>\d+)/labels/(?P<node_type>(treenode|location|connector))/(?P<node_id>\d+)/$', label.labels_for_node),

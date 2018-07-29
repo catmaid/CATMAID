@@ -19,7 +19,10 @@ included in this changelog.
 
 ### Modifications
 
-None.
+- `POST /{project_id}/skeletons/node-label`:
+  The new `label_names` parameter accepts a list of strings that an be used
+  instead of or together with label IDs to get skeletons with nodes that have
+  particular labels.
 
 ### Deprecations
 

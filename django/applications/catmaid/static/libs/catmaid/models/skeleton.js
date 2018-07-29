@@ -118,6 +118,21 @@
     },
 
     /**
+     * Get all skeleton IDs for skeletons with nodes with the passed in label
+     * IDs or label names.
+     *
+     * @param {integer}   projectId   Project space to work in
+     * @param {integer[]} labelIds    A list of label IDs result skeleton will have
+     * @param {string[]}  labelNames  A list of label names result skeleton will have
+     */
+    withLabels: function(projectID, labelIds, labelNames) {
+      return CATMAID.fetch(project.id + '/skeletons/node-labels', 'POST', {
+        label_ids: labelIds,
+        label_names: labelNames
+      });
+    },
+
+    /**
      * Export skeletons as SWC files
      *
      * @param {number}   projectId    Project sapce to work in

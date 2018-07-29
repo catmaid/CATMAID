@@ -2420,6 +2420,13 @@ def skeletons_by_node_labels(request, project_id=None):
           items:
             type: integer
           paramType: form
+        - name: label_names[]
+          description: Alternative to `label_ids` to pass in a list label names.
+          required: true
+          type: array
+          items:
+            type: string
+          paramType: form
     type:
         - type: array
           items:
@@ -2427,14 +2434,19 @@ def skeletons_by_node_labels(request, project_id=None):
           description: array of [label_id, [skel_id1, skel_id2, skel_id3, ...]] tuples
           required: true
     """
-    labels = get_request_list(request.POST, 'label_ids', map_fn=int)
+    label_ids = get_request_list(request.POST, 'label_ids', default=[], map_fn=int)
+    label_names = get_request_list(request.POST, 'label_names', default=[])
 
-    if not labels:
+    if not label_ids and not label_names:
         return JsonResponse([], safe=False)
 
-    interp_lst = ', '.join(['(%s)' for _ in labels])
-
+    label_class = Class.objects.get(project=project_id, class_name='label')
     labeled_as_relation = Relation.objects.get(project=project_id, relation_name='labeled_as')
+
+    if label_names:
+        extra_label_ids = ClassInstance.objects.filter(project_id=project_id,
+                class_column=label_class, name__in=label_names).values_list('id', flat=True)
+        label_ids.extend(extra_label_ids)
 
     cursor = connection.cursor()
     cursor.execute("""
@@ -2444,12 +2456,16 @@ def skeletons_by_node_labels(request, project_id=None):
             ON t.id = tci.treenode_id
           JOIN class_instance ci
             ON tci.class_instance_id = ci.id
-          JOIN (VALUES {}) label(id)
+          JOIN UNNEST(%(label_ids)s::int[]) label(id)
             ON label.id = ci.id
-          WHERE ci.project_id = %s
-            AND tci.relation_id = %s
+          WHERE ci.project_id = %(project_id)s
+            AND tci.relation_id = %(labeled_as)s
           GROUP BY ci.id;
-    """.format(interp_lst), labels + [int(project_id), labeled_as_relation.id])
+    """, {
+        'label_ids': label_ids,
+        'project_id': int(project_id),
+        'labeled_as': labeled_as_relation.id
+    })
 
     return JsonResponse(cursor.fetchall(), safe=False)
 

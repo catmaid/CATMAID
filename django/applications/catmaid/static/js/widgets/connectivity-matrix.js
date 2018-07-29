@@ -36,6 +36,13 @@
     this.rotateColumnHeaders = false;
     // Display manual order edit controls
     this.displayOrderFields = false;
+    // Whether or not to display connectivity counts as percentage to total
+    // connectivity.
+    this.relativeDisplay = false;
+    // Total skeleton connectivity information for each skeleton, if enabled
+    this.connectivityData = null;
+    // A map of relation names to IDs, used with relativeDisplay
+    this.relationMap = null;
 
     // A set of filter rules to apply to the handled connectors
     this.filterRules = [];
@@ -154,6 +161,8 @@
          * Load rows and/or coulmns and refresh.
          */
         var loadWith = function(withRows, withCols) {
+          this.connectivityData = null;
+          this.relationMap = null;
           if (loadAsGroup) {
             // Ask for group name
             askForGroupName((function(name) {
@@ -270,6 +279,23 @@
         synapseThreshold.appendChild(document.createTextNode('Syn. threshold'));
         synapseThreshold.appendChild(synapseThresholdSelect);
         tabs['Main'].appendChild(synapseThreshold);
+
+        var relativeDisplayCb = document.createElement('input');
+        relativeDisplayCb.setAttribute('type', 'checkbox');
+        relativeDisplayCb.checked = this.relativeDisplay;
+        relativeDisplayCb.onclick = (function(e) {
+          this.relativeDisplay = e.target.checked;
+          var prepare = this.connectivityData ? Promise.resolve() :
+            this.updateConnectivityCounts();
+          prepare.then(this.refresh.bind(this));
+        }).bind(this);
+        var relativeDisplay = document.createElement('label');
+        relativeDisplay.appendChild(relativeDisplayCb);
+        relativeDisplay.appendChild(document.createTextNode('Fractions'));
+        relativeDisplay.setAttribute('title', 'Display the number of connections ' +
+            'as percetage of the total number of postsynaptic links to the target ' +
+            'skeleton.');
+        tabs['Main'].appendChild(relativeDisplay);
 
         var applyFiltersCb = document.createElement('input');
         applyFiltersCb.setAttribute('type', 'checkbox');
@@ -548,6 +574,8 @@
    * Clear all selected sources.
    */
   ConnectivityMatrixWidget.prototype.clear = function(clearRows, clearCols) {
+    this.connectivityData = null;
+    this.relationMap = null;
     if (clearRows) this.rowDimension.clear();
     if (clearCols) this.colDimension.clear();
     if (clearRows || clearCols) this.update();
@@ -656,18 +684,55 @@
     this.matrix.rowSkeletonIDs = this.rowDimension.getSelectedSkeletons();
     this.matrix.colSkeletonIDs = this.colDimension.getSelectedSkeletons();
 
+    var skeletonIds = new Set(this.matrix.rowSkeletonIDs);
+    for (var i=0; i<this.matrix.colSkeletonIDs.length; ++i) {
+      skeletonIds.add(this.matrix.colSkeletonIDs[i]);
+    }
+
     this.matrix.filterRules.length = 0;
     this.matrix.filterRules.push.apply(this.matrix.filterRules, this.filterRules);
     this.matrix.applyFilterRules = this.applyFilterRules;
+    var self = this;
     this.matrix.refresh()
       .then(nns.registerAll.bind(nns, this, this.rowDimension.getSelectedSkeletonModels()))
       .then(nns.registerAll.bind(nns, this, this.colDimension.getSelectedSkeletonModels()))
+      .then(function() {
+        if (self.relativeDisplay && !self.connectivityData) {
+          return self.updateConnectivityCounts(Array.from(skeletonIds));
+        }
+      })
       .then((function() {
         // Clear any message
         if (this.content.dataset.msg) delete this.content.dataset.msg;
         // Create table
         this.refresh();
       }).bind(this));
+  };
+
+  ConnectivityMatrixWidget.prototype.updateConnectivityCounts = function(skeletonIds) {
+    if (!skeletonIds) {
+      var rowSkeletonIDs = this.rowDimension.getSelectedSkeletons();
+      var colSkeletonIDs = this.colDimension.getSelectedSkeletons();
+      skeletonIds = new Set(this.matrix.rowSkeletonIDs);
+      for (var i=0; i<this.matrix.colSkeletonIDs.length; ++i) {
+        skeletonIds.add(this.matrix.colSkeletonIDs[i]);
+      }
+      skeletonIds = Array.from(skeletonIds);
+    }
+
+    var self = this;
+    return CATMAID.fetch(project.id + '/skeletons/connectivity-counts', 'POST', {
+      skeleton_ids: skeletonIds,
+      source_relations: ['postsynaptic_to'],
+      target_relations: ['presynaptic_to']
+    })
+    .then(function(connCount) {
+      self.connectivityData = connCount.connectivity;
+      self.relationMap = Object.keys(connCount.relations).reduce(function(map, rId) {
+        map[connCount.relations[rId]] = rId;
+        return map;
+      }, {});
+    });
   };
 
   function sortDimension(map, a, b) {
@@ -721,8 +786,24 @@
     var colHeader = table.appendChild(document.createElement('tr'));
     colHeader.appendChild(document.createElement('th'));
 
-    // Find maximum connection number in matrix
+    // Find maximum connection number in matrix and maximum percent (if relative
+    // display is enabled).
     var maxConnections = matrix.getMaxConnections();
+    var maxPercent = 0;
+    if (this.relativeDisplay) {
+      var postToId = this.relationMap['postsynaptic_to'];
+      for (var i=0; i<this.matrix.rowSkeletonIDs.length; ++i) {
+        for (var j=0; j<this.matrix.colSkeletonIDs.length; ++j) {
+          var c = this.matrix.connectivityMatrix[i][j];
+          let skeletonData = this.connectivityData[this.matrix.colSkeletonIDs[j]];
+          if (!skeletonData) continue;
+          let targetTotal = skeletonData[postToId];
+          if (!targetTotal) continue;
+          let percent = 100 * c.count / targetTotal;
+          if (percent > maxPercent) maxPercent = percent;
+        }
+      }
+    }
 
     // Collect row as well as column names and skeleton IDs
     var rowNames = [], rowSkids = [], colNames = [], colSkids = [];
@@ -731,7 +812,11 @@
         handleColumn.bind(this, colHeader, colNames, colSkids),
         handleRow.bind(window, table, rowNames, rowSkids),
         handleCell.bind(this),
-        handleCompletion.bind(this, table, rowNames, rowSkids, colNames, colSkids));
+        handleCompletion.bind(this, table, rowNames, rowSkids, colNames, colSkids), {
+          relative: this.relativeDisplay,
+          totalConnectivity: this.connectivityData,
+          relationMap: this.relationMap,
+        });
 
     if (walked) {
       // Add optional order fields
@@ -1087,17 +1172,27 @@
     }
 
     // Create cell
-    function handleCell(row, rowName, rowSkids, colName, colSkids, connections) {
+    function handleCell(row, rowName, rowSkids, colName, colSkids, connections,
+        totalConnections, relative) {
       /* jshint validthis: true */ // `this` is bound to the connectivity matrix
       var td = createSynapseCountCell("pre", rowName, rowSkids, colName, colSkids,
-          connections, synThreshold);
-      colorize(td, colorOptions[this.color], connections, synThreshold, maxConnections);
+          connections, synThreshold, totalConnections, relative);
+      if (relative) {
+        var percent = 100.0 * connections / totalConnections;
+        colorize(td, colorOptions[this.color], percent, 0, maxPercent);
+      } else {
+        colorize(td, colorOptions[this.color], connections, synThreshold, maxConnections);
+      }
       row.appendChild(td);
+    }
+
+    function sumElements(acc, val) {
+      return acc + val;
     }
 
     // Create aggretate rows and columns
     function handleCompletion(table, rowNames, rowSkids, colNames, colSkids,
-        rowSums, colSums) {
+        rowSums, colSums, colTotals, relative) {
       /* jshint validthis: true */ // `this` is bound to the connectivity matrix
       var allRowSkids = this.rowDimension.getSelectedSkeletons();
       var allColSkids = this.colDimension.getSelectedSkeletons();
@@ -1108,10 +1203,13 @@
       aggRow.appendChild(aggRowHead);
       for (var c=0; c<colSums.length; ++c) {
         var td = createSynapseCountCell("pre", "All presynaptic neurons",
-            allRowSkids, colNames[c], colSkids[c], colSums[c], synThreshold);
+            allRowSkids, colNames[c], colSkids[c], colSums[c], synThreshold,
+            colTotals[c], relative);
         aggRow.appendChild(td);
       }
       $(table).find("tr:last").after(aggRow);
+
+      let allTargetSum = colSums.reduce(sumElements, 0);
 
       // Create aggregate column
       var rotate = this.rotateColumnHeaders;
@@ -1127,15 +1225,16 @@
         } else if (i <= rowSums.length) {
           // Substract one for the header row to get the correct sum index
           var td = createSynapseCountCell("pre", rowNames[i - 1], rowSkids[i - 1],
-              "All postsynaptic neurons", allColSkids, rowSums[i - 1], synThreshold);
+              "All postsynaptic neurons", allColSkids, rowSums[i - 1],
+              synThreshold, allTargetSum, relative);
           e.appendChild(td);
         } else {
           // This has to be the lower right cell of the table. It doesn't matter
           // if we add up rows or columns, it yields the same number.
-          var sum = rowSums.reduce(function(s, r) { return s + r; }, 0);
+          var sum = rowSums.reduce(sumElements, 0);
           var td = createSynapseCountCell("pre", "All presynaptic neurons",
               allRowSkids, "All postsynaptic neurons", allColSkids, sum,
-              synThreshold);
+              synThreshold, allTargetSum, relative);
           e.appendChild(td);
         }
       });
@@ -1200,8 +1299,8 @@
    * functions when a column can be created, a row can be crated and a cell can
    * be created.
    */
-  ConnectivityMatrixWidget.prototype.walkMatrix = function(
-      matrix, handleCol, handleRow, handleCell, handleCompletion) {
+  ConnectivityMatrixWidget.prototype.walkMatrix = function( matrix, handleCol,
+      handleRow, handleCell, handleCompletion, options) {
     var nRows = matrix.getNumberOfRows();
     var nCols = matrix.getNumberOfColumns();
     if (0 === nRows || 0 === nCols) {
@@ -1212,6 +1311,7 @@
     var nns = CATMAID.NeuronNameService.getInstance();
     var rowSums = [];
     var colSums = [];
+    var colTotals = [];
 
     // Get group information
     var nDisplayRows = this.rowDimension.orderedElements.length;
@@ -1223,10 +1323,16 @@
       var colGroup = this.colDimension.groups[id];
       var name = colGroup ? id : nns.getName(id);
       var skeletonIDs = colGroup ? colGroup : [id];
+      let totalConnections = options.relative ?
+          getTotalConections(options.totalConnectivity,
+              options.relationMap, skeletonIDs) :
+           null;
+      colTotals.push(totalConnections);
       handleCol(id, colGroup, name, skeletonIDs);
     }
     // Add row headers and connectivity matrix rows
     var r = 0;
+    var colTotalSum = 0;
     for (var dr=0; dr<nDisplayRows; ++dr) {
       var c = 0;
       // Get skeleton or rowGroup name and increase row skeleton counter
@@ -1249,7 +1355,8 @@
         // Create and handle in and out cells
         var rowSkids = rowGroup ? rowGroup : [rowId];
         var colSkids = colGroup ? colGroup : [colId];
-        handleCell(row, rowName, rowSkids, colName, colSkids, connections);
+        handleCell(row, rowName, rowSkids, colName, colSkids, connections,
+            colTotals[dc], options.relative);
 
         // Add to row and column sums
         rowSums[dr] = (rowSums[dr] || 0) + connections;
@@ -1263,10 +1370,30 @@
       r = rowGroup ? r + rowGroup.length : r + 1;
     }
 
-    if (CATMAID.tools.isFn(handleCompletion)) handleCompletion(rowSums, colSums);
+    if (CATMAID.tools.isFn(handleCompletion)) handleCompletion(rowSums, colSums,
+        colTotals, options.relative);
 
     return true;
   };
+
+  function sumPost(context, skeletonId) {
+    var skeletonCounts = context.data[skeletonId];
+    if (skeletonCounts) {
+      var count = skeletonCounts[context.relationId];
+      if (count) {
+        context.sum += count;
+      }
+    }
+    return context;
+  }
+
+  function getTotalConections(data, relationMap, colSkeletonIds) {
+    return colSkeletonIds.reduce(sumPost, {
+      sum: 0,
+      relationId: relationMap['postsynaptic_to'],
+      data: data,
+    }).sum;
+  }
 
   /**
    * Open the print dialog for an empty page containing only the connectivity
@@ -1330,8 +1457,9 @@
     }
 
     // Create cell
-    function handleCell(line, rowName, rowSkids, colName, colSkids, connections) {
-      line.push(connections);
+    function handleCell(line, rowName, rowSkids, colName, colSkids, connections,
+        totalConnections, relative) {
+      line.push(relative ? (connections / totalConnections) : connections);
     }
   };
 
@@ -1364,8 +1492,9 @@
     }
 
     // Create cell
-    function handleCell(line, rowName, rowSkids, colName, colSkids, connections) {
-      line.push(connections);
+    function handleCell(line, rowName, rowSkids, colName, colSkids, connections,
+        totalConnections, relative) {
+      line.push(relative ? (connections / totalConnections) : connections);
     }
 
     var walked = this.walkMatrix(this.matrix, handleColumn.bind(window, lines[0]),
@@ -1424,7 +1553,7 @@
    * Create a synapse count table cell.
    */
   function createSynapseCountCell(sourceType, sourceName, sourceIDs, targetName, partnerIDs,
-      count, threshold) {
+      count, threshold, totalConnections, relative) {
     var td = document.createElement('td');
     td.setAttribute('class', 'syncount');
 
@@ -1440,7 +1569,13 @@
       // handler to do this is created separate to only require one handler.
       var a = document.createElement('a');
       td.appendChild(a);
-      a.appendChild(document.createTextNode(count));
+
+      if (relative) {
+        var percent = (100.0 * count / totalConnections).toFixed(2);
+        a.appendChild(document.createTextNode(percent + '%'));
+      } else {
+        a.appendChild(document.createTextNode(count));
+      }
       a.setAttribute('href', '#');
       a.setAttribute('sourceIDs', JSON.stringify(sourceIDs));
       a.setAttribute('partnerIDs', JSON.stringify(partnerIDs));

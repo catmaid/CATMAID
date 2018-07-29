@@ -9,6 +9,13 @@
 
 ### Features and enhancements
 
+Connectivity matrix:
+
+- The new checkbox labeled "Fractions" in the "Main" tab makes it now possible
+  to display connector fraction instead of an absolute link number in each cell.
+  The number of connections from one source row to a target column is divided by
+  the number of total posynaptic connections that are made to the target
+  skeleton (column). This makes columns better comparable to each other.
 
 Miscellaneous:
 

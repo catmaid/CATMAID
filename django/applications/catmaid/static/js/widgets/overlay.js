@@ -2858,7 +2858,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     var fontSize = parseFloat(this.graphics.ArrowLine.prototype.confidenceFontSize) * 0.75;
     var labeledNodes = Object.keys(m);
     for (var i=0, imax=labeledNodes.length; i<imax; ++i) {
-      var nid = labeledNodes[i];
+      var nid = parseInt(labeledNodes[i], 10);
       if (m.hasOwnProperty(nid)) {
         var node = this.nodes.get(nid);
         // Only add labels for nodes in current section

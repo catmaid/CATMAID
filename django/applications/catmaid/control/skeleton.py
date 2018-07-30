@@ -2407,7 +2407,7 @@ def all_shared_connectors(request, project_id=None):
     return JsonResponse(dict.fromkeys(skelgroup.all_shared_connectors()))
 
 
-@api_view(['POST'])
+@api_view(['GET', 'POST'])
 @requires_user_role([UserRole.Browse])
 def skeletons_by_node_labels(request, project_id=None):
     """Return relationship between label IDs and skeleton IDs

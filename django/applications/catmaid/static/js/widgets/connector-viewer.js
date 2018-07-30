@@ -301,7 +301,7 @@
           return cmwWindow.title === self.getName();
         });
         CATMAID.DOM.addCaptionButton(
-          window, 'ui-icon ui-icon-link', 'Show and hide skeleton source controls', function() {
+          window, 'fa fa-link', 'Show and hide skeleton source controls', function() {
             $('.extended-source-controls').toggle();
           }
         );

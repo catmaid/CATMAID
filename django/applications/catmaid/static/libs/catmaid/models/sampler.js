@@ -227,7 +227,9 @@
 
           // If this or the last node is closer
           if (distanceToLast < distanceToThis) {
-            if (distanceToLast < intervalError) {
+            // If the last node is close enough and is not the start of the
+            // current interval, select it as interval boundary.
+            if (distanceToLast < intervalError && intervalStartIdx !== j + 1) {
               // Use last node, because it is closer than this node and closer
               // than the allowed interval error.
               selectedNode = partition[j+1];
@@ -284,10 +286,12 @@
 
               // Prepare point ID for next point
               newPointId++;
-            } else if (preferSmallerError && distanceToLast < distanceToThis && !lastIsFirst) {
+            } else if (preferSmallerError && intervalStartIdx !== j + 1 &&
+                distanceToLast < distanceToThis && !lastIsFirst) {
               // Optionally, make the interval smaller if this means being closer to
               // the ideal interval length. This can only be done if the current
-              // interval has at least a length of 2.
+              // interval has at least a length of 2 and the previous node isn't
+              // the interval start.
               selectedNode = partition[j+1];
               // To properly continue from the last node with the next interval,
               // move index back one step.

@@ -1525,6 +1525,14 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
  * argument can be set to true.
  */
 SkeletonAnnotations.TracingOverlay.prototype.selectNode = function(id, strict) {
+  // For the sake of robustness, try parsing the passed in ID as Number. If this
+  // yields a valid number, it is used to find the nodes. This is done because
+  // the nodes map is typed.
+  var numberId = Number(id);
+  if (!Number.isNaN(numberId)) {
+    id = numberId;
+  }
+
   var node = this.nodes.get(id);
   if (node) {
     this.activateNode(node);

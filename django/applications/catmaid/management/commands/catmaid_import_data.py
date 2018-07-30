@@ -445,6 +445,8 @@ class FileImporter:
             FROM concept;
             SELECT setval('location_id_seq', coalesce(max("id"), 1), max("id") IS NOT null)
             FROM location;
+            SELECT setval('auth_user_id_seq', coalesce(max("id"), 1), max("id") IS NOT null)
+            FROM auth_user;
         ''')
 
 

@@ -62,6 +62,16 @@
     this.workflow.selectStep(0);
   };
 
+  ReconstructionSampler.prototype.setFromSampler = function(sampler) {
+    this.state['samplerId'] = sampler['id'];
+    this.state['skeletonId'] = sampler['skeleton_id'];
+    this.state['intervalLength'] = sampler['interval_length'];
+    this.state['intervalError'] = sampler['interval_error'];
+    this.state['createIntervalBoundingNodes'] = sampler['create_interval_boundaries'];
+    this.state['reviewRequired'] = sampler['review_required'];
+    this.state['leafHandling'] = sampler['leaf_segment_handling'];
+  };
+
   ReconstructionSampler.prototype.destroy = function() {
     CATMAID.NeuronNameService.getInstance().unregister(this);
     this.unregisterInstance();
@@ -588,11 +598,7 @@
         var table = $(this).closest('table');
         var tr = $(this).closest('tr');
         var data =  $(table).DataTable().row(tr).data();
-
-        var samplerId = parseInt(this.dataset.samplerId, 10);
-
-        widget.state['skeletonId'] = data.skeleton_id;
-        widget.state['samplerId'] = data.id;
+        widget.setFromSampler(data);
         widget.workflow.advance();
         widget.update();
       }
@@ -615,9 +621,7 @@
       var table = $(this).closest('table');
       var tr = $(this).closest('tr');
       var data =  $(table).DataTable().row(tr).data();
-
-      widget.state['skeletonId'] = data.skeleton_id;
-      widget.state['samplerId'] = data.id;
+      widget.setFromSampler(data);
       widget.workflow.advance();
       widget.update();
     });

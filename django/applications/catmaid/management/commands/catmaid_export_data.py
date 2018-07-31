@@ -323,16 +323,19 @@ class Exporter():
                 else:
                     logger.info("Exporting %s placeholder nodes with first new class instance ID %s" % (len(extra_tids), new_skeleton_id))
 
-                placeholder_treenodes = Treenode.objects.filter(id__in=extra_tids)
+                placeholder_treenodes = Treenode.objects.prefetch_related(
+                        'treenodeconnector_set').filter(id__in=extra_tids)
                 # Placeholder nodes will be transformed into root nodes of new
                 # skeletons.
                 new_skeleton_cis = []
                 new_neuron_cis = []
                 new_model_of_links = []
+                new_tc_links = []
                 for pt in placeholder_treenodes:
                     pt.parent_id = None
 
                     if not self.original_placeholder_context:
+                        original_skeleton_id = pt.skeleton_id
                         pt.skeleton_id = new_skeleton_id
 
                         # Add class instances for both the skeleton and neuron for
@@ -355,7 +358,6 @@ class Exporter():
                                 class_column_id=classes['neuron'],
                                 name='Placeholder Neuron ' + str(new_neuron_name_id))
 
-
                         new_model_of_link = ClassInstanceClassInstance(
                                 id=new_model_of_id,
                                 user_id=pt.user_id,
@@ -366,9 +368,31 @@ class Exporter():
                                 class_instance_a_id=new_skeleton_id,
                                 class_instance_b_id=new_neuron_id)
 
-                        new_skeleton_id += new_concept_offset
-                        new_neuron_id += new_concept_offset
-                        new_model_of_id += new_concept_offset
+                        tc_offset = 0
+                        for tc in pt.treenodeconnector_set.all():
+                            # Only export treenode connector links to connectors
+                            # that are exported.
+                            if tc.skeleton_id != original_skeleton_id or \
+                                    tc.connector_id not in connector_ids:
+                                continue
+                            new_tc_id = new_skeleton_id + new_concept_offset + 1
+                            tc_offset += 1
+                            new_treenode_connector = TreenodeConnector(
+                                    id=new_tc_id,
+                                    user_id=tc.user_id,
+                                    creation_time=tc.creation_time,
+                                    edition_time=tc.edition_time,
+                                    project_id=tc.project_id,
+                                    relation_id=tc.relation_id,
+                                    treenode_id=pt.id,
+                                    skeleton_id = new_skeleton_id,
+                                    connector_id=tc.connector_id)
+                            new_tc_links.append(new_treenode_connector)
+
+                        effective_offset = new_concept_offset + tc_offset
+                        new_skeleton_id += effective_offset
+                        new_neuron_id += effective_offset
+                        new_model_of_id += effective_offset
                         new_neuron_name_id += 1
 
                         new_skeleton_cis.append(new_skeleton_ci)
@@ -379,6 +403,8 @@ class Exporter():
                     self.to_serialize.append(new_skeleton_cis)
                     self.to_serialize.append(new_neuron_cis)
                     self.to_serialize.append(new_model_of_links)
+                    if new_tc_links:
+                        self.to_serialize.append(new_tc_links)
 
                 self.to_serialize.append(placeholder_treenodes)
 

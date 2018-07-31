@@ -17,6 +17,12 @@ CM_EXAMPLE_PROJECTS=${CM_EXAMPLE_PROJECTS:-true}
 CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE=${CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:-""}
 CM_HOST=${CM_HOST:-0.0.0.0}
 CM_PORT=${CM_PORT:-8000}
+CM_FORCE_CONFIG_UPDATE=${CM_FORCE_CONFIG_UPDATE:-false}
+CM_WRITEABLE_PATH=${CM_WRITEABLE_PATH:-"/tmp"}
+CM_NODE_LIMIT=${CM_NODE_LIMIT:-10000}
+CM_NODE_PROVIDER=${CM_NODE_PROVIDER:-"postgis2d"}
+CM_SUBDIRECTORY=${CM_SUBDIRECTORY:-""}
+CM_CSRF_TRUSTED_ORIGINS=${CM_CSRF_TRUSTED_ORIGINS:-""}
 TIMEZONE=`readlink /etc/localtime | sed "s/.*\/\(.*\)$/\1/"`
 PG_VERSION='10'
 
@@ -41,7 +47,7 @@ init_catmaid () {
   source /usr/share/virtualenvwrapper/virtualenvwrapper.sh
   workon catmaid
 
-  if [ ! -f /home/django/projects/mysite/settings.py ]; then
+  if [ ! -f /home/django/projects/mysite/settings.py ] || ["$CM_FORCE_CONFIG_UPDATE" = true]; then
     echo "Setting up CATMAID"
 
     cp /home/django/configuration.py.example /home/django/configuration.py
@@ -54,6 +60,8 @@ init_catmaid () {
     sed -i -e "s?^\(catmaid_database_password = \).*?\1'${DB_PASS}'?g" /home/django/configuration.py
     sed -i -e "s?^\(catmaid_timezone = \).*?\1'${TIMEZONE}'?g" /home/django/configuration.py
     sed -i -e "s?^\(catmaid_servername = \).*?\1'*'?g" /home/django/configuration.py
+    sed -i -e "s?^\(catmaid_subdirectory = \).*?\1'${CM_SUBDIRECTORY}'?g" /home/django/configuration.py
+    sed -i -e "s?^\(catmaid_writable_path = \).*?\1'${CM_WRITEABLE_PATH}'?g" /home/django/configuration.py
     cd /home/django && python create_configuration.py
     mkdir -p /home/django/static
   fi
@@ -66,6 +74,23 @@ init_catmaid () {
     echo "Setting IMPORTED_SKELETON_FILE_MAXIMUM_SIZE = ${CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE}"
     echo "IMPORTED_SKELETON_FILE_MAXIMUM_SIZE = ${CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE}" >> mysite/settings.py
   fi
+
+  # Update CSRF information
+  sed -i "/^\(CSRF_TRUSTED_ORIGINS = \).*/d" mysite/settings.py
+  if [ ! -z "${CM_CSRF_TRUSTED_ORIGINS}" ]; then
+    echo "Setting CSRF_TRUSTED_ORIGINS = ${CM_CSRF_TRUSTED_ORIGINS}"
+    echo "CSRF_TRUSTED_ORIGINS = ${CM_CSRF_TRUSTED_ORIGINS}" >> mysite/settings.py
+  fi
+
+  # Update node limit
+  sed -i "/^\(NODE_LIST_MAXIMUM_COUNT = \).*/d" mysite/settings.py
+  echo "Setting NODE_LIST_MAXIMUM_COUNT = ${CM_NODE_LIMIT}"
+  echo "NODE_LIST_MAXIMUM_COUNT = ${CM_NODE_LIMIT}" >> mysite/settings.py
+
+  # Update node provider
+  sed -i "/^\(NODE_PROVIDER = \).*/d" mysite/settings.py
+  echo "Setting NODE_PROVIDER = ${CM_NODE_PROVIDER}"
+  echo "NODE_PROVIDER = '${CM_NODE_PROVIDER}'" >> mysite/settings.py
 
   # Create database and databsae user if not yet present. This should only
   # happen if the database is not run in a separete container.

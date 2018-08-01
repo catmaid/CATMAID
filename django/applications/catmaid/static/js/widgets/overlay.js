@@ -807,11 +807,11 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
         return undefined;
       }
       var children = [];
-      for (var cid in node.children) {
+      for (var cid of node.children.keys()) {
         if (!SkeletonAnnotations.isRealNode(cid)) {
           cid = SkeletonAnnotations.getChildOfVirtualNode(cid);
         }
-        var child = node.children[cid];
+        var child = node.children.get(cid);
         children.push(nodeToStateList(child));
       }
       return children;
@@ -829,9 +829,8 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
           links.push([l.id, l.edition_time_iso_str]);
         }
       } else if (node.connectors) {
-        for (var cid in node.connectors) {
-          var c = node.connectors[cid];
-          links.push([c.id, c.edition_time_iso_str]);
+        for (var link of node.connectors.values()) {
+          links.push([link.id, link.edition_time_iso_str]);
         }
       }
       return links;
@@ -1795,21 +1794,21 @@ SkeletonAnnotations.TracingOverlay.prototype.findNearestSkeletonPoint = function
   var nodeIsValid = SkeletonAnnotations.validNodeTest(respectVirtualNodes);
 
   var nearestReduction = function (nodes, nearest) {
-    return Object.keys(nodes).reduce(function (nearest, nodeId) {
-      var node = nodes.get(nodeId);
+    for (var node of nodes.values()) {
       if (nodeIsValid(nodes, node.id) &&
           node.skeleton_id === skeleton_id &&
-          node.parent !== null)
-        {
+          node.parent !== null) {
         var tmp = self.pointEdgeDistanceSq(x, y, z, node, phys_radius);
-        if (tmp.distsq < nearest.distsq) return {
-          distsq: tmp.distsq,
-          node: node,
-          point: tmp.point
-        };
+        if (tmp.distsq < nearest.distsq) {
+          nearest = {
+            distsq: tmp.distsq,
+            node: node,
+            point: tmp.point
+          };
+        }
       }
-      return nearest;
-    }, nearest);
+    }
+    return nearest;
   };
 
   nearest = nearestReduction(this.nodes, nearest);
@@ -1851,16 +1850,16 @@ SkeletonAnnotations.TracingOverlay.prototype.insertNodeInActiveSkeleton = functi
           // not loaded in the overlay nodes.
           var additionalNodes = json.reduce(function (nodes, branch) {
             var child = branch[0];
-            nodes[child[0]] = {
+            nodes.set(child[0], {
               id: child[0],
               x: child[1],
               y: child[2],
               z: child[3],
               skeleton_id: atn.skeleton_id,
               parent: atn
-            };
+            });
             return nodes;
-          }, {});
+          }, new Map());
           if (atn.parent_id && (SkeletonAnnotations.isRealNode(atn.parent_id) ||
                                 !self.nodes.has(atn.parent_id)))
           {
@@ -1872,7 +1871,7 @@ SkeletonAnnotations.TracingOverlay.prototype.insertNodeInActiveSkeleton = functi
                     'POST',
                     {tnid: parentId},
                     function(json) {
-                      additionalNodes[atn.id] = {
+                      additionalNodes.set(atn.id, {
                         id: atn.id,
                         x: atn.x,
                         y: atn.y,
@@ -1885,7 +1884,7 @@ SkeletonAnnotations.TracingOverlay.prototype.insertNodeInActiveSkeleton = functi
                           z: json[3],
                           skeleton_id: atn.skeleton_id,
                         }
-                      };
+                      });
                       insertNode(additionalNodes);
                     });
               })
@@ -3968,8 +3967,8 @@ SkeletonAnnotations.TracingOverlay.prototype.goToChildNode = function (treenode_
       return new Promise(function(resolve, reject) {
         // Fill branch cache
         var stack = self.stackViewer.primaryStack;
-        var branchData = Object.keys(knownNode.children).map(function(childId) {
-          var child = knownNode.children[childId];
+        var branchData = Array.from(knownNode.children.keys()).map(function(childId) {
+          var child = knownNode.children.get(childId);
           return [[parseInt(childId), child.x, child.y, child.z]];
         });
         if (branchData.length === 0) {
@@ -5030,7 +5029,7 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteConnectorNode =
         var allLinks = connectornode.getLinks();
         for (var i=0; i<allLinks.length; ++i) {
           var link = allLinks[i];
-          delete link.treenode.connectors[connectorId];
+          link.treenode.connectors.delete(connectorId);
         }
 
         // Delete this connector from overlay (to not require a database update).
@@ -5068,10 +5067,10 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
         self.findConnectors(node.id) : null;
 
     // Delete any connector links
-    for (var connectorId in node.connectors) {
+    for (var connectorId of node.connectors.keys()) {
       var connector = self.nodes.get(connectorId);
       if (connector) {
-        var link = node.connectors[connectorId];
+        var link = node.connectors.get(connectorId);
         connector.removeLink(link);
         connector.drawEdges(true);
       }
@@ -5082,8 +5081,7 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
     var parent = node.parent;
     self.nodes.delete(node.id);
     if (children) {
-      for (var childId in children) {
-        var child = children[childId];
+      for (var child of children.values()) {
         child.parent = parent;
         child.parent_id = node.parent_id;
         if (parent) {
@@ -5310,16 +5308,16 @@ SkeletonAnnotations.TracingOverlay.prototype.getState = function(nodeId) {
   }
 
   var children = [];
-  for (var cid in node.children) {
+  for (var cid of node.children.keys()) {
     cid = SkeletonAnnotations.isRealNode(cid) ? cid :
         SkeletonAnnotations.getChildOfVirtualNode(cid);
-    children.push([cid, node.children[cid].edition_time_iso_str]);
+    children.push([cid, node.children.get(cid).edition_time_iso_str]);
   }
 
   var links = [];
-  for (var cid in node.connectors) {
+  for (var cid of node.connectors.keys()) {
     var connector = this.nodes.get(cid);
-    var link = node.connectors[cid];
+    var link = node.connectors.get(cid);
     links.push([cid, connector.edition_time_iso_str, link.relation_id]);
   }
 
@@ -5347,11 +5345,11 @@ SkeletonAnnotations.TracingOverlay.prototype.getEdgeState = function(childId, pa
   }
 
   var child;
-  for (var cid in node.children) {
+  for (var cid of node.children.keys()) {
     if (cid == childId) {
       cid = SkeletonAnnotations.isRealNode(cid) ? cid :
           SkeletonAnnotations.getChildOfVirtualNode(cid);
-      child = [cid, node.children[cid].edition_time_iso_str];
+      child = [cid, node.children.get(cid).edition_time_iso_str];
       break;
     }
   }

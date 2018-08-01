@@ -549,23 +549,15 @@
       this.type = SkeletonAnnotations.TYPE_NODE;
 
       this.addChildNode = function(childNode) {
-        if (!this.children.hasOwnProperty(childNode.id)) {
-          ++ this.numberOfChildren;
-        }
-        // Still set new node object in any case, since
-        // node objects can be reused for different IDs
-        this.children[childNode.id] = childNode;
+        this.children.set(childNode.id, childNode);
       };
 
       this.removeChildNode = function (childNode) {
-        if (this.children.hasOwnProperty(childNode.id)) {
-          -- this.numberOfChildren;
-          delete this.children[childNode.id];
-        }
+        this.children.delete(childNode.id);
       };
 
       this.linkConnector = function(connectorId, link) {
-        this.connectors[connectorId] = link;
+        this.connectors.set(connectorId, link);
       };
 
       this.shouldDisplay = function () {
@@ -611,7 +603,7 @@
         } else if (null === this.parent_id) {
           // The root node should be colored red unless it's active:
           color = SkeletonAnnotations.TracingOverlay.Settings.session.root_node_color;
-        } else if (0 === this.numberOfChildren) {
+        } else if (0 === this.children.size) {
           color = SkeletonAnnotations.TracingOverlay.Settings.session.leaf_node_color;
         } else {
           // If none of the above applies, just colour according to the z difference.
@@ -642,7 +634,7 @@
           }
         } else if (null === this.parent_id) {
           return baseColor.clone().offsetHSL(0, 0, 0.25).getHex();
-        } else if (0 === this.numberOfChildren) {
+        } else if (0 === this.children.size) {
           return baseColor.clone().offsetHSL(0, 0, -0.25).getHex();
         } else {
           // If none of the above applies, just colour according to the z difference.
@@ -854,12 +846,9 @@
        * for. */
       this.drawEdges = function(toChildren) {
         if (toChildren) {
-          for (var ID in this.children) {
-            if (this.children.hasOwnProperty(ID)) {
-              var child = this.children[ID];
-              if (this.mustDrawLineWith(child)) {
-                child.drawLineToParent();
-              }
+          for (var child of this.children.values()) {
+            if (this.mustDrawLineWith(child)) {
+              child.drawLineToParent();
             }
           }
         }
@@ -875,7 +864,6 @@
         this.parent = null;
         this.parent_id = null;
         this.children = null;
-        this.numberOfChildren = 0;
         this.connectors = null;
         this.visibilityGroups = null;
         if (this.c) {
@@ -911,9 +899,8 @@
         this.id = this.DISABLED;
         this.parent = null;
         this.parent_id = this.DISABLED;
-        this.children = {};
-        this.numberOfChildren = 0;
-        this.connectors = {};
+        this.children.clear();
+        this.connectors.clear();
         this.visibilityGroups = null;
         if (this.c) {
           this.c.visible = false;
@@ -938,9 +925,6 @@
         this.id = id;
         this.parent = parent;
         this.parent_id = parent_id;
-        this.children = {};
-        this.numberOfChildren = 0;
-        this.connectors = {};
         this.visibilityGroups = null;
         this.radius = radius; // the radius as stored in the database
         this.x = x;
@@ -1148,9 +1132,8 @@
       this.id = id;
       this.parent = parent;
       this.parent_id = parent_id;
-      this.children = {};
-      this.numberOfChildren = 0;
-      this.connectors = {};
+      this.children = new Map();
+      this.connectors = new Map();
       this.radius = radius; // the radius as stored in the database
       this.x = x;
       this.y = y;
@@ -2160,7 +2143,9 @@
         this.pool.splice(reserve).forEach(this.obliterateFn);
       }
       // Disable elements from cut off to new ending of node pool array
-      this.pool.slice(newLength).forEach(this.disableFn);
+      for (var i=newLength; i<this.pool.length; ++i) {
+        this.pool[i].disable();
+      }
     }
   };
 

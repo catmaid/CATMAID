@@ -1398,7 +1398,7 @@ class ChangeRequest(UserFocusedModel):
                     self.status = ChangeRequest.INVALID
                     self.save()
             except Exception as e:
-                raise Exception('Could not validate the request (%s)', str(e))
+                raise Exception('Could not validate the request (%s)' % str(e))
         else:
             is_valid = False
 

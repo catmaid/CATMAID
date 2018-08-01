@@ -733,7 +733,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   /** A set of node IDs of nodes that need to be synced to the backend. */
   this.nodeIDsNeedingSync = new Set();
   /** The DOM elements representing node labels. */
-  this.labels = {};
+  this.labels = new Map();
   /** Toggle for text labels on nodes and connectors. */
   this.show_labels = options.show_labels || false;
   /** Indicate if this overlay is suspended and won't update nodes on redraw. */
@@ -1593,12 +1593,10 @@ SkeletonAnnotations.TracingOverlay.prototype.updateVisibilityForAllNodes = funct
   for (var node of this.nodes.values()) {
     node.updateVisibility(false);
   }
-  for (var nodeID in this.labels) {
-    if (this.labels.hasOwnProperty(nodeID)) {
-      var node = this.nodes.get(nodeID);
-      if (node) {
-        this.labels[nodeID].visibility(node.isVisible());
-      }
+  for (var nodeId of this.labels.keys()) {
+    var node = this.nodes.get(nodeId);
+    if (node) {
+      this.labels.get(nodeId).visibility(node.isVisible());
     }
   }
   this.pixiLayer._renderIfReady();
@@ -1909,12 +1907,10 @@ SkeletonAnnotations.TracingOverlay.prototype.hideLabels = function() {
  * Remove all node labels in the view.  Empty the node labels array.
  */
 SkeletonAnnotations.TracingOverlay.prototype.removeLabels = function() {
-  for (var labid in this.labels) {
-    if (this.labels.hasOwnProperty(labid)) {
-      this.labels[labid].remove();
-    }
+  for (var label of this.labels.values()) {
+    label.remove();
   }
-  this.labels = {};
+  this.labels.clear();
 };
 
 /**
@@ -2871,9 +2867,9 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
         var node = this.nodes.get(nid);
         // Only add labels for nodes in current section
         if (node && node.shouldDisplay()) {
-          this.labels[nid] = new CATMAID.OverlayLabel(
+          this.labels.set(nid, new CATMAID.OverlayLabel(
               nid, this.paper, node[node.planeX], node[node.planeY],
-              fontSize, m[nid], node.isVisible());
+              fontSize, m[nid], node.isVisible()));
         }
       }
     }

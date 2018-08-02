@@ -7179,11 +7179,12 @@
           this.tags[tag].forEach(function(nodeID) {
             if (!this.specialTagSpheres[nodeID] && (!(silent && !vs[nodeID]))) {
               let node = vs[nodeID];
-              let nodeLabels = labels.get(node);
-              if (!nodeLabels) {
-                nodeLabels = [];
-                labels.set([nodeID, node], nodeLabels);
+              let nodeData = labels.get(node);
+              if (!nodeData) {
+                nodeData = [nodeID, []];
+                labels.set(node, nodeData);
               }
+              let nodeLabels = nodeData[1];
               if (labelType === 'custom') {
                 // Promote custom tag matches to make sure they are displayed
                 nodeLabels.unshift(labelType);
@@ -7206,10 +7207,12 @@
     // Create buffer geometry for labels
     if (labels.size > 0) {
       let displayedLabels = Array.from(labels).map(function(l) {
+        let nodeId = l[1][0];
+        let nodeLabels = l[1][1];
         // Select first label, if multiple
-        let labelType = l[1][0];
+        let labelType = nodeLabels[0];
         let color = this[labelType];
-        return [l[0][1], color, l[0][0]];
+        return [l[0], color, nodeId];
       }, this.space.staticContent.labelColors);
       this.createLabelSpheres(displayedLabels, options.skeleton_node_scaling,
           options.neuron_material, preventSceneUpdate);

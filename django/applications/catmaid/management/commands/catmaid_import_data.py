@@ -155,7 +155,7 @@ class FileImporter:
                             "--create-unknown-users".format(obj_username))
 
     def reset_ids(self, target_classes, import_objects,
-            import_objects_by_type_and_id):
+            import_objects_by_type_and_id, map_treenodes=True, save=True):
         """Reset the ID of each import object to None so that a new object will
         be created when the object is saved. At the same time an index is
         created that allows per-type lookups of foreign key fields
@@ -226,13 +226,13 @@ class FileImporter:
 
                 # Save objects if they should either be imported or have change
                 # foreign key fields
-                if updated_fk_ids or obj.id is None:
+                if save and (updated_fk_ids or obj.id is None):
                     obj.save()
 
             # Treenodes are special, because they can reference themselves. They
             # need therefore a second iteration of reference updates after all
             # treenodes have been saved and new IDs are available.
-            if object_type == Treenode:
+            if map_treenodes and object_type == Treenode:
                 logger.info('Mapping parent IDs of treenodes to imported data')
                 imported_objects_by_id = import_objects_by_type_and_id[Treenode]
                 for obj, parent_id in progressbar.progressbar(imported_parent_nodes,
@@ -242,7 +242,8 @@ class FileImporter:
                     if not new_parent:
                         raise ValueError("Could not find imported treenode {}".format(parent_id))
                     obj.parent_id = new_parent.id
-                    obj.save()
+                    if save:
+                        obj.save()
 
         logger.info("{} foreign key references updated, {} did not require change".format(
                 updated_fk_ids, unchanged_fk_ids))
@@ -397,9 +398,11 @@ class FileImporter:
 
         # In append-only mode, the foreign keys to objects with changed IDs have
         # to be updated. In preserve-ids mode only IDs to classes and relations
-        # will be updated.
+        # will be updated. Saving model objects after an update of referenced
+        # keys is only needed in append-only mode.
         self.reset_ids(user_updatable_classes, objects_to_save,
-                import_objects_by_type_and_id)
+                import_objects_by_type_and_id, map_treenodes=append_only,
+                save=append_only)
 
         other_tasks = set(objects_to_save.keys()) - set(ordered_save_tasks)
         for object_type in ordered_save_tasks + list(other_tasks):

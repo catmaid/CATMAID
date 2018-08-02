@@ -4,6 +4,24 @@ from __future__ import unicode_literals
 from django.db import migrations, models
 
 forward = """
+    -- Remove constraints if they exist (in case they have been added manually
+    ALTER TABLE ONLY class_instance_class_instance
+        DROP CONSTRAINT IF EXISTS class_instance_class_instance_project_id_fkey;
+    ALTER TABLE ONLY class_instance_class_instance
+        DROP CONSTRAINT IF EXISTS class_instance_class_instance_class_instance_a_fkey;
+    ALTER TABLE ONLY class_instance_class_instance
+        DROP CONSTRAINT IF EXISTS class_instance_class_instance_class_instance_b_fkey;
+    ALTER TABLE ONLY class_instance_class_instance
+        DROP CONSTRAINT IF EXISTS class_instance_class_instance_relation_id_fkey;
+
+    ALTER TABLE ONLY class_instance
+        DROP CONSTRAINT IF EXISTS class_instance_project_id_fkey;
+    ALTER TABLE ONLY class_instance
+        DROP CONSTRAINT IF EXISTS class_instance_class_id_fkey;
+
+    ALTER TABLE ONLY class
+        DROP CONSTRAINT IF EXISTS class_project_id_fkey;
+
     -- Foreign key constraints for class_instance_class_instance
     ALTER TABLE ONLY class_instance_class_instance
         ADD CONSTRAINT class_instance_class_instance_project_id_fkey FOREIGN KEY

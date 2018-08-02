@@ -392,10 +392,10 @@ class FileImporter:
                 .format(n_objects - n_reused, n_reused))
 
         # In append-only mode, the foreign keys to objects with changed IDs have
-        # to be updated.
-        if append_only:
-            self.reset_ids(user_updatable_classes, objects_to_save,
-                    import_objects_by_type_and_id)
+        # to be updated. In preserve-ids mode only IDs to classes and relations
+        # will be updated.
+        self.reset_ids(user_updatable_classes, objects_to_save,
+                import_objects_by_type_and_id)
 
         other_tasks = set(objects_to_save.keys()) - set(ordered_save_tasks)
         for object_type in ordered_save_tasks + list(other_tasks):

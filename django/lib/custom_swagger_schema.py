@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 # This implementation was copied from:
 # https://github.com/m-haziq/django-rest-swagger-docs#integrating-django-rest-swagger

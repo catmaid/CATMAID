@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 @login_required
 def initialize_components_for_skeleton(request, project_id=None, stack_id=None):

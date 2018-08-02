@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 from django.utils.safestring import mark_safe
 from django.utils.encoding import smart_text

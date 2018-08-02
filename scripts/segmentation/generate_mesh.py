@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 
 def generate_mesh(request, project_id=None, stack_id=None):

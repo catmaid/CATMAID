@@ -24,7 +24,6 @@
 # username: catmaid_user
 # password: password_of_your_catmaid_user
 
-from __future__ import unicode_literals, print_function
 
 import sys
 import os

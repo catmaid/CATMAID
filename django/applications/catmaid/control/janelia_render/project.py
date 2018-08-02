@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 from django.http import JsonResponse
 from catmaid.control.janelia_render.models import JaneliaRenderProjectStacks

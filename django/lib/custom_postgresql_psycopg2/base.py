@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 """
 This is a custom version of the postgresql_psycopg2 adaptor that

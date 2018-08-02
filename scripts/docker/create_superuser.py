@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is expected to have an empty new line at the end so that it can be
 # easily piped into a python interpreter.
-from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
 

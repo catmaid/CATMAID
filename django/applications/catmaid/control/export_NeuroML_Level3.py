@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 # Export functions for NeuroML NetworkML 1.8.1
 

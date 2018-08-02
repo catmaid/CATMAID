@@ -17,7 +17,6 @@
 #
 # Its dependencies are part of the requirements-dev.txt file.
 #
-from __future__ import unicode_literals
 
 import os
 import re

@@ -4,7 +4,6 @@
 #
 # Mark Longair 2010
 #
-from __future__ import unicode_literals
 
 import os, re, sys, ij
 

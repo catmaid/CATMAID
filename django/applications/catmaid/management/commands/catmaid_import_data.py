@@ -231,7 +231,8 @@ class FileImporter:
             if object_type == Treenode:
                 logger.info('Mapping parent IDs of treenodes to imported data')
                 imported_objects_by_id = import_objects_by_type_and_id[Treenode]
-                for obj, parent_id in imported_parent_nodes:
+                for obj, parent_id in progressbar.progressbar(imported_parent_nodes,
+                        max_value=len(imported_parent_nodes), redirect_stdout=True):
                     new_parent = imported_objects_by_id.get(parent_id)
                     if not new_parent:
                         raise ValueError("Could not find imported treenode {}".format(parent_id))

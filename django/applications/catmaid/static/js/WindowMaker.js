@@ -416,7 +416,11 @@ var WindowMaker = new function()
             onclick: function() {
               let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
               if (activeSkeletonId) {
-                WA.lookAtSkeleton(activeSkeletonId);
+                if (WA.hasSkeleton(activeSkeletonId)) {
+                  WA.lookAtSkeleton(activeSkeletonId);
+                } else {
+                  CATMAID.warn('Active skeleton not loaded in 3D Viewer');
+                }
               } else {
                 CATMAID.warn('No skeleton selected!');
               }

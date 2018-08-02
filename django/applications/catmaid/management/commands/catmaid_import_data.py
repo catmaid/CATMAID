@@ -196,7 +196,10 @@ class FileImporter:
 
             imported_parent_nodes = []
 
-            for deserialized_object in objects:
+            bar_prefix = "- {}: ".format(object_type.__name__)
+            for deserialized_object in progressbar.progressbar(objects,
+                    max_value=len(objects), redirect_stdout=True,
+                    prefix=bar_prefix):
                 obj = deserialized_object.object
                 obj_type = type(obj)
                 for fk_field, fk_type in six.iteritems(fk_fields):
@@ -233,7 +236,8 @@ class FileImporter:
                 logger.info('Mapping parent IDs of treenodes to imported data')
                 imported_objects_by_id = import_objects_by_type_and_id[Treenode]
                 for obj, parent_id in progressbar.progressbar(imported_parent_nodes,
-                        max_value=len(imported_parent_nodes), redirect_stdout=True):
+                        max_value=len(imported_parent_nodes),
+                        redirect_stdout=True, prefix="- Mapping parent treenodes: "):
                     new_parent = imported_objects_by_id.get(parent_id)
                     if not new_parent:
                         raise ValueError("Could not find imported treenode {}".format(parent_id))

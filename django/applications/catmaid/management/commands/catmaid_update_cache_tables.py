@@ -7,7 +7,7 @@ from django.conf import settings
 from django.db import connection
 
 from catmaid.control.node import (_node_list_tuples_query, update_cache,
-        Postgis2dNodeProvider, ORIENTATIONS)
+        Postgis2dNodeProvider, ORIENTATIONS, update_node_query_cache)
 from catmaid.models import Project
 
 
@@ -23,7 +23,7 @@ class Command(BaseCommand):
             help='Which type of cache to populate: json, json_text, msgpack'),
         parser.add_argument('--orientation', dest='orientations', nargs='+',
             default='xz', help='Which orientations should be generated: xy, xz, zy'),
-        parser.add_argument('--step', dest='steps', nargs='+', required=True,
+        parser.add_argument('--step', dest='steps', nargs='+',
             help='Map section thickness (depth resultion) for each orientation (in nm)'),
         parser.add_argument('--min-x', dest='min_x', default='-inf',
             help='Optional minimum X project space coordinate for cache update'),
@@ -41,10 +41,22 @@ class Command(BaseCommand):
             default=settings.NODE_LIST_MAXIMUM_COUNT, help='Override node limit from settings. 0 means no limit'),
         parser.add_argument('--n-largest-skeletons-limit', dest='n_largest_skeletons_limit',
                 default=None, help='Only show treenodes of the N largest skeletons in the field of view'),
+        parser.add_argument('--from-config', action="store_true", dest='from_config',
+                default=False, help="Update cache based on NODE_PROVIDERS variable in settings")
 
     def handle(self, *args, **options):
-        cursor = connection.cursor()
+        if options['from_config']:
+            self.update_from_config(options)
+        else:
+            self.update_from_options(options)
 
+        self.stdout.write('Done')
+
+    def update_from_config(self, options):
+        update_node_query_cache(log=lambda x: self.stdout.write(x))
+
+    def update_from_options(self, options):
+        cursor = connection.cursor()
         project_ids = options['project_id']
         if project_ids:
             projects = Project.objects.filter(id__in=project_ids)
@@ -97,5 +109,3 @@ class Command(BaseCommand):
                     n_largest_skeletons_limit, delete, bb_limits,
                     log=self.stdout.write)
             self.stdout.write('Updated cache for project {}'.format(p.id))
-
-        self.stdout.write('Done')

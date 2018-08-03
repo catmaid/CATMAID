@@ -408,7 +408,7 @@ class FileImporter:
         for object_type in ordered_save_tasks + list(other_tasks):
             objects = objects_to_save.get(object_type)
             if objects:
-                logger.info("- Importing objects of type " + str(object_type))
+                logger.info("- Importing objects of type " + object_type.__name__)
                 for deserialized_object in progressbar.progressbar(objects,
                         max_value=len(objects), redirect_stdout=True):
                     deserialized_object.save()

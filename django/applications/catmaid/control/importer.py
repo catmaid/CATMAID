@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 import glob
 import os.path
+import json
 import yaml
 import urllib
 import requests
@@ -315,6 +316,23 @@ def find_project_folders(image_base, path, filter_term, depth=1):
                 index = index + find_files( current_file, depth - 1)
     return (index, projects, not_readable)
 
+
+def get_projects_from_raw_data(data, filter_term, headers=None, auth=None,
+        base_url=None, merge_same=True):
+    index = []
+    projects = {}
+    not_readable = []
+
+    for p in data:
+        project = PreProject(p, base_url, None)
+        short_name = project.title
+        key = "{}-{}".format('File', short_name)
+        projects[key] = project
+        index.append((key, short_name))
+
+    return (index, projects, not_readable)
+
+
 def get_projects_from_url(url, filter_term, headers=None, auth=None,
         base_url=None, merge_same=True):
     if not url:
@@ -490,6 +508,7 @@ class ImportingWizard(SessionWizardView):
             filter_term = cleaned_path_data['filter_term']
             http_auth_user = cleaned_path_data['http_auth_user'].strip()
             http_auth_pass = cleaned_path_data['http_auth_pass']
+            json_spec = cleaned_path_data['json_spec']
             known_project_filter = cleaned_path_data['known_project_filter']
             known_project_strategy = cleaned_path_data['known_project_strategy']
             base_url = cleaned_path_data['base_url']
@@ -514,6 +533,9 @@ class ImportingWizard(SessionWizardView):
                     }
                 project_index, projects, not_readable = get_projects_from_url(
                         complete_catmaid_host, filter_term, headers, auth)
+            elif source == 'json-spec':
+                project_index, projects, not_readable = get_projects_from_raw_data(
+                        json.loads(json_spec), filter_term, base_url=base_url, auth=auth)
             else:
                 # Get all folders that match the selected criteria
                 data_dir = os.path.join(settings.CATMAID_IMPORT_PATH, path)
@@ -785,7 +807,8 @@ class DataFileForm(forms.Form):
             initial=settings.IMPORTER_DEFAULT_DATA_SOURCE,
             choices=(('filesystem', 'Data directory on server'),
                      ('remote-catmaid', 'Remote CATMAID instance'),
-                     ('remote', 'General remote host')),
+                     ('remote', 'General remote host'),
+                     ('json-spec', 'JSON spcification')),
             help_text="Where new pojects and stacks will be looked for")
     relative_path = forms.CharField(required=False, widget=forms.TextInput(
         attrs={'size':'40', 'class': 'import-source-setting filesystem-import'}),
@@ -809,6 +832,8 @@ class DataFileForm(forms.Form):
     http_auth_pass = forms.CharField(required=False, widget=forms.PasswordInput(
         attrs={'size':'20', 'class': 'import-source-setting http-auth-user'}),
         help_text="(Optional) HTTP-Auth password for the remote server.")
+    json_spec = forms.CharField(required=False, widget=forms.Textarea(
+        attrs={'class': 'import-source-setting json-spec'}))
     filter_term = forms.CharField(initial="*", required=False,
         widget=forms.TextInput(attrs={'size':'40'}),
         help_text="Optionally, you can apply a <em>glob filter</em> to the " \

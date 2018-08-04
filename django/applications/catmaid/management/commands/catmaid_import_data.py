@@ -97,26 +97,15 @@ class FileImporter:
             if hasattr(obj, id_ref):
                 obj_user_ref_id = getattr(obj, id_ref)
                 import_user = import_users.get(obj_user_ref_id)
+                existing_user_id = None
 
                 if import_user:
                     import_user = import_user.object
                     obj_username = import_user.username
-
-                    # If there is already a user with this ID,
-
-                # If no username has been found yet, no model object
-                # has been attached by Django. Read the plain user
-                # ID reference as username.
-                if not obj_username:
-                    if import_user:
-                        obj_username = import_user.username
-                    else:
-                        raise ValueError("Could not find referenced user {} " +
-                                "in imported data".format(obj_user_ref_id))
-
-                existing_user_id = None
-                if import_user:
                     existing_user_id = self.user_map.get(obj_username)
+                else:
+                    raise ValueError("Could not find referenced user {} " +
+                            "in imported data".format(obj_user_ref_id))
 
                 # Map users if usernames match
                 if existing_user_id is not None:
@@ -333,8 +322,10 @@ class FileImporter:
         created_users = dict()
         if import_data.get(User):
             import_users = dict((u.object.id, u) for u in import_data.get(User))
+            logger.info("Found {} referenceable users in import data".format(len(import_users)))
         else:
             import_users = dict()
+            logger.info("Found no referenceable users in import data")
 
         # Get CATMAID model classes, which are the ones we want to allow
         # optional modification of user, project and ID fields.

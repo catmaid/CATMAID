@@ -130,9 +130,10 @@ class FileImporter:
                 elif import_user:
                     if import_user.id in self.user_id_map:
                         import_user.id = None
-                        import_user.is_active = False
                         import_user.save()
-                        created_users[obj_username] = import_user
+                    else:
+                        import_user.is_active = False
+                    created_users[obj_username] = import_user
                     obj.user = import_user
                 elif self.create_unknown_users:
                     user = created_users.get(obj_username)

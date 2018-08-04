@@ -14,7 +14,7 @@ from django.db import connection, transaction
 from catmaid.control.annotationadmin import copy_annotations
 from catmaid.models import (Class, ClassClass, ClassInstance,
         ClassInstanceClassInstance, Project, Relation, User, Treenode,
-        Connector, Concept)
+        Connector, Concept, SkeletonSummary)
 
 from six.moves import input
 
@@ -179,8 +179,11 @@ class FileImporter:
                 class_index[field.attname] = field.related_model
 
         logger.info("Updating foreign keys to imported objects with new IDs")
+        all_classes = dict()
+        all_classes.update(existing_classes)
         updated_fk_ids = 0
         unchanged_fk_ids = 0
+        explicitly_created_summaries = 0
         other_tasks = set(import_objects.keys()) - set(ordered_save_tasks)
         # Iterate objects to import and respect dependency order
         for object_type in ordered_save_tasks + list(other_tasks):
@@ -245,8 +248,29 @@ class FileImporter:
                     if save:
                         obj.save()
 
-        logger.info("{} foreign key references updated, {} did not require change".format(
-                updated_fk_ids, unchanged_fk_ids))
+            # Update list of known classes after new classes have been saved
+            if object_type == Class:
+                for deserialized_object in objects:
+                    obj = deserialized_object.object
+                    all_classes[obj.class_name] = obj.id
+
+            # If skeleton class instances are created, make sure the skeleton
+            # summary table entries for the respective skeletons are there.
+            # Otherwise the ON CONFLICT claues of the summary update updates can
+            # be called multiple times. The alternative is to disable the
+            # trigger during import.
+            pre_create_summaries = False
+            if object_type == ClassInstance and pre_create_summaries:
+                skeleton_class_id = all_classes.get('skeleton')
+                for deserialized_object in objects:
+                    obj = deserialized_object.object
+                    if obj.class_column_id == skeleton_class_id:
+                        r = SkeletonSummary.objects.get_or_create(project=self.target, skeleton_id=obj.id)
+                        explicitly_created_summaries += 1
+
+        logger.info("".join(["{} foreign key references updated, {} did not ",
+                "require change, {} skeleton summaries were created"]).format(
+                updated_fk_ids, unchanged_fk_ids, explicitly_created_summaries))
 
     def override_fields(self, obj):
         # Override project to match target project

@@ -14,7 +14,7 @@ from django.db import connection, transaction
 from catmaid.control.annotationadmin import copy_annotations
 from catmaid.models import (Class, ClassClass, ClassInstance,
         ClassInstanceClassInstance, Project, Relation, User, Treenode,
-        Connector)
+        Connector, Concept)
 
 from six.moves import input
 
@@ -314,6 +314,8 @@ class FileImporter:
         existing_class_instances = dict(ClassInstance.objects.filter(project_id=self.target.id) \
                 .values_list('name', 'id'))
 
+        existing_concept_ids = set(Concept.objects.all().values_list('id', flat=True))
+
         # Find classes for neurons and skeletons in import data
         if Class in import_data:
             allowed_duplicate_classes = tuple(c.object.id
@@ -323,6 +325,7 @@ class FileImporter:
             allowed_duplicate_classes = tuple()
 
         n_reused = 0
+        n_moved = 0
         append_only = not self.preserve_ids
         need_separate_import = []
         objects_to_save = defaultdict(list)
@@ -347,8 +350,10 @@ class FileImporter:
                 obj = deserialized_object.object
 
                 # Semantic data like classes and class instances are expected to
-                # be unique with respect to their names.
+                # be unique with respect to their names. Existing objects with
+                # the same ID will get a new ID even if --preserve-ids is set.
                 existing_obj_id = None
+                concept_id_exists = obj.id in existing_concept_ids
                 if is_class:
                     existing_obj_id = existing_classes.get(obj.class_name)
                 if is_relation:
@@ -362,6 +367,7 @@ class FileImporter:
                     # however, class instance reuse is not wanted.
                     if existing_obj_id and obj.class_column_id in allowed_duplicate_classes:
                         existing_obj_id = None
+                        concept_id_exists = False
 
                 if existing_obj_id is not None:
                     # Add mapping so that existing references to it can be
@@ -372,6 +378,17 @@ class FileImporter:
                     obj.id = existing_obj_id
                     n_reused += 1
                     continue
+
+                # If there is already an known object with the ID of the object
+                # we are importing at the moment and the current model is a
+                # class, relation or class_instance, then the imported object
+                # will get a new ID, even with --preservie-ids set. We reuse
+                # these types.
+                if concept_id_exists:
+                    current_id = obj.id
+                    objects_by_id[current_id] = obj
+                    obj.id = None
+                    n_moved += 1
 
                 # Replace existing data if requested
                 self.override_fields(obj)
@@ -393,8 +410,8 @@ class FileImporter:
                 objects_to_save[object_type].append(deserialized_object)
 
         # Finally save all objects. Make sure they are saved in order:
-        logger.info("Storing {} database objects, reusing additional {} existing objects" \
-                .format(n_objects - n_reused, n_reused))
+        logger.info("Storing {} database objects including {} moved objects, reusing additional {} existing objects" \
+                .format(n_objects - n_reused, n_moved, n_reused))
 
         # In append-only mode, the foreign keys to objects with changed IDs have
         # to be updated. In preserve-ids mode only IDs to classes and relations

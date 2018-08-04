@@ -808,7 +808,7 @@ class DataFileForm(forms.Form):
             choices=(('filesystem', 'Data directory on server'),
                      ('remote-catmaid', 'Remote CATMAID instance'),
                      ('remote', 'General remote host'),
-                     ('json-spec', 'JSON spcification')),
+                     ('json-spec', 'JSON representation')),
             help_text="Where new pojects and stacks will be looked for")
     relative_path = forms.CharField(required=False, widget=forms.TextInput(
         attrs={'size':'40', 'class': 'import-source-setting filesystem-import'}),

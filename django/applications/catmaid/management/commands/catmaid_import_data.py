@@ -100,17 +100,13 @@ class FileImporter:
 
                 if import_user:
                     import_user = import_user.object
+                    obj_username = import_user.username
 
-                existing_user_id = None
-                if import_user:
-                    existing_user_id = self.user_map.get(obj_user_ref_id)
-
+                    # If there is already a user with this ID,
 
                 # If no username has been found yet, no model object
                 # has been attached by Django. Read the plain user
-                # ID reference as username. The corresponding
-                # exporter is expected to use Django's natural keys
-                # for user references.
+                # ID reference as username.
                 if not obj_username:
                     if import_user:
                         obj_username = import_user.username
@@ -118,14 +114,18 @@ class FileImporter:
                         raise ValueError("Could not find referenced user {} " +
                                 "in imported data".format(obj_user_ref_id))
 
+                existing_user_id = None
+                if import_user:
+                    existing_user_id = self.user_map.get(obj_username)
+
                 # Map users if usernames match
-                if existing_user_id:
+                if existing_user_id is not None:
                     # If a user with this username exists already, update
                     # the user reference the existing user if --map-users is
                     # set. If no existing user is available, use imported user,
                     # if available. Otherwise complain.
                     if map_users:
-                        setattr(obj, ref + "_id", existing_user_id)
+                        setattr(obj, id_ref, existing_user_id)
                         mapped_user_ids.add(obj_user_ref_id)
                         mapped_user_target_ids.add(existing_user_id)
                     elif import_user:
@@ -139,6 +139,11 @@ class FileImporter:
                                 " existing user should be used, please use the "
                                 "--map-users option".format(obj_username))
                 elif import_user:
+                    if import_user.id in self.user_id_map:
+                        import_user.id = None
+                        import_user.is_active = False
+                        import_user.save()
+                        created_users[obj_username] = import_user
                     obj.user = import_user
                 elif self.create_unknown_users:
                     user = created_users.get(obj_username)
@@ -155,7 +160,8 @@ class FileImporter:
                             "--create-unknown-users".format(obj_username))
 
     def reset_ids(self, target_classes, import_objects,
-            import_objects_by_type_and_id, map_treenodes=True, save=True):
+            import_objects_by_type_and_id, existing_classes,
+            map_treenodes=True, save=True):
         """Reset the ID of each import object to None so that a new object will
         be created when the object is saved. At the same time an index is
         created that allows per-type lookups of foreign key fields
@@ -220,8 +226,8 @@ class FileImporter:
                         if object_type == Treenode and fk_type == Treenode:
                             imported_parent_nodes.append((obj, current_ref))
                         elif ref_obj.id is None:
-                            raise ValueError("The referenced {} object with import ID {} wasn't stored yet".format(
-                                    fk_type, current_ref))
+                            raise ValueError("The referenced {} object '{}' with import ID {} wasn't stored yet".format(
+                                    fk_type, str(ref_obj), current_ref))
                         setattr(obj, fk_field, ref_obj.id)
                         updated_fk_ids += 1
                     else:
@@ -385,10 +391,11 @@ class FileImporter:
                 if is_class_instance:
                     existing_obj_id = existing_class_instances.get(obj.name)
 
-                    # Neurons (class instances of class "neuron") are a special case.
-                    # There can be multiple neurons with the same name, something that
-                    # is not allowed in other cases. In this particular case,
-                    # however, class instance reuse is not wanted.
+                    # Neurons (class instances of class "neuron" and "skeleton")
+                    # are a special case.  There can be multiple neurons with
+                    # the same name, something that is not allowed in other
+                    # cases. In this particular case, however, class instance
+                    # reuse is not wanted.
                     if existing_obj_id and obj.class_column_id in allowed_duplicate_classes:
                         existing_obj_id = None
                         concept_id_exists = False
@@ -433,6 +440,12 @@ class FileImporter:
                 # Remember for saving
                 objects_to_save[object_type].append(deserialized_object)
 
+        if len(created_users) > 0:
+            logger.info("Created {} new users: {}".format(len(created_users),
+                    ", ".join(sorted(created_users.keys()))))
+        else:
+            logger.info("No unmapped users imported")
+
         # Finally save all objects. Make sure they are saved in order:
         logger.info("Storing {} database objects including {} moved objects, reusing additional {} existing objects" \
                 .format(n_objects - n_reused, n_moved, n_reused))
@@ -442,8 +455,7 @@ class FileImporter:
         # will be updated. Saving model objects after an update of referenced
         # keys is only needed in append-only mode.
         self.reset_ids(user_updatable_classes, objects_to_save,
-                import_objects_by_type_and_id, map_treenodes=append_only,
-                save=append_only)
+                import_objects_by_type_and_id, existing_classes)
 
         other_tasks = set(objects_to_save.keys()) - set(ordered_save_tasks)
         for object_type in ordered_save_tasks + list(other_tasks):
@@ -486,7 +498,8 @@ class FileImporter:
                             logger.info("Will import all listed users in import data")
 
             for deserialized_object in other_objects:
-                deserialized_object.save()
+                if deserialized_object.object.username in created_users.keys():
+                    deserialized_object.save()
 
         # Reset counters to current maximum IDs
         cursor.execute('''

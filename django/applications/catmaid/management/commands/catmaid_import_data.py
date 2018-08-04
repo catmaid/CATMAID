@@ -13,7 +13,7 @@ from django.db import connection, transaction
 from catmaid.control.annotationadmin import copy_annotations
 from catmaid.models import (Class, ClassClass, ClassInstance,
         ClassInstanceClassInstance, Project, Relation, User, Treenode,
-        Connector)
+        Connector, Concept, SkeletonSummary)
 
 from six.moves import input
 
@@ -96,35 +96,24 @@ class FileImporter:
             if hasattr(obj, id_ref):
                 obj_user_ref_id = getattr(obj, id_ref)
                 import_user = import_users.get(obj_user_ref_id)
+                existing_user_id = None
 
                 if import_user:
                     import_user = import_user.object
-
-                existing_user_id = None
-                if import_user:
-                    existing_user_id = self.user_map.get(obj_user_ref_id)
-
-
-                # If no username has been found yet, no model object
-                # has been attached by Django. Read the plain user
-                # ID reference as username. The corresponding
-                # exporter is expected to use Django's natural keys
-                # for user references.
-                if not obj_username:
-                    if import_user:
-                        obj_username = import_user.username
-                    else:
-                        raise ValueError("Could not find referenced user {} " +
-                                "in imported data".format(obj_user_ref_id))
+                    obj_username = import_user.username
+                    existing_user_id = self.user_map.get(obj_username)
+                else:
+                    raise ValueError("Could not find referenced user {} " +
+                            "in imported data".format(obj_user_ref_id))
 
                 # Map users if usernames match
-                if existing_user_id:
+                if existing_user_id is not None:
                     # If a user with this username exists already, update
                     # the user reference the existing user if --map-users is
                     # set. If no existing user is available, use imported user,
                     # if available. Otherwise complain.
                     if map_users:
-                        setattr(obj, ref + "_id", existing_user_id)
+                        setattr(obj, id_ref, existing_user_id)
                         mapped_user_ids.add(obj_user_ref_id)
                         mapped_user_target_ids.add(existing_user_id)
                     elif import_user:
@@ -138,6 +127,12 @@ class FileImporter:
                                 " existing user should be used, please use the "
                                 "--map-users option".format(obj_username))
                 elif import_user:
+                    if import_user.id in self.user_id_map:
+                        import_user.id = None
+                        import_user.save()
+                    else:
+                        import_user.is_active = False
+                    created_users[obj_username] = import_user
                     obj.user = import_user
                 elif self.create_unknown_users:
                     user = created_users.get(obj_username)
@@ -154,7 +149,8 @@ class FileImporter:
                             "--create-unknown-users".format(obj_username))
 
     def reset_ids(self, target_classes, import_objects,
-            import_objects_by_type_and_id):
+            import_objects_by_type_and_id, existing_classes,
+            map_treenodes=True, save=True):
         """Reset the ID of each import object to None so that a new object will
         be created when the object is saved. At the same time an index is
         created that allows per-type lookups of foreign key fields
@@ -178,8 +174,11 @@ class FileImporter:
                 class_index[field.attname] = field.related_model
 
         logger.info("Updating foreign keys to imported objects with new IDs")
+        all_classes = dict()
+        all_classes.update(existing_classes)
         updated_fk_ids = 0
         unchanged_fk_ids = 0
+        explicitly_created_summaries = 0
         other_tasks = set(import_objects.keys()) - set(ordered_save_tasks)
         # Iterate objects to import and respect dependency order
         for object_type in ordered_save_tasks + list(other_tasks):
@@ -195,7 +194,10 @@ class FileImporter:
 
             imported_parent_nodes = []
 
-            for deserialized_object in objects:
+            bar_prefix = "- {}: ".format(object_type.__name__)
+            for deserialized_object in progressbar.progressbar(objects,
+                    max_value=len(objects), redirect_stdout=True,
+                    prefix=bar_prefix):
                 obj = deserialized_object.object
                 obj_type = type(obj)
                 for fk_field, fk_type in six.iteritems(fk_fields):
@@ -213,8 +215,8 @@ class FileImporter:
                         if object_type == Treenode and fk_type == Treenode:
                             imported_parent_nodes.append((obj, current_ref))
                         elif ref_obj.id is None:
-                            raise ValueError("The referenced {} object with import ID {} wasn't stored yet".format(
-                                    fk_type, current_ref))
+                            raise ValueError("The referenced {} object '{}' with import ID {} wasn't stored yet".format(
+                                    fk_type, str(ref_obj), current_ref))
                         setattr(obj, fk_field, ref_obj.id)
                         updated_fk_ids += 1
                     else:
@@ -222,25 +224,48 @@ class FileImporter:
 
                 # Save objects if they should either be imported or have change
                 # foreign key fields
-                if updated_fk_ids or obj.id is None:
+                if save and (updated_fk_ids or obj.id is None):
                     obj.save()
 
             # Treenodes are special, because they can reference themselves. They
             # need therefore a second iteration of reference updates after all
             # treenodes have been saved and new IDs are available.
-            if object_type == Treenode:
+            if map_treenodes and object_type == Treenode:
                 logger.info('Mapping parent IDs of treenodes to imported data')
                 imported_objects_by_id = import_objects_by_type_and_id[Treenode]
                 for obj, parent_id in progressbar.progressbar(imported_parent_nodes,
-                        max_value=len(imported_parent_nodes), redirect_stdout=True):
+                        max_value=len(imported_parent_nodes),
+                        redirect_stdout=True, prefix="- Mapping parent treenodes: "):
                     new_parent = imported_objects_by_id.get(parent_id)
                     if not new_parent:
                         raise ValueError("Could not find imported treenode {}".format(parent_id))
                     obj.parent_id = new_parent.id
-                    obj.save()
+                    if save:
+                        obj.save()
 
-        logger.info("{} foreign key references updated, {} did not require change".format(
-                updated_fk_ids, unchanged_fk_ids))
+            # Update list of known classes after new classes have been saved
+            if object_type == Class:
+                for deserialized_object in objects:
+                    obj = deserialized_object.object
+                    all_classes[obj.class_name] = obj.id
+
+            # If skeleton class instances are created, make sure the skeleton
+            # summary table entries for the respective skeletons are there.
+            # Otherwise the ON CONFLICT claues of the summary update updates can
+            # be called multiple times. The alternative is to disable the
+            # trigger during import.
+            pre_create_summaries = False
+            if object_type == ClassInstance and pre_create_summaries:
+                skeleton_class_id = all_classes.get('skeleton')
+                for deserialized_object in objects:
+                    obj = deserialized_object.object
+                    if obj.class_column_id == skeleton_class_id:
+                        r = SkeletonSummary.objects.get_or_create(project=self.target, skeleton_id=obj.id)
+                        explicitly_created_summaries += 1
+
+        logger.info("".join(["{} foreign key references updated, {} did not ",
+                "require change, {} skeleton summaries were created"]).format(
+                updated_fk_ids, unchanged_fk_ids, explicitly_created_summaries))
 
     def override_fields(self, obj):
         # Override project to match target project
@@ -266,6 +291,13 @@ class FileImporter:
         # Defer all constraint checks
         cursor.execute('SET CONSTRAINTS ALL DEFERRED')
 
+        # Drop summary table trigger to make insertion faster
+        cursor.execute("""
+            DROP TRIGGER on_edit_treenode_update_summary_and_edges ON treenode;
+            DROP TRIGGER on_insert_treenode_update_summary_and_edges ON treenode;
+            DROP TRIGGER on_delete_treenode_update_summary_and_edges ON treenode;
+        """)
+
         # Get all existing users so that we can map them basedon their username.
         mapped_user_ids = set()
         mapped_user_target_ids = set()
@@ -290,8 +322,10 @@ class FileImporter:
         created_users = dict()
         if import_data.get(User):
             import_users = dict((u.object.id, u) for u in import_data.get(User))
+            logger.info("Found {} referenceable users in import data".format(len(import_users)))
         else:
             import_users = dict()
+            logger.info("Found no referenceable users in import data")
 
         # Get CATMAID model classes, which are the ones we want to allow
         # optional modification of user, project and ID fields.
@@ -308,6 +342,8 @@ class FileImporter:
         existing_class_instances = dict(ClassInstance.objects.filter(project_id=self.target.id) \
                 .values_list('name', 'id'))
 
+        existing_concept_ids = set(Concept.objects.all().values_list('id', flat=True))
+
         # Find classes for neurons and skeletons in import data
         if Class in import_data:
             allowed_duplicate_classes = tuple(c.object.id
@@ -317,6 +353,7 @@ class FileImporter:
             allowed_duplicate_classes = tuple()
 
         n_reused = 0
+        n_moved = 0
         append_only = not self.preserve_ids
         need_separate_import = []
         objects_to_save = defaultdict(list)
@@ -341,8 +378,10 @@ class FileImporter:
                 obj = deserialized_object.object
 
                 # Semantic data like classes and class instances are expected to
-                # be unique with respect to their names.
+                # be unique with respect to their names. Existing objects with
+                # the same ID will get a new ID even if --preserve-ids is set.
                 existing_obj_id = None
+                concept_id_exists = obj.id in existing_concept_ids
                 if is_class:
                     existing_obj_id = existing_classes.get(obj.class_name)
                 if is_relation:
@@ -350,12 +389,14 @@ class FileImporter:
                 if is_class_instance:
                     existing_obj_id = existing_class_instances.get(obj.name)
 
-                    # Neurons (class instances of class "neuron") are a special case.
-                    # There can be multiple neurons with the same name, something that
-                    # is not allowed in other cases. In this particular case,
-                    # however, class instance reuse is not wanted.
+                    # Neurons (class instances of class "neuron" and "skeleton")
+                    # are a special case.  There can be multiple neurons with
+                    # the same name, something that is not allowed in other
+                    # cases. In this particular case, however, class instance
+                    # reuse is not wanted.
                     if existing_obj_id and obj.class_column_id in allowed_duplicate_classes:
                         existing_obj_id = None
+                        concept_id_exists = False
 
                 if existing_obj_id is not None:
                     # Add mapping so that existing references to it can be
@@ -366,6 +407,17 @@ class FileImporter:
                     obj.id = existing_obj_id
                     n_reused += 1
                     continue
+
+                # If there is already an known object with the ID of the object
+                # we are importing at the moment and the current model is a
+                # class, relation or class_instance, then the imported object
+                # will get a new ID, even with --preservie-ids set. We reuse
+                # these types.
+                if concept_id_exists:
+                    current_id = obj.id
+                    objects_by_id[current_id] = obj
+                    obj.id = None
+                    n_moved += 1
 
                 # Replace existing data if requested
                 self.override_fields(obj)
@@ -386,21 +438,28 @@ class FileImporter:
                 # Remember for saving
                 objects_to_save[object_type].append(deserialized_object)
 
+        if len(created_users) > 0:
+            logger.info("Created {} new users: {}".format(len(created_users),
+                    ", ".join(sorted(created_users.keys()))))
+        else:
+            logger.info("No unmapped users imported")
+
         # Finally save all objects. Make sure they are saved in order:
-        logger.info("Storing {} database objects, reusing additional {} existing objects" \
-                .format(n_objects - n_reused, n_reused))
+        logger.info("Storing {} database objects including {} moved objects, reusing additional {} existing objects" \
+                .format(n_objects - n_reused, n_moved, n_reused))
 
         # In append-only mode, the foreign keys to objects with changed IDs have
         # to be updated. In preserve-ids mode only IDs to classes and relations
-        # will be updated.
+        # will be updated. Saving model objects after an update of referenced
+        # keys is only needed in append-only mode.
         self.reset_ids(user_updatable_classes, objects_to_save,
-                import_objects_by_type_and_id)
+                import_objects_by_type_and_id, existing_classes)
 
         other_tasks = set(objects_to_save.keys()) - set(ordered_save_tasks)
         for object_type in ordered_save_tasks + list(other_tasks):
             objects = objects_to_save.get(object_type)
             if objects:
-                logger.info("- Importing objects of type " + str(object_type))
+                logger.info("- Importing objects of type " + object_type.__name__)
                 for deserialized_object in progressbar.progressbar(objects,
                         max_value=len(objects), redirect_stdout=True):
                     deserialized_object.save()
@@ -437,7 +496,8 @@ class FileImporter:
                             logger.info("Will import all listed users in import data")
 
             for deserialized_object in other_objects:
-                deserialized_object.save()
+                if deserialized_object.object.username in created_users.keys():
+                    deserialized_object.save()
 
         # Reset counters to current maximum IDs
         cursor.execute('''
@@ -448,6 +508,29 @@ class FileImporter:
             SELECT setval('auth_user_id_seq', coalesce(max("id"), 1), max("id") IS NOT null)
             FROM auth_user;
         ''')
+
+        cursor.execute("""
+            CREATE TRIGGER on_insert_treenode_update_summary_and_edges
+            AFTER INSERT ON treenode
+            REFERENCING NEW TABLE as inserted_treenode
+            FOR EACH STATEMENT EXECUTE PROCEDURE on_insert_treenode_update_summary_and_edges();
+
+            CREATE TRIGGER on_edit_treenode_update_summary_and_edges
+            AFTER UPDATE ON treenode
+            REFERENCING NEW TABLE as new_treenode OLD TABLE as old_treenode
+            FOR EACH STATEMENT EXECUTE PROCEDURE on_edit_treenode_update_summary_and_edges();
+
+            CREATE TRIGGER on_delete_treenode_update_summary_and_edges
+            AFTER DELETE ON treenode
+            REFERENCING OLD TABLE as deleted_treenode
+            FOR EACH STATEMENT EXECUTE PROCEDURE on_delete_treenode_update_summary_and_edges();
+        """)
+
+        logger.info("Updated skeleton summary tables")
+        cursor.execute("""
+            DELETE FROM catmaid_skeleton_summary;
+            SELECT refresh_skeleton_summary_table();
+        """)
 
 
 class InternalImporter:

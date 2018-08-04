@@ -18,9 +18,9 @@ CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE=${CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:
 CM_HOST=${CM_HOST:-0.0.0.0}
 CM_PORT=${CM_PORT:-8000}
 CM_FORCE_CONFIG_UPDATE=${CM_FORCE_CONFIG_UPDATE:-false}
-CM_WRITEABLE_PATH=${CM_WRITEABLE_PATH:-"/tmp"}
+CM_WRITEABLE_PATH=${CM_WRITEABLE_PATH:-"'/tmp'"}
 CM_NODE_LIMIT=${CM_NODE_LIMIT:-10000}
-CM_NODE_PROVIDER=${CM_NODE_PROVIDER:-"postgis2d"}
+CM_NODE_PROVIDER=${CM_NODE_PROVIDER:-"'postgis2d'"}
 CM_SUBDIRECTORY=${CM_SUBDIRECTORY:-""}
 CM_CSRF_TRUSTED_ORIGINS=${CM_CSRF_TRUSTED_ORIGINS:-""}
 TIMEZONE=`readlink /etc/localtime | sed "s/.*\/\(.*\)$/\1/"`
@@ -61,7 +61,7 @@ init_catmaid () {
     sed -i -e "s?^\(catmaid_timezone = \).*?\1'${TIMEZONE}'?g" /home/django/configuration.py
     sed -i -e "s?^\(catmaid_servername = \).*?\1'*'?g" /home/django/configuration.py
     sed -i -e "s?^\(catmaid_subdirectory = \).*?\1'${CM_SUBDIRECTORY}'?g" /home/django/configuration.py
-    sed -i -e "s?^\(catmaid_writable_path = \).*?\1'${CM_WRITEABLE_PATH}'?g" /home/django/configuration.py
+    sed -i -e "s?^\(catmaid_writable_path = \).*?\1${CM_WRITEABLE_PATH}?g" /home/django/configuration.py
     cd /home/django && python create_configuration.py
     mkdir -p /home/django/static
   fi
@@ -90,7 +90,7 @@ init_catmaid () {
   # Update node provider
   sed -i "/^\(NODE_PROVIDER = \).*/d" mysite/settings.py
   echo "Setting NODE_PROVIDER = ${CM_NODE_PROVIDER}"
-  echo "NODE_PROVIDER = '${CM_NODE_PROVIDER}'" >> mysite/settings.py
+  echo "NODE_PROVIDER = ${CM_NODE_PROVIDER}" >> mysite/settings.py
 
   # Create database and databsae user if not yet present. This should only
   # happen if the database is not run in a separete container.

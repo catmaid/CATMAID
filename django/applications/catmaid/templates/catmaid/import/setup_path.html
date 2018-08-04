@@ -38,6 +38,9 @@
         showAll(document.querySelectorAll('.api-key'));
         showAll(document.querySelectorAll('.http-auth-user'));
         showAll(document.querySelectorAll('.http-auth-pass'));
+      } else if ('json-spec' === source) {
+        hideAll(document.querySelectorAll('.import-source-setting'));
+        showAll(document.querySelectorAll('.json-spec'));
       } else {
         alert("Unknown import source: " + source);
       }

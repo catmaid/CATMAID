@@ -302,6 +302,13 @@ class FileImporter:
         # Defer all constraint checks
         cursor.execute('SET CONSTRAINTS ALL DEFERRED')
 
+        # Drop summary table trigger to make insertion faster
+        cursor.execute("""
+            DROP TRIGGER on_edit_treenode_update_summary_and_edges ON treenode;
+            DROP TRIGGER on_insert_treenode_update_summary_and_edges ON treenode;
+            DROP TRIGGER on_delete_treenode_update_summary_and_edges ON treenode;
+        """)
+
         # Get all existing users so that we can map them basedon their username.
         mapped_user_ids = set()
         mapped_user_target_ids = set()
@@ -510,6 +517,29 @@ class FileImporter:
             SELECT setval('auth_user_id_seq', coalesce(max("id"), 1), max("id") IS NOT null)
             FROM auth_user;
         ''')
+
+        cursor.execute("""
+            CREATE TRIGGER on_insert_treenode_update_summary_and_edges
+            AFTER INSERT ON treenode
+            REFERENCING NEW TABLE as inserted_treenode
+            FOR EACH STATEMENT EXECUTE PROCEDURE on_insert_treenode_update_summary_and_edges();
+
+            CREATE TRIGGER on_edit_treenode_update_summary_and_edges
+            AFTER UPDATE ON treenode
+            REFERENCING NEW TABLE as new_treenode OLD TABLE as old_treenode
+            FOR EACH STATEMENT EXECUTE PROCEDURE on_edit_treenode_update_summary_and_edges();
+
+            CREATE TRIGGER on_delete_treenode_update_summary_and_edges
+            AFTER DELETE ON treenode
+            REFERENCING OLD TABLE as deleted_treenode
+            FOR EACH STATEMENT EXECUTE PROCEDURE on_delete_treenode_update_summary_and_edges();
+        """)
+
+        logger.info("Updated skeleton summary tables")
+        cursor.execute("""
+            DELETE FROM catmaid_skeleton_summary;
+            SELECT refresh_skeleton_summary_table();
+        """)
 
 
 class InternalImporter:

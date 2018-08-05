@@ -81,7 +81,7 @@
                 '<label class="checkbox-label"><input type="checkbox" name="neuron_query_by_name_not" ' +
                     'id="neuron_query_by_name_not{{NA-ID}}" />not</label>' +
                 '<input type="text" name="neuron_query_by_name" tabindex="1" ' +
-                    'id="neuron_query_by_name{{NA-ID}}" value="" class="" />' +
+                    'id="neuron_query_by_name{{NA-ID}}" value="" class="" placeholder="Use / for RegEx" />' +
               '</td> ' +
               '<td><div class="help">Optional</div></td>' +
             '</tr>' +

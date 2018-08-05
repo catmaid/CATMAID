@@ -12,6 +12,7 @@ from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection, transaction
 from catmaid.control.annotationadmin import copy_annotations
+from catmaid.control.edge import rebuild_edge_tables
 from catmaid.models import (Class, ClassClass, ClassInstance,
         ClassInstanceClassInstance, Project, Relation, User, Treenode,
         Connector, Concept, SkeletonSummary)
@@ -526,6 +527,9 @@ class FileImporter:
             REFERENCING OLD TABLE as deleted_treenode
             FOR EACH STATEMENT EXECUTE PROCEDURE on_delete_treenode_update_summary_and_edges();
         """)
+
+        logger.info("Updating edge tables")
+        rebuild_edge_tables(log=lambda msg: logger.info(msg))
 
         logger.info("Updated skeleton summary tables")
         cursor.execute("""

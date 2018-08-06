@@ -82,10 +82,13 @@
       let stack = project.focusedStackViewer.primaryStack;
       options.skeleton_node_scaling = 2 * Math.min(stack.resolution.x,
           stack.resolution.y, stack.resolution.z);
+      options.link_node_scaling = 2 * Math.min(stack.resolution.x,
+          stack.resolution.y, stack.resolution.z);
     }
 
     // Make the scaling factor look a bit prettier by rounding to two decimals
     options.skeleton_node_scaling = Number(options.skeleton_node_scaling.toFixed(2));
+    options.link_node_scaling = Number(options.link_node_scaling.toFixed(2));
 
     return options;
   };
@@ -96,7 +99,8 @@
     }
     this.container = container;
     this.submit = new submitterFn();
-    this.space = new this.Space(canvasWidth, canvasHeight, this.container, project.focusedStackViewer.primaryStack, this.options);
+    this.space = new this.Space(canvasWidth, canvasHeight, this.container,
+        project.focusedStackViewer.primaryStack, this.loadedVolumes, this.options);
     this.updateActiveNode();
     project.on(CATMAID.Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
     project.on(CATMAID.Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
@@ -1213,6 +1217,7 @@
     this.triangulated_lines = true;
     this.skeleton_line_width = 3;
     this.skeleton_node_scaling = 1.0;
+    this.link_node_scaling = 1.0;
     this.invert_shading = false;
     this.interpolate_vertex_colots = true;
     this.follow_active = false;
@@ -1241,6 +1246,7 @@
     this.interpolated_sections_z = [];
     this.interpolate_broken_sections = false;
     this.apply_filter_rules = true;
+    this.volume_location_picking = false;
   };
 
   WebGLApplication.prototype.Options.prototype = {};
@@ -2621,8 +2627,10 @@
   };
 
   /** Defines the properties of the 3d space and also its static members like the bounding box and the missing sections. */
-  WebGLApplication.prototype.Space = function( w, h, container, stack, options ) {
+  WebGLApplication.prototype.Space = function( w, h, container, stack,
+      loadedVolumes, options ) {
     this.stack = stack;
+    this.loadedVolumes = loadedVolumes;
     this.container = container; // used by MouseControls
     this.options = options;
     // FIXME: If the expected container configuration isn't found, we create a
@@ -4906,6 +4914,19 @@
     var ambientLight = new THREE.AmbientLight(0xffffff);
     this.scene.add(ambientLight);
 
+    // Hide volumes if they aren't include in picking
+    let originalVolumeVisibility = new Map();
+    if (!o.volume_location_picking) {
+      for (let volumeId of this.loadedVolumes.keys()) {
+        let volume = this.loadedVolumes.get(volumeId);
+        for (let i=0; i<volume.meshes.length; ++i) {
+          let m = volume.meshes[i].material;
+          originalVolumeVisibility.set(volumeId, m.visible);
+          m.visible = false;
+        }
+      }
+    }
+
     // Prepare all spheres for picking by coloring them with an ID.
     mapToPickables(this, this.content.skeletons, function(skeleton) {
       color++;
@@ -5145,6 +5166,16 @@
     // Reset Z plane material and visibility
     if (o.show_zplane && zplane) {
       zplane.material = originalMaterials.get(zplane);
+    }
+
+    // Reset volumes to original visibility
+    if (!o.volume_location_picking) {
+      for (let volumeId of this.loadedVolumes.keys()) {
+        let volume = this.loadedVolumes.get(volumeId);
+        for (let i=0; i<volume.meshes.length; ++i) {
+          volume.meshes[i].material.visible = originalVolumeVisibility.get(volumeId);
+        }
+      }
     }
 
     // Reset lighting, assuming no change in position
@@ -6136,8 +6167,7 @@
   };
 
   /**
-   * Scale node handles of a skeletons. These are the special tag spheres and the
-   * synaptic spheres.
+   * Scale node handles of a skeletons. These are the special tag spheres.
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.scaleNodeHandles = function(value) {
     // Both special tag handlers and connector partner nodes are stored as
@@ -6146,6 +6176,15 @@
     if (this.specialTagSphereCollection) {
       this.specialTagSphereCollection.geometry.scaleTemplate(value, value, value);
     }
+  };
+
+  /**
+   * Scale link node handles of a skeletons. These are all synaptic spheres.
+   */
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.scaleLinkNodeHandles = function(value) {
+    // Both special tag handlers and connector partner nodes are stored as
+    // indexed buffer geometry. Therefore, only the template geometry has to be
+    // scaled.
     if (this.connectorSphereCollection) {
       this.connectorSphereCollection.geometry.scaleTemplate(value, value, value);
     }
@@ -6587,7 +6626,7 @@
     this.connectorgeometry[this.CTYPES[2]] = new THREE.Geometry();
     this.connectorgeometry[this.CTYPES[3]] = new THREE.Geometry();
 
-    var scaling = this.space.options.skeleton_node_scaling;
+    var scaling = this.space.options.link_node_scaling;
     var materialType = this.space.options.neuron_material;
 
     this.synapticTypes.forEach(function(type) {
@@ -7103,7 +7142,7 @@
         let nodeLabels = labels.get(v1);
         if (!nodeLabels) {
           nodeLabels = [];
-          labels.set([node[0], v1], nodeLabels);
+          labels.set(v1, [node[0], nodeLabels]);
         }
         nodeLabels.push('uncertain');
       }
@@ -7204,7 +7243,7 @@
 
     // Create buffer geometry for connectors
     if (partner_nodes.length > 0) {
-      this.createPartnerSpheres(partner_nodes, options.skeleton_node_scaling,
+      this.createPartnerSpheres(partner_nodes, options.link_node_scaling,
           options.neuron_material, preventSceneUpdate);
     }
 
@@ -7571,6 +7610,15 @@
     this.options.skeleton_node_scaling = value;
     var sks = this.space.content.skeletons;
     Object.keys(sks).forEach(function(skid) { sks[skid].scaleNodeHandles(value); });
+    this.space.render();
+  };
+
+  WebGLApplication.prototype.updateLinkNodeHandleScaling = function(value) {
+    value = CATMAID.tools.validateNumber(value, "Invalid link node scaling value", 0);
+    if (!value) return;
+    this.options.link_node_scaling = value;
+    var sks = this.space.content.skeletons;
+    Object.keys(sks).forEach(function(skid) { sks[skid].scaleLinkNodeHandles(value); });
     this.space.render();
   };
 

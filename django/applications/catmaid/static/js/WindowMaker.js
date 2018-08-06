@@ -813,6 +813,15 @@ var WindowMaker = new function()
           [volumeSelectionWrapper],
           ['Faces ', o.meshes_faces, function() { WA.options.meshes_faces = this.checked;}, false],
           [WA.createMeshColorButton()],
+          {
+            type: 'checkbox',
+            label: 'Pickable',
+            title: 'Whether or not to include volumes when picking a location using Shift + Click',
+            value: WA.options.volume_location_picking,
+            onclick: function() {
+              WA.options.volume_location_picking = this.checked;
+            }
+          },
           [landmarkGroupSelection],
           {
             type: 'numeric',
@@ -925,10 +934,18 @@ var WindowMaker = new function()
     var nodeScalingInput = DOM.appendNumericField(tabs['View settings'],
         'Node handle scaling', 'Size of handle spheres for tagged nodes.',
         o.skeleton_node_scaling, null, function() {
-              WA.options.skeleton_node_scaling = Math.max(0, this.value) || 1.0;
+              WA.options.skeleton_node_scaling = Math.max(0, parseInt(this.value, 10)) || 1.0;
               WA.adjustContent();
               WA.updateSkeletonNodeHandleScaling(this.value);
-        }, 3, undefined, false, 0.1, 0);
+        }, 3, undefined, false, 10, 0);
+
+    var linkNodeScalingInput = DOM.appendNumericField(tabs['View settings'],
+        'Link site scaling', 'Size of handle spheres for nodes linked to connectors.',
+        o.link_node_scaling, null, function() {
+              WA.options.link_node_scaling = Math.max(0, parseInt(this.value, 10)) || 1.0;
+              WA.adjustContent();
+              WA.updateLinkNodeHandleScaling(this.value);
+        }, 3, undefined, false, 10, 0);
 
     var textScalingInput = DOM.appendNumericField(tabs['View settings'],
         'Text scaling', 'Scaling of text.', o.text_scaling, null, function() {
@@ -1485,6 +1502,7 @@ var WindowMaker = new function()
     // updated here explicitly. At some point we might want to have some sort of
     // observer for this.
     nodeScalingInput.value = WA.options.skeleton_node_scaling;
+    linkNodeScalingInput.value = WA.options.link_node_scaling;
 
     // Arrange previously created selection table below 3D viewer. To do this,
     // the Selection Table has to be moved out of its split node and moved into

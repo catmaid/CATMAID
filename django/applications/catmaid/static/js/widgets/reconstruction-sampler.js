@@ -983,6 +983,8 @@
     var table = document.createElement('table');
     content.appendChild(table);
 
+    var domainLengths = new Map();
+
     var datatable = $(table).DataTable({
       dom: "lrfhtip",
       autoWidth: false,
@@ -1037,12 +1039,14 @@
           title: "Cable length (nm)",
           orderable: true,
           class: "cm-center",
+          type: "num",
           render: function(data, type, row, meta) {
             // Create arbor for domain and measure cable length
             let arbor = widget.state['arbor'];
             let domainArbor = CATMAID.Sampling.domainArbor(arbor.arbor, row.start_node_id,
                 row.ends.map(function(end) { return end.node_id; }));
             let l = Math.round(domainArbor.cableLength(arbor.positions));
+            domainLengths.set(row.id, l);
             return l < 1 ? '< 1' : l;
           }
         },
@@ -1114,6 +1118,7 @@
         var data =  $(table).DataTable().row(tr).data();
 
         widget.state['domain'] = data;
+        widget.state['domainLength'] = domainLengths.get(data.id);
         widget.workflow.advance();
         widget.update();
       }
@@ -1124,8 +1129,8 @@
       var table = $(this).closest('table');
       var tr = $(this).closest('tr');
       var data =  $(table).DataTable().row(tr).data();
-
       widget.state['domain'] = data;
+      widget.state['domainLength'] = domainLengths.get(data.id);
       widget.workflow.advance();
       widget.update();
     });
@@ -1389,6 +1394,7 @@
     var samplerId = widget.state['samplerId'];
     var skeletonId = widget.state['skeletonId'];
     var domain = widget.state['domain'];
+    var domainLength = widget.state['domainLength'];
 
     var p = content.appendChild(document.createElement('p'));
     p.appendChild(document.createTextNode('Each domain is sampled by intervals ' +
@@ -1418,6 +1424,10 @@
     var completedIntervalSpan = p3.appendChild(document.createElement('span'));
     completedIntervalSpan.setAttribute('data-type', 'completed-sum');
     completedIntervalSpan.appendChild(document.createTextNode('...'));
+    p3.appendChild(document.createTextNode(' / '));
+    var completedRatioSpan = p3.appendChild(document.createElement('span'));
+    completedRatioSpan.setAttribute('data-type', 'completed-ratio');
+    completedRatioSpan.appendChild(document.createTextNode('...'));
 
     // Create a data table with all available domains or a filtered set
     var table = document.createElement('table');
@@ -1469,10 +1479,15 @@
                   }
                 }
 
-                // Update interval length span element
+                var completedRatio = 100.0 * completedSum / domainLength;
+
+                // Update interval length span elements
                 $(completedIntervalSpan).empty();
                 completedIntervalSpan.appendChild(document.createTextNode(
                     Math.round(completedSum) + 'nm'));
+                $(completedRatioSpan).empty();
+                completedRatioSpan.appendChild(document.createTextNode(
+                    Number(completedRatio).toFixed(2) + '%'));
               })
               .then(callback.bind(window, {
                 draw: data.draw,
@@ -1524,6 +1539,7 @@
           title: "Cable length (nm)",
           orderable: true,
           class: "cm-center",
+          type: "num",
           render: function(data, type, row, meta) {
             // Create arbor for domain and measure cable length
             if (cableMap.has(row.id)) {

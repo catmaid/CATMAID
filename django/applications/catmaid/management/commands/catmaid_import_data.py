@@ -584,6 +584,8 @@ class Command(BaseCommand):
             action='store_true', help='Create new inactive users for unmapped or unknown users referenced in inport data.')
         parser.add_argument('--preserve-ids', dest='preserve_ids', default=False,
                 action='store_true', help='Use IDs provided in import data. Warning: this can cause changes in existing data.')
+        parser.add_argument('--no-analyze', dest='analyze_db', default=True,
+                action='store_false', help='If ANALYZE to update database statistics should not be called after the import.')
 
     def ask_for_project(self, title):
         """ Return a valid project object.
@@ -659,5 +661,10 @@ class Command(BaseCommand):
 
         importer = Importer(source, target, override_user, options)
         importer.import_data()
+
+        if options['analyze_db']:
+            cursor = connection.cursor()
+            logger.info("Updating database statistics")
+            cursor.execute("ANALYZE")
 
         logger.info("Finished import into project with ID %s" % importer.target.id)

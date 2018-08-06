@@ -799,7 +799,12 @@
         // Otherwise, treat the search term as regular expression if it starts
         // with a forward slash character and filter annotations that match
         var pattern = a.substr(1);
-        var filter  = new RegExp(pattern);
+        try {
+          var filter  = new RegExp(pattern);
+        } catch (error) {
+          CATMAID.warn(error);
+          return;
+        }
         var matches = CATMAID.annotations.getAllNames().filter(function(a) {
           return this.test(a);
         }, filter);

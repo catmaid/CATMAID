@@ -13,6 +13,7 @@ DB_TUNE=${DB_TUNE:-true}
 DB_FIXTURE=${DB_FIXTURE:-false}
 AVAILABLE_MEMORY=`awk '/MemTotal/ { printf "%.3f \n", $2/1024 }' /proc/meminfo`
 INSTANCE_MEMORY=${INSTANCE_MEMORY:-$AVAILABLE_MEMORY}
+CM_DEBUG=${CM_DEBUG:-false}
 CM_EXAMPLE_PROJECTS=${CM_EXAMPLE_PROJECTS:-true}
 CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE=${CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:-""}
 CM_HOST=${CM_HOST:-0.0.0.0}
@@ -67,6 +68,15 @@ init_catmaid () {
   fi
 
   cd /home/django/projects
+
+  # Update debug setting
+  sed -i "/^\(DEBUG = \).*/d" mysite/settings.py
+  catmaid_debug=False
+  if [ "$CM_DEBUG" = true ]; then
+    catmaid_debug=True
+  fi
+  echo "Setting DEBUG = ${catmaid_debug}"
+  echo "DEBUG = ${catmaid_debug}" >> mysite/settings.py
 
   # Update maximum import size setting
   sed -i "/^\(IMPORTED_SKELETON_FILE_MAXIMUM_SIZE = \).*/d" mysite/settings.py

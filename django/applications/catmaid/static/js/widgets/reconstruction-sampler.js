@@ -1039,6 +1039,7 @@
           title: "Cable length (nm)",
           orderable: true,
           class: "cm-center",
+          type: "num",
           render: function(data, type, row, meta) {
             // Create arbor for domain and measure cable length
             let arbor = widget.state['arbor'];
@@ -1538,6 +1539,7 @@
           title: "Cable length (nm)",
           orderable: true,
           class: "cm-center",
+          type: "num",
           render: function(data, type, row, meta) {
             // Create arbor for domain and measure cable length
             if (cableMap.has(row.id)) {

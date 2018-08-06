@@ -34,9 +34,9 @@ c.execute('SELECT id, title FROM project')
 project_tuples = c.fetchall()
 
 for project_id, project_title in project_tuples:
-    print "========================================================================"
-    print "project_id", project_id
-    print "project_title", project_title
+    print("========================================================================")
+    print("project_id", project_id)
+    print("project_title", project_title)
 
     c.execute('SELECT relation_name, id FROM relation WHERE project_id = %s',
               (project_id,))
@@ -52,7 +52,7 @@ for project_id, project_title in project_tuples:
     # We could do pre and post synaptic in one go, but this is slightly
     # easier:
     for direction in ('presynaptic', 'postsynaptic'):
-        print "doing direction:", direction
+        print("doing direction:", direction)
         direction_relation_id = relations[direction + '_to']
         terminal_class_id = classes[direction + ' terminal']
         c.execute('''

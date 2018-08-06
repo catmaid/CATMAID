@@ -49,14 +49,14 @@ required_tables = [ "bezierkey",
 
 for t in required_tables:
     if t not in tables:
-        print "The required table '%s' was missing" % (t,)
+        print("The required table '%s' was missing" % (t,))
         everything_ok = False
 
 c.execute("select proname from pg_proc")
 procedures = set(x[0] for x in c.fetchall())
 
 if not 'connectby' in procedures:
-    print "The procedure 'connectby' hasn't been defined"
+    print("The procedure 'connectby' hasn't been defined")
     everything_ok = False
 
 c.execute("select tgname from pg_trigger")
@@ -79,11 +79,11 @@ required_triggers = [ "on_edit",
 
 for trigger in required_triggers:
     if not trigger in triggers:
-        print "The required trigger '%s' was missing" % (trigger,)
+        print("The required trigger '%s' was missing" % (trigger,))
         everything_ok = False
 
 if not everything_ok:
-    print '''It seems that your database is not in the state
+    print('''It seems that your database is not in the state)
 described in master.sql from commit 5145c06574a2, so
 this script refuses to set the schema version.  You will
 need to fix this by hand.  For more information see:
@@ -109,12 +109,12 @@ except psycopg2.ProgrammingError as e:
     c.execute("ROLLBACK TO SAVEPOINT sp")
     pass
 
-print "Setting the schema version to '%s' ..." % (first_migration,)
+print("Setting the schema version to '%s' ..." % (first_migration,))
 
 c.execute("UPDATE settings SET value = %s WHERE key = 'schema_version'",
           (first_migration,))
 
-print "done."
+print("done.")
 
 db_connection.commit()
 c.close()

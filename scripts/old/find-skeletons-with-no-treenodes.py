@@ -54,5 +54,5 @@ SELECT DISTINCT tci.class_instance_id
 skeletons_with_at_least_one_treenode = set(x[0] for x in c.fetchall())
 
 for skeleton_id in sorted((all_skeletons - skeletons_with_at_least_one_treenode)):
-    print skeleton_id
+    print(skeleton_id)
 

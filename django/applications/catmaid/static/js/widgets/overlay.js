@@ -4253,7 +4253,7 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
         $('body').off('keydown.catmaidRadiusSelect');
         fakeNode.removeSurroundingCircle();
         if (fakeNode.id === id) {
-          fakeNode.obliterate();
+          fakeNode.disable();
         }
         return true;
       }
@@ -4265,7 +4265,7 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
       $('body').off('keydown.catmaidRadiusSelect');
       // Remove circle and call callback
       fakeNode.removeSurroundingCircle(displayRadius);
-      fakeNode.obliterate();
+      fakeNode.disable();
       self.redraw();
     }
   }
@@ -5034,7 +5034,7 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteConnectorNode =
 
         // Delete this connector from overlay (to not require a database update).
         self.nodes.delete(connectorId);
-        connectornode.obliterate();
+        connectornode.disable();
         self.pixiLayer._renderIfReady();
 
         CATMAID.statusBar.replaceLast("Deleted connector #" + connectorId);
@@ -5081,9 +5081,14 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
     var parent = node.parent;
     self.nodes.delete(node.id);
     if (children) {
+      let changedChildren = json.children ? json.children : [];
+      let childEditTimeMap = new Map(changedChildren);
       for (var child of children.values()) {
         child.parent = parent;
         child.parent_id = node.parent_id;
+        if (childEditTimeMap.has(child.id)) {
+          child.edition_time_iso_str = childEditTimeMap.get(child.id);
+        }
         if (parent) {
           parent.addChildNode(child);
         }
@@ -5096,7 +5101,7 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
     // Store node ID before node gets reset
     var nodeId = node.id;
 
-    node.obliterate();
+    node.disable();
     node.drawEdges(false);
     if (parent) parent.drawEdges(true);
     self.pixiLayer._renderIfReady();

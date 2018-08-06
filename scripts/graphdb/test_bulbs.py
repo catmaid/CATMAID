@@ -98,8 +98,8 @@ g.has_treenode.create(neuron1, treenode1)
 
 g.has_child.create(treenode1, treenode11)
 
-print 'Show treenodes of neuron 1'
-print list(neuron1.inV('element_of'))
+print('Show treenodes of neuron 1')
+print(list(neuron1.inV('element_of')))
 
 # update
 neur = g.vertices.get(neuron1.eid)
@@ -109,17 +109,17 @@ neur.save()
 """
 eid = neuron1.eid
 dic = neuron1.map()
-print 'dictionary', eid, dic
+print('dictionary', eid, dic)
 dic['aha'] = 10
 g.vertices.update(eid,dic)
-print 'get it anew', eid, g.vertices.get(eid).map()
+print('get it anew', eid, g.vertices.get(eid).map())
 """
 
 # get edge attributes
 edg = list(neur.outE('has_treenode'))[0]
 
 # TODO: why is the relationship label not accessible? edge_type?
-print 'edge label', edg._label, edg.map()
+print('edge label', edg._label, edg.map())
 
 #g.vertices.delete(neuron1.eid)
 
@@ -127,16 +127,16 @@ import sys
 sys.exit(1)
 
 """
-print neuron1.eid
+print(neuron1.eid)
 neuronid = 1000
 old_tn = None
 for i in range(6005):
-    print 'i', i
+    print('i', i)
     if i % 5000 == 0:
-        print 'past 1000',i
+        print('past 1000',i)
         neuronid+=1
         neuron1 = g.neuron.create(name="MyNeuron {0}".format(i))
-        print 'new neuron with id', neuron1.eid
+        print('new neuron with id', neuron1.eid)
         
     treenode_new = g.treenode.create(x=3.3,y=4.3,z=3.2)
     g.has_treenode.create(neuron1, treenode_new)
@@ -154,14 +154,14 @@ a,b=r.get_results()
 TN=[]
 for e in a:
     TN.append( e.get_id() )
-print 'time', time.time()-start
-#print 'result', TN
+print('time', time.time()-start)
+#print('result', TN)
 
 start=time.time()
 TN2=[]
 for i in g.neuron.get(2072).outE('has_treenode'):
     TN2.append( i.eid )
     
-print 'time2', time.time()-start
+print('time2', time.time()-start)
 
 # TODO: how to update with nodes with gremlin?

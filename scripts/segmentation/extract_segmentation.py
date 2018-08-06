@@ -34,21 +34,21 @@ for comp in components:
     maxY = max(maxY, comp.max_y)
     maxZ = max(maxZ, comp.z)
 
-print 'found bounding box', minX, minY, maxX, maxY, minZ, maxZ
+print('found bounding box', minX, minY, maxX, maxY, minZ, maxZ)
 
 # create 3d array
 data = np.zeros( (maxY-minY, maxX-minX, maxZ-minZ), dtype = np.uint8 )
 
 # for all components, retrieve image and bounding box location
 for comp in components:
-    print 'work on component', comp.id,  comp.component_id
+    print('work on component', comp.id,  comp.component_id)
     img = extract_as_numpy_array( project_id, stack_id, comp.component_id, comp.z ).T
     # store image in array
 
     height = comp.max_y - comp.min_y + 1
     width = comp.max_x - comp.min_x + 1
-    print 'height, width', height, width
-    print 'image shape (should match)', img.shape
+    print('height, width', height, width)
+    print('image shape (should match)', img.shape)
     try:
         indX = comp.min_x - minX
         indY = comp.min_y - minY

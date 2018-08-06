@@ -84,7 +84,7 @@ for trigger in required_triggers:
         everything_ok = False
 
 if not everything_ok:
-    print '''It seems that your database is not in the state
+    print('''It seems that your database is not in the state)
 described in master.sql from commit 5145c06574a2, so
 this script refuses to set the schema version.  You will
 need to fix this by hand.  For more information see:

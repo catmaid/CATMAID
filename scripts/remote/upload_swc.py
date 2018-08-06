@@ -51,7 +51,7 @@ def main():
         '{}/{}/skeletons/import'.format(args.url, args.project_id),
         files={'file.swc': open(args.swc_file, 'rb')})
 
-    print 'Upload completed in {}ms'.format(response.elapsed.total_seconds() * 1000)
+    print('Upload completed in {}ms'.format(response.elapsed.total_seconds() * 1000))
     try:
         skel = response.json()
     except:
@@ -64,8 +64,8 @@ def main():
         print skel
         raise SystemExit, 1
 
-    print 'Skeleton ID: {}'.format(skel['skeleton_id'])
-    print 'Neuron ID: {}'.format(skel['neuron_id'])
+    print('Skeleton ID: {}'.format(skel['skeleton_id']))
+    print('Neuron ID: {}'.format(skel['neuron_id']))
 
     response = session.post(
         '{}/{}/stacks'.format(args.url, args.project_id))
@@ -75,7 +75,7 @@ def main():
         '{}/{}/node/get_location'.format(args.url, args.project_id),
         {'tnid': skel['node_id_map'].itervalues().next()})
     tn = response.json()
-    print 'Link: {}?pid={}&zp={}&yp={}&xp={}&sid0={}&s0=0&tool=tracingtool&active_node_id={}&active_skeleton_id={}'.format(
+    print('Link: {}?pid={}&zp={}&yp={}&xp={}&sid0={}&s0=0&tool=tracingtool&active_node_id={}&active_skeleton_id={}'.format()
             args.url,
             args.project_id,
             tn[3], tn[2], tn[1],

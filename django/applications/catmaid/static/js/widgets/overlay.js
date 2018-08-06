@@ -4917,10 +4917,15 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
     var parent = node.parent;
     delete self.nodes[node.id];
     if (children) {
+      let changedChildren = json.children ? json.children : [];
+      let childEditTimeMap = new Map(changedChildren);
       for (var childId in children) {
         var child = children[childId];
         child.parent = parent;
         child.parent_id = node.parent_id;
+        if (childEditTimeMap.has(child.id)) {
+          child.edition_time_iso_str = childEditTimeMap.get(child.id);
+        }
         if (parent) {
           parent.addChildNode(child);
         }

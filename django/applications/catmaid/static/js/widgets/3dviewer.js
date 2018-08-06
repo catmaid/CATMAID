@@ -99,7 +99,8 @@
     }
     this.container = container;
     this.submit = new submitterFn();
-    this.space = new this.Space(canvasWidth, canvasHeight, this.container, project.focusedStackViewer.primaryStack, this.options);
+    this.space = new this.Space(canvasWidth, canvasHeight, this.container,
+        project.focusedStackViewer.primaryStack, this.loadedVolumes, this.options);
     this.updateActiveNode();
     project.on(CATMAID.Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
     project.on(CATMAID.Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
@@ -1245,6 +1246,7 @@
     this.interpolated_sections_z = [];
     this.interpolate_broken_sections = false;
     this.apply_filter_rules = true;
+    this.volume_location_picking = false;
   };
 
   WebGLApplication.prototype.Options.prototype = {};
@@ -2625,8 +2627,10 @@
   };
 
   /** Defines the properties of the 3d space and also its static members like the bounding box and the missing sections. */
-  WebGLApplication.prototype.Space = function( w, h, container, stack, options ) {
+  WebGLApplication.prototype.Space = function( w, h, container, stack,
+      loadedVolumes, options ) {
     this.stack = stack;
+    this.loadedVolumes = loadedVolumes;
     this.container = container; // used by MouseControls
     this.options = options;
     // FIXME: If the expected container configuration isn't found, we create a
@@ -4910,6 +4914,19 @@
     var ambientLight = new THREE.AmbientLight(0xffffff);
     this.scene.add(ambientLight);
 
+    // Hide volumes if they aren't include in picking
+    let originalVolumeVisibility = new Map();
+    if (!o.volume_location_picking) {
+      for (let volumeId of this.loadedVolumes.keys()) {
+        let volume = this.loadedVolumes.get(volumeId);
+        for (let i=0; i<volume.meshes.length; ++i) {
+          let m = volume.meshes[i].material;
+          originalVolumeVisibility.set(volumeId, m.visible);
+          m.visible = false;
+        }
+      }
+    }
+
     // Prepare all spheres for picking by coloring them with an ID.
     mapToPickables(this, this.content.skeletons, function(skeleton) {
       color++;
@@ -5149,6 +5166,16 @@
     // Reset Z plane material and visibility
     if (o.show_zplane && zplane) {
       zplane.material = originalMaterials.get(zplane);
+    }
+
+    // Reset volumes to original visibility
+    if (!o.volume_location_picking) {
+      for (let volumeId of this.loadedVolumes.keys()) {
+        let volume = this.loadedVolumes.get(volumeId);
+        for (let i=0; i<volume.meshes.length; ++i) {
+          volume.meshes[i].material.visible = originalVolumeVisibility.get(volumeId);
+        }
+      }
     }
 
     // Reset lighting, assuming no change in position

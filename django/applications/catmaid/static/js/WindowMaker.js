@@ -813,6 +813,15 @@ var WindowMaker = new function()
           [volumeSelectionWrapper],
           ['Faces ', o.meshes_faces, function() { WA.options.meshes_faces = this.checked;}, false],
           [WA.createMeshColorButton()],
+          {
+            type: 'checkbox',
+            label: 'Pickable',
+            title: 'Whether or not to include volumes when picking a location using Shift + Click',
+            value: WA.options.volume_location_picking,
+            onclick: function() {
+              WA.options.volume_location_picking = this.checked;
+            }
+          },
           [landmarkGroupSelection],
           {
             type: 'numeric',

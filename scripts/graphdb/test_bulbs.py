@@ -100,7 +100,7 @@ g.has_treenode.create(neuron1, treenode1)
 g.has_child.create(treenode1, treenode11)
 
 print('Show treenodes of neuron 1')
-print list(neuron1.inV('element_of'))
+print(list(neuron1.inV('element_of')))
 
 # update
 neur = g.vertices.get(neuron1.eid)
@@ -128,7 +128,7 @@ import sys
 sys.exit(1)
 
 """
-print neuron1.eid
+print(neuron1.eid)
 neuronid = 1000
 old_tn = None
 for i in range(6005):

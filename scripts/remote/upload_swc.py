@@ -56,12 +56,12 @@ def main():
         skel = response.json()
     except:
         e = sys.exc_info()[0]
-        print "Parse error: " + str(e)
-        print response.content
+        print("Parse error: " + str(e))
+        print(response.content)
         raise SystemExit, 1
 
     if 'error' in skel:
-        print skel
+        print(skel)
         raise SystemExit, 1
 
     print('Skeleton ID: {}'.format(skel['skeleton_id']))

@@ -4089,7 +4089,7 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
         $('body').off('keydown.catmaidRadiusSelect');
         fakeNode.removeSurroundingCircle();
         if (fakeNode.id === id) {
-          fakeNode.obliterate();
+          fakeNode.disable();
         }
         return true;
       }
@@ -4101,7 +4101,7 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
       $('body').off('keydown.catmaidRadiusSelect');
       // Remove circle and call callback
       fakeNode.removeSurroundingCircle(displayRadius);
-      fakeNode.obliterate();
+      fakeNode.disable();
       self.redraw();
     }
   }
@@ -4870,7 +4870,7 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteConnectorNode =
 
         // Delete this connector from overlay (to not require a database update).
         delete self.nodes[connectorId];
-        connectornode.obliterate();
+        connectornode.disable();
         self.pixiLayer._renderIfReady();
 
         CATMAID.statusBar.replaceLast("Deleted connector #" + connectorId);
@@ -4938,7 +4938,7 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
     // Store node ID before node gets reset
     var nodeId = node.id;
 
-    node.obliterate();
+    node.disable();
     node.drawEdges(false);
     if (parent) parent.drawEdges(true);
     self.pixiLayer._renderIfReady();

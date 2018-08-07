@@ -749,7 +749,8 @@
                 dialog.close();
               }
             },
-            shadingMethod: colorMethod,
+            colorMethod: colorMethod,
+            shadingMethod: 'sampler-domain',
             extraControls: [
               {
                 type: 'checkbox',
@@ -793,7 +794,7 @@
 
             // Set new shading and coloring methods
             glWidget.options.color_method = colorMethod;
-            glWidget.options.shading_method = 'sampler-intervals';
+            glWidget.options.shading_method = 'sampler-domain';
             glWidget.options.interpolate_vertex_colots = false;
 
             // Look at center of mass of skeleton and update screen

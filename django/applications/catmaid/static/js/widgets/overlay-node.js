@@ -925,6 +925,8 @@
         this.id = id;
         this.parent = parent;
         this.parent_id = parent_id;
+        this.children.clear();
+        this.connectors.clear();
         this.visibilityGroups = null;
         this.radius = radius; // the radius as stored in the database
         this.x = x;

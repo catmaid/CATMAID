@@ -106,7 +106,7 @@
    */
   Sampling.intervalsFromModels = function(arbor, positions, domainDetails,
       intervalLength, intervalError, preferSmallerError, createNewNodes,
-      leafHandling, updateArborData, targetEdgeMap, nodeBlacklist) {
+      leafHandling, updateArborData, targetEdgeMap, nodeBlacklist, mergeLimit) {
     if (!intervalLength) {
       throw new CATMAID.ValueError("Need interval length for interval creation");
     }
@@ -172,8 +172,9 @@
           // segment handling strategies.
           } else if (j === 0) {
             let isFirstInterval = intervalStartIdx === (partition.length - 1);
-            let canBeMerged = leafHandling === 'merge' ||
-                leafHandling === 'merge-or-create';
+            let fragmentLengthRatio = dist / intervalLength;
+            let canBeMerged = fragmentLengthRatio <= mergeLimit &&
+                (leafHandling === 'merge' || leafHandling === 'merge-or-create');
             if (canBeMerged && !isFirstInterval) {
               // Add the collected nodes of the current interval to the last
               // interval. This only is allowed if this interval isn't the first
@@ -371,7 +372,8 @@
     return sampler.domains.reduce(function(o, d) {
       var intervalConfiguration = Sampling.intervalsFromModels(arbor, positions,
           d, sampler.interval_length, sampler.interval_error, preferSmallerError,
-          createNewNodes, sampler.leaf_segment_handling, updateArborData, target);
+          createNewNodes, sampler.leaf_segment_handling, updateArborData, target,
+          sampler.merge_limit);
       o[d.id] = intervalConfiguration.intervals;
       return o;
     }, {});

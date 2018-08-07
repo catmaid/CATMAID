@@ -1066,6 +1066,7 @@ class Sampler(UserFocusedModel):
     sampler_state = models.ForeignKey(SamplerState, on_delete=models.CASCADE)
     skeleton = models.ForeignKey(ClassInstance, db_index=True, on_delete=models.CASCADE)
     leaf_segment_handling = models.TextField(default="ignore")
+    merge_limit = models.FloatField(default=0)
 
     def __str__(self):
         return "Sampler for {}".format(self.skeleton_id)

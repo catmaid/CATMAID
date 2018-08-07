@@ -56,7 +56,8 @@
       'interpolatableY': get(state.interpolatableY, project.interpolatableSections.y),
       'interpolatableZ': get(state.interpolatableZ, project.interpolatableSections.z),
       'binaryIntervalColors': get(state.binaryIntervalColors, true),
-      'leafHandling': get(state.leafHandling, 'ignore'),
+      'leafHandling': get(state.leafHandling, 'merge-or-create'),
+      'mergeLimit': get(state.mergeLimit, 0.2),
     };
     this.workflow.setState(this.state);
     this.workflow.selectStep(0);
@@ -70,6 +71,7 @@
     this.state['createIntervalBoundingNodes'] = sampler['create_interval_boundaries'];
     this.state['reviewRequired'] = sampler['review_required'];
     this.state['leafHandling'] = sampler['leaf_segment_handling'];
+    this.state['mergeLimit'] = sampler['merge_limit'];
   };
 
   ReconstructionSampler.prototype.destroy = function() {
@@ -214,6 +216,19 @@
 
   BackboneWorkflowStep.prototype.createControls = function(widget) {
     var self = this;
+
+    var mergeLimitDisabled = widget.state['mergeLimit'] !== 'merge-or-create' &&
+        widget.state['mergeLimit'] !== 'merge';
+    var mocMergeLimit = CATMAID.DOM.createNumericField(undefined, 'Merge limit (%)',
+        'When the "Merge or create" or "Merge leaf handling mode is selected, this ' +
+        'value can be used to limit to what percentage of the interval ' +
+        'length should be merged. A value of zero or 100 disables the limit ' +
+        'effectively.', Number(100 * widget.state['mergeLimit']).toFixed(0),
+        undefined, function() {
+          widget.state['mergeLimit'] = Number(this.value) / 100.0;
+        }, 4, mergeLimitDisabled, false, 1, 0, 100);
+    var mocMergeLimitInput = mocMergeLimit.querySelector('input');
+
     return [
       {
         type: 'button',
@@ -393,7 +408,13 @@
         }],
         onchange: function() {
           widget.state['leafHandling'] = this.value;
+          mocMergeLimitInput.disabled = this.value !== 'merge-or-create' &&
+              this.value !== 'merge';
         }
+      },
+      {
+        type: 'child',
+        element: mocMergeLimit
       },
       {
         type: 'button',
@@ -547,6 +568,20 @@
         {data: "interval_error", title: "Max error", orderable: true, class: 'cm-center'},
         {data: "leaf_segment_handling", title: "Leaf handling", orderable: true, class: 'cm-center'},
         {
+          data: "merge_limit",
+          title: "Merge limit",
+          orderable: true,
+          class: "cm-center",
+          render: function(data, type, row, meta) {
+            if (row.leaf_segment_handling === 'merge-or-create' ||
+                row.leaf_segment_handling === 'merge') {
+              return Number(row.merge_limit).toFixed(2);
+            } else {
+              return '-';
+            }
+          }
+        },
+        {
           data: "create_interval_boundaries",
           title: "Create interval boundaries",
           orderable: true,
@@ -677,6 +712,11 @@
       CATMAID.warn("No valid leaf handling option found");
       return;
     }
+    var mergeLimit = widget.state['mergeLimit'];
+    if (!mergeLimit && mergeLimit != 0.0) {
+      CATMAID.warn("No valid merge limit option found");
+      return;
+    }
 
     var arbor = widget.state['arbor'];
     // Get arbor if not already cached
@@ -717,6 +757,7 @@
             interval_length: intervalLength,
             interval_error: intervalError,
             leaf_segment_handling: leafHandling,
+            merge_limit: mergeLimit,
             domains: [fakeDomain]
           };
           let preferSmallerError = true;
@@ -735,7 +776,7 @@
           let intervalConfiguration = CATMAID.Sampling.intervalsFromModels(
             workParser.arbor, workParser.positions, fakeDomain, intervalLength,
             intervalError, preferSmallerError, createIntervalBoundingNodes,
-            leafHandling, true);
+            leafHandling, true, undefined, undefined, mergeLimit);
           let intervals = intervalConfiguration.intervals;
 
           // Show 3D viewer confirmation dialog
@@ -839,6 +880,11 @@
       CATMAID.warn("Can't create sampler without leafHandling parameter");
       return;
     }
+    var mergeLimit = widget.state['mergeLimit'];
+    if (undefined === mergeLimit) {
+      CATMAID.warn("Can't create sampler without mergeLimit parameter");
+      return;
+    }
     CATMAID.fetch(project.id + '/samplers/add', 'POST', {
       skeleton_id: skeletonId,
       interval_length: intervalLength,
@@ -846,6 +892,7 @@
       create_interval_boundaries: createIntervalBoundingNodes,
       review_required: reviewRequired,
       leaf_segment_handling: leafHandling,
+      merge_limit: mergeLimit,
     }).then(function(result) {
       // TODO: Should probably go to next step immediately
       widget.update();
@@ -1711,6 +1758,11 @@
       CATMAID.warn("No valid leaf handling parameter found");
       return;
     }
+    var mergeLimit = widget.state['mergeLimit'];
+    if (!mergeLimit && mergeLimit != 0.0) {
+      CATMAID.warn("No valid merge limit parameter found");
+      return;
+    }
 
     var arbor = widget.state['arbor'];
     // Get arbor if not already cached
@@ -1757,7 +1809,8 @@
         return CATMAID.Sampling.intervalsFromModels(workParser.arbor,
             workParser.positions, domainDetails, intervalLength,
             intervalError, preferSmallerError,
-            createIntervalBoundingNodes, leafHandling, true, false, interpolatedNodes);
+            createIntervalBoundingNodes, leafHandling, true, false,
+            interpolatedNodes, mergeLimit);
       })
       .then(function(intervalConfiguration) {
         return new Promise(function(resolve, reject) {

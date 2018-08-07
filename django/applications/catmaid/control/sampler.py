@@ -136,6 +136,7 @@ def list_samplers(request, project_id):
            'interval_length': s.interval_length,
            'interval_error': s.interval_error,
            'leaf_segment_handling': s.leaf_segment_handling,
+           'merge_limit': s.merge_limit,
            'review_required': s.review_required,
            'create_interval_boundaries': s.create_interval_boundaries,
            'state_id': s.sampler_state_id,
@@ -189,6 +190,13 @@ def add_sampler(request, project_id):
        paramType: form
        required: false
        default: ignore
+     - name: merge_limit
+       description: A leaf handling option for merge-or-create mode. A value between 0 and 1 representing the interval length ratio up to which a merge is allowed.
+       type: string
+       paramType: form
+       required: false
+       default: 0
+       default: ignore
     """
     skeleton_id = request.POST.get('skeleton_id')
     if skeleton_id:
@@ -229,6 +237,15 @@ def add_sampler(request, project_id):
     else:
         leaf_segment_handling = 'ignore'
 
+    merge_limit = request.POST.get('merge_limit')
+    if merge_limit:
+        merge_limit = float(merge_limit)
+    else:
+        merge_limit = 0
+
+    if merge_limit < 0 or merge_limit > 1.0:
+        raise ValueError("Merge limit needs to be between 0 and 1")
+
     sampler_state = SamplerState.objects.get(name="open");
 
     sampler = Sampler.objects.create(
@@ -236,6 +253,7 @@ def add_sampler(request, project_id):
         interval_length=interval_length,
         interval_error=interval_error,
         leaf_segment_handling=leaf_segment_handling,
+        merge_limit=merge_limit,
         review_required=review_required,
         create_interval_boundaries=create_interval_boundaries,
         sampler_state=sampler_state,
@@ -248,6 +266,7 @@ def add_sampler(request, project_id):
         "interval_length": sampler.interval_length,
         "interval_error": sampler.interval_error,
         "leaf_segment_handling": sampler.leaf_segment_handling,
+        "merge_limit": sampler.merge_limit,
         "review_required": sampler.review_required,
         "create_interval_boundaries": sampler.create_interval_boundaries,
         "sampler_state": sampler.sampler_state_id,

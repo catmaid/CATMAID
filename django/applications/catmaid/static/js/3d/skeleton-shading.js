@@ -508,7 +508,7 @@
           let addedIntervals = CATMAID.Sampling.intervalsFromModels(
               arbor, positions, domain, sampler.interval_length,
               sampler.interval_error, true, true, sampler.leaf_segment_handling,
-              true, intervalMap);
+              true, intervalMap, undefined, sampler.merge_limit);
           let mockIntervals = addedIntervals.intervals.map(function(ai, i) {
             // use the negative index as ID for now. There should not be
             // any collissions.

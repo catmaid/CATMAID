@@ -6515,12 +6515,16 @@
     // Set colors per-vertex
     var seen = {},
         seen_materials = {},
-        colors = [],
-        vertices = this.geometry[type].vertices;
+        colors = [];
 
-    for (var i=0; i<vertices.length; i+=2) {
-      var connector_id = vertices[i].node_id,
-          node_id = vertices[i+1].node_id,
+    for (let nodeId in this.synapticSpheres) {
+      let bufferObject = this.synapticSpheres[nodeId];
+      if (bufferObject.type !== type) {
+        continue;
+      }
+
+      var connector_id = bufferObject.connector_id,
+          node_id = bufferObject.node_id,
           value = fnConnectorValue(node_id, connector_id);
 
       var color = seen[value];
@@ -6534,19 +6538,16 @@
       colors.push(color);
       colors.push(color);
 
-      var bufferObject = this.synapticSpheres[node_id];
-      if (bufferObject) {
-        bufferObject.color = color;
-        // TODO: Might not be needed anymore: why should we store this extra
-        // material anyway.
-        var material = seen_materials[value];
-        if (!material) {
-          material = bufferObject.material.clone();
-          material.color = color;
-          seen_materials[value] = material;
-        }
-        bufferObject.material = material;
+      bufferObject.color = color;
+      // TODO: Might not be needed anymore: why should we store this extra
+      // material anyway.
+      var material = seen_materials[value];
+      if (!material) {
+        material = bufferObject.material.clone();
+        material.color = color;
+        seen_materials[value] = material;
       }
+      bufferObject.material = material;
     }
 
     this.geometry[type].colors = colors;
@@ -6762,6 +6763,7 @@
     }).bind(this), (function(v, m, o, bufferObject) {
       let nodeId = o[3];
       bufferObject.node_id = nodeId;
+      bufferObject.connector_id = o[4];
       bufferObject.type = this.synapticTypes[o[2]];
       this.synapticSpheres[nodeId] = bufferObject;
     }).bind(this));
@@ -7193,7 +7195,7 @@
         this.createEdge(v1, v2, this.geometry[this.synapticTypes[type]]);
         var defaultMaterial = this.space.staticContent.synapticColors[type] ||
           this.space.staticContent.synapticColors.default;
-        partner_nodes.push([v2, defaultMaterial, type, con[0]]);
+        partner_nodes.push([v2, defaultMaterial, type, con[0], con[1]]);
       } else if (!silent) {
         throw new CATMAID.ValueError("Connector loading failed, not all vertices available");
       }

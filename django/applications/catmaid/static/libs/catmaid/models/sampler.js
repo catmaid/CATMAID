@@ -67,7 +67,7 @@
         if (currentNodeId == startNodeId) {
           // Don't set the start node of an interval explicitly. Start nodes are
           // either the end of another interval or the domain start.
-          if (currentNodeId == domainStartId) {
+          if (currentNodeId == domainStartId || !targetEdgeMap[currentNodeId]) {
             targetEdgeMap[currentNodeId] = intervalId;
           }
           break;

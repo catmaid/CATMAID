@@ -579,6 +579,41 @@
   }
 
   /**
+   * Create a stack by fetching from the backend stack info API.
+   *
+   * @returns {Promise} Promise resolving with the Stack.
+   */
+  Stack.fetch = function(projectId, stackId) {
+    return CATMAID.fetch(projectId + '/stack/' + stackId + '/info')
+      .then(CATMAID.Stack.fromStackInfoJson);
+  };
+
+  /**
+   * Create a stack instance from JSON returned by the backend stack info
+   * API.
+   *
+   * @param  {Object} json
+   * @return {Stack}
+   */
+  Stack.fromStackInfoJson = function (json) {
+    return new CATMAID.Stack(
+        json.sid,
+        json.stitle,
+        json.dimension,
+        json.resolution,
+        json.translation,
+        json.broken_slices,
+        json.downsample_factors,
+        -2,
+        json.description,
+        json.metadata,
+        json.orientation,
+        json.canary_location,
+        json.placeholder_color,
+        json.mirrors);
+  };
+
+  /**
    * Get all available stacks for a given project, optionally sorted by name.
    */
   Stack.list = function(projectId, sort) {

@@ -1335,7 +1335,7 @@ var project;
 
         function loadNextStack(pid, stackIndex, sgId, stacks, firstStackViewer) {
           var stack = stacks[stackIndex];
-          return CATMAID.fetch(pid + '/stack/' + stack.id + '/info', 'GET')
+          return CATMAID.fetch(pid + '/stack/' + stack.id + '/info')
             .then(function(json) {
               var stackViewer;
               // If there is already a stack loaded and this stack is a channel of
@@ -1593,21 +1593,7 @@ var project;
     function loadStack(e, stackViewer, hideTileLayer) {
       var useExistingViewer = typeof stackViewer !== 'undefined';
 
-      var stack = new CATMAID.Stack(
-          e.sid,
-          e.stitle,
-          e.dimension,
-          e.resolution,
-          e.translation,    //!< @todo replace by an affine transform
-          e.broken_slices,
-          e.downsample_factors,
-          -2,
-          e.description,
-          e.metadata,
-          e.orientation,
-          e.canary_location,
-          e.placeholder_color,
-          e.mirrors);
+      var stack = new CATMAID.Stack.fromStackInfoJson(e);
 
       if (!useExistingViewer) {
         stackViewer = new CATMAID.StackViewer(project, stack);

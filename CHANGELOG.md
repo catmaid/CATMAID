@@ -30,6 +30,8 @@ Miscellaneous:
 - There is small copy-to-clipboard button left to the "URL to the view" link in
   the upper right corner of the user interface.
 
+- The Ctrl modifier can now be used with - and + to animate zooming.
+
 
 ### Bug fixes
 

@@ -199,7 +199,7 @@
       }
     };
 
-    var smoothChangeSlice = function (e, step, max_fps) {
+    var animateChange = function (e, max_fps, name, change) {
       if (!max_fps) {
         // Throttle to 60 FPS by default.
         max_fps = 60.0;
@@ -208,11 +208,11 @@
       var frameTimeout = null;
       var lastFrameTime = null;
 
-      if (self.smoothScrolling) return true;
-      self.smoothScrolling = true;
+      if (self['animate' + name]) return true;
+      self['animate' + name] = true;
 
       var callback = function () {
-        if (!self.smoothScrolling) return;
+        if (!self['animate' + name]) return;
 
         // Throttle slice change rate to 60 FPS, because rendering can be much
         // faster if image data is already cached.
@@ -224,14 +224,7 @@
         }
         lastFrameTime = thisFrameTime;
 
-        var zOffset = self.stackViewer.validZDistanceByStep(self.slider_z.val, step);
-        if (!zOffset) return;
-        self.stackViewer.moveToPixel(
-            self.slider_z.val + zOffset,
-            self.stackViewer.y,
-            self.stackViewer.x,
-            self.stackViewer.s,
-            callback);
+        change(callback);
       };
 
       var target = e.target;
@@ -241,10 +234,23 @@
       target.onkeyup = function (e) {
         window.clearTimeout(frameTimeout);
         target.onkeyup = oldListener;
-        self.smoothScrolling = false;
+        self['animate' + name] = false;
         self.stackViewer.blockingRedraws = oldBlocking;
       };
       callback();
+    };
+
+    var smoothChangeSlice = function (e, max_fps, step) {
+      animateChange(e, max_fps, 'scroll', function (callback) {
+        var zOffset = self.stackViewer.validZDistanceByStep(self.slider_z.val, step);
+        if (!zOffset) return;
+        self.stackViewer.moveToPixel(
+            self.slider_z.val + zOffset,
+            self.stackViewer.y,
+            self.stackViewer.x,
+            self.stackViewer.s,
+            callback);
+      });
     };
 
     //--------------------------------------------------------------------------
@@ -271,7 +277,7 @@
       changeScaleDelayedTimer = window.setTimeout( changeScaleDelayedAction, 100 );
     };
 
-    this.changeScale = function( val )
+    this.changeScale = function( val, callback )
     {
       // Determine if the mouse is over the stack view.
       var offset = $(self.stackViewer.getView()).offset();
@@ -285,10 +291,10 @@
         y /= self.stackViewer.scale;
         x += (self.stackViewer.x - self.stackViewer.viewWidth / self.stackViewer.scale / 2);
         y += (self.stackViewer.y - self.stackViewer.viewHeight / self.stackViewer.scale / 2);
-        self.scalePreservingLastPosition(x, y, val);
+        self.scalePreservingLastPosition(x, y, val, callback);
       } else {
         // If the mouse is not over the stack view, zoom towards the center.
-        self.stackViewer.moveToPixel( self.stackViewer.z, self.stackViewer.y, self.stackViewer.x, val );
+        self.stackViewer.moveToPixel( self.stackViewer.z, self.stackViewer.y, self.stackViewer.x, val, callback );
       }
     };
 
@@ -296,7 +302,7 @@
      * change the scale, making sure that the point keep_[xyz] stays in
      * the same position in the view
      */
-    this.scalePreservingLastPosition = function (keep_x, keep_y, sp) {
+    this.scalePreservingLastPosition = function (keep_x, keep_y, sp, callback) {
       var old_s = self.stackViewer.s;
       var s_extents = self.stackViewer.getZoomExtents();
       var new_s = Math.max(s_extents.min, Math.min(s_extents.max, sp));
@@ -311,7 +317,14 @@
       var new_centre_x = keep_x - dx * scale_ratio;
       var new_centre_y = keep_y - dy * scale_ratio;
 
-      self.stackViewer.moveToPixel(self.stackViewer.z, new_centre_y, new_centre_x, sp);
+      self.stackViewer.moveToPixel(self.stackViewer.z, new_centre_y, new_centre_x, sp, callback);
+    };
+
+    var smoothChangeScale = function (e, max_fps, step) {
+      animateChange(e, max_fps, 'scale', function (callback) {
+        var val = self.slider_s.val + step;
+        self.changeScale(val, callback);
+      });
     };
 
     //--------------------------------------------------------------------------
@@ -350,23 +363,31 @@
     var actions = [
 
       new CATMAID.Action({
-        helpText: "Zoom in (smaller increments with <kbd>Shift</kbd> held)",
+        helpText: "Zoom in (smaller increments with <kbd>Shift</kbd> held; hold with <kbd>Ctrl</kbd> to animate)",
         keyShortcuts: {
-          '+': [ '+', '=', 'Shift + +' ]
+          '+': [ '+', '=', 'Ctrl + =', 'Ctrl + Shift + =', 'Shift + +' ]
         },
         run: function (e) {
-          self.slider_s.move(1, !e.shiftKey);
+          if (e.ctrlKey) {
+            smoothChangeScale(e, Navigator.Settings.session.max_fps, e.shiftKey ? -0.01 : -0.05);
+          } else {
+            self.slider_s.move(1, !e.shiftKey);
+          }
           return true;
         }
       }),
 
       new CATMAID.Action({
-        helpText: "Zoom out (smaller increments with <kbd>Shift</kbd> held)",
+        helpText: "Zoom out (smaller increments with <kbd>Shift</kbd> held; hold with <kbd>Ctrl</kbd> to animate)",
         keyShortcuts: {
-          '-': [ '-', 'Shift + -' ]
+          '-': [ '-', 'Ctrl + -', 'Ctrl + Shift + -', 'Shift + -' ]
         },
         run: function (e) {
-          self.slider_s.move(-1, !e.shiftKey);
+          if (e.ctrlKey) {
+            smoothChangeScale(e, Navigator.Settings.session.max_fps, e.shiftKey ? 0.01 : 0.05);
+          } else {
+            self.slider_s.move(-1, !e.shiftKey);
+          }
           return true;
         }
       }),
@@ -379,7 +400,7 @@
         run: function (e) {
           var step = e.shiftKey ? (-1 * Navigator.Settings.session.major_section_step) : -1;
           if (Navigator.Settings.session.animate_section_change ? !e.ctrlKey : e.ctrlKey) {
-            smoothChangeSlice(e, step, Navigator.Settings.session.max_fps);
+            smoothChangeSlice(e, Navigator.Settings.session.max_fps, step);
           } else {
             self.slider_z.move(step);
           }
@@ -395,7 +416,7 @@
         run: function (e) {
           var step = e.shiftKey ? Navigator.Settings.session.major_section_step : 1;
           if (Navigator.Settings.session.animate_section_change ? !e.ctrlKey : e.ctrlKey) {
-            smoothChangeSlice(e, step, Navigator.Settings.session.max_fps);
+            smoothChangeSlice(e, Navigator.Settings.session.max_fps, step);
           } else {
             self.slider_z.move(step);
           }

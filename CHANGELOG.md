@@ -33,6 +33,8 @@ Miscellaneous:
 
 ### Bug fixes
 
+- 3D viewer: loading a single node skeleton with smoothing enabled no longer
+  causes an error.
 
 
 ## 2018.07.19

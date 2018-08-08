@@ -7150,8 +7150,17 @@
 
     // Special case, if there is only a single node
     if (nodes.length === 1) {
-      var nodeId = nodes[0][0];
-      edgeGeometry.vertices.push(vs[nodeId]);
+      var node = nodes[0];
+      var metaData = {
+        'node_id': node[0],
+        'parent_id': node[1],
+        'user_id': node[2],
+        'x': node[3],
+        'y': node[4],
+        'z': node[5],
+      };
+      edgeGeometry.vertices.push(vs[node[0]]);
+      nodeMetaData.push(metaData, metaData);
     }
 
     if (options.smooth_skeletons) {

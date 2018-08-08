@@ -31,17 +31,3 @@ def relative(*path_components):
     base = os.path.abspath(os.path.dirname(__file__))
     all_parts = [base] + list(path_components)
     return os.path.realpath(os.path.join(*all_parts))
-
-def mkdir_p(path):
-    """
-    Create a directory hierarchy (like mkdir -p).
-    From: http://stackoverflow.com/q/600268/223092
-
-    """
-    try:
-        os.makedirs(path)
-    except OSError as exc:
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else:
-            raise

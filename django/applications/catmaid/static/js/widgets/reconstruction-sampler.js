@@ -1844,7 +1844,8 @@
                 intervalLength + "nm each, " + intervalConfiguration.addedNodes.length +
                 " new nodes are created to match intervals",
             showControlPanel: false,
-            shadingMethod: colorMethod,
+            colorMethod: colorMethod,
+            shadingMethod: 'sampler-domain',
             extraControls: [
               {
                 type: 'checkbox',

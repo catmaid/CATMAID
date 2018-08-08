@@ -52,7 +52,7 @@
    * The passed in interval map will be update with nodes from the arbor that
    * are covered by the passed in interval list.
    */
-  Sampling.updateIntervalMap = function(arbor, intervals, targetEdgeMap) {
+  Sampling.updateIntervalMap = function(arbor, intervals, targetEdgeMap, domainStartId) {
     for (var i=0, imax=intervals.length; i<imax; ++i) {
       let interval = intervals[i];
       let intervalId = interval[0];
@@ -65,7 +65,11 @@
         targetEdgeMap[currentNodeId] = intervalId;
         currentNodeId = arbor.edges[currentNodeId];
         if (currentNodeId == startNodeId) {
-          targetEdgeMap[startNodeId] = interval[0];
+          // Don't set the start node of an interval explicitly. Start nodes are
+          // either the end of another interval or the domain start.
+          if (currentNodeId == domainStartId || !targetEdgeMap[currentNodeId]) {
+            targetEdgeMap[currentNodeId] = intervalId;
+          }
           break;
         }
         if (!currentNodeId) {
@@ -106,7 +110,7 @@
    */
   Sampling.intervalsFromModels = function(arbor, positions, domainDetails,
       intervalLength, intervalError, preferSmallerError, createNewNodes,
-      leafHandling, updateArborData, targetEdgeMap, nodeBlacklist) {
+      leafHandling, updateArborData, targetEdgeMap, nodeBlacklist, mergeLimit) {
     if (!intervalLength) {
       throw new CATMAID.ValueError("Need interval length for interval creation");
     }
@@ -172,8 +176,9 @@
           // segment handling strategies.
           } else if (j === 0) {
             let isFirstInterval = intervalStartIdx === (partition.length - 1);
-            let canBeMerged = leafHandling === 'merge' ||
-                leafHandling === 'merge-or-create';
+            let fragmentLengthRatio = dist / intervalLength;
+            let canBeMerged = fragmentLengthRatio <= mergeLimit &&
+                (leafHandling === 'merge' || leafHandling === 'merge-or-create');
             if (canBeMerged && !isFirstInterval) {
               // Add the collected nodes of the current interval to the last
               // interval. This only is allowed if this interval isn't the first
@@ -371,7 +376,8 @@
     return sampler.domains.reduce(function(o, d) {
       var intervalConfiguration = Sampling.intervalsFromModels(arbor, positions,
           d, sampler.interval_length, sampler.interval_error, preferSmallerError,
-          createNewNodes, sampler.leaf_segment_handling, updateArborData, target);
+          createNewNodes, sampler.leaf_segment_handling, updateArborData, target,
+          sampler.merge_limit);
       o[d.id] = intervalConfiguration.intervals;
       return o;
     }, {});

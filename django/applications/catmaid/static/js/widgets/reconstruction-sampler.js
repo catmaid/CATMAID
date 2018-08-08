@@ -16,6 +16,7 @@
    */
   var ReconstructionSampler = function() {
     this.widgetID = this.registerInstance();
+    this.idPrefix = "reconstruction-sampler-" + this.widgetID;
 
     this.workflow = new CATMAID.Workflow({
       steps: [
@@ -56,10 +57,26 @@
       'interpolatableY': get(state.interpolatableY, project.interpolatableSections.y),
       'interpolatableZ': get(state.interpolatableZ, project.interpolatableSections.z),
       'binaryIntervalColors': get(state.binaryIntervalColors, true),
-      'leafHandling': get(state.leafHandling, 'ignore'),
+      'leafHandling': get(state.leafHandling, 'merge-or-create'),
+      'mergeLimit': get(state.mergeLimit, 0.2),
     };
     this.workflow.setState(this.state);
     this.workflow.selectStep(0);
+  };
+
+  /**
+   * Init state based on the current sampler user interface controls.
+   */
+  ReconstructionSampler.prototype.initFromUI = function() {
+    let state = {
+      'intervalLength': Number(document.getElementById(this.idPrefix + '-interval-length').value),
+      'intervalError': Number(document.getElementById(this.idPrefix + '-max-error').value),
+      'createIntervalBoundingNodes': document.getElementById(this.idPrefix + '-create-bounding-nodes').checked,
+      'reviewRequired': document.getElementById(this.idPrefix + '-review-required').checked,
+      'leafHandling': document.getElementById(this.idPrefix + '-leaf-handling').value,
+      'mergeLimit': Number(document.getElementById(this.idPrefix + '-merge-limit').value) / 100.0,
+    };
+    this.init(state);
   };
 
   ReconstructionSampler.prototype.setFromSampler = function(sampler) {
@@ -70,6 +87,7 @@
     this.state['createIntervalBoundingNodes'] = sampler['create_interval_boundaries'];
     this.state['reviewRequired'] = sampler['review_required'];
     this.state['leafHandling'] = sampler['leaf_segment_handling'];
+    this.state['mergeLimit'] = sampler['merge_limit'];
   };
 
   ReconstructionSampler.prototype.destroy = function() {
@@ -214,6 +232,20 @@
 
   BackboneWorkflowStep.prototype.createControls = function(widget) {
     var self = this;
+
+    var mergeLimitDisabled = widget.state['mergeLimit'] !== 'merge-or-create' &&
+        widget.state['mergeLimit'] !== 'merge';
+    var mocMergeLimit = CATMAID.DOM.createNumericField(undefined, 'Merge limit (%)',
+        'When the "Merge or create" or "Merge" leaf handling mode is selected, this ' +
+        'value can be used to limit to what percentage of the interval ' +
+        'length should be merged. A value of zero or 100 disables the limit ' +
+        'effectively.', Number(100 * widget.state['mergeLimit']).toFixed(0),
+        undefined, function() {
+          widget.state['mergeLimit'] = Number(this.value) / 100.0;
+        }, 4, mergeLimitDisabled, false, 1, 0, 100);
+    var mocMergeLimitInput = mocMergeLimit.querySelector('input');
+    mocMergeLimitInput.setAttribute('id', widget.idPrefix + '-merge-limit');
+
     return [
       {
         type: 'button',
@@ -221,7 +253,7 @@
         onclick: function() {
           var skeletonId = SkeletonAnnotations.getActiveSkeletonId();
           if (skeletonId) {
-            widget.init(widget.state);
+            widget.initFromUI();
             widget.state['skeletonId'] = skeletonId;
             widget.update();
           } else {
@@ -233,12 +265,13 @@
         type: 'button',
         label: 'New session',
         onclick: function() {
-          widget.init(widget.state);
+          widget.initFromUI();
           widget.update();
           CATMAID.msg("Info", "Stared new sampler session");
         }
       },
       {
+        id: widget.idPrefix + '-interval-length',
         type: 'numeric',
         label: 'Interval length (nm)',
         title: 'Default length of intervals created in domains of this sampler',
@@ -249,6 +282,7 @@
         }
       },
       {
+        id: widget.idPrefix + '-max-error',
         type: 'numeric',
         label: 'Max error (nm)',
         title: 'If the interval error with existing nodes is bigger than this value and ' +
@@ -260,6 +294,7 @@
         }
       },
       {
+        id: widget.idPrefix + '-create-bounding-nodes',
         type: 'checkbox',
         label: 'Create bounding nodes',
         title: 'To match the interval length exactly, missing nodes can be created at respective locations.',
@@ -269,6 +304,7 @@
         }
       },
       {
+        id: widget.idPrefix + '-review-required',
         type: 'checkbox',
         label: 'Review required',
         title: 'Whether domains and intervals can only be completed if they are reviewed completely',
@@ -374,6 +410,7 @@
         }
       },
       {
+        id: widget.idPrefix + '-leaf-handling',
         type: 'select',
         label: 'Leaf handling',
         title: 'Select how leaf segments should be handled',
@@ -393,7 +430,13 @@
         }],
         onchange: function() {
           widget.state['leafHandling'] = this.value;
+          mocMergeLimitInput.disabled = this.value !== 'merge-or-create' &&
+              this.value !== 'merge';
         }
+      },
+      {
+        type: 'child',
+        element: mocMergeLimit
       },
       {
         type: 'button',
@@ -547,6 +590,20 @@
         {data: "interval_error", title: "Max error", orderable: true, class: 'cm-center'},
         {data: "leaf_segment_handling", title: "Leaf handling", orderable: true, class: 'cm-center'},
         {
+          data: "merge_limit",
+          title: "Merge limit",
+          orderable: true,
+          class: "cm-center",
+          render: function(data, type, row, meta) {
+            if (row.leaf_segment_handling === 'merge-or-create' ||
+                row.leaf_segment_handling === 'merge') {
+              return Number(row.merge_limit).toFixed(2);
+            } else {
+              return '-';
+            }
+          }
+        },
+        {
           data: "create_interval_boundaries",
           title: "Create interval boundaries",
           orderable: true,
@@ -677,6 +734,11 @@
       CATMAID.warn("No valid leaf handling option found");
       return;
     }
+    var mergeLimit = widget.state['mergeLimit'];
+    if (!mergeLimit && mergeLimit != 0.0) {
+      CATMAID.warn("No valid merge limit option found");
+      return;
+    }
 
     var arbor = widget.state['arbor'];
     // Get arbor if not already cached
@@ -717,6 +779,7 @@
             interval_length: intervalLength,
             interval_error: intervalError,
             leaf_segment_handling: leafHandling,
+            merge_limit: mergeLimit,
             domains: [fakeDomain]
           };
           let preferSmallerError = true;
@@ -735,7 +798,7 @@
           let intervalConfiguration = CATMAID.Sampling.intervalsFromModels(
             workParser.arbor, workParser.positions, fakeDomain, intervalLength,
             intervalError, preferSmallerError, createIntervalBoundingNodes,
-            leafHandling, true);
+            leafHandling, true, undefined, undefined, mergeLimit);
           let intervals = intervalConfiguration.intervals;
 
           // Show 3D viewer confirmation dialog
@@ -749,7 +812,8 @@
                 dialog.close();
               }
             },
-            shadingMethod: colorMethod,
+            colorMethod: colorMethod,
+            shadingMethod: 'sampler-domain',
             extraControls: [
               {
                 type: 'checkbox',
@@ -793,7 +857,7 @@
 
             // Set new shading and coloring methods
             glWidget.options.color_method = colorMethod;
-            glWidget.options.shading_method = 'sampler-intervals';
+            glWidget.options.shading_method = 'none';
             glWidget.options.interpolate_vertex_colots = false;
 
             // Look at center of mass of skeleton and update screen
@@ -838,6 +902,11 @@
       CATMAID.warn("Can't create sampler without leafHandling parameter");
       return;
     }
+    var mergeLimit = widget.state['mergeLimit'];
+    if (undefined === mergeLimit) {
+      CATMAID.warn("Can't create sampler without mergeLimit parameter");
+      return;
+    }
     CATMAID.fetch(project.id + '/samplers/add', 'POST', {
       skeleton_id: skeletonId,
       interval_length: intervalLength,
@@ -845,6 +914,7 @@
       create_interval_boundaries: createIntervalBoundingNodes,
       review_required: reviewRequired,
       leaf_segment_handling: leafHandling,
+      merge_limit: mergeLimit,
     }).then(function(result) {
       // TODO: Should probably go to next step immediately
       widget.update();
@@ -1300,7 +1370,7 @@
 
             // Set new shading and coloring methods
             widget.options.color_method = 'sampler-domains';
-            widget.options.shading_method = 'sampler-domains';
+            widget.options.shading_method = 'none';
             widget.options.interpolate_vertex_colots = false;
             widget.updateSkeletonColors()
               .then(function() { widget.render(); });
@@ -1395,6 +1465,7 @@
     var skeletonId = widget.state['skeletonId'];
     var domain = widget.state['domain'];
     var domainLength = widget.state['domainLength'];
+    var leafHandling = widget.state['leafHandling'];
 
     var p = content.appendChild(document.createElement('p'));
     p.appendChild(document.createTextNode('Each domain is sampled by intervals ' +
@@ -1420,7 +1491,17 @@
     var completedIntervalCable = '...';
     p3.appendChild(document.createTextNode(', Sampler: #' + samplerId +
         ', Domain: #' + domain.id + ', Interval length: ' + intervalLength +
-        'nm, Completed interval cable: '));
+        'nm, Leaf handling: ' + leafHandling));
+    p3.appendChild(document.createElement('br'));
+    p3.appendChild(document.createTextNode('Total interval cable: '));
+    var totalIntervalSpan = p3.appendChild(document.createElement('span'));
+    totalIntervalSpan.setAttribute('data-type', 'total-sum');
+    totalIntervalSpan.appendChild(document.createTextNode('...'));
+    p3.appendChild(document.createTextNode(' / '));
+    var totalRatioSpan = p3.appendChild(document.createElement('span'));
+    totalRatioSpan.setAttribute('data-type', 'total-ratio');
+    totalRatioSpan.appendChild(document.createTextNode('...'));
+    p3.appendChild(document.createTextNode(', Completed interval cable: '));
     var completedIntervalSpan = p3.appendChild(document.createElement('span'));
     completedIntervalSpan.setAttribute('data-type', 'completed-sum');
     completedIntervalSpan.appendChild(document.createTextNode('...'));
@@ -1468,20 +1549,29 @@
                 // Update cable length map and find completed sum
                 cableMap.clear();
                 var completedSum = 0;
+                var totalSum = 0;
                 for (let i=0; i<result.length; ++i) {
                   let interval = result[i];
                   let arbor = widget.state['arbor'];
                   let intervalLength = arbor.arbor.cableLengthBetweenNodes(arbor.positions,
                     interval.start_node_id, interval.end_node_id, true);
                   cableMap.set(interval.id, intervalLength);
+                  totalSum += intervalLength;
                   if (interval.state_id === completedStateId) {
                     completedSum += intervalLength;
                   }
                 }
 
+                var totalRatio = 100.0 * totalSum / domainLength;
                 var completedRatio = 100.0 * completedSum / domainLength;
 
                 // Update interval length span elements
+                $(totalIntervalSpan).empty();
+                totalIntervalSpan.appendChild(document.createTextNode(
+                    Math.round(totalSum) + 'nm'));
+                $(totalRatioSpan).empty();
+                totalRatioSpan.appendChild(document.createTextNode(
+                    Number(totalRatio).toFixed(2) + '%'));
                 $(completedIntervalSpan).empty();
                 completedIntervalSpan.appendChild(document.createTextNode(
                     Math.round(completedSum) + 'nm'));
@@ -1710,6 +1800,11 @@
       CATMAID.warn("No valid leaf handling parameter found");
       return;
     }
+    var mergeLimit = widget.state['mergeLimit'];
+    if (!mergeLimit && mergeLimit != 0.0) {
+      CATMAID.warn("No valid merge limit parameter found");
+      return;
+    }
 
     var arbor = widget.state['arbor'];
     // Get arbor if not already cached
@@ -1756,7 +1851,8 @@
         return CATMAID.Sampling.intervalsFromModels(workParser.arbor,
             workParser.positions, domainDetails, intervalLength,
             intervalError, preferSmallerError,
-            createIntervalBoundingNodes, leafHandling, true, false, interpolatedNodes);
+            createIntervalBoundingNodes, leafHandling, true, false,
+            interpolatedNodes, mergeLimit);
       })
       .then(function(intervalConfiguration) {
         return new Promise(function(resolve, reject) {
@@ -1770,7 +1866,8 @@
                 intervalLength + "nm each, " + intervalConfiguration.addedNodes.length +
                 " new nodes are created to match intervals",
             showControlPanel: false,
-            shadingMethod: colorMethod,
+            colorMethod: colorMethod,
+            shadingMethod: 'sampler-domain',
             extraControls: [
               {
                 type: 'checkbox',
@@ -1823,7 +1920,7 @@
           glWidget.addSkeletons(models, function() {
             // Set new shading and coloring methods
             glWidget.options.color_method = colorMethod;
-            glWidget.options.shading_method = 'sampler-domains';
+            glWidget.options.shading_method = 'none';
             glWidget.options.interpolate_vertex_colots = false;
 
             // Make sure only the active domain is visible

@@ -345,7 +345,7 @@
         CATMAID.annotations.add_autocomplete_to_input(
             $("#selection-table-ann-filter" + this.widgetID));
         this.init();
-        win.focus();
+        this.focus();
       },
       helpText: [
         '<p>This table allows to manipulate skeletons in batches. Skeletons ',

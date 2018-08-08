@@ -521,10 +521,10 @@
             // any collissions.
             return [-1 * i, parseInt(ai[0], 10), parseInt(ai[1], 10), null];
           });
-          CATMAID.Sampling.updateIntervalMap(arbor, mockIntervals, intervalMap);
+          CATMAID.Sampling.updateIntervalMap(arbor, mockIntervals, intervalMap, domain.start_node_id);
         } else if (intervalMap) {
           // Update interval map with existing intervals
-          CATMAID.Sampling.updateIntervalMap(arbor, domain.intervals, intervalMap);
+          CATMAID.Sampling.updateIntervalMap(arbor, domain.intervals, intervalMap, domain.start_node_id);
         }
       }
     }

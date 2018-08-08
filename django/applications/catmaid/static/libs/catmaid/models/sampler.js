@@ -52,7 +52,7 @@
    * The passed in interval map will be update with nodes from the arbor that
    * are covered by the passed in interval list.
    */
-  Sampling.updateIntervalMap = function(arbor, intervals, targetEdgeMap) {
+  Sampling.updateIntervalMap = function(arbor, intervals, targetEdgeMap, domainStartId) {
     for (var i=0, imax=intervals.length; i<imax; ++i) {
       let interval = intervals[i];
       let intervalId = interval[0];
@@ -67,6 +67,9 @@
         if (currentNodeId == startNodeId) {
           // Don't set the start node of an interval explicitly. Start nodes are
           // either the end of another interval or the domain start.
+          if (currentNodeId == domainStartId) {
+            targetEdgeMap[currentNodeId] = intervalId;
+          }
           break;
         }
         if (!currentNodeId) {

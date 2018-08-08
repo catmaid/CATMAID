@@ -1443,6 +1443,7 @@
     var skeletonId = widget.state['skeletonId'];
     var domain = widget.state['domain'];
     var domainLength = widget.state['domainLength'];
+    var leafHandling = widget.state['leafHandling'];
 
     var p = content.appendChild(document.createElement('p'));
     p.appendChild(document.createTextNode('Each domain is sampled by intervals ' +
@@ -1468,7 +1469,17 @@
     var completedIntervalCable = '...';
     p3.appendChild(document.createTextNode(', Sampler: #' + samplerId +
         ', Domain: #' + domain.id + ', Interval length: ' + intervalLength +
-        'nm, Completed interval cable: '));
+        'nm, Leaf handling: ' + leafHandling));
+    p3.appendChild(document.createElement('br'));
+    p3.appendChild(document.createTextNode('Total interval cable: '));
+    var totalIntervalSpan = p3.appendChild(document.createElement('span'));
+    totalIntervalSpan.setAttribute('data-type', 'total-sum');
+    totalIntervalSpan.appendChild(document.createTextNode('...'));
+    p3.appendChild(document.createTextNode(' / '));
+    var totalRatioSpan = p3.appendChild(document.createElement('span'));
+    totalRatioSpan.setAttribute('data-type', 'total-ratio');
+    totalRatioSpan.appendChild(document.createTextNode('...'));
+    p3.appendChild(document.createTextNode(', Completed interval cable: '));
     var completedIntervalSpan = p3.appendChild(document.createElement('span'));
     completedIntervalSpan.setAttribute('data-type', 'completed-sum');
     completedIntervalSpan.appendChild(document.createTextNode('...'));
@@ -1516,20 +1527,29 @@
                 // Update cable length map and find completed sum
                 cableMap.clear();
                 var completedSum = 0;
+                var totalSum = 0;
                 for (let i=0; i<result.length; ++i) {
                   let interval = result[i];
                   let arbor = widget.state['arbor'];
                   let intervalLength = arbor.arbor.cableLengthBetweenNodes(arbor.positions,
                     interval.start_node_id, interval.end_node_id, true);
                   cableMap.set(interval.id, intervalLength);
+                  totalSum += intervalLength;
                   if (interval.state_id === completedStateId) {
                     completedSum += intervalLength;
                   }
                 }
 
+                var totalRatio = 100.0 * totalSum / domainLength;
                 var completedRatio = 100.0 * completedSum / domainLength;
 
                 // Update interval length span elements
+                $(totalIntervalSpan).empty();
+                totalIntervalSpan.appendChild(document.createTextNode(
+                    Math.round(totalSum) + 'nm'));
+                $(totalRatioSpan).empty();
+                totalRatioSpan.appendChild(document.createTextNode(
+                    Number(totalRatio).toFixed(2) + '%'));
                 $(completedIntervalSpan).empty();
                 completedIntervalSpan.appendChild(document.createTextNode(
                     Math.round(completedSum) + 'nm'));

@@ -16,6 +16,7 @@
    */
   var ReconstructionSampler = function() {
     this.widgetID = this.registerInstance();
+    this.idPrefix = "reconstruction-sampler-" + this.widgetID;
 
     this.workflow = new CATMAID.Workflow({
       steps: [
@@ -61,6 +62,21 @@
     };
     this.workflow.setState(this.state);
     this.workflow.selectStep(0);
+  };
+
+  /**
+   * Init state based on the current sampler user interface controls.
+   */
+  ReconstructionSampler.prototype.initFromUI = function() {
+    let state = {
+      'intervalLength': Number(document.getElementById(this.idPrefix + '-interval-length').value),
+      'intervalError': Number(document.getElementById(this.idPrefix + '-max-error').value),
+      'createIntervalBoundingNodes': document.getElementById(this.idPrefix + '-create-bounding-nodes').checked,
+      'reviewRequired': document.getElementById(this.idPrefix + '-review-required').checked,
+      'leafHandling': document.getElementById(this.idPrefix + '-leaf-handling').value,
+      'mergeLimit': Number(document.getElementById(this.idPrefix + '-merge-limit').value) / 100.0,
+    };
+    this.init(state);
   };
 
   ReconstructionSampler.prototype.setFromSampler = function(sampler) {
@@ -228,6 +244,7 @@
           widget.state['mergeLimit'] = Number(this.value) / 100.0;
         }, 4, mergeLimitDisabled, false, 1, 0, 100);
     var mocMergeLimitInput = mocMergeLimit.querySelector('input');
+    mocMergeLimitInput.setAttribute('id', widget.idPrefix + '-merge-limit');
 
     return [
       {
@@ -236,7 +253,7 @@
         onclick: function() {
           var skeletonId = SkeletonAnnotations.getActiveSkeletonId();
           if (skeletonId) {
-            widget.init(widget.state);
+            widget.initFromUI();
             widget.state['skeletonId'] = skeletonId;
             widget.update();
           } else {
@@ -248,12 +265,13 @@
         type: 'button',
         label: 'New session',
         onclick: function() {
-          widget.init(widget.state);
+          widget.initFromUI();
           widget.update();
           CATMAID.msg("Info", "Stared new sampler session");
         }
       },
       {
+        id: widget.idPrefix + '-interval-length',
         type: 'numeric',
         label: 'Interval length (nm)',
         title: 'Default length of intervals created in domains of this sampler',
@@ -264,6 +282,7 @@
         }
       },
       {
+        id: widget.idPrefix + '-max-error',
         type: 'numeric',
         label: 'Max error (nm)',
         title: 'If the interval error with existing nodes is bigger than this value and ' +
@@ -275,6 +294,7 @@
         }
       },
       {
+        id: widget.idPrefix + '-create-bounding-nodes',
         type: 'checkbox',
         label: 'Create bounding nodes',
         title: 'To match the interval length exactly, missing nodes can be created at respective locations.',
@@ -284,6 +304,7 @@
         }
       },
       {
+        id: widget.idPrefix + '-review-required',
         type: 'checkbox',
         label: 'Review required',
         title: 'Whether domains and intervals can only be completed if they are reviewed completely',
@@ -389,6 +410,7 @@
         }
       },
       {
+        id: widget.idPrefix + '-leaf-handling',
         type: 'select',
         label: 'Leaf handling',
         title: 'Select how leaf segments should be handled',

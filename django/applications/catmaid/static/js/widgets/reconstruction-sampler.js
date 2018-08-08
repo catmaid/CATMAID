@@ -536,7 +536,7 @@
         {
           data: "id",
           title: "Id",
-          orderable: false,
+          orderable: true,
           class: "cm-center",
           render: function(data, type, row, meta) {
             return row.id;
@@ -735,7 +735,7 @@
       return;
     }
     var mergeLimit = widget.state['mergeLimit'];
-    if (!mergeLimit && mergeLimit != 0.0) {
+    if (!mergeLimit && mergeLimit !== 0.0) {
       CATMAID.warn("No valid merge limit option found");
       return;
     }
@@ -1085,7 +1085,7 @@
         {
           data: "id",
           title: "Id",
-          orderable: false,
+          orderable: true,
           class: "cm-center",
           render: function(data, type, row, meta) {
             return row.id;
@@ -1591,7 +1591,7 @@
         {
           data: "id",
           title: "Id",
-          orderable: false,
+          orderable: true,
           class: "cm-center",
           render: function(data, type, row, meta) {
             return row.id;
@@ -1801,7 +1801,7 @@
       return;
     }
     var mergeLimit = widget.state['mergeLimit'];
-    if (!mergeLimit && mergeLimit != 0.0) {
+    if (!mergeLimit && mergeLimit !== 0.0) {
       CATMAID.warn("No valid merge limit parameter found");
       return;
     }
@@ -2317,7 +2317,7 @@
         {
           data: "id",
           title: "Connector",
-          orderable: false,
+          orderable: true,
           class: "cm-center",
           render: function(data, type, row, meta) {
             if (type === "display") {
@@ -2787,7 +2787,7 @@
         {
           data: "skeleton_id",
           title: "Skeleton",
-          orderable: false,
+          orderable: true,
           class: "cm-center",
           render: function(data, type, row, meta) {
             if (type === "display") {

@@ -503,7 +503,14 @@
       var nDomains = domains.length;
       for (var j=0; j<nDomains; ++j) {
         // Get intervals for domain
-        var domain = domains[j];
+        let domain = domains[j];
+
+        // Skip this domain if the user set 'allowed_sampler_domains'
+        if (options.viewerOptions.allowed_sampler_domains &&
+            !options.viewerOptions.allowed_sampler_domains.has(domain.id)) {
+          continue;
+        }
+
         if (!domain.intervals || domain.intervals.length === 0) {
           let addedIntervals = CATMAID.Sampling.intervalsFromModels(
               arbor, positions, domain, sampler.interval_length,
@@ -552,6 +559,14 @@
         let domains = sampler.domains;
         let nDomains = domains.length;
         for (var j=0; j<nDomains; ++j) {
+          let domain = domains[j];
+
+          // Skip this domain if the user set 'allowed_sampler_domains'
+          if (options.viewerOptions.allowed_sampler_domains &&
+              !options.viewerOptions.allowed_sampler_domains.has(domain.id)) {
+            continue;
+          }
+
           // Get domain arbor
           let domainArbor = CATMAID.Sampling.domainArborFromModel(arbor, domain);
           let successors = domainArbor.allSuccessors();
@@ -1134,6 +1149,7 @@
             yOffset: options.yOffset,
             zDim: options.zDim,
             zOffset: options.zOffset,
+            viewerOptions: options
           });
         } else {
           return function(vertex) {

@@ -835,7 +835,7 @@
 
             // Set new shading and coloring methods
             glWidget.options.color_method = colorMethod;
-            glWidget.options.shading_method = 'sampler-domain';
+            glWidget.options.shading_method = 'none';
             glWidget.options.interpolate_vertex_colots = false;
 
             // Look at center of mass of skeleton and update screen
@@ -1348,7 +1348,7 @@
 
             // Set new shading and coloring methods
             widget.options.color_method = 'sampler-domains';
-            widget.options.shading_method = 'sampler-domains';
+            widget.options.shading_method = 'none';
             widget.options.interpolate_vertex_colots = false;
             widget.updateSkeletonColors()
               .then(function() { widget.render(); });
@@ -1898,7 +1898,7 @@
           glWidget.addSkeletons(models, function() {
             // Set new shading and coloring methods
             glWidget.options.color_method = colorMethod;
-            glWidget.options.shading_method = 'sampler-domains';
+            glWidget.options.shading_method = 'none';
             glWidget.options.interpolate_vertex_colots = false;
 
             // Make sure only the active domain is visible

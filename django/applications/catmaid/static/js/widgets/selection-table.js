@@ -535,7 +535,7 @@
   };
 
   /** Static access to the first selection table found. */
-  SelectionTable.prototype.getOrCreate = function() {
+  SelectionTable.getOrCreate = function() {
     var selection = SelectionTable.prototype.getFirstInstance();
     if (!selection) WindowMaker.create('selection-table');
     return SelectionTable.prototype.getFirstInstance();
@@ -547,7 +547,7 @@
 
   SelectionTable.getLastFocused = function () {
     if (SelectionTable._lastFocused === null)
-      SelectionTable._lastFocused = SelectionTable.prototype.getOrCreate();
+      SelectionTable._lastFocused = SelectionTable.getOrCreate();
 
     return SelectionTable._lastFocused;
   };

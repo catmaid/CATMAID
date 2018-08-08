@@ -9,7 +9,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 # instance, make sure we install the upstream version to match the manual (and
 # make building images on top of this one easier).
 RUN apt-get update -y \
-    && apt-get install -y apt-utils \
+    && apt-get install -y apt-utils gawk \
     && apt-get install -y software-properties-common \
     && add-apt-repository ppa:deadsnakes/ppa \
     && add-apt-repository -y ppa:nginx/stable \
@@ -51,6 +51,11 @@ RUN mkdir /etc/ssl/private-copy; \
     mv /etc/ssl/private-copy /etc/ssl/private; \
     chmod -R 0700 /etc/ssl/private; \
     chown -R postgres /etc/ssl/private
+
+# Add Git commit build information to container
+COPY .git/HEAD /home/.git/HEAD
+COPY .git/refs /home/.git/refs
+RUN cat /home/.git/$(cat /home/.git/HEAD | awk '{print $2}') > /home/git-commit
 
 ENTRYPOINT ["/home/scripts/docker/catmaid-entry.sh"]
 

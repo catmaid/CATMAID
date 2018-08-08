@@ -44,6 +44,13 @@ init_catmaid () {
   # Wait to avoid "panic: Failed to open sql connection pq: the database system is starting up"
   sleep 1
 
+  if [ -f "/git-commit" ]; then
+    CM_VERSION=$(cat /git-commit);
+    echo "CATMAID Git commit: ${CM_VERSION}"
+  else
+    echo "No detailed CATMAID version information found"
+  fi
+
   echo "Loading virtualenv"
   source /usr/share/virtualenvwrapper/virtualenvwrapper.sh
   workon catmaid

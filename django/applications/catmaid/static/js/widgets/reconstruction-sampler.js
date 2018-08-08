@@ -220,7 +220,7 @@
     var mergeLimitDisabled = widget.state['mergeLimit'] !== 'merge-or-create' &&
         widget.state['mergeLimit'] !== 'merge';
     var mocMergeLimit = CATMAID.DOM.createNumericField(undefined, 'Merge limit (%)',
-        'When the "Merge or create" or "Merge leaf handling mode is selected, this ' +
+        'When the "Merge or create" or "Merge" leaf handling mode is selected, this ' +
         'value can be used to limit to what percentage of the interval ' +
         'length should be merged. A value of zero or 100 disables the limit ' +
         'effectively.', Number(100 * widget.state['mergeLimit']).toFixed(0),

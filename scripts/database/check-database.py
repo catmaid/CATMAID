@@ -16,8 +16,6 @@
 # username: catmaid_user
 # password: password_of_your_catmaid_user
 
-from __future__ import print_function, unicode_literals
-
 import sys, os
 from common import db_connection
 from subprocess import check_call

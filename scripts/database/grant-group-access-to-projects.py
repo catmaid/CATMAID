@@ -16,8 +16,6 @@
 # password: password_of_your_catmaid_user
 #
 # -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals
-
 import sys
 import psycopg2
 import os

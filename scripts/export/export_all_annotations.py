@@ -6,7 +6,6 @@
 # [2] project_id = 12
 # [3] export(project_id, "all", "all")
 
-from __future__ import with_statement
 from django.db import connection
 from django.db import transaction
 import gzip

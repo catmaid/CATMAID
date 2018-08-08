@@ -163,11 +163,6 @@ projects once a minute, the following could be added to ``settings.py``::
     'schedule': crontab(minute='*/1')
   }
 
-Note, for this to work, make sure you have this in the first line of your
-``settings.py`` file::
-
-  from __future__ import absolute_import
-
 To specify when and how often the task should be run, ``datetime.timedelta``
 can be used as well . Other tasks can be defined in a similar fashion.
 

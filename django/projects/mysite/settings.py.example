@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 # If you don't have settings.py in this directory, you should copy
 # this file to settings.py and customize it.
 

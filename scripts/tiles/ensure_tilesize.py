@@ -9,8 +9,6 @@
 #
 # [1] http://pypi.python.org/pypi/pgmagick/
 
-from __future__ import print_function, unicode_literals
-
 import sys
 import os
 from pgmagick import Image, Geometry, Color, CompositeOperator as co

@@ -9,8 +9,6 @@
 #  * add the new "missing" layers to the broken_slice table
 #  * change the dimensions.z field of each stack in the stack
 #    table
-from __future__ import print_function, unicode_literals
-
 import glob, os, re, sys, subprocess
 
 layers_missing_z = [

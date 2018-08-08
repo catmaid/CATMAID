@@ -17,7 +17,6 @@
 # these directed edges also contain the skeleton ID of the pre- and the postsynaptic
 # skeletons.
 
-from __future__ import with_statement
 from django.db import connection
 from django.db import transaction
 import gzip

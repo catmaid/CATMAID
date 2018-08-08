@@ -7,8 +7,6 @@
 # You may need to install psycopg2, e.g. with:
 #   sudo apt-get install python-psycopg2
 
-from __future__ import print_function, unicode_literals
-
 import sys
 import psycopg2
 import os

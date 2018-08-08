@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-
-from __future__ import print_function
-
 from django.db import connection
 from collections import defaultdict
 from itertools import chain

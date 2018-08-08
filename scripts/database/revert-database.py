@@ -23,8 +23,6 @@
 # username: catmaid_user
 # password: password_of_your_catmaid_user
 
-from __future__ import print_function
-
 import sys
 import os
 from common import db_database, db_username, db_password

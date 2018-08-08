@@ -115,8 +115,7 @@
         };
         var actionaddstage = function(type) {
           return function() {
-            // Find an open Selection, or open one if none
-            var selection = CATMAID.SelectionTable.prototype.getOrCreate();
+            var selection = CATMAID.SelectionTable.getLastFocused();
             selection.addSkeletons([parseInt($(this).attr('id'))]);
             return false;
           };

@@ -563,7 +563,8 @@
             let isIntervalStart = workingSetIntervalStart.shift();
 
             let intervalId = intervalMap[currentNodeId];
-            if (intervalId === undefined || intervalId === null) {
+            if (currentNodeId != domain.start_node_id &&
+                (intervalId === undefined || intervalId === null)) {
               // This node is part of the domain, but part of no interval. This
               // can only happen at the end of branches and we don't have to
               // expect more valid intervals on this branch. Therefore, we can

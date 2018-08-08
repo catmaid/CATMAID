@@ -65,7 +65,8 @@
         targetEdgeMap[currentNodeId] = intervalId;
         currentNodeId = arbor.edges[currentNodeId];
         if (currentNodeId == startNodeId) {
-          targetEdgeMap[startNodeId] = interval[0];
+          // Don't set the start node of an interval explicitly. Start nodes are
+          // either the end of another interval or the domain start.
           break;
         }
         if (!currentNodeId) {

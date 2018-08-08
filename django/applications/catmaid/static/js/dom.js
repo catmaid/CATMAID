@@ -1321,7 +1321,9 @@
           case 'checkbox':
             return CATMAID.DOM.appendCheckbox(tab, e.label, e.title, e.value, e.onclick, e.left, e.id);
           case 'numeric':
-            return CATMAID.DOM.appendNumericField(tab, e.label, e.title, e.value, e.postlabel, e.onchange, e.length, e.placeholder);
+            return CATMAID.DOM.appendNumericField(tab, e.label, e.title,
+                e.value, e.postlabel, e.onchange, e.length, e.placeholder,
+                e.disabled, e.step, e.min, e.max, e.id);
           case 'text':
             return CATMAID.DOM.appendTextField(tab, e.id, e.label, e.title, e.value,
                 e.postlabel, e.onchange, e.length, e.placeholder, e.disabled, e.onenter);
@@ -1329,7 +1331,7 @@
             return CATMAID.DOM.appendDateField(tab, e.label, e.title, e.value,
                 e.postlabel, e.onchange, e.length, e.placeholder, e.time);
           case 'select':
-            return CATMAID.DOM.appendSelect(tab, e.id, e.label, e.entries, e.title, e.value, e.onchange);
+            return CATMAID.DOM.appendSelect(tab, e.relativeId, e.label, e.entries, e.title, e.value, e.onchange, e.id);
           case 'file':
             return CATMAID.DOM.appendFileButton(tab, e.id, e.label, e.title, e.multiple, e.onclick);
           default:
@@ -1399,8 +1401,8 @@
    * Append a new numeric input field to another element.
    */
   DOM.appendNumericField = function(div, label, title, value, postlabel,
-      onchangeFn, length, placeholder, disabled, step, min, max) {
-    var field = DOM.createNumericField(undefined, label, title, value, postlabel,
+      onchangeFn, length, placeholder, disabled, step, min, max, id) {
+    var field = DOM.createNumericField(id, label, title, value, postlabel,
         onchangeFn, length, placeholder, disabled, step, min, max);
     div.appendChild(field);
     return field;
@@ -1431,8 +1433,8 @@
   /**
    * Append a new select element to another element.
    */
-  DOM.appendSelect = function(div, id, label, entries, title, value, onChangeFn) {
-    id = id ? (div.id + '_' + id) : undefined;
+  DOM.appendSelect = function(div, relId, label, entries, title, value, onChangeFn, id) {
+    id = id ? id : (relId ?  (div.id + '_' + id) : undefined);
     var select = CATMAID.DOM.createSelect(id, entries, value);
     div.appendChild(select);
     if (title) {

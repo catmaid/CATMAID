@@ -472,7 +472,7 @@ def dailyActivePlotFigure( activebouts, ax, start_date, end_date ):
     for i in range(12):
         ax.axhline(2 * i, color='#AAAAAA', linestyle = ':')
     ax.axhspan(8,18,facecolor='#999999',alpha=0.25)
-    ax.set_yticks([0,2,4,6,8,10,12,14,16,18,20,22,24])
+    ax.set_yticks(range(0, 25, 2))
 
     # X axis: Ticks and labels for every day
     ax.xaxis.set_major_locator(DayLocator())
@@ -490,6 +490,7 @@ def dailyActivePlotFigure( activebouts, ax, start_date, end_date ):
 
     # Set Axis limits
     ax.set_ylim((0, 24))
+    ax.invert_yaxis()
     ax.set_xlim((start_date, end_date))
 
     return ax

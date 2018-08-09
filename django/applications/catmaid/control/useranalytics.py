@@ -466,8 +466,8 @@ def dailyActivePlotFigure( activebouts, ax, start_date, end_date ):
     <end_date> to the plot given by <ax>.
     """
     # Y axis: Draw a line for each two hours in a day and set ticks accordingly
-    for i in range(12):
-        ax.axhline(2 * i, color='#AAAAAA', linestyle = ':')
+    for i in range(2, 24, 2):
+        ax.axhline(i, color='#AAAAAA', linestyle = ':')
     ax.axhspan(8,18,facecolor='#999999',alpha=0.25)
     ax.set_yticks(range(0, 25, 2))
 

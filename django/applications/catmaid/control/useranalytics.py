@@ -20,15 +20,14 @@ from catmaid.models import Connector, Project, Treenode, Review, UserRole
 logger = logging.getLogger(__name__)
 
 try:
-    # Because we don't want to show generated images in a window, we can use
-    # the Agg backend. This avoids some potential threading issues.
     import matplotlib
-    matplotlib.use('Agg')
+    # Use a noninteractive backend since most CATMAID instances are headless.
+    matplotlib.use('svg')
 
     import matplotlib.pyplot as plt
     from matplotlib.dates import  DateFormatter, DayLocator
     from pylab import figure
-    from matplotlib.backends.backend_agg import FigureCanvasAgg
+    from matplotlib.backends.backend_svg import FigureCanvasSVG
 except ImportError:
     logger.warning("CATMAID was unable to laod the matplotlib module. "
         "User analytics will not be available")
@@ -69,7 +68,7 @@ class Bout(object):
 @never_cache
 @requires_user_role(UserRole.Browse)
 def plot_useranalytics(request, project_id):
-    """ Creates a PNG image containing different plots for analzing the
+    """ Creates an SVG image containing different plots for analzing the
     performance of individual users over time.
     """
     time_zone = pytz.utc
@@ -111,9 +110,11 @@ def plot_useranalytics(request, project_id):
     else:
         f = generateErrorImage('You lack permissions to view this report.')
 
-    canvas = FigureCanvasAgg( f )
-    response = HttpResponse(content_type='image/png')
-    canvas.print_png(response)
+    # Use raw text rather than SVG fonts or pathing.
+    plt.rcParams['svg.fonttype'] = 'none'
+    canvas = FigureCanvasSVG(f)
+    response = HttpResponse(content_type='image/svg+xml')
+    canvas.print_svg(response)
     return response
 
 def eventTimes(user_id, project_id, start_date, end_date, all_writes=True):
@@ -395,11 +396,7 @@ def generateReport(user_id, project_id, activeTimeThresh, start_date, end_date, 
 
     dayformat = DateFormatter('%b %d')
 
-    fig = plt.figure(figsize=(12,10))
-
-    # Restore defaults from matplotlib 1.5.3. Default dpi changed to 100 in
-    # matplotlib 2.0.0.
-    fig.dpi = 80
+    fig = plt.figure(figsize=(9.6, 8))
 
     # Top left plot: created and edited nodes per day
     ax1 = plt.subplot2grid((2,2), (0,0))
@@ -460,7 +457,7 @@ def generateReport(user_id, project_id, activeTimeThresh, start_date, end_date, 
     plt.setp(yl, fontsize=10)
     ax4.set_ylabel('Time (24 hr)')
 
-    plt.tight_layout()
+    fig.set_tight_layout(True)
 
     return fig
 

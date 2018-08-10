@@ -32,6 +32,9 @@ Miscellaneous:
 
 - The Ctrl modifier can now be used with - and + to animate zooming.
 
+- New widget: stack info, which displays properties for stacks related to the
+  active project.
+
 
 ### Bug fixes
 

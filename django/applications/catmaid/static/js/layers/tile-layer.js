@@ -858,6 +858,15 @@
         value: this.efficiencyThreshold,
         help: 'Omit tiles with less area visible than this threshold. This ' +
               'is useful to reduce data use on bandwidth-limited connections.'
+    }, {
+      name: 'stackInfo',
+      displayName: 'Stack info',
+      type: 'buttons',
+      buttons: [
+        {
+          name: 'Open',
+          onclick: (function () {WindowMaker.create('stack-info', this.stack.id);}).bind(this)
+        }]
     },{
       name: 'mirrorSelection',
       displayName: 'Stack mirror',

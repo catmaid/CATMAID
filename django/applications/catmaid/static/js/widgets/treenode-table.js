@@ -16,6 +16,7 @@
     this.oTable = null;
     this.filter_nodetype = 'L';
     this.filter_searchtag = '';
+    this.filter_nodeids = new Set();
 
     this.treenodeViewer = null;
   };
@@ -134,6 +135,8 @@
             <tbody> 
             </tbody> 
           </table>`;
+
+        $("select#" + this.idPrefix + "search-type").val(this.filter_nodetype);
       },
       init: function() {
         this.init(project.getId());
@@ -196,6 +199,7 @@
   TreenodeTable.prototype.clear = function() {
     this.models = {};
     this.ranges = {};
+    this.filter_nodeids.clear();
     this.oTable.clear();
     this.oTable.draw();
   };
@@ -370,6 +374,12 @@
           this.oTable.rows.add(all_rows);
           this.filter_nodetype = $('select#' + this.idPrefix + 'search-type').val();
           this.oTable.columns(1).search(this.filter_nodetype).draw();
+
+          if (this.filter_nodeids.size > 0) {
+            let idRegEx = '^(' + Array.from(this.filter_nodeids).join('|') + ')$';
+            this.oTable.columns(0).search(idRegEx, true, false, true).draw();
+            //this.oTable.columns(0).search('^(8995095|999)', true, false, true).draw();
+          }
         }).bind(this));
   };
 
@@ -523,6 +533,11 @@
   };
 
   TreenodeTable.prototype.updateNeuronNames = function() {};
+
+  TreenodeTable.prototype.setNodeTypeFilter = function(value) {
+    this.filter_nodetype = value;
+    $("select#" + this.idPrefix + "search-type").val(this.filter_nodetype);
+  };
 
   // Export widget
   CATMAID.TreenodeTable = TreenodeTable;

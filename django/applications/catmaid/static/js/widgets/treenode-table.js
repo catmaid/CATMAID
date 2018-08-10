@@ -300,7 +300,7 @@
     fetchSkeletons(
         skeleton_ids,
         function(skid) {
-          return CATMAID.makeURL(project.id + '/treenode/table/' + skid + '/content');
+          return CATMAID.makeURL(project.id + '/skeletons/' + skid + '/node-overview');
         },
         function(skid) { return {}; }, // post
         (function(skid, json) {
@@ -379,8 +379,11 @@
             let idRegEx = '^(' + Array.from(this.filter_nodeids).join('|') + ')$';
             this.oTable.columns(0).search(idRegEx, true, false, true).draw();
             //this.oTable.columns(0).search('^(8995095|999)', true, false, true).draw();
+          } else {
+            this.oTable.columns(0).search('').draw();
           }
-        }).bind(this));
+        }).bind(this),
+        'GET');
   };
 
   TreenodeTable.prototype.init = function() {

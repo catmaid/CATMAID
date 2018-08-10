@@ -1437,13 +1437,19 @@
       onclick: function() {
         self.ignoreCompleted = this.checked;
       }
-    },
-    {
+    }, {
       type: 'button',
       label: 'Create intervals',
       title: 'Create a new set of intervals for the current domain',
       onclick: function() {
         self.createNewIntervals(widget);
+      }
+    }, {
+      type: 'button',
+      label: 'Uncovered domain parts',
+      title: 'Show information on domain parts that are not covered by intervals.',
+      onclick: function() {
+        self.showUncoveredDomainInfo(widget);
       }
     }, {
       type: 'button',
@@ -2028,6 +2034,207 @@
         widget.update();
       });
   };
+
+  /**
+   * Compute a historgram on the length of all segments of a skeleton that part
+   * of a domain, but not part of an interval. It is assumed that the first
+   * interval starts at the domain start node.
+   */
+  IntervalWorkflowStep.prototype.showUncoveredDomainInfo = function(widget) {
+    let domainIntervals = widget.state['domainIntervals'];
+    if (!domainIntervals) {
+      CATMAID.warn("Please wait until intervals are loaded");
+      return;
+    }
+
+    let skeletonId = widget.state['skeletonId'];
+    if (!skeletonId) {
+      throw new CATMAID.ValueError("Need skeleton ID for interval review");
+    }
+    let arbor = widget.state['arbor'];
+    if (!arbor) {
+      CATMAID.warn("Need domain for synapse workflow step");
+      return;
+    }
+    let domain = widget.state['domain'];
+    if (domain === undefined) {
+      CATMAID.warn("Need domain for synapse workflow step");
+      return;
+    }
+    let intervalLength = widget.state['intervalLength'];
+    if (!intervalLength) {
+      CATMAID.warn("No valid interval length found");
+      return;
+    }
+    let intervalError = widget.state['intervalError'];
+    if (!intervalError && intervalError !== 0) {
+      CATMAID.warn("No valid interval error value found");
+      return;
+    }
+    let leafHandling = widget.state['leafHandling'];
+    if (!leafHandling) {
+      CATMAID.warn("No valid leaf handling option found");
+      return;
+    }
+    let mergeLimit = widget.state['mergeLimit'];
+    if (!mergeLimit && mergeLimit != 0.0) {
+      CATMAID.warn("No valid merge limit option found");
+      return;
+    }
+
+    let domainListIntervals = domainIntervals.map(function(i) {
+      // [intervalId, startNodeId, endNodeId
+      return [i.id, i.start_node_id, i.end_node_id];
+    });
+
+    var intervalMap = {};
+    CATMAID.Sampling.updateIntervalMap(arbor.arbor, domainListIntervals,
+        intervalMap, domain.start_node_id);
+
+    // Get domain arbor
+    let domainArbor = CATMAID.Sampling.domainArborFromModel(arbor.arbor, domain);
+    let successors = domainArbor.allSuccessors();
+    let workingSet = [[domain.start_node_id, null]];
+    let domainEnds = domain.ends.reduce(function(o, e) {
+      o[e.node_id] = true;
+      return o;
+    }, {});
+
+    let positions = arbor.positions;
+    let intervalFragments = [];
+    let currentFragment = null;
+    let leafFragmentLengths = {};
+    while (workingSet.length > 0) {
+      let currentNodeInfo = workingSet.shift();
+      let currentNodeId = currentNodeInfo[0];
+      let lastNodeId = currentNodeInfo[1];
+      let currentFragmentId = currentNodeInfo[2];
+
+      let intervalId = intervalMap[currentNodeId];
+      if (currentNodeId != domain.start_node_id &&
+          (intervalId === undefined || intervalId === null)) {
+        // This node is part of the domain, but part of no interval. This
+        // can only happen at the end of branches and we don't have to
+        // expect more valid intervals on this branch. Therefore, we can
+        // just all all successors to the the current ignoredFragment;
+        if (!currentFragmentId && currentFragmentId !== 0) {
+          // Add last node, we need it for distance computations.
+          currentFragmentId = lastNodeId;
+          intervalFragments.push(lastNodeId);
+        }
+
+        // Compute and aggregate length
+        let lastPos = positions[lastNodeId];
+        let pos = positions[currentNodeId];
+        if (!lastPos) {
+          CATMAID.warn("Couldn't find position for last node " + fragment[i-1]);
+        }
+        if (!pos) {
+          CATMAID.warn("Couldn't find position for current node " + fragment[i]);
+        }
+        let length = leafFragmentLengths[currentFragmentId] || 0;
+        leafFragmentLengths[currentFragmentId] = length + lastPos.distanceTo(pos);
+      }
+
+      // If we hit a domain end, we stop looking for successors in this branch
+      // and can continue with the next node on another branch.
+      if (domainEnds[currentNodeId]) {
+        continue;
+      }
+
+      let succ = successors[currentNodeId];
+      if (succ && succ.length > 0) {
+        for (let k=0; k<succ.length; ++k) {
+          let succId = succ[k];
+          workingSet.push([succId, currentNodeId, currentFragmentId]);
+        }
+      } else {
+        currentFragment = null;
+      }
+    }
+
+    // Compute lengths.
+    let ignoredFragmentLengths = intervalFragments.map(function(fragmentId) {
+      return leafFragmentLengths[fragmentId];
+    });
+
+    // Show diagram
+    let dialog = new CATMAID.OptionsDialog(ignoredFragmentLengths.length +
+        ' ignored leaf fragments', {
+      'Download CSV': function() {
+        let today = new Date();
+        let filename = 'catmaid-sampler-ignored-intervals-' + today.getFullYear() +
+            '-' + (today.getMonth() + 1) + '-' + today.getDate() + '.csv';
+        let data = "\"Ignored fragment length (nm)\"\n" + ignoredFragmentLengths.join("\n");
+        saveAs(new Blob([data], {type: 'text/plain'}), filename);
+      },
+      'Ok': function() {},
+    });
+
+    dialog.appendMessage("Histogram of the lengths of " + ignoredFragmentLengths.length +
+        " ignored leaf fragments in domain " + domain.id + ". Click on the bins to " +
+        "open respective fragment start nodes in a table.");
+
+    let plot = document.createElement('div');
+    dialog.appendChild(plot);
+
+    let resizeDialog = function() {
+      Plotly.Plots.resize(plot);
+    };
+
+    dialog.show(600, 400, false, undefined, resizeDialog);
+
+    let trace = {
+      x: ignoredFragmentLengths,
+      type: 'histogram',
+    };
+    let data = [trace];
+    Plotly.newPlot(plot, data, {
+      autosize: false,
+      width: 500,
+      height: 200,
+      margin: {
+        l: 30,
+        r: 20,
+        b: 50,
+        t: 20,
+        pad: 4
+      },
+      xaxis: {
+        title: 'Binned length (nm) of ignored leaf fragments'
+      }});
+
+    // Open a table with all treenodes that are part in the respective bin of
+    // the histogram.
+    plot.on('plotly_click', function(eventData){
+      let pts = '';
+      let points = eventData.points;
+      for(let i=0; i<points.length; i++){
+        let a = arbor;
+        let dataIndices = points[i].pointIndices;
+        if (dataIndices.length > 0) {
+          let fragmentStartNodeIds = dataIndices.map(x => intervalFragments[x]);
+          openTreenodeTable(skeletonId, fragmentStartNodeIds);
+        } else {
+          CATMAID.msg("Note", "No data points in selected bin");
+        }
+      }
+    });
+  };
+
+  function openTreenodeTable(skeletonId, nodeIds) {
+    let treenodeTable = WindowMaker.create('treenode-table').widget;
+    // Add a node filter
+    for (let i=0; i<nodeIds.length; ++i) {
+      treenodeTable.filter_nodeids.add(nodeIds[i]);
+    }
+    // Disable node type filter
+    treenodeTable.setNodeTypeFilter("");
+    // Add models
+    let models = {};
+    models[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
+    treenodeTable.append(models);
+  }
 
   var reviewInterval = function(skeletonId, interval) {
     var reviewWidget = WindowMaker.create('review-widget').widget;

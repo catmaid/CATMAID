@@ -310,8 +310,8 @@ var project;
     };
 
     $(document.body).on('click', 'a[data-role=url-to-clipboard]', function() {
-      CATMAID.tools.copyToClipBoard(document.location.origin + '/' +
-          project.createURL());
+      let l = document.location;
+      CATMAID.tools.copyToClipBoard(l.origin + l.pathname + project.createURL());
     });
 
     document.getElementById( "login_box" ).style.display = "block";

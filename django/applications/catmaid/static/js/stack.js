@@ -24,6 +24,7 @@
       skip_planes,        //!< {Array} planes to be excluded from the stack's view [[z,t,...], [z,t,...], ...]
       downsample_factors,
       max_zoom_level,       //!< {int} that defines the maximum available zoom level
+      comment,
       description,         //!< {String} of arbitrary meta data
       metadata,
       orientation,         //!< {Integer} orientation (0: xy, 1: xz, 2: yz)
@@ -78,6 +79,7 @@
     self.MIN_S = max_zoom_level;
     self.downsample_factors = downsample_factors;
 
+    self.comment = comment;
     self.description = description;
     self.metadata = metadata;
     self.orientation = orientation;
@@ -605,6 +607,7 @@
         json.broken_slices,
         json.downsample_factors,
         -2,
+        json.comment,
         json.description,
         json.metadata,
         json.orientation,

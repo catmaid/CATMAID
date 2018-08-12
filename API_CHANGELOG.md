@@ -24,6 +24,9 @@ included in this changelog.
   instead of or together with label IDs to get skeletons with nodes that have
   particular labels.
 
+- `GET /{project_id}/stacks/{stack_id}/info`:
+  Now includes the `comment` field for each stack.
+
 ### Deprecations
 
 None.

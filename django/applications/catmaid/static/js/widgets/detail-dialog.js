@@ -50,7 +50,7 @@
               detail_text.appendChild(document.createElement('br'));
             }
             // Replace whitespace with a span with respective length
-            var detail_line = detail_lines[i].replace(/\s/g, '&nbsp;');
+            var detail_line = detail_lines[i].replace(/\s/g, '\u00a0');
             detail_text.appendChild(document.createTextNode(detail_line));
           }
         } else {

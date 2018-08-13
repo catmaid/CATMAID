@@ -52,12 +52,21 @@
    * The passed in interval map will be update with nodes from the arbor that
    * are covered by the passed in interval list.
    */
-  Sampling.updateIntervalMap = function(arbor, intervals, targetEdgeMap, domainStartId) {
+  Sampling.updateIntervalMap = function(arbor, intervals, targetEdgeMap,
+      domainStartId, intervalFilter) {
     for (var i=0, imax=intervals.length; i<imax; ++i) {
       let interval = intervals[i];
       let intervalId = interval[0];
       let startNodeId = interval[1];
       let endNodeId = interval[2];
+
+      // If an interval fitler exists, show only intervals allowed by it.
+      if (intervalFilter &&
+          intervalFilter.length > 0 &&
+          intervalFilter.indexOf(intervalId) === -1) {
+        continue;
+      }
+
       // Try to walk from interval end to start, assuming that an interval
       // starts closer to root than it ends.
       let currentNodeId = endNodeId;
@@ -346,7 +355,9 @@
     edges = target || {};
 
     var edges = sampler.domains.reduce(function(o, d) {
-      if (allowedDomains && !allowedDomains.has(d.id)) {
+      if (allowedDomains &&
+          allowedDomains.length > 0 &&
+          allowedDomains.indexOf(d.id) === -1) {
         return o;
       }
 

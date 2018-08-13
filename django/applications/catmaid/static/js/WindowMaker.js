@@ -1158,7 +1158,53 @@ var WindowMaker = new function()
           ['Min. synapse-free cable', o.min_synapse_free_cable, ' nm', function() {
             WA.updateShadingParameter('min_synapse_free_cable', this.value, 'synapse-free'); }, 6],
           ['Strahler number', o.strahler_cut, '', function() { WA.updateShadingParameter('strahler_cut', this.value, ['dendritic-backbone', 'single-strahler-number', 'strahler-threshold']); }, 4],
-          ['Tag (regex):', o.tag_regex, '', function() { WA.updateShadingParameter('tag_regex', this.value, 'downstream-of-tag'); }, 4]
+          ['Tag (regex):', o.tag_regex, '', function() { WA.updateShadingParameter('tag_regex', this.value, 'downstream-of-tag'); }, 4],
+          {
+            type: 'text',
+            label: 'Sampler domain IDs',
+            placeholder: '1, 2, …',
+            title: 'If a sampler domain shading or coloring method is used, only these domains will be shown.',
+            value: o.allowed_sampler_domain_ids.join(', '),
+            onchange: function() {
+              WA.options.allowed_sampler_domain_ids = this.value.split(',').filter(
+                  function(s) {
+                    s = s.trim();
+                    return s.length > 0;
+                  }).map(function(s) {
+                    var val = parseInt(s, 10);
+                    if (isNaN(val)) {
+                      throw new CATMAID.ValueError("No number: " + s.trim());
+                    }
+                    return val;
+                  });
+              WA.updateSkeletonColors()
+                .then(function() { WA.render(); });
+            },
+            length: 4,
+          },
+          {
+            type: 'text',
+            label: 'Sampler interval IDs',
+            placeholder: '1, 2, …',
+            title: 'If a sampler interval shading or coloring method is used, only these intervals will be shown.',
+            value: o.allowed_sampler_interval_ids.join(', '),
+            onchange: function() {
+              WA.options.allowed_sampler_interval_ids = this.value.split(',').filter(
+                  function(s) {
+                    s = s.trim();
+                    return s.length > 0;
+                  }).map(function(s) {
+                    var val = parseInt(s, 10);
+                    if (isNaN(val)) {
+                      throw new CATMAID.ValueError("No number: " + s.trim());
+                    }
+                    return val;
+                  });
+              WA.updateSkeletonColors()
+                .then(function() { WA.render(); });
+            },
+            length: 4,
+          },
         ]);
 
     var axisOptions = document.createElement('select');

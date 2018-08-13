@@ -1247,6 +1247,8 @@
     this.interpolate_broken_sections = false;
     this.apply_filter_rules = true;
     this.volume_location_picking = false;
+    this.allowed_sampler_domain_ids = [];
+    this.allowed_sampler_interval_ids = [];
   };
 
   WebGLApplication.prototype.Options.prototype = {};

@@ -404,6 +404,15 @@
           var nDomains = domains.length;
           for (var j=0; j<nDomains; ++j) {
             var domain = domains[j];
+            var allowedDomainIds = options.viewerOptions.allowed_sampler_domain_ids;
+
+            // Ignore domain, if a domain filter exists and this domain isn't
+            // allowed.
+            if (allowedDomainIds && allowedDomainIds > 0 &&
+                allowedDomainIds.indexOf(domain.id) === -1) {
+              continue;
+            }
+
             domainColorIndex.set(domain.id, nAddedDomains % nColors);
             ++nAddedDomains;
 
@@ -505,9 +514,18 @@
         // Get intervals for domain
         let domain = domains[j];
 
+        // Ignore domain, if a domain filter exists and this domain isn't
+        // allowed.
+        if (options.sampler_domain_shading_ids &&
+            options.sampler_domain_shading_ids.length > 0 &&
+            options.sampler_domain_shading_ids.indexOf(domain.id) === -1) {
+          continue;
+        }
+
         // Skip this domain if the user set 'allowed_sampler_domains'
-        if (options.viewerOptions.allowed_sampler_domains &&
-            !options.viewerOptions.allowed_sampler_domains.has(domain.id)) {
+        if (options.viewerOptions.allowed_sampler_domain_ids &&
+            options.viewerOptions.allowed_sampler_domain_ids.length > 0 &&
+            options.viewerOptions.allowed_sampler_domain_ids.indexOf(domain.id) === -1) {
           continue;
         }
 
@@ -524,7 +542,9 @@
           CATMAID.Sampling.updateIntervalMap(arbor, mockIntervals, intervalMap, domain.start_node_id);
         } else if (intervalMap) {
           // Update interval map with existing intervals
-          CATMAID.Sampling.updateIntervalMap(arbor, domain.intervals, intervalMap, domain.start_node_id);
+          CATMAID.Sampling.updateIntervalMap(arbor, domain.intervals,
+              intervalMap, domain.start_node_id,
+              options.viewerOptions.allowed_sampler_interval_ids);
         }
       }
     }
@@ -560,10 +580,12 @@
         let nDomains = domains.length;
         for (var j=0; j<nDomains; ++j) {
           let domain = domains[j];
+          let allowedIntervalIds = options.viewerOptions.allowed_sampler_domain_ids;
 
           // Skip this domain if the user set 'allowed_sampler_domains'
-          if (options.viewerOptions.allowed_sampler_domains &&
-              !options.viewerOptions.allowed_sampler_domains.has(domain.id)) {
+          if (allowedIntervalIds &&
+              allowedIntervalIds.length > 0 &&
+              allowedIntervalIds.indexOf(domain.id) === -1) {
             continue;
           }
 
@@ -579,7 +601,8 @@
 
             let intervalId = intervalMap[currentNodeId];
             if (currentNodeId != domain.start_node_id &&
-                (intervalId === undefined || intervalId === null)) {
+                (intervalId === undefined || intervalId === null) &&
+                allowedIntervalIds.length === 0) {
               // This node is part of the domain, but part of no interval. This
               // can only happen at the end of branches and we don't have to
               // expect more valid intervals on this branch. Therefore, we can
@@ -976,7 +999,7 @@
         for (var i=0; i<samplers.length; ++i) {
           var sampler = samplers[i];
           CATMAID.Sampling.samplerEdges(arbor, sampler, samplerEdges,
-              options.allowed_sampler_domains);
+              options.allowed_sampler_domain_ids);
         }
 
         // Add all nodes in all domains

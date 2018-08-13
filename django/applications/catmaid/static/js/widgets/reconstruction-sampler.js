@@ -1930,7 +1930,8 @@
             glWidget.options.interpolate_vertex_colots = false;
 
             // Make sure only the active domain is visible
-            glWidget.options.allowed_sampler_domains = new Set([activeDomainId]);
+            glWidget.options.allowed_sampler_domain_ids.length = 0;
+            glWidget.options.allowed_sampler_domain_ids.push(activeDomainId);
 
             glWidget.updateSkeletonColors()
               .then(function() { glWidget.render(); });

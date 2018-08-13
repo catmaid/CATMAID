@@ -1030,9 +1030,11 @@
               options.allowed_sampler_domain_ids);
         }
 
+        var nonDomainWeight = options.sampler_domain_shading_other_weight || 0;
+
         // Add all nodes in all domains
         var nodeWeights = arbor.nodesArray().reduce(function(o, d) {
-          o[d] = samplerEdges[d] === undefined ? 0 : 1;
+          o[d] = samplerEdges[d] === undefined ? nonDomainWeight : 1;
           return o;
         }, {});
 

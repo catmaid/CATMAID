@@ -1926,10 +1926,12 @@
           glWidget.addSkeletons(models, function() {
             // Set new shading and coloring methods
             glWidget.options.color_method = colorMethod;
-            glWidget.options.shading_method = 'none';
+            glWidget.options.shading_method = 'sampler-domains';
             glWidget.options.interpolate_vertex_colots = false;
 
-            // Make sure only the active domain is visible
+            // Make sure only the active domain is visible fully and other
+            // parts of the skeleton only a little.
+            glWidget.options.sampler_domain_shading_other_weight = 0.2;
             glWidget.options.allowed_sampler_domain_ids.length = 0;
             glWidget.options.allowed_sampler_domain_ids.push(activeDomainId);
 

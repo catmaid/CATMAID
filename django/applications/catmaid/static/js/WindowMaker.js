@@ -543,6 +543,9 @@ var WindowMaker = new function()
      ['x-lut', 'X Width rainbow'],
      ['y-lut', 'Y Height rainbow'],
      ['z-lut', 'Z Depth rainbow'],
+     ['skeleton-x-lut', 'X Width rainbow per skeleton'],
+     ['skeleton-y-lut', 'Y Height rainbow per skeleton'],
+     ['skeleton-z-lut', 'Z Depth rainbow per skeleton'],
      ['sampler-domains', 'Reconstrucion sampler domains'],
      ['binary-sampler-intervals', 'Reconstrucion sampler intervals (2 colors)'],
      ['multicolor-sampler-intervals', 'Reconstrucion sampler intervals (11 colors)']

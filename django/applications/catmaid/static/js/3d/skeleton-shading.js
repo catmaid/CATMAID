@@ -490,7 +490,43 @@
           return lut.getColor(vertex.z);
         };
       }
-    }
+    },
+    'skeleton-x-lut': {
+      vertexColorizer: function(skeleton, options) {
+        let lutResolution = options.lutResolution || 256;
+        let lut = new THREE.Lut(options.colorMap || "rainbow", lutResolution);
+        let bb = skeleton.getBoundingBox();
+        lut.setMin(bb.min.x);
+        lut.setMax(bb.max.x);
+        return function(vertex) {
+          return lut.getColor(vertex.x);
+        };
+      }
+    },
+    'skeleton-y-lut': {
+      vertexColorizer: function(skeleton, options) {
+        let lutResolution = options.lutResolution || 256;
+        let lut = new THREE.Lut(options.colorMap || "rainbow", lutResolution);
+        let bb = skeleton.getBoundingBox();
+        lut.setMin(bb.min.y);
+        lut.setMax(bb.max.y);
+        return function(vertex) {
+          return lut.getColor(vertex.y);
+        };
+      }
+    },
+    'skeleton-z-lut': {
+      vertexColorizer: function(skeleton, options) {
+        let lutResolution = options.lutResolution || 256;
+        let lut = new THREE.Lut(options.colorMap || "rainbow", lutResolution);
+        let bb = skeleton.getBoundingBox();
+        lut.setMin(bb.min.z);
+        lut.setMax(bb.max.z);
+        return function(vertex) {
+          return lut.getColor(vertex.z);
+        };
+      }
+    },
   };
 
   let makeSamplerIntervalColorizer = function(skeleton, options) {

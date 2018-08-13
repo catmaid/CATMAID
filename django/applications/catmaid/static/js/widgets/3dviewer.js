@@ -5527,6 +5527,14 @@
     this.connectorSelection = null;
   };
 
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getBoundingBox = function() {
+    let geometry = this.geometry['neurite'];
+    if (!geometry.boundingBox) {
+      geometry.computeBoundingBox();
+    }
+    return geometry.boundingBox;
+  };
+
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getVertexCount = function() {
     let geometry = this.geometry['neurite'];
     if (geometry.isBufferGeometry) {

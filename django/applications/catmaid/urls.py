@@ -18,7 +18,7 @@ from catmaid.control import (authentication, user, log, message, client, common,
         cropping, data_view, ontology, classification, notifications, roi,
         clustering, volume, noop, useranalytics, user_evaluation,
         search, graphexport, transaction, graph2, circles, analytics, review,
-        wiringdiagram, object, sampler, treenodetable, nat, point, landmarks)
+        wiringdiagram, object, sampler, nat, point, landmarks)
 
 from catmaid.views import CatmaidView
 from catmaid.history import record_request_action as record_view

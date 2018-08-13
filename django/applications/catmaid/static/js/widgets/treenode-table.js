@@ -16,6 +16,7 @@
     this.oTable = null;
     this.filter_nodetype = 'L';
     this.filter_searchtag = '';
+    this.filter_nodeids = new Set();
 
     this.treenodeViewer = null;
   };
@@ -134,6 +135,8 @@
             <tbody> 
             </tbody> 
           </table>`;
+
+        $("select#" + this.idPrefix + "search-type").val(this.filter_nodetype);
       },
       init: function() {
         this.init(project.getId());
@@ -196,6 +199,7 @@
   TreenodeTable.prototype.clear = function() {
     this.models = {};
     this.ranges = {};
+    this.filter_nodeids.clear();
     this.oTable.clear();
     this.oTable.draw();
   };
@@ -296,7 +300,7 @@
     fetchSkeletons(
         skeleton_ids,
         function(skid) {
-          return CATMAID.makeURL(project.id + '/treenode/table/' + skid + '/content');
+          return CATMAID.makeURL(project.id + '/skeletons/' + skid + '/node-overview');
         },
         function(skid) { return {}; }, // post
         (function(skid, json) {
@@ -370,7 +374,16 @@
           this.oTable.rows.add(all_rows);
           this.filter_nodetype = $('select#' + this.idPrefix + 'search-type').val();
           this.oTable.columns(1).search(this.filter_nodetype).draw();
-        }).bind(this));
+
+          if (this.filter_nodeids.size > 0) {
+            let idRegEx = '^(' + Array.from(this.filter_nodeids).join('|') + ')$';
+            this.oTable.columns(0).search(idRegEx, true, false, true).draw();
+            //this.oTable.columns(0).search('^(8995095|999)', true, false, true).draw();
+          } else {
+            this.oTable.columns(0).search('').draw();
+          }
+        }).bind(this),
+        'GET');
   };
 
   TreenodeTable.prototype.init = function() {
@@ -523,6 +536,11 @@
   };
 
   TreenodeTable.prototype.updateNeuronNames = function() {};
+
+  TreenodeTable.prototype.setNodeTypeFilter = function(value) {
+    this.filter_nodetype = value;
+    $("select#" + this.idPrefix + "search-type").val(this.filter_nodetype);
+  };
 
   // Export widget
   CATMAID.TreenodeTable = TreenodeTable;

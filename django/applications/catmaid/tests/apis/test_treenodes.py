@@ -19,7 +19,7 @@ from .common import CatmaidApiTestCase
 class TreenodesApiTests(CatmaidApiTestCase):
     def test_list_treenode_table_empty(self):
         self.fake_authentication()
-        response = self.client.post('/%d/treenode/table/%d/content' % \
+        response = self.client.get('/%d/skeletons/%d/node-overview' % \
                                     (self.test_project_id, 0))
         self.assertEqual(response.status_code, 200)
         expected_result = [[], [], []]
@@ -1043,8 +1043,8 @@ class TreenodesApiTests(CatmaidApiTestCase):
 
     def test_list_treenode_table_simple(self):
         self.fake_authentication()
-        response = self.client.post(
-                '/%d/treenode/table/%d/content' % (self.test_project_id, 235))
+        response = self.client.get(
+                '/%d/skeletons/%d/node-overview' % (self.test_project_id, 235))
         self.assertEqual(response.status_code, 200)
         expected_result = [[
                 [417, 415, 5, 4990.0, 4200.0, 0.0, -1.0, 3, 1323093096.0],

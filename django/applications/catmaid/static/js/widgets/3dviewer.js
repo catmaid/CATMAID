@@ -1247,6 +1247,8 @@
     this.interpolate_broken_sections = false;
     this.apply_filter_rules = true;
     this.volume_location_picking = false;
+    this.allowed_sampler_domain_ids = [];
+    this.allowed_sampler_interval_ids = [];
   };
 
   WebGLApplication.prototype.Options.prototype = {};
@@ -5523,6 +5525,14 @@
     this.connectoractor = null;
     this.connectorgeometry = {};
     this.connectorSelection = null;
+  };
+
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getBoundingBox = function() {
+    let geometry = this.geometry['neurite'];
+    if (!geometry.boundingBox) {
+      geometry.computeBoundingBox();
+    }
+    return geometry.boundingBox;
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getVertexCount = function() {

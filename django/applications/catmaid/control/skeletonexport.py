@@ -1620,3 +1620,67 @@ def neuroglancer_skeleton(request, project_id=None, skeleton_id=None):
         offset += 8
 
     return JsonResponse(buff, safe=False)
+
+@api_view(['GET'])
+@requires_user_role(UserRole.Browse)
+def treenode_overview(request, project_id=None, skeleton_id=None):
+    """Get information on a skeleton's treenodes, reviews and labels.
+    ---
+    parameters:
+    - name: project_id
+      description: The project to operate in
+      required: true
+      type: integer
+      paramType: path
+    - name: skeleton_id
+      description: The skeleton to get information on
+      required: true
+      type: integer
+      paramType: path
+    """
+    project_id = int(project_id)
+    skeleton_id = int(skeleton_id)
+
+    cursor = connection.cursor()
+    cursor.execute('''
+SELECT id, parent_id, confidence,
+       location_x, location_y, location_z,
+       radius, user_id, floor(EXTRACT(epoch FROM edition_time))
+FROM treenode
+WHERE project_id = %s
+  AND skeleton_id = %s
+    ''' % (project_id, skeleton_id))
+
+    treenodes = tuple(cursor.fetchall())
+
+    cursor.execute('''
+SELECT treenode_id, reviewer_id
+FROM review
+WHERE project_id = %s
+  AND skeleton_id = %s
+    ''' % (project_id, skeleton_id))
+
+    reviews = tuple(cursor.fetchall())
+
+    cursor.execute('''
+SELECT id
+FROM relation
+WHERE project_id = %s
+  AND relation_name = 'labeled_as'
+    ''' % (project_id))
+
+    labeled_as = cursor.fetchone()[0]
+
+    cursor.execute('''
+SELECT t.id, ci.name
+FROM treenode t, treenode_class_instance tci, class_instance ci
+WHERE t.project_id = %s
+  AND t.skeleton_id = %s
+  AND tci.treenode_id = t.id
+  AND tci.relation_id = %s
+  AND tci.class_instance_id = ci.id
+    ''' % (project_id, skeleton_id, labeled_as))
+
+    tags = tuple(cursor.fetchall())
+
+    return HttpResponse(json.dumps([treenodes, reviews, tags], separators=(',', ':')))

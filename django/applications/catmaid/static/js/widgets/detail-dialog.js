@@ -49,7 +49,7 @@
             if (i > 0) {
               detail_text.appendChild(document.createElement('br'));
             }
-            detail_text.appendChild(document.createTextNode(detail));
+            detail_text.appendChild(document.createTextNode(detail_lines[i]));
           }
         } else {
           detail_text.appendChild(document.createTextNode(detail));

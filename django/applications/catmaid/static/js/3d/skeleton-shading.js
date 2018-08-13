@@ -550,14 +550,6 @@
         // Get intervals for domain
         let domain = domains[j];
 
-        // Ignore domain, if a domain filter exists and this domain isn't
-        // allowed.
-        if (options.sampler_domain_shading_ids &&
-            options.sampler_domain_shading_ids.length > 0 &&
-            options.sampler_domain_shading_ids.indexOf(domain.id) === -1) {
-          continue;
-        }
-
         // Skip this domain if the user set 'allowed_sampler_domains'
         if (options.viewerOptions.allowed_sampler_domain_ids &&
             options.viewerOptions.allowed_sampler_domain_ids.length > 0 &&

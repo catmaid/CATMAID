@@ -1045,6 +1045,7 @@
       prepare: initSamplerIntervals,
       weights: function(skeleton, options) {
         var arbor = skeleton.createArbor();
+        var positions = skeleton.getPositions();
         var samplers = skeleton.samplers;
         if (!samplers) {
           // Weight each node zero if there are no samplers
@@ -1058,7 +1059,7 @@
         var intervalMap = {};
         for (var i=0; i<samplers.length; ++i) {
           var sampler = samplers[i];
-          CATMAID.Sampling.intervalEdges(arbor, skeleton.getPositions(),
+          CATMAID.Sampling.intervalEdges(arbor, positions,
               sampler, true, true, true, intervalMap);
         }
 

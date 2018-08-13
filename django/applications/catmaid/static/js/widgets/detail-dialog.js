@@ -49,7 +49,9 @@
             if (i > 0) {
               detail_text.appendChild(document.createElement('br'));
             }
-            detail_text.appendChild(document.createTextNode(detail_lines[i]));
+            // Replace whitespace with a span with respective length
+            var detail_line = detail_lines[i].replace(/\s/g, '&nbsp;');
+            detail_text.appendChild(document.createTextNode(detail_line));
           }
         } else {
           detail_text.appendChild(document.createTextNode(detail));

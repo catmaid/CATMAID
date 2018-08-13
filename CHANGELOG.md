@@ -17,6 +17,55 @@ Connectivity matrix:
   the number of total posynaptic connections that are made to the target
   skeleton (column). This makes columns better comparable to each other.
 
+3D viewer:
+
+- Treenodes that are linked to connector nodes can now be scaled independently
+  from other node handles using the "Link node scaling" option.
+
+- Volume picking is now optional and disabled by default, i.e Shift + Click will
+  go through volumes. To enable volume surface location selection, the
+  "Pickable" checkbox needs to be checked.
+
+- If Reconstruction Sampler domain shading or interval shading is used, a list
+  of valid domains and intervals can now be specified in the "Shadings
+  parameter" tab.
+
+- The X/Y/Z rainbow coloring modes are now also available normalized to each
+  individual skeleton.
+
+Reconstruction sampler:
+
+- Improve performance of interval length computation
+
+- Domain completion is now shown in percent along with interval coverage of the
+  domain in "Interval" step.
+
+- Merge decisions can now be limited when the 'merge' or 'merge-or-create' leaf
+  handling mode is selected. This means a percentage can be specified which
+  defined below which ratio of extra cable versus interval length the extra
+  cable should be merged into the previous interval (if possible) rather than a
+  new interval is created.
+
+- Ignored lead segments can now be inspected in more detail using the
+  "Uncovered domain parts" button the "Interval" step. This will open a dialog
+  window with a histogram on all ignored leaf segments in the current domain.
+  Clicking on individual bins will open a treenode table containing the
+  respective start nodes of the ignored leaf segments.
+
+Docker:
+
+- More CATMAID configuration options are now accessible through Docker
+  environment cariables: CM_DEBUG, CM_FORCE_CONFIG_UPDATE, CM_WRITABLE_PATH,
+  CM_NODE_LIMIT, CM_NODE_PROVIDERS, CM_SUBDIRECTORY, CM_CSRF_TRUSTED_ORIGINS.
+
+CLI importer:
+
+- With the help of a few additional progress bars, import progress can be better
+  monitored.
+
+- Database statistics are now automatically recomputed after an import, i.e.
+  ANALYZE is run.
+
 Miscellaneous:
 
 - Each Tracing Layer is now listed as a skeleton source. All skeletons visible
@@ -35,11 +84,71 @@ Miscellaneous:
 - New widget: stack info, which displays properties for stacks related to the
   active project.
 
+- The node cache update management command `catmaid_update_cache_tables` can now
+  update all caches configured in the NODE_PROVIDERS settings variable
+  automatically when the `--from-config` option is provided.
+
+- Admin: a projects/export JSON export of the visible project/stack structure
+  can now be used directly in the Project/stack Importer by selection "JSON
+  representation" as source and pasting the data into the text field.
+
+- Neuron search: regular expressions are now optional for the neuron name.
+  Unless the search string starts with '/', no regular expressions are used,
+  but a regular case insensitive text search.
+
 
 ### Bug fixes
 
 - 3D viewer: loading a single node skeleton with smoothing enabled no longer
   causes an error.
+
+- 3D viewer: nodes taged with 'uncertain' can be loaded again.
+
+- 3D viewer: various rendering bugs for Reconstruction Sampler domains and
+  intervals have been fixed.
+
+- 3D viewer: stored node scaling settings are now properly restored.
+
+- 3D viewer: TODO tag coloring doesn't override custom label colors anymore.
+
+- 3D viewer: all synaptic site spheres are created and colored again.
+
+- Tracing overlay: the border of the tracing window is now properly rendered.
+
+- Tracing overlay: child node edition times are now correctly updated if the
+  parent is deleted, which fixes occasional state matching errors.
+
+- Reconstruction sampler: deleting samplers while other samplers on the same
+  neuron refer to the same created boundary nodes no longer causes an error.
+
+- Reconstruction sampler: cable length columns are now sorted numercially.
+
+- Reconstruction sampler: all settings are now correctly reset when a sampler is
+  selected or "New session" is pressed.
+
+- Reconstruction sampler: a few corner cases for binary interval coloring have
+  been fixed. Colors should now alternate in most cases.
+
+- Connectivity matrix: synapse count based ordering works again.
+
+- Connectivity widget: annotations on neurons (used for filtering) are now
+  properly updated when they are changed in another part of CATMAID.
+
+- CLI importer: the ID sequence for the auth_user table is now properly reset
+  after an import.
+
+- CLI importer: missing treenode-connector links are now imported between
+  connectors and placeholer nodes.
+
+- CLI impoerter: the ID of reused objects is now proplery updated in imported
+  data when --preserve-ids is used.
+
+- CLI importer: skeleton summaries and edge tables aew correctly created again.
+
+- CLI importer: unmapped imported users are now correctly saved.
+
+- The error dialog prints now linen breaks and spaces correctly again, which
+  improves its formatting.
 
 
 ## 2018.07.19

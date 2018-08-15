@@ -279,6 +279,11 @@ def compute_scoring_matrix(project_id, user_id, matching_skeleton_ids,
 
         conn = rcatmaid.catmaid_login(**server_params)
 
+        if settings.MAX_PARALLEL_ASYNC_WORKERS > 1:
+            #' # Parallelise NBLASTing across 4 cores using doMC package
+            rdomc = importr('doMC')
+            rdomc.registerDoMC(settings.MAX_PARALLEL_ASYNC_WORKERS)
+
         # Get neurons
         # nb also convert from nm to um, resample to 1µm spacing and use k=5
         # nearest neighbours of each point to define tangent vector

@@ -41,6 +41,7 @@ class UserRole(object):
     Annotate = 'Annotate'
     Browse = 'Browse'
     Import = 'Import'
+    QueueComputeTask = 'QueueComputeTask'
 
 @python_2_unicode_compatible
 class Project(models.Model):
@@ -57,7 +58,8 @@ class Project(models.Model):
             ("can_administer", "Can administer projects"),
             ("can_annotate", "Can annotate projects"),
             ("can_browse", "Can browse projects"),
-            ("can_import", "Can import into projects")
+            ("can_import", "Can import into projects"),
+            ("can_queue_compute_task", "Can queue resource-intensive tasks"),
         )
 
     def __str__(self):

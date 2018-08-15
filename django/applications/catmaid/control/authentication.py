@@ -117,6 +117,8 @@ def check_user_role(user, project, roles):
                 has_role = checker.has_perm('can_browse', project)
             elif role == UserRole.Import:
                 has_role = checker.has_perm('can_import', project)
+            elif role == UserRole.QueueComputeTask:
+                has_role = checker.has_perm('can_queue_compute_task', project)
             if has_role:
                 break
 

@@ -871,7 +871,7 @@ def getBBintersections(project_id):
 
 @api_view(['GET', 'POST'])
 @requires_user_role(UserRole.Browse)
-def skeletonInnervations(paramSet, skeleton_ids):
+def skeletonInnervations(skeleton_ids, project_id):
     '''
         Test environment only contains two skeletons - based on that, sql query always returns list of all 
         SKIDs but all data (about both skeletons) is contained in the first SKID in the list - if this changes,
@@ -887,7 +887,10 @@ def skeletonInnervations(paramSet, skeleton_ids):
               type: dict
               paramType: functionCall
     '''
-    skeleton_ids = skeleton_ids
+    
+
+    paramSet = getBBintersections(skeleton_ids)
+    
     skelVols = {}
     myResults = {}
     for i in skeleton_ids:

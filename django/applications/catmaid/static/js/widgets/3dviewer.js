@@ -1249,6 +1249,7 @@
     this.volume_location_picking = false;
     this.allowed_sampler_domain_ids = [];
     this.allowed_sampler_interval_ids = [];
+    this.sampler_domain_shading_other_weight = 0;
   };
 
   WebGLApplication.prototype.Options.prototype = {};

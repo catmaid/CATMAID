@@ -13,14 +13,14 @@ from catmaid.tests.common import CatmaidTestCase
 class InternalApiTestsNoDB(TestCase):
 
     def test_request_list_parsing(self):
-        q = QueryDict('a=1&a=2&a=3')
-        self.assertEqual(get_request_list(q, 'a'), ['1', '2', '3'])
-        self.assertEqual(get_request_list(q, 'a', map_fn=int), [1, 2, 3])
+        q = QueryDict('a=0&a=1&a=2&a=3')
+        self.assertEqual(get_request_list(q, 'a'), ['0', '1', '2', '3'])
+        self.assertEqual(get_request_list(q, 'a', map_fn=int), [0, 1, 2, 3])
         self.assertEqual(get_request_list(q, 'b'), None)
 
-        q2 = QueryDict('a[0]=1&a[1]=2&a[2]=3&a=4')
-        self.assertEqual(get_request_list(q2, 'a'), ['1', '2', '3'])
-        self.assertEqual(get_request_list(q2, 'a', map_fn=int), [1, 2, 3])
+        q2 = QueryDict('a[0]=0&a[1]=1&a[2]=2&a[3]=3&a=4')
+        self.assertEqual(get_request_list(q2, 'a'), ['0', '1', '2', '3'])
+        self.assertEqual(get_request_list(q2, 'a', map_fn=int), [0, 1, 2, 3])
         self.assertEqual(get_request_list(q2, 'b'), None)
 
         # Test list of lists [[1,2],[3,4]]

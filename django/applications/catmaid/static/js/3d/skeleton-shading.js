@@ -550,14 +550,6 @@
         // Get intervals for domain
         let domain = domains[j];
 
-        // Ignore domain, if a domain filter exists and this domain isn't
-        // allowed.
-        if (options.sampler_domain_shading_ids &&
-            options.sampler_domain_shading_ids.length > 0 &&
-            options.sampler_domain_shading_ids.indexOf(domain.id) === -1) {
-          continue;
-        }
-
         // Skip this domain if the user set 'allowed_sampler_domains'
         if (options.viewerOptions.allowed_sampler_domain_ids &&
             options.viewerOptions.allowed_sampler_domain_ids.length > 0 &&
@@ -1038,9 +1030,11 @@
               options.allowed_sampler_domain_ids);
         }
 
+        var nonDomainWeight = options.sampler_domain_shading_other_weight || 0;
+
         // Add all nodes in all domains
         var nodeWeights = arbor.nodesArray().reduce(function(o, d) {
-          o[d] = samplerEdges[d] === undefined ? 0 : 1;
+          o[d] = samplerEdges[d] === undefined ? nonDomainWeight : 1;
           return o;
         }, {});
 
@@ -1051,6 +1045,7 @@
       prepare: initSamplerIntervals,
       weights: function(skeleton, options) {
         var arbor = skeleton.createArbor();
+        var positions = skeleton.getPositions();
         var samplers = skeleton.samplers;
         if (!samplers) {
           // Weight each node zero if there are no samplers
@@ -1064,7 +1059,7 @@
         var intervalMap = {};
         for (var i=0; i<samplers.length; ++i) {
           var sampler = samplers[i];
-          CATMAID.Sampling.intervalEdges(arbor, skeleton.getPositions(),
+          CATMAID.Sampling.intervalEdges(arbor, positions,
               sampler, true, true, true, intervalMap);
         }
 

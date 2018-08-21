@@ -145,6 +145,24 @@
     }
   };
 
+  NeuronSimilarityWidget.prototype.handleConfigStatusChange = function(configId, status) {
+    for (let modeName in NeuronSimilarityWidget.Modes) {
+      let mode = NeuronSimilarityWidget.Modes[modeName];
+      if (CATMAID.tools.isFn(mode.handleConfigStatusChange)) {
+        mode.handleConfigStatusChange(this, configId, status);
+      }
+    }
+  };
+
+  NeuronSimilarityWidget.prototype.handleSimilarityStatusChange = function(similarityId, status) {
+    for (let modeName in NeuronSimilarityWidget.Modes) {
+      let mode = NeuronSimilarityWidget.Modes[modeName];
+      if (CATMAID.tools.isFn(mode.handleSimilarityStatusChange)) {
+        mode.handleSimilarityStatusChange(this, similarityId, status);
+      }
+    }
+  };
+
   function listToStr(list) {
     if (list instanceof Array) {
       return '[' + list.join(', ') + ']';
@@ -435,6 +453,21 @@
         let configSelect = document.getElementById(widget.idPrefix + 'config-select');
         if (!configSelect) throw new CATMAID.ValueError("Config select element not found");
         NeuronSimilarityWidget.updateConfigSelect(configSelect);
+      },
+      handleConfigStatusChange: function(widget, configId, status) {
+        if (status === 'complete') {
+          let configSelect = document.getElementById(widget.idPrefix + 'config-select');
+          if (!configSelect) throw new CATMAID.ValueError("Config select element not found");
+          NeuronSimilarityWidget.updateConfigSelect(configSelect);
+        }
+      },
+      handleSimilarityStatusChange: function(widget, similarityId, status) {
+        if (status === 'complete') {
+          let table = document.getElementById(widget.idPrefix + 'similarity-table');
+          if (table) {
+            $(table).DataTable().ajax.reload();
+          }
+        }
       },
       refresh: function(widget) {
         let table = document.getElementById(widget.idPrefix + 'similarity-table');
@@ -854,6 +887,12 @@
           NeuronSimilarityWidget.showSimilarityScoringDialog(data);
         });
       },
+      handleConfigStatusChange: function(widget, configId, status) {
+        let table = document.getElementById(widget.idPrefix + 'config-table');
+        if (table) {
+          $(table).DataTable().ajax.reload();
+        }
+      },
       refresh: function(widget) {
         let table = document.getElementById(widget.idPrefix + 'config-table');
         if (table) {
@@ -1206,7 +1245,51 @@
     name: "Neuron similarity",
     description: "Compare neurons and rank them by similarity using NBLAST",
     key: "neuron-similarity",
-    creator: NeuronSimilarityWidget
+    creator: NeuronSimilarityWidget,
+    websocketHandlers: {
+      'similarity-config-update': function(client, payload) {
+        let id = payload.config_id;
+        let status = payload.config_status;
+
+        // Show a status message
+        if (status === 'complete') {
+          CATMAID.msg('Success', 'NBLAST config #' + id + ' can now be used');
+        } else if (status === 'error') {
+          CATMAID.warn('There was an error during the computation of NBLAST config #' + id);
+        } else {
+          CATMAID.msg('NBLAST config #' + id + ' status change', 'New status: ' + status);
+        }
+
+        // Update all neuron similarity matrix widgets
+        let windowMap = WindowMaker.getOpenWindows('neuron-similarity', false, null, true);
+        if (windowMap) {
+          for (let widget of windowMap.values()) {
+            widget.handleConfigStatusChange(id, status);
+          }
+        }
+      },
+      'similarity-update': function(client, payload) {
+        var status = payload.similarity_status;
+        var id = payload.similarity_id;
+
+        // Show a status message
+        if (status === 'complete') {
+          CATMAID.msg('Success', 'NBLAST similarity #' + id + ' is now computed');
+        } else if (status === 'error') {
+          CATMAID.warn('There was an error during the computation of NBLAST similarity #' + id);
+        } else {
+          CATMAID.msg('NBLAST similarity #' + id + ' status change', 'New status: ' + status);
+        }
+
+        // Update all neuron similarity matrix widgets
+        let windowMap = WindowMaker.getOpenWindows('neuron-similarity', false, null, true);
+        if (windowMap) {
+          for (let widget of windowMap.values()) {
+            widget.handleSimilarityStatusChange(id, status);
+          }
+        }
+      }
+    }
   });
 
 })(CATMAID);

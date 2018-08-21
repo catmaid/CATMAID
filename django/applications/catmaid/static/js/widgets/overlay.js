@@ -2082,7 +2082,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
                   extension: extension,
                   keepOrder: false,
                   merge: function(fromId, toId) {
-                    merge(dialog.get_combined_annotation_set(), fromId, toId);
+                    merge(this.get_combined_annotation_set(), fromId, toId);
                   }
                 });
                 dialog.show(extension);

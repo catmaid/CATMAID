@@ -1984,9 +1984,10 @@ var WindowMaker = new function()
    * @param  {string}  name   Name of the widget window to search for.
    * @param  {boolean} create Whether to create a new widget if none is open.
    * @param  {Object}  params Parameters with which to create the window.
+   * @param  {Boolean} silent (optional) Wheter to drop all error messages.
    * @return {Map}            Map of window objects to widget instances.
    */
-  this.getOpenWindows = function (name, create, params) {
+  this.getOpenWindows = function (name, create, params, silent) {
     if (creators.hasOwnProperty(name)) {
       if (windows.has(name)) {
         var instances = windows.get(name);
@@ -1999,7 +2000,7 @@ var WindowMaker = new function()
       } else {
         return new Map();
       }
-    } else {
+    } else if (!silent) {
       CATMAID.error("No known window with name " + name);
     }
   };

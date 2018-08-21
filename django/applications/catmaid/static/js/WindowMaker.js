@@ -2084,6 +2084,16 @@ var WindowMaker = new function()
       name: options.name || key,
       description: options.description || ''
     };
+
+    if (options.websocketHandlers) {
+      for (var msgName in options.websocketHandlers) {
+        if (CATMAID.Client.messageHandlers.has(msgName) && !replace) {
+          throw new CATMAID.ValueError("A handler for message '" + msgName +
+              "' is already registered");
+        }
+        CATMAID.Client.messageHandlers.set(msgName, options.websocketHandlers[msgName]);
+      }
+    }
   };
 
   this.registerState = function(type, options) {

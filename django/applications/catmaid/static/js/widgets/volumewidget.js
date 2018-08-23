@@ -257,9 +257,23 @@
           CATMAID.Volumes.get(project.id, volume.id)
             .then(function(volume) {
               let bb = volume.bbox;
+              let skeletonConstraints;
+              if (self.selectedSkeletonConstraintSource &&
+                  self.selectedSkeletonConstraintSource!== 'none') {
+                let source = CATMAID.skeletonListSources.getSource(
+                    self.selectedSkeletonConstraintSource);
+                if (!source) {
+                  throw new CATMAID.ValueError("Can't find skeleton source: " +
+                      self.selectedSkeletonConstraintSource);
+                }
+                let skeletonIds = source.getSelectedSkeletons();
+                if (skeletonIds.length > 0) {
+                  skeletonConstraints = skeletonIds;
+                }
+              }
               return CATMAID.Connectors.inBoundingBox(project.id, bb.min.x,
                   bb.min.y, bb.min.z, bb.max.x, bb.max.y, bb.max.z, undefined,
-                  true, true);
+                  true, true, skeletonConstraints);
             })
             .then(function(connectorData) {
               if (!connectorData || connectorData.length === 0) {

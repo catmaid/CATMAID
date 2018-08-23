@@ -72,10 +72,133 @@
     this.set("title", options.title || "Box volume");
     this.set("comment", options.comment || undefined);
     this.set("id", options.id || null);
+    this.set("preview", CATMAID.tools.getDefined(options.preview, true));
+    this.set("previewColor", CATMAID.tools.getDefined(options.previewColor, '#FFFFFF'));
+    this.set("previewOpacity", CATMAID.tools.getDefined(options.previewOpacity, 0.7));
+    this.meshNeedsSync = true;
+    this._previewMeshManager = null;
   };
 
   CATMAID.BoxVolume.prototype = Object.create(CATMAID.Volume.prototype);
   CATMAID.BoxVolume.prototype.constructor = CATMAID.BoxVolume;
+
+  CATMAID.BoxVolume.prototype.init = function() {
+    this.updateTriangleMesh();
+    return this;
+  };
+
+  CATMAID.BoxVolume.prototype.clearPreviewData = function() {
+    // If there is an existing removal function, call it.
+    if (this._previewMeshManager) {
+      CATMAID.tools.callIfFn(this._previewMeshManager.remove());
+    }
+  };
+
+  CATMAID.BoxVolume.prototype.updateTriangleMesh = function(onSuccess, onError) {
+    // Remove existing preview data, if there is any
+    this.clearPreviewData();
+
+    let work = this.createMesh();
+
+    if (this.preview) {
+      work = work
+        .then(mesh =>
+          CATMAID.BoxVolume.showCompartment(mesh, this.previewColor,
+          this.previewOpacity))
+        .then(meshInfo => {
+          this._previewMeshManager = meshInfo.meshManager;
+          return meshInfo.mesh;
+        });
+    }
+
+    return work
+      .then(mesh => {
+        // Mesh is now up to date
+        this.meshNeedsSync = false;
+        this.set("mesh", mesh);
+        if (CATMAID.tools.isFn(onSuccess)) {
+          onSuccess(this, mesh);
+        }
+        return mesh;
+      })
+      .catch(onError);
+  };
+
+  CATMAID.BoxVolume.prototype.createMesh = function() {
+    let points = [
+      [this.minX, this.minY, this.minZ],
+      [this.minX, this.minY, this.maxZ],
+      [this.minX, this.maxY, this.minZ],
+      [this.minX, this.maxY, this.maxZ],
+      [this.maxX, this.minY, this.minZ],
+      [this.maxX, this.minY, this.maxZ],
+      [this.maxX, this.maxY, this.minZ],
+      [this.maxX, this.maxY, this.maxZ],
+    ];
+    let faces = [
+      [1, 0, 2], [1, 2, 3],
+      [0, 4, 6], [0, 6, 2],
+      [4, 5, 7], [4, 7, 6],
+      [5, 1, 3], [5, 3, 7],
+      [3, 2, 6], [3, 6, 7],
+      [0, 1, 5], [0, 5, 4],
+    ];
+    return Promise.resolve([points, faces]);
+  };
+
+  /**
+   * Create a convex hull and display it in the first available 3D viewer.
+   */
+  CATMAID.BoxVolume.showCompartment = function(mesh, color, opacity) {
+    var list = mesh ? [mesh] : [];
+    var meshManager = CATMAID.BoxVolume.showMeshesIn3DViewer(
+        list, color, opacity);
+    return Promise.resolve({
+      mesh: mesh,
+      meshManager: meshManager
+    });
+  };
+
+  /**
+   * Display meshes in the passed in object in the first opened 3D viewer. Mesh
+   * IDs should be mapped to an array following this format:
+   * [[points], [[faces]].
+   *
+   * @returns an object with a setColor() and remove() function function that
+   * operate on the addeded meshes.
+   */
+  CATMAID.BoxVolume.showMeshesIn3DViewer = function(meshes, color, opacity) {
+    var w = CATMAID.WebGLApplication.prototype.getFirstInstance();
+    if (!w || !w.space) {
+      // Silently fail if no 3D viewer is open
+      return;
+    }
+
+    return w.showTriangleMeshes(meshes, color, opacity);
+  };
+
+  CATMAID.BoxVolume.prototype.set = function(field, value, forceOverride, noSyncCheck) {
+    // Check parameter for influence on mesh *before* the prototype is called,
+    // this makes sure all property change event handlers can already know that
+    // the mesh needs to be updated. In case a mesh set directly no sync is
+    // needed anymore.
+    if (!noSyncCheck) {
+      if (field == 'mesh') {
+        this.meshNeedsSync = false;
+      } else if (field !== "id" && field !== "title" && field !== 'comment' &&
+          field !== 'previewColor' && field !== 'previewOpacity') {
+        this.meshNeedsSync = true;
+      }
+    }
+
+    CATMAID.Volume.prototype.set.call(this, field, value, forceOverride);
+
+    if (this.preview && this._previewMeshManager) {
+      if (field === 'previewColor' || field === 'previewOpacity') {
+        this._previewMeshManager.setColor(this.previewColor, this.previewOpacity);
+      }
+    }
+  };
 
   /**
    * Get a JSON representation of this object.

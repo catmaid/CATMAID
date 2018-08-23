@@ -584,6 +584,101 @@
     }
   };
 
+  var addPreviewControls = function(content, volume) {
+    // Option to control preview
+    var preview = CATMAID.DOM.createCheckboxSetting(
+        "Preview in 3D viewer", volume.preview, "If checked the first " +
+        "available 3D viewer will be used to preview the meshes before saving.",
+        function(e) { volume.set("preview", this.checked); });
+    content.append(preview);
+
+    // Inject color picker into preview checkbox label
+    var $previewColor = CATMAID.DOM.createInputSetting(
+        "Preview color", volume.previewColor,
+        "Set the color of the volume 3D preview.");
+    content.append($previewColor);
+    CATMAID.ColorPicker.enable($('input', $previewColor), {
+      initialColor: volume.previewColor,
+      initialAlpha: volume.previewOpacity,
+      onColorChange: function(color, alpha, colorChanged, alphaChanged) {
+        if (colorChanged) {
+          var hexColor = CATMAID.tools.rgbToHex(
+            Math.round(255 * color.r),
+            Math.round(255 * color.g),
+            Math.round(255 * color.b));
+          volume.set('previewColor', hexColor);
+        }
+        if (alphaChanged) {
+          volume.set('previewOpacity', alpha);
+        }
+      }
+    });
+  };
+
+  var getPreviewHandlers = function(volume) {
+    // Give some feedback in case of problems
+    var checkGeneratedMesh = function(volume, mesh) {
+      var meshNeedsUpdate = false;
+      if (!mesh || 0 === mesh.length) {
+        CATMAID.warn("Neither points nor mesh could be generated");
+        meshNeedsUpdate = true;
+      } else if (!mesh[0] || 0 === mesh[0].length) {
+        CATMAID.warn("Couldn't find points for volume generation");
+        meshNeedsUpdate = true;
+      } else if (!mesh[1] || 0 === mesh[1].length) {
+        CATMAID.warn("Couldn't generate volume from degenerative points");
+        meshNeedsUpdate = true;
+      }
+      volume.meshNeedsSync = meshNeedsUpdate;
+      return !meshNeedsUpdate;
+    };
+    var onUpdate = function(field, newValue, oldValue) {
+      // Recalculate mesh if preview was just enabled
+      if (volume.preview && "preview" === field) {
+        volume.meshNeedsSync = true;
+      }
+      // Re-create mesh if the updated field is no 'basic' property to avoid
+      // unnecessary re-calculation.
+      if (volume.preview && volume.meshNeedsSync) {
+        $.blockUI({message: '<img src="' + CATMAID.staticURL +
+            'images/busy.gif" /> <span>Please wait, creating volume</span>'});
+        var onSuccess = function(volume, mesh) {
+          checkGeneratedMesh(volume, mesh);
+          $.unblockUI();
+        };
+        var updateMesh = volume.updateTriangleMesh.bind(volume, onSuccess,
+            $.unblockUI.bind($));
+        setTimeout(updateMesh, 100);
+      } else if (!volume.preview && "preview" === field) {
+        // Preview just got disabled
+        volume.clearPreviewData();
+      }
+    };
+    var onClose = function(save, onSuccess, onCancel) {
+      if (save) {
+        var onSuccessWrapper = function(volume, mesh) {
+          if (checkGeneratedMesh(volume, mesh)) {
+            CATMAID.tools.callIfFn(onSuccess);
+          } else {
+            CATMAID.tools.callIfFn(onCancel);
+          }
+          // Remove previewed meshes from 3D viewer
+          volume.clearPreviewData();
+        };
+        if (volume.meshNeedsSync) {
+          volume.updateTriangleMesh(onSuccessWrapper);
+        } else {
+          onSuccessWrapper(volume, volume.mesh);
+        }
+      } else {
+        // Remove previewed meshes from 3D viewer
+        volume.clearPreviewData();
+        CATMAID.tools.callIfFn(onSuccess);
+      }
+    };
+    return [onUpdate, onClose];
+  };
+
   /**
    * Either convex hull or alpha-shape, which are almost identical. The
    * alpha-shape has an extra parameter, the alpha.
@@ -603,34 +698,7 @@
         var $content = CATMAID.DOM.addSettingsContainer($settings,
             name + " rule settings", false);
 
-        // Option to control preview
-        var preview = CATMAID.DOM.createCheckboxSetting(
-            "Preview in 3D viewer", volume.preview, "If checked the first " +
-            "available 3D viewer will be used to preview the meshes before saving.",
-            function(e) { volume.set("preview", this.checked); });
-        $content.append(preview);
-
-        // Inject color picker into preview checkbox label
-        var $previewColor = CATMAID.DOM.createInputSetting(
-            "Preview color", volume.previewColor,
-            "Set the color of the volume 3D preview.");
-        $content.append($previewColor);
-        CATMAID.ColorPicker.enable($('input', $previewColor), {
-          initialColor: volume.previewColor,
-          initialAlpha: volume.previewOpacity,
-          onColorChange: function(color, alpha, colorChanged, alphaChanged) {
-            if (colorChanged) {
-              var hexColor = CATMAID.tools.rgbToHex(
-                Math.round(255 * color.r),
-                Math.round(255 * color.g),
-                Math.round(255 * color.b));
-              volume.set('previewColor', hexColor);
-            }
-            if (alphaChanged) {
-              volume.set('previewOpacity', alpha);
-            }
-          }
-        });
+        addPreviewControls($content, volume);
 
         // The skeleton source
         var availableSources = CATMAID.skeletonListSources.getSourceNames();
@@ -792,67 +860,7 @@
        * Create an array of handlers: [onVolumeUpdate, onVolumeClose]
        */
       createHandlers: function(volume) {
-        // Give some feedback in case of problems
-        var checkGeneratedMesh = function(volume, mesh) {
-          var meshNeedsUpdate = false;
-          if (!mesh || 0 === mesh.length) {
-            CATMAID.warn("Neither points nor mesh could be generated");
-            meshNeedsUpdate = true;
-          } else if (!mesh[0] || 0 === mesh[0].length) {
-            CATMAID.warn("Couldn't find points for volume generation");
-            meshNeedsUpdate = true;
-          } else if (!mesh[1] || 0 === mesh[1].length) {
-            CATMAID.warn("Couldn't generate volume from degenerative points");
-            meshNeedsUpdate = true;
-          }
-          volume.meshNeedsSync = meshNeedsUpdate;
-          return !meshNeedsUpdate;
-        };
-        var onUpdate = function(field, newValue, oldValue) {
-          // Recalculate mesh if preview was just enabled
-          if (volume.preview && "preview" === field) {
-            volume.meshNeedsSync = true;
-          }
-          // Re-create mesh if the updated field is no 'basic' property to avoid
-          // unnecessary re-calculation.
-          if (volume.preview && volume.meshNeedsSync) {
-            $.blockUI({message: '<img src="' + CATMAID.staticURL +
-                'images/busy.gif" /> <span>Please wait, creating volume</span>'});
-            var onSuccess = function(volume, mesh) {
-              checkGeneratedMesh(volume, mesh);
-              $.unblockUI();
-            };
-            var updateMesh = volume.updateTriangleMesh.bind(volume, onSuccess,
-                $.unblockUI.bind($));
-            setTimeout(updateMesh, 100);
-          } else if (!volume.preview && "preview" === field) {
-            // Preview just got disabled
-            volume.clearPreviewData();
-          }
-        };
-        var onClose = function(save, onSuccess, onCancel) {
-          if (save) {
-            var onSuccessWrapper = function(volume, mesh) {
-              if (checkGeneratedMesh(volume, mesh)) {
-                CATMAID.tools.callIfFn(onSuccess);
-              } else {
-                CATMAID.tools.callIfFn(onCancel);
-              }
-              // Remove previewed meshes from 3D viewer
-              volume.clearPreviewData();
-            };
-            if (volume.meshNeedsSync) {
-              volume.updateTriangleMesh(onSuccessWrapper);
-            } else {
-              onSuccessWrapper(volume, volume.mesh);
-            }
-          } else {
-            // Remove previewed meshes from 3D viewer
-            volume.clearPreviewData();
-            CATMAID.tools.callIfFn(onSuccess);
-          }
-        };
-        return [onUpdate, onClose];
+        return getPreviewHandlers(volume);
       },
     };
   };
@@ -924,6 +932,8 @@
         $content.append(inputMaxY);
         $content.append(inputMaxZ);
 
+        addPreviewControls($content, volume);
+
         return $settings;
       },
       createVolume: function(options) {
@@ -933,7 +943,8 @@
        * Create an array of handlers: [onVolumeUpdate, onVolumeClose]
        */
       createHandlers: function(volume) {
-        var handlers = [null, null];
+        var handlers = getPreviewHandlers(volume);
+
         if (project.focusedStackViewer) {
           var stack = project.focusedStackViewer;
           // TODO: Use a proper layer for this and make this work wirh regular
@@ -945,7 +956,8 @@
               volume.minX, volume.minY, Math.abs(volume.maxX - volume.minX),
               Math.abs(volume.maxY - volume.minY), 0, volume.minZ, volume.maxZ);
 
-          var onUpdate = function(field, newValue, oldValue) {
+          let baseOnUpdate = handlers[0];
+          handlers[0] = function(field, newValue, oldValue) {
             boxTool.cropBox.top = volume.minY;
             boxTool.cropBox.bottom = volume.maxY;
             boxTool.cropBox.left = volume.minX;
@@ -953,17 +965,16 @@
             boxTool.cropBox.z1 = volume.minZ;
             boxTool.cropBox.z2 = volume.maxZ;
             boxTool.updateCropBox();
+            baseOnUpdate(field, newValue, oldValue);
           };
-
-          var onCloseVolumeEdit = function(save, onSuccess, onCancel) {
+          let baseOnClose = handlers[1];
+          handlers[1] = function(save, onSuccess, onCancel) {
             boxTool.destroy();
-            onSuccess();
+            baseOnClose.call(this, save, onSuccess, onCancel);
           };
-
-          return [onUpdate, onCloseVolumeEdit];
-        } else {
-          return [null, null];
         }
+
+        return handlers;
       }
     },
 

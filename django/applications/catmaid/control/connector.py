@@ -1074,6 +1074,20 @@ def get_connectors_in_bb_postgis3d(params):
     limit = params.get('limit', 0)
     with_locations = params.get('with_locations', False)
     with_links = params.get('with_links', False)
+    skeleton_ids = params.get('skeleton_ids', False)
+
+    extra_joins = []
+    if skeleton_ids:
+        extra_joins.append("""
+            JOIN (
+                SELECT DISTiNCT tc2.connector_id
+                FROM treenode_connector tc2
+                JOIN UNNEST(%(skeleton_ids)s::int[]) skeleton(id)
+                    ON tc2.skeleton_id = skeleton.id
+            ) allowed_connector(id)
+                ON allowed_connector.id = c.id
+        """)
+
     cursor = connection.cursor()
     cursor.execute("""
         SELECT {distinct} c.id
@@ -1084,6 +1098,7 @@ def get_connectors_in_bb_postgis3d(params):
             ON tce.id = tc.id
         JOIN connector c
             ON c.id = tc.connector_id
+        {extra_joins}
         WHERE tce.edge &&& ST_MakeLine(ARRAY[
             ST_MakePoint(%(minx)s, %(maxy)s, %(maxz)s),
             ST_MakePoint(%(maxx)s, %(miny)s, %(minz)s)] ::geometry[])
@@ -1105,12 +1120,13 @@ def get_connectors_in_bb_postgis3d(params):
         'link_select': ', tc.skeleton_id, tc.confidence, tc.user_id, ' \
                 'tc.treenode_id, tc.creation_time, tc.edition_time' \
                 if with_links else '',
+        'extra_joins': '\n'.join(extra_joins),
     }), params)
 
     return list(cursor.fetchall())
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 @requires_user_role(UserRole.Browse)
 def connectors_in_bounding_box(request, project_id):
     """Get a list of all connector nodes that intersect with the passed in
@@ -1172,6 +1188,13 @@ def connectors_in_bounding_box(request, project_id):
       required: true
       type: float
       paramType: form
+    - name: skeleton_ids
+      description: Skeletons linked to connectors
+      type: array
+      items:
+        type: integer
+      paramType: form
+      required: false
     type:
         - type: array
           items:
@@ -1180,7 +1203,7 @@ def connectors_in_bounding_box(request, project_id):
           required: true
     """
     project_id = int(project_id)
-    data = request.GET
+    data = request.GET if request.method == 'GET' else request.POST
 
     params = {
         'project_id': project_id,
@@ -1192,6 +1215,10 @@ def connectors_in_bounding_box(request, project_id):
         params[p] = float(data.get(p, 0))
     params['halfzdiff'] = abs(params['maxz'] - params['minz']) * 0.5
     params['halfz'] = params['minz'] + (params['maxz'] - params['minz']) * 0.5
+
+    skeleton_ids = get_request_list(data, 'skeleton_ids', map_fn=int)
+    if skeleton_ids:
+        params['skeleton_ids'] = skeleton_ids
 
     connector_ids = get_connectors_in_bb_postgis3d(params)
     return JsonResponse(connector_ids, safe=False)

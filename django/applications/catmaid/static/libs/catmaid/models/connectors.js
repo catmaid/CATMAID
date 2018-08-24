@@ -328,12 +328,15 @@
      * @param {boolean} with_links     (optional) Whether all matched partner
      *                                 link information should be returned.
      *                                 Default is false.
+     * @param {number[]} skeletonIds   (optional) A list of skeleton IDs to
+     *                                 which returned connectors need to be
+     *                                 connected.
      *
      * @returns {Promise} Resolves with a list of intersecting skeleton Ids (or
      *                    more info if requested)..
      */
     inBoundingBox: function(projectId, minX, minY, minZ, maxX, maxY, maxZ,
-        limit, with_locations, with_links) {
+        limit, with_locations, with_links, skeletonIds) {
       return CATMAID.fetch(project.id + '/connectors/in-bounding-box', 'GET', {
         'minx': minX,
         'miny': minY,
@@ -344,6 +347,7 @@
         'limit': limit,
         'with_locations': with_locations,
         'with_links': with_links,
+        'skeleton_ids': skeletonIds,
       });
     },
   };

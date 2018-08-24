@@ -1,5 +1,5 @@
 FROM ubuntu:16.04
-LABEL maintainer="Andrew Champion <andrew.champion@gmail.com>, Tom Kazimiers <tom@voodoo-arts.net"
+LABEL maintainer="Andrew Champion <andrew.champion@gmail.com>, Tom Kazimiers <tom@voodoo-arts.net>"
 
 # For building the image, let dpkg/apt know that we install and configure
 # non-interactively.

@@ -114,7 +114,7 @@
         // The skeleton source
         var sourceSelect = CATMAID.DOM.appendSelect(
             controls,
-            "skeleton-constraint-source-" + this.widgetID,
+            "skeleton-constraint-source",
             "Skeleton constraints",
             [{title: '(none)', value: 'none'}],
             "Only list skeletons for a volume from this skeleton source",
@@ -336,7 +336,7 @@
    *
    */
   VolumeManagerWidget.prototype.updateSkeletonConstraintSources = function() {
-    let sourceSelectSelector = "select#volume_manager_controls_skeleton-constraint-source-" + this.widgetID;
+    let sourceSelectSelector = "select#volume_manager_controls_skeleton-constraint-source";
     let sourceSelect = document.querySelector(sourceSelectSelector);
     if (!sourceSelect) {
       return;

@@ -1119,7 +1119,8 @@ def get_connectors_in_bb_postgis3d(params):
         'location_select': ', c.location_x, c.location_y, c.location_z' \
                 if with_locations else '',
         'link_select': ', tc.skeleton_id, tc.confidence, tc.user_id, ' \
-                'tc.treenode_id, tc.creation_time, tc.edition_time' \
+                'tc.treenode_id, tc.creation_time, tc.edition_time, ' \
+                'tc.relation_id' \
                 if with_links else '',
         'extra_joins': '\n'.join(extra_joins),
     }), params)

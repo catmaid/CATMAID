@@ -23,6 +23,8 @@
     // listing links with specific skeletons.
     this.focusSetSource = 'none';
     this.focusSetRelation = 'none';
+    this.partnerSetSource = 'none';
+    this.partnerSetRelation = 'none';
 
     // The displayed data table
     this.connectorTable = null;
@@ -110,10 +112,38 @@
             "Only list links with this relation.",
             'none',
             function(e) {
-              self.focusSetRelation = this.value;
+              self.focusSetRelation = parseInt(this.value, 10);
               self.updateFilters();
             });
         this.updateRelationSelect(skeletonRelSelect, this.focusSetRelation);
+
+        var partnerSelect = CATMAID.DOM.appendSelect(
+            controls,
+            "partner-constraint-source",
+            "Partner skeletons",
+            [{title: '(any)', value: 'none'}],
+            "Only list links which connect to a connector which is linked to " +
+                "at least one skeleton from the selected source.",
+            'none',
+            function(e) {
+              self.partnerSetSource = this.value;
+              self.updateFilters();
+            });
+        this.updateSkeletonConstraintSourceSelect(partnerSelect);
+
+        var partnerRelSelect = CATMAID.DOM.appendSelect(
+            controls,
+            "partner-relation",
+            "Partner relation",
+            [{title: '(any)', value: 'none'}],
+            "Only list links which connect to a connector which is linked to " +
+                "a skeleton using this relation",
+            'none',
+            function(e) {
+              self.partnerSetRelation = parseInt(this.value, 10);
+              self.updateFilters();
+            });
+        this.updateRelationSelect(partnerRelSelect, this.partnerSetRelation);
       },
       contentID: this.idPrefix + 'content',
       createContent: function(content) {
@@ -188,6 +218,8 @@
                     return '(unknown - id: ' + relationId + ')';
                   }
                   return abbrevMap[relationName] || relationName;
+                } else if (type === 'filter') {
+                  return relationId;
                 }
                 return relationName;
               }
@@ -268,7 +300,7 @@
       return;
     }
 
-    let focusSetSkeletonIds;
+    let allowedSkeletonIds = [];
     if (this.focusSetSource && this.focusSetSource !== 'none') {
       let source = CATMAID.skeletonListSources.getSource(this.focusSetSource);
       if (!source) {
@@ -276,9 +308,7 @@
             this.focusSetSource);
       }
       let skeletonIds = source.getSelectedSkeletons();
-      if (skeletonIds.length > 0) {
-        focusSetSkeletonIds = '(' + skeletonIds.join(')|(') + ')';
-      }
+      Array.prototype.push.apply(allowedSkeletonIds, skeletonIds);
     }
 
     let focusSetRelationId;
@@ -286,7 +316,62 @@
       focusSetRelationId = this.focusSetRelation;
     }
 
-    this.connectorTable.columns(0).search(focusSetSkeletonIds || '', true, false, true);
+
+    let partnerSetSkeletonIds;
+    if (this.partnerSetSource && this.partnerSetSource!== 'none') {
+      let source = CATMAID.skeletonListSources.getSource(this.partnerSetSource);
+      if (!source) {
+        throw new CATMAID.ValueError("Can't find skeleton source: " +
+            this.partnerSetSource);
+      }
+      let skeletonIds = source.getSelectedSkeletons();
+      if (skeletonIds.length > 0) {
+        partnerSetSkeletonIds = skeletonIds;
+      }
+    }
+
+    let partnerSetRelationId;
+    if (this.partnerSetRelation && this.partnerSetRelation !== 'none') {
+      partnerSetRelationId = this.partnerSetRelation;
+    }
+
+    // Find all allowed rows. They are the ones with connectors that have links
+    // to allowed partner skeletons.
+    let allowedConnectorIds;
+    if (partnerSetSkeletonIds || partnerSetRelationId) {
+      allowedConnectorIds = this.connectorTable.rows().data().toArray()
+        .reduce(function(target, row) {
+          // If a row's skeleton ID is part of the partner set, remember its
+          // connector ID. If a partner relation requirement is defined,
+          // remember the connector ID only on a match
+          let skeletonMatch = !partnerSetSkeletonIds ||
+              partnerSetSkeletonIds.indexOf(row[4]) !== -1;
+          let relationMatch = !partnerSetRelationId ||
+              row[10] === partnerSetRelationId;
+          if (skeletonMatch && relationMatch) {
+            target.push(row[0]);
+          }
+          return target;
+        }, []);
+    }
+
+
+    let allowedSkeletonIdsRegEx = '.*';
+    if (allowedSkeletonIds && allowedSkeletonIds.length > 0) {
+      allowedSkeletonIdsRegEx = '(' + allowedSkeletonIds.join(')|(') + ')';
+    }
+    this.connectorTable.columns(0).search(allowedSkeletonIdsRegEx, true, false, true);
+
+    var allowedConnectorIdsRegEx;
+    if (allowedConnectorIds) {
+      if (allowedConnectorIds.length) {
+        allowedConnectorIdsRegEx = '(' + allowedConnectorIds.join(')|(') + ')';
+      } else {
+        allowedConnectorIdsRegEx = '^$';
+      }
+    }
+    this.connectorTable.columns(1).search(allowedConnectorIdsRegEx || '.*', true, false, true);
+
     this.connectorTable.columns(2).search(focusSetRelationId || '');
 
     this.connectorTable.draw();
@@ -303,6 +388,14 @@
       this.updateSkeletonConstraintSourceSelect(sourceSelect);
       this.selectedSkeletonConstraintSource = sourceSelect.value;
     }
+
+    let partnerSelectSelector = "select#connector-list" +
+        this.widgetID + "-controls_partner-constraint-source";
+    let partnerSelect = document.querySelector(partnerSelectSelector);
+    if (partnerSelect) {
+      this.updateSkeletonConstraintSourceSelect(partnerSelect);
+      this.selectedSkeletonConstraintSource = partnerSelect.value;
+    }
   };
 
   ConnectorList.prototype.updateRelationSelect = function(relationSelect, selectedLinkType) {
@@ -315,7 +408,7 @@
           .map(function(lt) {
             return {
               title: lt.name,
-              value: lt.relation
+              value: lt.relation_id
             };
           });
 

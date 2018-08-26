@@ -81,6 +81,12 @@
         table.style.width = "100%";
         content.appendChild(table);
 
+        var relationNames = null;
+        var abbrevMap = {
+          'presynaptic_to': 'pre',
+          'postsynaptic_to': 'post',
+        };
+
         var self = this;
         this.connectorTable = $(table).DataTable({
           dom: "lrfphtip",
@@ -89,10 +95,21 @@
           lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
           ajax: function(data, callback, settings) {
 
+
               // Locally resolve request if no skeletons are provided
-            self.getData()
-              .then(function(connectorData) {
-                return self.filterResults(connectorData);
+            Promise.all([
+                self.getData(),
+                CATMAID.Relations.list(project.id)
+              ])
+              .then(function(results) {
+                if (!relationNames) {
+                  relationNames = {};
+                  for (let relationName in results[1]) {
+                    let relationId = results[1][relationName];
+                    relationNames[relationId] = relationName;
+                  }
+                }
+                return self.filterResults(results[0]);
               })
               .then(function(connectorData) {
                 callback({
@@ -116,6 +133,19 @@
           columns: [
             {data: 4, className: "cm-center", title: "Skeleton ID"},
             {data: 0, className: "cm-center", title: "Connector ID"},
+            {
+              data: 10,
+              title: "Relation",
+              className: "cm-center",
+              render: function(data, type, row, meta) {
+                let relationId = data;
+                let relationName = relationNames[relationId];
+                if (relationName === undefined) {
+                  return '(unknown - id: ' + relationId + ')';
+                }
+                return abbrevMap[relationName] || relationName;
+              }
+            },
             {data: 1, className: "cm-center", title: "X"},
             {data: 2, className: "cm-center", title: "Y"},
             {data: 3, className: "cm-center", title: "Z"},

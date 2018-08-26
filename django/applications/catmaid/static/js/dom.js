@@ -1434,7 +1434,7 @@
    * Append a new select element to another element.
    */
   DOM.appendSelect = function(div, relId, label, entries, title, value, onChangeFn, id) {
-    id = id ? id : (relId ?  (div.id + '_' + id) : undefined);
+    id = id ? id : (relId ? (div.id + '_' + relId) : undefined);
     var select = CATMAID.DOM.createSelect(id, entries, value);
     div.appendChild(select);
     if (title) {

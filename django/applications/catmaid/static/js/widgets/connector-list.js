@@ -19,6 +19,11 @@
       owner: this
     });
 
+    // A skeleton source that is selected to provide skeleton ID constraints for
+    // listing links with specific skeletons.
+    this.focusSetSource = 'none';
+    this.focusSetRelation = 'none';
+
     // The displayed data table
     this.connectorTable = null;
 
@@ -28,6 +33,11 @@
     this.filterRules = [];
     // Filter rules can optionally be disabled
     this.applyFilterRules = true;
+
+    CATMAID.skeletonListSources.on(CATMAID.SkeletonSourceManager.EVENT_SOURCE_ADDED,
+        this.updateSkeletonConstraintSources, this);
+    CATMAID.skeletonListSources.on(CATMAID.SkeletonSourceManager.EVENT_SOURCE_REMOVED,
+        this.updateSkeletonConstraintSources, this);
   };
 
   /**
@@ -52,6 +62,11 @@
   ConnectorList.prototype.destroy = function() {
     this.unregisterInstance();
     this.resultSkeletonSource.destroy();
+
+    SkeletonAnnotations.off(CATMAID.SkeletonSourceManager.EVENT_SOURCE_ADDED,
+        this.updateSkeletonConstraintSources, this);
+    SkeletonAnnotations.off(CATMAID.SkeletonSourceManager.EVENT_SOURCE_REMOVED,
+        this.updateSkeletonConstraintSources, this);
   };
 
   ConnectorList.prototype.getWidgetConfiguration = function() {
@@ -71,6 +86,34 @@
         exportConnectorCSV.setAttribute("title", "Export a CSV file including all connector IDs and locations");
         exportConnectorCSV.onclick = this.exportConnectorCSV.bind(this);
         controls.appendChild(exportConnectorCSV);
+
+        var self = this;
+
+        var sourceSelect = CATMAID.DOM.appendSelect(
+            controls,
+            "skeleton-constraint-source",
+            "Skeletons",
+            [{title: '(any)', value: 'none'}],
+            "Only list links with skeletons from this skeleton source",
+            'none',
+            function(e) {
+              self.focusSetSource = this.value;
+              self.updateFilters();
+            });
+        this.updateSkeletonConstraintSourceSelect(sourceSelect);
+
+        var skeletonRelSelect = CATMAID.DOM.appendSelect(
+            controls,
+            "skeleton-relation",
+            "Relation",
+            [{title: '(any)', value: 'none'}],
+            "Only list links with this relation.",
+            'none',
+            function(e) {
+              self.focusSetRelation = this.value;
+              self.updateFilters();
+            });
+        this.updateRelationSelect(skeletonRelSelect, this.focusSetRelation);
       },
       contentID: this.idPrefix + 'content',
       createContent: function(content) {
@@ -140,10 +183,13 @@
               render: function(data, type, row, meta) {
                 let relationId = data;
                 let relationName = relationNames[relationId];
-                if (relationName === undefined) {
-                  return '(unknown - id: ' + relationId + ')';
+                if (type === 'display') {
+                  if (relationName === undefined) {
+                    return '(unknown - id: ' + relationId + ')';
+                  }
+                  return abbrevMap[relationName] || relationName;
                 }
-                return abbrevMap[relationName] || relationName;
+                return relationName;
               }
             },
             {data: 1, className: "cm-center", title: "X"},
@@ -212,6 +258,103 @@
         type: 'node',
       },
     };
+  };
+
+  /**
+   * Re-apply all current filters.
+   */
+  ConnectorList.prototype.updateFilters = function() {
+    if (!this.connectorTable) {
+      return;
+    }
+
+    let focusSetSkeletonIds;
+    if (this.focusSetSource && this.focusSetSource !== 'none') {
+      let source = CATMAID.skeletonListSources.getSource(this.focusSetSource);
+      if (!source) {
+        throw new CATMAID.ValueError("Can't find skeleton source: " +
+            this.focusSetSource);
+      }
+      let skeletonIds = source.getSelectedSkeletons();
+      if (skeletonIds.length > 0) {
+        focusSetSkeletonIds = '(' + skeletonIds.join(')|(') + ')';
+      }
+    }
+
+    let focusSetRelationId;
+    if (this.focusSetRelation && this.focusSetRelation !== 'none') {
+      focusSetRelationId = this.focusSetRelation;
+    }
+
+    this.connectorTable.columns(0).search(focusSetSkeletonIds || '', true, false, true);
+    this.connectorTable.columns(2).search(focusSetRelationId || '');
+
+    this.connectorTable.draw();
+  };
+
+  /**
+   *
+   */
+  ConnectorList.prototype.updateSkeletonConstraintSources = function() {
+    let sourceSelectSelector = "select#connector-list" +
+        this.widgetID +"-controls_skeleton-constraint-source";
+    let sourceSelect = document.querySelector(sourceSelectSelector);
+    if (sourceSelect) {
+      this.updateSkeletonConstraintSourceSelect(sourceSelect);
+      this.selectedSkeletonConstraintSource = sourceSelect.value;
+    }
+  };
+
+  ConnectorList.prototype.updateRelationSelect = function(relationSelect, selectedLinkType) {
+    return CATMAID.Connectors.linkTypes(project.id)
+      .then(function(json) {
+        var seenLinkTypes = new Set();
+        var linkTypes = json.sort(function(a, b) {
+            return CATMAID.tools.compareStrings(a.name, b.name);
+          })
+          .map(function(lt) {
+            return {
+              title: lt.name,
+              value: lt.relation
+            };
+          });
+
+        let newIndexInNewSelect = -1;
+        for (let i=0; i<linkTypes.length; ++i) {
+          if (linkTypes[i] === selectedLinkType) {
+            newIndexInNewSelect = i;
+            break;
+          }
+        }
+      var linkOptions = [{title: '(any)', value: 'none'}].concat(linkTypes);
+      CATMAID.DOM.appendOptionsToSelect(relationSelect, linkOptions,
+          selectedLinkType, true);
+      });
+  };
+
+  /**
+   * Update a particular select element with the most recent sources.
+   */
+  ConnectorList.prototype.updateSkeletonConstraintSourceSelect = function(sourceSelect) {
+    // Find index of current value in new source list
+    let availableSources = CATMAID.skeletonListSources.getSourceNames();
+    let newIndexInNewSources = -1;
+    for (let i=0; i<availableSources.length; ++i) {
+      if (availableSources[i] === this.selectedSkeletonConstraintSource) {
+        newIndexInNewSources = i;
+        break;
+      }
+    }
+    var sourceOptions = availableSources.reduce(function(o, name) {
+      o.push({
+        title: name,
+        value: name
+      });
+      return o;
+    }, [{title: '(any)', value: 'none'}]);
+
+    CATMAID.DOM.appendOptionsToSelect(sourceSelect, sourceOptions,
+        this.selectedSkeletonConstraintSource, true);
   };
 
   ConnectorList.prototype.getData = function() {

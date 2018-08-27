@@ -184,7 +184,7 @@ database called ``catmaid`` and a database user called
 ``catmaid_user``.  Firstly, we need to reconfigure PostgreSQL to
 allow password-based authentication for that user to that
 database.  To do that, edit the file
-``/etc/postgresql/9.6/main/pg_hba.conf`` and add this line as the
+``/etc/postgresql/10/main/pg_hba.conf`` and add this line as the
 *first* rule in that file::
 
     local catmaid catmaid_user md5
@@ -210,7 +210,7 @@ relations, e.g.::
 
     psql -U catmaid_user catmaid
     Password:
-    psql (9.6.5)
+    psql (10.4)
     Type "help" for help.
 
     catmaid=> \d

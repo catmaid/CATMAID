@@ -19,6 +19,18 @@
       } else {
         return Promise.resolve(relationCache);
       }
+    },
+
+    getNameMap: function(projectId, forceCacheUpdate) {
+      return CATMAID.Relations.list(projectId, forceCacheUpdate)
+        .then(function(relationIds) {
+          let relationNames = {};
+          for (let relationName in relationIds) {
+            let relationId = relationIds[relationName];
+            relationNames[relationId] = relationName;
+          }
+          return relationNames;
+        });
     }
   };
 

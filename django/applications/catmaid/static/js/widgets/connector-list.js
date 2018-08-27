@@ -172,15 +172,11 @@
               // Locally resolve request if no skeletons are provided
             Promise.all([
                 self.getData(),
-                CATMAID.Relations.list(project.id)
+                CATMAID.Relations.getNameMap(project.id)
               ])
               .then(function(results) {
                 if (!relationNames) {
-                  relationNames = {};
-                  for (let relationName in results[1]) {
-                    let relationId = results[1][relationName];
-                    relationNames[relationId] = relationName;
-                  }
+                  relationNames = results[1];
                 }
                 return self.filterResults(results[0]);
               })
@@ -510,17 +506,26 @@
     // Remove "S" column
     header.splice(5, 1);
 
-    // Use original data, but change order to match the table
-    var connectorRows = this.connectorTable.rows({"order": "current"})
-        .data().map(function(row) {
-          return [row[4], row[0], row[1], row[2], row[3], row[5], row[6],
-              row[7], row[8], row[9]];
-        });
-    var csv = header.join(',') + '\n' + connectorRows.map(function(row) {
-      return row.join(',');
-    }).join('\n');
-    var blob = new Blob([csv], {type: 'text/plain'});
-    saveAs(blob, "catmaid-connector-link-list.csv");
+    CATMAID.Relations.getNameMap(project.id)
+      .then(relationNames => {
+        // Use original data, but change order to match the table
+        var connectorRows = this.connectorTable.rows({"order": "current", "search": 'applied'})
+            .data().map(function(row) {
+              let relationId = row[10];
+              let relationName = relationNames[relationId];
+              if (relationName === undefined) {
+                relationName = relationId;
+              }
+              return [row[4], row[0], relationName, row[1], row[2], row[3],
+                  row[5], row[6], row[7], row[8], row[9]];
+            });
+        var csv = header.join(',') + '\n' + connectorRows.map(function(row) {
+          return row.join(',');
+        }).join('\n');
+        var blob = new Blob([csv], {type: 'text/plain'});
+        saveAs(blob, "catmaid-connector-link-list.csv");
+      })
+      .catch(CATMAID.handleError);
   };
 
   /**

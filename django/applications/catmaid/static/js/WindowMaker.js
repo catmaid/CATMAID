@@ -568,7 +568,7 @@ var WindowMaker = new function()
      ['Custom', 'custom']
     ].forEach(function(e, i) {
        var selected = o.connector_color === e[1];
-       synColors.options.add(new Option(e[1], e[1], selected, selected));
+       synColors.options.add(new Option(e[0], e[1], selected, selected));
     });
     if (synColors.selectedIndex === -1) {
       synColors.selectedIndex = 0;

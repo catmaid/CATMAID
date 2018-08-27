@@ -144,6 +144,23 @@ and the actual ``pg_dump`` call is executed as `postgres` user with the help of
 more complicated than this, it is recommended to create a script file and call
 this from cron.
 
+.. note::
+
+   The following tables can be ommitted from a backup (``-T`` option with
+   ``pg_dump``), because they can be recreated after a backup is restored:
+   ``treenode_edge``, ``treenode_connector_edge``, ``connector_geom``,
+   ``catmaid_stats_summary``, ``node_query_cache``, ``catmaid_skeleton_summary``.
+
+   If one or more of these tables isn't part of a backup, it is required to
+   backup the schema separately by using ``pg_dump --schema-only``. When
+   restoring, the schema has to be restored first, followed by a ``pg_restore --data-only
+   --disable-triggers`` of the data dump. Ultimately, the ommitted tables need
+   to be restored, e.g. using ``manage.py catmaid_rebuild_all_materializations``.
+
+   The script ``scripts/database/backup-min-database.py`` can be used to export
+   all databases exluding the tables mention above.
+
+
 Modifying the database directly
 -------------------------------
 

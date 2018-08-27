@@ -564,7 +564,8 @@ var WindowMaker = new function()
      ['N with partner: pre[red > blue], post[yellow > cyan]', 'by-amount'],
      ['Synapse clusters', 'synapse-clustering'],
      ['Max. flow cut: axon (green) and dendrite (blue)', 'axon-and-dendrite'],
-     ['Same as skeleton', 'skeleton']
+     ['Same as skeleton', 'skeleton'],
+     ['Custom', 'custom']
     ].forEach(function(e, i) {
        var selected = o.connector_color === e[1];
        synColors.options.add(new Option(e[1], e[1], selected, selected));
@@ -1207,6 +1208,34 @@ var WindowMaker = new function()
                 .then(function() { WA.render(); });
             },
             length: 4,
+          },
+          {
+            type: 'color-button',
+            label: 'Custom pre-color',
+            title: 'The color used for presynaptic sites when custom connector coloring is selected.',
+            color: {
+              initialColor: WA.options.custom_connector_colors['presynaptic_to'],
+              onColorChange: function(rgb, alpha, colorChanged, alphaChanged, colorHex) {
+                WA.options.custom_connector_colors['presynaptic_to'] = '#' + colorHex;
+                if (WA.options.connector_color === 'custom') {
+                  WA.updateConnectorColors();
+                }
+              }
+            },
+          },
+          {
+            type: 'color-button',
+            label: 'Custom post-color',
+            title: 'The color used for postsynaptic sites when custom connector coloring is selected.',
+            color: {
+              initialColor: WA.options.custom_connector_colors['postsynaptic_to'],
+              onColorChange: function(rgb, alpha, colorChanged, alphaChanged, colorHex) {
+                WA.options.custom_connector_colors['postsynaptic_to'] = '#' + colorHex;
+                if (WA.options.connector_color === 'custom') {
+                  WA.updateConnectorColors();
+                }
+              }
+            },
           },
         ]);
 

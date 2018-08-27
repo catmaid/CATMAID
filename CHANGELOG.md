@@ -33,6 +33,9 @@ Connectivity matrix:
 - The X/Y/Z rainbow coloring modes are now also available normalized to each
   individual skeleton.
 
+- Add custom connector coloring. The pre and post colors can be adjusted in the
+  "Shading parameters" tab.
+
 Reconstruction sampler:
 
 - Improve performance of interval length computation

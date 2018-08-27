@@ -1207,6 +1207,10 @@
     this.color_method = 'none';
     this.tag_regex = '';
     this.connector_color = 'cyan-red';
+    this.custom_connector_colors = {
+        'presynaptic_to': '#ffa500',
+        'postsynaptic_to': '#005aff',
+    };
     this.camera_view = 'perspective';
     this.lean_mode = false;
     this.synapse_clustering_bandwidth = 5000;
@@ -6258,7 +6262,9 @@
 
 
   WebGLApplication.prototype.updateConnectorColors = function(select) {
-    this.options.connector_color = select.value;
+    if (select) {
+      this.options.connector_color = select.value;
+    }
     var skeletons = Object.keys(this.space.content.skeletons).map(function(skid) {
       return this.space.content.skeletons[skid];
     }, this);
@@ -6345,16 +6351,23 @@
       };
 
       if ('cyan-red' === options.connector_color ||
-          'cyan-red-dark' === options.connector_color) {
+          'cyan-red-dark' === options.connector_color ||
+          'custom' === options.connector_color) {
+
         var pre = self.staticContent.synapticColors[0],
             post = self.staticContent.synapticColors[1];
 
-        pre.color.setRGB(1, 0, 0); // red
+        if ('custom' === options.connector_color) {
+          pre.color.setStyle(options.custom_connector_colors['presynaptic_to']);
+          post.color.setStyle(options.custom_connector_colors['postsynaptic_to']);
+        } else {
+          pre.color.setRGB(1, 0, 0); // red
+          if ('cyan-red' === options.connector_color) post.color.setRGB(0, 1, 1); // cyan
+          else post.color.setHex(0x00b7eb); // dark cyan
+        }
         pre.vertexColors = THREE.NoColors;
         pre.needsUpdate = true;
 
-        if ('cyan-red' === options.connector_color) post.color.setRGB(0, 1, 1); // cyan
-        else post.color.setHex(0x00b7eb); // dark cyan
         post.vertexColors = THREE.NoColors;
         post.needsUpdate = true;
 
@@ -6409,7 +6422,8 @@
   /** Operates in conjunction with updateConnectorColors above. */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.completeUpdateConnectorColor = function(options, json) {
     if ('cyan-red' === options.connector_color ||
-        'cyan-red-dark' === options.connector_color) {
+        'cyan-red-dark' === options.connector_color ||
+        'custom' === options.connector_color) {
       this.CTYPES.slice(1).forEach(function(type, i) {
         this.geometry[type].colors = [];
         this.geometry[type].colorsNeedUpdate = true;

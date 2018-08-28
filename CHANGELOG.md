@@ -55,6 +55,9 @@ Reconstruction sampler:
   Clicking on individual bins will open a treenode table containing the
   respective start nodes of the ignored leaf segments.
 
+- The Synapse tab now also shows all leaf nodes of an interval. This makes it
+  easier to find the places where an interval needs to be continued.
+
 Docker:
 
 - More CATMAID configuration options are now accessible through Docker

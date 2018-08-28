@@ -231,7 +231,8 @@
     div.appendChild(fileButton);
     var open = document.createElement('input');
     open.setAttribute("type", "button");
-    open.setAttribute("value", "Open");
+    open.setAttribute("value", label || "Open");
+    open.setAttribute("title", title);
     open.onclick = function() { fileButton.click(); };
     div.appendChild(open);
 

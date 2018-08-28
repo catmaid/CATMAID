@@ -2379,6 +2379,10 @@
   };
 
   SynapseWorkflowStep.prototype.updateContent = function(content, widget) {
+    var arbor = widget.state['arbor'];
+    if (!arbor) {
+      throw new CATMAID.ValueError("Need arbor for synapse workflow step");
+    }
     var interval = widget.state['interval'];
     if (!interval) {
       throw new CATMAID.ValueError("Need interval for synapse workflow step");
@@ -2446,6 +2450,12 @@
     var upstreamTable = document.createElement('table');
     content.appendChild(upstreamTable);
 
+    var leafHeader = content.appendChild(document.createElement('h3'));
+    leafHeader.appendChild(document.createTextNode('Leaf nodes'));
+    leafHeader.style.clear = 'both';
+    var leafTable = document.createElement('table');
+    content.appendChild(leafTable);
+
     // Get current arbor. Don't use the cached one, because the user is expected
     // to change the arbor in this step.
     var prepare = CATMAID.Sampling.getArbor(skeletonId)
@@ -2467,7 +2477,8 @@
       .then(function() {
         self.datatables = [
           self.makeConnectorTable(widget, downstreamTable, interval, skeletonId, "presynaptic_to"),
-          self.makeConnectorTable(widget, upstreamTable, interval, skeletonId, "postsynaptic_to")
+          self.makeConnectorTable(widget, upstreamTable, interval, skeletonId, "postsynaptic_to"),
+          self.makeLeafNodeTable(widget, leafTable, arbor.arbor, self.intervalTreenodes, skeletonId),
         ];
       })
       .catch(CATMAID.handleError);
@@ -2659,6 +2670,93 @@
 
     datatable.on('click', 'a[data-action=select-node]', function() {
       var nodeId = this.dataset.nodeId;
+      SkeletonAnnotations.staticMoveToAndSelectNode(nodeId);
+    });
+
+    return datatable;
+  };
+
+  SynapseWorkflowStep.prototype.makeLeafNodeTable = function(widget, table,
+      arbor, intervalNodes, skeletonId) {
+    let self = this;
+    let datatable = $(table).DataTable({
+      dom: "lrfhtip",
+      autoWidth: false,
+      paging: true,
+      lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+      ajax: function(data, callback, settings) {
+        // Find leaf nodes in interval nodes
+        let successors = arbor.allSuccessorsCount();
+        let leaves = [];
+        for (let nodeId of intervalNodes) {
+          if (!successors[nodeId]) {
+            leaves.push(nodeId);
+          }
+        }
+        Promise.all([
+          CATMAID.fetch(project.id + '/treenodes/compact-detail', 'POST', {
+            'treenode_ids': leaves,
+          })
+        ])
+        .then(function(leafDetail) {
+          callback({
+            draw: data.draw,
+            data: leafDetail[0]
+          });
+        })
+        .catch(CATMAID.handleError);
+      },
+      order: [[2, 'desc']],
+      columns: [
+        {
+          data: 0,
+          title: "Node",
+          orderable: true,
+          class: "cm-center",
+          render: function(data, type, row, meta) {
+            if (type === "display") {
+              return '<a href="#" data-action="select-node" data-node-id="' +
+                  data + '">' + data + '</a>';
+            }
+            return data;
+          }
+        },
+        {
+          data: 9,
+          title: "User",
+          orderable: true,
+          class: "cm-center",
+          render: function(data, type, row, meta) {
+            return CATMAID.User.safe_get(data).login;
+          }
+        },
+        {
+          data: 8,
+          title: "Last edited on (UTC)",
+          class: "cm-center",
+          orderable: true,
+          render: function(data, type, row, meta) {
+            return formatDate(new Date(data));
+          }
+        },
+        {
+          title: "Action",
+          orderable: true,
+          class: "cm-center",
+          render: function(data, type, row, meta) {
+            return '<a href="#" data-action="select-node">select</a>';
+          }
+        }
+      ],
+      createdRow: function( row, data, dataIndex ) {
+        row.setAttribute('data-node-id', data[0]);
+      },
+      drawCallback: function(settings) {
+        highlightActiveNode.call(this);
+      }
+    }).on('click', 'a[data-action=select-node]', function() {
+      let row = this.closest('tr');
+      let nodeId = parseInt(row.dataset.nodeId, 10);
       SkeletonAnnotations.staticMoveToAndSelectNode(nodeId);
     });
 

@@ -812,6 +812,15 @@ var WindowMaker = new function()
       volumeSelectionWrapper.appendChild(volumeSelection);
     };
 
+    // Replace point cloud selection wrapper children with new select
+    var refreshPointcloudList = function() {
+      while (0 !== pointCloudSelectionWrapper.children.length) {
+        pointCloudSelectionWrapper.removeChild(pointCloudSelectionWrapper.children[0]);
+      }
+      var pointcloudSelection = DOM.createAsyncPlaceholder(initPointCloudList());
+      pointCloudSelectionWrapper.appendChild(pointcloudSelection);
+    };
+
     DOM.appendToTab(tabs['View settings'],
         [
           [volumeSelectionWrapper],
@@ -1614,11 +1623,19 @@ var WindowMaker = new function()
 
     CATMAID.Volumes.on(CATMAID.Volumes.EVENT_VOLUME_ADDED,
         refreshVolumeList, WA);
+    CATMAID.Pointcloud.on(CATMAID.Pointcloud.EVENT_POINTCLOUD_ADDED,
+        refreshPointcloudList, WA);
+    CATMAID.Pointcloud.on(CATMAID.Pointcloud.EVENT_POINTCLOUD_DELETED,
+        refreshPointcloudList, WA);
 
     // Clear listeners that were added above
     var unregisterUIListeners = function() {
       CATMAID.Volumes.off(CATMAID.Volumes.EVENT_VOLUME_ADDED,
           refreshVolumeList, WA);
+      CATMAID.Pointcloud.off(CATMAID.Pointcloud.EVENT_POINTCLOUD_ADDED,
+          refreshPointcloudList, WA);
+      CATMAID.Pointcloud.off(CATMAID.Pointcloud.EVENT_POINTCLOUD_DELETED,
+          refreshPointcloudList, WA);
     };
 
     var destroy = wrapSaveState(WA, WA.destroy);

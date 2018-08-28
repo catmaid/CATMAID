@@ -18,7 +18,7 @@
     this.showOnlyMatchesInResult = true;
 
     this.mode = 'similarity';
-    this.modes = ['similarity', 'configrations'];
+    this.modes = ['similarity', 'configrations', 'pointclouds'];
 
     CATMAID.Similarity.on(CATMAID.Similarity.EVENT_CONFIG_ADDED,
         this.handleAddedConfig, this);
@@ -28,6 +28,8 @@
 
   NeuronSimilarityWidget.prototype = {};
   $.extend(NeuronSimilarityWidget.prototype, new InstanceRegistry());
+
+  CATMAID.asEventSource(NeuronSimilarityWidget.prototype);
 
   NeuronSimilarityWidget.prototype.getName = function() {
     return "Neuron Similarity " + this.widgetID;
@@ -86,7 +88,35 @@
       },
       helpText: [
         '<h1>Neuron Similarity Widget</h1>',
-        '<p>This widget allows to compare neuron morphologies based on their spatial location and orientation.</p>'
+        '<p>This widget allows to compare neuron morphologies based on their spatial location and orientation.</p>',
+        '<h2>Neuron similarity</h2>',
+        '<h2>Configurations</h2>',
+        '<h2>Point clouds</h2>',
+        '<p>This tab list all registered point clouds and allows to add single new point clouds. ',
+        'To add new point clouds a <em>name</em> is needed as well as a set of points. By clicking ',
+        'the <kbd>Point CSV</kbd> button, points can be loaded from a file. This CSV file is ',
+        'expected to have three columns: <em>X, Y and Z</em>. When storing new point clouds in ',
+        'the database, the coordinates are expected to be in <em>project space</em>.</p>',
+
+        '<p>Since this isn\'t always easy to provide, a separate <em>transformation</em> file ',
+        'can be loaded using the <kbd>Transformation CSV</kbd> button. This CSV file can have ',
+        'either <em>9 or 15 columns</em>. If 9 columns are provided, they are expected to ',
+        'represent the following: <span class="inline-code">Name</span>, ',
+        '<span class="inline-code">Source name</span>, <span class="inline-code">Target name</span>, ',
+        '<span class="inline-code">Source x</span>, <span class="inline-code">Source y</span>, ',
+        '<span class="inline-code">Source z</span>, <span class="inline-code">Target x</span>, ',
+        '<span class="inline-code">Target y</span>, <span class="inline-code">Target z</span>. ',
+        'This will describe point matches from the source space (<em>Point CSV</em>) to the ',
+        'target (project) space. Alternatively, a 15 column format can be used, which ',
+        'further distringuishes between point matches on the left and on the right side, which ',
+        'is useful in some datasets. Those 15 columns are: <span class="inline-code">Name</span>, ',
+        '<span class="inline-code">Source name</span>, <span class="inline-code">Target name</span>, ',
+        '<span class="inline-code">Source left x</span>, <span class="inline-code">Source left y</span>, ',
+        '<span class="inline-code">Source left z</span>, <span class="inline-code">Target left x</span>, ',
+        '<span class="inline-code">Target left y</span>, <span class="inline-code">Target left z</span>, ',
+        '<span class="inline-code">Source right x</span>, <span class="inline-code">Source right y</span>, ',
+        '<span class="inline-code">Source right z</span>, <span class="inline-code">Target right x</span>, ',
+        '<span class="inline-code">Target right y</span>, <span class="inline-code">Target right z</span>.</p>',
       ].join('\n'),
     };
   };
@@ -161,6 +191,44 @@
         mode.handleSimilarityStatusChange(this, similarityId, status);
       }
     }
+  };
+
+  NeuronSimilarityWidget.prototype.addPointCloud = function(newPointcloudName,
+      newPointcloudDescription, pointData, pointMatches, images) {
+    if (!newPointcloudName) {
+      throw new CATMAID.ValueError("Need a point cloud name");
+    }
+    if (!pointData) {
+      throw new CATMAID.ValueError("Need point data for point cloud");
+    }
+
+    // If there are point matches, transform the input point data.
+    if (pointMatches) {
+      let matches = pointMatches.map(m => new CATMAID.transform.PointMatch(
+          new CATMAID.transform.Point(m.source),
+          new CATMAID.transform.Point(m.target), 1.0));
+
+      if (!matches || matches.length === 0) {
+        throw new CATMAID.ValueError("Could not create point matches for point cloud");
+      }
+
+      var mls = new CATMAID.transform.MovingLeastSquaresTransform();
+      var model = new CATMAID.transform.AffineModel3D();
+      mls.setModel(model);
+
+      try {
+        mls.setMatches(matches);
+      } catch (error) {
+        throw new CATMAID.ValueError("Could not fit model for point cloud transformation");
+      }
+
+
+      // Get a transformed copy of each point.
+      pointData = pointData.map(p => mls.apply(p));
+    }
+
+    return CATMAID.Pointcloud.add(project.id, newPointcloudName, pointData,
+        newPointcloudDescription, images);
   };
 
   function listToStr(list) {
@@ -900,6 +968,370 @@
         }
       }
     },
+    pointclouds: {
+      title: "Point clouds",
+      createControls: function(widget) {
+        let newPointcloudName = '';
+        let newPointcloudDescription = '';
+        let csvLineSkip = true;
+        let pointData = null;
+        let pointMatches = null;
+        let images = null;
+
+        let newPointcloudSection = document.createElement('span');
+        newPointcloudSection.classList.add('section-header');
+        newPointcloudSection.appendChild(document.createTextNode('New point cloud'));
+
+        return [{
+          type: 'button',
+          label: 'Refresh',
+          onclick: widget.refresh.bind(widget),
+        }, {
+          type: 'button',
+          label: 'Reset',
+          onclick: function() {
+            newPointcloudName = '';
+            newPointcloudDescription = '';
+            csvLineSkip = true;
+            pointData = null;
+            pointMatches = null;
+            images = null;
+            // Reset UI
+            $('#neuron-similarity-new-pointcloud-name' + widget.widgetID)
+              .val('');
+            $('#neuron-similarity-new-pointcloud-description' + widget.widgetID)
+              .val('');
+            $('#neuron-similarity-new-pointcloud-header' + widget.widgetID)
+              .prop('checked', true);
+            $('#neuron-similarity-new-pointcloud-points' + widget.widgetID)
+              .val('');
+            $('#neuron-similarity-new-pointcloud-images' + widget.widgetID)
+              .val('');
+            $('#neuron-similarity-new-pointcloud-images' + widget.widgetID + ' + input[type=button]')
+              .val('Images');
+            $('#neuron-similarity-new-pointcloud-transformation' + widget.widgetID)
+              .val('');
+            $('#neuron-similarity-new-pointcloud-points' + widget.widgetID)
+              .closest('div')
+              .find('.files-loaded')
+              .removeClass('files-loaded');
+
+            CATMAID.msg("Success", "Point cloud form reset");
+          }
+        }, {
+          type: 'child',
+          element: newPointcloudSection,
+        }, {
+          type: 'text',
+          label: 'Name',
+          title: 'An optional name for this pointcloud',
+          id: 'neuron-similarity-new-pointcloud-name' + widget.widgetID,
+          value: newPointcloudName,
+          length: 8,
+          onchange: function() {
+            newPointcloudName = this.value;
+          }
+        }, {
+          type: 'text',
+          label: 'Descr.',
+          title: 'An optional description of this pointcloud',
+          id: 'neuron-similarity-new-pointcloud-description' + widget.widgetID,
+          placeholder: '(optional)',
+          value: newPointcloudDescription,
+          length: 8,
+          onchange: function() {
+            newPointcloudDescription = this.value;
+          }
+        }, {
+          type: 'checkbox',
+          label: 'CSV header',
+          id: 'neuron-similarity-new-pointcloud-header' + widget.widgetID,
+          value: csvLineSkip,
+          onclick: function() {
+            csvLineSkip = this.value;
+          },
+        }, {
+          type: 'file',
+          label: 'Point CSV',
+          title: 'A CSV file that contains each point of this pointcloud. Each row should have the x, y and z values.',
+          id: 'neuron-similarity-new-pointcloud-points' + widget.widgetID,
+          multiple: false,
+          onclick: function(e, clickedButton) {
+            // Try loading point CSV file
+            if (e.target.files.length !== 1) {
+              CATMAID.warn("Please select a single point CSV file");
+              return;
+            }
+            let self = this;
+            CATMAID.parseCSVFile(e.target.files[0], ',', csvLineSkip ? 1 : 0,
+                hasThreeElements)
+              .then(function(parsedPointData) {
+                parsedPointData.forEach(function(p) {
+                  p[0] = parseFloat(p[0]);
+                  p[1] = parseFloat(p[1]);
+                  p[2] = parseFloat(p[2]);
+                });
+                pointData = parsedPointData;
+                self.classList.add('files-loaded');
+                clickedButton.classList.add('files-loaded');
+                CATMAID.msg("Success", "Read " + parsedPointData.length + " points");
+              })
+              .catch(CATMAID.handleError);
+          }
+        }, {
+          type: 'file',
+          label: 'Transformation CSV',
+          title: 'A CSV file that contains an optional set of point matches that is used to build a transformation that is applied to the input points.',
+          id: 'neuron-similarity-new-pointcloud-transformation' + widget.widgetID,
+          multiple: false,
+          onclick: function(e, clickedButton) {
+            // Try loading point CSV file
+            if (e.target.files.length !== 1) {
+              CATMAID.warn("Please select a single transformation CSV file");
+              return;
+            }
+            let self = this;
+            CATMAID.parseCSVFile(e.target.files[0], ',', csvLineSkip ? 1 : 0)
+              .then(function(transformationData) {
+                if (!transformationData || transformationData.length === 0) {
+                  throw new CATMAID.ValueError("Could not find any transformation data");
+                }
+                let nColumns = transformationData[0].length;
+                if (nColumns !== 9 && nColumns !== 15) {
+                  throw new CATMAID.ValueError("Expected 9 or 15 columns, found " + nColumns);
+                }
+                let hasMirrorData = nColumns === 15;
+
+                pointMatches = [];
+
+                if (hasMirrorData) {
+                  transformationData.forEach(function(p) {
+                    if (p.length !== nColumns) {
+                      return;
+                    }
+                    let name = p[0], sourceName = p[1], targetName = p[2],
+                        lSourceX = parseFloat(p[3]), lSourceY = parseFloat(p[4]), lSourceZ = parseFloat(p[5]),
+                        lTargetX = parseFloat(p[6]), lTargetY = parseFloat(p[7]), lTargetZ = parseFloat(p[8]),
+                        rSourceX = parseFloat(p[9]), rSourceY = parseFloat(p[10]), rSourceZ = parseFloat(p[11]),
+                        rTargetX = parseFloat(p[12]), rTargetY = parseFloat(p[13]), rTargetZ = parseFloat(p[14]);
+                    pointMatches.push({
+                      name: name,
+                      sourceName: sourceName,
+                      targetName: targetName,
+                      source: [lSourceX, lSourceY, lSourceZ],
+                      target: [lTargetX, lTargetY, lTargetZ],
+                    });
+                    pointMatches.push({
+                      name: name,
+                      sourceName: sourceName,
+                      targetName: targetName,
+                      source: [rSourceX, rSourceY, rSourceZ],
+                      target: [rTargetX, rTargetY, rTargetZ],
+                    });
+                  });
+                } else {
+                  transformationData.forEach(function(p) {
+                    if (p.length !== nColumns) {
+                      return;
+                    }
+                    let name = p[0], sourceName = p[1], targetName = p[2],
+                        sourceX = parseFloat(p[3]), sourceY = parseFloat(p[4]), sourceZ = parseFloat(p[5]),
+                        targetX = parseFloat(p[6]), targetY = parseFloat(p[7]), targetZ = parseFloat(p[8]);
+                    pointMatches.push({
+                      name: name,
+                      sourceName: sourceName,
+                      targetName: targetName,
+                      source: [sourceX, sourceY, sourceZ],
+                      target: [targetX, targetY, targetZ],
+                    });
+                  });
+                }
+
+                self.classList.add('files-loaded');
+                clickedButton.classList.add('files-loaded');
+                CATMAID.msg("Success", "Read " + pointMatches.length + " point matches");
+              })
+              .catch(CATMAID.handleError);
+          }
+        }, {
+          type: 'file',
+          label: 'Images',
+          title: 'An optional set of image files that represents the pointcloud',
+          id: 'neuron-similarity-new-pointcloud-images' + widget.widgetID,
+          multiple: false,
+          onclick: function(e, clickedButton) {
+            // Try loading point CSV file
+            if (e.target.files.length !== 1) {
+              CATMAID.warn("Please select a single image file at a time");
+              return;
+            }
+            let self = this;
+            let file = e.target.files[0];
+            let reader = new FileReader();
+            reader.onload = function() {
+              let dataURL = reader.result;
+              // Ask user for description for each image
+              let dialog = new CATMAID.OptionsDialog("Image description");
+              dialog.appendMessage("Please add a description for image \"" + file.nam +"\".");
+              let description = dialog.appendField("Description", undefined, "", true);
+              dialog.onOK = function() {
+                if (!images) {
+                  images = [];
+                }
+                images.push({
+                  description: description.value,
+                  image: dataURL,
+                });
+                self.classList.add('files-loaded');
+                clickedButton.classList.add('files-loaded');
+                clickedButton.value = "Images (" + images.length + ")";
+                CATMAID.msg("Success", "Image \"" + file.name + "\" added");
+              };
+              dialog.show("auto", "auto");
+            };
+            reader.readAsDataURL(file);
+          }
+        }, {
+          type: 'button',
+          label: 'Add point cloud',
+          onclick: function() {
+            if (!newPointcloudName) {
+              CATMAID.warn("Need a point cloud name");
+              return;
+            }
+            if (!pointData) {
+              CATMAID.warn("Need point data for point cloud");
+              return;
+            }
+            widget.addPointCloud(newPointcloudName, newPointcloudDescription,
+                pointData, pointMatches, images)
+              .then(function() {
+                widget.refresh();
+                CATMAID.msg("Success", "Point cloud created");
+              })
+              .catch(CATMAID.handleError);
+          },
+        }];
+      },
+      createContent: function(content, widget) {
+        // Create table of all visible configurations.
+        let container = content.appendChild(document.createElement('div'));
+        container.classList.add('container');
+        let table = container.appendChild(document.createElement('table'));
+        table.setAttribute('id', widget.idPrefix + 'pointcloud-table');
+        let datatable = $(table).DataTable({
+          dom: 'lfrtip',
+          autoWidth: false,
+          paging: true,
+          lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+          ajax: function(data, callback, settings) {
+            CATMAID.Pointcloud.listAll(project.id)
+              .then(function(result) {
+                callback({
+                  draw: data.draw,
+                  data: result,
+                  recordsTotal: result.length,
+                  recordsFiltered: result.length
+                });
+              })
+              .catch(CATMAID.handleError);
+          },
+          order: [],
+          columns: [{
+              data: "id",
+              title: "Id",
+              orderable: true,
+              class: 'cm-center',
+              render: function(data, type, row, meta) {
+                return row.id;
+              }
+            }, {
+              data: "name",
+              title: "Name",
+              orderable: true,
+              class: 'cm-center',
+              render: function(data, type, row, meta) {
+                if ("display") {
+                  return '<a href="#" data-action="select-group" data-group-id="' +
+                      row.id + '" >' + row.name + '</a>';
+                } else {
+                  return row.name;
+                }
+              }
+            }, {
+              data: "description",
+              title: "Description",
+              orderable: true,
+              class: 'cm-center',
+              render: function(data, type, row, meta) {
+                return data && data.length > 0 ? data : '(none)';
+              }
+            }, {
+              title: "User",
+              orderable: true,
+              class: 'cm-center',
+              render: function(data, type, row, meta) {
+                return CATMAID.User.safe_get(row.user_id).login;
+              }
+            }, {
+              data: "creation_time",
+              title: "Created on (UTC)",
+              class: "cm-center",
+              searchable: true,
+              orderable: true,
+              render: function(data, type, row, meta) {
+                if (type === 'display') {
+                  var date = CATMAID.tools.isoStringToDate(row.creation_time);
+                  if (date) {
+                    return CATMAID.tools.dateToString(date);
+                  } else {
+                    return "(parse error)";
+                  }
+                } else {
+                  return data;
+                }
+              }
+            }, {
+              title: "Action",
+              class: 'cm-center',
+              render: function(data, type, row, meta) {
+                return '<a href="#" data-role="delete-pointcloud">Delete</a> <a href="#" data-role="show-points">View</a>';
+              }
+            }],
+          createdRow: function( row, data, dataIndex ) {
+            row.setAttribute('data-pointcloud-id', data.id);
+          },
+        }).on('click', 'a[data-role=delete-pointcloud]', function() {
+          let pointcloudId = this.closest('tr').dataset.pointcloudId;
+          if (pointcloudId) {
+            CATMAID.Pointcloud.delete(project.id, pointcloudId)
+              .then(result => {
+                datatable.ajax.reload();
+                CATMAID.msg("Success", "Deleted point cloud #" + result.pointcloud_id);
+              })
+              .catch(CATMAID.handleError);
+          }
+        }).on('click', 'a[data-role=show-pointcloud]', function() {
+
+        });
+      },
+      refresh: function(widget) {
+        let table = document.getElementById(widget.idPrefix + 'pointcloud-table');
+        if (table) {
+          $(table).DataTable().ajax.reload();
+        }
+      }
+    },
+  };
+
+  function hasThreeElements(l) {
+    return l.length === 3;
+  }
+
+  NeuronSimilarityWidget.parsePointCSVFile = function(file, skipHeader) {
+    return Promise(function(resolve, reject) {
+
+    });
   };
 
   NeuronSimilarityWidget.showSimilarityScoringDialog = function(similarity) {

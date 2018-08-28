@@ -1050,17 +1050,20 @@ class PointCloud(UserFocusedModel):
     name = models.TextField()
     description = models.TextField(default="")
     source_path = models.TextField(default="")
+    images = models.ManyToManyField("ImageData", through='PointCloudImageData')
+    points = models.ManyToManyField("Point", through='PointCloudPoint')
 
     class Meta:
         db_table = 'pointcloud'
 
 
 class PointCloudPoint(models.Model):
-    """Links a point to a pointcloud for a particular project.
+    """Links a point to a pointcloud for a particular project. Referential
+    integretry (delete cascade) is taken care of by the database.
     """
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    pointcloud = models.ForeignKey(PointCloud, on_delete=models.CASCADE)
-    point = models.ForeignKey(Point, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.DO_NOTHING)
+    pointcloud = models.ForeignKey(PointCloud, on_delete=models.DO_NOTHING)
+    point = models.ForeignKey(Point, on_delete=models.DO_NOTHING)
 
     class Meta:
         db_table = 'pointcloud_point'
@@ -1080,11 +1083,12 @@ class ImageData(UserFocusedModel):
 
 
 class PointCloudImageData(models.Model):
-    """Links a piece of image data to a point cloud.
+    """Links a piece of image data to a point cloud. Referential integretry
+    (delete cascade) is taken care of by the database.
     """
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    pointcloud = models.ForeignKey(PointCloud, on_delete=models.CASCADE)
-    image_data = models.ForeignKey(ImageData, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.DO_NOTHING)
+    pointcloud = models.ForeignKey(PointCloud, on_delete=models.DO_NOTHING)
+    image_data = models.ForeignKey(ImageData, on_delete=models.DO_NOTHING)
 
     class Meta:
         db_table = 'pointcloud_image_data'

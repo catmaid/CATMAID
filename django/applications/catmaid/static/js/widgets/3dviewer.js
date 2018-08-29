@@ -1717,15 +1717,18 @@
         'skeletonIds': filteredConnectorIds.length ? visible_skeletons : []
       };
 
+      let updatedSkeletons = [];
       for (var skeleton_id in skeletons) {
         if (skeletons.hasOwnProperty(skeleton_id)) {
           skeletons[skeleton_id].remove_connector_selection();
           if (skeleton_id in visible_set) {
             skeletons[skeleton_id].create_connector_selection( common );
             skeletons[skeleton_id].updateConnectorRestictionVisibilities();
+            updatedSkeletons.push(skeletons[skeleton_id]);
           }
         }
       }
+      this.space.updateRestrictedConnectorColors(updatedSkeletons);
     } else {
       skids.forEach(function(skid) {
         skeletons[skid].remove_connector_selection();
@@ -6651,7 +6654,7 @@
           var v2 = vertices1[i+1];
           vertices2.push(v2);
           vertices2.push(v);
-          connectors.push([v2, material, type]);
+          connectors.push([v2, material, type, {connector_id: v.node_id, node_id: v.treenode_id}]);
         }
       }
 
@@ -6672,7 +6675,7 @@
         var partnerSpheres = {};
         var visible = this.connectorVisibility[type];
         geometry.createAll(connectors, scaling, visible, null, function(v, m, o, bufferObject) {
-          partnerSpheres[v.node_id] = bufferObject;
+          partnerSpheres[o[3].node_id] = bufferObject;
         });
 
         var sphereMaterial = geometry.createMaterial(materialType);
@@ -7200,6 +7203,7 @@
       var type = con[2];
       if (type === -1) return;
       var v1 = new THREE.Vector3(con[3], con[4], con[5]);
+      v1.treenode_id = con[0];
       v1.node_id = con[1];
       var v2 = vs[con[0]];
       if (v1 && v2) {

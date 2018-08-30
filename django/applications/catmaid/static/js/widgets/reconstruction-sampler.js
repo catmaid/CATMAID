@@ -2117,9 +2117,9 @@
       if (currentNodeId != domain.start_node_id &&
           (intervalId === undefined || intervalId === null)) {
         // This node is part of the domain, but part of no interval. This
-        // can only happen at the end of branches and we don't have to
-        // expect more valid intervals on this branch. Therefore, we can
-        // just all all successors to the the current ignoredFragment;
+        // should only happen at the end of branches. While we don't have to
+        // expect more valid intervals on this branch, continue traversal for
+        // the sake of robustness.
         if (!currentFragmentId && currentFragmentId !== 0) {
           // Add last node, we need it for distance computations.
           currentFragmentId = lastNodeId;
@@ -2137,6 +2137,10 @@
         }
         let length = leafFragmentLengths[currentFragmentId] || 0;
         leafFragmentLengths[currentFragmentId] = length + lastPos.distanceTo(pos);
+      } else {
+        // If the current node is part of an interval, make sure it isn't
+        // counted as part of an ignored leaf fragment.
+        currentFragmentId = null;
       }
 
       // If we hit a domain end, we stop looking for successors in this branch

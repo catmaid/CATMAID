@@ -2708,7 +2708,7 @@
         .then(function(leafDetail) {
           callback({
             draw: data.draw,
-            data: leafDetail[0]
+            data: leafDetail
           });
         })
         .catch(CATMAID.handleError);

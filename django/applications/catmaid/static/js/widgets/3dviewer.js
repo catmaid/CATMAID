@@ -956,7 +956,7 @@
       sk.synapticTypes.forEach(function(type) {
         var vs = (sk.connectoractor ? sk.connectorgeometry : sk.geometry)[type].vertices;
         for (var i=0; i<vs.length; i+=2) {
-          rows.push([vs[i].node_id, skid, vs[i+1].node_id, type].join(','));
+          rows.push([vs[i].node_id, skid, vs[i].treenode_id, type].join(','));
         }
       });
     });
@@ -1111,7 +1111,7 @@
         synapticTypes.forEach(function(type) {
           var vs = sk.geometry[type].vertices;
           for (var i=0; i<vs.length; i+=2) {
-            if (within[vs[i+1].node_id]) connectors[vs[i].node_id] = true;
+            if (within[vs[i].treenode_id]) connectors[vs[i].node_id] = true;
           }
         });
         // Find partner skeletons
@@ -5823,7 +5823,7 @@
     return this.synapticTypes.reduce((function(o, type, k) {
       var vs = this.geometry[type].vertices;
       for (var i=0, l=vs.length; i<l; i+=2) {
-        var treenode_id = vs[i+1].node_id,
+        var treenode_id = vs[i].treenode_id,
             count = o[treenode_id];
         if (count) o[treenode_id] = count + 1;
         else o[treenode_id] = 1;
@@ -5842,7 +5842,7 @@
       var vs = this.geometry[type].vertices,
           syn = {};
       for (var i=0, l=vs.length; i<l; i+=2) {
-        var treenode_id = vs[i+1].node_id,
+        var treenode_id = vs[i].treenode_id,
             count = syn[treenode_id];
         if (count) syn[treenode_id] = count + 1;
         else syn[treenode_id] = 1;
@@ -5860,7 +5860,7 @@
       var vs = this.geometry[type].vertices;
       for (var i=0, l=vs.length; i<l; i+=2) {
         var connector_id = vs[i].node_id,
-            treenode_id = vs[i+1].node_id,
+            treenode_id = vs[i].treenode_id,
             list = o[treenode_id],
             synapse = {type: k,
                        connector_id: connector_id};
@@ -5878,7 +5878,7 @@
       var vs = this.geometry[type].vertices;
       for (var i=0, l=vs.length; i<l; i+=2) {
         var connector_id = vs[i].node_id,
-            treenode_id = vs[i+1].node_id,
+            treenode_id = vs[i].treenode_id,
             list = o[connector_id];
         if (list) {
           list.push(connector_id);
@@ -6652,8 +6652,8 @@
         var v = vertices1[i];
         if (common_connector_IDs.hasOwnProperty(v.node_id)) {
           var v2 = vertices1[i+1];
-          vertices2.push(v2);
           vertices2.push(v);
+          vertices2.push(v2);
           connectors.push([v2, material, type, {connector_id: v.node_id, node_id: v.treenode_id}]);
         }
       }

@@ -6489,13 +6489,14 @@
               o[c[0]] = new THREE.Color().set(colorizer(i));
               return o;
             }, {});
+      var notComputableColor = new THREE.Color(0.4, 0.4, 0.4);
 
       var fnConnectorValue = function(node_id, connector_id) {
         return density_hill_map[node_id];
       };
 
       var fnMakeColor = function(value) {
-        return cluster_colors[value];
+        return cluster_colors[value] || notComputableColor;
       };
 
       this.synapticTypes.forEach(function(type) {

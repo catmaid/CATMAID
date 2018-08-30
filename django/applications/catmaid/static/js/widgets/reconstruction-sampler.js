@@ -2693,15 +2693,22 @@
             leaves.push(nodeId);
           }
         }
-        Promise.all([
-          CATMAID.fetch(project.id + '/treenodes/compact-detail', 'POST', {
-            'treenode_ids': leaves,
-          })
-        ])
+
+        if (!leaves || leaves.length === 0) {
+          callback({
+            draw: data.draw,
+            data: []
+          });
+          return;
+        }
+
+        CATMAID.fetch(project.id + '/treenodes/compact-detail', 'POST', {
+          'treenode_ids': leaves,
+        })
         .then(function(leafDetail) {
           callback({
             draw: data.draw,
-            data: leafDetail[0]
+            data: leafDetail
           });
         })
         .catch(CATMAID.handleError);

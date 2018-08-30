@@ -100,9 +100,10 @@ def get_request_list(request_dict, name, default=None, map_fn=identity):
     if items:
         return items
 
-    items = [map_fn(v) for v in request_dict.getlist(name, [])]
-    if items:
-        return items
+    if hasattr(request_dict, 'getlist'):
+        items = [map_fn(v) for v in request_dict.getlist(name, [])]
+        if items:
+            return items
 
     return default
 

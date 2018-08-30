@@ -1303,7 +1303,7 @@
     });
   };
 
-  function generateSprite(colorr, opacity) {
+  function generateSprite(color, opacity) {
     var canvas = document.createElement( 'canvas' );
     canvas.width = 16;
     canvas.height = 16;

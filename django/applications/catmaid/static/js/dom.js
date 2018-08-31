@@ -224,12 +224,20 @@
   };
 
   DOM.appendFileButton = function(div, id, label, title, multiple, onchange) {
+    var open = document.createElement('input');
+    if (onchange) {
+      // Wrap onchange function to include a referenc to the actual button in
+      // the argument list.
+      let originalOnChange = onchange;
+      onchange = function(event) {
+        originalOnChange.call(this, event, open);
+      };
+    }
     var fileButton = DOM.createFileButton(id, false, onchange);
     if (multiple) {
       fileButton.setAttribute('multiple', 'multiple');
     }
     div.appendChild(fileButton);
-    var open = document.createElement('input');
     open.setAttribute("type", "button");
     open.setAttribute("value", label || "Open");
     open.setAttribute("title", title);

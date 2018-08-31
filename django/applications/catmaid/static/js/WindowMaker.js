@@ -625,6 +625,21 @@ var WindowMaker = new function()
       e.stopPropagation();
     };
 
+    var updatePointCloudColor = function(pointCloudId, rgb, alpha, colorChanged,
+        alphaChanged, colorHex) {
+      WA.setPointCloudColor(pointCloudId,
+          colorChanged ? ('#' + colorHex) : null,
+          alphaChanged ? alpha : null);
+    };
+
+    var updatePointCloudFaces = function(volumeId, e) {
+      var facesVisible = e.target.checked;
+      WA.setPointCloudStyle(volumeId, "faces", facesVisible);
+      // Stop propagation or the general landmark group list change handler is
+      // called.
+      e.stopPropagation();
+    };
+
     var updateVolumeColor = function(volumeId, rgb, alpha, colorChanged,
         alphaChanged, colorHex) {
       WA.setVolumeColor(volumeId,
@@ -736,7 +751,7 @@ var WindowMaker = new function()
         });
     };
 
-    // Update volume list
+    // Update landmark list
     var initLandmarkList = function() {
       return CATMAID.Landmarks.listGroups(project.id).then(function(json) {
           var landmarkGroups = json.sort(function(a, b) {
@@ -791,6 +806,57 @@ var WindowMaker = new function()
         });
     };
 
+    // Update point cloud list
+    var initPointCloudList = function() {
+      return CATMAID.Pointcloud.listAll(project.id, true).then(function(json) {
+          var pointClouds = json.sort(function(a, b) {
+            return CATMAID.tools.compareStrings(a.name, b.name);
+          }).map(function(pointCloud) {
+            return {
+              title: pointCloud.name,
+              value: pointCloud.id
+            };
+          });
+          var selectedPointClouds = WA.getLoadedPointCloudIds();
+          // Create actual element based on the returned data
+          var node = DOM.createCheckboxSelect('Point clouds', pointClouds,
+              selectedPointClouds, true);
+          // Add a selection handler
+          node.onchange = function(e) {
+            var visible = e.target.checked;
+            var pointCloudId = e.target.value;
+            WA.showPointCloud(pointCloudId, visible);
+
+            // Add extra display controls for enabled volumes
+            var li = e.target.closest('li');
+            if (!li) {
+              return;
+            }
+            if (visible) {
+              var pointCloudControls = li.appendChild(document.createElement('span'));
+              pointCloudControls.setAttribute('data-role', 'pointcloud-controls');
+              CATMAID.DOM.appendColorButton(pointCloudControls, 'c',
+                'Change the color of this point cloud',
+                undefined, undefined, {
+                  initialColor: o.landmarkgroup_color,
+                  initialAlpha: o.landmarkgroup_opacity,
+                  onColorChange: updatePointCloudColor.bind(null, pointCloudId)
+                });
+              var facesCb = CATMAID.DOM.appendCheckbox(pointCloudControls, "Faces",
+                  "Whether faces should be displayed for this point cloud",
+                  o.pointcloud_faces, updatePointCloudFaces.bind(null, pointCloudId));
+              facesCb.style.display = 'inline';
+            } else {
+              var pointCloudControls = li.querySelector('span[data-role=pointcloud-controls]');
+              if (pointCloudControls) {
+                li.removeChild(pointCloudControls);
+              }
+            }
+          };
+          return node;
+        });
+    };
+
     // Create async selection and wrap it in container to have handle on initial
     // DOM location
     var volumeSelection = DOM.createAsyncPlaceholder(initVolumeList());
@@ -802,6 +868,12 @@ var WindowMaker = new function()
     var landmarkGroupSelection = DOM.createAsyncPlaceholder(initLandmarkList());
     var landmarkGroupSelectionWrapper = document.createElement('span');
     landmarkGroupSelectionWrapper.appendChild(landmarkGroupSelection);
+
+    // Create async selection and wrap it in container to have handle on initial
+    // DOM location
+    var pointCloudSelection = DOM.createAsyncPlaceholder(initPointCloudList());
+    var pointCloudSelectionWrapper = document.createElement('span');
+    pointCloudSelectionWrapper.appendChild(pointCloudSelection);
 
     // Replace volume selection wrapper children with new select
     var refreshVolumeList = function() {
@@ -845,6 +917,20 @@ var WindowMaker = new function()
               let value  = parseInt(this.value, 10);
               if (value && !Number.isNaN(value)) {
                 WA.options.landmark_scale = value;
+                WA.adjustContent();
+              }
+            }
+          },
+          [pointCloudSelectionWrapper],
+          {
+            type: 'numeric',
+            label: 'Point cloud scale',
+            value: o.pointcloud_scale,
+            length: 3,
+            onchange: function() {
+              let value  = parseInt(this.value, 10);
+              if (value && !Number.isNaN(value)) {
+                WA.options.pointcloud_scale = value;
                 WA.adjustContent();
               }
             }

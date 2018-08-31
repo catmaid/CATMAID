@@ -1172,7 +1172,7 @@
               let dataURL = reader.result;
               // Ask user for description for each image
               let dialog = new CATMAID.OptionsDialog("Image description");
-              dialog.appendMessage("Please add a description for image \"" + file.nam +"\".");
+              dialog.appendMessage("Please add a description for image \"" + file.name +"\".");
               let description = dialog.appendField("Description", undefined, "", true);
               dialog.onOK = function() {
                 if (!images) {
@@ -1181,6 +1181,7 @@
                 images.push({
                   description: description.value,
                   image: dataURL,
+                  name: file.name,
                 });
                 self.classList.add('files-loaded');
                 clickedButton.classList.add('files-loaded');

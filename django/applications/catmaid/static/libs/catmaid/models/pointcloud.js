@@ -47,12 +47,15 @@
    * @param pointcloudId {Number}  The point cloud to return.
    * @param withPoints   {Boolean} Whether or not to return point data.
    * @param withImages   {Boolean} Whether or not to return image data.
+   * @param sampleRatio  {Number}  Number in range [0,1] that reflects the
+   *                               percentage of point cloud that should be loaded.
    * @returns {Promise} Resolves with details on the request point cloud.
    */
-  Pointcloud.get = function(projectId, pointcloudId, withPoints, withImages) {
+  Pointcloud.get = function(projectId, pointcloudId, withPoints, withImages, sampleRatio) {
     return CATMAID.fetch(projectId + '/pointclouds/' + pointcloudId + '/', 'GET', {
       with_points: !!withPoints,
       with_images: !!withImages,
+      sample_ratio: sampleRatio,
     });
   };
 

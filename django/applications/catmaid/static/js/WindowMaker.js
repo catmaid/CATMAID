@@ -935,6 +935,22 @@ var WindowMaker = new function()
               }
             }
           },
+          {
+            type: 'numeric',
+            label: 'Point cloud sample',
+            value: o.pointcloud_sample * 100,
+            length: 3,
+            step: 1,
+            min: 0,
+            max: 100,
+            onchange: function() {
+              let value  = parseInt(this.value, 10);
+              if (value && !Number.isNaN(value)) {
+                WA.options.pointcloud_sample = value / 100.0;
+                WA.adjustContent();
+              }
+            }
+          },
           ['Active node', o.show_active_node, function() { WA.options.show_active_node = this.checked; WA.adjustContent(); }, false],
           ['Active node on top', o.active_node_on_top, function() { WA.options.active_node_on_top = this.checked; WA.adjustContent(); }, false],
           ['Radius adaptive active node', o.active_node_respects_radius, function() { WA.options.active_node_respects_radius = this.checked; WA.adjustContent(); }, false],

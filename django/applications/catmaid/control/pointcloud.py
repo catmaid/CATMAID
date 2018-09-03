@@ -96,9 +96,16 @@ class PointCloudList(APIView):
             paramType: form
             required: false
             defaultValue: false
+          - name: sample_ratio
+            description: Number in [0,1] to optionally sample point cloud
+            type: number
+            paramType: form
+            required: false
+            defaultValue: 1
         """
         with_images = get_request_bool(request.query_params, 'with_images', False)
         with_points = get_request_bool(request.query_params, 'with_points', False)
+        sample_ratio = float(request.query_params.get('sample_ratio', '1.0'))
         simple = get_request_bool(request.query_params, 'simple', False)
         return JsonResponse([serialize_pointcloud(c, simple) for c in
                 PointCloud.objects.filter(project_id=project_id)], safe=False)
@@ -212,6 +219,8 @@ class PointCloudDetail(APIView):
         with_images = get_request_bool(request.query_params, 'with_images', False)
         with_points = get_request_bool(request.query_params, 'with_points', False)
         simple = get_request_bool(request.query_params, 'simple', False)
+        sample_ratio = float(request.query_params.get('sample_ratio', '1.0'))
+        simple = get_request_bool(request.query_params, 'simple', False)
 
         pointcloud = PointCloud.objects.get(pk=pointcloud_id, project_id=project_id)
         pointcloud_data = serialize_pointcloud(pointcloud, simple)
@@ -221,8 +230,31 @@ class PointCloudDetail(APIView):
             pointcloud_data['images'] = images
 
         if with_points:
-            points = [serialize_point(p, compact=True) for p in pointcloud.points.all()]
-            pointcloud_data['points'] = points
+            if sample_ratio == 1.0:
+                points = [serialize_point(p, compact=True) for p in pointcloud.points.all()]
+                pointcloud_data['points'] = points
+            else:
+                n_points = PointCloudPoint.objects.filter(pointcloud_id=pointcloud.id).count()
+                n_sample = int(n_points * sample_ratio)
+                cursor = connection.cursor()
+                # Select a random sample of N points in a repeatable fashion.
+                cursor.execute("""
+                    SELECT setseed(0);
+                    SELECT id, location_x, location_y, location_z
+                    FROM point p
+                    JOIN (
+                        SELECT pcp.point_id
+                        FROM pointcloud_point pcp
+                        WHERE pcp.pointcloud_id = %(pointcloud_id)s
+                        ORDER BY random()
+                    ) ordered_points(id)
+                        USING(id)
+                    LIMIT %(n_sample)s
+                """, {
+                    'pointcloud_id': pointcloud.id,
+                    'n_sample': n_sample
+                })
+                pointcloud_data['points'] = cursor.fetchall()
 
         return JsonResponse(pointcloud_data)
 

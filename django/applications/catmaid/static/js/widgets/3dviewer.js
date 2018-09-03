@@ -1188,6 +1188,7 @@
     this.pointcloud_faces = true;
     this.pointcloud_text = true;
     this.pointcloud_scale = 500;
+    this.pointcloud_sample = 1.0;
     this.text_scaling = 1.0;
     this.show_missing_sections = false;
     this.missing_section_height = 20;
@@ -2671,7 +2672,7 @@
         return;
       }
 
-      CATMAID.Pointcloud.get(project.id, pointCloudId, true, false)
+      CATMAID.Pointcloud.get(project.id, pointCloudId, true, false, this.options.pointcloud_sample)
         .then((function(pointCloud) {
           let bb = CATMAID.Pointcloud.getBoundingBox(pointCloud);
           let min = bb.min;
@@ -2690,7 +2691,7 @@
               min.z + (max.z - min.z) * 0.5);
           meshes.push(new THREE.Mesh(boxGeometry, boxMaterial));
 
-          // Create landmark particles, optionally with text tag
+          // Create point cloud particles
           let locations = pointCloud.points;
           let pointCloudMaterial = this.options.createPointCloudMaterial();
           for (var j=0, jmax=locations.length; j<jmax; ++j) {

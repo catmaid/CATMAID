@@ -1151,6 +1151,16 @@
 		return [cb, document.createTextNode(label)];
 	};
 
+	DOM.createRadioButton = function(label, name, value, checked, onclickFn, id) {
+		var cb = document.createElement('input');
+		cb.setAttribute('type', 'radio');
+		cb.setAttribute('name', name);
+		if (id) cb.setAttribute('id', id);
+		cb.checked = !!checked;
+		cb.onchange = onclickFn;
+		return [cb, document.createTextNode(label)];
+	};
+
   /**
    * Create a new numeric field based on the passed in configuration.
    */
@@ -1345,6 +1355,9 @@
             return CATMAID.DOM.appendColorButton(tab, e.label, e.title, e.attr, e.onchange, e.color);
           case 'checkbox':
             return CATMAID.DOM.appendCheckbox(tab, e.label, e.title, e.value, e.onclick, e.left, e.id);
+          case 'radio':
+            return CATMAID.DOM.appendRadioButton(tab, e.label, e.title, e.name,
+                e.value, e.checked, e.onclick, e.left, e.id);
           case 'numeric':
             return CATMAID.DOM.appendNumericField(tab, e.label, e.title,
                 e.value, e.postlabel, e.onchange, e.length, e.placeholder,
@@ -1422,6 +1435,22 @@
       labelEl.setAttribute('title', title);
     }
     var elems = DOM.createCheckbox(label, value, onclickFn, id);
+    if (left) elems.reverse();
+    elems.forEach(function(elem) { labelEl.appendChild(elem); });
+    div.appendChild(labelEl);
+    return labelEl;
+  };
+
+  /**
+   * Append a new radio button to another element.
+   */
+  DOM.appendRadioButton = function(div, label, title, name, value, checked,
+      onclickFn, left, id) {
+    var labelEl = document.createElement('label');
+    if (title) {
+      labelEl.setAttribute('title', title);
+    }
+    var elems = DOM.createRadioButton(label, name, value, checked, onclickFn, id);
     if (left) elems.reverse();
     elems.forEach(function(elem) { labelEl.appendChild(elem); });
     div.appendChild(labelEl);

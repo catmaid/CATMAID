@@ -601,6 +601,10 @@ table.neuron_annotations_query_fields {
   margin-left: 0.5em;
 }
 
+.buttonpanel input[type=radio] {
+  margin-bottom: 0.3em;
+}
+
 .windowContent table {
   width: 100%;
 }

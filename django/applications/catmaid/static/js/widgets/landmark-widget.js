@@ -2610,7 +2610,7 @@
             Promise.all(parsePromises)
               .then(function(parsedFiles) {
                 let importList = [];
-                for (let i=0; i<widget.filesToImport.length; ++i) {
+                for (let i=0; i<parsedFiles.length; ++i) {
                   let fileContent = parsedFiles[i];
                   let group = groupFields[i];
                   if (!group) {

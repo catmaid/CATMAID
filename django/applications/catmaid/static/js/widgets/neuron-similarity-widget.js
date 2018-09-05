@@ -247,6 +247,7 @@
         let querySource = null;
         let targetSource = null;
         let configId = null;
+        let targetType = 'skeleton';
 
         let newScoringSection = document.createElement('span');
         newScoringSection.classList.add('section-header');
@@ -314,8 +315,30 @@
           type: 'child',
           element: querySelect,
         }, {
+          type: 'radio',
+          label: 'Target skeletons',
+          name: 'target',
+          title: 'Query against a set of target skeletons',
+          value: 'skeleton',
+          checked: targetType === 'skeleton',
+          onclick: function() {
+            targetType = 'skeleton';
+            targetSelect.querySelector('select').disabled = false;
+          },
+        }, {
           type: 'child',
           element: targetSelect,
+        }, {
+          type: 'radio',
+          label: 'Target point clouds',
+          name: 'target',
+          checked: targetType === 'pointcloud',
+          title: 'Query against a set of target point clouds',
+          value: targetType === 'pointcloud',
+          onclick: function() {
+            targetType = 'pointcloud';
+            targetSelect.querySelector('select').disabled = true;
+          },
         }, {
           type: 'child',
           element: configSelectWrapper,

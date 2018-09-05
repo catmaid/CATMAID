@@ -193,8 +193,15 @@
     }
   };
 
+  /**
+   * Add a new point cloud.
+   *
+   * @params swapZY {Boolean} (optional) Wheter or not to transform the point
+   *                          data from a left handed system into a right handed one.
+   */
   NeuronSimilarityWidget.prototype.addPointCloud = function(newPointcloudName,
-      newPointcloudDescription, pointData, pointMatches, images) {
+      newPointcloudDescription, pointData, pointMatches, images, swapZY,
+      invertY) {
     if (!newPointcloudName) {
       throw new CATMAID.ValueError("Need a point cloud name");
     }
@@ -225,11 +232,36 @@
 
       // Get a transformed copy of each point.
       pointData = pointData.map(p => mls.apply(p));
+
+      // Optionally, swap Y and Z
+      if (swapZY) {
+        pointData.forEach(p => lhToRhInPlace(p));
+      }
+
+      if (invertY) {
+        let bb = CATMAID.tools.getPointBoundingBox(pointData);
+        pointData.forEach(p => {
+          p[1] = bb.max.y - p[1];
+          return p;
+        });
+      }
     }
 
     return CATMAID.Pointcloud.add(project.id, newPointcloudName, pointData,
         newPointcloudDescription, images);
   };
+
+  function invertYInPlace(p) {
+    p[1] = -p[1];
+    return p;
+  }
+
+  function lhToRhInPlace(p) {
+    let y = p[1];
+    p[1] = p[2];
+    p[2] = y;
+    return p;
+  }
 
   function listToStr(list) {
     if (list instanceof Array) {
@@ -1000,6 +1032,8 @@
         let pointData = null;
         let pointMatches = null;
         let images = null;
+        let swapZY = false;
+        let invertY = false;
 
         let newPointcloudSection = document.createElement('span');
         newPointcloudSection.classList.add('section-header');
@@ -1071,7 +1105,23 @@
           id: 'neuron-similarity-new-pointcloud-header' + widget.widgetID,
           value: csvLineSkip,
           onclick: function() {
-            csvLineSkip = this.value;
+            csvLineSkip = this.checked;
+          },
+        }, {
+          type: 'checkbox',
+          label: 'Swap Y/Z',
+          id: 'neuron-similarity-new-pointcloud-swap-yz' + widget.widgetID,
+          value: swapZY,
+          onclick: function() {
+            swapZY = this.checked;
+          },
+        }, {
+          type: 'checkbox',
+          label: 'Invert Y',
+          id: 'neuron-similarity-new-pointcloud-invert-y' + widget.widgetID,
+          value: invertY,
+          onclick: function() {
+            invertY = this.checked;
           },
         }, {
           type: 'file',
@@ -1228,7 +1278,7 @@
               return;
             }
             widget.addPointCloud(newPointcloudName, newPointcloudDescription,
-                pointData, pointMatches, images)
+                pointData, pointMatches, images, swapZY, invertY)
               .then(function() {
                 widget.refresh();
                 CATMAID.msg("Success", "Point cloud created");

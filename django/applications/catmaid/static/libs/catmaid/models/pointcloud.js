@@ -78,10 +78,13 @@
    * Return a bounding box for a passed in point cloud.
    */
   Pointcloud.getBoundingBox = function(pointCloud) {
+    return Pointcloud.getBoundingBoxOfPoints(pointCloud.points);
+  };
+
+  Pointcloud.getBoundingBoxOfPoints = function(points) {
     // Find bounding box around locations
     let min = { x: Infinity, y: Infinity, z: Infinity };
     let max = { x: -Infinity, y: -Infinity, z: -Infinity };
-    let points = pointCloud.points;
     for (var i=0, imax=points.length; i<imax; ++i) {
       let loc = points[i];
       if (loc[1] < min.x) min.x = loc[1];

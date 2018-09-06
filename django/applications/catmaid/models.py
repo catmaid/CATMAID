@@ -1024,19 +1024,20 @@ class NblastSkeletonSourceType(models.Model):
 
 class NblastSimilarity(UserFocusedModel):
     """A model to represent computed similarity matrices for a particular
-    configuration using a set of query and target skeleton IDs. Referential
-    integretry (delete cascade) is taken care of by the database.
+    configuration using a set of query and target objects (skeleton IDs or point
+    cloud IDs). Referential integretry (delete cascade) is taken care of by the
+    database.
     """
     name = models.TextField()
     status = models.TextField()
     config = models.ForeignKey(NblastConfig, on_delete=models.DO_NOTHING)
-    query_skeletons = ArrayField(models.IntegerField())
-    target_skeletons = ArrayField(models.IntegerField())
     scoring = ArrayField(ArrayField(models.FloatField()))
     query_type = models.ForeignKey(NblastSkeletonSourceType,
         related_name='query_type_set')
     target_type = models.ForeignKey(NblastSkeletonSourceType,
         related_name='target_type_set')
+    query_objects = ArrayField(models.IntegerField())
+    target_objects = ArrayField(models.IntegerField())
 
     class Meta:
         db_table = "nblast_similarity"
@@ -1051,6 +1052,8 @@ class PointCloud(UserFocusedModel):
     description = models.TextField(default="")
     source_path = models.TextField(default="")
     images = models.ManyToManyField("ImageData", through='PointCloudImageData')
+    # Points are stored in an array of the format [X, Y, Z, X, Y, Z, …]. A
+    # length divisible by three is enforced by the database.
     points = models.ManyToManyField("Point", through='PointCloudPoint')
 
     class Meta:

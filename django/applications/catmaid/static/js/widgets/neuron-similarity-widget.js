@@ -14,6 +14,9 @@
     this.widgetID = this.registerInstance();
     this.idPrefix = "neuron-similarity-widget" + this.widgetID + '-';
 
+    // Keep track of selected point clouds
+    this.pointCloudSelection = {};
+
     this.lastSimilarityQuery = null;
     this.showOnlyMatchesInResult = true;
 
@@ -85,6 +88,7 @@
       },
       init: function() {
         this.update();
+        this.updatePointClouds();
       },
       helpText: [
         '<h1>Neuron Similarity Widget</h1>',
@@ -271,6 +275,27 @@
     }
   }
 
+  NeuronSimilarityWidget.prototype.getSelectedPointClouds = function() {
+    return Object.keys(this.pointCloudSelection)
+        .filter(pcId => this.pointCloudSelection[pcId])
+        .map(pcId => parseInt(pcId, 10));
+  };
+
+  NeuronSimilarityWidget.prototype.updatePointClouds = function() {
+    let widget = this;
+    return CATMAID.Pointcloud.listAll(project.id)
+      .then(function(result) {
+        // Save new point clouds in selection map, default to selected.
+        result.forEach(pc => {
+          if (!widget.pointCloudSelection.hasOwnProperty(pc.id)) {
+            widget.pointCloudSelection[pc.id] = true;
+          }
+        });
+
+        return result;
+      });
+  };
+
   NeuronSimilarityWidget.Modes = {
     similarity: {
       title: "Neuron similarity",
@@ -279,6 +304,7 @@
         let querySource = null;
         let targetSource = null;
         let configId = null;
+        let queryType = 'skeleton';
         let targetType = 'skeleton';
 
         let newScoringSection = document.createElement('span');
@@ -295,7 +321,6 @@
           querySource = e.target.value;
         };
         let targetSelect = document.createElement('label');
-        targetSelect.appendChild(document.createTextNode('Target skeletons'));
         let targetSourceSelect = CATMAID.skeletonListSources.createUnboundSelect(widget.getName + ' Target source');
         targetSourceSelect.setAttribute('id', widget.idPrefix + 'target-source');
         targetSelect.appendChild(targetSourceSelect);
@@ -365,7 +390,7 @@
           label: 'Target point clouds',
           name: 'target',
           checked: targetType === 'pointcloud',
-          title: 'Query against a set of target point clouds',
+          title: 'Query against the set of target point clouds selected in the "Point clouds" tab.',
           value: targetType === 'pointcloud',
           onclick: function() {
             targetType = 'pointcloud';
@@ -383,14 +408,21 @@
               CATMAID.error("Can't find source: " + querySource);
               return;
             }
-            let querySkeletonIds = querySkeletonSource.getSelectedSkeletons();
+            let queryIds = querySkeletonSource.getSelectedSkeletons();
 
-            let targetSkeletonSource = CATMAID.skeletonListSources.getSource(targetSource);
-            if (!targetSkeletonSource) {
-              CATMAID.error("Can't find source: " + targetSource);
-              return;
+            let targetIds = [];
+            if (targetType === 'skeleton') {
+              let targetSkeletonSource = CATMAID.skeletonListSources.getSource(targetSource);
+              if (!targetSkeletonSource) {
+                CATMAID.error("Can't find source: " + targetSource);
+                return;
+              }
+              targetIds = targetSkeletonSource.getSelectedSkeletons();
+            } else if (targetType === 'pointcloud') {
+              targetIds = widget.getSelectedPointClouds();
+            } else {
+              throw new CATMAID.ValueError("Unknown target type: " +  targetType);
             }
-            let targetSkeletonIds = targetSkeletonSource.getSelectedSkeletons();
 
             // Make sure there is a selected config. Default to first element, if none was selected explicitly.
             if (configSelect.options.length > 0 && configSelect.value === -1) {
@@ -398,7 +430,7 @@
             }
 
             CATMAID.Similarity.computeSimilarity(project.id, configId,
-                querySkeletonIds, targetSkeletonIds, newQueryName)
+                queryIds, targetIds, queryType, targetType, newQueryName)
               .then(function(response) {
                 widget.lastSimilarityQuery = response;
                 return widget.update();
@@ -496,30 +528,42 @@
                 }
               }
             }, {
-              data: "query_skeleton_ids",
-              title: "Query skeletons",
+              data: "query_objects",
+              title: "Query objects",
               orderable: false,
               class: 'cm-center',
               render: function(data, type, row, meta) {
-                let qs = row.query_skeleton_ids;
-                let allBins = qs.join(', ');
-                let text = (qs && qs.length > 4) ?
-                    (qs[0] + ', ' +  qs[1] +  ' … ' + qs[qs.length - 2] + ', ' + qs[qs.length - 1]) :
-                    allBins;
-                return '<span title="' + qs.length + ' skeletons">' + text + '</span>';
+                let qo = row.query_objects;
+                let allBins = qo.join(', ');
+                if (row.query_type === 'skeleton') {
+                  let text = (qo && qo.length > 4) ?
+                      (qo[0] + ', ' +  qo[1] +  ' … ' + qo[qo.length - 2] + ', ' + qo[qo.length - 1]) :
+                      allBins;
+                  return '<em>Skeletons: </em><span title="' + qo.length + ' skeletons">' + text + '</span>';
+                } else if (row.query_type === 'pointcloud') {
+                  return '<em>Point clouds: </em>' + allBins;
+                } else {
+                  return '<em>Unknown type: </em>' + allBins;
+                }
               }
             }, {
-              data: "target_skeleton_ids",
-              title: "Target skeletons",
+              data: "target_objects",
+              title: "Target objects",
               orderable: false,
               class: 'cm-center',
               render: function(data, type, row, meta) {
-                let ts = row.target_skeleton_ids;
-                let allBins = ts.join(', ');
-                let text = (ts && ts.length > 4) ?
-                    (ts[0] + ', ' +  ts[1] +  ' … ' + ts[ts.length - 2] + ', ' + ts[ts.length - 1]) :
-                    allBins;
-                return '<span title="' + ts.length + ' skeletons">' + text + '</span>';
+                let to = row.target_objects;
+                let allBins = to.join(', ');
+                if (row.target_type === 'skeleton') {
+                  let text = (to && to.length > 4) ?
+                      (to[0] + ', ' +  to[1] +  ' … ' + to[to.length - 2] + ', ' + to[to.length - 1]) :
+                      allBins;
+                  return '<em>Skeletons: </em><span title="' + to.length + ' skeletons">' + text + '</span>';
+                } else if (row.target_type === 'pointcloud') {
+                  return '<em>Point clouds: </em>' + allBins;
+                } else {
+                  return '<em>Unknown type: </em>' + allBins;
+                }
               }
             }, {
               data: "scoring",
@@ -527,7 +571,6 @@
               orderable: false,
               class: 'cm-center',
               render: function(data, type, row, meta) {
-
                 if (row.scoring && row.scoring.length > 0) {
                   let allCells = '[' + row.scoring.map(listToStr).join('\n, ') + ']';
                   return '<a data-role="show-similarity" href="#" title="' + allCells + '">[…]</a>';
@@ -597,6 +640,9 @@
         if (table) {
           $(table).DataTable().ajax.reload();
         }
+        let configSelect = document.getElementById(widget.idPrefix + 'config-select');
+        if (!configSelect) throw new CATMAID.ValueError("Config select element not found");
+        NeuronSimilarityWidget.updateConfigSelect(configSelect);
       }
     },
     configrations: {
@@ -1299,7 +1345,7 @@
           paging: true,
           lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
           ajax: function(data, callback, settings) {
-            CATMAID.Pointcloud.listAll(project.id)
+            widget.updatePointClouds()
               .then(function(result) {
                 callback({
                   draw: data.draw,
@@ -1312,6 +1358,14 @@
           },
           order: [],
           columns: [{
+              title: "",
+              orderable: false,
+              class: 'cm-center',
+              render: function(data, type, row, meta) {
+                return '<input type="checkbox" data-role="select-pointcloud"' +
+                    (widget.pointCloudSelection[row.id] ? ' checked' : '') + '></input>';
+              }
+            }, {
               data: "id",
               title: "Id",
               orderable: true,
@@ -1386,8 +1440,20 @@
               .catch(CATMAID.handleError);
           }
         }).on('click', 'a[data-role=show-pointcloud]', function() {
-
+          let pointcloudId = this.closest('tr').dataset.pointcloudId;
+          if (pointcloudId) {
+            // Show point cloud in a new 3D viewer dialog.
+          }
+        }).on('click', 'input[data-role=select-pointcloud]', function() {
+          let pointcloudId = this.closest('tr').dataset.pointcloudId;
+          if (pointcloudId) {
+            widget.pointCloudSelection[pointcloudId] = !widget.pointCloudSelection[pointcloudId];
+          }
         });
+
+        // Add a toggle-all checkbox for point cloud selection
+        $($('th', table)[0]).append($('<input title="Toogle selection of all pointclouds" ' +
+            'type="checkbox"></input>'));
       },
       refresh: function(widget) {
         let table = document.getElementById(widget.idPrefix + 'pointcloud-table');
@@ -1532,7 +1598,7 @@
 
       let collectEntries = function(target, element, i) {
         if (element >= 0) {
-          target.push([similarity.target_skeleton_ids[i], element]);
+          target.push([similarity.target_objects[i], element]);
         }
         return target;
       };
@@ -1543,7 +1609,7 @@
         return 0;
       };
 
-      let dataAboveZero = similarity.query_skeleton_ids.map(function(qskid, i) {
+      let dataAboveZero = similarity.query_objects.map(function(qskid, i) {
         let sortedMatches = similarity.scoring[i].reduce(collectEntries, []).sort(compareEntriesDesc);
         return [qskid, sortedMatches];
       });
@@ -1732,11 +1798,11 @@
     let today = new Date();
     let filename = 'catmaid-nblast-scores-' + today.getFullYear() +
         '-' + (today.getMonth() + 1) + '-' + today.getDate() + '.csv';
-    let header = ['""'].concat(similarity.target_skeleton_ids.map(function(s) {
+    let header = ['""'].concat(similarity.target_objects.map(function(s) {
       return `"${s}"`;
     })).join(',');
     let data = [header];
-    similarity.query_skeleton_ids.forEach(function(s, i) {
+    similarity.query_objects.forEach(function(s, i) {
       let line = [`"${s}"`].concat(similarity.scoring[i]);
       data.push(line.join(','));
     });

@@ -34,8 +34,9 @@ forward_create_tables = """
         txid bigint DEFAULT txid_current(),
         -- Convention: an array of flattened points. Each sub-array
         -- represents one point set, with its points stored in the
-        -- form [X, Y, Z, X, Y, Z, …].
-        points real[] NOT NULL
+        -- form [X, Y, Z, X, Y, Z, …]. This general pattern is enforced with a
+        -- CHECK constraint.
+        points real[] CHECK (CARDINALITY(points) % 3 = 0) NOT NULL
     );
 
     CREATE TABLE nblast_sample (
@@ -87,12 +88,12 @@ forward_create_tables = """
         status text CHECK (status IN ('queued', 'computing', 'complete', 'error')),
         name text NOT NULL,
         config_id integer REFERENCES nblast_config(id) ON DELETE CASCADE NOT NULL,
-        query_skeletons bigint[],
-        target_skeletons bigint[],
         query_type_id text REFERENCES nblast_skeleton_source_type(name) NOT NULL,
         target_type_id text REFERENCES nblast_skeleton_source_type(name) NOT NULL,
         scoring real[][],
-        txid bigint DEFAULT txid_current()
+        txid bigint DEFAULT txid_current(),
+        query_objects bigint[],
+        target_objects bigint[]
     );
 
     CREATE TABLE pointcloud (
@@ -112,6 +113,7 @@ forward_create_tables = """
         project_id int REFERENCES project(id) ON DELETE CASCADE NOT NULL,
         pointcloud_id int REFERENCES pointcloud(id) ON DELETE CASCADE NOT NULL,
         point_id bigint REFERENCES point(id) ON DELETE CASCADE NOT NULL,
+        edition_time timestamptz NOT NULL DEFAULT now(),
         txid bigint DEFAULT txid_current()
     );
 
@@ -155,8 +157,8 @@ forward_create_tables = """
     CREATE INDEX nblast_config_id_idx ON nblast_config USING btree (id);
     CREATE INDEX nblast_config_project_id_idx ON nblast_config USING btree (project_id);
 
-    CREATE INDEX nblast_similarity_query_skeletons_idx ON nblast_similarity
-        USING GIN (query_skeletons, target_skeletons);
+    CREATE INDEX nblast_similarity_query_objects ON nblast_similarity
+        USING GIN (query_objects, target_objects);
     CREATE INDEX nblast_similarity_project_id_idx ON nblast_similarity
         USING btree (project_id);
 
@@ -185,7 +187,7 @@ forward_create_tables = """
     SELECT create_history_table('nblast_similarity'::regclass, 'edition_time', 'txid');
     SELECT create_history_table('nblast_skeleton_source_type'::regclass);
     SELECT create_history_table('pointcloud'::regclass, 'edition_time', 'txid');
-    SELECT create_history_table('pointcloud_point'::regclass);
+    SELECT create_history_table('pointcloud_point'::regclass, 'edition_time', 'txid');
     SELECT create_history_table('image_data'::regclass, 'edition_time', 'txid');
     SELECT create_history_table('pointcloud_image_data'::regclass);
 """
@@ -283,9 +285,9 @@ class Migration(migrations.Migration):
                         ('edition_time', models.DateTimeField(default=django.utils.timezone.now)),
                         ('name', models.TextField()),
                         ('status', models.TextField()),
-                        ('query_skeletons', django.contrib.postgres.fields.ArrayField(base_field=models.IntegerField(), size=None)),
-                        ('target_skeletons', django.contrib.postgres.fields.ArrayField(base_field=models.IntegerField(), size=None)),
                         ('scoring', django.contrib.postgres.fields.ArrayField(base_field=django.contrib.postgres.fields.ArrayField(base_field=models.FloatField(), size=None), size=None)),
+                        ('query_objects', django.contrib.postgres.fields.ArrayField(base_field=models.IntegerField(), size=None)),
+                        ('target_objects', django.contrib.postgres.fields.ArrayField(base_field=models.IntegerField(), size=None)),
                         ('config', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to='catmaid.NblastConfig')),
                     ],
                     options={
@@ -355,11 +357,6 @@ class Migration(migrations.Migration):
                 ),
                 migrations.AddField(
                     model_name='pointcloud',
-                    name='user',
-                    field=models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to=settings.AUTH_USER_MODEL),
-                ),
-                migrations.AddField(
-                    model_name='pointcloud',
                     name='images',
                     field=models.ManyToManyField(through='catmaid.PointCloudImageData', to='catmaid.ImageData'),
                 ),
@@ -367,6 +364,11 @@ class Migration(migrations.Migration):
                     model_name='pointcloud',
                     name='points',
                     field=models.ManyToManyField(through='catmaid.PointCloudPoint', to='catmaid.Point'),
+                ),
+                migrations.AddField(
+                    model_name='pointcloud',
+                    name='user',
+                    field=models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to=settings.AUTH_USER_MODEL),
                 ),
                 migrations.AddField(
                     model_name='nblastsimilarity',

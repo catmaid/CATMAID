@@ -535,10 +535,10 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
                         nrow=n_points, byrow=True)
                 pointclouds.append(point_data)
 
-            target_objects = rnat.as_neuronlist(pointclouds)
+            query_objects = rnat.as_neuronlist(pointclouds)
 
-            logger.debug('Computing target pointcloud stats')
-            target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
+            logger.debug('Computing query pointcloud stats')
+            query_dps = rnat.dotprops(query_objects.ro / 1e3, **{
                         'k': config.tangent_neighbors,
                         'resample': 1,
                         '.progress': 'none'

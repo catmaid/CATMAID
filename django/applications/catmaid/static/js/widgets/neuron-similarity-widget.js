@@ -312,7 +312,6 @@
         newScoringSection.appendChild(document.createTextNode('New query'));
 
         let querySelect = document.createElement('label');
-        querySelect.appendChild(document.createTextNode('Query skeletons'));
         let querySourceSelect = CATMAID.skeletonListSources.createUnboundSelect(widget.getName + ' Query source');
         querySourceSelect.setAttribute('id', widget.idPrefix + 'query-source');
         querySelect.appendChild(querySourceSelect);
@@ -369,8 +368,30 @@
             newQueryName = this.value;
           }
         }, {
+          type: 'radio',
+          label: 'Query skeletons',
+          name: 'query',
+          title: 'Query a set of skeletons',
+          value: 'skeleton',
+          checked: queryType === 'skeleton',
+          onclick: function() {
+            targetType = 'skeleton';
+            querySelect.querySelector('select').disabled = false;
+          },
+        }, {
           type: 'child',
           element: querySelect,
+        }, {
+          type: 'radio',
+          label: 'Query point clouds',
+          name: 'query',
+          checked: targetType === 'pointcloud',
+          title: 'Query a set of point clouds selected in the "Point clouds" tab.',
+          value: 'pointcloud',
+          onclick: function() {
+            queryType = 'pointcloud';
+            querySelect.querySelector('select').disabled = true;
+          },
         }, {
           type: 'radio',
           label: 'Target skeletons',
@@ -403,12 +424,19 @@
           type: 'button',
           label: 'Compute similarity',
           onclick: function() {
-            let querySkeletonSource = CATMAID.skeletonListSources.getSource(querySource);
-            if (!querySkeletonSource) {
-              CATMAID.error("Can't find source: " + querySource);
-              return;
+            let queryIds = [];
+            if (queryType === 'skeleton') {
+              let querySkeletonSource = CATMAID.skeletonListSources.getSource(querySource);
+              if (!querySkeletonSource) {
+                CATMAID.error("Can't find source: " + querySource);
+                return;
+              }
+              queryIds = querySkeletonSource.getSelectedSkeletons();
+            } else if (queryType === 'pointcloud') {
+              queryIds = widget.getSelectedPointClouds();
+            } else {
+              throw new CATMAID.ValueError("Unknown query type: " +  queryType);
             }
-            let queryIds = querySkeletonSource.getSelectedSkeletons();
 
             let targetIds = [];
             if (targetType === 'skeleton') {

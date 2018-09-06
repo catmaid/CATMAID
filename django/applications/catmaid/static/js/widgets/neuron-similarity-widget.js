@@ -1451,7 +1451,7 @@
               title: "Action",
               class: 'cm-center',
               render: function(data, type, row, meta) {
-                return '<a href="#" data-role="delete-pointcloud">Delete</a> <a href="#" data-role="show-points">View</a>';
+                return '<a href="#" data-role="delete-pointcloud">Delete</a> <a href="#" data-role="show-pointcloud">View</a>';
               }
             }],
           createdRow: function( row, data, dataIndex ) {
@@ -1471,6 +1471,8 @@
           let pointcloudId = this.closest('tr').dataset.pointcloudId;
           if (pointcloudId) {
             // Show point cloud in a new 3D viewer dialog.
+            let widget = WindowMaker.create('3d-viewer').widget;
+            widget.showPointCloud(pointcloudId, true);
           }
         }).on('click', 'input[data-role=select-pointcloud]', function() {
           let pointcloudId = this.closest('tr').dataset.pointcloudId;

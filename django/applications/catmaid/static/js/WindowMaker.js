@@ -1162,7 +1162,15 @@ var WindowMaker = new function()
           ['Min. synapse-free cable', o.min_synapse_free_cable, ' nm', function() {
             WA.updateShadingParameter('min_synapse_free_cable', this.value, 'synapse-free'); }, 6],
           ['Strahler number', o.strahler_cut, '', function() { WA.updateShadingParameter('strahler_cut', this.value, ['dendritic-backbone', 'single-strahler-number', 'strahler-threshold']); }, 4],
-          ['Tag (regex):', o.tag_regex, '', function() { WA.updateShadingParameter('tag_regex', this.value, 'downstream-of-tag'); }, 4],
+          {
+            type: 'text',
+            label: 'Tag (regex):',
+            value: o.tag_regex,
+            onchange, function() {
+              WA.updateShadingParameter('tag_regex', this.value, 'downstream-of-tag');
+            },
+            length: 4
+          },
           {
             type: 'text',
             label: 'Sampler domain IDs',

@@ -6,6 +6,7 @@ import sys
 import re
 import urllib
 import six
+import colorsys
 
 from django import forms
 from django.conf import settings
@@ -26,8 +27,6 @@ from taggit.managers import TaggableManager
 from rest_framework.authtoken.models import Token
 
 from .fields import Double3DField, Integer3DField, RGBAField, DownsampleFactorsField
-
-from .control.user import distinct_user_color
 
 
 CELL_BODY_CHOICES = (
@@ -1351,6 +1350,36 @@ class NodeQueryCache(models.Model):
     class Meta:
         db_table = "node_query_cache"
         unique_together = (('project', 'orientation', 'depth'),)
+
+
+initial_colors = ((1, 0, 0, 1),
+                  (0, 1, 0, 1),
+                  (0, 0, 1, 1),
+                  (1, 0, 1, 1),
+                  (0, 1, 1, 1),
+                  (1, 1, 0, 1),
+                  (1, 1, 1, 1),
+                  (1, 0.5, 0, 1),
+                  (1, 0, 0.5, 1),
+                  (0.5, 1, 0, 1),
+                  (0, 1, 0.5, 1),
+                  (0.5, 0, 1, 1),
+                  (0, 0.5, 1, 1))
+
+
+def distinct_user_color():
+    """ Returns a color for a new user. If there are less users registered than
+    entries in the initial_colors list, the next free color is used. Otherwise,
+    a random color is generated.
+    """
+    nr_users = User.objects.exclude(id__exact=-1).count()
+
+    if nr_users < len(initial_colors):
+        distinct_color = initial_colors[nr_users]
+    else:
+        distinct_color = colorsys.hsv_to_rgb(random(), random(), 1.0) + (1,)
+
+    return distinct_color
 
 
 @python_2_unicode_compatible

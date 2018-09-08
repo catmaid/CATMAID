@@ -3897,7 +3897,7 @@ initial_state_operations = [
             ('show_tracing_tool', models.BooleanField(default=False)),
             ('show_ontology_tool', models.BooleanField(default=False)),
             ('show_roi_tool', models.BooleanField(default=False)),
-            ('color', catmaid.fields.RGBAField(default=catmaid.control.user.distinct_user_color)),
+            ('color', catmaid.fields.RGBAField(default=catmaid.models.distinct_user_color)),
             ('user', models.OneToOneField(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
         ],
         options={

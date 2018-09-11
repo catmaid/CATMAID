@@ -10,15 +10,15 @@ import django.contrib.auth.views as djauth
 
 from rest_framework.decorators import api_view
 
-from catmaid.control import (authentication, user, log, message, client, common,
-        project, stack, stackgroup, tile, tracing, stats, neuron_annotations as
-        annotations, textlabel, label, link, connector, neuron, node, treenode,
-        suppressed_virtual_treenode, skeleton, skeletonexport, treenodeexport,
-        cropping, data_view, ontology, classification, notifications, roi,
-        clustering, volume, noop, useranalytics, user_evaluation, search,
-        graphexport, transaction, graph2, circles, analytics, review,
-        wiringdiagram, object, sampler, similarity, nat, point, landmarks,
-        pointcloud)
+from catmaid.control import (authentication, user, group, log, message, client,
+        common, project, stack, stackgroup, tile, tracing, stats,
+        neuron_annotations as annotations, textlabel, label, link, connector,
+        neuron, node, treenode, suppressed_virtual_treenode, skeleton,
+        skeletonexport, treenodeexport, cropping, data_view, ontology,
+        classification, notifications, roi, clustering, volume, noop,
+        useranalytics, user_evaluation, search, graphexport, transaction,
+        graph2, circles, analytics, review, wiringdiagram, object, sampler,
+        similarity, nat, point, landmarks, pointcloud)
 
 from catmaid.views import CatmaidView
 from catmaid.history import record_request_action as record_view
@@ -56,6 +56,11 @@ urlpatterns += [
     url(r'^user-table-list$', user.user_list_datatable),
     url(r'^user-profile/update$', user.update_user_profile),
     url(r'^user/password_change/$', user.change_password, {'post_change_redirect': 'catmaid:home'}),
+]
+
+# Groups
+urlpatterns += [
+    url(r'^groups/$', group.GroupList.as_view())
 ]
 
 # Log

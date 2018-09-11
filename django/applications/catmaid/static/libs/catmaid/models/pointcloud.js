@@ -24,15 +24,24 @@
    * Add a new point cloud to a project. The passed in points are expected to by
    * a list of three-element lists that represent X, Y and Z of a single point.
    *
+   * @param projectId {Number}     The project to add the point cloud to.
+   * @param name      {String}     Name of the new point cloud.
+   * @param points    {Number[][]} An array of XYZ arrays representing the
+   *                               points of the point clouod.
+   * @param description {String}   (optional) Description of the point cloud.
+   * @param sourcePath  {String}   (optional) A reference to the source file.
+   * @param groupId   {Number}     (optional) A group which users need to be
+   *                               members of to see this point cloud.
    */
   Pointcloud.add = function(projectId, name, points, description, images,
-      sourcePath) {
+      sourcePath, groupId) {
     return CATMAID.fetch(projectId + '/pointclouds/', 'PUT', {
         name: name,
         description: description,
         points: JSON.stringify(points),
         images: images,
         source_path: sourcePath,
+        group_id: groupId,
       })
       .then(function(result) {
         CATMAID.Pointcloud.trigger(CATMAID.Pointcloud.EVENT_POINTCLOUD_ADDED, result.id);

@@ -22,6 +22,8 @@ from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
+from guardian.models import (UserObjectPermissionBase,
+        GroupObjectPermissionBase)
 from guardian.shortcuts import get_objects_for_user
 from taggit.managers import TaggableManager
 from rest_framework.authtoken.models import Token
@@ -1042,6 +1044,7 @@ class NblastSimilarity(UserFocusedModel):
         db_table = "nblast_similarity"
 
 
+@python_2_unicode_compatible
 class PointCloud(UserFocusedModel):
     """A point cloud. Its points are linked through the point_cloud_point
     relation.
@@ -1055,8 +1058,34 @@ class PointCloud(UserFocusedModel):
     # length divisible by three is enforced by the database.
     points = models.ManyToManyField("Point", through='PointCloudPoint')
 
+    def num_permissions(self):
+        n_user_perms = PointCloudUserObjectPermission.objects.filter(content_object=self).count()
+        n_group_perms = PointCloudGroupObjectPermission.objects.filter(content_object=self).count()
+        return n_user_perms + n_group_perms
+
     class Meta:
         db_table = 'pointcloud'
+        permissions = (
+            ("can_read", "Can read point cloud"),
+            ("can_update", "Can update point cloud"),
+        )
+
+    def __str__(self):
+        return self.name
+
+
+class PointCloudUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(PointCloud, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'pointcloud_user_object_permission'
+
+
+class PointCloudGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(PointCloud, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'pointcloud_group_object_permission'
 
 
 class PointCloudPoint(models.Model):

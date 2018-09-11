@@ -6,6 +6,8 @@ from django.db import connection
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 
+from guardian.shortcuts import get_perms, get_users_with_perms, assign_perm
+
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 
@@ -107,8 +109,50 @@ class PointCloudList(APIView):
         with_points = get_request_bool(request.query_params, 'with_points', False)
         sample_ratio = float(request.query_params.get('sample_ratio', '1.0'))
         simple = get_request_bool(request.query_params, 'simple', False)
-        return JsonResponse([serialize_pointcloud(c, simple) for c in
-                PointCloud.objects.filter(project_id=project_id)], safe=False)
+
+        # Check permissions. If there are no permission assigned at all,
+        # everyone can read a point cloud.
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT pc.id, pc.name, pc.description, pc.user_id, pc.creation_time,
+                pc.edition_time
+            FROM pointcloud pc
+            LEFT OUTER JOIN pointcloud_user_object_permission puop
+                ON pc.id = puop.content_object_id
+            LEFT OUTER JOIN pointcloud_group_object_permission pgop
+                ON pc.id = pgop.content_object_id
+            LEFT OUTER JOIN auth_permission ap_u
+                ON ap_u.id = puop.permission_id
+            LEFT OUTER JOIN auth_permission ap_g
+                ON ap_g.id = pgop.permission_id
+            LEFT OUTER JOIN auth_user_groups ug
+                ON ug.group_id = pgop.group_id
+            WHERE pc.project_id = %(project_id)s AND (
+                (puop.id IS NULL AND pgop.id IS NULL) OR
+                (puop.user_id = %(user_id)s AND ap_u.codename = 'can_read') OR
+                (ug.user_id = %(user_id)s AND ap_g.codename ='can_read'))
+        """, {
+            'project_id': project_id,
+            'user_id': request.user.id
+        })
+
+        if simple:
+            pointcloud_data = [{
+                'id': pc[0],
+                'name': pc[1],
+            } for pc in cursor.fetchall()]
+        else:
+            pointcloud_data = [{
+                'id': pc[0],
+                'name': pc[1],
+                'description': pc[2],
+                'user_id': pc[3],
+                'creation_time': pc[4],
+                'edition_time': pc[5],
+                'project_id': project_id,
+            } for pc in cursor.fetchall()]
+
+        return JsonResponse(pointcloud_data, safe=False)
 
     @method_decorator(requires_user_role(UserRole.Annotate))
     def put(self, request, project_id):
@@ -135,6 +179,11 @@ class PointCloudList(APIView):
             type: array
             paramType: form
             required: true
+          - name: group_id
+            description: A group for which this point cloud will be visible exclusivly.
+            type: integer
+            paramType: form
+            required: false
         """
         name = request.POST.get('name')
         if not name:
@@ -157,6 +206,15 @@ class PointCloudList(APIView):
                 source_path=source_path)
         pc.save()
 
+        # Find an optional restriction group permission. If a group has no
+        # permission assigned, it is considered readable by all.
+        group_id = request.POST.get('group_id')
+        if group_id is not None:
+            group_id = int(group_id)
+            group = Group.objects.get(pk=group_id)
+            assigned_perm = assign_perm('can_read', group, pc)
+
+        # Add points
         cursor = connection.cursor()
         cursor.execute("""
             WITH added_point AS (
@@ -224,6 +282,13 @@ class PointCloudDetail(APIView):
 
         pointcloud = PointCloud.objects.get(pk=pointcloud_id, project_id=project_id)
         pointcloud_data = serialize_pointcloud(pointcloud, simple)
+
+        # Check permissions. If there are no read permission assigned at all,
+        # everyone can read.
+        if 'can_read' not in get_perms(request.user, pointcloud) and \
+                len(get_users_with_perms(pointcloud)) > 0:
+            raise PermissionError('User "{}" not allowed to read point cloud #{}'.format(
+                    request.user.username, pointcloud.id))
 
         if with_images:
             images = [serialize_image_data(i) for i in pointcloud.images.all()]

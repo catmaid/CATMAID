@@ -205,7 +205,7 @@
    */
   NeuronSimilarityWidget.prototype.addPointCloud = function(newPointcloudName,
       newPointcloudDescription, pointData, pointMatches, images, swapZY,
-      invertY) {
+      invertY, groupId) {
     if (!newPointcloudName) {
       throw new CATMAID.ValueError("Need a point cloud name");
     }
@@ -252,7 +252,7 @@
     }
 
     return CATMAID.Pointcloud.add(project.id, newPointcloudName, pointData,
-        newPointcloudDescription, images);
+        newPointcloudDescription, images, groupId);
   };
 
   function invertYInPlace(p) {
@@ -319,6 +319,7 @@
         querySourceSelect.onchange = function(e) {
           querySource = e.target.value;
         };
+
         let targetSelect = document.createElement('label');
         let targetSourceSelect = CATMAID.skeletonListSources.createUnboundSelect(widget.getName + ' Target source');
         targetSourceSelect.setAttribute('id', widget.idPrefix + 'target-source');
@@ -327,6 +328,7 @@
         targetSourceSelect.onchange = function(e) {
           targetSource = e.target.value;
         };
+
         let configSelectWrapper = document.createElement('label');
         configSelectWrapper.appendChild(document.createTextNode('Config'));
         configSelectWrapper.setAttribute('title', 'Select a configuration to use (has to be complete)');
@@ -1113,6 +1115,29 @@
         newPointcloudSection.classList.add('section-header');
         newPointcloudSection.appendChild(document.createTextNode('New point cloud'));
 
+        // Group selection
+        let groupSelectWrapper = document.createElement('label');
+        groupSelectWrapper.appendChild(document.createTextNode('Restrict to group'));
+        groupSelectWrapper.setAttribute('title', 'A group that has permission to see this point cloud. It is hidden for everyone else. Only groups this user is member of are shown.');
+        let groupSelect = document.createElement('select');
+        groupSelect.setAttribute('id', widget.idPrefix + 'group-select');
+        groupSelectWrapper.appendChild(groupSelect);
+        let groupId = groupSelect.value && groupSelect.value.length > 0 ?
+            parseInt(groupSelect.value, 10) : null;
+        groupSelect.onchange = function(e) {
+          groupId = parseInt(e.target.value, 10);
+        };
+
+        // Add available groups to select
+        NeuronSimilarityWidget.updateGroupSelect(groupSelect)
+          .then(function() {
+            // Select first option by default.
+            if (groupSelect.options.length > 0 && !groupId && groupId !== 0) {
+              groupId = groupSelect.options[0].value;
+              groupSelect.value = groupId;
+            }
+          });
+
         return [{
           type: 'button',
           label: 'Refresh',
@@ -1340,6 +1365,9 @@
             reader.readAsDataURL(file);
           }
         }, {
+          type: 'child',
+          element: groupSelectWrapper,
+        }, {
           type: 'button',
           label: 'Add point cloud',
           onclick: function() {
@@ -1351,8 +1379,10 @@
               CATMAID.warn("Need point data for point cloud");
               return;
             }
+            let effectiveGroupId = (groupId & groupId !== 'none') ?
+                groupId : undefined;
             widget.addPointCloud(newPointcloudName, newPointcloudDescription,
-                pointData, pointMatches, images, swapZY, invertY)
+                pointData, pointMatches, images, swapZY, invertY, effectiveGroupId)
               .then(function() {
                 widget.refresh();
                 CATMAID.msg("Success", "Point cloud created");
@@ -1790,6 +1820,29 @@
     }
 
     dialog.show(620, 550, false);
+  };
+
+  NeuronSimilarityWidget.updateGroupSelect = function (select) {
+    return CATMAID.Group.list(CATMAID.session.userid)
+      .then(function(groups) {
+        let selectedIndex = select.selectedIndex;
+        let selectedValue = selectedIndex === -1 ? null : select.value;
+
+        // Clear options
+        select.options.length = 0;
+
+        // Add default option
+        select.options.add(new Option("(none)", "none"));
+
+        for (let i=0; i<groups.length; ++i) {
+          let group = groups[i];
+          let selected = group.id === selectedValue;
+          let name = `${group.name} (${group.id})`;
+          let option = new Option(name, group.id, selected, selected);
+          select.options.add(option);
+        }
+      })
+      .catch(CATMAID.handleError);
   };
 
   NeuronSimilarityWidget.updateConfigSelect = function (select) {

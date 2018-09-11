@@ -2105,6 +2105,7 @@
 
     let positions = arbor.positions;
     let intervalFragments = [];
+    let ignoredFragmentNodeIds = [];
     let currentFragment = null;
     let leafFragmentLengths = {};
     while (workingSet.length > 0) {
@@ -2125,6 +2126,9 @@
           currentFragmentId = lastNodeId;
           intervalFragments.push(lastNodeId);
         }
+
+        // Remember node as being part of an ignored fragment
+        ignoredFragmentNodeIds.push(currentNodeId);
 
         // Compute and aggregate length
         let lastPos = positions[lastNodeId];
@@ -2168,6 +2172,12 @@
     // Show diagram
     let dialog = new CATMAID.OptionsDialog(ignoredFragmentLengths.length +
         ' ignored leaf fragments', {
+      'Downstream partners': function() {
+        showPartnerNodes(skeletonId, ignoredFragmentNodeIds, 'postsynaptic_to');
+      },
+      'Upstream partners': function() {
+        showPartnerNodes(skeletonId, ignoredFragmentNodeIds, 'presynaptic_to');
+      },
       'Download CSV': function() {
         let today = new Date();
         let filename = 'catmaid-sampler-ignored-intervals-' + today.getFullYear() +
@@ -2180,7 +2190,8 @@
 
     dialog.appendMessage("Histogram of the lengths of " + ignoredFragmentLengths.length +
         " ignored leaf fragments in domain " + domain.id + ". Click on the bins to " +
-        "open respective fragment start nodes in a table.");
+        "open respective fragment start nodes in a table. The \"partner\" buttons " +
+        "at the bottom allow to list partner nodes in ignored leaf fragments.");
 
     let plot = document.createElement('div');
     dialog.appendChild(plot);
@@ -2241,6 +2252,43 @@
     let models = {};
     models[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
     treenodeTable.append(models);
+  }
+
+  /**
+   * Open a new connector list widget, showing all partner nodes that are
+   * connectored to the passed in node Ids with the respective relation.
+   */
+  function showPartnerNodes(skeletonId, nodeIds, relation) {
+    let allowedNodeIds = new Set(nodeIds.map(Number));
+    let containsAllowedNode = function(p) {
+      return allowedNodeIds.has(p[1]);
+    };
+
+    CATMAID.fetch(project.id + '/connectors/', 'POST', {
+        'skeleton_ids': [skeletonId],
+        'with_tags': 'false',
+        'relation_type': relation,
+        'with_partners': true,
+      })
+      .then(function(result) {
+        // Only allow links that are connecting to nodes in the passed in list.
+        let allowedConnectors = result.connectors.filter(function(c) {
+          let partners = result.partners[c[0]];
+          return partners.some(containsAllowedNode);
+        });
+        // Create entries of the following format:
+        // [connector_id, x, y, z, skeleton_id, confidence, creator_id, creation_time, edition_time]
+        let connectorData = allowedConnectors.reduce(function(o, c) {
+          let partners = result.partners[c[0]];
+          for (let i=0; i<partners.length; ++i) {
+            let p = partners[i];
+            o.push([c[0], c[1], c[2], c[3], p[2], p[4], c[6], p[1], c[7], c[8], p[3]]);
+          }
+          return o;
+        }, []);
+        var connectorList = CATMAID.ConnectorList.fromRawData(connectorData).widget;
+      })
+      .catch(CATMAID.handleError);
   }
 
   var reviewInterval = function(skeletonId, interval) {

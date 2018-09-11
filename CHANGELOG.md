@@ -53,7 +53,9 @@ Reconstruction sampler:
   "Uncovered domain parts" button the "Interval" step. This will open a dialog
   window with a histogram on all ignored leaf segments in the current domain.
   Clicking on individual bins will open a treenode table containing the
-  respective start nodes of the ignored leaf segments.
+  respective start nodes of the ignored leaf segments. From this dialog, it is
+  also possible to list all downstream/upstream partners linked to nodes in
+  ignored segments of a domain.
 
 - The Synapse tab now also shows all leaf nodes of an interval. This makes it
   easier to find the places where an interval needs to be continued.

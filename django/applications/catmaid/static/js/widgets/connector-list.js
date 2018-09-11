@@ -47,7 +47,7 @@
    * representing a connector link. The expected format is:
    *
    * [connector_id, x, y, z, skeleton_id, confidence, creator_id, creation_time,
-   * edition_time]
+   * edition_time, relation_id]
    *
    * @returns {Object} Window handle and widget instance.
    */

@@ -265,7 +265,7 @@
         }).on('dblclick', 'tbody td', function() {
           var cell = self.connectorTable.cell( this );
           var col = cell[0][0].column;
-          if (!cell || col !== 8) {
+          if (!cell || col !== 9) {
             return;
           }
 

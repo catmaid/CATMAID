@@ -632,9 +632,9 @@ var WindowMaker = new function()
           alphaChanged ? alpha : null);
     };
 
-    var updatePointCloudFaces = function(volumeId, e) {
+    var updatePointCloudFaces = function(pointCloudId, e) {
       var facesVisible = e.target.checked;
-      WA.setPointCloudStyle(volumeId, "faces", facesVisible);
+      WA.setPointCloudStyle(pointCloudId, "faces", facesVisible);
       // Stop propagation or the general landmark group list change handler is
       // called.
       e.stopPropagation();

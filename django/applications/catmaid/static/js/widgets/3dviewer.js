@@ -1185,8 +1185,10 @@
     this.landmark_scale = 2000;
     this.pointcloud_color = "#ffa500";
     this.pointcloud_opacity = 0.2;
-    this.pointcloud_faces = true;
-    this.pointcloud_text = true;
+    this.pointcloud_box_color = '#ffa500';
+    this.pointcloud_box_opacity = 0.2;
+    this.pointcloud_faces = false;
+    this.pointcloud_text = false;
     this.pointcloud_scale = 500;
     this.pointcloud_sample = 1.0;
     this.text_scaling = 1.0;
@@ -1302,7 +1304,7 @@
     color = color || new THREE.Color(this.pointcloud_box_color);
     if (typeof opacity === 'undefined') opacity = this.pointcloud_box_opacity;
     return new THREE.MeshLambertMaterial({color: color, opacity: opacity,
-      transparent: opacity !== 1, wireframe: !this.pointcloud_box_faces, side: THREE.DoubleSide,
+      transparent: opacity !== 1, wireframe: !this.pointcloud_faces, side: THREE.DoubleSide,
       depthWrite: opacity === 1});
   };
 
@@ -2681,6 +2683,7 @@
 
           // Create box mesh
           let boxMaterial = this.options.createPointCloudBoxMaterial();
+          boxMaterial.visible = this.options.pointcloud_faces;
           let boxGeometry = new THREE.BoxBufferGeometry(
               max.x - min.x,
               max.y - min.y,
@@ -2778,6 +2781,7 @@
         // Apply faces/wireframe change only to landmark bounding box
         if (mesh.geometry && mesh.geometry.type === 'BoxBufferGeometry') {
           var material = mesh.material;
+          material.visible = !!value;
           material.wireframe = !value;
           material.needsUpdate = true;
         }

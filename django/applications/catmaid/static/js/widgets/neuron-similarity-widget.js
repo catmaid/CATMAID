@@ -200,12 +200,20 @@
   /**
    * Add a new point cloud.
    *
-   * @params swapZY {Boolean} (optional) Wheter or not to transform the point
-   *                          data from a left handed system into a right handed one.
+   * @params swapZY  {Boolean}   (optional) Whether or not to transform the
+   *                             point data from a left handed system into a
+   *                             right handed one.
+   * @params invertY {Boolean}   (optional) Whether or not to invert the input
+   *                             data's Y values wrt. to the bounding box.
+   * @params groupId {Number}    (optional) Id of a group that is allowed
+   *                             exclusive access on this point cloud. No one
+   *                             else cann see it.
+   * @params sampleSize {Number} (optional) A sampling can be performed based on
+   *                             the passed in spacing value in nm.
    */
   NeuronSimilarityWidget.prototype.addPointCloud = function(newPointcloudName,
       newPointcloudDescription, pointData, pointMatches, images, swapZY,
-      invertY, groupId) {
+      invertY, groupId, sampleSize) {
     if (!newPointcloudName) {
       throw new CATMAID.ValueError("Need a point cloud name");
     }
@@ -233,7 +241,6 @@
         throw new CATMAID.ValueError("Could not fit model for point cloud transformation");
       }
 
-
       // Get a transformed copy of each point.
       pointData = pointData.map(p => mls.apply(p));
 
@@ -249,11 +256,33 @@
           return p;
         });
       }
+
+      // Optionally, resampl point cloud
+      if (sampleSize) {
+        // Create a 3D grid with the respective sample sizeand find one point in
+        // each cell.
+        let cellConfig = pointData.reduce(addSampleToEmptyCell, {
+          map: new Map(),
+          sampleSize: sampleSize,
+        });
+        pointData = Array.from(cellConfig.map.values());
+      }
     }
 
     return CATMAID.Pointcloud.add(project.id, newPointcloudName, pointData,
         newPointcloudDescription, images, groupId);
   };
+
+  function addSampleToEmptyCell(target, point) {
+    let cellX = Math.floor(point[0] / target.sampleSize),
+        cellY = Math.floor(point[1] / target.sampleSize),
+        cellZ = Math.floor(point[2] / target.sampleSize);
+    let key = cellX + '_' + cellY + '_' + cellZ;
+    if (!target.map.has(key)) {
+      target.map.set(key, point);
+    }
+    return target;
+  }
 
   function invertYInPlace(p) {
     p[1] = -p[1];
@@ -1110,6 +1139,8 @@
         let images = null;
         let swapZY = false;
         let invertY = false;
+        let sample = false;
+        let sampleSize = 1000;
 
         let newPointcloudSection = document.createElement('span');
         newPointcloudSection.classList.add('section-header');
@@ -1221,6 +1252,31 @@
           value: invertY,
           onclick: function() {
             invertY = this.checked;
+          },
+        }, {
+          type: 'checkbox',
+          label: 'Resample (nm)',
+          value: sample,
+          onclick: function() {
+            sample = this.checked;
+            let sampleSizeInput = document.getElementById(
+                'neuron-similarity-sample-size' + widget.widgetID);
+            if (sampleSizeInput) {
+              sampleSizeInput.disabled = !this.checked;
+            }
+          },
+        }, {
+          type: 'numeric',
+          id: 'neuron-similarity-sample-size' + widget.widgetID,
+          min: 0,
+          length: 4,
+          value: sampleSize,
+          disabled: !sample,
+          onchange: function() {
+            let val = parseFloat(this.value);
+            if (val !== undefined && !Number.isNaN(val)) {
+              sampleSize = val;
+            }
           },
         }, {
           type: 'file',
@@ -1381,8 +1437,11 @@
             }
             let effectiveGroupId = (groupId & groupId !== 'none') ?
                 groupId : undefined;
+            let effectiveSampleSize = (sample && sampleSize) ?
+                sampleSize : undefined;
             widget.addPointCloud(newPointcloudName, newPointcloudDescription,
-                pointData, pointMatches, images, swapZY, invertY, effectiveGroupId)
+                pointData, pointMatches, images, swapZY, invertY, effectiveGroupId,
+                effectiveSampleSize)
               .then(function() {
                 widget.refresh();
                 CATMAID.msg("Success", "Point cloud created");

@@ -290,7 +290,7 @@ def list_connectors(request, project_id=None):
         defaultValue: true
         required: false
       - name: with_partners
-        description: If partner node information should be fetched
+        description: If partner node and link information should be fetched
         type: boolean
         paramType: form
         defaultValue: false

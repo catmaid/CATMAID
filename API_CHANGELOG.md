@@ -27,6 +27,11 @@ included in this changelog.
 - `GET /{project_id}/stacks/{stack_id}/info`:
   Now includes the `comment` field for each stack.
 
+- `GET /{project_id}/connectors/`:
+  The partner data returned when the `with_partners` is set, includes now
+  additionally the creator of the link and the creation and edition time (in
+  epoch format).
+
 ### Deprecations
 
 None.

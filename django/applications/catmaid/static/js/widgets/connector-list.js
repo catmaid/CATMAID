@@ -9,8 +9,10 @@
    * Create a new connector table, optional with a set of initial skeleton
    * models.
    */
-  var ConnectorList = function(data)
+  var ConnectorList = function(options)
   {
+    options = options || {};
+
     this.widgetID = this.registerInstance();
     this.idPrefix = `connector-list${this.widgetID}-`;
 
@@ -22,14 +24,14 @@
     // A skeleton source that is selected to provide skeleton ID constraints for
     // listing links with specific skeletons.
     this.focusSetSource = 'none';
-    this.focusSetRelation = 'none';
+    this.focusSetRelation = options.focusSetRelationId || 'none';
     this.partnerSetSource = 'none';
-    this.partnerSetRelation = 'none';
+    this.partnerSetRelation = options.partnerSetRelation || 'none';
 
     // The displayed data table
     this.connectorTable = null;
 
-    this.data = data;
+    this.data = options.data;
 
     // A set of filter rules to apply to the handled connectors
     this.filterRules = [];
@@ -49,10 +51,17 @@
    * [connector_id, x, y, z, skeleton_id, confidence, creator_id, creation_time,
    * edition_time, relation_id]
    *
+   * Optionally, relation ID filters for the focused set and the partner set can
+   * be provided.
+   *
    * @returns {Object} Window handle and widget instance.
    */
-  ConnectorList.fromRawData = function(data) {
-    return CATMAID.WindowMaker.create('connector-list', data);
+  ConnectorList.fromRawData = function(data, focusSetRelationId, partnerSetRelation) {
+    return CATMAID.WindowMaker.create('connector-list', {
+      data: data,
+      focusSetRelationId: focusSetRelationId,
+      partnerSetRelationId: partnerSetRelationId,
+    });
   };
 
   $.extend(ConnectorList.prototype, new InstanceRegistry());

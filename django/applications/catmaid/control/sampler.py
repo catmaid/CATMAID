@@ -164,6 +164,33 @@ def list_samplers(request, project_id):
     return JsonResponse([exportSampler(s) for s in samplers], safe=False)
 
 
+@api_view(['GET'])
+@requires_user_role(UserRole.Browse)
+def get_sampler(request, project_id, sampler_id):
+    """Get details on a particular sampler.
+    """
+    sampler_id = int(sampler_id)
+    with_domains = get_request_bool(request.GET, 'with_domains', False)
+    if with_domains:
+        sampler = SamplerInterval.objects.prefetch_related('samplerdomain_set').get(pk=sampler_id)
+    else:
+        sampler = SamplerInterval.objects.get(pk=sampler_id)
+
+    sampler_detail = serialize_sampler(sampler)
+
+    if with_domains:
+        domains = []
+        domains_and_ends = SamplerDomain.objects.filter(sampler=sampler_id) \
+                .prefetch_related('samplerdomainend_set')
+        for domain in domains_and_ends:
+            domain_data = serialize_domain(domain, with_ends=True)
+            domains.append(domain_data)
+        sampler_detail['domains'] = domains
+
+    return JsonResponse(sampler)
+
+
+
 @api_view(['POST'])
 @requires_user_role([UserRole.Annotate])
 def add_sampler(request, project_id):

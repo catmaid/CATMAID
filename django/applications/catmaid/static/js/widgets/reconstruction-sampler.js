@@ -2173,10 +2173,12 @@
     let dialog = new CATMAID.OptionsDialog(ignoredFragmentLengths.length +
         ' ignored leaf fragments', {
       'Downstream partners': function() {
-        showPartnerNodes(skeletonId, ignoredFragmentNodeIds, 'postsynaptic_to');
+        ReconstructionSampler.showPartnerNodes(skeletonId,
+            ignoredFragmentNodeIds, 'postsynaptic_to');
       },
       'Upstream partners': function() {
-        showPartnerNodes(skeletonId, ignoredFragmentNodeIds, 'presynaptic_to');
+        ReconstructionSampler.showPartnerNodes(skeletonId,
+            ignoredFragmentNodeIds, 'presynaptic_to');
       },
       'Download CSV': function() {
         let today = new Date();
@@ -2185,8 +2187,10 @@
         let data = "\"Ignored fragment length (nm)\"\n" + ignoredFragmentLengths.join("\n");
         saveAs(new Blob([data], {type: 'text/plain'}), filename);
       },
-      'Ok': function() {},
-    });
+      'Ok': function() {
+        $(dialog.dialog).dialog("destroy");
+      },
+    }, true);
 
     dialog.appendMessage("Histogram of the lengths of " + ignoredFragmentLengths.length +
         " ignored leaf fragments in domain " + domain.id + ". Click on the bins to " +
@@ -2258,16 +2262,28 @@
    * Open a new connector list widget, showing all partner nodes that are
    * connectored to the passed in node Ids with the respective relation.
    */
-  function showPartnerNodes(skeletonId, nodeIds, relation) {
+  ReconstructionSampler.showPartnerNodes = function(skeletonId, nodeIds, relation) {
     let allowedNodeIds = new Set(nodeIds.map(Number));
     let containsAllowedNode = function(p) {
       return allowedNodeIds.has(p[1]);
     };
 
+    // We query with respect to the focused skeleton ID, i.e. for downstream
+    // neurons we are interested in connectors to which this skeleton is
+    // presynaptic.
+    let queryRelation;
+    if (relation === 'presynaptic_to') {
+      queryRelation = 'postsynaptic_to';
+    } else if (relation === 'postsynaptic_to') {
+      queryRelation = 'presynaptic_to';
+    } else {
+      queryRelation = relation;
+    }
+
     CATMAID.fetch(project.id + '/connectors/', 'POST', {
         'skeleton_ids': [skeletonId],
         'with_tags': 'false',
-        'relation_type': relation,
+        'relation_type': queryRelation,
         'with_partners': true,
       })
       .then(function(result) {
@@ -2277,19 +2293,37 @@
           return partners.some(containsAllowedNode);
         });
         // Create entries of the following format:
-        // [connector_id, x, y, z, skeleton_id, confidence, creator_id, creation_time, edition_time]
+        // [connector_id, x, y, z, skeleton_id, confidence, creator_id,
+        // treenode_id, creation_time, edition_time, relation_id]
         let connectorData = allowedConnectors.reduce(function(o, c) {
           let partners = result.partners[c[0]];
           for (let i=0; i<partners.length; ++i) {
+            // Partners: link_id, treenode_id, skeleton_id, relation_id,
+            // confidence, user_id, creation_time, edition_time
             let p = partners[i];
-            o.push([c[0], c[1], c[2], c[3], p[2], p[4], c[6], p[1], c[7], c[8], p[3]]);
+            // We don't want links to the focused skeletons
+            if (p[2] !== skeletonId) {
+              o.push([c[0], c[1], c[2], c[3], p[2], p[4], p[5], p[1], p[6], p[7], p[3]]);
+            }
           }
           return o;
         }, []);
-        var connectorList = CATMAID.ConnectorList.fromRawData(connectorData).widget;
+
+        return Promise.all([
+          connectorData,
+          CATMAID.Relations.list(project.id),
+        ]);
+      })
+      .then(function(results) {
+        let connectorData = results[0];
+        let relationMap = results[1];
+
+        let focusSetRelationId = relationMap[relation];
+        let connectorList = CATMAID.ConnectorList.fromRawData(
+          connectorData, focusSetRelationId, undefined, [skeletonId]).widget;
       })
       .catch(CATMAID.handleError);
-  }
+  };
 
   var reviewInterval = function(skeletonId, interval) {
     var reviewWidget = WindowMaker.create('review-widget').widget;

@@ -26,7 +26,8 @@
     this.focusSetSource = 'none';
     this.focusSetRelation = options.focusSetRelationId || 'none';
     this.partnerSetSource = 'none';
-    this.partnerSetRelation = options.partnerSetRelation || 'none';
+    this.partnerSetExcludedSkeletonIds = new Set(options.partnerSetExcludedSkeletonIds || []);
+    this.partnerSetRelation = options.partnerSetRelationId || 'none';
 
     // The displayed data table
     this.connectorTable = null;
@@ -56,11 +57,13 @@
    *
    * @returns {Object} Window handle and widget instance.
    */
-  ConnectorList.fromRawData = function(data, focusSetRelationId, partnerSetRelation) {
+  ConnectorList.fromRawData = function(data, focusSetRelationId,
+      partnerSetRelationId, partnerSetExcludedSkeletonIds) {
     return CATMAID.WindowMaker.create('connector-list', {
       data: data,
       focusSetRelationId: focusSetRelationId,
       partnerSetRelationId: partnerSetRelationId,
+      partnerSetExcludedSkeletonIds: partnerSetExcludedSkeletonIds
     });
   };
 
@@ -136,6 +139,7 @@
             'none',
             function(e) {
               self.partnerSetSource = this.value;
+              self.partnerSetExcludedSkeletonIds.clear();
               self.updateFilters();
             });
         this.updateSkeletonConstraintSourceSelect(partnerSelect);
@@ -196,6 +200,8 @@
                   recordsFiltered: connectorData.length,
                   data: connectorData,
                 });
+
+                self.updateFilters();
 
                 // Populate result skeleton source
                 var models = connectorData.reduce(function(o, link) {
@@ -293,7 +299,7 @@
         rules: this.filterRules,
         update: this.update.bind(this),
         type: 'node',
-      },
+      }
     };
   };
 
@@ -340,10 +346,12 @@
       partnerSetRelationId = this.partnerSetRelation;
     }
 
+    let partnerSetExcludedSkeletonIds = this.partnerSetExcludedSkeletonIds;
+
     // Find all allowed rows. They are the ones with connectors that have links
     // to allowed partner skeletons.
     let allowedConnectorIds;
-    if (partnerSetSkeletonIds || partnerSetRelationId) {
+    if (partnerSetSkeletonIds || partnerSetRelationId || partnerSetExcludedSkeletonIds) {
       allowedConnectorIds = this.connectorTable.rows().data().toArray()
         .reduce(function(target, row) {
           // If a row's skeleton ID is part of the partner set, remember its
@@ -353,7 +361,9 @@
               partnerSetSkeletonIds.indexOf(row[4]) !== -1;
           let relationMatch = !partnerSetRelationId ||
               row[10] === partnerSetRelationId;
-          if (skeletonMatch && relationMatch) {
+          let skeletonNotExcluded = partnerSetExcludedSkeletonIds.size === 0 ||
+              !partnerSetExcludedSkeletonIds.has(row[4]);
+          if (skeletonMatch && relationMatch && skeletonNotExcluded) {
             target.push(row[0]);
           }
           return target;

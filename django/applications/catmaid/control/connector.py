@@ -414,7 +414,9 @@ def list_connectors(request, project_id=None):
         c_template = ",".join("(%s)" for _ in connector_ids)
         cursor.execute('''
             SELECT tc.connector_id, tc.id, tc.treenode_id, tc.skeleton_id,
-                tc.relation_id, tc.confidence
+                tc.relation_id, tc.confidence, tc.user_id,
+                EXTRACT(EPOCH FROM tc.creation_time),
+                EXTRACT(EPOCH FROM tc.edition_time)
             FROM treenode_connector tc
             JOIN (VALUES {}) c(id)
                 ON tc.connector_id = c.id

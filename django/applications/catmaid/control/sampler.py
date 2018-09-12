@@ -22,6 +22,44 @@ SAMPLER_CREATED_CLASS = "sampler-created"
 
 epsilon = 0.001
 
+
+def serialize_sampler(sampler):
+    return {
+       'id': s.id,
+       'creation_time': float(s.creation_time.strftime('%s')),
+       'edition_time': float(s.edition_time.strftime('%s')),
+       'interval_length': s.interval_length,
+       'interval_error': s.interval_error,
+       'leaf_segment_handling': s.leaf_segment_handling,
+       'merge_limit': s.merge_limit,
+       'review_required': s.review_required,
+       'create_interval_boundaries': s.create_interval_boundaries,
+       'state_id': s.sampler_state_id,
+       'skeleton_id': s.skeleton_id,
+       'user_id': s.user_id,
+    }
+
+def serialize_domain(domain, with_ends=True):
+    detail = {
+        "id": domain.id,
+        "sampler_id": domain.sampler_id,
+        "type_id": domain.domain_type_id,
+        "parent_interval": domain.parent_interval_id,
+        "start_node_id": domain.start_node_id,
+        "user_id": domain.user_id,
+        "project_id": domain.project_id,
+    }
+
+    if with_ends:
+        domain_ends = domain.samplerdomainend_set.all()
+        detail["ends"] = [{
+            "id": e.id,
+            "node_id": e.end_node_id
+        } for e in domain_ends]
+
+    return detail
+
+
 @api_view(['GET'])
 @requires_user_role([UserRole.Browse])
 def list_samplers(request, project_id):
@@ -107,20 +145,7 @@ def list_samplers(request, project_id):
             domain_query = domain_query.prefetch_related('samplerinterval_set')
 
         for domain in domain_query:
-            domain_ends = domain.samplerdomainend_set.all()
-            domain_data = {
-                "id": domain.id,
-                "sampler_id": domain.sampler_id,
-                "type_id": domain.domain_type_id,
-                "parent_interval": domain.parent_interval_id,
-                "start_node_id": domain.start_node_id,
-                "user_id": domain.user_id,
-                "project_id": domain.project_id,
-                "ends": [{
-                    "id": e.id,
-                    "node_id": e.end_node_id
-                } for e in domain_ends]
-            }
+            domain_data = serialize_domain(domain, with_ends=True)
             if with_intervals:
                 domain_data['intervals'] = [[
                     i.id, i.start_node_id, i.end_node_id, i.interval_state_id
@@ -129,20 +154,7 @@ def list_samplers(request, project_id):
             domains[domain.sampler_id].append(domain_data)
 
     def exportSampler(s):
-        s = {
-           'id': s.id,
-           'creation_time': float(s.creation_time.strftime('%s')),
-           'edition_time': float(s.edition_time.strftime('%s')),
-           'interval_length': s.interval_length,
-           'interval_error': s.interval_error,
-           'leaf_segment_handling': s.leaf_segment_handling,
-           'merge_limit': s.merge_limit,
-           'review_required': s.review_required,
-           'create_interval_boundaries': s.create_interval_boundaries,
-           'state_id': s.sampler_state_id,
-           'skeleton_id': s.skeleton_id,
-           'user_id': s.user_id,
-        }
+        s = serialize_sampler(s)
 
         if with_domains:
             s['domains'] = domains.get(s['id'], [])

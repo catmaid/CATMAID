@@ -772,6 +772,14 @@
     };
   };
 
+  Sampling.getSampler = function(projectId, samplerId, withDomains,
+      withIntervals) {
+    return CATMAID.fetch(project.id + '/samplers/' + samplerId + '/', 'GET', {
+      with_domains: withDomains,
+      with_intervals: withIntervals,
+    });
+  };
+
 
   // Export into CATMAID namespace
   CATMAID.Sampling = Sampling;

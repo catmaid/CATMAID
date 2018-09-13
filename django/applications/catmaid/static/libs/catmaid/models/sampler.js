@@ -690,6 +690,23 @@
     return intervalNodes;
   };
 
+  /**
+   * Update one or more fields of a particular sampler.
+   *
+   * @param projectId {Number} The project the sampler is part of.
+   * @param samplerId {Number} The sampler to update;
+   * @param newFields {Object} Sampler fields with their new data.
+   * @returns {Promise} resolves with the updated sampler data.
+   */
+  Sampling.updateSampler = function(projectId, samplerId, newProperties) {
+    return CATMAID.fetch(projectId + '/samplers/' + samplerId + '/', 'POST', {
+        'leaf_handling_mode': newProperties.leafHandlingMode,
+      })
+      .then(function() {
+        CATMAID.Sampling.trigger(CATMAID.Sampling.EVENT_SAMPLER_UPDATED, samplerId);
+      });
+  };
+
   Sampling.getIgnoredFragments = function(projectId, samplerId, arbor,
       positions, domain, domainListIntervals) {
     var intervalMap = {};
@@ -779,6 +796,13 @@
       with_intervals: withIntervals,
     });
   };
+
+
+  // Be an event source and define events
+  CATMAID.asEventSource(Sampling);
+  Sampling.EVENT_SAMPLER_ADDED = 'sampler_added';
+  Sampling.EVENT_SAMPLER_DELETED = 'sampler_deleted';
+  Sampling.EVENT_SAMPLER_UPDATED = 'sampler_updated';
 
 
   // Export into CATMAID namespace

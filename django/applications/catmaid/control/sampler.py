@@ -21,9 +21,8 @@ from rest_framework.views import APIView
 
 
 SAMPLER_CREATED_CLASS = "sampler-created"
-
 epsilon = 0.001
-
+known_leaf_modes = frozenset(('ignore', 'merge', 'short-interval', 'merge-or-create'))
 
 def serialize_sampler(sampler):
     return {
@@ -224,6 +223,37 @@ class SamplerDetail(APIView):
 
         return JsonResponse(sampler)
 
+    @method_decorator(requires_user_role(UserRole.Browse))
+    def post(request, project_id, sampler_id):
+        """Set fields of a particular sampler.
+        ---
+        parameters:
+         - name: project_id
+           description: The project to operate in.
+           type: integer
+           paramType: path
+           required: false
+         - name: sampler_id
+           description: The sampler to return.
+           type: integer
+           paramType: path
+           required: false
+         - name: leaf_handling_mode
+           description: Optional flag to include all domains of all result sampler results.
+           type: boolean
+           paramType: form
+           required: false
+        """
+        sampler_id = int(sampler_id)
+        can_edit_all_or_fail(request.user, sampler_id, 'catmaid_sampler')
+
+        sampler = SamplerInterval.objects.get(pk=sampler_id)
+
+        leaf_handling_mode = request.GET.get('leaf_handling_mode')
+        if leaf_handling_mode and leaf_handling_mode in known_leaf_modes:
+            sampler.leaf_handling_mode = leaf_handling_mode
+
+        return JsonResponse(serialize_sampler(sampler))
 
 
 @api_view(['POST'])
@@ -304,7 +334,6 @@ def add_sampler(request, project_id):
 
     leaf_segment_handling = request.POST.get('leaf_segment_handling')
     if leaf_segment_handling:
-        known_leaf_modes = ('ignore', 'merge', 'short-interval', 'merge-or-create')
         if leaf_segment_handling not in known_leaf_modes:
             raise ValueError("The leaf_segment_handling parameter needs to " +
                     "be one of 'ignore', 'merge' or 'short-interval'")

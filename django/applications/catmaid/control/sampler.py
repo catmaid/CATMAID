@@ -5,6 +5,7 @@ from itertools import chain
 
 from django.db import connection
 from django.http import JsonResponse
+from django.utils.decorators import method_decorator
 
 from catmaid.control.authentication import (requires_user_role, user_can_edit,
         can_edit_or_fail)
@@ -16,6 +17,7 @@ from catmaid.models import (Class, ClassInstance, Connector, Relation, Sampler,
 from catmaid.util import Point3D, is_collinear
 
 from rest_framework.decorators import api_view
+from rest_framework.views import APIView
 
 
 SAMPLER_CREATED_CLASS = "sampler-created"
@@ -25,21 +27,21 @@ epsilon = 0.001
 
 def serialize_sampler(sampler):
     return {
-       'id': s.id,
-       'creation_time': float(s.creation_time.strftime('%s')),
-       'edition_time': float(s.edition_time.strftime('%s')),
-       'interval_length': s.interval_length,
-       'interval_error': s.interval_error,
-       'leaf_segment_handling': s.leaf_segment_handling,
-       'merge_limit': s.merge_limit,
-       'review_required': s.review_required,
-       'create_interval_boundaries': s.create_interval_boundaries,
-       'state_id': s.sampler_state_id,
-       'skeleton_id': s.skeleton_id,
-       'user_id': s.user_id,
+       'id': sampler.id,
+       'creation_time': float(sampler.creation_time.strftime('%s')),
+       'edition_time': float(sampler.edition_time.strftime('%s')),
+       'interval_length': sampler.interval_length,
+       'interval_error': sampler.interval_error,
+       'leaf_segment_handling': sampler.leaf_segment_handling,
+       'merge_limit': sampler.merge_limit,
+       'review_required': sampler.review_required,
+       'create_interval_boundaries': sampler.create_interval_boundaries,
+       'state_id': sampler.sampler_state_id,
+       'skeleton_id': sampler.skeleton_id,
+       'user_id': sampler.user_id,
     }
 
-def serialize_domain(domain, with_ends=True):
+def serialize_domain(domain, with_ends=True, with_intervals=True):
     detail = {
         "id": domain.id,
         "sampler_id": domain.sampler_id,
@@ -56,6 +58,11 @@ def serialize_domain(domain, with_ends=True):
             "id": e.id,
             "node_id": e.end_node_id
         } for e in domain_ends]
+
+    if with_intervals:
+        detail['intervals'] = [[
+            i.id, i.start_node_id, i.end_node_id, i.interval_state_id
+        ] for i in domain.samplerinterval_set.all()]
 
     return detail
 
@@ -145,12 +152,8 @@ def list_samplers(request, project_id):
             domain_query = domain_query.prefetch_related('samplerinterval_set')
 
         for domain in domain_query:
-            domain_data = serialize_domain(domain, with_ends=True)
-            if with_intervals:
-                domain_data['intervals'] = [[
-                    i.id, i.start_node_id, i.end_node_id, i.interval_state_id
-                ] for i in domain.samplerinterval_set.all()]
-
+            domain_data = serialize_domain(domain, with_ends=True,
+                    with_intervals=with_intervals)
             domains[domain.sampler_id].append(domain_data)
 
     def exportSampler(s):
@@ -164,30 +167,62 @@ def list_samplers(request, project_id):
     return JsonResponse([exportSampler(s) for s in samplers], safe=False)
 
 
-@api_view(['GET'])
-@requires_user_role(UserRole.Browse)
-def get_sampler(request, project_id, sampler_id):
-    """Get details on a particular sampler.
-    """
-    sampler_id = int(sampler_id)
-    with_domains = get_request_bool(request.GET, 'with_domains', False)
-    if with_domains:
-        sampler = SamplerInterval.objects.prefetch_related('samplerdomain_set').get(pk=sampler_id)
-    else:
-        sampler = SamplerInterval.objects.get(pk=sampler_id)
+class SamplerDetail(APIView):
 
-    sampler_detail = serialize_sampler(sampler)
+    @method_decorator(requires_user_role(UserRole.Browse))
+    def get(request, project_id, sampler_id):
+        """Get details on a particular sampler.
+        ---
+        parameters:
+         - name: project_id
+           description: The project to operate in.
+           type: integer
+           paramType: path
+           required: false
+         - name: sampler_id
+           description: The sampler to return.
+           type: integer
+           paramType: path
+           required: false
+         - name: with_domains
+           description: Optional flag to include all domains of all result sampler results.
+           type: boolean
+           paramType: form
+           required: false
+           defaultValue: false
+         - name: with_intervals
+           description: Optional flag to include all intervals of all domains. Implies with_domains.
+           type: boolean
+           paramType: form
+           required: false
+           default: false
+           defaultValue: false
+        """
+        sampler_id = int(sampler_id)
+        with_intervals = get_request_bool(request.GET, 'with_intervals', False)
+        with_domains = get_request_bool(request.GET, 'with_domains', False) or with_intervals
 
-    if with_domains:
-        domains = []
-        domains_and_ends = SamplerDomain.objects.filter(sampler=sampler_id) \
-                .prefetch_related('samplerdomainend_set')
-        for domain in domains_and_ends:
-            domain_data = serialize_domain(domain, with_ends=True)
-            domains.append(domain_data)
-        sampler_detail['domains'] = domains
+        if with_domains:
+            sampler = SamplerInterval.objects.prefetch_related('samplerdomain_set').get(pk=sampler_id)
+        else:
+            sampler = SamplerInterval.objects.get(pk=sampler_id)
 
-    return JsonResponse(sampler)
+        sampler_detail = serialize_sampler(sampler)
+
+        if with_domains:
+            domains = []
+            domains_and_ends = SamplerDomain.objects.filter(sampler=sampler_id) \
+                    .prefetch_related('samplerdomainend_set')
+            if with_intervals:
+                domains_and_ends = domains_and_ends.prefetch_related('samplerinterval_set')
+
+            for domain in domains_and_ends:
+                domain_data = serialize_domain(domain, with_ends=True,
+                        with_intervals=with_intervals)
+                domains.append(domain_data)
+            sampler_detail['domains'] = domains
+
+        return JsonResponse(sampler)
 
 
 

@@ -2064,109 +2064,18 @@
       CATMAID.warn("Need domain for synapse workflow step");
       return;
     }
-    let intervalLength = widget.state['intervalLength'];
-    if (!intervalLength) {
-      CATMAID.warn("No valid interval length found");
-      return;
-    }
-    let intervalError = widget.state['intervalError'];
-    if (!intervalError && intervalError !== 0) {
-      CATMAID.warn("No valid interval error value found");
-      return;
-    }
-    let leafHandling = widget.state['leafHandling'];
-    if (!leafHandling) {
-      CATMAID.warn("No valid leaf handling option found");
-      return;
-    }
-    let mergeLimit = widget.state['mergeLimit'];
-    if (!mergeLimit && mergeLimit != 0.0) {
-      CATMAID.warn("No valid merge limit option found");
-      return;
-    }
 
     let domainListIntervals = domainIntervals.map(function(i) {
       // [intervalId, startNodeId, endNodeId
       return [i.id, i.start_node_id, i.end_node_id];
     });
 
-    var intervalMap = {};
-    CATMAID.Sampling.updateIntervalMap(arbor.arbor, domainListIntervals,
-        intervalMap, domain.start_node_id);
-
-    // Get domain arbor
-    let domainArbor = CATMAID.Sampling.domainArborFromModel(arbor.arbor, domain);
-    let successors = domainArbor.allSuccessors();
-    let workingSet = [[domain.start_node_id, null]];
-    let domainEnds = domain.ends.reduce(function(o, e) {
-      o[e.node_id] = true;
-      return o;
-    }, {});
-
-    let positions = arbor.positions;
-    let intervalFragments = [];
-    let ignoredFragmentNodeIds = [];
-    let currentFragment = null;
-    let leafFragmentLengths = {};
-    while (workingSet.length > 0) {
-      let currentNodeInfo = workingSet.shift();
-      let currentNodeId = currentNodeInfo[0];
-      let lastNodeId = currentNodeInfo[1];
-      let currentFragmentId = currentNodeInfo[2];
-
-      let intervalId = intervalMap[currentNodeId];
-      if (currentNodeId != domain.start_node_id &&
-          (intervalId === undefined || intervalId === null)) {
-        // This node is part of the domain, but part of no interval. This
-        // should only happen at the end of branches. While we don't have to
-        // expect more valid intervals on this branch, continue traversal for
-        // the sake of robustness.
-        if (!currentFragmentId && currentFragmentId !== 0) {
-          // Add last node, we need it for distance computations.
-          currentFragmentId = lastNodeId;
-          intervalFragments.push(lastNodeId);
-        }
-
-        // Remember node as being part of an ignored fragment
-        ignoredFragmentNodeIds.push(currentNodeId);
-
-        // Compute and aggregate length
-        let lastPos = positions[lastNodeId];
-        let pos = positions[currentNodeId];
-        if (!lastPos) {
-          CATMAID.warn("Couldn't find position for last node " + fragment[i-1]);
-        }
-        if (!pos) {
-          CATMAID.warn("Couldn't find position for current node " + fragment[i]);
-        }
-        let length = leafFragmentLengths[currentFragmentId] || 0;
-        leafFragmentLengths[currentFragmentId] = length + lastPos.distanceTo(pos);
-      } else {
-        // If the current node is part of an interval, make sure it isn't
-        // counted as part of an ignored leaf fragment.
-        currentFragmentId = null;
-      }
-
-      // If we hit a domain end, we stop looking for successors in this branch
-      // and can continue with the next node on another branch.
-      if (domainEnds[currentNodeId]) {
-        continue;
-      }
-
-      let succ = successors[currentNodeId];
-      if (succ && succ.length > 0) {
-        for (let k=0; k<succ.length; ++k) {
-          let succId = succ[k];
-          workingSet.push([succId, currentNodeId, currentFragmentId]);
-        }
-      } else {
-        currentFragment = null;
-      }
-    }
+    let fragmentInfo = CATMAID.Sampling.getIgnoredFragments(project.id,
+        samplerId, arbor.arbor, arbor.positions, domain, domainListIntervals);
 
     // Compute lengths.
-    let ignoredFragmentLengths = intervalFragments.map(function(fragmentId) {
-      return leafFragmentLengths[fragmentId];
+    let ignoredFragmentLengths = fragmentInfo.intervalFragments.map(function(fragmentId) {
+      return fragmentInfo.leafFragmentLengths[fragmentId];
     });
 
     // Show diagram
@@ -2174,11 +2083,11 @@
         ' ignored leaf fragments', {
       'Downstream partners': function() {
         ReconstructionSampler.showPartnerNodes(skeletonId,
-            ignoredFragmentNodeIds, 'postsynaptic_to');
+            fragmentInfo.ignoredFragmentNodeIds, 'postsynaptic_to');
       },
       'Upstream partners': function() {
         ReconstructionSampler.showPartnerNodes(skeletonId,
-            ignoredFragmentNodeIds, 'presynaptic_to');
+            fragmentInfo.ignoredFragmentNodeIds, 'presynaptic_to');
       },
       'Download CSV': function() {
         let today = new Date();

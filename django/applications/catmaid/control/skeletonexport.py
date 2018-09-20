@@ -212,6 +212,13 @@ def compact_skeleton_detail(request, project_id=None, skeleton_id=None):
       type: boolean
       defaultValue: "false"
       paramType: form
+    - name: ordered
+      description: |
+        Whether result skeletons should be ordered by ID.
+      required: false
+      type: boolean
+      defaultValue: true
+      paramType: form
     type:
     - type: array
       items:
@@ -229,10 +236,12 @@ def compact_skeleton_detail(request, project_id=None, skeleton_id=None):
     with_annotations = get_request_bool(request.GET, "with_annotations", False)
     with_user_info = get_request_bool(request.GET, "with_user_info", False)
     return_format = request.GET.get('format', 'json')
+    ordered = get_request_bool(request.GET, "ordered", False)
 
     result = _compact_skeleton(project_id, skeleton_id, with_connectors,
                                with_tags, with_history, with_merge_history,
-                               with_reviews, with_annotations, with_user_info)
+                               with_reviews, with_annotations, with_user_info,
+                               ordered)
 
     if return_format == 'msgpack':
         data = msgpack.packb(result)
@@ -265,10 +274,12 @@ def compact_skeleton(request, project_id=None, skeleton_id=None,
     with_reviews = get_request_bool(request.GET, "with_reviews", False)
     with_annotations = get_request_bool(request.GET, "with_annotations", False)
     with_user_info = get_request_bool(request.GET, "with_user_info", False)
+    ordered = get_request_bool(request.GET, "ordered", False)
 
     result = _compact_skeleton(project_id, skeleton_id, with_connectors,
                                with_tags, with_history, with_merge_history,
-                               with_reviews, with_annotations, with_user_info)
+                               with_reviews, with_annotations, with_user_info,
+                               ordered)
 
     return JsonResponse(result, safe=False,
             json_dumps_params={
@@ -381,6 +392,7 @@ def compact_skeleton_detail_many(request, project_id=None):
     with_annotations = get_request_bool(request.POST, "with_annotations", False)
     with_user_info = get_request_bool(request.POST, "with_user_info", False)
     return_format = request.POST.get('format', 'json')
+    ordered = get_request_bool(request.POST, "ordered", False)
 
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
@@ -389,7 +401,7 @@ def compact_skeleton_detail_many(request, project_id=None):
     for skeleton_id in skeleton_ids:
         skeletons[skeleton_id] = _compact_skeleton(project_id, skeleton_id,
                 with_connectors, with_tags, with_history, with_merge_history,
-                with_reviews, with_annotations, with_user_info)
+                with_reviews, with_annotations, with_user_info, ordered)
 
     result = {
         "skeletons": skeletons
@@ -407,7 +419,8 @@ def compact_skeleton_detail_many(request, project_id=None):
 
 def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
         with_tags=True, with_history=False, with_merge_history=True,
-        with_reviews=False, with_annotations=False, with_user_info=False):
+        with_reviews=False, with_annotations=False, with_user_info=False,
+        ordered=False):
     """Get a compact treenode representation of a skeleton, optionally with the
     history of individual nodes and connector, reviews and annotationss. Note
     this function is performance critical! Returns, in JSON:
@@ -436,8 +449,13 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
                 location_x, location_y, location_z,
                 radius, confidence
             FROM treenode
-            WHERE skeleton_id = %s
-        ''', (skeleton_id,))
+            WHERE skeleton_id = %(skeleton_id)s
+            {order}
+        '''.format(**{
+            'order': 'ORDER BY id' if ordered else '',
+        }), {
+            'skeleton_id': skeleton_id,
+        })
 
         nodes = tuple(cursor.fetchall())
     else:
@@ -499,6 +517,14 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
                     AND t.skeleton_id = %(skeleton_id)s
                     AND th.skeleton_id <> t.skeleton_id
             '''.format(query)
+
+        query = """
+            {query}
+            {order}
+        """.format(**{
+            'query': query,
+            'order': 'ORDER BY treenode.id' if ordered else '',
+        })
 
         cursor.execute(query, params)
 
@@ -610,17 +636,25 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
         # Fetch all node tags
         cursor.execute('''
             SELECT c.name, tci.treenode_id
-                   {0}
+                   {history_query}
                    {user_select}
-            FROM treenode{1} t,
-                 treenode_class_instance{1} tci,
-                 class_instance{1} c
-            WHERE t.skeleton_id = %s
+            FROM treenode{history_suffix} t,
+                 treenode_class_instance{history_suffix} tci,
+                 class_instance{history_suffix} c
+            WHERE t.skeleton_id = %(skeleton_id)s
               AND t.id = tci.treenode_id
-              AND tci.relation_id = %s
+              AND tci.relation_id = %(relation_id)s
               AND c.id = tci.class_instance_id
-        '''.format(t_history_query, history_suffix, user_select=user_select),
-        (skeleton_id, relations['labeled_as']))
+            {order}
+        '''.format(**{
+            'history_query': t_history_query,
+            'history_suffix': history_suffix,
+            'user_select': user_select,
+            'order': 'ORDER BY tci.treenode_id ASC' if ordered else '',
+        }), {
+            'skeleton_id': skeleton_id,
+            'relation_id': relations['labeled_as'],
+        })
 
         if with_history:
             if with_user_info:
@@ -677,7 +711,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
 
 
 def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,
-        with_connectors=None, with_tags=None, with_time=None):
+        with_connectors=None, with_tags=None, with_time=None, ordered=False):
     """
     Performance-critical function. Do not edit unless to improve performance.
     Returns, in JSON, [[nodes], [connections], {nodeID: [tags]}],
@@ -722,10 +756,16 @@ def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,
         cursor.execute('''
             SELECT id, parent_id, user_id,
                 location_x, location_y, location_z,
-                radius, confidence{}
+                radius, confidence{extra_fields}
             FROM treenode
-            WHERE skeleton_id = %s
-        '''.format(extra_fields), (skeleton_id,))
+            WHERE skeleton_id = %(skeleton_id)s
+            {order}
+        '''.format(**{
+            'extra_fields': extra_fields,
+            'order': 'ORDER BY id' if ordered else ''
+        }), {
+            'skeleton_id': skeleton_id
+        })
 
         nodes = tuple(cursor.fetchall())
 
@@ -753,11 +793,18 @@ def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,
                    tc1.relation_id, tc2.relation_id
             FROM treenode_connector tc1,
                  treenode_connector tc2
-            WHERE tc1.skeleton_id = %s
+            WHERE tc1.skeleton_id = %(skeleton_id)s
               AND tc1.id != tc2.id
               AND tc1.connector_id = tc2.connector_id
-              AND (tc1.relation_id = %s OR tc1.relation_id = %s)
-        ''' % (skeleton_id, pre, post))
+              AND (tc1.relation_id = %(pre)s OR tc1.relation_id = %(post)s)
+            {order}
+        '''.format(**{
+            'order': 'ORDER BY tc1.treenode_id' if ordered else ''
+        }), {
+            'skeleton_id': skeleton_id,
+            'pre': pre,
+            'post': post,
+        })
 
         for row in cursor.fetchall():
             # Ignore all other kinds of relation pairs (there shouldn't be any)
@@ -773,11 +820,17 @@ def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,
             FROM treenode t,
                  treenode_class_instance tci,
                  class_instance c
-            WHERE t.skeleton_id = %s
+            WHERE t.skeleton_id = %(skeleton_id)s
               AND t.id = tci.treenode_id
-              AND tci.relation_id = %s
+              AND tci.relation_id = %(relation_id)s
               AND c.id = tci.class_instance_id
-        ''' % (skeleton_id, relations['labeled_as']))
+            {order}
+        '''.format(**{
+            'order': 'ORDER BY tci.treenode_id' if ordered else '',
+        }), {
+            'skeleton_id': skeleton_id,
+            'relation_id': relations['labeled_as'],
+        })
 
         for row in cursor.fetchall():
             tags[row[0]].append(row[1])
@@ -788,8 +841,9 @@ def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,
 @requires_user_role(UserRole.Browse)
 def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None):
     with_time = get_request_bool(request.GET, "with_time", False)
+    ordered = get_request_bool(request.GET, "ordered", False)
     nodes, connectors, tags = _compact_arbor(project_id, skeleton_id,
-            with_nodes, with_connectors, with_tags, with_time)
+            with_nodes, with_connectors, with_tags, with_time, ordered)
     return JsonResponse((nodes, connectors, tags), safe=False,
             json_dumps_params={
                 'separators': (',', ':')
@@ -816,9 +870,11 @@ def treenode_time_bins(request, project_id=None, skeleton_id=None):
 
 
 @requires_user_role([UserRole.Browse])
-def compact_arbor_with_minutes(request, project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None):
+def compact_arbor_with_minutes(request, project_id=None, skeleton_id=None,
+        with_nodes=None, with_connectors=None, with_tags=None):
+    ordered = get_request_bool(request.GET, "ordered", False)
     nodes, connectors, tags = _compact_arbor(project_id, skeleton_id,
-            with_nodes, with_connectors, with_tags)
+            with_nodes, with_connectors, with_tags, ordered=ordered)
     minutes = _treenode_time_bins(skeleton_id)
     return JsonResponse((nodes, connectors, tags, minutes), safe=False,
             json_dumps_params={

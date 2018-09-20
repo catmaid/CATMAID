@@ -2049,19 +2049,22 @@
       CATMAID.warn("Please wait until intervals are loaded");
       return;
     }
-
+    let samplerId = widget.state['samplerId'];
+    if (!samplerId) {
+      throw new CATMAID.ValueError("Need sampler ID");
+    }
     let skeletonId = widget.state['skeletonId'];
     if (!skeletonId) {
-      throw new CATMAID.ValueError("Need skeleton ID for interval review");
+      throw new CATMAID.ValueError("Need skeleton ID");
     }
     let arbor = widget.state['arbor'];
     if (!arbor) {
-      CATMAID.warn("Need domain for synapse workflow step");
+      CATMAID.warn("Need arbor");
       return;
     }
     let domain = widget.state['domain'];
     if (domain === undefined) {
-      CATMAID.warn("Need domain for synapse workflow step");
+      CATMAID.warn("Need domain");
       return;
     }
 

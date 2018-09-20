@@ -11,17 +11,19 @@
    * Get a sub-arbor from the passed in arbor that matches the passed in domain
    * model.
    */
-  Sampling.domainArborFromModel = function(arbor, domain) {
+  Sampling.domainArborFromModel = function(arbor, domain, strict) {
     return CATMAID.Sampling.domainArbor(arbor, domain.start_node_id,
-        domain.ends.map(function(e) { return e.node_id; }));
+        domain.ends.map(function(e) { return e.node_id; }), strict);
   };
 
   /**
    * Get sub-arbor that starts at a start node and is pruned at all domain ends.
    */
-  Sampling.domainArbor = function(arbor, startNodeId, endNodeIds) {
+  Sampling.domainArbor = function(arbor, startNodeId, endNodeIds, strict) {
     var domainArbor = arbor.subArbor(startNodeId);
     var allSuccessors = domainArbor.allSuccessors();
+
+    // Remove all nodes after end nodes
     domainArbor.pruneAt(endNodeIds.reduce(function(o, endNodeId) {
       // Pruning is inclusive, so we need to prune the potential successors
       // of the end nodes.
@@ -43,6 +45,12 @@
       if (rootDistance[nodeId] === undefined) {
         delete domainArbor.edges[nodeId];
       }
+    }
+
+    // In strict mode, remove all parts of the arbor that are not strictly part
+    // of the path between root and end nodes.
+    if (strict) {
+      domainArbor = domainArbor.spanningTree([startNodeId].concat(endNodeIds));
     }
 
     return domainArbor;
@@ -119,14 +127,15 @@
    */
   Sampling.intervalsFromModels = function(arbor, positions, domainDetails,
       intervalLength, intervalError, preferSmallerError, createNewNodes,
-      leafHandling, updateArborData, targetEdgeMap, nodeBlacklist, mergeLimit) {
+      leafHandling, updateArborData, targetEdgeMap, nodeBlacklist, mergeLimit,
+      strict) {
     if (!intervalLength) {
       throw new CATMAID.ValueError("Need interval length for interval creation");
     }
 
     // Get domain arbor, which is then split into slabs, which are then
     // further split into intervals of respective length.
-    var domainArbor = CATMAID.Sampling.domainArborFromModel(arbor, domainDetails);
+    var domainArbor = CATMAID.Sampling.domainArborFromModel(arbor, domainDetails, strict);
 
     preferSmallerError = preferSmallerError === undefined ? true : !!preferSmallerError;
     createNewNodes = CATMAID.tools.getDefined(createNewNodes, false);

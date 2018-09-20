@@ -169,7 +169,7 @@ def list_samplers(request, project_id):
 class SamplerDetail(APIView):
 
     @method_decorator(requires_user_role(UserRole.Browse))
-    def get(request, project_id, sampler_id):
+    def get(self, request, project_id, sampler_id):
         """Get details on a particular sampler.
         ---
         parameters:
@@ -202,9 +202,9 @@ class SamplerDetail(APIView):
         with_domains = get_request_bool(request.GET, 'with_domains', False) or with_intervals
 
         if with_domains:
-            sampler = SamplerInterval.objects.prefetch_related('samplerdomain_set').get(pk=sampler_id)
+            sampler = Sampler.objects.prefetch_related('samplerdomain_set').get(pk=sampler_id)
         else:
-            sampler = SamplerInterval.objects.get(pk=sampler_id)
+            sampler = Sampler.objects.get(pk=sampler_id)
 
         sampler_detail = serialize_sampler(sampler)
 
@@ -221,10 +221,10 @@ class SamplerDetail(APIView):
                 domains.append(domain_data)
             sampler_detail['domains'] = domains
 
-        return JsonResponse(sampler)
+        return JsonResponse(sampler_detail)
 
     @method_decorator(requires_user_role(UserRole.Browse))
-    def post(request, project_id, sampler_id):
+    def post(self, request, project_id, sampler_id):
         """Set fields of a particular sampler.
         ---
         parameters:
@@ -245,13 +245,14 @@ class SamplerDetail(APIView):
            required: false
         """
         sampler_id = int(sampler_id)
-        can_edit_all_or_fail(request.user, sampler_id, 'catmaid_sampler')
+        can_edit_or_fail(request.user, sampler_id, 'catmaid_sampler')
 
-        sampler = SamplerInterval.objects.get(pk=sampler_id)
+        sampler = Sampler.objects.get(pk=sampler_id)
 
-        leaf_handling_mode = request.GET.get('leaf_handling_mode')
+        leaf_handling_mode = request.POST.get('leaf_handling_mode')
         if leaf_handling_mode and leaf_handling_mode in known_leaf_modes:
-            sampler.leaf_handling_mode = leaf_handling_mode
+            sampler.leaf_segment_handling = leaf_handling_mode
+            sampler.save()
 
         return JsonResponse(serialize_sampler(sampler))
 

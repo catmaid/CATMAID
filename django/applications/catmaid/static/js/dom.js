@@ -1331,7 +1331,7 @@
           case 'child':
             return tab.appendChild(e.element);
           case 'button':
-            return CATMAID.DOM.appendButton(tab, e.label, e.title, e.onclick, e.attr, e.disabled);
+            return CATMAID.DOM.appendButton(tab, e.label, e.title, e.onclick, e.attr, e.disabled, e.id);
           case 'color-button':
             return CATMAID.DOM.appendColorButton(tab, e.label, e.title, e.attr, e.onchange, e.color);
           case 'checkbox':
@@ -1360,8 +1360,11 @@
   /**
    * Append a new button to another element.
    */
-  DOM.appendButton = function(div, label, title, onclickFn, attr, disabled) {
+  DOM.appendButton = function(div, label, title, onclickFn, attr, disabled, id) {
     var b = document.createElement('input');
+    if (id) {
+      b.setAttribute('id', id);
+    }
     if (attr) Object.keys(attr).forEach(function(key) { b.setAttribute(key, attr[key]); });
     b.setAttribute('type', 'button');
     b.setAttribute('value', label);

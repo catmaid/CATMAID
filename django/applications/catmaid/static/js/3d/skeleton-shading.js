@@ -658,7 +658,7 @@
                 // If the successor node is part of a new interval, pre-assign
                 // color.
                 let succIntervalId = intervalMap[succId];
-                if (succIntervalId && succIntervalId !== intervalId) {
+                if (succIntervalId !== undefined && succIntervalId !== intervalId) {
                   // All branches start at same node. If there are branches
                   // (more than one successor interval), color them all the
                   // same.

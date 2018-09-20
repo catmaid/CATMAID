@@ -632,7 +632,7 @@
               render: function(data, type, row, meta) {
                 if (row.scoring && row.scoring.length > 0) {
                   let allCells = '[' + row.scoring.map(listToStr).join('\n, ') + ']';
-                  return '<a data-role="show-similarity" href="#" title="' + allCells + '">[…]</a>';
+                  return '<a data-role="show-similarity" href="#" title="' + allCells + '">View</a>';
                 } else {
                   return '-';
                 }
@@ -1073,7 +1073,7 @@
 
                 if (row.scoring && row.scoring.length > 0) {
                   let allCells = '[' + row.scoring.map(listToStr).join('\n, ') + ']';
-                  return '<a data-role="show-similarity" href="#" title="' + allCells + '">[…]</a>';
+                  return '<a data-role="show-similarity" href="#" title="' + allCells + '">View</a>';
                 } else {
                   return '-';
                 }

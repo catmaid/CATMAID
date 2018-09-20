@@ -964,7 +964,24 @@
   DomainWorkflowStep.prototype.createControls = function(widget) {
     var self = this;
 
+    var leafHandling = widget.state['leafHandling'];
+    if (!leafHandling) {
+      throw new CATMAID.ValueError('No valid leaf handling option found');
+    }
+
     return [
+      {
+        type: 'button',
+        label: 'Set "short-interval" leaf mode',
+        disabled: leafHandling !== 'ignore',
+        id: widget.idPrefix + '-set-short-interval',
+        title: 'If the current leaf segment handling mode is "ignore", it is ' +
+            'possible to upgrade to "short-interval" to create new intervals for ' +
+            'ignored fragments.',
+        onclick: function() {
+          self.updateLeafHandlingMode(widget, 'short-interval');
+        },
+      },
       {
         type: 'select',
         label: 'Domain start',
@@ -1036,6 +1053,12 @@
     var self = this;
     var skeletonId = widget.state['skeletonId'];
     var samplerId = widget.state['samplerId'];
+    var leafHandling = widget.state['leafHandling'];
+
+    var setShortIntervalButton = document.getElementById(widget.idPrefix + '-set-short-interval');
+    if (setShortIntervalButton) {
+      setShortIntervalButton.disabled = leafHandling !== 'ignore';
+    }
 
     var p = content.appendChild(document.createElement('p'));
     p.appendChild(document.createTextNode('Define one or more domains that should be sampled on neuron '));
@@ -1382,6 +1405,27 @@
       }).then(function(result) {
         widget.update();
     }).catch(CATMAID.handleError);
+  };
+
+  /**
+   * Update the leaf handling mode of a sampler to 'short-interval' if it
+   * currently is 'ignore'. This will create new intervals for each currently
+   * ignored fragment.
+   */
+  DomainWorkflowStep.prototype.updateLeafHandlingMode = function(widget, leafHandling) {
+    let samplerId = widget.state['samplerId'];
+    if (!samplerId) {
+      throw new CATMAID.ValueError("No sampler loaded");
+    }
+
+    CATMAID.Sampling.updateLeafHandlingMode(project.id, samplerId, leafHandling)
+      .then(function(sampler) {
+        if (sampler) {
+          widget.state['leafHandling'] = sampler.leaf_segment_handling;
+          widget.update();
+        }
+      })
+      .catch(CATMAID.handleError);
   };
 
   /**
@@ -1869,7 +1913,7 @@
           var dialog = new CATMAID.Confirmation3dDialog({
             title: "Please confirm " + intervals.length +
                 " domain interval(s) with an interval length of " +
-                intervalLength + "nm each, " + intervalConfiguration.addedNodes.length +
+                intervalLength + "nm each, " + addedNodes.length +
                 " new nodes are created to match intervals",
             showControlPanel: false,
             colorMethod: colorMethod,
@@ -2077,8 +2121,8 @@
         samplerId, arbor.arbor, arbor.positions, domain, domainListIntervals);
 
     // Compute lengths.
-    let ignoredFragmentLengths = fragmentInfo.intervalFragments.map(function(fragmentId) {
-      return fragmentInfo.leafFragmentLengths[fragmentId];
+    let ignoredFragmentLengths = fragmentInfo.intervalFragments.map(function(fragment) {
+      return fragmentInfo.leafFragmentLengths[fragment.start];
     });
 
     // Show diagram

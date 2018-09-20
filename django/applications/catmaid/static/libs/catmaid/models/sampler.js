@@ -711,11 +711,264 @@
     return CATMAID.fetch(projectId + '/samplers/' + samplerId + '/', 'POST', {
         'leaf_handling_mode': newProperties.leafHandlingMode,
       })
-      .then(function() {
+      .then(function(sampler) {
         CATMAID.Sampling.trigger(CATMAID.Sampling.EVENT_SAMPLER_UPDATED, samplerId);
+        return sampler;
       });
   };
 
+  /**
+   * Create shorter intervals for each ignored fragment of a domain (i.e.
+   * fragments that are not of an interval, but part of a domain). This also
+   * sets the leaf handling mode to 'short-interval'.
+   */
+  Sampling.updateLeafHandlingMode = function(projectId, samplerId, leafHandling) {
+    if (leafHandling !== 'short-interval') {
+      return Promise.reject(new CATMAID.ValueError("Can only transform to short interval mode"));
+    }
+    let intervalsNeedingUpdate = 0;
+    let intervalsUpdated = 0;
+    return CATMAID.Sampling.getSampler(projectId, samplerId, true, true)
+        .then(function(sampler) {
+          if (sampler.leaf_segment_handling !== 'ignore') {
+            throw new CATMAID.ValueError("Current leaf handling mode needs to be 'ignore'");
+          }
+
+          return Promise.all([
+            sampler,
+            CATMAID.fetch(project.id + '/' + sampler.skeleton_id + '/1/1/1/compact-arbor'),
+          ]);
+        })
+        .then(function(results) {
+          let sampler = results[0];
+          let skeletonData = results[1];
+          let arborParser = new CATMAID.ArborParser().init('compact-skeleton', skeletonData);
+
+          // Iterate over all domains and find all ignored fragments.
+          let newIntervalsPerDomain = [];
+          for (let domain of sampler.domains) {
+            // If this domain does not have any intervals, ignore it
+            if (!domain.intervals || !domain.intervals.length) {
+              continue;
+            }
+            ++intervalsNeedingUpdate;
+
+            // Get all ignored fragments
+            let fragmentInfo = CATMAID.Sampling.getIgnoredFragments(projectId,
+                samplerId, arborParser.arbor, arborParser.positions, domain,
+                domain.intervals);
+
+            // Create intervals in ignored fragments, regardless of length. This
+            // is done by creating intervals for temporary domains that start at
+            // the start of each individual ignored fragment (available from
+            // fragmentInfo.intervalFragments). Ends are found by walking
+            // successors until they are not in the ignored fragment set
+            // (fragmentInfo.ignoredFragmentNodeIds).
+            let intervalInfos = [];
+            for (let ignoredFragment of fragmentInfo.intervalFragments) {
+              var tempDomain = {
+                start_node_id: ignoredFragment.start,
+                ends: ignoredFragment.ends.map(function(endNodeId) {
+                  return {
+                    id: null,
+                    node_id: endNodeId,
+                  };
+                }),
+                intervals: []
+              };
+              let intervalMap = {};
+              let intervalInfo = CATMAID.Sampling.intervalsFromModels(
+                  arborParser.arbor, arborParser.positions, tempDomain,
+                  sampler.interval_length, sampler.interval_error, true,
+                  sampler.create_interval_boundaries, leafHandling,
+                  true, intervalMap, undefined, sampler.merge_limit, true);
+              intervalInfos.push(intervalInfo);
+            }
+
+            if (intervalInfos.length === 0) {
+              CATMAID.warn("No new intervals could be found in domain " +
+                  domain.id);
+            } else {
+              newIntervalsPerDomain.push({
+                intervals: intervalInfos,
+                domain: domain,
+                fragmentInfo: fragmentInfo,
+              });
+            }
+          }
+
+          return {
+            domainIntervals: newIntervalsPerDomain,
+            sampler: sampler,
+            arborParser: arborParser,
+          };
+        })
+        .then(function(samplerInfo) {
+          let sampler = samplerInfo.sampler;
+          let skeletonId = sampler.skeleton_id;
+          let workParser = samplerInfo.arborParser;
+          let newIntervalsPerDomain = samplerInfo.domainIntervals;
+          return new Promise(function(resolve, reject) {
+            let dialogs = [];
+
+            var models = {};
+            models[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
+
+            // Create virtual skeletons
+            let arborParsers = new Map([[skeletonId, workParser]]);
+            let nodeProvider = new CATMAID.ArborParserNodeProvider(arborParsers);
+
+            // This fake sampler is used to preview the new intervals. Use a
+            // copy of the original domain definitions, because we are going to
+            // slightly change them for preview.
+            var fakeSampler = CATMAID.tools.deepCopy(sampler);
+
+            let colorMethod = 'binary-sampler-intervals';
+
+            let showNextDialog = function() {
+              let dialogInfo = dialogs.pop();
+              if (!dialogInfo) {
+                resolve();
+              } else {
+                let dialog = dialogInfo.dialog;
+                let domain = dialogInfo.domain;
+
+                dialog.show();
+
+                // At the moment the 3D viewer is only accessible after display
+                var glWidget = dialog.webglapp;
+
+                let activeDomainId = domain.id;
+
+                glWidget.addSkeletons(models, function() {
+                  // Set preview sampler information
+                  let skeletons = glWidget.space.content.skeletons;
+                  let skeletonIds = Object.keys(skeletons);
+                  if (skeletonIds.length !== 1) {
+                    throw new CATMAID.ValueError("Expected exactly one loaded skeleton");
+                  }
+                  let skeleton = skeletons[skeletonIds[0]];
+
+                  skeleton.setSamplers([fakeSampler]);
+
+                  // Set new shading and coloring methods
+                  glWidget.options.color_method = colorMethod;
+                  glWidget.options.shading_method = 'sampler-domains';
+                  glWidget.options.interpolate_vertex_colots = true;
+
+                  let fakeDomain = domainLookup[domain.id];
+                  let allowedIntervalIds = fakeDomain.intervals.map(i => i[0]);
+
+                  // Make sure only the active domain is visible fully and other
+                  // parts of the skeleton only a little.
+                  glWidget.options.sampler_domain_shading_other_weight = 0.2;
+                  glWidget.options.allowed_sampler_domain_ids.length = 0;
+                  glWidget.options.allowed_sampler_domain_ids.push(activeDomainId);
+                  glWidget.options.allowed_sampler_interval_ids.length = 0;
+                  Array.prototype.push.apply(glWidget.options.allowed_sampler_interval_ids,
+                      allowedIntervalIds);
+
+                  glWidget.updateSkeletonColors()
+                    .then(function() { glWidget.render(); });
+
+                  // Look at center of mass of skeleton and update screen
+                  glWidget.lookAtSkeleton(skeletonId);
+                }, nodeProvider);
+              }
+            };
+
+            let domainLookup = fakeSampler.domains.reduce(function(o, d) {
+              o[d.id] = d;
+              return o;
+            }, {});
+
+            // Show a confirmation dialog for each domain
+            for (let domainInfo of newIntervalsPerDomain) {
+              let intervals = [];
+              let addedNodes = [];
+              for (let intervalInfo of domainInfo.intervals) {
+                Array.prototype.push.apply(intervals, intervalInfo.intervals);
+                Array.prototype.push.apply(addedNodes, intervalInfo.addedNodes);
+              }
+              let domain = domainLookup[domainInfo.domain.id];
+              domain.intervals = intervals.map(function(i, n) {
+                return [-1 * n, i[0], i[1], null];
+              });
+
+              // Show 3D viewer confirmation dialog
+              let dialog = new CATMAID.Confirmation3dDialog({
+                title: "Please confirm " + intervals.length +
+                    " domain interval(s) that are added to replace ignored " +
+                    "leaf nodes, " + addedNodes.length + " new nodes are " +
+                    "created to match intervals",
+                showControlPanel: false,
+                colorMethod: colorMethod,
+                shadingMethod: 'sampler-domain',
+                extraControls: [
+                  {
+                    type: 'checkbox',
+                    label: 'Binary colors',
+                    value: true,
+                    onclick: function() {
+                      //widget.state['binaryIntervalColors'] = this.checked;
+                      if (glWidget) {
+                        colorMethod = this.checked ?
+                            'binary-sampler-intervals' : 'multicolor-sampler-intervals';
+                        glWidget.options.color_method = colorMethod;
+                        glWidget.updateSkeletonColors()
+                          .then(glWidget.render.bind(glWidget));
+                      }
+                    }
+                  }
+                ]
+              });
+
+              // Create intervals if OK is pressed
+              dialog.onOK = function() {
+                CATMAID.fetch(project.id + '/samplers/domains/' +
+                    domain.id + '/intervals/add-all', 'POST', {
+                        intervals: intervals,
+                        added_nodes: JSON.stringify(addedNodes)
+                    })
+                  .then(function(result) {
+                    ++intervalsUpdated;
+                    showNextDialog();
+                    CATMAID.msg("Success", intervals.length + " interval(s) created, using " +
+                        result.n_added_nodes + " new node(s)");
+                  })
+                  .catch(reject);
+              };
+              dialog.onCancel = function() {
+                CATMAID.msg("No intervals created", "Canceled by user");
+                showNextDialog();
+              };
+
+              dialogs.push({
+                dialog: dialog,
+                domain: domainInfo.domain,
+                fragmentInfo: domainInfo.fragmentInfo,
+              });
+            }
+
+            // Show first dialog
+            showNextDialog();
+          });
+        })
+        .then(function() {
+          if (intervalsNeedingUpdate === intervalsUpdated) {
+            // Set the sampler's leaf handling type
+            let newLeafHandling = 'short-interval';
+            return CATMAID.Sampling.updateSampler(projectId, samplerId, {
+              'leafHandlingMode': newLeafHandling,
+            });
+          } else {
+            CATMAID.warn("Could not update all domains that needed a leaf mode update");
+          }
+        });
+  };
+
+  // FIXME: This ignores the fact that some branches were only created after
+  // intervals were created and will make these regular intervals as well.
   Sampling.getIgnoredFragments = function(projectId, samplerId, arbor,
       positions, domain, domainListIntervals) {
     var intervalMap = {};
@@ -730,7 +983,7 @@
       return o;
     }, {});
 
-    let workingSet = [[domain.start_node_id, null]];
+    let workingSet = [[domain.start_node_id, null, null]];
     let intervalFragments = [];
     let ignoredFragmentNodeIds = [];
     let currentFragment = null;
@@ -739,7 +992,7 @@
       let currentNodeInfo = workingSet.shift();
       let currentNodeId = currentNodeInfo[0];
       let lastNodeId = currentNodeInfo[1];
-      let currentFragmentId = currentNodeInfo[2];
+      let currentFragment = currentNodeInfo[2];
 
       let intervalId = intervalMap[currentNodeId];
       if (currentNodeId != domain.start_node_id &&
@@ -748,10 +1001,13 @@
         // should only happen at the end of branches. While we don't have to
         // expect more valid intervals on this branch, continue traversal for
         // the sake of robustness.
-        if (!currentFragmentId && currentFragmentId !== 0) {
+        if (!currentFragment) {
           // Add last node, we need it for distance computations.
-          currentFragmentId = lastNodeId;
-          intervalFragments.push(lastNodeId);
+          currentFragment = {
+            start: lastNodeId,
+            ends: [],
+          };
+          intervalFragments.push(currentFragment);
         }
 
         // Remember node as being part of an ignored fragment
@@ -766,17 +1022,23 @@
         if (!pos) {
           CATMAID.warn("Couldn't find position for current node " + fragment[i]);
         }
-        let length = leafFragmentLengths[currentFragmentId] || 0;
-        leafFragmentLengths[currentFragmentId] = length + lastPos.distanceTo(pos);
+        let length = leafFragmentLengths[currentFragment.start] || 0;
+        leafFragmentLengths[currentFragment.start] = length + lastPos.distanceTo(pos);
       } else {
+        if (currentFragment) {
+          currentFragment.ends.push(currentNodeId);
+        }
         // If the current node is part of an interval, make sure it isn't
         // counted as part of an ignored leaf fragment.
-        currentFragmentId = null;
+        currentFragment = null;
       }
 
       // If we hit a domain end, we stop looking for successors in this branch
       // and can continue with the next node on another branch.
       if (domainEnds[currentNodeId]) {
+        if (currentFragment) {
+          currentFragment.ends.push(currentNodeId);
+        }
         continue;
       }
 
@@ -784,7 +1046,7 @@
       if (succ && succ.length > 0) {
         for (let k=0; k<succ.length; ++k) {
           let succId = succ[k];
-          workingSet.push([succId, currentNodeId, currentFragmentId]);
+          workingSet.push([succId, currentNodeId, currentFragment]);
         }
       } else {
         currentFragment = null;
@@ -795,6 +1057,8 @@
       intervalFragments: intervalFragments,
       leafFragmentLengths: leafFragmentLengths,
       ignoredFragmentNodeIds: ignoredFragmentNodeIds,
+      domainArbor: domainArbor,
+      domainSuccesors: successors,
     };
   };
 

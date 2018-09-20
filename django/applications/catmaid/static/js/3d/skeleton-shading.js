@@ -560,8 +560,9 @@
         if (!domain.intervals || domain.intervals.length === 0) {
           let addedIntervals = CATMAID.Sampling.intervalsFromModels(
               arbor, positions, domain, sampler.interval_length,
-              sampler.interval_error, true, true, sampler.leaf_segment_handling,
-              true, intervalMap, undefined, sampler.merge_limit);
+              sampler.interval_error, true, sampler.create_interval_boundaries,
+              sampler.leaf_segment_handling, true, intervalMap, undefined,
+              sampler.merge_limit);
           let mockIntervals = addedIntervals.intervals.map(function(ai, i) {
             // use the negative index as ID for now. There should not be
             // any collissions.
@@ -608,12 +609,12 @@
         let nDomains = domains.length;
         for (var j=0; j<nDomains; ++j) {
           let domain = domains[j];
-          let allowedIntervalIds = options.viewerOptions.allowed_sampler_domain_ids;
+          let allowedDomainIds = options.viewerOptions.allowed_sampler_domain_ids;
 
           // Skip this domain if the user set 'allowed_sampler_domains'
-          if (allowedIntervalIds &&
-              allowedIntervalIds.length > 0 &&
-              allowedIntervalIds.indexOf(domain.id) === -1) {
+          if (allowedDomainIds &&
+              allowedDomainIds.length > 0 &&
+              allowedDomainIds.indexOf(domain.id) === -1) {
             continue;
           }
 
@@ -628,20 +629,14 @@
             let isIntervalStart = workingSetIntervalStart.shift();
 
             let intervalId = intervalMap[currentNodeId];
-            if (currentNodeId != domain.start_node_id &&
-                (intervalId === undefined || intervalId === null) &&
-                allowedIntervalIds.length === 0) {
-              // This node is part of the domain, but part of no interval. This
-              // can only happen at the end of branches and we don't have to
-              // expect more valid intervals on this branch. Therefore, we can
-              // just continue with the next working set node.
-              continue;
-            }
-
-            let intervalColor = colorMap.get(intervalId);
-            if (!intervalColor) {
-              intervalColor = nextColor;
-              colorMap.set(intervalId, intervalColor);
+            let isInInterval = intervalId !== undefined && intervalId !== null;
+            let intervalColor;
+            if (isInInterval) {
+                intervalColor = colorMap.get(intervalId);
+                if (!intervalColor) {
+                  intervalColor = nextColor;
+                  colorMap.set(intervalId, intervalColor);
+                }
             }
 
             // Check all successors of current reference node if they are part

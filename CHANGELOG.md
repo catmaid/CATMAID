@@ -57,6 +57,11 @@ Reconstruction sampler:
   also possible to list all downstream/upstream partners linked to nodes in
   ignored segments of a domain.
 
+- For samplers using the 'ignore' leaf handing mode, it is now possible to
+  update this to 'short-interval' mode including the generation of missing
+  intervals for existing domains. A visual confirmation dialog is shown. To use
+  this, press the "Set short-interval leaf mode" button in the Domain tab.
+
 - The Synapse tab now also shows all leaf nodes of an interval. This makes it
   easier to find the places where an interval needs to be continued.
 

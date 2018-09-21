@@ -21,7 +21,7 @@
     this.showOnlyMatchesInResult = true;
     // Whether or not the results are displayed in a dialog (rather than a
     // window).
-    this.resultMode = 'dialog';
+    this.resultMode = 'window';
 
     this.mode = 'similarity';
     this.modes = ['similarity', 'configrations', 'pointclouds'];
@@ -391,6 +391,22 @@
           type: 'button',
           label: 'Refresh',
           onclick: widget.refresh.bind(widget),
+        }, {
+          id: widget.idPrefix + '-result-mode',
+          type: 'select',
+          label: 'View',
+          title: 'Whether to view results in a window or a dialog',
+          value: widget.resultMode,
+          entries: [{
+            title: 'Window',
+            value: 'window'
+          }, {
+            title: 'Dialog',
+            value: 'dialog'
+          }],
+          onchange: function() {
+            widget.resultMode = this.value;
+          }
         }, {
           type: 'child',
           element: newScoringSection,
@@ -1732,20 +1748,7 @@
   NeuronSimilarityWidget.prototype.showSimilarity = function(similarity) {
     let self = this;
     if (this.resultMode === 'dialog') {
-      let targetModels = {};
-      if (similarity.target_type === 'skeleton') {
-        similarity.target_objects.reduce(function(o, to) {
-          o[to] = new CATMAID.SkeletonModel(to);
-          return o;
-        }, targetModels);
-      }
-      if (similarity.query_type === 'skeleton') {
-        similarity.query_objects.reduce(function(o, to) {
-          o[to] = new CATMAID.SkeletonModel(to);
-          return o;
-        }, targetModels);
-      }
-
+      let targetModels = CATMAID.Similarity.getReferencedSkeletonModels(similarity);
       let needsPointclouds = similarity.query_type === 'pointcloud' ||
           similarity.target_type === 'pointcloud';
 
@@ -1772,7 +1775,8 @@
   };
 
   NeuronSimilarityWidget.showSimilarityWindow = function(similarity) {
-    let widgetInfo = CATMAID.WindowMaker.create('neuron-similarity-list');
+    let widgetInfo = CATMAID.WindowMaker.create('neuron-similarity-detail');
+    widgetInfo.widget.setSimilarity(similarity);
   };
 
   /**

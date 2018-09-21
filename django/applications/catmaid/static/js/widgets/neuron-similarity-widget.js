@@ -1547,7 +1547,7 @@
               title: "Action",
               class: 'cm-center',
               render: function(data, type, row, meta) {
-                return '<a href="#" data-role="delete-pointcloud">Delete</a> <a href="#" data-role="show-pointcloud">View</a>';
+                return '<a href="#" data-role="delete-pointcloud">Delete</a> <a href="#" data-role="show-images">View images</a> <a href="#" data-role="show-pointcloud">View</a>';
               }
             }],
           createdRow: function( row, data, dataIndex ) {
@@ -1567,8 +1567,14 @@
           let pointcloudId = this.closest('tr').dataset.pointcloudId;
           if (pointcloudId) {
             // Show point cloud in a new 3D viewer dialog.
-            let widget = WindowMaker.create('3d-viewer').widget;
-            widget.showPointCloud(pointcloudId, true);
+            let widget3d = WindowMaker.create('3d-viewer').widget;
+            widget3d.showPointCloud(pointcloudId, true);
+          }
+        }).on('click', 'a[data-role=show-images]', function() {
+          let pointcloudId = this.closest('tr').dataset.pointcloudId;
+          if (pointcloudId) {
+            // Show point cloud in a new 3D viewer dialog.
+            NeuronSimilarityWidget.showPointCloudImages(project.id, pointcloudId, true);
           }
         }).on('click', 'input[data-role=select-pointcloud]', function() {
           let pointcloudId = this.closest('tr').dataset.pointcloudId;
@@ -1598,6 +1604,42 @@
     return Promise(function(resolve, reject) {
 
     });
+  };
+
+  /**
+   * Show a dialog with all images linked to this point cloud.
+   */
+  NeuronSimilarityWidget.showPointCloudImages = function(projectId, pointcloudId) {
+    CATMAID.Pointcloud.get(projectId, pointcloudId, false, true)
+      .then(function(pointcloud) {
+
+        if (!pointcloud.images || pointcloud.images.length === 0) {
+          CATMAID.warn("No images are linked to this point cloud");
+          return;
+        }
+
+        // Create a new dialog with image elements
+        let dialog = new CATMAID.OptionsDialog("Images linked to point cloud " +
+            pointcloud.name + " (" + pointcloud.id + ")", {
+              'Ok': CATMAID.tools.noop,
+            });
+
+        let imageContainer = document.createElement('span');
+        imageContainer.style.display = 'flex';
+
+        for (let image of pointcloud.images) {
+          let img = document.createElement('img');
+          img.src = CATMAID.Pointcloud.getImagePath(projectId, pointcloud.id, image.id);
+          let description = image.description ? image.description : '(no description)';
+          img.title = `${image.name} (${image.id}): ${description}`;
+          img.style.height = '400px';
+          imageContainer.appendChild(img);
+        }
+
+        dialog.appendChild(imageContainer);
+        dialog.show('auto', 'auto');
+      })
+      .catch(CATMAID.handleError);
   };
 
   NeuronSimilarityWidget.showSimilarityScoringDialog = function(similarity) {

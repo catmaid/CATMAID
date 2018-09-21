@@ -4,7 +4,7 @@ import json
 
 from django.conf import settings
 from django.db import connection
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.utils.decorators import method_decorator
 
 from guardian.shortcuts import get_perms, get_users_with_perms, assign_perm
@@ -291,6 +291,67 @@ class PointCloudList(APIView):
         images = get_request_list(request.POST, 'images')
 
         return JsonResponse(serialize_pointcloud(pc))
+
+
+class PointCloudImageDetail(APIView):
+
+    @method_decorator(requires_user_role(UserRole.Browse))
+    def get(self, request, project_id, pointcloud_id, image_id):
+        """Return a point cloud.
+        parameters:
+          - name: project_id
+            description: Project of the returned point cloud image
+            type: integer
+            paramType: path
+            required: true
+          - name: pointcloud_id
+            description: Point cloud this image is linked to
+            type: integer
+            paramType: path
+            required: true
+          - name: image_id
+            description: The image to load
+            type: integer
+            paramType: path
+            required: true
+        """
+        pointcloud = PointCloud.objects.get(pk=pointcloud_id, project_id=project_id)
+
+        # Check permissions. If there are no read permission assigned at all,
+        # everyone can read.
+        if 'can_read' not in get_perms(request.user, pointcloud) and \
+                len(get_users_with_perms(pointcloud)) > 0:
+            raise PermissionError('User "{}" not allowed to read point cloud #{}'.format(
+                    request.user.username, pointcloud.id))
+
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT image, content_type, name
+            FROM image_data img
+            JOIN pointcloud_image_data pcid
+                ON img.id = pcid.image_data_id
+            WHERE img.project_id = %(project_id)s
+            AND pcid.image_data_id = %(image_id)s
+            AND pcid.pointcloud_id = %(pointcloud_id)s
+        """, {
+            'project_id': project_id,
+            'pointcloud_id': pointcloud_id,
+            'image_id': image_id,
+        })
+
+        rows = cursor.fetchall()
+        if len(rows) == 0:
+            raise ValueError("Could not find image")
+        if len(rows) > 1:
+            raise ValueError("Found more than one image")
+
+        image_data = rows[0][0]
+        content_type = rows[0][1]
+        name = rows[0][2]
+
+        response = HttpResponse(image_data, content_type=content_type)
+        response['Content-Disposition'] = 'attachment; filename={}'.format(name)
+        return response
 
 
 class PointCloudDetail(APIView):

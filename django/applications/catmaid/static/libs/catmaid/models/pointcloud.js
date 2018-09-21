@@ -63,7 +63,7 @@
    * @param projectId    {Number}  The project to operate in.
    * @param pointcloudId {Number}  The point cloud to return.
    * @param withPoints   {Boolean} Whether or not to return point data.
-   * @param withImages   {Boolean} Whether or not to return image data.
+   * @param withImages   {Boolean} Whether or not to return image info.
    * @param sampleRatio  {Number}  Number in range [0,1] that reflects the
    *                               percentage of point cloud that should be loaded.
    * @returns {Promise} Resolves with details on the request point cloud.
@@ -89,6 +89,14 @@
         CATMAID.Pointcloud.trigger(CATMAID.Pointcloud.EVENT_POINTCLOUD_DELETED, result.id);
         return result;
       });
+  };
+
+  /**
+   * Return the path to a particular image.
+   */
+  Pointcloud.getImagePath = function(projectId, pointcloudId, imageId) {
+    return CATMAID.makeURL(project.id + '/pointclouds/' + pointcloudId +
+        '/images/' + imageId + '/');
   };
 
   /**

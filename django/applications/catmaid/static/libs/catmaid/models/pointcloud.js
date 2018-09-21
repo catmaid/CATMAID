@@ -35,14 +35,22 @@
    */
   Pointcloud.add = function(projectId, name, points, description, images,
       sourcePath, groupId) {
-    return CATMAID.fetch(projectId + '/pointclouds/', 'PUT', {
-        name: name,
-        description: description,
-        points: JSON.stringify(points),
-        images: images,
-        source_path: sourcePath,
-        group_id: groupId,
-      })
+    var data = new FormData();
+    data.append('name', name);
+    data.append('description', description);
+    data.append('points', JSON.stringify(points));
+    if (sourcePath) data.append('source_path', sourcePath);
+    if (groupId) data.append('group_id', groupId);
+    if (images) {
+     images.forEach(function(image, i){
+       data.append('images[' + i + ']', image.file, image.name);
+       data.append('image_descriptions[' + i + ']', image.description);
+       data.append('image_names[' + i + ']', image.name);
+     });
+    }
+
+    return CATMAID.fetch(projectId + '/pointclouds/', 'PUT', data, undefined,
+        undefined, undefined, undefined, {"Content-type" : null})
       .then(function(result) {
         CATMAID.Pointcloud.trigger(CATMAID.Pointcloud.EVENT_POINTCLOUD_ADDED, result.id);
         return result;

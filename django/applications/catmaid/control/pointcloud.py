@@ -2,11 +2,13 @@
 import logging
 import json
 
+from django.conf import settings
 from django.db import connection
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 
 from guardian.shortcuts import get_perms, get_users_with_perms, assign_perm
+from io import StringIO, BytesIO
 
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
@@ -18,6 +20,8 @@ from catmaid.control.common import (insert_into_log, get_class_to_id_map,
         get_request_list)
 from catmaid.models import (Point, PointCloud, PointCloudPoint, ImageData,
         PointCloudImageData, UserRole)
+
+from PIL import Image
 
 
 logger = logging.getLogger('__name__')
@@ -205,6 +209,51 @@ class PointCloudList(APIView):
                 name=name, description=description, user=request.user,
                 source_path=source_path)
         pc.save()
+
+        image_names = get_request_list(request.POST, 'image_names')
+        image_descriptions = get_request_list(request.POST, 'image_descriptions')
+        n_images = len(request.FILES)
+
+        if image_names and len(image_names) != n_images:
+            raise ValueError("If image names are passed in, there need to be exactly as many as passed in files ({})".format(n_images))
+
+        if image_descriptions and len(image_descriptions) != n_images:
+            raise ValueError("If image descriptions are passed in, there need to be exactly as many as passed in files ({})".format(n_images))
+
+        cursor = connection.cursor()
+        for n, image in enumerate(request.FILES.values()):
+            if image.size > settings.IMPORTED_IMAGE_FILE_MAXIMUM_SIZE:
+                raise ValueError("Image {} is bigger than IMPORTED_IMAGE_FILE_MAXIMUM_SIZE ({} MB)".format(
+                        image.name, settings.IMPORTED_IMAGE_FILE_MAXIMUM_SIZE / 1024**2))
+
+            # Transform into JPEG
+            img = Image.open(image)
+            image_io = BytesIO()
+            img.save(image_io, format='JPEG')
+
+            cursor.execute("""
+                INSERT INTO image_data(user_id, project_id, name, description,
+                        source_path, content_type, image)
+                VALUES (%(user_id)s, %(project_id)s, %(name)s, %(description)s,
+                        %(source_path)s, %(content_type)s, %(image)s)
+                RETURNING id;
+            """, {
+                'user_id': request.user.id,
+                'project_id': project_id,
+                'name': image.name,
+                'description': image_descriptions[n],
+                'source_path': image.name,
+                'content_type': 'image/jpeg',
+                'image': image_io.getvalue()
+            })
+            image_data_id = cursor.fetchone()[0]
+
+            pcid = PointCloudImageData(**{
+                'project_id': project_id,
+                'pointcloud_id': pc.id,
+                'image_data_id': image_data_id,
+            })
+            pcid.save()
 
         # Find an optional restriction group permission. If a group has no
         # permission assigned, it is considered readable by all.

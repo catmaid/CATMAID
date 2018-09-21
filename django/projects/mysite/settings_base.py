@@ -247,6 +247,9 @@ GENERATED_FILES_MAXIMUM_SIZE = 52428800
 # The default is 5 megabytes.
 IMPORTED_SKELETON_FILE_MAXIMUM_SIZE = 5242880
 
+# The maximum allowed image size for imported images. The default is 3MB.
+IMPORTED_IMAGE_FILE_MAXIMUM_SIZE = 3145728
+
 # Specifies if user registration is allowed
 USER_REGISTRATION_ALLOWED = False
 

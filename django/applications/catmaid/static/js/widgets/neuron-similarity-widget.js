@@ -1415,6 +1415,7 @@
                 images.push({
                   description: description.value,
                   image: dataURL,
+                  file: file,
                   name: file.name,
                 });
                 self.classList.add('files-loaded');

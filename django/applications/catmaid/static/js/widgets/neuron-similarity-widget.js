@@ -19,9 +19,14 @@
 
     this.lastSimilarityQuery = null;
     this.showOnlyMatchesInResult = true;
+    // Whether or not the results are displayed in a dialog (rather than a
+    // window).
+    this.resultMode = 'dialog';
 
     this.mode = 'similarity';
     this.modes = ['similarity', 'configrations', 'pointclouds'];
+
+    this.neuronNameService = CATMAID.NeuronNameService.getInstance();
 
     CATMAID.Similarity.on(CATMAID.Similarity.EVENT_CONFIG_ADDED,
         this.handleAddedConfig, this);
@@ -40,6 +45,7 @@
 
   NeuronSimilarityWidget.prototype.destroy = function() {
     this.unregisterInstance();
+    this.neuronNameService.unregister(this);
     CATMAID.Similarity.off(CATMAID.Similarity.EVENT_CONFIG_ADDED,
         this.handleAddedConfig, this);
     CATMAID.Similarity.off(CATMAID.Similarity.EVENT_CONFIG_DELETED,
@@ -259,8 +265,8 @@
 
       // Optionally, resampl point cloud
       if (sampleSize) {
-        // Create a 3D grid with the respective sample sizeand find one point in
-        // each cell.
+        // Create a 3D grid with the respective sample size and find one point
+        // in each cell.
         let cellConfig = pointData.reduce(addSampleToEmptyCell, {
           map: new Map(),
           sampleSize: sampleSize,
@@ -400,7 +406,7 @@
           }
         }, {
           type: 'radio',
-          label: 'Query skeletons',
+          label: 'Query objects',
           name: 'query',
           title: 'Query a set of skeletons',
           value: 'skeleton',
@@ -666,7 +672,7 @@
             .catch(CATMAID.handleError);
         }).on('click', 'a[data-role=show-similarity]', function() {
           let data = datatable.row($(this).parents('tr')).data();
-          NeuronSimilarityWidget.showSimilarityDialog(widget, data);
+          widget.showSimilarity(data);
         });
       },
       handleAddedConfig: function(widget, config) {
@@ -1139,7 +1145,7 @@
         let images = null;
         let swapZY = false;
         let invertY = false;
-        let sample = false;
+        let sample = true;
         let sampleSize = 1000;
 
         let newPointcloudSection = document.createElement('span');
@@ -1676,7 +1682,60 @@
     return value >= 0;
   }
 
-  NeuronSimilarityWidget.showSimilarityDialog = function(widget, similarity) {
+  /**
+   * Show a particular similarity result in a result dialog or result window,
+   * depending on the widget settings.
+   */
+  NeuronSimilarityWidget.prototype.showSimilarity = function(similarity) {
+    let self = this;
+    if (this.resultMode === 'dialog') {
+      let targetModels = {};
+      if (similarity.target_type === 'skeleton') {
+        similarity.target_objects.reduce(function(o, to) {
+          o[to] = new CATMAID.SkeletonModel(to);
+          return o;
+        }, targetModels);
+      }
+      if (similarity.query_type === 'skeleton') {
+        similarity.query_objects.reduce(function(o, to) {
+          o[to] = new CATMAID.SkeletonModel(to);
+          return o;
+        }, targetModels);
+      }
+
+      let needsPointclouds = similarity.query_type === 'pointcloud' ||
+          similarity.target_type === 'pointcloud';
+
+      let prepare = [];
+      if (!CATMAID.tools.isEmpty(targetModels)) {
+        prepare.push(this.neuronNameService.registerAll(this, targetModels));
+      }
+
+      Promise.all(prepare)
+        .then(function() {
+          if (needsPointclouds) {
+            return CATMAID.Pointcloud.listAll(project.id, true);
+          }
+        })
+        .then(function(pointclouds) {
+          NeuronSimilarityWidget.showSimilarityDialog(self, similarity, pointclouds);
+        })
+        .catch(CATMAID.handleError);
+    } else if (this.resultMode === 'window') {
+      NeuronSimilarityWidget.showSimilarityWindow(similarity);
+    } else {
+      throw new CATMAID.ValueError('Unknown result mode: ' + this.resultMode);
+    }
+  };
+
+  NeuronSimilarityWidget.showSimilarityWindow = function(similarity) {
+    let widgetInfo = CATMAID.WindowMaker.create('neuron-similarity-list');
+  };
+
+  /**
+   * Show similarity results in a simple dialog.
+   */
+  NeuronSimilarityWidget.showSimilarityDialog = function(widget, similarity, pointClouds) {
     let dialog = new CATMAID.OptionsDialog("Similarity configuration", {
       'Ok': function() {},
     });
@@ -1709,15 +1768,47 @@
       let thead = table.appendChild(document.createElement('thead'));
       let theadTr = thead.appendChild(document.createElement('tr'));
       let theadTh1 = theadTr.appendChild(document.createElement('th'));
-      theadTh1.appendChild(document.createTextNode('Query skeleton'));
+      theadTh1.appendChild(document.createTextNode('Query ' + similarity.query_type));
       let theadTh2 = theadTr.appendChild(document.createElement('th'));
-      theadTh2.appendChild(document.createTextNode('Top 10 target matches'));
+      theadTh2.appendChild(document.createTextNode('Top 10 target ' + similarity.target_type + 's'));
 
       let tbody = table.appendChild(document.createElement('tbody'));
 
+      let getQueryName;
+      if (similarity.query_type === 'skeleton') {
+        getQueryName = function(element) {
+          return CATMAID.NeuronNameService.getInstance().getName(element);
+        };
+      } else if (similarity.query_type === 'pointcloud') {
+        getQueryName = function(element) {
+          let pc = pointClouds[element];
+          return pc ? pc.name : (element + ' (not found)');
+        };
+      } else {
+        getQueryName = function(element) {
+          return element;
+        };
+      }
+
+      let getTargetName;
+      if (similarity.target_type === 'skeleton') {
+        getTargetName = function(element) {
+          return CATMAID.NeuronNameService.getInstance().getName(element);
+        };
+      } else if (similarity.target_type === 'pointcloud') {
+        getTargetName = function(element) {
+          let pc = pointClouds[element];
+          return pc ? pc.name : (element + ' (not found)');
+        };
+      } else {
+        getTargetName = function(element) {
+          return element;
+        };
+      }
+
       let collectEntries = function(target, element, i) {
         if (element >= 0) {
-          target.push([similarity.target_objects[i], element]);
+          target.push([getTargetName(similarity.target_objects[i]), element]);
         }
         return target;
       };
@@ -1741,7 +1832,7 @@
           orderable: true,
           class: 'cm-center',
           render: function(data, type, row, meta) {
-            return `<a href="#" data-skeleton-id="${row[0]}" data-role="select-skeleton">${row[0]}</a>`;
+            return `<a href="#" data-skeleton-id="${row[0]}" data-role="select-skeleton">${getQueryName(row[0])}</a>`;
           }
         }, {
           orderable: false,

@@ -813,7 +813,7 @@ var WindowMaker = new function()
             return CATMAID.tools.compareStrings(a.name, b.name);
           }).map(function(pointCloud) {
             return {
-              title: pointCloud.name,
+              title: pointCloud.name + ' (' + pointCloud.id + ')',
               value: pointCloud.id
             };
           });

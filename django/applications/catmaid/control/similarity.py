@@ -377,7 +377,8 @@ class ConfigurationList(APIView):
 
         with transaction.atomic():
             if match_sample_id:
-                match_sample = NblastSample.objects.get(id=match_sample_id)
+                match_sample = NblastSample.objects.get(id=match_sample_id,
+                        project_id =project_id)
             else:
                 # Find random skeleton IDs with an optional minimum length
                 cursor = connection.cursor()
@@ -402,7 +403,8 @@ class ConfigurationList(APIView):
                         histogram=histogram, probability=probability)
 
             if random_sample_id:
-                random_sample = NblastSample.objects.get(id=random_sample_id)
+                random_sample = NblastSample.objects.get(id=random_sample_id,
+                        project_id=project_id)
             else:
                 # Find random skeleton IDs with an optional minimum length
                 cursor = connection.cursor()

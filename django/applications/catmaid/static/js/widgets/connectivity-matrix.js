@@ -328,6 +328,16 @@
         exportXLSX.onclick = this.exportXLSX.bind(this);
         tabs['Main'].appendChild(exportXLSX);
 
+        var exportCsvNoDisplay = document.createElement('input');
+        exportCsvNoDisplay.setAttribute("type", "button");
+        exportCsvNoDisplay.setAttribute("value", "Auto-connectivity CSV");
+        exportCsvNoDisplay.setAttribute('title', "Generate the auto-connectivity matrix for the selected source and download it as CSV file without displaying it.");
+        exportCsvNoDisplay.onclick = function() {
+          var source = CATMAID.skeletonListSources.getSource(sourceSelect.value);
+          self.exportCsvNoDisplay(source.getSelectedSkeletons());
+        };
+        tabs['Main'].appendChild(exportCsvNoDisplay);
+
 
         // Groups tab
         var groupEquallyNamedRows = document.createElement('input');
@@ -1420,6 +1430,23 @@
         "will only be visible if the \"Background graphics\" setting in the " +
         "print dialog is active.");
     dialog.show(450, 200, true);
+  };
+
+  /**
+   * Let back-end export a CSV for the auto-connectivity (self-connectivity) of
+   * the selected source.
+   */
+  ConnectivityMatrixWidget.prototype.exportCsvNoDisplay = function(skeletonIds) {
+    CATMAID.fetch(project.id + '/skeletons/connectivity_matrix/csv', 'POST', {
+        rows: skeletonIds,
+        columns: skeletonIds,
+      }, true)
+      .then(function(response) {
+        CATMAID.msg("Success", "Auto-connectivity matrix of " + skeletonIds.length +
+            "skeletons finished");
+        saveAs(new Blob([response], {type: 'text/csv'}), 'catmaid-connectivity-matrix.csv');
+      })
+      .catch(CATMAID.handleError);
   };
 
   /**

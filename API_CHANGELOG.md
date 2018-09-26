@@ -14,6 +14,10 @@ included in this changelog.
   Allows to get the number connector links per relation type for each passed in
   skeleton. Also accepts GET parameters.
 
+- `POST /{project_id}/skeletons/connectivity_matrix/csv`:
+  Return a CSV file containing the connectivity matrix for the passed in `rows`
+  and `columns`.
+
 - `GET /{project_id}/labels/detail`:
   Returns a list of of label objects, each with a name field and an ID field.
 

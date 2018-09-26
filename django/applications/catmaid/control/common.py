@@ -342,3 +342,13 @@ def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
     """ Creates a random string of the specified length.
     """
     return ''.join(random.choice(chars) for x in range(size))
+
+
+class Echo:
+    """An object that implements just the write method of the file-like
+    interface. From:
+    https://docs.djangoproject.com/en/1.11/howto/outputting-csv/
+    """
+    def write(self, value):
+        """Write the value by returning it, instead of storing in a buffer."""
+        return value

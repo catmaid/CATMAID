@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import csv
 import json
 import networkx as nx
 import pytz
@@ -12,7 +13,7 @@ from itertools import chain
 
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseBadRequest, Http404, \
-        JsonResponse
+        JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from django.db import connection
 from django.db.models import Q
@@ -30,7 +31,7 @@ from catmaid.control.authentication import requires_user_role, \
         can_edit_class_instance_or_fail, can_edit_or_fail
 from catmaid.control.common import (insert_into_log, get_class_to_id_map,
         get_relation_to_id_map, _create_relation, get_request_bool,
-        get_request_list)
+        get_request_list, Echo)
 from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.neuron_annotations import (annotations_for_skeleton,
         create_annotation_query, _annotate_entities, _update_neuron_annotations)
@@ -1356,6 +1357,66 @@ def connectivity_matrix(request, project_id=None):
     matrix = get_connectivity_matrix(project_id, rows, cols,
         with_locations=with_locations)
     return JsonResponse(matrix)
+
+
+@api_view(['POST'])
+@requires_user_role(UserRole.Browse)
+def connectivity_matrix_csv(request, project_id):
+    """
+    Return a CSV file that represents the connectivity matrix of a set of row
+    skeletons and a set of column skeletons.
+    ---
+    parameters:
+      - name: project_id
+        description: Project of skeletons
+        type: integer
+        paramType: path
+        required: true
+      - name: rows
+        description: IDs of row skeletons
+        required: true
+        type: array
+        items:
+          type: integer
+        paramType: form
+      - name: columns
+        description: IDs of column skeletons
+        required: true
+        type: array
+        items:
+          type: integer
+        paramType: form
+    """
+    # sanitize arguments
+    project_id = int(project_id)
+    rows = tuple(get_request_list(request.POST, 'rows', [], map_fn=int))
+    cols = tuple(get_request_list(request.POST, 'columns', [], map_fn=int))
+
+    matrix = get_connectivity_matrix(project_id, rows, cols)
+
+    csv_data = []
+    header = [''] + list(cols)
+    csv_data.append(header)
+
+    for n, skid_a in enumerate(rows):
+        # Add row header skeleton ID
+        row = [skid_a]
+        csv_data.append(row)
+        # Add connectivity information
+        for m, skid_b in enumerate(cols):
+            p = matrix.get(skid_a, {})
+            c = p.get(skid_b, 0)
+            row.append(c)
+
+    pseudo_buffer = Echo()
+    writer = csv.writer(pseudo_buffer, quoting=csv.QUOTE_NONNUMERIC)
+
+    response = StreamingHttpResponse((writer.writerow(row) for row in csv_data),
+            content_type='text/csv')
+    filename = 'catmaid-connectivity-matrix.csv'
+    response['Content-Disposition'] = 'attachment; filename={}'.format(filename)
+
+    return response
 
 
 def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids,

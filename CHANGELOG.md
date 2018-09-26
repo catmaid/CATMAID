@@ -17,6 +17,10 @@ Connectivity matrix:
   the number of total posynaptic connections that are made to the target
   skeleton (column). This makes columns better comparable to each other.
 
+- The auto-connectivity matrix of a large set of skeletons can now be exported
+  as CSV without displaying it using the "Auto-connectivity CSV" button. This
+  makes it possible to export larger connectivity matrices in a usable format.
+
 3D viewer:
 
 - Treenodes that are linked to connector nodes can now be scaled independently

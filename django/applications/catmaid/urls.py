@@ -267,6 +267,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/skeletons/connectivity$', skeleton.skeleton_info_raw),
     url(r'^(?P<project_id>\d+)/skeletons/in-bounding-box$', skeleton.skeletons_in_bounding_box),
     url(r'^(?P<project_id>\d+)/skeleton/connectivity_matrix$', skeleton.connectivity_matrix),
+    url(r'^(?P<project_id>\d+)/skeletons/connectivity_matrix/csv$', skeleton.connectivity_matrix_csv),
     url(r'^(?P<project_id>\d+)/skeletons/review-status$', skeleton.review_status),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/statistics$', skeleton.skeleton_statistics),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/contributor_statistics$', skeleton.contributor_statistics),

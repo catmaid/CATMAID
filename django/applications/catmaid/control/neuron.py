@@ -25,6 +25,10 @@ from six.moves import map
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def get_all_skeletons_of_neuron(request, project_id=None, neuron_id=None):
+    skeleton_ids = _get_all_skeletons_of_neuron(project_id, neuron_id)
+    return JsonResponse(skeleton_ids, safe=False)
+
+def _get_all_skeletons_of_neuron(project_id, neuron_id):
     p = get_object_or_404(Project, pk=project_id)
     neuron = get_object_or_404(ClassInstance,
         pk=neuron_id,
@@ -34,7 +38,7 @@ def get_all_skeletons_of_neuron(request, project_id=None, neuron_id=None):
         project=p,
         cici_via_a__relation__relation_name='model_of',
         cici_via_a__class_instance_b=neuron)
-    return JsonResponse([x.id for x in qs], safe=False)
+    return [x.id for x in qs]
 
 def _delete_if_empty(neuron_id):
     """ Delete this neuron if no class_instance is a model_of it;

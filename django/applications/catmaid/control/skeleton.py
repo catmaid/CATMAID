@@ -2329,9 +2329,9 @@ def _list_skeletons(project_id, created_by=None, reviewed_by=None, from_date=Non
             query += " AND r.review_time < %(to_date)s"
     else:
         query = '''
-            SELECT DISTINCT skeleton_id
-            FROM treenode t
-            WHERE t.project_id=%(project_id)s
+            SELECT skeleton_id
+            FROM catmaid_skeleton_summary css
+            WHERE css.project_id=%(project_id)s
         '''
 
     if created_by:

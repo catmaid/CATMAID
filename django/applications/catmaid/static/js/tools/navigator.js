@@ -607,15 +607,15 @@
       if (toolbar) toolbar.style.display = "none";
 
       self.slider_s.update(
-        0,
-        1,
+        undefined,
+        undefined,
         undefined,
         0,
         null );
 
       self.slider_z.update(
-        0,
-        1,
+        undefined,
+        undefined,
         undefined,
         0,
         null );

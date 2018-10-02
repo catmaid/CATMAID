@@ -272,6 +272,12 @@
       if (this._input) {
         // Set input textbox to new value, truncating the value for display
         this._input.value = Number(val).toFixed(2).replace(/\.?0+$/,"");
+
+        // increase input textbox size if new value is too big for current box
+        var truncatedLength = this._input.value.toString().length;
+        if (truncatedLength > this._input.size) {
+          this._input.size = truncatedLength + 1;
+        }
       }
 
       if (!cancelOnchange) this.onchange(this.val, step);
@@ -568,7 +574,7 @@
 
     this.setByValue( typeof def !== "undefined" ? def : this._values[ 0 ], true );
 
-    if (this._input)
+    if (this._input && typeof min !== 'undefined' && typeof max !== 'undefined')
     {
       // Resize input text box size to accomodate the number of digits in range.
       this._input.size = [min, max].map(function (x) {

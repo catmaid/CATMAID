@@ -113,6 +113,8 @@ Miscellaneous:
   Unless the search string starts with '/', no regular expressions are used,
   but a regular case insensitive text search.
 
+- WebGL layers are now preferred by default.
+
 
 ### Bug fixes
 

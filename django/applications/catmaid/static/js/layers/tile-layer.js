@@ -1035,7 +1035,7 @@
         version: 0,
         entries: {
           prefer_webgl: {
-            default: false
+            default: true
           },
           linear_interpolation: {
             default: true

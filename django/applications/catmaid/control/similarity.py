@@ -710,6 +710,13 @@ class SimilarityList(APIView):
 
 class SimilarityDetail(APIView):
 
+    @method_decorator(requires_user_role(UserRole.Browse))
+    def get(self, request, project_id, similarity_id):
+        """Get a particular similarity query result.
+        """
+        similarity = NblastSimilarity.objects.get(pk=similarity_id, project_id=project_id)
+        return JsonResponse(serialize_similarity(similarity))
+
     @method_decorator(requires_user_role(UserRole.Annotate))
     def delete(self, request, project_id, similarity_id):
         """Delete a NBLAST similarity task.

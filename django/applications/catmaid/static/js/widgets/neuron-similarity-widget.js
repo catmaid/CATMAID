@@ -347,7 +347,7 @@
         newScoringSection.appendChild(document.createTextNode('New query'));
 
         let querySelect = document.createElement('label');
-        let querySourceSelect = CATMAID.skeletonListSources.createUnboundSelect(widget.getName + ' Query source');
+        let querySourceSelect = CATMAID.skeletonListSources.createUnboundSelect(widget.getName() + ' Query source');
         querySourceSelect.setAttribute('id', widget.idPrefix + 'query-source');
         querySelect.appendChild(querySourceSelect);
         querySource = querySourceSelect.value;
@@ -356,7 +356,7 @@
         };
 
         let targetSelect = document.createElement('label');
-        let targetSourceSelect = CATMAID.skeletonListSources.createUnboundSelect(widget.getName + ' Target source');
+        let targetSourceSelect = CATMAID.skeletonListSources.createUnboundSelect(widget.getName() + ' Target source');
         targetSourceSelect.setAttribute('id', widget.idPrefix + 'target-source');
         targetSelect.appendChild(targetSourceSelect);
         targetSource = targetSourceSelect.value;
@@ -729,7 +729,7 @@
 
         let matchSelect = document.createElement('label');
         matchSelect.appendChild(document.createTextNode('Similar skeletons'));
-        let matchSourceSelect = CATMAID.skeletonListSources.createUnboundSelect(widget.getName + ' Match source');
+        let matchSourceSelect = CATMAID.skeletonListSources.createUnboundSelect(widget.getName() + ' Match source');
         matchSourceSelect.setAttribute('id', widget.idPrefix + '-config-match-source');
         matchSelect.appendChild(matchSourceSelect);
         matchingSource = matchSourceSelect.value;
@@ -739,7 +739,7 @@
         let randomSelect = document.createElement('label');
         randomSelect.appendChild(document.createTextNode('Random skeletons'));
         randomSelect.disabled = backendRandomSelection;
-        let randomSourceSelect = CATMAID.skeletonListSources.createUnboundSelect(widget.getName + ' Random source');
+        let randomSourceSelect = CATMAID.skeletonListSources.createUnboundSelect(widget.getName() + ' Random source');
         randomSourceSelect.setAttribute('id', widget.idPrefix + '-config-random-source');
         randomSourceSelect.disabled = backendRandomSelection;
         randomSelect.appendChild(randomSourceSelect);
@@ -1779,7 +1779,7 @@
    * Show similarity results in a simple dialog.
    */
   NeuronSimilarityWidget.showSimilarityDialog = function(widget, similarity, pointClouds) {
-    let dialog = new CATMAID.OptionsDialog("Similarity configuration", {
+    let dialog = new CATMAID.OptionsDialog("Similarity result", {
       'Ok': function() {},
     });
 

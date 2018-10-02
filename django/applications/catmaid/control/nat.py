@@ -204,7 +204,7 @@ def export_skeleton_as_nrrd(skeleton_id, source_ref, target_ref, user_id, mirror
 def compute_scoring_matrix(project_id, user_id, matching_skeleton_ids,
         random_skeleton_ids, distbreaks=NblastConfigDefaultDistanceBreaks,
         dotbreaks=NblastConfigDefaultDotBreaks, resample_step=1000,
-        tangent_neighbors=5):
+        tangent_neighbors=5, omit_failures=True):
     """Create NBLAST scoring matrix for a set of matching skeleton IDs and a set
     of random skeleton IDs. Matching skeletons are skeletons with a similar
     morphology, e.g. KCy in FAFB.
@@ -293,14 +293,14 @@ def compute_scoring_matrix(project_id, user_id, matching_skeleton_ids,
                 robjects.IntVector(matching_skeleton_ids), **{
                     'conn': conn,
                     '.progress': 'none',
-                    'OmitFailures': True,
+                    'OmitFailures': omit_failures,
                 })
         logger.debug('Fetching random skeletons')
         nonmatching_neurons = rcatmaid.read_neurons_catmaid(
                 robjects.IntVector(random_skeleton_ids), **{
                     'conn': conn,
                     '.progress': 'none',
-                    'OmitFailures': True,
+                    'OmitFailures': omit_failures,
                 })
 
         # Create dotprop instances and resample
@@ -309,7 +309,7 @@ def compute_scoring_matrix(project_id, user_id, matching_skeleton_ids,
                     'k': tangent_neighbors,
                     'resample': 1,
                     '.progress': 'none',
-                    'OmitFailures': True,
+                    'OmitFailures': omit_failures,
                 })
 
         logger.debug('Computing random skeleton stats')
@@ -317,7 +317,7 @@ def compute_scoring_matrix(project_id, user_id, matching_skeleton_ids,
                     'k': tangent_neighbors,
                     'resample': 1,
                     '.progress': 'none',
-                    'OmitFailures': True,
+                    'OmitFailures': omit_failures,
                 })
 
 
@@ -456,7 +456,7 @@ def compute_all_by_all_skeleton_similarity(project_id, user_id,
 
 
 def nblast(project_id, config_id, query_object_ids, target_object_ids,
-        query_type='skeleton', target_type='skeleton'):
+        query_type='skeleton', target_type='skeleton', omit_failures=True):
     """Create NBLAST score for forward similarity from query objects to target
     objects. Objects can either be pointclouds or skeletons, which has to be
     reflected in the respective type parameter. This is executing essentially
@@ -514,13 +514,14 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
                     robjects.IntVector(query_object_ids), **{
                         'conn': conn,
                         '.progress': 'none',
-                        'OmitFailures': True,
+                        'OmitFailures': omit_failures,
                     })
             logger.debug('Computing query skeleton stats')
             query_dps = rnat.dotprops(query_objects.ro / 1e3, **{
                         'k': config.tangent_neighbors,
                         'resample': 1,
-                        '.progress': 'none'
+                        '.progress': 'none',
+                        'OmitFailures': omit_failures,
                     })
         elif query_type == 'pointcloud':
             logger.debug('Fetching query point clouds')
@@ -541,7 +542,8 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
             query_dps = rnat.dotprops(query_objects.ro / 1e3, **{
                         'k': config.tangent_neighbors,
                         'resample': 1,
-                        '.progress': 'none'
+                        '.progress': 'none',
+                        'OmitFailures': omit_failures,
                     })
         else:
             raise ValueError("Unknown query type: {}".format(query_type))
@@ -553,14 +555,15 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
                     robjects.IntVector(target_object_ids), **{
                         'conn': conn,
                         '.progress': 'none',
-                        'OmitFailures': True,
+                        'OmitFailures': omit_failures,
                     })
 
             logger.debug('Computing target skeleton stats')
             target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
                         'k': config.tangent_neighbors,
                         'resample': 1,
-                        '.progress': 'none'
+                        '.progress': 'none',
+                        'OmitFailures': omit_failures,
                     })
         elif target_type == 'pointcloud':
             logger.debug('Fetching target point clouds')
@@ -581,7 +584,8 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
             target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
                         'k': config.tangent_neighbors,
                         'resample': 1,
-                        '.progress': 'none'
+                        '.progress': 'none',
+                        'OmitFailures': omit_failures,
                     })
         else:
             raise ValueError("Unknown target type: {}".format(target_type))

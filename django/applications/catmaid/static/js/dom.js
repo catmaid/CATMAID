@@ -1320,6 +1320,38 @@
     }, {});
   };
 
+  DOM.appendElement = function(target, e) {
+    switch (e.type) {
+      case 'child':
+        return target.appendChild(e.element);
+      case 'button':
+        return CATMAID.DOM.appendButton(target, e.label, e.title, e.onclick, e.attr, e.disabled, e.id);
+      case 'color-button':
+        return CATMAID.DOM.appendColorButton(target, e.label, e.title, e.attr, e.onchange, e.color);
+      case 'checkbox':
+        return CATMAID.DOM.appendCheckbox(target, e.label, e.title, e.value, e.onclick, e.left, e.id);
+      case 'radio':
+        return CATMAID.DOM.appendRadioButton(target, e.label, e.title, e.name,
+            e.value, e.checked, e.onclick, e.left, e.id);
+      case 'numeric':
+        return CATMAID.DOM.appendNumericField(target, e.label, e.title,
+            e.value, e.postlabel, e.onchange, e.length, e.placeholder,
+            e.disabled, e.step, e.min, e.max, e.id);
+      case 'text':
+        return CATMAID.DOM.appendTextField(target, e.id, e.label, e.title, e.value,
+            e.postlabel, e.onchange, e.length, e.placeholder, e.disabled, e.onenter);
+      case 'date':
+        return CATMAID.DOM.appendDateField(target, e.label, e.title, e.value,
+            e.postlabel, e.onchange, e.length, e.placeholder, e.time);
+      case 'select':
+        return CATMAID.DOM.appendSelect(target, e.relativeId, e.label, e.entries, e.title, e.value, e.onchange, e.id);
+      case 'file':
+        return CATMAID.DOM.appendFileButton(target, e.id, e.label, e.title, e.multiple, e.onclick);
+      default:
+        return undefined;
+    }
+  };
+
   /**
    * Construct elements from an array of parameters and append them to a tab
    * element.
@@ -1346,35 +1378,7 @@
           default: return undefined;
         }
       } else {
-        switch (e.type) {
-          case 'child':
-            return tab.appendChild(e.element);
-          case 'button':
-            return CATMAID.DOM.appendButton(tab, e.label, e.title, e.onclick, e.attr, e.disabled, e.id);
-          case 'color-button':
-            return CATMAID.DOM.appendColorButton(tab, e.label, e.title, e.attr, e.onchange, e.color);
-          case 'checkbox':
-            return CATMAID.DOM.appendCheckbox(tab, e.label, e.title, e.value, e.onclick, e.left, e.id);
-          case 'radio':
-            return CATMAID.DOM.appendRadioButton(tab, e.label, e.title, e.name,
-                e.value, e.checked, e.onclick, e.left, e.id);
-          case 'numeric':
-            return CATMAID.DOM.appendNumericField(tab, e.label, e.title,
-                e.value, e.postlabel, e.onchange, e.length, e.placeholder,
-                e.disabled, e.step, e.min, e.max, e.id);
-          case 'text':
-            return CATMAID.DOM.appendTextField(tab, e.id, e.label, e.title, e.value,
-                e.postlabel, e.onchange, e.length, e.placeholder, e.disabled, e.onenter);
-          case 'date':
-            return CATMAID.DOM.appendDateField(tab, e.label, e.title, e.value,
-                e.postlabel, e.onchange, e.length, e.placeholder, e.time);
-          case 'select':
-            return CATMAID.DOM.appendSelect(tab, e.relativeId, e.label, e.entries, e.title, e.value, e.onchange, e.id);
-          case 'file':
-            return CATMAID.DOM.appendFileButton(tab, e.id, e.label, e.title, e.multiple, e.onclick);
-          default:
-            return undefined;
-        }
+        return CATMAID.DOM.appendElement(tab, e);
       }
     });
   };

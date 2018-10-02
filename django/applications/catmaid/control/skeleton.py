@@ -2335,8 +2335,13 @@ def _list_skeletons(project_id, created_by=None, reviewed_by=None, from_date=Non
         '''
 
     if created_by:
+        query = '''
+            SELECT DISTINCT skeleton_id
+            FROM treenode t
+            WHERE t.project_id=%(project_id)s
+              AND t.user_id=%(created_by)s
+        '''
         params['created_by'] = created_by
-        query += " AND t.user_id=%(created_by)s"
 
         if from_date:
             params['from_date'] = from_date.isoformat()

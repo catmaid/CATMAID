@@ -117,6 +117,7 @@
             let value = parseInt(this.value, 10);
             if (value !== undefined && !Number.isNaN(value)) {
               self.showTopN = value;
+              self.refresh();
             }
           },
         });
@@ -173,17 +174,17 @@
     let theadTh1 = theadTr.appendChild(document.createElement('th'));
     theadTh1.appendChild(document.createTextNode('Query ' + this.similarity.query_type));
     let theadTh2 = theadTr.appendChild(document.createElement('th'));
-    theadTh2.appendChild(document.createTextNode('Top 10 target ' + this.similarity.target_type + 's'));
+    theadTh2.appendChild(document.createTextNode(`Top ${this.showTopN} target ${this.similarity.target_type}s`));
     let tbody = table.appendChild(document.createElement('tbody'));
 
     let pointClouds = {};
 
     NeuronSimilarityDetailWidget.createSimilarityTable(this.similarity,
-        this.onlyPositiveScores, pointClouds, table);
+        this.onlyPositiveScores, this.showTopN, pointClouds, table);
   };
 
   NeuronSimilarityDetailWidget.createSimilarityTable = function(similarity,
-      matchesOnly, pointClouds, table) {
+      matchesOnly, showTopN, pointClouds, table) {
     if (!table) {
       table = document.createElement('table');
     }
@@ -253,9 +254,9 @@
         class: 'cm-left',
         render: function(data, type, row, meta) {
           if (row[1].length > 0) {
-            let nTop10Elements = Math.min(10, row[1].length);
+            let topNElements = Math.min(showTopN, row[1].length);
             let elements = ['<span class="result-list">'];
-            for (let i=0; i<nTop10Elements; ++i) {
+            for (let i=0; i<topNElements; ++i) {
               let entry = row[1][i];
               elements.push(`<span class="result-element"><span>${i+1}.</span><a href="#" data-skeleton-id="${entry[0]}" data-role="select-skeleton">${entry[0]}</a> (${entry[1]})</span>`);
             }

@@ -20,7 +20,7 @@ from catmaid.models import (NblastConfig, NblastSample, Project,
         NblastConfigDefaultDistanceBreaks, NblastConfigDefaultDotBreaks,
         NblastSimilarity, PointCloud, UserRole)
 from catmaid.control.nat import (compute_scoring_matrix, nblast,
-        test_r_environment)
+        test_r_environment, setup_r_environment)
 
 
 logger = logging.getLogger('__name__')

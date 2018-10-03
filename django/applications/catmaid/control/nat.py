@@ -229,6 +229,16 @@ def test_r_environment():
     })
 
 
+def setup_r_environment():
+    """Install all R dependencies that are needed for NBLAST."""
+    robjects.r("""
+        if(!require("devtools")) install.packages("devtools")
+        devtools::install_github(c("jefferis/nat", "jefferislab/nat.nblast",
+                "jefferis/rcatmaid"))
+        install.packages("doMC")
+    """)
+
+
 def compute_scoring_matrix(project_id, user_id, matching_skeleton_ids,
         random_skeleton_ids, distbreaks=NblastConfigDefaultDistanceBreaks,
         dotbreaks=NblastConfigDefaultDotBreaks, resample_step=1000,

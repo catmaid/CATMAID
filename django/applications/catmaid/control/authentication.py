@@ -35,6 +35,20 @@ class PermissionError(Exception):
     pass
 
 
+def access_check(user):
+    """ Returns true if users are logged in or if they have the general
+    can_browse permission assigned (i.e. not with respect to a certain object).
+    This is used to also allow the not logged in anonymous user to retrieve
+    data if it is granted the 'can_browse' permission.
+    """
+    if user.is_authenticated:
+        if user == get_anonymous_user():
+            return user.has_perm('catmaid.can_browse')
+        else:
+            return True
+    return False
+
+
 def login_user(request):
     profile_context = {}
     if request.method == 'POST':

@@ -247,6 +247,9 @@ GENERATED_FILES_MAXIMUM_SIZE = 52428800
 # The default is 5 megabytes.
 IMPORTED_SKELETON_FILE_MAXIMUM_SIZE = 5242880
 
+# The maximum allowed image size for imported images. The default is 3MB.
+IMPORTED_IMAGE_FILE_MAXIMUM_SIZE = 3145728
+
 # Specifies if user registration is allowed
 USER_REGISTRATION_ALLOWED = False
 
@@ -406,3 +409,7 @@ CATMAID_HTTP_AUTH_PASS = None
 # Whether or not to create default data views in the initial migration. This is
 # mainly useful for setups using the JaneliaRender or DVID middleware.
 CREATE_DEFAULT_DATAVIEWS = True
+
+# NBLAST support
+NBLAST_ALL_BY_ALL_MIN_SIZE = 10
+MAX_PARALLEL_ASYNC_WORKERS = 1

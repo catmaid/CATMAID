@@ -134,6 +134,14 @@ label.checkbox-label input {
   text-align: center;
 }
 
+.cm-left {
+  text-align: left;
+}
+
+.cm-right {
+  text-align: right;
+}
+
 .clickable {
   cursor: pointer;
 }
@@ -593,6 +601,10 @@ table.neuron_annotations_query_fields {
   margin-left: 0.5em;
 }
 
+.buttonpanel input[type=radio] {
+  margin-bottom: 0.3em;
+}
+
 .windowContent table {
   width: 100%;
 }
@@ -615,6 +627,10 @@ table.neuron_annotations_query_fields {
 .windowContent span.file-content {
   display: block;
   color: #aaa;
+}
+
+.windowContent p.info-text {
+  margin: 1em 0.1em 1em 0.2em;
 }
 
 .bordered-list-elem {
@@ -1485,4 +1501,31 @@ img.missing-image:before {
 a[data-role=url-to-clipboard] i {
   color: #5459ff;
   margin: 0 0.5em 0 0.5em;
+}
+
+.row-head {
+  font-weight: bold;
+  text-align: right;
+}
+
+span.result-list {
+  width: 100%;
+  text-align: left;
+}
+
+span.result-list span.result-element span {
+  margin: 0 0.4em 0 0.4em;
+  font-weight: bold;
+}
+
+input[type=file].files-loaded,
+input[type=button].files-loaded,
+button.files-loaded {
+  background-color: #72e172;
+}
+
+.inline-code {
+  font-family: monospace;
+  background-color: #eae9e9;
+  padding: 0.05em;
 }

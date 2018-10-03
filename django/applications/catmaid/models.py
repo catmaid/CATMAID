@@ -6,12 +6,13 @@ import sys
 import re
 import urllib
 import six
+import colorsys
 
 from django import forms
 from django.conf import settings
 from django.contrib.auth.models import User, Group
 from django.contrib.gis.db import models as spatial_models
-from django.contrib.postgres.fields import JSONField
+from django.contrib.postgres.fields import JSONField, ArrayField
 from django.core.validators import RegexValidator
 from django.db import connection, models
 from django.db.models import Q
@@ -21,13 +22,13 @@ from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
+from guardian.models import (UserObjectPermissionBase,
+        GroupObjectPermissionBase)
 from guardian.shortcuts import get_objects_for_user
 from taggit.managers import TaggableManager
 from rest_framework.authtoken.models import Token
 
 from .fields import Double3DField, Integer3DField, RGBAField, DownsampleFactorsField
-
-from .control.user import distinct_user_color
 
 
 CELL_BODY_CHOICES = (
@@ -950,6 +951,180 @@ class StackGroupClassInstance(models.Model):
         db_table = "stack_group_class_instance"
 
 
+# The default values for the histogram bins for both absolute dot product and
+# distance (in um). They are stored in own field For better readability and
+# reuse.
+NblastConfigDefaultDotBreaks = list(n/10 for n in range(11))
+NblastConfigDefaultDistanceBreaks = (0, 0.75, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 7,
+        8, 9, 10, 12, 14, 16, 20, 25, 30, 40, 500)
+
+
+class PointSet(UserFocusedModel):
+    """Store a set of points.
+    """
+    name = models.TextField()
+    description = models.TextField()
+    points = ArrayField(models.FloatField())
+
+    class Meta:
+        db_table = "point_set"
+
+
+class NblastSample(UserFocusedModel):
+    """Store binned distance and dot product information of the sample neuron
+    set in a histogram as well as a probability density based on it.
+    """
+    name = models.TextField()
+    sample_neurons = ArrayField(models.IntegerField())
+    sample_pointclouds = ArrayField(models.IntegerField())
+    sample_pointsets = ArrayField(models.IntegerField())
+    histogram = ArrayField(ArrayField(models.IntegerField()))
+    probability = ArrayField(ArrayField(models.FloatField()))
+
+    class Meta:
+        db_table = "nblast_sample"
+
+
+class NblastConfig(UserFocusedModel):
+    """A NBLAST configuration that defines histogram binning and which
+    NblastSample entries define the match sampling and the random sampling.
+    Based on those it can keep a base scoring matrix. Referential integretry
+    (delete cascade) is taken care of by the database.
+    """
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+    creation_time = models.DateTimeField(default=timezone.now)
+    edition_time = models.DateTimeField(default=timezone.now)
+    project = models.ForeignKey(Project, on_delete=models.DO_NOTHING)
+
+    name = models.TextField()
+    status = models.TextField()
+    distance_breaks = ArrayField(models.FloatField(
+            default=NblastConfigDefaultDotBreaks))
+    dot_breaks = ArrayField(models.FloatField(
+            default=NblastConfigDefaultDistanceBreaks))
+    match_sample = models.ForeignKey(NblastSample, on_delete=models.DO_NOTHING,
+            related_name='match_config_set')
+    random_sample = models.ForeignKey(NblastSample, on_delete=models.DO_NOTHING,
+            related_name='random_config_set')
+    scoring = ArrayField(ArrayField(models.FloatField()))
+    resample_step = models.FloatField(default=1000)
+    tangent_neighbors = models.IntegerField(default=5)
+
+    class Meta:
+        db_table = "nblast_config"
+
+
+class NblastSkeletonSourceType(models.Model):
+
+    name = models.TextField(primary_key=True)
+    description = models.TextField(default="")
+
+    class Meta:
+        db_table = "nblast_skeleton_source_type"
+
+
+class NblastSimilarity(UserFocusedModel):
+    """A model to represent computed similarity matrices for a particular
+    configuration using a set of query and target objects (skeleton IDs or point
+    cloud IDs). Referential integretry (delete cascade) is taken care of by the
+    database.
+    """
+    name = models.TextField()
+    status = models.TextField()
+    config = models.ForeignKey(NblastConfig, on_delete=models.DO_NOTHING)
+    scoring = ArrayField(ArrayField(models.FloatField()))
+    query_type = models.ForeignKey(NblastSkeletonSourceType,
+        related_name='query_type_set')
+    target_type = models.ForeignKey(NblastSkeletonSourceType,
+        related_name='target_type_set')
+    query_objects = ArrayField(models.IntegerField())
+    target_objects = ArrayField(models.IntegerField())
+
+    class Meta:
+        db_table = "nblast_similarity"
+
+
+@python_2_unicode_compatible
+class PointCloud(UserFocusedModel):
+    """A point cloud. Its points are linked through the point_cloud_point
+    relation.
+    """
+
+    name = models.TextField()
+    description = models.TextField(default="")
+    source_path = models.TextField(default="")
+    images = models.ManyToManyField("ImageData", through='PointCloudImageData')
+    # Points are stored in an array of the format [X, Y, Z, X, Y, Z, …]. A
+    # length divisible by three is enforced by the database.
+    points = models.ManyToManyField("Point", through='PointCloudPoint')
+
+    def num_permissions(self):
+        n_user_perms = PointCloudUserObjectPermission.objects.filter(content_object=self).count()
+        n_group_perms = PointCloudGroupObjectPermission.objects.filter(content_object=self).count()
+        return n_user_perms + n_group_perms
+
+    class Meta:
+        db_table = 'pointcloud'
+        permissions = (
+            ("can_read", "Can read point cloud"),
+            ("can_update", "Can update point cloud"),
+        )
+
+    def __str__(self):
+        return self.name
+
+
+class PointCloudUserObjectPermission(UserObjectPermissionBase):
+    content_object = models.ForeignKey(PointCloud, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'pointcloud_user_object_permission'
+
+
+class PointCloudGroupObjectPermission(GroupObjectPermissionBase):
+    content_object = models.ForeignKey(PointCloud, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'pointcloud_group_object_permission'
+
+
+class PointCloudPoint(models.Model):
+    """Links a point to a pointcloud for a particular project. Referential
+    integretry (delete cascade) is taken care of by the database.
+    """
+    project = models.ForeignKey(Project, on_delete=models.DO_NOTHING)
+    pointcloud = models.ForeignKey(PointCloud, on_delete=models.DO_NOTHING)
+    point = models.ForeignKey(Point, on_delete=models.DO_NOTHING)
+
+    class Meta:
+        db_table = 'pointcloud_point'
+
+
+class ImageData(UserFocusedModel):
+    """A piece of image data that can be linked to other entities.
+    """
+    name = models.TextField()
+    description = models.TextField(default="")
+    source_path = models.TextField(default="")
+    content_type = models.TextField()
+    image = spatial_models.BinaryField()
+
+    class Meta:
+        db_table = 'image_data'
+
+
+class PointCloudImageData(models.Model):
+    """Links a piece of image data to a point cloud. Referential integretry
+    (delete cascade) is taken care of by the database.
+    """
+    project = models.ForeignKey(Project, on_delete=models.DO_NOTHING)
+    pointcloud = models.ForeignKey(PointCloud, on_delete=models.DO_NOTHING)
+    image_data = models.ForeignKey(ImageData, on_delete=models.DO_NOTHING)
+
+    class Meta:
+        db_table = 'pointcloud_image_data'
+
+
 # ------------------------------------------------------------------------
 # Now the non-Django tables:
 
@@ -1204,6 +1379,36 @@ class NodeQueryCache(models.Model):
     class Meta:
         db_table = "node_query_cache"
         unique_together = (('project', 'orientation', 'depth'),)
+
+
+initial_colors = ((1, 0, 0, 1),
+                  (0, 1, 0, 1),
+                  (0, 0, 1, 1),
+                  (1, 0, 1, 1),
+                  (0, 1, 1, 1),
+                  (1, 1, 0, 1),
+                  (1, 1, 1, 1),
+                  (1, 0.5, 0, 1),
+                  (1, 0, 0.5, 1),
+                  (0.5, 1, 0, 1),
+                  (0, 1, 0.5, 1),
+                  (0.5, 0, 1, 1),
+                  (0, 0.5, 1, 1))
+
+
+def distinct_user_color():
+    """ Returns a color for a new user. If there are less users registered than
+    entries in the initial_colors list, the next free color is used. Otherwise,
+    a random color is generated.
+    """
+    nr_users = User.objects.exclude(id__exact=-1).count()
+
+    if nr_users < len(initial_colors):
+        distinct_color = initial_colors[nr_users]
+    else:
+        distinct_color = colorsys.hsv_to_rgb(random(), random(), 1.0) + (1,)
+
+    return distinct_color
 
 
 @python_2_unicode_compatible

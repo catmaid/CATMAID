@@ -44,6 +44,8 @@
     this.loadedLandmarkGroups = {};
     // A set of loaded landmark based transformations
     this.loadedLandmarkTransforms = {};
+    // Map loaded point cloud IDs to an array of Three.js meshes
+    this.loadedPointClouds = {};
     // Current set of filtered connectors (if any)
     this.filteredConnectors = null;
 
@@ -1181,6 +1183,14 @@
     this.landmarkgroup_faces = true;
     this.landmarkgroup_text = true;
     this.landmark_scale = 2000;
+    this.pointcloud_color = "#ffa500";
+    this.pointcloud_opacity = 0.2;
+    this.pointcloud_box_color = '#ffa500';
+    this.pointcloud_box_opacity = 0.2;
+    this.pointcloud_faces = false;
+    this.pointcloud_text = false;
+    this.pointcloud_scale = 500;
+    this.pointcloud_sample = 1.0;
     this.text_scaling = 1.0;
     this.show_missing_sections = false;
     this.missing_section_height = 20;
@@ -1283,6 +1293,22 @@
   };
 
   WebGLApplication.prototype.Options.prototype.createLandmarkMaterial = function(color, opacity) {
+    var material = new THREE.SpriteMaterial({
+		    map: new THREE.CanvasTexture(generateSprite(color, opacity)),
+				blending: THREE.AdditiveBlending
+	    });
+    return material;
+  };
+
+  WebGLApplication.prototype.Options.prototype.createPointCloudBoxMaterial = function(color, opacity) {
+    color = color || new THREE.Color(this.pointcloud_box_color);
+    if (typeof opacity === 'undefined') opacity = this.pointcloud_box_opacity;
+    return new THREE.MeshLambertMaterial({color: color, opacity: opacity,
+      transparent: opacity !== 1, wireframe: !this.pointcloud_faces, side: THREE.DoubleSide,
+      depthWrite: opacity === 1});
+  };
+
+  WebGLApplication.prototype.Options.prototype.createPointCloudMaterial = function(color, opacity) {
     var material = new THREE.SpriteMaterial({
 		    map: new THREE.CanvasTexture(generateSprite(color, opacity)),
 				blending: THREE.AdditiveBlending
@@ -2620,6 +2646,142 @@
         // Apply faces/wireframe change only to landmark bounding box
         if (mesh.geometry && mesh.geometry.type === 'BoxBufferGeometry') {
           var material = mesh.material;
+          material.wireframe = !value;
+          material.needsUpdate = true;
+        }
+      }
+    } else if (property === 'text') {
+      for (var i=0; i<existingMeshes.length; ++i) {
+        let mesh = existingMeshes[i];
+        // Apply faces/wireframe change only to landmark bounding box
+        if (mesh.geometry && mesh.geometry.type === 'TextGeometry') {
+          mesh.visible = value;
+        }
+      }
+    }
+    this.space.render();
+  };
+
+  /**
+   * Show or hide a stored point cloud with a given ID.
+   */
+  WebGLApplication.prototype.showPointCloud = function(pointCloudId, visible) {
+    var existingPointCloud = this.loadedPointClouds[pointCloudId];
+    if (visible) {
+      // Bail out if the landmarkGroup in question is already visible
+      if (existingPointCloud) {
+        CATMAID.warn("Point cloud \"" + pointCloudId + "\" is already visible.");
+        return;
+      }
+
+      CATMAID.Pointcloud.get(project.id, pointCloudId, true, false, this.options.pointcloud_sample)
+        .then((function(pointCloud) {
+          let bb = CATMAID.Pointcloud.getBoundingBox(pointCloud);
+          let min = bb.min;
+          let max = bb.max;
+          let meshes = [];
+
+          // Create box mesh
+          let boxMaterial = this.options.createPointCloudBoxMaterial();
+          boxMaterial.visible = this.options.pointcloud_faces;
+          let boxGeometry = new THREE.BoxBufferGeometry(
+              max.x - min.x,
+              max.y - min.y,
+              max.z - min.z);
+          boxGeometry.translate(
+              min.x + (max.x - min.x) * 0.5,
+              min.y + (max.y - min.y) * 0.5,
+              min.z + (max.z - min.z) * 0.5);
+          meshes.push(new THREE.Mesh(boxGeometry, boxMaterial));
+
+          // Create point cloud particles
+          let locations = pointCloud.points;
+          let pointCloudMaterial = this.options.createPointCloudMaterial();
+          for (var j=0, jmax=locations.length; j<jmax; ++j) {
+            let loc = locations[j];
+            let particle = new THREE.Sprite(pointCloudMaterial);
+            particle.position.set(loc[1], loc[2], loc[3]);
+            particle.scale.x = particle.scale.y = this.options.pointcloud_scale;
+            meshes.push(particle);
+          }
+          return meshes;
+        }).bind(this))
+        .then((function(meshes) {
+          for (let j=0, jmax=meshes.length; j<jmax; ++j) {
+            this.space.scene.add(meshes[j]);
+          }
+
+          // Store mesh reference
+          this.loadedPointClouds[pointCloudId] = meshes;
+          this.space.render();
+        }).bind(this))
+        .catch(CATMAID.handleError);
+    } else if (existingPointCloud) {
+      // Remove landmarkGroup
+      existingPointCloud.forEach(function(v) {
+        this.space.scene.remove(v);
+      }, this);
+      delete this.loadedPointClouds[pointCloudId];
+      this.space.render();
+    }
+  };
+
+  /**
+   * Return IDs of the currently loaded point clouds.
+   */
+  WebGLApplication.prototype.getLoadedPointCloudIds = function() {
+    return Object.keys(this.loadedPointClouds).map(p => parseInt(p, 10));
+  };
+
+  /**
+   * Set color and alpha of a loaded point cloud. Color and alpha will only
+   * be adjusted if the respective value is not null. Otherwise it is ignored.
+   *
+   * @param {Number} volumeId The ID of the point cloud to adjust.
+   * @param {String} color    The new color as hex string or null.
+   * @param {Number} alpha    The new alpha or null.
+   */
+  WebGLApplication.prototype.setPointCloudColor = function(pointCloudId, color, alpha) {
+    var existingMeshes = this.loadedPointClouds[pointCloudId];
+    if (!existingMeshes) {
+      CATMAID.warn("Point cloud not loaded");
+      return;
+    }
+    for (var i=0; i<existingMeshes.length; ++i) {
+      var material = existingMeshes[i].material;
+      if (color !== null) {
+        material.color.set(color);
+        material.needsUpdate = true;
+      }
+      if (alpha !== null) {
+        material.opacity = alpha;
+        material.transparent = alpha !== 1;
+        material.depthWrite = alpha === 1;
+        material.needsUpdate = true;
+      }
+    }
+    this.space.render();
+  };
+
+  /**
+   * Set point cloud render style properties.
+   *
+   * @param {Boolean} faces    Whether mesh faces should be rendered.
+   */
+  WebGLApplication.prototype.setPointCloudStyle = function(pointCloudId, property, value) {
+    value = !!value;
+    var existingMeshes = this.loadedPointClouds[pointCloudId];
+    if (!existingMeshes) {
+      CATMAID.warn("Point cloud not loaded");
+      return;
+    }
+    if (property === 'faces') {
+      for (var i=0; i<existingMeshes.length; ++i) {
+        let mesh = existingMeshes[i];
+        // Apply faces/wireframe change only to landmark bounding box
+        if (mesh.geometry && mesh.geometry.type === 'BoxBufferGeometry') {
+          var material = mesh.material;
+          material.visible = !!value;
           material.wireframe = !value;
           material.needsUpdate = true;
         }

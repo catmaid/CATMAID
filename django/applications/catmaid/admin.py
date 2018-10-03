@@ -16,7 +16,8 @@ from django.utils.translation import ugettext_lazy as _
 from guardian.admin import GuardedModelAdmin
 from catmaid.models import (Project, DataView, Stack, InterpolatableSection,
         ProjectStack, UserProfile, BrokenSlice, StackClassInstance, Relation,
-        ClassInstance, Class, StackGroup, StackStackGroup, StackMirror)
+        ClassInstance, Class, StackGroup, StackStackGroup, StackMirror,
+        PointCloud)
 from catmaid.control.importer import importer_admin_view
 from catmaid.control.classificationadmin import classification_admin_view
 from catmaid.control.annotationadmin import ImportingWizard
@@ -257,6 +258,11 @@ class ProjectAdmin(GuardedModelAdmin):
             export_project_json_action, export_project_yaml_action)
 
 
+class PointCloudAdmin(GuardedModelAdmin):
+    search_fields = ['name','description']
+    save_as = True
+
+
 class StackAdmin(GuardedModelAdmin):
     list_display = ('title', 'dimension', 'resolution',)
     search_fields = ['title', 'comment']
@@ -407,6 +413,7 @@ admin.site.register(Stack, StackAdmin)
 admin.site.register(StackGroup, StackGroupAdmin)
 admin.site.register(ProjectStack, ProjectStackAdmin)
 admin.site.register(StackMirror, StackMirrorAdmin)
+admin.site.register(PointCloud, PointCloudAdmin)
 
 # Replace the user admin view with custom view
 admin.site.register(User, CustomUserAdmin)

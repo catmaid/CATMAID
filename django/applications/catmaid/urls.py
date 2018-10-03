@@ -10,14 +10,15 @@ import django.contrib.auth.views as djauth
 
 from rest_framework.decorators import api_view
 
-from catmaid.control import (authentication, user, log, message, client, common,
-        project, stack, stackgroup, tile, tracing, stats, neuron_annotations as
-        annotations, textlabel, label, link, connector, neuron, node, treenode,
-        suppressed_virtual_treenode, skeleton, skeletonexport, treenodeexport,
-        cropping, data_view, ontology, classification, notifications, roi,
-        clustering, volume, noop, useranalytics, user_evaluation,
-        search, graphexport, transaction, graph2, circles, analytics, review,
-        wiringdiagram, object, sampler, nat, point, landmarks)
+from catmaid.control import (authentication, user, group, log, message, client,
+        common, project, stack, stackgroup, tile, tracing, stats,
+        neuron_annotations as annotations, textlabel, label, link, connector,
+        neuron, node, treenode, suppressed_virtual_treenode, skeleton,
+        skeletonexport, treenodeexport, cropping, data_view, ontology,
+        classification, notifications, roi, clustering, volume, noop,
+        useranalytics, user_evaluation, search, graphexport, transaction,
+        graph2, circles, analytics, review, wiringdiagram, object, sampler,
+        similarity, nat, point, landmarks, pointcloud)
 
 from catmaid.views import CatmaidView
 from catmaid.history import record_request_action as record_view
@@ -55,6 +56,11 @@ urlpatterns += [
     url(r'^user-table-list$', user.user_list_datatable),
     url(r'^user-profile/update$', user.update_user_profile),
     url(r'^user/password_change/$', user.change_password, {'post_change_redirect': 'catmaid:home'}),
+]
+
+# Groups
+urlpatterns += [
+    url(r'^groups/$', group.GroupList.as_view())
 ]
 
 # Log
@@ -309,6 +315,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/neuroglancer$', skeletonexport.neuroglancer_skeleton),
     url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/node-overview$', skeletonexport.treenode_overview),
     url(r'^(?P<project_id>\d+)/skeletons/compact-detail$', skeletonexport.compact_skeleton_detail_many),
+    url(r'^(?P<project_id>\d+)/skeletons/similarity$', similarity.compare_skeletons),
     # Marked as deprecated, but kept for backwards compatibility
     url(r'^(?P<project_id>\d+)/(?P<skeleton_id>\d+)/(?P<with_connectors>\d)/(?P<with_tags>\d)/compact-skeleton$', skeletonexport.compact_skeleton),
 ]
@@ -317,6 +324,22 @@ urlpatterns += [
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/connectorarchive/export$', treenodeexport.export_connectors),
     url(r'^(?P<project_id>\d+)/treenodearchive/export$', treenodeexport.export_treenodes),
+]
+
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/pointclouds/$', pointcloud.PointCloudList.as_view()),
+    url(r'^(?P<project_id>\d+)/pointclouds/(?P<pointcloud_id>\d+)/$', pointcloud.PointCloudDetail.as_view()),
+    url(r'^(?P<project_id>\d+)/pointclouds/(?P<pointcloud_id>\d+)/images/(?P<image_id>\d+)/$', pointcloud.PointCloudImageDetail.as_view()),
+]
+
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/similarity/configs/$', similarity.ConfigurationList.as_view()),
+    url(r'^(?P<project_id>\d+)/similarity/configs/(?P<config_id>\d+)/$', similarity.ConfigurationDetail.as_view()),
+    url(r'^(?P<project_id>\d+)/similarity/configs/(?P<config_id>\d+)/recompute$', similarity.recompute_config),
+    url(r'^(?P<project_id>\d+)/similarity/queries/$', similarity.SimilarityList.as_view()),
+    url(r'^(?P<project_id>\d+)/similarity/queries/(?P<similarity_id>\d+)/$', similarity.SimilarityDetail.as_view()),
+    url(r'^(?P<project_id>\d+)/similarity/queries/(?P<similarity_id>\d+)/recompute$', similarity.recompute_similarity),
+    url(r'^(?P<project_id>\d+)/similarity/test-setup$', similarity.test_setup),
 ]
 
 # Cropping

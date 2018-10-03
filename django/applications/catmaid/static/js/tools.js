@@ -781,4 +781,27 @@ CATMAID.tools = CATMAID.tools || {};
     return result;
   };
 
+  /**
+   * Get the bounding box of an array of points, which are represented as a
+   * three element array: [x, y, z].
+   */
+  tools.getPointBoundingBox = function(points) {
+    // Find bounding box around locations
+    let min = { x: Infinity, y: Infinity, z: Infinity };
+    let max = { x: -Infinity, y: -Infinity, z: -Infinity };
+    for (var i=0, imax=points.length; i<imax; ++i) {
+      let loc = points[i];
+      if (loc[0] < min.x) min.x = loc[0];
+      if (loc[1] < min.y) min.y = loc[1];
+      if (loc[2] < min.z) min.z = loc[2];
+      if (loc[0] > max.x) max.x = loc[0];
+      if (loc[1] > max.y) max.y = loc[1];
+      if (loc[2] > max.z) max.z = loc[2];
+    }
+    return {
+      min: min,
+      max: max
+    };
+  };
+
 })(CATMAID.tools);

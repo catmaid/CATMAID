@@ -306,6 +306,20 @@
     return table;
   };
 
+
+  /**
+   * Add extra dialog controls to the left of the dialog footer.
+   */
+  OptionsDialog.prototype.appendExtraControls = function(extraControls) {
+    var customOptions = document.createElement('div');
+    customOptions.setAttribute('class', 'ui-dialog-extra-buttonset');
+
+    CATMAID.DOM.appendToTab(customOptions, extraControls);
+
+    // Add extra options to the button pane
+    $(".ui-dialog-buttonpane", this.dialog.parent).prepend(customOptions);
+  };
+
   // Make option dialog available in CATMAID namespace
   CATMAID.OptionsDialog = OptionsDialog;
 

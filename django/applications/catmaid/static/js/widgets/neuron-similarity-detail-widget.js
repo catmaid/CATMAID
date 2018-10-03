@@ -121,6 +121,39 @@
             }
           },
         });
+
+        CATMAID.DOM.appendElement(controls, {
+          type: 'button',
+          label: 'Show scoring matrix',
+          onclick: function() {
+            if (!self.similarity) {
+              CATMAID.warn("No similarity query selected");
+              return;
+            }
+            CATMAID.Similarity.getConfig(project.id, self.similarity.config_id)
+              .then(function(config) {
+                CATMAID.NeuronSimilarityWidget.showSimilarityScoringDialog(config);
+              })
+              .catch(CATMAID.handleError);
+          },
+        });
+
+        CATMAID.DOM.appendElement(controls, {
+          type: 'button',
+          label: 'Download scores as CSV',
+          onclick: function() {
+            if (!self.similarity) {
+              CATMAID.warn("No similarity query selected");
+              return;
+            }
+            CATMAID.Similarity.getConfig(project.id, self.similarity.config_id)
+              .then(function(config) {
+                CATMAID.NeuronSimilarityWidget.exportNblastCSV(self.similarity, config);
+                CATMAID.msg("Success", "CSV exported");
+              })
+              .catch(CATMAID.handleError);
+          },
+        });
       },
       contentID: this.idPrefix + 'content',
       createContent: function(content) {

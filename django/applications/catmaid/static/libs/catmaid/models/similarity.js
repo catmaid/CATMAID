@@ -8,6 +8,13 @@
   var Similarity = {};
 
   /**
+   * Test if the NBLAST environment is set up.
+   */
+  Similarity.testEnvironment = function(projectId) {
+    return CATMAID.fetch(projectId + '/similarity/test-setup');
+  };
+
+  /**
    * Get a list of all similarity configurations in this project.
    *
    * @param projectId {integer} The project to operate in.

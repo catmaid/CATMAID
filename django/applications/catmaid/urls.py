@@ -338,6 +338,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/similarity/queries/$', similarity.SimilarityList.as_view()),
     url(r'^(?P<project_id>\d+)/similarity/queries/(?P<similarity_id>\d+)/$', similarity.SimilarityDetail.as_view()),
     url(r'^(?P<project_id>\d+)/similarity/queries/(?P<similarity_id>\d+)/recompute$', similarity.recompute_similarity),
+    url(r'^(?P<project_id>\d+)/similarity/test-setup$', similarity.test_setup),
 ]
 
 # Cropping

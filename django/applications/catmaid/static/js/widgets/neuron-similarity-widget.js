@@ -95,6 +95,13 @@
       init: function() {
         this.update();
         this.updatePointClouds();
+        CATMAID.Similarity.testEnvironment(project.id)
+          .then(function(result) {
+            if (!result || !result.setup_ok) {
+              CATMAID.warn("The NBLAST back-end isn't set up properly.");
+            }
+          })
+          .catch(CATMAID.handleError);
       },
       helpText: [
         '<h1>Neuron Similarity Widget</h1>',

@@ -201,6 +201,34 @@ def export_skeleton_as_nrrd(skeleton_id, source_ref, target_ref, user_id, mirror
     }
 
 
+def test_r_environment():
+    """Test if all required R packages are installed to use the NBLAST API.
+    """
+    setup_is_ok = False
+    try:
+        rnat = importr('nat')
+        rnblast = importr('nat.nblast')
+        rcatmaid = importr('catmaid')
+        setup_is_ok = True
+    except e:
+        setup_is_ok = False
+        logger.info("""
+        Please make sure the following R packages are installed to use CATMAID's
+        NBLAST support. This can be done by executing the following in the R
+        environment of the user running CATMAID (e.g. www-data):
+
+        if(!require("devtools")) install.packages("devtools")
+        devtools::install_github(c("jefferis/nat", "jefferislab/nat.nblast",
+                "jefferis/rcatmaid"))
+
+        This is required to let CATMAID compute NBLAST scores.
+        """)
+
+    return JsonResponse({
+        'setup_ok': setup_is_ok,
+    })
+
+
 def compute_scoring_matrix(project_id, user_id, matching_skeleton_ids,
         random_skeleton_ids, distbreaks=NblastConfigDefaultDistanceBreaks,
         dotbreaks=NblastConfigDefaultDotBreaks, resample_step=1000,

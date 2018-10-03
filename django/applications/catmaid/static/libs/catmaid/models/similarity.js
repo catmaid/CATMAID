@@ -97,7 +97,7 @@
    */
   Similarity.computeSimilarity = function(projectId, configId, queryIds,
       targetIds, queryType, targetType, name) {
-    return CATMAID.fetch(projectId + '/skeletons/similarity', 'POST', {
+    return CATMAID.fetch(projectId + '/queries/similarity', 'POST', {
       'query_ids': queryIds,
       'target_ids': targetIds,
       'query_type_id': queryType,
@@ -111,14 +111,14 @@
    * Queue recomputation of a similarity configuration.
    */
   Similarity.recomputeSimilarity = function(projectId, similarityId) {
-    return CATMAID.fetch(projectId + '/similarity/skeletons/' + similarityId + '/recompute');
+    return CATMAID.fetch(projectId + '/similarity/queries/' + similarityId + '/recompute');
   };
 
   /**
    * Get a specific similarity query result.
    */
   Similarity.getSimilarity = function(projectId, similarityId) {
-    return CATMAID.fetch(projectId + '/similarity/skeletons/' + similarityId + '/');
+    return CATMAID.fetch(projectId + '/similarity/queries/' + similarityId + '/');
   };
 
   /**
@@ -130,7 +130,7 @@
    * @returns a promise that resolves in the list of similarities.
    */
   Similarity.listAllSkeletonSimilarities = function(projectId, configId) {
-    return CATMAID.fetch(projectId + '/similarity/skeletons/', 'GET', {
+    return CATMAID.fetch(projectId + '/similarity/queries/', 'GET', {
       configId: configId
     });
   };
@@ -139,7 +139,7 @@
    * Delete a particular skeleton similarity task.
    */
   Similarity.deleteSimilarity = function(projectId, similarityId) {
-    return CATMAID.fetch(projectId + '/similarity/skeletons/' + similarityId + '/',
+    return CATMAID.fetch(projectId + '/similarity/queries/' + similarityId + '/',
         'DELETE')
       .then(function(result) {
         CATMAID.Similarity.trigger(CATMAID.Similarity.EVENT_SIMILARITY_DELETED, similarityId);

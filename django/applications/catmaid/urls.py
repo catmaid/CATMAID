@@ -335,9 +335,9 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/similarity/configs/$', similarity.ConfigurationList.as_view()),
     url(r'^(?P<project_id>\d+)/similarity/configs/(?P<config_id>\d+)/$', similarity.ConfigurationDetail.as_view()),
     url(r'^(?P<project_id>\d+)/similarity/configs/(?P<config_id>\d+)/recompute$', similarity.recompute_config),
-    url(r'^(?P<project_id>\d+)/similarity/skeletons/$', similarity.SimilarityList.as_view()),
-    url(r'^(?P<project_id>\d+)/similarity/skeletons/(?P<similarity_id>\d+)/$', similarity.SimilarityDetail.as_view()),
-    url(r'^(?P<project_id>\d+)/similarity/skeletons/(?P<similarity_id>\d+)/recompute$', similarity.recompute_similarity),
+    url(r'^(?P<project_id>\d+)/similarity/queries/$', similarity.SimilarityList.as_view()),
+    url(r'^(?P<project_id>\d+)/similarity/queries/(?P<similarity_id>\d+)/$', similarity.SimilarityDetail.as_view()),
+    url(r'^(?P<project_id>\d+)/similarity/queries/(?P<similarity_id>\d+)/recompute$', similarity.recompute_similarity),
 ]
 
 # Cropping

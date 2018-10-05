@@ -230,6 +230,19 @@ class ViewPageTests(TestCase):
             assign_perm('can_browse', user, p)
             assign_perm('can_annotate', user, p)
 
+    def fake_admin_authentication(self, username='test2', password='test'):
+        user = User.objects.get(username=username)
+        user.is_staff = True
+        user.is_superuser = True
+        user.save()
+
+        self.client.login(username=username, password=password)
+
+        # Assign the new user permissions to browse and annotate projects
+        p = Project.objects.get(pk=self.test_project_id)
+        assign_perm('can_browse', user, p)
+        assign_perm('can_annotate', user, p)
+
     def test_authentication(self):
         # Try to access the password change view without logging in
         response = self.client.get('/user/password_change/')
@@ -306,6 +319,74 @@ class ViewPageTests(TestCase):
         url = '/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+
+    def test_user_list_with_passwords_regular_user(self):
+        self.fake_authentication()
+        response = self.client.get('/user-list', {
+            'with_passwords': True,
+        })
+
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        self.assertTrue('error' in parsed_response)
+        self.assertTrue('type' in parsed_response)
+        self.assertEqual(parsed_response['type'], 'PermissionError')
+
+    def test_user_list_with_passwords_admin_user(self):
+        self.fake_admin_authentication()
+        response = self.client.get('/user-list', {
+            'with_passwords': True,
+        })
+
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        self.assertFalse('error' in parsed_response)
+
+        expected_result = [
+            {
+                'first_name': 'Admin',
+                'last_name': 'Superuser',
+                'color': [1.0, 1.0, 0.0],
+                'full_name': 'Admin Superuser',
+                'login': 'admin',
+                'password': 'pbkdf2_sha256$12000$CqdO6wRdSSxH$c57xXXPO8k65prBMrHTvjj/inanxDnbdoaeDIeWWrik=',
+                'id': 4
+            }, {
+                'first_name': 'Test',
+                'last_name': 'User 0',
+                'color': [0.0, 0.0, 1.0],
+                'full_name': 'Test User 0',
+                'login': 'test0',
+                'password': 'pbkdf2_sha256$12000$CqdO6wRdSSxH$c57xXXPO8k65prBMrHTvjj/inanxDnbdoaeDIeWWrik=',
+                'id': 5
+            }, {
+                'first_name': 'Test',
+                'last_name': 'User 1',
+                'color': [1.0, 0.0, 1.0],
+                'full_name': 'Test User 1',
+                'login': 'test1',
+                'password': 'pbkdf2_sha256$12000$CqdO6wRdSSxH$c57xXXPO8k65prBMrHTvjj/inanxDnbdoaeDIeWWrik=',
+                'id': 2
+            },
+        ]
+
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        for u in expected_result:
+            self.assertIn(u, parsed_response)
+
+        # The anonymous user is created by Guardian, we don't know its ID. A
+        # second test user (test2) has a run-time updated password, which we
+        # don't know and therefore we skip it.
+        self.assertEqual(len(expected_result) + 2, len(parsed_response))
+        found_anon_user = False
+        for u in parsed_response:
+            if u['login'] == 'AnonymousUser':
+                found_anon_user = True
+        self.assertTrue(found_anon_user)
 
     def test_user_list(self):
         self.fake_authentication()

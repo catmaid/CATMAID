@@ -36,6 +36,11 @@ included in this changelog.
   additionally the creator of the link and the creation and edition time (in
   epoch format).
 
+- `GET /user-list`:
+  Accepts a new boolean parameter `with_passwords` to export encrypted
+  passwords, which in turn can be imported into other CATMAID instances. This
+  requires the requesting user to be a superuser.
+
 ### Deprecations
 
 None.

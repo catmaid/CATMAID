@@ -23,17 +23,41 @@ def not_anonymous(user):
 
 @user_passes_test(access_check)
 def user_list(request):
+    """List registered users in this CATMAID instance. Requires to be logged in.
+    An administrator can export users including their encrpyted password. This
+    is meant to import users into other CATMAID instances.
+    ---
+    parameters:
+    - name: with_passwords
+      description: |
+        Export encrypted passwords. Requires admin access.
+      required: false
+      type: boolean,
+      default: false
+    """
+    with_passwords = get_request_bool(request.GET, 'with_passwords', False)
+    if with_passwords:
+        # Make sure user is an admin and part of the staff
+        if not request.user.is_staff and not request.user.is_superuser:
+            raise PermissionError("Superuser permissions required to export "
+                    "encrypted user passwords")
+
     result = []
     for u in User.objects.all().select_related('userprofile') \
             .order_by('last_name', 'first_name'):
         up = u.userprofile
-        result.append({
+        user_data = {
             "id": u.id,
             "login": u.username,
             "full_name": u.get_full_name(),
             "first_name": u.first_name,
             "last_name": u.last_name,
-            "color": (up.color.r, up.color.g, up.color.b) })
+            "color": (up.color.r, up.color.g, up.color.b)
+        }
+        if with_passwords:
+            # Append encypted user password
+            user_data['password'] = u.password
+        result.append(user_data)
 
     return JsonResponse(result, safe=False)
 

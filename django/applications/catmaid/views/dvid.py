@@ -16,11 +16,13 @@ from catmaid.models import (
 from catmaid.control import dvid
 from catmaid.fields import DownsampleFactorsField
 
+
 TEMPLATES = {
     'server': 'catmaid/dvidimport/server.html',
     'stack': 'catmaid/dvidimport/stack.html',
     'confirm': 'catmaid/dvidimport/confirm.html',
 }
+
 
 class ServerForm(forms.Form):
     # The DVID server to talk to
@@ -60,6 +62,7 @@ class StackForm(forms.Form):
             raise ValidationError(e)
         return instance
 
+
 class ConfirmForm(forms.Form):
     title = forms.CharField(help_text='Title of the new stack')
     comment = forms.CharField(help_text='Optional comment of the new stack', required=False)
@@ -74,6 +77,7 @@ class ConfirmForm(forms.Form):
                                      'link the created stack(s) to it. Ortho '
                                      'stacks will be linked with their '
                                      'respective orientation.')
+
 
 class DVIDImportWizard(SessionWizardView):
     form_list = [('server', ServerForm), ('stack', StackForm), ('confirm', ConfirmForm)]

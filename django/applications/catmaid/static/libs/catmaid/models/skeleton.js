@@ -259,6 +259,20 @@
       });
     },
 
+    /**
+     * Get the number of sampler associated with this skeleton.
+     *
+     * @param projectId  {integer} The project to operate in.
+     * @param skeletonId {integer} The skeleton to get sampler count for.
+     * @returns Promise that resolves with sampler count information.
+     */
+    getSamplerCount: function(projectId, skeletonId) {
+      return CATMAID.fetch(projectId + '/skeletons/' + skeletonId + '/sampler-count')
+        .then(function(count) {
+          return count['n_samplers'];
+        });
+    },
+
   };
 
   // Provide some basic events

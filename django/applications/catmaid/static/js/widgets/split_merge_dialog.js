@@ -395,6 +395,24 @@
       }
 
       this.webglapp.render();
+
+      // If there is a sampler associated with this skeleton, ask the user for
+      // confirmation.
+      if (!this.in_merge_mode) {
+        CATMAID.Skeletons.getSamplerCount(project.id, this.model1_id)
+          .then((function(samplerCount) {
+            if (samplerCount > 0) {
+              let samplerNoun = samplerCount > 1 ? " samplers" : " sampler";
+              if (!confirm("This skeleton has " + samplerCount +
+                  samplerNoun + " linked. A split will remove sampler " +
+                  "information from split-off fragments. Continue?")) {
+                // Close dialog
+                this.close();
+              }
+            }
+          }).bind(this))
+          .catch(CATMAID.handleError);
+      }
     }).bind(this));
 
     var self = this;

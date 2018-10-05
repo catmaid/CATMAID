@@ -281,6 +281,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/find-labels$', skeleton.find_labels),
     url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/open-leaves$', skeleton.open_leaves),
     url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/root$', skeleton.root_for_skeleton),
+    url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/sampler-count$', skeleton.sampler_count),
     url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/cable-length$', skeleton.cable_length),
     url(r'^(?P<project_id>\d+)/skeleton/split$', record_view("skeletons.split")(skeleton.split_skeleton)),
     url(r'^(?P<project_id>\d+)/skeleton/ancestry$', skeleton.skeleton_ancestry),

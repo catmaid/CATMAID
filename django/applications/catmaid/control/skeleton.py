@@ -23,7 +23,7 @@ from rest_framework.decorators import api_view
 
 from catmaid.models import (Project, UserRole, Class, ClassInstance, Review,
         ClassInstanceClassInstance, Relation, Sampler, Treenode,
-        TreenodeConnector, SkeletonSummary)
+        TreenodeConnector, SkeletonSummary, SamplerDomainEnd, SamplerInterval)
 from catmaid.objects import Skeleton, SkeletonGroup, \
         compartmentalize_skeletongroup_by_edgecount, \
         compartmentalize_skeletongroup_by_confidence
@@ -521,6 +521,28 @@ def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
+def sampler_count(request, project_id=None, skeleton_id=None):
+    """Get the number of samplers associated with this skeleton.
+    ---
+    parameters:
+      - name: project_id
+        description: Project of skeleton
+        type: integer
+        paramType: path
+        required: true
+      - name: skeleton_id
+        description: IDs of the skeleton to get the sampler count for.
+        required: true
+        type: integer
+        paramType: path
+    """
+    p = get_object_or_404(Project, pk=project_id)
+    return JsonResponse({
+        'n_samplers': Sampler.objects.filter(project_id=project_id, skeleton_id=skeleton_id).count(),
+    })
+
+@api_view(['GET'])
+@requires_user_role(UserRole.Browse)
 def cable_length(request, project_id=None, skeleton_id=None, treenode_id=None):
     """Get the cable length for a skeleton
     ---
@@ -838,15 +860,10 @@ def split_skeleton(request, project_id=None):
     else:
         downstream_annotation_map = current_annotations
 
-    # Make sure this skeleton is not used in a sampler
-    n_samplers = Sampler.objects.filter(skeleton_id=skeleton_id).count()
-    if n_samplers > 0:
-        raise Exception('Can\'t split, skeleton {} is used in {} sampler(s)'.format(
-                skeleton_id, n_samplers))
-
     # Check if the treenode is root!
     if not treenode.parent:
         return JsonResponse({'error': 'Can\'t split at the root node: it doesn\'t have a parent.'})
+    treenode_parent = treenode.parent
 
     # Check if annotations are valid
     if not check_annotations_on_split(project_id, skeleton_id,
@@ -949,18 +966,129 @@ def split_skeleton(request, project_id=None):
     # Update annotations of under skeleton
     _annotate_entities(project_id, [new_neuron.id], downstream_annotation_map)
 
+    # If samplers reference this skeleton, make sure they are updated as well
+    sampler_info = prune_samplers(skeleton_id, graph, treenode_parent, treenode)
+
     # Log the location of the node at which the split was done
     location = (treenode.location_x, treenode.location_y, treenode.location_z)
     insert_into_log(project_id, request.user.id, "split_skeleton", location,
                     "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron.name ) )
 
-    return JsonResponse({
+    response = {
         'new_skeleton_id': new_skeleton.id,
         'existing_skeleton_id': skeleton_id,
         'x': treenode.location_x,
         'y': treenode.location_y,
-        'z': treenode.location_z
-    })
+        'z': treenode.location_z,
+    }
+
+    if sampler_info['n_samplers'] > 0:
+        response['samplers'] = {
+            'n_deleted_intervals': sampler_info['n_deleted_intervals'],
+            'n_deleted_domains': sampler_info['n_deleted_domains'],
+        }
+
+    return JsonResponse(response)
+
+
+def create_subgraph(source_graph, target_graph, start_node, end_nodes):
+    """Extract a subgraph out of <source_graph> into <target_graph>.
+    """
+    for n in source_graph.successors_iter(start_node):
+        target_graph.add_path([start_node,n])
+        if n not in end_nodes:
+            create_subgraph(source_graph, target_graph, n, end_nodes)
+
+
+def prune_samplers(skeleton_id, graph, treenode_parent, treenode):
+    samplers = Sampler.objects.prefetch_related('samplerdomain_set',
+            'samplerdomain_set__samplerdomainend_set',
+            'samplerdomain_set__samplerinterval_set').filter(skeleton_id=skeleton_id)
+    n_deleted_sampler_intervals = 0
+    n_deleted_sampler_domains = 0
+    if len(samplers) > 0:
+        for sampler in samplers:
+            # Each sampler references the skeleton through domains and
+            # intervals. If the split off part intersects with the domain, the
+            # domain needs to be adjusted.
+            for domain in sampler.samplerdomain_set.all():
+                domain_ends = domain.samplerdomainend_set.all()
+                domain_end_map = dict(map(lambda de: (de.end_node_id, de.id), domain_ends))
+                domain_end_ids = domain_end_map.keys()
+                # Construct a graph for the domain and split it too.
+                domain_graph = nx.DiGraph()
+                create_subgraph(graph, domain_graph, domain.start_node_id, domain_ends)
+
+                # If the subgraph is empty, this domain doesn't intersect with
+                # the split off part. Therefore, this domain needs no update.
+                if domain_graph.size() == 0:
+                    continue
+
+                new_sk_domain_nodes = set(nx.bfs_tree(domain_graph, treenode.id).nodes())
+
+                # At this point, we expect some intersecting domain nodes to be there.
+                if not new_sk_domain_nodes:
+                    raise ValueError("Could not find any split-off domain nodes")
+
+                # Remove all explicit domain ends in split-off part. If the
+                # split off part leaves a branch, add a new domain end for it to
+                # remaining domain.
+                ends_to_remove = filter(lambda nid: nid in new_sk_domain_nodes, domain_end_ids)
+
+                if ends_to_remove:
+                    domain_end_ids = list(map(lambda x: domain_end_map[x], ends_to_remove))
+                    SamplerDomainEnd.objects.filter(domain_id__in=domain_end_ids).delete()
+
+                if treenode_parent.parent_id is not None and \
+                        len(domain_graph.successors(treenode_parent.parent_id)) > 1:
+                    new_domain_end = SamplerDomainEnd.objects.create(
+                                domain=domain, end_node=treenode_parent)
+
+                # Delete domain intervals that intersect with split-off part
+                domain_intervals = domain.samplerinterval_set.all()
+                intervals_to_delete = []
+                for di in domain_intervals:
+                    start_split_off = di.start_node_id in new_sk_domain_nodes
+                    end_split_off = di.end_node_id in new_sk_domain_nodes
+                    # If neither start or end of the interval are in split-off
+                    # part, the interval can be ignored.
+                    if not start_split_off and not end_split_off:
+                        continue
+                    # If both start and end node are split off, the whole
+                    # interval can be removed, because the interval is
+                    # completely in the split off part.
+                    elif start_split_off and end_split_off:
+                        intervals_to_delete.append(di.id)
+                    # If the start is not split off, but the end is, the
+                    # interval crosses the split location and has to be
+                    # adjusted. If this makes the start and end of the remaining
+                    # part the same, the interval is deleted, too.
+                    elif not start_split_off and end_split_off:
+                        if di.start_node_id == treenode_parent.id:
+                            intervals_to_delete.append(di.id)
+                        else:
+                            di.end_node_id = treenode_parent.id
+                            di.save()
+                    # If the start is split off and the end is not, something is
+                    # wrong and we raise an error
+                    else:
+                        raise ValueError("Unexpected interval: start is split "
+                                "off, end is not")
+
+                if intervals_to_delete:
+                    SamplerInterval.objects.filter(id__in=intervals_to_delete).delete()
+                    n_deleted_sampler_intervals += len(intervals_to_delete)
+
+                # If the domain doesn't have any intervals left after this, it
+                # can be removed as well.
+                if len(domain_intervals) == len(intervals_to_delete):
+                    domain.delete()
+                    ++n_deleted_sampler_domains
+    return {
+        'n_samplers': len(samplers),
+        'n_deleted_domains': n_deleted_sampler_domains,
+        'n_deleted_intervals': n_deleted_sampler_intervals,
+    }
 
 
 @api_view(['GET'])

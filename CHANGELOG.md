@@ -44,6 +44,12 @@ Reconstruction sampler:
 
 - Improve performance of interval length computation
 
+- Sampled skeletons can now be split after the users confirm this is their
+  intention. The split-off part of the skeleton will not contain any sampler
+  information anymore. Intervals on the split-off part are removed, split-point
+  crossing intervals are shortened and domain end points will be removed and
+  recreated as needed.
+
 - Domain completion is now shown in percent along with interval coverage of the
   domain in "Interval" step.
 

@@ -2,6 +2,7 @@
 
 import string
 import random
+import requests
 import json
 import six
 
@@ -352,3 +353,31 @@ class Echo:
     def write(self, value):
         """Write the value by returning it, instead of storing in a buffer."""
         return value
+
+
+def is_reachable(url, auth=None):
+    """Test if a URL is reachable.
+    """
+    try:
+        r = requests.head(url, auth=auth)
+        if r.status_code >= 200 and r.status_code < 400:
+            return (True, 'URL accessible')
+        else:
+            return (False, r.reason)
+    except requests.ConnectionError:
+        return (False, 'No route to host')
+
+
+def is_invalid_host(host, auth=None):
+    """Test if the passed in string is a valid URI.
+    """
+    host = host.strip()
+    if 0 == len(host):
+        return 'No URL provided'
+    if '://' not in host:
+        return 'URL is missing protocol (http://...)'
+    reachable, reason = is_reachable(host, auth)
+    if not reachable:
+        return 'URL not reachable: {}'.format(reason)
+
+    return None

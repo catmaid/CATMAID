@@ -11,6 +11,7 @@ from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import User
 
 from catmaid.control.authentication import access_check
+from catmaid.control.common import get_request_bool
 
 
 def not_anonymous(user):

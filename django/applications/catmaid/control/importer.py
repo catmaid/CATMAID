@@ -31,7 +31,7 @@ from catmaid.models import (BrokenSlice, Class, Relation, ClassClass,
         StackStackGroup, ProjectStack, StackClassInstance, StackGroupRelation,
         StackMirror, TILE_SOURCE_TYPES)
 from catmaid.fields import Double3D
-from catmaid.control.common import urljoin
+from catmaid.control.common import urljoin, is_invalid_host
 from catmaid.control.classification import get_classification_links_qs, \
         link_existing_classification, ClassInstanceClassInstanceProxy
 
@@ -43,28 +43,6 @@ TEMPLATES = {"pathsettings": "catmaid/import/setup_path.html",
 info_file_name = "project.yaml"
 datafolder_setting = "CATMAID_IMPORT_PATH"
 base_url_setting = "IMPORTER_DEFAULT_IMAGE_BASE"
-
-def is_reachable(url, auth=None):
-    try:
-        r = requests.head(url, auth=auth)
-        if r.status_code >= 200 and r.status_code < 400:
-            return (True, 'URL accessible')
-        else:
-            return (False, r.reason)
-    except requests.ConnectionError:
-        return (False, 'No route to host')
-
-def is_invalid_host(host, auth=None):
-    host = host.strip()
-    if 0 == len(host):
-        return 'No URL provided'
-    if '://' not in host:
-        return 'URL is missing protocol (http://...)'
-    reachable, reason = is_reachable(host, auth)
-    if not reachable:
-        return 'URL not reachable: {}'.format(reason)
-
-    return None
 
 class UserProxy(User):
     """ A proxy class for the user model as we want to be able to call

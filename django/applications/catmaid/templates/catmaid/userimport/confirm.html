@@ -1,0 +1,29 @@
+{% extends "catmaid/form_wizard.html" %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url "admin:index" %}">Home</a> &rsaquo; Import Users
+  </div>
+{% endblock %}
+
+{% block stepinfo %}
+<p>
+If you submit this form, all selected users will be imported into this database.
+No group information is copied, only basic user properties (login, full name,
+color and encrypted password). The following users are selected for import:
+
+  <ul>
+    {% for user in users_to_import %}
+      <li>
+        {% if user.full_name %}
+          {{ user.full_name }} ({{ user.login }})
+        {% else %}
+        <em>(none)</em> ({{ user.login }})
+        {% endif %}
+      </li>
+    {% endfor %}
+    </ul>
+</p>
+{% endblock %}
+
+

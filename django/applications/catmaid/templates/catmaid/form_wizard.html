@@ -23,6 +23,19 @@
     <div class="module">
     {% block stepinfo %}
     {% endblock %}
+
+    {% if form.errors %}
+      <div class="module">
+      {% for error in form.non_field_errors %}
+          <div class="alert alert-danger">
+              <p>
+              <strong>{{ error|escape }}</strong>
+              </p>
+          </div>
+      {% endfor %}
+      </div>
+    {% endif %}
+
     <div class="aligned">
     {{ wizard.management_form }}
     {% for field in wizard.form %}
@@ -47,4 +60,3 @@
   </form>
 </div>
 {% endblock %}
-

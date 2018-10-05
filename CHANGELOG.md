@@ -115,6 +115,9 @@ Miscellaneous:
 
 - WebGL layers are now preferred by default.
 
+- Admin: a user import view is now available to import users from other CATMAID
+  instances. It requires superuser permissions on the remote instance.
+
 
 ### Bug fixes
 

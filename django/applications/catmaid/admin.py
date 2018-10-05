@@ -26,6 +26,7 @@ from catmaid.control.project import (delete_projects_and_stack_data,
 from catmaid.views import (UseranalyticsView, UserProficiencyView,
         GroupMembershipHelper)
 from catmaid.views.dvid import DVIDImportWizard
+from catmaid.views.userimporter import UserImportWizard
 
 
 def add_related_field_wrapper(form, col_name, rel=None):
@@ -436,3 +437,5 @@ admin.site.register_view('groupmembershiphelper',
                          view=GroupMembershipHelper.as_view())
 admin.site.register_view('dvidimporter', 'Import DVID stacks',
                          view=DVIDImportWizard.as_view())
+admin.site.register_view('userimporter', 'Import users',
+                         view=UserImportWizard.as_view())

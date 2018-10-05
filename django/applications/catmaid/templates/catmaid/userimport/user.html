@@ -1,0 +1,101 @@
+{% extends "catmaid/form_wizard.html" %}
+{% load pipeline %}
+
+{% block extrahead %}
+  {{ block.super }}
+	{% stylesheet 'libraries' %}
+	{% javascript 'jquery-lib' %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function(event) {
+      $(".select-all").change(function() {
+        var selected = this.checked;
+        $(this).closest('div').find('ul#unknown-remote-users input[type=checkbox]:visible')
+          .prop('checked', selected);
+      });
+
+      $(".filterbox").keyup(function() {
+        var filter = $(this).val().toLowerCase();
+        // Get sibling list element
+        var list = $(this).closest('div').find("ul#unknown-remote-users");
+        list.find("li").each(function() {
+          var val = $(this).text().trim().toLowerCase();
+          if (0 === filter.length || 0 === val.indexOf(filter)) {
+            $(this).show();
+          } else {
+            $(this).hide();
+          }
+        });
+      });
+    });
+  </script>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url "admin:index" %}">Home</a> &rsaquo; Import Users
+  </div>
+{% endblock %}
+
+{% block stepinfo %}
+<p>
+Please select below which users to import and continue.
+</p>
+
+{% if remote_users %}
+  <div id="users">
+    <p>
+      <input placeholder="Remote users" class="filterbox" type="text" />
+    </p>
+    <p>
+      <label>
+        <input type="checkbox" class="select-all" />
+        Select all
+      </label>
+    </p>
+
+    <h3>Importable remote users</h3>
+
+    <ul id="unknown-remote-users">
+    {% for user in remote_users %}
+      {% if user.login not in local_users %}
+        <li>
+          <label>
+            <input type="checkbox" name="importable-remote-user" value="{{ user.id }}"
+                id="importable-remote-user-{{ user.id }}" />
+            {% if user.full_name %}
+              {{ user.full_name }} ({{ user.login }})
+            {% else %}
+            <em>(none)</em> ({{ user.login }})
+            {% endif %}
+          </label>
+        </li>
+      {% endif %}
+    {% endfor %}
+    </ul>
+
+    <h3>Already existing remote users</h3>
+
+    <ul id="known-remote-users">
+    {% for user in remote_users %}
+      {% if user.login in local_users %}
+        <li>
+          <label class="disabled">
+            <input type="checkbox" name="source-users" value="{{ user.id }}"
+                id="source-user-{{ user.id }}" disabled />
+            {% if user.full_name %}
+              {{ user.full_name }} ({{ user.login }})
+            {% else %}
+            <em>(none)</em> ({{ user.login }})
+            {% endif %}
+          </label>
+        </li>
+      {% endif %}
+    {% endfor %}
+    </ul>
+  </div>
+{% else %}
+    <em>Couldn't find any remote users !</em>
+{% endif %}
+
+{% endblock %}
+

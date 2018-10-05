@@ -4,8 +4,6 @@ import json
 import django.contrib.auth.views as django_auth_views
 import six
 
-from random import random
-
 from guardian.utils import get_anonymous_user
 
 from django.http import JsonResponse

@@ -27,6 +27,7 @@ from guardian.models import (UserObjectPermissionBase,
 from guardian.shortcuts import get_objects_for_user
 from taggit.managers import TaggableManager
 from rest_framework.authtoken.models import Token
+from random import random
 
 from .fields import Double3DField, Integer3DField, RGBAField, DownsampleFactorsField
 

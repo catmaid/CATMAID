@@ -210,7 +210,7 @@ def test_r_environment():
         rnblast = importr('nat.nblast')
         rcatmaid = importr('catmaid')
         setup_is_ok = True
-    except e:
+    except:
         setup_is_ok = False
         logger.info("""
         Please make sure the following R packages are installed to use CATMAID's

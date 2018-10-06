@@ -57,10 +57,14 @@
      * @param {integer} toId          The skeleton that will get more nodes
      * @param {object}  annotationSet (Optional) Map of annotation name vs
      *                                annotator ID.
+     * @param {string}  samplerHandling (optional) If one or both of the
+     *                                  skeletons have samplers, a handling mode
+     *                                  is needed. Either "create-intervals",
+     *                                  "branch", "domain-end" or "new-domain".
      *
      * @returns A new promise that is resolved once both skeletons are joined.
      */
-    join: function(state, projectId, fromId, toId, annotationSet) {
+    join: function(state, projectId, fromId, toId, annotationSet, samplerHandling) {
 
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to join skeletons');
@@ -68,11 +72,15 @@
       var params = {
         from_id: fromId,
         to_id: toId,
-        state: state.makeMultiNodeState([fromId, toId])
+        state: state.makeMultiNodeState([fromId, toId]),
       };
 
       if (annotationSet) {
         params.annotation_set = JSON.stringify(annotationSet);
+      }
+
+      if (samplerHandling) {
+        params.sampler_handling = samplerHandling;
       }
 
       return CATMAID.fetch(url, 'POST', params).then((function(json) {
@@ -340,12 +348,17 @@
      * @param {integer} toId          The skeleton that will get more nodes
      * @param {object}  annotationSet (Optional) Map of annotation name vs
      *                                annotator ID.
+     * @param {string}  samplerHandling (optional) If one or both of the
+     *                                  skeletons have samplers, a handling mode
+     *                                  is needed. Either "create-intervals",
+     *                                  "branch", "domain-end" or "new-domain".
    */
   CATMAID.JoinSkeletonsCommand = CATMAID.makeCommand(
-      function(state, projectId, fromId, toId, annotationSet) {
+      function(state, projectId, fromId, toId, annotationSet, samplerHandling) {
 
     var exec = function(done, command, map) {
-      var join = CATMAID.Skeletons.join(state, project.id, fromId, toId, annotationSet);
+      var join = CATMAID.Skeletons.join(state, project.id, fromId, toId,
+          annotationSet, samplerHandling);
       return join.then(function(result) {
         done();
         return result;

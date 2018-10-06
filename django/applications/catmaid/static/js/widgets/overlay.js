@@ -2076,14 +2076,14 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
         self.executeIfSkeletonEditable(from_skid, function() {
           self.executeIfSkeletonEditable(to_skid, function() {
             // The function used to instruct the backend to do the merge
-            var merge = function(annotation_set, fromId, toId) {
+            var merge = function(annotation_set, fromId, toId, samplerHandling) {
               return self.submit.then(function() {
                 // Suspend tracing layer during join to avoid unnecessary
                 // reloads.
                 self.suspended = true;
                 // Join skeletons
                 var command = new CATMAID.JoinSkeletonsCommand(self.state, project.id,
-                    nodes[fromId], nodes[toId], annotation_set);
+                    nodes[fromId], nodes[toId], annotation_set, samplerHandling);
                 return CATMAID.commands.execute(command)
                   .catch(CATMAID.handleError)
                   .then(function(result) {
@@ -2133,7 +2133,8 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
                   extension: extension,
                   keepOrder: false,
                   merge: function(fromId, toId) {
-                    merge(this.get_combined_annotation_set(), fromId, toId);
+                    merge(this.get_combined_annotation_set(), fromId, toId,
+                        this.samplerHandling);
                   }
                 });
                 dialog.show(extension);

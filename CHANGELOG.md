@@ -50,6 +50,18 @@ Reconstruction sampler:
   crossing intervals are shortened and domain end points will be removed and
   recreated as needed.
 
+- Sampled skeletons can now be merged into. All samplers that reference the
+  merged-in fragment are deleted. If the merged fragment is merged outside
+  of a domain, nothing special is happening---it is a regular merge. If the
+  merge treenode is in a sampler domain, there are currently three options,
+  "Branch", "Domain end" and "New domain": 1. Branch: add the new fragment to the
+  skeleton without changing domain end nodes or intervals. This is only allowed
+  if the merge target is not the start or end of an interval. 2. Domain end: add
+  a new domain end node right where the merged in fragment starts. This keeps
+  the new fragment isolated from the sampled domain. 3. New domain: a new
+  domain is created for the merged in fragment. This also adds the domain end
+  node from (2).
+
 - Domain completion is now shown in percent along with interval coverage of the
   domain in "Interval" step.
 

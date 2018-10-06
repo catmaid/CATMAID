@@ -16,6 +16,12 @@
     this.split = options.split;
     this.merge = options.merge;
 
+    // Sampler handling
+    this.samplerHandling = 'domain-end';
+
+    // Whether or not swapping is enabled
+    this.swapEnabled = true;
+
     // Models object
     this.models = {};
     this.models[model1.id] = model1;
@@ -43,6 +49,10 @@
   SplitMergeDialog.prototype.constructor = SplitMergeDialog;
 
   SplitMergeDialog.prototype.swapSkeletons = function() {
+    if (!this.swapEnabled) {
+      CATMAID.warn("Swapping is disabled");
+      return;
+    }
     this.close();
 
     var newDialog = new CATMAID.SplitMergeDialog({
@@ -398,7 +408,72 @@
 
       // If there is a sampler associated with this skeleton, ask the user for
       // confirmation.
-      if (!this.in_merge_mode) {
+      if (this.in_merge_mode) {
+        CATMAID.Skeletons.getAllSamplerCounts(project.id, [this.model1_id, this.model2_id])
+          .then((function(samplerCounts) {
+            // Only ask for user action if there is a sampler in either of the
+            // merge partners.
+            let samplerCount1 = samplerCounts[this.model1_id];
+            let samplerCount2 = samplerCounts[this.model2_id];
+            if (samplerCount1 > 0 || samplerCount2 > 0) {
+              let self = this;
+              // Swapping is for now not allowed when a sampler is merged.
+              this.swapEnabled = false;
+              // Check if the merged in fragment has linked samplers, if so show
+              // dialog that asks for user action. Check if the target node for
+              // the merge is part of a sampler domain. If so, ask for user
+              // action. If the merged-in fragment has no sampler and the target
+              // node is not part of a sampler domain, no user action is needed.
+              let buttons = {};
+              if (samplerCount1 > 0) {
+                //buttons['New intervals'] = self.setSamplerHandling.bind(self, 'create-intervals');
+                buttons['Branch'] = self.setSamplerHandling.bind(self, 'branch');
+                buttons['Domain end'] = self.setSamplerHandling.bind(self, 'domain-end');
+                buttons['New domain'] = self.setSamplerHandling.bind(self, 'new-domain');
+              }
+
+              buttons['Cancel'] = function() {
+                // Close dialog
+                self.close();
+              };
+
+              let dialog = new CATMAID.OptionsDialog("Sampler update needed", buttons);
+
+              let samplerNoun1 = samplerCount1 === 1 ? " sampler" : " samplers";
+              let samplerNoun2 = samplerCount2 === 1 ? " sampler" : " samplers";
+              if (samplerCount1 > 0) {
+                dialog.appendMessage("The active skeleton is currentely used in " +
+                    samplerCount1 + samplerNoun1 + ". There are multiple options " +
+                    "for how to deal with his in a merge operation. In each " +
+                    "case, no swap operation is allowed and the sampled " +
+                    "skeleton will remain the \"winner\" of the merge to avoid a " +
+                    "re-rooting operation. If the fragment is merged outside of a " +
+                    "domain, the selected option has no effect.");
+
+                if (samplerCount2 > 0) {
+                  dialog.appendMessage("The merged-in fragment is used in " + samplerCount2 +
+                      "reconstruction " + samplerNoun2 + ". All samplers on " +
+                      "merged-in fragments will be deleted.");
+                } else {
+                  dialog.appendMessage("The merged-in fragment isn't used in any sampler.");
+                }
+
+                //dialog.appendHTML("<em>1. New intervals:</em> Extend domain and add intervals.");
+                dialog.appendHTML("<em>1. Branch:</em> Add nodes as traced out branch to existing interval.");
+                dialog.appendHTML("<em>2. Domain end:</em> End existing domain where fragment starts.");
+                dialog.appendHTML("<em>3. New domain:</em> Create a new domain for the merged in fragment.");
+              } else {
+                dialog.appendMessage("While the active skeleton isn't used in a " +
+                    "sampler, the merged-in fragment is used in " + samplerCount2 +
+                    "reconstruction " + samplerNoun2 + ". All samplers on " +
+                    "merged-in fragments will be deleted.");
+              }
+
+              dialog.show(550, 'auto', true);
+            }
+          }).bind(this))
+          .catch(CATMAID.handleError);
+      } else {
         CATMAID.Skeletons.getSamplerCount(project.id, this.model1_id)
           .then((function(samplerCount) {
             if (samplerCount > 0) {
@@ -437,6 +512,12 @@
     }
 
     return this;
+  };
+
+  SplitMergeDialog.prototype.setSamplerHandling = function(samplerHandling) {
+    this.samplerHandling = samplerHandling;
+    $(this.dialog.parentNode).find('span.ui-dialog-title:first')
+        .append($('<span />').append(' using sampler handling "' + samplerHandling + '"'));
   };
 
   SplitMergeDialog.prototype.get_annotation_set = function(over) {

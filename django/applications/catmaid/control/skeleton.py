@@ -23,7 +23,8 @@ from rest_framework.decorators import api_view
 
 from catmaid.models import (Project, UserRole, Class, ClassInstance, Review,
         ClassInstanceClassInstance, Relation, Sampler, Treenode,
-        TreenodeConnector, SkeletonSummary, SamplerDomainEnd, SamplerInterval)
+        TreenodeConnector, SamplerDomain, SkeletonSummary, SamplerDomainEnd,
+        SamplerInterval, SamplerDomainType)
 from catmaid.objects import Skeleton, SkeletonGroup, \
         compartmentalize_skeletongroup_by_edgecount, \
         compartmentalize_skeletongroup_by_confidence
@@ -1023,7 +1024,7 @@ def split_skeleton(request, project_id=None):
         'z': treenode.location_z,
     }
 
-    if sampler_info['n_samplers'] > 0:
+    if sampler_info and sampler_info['n_samplers'] > 0:
         response['samplers'] = {
             'n_deleted_intervals': sampler_info['n_deleted_intervals'],
             'n_deleted_domains': sampler_info['n_deleted_domains'],
@@ -1045,86 +1046,92 @@ def prune_samplers(skeleton_id, graph, treenode_parent, treenode):
     samplers = Sampler.objects.prefetch_related('samplerdomain_set',
             'samplerdomain_set__samplerdomainend_set',
             'samplerdomain_set__samplerinterval_set').filter(skeleton_id=skeleton_id)
+    n_samplers = len(samplers)
+
+    # Return early if there are no samplers
+    if not n_samplers:
+        return None
+
     n_deleted_sampler_intervals = 0
     n_deleted_sampler_domains = 0
-    if len(samplers) > 0:
-        for sampler in samplers:
-            # Each sampler references the skeleton through domains and
-            # intervals. If the split off part intersects with the domain, the
-            # domain needs to be adjusted.
-            for domain in sampler.samplerdomain_set.all():
-                domain_ends = domain.samplerdomainend_set.all()
-                domain_end_map = dict(map(lambda de: (de.end_node_id, de.id), domain_ends))
-                domain_end_ids = domain_end_map.keys()
-                # Construct a graph for the domain and split it too.
-                domain_graph = nx.DiGraph()
-                create_subgraph(graph, domain_graph, domain.start_node_id, domain_ends)
 
-                # If the subgraph is empty, this domain doesn't intersect with
-                # the split off part. Therefore, this domain needs no update.
-                if domain_graph.size() == 0:
+    for sampler in samplers:
+        # Each sampler references the skeleton through domains and
+        # intervals. If the split off part intersects with the domain, the
+        # domain needs to be adjusted.
+        for domain in sampler.samplerdomain_set.all():
+            domain_ends = domain.samplerdomainend_set.all()
+            domain_end_map = dict(map(lambda de: (de.end_node_id, de.id), domain_ends))
+            domain_end_ids = domain_end_map.keys()
+            # Construct a graph for the domain and split it too.
+            domain_graph = nx.DiGraph()
+            create_subgraph(graph, domain_graph, domain.start_node_id, domain_ends)
+
+            # If the subgraph is empty, this domain doesn't intersect with
+            # the split off part. Therefore, this domain needs no update.
+            if domain_graph.size() == 0:
+                continue
+
+            new_sk_domain_nodes = set(nx.bfs_tree(domain_graph, treenode.id).nodes())
+
+            # At this point, we expect some intersecting domain nodes to be there.
+            if not new_sk_domain_nodes:
+                raise ValueError("Could not find any split-off domain nodes")
+
+            # Remove all explicit domain ends in split-off part. If the
+            # split off part leaves a branch, add a new domain end for it to
+            # remaining domain.
+            ends_to_remove = filter(lambda nid: nid in new_sk_domain_nodes, domain_end_ids)
+
+            if ends_to_remove:
+                domain_end_ids = list(map(lambda x: domain_end_map[x], ends_to_remove))
+                SamplerDomainEnd.objects.filter(domain_id__in=domain_end_ids).delete()
+
+            if treenode_parent.parent_id is not None and \
+                    len(domain_graph.successors(treenode_parent.parent_id)) > 1:
+                new_domain_end = SamplerDomainEnd.objects.create(
+                            domain=domain, end_node=treenode_parent)
+
+            # Delete domain intervals that intersect with split-off part
+            domain_intervals = domain.samplerinterval_set.all()
+            intervals_to_delete = []
+            for di in domain_intervals:
+                start_split_off = di.start_node_id in new_sk_domain_nodes
+                end_split_off = di.end_node_id in new_sk_domain_nodes
+                # If neither start or end of the interval are in split-off
+                # part, the interval can be ignored.
+                if not start_split_off and not end_split_off:
                     continue
-
-                new_sk_domain_nodes = set(nx.bfs_tree(domain_graph, treenode.id).nodes())
-
-                # At this point, we expect some intersecting domain nodes to be there.
-                if not new_sk_domain_nodes:
-                    raise ValueError("Could not find any split-off domain nodes")
-
-                # Remove all explicit domain ends in split-off part. If the
-                # split off part leaves a branch, add a new domain end for it to
-                # remaining domain.
-                ends_to_remove = filter(lambda nid: nid in new_sk_domain_nodes, domain_end_ids)
-
-                if ends_to_remove:
-                    domain_end_ids = list(map(lambda x: domain_end_map[x], ends_to_remove))
-                    SamplerDomainEnd.objects.filter(domain_id__in=domain_end_ids).delete()
-
-                if treenode_parent.parent_id is not None and \
-                        len(domain_graph.successors(treenode_parent.parent_id)) > 1:
-                    new_domain_end = SamplerDomainEnd.objects.create(
-                                domain=domain, end_node=treenode_parent)
-
-                # Delete domain intervals that intersect with split-off part
-                domain_intervals = domain.samplerinterval_set.all()
-                intervals_to_delete = []
-                for di in domain_intervals:
-                    start_split_off = di.start_node_id in new_sk_domain_nodes
-                    end_split_off = di.end_node_id in new_sk_domain_nodes
-                    # If neither start or end of the interval are in split-off
-                    # part, the interval can be ignored.
-                    if not start_split_off and not end_split_off:
-                        continue
-                    # If both start and end node are split off, the whole
-                    # interval can be removed, because the interval is
-                    # completely in the split off part.
-                    elif start_split_off and end_split_off:
+                # If both start and end node are split off, the whole
+                # interval can be removed, because the interval is
+                # completely in the split off part.
+                elif start_split_off and end_split_off:
+                    intervals_to_delete.append(di.id)
+                # If the start is not split off, but the end is, the
+                # interval crosses the split location and has to be
+                # adjusted. If this makes the start and end of the remaining
+                # part the same, the interval is deleted, too.
+                elif not start_split_off and end_split_off:
+                    if di.start_node_id == treenode_parent.id:
                         intervals_to_delete.append(di.id)
-                    # If the start is not split off, but the end is, the
-                    # interval crosses the split location and has to be
-                    # adjusted. If this makes the start and end of the remaining
-                    # part the same, the interval is deleted, too.
-                    elif not start_split_off and end_split_off:
-                        if di.start_node_id == treenode_parent.id:
-                            intervals_to_delete.append(di.id)
-                        else:
-                            di.end_node_id = treenode_parent.id
-                            di.save()
-                    # If the start is split off and the end is not, something is
-                    # wrong and we raise an error
                     else:
-                        raise ValueError("Unexpected interval: start is split "
-                                "off, end is not")
+                        di.end_node_id = treenode_parent.id
+                        di.save()
+                # If the start is split off and the end is not, something is
+                # wrong and we raise an error
+                else:
+                    raise ValueError("Unexpected interval: start is split "
+                            "off, end is not")
 
-                if intervals_to_delete:
-                    SamplerInterval.objects.filter(id__in=intervals_to_delete).delete()
-                    n_deleted_sampler_intervals += len(intervals_to_delete)
+            if intervals_to_delete:
+                SamplerInterval.objects.filter(id__in=intervals_to_delete).delete()
+                n_deleted_sampler_intervals += len(intervals_to_delete)
 
-                # If the domain doesn't have any intervals left after this, it
-                # can be removed as well.
-                if len(domain_intervals) == len(intervals_to_delete):
-                    domain.delete()
-                    ++n_deleted_sampler_domains
+            # If the domain doesn't have any intervals left after this, it
+            # can be removed as well.
+            if len(domain_intervals) == len(intervals_to_delete):
+                domain.delete()
+                ++n_deleted_sampler_domains
     return {
         'n_samplers': len(samplers),
         'n_deleted_domains': n_deleted_sampler_domains,
@@ -1858,9 +1865,10 @@ def join_skeleton(request, project_id=None):
         annotation_set = request.POST.get('annotation_set', None)
         if annotation_set:
             annotation_set = json.loads(annotation_set)
+        sampler_handling = request.POST.get('sampler_handling', None)
 
         join_info = _join_skeleton(request.user, from_treenode_id, to_treenode_id,
-                project_id, annotation_set)
+                project_id, annotation_set, sampler_handling)
 
         response_on_error = 'Could not log actions.'
 
@@ -1909,7 +1917,7 @@ def make_annotation_map(annotation_vs_user_id, neuron_id, cursor=None):
 
 
 def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
-        annotation_map):
+        annotation_map, sampler_handling=None):
     """ Take the IDs of two nodes, each belonging to a different skeleton, and
     make to_treenode be a child of from_treenode, and join the nodes of the
     skeleton of to_treenode into the skeleton of from_treenode, and delete the
@@ -1919,6 +1927,9 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
     reviews of the skeleton that changes ID are changed to refer to the new
     skeleton ID. If annotation_map is None, the resulting skeleton will have
     all annotations available on both skeletons combined.
+
+    If samplers link to one or both ot the input skeletons, a sampler handling
+    mode is required. Otherwise, the merge operation is canceled.
     """
     if from_treenode_id is None or to_treenode_id is None:
         raise Exception('Missing arguments to _join_skeleton')
@@ -1944,18 +1955,12 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         to_skid = to_treenode.skeleton_id
         to_neuron = _get_neuronname_from_skeletonid( project_id, to_skid )
 
-        # Make sure this skeleton is not used in a sampler
-        n_from_samplers = Sampler.objects.filter(skeleton_id=from_skid).count()
-        if n_from_samplers > 0:
-            raise Exception('Can\'t merge, skeleton {} is used in {} sampler(s)'.format(
-                    from_skid, n_from_samplers))
-        n_to_samplers = Sampler.objects.filter(skeleton_id=to_skid).count()
-        if n_to_samplers > 0:
-            raise Exception('Can\'t merge, skeleton {} is used in {} sampler(s)'.format(
-                    to_skid, n_to_samplers))
-
         if from_skid == to_skid:
             raise Exception('Cannot join treenodes of the same skeleton, this would introduce a loop.')
+
+        # If samplers reference this skeleton, make sure they are updated as well
+        sampler_info = _update_samplers_in_merge(project_id, user.id, from_skid, to_skid,
+                from_treenode.id, to_treenode.id, sampler_handling, "delete-samplers")
 
         # Make sure the user has permissions to edit both neurons
         can_edit_class_instance_or_fail(
@@ -2047,13 +2052,250 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
                 (to_skid, to_neuron['neuronname'], from_skid,
                         from_neuron['neuronname'], ', '.join(winning_map.keys())))
 
-        return {
+        response = {
             'from_skeleton_id': from_skid,
             'to_skeleton_id': to_skid
         }
 
+        if sampler_info and sampler_info['n_samplers'] > 0:
+            response['samplers'] = {
+                'n_deleted_intervals': sampler_info['n_deleted_intervals'],
+                'n_deleted_domains': sampler_info['n_deleted_domains'],
+                'n_added_domains': sampler_info['n_added_domains'],
+                'n_added_intervals': sampler_info['n_added_intervals'],
+            }
+
+        return response
+
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
+
+
+def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleton_id,
+        win_treenode_id, lose_treenode_id, win_sampler_handling,
+        lose_sampler_handling):
+    """Update the sampler configuration for the passed in skeletons under the
+    assumption that this is part of a merge operation.
+    """
+    samplers = Sampler.objects.prefetch_related('samplerdomain_set',
+            'samplerdomain_set__samplerdomainend_set',
+            'samplerdomain_set__samplerinterval_set').filter(
+                    skeleton_id__in=[win_skeleton_id, lose_skeleton_id])
+    n_samplers = len(samplers)
+
+    # If there are no samplers linked, return early
+    if not n_samplers:
+        return None
+
+    sampler_index = defaultdict(list)
+    for s in samplers:
+        sampler_index[s.skeleton_id].append(s)
+
+    known_win_sampler_handling_modes =("create-intervals", "branch",
+            "domain-end", "new-domain")
+    known_lose_sampler_handling_modes = ("delete-samplers",)
+    if win_sampler_handling not in known_win_sampler_handling_modes:
+        raise ValueError("Samplers in use on skeletons. Unknown "
+                "(winning) sampler handling mode: {}".format(win_sampler_handling))
+    if lose_sampler_handling not in known_lose_sampler_handling_modes:
+        raise ValueError("Samplers in use on skeletons. Unknown "
+                "(losing) sampler handling mode: {}".format(lose_sampler_handling))
+
+    n_deleted_intervals = 0
+    n_deleted_domains = 0
+    n_added_intervals = 0
+    n_added_domains = 0
+    n_added_domain_ends = 0
+
+    # If there are samplers linked to the losing skeleton, delete them if
+    # allowed or complain otherwise.
+    n_samplers_lose = len(sampler_index[lose_skeleton_id])
+    if n_samplers_lose:
+        if lose_sampler_handling == "delete-samplers":
+            # Delete samplers that link to losing skeleton
+            Sampler.objects.filter(project_id=project_id,
+                    skeleton_id=lose_skeleton_id).delete()
+            # TODO Update n_deleted_*
+        else:
+            raise ValueError("The losing merge skeleton is referenced "
+                    "by {} sampler(s), merge aborted.".format(n_samplers_lose))
+
+    # Construct a networkx graph for the winning skeleton
+    cursor = connection.cursor()
+    cursor.execute('''
+        SELECT t.id, t.parent_id FROM treenode t WHERE t.skeleton_id = %s
+        ORDER BY t.id
+    ''', [win_skeleton_id])
+    # build the networkx graph from it
+    graph = nx.DiGraph()
+    for row in cursor.fetchall():
+        graph.add_node(row[0])
+        if row[1]:
+            # edge from parent_id to id
+            graph.add_edge(row[1], row[0])
+
+    cursor.execute('''
+        SELECT t.id, t.parent_id FROM treenode t WHERE t.skeleton_id = %s
+        ORDER BY t.id
+        ''', [lose_skeleton_id]) # no need to sanitize
+    # build the networkx graph from it
+    lose_graph = nx.DiGraph()
+    for row in cursor.fetchall():
+        lose_graph.add_node(row[0])
+        if row[1]:
+            # edge from parent_id to id
+            lose_graph.add_edge(row[1], row[0])
+
+    lose_graph_end_nodes = [x for x in lose_graph.nodes_iter()
+            if lose_graph.out_degree(x)==0 and lose_graph.in_degree(x)==1]
+
+    regular_domain_type = SamplerDomainType.objects.get(name='regular')
+
+    # Update each sampler
+    n_samplers_win = len(sampler_index[win_skeleton_id])
+    for sampler in sampler_index[win_skeleton_id]:
+        # Each sampler references the skeleton through domains and
+        # intervals. Action is only required if the merge is performed into an
+        # existing domain. Therefore, iterate over domains and check if the
+        # merge point is in them.
+        # TODO What happens when merge is into interval, but into a newly traced
+        # branch on that interval.
+        matching_domains = []
+        for domain in sampler.samplerdomain_set.all():
+            domain_ends = domain.samplerdomainend_set.all()
+            domain_end_map = dict(map(lambda de: (de.end_node_id, de.id), domain_ends))
+            domain_end_ids = domain_end_map.keys()
+            # Construct a graph for the domain and split it too.
+            domain_graph = nx.DiGraph()
+            create_subgraph(graph, domain_graph, domain.start_node_id, domain_ends)
+
+            # If the subgraph is empty, this domain doesn't intersect with
+            # the split off part. Therefore, this domain needs no update.
+            if domain_graph.size() == 0:
+                continue
+
+            if domain_graph.has_node(win_treenode_id):
+                matching_domains.append({
+                    'domain': domain,
+                    'graph': domain_graph,
+                })
+
+        if len(matching_domains) > 1:
+            raise ValueError("The merge point is part of multiple sampler "
+                    "domains in the same sampler, please pick one of the "
+                    "adjecent points.")
+
+        # If the merge point is not part of any domain in this sampler,
+        # continue. No update is needed here.
+        if len(matching_domains) == 0:
+            continue;
+
+
+        # We expect a single domain at the moment
+        domain_info = matching_domains[0]
+        domain = domain_info['domain']
+        domain_graph = domain_info['graph']
+
+        # Figure out some basic properties about the node
+        is_domain_start = win_treenode_id == domain.start_node_id
+        is_domain_end = win_treenode_id in domain_end_ids
+
+        # Check if the winning merge treenode is the start of an interval in
+        # this sampler.
+        cursor.execute("""
+            SELECT id
+            FROM catmaid_samplerinterval
+            WHERE project_id = %(project_id)s
+            AND domain_id= %(domain_id)s
+            AND (start_node_id = %(treenode_id)s
+                OR end_node_id = %(treenode_id)s)
+        """, {
+            'domain_id': domain.id,
+            'project_id': project_id,
+            'treenode_id': win_treenode_id,
+        })
+        start_end_intervals = cursor.fetchall()
+
+        is_interval_start_or_end = len(start_end_intervals) > 0
+        #is_in_interval = 
+        #is_in_traced_out_part = not is_domain_end
+
+
+
+
+        # For each domain in this sampler in which the winning merging treenode
+        # is contained, we need to update the
+        new_domain_ends = []
+        if win_sampler_handling == "create-intervals":
+            raise ValueError("Extending an existing sampler domain using a "
+                    "merge is not yet supported")
+        elif win_sampler_handling == "branch":
+            # Nothing needs to be done here if the winning merge node is not an
+            # interval start or end. If it is, an error is raised in this mode,
+            # because we don't treat interval start/end branches as part of the
+            # interval.
+            if is_interval_start_or_end:
+                raise ValueError("Please merge into an adjacent node, because "
+                        "the current target ({}) is a start or end of an interval".format(win_treenode_id))
+            else:
+                # It doesn't matter whether this fragment is merged into an
+                # interval or not.
+                pass
+        elif win_sampler_handling == "domain-end" or \
+                win_sampler_handling == "new-domain":
+            if is_domain_start:
+                # If we merge into a domain start and want to keep the domain
+                # integrity, we need to add a new end at the losing treenode.
+                new_domain_ends.append(lose_treenode_id)
+            elif is_domain_end:
+                # If we merge into a domain end and want to keep this the end,
+                # nothing has to be done. Regardless of whether it is a leaf or
+                # not.
+                pass
+            #elif is_in_interval:
+            #    new_domain_ends.append(lose_treenode_id)
+
+                #if is_in_traced_out_part:
+                    # A traced out fragment isn't part of the initial interval,
+                    # but has been added while tracing out the interval. To
+                    # maintain this as a part of this domain, we need to add
+                    # regular intervals on this branch (starting from the last
+                    # regular interval node and add the losing treenode as
+                    # domain end.
+                    # TODO
+                    #new_domain_ends.append(lose_treenode_id)
+            else:
+                # If we merge into the domain, but not into an interval, make
+                # sure the domain isn't extended here by adding a new domain end
+                # ad the merged in node.
+                new_domain_ends.append(lose_treenode_id)
+
+            if win_sampler_handling == "new-domain":
+                # Add new domain
+                new_domain = SamplerDomain.objects.create(project_id=project_id,
+                        user_id=user_id, sampler=sampler, start_node_id=lose_treenode_id,
+                        domain_type=regular_domain_type)
+                ++n_added_domains
+                for leaf in lose_graph_end_nodes:
+                    SamplerDomainEnd.objects.create(domain=new_domain,
+                            end_node_id=leaf)
+                    ++n_added_domain_ends
+
+        # Add new domain ends
+        for end_node in new_domain_ends:
+            SamplerDomainEnd.objects.create(domain=domain, end_node_id=end_node)
+            ++n_added_domain_ends
+
+    return {
+        'n_samplers': n_samplers_win + n_samplers_lose,
+        'n_samplers_win': n_samplers_win,
+        'n_samplers_lose': n_samplers_lose,
+        'n_deleted_intervals': n_deleted_intervals,
+        'n_deleted_domains': n_deleted_domains,
+        'n_added_intervals': n_added_intervals,
+        'n_added_domains': n_added_domains,
+        'n_added_domain_ends': n_added_domain_ends,
+    }
 
 
 @api_view(['POST'])

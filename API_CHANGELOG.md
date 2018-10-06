@@ -18,7 +18,11 @@ included in this changelog.
   Return a CSV file containing the connectivity matrix for the passed in `rows`
   and `columns`.
 
-- `POST /{project_id}/skeletons/{skeleton_id}/sampler-count`:
+- `POST /{project_id}/skeletons/sampler-count`:
+  Return the number of samplers linked to each skeleton in the passed in
+  `skeleton_ids` list.
+
+- `GET /{project_id}/skeletons/{skeleton_id}/sampler-count`:
   Return the number of samplers linked to this skeleton.
 
 - `GET /{project_id}/labels/detail`:

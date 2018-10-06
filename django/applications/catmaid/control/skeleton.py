@@ -531,7 +531,7 @@ def sampler_count(request, project_id=None, skeleton_id=None):
         paramType: path
         required: true
       - name: skeleton_id
-        description: IDs of the skeleton to get the sampler count for.
+        description: ID of the skeleton to get the sampler count for.
         required: true
         type: integer
         paramType: path
@@ -540,6 +540,47 @@ def sampler_count(request, project_id=None, skeleton_id=None):
     return JsonResponse({
         'n_samplers': Sampler.objects.filter(project_id=project_id, skeleton_id=skeleton_id).count(),
     })
+
+@api_view(['POST'])
+@requires_user_role(UserRole.Browse)
+def list_sampler_count(request, project_id=None):
+    """Get the number of samplers associated with each skeleton in the passed in
+    last.
+    ---
+    parameters:
+      - name: project_id
+        description: Project of skeleton
+        type: integer
+        paramType: path
+        required: true
+      - name: skeleton_ids
+        description: IDs of the skeleton to get the sampler count for.
+        required: true
+        type: array
+        items:
+          type: integer
+        paramType: path
+    """
+    p = get_object_or_404(Project, pk=project_id)
+    skeleton_ids = get_request_list(request.POST, 'skeleton_ids', map_fn=int)
+    if not skeleton_ids:
+        raise ValueError("Need at least one skeleton ID")
+
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT skeleton.id, count(cs.skeleton_id)
+        FROM UNNEST(%(skeleton_ids)s::bigint[]) skeleton(id)
+        LEFT JOIN catmaid_sampler cs
+            ON cs.skeleton_id = skeleton.id
+        WHERE project_id = %(project_id)s OR cs.skeleton_id IS NULL
+        GROUP BY skeleton.id
+    """, {
+        'project_id': p.id,
+        'skeleton_ids': skeleton_ids,
+    })
+
+    return JsonResponse(dict(cursor.fetchall()))
+
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)

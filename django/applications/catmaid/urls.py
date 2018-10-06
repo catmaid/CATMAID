@@ -287,6 +287,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/skeleton/ancestry$', skeleton.skeleton_ancestry),
     url(r'^(?P<project_id>\d+)/skeleton/join$', record_view("skeletons.merge")(skeleton.join_skeleton)),
     url(r'^(?P<project_id>\d+)/skeleton/reroot$', record_view("skeletons.reroot")(skeleton.reroot_skeleton)),
+    url(r'^(?P<project_id>\d+)/skeletons/sampler-count$', skeleton.list_sampler_count),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/permissions$', skeleton.get_skeleton_permissions),
     url(r'^(?P<project_id>\d+)/skeletons/import$', record_view("skeletons.import")(skeleton.import_skeleton)),
     url(r'^(?P<project_id>\d+)/skeleton/annotationlist$', skeleton.annotation_list),

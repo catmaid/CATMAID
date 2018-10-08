@@ -16,4 +16,5 @@ Administrator Documentation
    docker
    userprofiles
    additional_backends
+   nblast
    admin_faq

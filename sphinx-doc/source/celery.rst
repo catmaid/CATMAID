@@ -64,18 +64,26 @@ This also enables a web-interface will be available on port ``15672``. The
 default user and password combination is guest/guest. Of course it is advisable
 to change these login credentials.
 
-This should be all to have RabbitMQ running. Next, Celery will be configured to
-talk to it.
+This should be all to have RabbitMQ running. Next, we need to add a user and
+virtual host on the RabbmitMQ server, which adds to security and makes it easier
+to run multiple isolated Celery servers with a single RabbmitMQ instance::
+
+   sudo rabbitmqctl add_user catmaid_user catmaid_pass
+   sudo rabbitmqctl add_vhost catmaid
+   sudo rabbitmqctl set_permissions -p catmaid catmaid_user ".*" ".*" ".*"
+
+Now we can configure Celery to talk to this message broker.
 
 Celery configuration
 --------------------
 
 The configuration of celery and the message broker happens in the
 ``settings.py`` file. To tell Celery where to expect which broker, the
-``CELERY_BROKER_URL`` is used. If the default RabbitMQ credentials and port were not
-changed, there is no need to set this manually. It is by default set to::
+``CELERY_BROKER_URL`` is used. If the default RabbitMQ port was not changed
+(5672) and together with the previously created user and virtual host, the
+broker URL looks like this::
 
-  CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672/'
+  CELERY_BROKER_URL = 'amqp://catmaid_user:catmaid_pass@localhost:5672/catmaid'
 
 If the defaults don't work for you, you can read more about the format
 `here <http://docs.celeryproject.org/en/latest/userguide/configuration.html#std:setting-broker_url>`_.

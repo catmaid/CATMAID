@@ -1088,6 +1088,7 @@ def prune_samplers(skeleton_id, graph, treenode_parent, treenode):
                 SamplerDomainEnd.objects.filter(domain_id__in=domain_end_ids).delete()
 
             if treenode_parent.parent_id is not None and \
+                    domain_graph.has_node(treenode_parent.parent_id) and \
                     len(domain_graph.successors(treenode_parent.parent_id)) > 1:
                 new_domain_end = SamplerDomainEnd.objects.create(
                             domain=domain, end_node=treenode_parent)

@@ -1310,7 +1310,7 @@
     var ul = document.createElement('ul');
     container.appendChild(ul);
     return titles.reduce(function(o, name) {
-      var id = name.replace(/ /, '') + widgetId;
+      var id = name.replace(/ /g, '') + widgetId;
       ul.appendChild($('<li><a href="#' + id + '">' + name + '</a></li>')[0]);
       var div = document.createElement('div');
       div.setAttribute('id', id);

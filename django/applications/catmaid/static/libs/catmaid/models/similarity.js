@@ -104,7 +104,7 @@
    */
   Similarity.computeSimilarity = function(projectId, configId, queryIds,
       targetIds, queryType, targetType, name) {
-    return CATMAID.fetch(projectId + '/queries/similarity', 'POST', {
+    return CATMAID.fetch(projectId + '/similarity/queries/similarity', 'POST', {
       'query_ids': queryIds,
       'target_ids': targetIds,
       'query_type_id': queryType,

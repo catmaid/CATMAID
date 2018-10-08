@@ -317,7 +317,6 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/neuroglancer$', skeletonexport.neuroglancer_skeleton),
     url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/node-overview$', skeletonexport.treenode_overview),
     url(r'^(?P<project_id>\d+)/skeletons/compact-detail$', skeletonexport.compact_skeleton_detail_many),
-    url(r'^(?P<project_id>\d+)/skeletons/similarity$', similarity.compare_skeletons),
     # Marked as deprecated, but kept for backwards compatibility
     url(r'^(?P<project_id>\d+)/(?P<skeleton_id>\d+)/(?P<with_connectors>\d)/(?P<with_tags>\d)/compact-skeleton$', skeletonexport.compact_skeleton),
 ]
@@ -339,6 +338,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/similarity/configs/(?P<config_id>\d+)/$', similarity.ConfigurationDetail.as_view()),
     url(r'^(?P<project_id>\d+)/similarity/configs/(?P<config_id>\d+)/recompute$', similarity.recompute_config),
     url(r'^(?P<project_id>\d+)/similarity/queries/$', similarity.SimilarityList.as_view()),
+    url(r'^(?P<project_id>\d+)/similarity/queries/similarity$', similarity.compare_skeletons),
     url(r'^(?P<project_id>\d+)/similarity/queries/(?P<similarity_id>\d+)/$', similarity.SimilarityDetail.as_view()),
     url(r'^(?P<project_id>\d+)/similarity/queries/(?P<similarity_id>\d+)/recompute$', similarity.recompute_similarity),
     url(r'^(?P<project_id>\d+)/similarity/test-setup$', similarity.test_setup),

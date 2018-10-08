@@ -1862,14 +1862,14 @@
 
       let collectEntries = function(target, element, i) {
         if (element >= 0) {
-          target.push([getTargetName(similarity.target_objects[i]), element]);
+          target.push([similarity.target_objects[i], getTargetName(similarity.target_objects[i]), element]);
         }
         return target;
       };
 
       let compareEntriesDesc = function(a, b) {
-        if (a[1] > b[1]) return -1;
-        if (a[1] < b[1]) return 1;
+        if (a[2] > b[1]) return -1;
+        if (a[2] < b[1]) return 1;
         return 0;
       };
 
@@ -1897,7 +1897,7 @@
               let elements = ['<span class="result-list">'];
               for (let i=0; i<nTop10Elements; ++i) {
                 let entry = row[1][i];
-                elements.push(`<span class="result-element"><span>${i+1}.</span><a href="#" data-skeleton-id="${entry[0]}" data-role="select-skeleton">${entry[0]}</a> (${entry[1]})</span>`);
+                elements.push(`<span class="result-element"><span>${i+1}.</span><a href="#" data-skeleton-id="${entry[0]}" data-role="select-skeleton">${entry[1]}</a> (${entry[2]})</span>`);
               }
               elements.push('</span>');
               return elements.join('');

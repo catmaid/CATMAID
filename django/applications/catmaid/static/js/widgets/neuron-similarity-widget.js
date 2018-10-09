@@ -23,8 +23,11 @@
     // window).
     this.resultMode = 'window';
 
+    // A currently displayed import job in the point cloud tab.
+    this.importJob = null;
+
     this.mode = 'similarity';
-    this.modes = ['similarity', 'configrations', 'pointclouds'];
+    this.modes = ['similarity', 'configrations', 'pointclouds', 'pointcloud-import'];
 
     this.neuronNameService = CATMAID.NeuronNameService.getInstance();
 
@@ -1232,6 +1235,9 @@
               .find('.files-loaded')
               .removeClass('files-loaded');
 
+            widget.importJob = null;
+            widget.refresh();
+
             CATMAID.msg("Success", "Point cloud form reset");
           }
         }, {
@@ -1348,62 +1354,11 @@
               return;
             }
             let self = this;
-            CATMAID.parseCSVFile(e.target.files[0], ',', csvLineSkip ? 1 : 0)
-              .then(function(transformationData) {
-                if (!transformationData || transformationData.length === 0) {
-                  throw new CATMAID.ValueError("Could not find any transformation data");
-                }
-                let nColumns = transformationData[0].length;
-                if (nColumns !== 9 && nColumns !== 15) {
-                  throw new CATMAID.ValueError("Expected 9 or 15 columns, found " + nColumns);
-                }
-                let hasMirrorData = nColumns === 15;
 
-                pointMatches = [];
-
-                if (hasMirrorData) {
-                  transformationData.forEach(function(p) {
-                    if (p.length !== nColumns) {
-                      return;
-                    }
-                    let name = p[0], sourceName = p[1], targetName = p[2],
-                        lSourceX = parseFloat(p[3]), lSourceY = parseFloat(p[4]), lSourceZ = parseFloat(p[5]),
-                        lTargetX = parseFloat(p[6]), lTargetY = parseFloat(p[7]), lTargetZ = parseFloat(p[8]),
-                        rSourceX = parseFloat(p[9]), rSourceY = parseFloat(p[10]), rSourceZ = parseFloat(p[11]),
-                        rTargetX = parseFloat(p[12]), rTargetY = parseFloat(p[13]), rTargetZ = parseFloat(p[14]);
-                    pointMatches.push({
-                      name: name,
-                      sourceName: sourceName,
-                      targetName: targetName,
-                      source: [lSourceX, lSourceY, lSourceZ],
-                      target: [lTargetX, lTargetY, lTargetZ],
-                    });
-                    pointMatches.push({
-                      name: name,
-                      sourceName: sourceName,
-                      targetName: targetName,
-                      source: [rSourceX, rSourceY, rSourceZ],
-                      target: [rTargetX, rTargetY, rTargetZ],
-                    });
-                  });
-                } else {
-                  transformationData.forEach(function(p) {
-                    if (p.length !== nColumns) {
-                      return;
-                    }
-                    let name = p[0], sourceName = p[1], targetName = p[2],
-                        sourceX = parseFloat(p[3]), sourceY = parseFloat(p[4]), sourceZ = parseFloat(p[5]),
-                        targetX = parseFloat(p[6]), targetY = parseFloat(p[7]), targetZ = parseFloat(p[8]);
-                    pointMatches.push({
-                      name: name,
-                      sourceName: sourceName,
-                      targetName: targetName,
-                      source: [sourceX, sourceY, sourceZ],
-                      target: [targetX, targetY, targetZ],
-                    });
-                  });
-                }
-
+            pointMatches = [];
+            CATMAID.NeuronSimilarityWidget.loadTransformationFile(e.target.files[0], csvLineSkip)
+              .then(function(loadedPointMatches) {
+                pointMatches = loadedPointMatches;
                 self.classList.add('files-loaded');
                 clickedButton.classList.add('files-loaded');
                 CATMAID.msg("Success", "Read " + pointMatches.length + " point matches");
@@ -1617,16 +1572,531 @@
         }
       }
     },
+    'pointcloud-import': {
+      /**
+       * Import a series of CSV files along with images and a shared
+       * transformation.
+       */
+      title: "Point cloud import",
+      createControls: function(widget) {
+        let newPointcloudFilter = '';
+        let newPointcloudSkipN = 0;
+        let newPointcloudName = '%f';
+        let newPointcloudDescription = '';
+        let csvLineSkip = true;
+        let pointMatches = null;
+        let images = null;
+        let swapZY = false;
+        let invertY = false;
+        let sample = true;
+        let sampleSize = 1000;
+        let csvFiles = [];
+        let imageFileSets = [];
+
+        let newPointcloudSection = document.createElement('span');
+        newPointcloudSection.classList.add('section-header');
+        newPointcloudSection.appendChild(document.createTextNode('New point clouds'));
+
+        // Group selection
+        let groupSelectWrapper = document.createElement('label');
+        groupSelectWrapper.appendChild(document.createTextNode('Restrict to group'));
+        groupSelectWrapper.setAttribute('title', 'A group that has permission to see this point cloud. It is hidden for everyone else. Only groups this user is member of are shown.');
+        let groupSelect = document.createElement('select');
+        groupSelect.setAttribute('id', widget.idPrefix + 'group-select');
+        groupSelectWrapper.appendChild(groupSelect);
+        let groupId = groupSelect.value && groupSelect.value.length > 0 ?
+            parseInt(groupSelect.value, 10) : null;
+        groupSelect.onchange = function(e) {
+          groupId = parseInt(e.target.value, 10);
+        };
+
+        // Add available groups to select
+        NeuronSimilarityWidget.updateGroupSelect(groupSelect)
+          .then(function() {
+            // Select first option by default.
+            if (groupSelect.options.length > 0 && !groupId && groupId !== 0) {
+              groupId = groupSelect.options[0].value;
+              groupSelect.value = groupId;
+            }
+          });
+
+        return [{
+          type: 'button',
+          label: 'Refresh',
+          onclick: widget.refresh.bind(widget),
+        }, {
+          type: 'button',
+          label: 'Reset',
+          onclick: function() {
+            self.importJob = null;
+            newPointcloudName = '%f';
+            newPointcloudFilter = '';
+            newPointcloudSkipN = 0;
+            newPointcloudDescription = '';
+            csvLineSkip = true;
+            pointMatches = null;
+            images = null;
+            // Reset UI
+            $('#neuron-similarity-new-import-pointcloud-name' + widget.widgetID)
+              .val('');
+            $('#neuron-similarity-new-import-pointcloud-description' + widget.widgetID)
+              .val('');
+            $('#neuron-similarity-new-import-pointcloud-header' + widget.widgetID)
+              .prop('checked', true);
+            $('#neuron-similarity-new-import-pointcloud-points' + widget.widgetID)
+              .val('');
+            $('#neuron-similarity-new-import-pointcloud-images' + widget.widgetID)
+              .val('');
+            $('#neuron-similarity-new-import-pointcloud-images' + widget.widgetID + ' + input[type=button]')
+              .val('Images');
+            $('#neuron-similarity-new-import-pointcloud-transformation' + widget.widgetID)
+              .val('');
+            $('#neuron-similarity-new-import-pointcloud-points' + widget.widgetID)
+              .closest('div')
+              .find('.files-loaded')
+              .removeClass('files-loaded');
+            $('#neuron-similarity-new-import-pointcloud-import' + widget.widgetID)
+              .attr('disabled', 'disabled');
+
+            CATMAID.msg("Success", "Point cloud form reset");
+          }
+        }, {
+          type: 'child',
+          element: newPointcloudSection,
+        }, {
+          type: 'text',
+          label: 'Path filter',
+          placeholder: 'Use \'/\' for RegEx',
+          title: 'An optional filter for loaded data',
+          id: 'neuron-similarity-new-import-pointcloud-filter' + widget.widgetID,
+          value: newPointcloudFilter,
+          length: 8,
+          onchange: function() {
+            newPointcloudFilter = this.value;
+          }
+        }, {
+          type: 'numeric',
+          label: 'Skip N',
+          title: 'An optional offset to the available files from where to start to import',
+          id: 'neuron-similarity-new-import-pointcloud-skip' + widget.widgetID,
+          value: newPointcloudSkipN,
+          length: 3,
+          onchange: function() {
+            let value = parseInt(this.value, 10);
+            if (value && !Number.isNaN(value)) {
+              newPointcloudSkipN = value;
+            }
+          }
+        }, {
+          type: 'text',
+          label: 'Name',
+          title: 'An optional name for this pointcloud. The placehoolder %f can be used for the file name without extension',
+          id: 'neuron-similarity-new-import-pointcloud-name' + widget.widgetID,
+          value: newPointcloudName,
+          length: 8,
+          onchange: function() {
+            newPointcloudName = this.value;
+          }
+        }, {
+          type: 'text',
+          label: 'Descr.',
+          title: 'An optional description of this pointcloud',
+          id: 'neuron-similarity-new-import-pointcloud-description' + widget.widgetID,
+          placeholder: '(optional)',
+          value: newPointcloudDescription,
+          length: 8,
+          onchange: function() {
+            newPointcloudDescription = this.value;
+          }
+        }, {
+          type: 'checkbox',
+          label: 'CSV header',
+          id: 'neuron-similarity-new-import-pointcloud-header' + widget.widgetID,
+          value: csvLineSkip,
+          onclick: function() {
+            csvLineSkip = this.checked;
+          },
+        }, {
+          type: 'checkbox',
+          label: 'Swap Y/Z',
+          id: 'neuron-similarity-new-import-pointcloud-swap-yz' + widget.widgetID,
+          value: swapZY,
+          onclick: function() {
+            swapZY = this.checked;
+          },
+        }, {
+          type: 'checkbox',
+          label: 'Invert Y',
+          id: 'neuron-similarity-new-import-pointcloud-invert-y' + widget.widgetID,
+          value: invertY,
+          onclick: function() {
+            invertY = this.checked;
+          },
+        }, {
+          type: 'checkbox',
+          label: 'Resample (nm)',
+          value: sample,
+          onclick: function() {
+            sample = this.checked;
+            let sampleSizeInput = document.getElementById(
+                'neuron-similarity-sample-size' + widget.widgetID);
+            if (sampleSizeInput) {
+              sampleSizeInput.disabled = !this.checked;
+            }
+          },
+        }, {
+          type: 'numeric',
+          id: 'neuron-similarity-sample-size' + widget.widgetID,
+          min: 0,
+          length: 4,
+          value: sampleSize,
+          disabled: !sample,
+          onchange: function() {
+            let val = parseFloat(this.value);
+            if (val !== undefined && !Number.isNaN(val)) {
+              sampleSize = val;
+            }
+          },
+        }, {
+          type: 'folder',
+          label: 'Point CSV folder',
+          title: 'Set a folder containing CSV file that contains each point of this pointcloud. Each row should have the x, y and z values.',
+          id: 'neuron-similarity-new-import-pointcloud-points' + widget.widgetID,
+          multiple: false,
+          onclick: function(e, clickedButton) {
+            // Try loading point CSV file
+            if (e.target.files.length == 0) {
+              CATMAID.warn("No files found in folder");
+              return;
+            }
+            csvFiles = Array.from(e.target.files);
+            this.classList.add('files-loaded');
+            clickedButton.classList.add('files-loaded');
+            CATMAID.msg("Success", "Found " + e.target.files.length + " files in the selected folder");
+          }
+        }, {
+          type: 'file',
+          label: 'Transformation CSV',
+          title: 'A CSV file that contains an optional set of point matches that is used to build a transformation that is applied to the input points.',
+          id: 'neuron-similarity-new-import-pointcloud-transformation' + widget.widgetID,
+          multiple: false,
+          onclick: function(e, clickedButton) {
+            // Try loading point CSV file
+            if (e.target.files.length !== 1) {
+              CATMAID.warn("Please select a single transformation CSV file");
+              return;
+            }
+            let self = this;
+            pointMatches = [];
+            CATMAID.NeuronSimilarityWidget.loadTransformationFile(e.target.files[0], csvLineSkip)
+              .then(function(loadedPointMatches) {
+                pointMatches = loadedPointMatches;
+                self.classList.add('files-loaded');
+                clickedButton.classList.add('files-loaded');
+                CATMAID.msg("Success", "Read " + pointMatches.length + " point matches");
+              })
+              .catch(CATMAID.handleError);
+          }
+        }, {
+          type: 'folder',
+          label: 'Image folders',
+          title: 'An optional set of folders that contain image files that represent individual  pointclouds',
+          id: 'neuron-similarity-new-import-pointcloud-images' + widget.widgetID,
+          multiple: false,
+          onclick: function(e, clickedButton) {
+            let imageFiles = Array.from(e.target.files);
+            // Try loading point CSV file
+            if (imageFiles.length === 0) {
+              CATMAID.warn("Could not find any file in the selected image folder");
+              return;
+            }
+            let self = this;
+            // Ask user for description for each image
+            let dialog = new CATMAID.OptionsDialog("Image description");
+            dialog.appendMessage("Please add a description for images from " +
+                "this folder. You can use the placeholer %f to reference the " +
+                "filename of an actual file (e.g. \"Skeleton projection %f\")");
+            let description = dialog.appendField("Description", undefined, "", true);
+            dialog.onOK = function() {
+              imageFileSets.push({
+                description: description.value,
+                files: imageFiles,
+              });
+              self.classList.add('files-loaded');
+              clickedButton.classList.add('files-loaded');
+              clickedButton.value = "Images folders (" + imageFileSets.length + ")";
+              CATMAID.msg("Success", "Image folder added");
+            };
+            dialog.show(500, "auto", true);
+          }
+        }, {
+          type: 'child',
+          element: groupSelectWrapper,
+        }, {
+          type: 'button',
+          label: 'Load point clouds',
+          onclick: function() {
+            if (!newPointcloudName) {
+              CATMAID.warn("Need a point cloud name");
+              return;
+            }
+            if (!csvFiles || csvFiles.length === 0) {
+              CATMAID.warn("No CSV file folder selected");
+              return;
+            }
+            let effectiveGroupId = (groupId & groupId !== 'none') ?
+                groupId : undefined;
+            let effectiveSampleSize = (sample && sampleSize) ?
+                sampleSize : undefined;
+
+            NeuronSimilarityWidget.loadPointcloudsFromFiles(newPointcloudName, newPointcloudDescription,
+                csvFiles, pointMatches, imageFileSets, swapZY, invertY, effectiveGroupId,
+                effectiveSampleSize, newPointcloudFilter, newPointcloudSkipN)
+              .then(function(importJob) {
+                widget.importJob = importJob;
+                widget.refresh();
+                CATMAID.msg("Success", "Point clouds loaded");
+              })
+              .catch(CATMAID.handleError);
+          },
+        }, {
+          type: 'button',
+          label: 'Import point clouds',
+          disabled: true,
+          id: 'neuron-similarity-new-import-pointcloud-import' + widget.widgetID,
+          onclick: function() {
+            // Requires all fields to be set.
+            if (widget.importJob) {
+              widget.runQueuedPointcloudImport(widget.importJob);
+            } else {
+              CATMAID.warn("No data to import");
+            }
+          },
+        }];
+      },
+      createContent: function(content, widget) {
+        // Add a datatable, but hide it if no import job is created.
+        let container = content.appendChild(document.createElement('div'));
+        container.classList.add('container');
+        container.style.display = widget.importJob ? 'block' : 'none';
+        let p = container.appendChild(document.createElement('p'));
+        p.classList.add('info-text');
+        p.appendChild(document.createTextNode('This is an overview on the ' +
+            'current import task. If everything looks like expected, the ' +
+            'import can be started using the "Import point clouds" button above.'));
+        let table = container.appendChild(document.createElement('table'));
+        table.setAttribute('id', widget.idPrefix + 'pointcloud-import-table');
+        let datatable = $(table).DataTable({
+          dom: 'lfrtip',
+          autoWidth: false,
+          paging: true,
+          lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+          ajax: function(data, callback, settings) {
+            let importData = widget.importJob ? Array.from(widget.importJob.pointClouds.values()) : [];
+            callback({
+              draw: data.draw,
+              data: importData,
+              recordsTotal: importData.length,
+              recordsFiltered: importData.length,
+            });
+          },
+          order: [[0, 'desc']],
+          columns: [{
+            data: 'name',
+            title: 'Name',
+            orderable: true,
+          }, {
+            data: 'file.name',
+            title: 'File name',
+            orderable: true,
+          }, {
+            data: 'path',
+            title: 'Images',
+            orderable: false,
+            render: function(data, type, row, meta) {
+              return '<a href="#" data-role="show-images">' + row.images.length + ' images</a>';
+            },
+          }],
+        });
+      },
+      refresh: function(widget) {
+        let table = document.getElementById(widget.idPrefix + 'pointcloud-import-table');
+        if (table) {
+          $(table).DataTable().ajax.reload();
+        }
+        let container = table.closest('div.container');
+        if (container) {
+          container.style.display = widget.importJob ? 'block' : 'none';
+        }
+        let importButton = document.getElementById('neuron-similarity-new-import-pointcloud-import' + widget.widgetID);
+        if (importButton) {
+          if (widget.importJob) {
+            importButton.removeAttribute('disabled');
+          } else {
+            importButton.setAttribute('disabled', 'disabled');
+          }
+        }
+      },
+    },
   };
 
   function hasThreeElements(l) {
     return l.length === 3;
   }
 
-  NeuronSimilarityWidget.parsePointCSVFile = function(file, skipHeader) {
-    return Promise(function(resolve, reject) {
+  function makeRegularFilter(filter) {
+    return function(value) {
+      return value.indexOf(filter) !== -1;
+    };
+  }
 
+  function makeRegExFilter(filter) {
+    let re = new RegExp(filter);
+    return function(value) {
+      return re.test(value);
+    };
+  }
+
+  /**
+   * Try to load all CSV files and match them to the respective image files by
+   * name.
+   */
+  NeuronSimilarityWidget.loadPointcloudsFromFiles = function(newPointcloudName,
+      newPointcloudDescription, csvFiles, pointMatches, imageFileSets, swapZY,
+      invertY, effectiveGroupId, effectiveSampleSize, newPointcloudFilter,
+      newPointcloudSkipN) {
+    newPointcloudSkipN = newPointcloudSkipN || 0;
+    return new Promise(function(resolve, reject) {
+      let csvFileWorkingSet = Array.from(csvFiles);
+      let filter;
+      if (newPointcloudFilter && newPointcloudFilter.length > 0) {
+        // Treat filter as regex search if it stats with '/'.
+        if (newPointcloudFilter[0] === '/') {
+          filter = makeRegExFilter(newPointcloudFilter.substr(1));
+        } else {
+          filter = makeRegularFilter(newPointcloudFilter);
+        }
+      } else {
+        filter = function() { return true; };
+      }
+
+      // Compute name matches and list imports in table
+      let pointclouds = csvFiles.reduce(function(m, f, i) {
+        if (i < newPointcloudSkipN) {
+          return m;
+        }
+        let filename = CATMAID.tools.extractFileNameNoExt(f.name);
+        if (!filter(filename)) {
+          return m;
+        }
+        m.set(filename, {
+          'file': f,
+          'filename': filename,
+          'name': newPointcloudName.replace(/%f/g, filename) || filename,
+          'description': newPointcloudDescription.replace(/%f/g, filename) || '',
+          'images': [],
+        });
+        return m;
+      }, new Map());
+
+      // Iterate over images and match them with CSV files.
+      if (imageFileSets) {
+        imageFileSets.forEach(function(ifs) {
+          let description = ifs.description;
+          let nIgnoredFiles = 0;
+          for (let i=0; i<ifs.files.length; ++i) {
+            let file = ifs.files[i];
+            let filename = CATMAID.tools.extractFileNameNoExt(file.name);
+            let pointcloud = pointclouds.get(filename);
+            if (!pointcloud) {
+              console.log('Filtering file: ' + file.name);
+              ++nIgnoredFiles;
+              continue;
+            }
+            pointcloud.images.push({
+              'file': file,
+              'description': description.replace(/%f/g, filename),
+              'name': file.name,
+            });
+          }
+        });
+      }
+
+      // Store a copy of the current import target.
+      resolve({
+        pointClouds: pointclouds,
+        pointMatches: pointMatches,
+        swapZY: swapZY,
+        invertY: invertY,
+        effectiveGroupId: effectiveGroupId,
+        effectiveSampleSize: effectiveSampleSize,
+      });
     });
+  };
+
+  /**
+   * This imports a set of CSV files along with images.
+   */
+  NeuronSimilarityWidget.prototype.runQueuedPointcloudImport = function(importJob) {
+    let self = this;
+    let csvFiles = Array.from(importJob.pointClouds.keys());
+    let successfulImports = 0;
+    let errors = [];
+
+    if (!csvFiles || csvFiles.length === 0) {
+      CATMAID.warn("No files to import");
+      return;
+    }
+
+    function parseCSVFile(pointCloudInfo) {
+      return CATMAID.parseCSVFile(pointCloudInfo.file, ',',
+          importJob.csvLineSkip ? 1 : 0, hasThreeElements)
+        .then(function(parsedPointData) {
+          parsedPointData.forEach(function(p) {
+            p[0] = parseFloat(p[0]);
+            p[1] = parseFloat(p[1]);
+            p[2] = parseFloat(p[2]);
+          });
+
+          return self.addPointCloud(pointCloudInfo.name, pointCloudInfo.description,
+              parsedPointData, importJob.pointMatches, pointCloudInfo.images,
+              importJob.swapZY, importJob.invertY, importJob.effectiveGroupId,
+              importJob.effectiveSampleSize);
+        });
+    }
+
+    function parseFiles() {
+      let pointCloudName = csvFiles.pop();
+      if (pointCloudName) {
+        let csvFile = importJob.pointClouds.get(pointCloudName);
+        return parseCSVFile(csvFile)
+          .then(function(pointCloud) {
+            ++successfulImports;
+            CATMAID.msg("Success", "Point cloud " + pointCloud.name +
+                " imported (ID: " + pointCloud.id + ")");
+            return parseFiles();
+          })
+          .catch(function(e) {
+            errors.push({
+              'error': e,
+              'fileDescription': csvFile,
+            });
+            return parseFiles();
+          });
+      }
+      return Promise.resolve();
+    }
+
+    parseFiles()
+      .then(function() {
+        if (successfulImports === 0) {
+          CATMAID.msg("No successful imports", "No file imported");
+        } else {
+          CATMAID.msg("Success", "Imported " + successfulImports + '/' +
+              importJob.pointClouds.size + " files successfully");
+        }
+      })
+      .catch(CATMAID.handleError);
   };
 
   /**
@@ -2072,6 +2542,67 @@
         }
       })
       .catch(CATMAID.handleError);
+  };
+
+  NeuronSimilarityWidget.loadTransformationFile = function(file, csvLineSkip) {
+    return CATMAID.parseCSVFile(file, ',', csvLineSkip ? 1 : 0)
+      .then(function(transformationData) {
+        if (!transformationData || transformationData.length === 0) {
+          throw new CATMAID.ValueError("Could not find any transformation data");
+        }
+        let nColumns = transformationData[0].length;
+        if (nColumns !== 9 && nColumns !== 15) {
+          throw new CATMAID.ValueError("Expected 9 or 15 columns, found " + nColumns);
+        }
+        let hasMirrorData = nColumns === 15;
+
+        let pointMatches = [];
+
+        if (hasMirrorData) {
+          transformationData.forEach(function(p) {
+            if (p.length !== nColumns) {
+              return;
+            }
+            let name = p[0], sourceName = p[1], targetName = p[2],
+                lSourceX = parseFloat(p[3]), lSourceY = parseFloat(p[4]), lSourceZ = parseFloat(p[5]),
+                lTargetX = parseFloat(p[6]), lTargetY = parseFloat(p[7]), lTargetZ = parseFloat(p[8]),
+                rSourceX = parseFloat(p[9]), rSourceY = parseFloat(p[10]), rSourceZ = parseFloat(p[11]),
+                rTargetX = parseFloat(p[12]), rTargetY = parseFloat(p[13]), rTargetZ = parseFloat(p[14]);
+            pointMatches.push({
+              name: name,
+              sourceName: sourceName,
+              targetName: targetName,
+              source: [lSourceX, lSourceY, lSourceZ],
+              target: [lTargetX, lTargetY, lTargetZ],
+            });
+            pointMatches.push({
+              name: name,
+              sourceName: sourceName,
+              targetName: targetName,
+              source: [rSourceX, rSourceY, rSourceZ],
+              target: [rTargetX, rTargetY, rTargetZ],
+            });
+          });
+        } else {
+          transformationData.forEach(function(p) {
+            if (p.length !== nColumns) {
+              return;
+            }
+            let name = p[0], sourceName = p[1], targetName = p[2],
+                sourceX = parseFloat(p[3]), sourceY = parseFloat(p[4]), sourceZ = parseFloat(p[5]),
+                targetX = parseFloat(p[6]), targetY = parseFloat(p[7]), targetZ = parseFloat(p[8]);
+            pointMatches.push({
+              name: name,
+              sourceName: sourceName,
+              targetName: targetName,
+              source: [sourceX, sourceY, sourceZ],
+              target: [targetX, targetY, targetZ],
+            });
+          });
+        }
+
+        return pointMatches;
+      });
   };
 
   function concatLine(line) {

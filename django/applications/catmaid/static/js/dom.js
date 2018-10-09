@@ -200,7 +200,7 @@
   /**
    * Create a file open button that can be optionally initialized hidden.
    */
-  DOM.createFileButton = function(id, visible, onchangeFn) {
+  DOM.createFileButton = function(id, visible, onchangeFn, multiple, selectFolders) {
     var fb = document.createElement('input');
     fb.setAttribute('type', 'file');
     if (id) {
@@ -209,6 +209,13 @@
     fb.setAttribute('name', 'files[]');
     if (!visible) {
       fb.style.display = 'none';
+    }
+    if (selectFolders) {
+      fb.setAttribute('webkitdirectory', 'webkitdirectory');
+      fb.setAttribute('multiple', 'multiple');
+    }
+    if (multiple) {
+      fb.setAttribute('multiple', 'multiple');
     }
     fb.onchange = function(event) {
       try {
@@ -233,10 +240,28 @@
         originalOnChange.call(this, event, open);
       };
     }
-    var fileButton = DOM.createFileButton(id, false, onchange);
-    if (multiple) {
-      fileButton.setAttribute('multiple', 'multiple');
+    var fileButton = DOM.createFileButton(id, false, onchange, true, false);
+    div.appendChild(fileButton);
+    open.setAttribute("type", "button");
+    open.setAttribute("value", label || "Open");
+    open.setAttribute("title", title);
+    open.onclick = function() { fileButton.click(); };
+    div.appendChild(open);
+
+    return open;
+  };
+
+  DOM.appendFolderButton = function(div, id, label, title, multiple, onchange) {
+    var open = document.createElement('input');
+    if (onchange) {
+      // Wrap onchange function to include a referenc to the actual button in
+      // the argument list.
+      let originalOnChange = onchange;
+      onchange = function(event) {
+        originalOnChange.call(this, event, open);
+      };
     }
+    var fileButton = DOM.createFileButton(id, false, onchange, true, true);
     div.appendChild(fileButton);
     open.setAttribute("type", "button");
     open.setAttribute("value", label || "Open");
@@ -1347,6 +1372,8 @@
         return CATMAID.DOM.appendSelect(target, e.relativeId, e.label, e.entries, e.title, e.value, e.onchange, e.id);
       case 'file':
         return CATMAID.DOM.appendFileButton(target, e.id, e.label, e.title, e.multiple, e.onclick);
+      case 'folder':
+        return CATMAID.DOM.appendFolderButton(target, e.id, e.label, e.title, e.multiple, e.onclick);
       default:
         return undefined;
     }

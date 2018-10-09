@@ -804,4 +804,15 @@ CATMAID.tools = CATMAID.tools || {};
     };
   };
 
+  /**
+   * Extract the filename of a path without the file extension.
+   */
+  tools.extractFileNameNoExt = function(path) {
+    let sep = CATMAID.tools.getOS() === 'WIN' ? '\\' : '/';
+    let start = path.lastIndexOf(sep) + 1;
+    let lastDotIdx = path.lastIndexOf('.');
+    let end = (lastDotIdx === -1 || lastDotIdx < start) ? undefined : lastDotIdx;
+    return path.substring(start, end);
+  };
+
 })(CATMAID.tools);

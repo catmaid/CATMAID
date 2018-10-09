@@ -182,4 +182,20 @@ QUnit.test('Utilities test', function( assert ) {
     assert.deepEqual(CATMAID.tools.getColor(0xff0000), new THREE.Color(1,0,0),
         "Colors can be created from hex values");
   })();
+
+  // Test extractFileName
+  (function() {
+    assert.strictEqual(CATMAID.tools.extractFileNameNoExt('/a/b/c.d'), 'c',
+        'CATMAID.tools.extractFileName() works');
+    assert.strictEqual(CATMAID.tools.extractFileNameNoExt('/abc.txt'), 'abc',
+        'CATMAID.tools.extractFileName() works');
+    assert.strictEqual(CATMAID.tools.extractFileNameNoExt('abc.txt'), 'abc',
+        'CATMAID.tools.extractFileName() works');
+    assert.strictEqual(CATMAID.tools.extractFileNameNoExt('/a/b/c.d.e'), 'c.d',
+        'CATMAID.tools.extractFileName() works');
+    assert.strictEqual(CATMAID.tools.extractFileNameNoExt('/abc.d.txt'), 'abc.d',
+        'CATMAID.tools.extractFileName() works');
+    assert.strictEqual(CATMAID.tools.extractFileNameNoExt('abc.d.txt'), 'abc.d',
+        'CATMAID.tools.extractFileName() works');
+  })();
 });

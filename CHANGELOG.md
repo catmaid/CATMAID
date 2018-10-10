@@ -111,6 +111,12 @@ Miscellaneous:
   colors and cable length values when to use it can be set for three colors in
   the Settings Widget in the "Skeleton length coloring" section.
 
+- The SWC exporter can now optionally mark a node as soma if it either is tagged
+  as "soma", if it has a radius larger than a defined value or if it is the root
+  node. All three conditions can be selected, and they will be applied in the
+  order they are listed above. If selected, a soma tagged node will always take
+  precedence.
+
 - There is small copy-to-clipboard button left to the "URL to the view" link in
   the upper right corner of the user interface.
 

@@ -324,6 +324,28 @@ annotations, neuron name, connectors or partner neurons.
         'linearize-ids', true,
         "Replace original node IDs with incremental IDs starting from one.");
 
+    dialog.appendMessage("Optionally, soma nodes can be marked in the exported " +
+        "SWC files. This can be done either by using soma tags, large nodes or " +
+        "root nodes. If multiple options are selected, they take precedence in " +
+        "this order.");
+
+    let somaTag = dialog.appendCheckbox('Mark "soma" tagged nodes as soma',
+        'soma-tag', true);
+    let somaRadius = dialog.appendCheckbox('Mark nodes larger than radius below as soma',
+        'soma-radius', false);
+    let somaRadiusVal = dialog.appendField('Soma radius', 'swc-export-soma-radius', 0, false);
+    somaRadiusVal.setAttribute('disabled', 'disabled');
+    let somaRoot = dialog.appendCheckbox('Mark root nodes as soma',
+        'soma-root', false);
+
+    somaRadius.onchange = function() {
+      if (this.checked) {
+        somaRadiusVal.removeAttribute('disabled');
+      } else {
+        somaRadiusVal.setAttribute('disabled', 'disabled');
+      }
+    };
+
     // Add handler for initiating the export
     dialog.onOK = function() {
       // Collected objects for all skeletons
@@ -337,8 +359,24 @@ annotations, neuron name, connectors or partner neurons.
         return;
       }
 
+      let somaMarkers = [];
+      if (somaTag.checked) {
+        somaMarkers.push('tag:soma');
+      }
+      if (somaRadius.checked) {
+        let radius = Number(somaRadiusVal.value);
+        if (radius && !Number.isNaN(radius)) {
+          somaMarkers.push('radius:' + radius);
+        } else {
+          throw new CATMAID.Warning("No valid radius");
+        }
+      }
+      if (somaRoot.checked) {
+        somaMarkers.push('root');
+      }
+
       CATMAID.Skeletons.exportSWC(project.id, skids,linearizeIds.checked,
-          createArchive.checked)
+          createArchive.checked, somaMarkers)
         .catch(CATMAID.handleError);
     };
 

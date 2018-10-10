@@ -70,11 +70,96 @@ def get_treenodes_qs(project_id=None, skeleton_id=None, with_labels=True):
     return treenode_qs, labels_qs, labelconnector_qs
 
 
-def get_swc_string(treenodes_qs, linearize_ids=False):
+def get_swc_string(project_id, skeleton_id, treenodes_qs, linearize_ids=False,
+        soma_markers=None):
+    """
+    Structure identifiers (www.neuromorpho.org):
+    0 - undefined
+    1 - soma
+    2 - axon
+    3 - (basal) dendrite
+    4 - apical dendrite
+    5+ - custom
+    """
+    # If there are soma tags asked for for soma marking, get them for the whole
+    # query set.
+    soma_node_id = None
+    if soma_markers:
+        radius_markers = list(filter(lambda x: x.startswith('radius:'),
+                soma_markers))
+        cursor = connection.cursor()
+        if 'tag:soma' in soma_markers:
+            # Get nodes tagges with soma
+            cursor.execute("""
+                SELECT DISTINCT t.id
+                FROM treenode_class_instance tci
+                JOIN class_instance ci
+                    ON ci.id = tci.class_instance_id
+                JOIN class c
+                    ON c.id = ci.class_id
+                JOIN relation r
+                    ON r.id = tci.relation_id
+                JOIN treenode t
+                    ON t.id = tci.treenode_id
+                WHERE c.project_id = %(project_id)s
+                    AND t.project_id = %(project_id)s
+                    AND t.skeleton_id = %(skeleton_id)s
+                    AND c.class_name = 'label'
+                    AND ci.name = 'soma'
+                    AND r.relation_name = 'labeled_as'
+            """, {
+                'project_id': project_id,
+                'skeleton_id': skeleton_id,
+            })
+
+            soma_nodes = cursor.fetchall()
+            if len(soma_nodes) > 1:
+                raise ValueError("More than one node found that is tagged " +
+                        "\"soma\" in skeleton {}".format(skeleton_id))
+            elif len(soma_nodes) == 1:
+                soma_node_id = soma_nodes[0][0]
+        elif radius_markers:
+            radius_marker_parts = radius_markers[0].split(':')
+            if len(radius_marker_parts) != 2:
+                raise ValueError("Unexpected radius marker format: " +
+                        radius_markers[0])
+            radius = float(radius_marker_parts[1])
+
+            cursor.execute("""
+                SELECT id
+                FROM treenode t
+                WHERE t.project_id = %(project_id)s
+                    AND t.skeleton_id = %(skeleton_id)s
+                    AND t.radius >= %(radius)s
+            """, {
+                'project_id': project_id,
+                'skeleton_id': skeleton_id,
+                'radius': radius,
+            })
+
+            soma_nodes = cursor.fetchall()
+            if len(soma_nodes) > 1:
+                raise ValueError("More than one node found with radius >= " +
+                        "{}nm in skeleton {}".format(radius, skeleton_id))
+            elif len(soma_nodes) == 1:
+                soma_node_id = soma_nodes[0][0]
+
     all_rows = []
     for tn in treenodes_qs:
+        struct_identifier = 0
+        if soma_markers:
+            found = False
+            if soma_node_id:
+                if tn.id == soma_node_id:
+                    struct_identifier = 1
+                    found = True
+            elif 'root' in soma_markers:
+                if tn.parent_id is None:
+                    struct_identifier = 1
+                    found = True
+
         swc_row = [tn.id]
-        swc_row.append(0)
+        swc_row.append(struct_identifier)
         swc_row.append(tn.location_x)
         swc_row.append(tn.location_y)
         swc_row.append(tn.location_z)
@@ -121,7 +206,9 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
 
     if format == 'swc':
         linearize_ids = get_request_bool(request.GET, 'linearize_ids', False)
-        return HttpResponse(get_swc_string(treenode_qs, linearize_ids), content_type='text/plain')
+        soma_markers = get_request_list(request.GET, 'soma_markers', [])
+        return HttpResponse(get_swc_string(project_id, skeleton_id, treenode_qs,
+                linearize_ids, soma_markers), content_type='text/plain')
     elif format == 'json':
         return JsonResponse(treenode_qs)
     else:

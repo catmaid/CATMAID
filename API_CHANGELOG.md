@@ -48,6 +48,12 @@ included in this changelog.
   passwords, which in turn can be imported into other CATMAID instances. This
   requires the requesting user to be a superuser.
 
+- `GET /{project_id}/skeleton/{skeleton_id}/swc`:
+  A new optional parameter `soma_markers` can be supplied. It is a list of
+  'tag:soma', 'radius:<n>' and 'root'. These are conditions for when a node is
+  marked as soma in the SWC export. The first matching condition in this order
+  wins.
+
 ### Deprecations
 
 None.

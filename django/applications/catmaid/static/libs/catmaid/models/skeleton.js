@@ -147,17 +147,23 @@
      * @param {number[]} skeletonIds  Skeletons to export as SWC
      * @param {boolean}  linearizeIds Whether node IDs should be mapped to
      *                                incremental numbers starting with 1.
+     * @param {string[]} somaMarkers (optional) A list of "root", "tag:soma",
+     *                               "radius:<n>" to specify that the exported
+     *                               SWC should mark somas and based on what
+     *                               criterion. Precedence as listed.
      *
      * @return A new promise that is resolved with the skeleton's SWC
      *         representation.
      */
-    getSWC: function(projectId, skeletonIds, linearizeIds) {
+    getSWC: function(projectId, skeletonIds, linearizeIds, somaMarkers) {
       if (!skeletonIds || !skeletonIds.length) {
         return Promise.reject("Need at least one skeleton ID");
       }
       var swcRequests = skeletonIds.map(function(skid) {
-        return CATMAID.fetch(projectId + '/skeleton/' + skid + '/swc', 'GET',
-          {'linearize_ids': !!linearizeIds}, true);
+        return CATMAID.fetch(projectId + '/skeleton/' + skid + '/swc', 'GET', {
+            'linearize_ids': !!linearizeIds,
+            'soma_markers': somaMarkers,
+        }, true);
       });
 
       return Promise.all(swcRequests);
@@ -171,12 +177,18 @@
      * @param {boolean}  linearizeIds Whether node IDs should be mapped to
      *                                incremental numbers starting with 1.
      * @param {boolean}  archive     Produce a ZIP archive containing all files
+     * @param {string[]} somaMarkers (optional) A list of "tag:soma",
+     *                               "radius:<n>" or "root" to specify that the
+     *                               exported SWC should mark somas and based on
+     *                               what criterion. Precedence as listed.
      *
      * @return A new promise that is resolved with the skeleton's SWC
      *         representation.
      */
-    exportSWC: function(projectId, skeletonIds, linearizeIds, archive) {
-      return CATMAID.Skeletons.getSWC(projectId, skeletonIds, linearizeIds)
+    exportSWC: function(projectId, skeletonIds, linearizeIds, archive,
+        somaMarkers) {
+      return CATMAID.Skeletons.getSWC(projectId, skeletonIds, linearizeIds,
+          somaMarkers)
         .then(function(swcData) {
           if (archive) {
             var zip = new JSZip();

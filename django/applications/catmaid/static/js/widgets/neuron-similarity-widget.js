@@ -632,9 +632,9 @@
                 if (row.query_type === 'skeleton') {
                   return '<em>Skeletons: </em><span title="' + qo.length + ' skeletons">' + text + '</span>';
                 } else if (row.query_type === 'pointcloud') {
-                  return '<em>Point clouds: </em>' + text;
+                  return '<em>Point clouds: </em><span title="' + qo.length + ' point clouds">' + text + '</span>';
                 } else {
-                  return '<em>Unknown type: </em>' + text;
+                  return '<em>Unknown type: </em><span title="' + qo.length + ' unknown objects">' + text + '</span>';
                 }
               }
             }, {
@@ -2040,7 +2040,9 @@
   NeuronSimilarityWidget.prototype.runQueuedPointcloudImport = function(importJob) {
     let self = this;
     let csvFiles = Array.from(importJob.pointClouds.keys());
+    let nTotalImports = importJob.pointClouds.size;
     let successfulImports = 0;
+    let attemptedImports = 0;
     let errors = [];
 
     if (!csvFiles || csvFiles.length === 0) {
@@ -2072,11 +2074,14 @@
         return parseCSVFile(csvFile)
           .then(function(pointCloud) {
             ++successfulImports;
+            ++attemptedImports;
             CATMAID.msg("Success", "Point cloud " + pointCloud.name +
-                " imported (ID: " + pointCloud.id + ")");
+                " imported (ID: " + pointCloud.id + ") - " +
+                attemptedImports + '/' + nTotalImports);
             return parseFiles();
           })
           .catch(function(e) {
+            ++attemptedImports;
             errors.push({
               'error': e,
               'fileDescription': csvFile,
@@ -2093,7 +2098,7 @@
           CATMAID.msg("No successful imports", "No file imported");
         } else {
           CATMAID.msg("Success", "Imported " + successfulImports + '/' +
-              importJob.pointClouds.size + " files successfully");
+              nTotalImports + " files successfully");
         }
       })
       .catch(CATMAID.handleError);

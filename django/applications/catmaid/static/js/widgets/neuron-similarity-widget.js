@@ -626,15 +626,15 @@
               render: function(data, type, row, meta) {
                 let qo = row.query_objects;
                 let allBins = qo.join(', ');
+                let text = (qo && qo.length > 4) ?
+                    (qo[0] + ', ' +  qo[1] +  ' … ' + qo[qo.length - 2] + ', ' + qo[qo.length - 1]) :
+                    allBins;
                 if (row.query_type === 'skeleton') {
-                  let text = (qo && qo.length > 4) ?
-                      (qo[0] + ', ' +  qo[1] +  ' … ' + qo[qo.length - 2] + ', ' + qo[qo.length - 1]) :
-                      allBins;
                   return '<em>Skeletons: </em><span title="' + qo.length + ' skeletons">' + text + '</span>';
                 } else if (row.query_type === 'pointcloud') {
-                  return '<em>Point clouds: </em>' + allBins;
+                  return '<em>Point clouds: </em>' + text;
                 } else {
-                  return '<em>Unknown type: </em>' + allBins;
+                  return '<em>Unknown type: </em>' + text;
                 }
               }
             }, {

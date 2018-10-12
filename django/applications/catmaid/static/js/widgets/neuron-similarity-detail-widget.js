@@ -255,7 +255,7 @@
     }
 
     let collectEntries = function(target, element, i) {
-      if (element >= 0) {
+      if (!matchesOnly || element >= 0) {
         target.push([similarity.target_objects[i], getTargetName(similarity.target_objects[i]), element]);
       }
       return target;

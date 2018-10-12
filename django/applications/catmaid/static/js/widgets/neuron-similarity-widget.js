@@ -120,23 +120,37 @@
 
         '<p>Since this isn\'t always easy to provide, a separate <em>transformation</em> file ',
         'can be loaded using the <kbd>Transformation CSV</kbd> button. This CSV file can have ',
-        'either <em>9 or 15 columns</em>. If 9 columns are provided, they are expected to ',
-        'represent the following: <span class="inline-code">Name</span>, ',
+        'either <em>4, 7, 9 or 15 columns</em>. The individual lengths correspond to the following ',
+        'values: <ul>',
+        '<li>4 columns: <span class="inline-code">Landmark</span>, ',
+        '<span class="inline-code">Source x</span>, <span class="inline-code">Source y</span>,',
+        '<span class="inline-code">Source z</span> This maps each source location to an existing ',
+        'CATMAID landmark. Requires that there is only one location linked to the referenced ',
+        'landmark in CATMAID.</li>',
+        '<li>7 columns: <span class="inline-code">Landmark</span>, ',
+        '<span class="inline-code">Source left x</span>, <span class="inline-code">Source left y</span>, ',
+        '<span class="inline-code">Source left z</span>, <span class="inline-code">Source right x</span>, ',
+        '<span class="inline-code">Source right y</span>, <span class="inline-code">Source right z</span> ',
+        'This is like the 4 column variant, but further distinguishes between left and right side per ',
+        'landmark. This expect a left and right location to be linked to the target landmark.</li>',
+        '<li>9 columns: <span class="inline-code">Name</span>, ',
         '<span class="inline-code">Source name</span>, <span class="inline-code">Target name</span>, ',
         '<span class="inline-code">Source x</span>, <span class="inline-code">Source y</span>, ',
         '<span class="inline-code">Source z</span>, <span class="inline-code">Target x</span>, ',
         '<span class="inline-code">Target y</span>, <span class="inline-code">Target z</span>. ',
         'This will describe point matches from the source space (<em>Point CSV</em>) to the ',
-        'target (project) space. Alternatively, a 15 column format can be used, which ',
-        'further distringuishes between point matches on the left and on the right side, which ',
-        'is useful in some datasets. Those 15 columns are: <span class="inline-code">Name</span>, ',
+        'target (project) space.</li>',
+        '<li>15 columns: <span class="inline-code">Name</span>, ',
         '<span class="inline-code">Source name</span>, <span class="inline-code">Target name</span>, ',
         '<span class="inline-code">Source left x</span>, <span class="inline-code">Source left y</span>, ',
         '<span class="inline-code">Source left z</span>, <span class="inline-code">Target left x</span>, ',
         '<span class="inline-code">Target left y</span>, <span class="inline-code">Target left z</span>, ',
         '<span class="inline-code">Source right x</span>, <span class="inline-code">Source right y</span>, ',
         '<span class="inline-code">Source right z</span>, <span class="inline-code">Target right x</span>, ',
-        '<span class="inline-code">Target right y</span>, <span class="inline-code">Target right z</span>.</p>',
+        '<span class="inline-code">Target right y</span>, <span class="inline-code">Target right z</span> ',
+        'This works like the 9 column format, but further distringuishes between point matches on the ',
+        'left and on the right side, which is useful in some datasets.</li>',
+        '</ul></p>',
       ].join('\n'),
     };
   };
@@ -1173,6 +1187,7 @@
         let invertY = false;
         let sample = true;
         let sampleSize = 1000;
+        let leftDim = 'y';
 
         let newPointcloudSection = document.createElement('span');
         newPointcloudSection.classList.add('section-header');
@@ -1342,6 +1357,22 @@
               .catch(CATMAID.handleError);
           }
         }, {
+          type: 'select',
+          label: 'Project left dir',
+          title: 'Select the direction in project space (where all tracing data is) that represents a canonical "left" (as opposed to right) in the data set. This is only used when 7-column transformation data is imported to know which landmark location is left.',
+          value: leftDim,
+          entries: [
+            {title: '+X', value: 'x'},
+            {title: '+Y', value: 'y'},
+            {title: '+Z', value: 'z'},
+            {title: '-X', value: '-x'},
+            {title: '-Y', value: '-y'},
+            {title: '-Z', value: '-z'},
+          ],
+          onchange: function() {
+            leftDim = this.value;
+          },
+        }, {
           type: 'file',
           label: 'Transformation CSV',
           title: 'A CSV file that contains an optional set of point matches that is used to build a transformation that is applied to the input points.',
@@ -1356,7 +1387,8 @@
             let self = this;
 
             pointMatches = [];
-            CATMAID.NeuronSimilarityWidget.loadTransformationFile(e.target.files[0], csvLineSkip)
+            CATMAID.NeuronSimilarityWidget.loadTransformationFile(e.target.files[0],
+                csvLineSkip, leftDim)
               .then(function(loadedPointMatches) {
                 pointMatches = loadedPointMatches;
                 self.classList.add('files-loaded');
@@ -1592,6 +1624,7 @@
         let sampleSize = 1000;
         let csvFiles = [];
         let imageFileSets = [];
+        let leftDim = 'y';
 
         let newPointcloudSection = document.createElement('span');
         newPointcloudSection.classList.add('section-header');
@@ -1775,6 +1808,22 @@
             CATMAID.msg("Success", "Found " + e.target.files.length + " files in the selected folder");
           }
         }, {
+          type: 'select',
+          label: 'Project left dir',
+          title: 'Select the direction in project space (where all tracing data is) that represents a canonical "left" (as opposed to right) in the data set. This is only used when 7-column transformation data is imported to know which landmark location is left.',
+          value: leftDim,
+          entries: [
+            {title: '+X', value: 'x'},
+            {title: '+Y', value: 'y'},
+            {title: '+Z', value: 'z'},
+            {title: '-X', value: '-x'},
+            {title: '-Y', value: '-y'},
+            {title: '-Z', value: '-z'},
+          ],
+          onchange: function() {
+            leftDim = this.value;
+          },
+        }, {
           type: 'file',
           label: 'Transformation CSV',
           title: 'A CSV file that contains an optional set of point matches that is used to build a transformation that is applied to the input points.',
@@ -1788,7 +1837,8 @@
             }
             let self = this;
             pointMatches = [];
-            CATMAID.NeuronSimilarityWidget.loadTransformationFile(e.target.files[0], csvLineSkip)
+            CATMAID.NeuronSimilarityWidget.loadTransformationFile(e.target.files[0],
+                csvLineSkip, leftDim)
               .then(function(loadedPointMatches) {
                 pointMatches = loadedPointMatches;
                 self.classList.add('files-loaded');
@@ -2549,21 +2599,189 @@
       .catch(CATMAID.handleError);
   };
 
-  NeuronSimilarityWidget.loadTransformationFile = function(file, csvLineSkip) {
+  /**
+   * Return a Promise resolving into point matches from data with the following
+   * 4-column format: Landmark, Source x, Source y, Source z.
+   */
+  NeuronSimilarityWidget.loadTransformationFrom4ColData = function(data) {
+    let nColumns = 4;
+    return CATMAID.Landmarks.list(project.id, true)
+      .then(function(landmarks) {
+        let pointMatches = [];
+        let landmarkIndex = landmarks.reduce(function(m, l) {
+          m.set(l.name, l);
+          return m;
+        }, new Map());
+        data.forEach(function(p, i) {
+          if (p.length !== nColumns) {
+            CATMAID.warn("Skipping line " + (i + 1) + " due to unexpected number of columns");
+            return;
+          }
+          let landmarkName = p[0],
+              sourceX = parseFloat(p[1]), sourceY = parseFloat(p[2]), sourceZ = parseFloat(p[3]);
+
+          // Find landmark and its location
+          let landmark = landmarkIndex.get(landmarkName);
+          if (!landmark) {
+            CATMAID.warn("Could not find landmark \"" + landmarkName + "\"");
+            return;
+          }
+          if (!landmark.locations || landmark.locations.length === 0) {
+            CATMAID.warn("Landmark \"" + landmarkName + "\" doesn't have any location linked.");
+            return;
+          }
+          if (landmark.locations.length > 1) {
+            CATMAID.warn("Landmark \"" + landmarkName + "\" has more than one location linked.");
+            return;
+          }
+
+          let targetName = landmarkName;
+          let target = landmark.locations[0];
+
+          pointMatches.push({
+            name: name,
+            sourceName: sourceName,
+            targetName: targetName,
+            source: [sourceX, sourceY, sourceZ],
+            target: [target.x, target.y, target.z],
+          });
+        });
+        return pointMatches;
+      });
+  };
+
+  /**
+   * Return a Promise resolving into point matches from data with the following
+   * 7-column format: Landmark, Source left x, Source left y, Source left z,
+   * Source right x, Source right y, Source right z.
+   *
+   * @param {transformationData[]} data A list of lists, representing the data
+   *                                    to parse.
+   * @param {string} leftDim (optinal) Either "x", "y", "z", "-x", "-y" or "-z".
+   *                         Represents the dimension which means "left".
+   *                         Defaults to "y".
+   */
+  NeuronSimilarityWidget.loadTransformationFrom7ColData = function(data, leftDim) {
+    leftDim = leftDim || 'y';
+    let nColumns = 7;
+    return CATMAID.Landmarks.list(project.id, true)
+      .then(function(landmarks) {
+        let pointMatches = [];
+        let landmarkIndex = landmarks.reduce(function(m, l) {
+          m.set(l.name, l);
+          return m;
+        }, new Map());
+        data.forEach(function(p, i) {
+          if (p.length !== nColumns) {
+            CATMAID.warn("Skipping line " + (i + 1) + " due to unexpected number of columns");
+            return;
+          }
+          let landmarkName = p[0],
+              lSourceX = parseFloat(p[1]), lSourceY = parseFloat(p[2]), lSourceZ = parseFloat(p[3]),
+              rSourceX = parseFloat(p[4]), rSourceY = parseFloat(p[5]), rSourceZ = parseFloat(p[6]);
+
+          // Find landmark and its location
+          let landmark = landmarkIndex.get(landmarkName);
+          if (!landmark) {
+            CATMAID.warn("Could not find landmark \"" + landmarkName + "\"");
+            return;
+          }
+          if (!landmark.locations || landmark.locations.length === 0) {
+            CATMAID.warn("Landmark \"" + landmarkName + "\" doesn't have any location linked. Need two (left and right).");
+            return;
+          }
+          if (landmark.locations.length == 1) {
+            CATMAID.warn("Landmark \"" + landmarkName + "\" has only one location linked. Need two (left and right).");
+            return;
+          }
+          if (landmark.locations.length > 2) {
+            CATMAID.warn("Landmark \"" + landmarkName + "\" has more than two location linked. Need two (left and right).");
+            return;
+          }
+
+          let targetName = landmarkName;
+          // Find landmark location on 'left' side. Which dimension that is
+          // exactly is specified by the caller.
+          let location1 = landmark.locations[0], location2 = landmark.locations[1];
+          let lTarget, rTarget;
+          if (leftDim === 'x' || leftDim === 'y' || leftDim === 'z') {
+            if (location1[leftDim] > location2[leftDim]) {
+              lTarget = location1;
+              rTarget = location2;
+            } else {
+              lTarget = location2;
+              rTarget = location1;
+            }
+          } else if (leftDim === '-x' || leftDim === '-y' || leftDim === '-z') {
+            if (location1[leftDim[1]] < location2[leftDim[1]]) {
+              lTarget = location1;
+              rTarget = location2;
+            } else {
+              lTarget = location2;
+              rTarget = location1;
+            }
+          } else {
+            throw new CATMAID.ValueError("Unknown project space 'left' dimension: " + leftDim);
+          }
+
+          pointMatches.push({
+            name: name,
+            sourceName: sourceName,
+            targetName: targetName,
+            source: [lSourceX, lSourceY, lSourceZ],
+            target: [lTarget.x, lTarget.x, lTarget.z],
+          });
+          pointMatches.push({
+            name: name,
+            sourceName: sourceName,
+            targetName: targetName,
+            source: [rSourceX, rSourceY, rSourceZ],
+            target: [rTarget.x, rTarget.y, rTarget.z],
+          });
+        });
+        return pointMatches;
+      });
+  };
+
+  NeuronSimilarityWidget.loadTransformationFile = function(file, csvLineSkip, leftDim) {
     return CATMAID.parseCSVFile(file, ',', csvLineSkip ? 1 : 0)
       .then(function(transformationData) {
         if (!transformationData || transformationData.length === 0) {
           throw new CATMAID.ValueError("Could not find any transformation data");
         }
+
         let nColumns = transformationData[0].length;
-        if (nColumns !== 9 && nColumns !== 15) {
-          throw new CATMAID.ValueError("Expected 9 or 15 columns, found " + nColumns);
-        }
-        let hasMirrorData = nColumns === 15;
 
-        let pointMatches = [];
-
-        if (hasMirrorData) {
+        if (nColumns === 4) {
+          return NeuronSimilarityWidget.loadTransformationFrom4ColData(transformationData);
+        } else if (nColumns === 7) {
+          return NeuronSimilarityWidget.loadTransformationFrom7ColData(transformationData, leftDim);
+        } else if (nColumns === 9) {
+          // Format: Name, Source name, Target name, Source x, Source y, Source
+          // z, Target x, Target y, Target z
+          let pointMatches = [];
+          transformationData.forEach(function(p) {
+            if (p.length !== nColumns) {
+              return;
+            }
+            let name = p[0], sourceName = p[1], targetName = p[2],
+                sourceX = parseFloat(p[3]), sourceY = parseFloat(p[4]), sourceZ = parseFloat(p[5]),
+                targetX = parseFloat(p[6]), targetY = parseFloat(p[7]), targetZ = parseFloat(p[8]);
+            pointMatches.push({
+              name: name,
+              sourceName: sourceName,
+              targetName: targetName,
+              source: [sourceX, sourceY, sourceZ],
+              target: [targetX, targetY, targetZ],
+            });
+          });
+          return pointMatches;
+        } else if (nColumns === 15) {
+          // Format: Name, Source name, Target name, Source left x, Source left
+          // y, Source left z, Target left x, Target left y, Target left z,
+          // Source right x, Source right y, Source right z, Target right x,
+          // Target right y, Target right z
+          let pointMatches = [];
           transformationData.forEach(function(p) {
             if (p.length !== nColumns) {
               return;
@@ -2588,25 +2806,10 @@
               target: [rTargetX, rTargetY, rTargetZ],
             });
           });
-        } else {
-          transformationData.forEach(function(p) {
-            if (p.length !== nColumns) {
-              return;
-            }
-            let name = p[0], sourceName = p[1], targetName = p[2],
-                sourceX = parseFloat(p[3]), sourceY = parseFloat(p[4]), sourceZ = parseFloat(p[5]),
-                targetX = parseFloat(p[6]), targetY = parseFloat(p[7]), targetZ = parseFloat(p[8]);
-            pointMatches.push({
-              name: name,
-              sourceName: sourceName,
-              targetName: targetName,
-              source: [sourceX, sourceY, sourceZ],
-              target: [targetX, targetY, targetZ],
-            });
-          });
-        }
 
-        return pointMatches;
+          return pointMatches;
+        }
+        throw new CATMAID.ValueError("Expected 4, 7, 9 or 15 columns, found " + nColumns);
       });
   };
 

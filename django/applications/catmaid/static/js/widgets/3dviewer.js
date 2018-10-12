@@ -1340,8 +1340,13 @@
     var context = canvas.getContext( '2d' );
     var gradient = context.createRadialGradient( canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2 );
     gradient.addColorStop( 0, 'rgba(255,255,255,1)' );
-    gradient.addColorStop( 0.2, 'rgba(0,255,255,1)' );
-    gradient.addColorStop( 0.4, 'rgba(0,0,64,1)' );
+    if (color) {
+      gradient.addColorStop( 0.2, 'rgba(0,255,255,1)' );
+      gradient.addColorStop( 0.4, 'rgba(0,0,64,1)' );
+    } else {
+      gradient.addColorStop( 0.2, color.getStyle());
+      gradient.addColorStop( 0.4, color.getStyle());
+    }
     gradient.addColorStop( 1, 'rgba(0,0,0,1)' );
     context.fillStyle = gradient;
     context.fillRect( 0, 0, canvas.width, canvas.height );
@@ -2665,7 +2670,7 @@
   /**
    * Show or hide a stored point cloud with a given ID.
    */
-  WebGLApplication.prototype.showPointCloud = function(pointCloudId, visible) {
+  WebGLApplication.prototype.showPointCloud = function(pointCloudId, visible, color) {
     var existingPointCloud = this.loadedPointClouds[pointCloudId];
     if (visible) {
       // Bail out if the landmarkGroup in question is already visible
@@ -2696,7 +2701,7 @@
 
           // Create point cloud particles
           let locations = pointCloud.points;
-          let pointCloudMaterial = this.options.createPointCloudMaterial();
+          let pointCloudMaterial = this.options.createPointCloudMaterial(color);
           for (var j=0, jmax=locations.length; j<jmax; ++j) {
             let loc = locations[j];
             let particle = new THREE.Sprite(pointCloudMaterial);

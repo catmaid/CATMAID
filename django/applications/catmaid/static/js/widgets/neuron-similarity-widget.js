@@ -630,11 +630,11 @@
                     (qo[0] + ', ' +  qo[1] +  ' … ' + qo[qo.length - 2] + ', ' + qo[qo.length - 1]) :
                     allBins;
                 if (row.query_type === 'skeleton') {
-                  return '<em>Skeletons: </em><span title="' + qo.length + ' skeletons">' + text + '</span>';
+                  return '<span title="' + qo.length + ' skeleton(s)"><em>Skeletons:</em> ' + text + '</span>';
                 } else if (row.query_type === 'pointcloud') {
-                  return '<em>Point clouds: </em><span title="' + qo.length + ' point clouds">' + text + '</span>';
+                  return '<span title="' + qo.length + ' point cloud(s)"><em>Point clouds:</em> ' + text + '</span>';
                 } else {
-                  return '<em>Unknown type: </em><span title="' + qo.length + ' unknown objects">' + text + '</span>';
+                  return '<span title="' + qo.length + ' unknown object(s)"><em>Unknown type:</em> ' + text + '</span>';
                 }
               }
             }, {
@@ -645,15 +645,15 @@
               render: function(data, type, row, meta) {
                 let to = row.target_objects;
                 let allBins = to.join(', ');
+                let text = (to && to.length > 4) ?
+                    (to[0] + ', ' +  to[1] +  ' … ' + to[to.length - 2] + ', ' + to[to.length - 1]) :
+                    allBins;
                 if (row.target_type === 'skeleton') {
-                  let text = (to && to.length > 4) ?
-                      (to[0] + ', ' +  to[1] +  ' … ' + to[to.length - 2] + ', ' + to[to.length - 1]) :
-                      allBins;
-                  return '<em>Skeletons: </em><span title="' + to.length + ' skeletons">' + text + '</span>';
+                  return '<span title="' + to.length + ' skeleton(s)"><em>Skeletons:</em> ' + text + '</span>';
                 } else if (row.target_type === 'pointcloud') {
-                  return '<em>Point clouds: </em>' + allBins;
+                  return '<span title="' + to.length + ' point cloud(s)"><em>Point clouds:</em> ' + text + '</span>';
                 } else {
-                  return '<em>Unknown type: </em>' + allBins;
+                  return '<span title="' + to.length + ' unknown object(s)"><em>Unknown type:</em> ' + text + '</span>';
                 }
               }
             }, {

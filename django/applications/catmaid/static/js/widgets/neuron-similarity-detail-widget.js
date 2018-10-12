@@ -223,6 +223,8 @@
     theadTh1.appendChild(document.createTextNode('Query ' + this.similarity.query_type));
     let theadTh2 = theadTr.appendChild(document.createElement('th'));
     theadTh2.appendChild(document.createTextNode(`Top ${this.showTopN} target ${this.similarity.target_type}s`));
+    let theadTh3 = theadTr.appendChild(document.createElement('th'));
+    theadTh3.appendChild(document.createTextNode('Action'));
     let tbody = table.appendChild(document.createElement('tbody'));
 
     NeuronSimilarityDetailWidget.createSimilarityTable(this.similarity,
@@ -312,10 +314,21 @@
             return '(no match)';
           }
         }
+      }, {
+        orderable: false,
+        render: function(data, type, row, meta) {
+          return '<a href="#" data-role="show-all-3d">Show 3D</a>';
+        }
       }]
     }).on('click', 'a[data-role=select-skeleton]', function() {
       let skeletonId = parseInt(this.dataset.skeletonId, 10);
       CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
+    }).on('click', 'a[data-role=show-all-3d]', function() {
+      var table = $(this).closest('table');
+      var tr = $(this).closest('tr');
+      var data = $(table).DataTable().row(tr).data();
+      NeuronSimilarityDetailWidget.showAllSimilarityResults(similarity,
+          matchesOnly, showTopN);
     });
 
     if (matchesOnly) {
@@ -323,6 +336,54 @@
     }
 
     return table;
+  };
+
+  NeuronSimilarityDetailWidget.showAllSimilarityResults = function(similarity,
+      matchesOnly, showTopN) {
+    let widget3d = WindowMaker.create('3d-viewer').widget;
+    widget3d.options.shading_method = 'none';
+    widget3d.options.color_method = 'none';
+
+    if (similarity.query_type === 'skeleton') {
+      let models = similarity.query_objects.reduce(function(o, s) {
+        o[s] = new CATMAID.SkeletonModel(s);
+        return o;
+      }, {});
+      widget3d.append(models);
+    } else if (similarity.query_type === 'pointcloud') {
+      for (let i=0; i<similarity.query_objects.length; ++i) {
+        let pointCloudId = similarity.query_objects[i];
+        widget3d.showPointCloud(pointcloudId, true);
+      }
+    }
+
+    let nTargetObjectsToAdd = showTopN ? showTopN : similarity.target_objects.length;
+    let lut = new THREE.Lut("rainbow", nTargetObjectsToAdd);
+    lut.setMax(nTargetObjectsToAdd - 1);
+
+    if (similarity.target_type === 'skeleton') {
+      let nAddedModels = 0;
+      let models = similarity.target_objects.reduce(function(o, s, i) {
+        let matchOkay = !matchesOnly || similarity.scoring[i] > 0;
+        let topNOkay = !showTopN || i < showTopN;
+        if (matchOkay && topNOkay) {
+          o[s] = new CATMAID.SkeletonModel(s, undefined, lut.getColor(i));
+          ++nAddedModels;
+        }
+        return o;
+      }, {});
+      widget3d.append(models);
+    } else if (similarity.target_type === 'pointcloud') {
+      let nAddedPointClouds = 0;
+      for (let i=0; i<similarity.target_objects.length; ++i) {
+        let matchOkay = !matchesOnly || similarity.scoring[i] > 0;
+        let topNOkay = !showTopN || i < showTopN;
+        if (matchOkay && topNOkay) {
+          let pointCloudId = similarity.target_objects[i];
+          widget3d.showPointCloud(pointCloudId, true, lut.getColor(i));
+        }
+      }
+    }
   };
 
 

@@ -16,6 +16,8 @@
 
     // The currently selected similarity query result.
     this.similarity = null;
+    // A dicrionary of point clouds
+    this.pointClouds = new Map();
     // Whether or not only positive scores (i.e. matches) should be displayed.
     this.onlyPositiveScores = true;
     // Show a top N of result matches
@@ -171,10 +173,23 @@
   NeuronSimilarityDetailWidget.prototype.setSimilarity = function(similarity) {
     this.similarity = similarity;
     let targetModels = CATMAID.Similarity.getReferencedSkeletonModels(similarity);
+    let self = this;
     CATMAID.NeuronNameService.getInstance().registerAll(this, targetModels)
-      .then((function() {
-        this.refresh();
-      }).bind(this))
+      .then(function() {
+        // Update all point clouds, if they are not yet available
+        if (!self.pointClouds || self.pointClouds.size === 0) {
+          return CATMAID.Pointcloud.listAll(project.id, true)
+            .then(function(result) {
+              self.pointClouds = result.reduce(function(m, e) {
+                m.set(e.id, e);
+                return m;
+              }, new Map());
+            });
+        }
+      })
+      .then(function() {
+        self.refresh();
+      })
       .catch(CATMAID.handleError);
   };
 
@@ -210,10 +225,8 @@
     theadTh2.appendChild(document.createTextNode(`Top ${this.showTopN} target ${this.similarity.target_type}s`));
     let tbody = table.appendChild(document.createElement('tbody'));
 
-    let pointClouds = {};
-
     NeuronSimilarityDetailWidget.createSimilarityTable(this.similarity,
-        this.onlyPositiveScores, this.showTopN, pointClouds, table);
+        this.onlyPositiveScores, this.showTopN, this.pointClouds, table);
   };
 
   NeuronSimilarityDetailWidget.createSimilarityTable = function(similarity,
@@ -229,7 +242,7 @@
       };
     } else if (similarity.query_type === 'pointcloud') {
       getQueryName = function(element) {
-        let pc = pointClouds[element];
+        let pc = pointClouds.get(element);
         return pc ? pc.name : (element + ' (not found)');
       };
     } else {
@@ -245,7 +258,7 @@
       };
     } else if (similarity.target_type === 'pointcloud') {
       getTargetName = function(element) {
-        let pc = pointClouds[element];
+        let pc = pointClouds.get(element);
         return pc ? pc.name : (element + ' (not found)');
       };
     } else {

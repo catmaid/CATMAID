@@ -357,8 +357,9 @@
       }
     }
 
-    let nTargetObjectsToAdd = showTopN ? showTopN : similarity.target_objects.length;
-    let lut = new THREE.Lut("rainbow", nTargetObjectsToAdd);
+    let nTargetObjects = similarity.target_objects.length;
+    let nTargetObjectsToAdd = showTopN ? Math.min(showTopN, nTargetObjects) : nTargetObjects;
+    let lut = new THREE.Lut("rainbow", 10);
     lut.setMax(nTargetObjectsToAdd - 1);
 
     if (similarity.target_type === 'skeleton') {

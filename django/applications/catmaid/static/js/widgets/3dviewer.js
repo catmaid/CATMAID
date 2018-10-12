@@ -1341,11 +1341,11 @@
     var gradient = context.createRadialGradient( canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2 );
     gradient.addColorStop( 0, 'rgba(255,255,255,1)' );
     if (color) {
-      gradient.addColorStop( 0.2, 'rgba(0,255,255,1)' );
-      gradient.addColorStop( 0.4, 'rgba(0,0,64,1)' );
-    } else {
       gradient.addColorStop( 0.2, color.getStyle());
       gradient.addColorStop( 0.4, color.getStyle());
+    } else {
+      gradient.addColorStop( 0.2, 'rgba(0,255,255,1)' );
+      gradient.addColorStop( 0.4, 'rgba(0,0,64,1)' );
     }
     gradient.addColorStop( 1, 'rgba(0,0,0,1)' );
     context.fillStyle = gradient;

@@ -2752,6 +2752,75 @@
       });
   };
 
+  /**
+   * Return a Promise resolving into point matches from data with the following
+   * 9-column format: Name, Source name, Target name, Source x, Source y, Source
+   * z, Target x, Target y, Target z
+   *
+   * @param {transformationData[]} data A list of lists, representing the data
+   *                                    to parse.
+   */
+  NeuronSimilarityWidget.loadTransformationFrom9ColData = function(data) {
+    let nColumns = 9;
+    let pointMatches = [];
+    data.forEach(function(p) {
+      if (p.length !== nColumns) {
+        return;
+      }
+      let name = p[0], sourceName = p[1], targetName = p[2],
+          sourceX = parseFloat(p[3]), sourceY = parseFloat(p[4]), sourceZ = parseFloat(p[5]),
+          targetX = parseFloat(p[6]), targetY = parseFloat(p[7]), targetZ = parseFloat(p[8]);
+      pointMatches.push({
+        name: name,
+        sourceName: sourceName,
+        targetName: targetName,
+        source: [sourceX, sourceY, sourceZ],
+        target: [targetX, targetY, targetZ],
+      });
+    });
+    return Promise.resolve(pointMatches);
+  };
+
+  /**
+   * Return a Promise resolving into point matches from data with the following
+   * 9-column format: Name, Source name, Target name, Source left x, Source left
+   * y, Source left z, Target left x, Target left y, Target left z, Source right
+   * x, Source right y, Source right z, Target right x, Target right y, Target
+   * right z
+   *
+   * @param {transformationData[]} data A list of lists, representing the data
+   *                                    to parse.
+   */
+  NeuronSimilarityWidget.loadTransformationFrom15ColData = function(data) {
+    let nColumns = 15;
+    let pointMatches = [];
+    data.forEach(function(p) {
+      if (p.length !== nColumns) {
+        return;
+      }
+      let name = p[0], sourceName = p[1], targetName = p[2],
+          lSourceX = parseFloat(p[3]), lSourceY = parseFloat(p[4]), lSourceZ = parseFloat(p[5]),
+          lTargetX = parseFloat(p[6]), lTargetY = parseFloat(p[7]), lTargetZ = parseFloat(p[8]),
+          rSourceX = parseFloat(p[9]), rSourceY = parseFloat(p[10]), rSourceZ = parseFloat(p[11]),
+          rTargetX = parseFloat(p[12]), rTargetY = parseFloat(p[13]), rTargetZ = parseFloat(p[14]);
+      pointMatches.push({
+        name: name,
+        sourceName: sourceName,
+        targetName: targetName,
+        source: [lSourceX, lSourceY, lSourceZ],
+        target: [lTargetX, lTargetY, lTargetZ],
+      });
+      pointMatches.push({
+        name: name,
+        sourceName: sourceName,
+        targetName: targetName,
+        source: [rSourceX, rSourceY, rSourceZ],
+        target: [rTargetX, rTargetY, rTargetZ],
+      });
+    });
+    return Promise.resolve(pointMatches);
+  };
+
   NeuronSimilarityWidget.loadTransformationFile = function(file, csvLineSkip, leftDim) {
     return CATMAID.parseCSVFile(file, ',', csvLineSkip ? 1 : 0)
       .then(function(transformationData) {
@@ -2766,57 +2835,9 @@
         } else if (nColumns === 7) {
           return NeuronSimilarityWidget.loadTransformationFrom7ColData(transformationData, leftDim);
         } else if (nColumns === 9) {
-          // Format: Name, Source name, Target name, Source x, Source y, Source
-          // z, Target x, Target y, Target z
-          let pointMatches = [];
-          transformationData.forEach(function(p) {
-            if (p.length !== nColumns) {
-              return;
-            }
-            let name = p[0], sourceName = p[1], targetName = p[2],
-                sourceX = parseFloat(p[3]), sourceY = parseFloat(p[4]), sourceZ = parseFloat(p[5]),
-                targetX = parseFloat(p[6]), targetY = parseFloat(p[7]), targetZ = parseFloat(p[8]);
-            pointMatches.push({
-              name: name,
-              sourceName: sourceName,
-              targetName: targetName,
-              source: [sourceX, sourceY, sourceZ],
-              target: [targetX, targetY, targetZ],
-            });
-          });
-          return pointMatches;
+          return NeuronSimilarityWidget.loadTransformationFrom9ColData(transformationData);
         } else if (nColumns === 15) {
-          // Format: Name, Source name, Target name, Source left x, Source left
-          // y, Source left z, Target left x, Target left y, Target left z,
-          // Source right x, Source right y, Source right z, Target right x,
-          // Target right y, Target right z
-          let pointMatches = [];
-          transformationData.forEach(function(p) {
-            if (p.length !== nColumns) {
-              return;
-            }
-            let name = p[0], sourceName = p[1], targetName = p[2],
-                lSourceX = parseFloat(p[3]), lSourceY = parseFloat(p[4]), lSourceZ = parseFloat(p[5]),
-                lTargetX = parseFloat(p[6]), lTargetY = parseFloat(p[7]), lTargetZ = parseFloat(p[8]),
-                rSourceX = parseFloat(p[9]), rSourceY = parseFloat(p[10]), rSourceZ = parseFloat(p[11]),
-                rTargetX = parseFloat(p[12]), rTargetY = parseFloat(p[13]), rTargetZ = parseFloat(p[14]);
-            pointMatches.push({
-              name: name,
-              sourceName: sourceName,
-              targetName: targetName,
-              source: [lSourceX, lSourceY, lSourceZ],
-              target: [lTargetX, lTargetY, lTargetZ],
-            });
-            pointMatches.push({
-              name: name,
-              sourceName: sourceName,
-              targetName: targetName,
-              source: [rSourceX, rSourceY, rSourceZ],
-              target: [rTargetX, rTargetY, rTargetZ],
-            });
-          });
-
-          return pointMatches;
+          return NeuronSimilarityWidget.loadTransformationFrom15ColData(transformationData);
         }
         throw new CATMAID.ValueError("Expected 4, 7, 9 or 15 columns, found " + nColumns);
       });

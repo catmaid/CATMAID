@@ -2724,20 +2724,29 @@
             throw new CATMAID.ValueError("Unknown project space 'left' dimension: " + leftDim);
           }
 
-          pointMatches.push({
-            name: name,
-            sourceName: sourceName,
-            targetName: targetName,
-            source: [lSourceX, lSourceY, lSourceZ],
-            target: [lTarget.x, lTarget.x, lTarget.z],
-          });
-          pointMatches.push({
-            name: name,
-            sourceName: sourceName,
-            targetName: targetName,
-            source: [rSourceX, rSourceY, rSourceZ],
-            target: [rTarget.x, rTarget.y, rTarget.z],
-          });
+          if ([lTarget.x, lTarget.y, lTarget.z].every(CATMAID.tools.isNumber)) {
+            pointMatches.push({
+              name: name,
+              sourceName: sourceName,
+              targetName: targetName,
+              source: [lSourceX, lSourceY, lSourceZ],
+              target: [lTarget.x, lTarget.x, lTarget.z],
+            });
+          } else {
+            CATMAID.warn("Skipping left target of " + i + ". entry. No numbers found.");
+          }
+
+          if ([rTarget.x, rTarget.y, rTarget.z].every(CATMAID.tools.isNumber)) {
+            pointMatches.push({
+              name: name,
+              sourceName: sourceName,
+              targetName: targetName,
+              source: [rSourceX, rSourceY, rSourceZ],
+              target: [rTarget.x, rTarget.y, rTarget.z],
+            });
+          } else {
+            CATMAID.warn("Skipping right target of " + i + ". entry. No numbers found.");
+          }
         });
         return pointMatches;
       });

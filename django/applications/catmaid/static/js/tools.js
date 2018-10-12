@@ -711,6 +711,13 @@ CATMAID.tools = CATMAID.tools || {};
   };
 
   /**
+   * Predicate to check if a value is a valid number.
+   */
+  tools.isNumber = function(value) {
+    return typeof(value) === "number" && !Number.isNaN(value);
+  };
+
+  /**
    * Test if two arrays are exactly the same, i.e. they are defined and have the
    * same elements in the same order.
    */

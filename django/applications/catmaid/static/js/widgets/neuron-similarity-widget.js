@@ -118,8 +118,8 @@
         'expected to have three columns: <em>X, Y and Z</em>. When storing new point clouds in ',
         'the database, the coordinates are expected to be in <em>project space</em>.</p>',
 
-        '<p>Since this isn\'t always easy to provide, a separate <em>transformation</em> file ',
-        'can be loaded using the <kbd>Transformation CSV</kbd> button. This CSV file can have ',
+        '<p>Since this isn\'t always easy to provide, separate <em>transformation</em> files ',
+        'can be loaded using the <kbd>Transformation CSVs</kbd> button. These CSV files can have ',
         'either <em>4, 7, 9 or 15 columns</em>. The individual lengths correspond to the following ',
         'values: <ul>',
         '<li>4 columns: <span class="inline-code">Landmark</span>, ',
@@ -151,6 +151,7 @@
         'This works like the 9 column format, but further distringuishes between point matches on the ',
         'left and on the right side, which is useful in some datasets.</li>',
         '</ul></p>',
+        '<p>It is possible to load multiple transformation files and each can have a different format.</p>'
       ].join('\n'),
     };
   };
@@ -1182,6 +1183,7 @@
         let csvLineSkip = true;
         let pointData = null;
         let pointMatches = null;
+        let loadedTransforms = 0;
         let images = null;
         let swapZY = false;
         let invertY = false;
@@ -1229,6 +1231,7 @@
             csvLineSkip = true;
             pointData = null;
             pointMatches = null;
+            loadedTransforms = 0;
             images = null;
             // Reset UI
             $('#neuron-similarity-new-pointcloud-name' + widget.widgetID)
@@ -1245,6 +1248,8 @@
               .val('Images');
             $('#neuron-similarity-new-pointcloud-transformation' + widget.widgetID)
               .val('');
+            $('#neuron-similarity-new-pointcloud-transformation' + widget.widgetID + ' + input[type=button]')
+              .val('Transformation CSVs');
             $('#neuron-similarity-new-pointcloud-points' + widget.widgetID)
               .closest('div')
               .find('.files-loaded')
@@ -1374,8 +1379,8 @@
           },
         }, {
           type: 'file',
-          label: 'Transformation CSV',
-          title: 'A CSV file that contains an optional set of point matches that is used to build a transformation that is applied to the input points.',
+          label: 'Transformation CSVs',
+          title: 'An optional set of CSV files that contain a set of point matches each that are used to build a transformation that is applied to the input points.',
           id: 'neuron-similarity-new-pointcloud-transformation' + widget.widgetID,
           multiple: false,
           onclick: function(e, clickedButton) {
@@ -1386,13 +1391,18 @@
             }
             let self = this;
 
-            pointMatches = [];
+            if (!pointMatches) {
+              pointMatches = [];
+            }
+
             CATMAID.NeuronSimilarityWidget.loadTransformationFile(e.target.files[0],
                 csvLineSkip, leftDim)
               .then(function(loadedPointMatches) {
-                pointMatches = loadedPointMatches;
+                ++loadedTransforms;
+                Array.prototype.push.apply(pointMatches, loadedPointMatches);
                 self.classList.add('files-loaded');
                 clickedButton.classList.add('files-loaded');
+                clickedButton.value = "Transformation CSVs (" + loadedTransforms + ")";
                 CATMAID.msg("Success", "Read " + pointMatches.length + " point matches");
               })
               .catch(CATMAID.handleError);
@@ -1617,6 +1627,7 @@
         let newPointcloudDescription = '';
         let csvLineSkip = true;
         let pointMatches = null;
+        let loadedTransforms = 0;
         let images = null;
         let swapZY = false;
         let invertY = false;
@@ -1668,6 +1679,7 @@
             newPointcloudDescription = '';
             csvLineSkip = true;
             pointMatches = null;
+            loadedTransforms = 0;
             images = null;
             // Reset UI
             $('#neuron-similarity-new-import-pointcloud-name' + widget.widgetID)
@@ -1684,6 +1696,8 @@
               .val('Images');
             $('#neuron-similarity-new-import-pointcloud-transformation' + widget.widgetID)
               .val('');
+            $('#neuron-similarity-new-import-pointcloud-transformation' + widget.widgetID + ' + input[type=button]')
+              .val('Transformation CSVs');
             $('#neuron-similarity-new-import-pointcloud-points' + widget.widgetID)
               .closest('div')
               .find('.files-loaded')
@@ -1825,7 +1839,7 @@
           },
         }, {
           type: 'file',
-          label: 'Transformation CSV',
+          label: 'Transformation CSVs',
           title: 'A CSV file that contains an optional set of point matches that is used to build a transformation that is applied to the input points.',
           id: 'neuron-similarity-new-import-pointcloud-transformation' + widget.widgetID,
           multiple: false,
@@ -1836,13 +1850,19 @@
               return;
             }
             let self = this;
-            pointMatches = [];
+
+            if (!pointMatches) {
+              pointMatches = [];
+            }
+
             CATMAID.NeuronSimilarityWidget.loadTransformationFile(e.target.files[0],
                 csvLineSkip, leftDim)
               .then(function(loadedPointMatches) {
-                pointMatches = loadedPointMatches;
+                ++loadedTransforms;
+                Array.prototype.push.apply(pointMatches, loadedPointMatches);
                 self.classList.add('files-loaded');
                 clickedButton.classList.add('files-loaded');
+                clickedButton.value = "Transformation CSVs (" + loadedTransforms + ")";
                 CATMAID.msg("Success", "Read " + pointMatches.length + " point matches");
               })
               .catch(CATMAID.handleError);

@@ -2655,6 +2655,7 @@
             return;
           }
 
+          let name = landmarkName;
           let targetName = landmarkName;
           let target = landmark.locations[0];
 
@@ -2700,6 +2701,10 @@
               lSourceX = parseFloat(p[1]), lSourceY = parseFloat(p[2]), lSourceZ = parseFloat(p[3]),
               rSourceX = parseFloat(p[4]), rSourceY = parseFloat(p[5]), rSourceZ = parseFloat(p[6]);
 
+          // Allow special case with only one linked location when lSource and
+          // rSource are the same.
+          let singleLocationAllowed = p[1] === p[4] && p[2] === p[5] && p[3] === p[6];
+
           // Find landmark and its location
           let landmark = landmarkIndex.get(landmarkName);
           if (!landmark) {
@@ -2710,7 +2715,7 @@
             CATMAID.warn("Landmark \"" + landmarkName + "\" doesn't have any location linked. Need two (left and right).");
             return;
           }
-          if (landmark.locations.length == 1) {
+          if (landmark.locations.length == 1 && !singleLocationAllowed) {
             CATMAID.warn("Landmark \"" + landmarkName + "\" has only one location linked. Need two (left and right).");
             return;
           }
@@ -2719,53 +2724,69 @@
             return;
           }
 
+          let name = landmarkName;
           let targetName = landmarkName;
-          // Find landmark location on 'left' side. Which dimension that is
-          // exactly is specified by the caller.
-          let location1 = landmark.locations[0], location2 = landmark.locations[1];
-          let lTarget, rTarget;
-          if (leftDim === 'x' || leftDim === 'y' || leftDim === 'z') {
-            if (location1[leftDim] > location2[leftDim]) {
-              lTarget = location1;
-              rTarget = location2;
+          if (singleLocationAllowed) {
+            let lTarget = landmark.locations[0];
+            if ([lTarget.x, lTarget.y, lTarget.z].every(CATMAID.tools.isNumber)) {
+              pointMatches.push({
+                name: name,
+                sourceName: landmarkName,
+                targetName: targetName,
+                source: [lSourceX, lSourceY, lSourceZ],
+                target: [lTarget.x, lTarget.x, lTarget.z],
+              });
             } else {
-              lTarget = location2;
-              rTarget = location1;
-            }
-          } else if (leftDim === '-x' || leftDim === '-y' || leftDim === '-z') {
-            if (location1[leftDim[1]] < location2[leftDim[1]]) {
-              lTarget = location1;
-              rTarget = location2;
-            } else {
-              lTarget = location2;
-              rTarget = location1;
+              CATMAID.warn("Skipping left target of " + i + ". entry. No numbers found.");
             }
           } else {
-            throw new CATMAID.ValueError("Unknown project space 'left' dimension: " + leftDim);
-          }
+            // Find landmark location on 'left' side. Which dimension that is
+            // exactly is specified by the caller.
+            let location1 = landmark.locations[0], location2 = landmark.locations[1];
+            let lTarget, rTarget;
+            if (leftDim === 'x' || leftDim === 'y' || leftDim === 'z') {
+              if (location1[leftDim] > location2[leftDim]) {
+                lTarget = location1;
+                rTarget = location2;
+              } else {
+                lTarget = location2;
+                rTarget = location1;
+              }
+            } else if (leftDim === '-x' || leftDim === '-y' || leftDim === '-z') {
+              if (location1[leftDim[1]] < location2[leftDim[1]]) {
+                lTarget = location1;
+                rTarget = location2;
+              } else {
+                lTarget = location2;
+                rTarget = location1;
+              }
+            } else {
+              throw new CATMAID.ValueError("Unknown project space 'left' dimension: " + leftDim);
+            }
 
-          if ([lTarget.x, lTarget.y, lTarget.z].every(CATMAID.tools.isNumber)) {
-            pointMatches.push({
-              name: name,
-              sourceName: landmarkName,
-              targetName: targetName,
-              source: [lSourceX, lSourceY, lSourceZ],
-              target: [lTarget.x, lTarget.x, lTarget.z],
-            });
-          } else {
-            CATMAID.warn("Skipping left target of " + i + ". entry. No numbers found.");
-          }
+            if ([lTarget.x, lTarget.y, lTarget.z].every(CATMAID.tools.isNumber)) {
+              pointMatches.push({
+                name: name,
+                sourceName: landmarkName,
+                targetName: targetName,
+                source: [lSourceX, lSourceY, lSourceZ],
+                target: [lTarget.x, lTarget.x, lTarget.z],
+              });
+            } else {
+              CATMAID.warn("Skipping left target of " + i + ". entry. No numbers found.");
+            }
 
-          if ([rTarget.x, rTarget.y, rTarget.z].every(CATMAID.tools.isNumber)) {
-            pointMatches.push({
-              name: name,
-              sourceName: landmarkName,
-              targetName: targetName,
-              source: [rSourceX, rSourceY, rSourceZ],
-              target: [rTarget.x, rTarget.y, rTarget.z],
-            });
-          } else {
-            CATMAID.warn("Skipping right target of " + i + ". entry. No numbers found.");
+            if ([rTarget.x, rTarget.y, rTarget.z].every(CATMAID.tools.isNumber)) {
+              pointMatches.push({
+                name: name,
+                sourceName: landmarkName,
+                targetName: targetName,
+                source: [rSourceX, rSourceY, rSourceZ],
+                target: [rTarget.x, rTarget.y, rTarget.z],
+              });
+            } else {
+              CATMAID.warn("Skipping right target of " + i + ". entry. No numbers found.");
+            }
           }
         });
         return pointMatches;

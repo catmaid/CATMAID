@@ -22,6 +22,9 @@
     this.onlyPositiveScores = true;
     // Show a top N of result matches
     this.showTopN = 10;
+    // A percentage that is used to sample result point clouds when displayed in
+    // a 3D Viewer.
+    this.pointCloudDisplaySample = 1.0;
 
     // We expect the content DOM element to be available after initialization.
     this.content = null;
@@ -119,6 +122,23 @@
             let value = parseInt(this.value, 10);
             if (value !== undefined && !Number.isNaN(value)) {
               self.showTopN = value;
+              self.refresh();
+            }
+          },
+        });
+
+        CATMAID.DOM.appendElement(controls, {
+          type: 'numeric',
+          label: 'Result point cloud sample',
+          title: 'A value from 0-100 that represents what percentage of a point cloud should be displayed in a 3D Viewer.',
+          length: 4,
+          min: 0,
+          max: 100,
+          value: self.pointCloudDisplaySample * 100,
+          onchange: function() {
+            let value = parseInt(this.value, 10);
+            if (value !== undefined && !Number.isNaN(value)) {
+              self.pointCloudDisplaySample = value / 100;
               self.refresh();
             }
           },
@@ -228,11 +248,12 @@
     let tbody = table.appendChild(document.createElement('tbody'));
 
     NeuronSimilarityDetailWidget.createSimilarityTable(this.similarity,
-        this.onlyPositiveScores, this.showTopN, this.pointClouds, table);
+        this.onlyPositiveScores, this.showTopN, this.pointClouds, table,
+        this.pointCloudDisplaySample);
   };
 
   NeuronSimilarityDetailWidget.createSimilarityTable = function(similarity,
-      matchesOnly, showTopN, pointClouds, table) {
+      matchesOnly, showTopN, pointClouds, table, pointcloudSample) {
     if (!table) {
       table = document.createElement('table');
     }
@@ -328,7 +349,7 @@
       var tr = $(this).closest('tr');
       var data = $(table).DataTable().row(tr).data();
       NeuronSimilarityDetailWidget.showAllSimilarityResults(similarity,
-          matchesOnly, showTopN);
+          matchesOnly, showTopN, pointcloudSample);
     });
 
     if (matchesOnly) {
@@ -339,10 +360,11 @@
   };
 
   NeuronSimilarityDetailWidget.showAllSimilarityResults = function(similarity,
-      matchesOnly, showTopN) {
+      matchesOnly, showTopN, pointcloudSample) {
     let widget3d = WindowMaker.create('3d-viewer').widget;
     widget3d.options.shading_method = 'none';
     widget3d.options.color_method = 'none';
+    widget3d.options.pointcloud_sample = pointcloudSample || 1.0;
 
     if (similarity.query_type === 'skeleton') {
       let models = similarity.query_objects.reduce(function(o, s) {

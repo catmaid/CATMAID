@@ -362,13 +362,29 @@
     let lut = new THREE.Lut("rainbow", 10);
     lut.setMax(nTargetObjectsToAdd - 1);
 
+    let compareScore = function(a, b) {
+      if (b[1] === undefined) return -1;
+      if (a[1] === undefined) return 1;
+      if (a[1] > b[1]) return -1;
+      if (a[1] < b[1]) return 1;
+      return 0;
+    };
+
+    let withScore = function(oid, i) {
+      // TODO: For now only the first query object scoring is respected.
+      return [oid, similarity.scoring[0][i]];
+    };
+
+
+    let sortedTargetObjects = similarity.target_objects.map(withScore).sort(compareScore);
+
     if (similarity.target_type === 'skeleton') {
       let nAddedModels = 0;
-      let models = similarity.target_objects.reduce(function(o, s, i) {
-        let matchOkay = !matchesOnly || similarity.scoring[i] > 0;
+      let models = sortedTargetObjects.reduce(function(o, s, i) {
+        let matchOkay = !matchesOnly || s[1] > 0;
         let topNOkay = !showTopN || i < showTopN;
         if (matchOkay && topNOkay) {
-          o[s] = new CATMAID.SkeletonModel(s, undefined, lut.getColor(i));
+          o[s[0]] = new CATMAID.SkeletonModel(s[0], undefined, lut.getColor(i));
           ++nAddedModels;
         }
         return o;
@@ -376,12 +392,12 @@
       widget3d.append(models);
     } else if (similarity.target_type === 'pointcloud') {
       let nAddedPointClouds = 0;
-      for (let i=0; i<similarity.target_objects.length; ++i) {
-        let matchOkay = !matchesOnly || similarity.scoring[i] > 0;
+      for (let i=0; i<sortedTargetObjects.length; ++i) {
+        let s = sortedTargetObjects[i];
+        let matchOkay = !matchesOnly || s[1] > 0;
         let topNOkay = !showTopN || i < showTopN;
         if (matchOkay && topNOkay) {
-          let pointCloudId = similarity.target_objects[i];
-          widget3d.showPointCloud(pointCloudId, true, lut.getColor(i));
+          widget3d.showPointCloud(s[0], true, lut.getColor(i));
         }
       }
     }

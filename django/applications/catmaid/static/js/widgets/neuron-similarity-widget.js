@@ -2747,7 +2747,7 @@
           if ([lTarget.x, lTarget.y, lTarget.z].every(CATMAID.tools.isNumber)) {
             pointMatches.push({
               name: name,
-              sourceName: sourceName,
+              sourceName: landmarkName,
               targetName: targetName,
               source: [lSourceX, lSourceY, lSourceZ],
               target: [lTarget.x, lTarget.x, lTarget.z],
@@ -2849,7 +2849,6 @@
         }
 
         let nColumns = transformationData[0].length;
-
         if (nColumns === 4) {
           return NeuronSimilarityWidget.loadTransformationFrom4ColData(transformationData);
         } else if (nColumns === 7) {

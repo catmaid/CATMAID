@@ -359,7 +359,7 @@
 
     let nTargetObjects = similarity.target_objects.length;
     let nTargetObjectsToAdd = showTopN ? Math.min(showTopN, nTargetObjects) : nTargetObjects;
-    let lut = new THREE.Lut("rainbow", 10);
+    let lut = new THREE.Lut("greenred", 10);
     lut.setMax(nTargetObjectsToAdd - 1);
 
     let compareScore = function(a, b) {

@@ -168,4 +168,9 @@ jQuery.expr[":"].icontainsnot = jQuery.expr.createPseudo(function(arg) {
   CATMAID.THREE.LineSegments2 = function() {
 
   };
+
+  THREE.Lut.prototype.addColorMap("greenred",
+    [[0.0, '0x6fff5c'], [0.2, '0x7DFFE9'], [0.6, '0x85ADFF'],
+     [0.8, '0xFF99FF'], [1.0, '0xFF4F4F']]);
+
 })(CATMAID);

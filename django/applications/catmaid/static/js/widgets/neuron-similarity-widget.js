@@ -2759,7 +2759,7 @@
           if ([rTarget.x, rTarget.y, rTarget.z].every(CATMAID.tools.isNumber)) {
             pointMatches.push({
               name: name,
-              sourceName: sourceName,
+              sourceName: landmarkName,
               targetName: targetName,
               source: [rSourceX, rSourceY, rSourceZ],
               target: [rTarget.x, rTarget.y, rTarget.z],

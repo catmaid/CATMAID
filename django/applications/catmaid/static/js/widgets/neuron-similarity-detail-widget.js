@@ -399,6 +399,8 @@
 
 
     let sortedTargetObjects = similarity.target_objects.map(withScore).sort(compareScore);
+    let sourceObjectIds = new Set(similarity.query_objects);
+    let sourceTargetTypesMatch = similarity.target_type === similarity.query_type;
 
     if (similarity.target_type === 'skeleton') {
       let nAddedModels = 0;
@@ -406,8 +408,10 @@
         let matchOkay = !matchesOnly || s[1] > 0;
         let topNOkay = !showTopN || i < showTopN;
         if (matchOkay && topNOkay) {
-          o[s[0]] = new CATMAID.SkeletonModel(s[0], undefined, lut.getColor(i));
-          ++nAddedModels;
+          if (!(sourceObjectIds.has(s[0]) && sourceTargetTypesMatch)) {
+            o[s[0]] = new CATMAID.SkeletonModel(s[0], undefined, lut.getColor(i));
+            ++nAddedModels;
+          }
         }
         return o;
       }, {});
@@ -419,7 +423,9 @@
         let matchOkay = !matchesOnly || s[1] > 0;
         let topNOkay = !showTopN || i < showTopN;
         if (matchOkay && topNOkay) {
-          widget3d.showPointCloud(s[0], true, lut.getColor(i));
+          if (!(sourceObjectIds.has(s[0]) && sourceTargetTypesMatch)) {
+            widget3d.showPointCloud(s[0], true, lut.getColor(i));
+          }
         }
       }
     }

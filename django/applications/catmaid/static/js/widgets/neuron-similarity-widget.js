@@ -2764,24 +2764,26 @@
               throw new CATMAID.ValueError("Unknown project space 'left' dimension: " + leftDim);
             }
 
-            if ([lTarget.x, lTarget.y, lTarget.z].every(CATMAID.tools.isNumber)) {
+            let lSourceLocation = [lSourceX, lSourceY, lSourceZ];
+            if (lSourceLocation.every(CATMAID.tools.isNumber)) {
               pointMatches.push({
                 name: name,
                 sourceName: landmarkName,
                 targetName: targetName,
-                source: [lSourceX, lSourceY, lSourceZ],
+                source: lSourceLocation,
                 target: [lTarget.x, lTarget.x, lTarget.z],
               });
             } else {
               CATMAID.warn("Skipping left target of " + i + ". entry. No numbers found.");
             }
 
-            if ([rTarget.x, rTarget.y, rTarget.z].every(CATMAID.tools.isNumber)) {
+            let rSourceLocation = [rSourceX, rSourceY, rSourceZ];
+            if (rSourceLocation.every(CATMAID.tools.isNumber)) {
               pointMatches.push({
                 name: name,
                 sourceName: landmarkName,
                 targetName: targetName,
-                source: [rSourceX, rSourceY, rSourceZ],
+                source: rSourceLocation,
                 target: [rTarget.x, rTarget.y, rTarget.z],
               });
             } else {

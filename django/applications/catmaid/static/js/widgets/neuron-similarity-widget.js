@@ -1605,7 +1605,12 @@
 
         // Add a toggle-all checkbox for point cloud selection
         $($('th', table)[0]).append($('<input title="Toogle selection of all pointclouds" ' +
-            'type="checkbox"></input>'));
+            'type="checkbox"></input>').on('change', function() {
+              for (let pcid in widget.pointCloudSelection) {
+                widget.pointCloudSelection[pcid] = this.checked;
+              }
+              datatable.rows().invalidate();
+            }));
       },
       refresh: function(widget) {
         let table = document.getElementById(widget.idPrefix + 'pointcloud-table');

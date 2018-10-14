@@ -10,6 +10,11 @@ configuration is defined. Settings defined in ``settings_base.py`` can be
 overridden in ``settings.py``. Below is an explanation of all available settings.
 
 .. glossary::
+  ``CELERY_WORKER_CONCURRENCY``
+      Controls how many asyncronous Celery workers are allowed to run. This
+      controls how many asyncronous tasks can be processed in parallel.
+
+.. glossary::
   ``NODE_LIST_MAXIMUM_COUNT``
       The maximum number of nodes that should be retrieved for a bounding box
       query as it is used to render tracing data. If set to ``None``, no limit
@@ -35,3 +40,10 @@ overridden in ``settings.py``. Below is an explanation of all available settings
       default. It is typically only useful if the ``DVID`` or ``JaneliaRender``
       middleware are in use and doesn't have any effect after the initial
       migration.
+
+.. glossary::
+  ``MAX_PARALLEL_ASYNC_WORKERS``
+     Control how many co-processes can be spawned from an async (Celery) worker.
+     This means if ``MAX_PARALLEL_ASYNC_WORKERS`` is set to ``3`` and assuming
+     ``CELERY_WORKER_CONCURRENCY`` is set to ``2``, asyncronous procerssing in
+     CATMAID can be expected to use a maximum f ``6`` processes.

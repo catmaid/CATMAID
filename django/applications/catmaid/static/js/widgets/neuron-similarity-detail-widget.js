@@ -375,7 +375,7 @@
     } else if (similarity.query_type === 'pointcloud') {
       for (let i=0; i<similarity.query_objects.length; ++i) {
         let pointCloudId = similarity.query_objects[i];
-        widget3d.showPointCloud(pointcloudId, true);
+        widget3d.showPointCloud(pointCloudId, true);
       }
     }
 

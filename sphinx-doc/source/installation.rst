@@ -10,7 +10,7 @@ Basic Installation Instructions
 ===============================
 
 These installation instructions have been tested on the most
-recent stable release of Ubuntu (16.04 xenial), so may need
+recent stable release of Ubuntu (18.04 bionic), so may need
 some minor changes for other Debian-based distributions.
 For installation on Mac OS X, first read these
 :ref:`additional instructions <installation-osx>`.
@@ -38,7 +38,7 @@ done so already)::
     sudo apt-get update
 
 While Python 3.5 is supported, we recommend the use of Python 3.6. To be able to
-install it on Ubuntu 14.04 and 16.04, the following needs to be done::
+install it on Ubuntu 16.04 and earlier, the following needs to be done::
 
     sudo add-apt-repository ppa:deadsnakes/ppa
     sudo apt-get update
@@ -80,18 +80,18 @@ and can be upgraded easily. Some of these Python packages depend on system-wide
 libraries that you will need to install in advance, however. You can do this
 with one of the following commands (the one suiting best your OS):
 
-Ubuntu 16.04:
+Ubuntu 18.04:
 
-    .. fileinclude:: ../../packagelist-ubuntu-16.04-apt.txt
+    .. fileinclude:: ../../packagelist-ubuntu-18.04-apt.txt
        :removelinebreaks:
        :indent:
        :prepend: sudo apt-get install
        :split: 75
        :splitend:  \
 
-Ubuntu 14.04:
+Ubuntu 16.04:
 
-    .. fileinclude:: ../../packagelist-ubuntu-14.04-apt.txt
+    .. fileinclude:: ../../packagelist-ubuntu-16.04-apt.txt
        :removelinebreaks:
        :indent:
        :prepend: sudo apt-get install

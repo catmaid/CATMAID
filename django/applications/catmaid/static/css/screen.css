@@ -1540,6 +1540,11 @@ span.result-list-vertical span.result-element span.li {
   font-weight: bold;
 }
 
+span.result-element span.li-body {
+  display: flex;
+  flex-direction: column;
+}
+
 span.result-element span.score {
   margin: 0 0.4em 0 2em;
 }
@@ -1550,6 +1555,10 @@ span.result-element span.actions {
 
 span.result-element span.actions a {
   margin: 0 0.4em 0 0.4em;
+}
+
+span.result-images img {
+  margin: 0.5em 0.5em 0.5em 0;
 }
 
 input[type=file].files-loaded,

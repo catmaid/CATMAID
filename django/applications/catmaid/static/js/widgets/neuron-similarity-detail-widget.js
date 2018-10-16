@@ -378,7 +378,8 @@
               for (let i=0; i<topNElements; ++i) {
                 let color = lut.getColor(i);
                 let entry = row[1][i];
-                elements.push(`<span class="result-element"><span class="li">${i+1}.</span><span class="li-body"><span class="result-info"><a href="#" data-skeleton-id="${entry[0]}" data-role="select-skeleton">${entry[1]}</a><span class="score">Score: ${entry[2]}</span><span class="color"><i class="fa fa-circle" style="color: ${color.getStyle()}"></i></span><span class="actions" data-pointcloud-id="${entry[0]}"><a href="#" data-role="show-single-3d" data-target-index="${i}">3D Viewer</a><a href="#" data-role="show-images">Images</a></span></span>`);
+                let name =  getTargetName(entry[0]);
+                elements.push(`<span class="result-element"><span class="li">${i+1}.</span><span class="li-body"><span class="result-info"><a href="#" data-skeleton-id="${entry[0]}" data-role="select-skeleton">${name}</a><span class="score">Score: ${entry[2]}</span><span class="color"><i class="fa fa-circle" style="color: ${color.getStyle()}"></i></span><span class="actions" data-pointcloud-id="${entry[0]}"><a href="#" data-role="show-single-3d" data-target-index="${i}">3D Viewer</a><a href="#" data-role="show-images">Images</a></span></span>`);
                 elements.push('<span class="result-images">');
                 let pointcloud = pointClouds.get(entry[0]);
                 if (pointcloud && pointcloud.images) {
@@ -398,7 +399,8 @@
               for (let i=0; i<topNElements; ++i) {
                 let color = lut.getColor(i);
                 let entry = row[1][i];
-                elements.push(`<span class="result-element"><span class="li">${i+1}.</span><a href="#" data-object-id="${entry[0]}" data-role="select-pointcloud">${entry[1]}</a><span class="score">Score: ${entry[2]}</span><span class="color"><i class="fa fa-circle" style="color: ${color.getStyle()}"></i></span></span>`);
+                let name =  getTargetName(entry[0]);
+                elements.push(`<span class="result-element"><span class="li">${i+1}.</span><a href="#" data-object-id="${entry[0]}" data-role="select-pointcloud">${name}</a><span class="score">Score: ${entry[2]}</span><span class="color"><i class="fa fa-circle" style="color: ${color.getStyle()}"></i></span></span>`);
               }
               elements.push('</span>');
               return elements.join('');

@@ -196,18 +196,6 @@
     let self = this;
     CATMAID.NeuronNameService.getInstance().registerAll(this, targetModels)
       .then(function() {
-        // Update all point clouds, if they are not yet available
-        if (!self.pointClouds || self.pointClouds.size === 0) {
-          return CATMAID.Pointcloud.listAll(project.id, true)
-            .then(function(result) {
-              self.pointClouds = result.reduce(function(m, e) {
-                m.set(e.id, e);
-                return m;
-              }, new Map());
-            });
-        }
-      })
-      .then(function() {
         self.refresh();
       })
       .catch(CATMAID.handleError);
@@ -236,6 +224,7 @@
     }
 
     let table = this.content.appendChild(document.createElement('table'));
+    table.classList.add('result-table');
 
     let thead = table.appendChild(document.createElement('thead'));
     let theadTr = thead.appendChild(document.createElement('tr'));
@@ -308,13 +297,66 @@
       return [qskid, sortedMatches];
     });
 
+    // Get detailed point cloud information
+    let referencedPointclouds = [];
+    if (similarity) {
+      let workingSet;
+      if (similarity.query_type === 'pointcloud') {
+        workingSet = new Set(similarity.query_objects.slice());
+      }
+      if (similarity.target_type === 'pointcloud') {
+        workingSet = dataAboveZero.reduce(function(a, p) {
+          let topNElements = Math.min(showTopN, p[1].length);
+          for (let i=0; i<topNElements; ++i) {
+            let entry = p[1][i];
+            a.add(entry[0]);
+          }
+          return a;
+        }, workingSet ? workingSet : new Set());
+      }
+      referencedPointclouds = Array.from(workingSet);
+    }
+
+    // Find unknown point clouds
+    let missingPointClouds = referencedPointclouds.reduce(function(m, pc) {
+      if (!pointClouds.has(pc)) {
+        m.push(pc);
+      }
+      return m;
+    }, []);
+
+    let prepare;
+    if (missingPointClouds.length > 0) {
+      prepare = CATMAID.Pointcloud.list(project.id, false, true,
+          missingPointClouds)
+        .then(function(result) {
+          result.forEach(function(e) {
+            pointClouds.set(e.id, e);
+          });
+        });
+    } else {
+      prepare = Promise.resolve();
+    }
+
     $(table).DataTable({
       dom: 'lfrtip',
-      data: dataAboveZero,
+      autoWidth: false,
+      ajax: function(data, callback, settings) {
+        // Load data dependencies
+        prepare.then(function(result) {
+            callback({
+              draw: data.draw,
+              data: dataAboveZero,
+              recordsTotal: dataAboveZero.length,
+              recordsFiltered: dataAboveZero.length
+            });
+          })
+          .catch(CATMAID.handleError);
+      },
       order: [],
       columns: [{
         orderable: true,
-        class: 'cm-center',
+        class: 'cm-center cm-top',
         render: function(data, type, row, meta) {
           return `<a href="#" data-skeleton-id="${row[0]}" data-role="select-skeleton">${getQueryName(row[0])}</a>`;
         }
@@ -324,19 +366,39 @@
         render: function(data, type, row, meta) {
           if (row[1].length > 0) {
             let topNElements = Math.min(showTopN, row[1].length);
-            let elements = ['<span class="result-list">'];
-            for (let i=0; i<topNElements; ++i) {
-              let entry = row[1][i];
-              elements.push(`<span class="result-element"><span>${i+1}.</span><a href="#" data-skeleton-id="${entry[0]}" data-role="select-skeleton">${entry[1]}</a> (${entry[2]})</span>`);
+            if (similarity.target_type === 'pointcloud') {
+              let elements = ['<span class="result-list-vertical">'];
+              for (let i=0; i<topNElements; ++i) {
+                let entry = row[1][i];
+                elements.push(`<span class="result-element"><span class="li">${i+1}.</span><a href="#" data-skeleton-id="${entry[0]}" data-role="select-skeleton">${entry[1]}</a><span class="score">Score: ${entry[2]}</span><span class="actions" data-pointcloud-id="${entry[0]}"><a href="#" data-role="show-single-3d" data-target-index="${i}">3D Viewer</a><a href="#" data-role="show-images">Images</a></span></span>`);
+                let pointcloud = pointClouds.get(entry[0]);
+                if (pointcloud && pointcloud.images) {
+                  for (let image of pointcloud.images) {
+                    let imageSource = CATMAID.Pointcloud.getImagePath(project.id, pointcloud.id, image.id);
+                    let description = image.description ? image.description : '(no description)';
+                    let imageTitle = `${image.name} (${image.id}): ${description}`;
+                    elements.push('<img src="' + imageSource + '" title="' + imageTitle + '" style="height: 200px;" />');
+                  }
+                }
+              }
+              elements.push('</span>');
+              return elements.join('');
+            } else {
+              let elements = ['<span class="result-list-vertical">'];
+              for (let i=0; i<topNElements; ++i) {
+                let entry = row[1][i];
+                elements.push(`<span class="result-element"><span class="li">${i+1}.</span><a href="#" data-object-id="${entry[0]}" data-role="select-pointcloud">${entry[1]}</a> (${entry[2]})</span>`);
+              }
+              elements.push('</span>');
+              return elements.join('');
             }
-            elements.push('</span>');
-            return elements.join('');
           } else {
             return '(no match)';
           }
         }
       }, {
         orderable: false,
+        class: "cm-center cm-top",
         render: function(data, type, row, meta) {
           return '<a href="#" data-role="show-all-3d">Show 3D</a>';
         }
@@ -350,6 +412,24 @@
       var data = $(table).DataTable().row(tr).data();
       NeuronSimilarityDetailWidget.showAllSimilarityResults(similarity,
           matchesOnly, showTopN, pointcloudSample);
+    }).on('click', 'a[data-role=show-single-3d]', function() {
+      var pointcloudId = parseInt(this.parentNode.dataset.pointcloudId, 10);
+      if (!CATMAID.tools.isNumber(pointcloudId)) {
+        return;
+      }
+      var targetIndex = parseInt(this.dataset.targetIndex, 10);
+      var table = $(this).closest('table');
+      var tr = $(this).closest('tr');
+      var data = $(table).DataTable().row(tr).data();
+      NeuronSimilarityDetailWidget.showSingleSimilarityResult(similarity,
+          data[0], pointcloudId, targetIndex, showTopN, pointcloudSample);
+    }).on('click', 'a[data-role=show-images]', function() {
+      var pointcloudId = parseInt(this.parentNode.dataset.pointcloudId, 10);
+      if (!CATMAID.tools.isNumber(pointcloudId)) {
+        return;
+      }
+      CATMAID.NeuronSimilarityWidget.showPointCloudImages(project.id,
+          pointcloudId, true);
     });
 
     if (matchesOnly) {
@@ -357,6 +437,37 @@
     }
 
     return table;
+  };
+
+  NeuronSimilarityDetailWidget.showSingleSimilarityResult = function(
+      similarity, queryObjectId, targetObjectId, targetIndex, showTopN,
+      pointcloudSample) {
+    let widget3d = WindowMaker.create('3d-viewer').widget;
+    widget3d.options.shading_method = 'none';
+    widget3d.options.color_method = 'none';
+    widget3d.options.pointcloud_sample = pointcloudSample || 1.0;
+
+    if (similarity.query_type === 'skeleton') {
+      let models = {};
+      models[queryObjectId] = new CATMAID.SkeletonModel(queryObjectId);
+      widget3d.append(models);
+    } else if (similarity.query_type === 'pointcloud') {
+      widget3d.showPointCloud(queryObjectId, true);
+    }
+
+    let nTargetObjects = similarity.target_objects.length;
+    let nTargetObjectsToAdd = showTopN ? Math.min(showTopN, nTargetObjects) : nTargetObjects;
+    let lut = new THREE.Lut("greenred", 10);
+    lut.setMax(nTargetObjectsToAdd - 1);
+    let color = lut.getColor(targetIndex || 0);
+
+    if (similarity.target_type === 'skeleton') {
+      let models = {};
+      models[queryObjectId] = new CATMAID.SkeletonModel(targetObjectId, undefined, color);
+      widget3d.append(models);
+    } else if (similarity.target_type === 'pointcloud') {
+      widget3d.showPointCloud(targetObjectId, true, color);
+    }
   };
 
   NeuronSimilarityDetailWidget.showAllSimilarityResults = function(similarity,

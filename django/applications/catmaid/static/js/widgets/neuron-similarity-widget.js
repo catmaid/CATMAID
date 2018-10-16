@@ -2447,7 +2447,7 @@
               let elements = ['<span class="result-list">'];
               for (let i=0; i<nTop10Elements; ++i) {
                 let entry = row[1][i];
-                elements.push(`<span class="result-element"><span>${i+1}.</span><a href="#" data-skeleton-id="${entry[0]}" data-role="select-skeleton">${entry[1]}</a> (${entry[2]})</span>`);
+                elements.push(`<span class="result-element"><span class="li">${i+1}.</span><a href="#" data-skeleton-id="${entry[0]}" data-role="select-skeleton">${entry[1]}</a> (${entry[2]})</span>`);
               }
               elements.push('</span>');
               return elements.join('');

@@ -314,7 +314,9 @@
           return a;
         }, workingSet ? workingSet : new Set());
       }
-      referencedPointclouds = Array.from(workingSet);
+      if (workingSet) {
+        referencedPointclouds = Array.from(workingSet);
+      }
     }
 
     // Find unknown point clouds
@@ -394,8 +396,9 @@
             } else {
               let elements = ['<span class="result-list-vertical">'];
               for (let i=0; i<topNElements; ++i) {
+                let color = lut.getColor(i);
                 let entry = row[1][i];
-                elements.push(`<span class="result-element"><span class="li">${i+1}.</span><a href="#" data-object-id="${entry[0]}" data-role="select-pointcloud">${entry[1]}</a> (${entry[2]})</span>`);
+                elements.push(`<span class="result-element"><span class="li">${i+1}.</span><a href="#" data-object-id="${entry[0]}" data-role="select-pointcloud">${entry[1]}</a><span class="score">Score: ${entry[2]}</span><span class="color"><i class="fa fa-circle" style="color: ${color.getStyle()}"></i></span></span>`);
               }
               elements.push('</span>');
               return elements.join('');

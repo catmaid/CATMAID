@@ -1555,10 +1555,10 @@ span.result-element span.color {
 
 span.result-element span.color i {
   text-shadow:
-    -1px -1px 0 #000,
-    1px -1px 0 #000,
-    -1px 1px 0 #000,
-    1px 1px 0 #000;
+    -1px -1px 0 #777,
+    1px -1px 0 #777,
+    -1px 1px 0 #777,
+    1px 1px 0 #777;
 }
 
 span.result-element span.actions {

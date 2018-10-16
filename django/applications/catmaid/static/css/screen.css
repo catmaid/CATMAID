@@ -1549,6 +1549,18 @@ span.result-element span.score {
   margin: 0 0.4em 0 2em;
 }
 
+span.result-element span.color {
+  margin: 0 0.4em 0 0.2em;
+}
+
+span.result-element span.color i {
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000;
+}
+
 span.result-element span.actions {
   margin: 0 1em 0 2em;
 }

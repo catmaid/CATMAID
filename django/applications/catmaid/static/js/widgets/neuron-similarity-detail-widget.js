@@ -338,6 +338,11 @@
       prepare = Promise.resolve();
     }
 
+    let nTargetObjects = similarity.target_objects.length;
+    let nTargetObjectsToAdd = showTopN ? Math.min(showTopN, nTargetObjects) : nTargetObjects;
+    let lut = new THREE.Lut("greenred", 10);
+    lut.setMax(nTargetObjectsToAdd - 1);
+
     $(table).DataTable({
       dom: 'lfrtip',
       autoWidth: false,
@@ -369,8 +374,9 @@
             if (similarity.target_type === 'pointcloud') {
               let elements = ['<span class="result-list-vertical">'];
               for (let i=0; i<topNElements; ++i) {
+                let color = lut.getColor(i);
                 let entry = row[1][i];
-                elements.push(`<span class="result-element"><span class="li">${i+1}.</span><span class="li-body"><span class="result-info"><a href="#" data-skeleton-id="${entry[0]}" data-role="select-skeleton">${entry[1]}</a><span class="score">Score: ${entry[2]}</span><span class="actions" data-pointcloud-id="${entry[0]}"><a href="#" data-role="show-single-3d" data-target-index="${i}">3D Viewer</a><a href="#" data-role="show-images">Images</a></span></span>`);
+                elements.push(`<span class="result-element"><span class="li">${i+1}.</span><span class="li-body"><span class="result-info"><a href="#" data-skeleton-id="${entry[0]}" data-role="select-skeleton">${entry[1]}</a><span class="score">Score: ${entry[2]}</span><span class="color"><i class="fa fa-circle" style="color: ${color.getStyle()}"></i></span><span class="actions" data-pointcloud-id="${entry[0]}"><a href="#" data-role="show-single-3d" data-target-index="${i}">3D Viewer</a><a href="#" data-role="show-images">Images</a></span></span>`);
                 elements.push('<span class="result-images">');
                 let pointcloud = pointClouds.get(entry[0]);
                 if (pointcloud && pointcloud.images) {

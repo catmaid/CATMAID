@@ -10,13 +10,34 @@
   /**
    * Get all point clouds visible in the passed in project.
    *
-   * @param projectId {Number}  The project of the returned point clouds
-   * @param simple    {Boolean} Whether or not only id and name are returned.
+   * @param projectId   {Number}  The project of the returned point clouds
+   * @param simple      {Boolean} Whether or not only id and name are returned.
+   * @param with_images {Boolean} (optional) Whether image meta data should be
+   *                              included in the response. Default is false.
    * @returns {Promise} Resolves with a list of point clouds.
    */
-  Pointcloud.listAll = function(projectId, simple) {
+  Pointcloud.listAll = function(projectId, simple, with_images) {
     return CATMAID.fetch(projectId + '/pointclouds/', 'GET', {
       simple: !!simple,
+      with_images: !!with_images,
+    });
+  };
+
+  /**
+   * Get detailed information on a set of query point clouds, if they are
+   * visible in the passed in project.
+   *
+   * @param projectId {Number}  The project of the returned point clouds
+   * @param simple    {Boolean} Whether or not only id and name are returned.
+   * @param with_images {Boolean} (optional) Whether image meta data should be
+   *                              included in the response. Default is false.
+   * @returns {Promise} Resolves with a list of point clouds.
+   */
+  Pointcloud.list = function(projectId, simple, with_images, pointcloudIds) {
+    return CATMAID.fetch(projectId + '/pointclouds/', pointcloudIds ? 'POST' : 'GET', {
+      simple: !!simple,
+      with_images: !!with_images,
+      pointcloud_ids: pointcloudIds,
     });
   };
 

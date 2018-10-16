@@ -72,11 +72,116 @@ def serialize_image_data(image, simple=False):
         }
 
 
+def list_pointclouds(project_id, user_id, simple, with_images, with_points, sample_ratio,
+        pointcloud_ids):
+    extra_select = []
+    extra_join = []
+    query_params = {
+        'project_id': project_id,
+        'user_id': user_id
+    }
+
+    if with_images:
+        extra_select.append('image_data.ids')
+        extra_select.append('image_data.names')
+        extra_select.append('image_data.descriptions')
+        extra_select.append('image_data.source_paths')
+        extra_join.append('''
+            LEFT JOIN LATERAL (
+                SELECT array_agg(i.id), array_agg(i.name),
+                    array_agg(i.description), array_agg(i.source_path)
+                FROM pointcloud_image_data pci
+                JOIN image_data i
+                    ON i.id = pci.image_data_id
+                WHERE pci.pointcloud_id = pc.id
+                GROUP BY pc.id
+            ) image_data(ids, names, descriptions, source_paths)
+                ON true
+        ''')
+
+    if pointcloud_ids:
+        extra_join.append('''
+            JOIN UNNEST(%(pointcloud_ids)s::bigint[]) query_pointcloud(id)
+                ON query_pointcloud.id = pc.id
+        ''')
+        query_params['pointcloud_ids'] = pointcloud_ids
+
+    # Check permissions. If there are no permission assigned at all,
+    # everyone can read a point cloud.
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT pc.id, pc.name, pc.description, pc.user_id, pc.creation_time,
+            pc.edition_time
+        {extra_select}
+        FROM pointcloud pc
+        LEFT OUTER JOIN pointcloud_user_object_permission puop
+            ON pc.id = puop.content_object_id
+        LEFT OUTER JOIN pointcloud_group_object_permission pgop
+            ON pc.id = pgop.content_object_id
+        LEFT OUTER JOIN auth_permission ap_u
+            ON ap_u.id = puop.permission_id
+        LEFT OUTER JOIN auth_permission ap_g
+            ON ap_g.id = pgop.permission_id
+        LEFT OUTER JOIN auth_user_groups ug
+            ON ug.group_id = pgop.group_id
+        {extra_join}
+        WHERE pc.project_id = %(project_id)s AND (
+            (puop.id IS NULL AND pgop.id IS NULL) OR
+            (puop.user_id = %(user_id)s AND ap_u.codename = 'can_read') OR
+            (ug.user_id = %(user_id)s AND ap_g.codename ='can_read'))
+    """.format(**{
+        'extra_select': (', ' + ', '.join(extra_select)) if extra_select else '',
+        'extra_join': '\n'.join(extra_join),
+    }), query_params)
+
+    if simple:
+        pointcloud_data = [{
+            'id': pc[0],
+            'name': pc[1],
+        } for pc in cursor.fetchall()]
+    else:
+        pointcloud_data = []
+        if with_images:
+            for pc in cursor.fetchall():
+                images = [{
+                    'id': iid,
+                    'name': pc[7][n],
+                    'description': pc[8][n],
+                    'source_path': pc[9][n],
+                } for n, iid in enumerate(pc[6])]
+
+                data = {
+                    'id': pc[0],
+                    'name': pc[1],
+                    'description': pc[2],
+                    'images': images,
+                    'user_id': pc[3],
+                    'creation_time': pc[4],
+                    'edition_time': pc[5],
+                    'project_id': project_id,
+                }
+                pointcloud_data.append(data)
+        else:
+            for n, pc in enumerate(cursor.fetchall()):
+                data = {
+                    'id': pc[0],
+                    'name': pc[1],
+                    'description': pc[2],
+                    'user_id': pc[3],
+                    'creation_time': pc[4],
+                    'edition_time': pc[5],
+                    'project_id': project_id,
+                }
+                pointcloud_data.append(data)
+
+    return pointcloud_data
+
+
 class PointCloudList(APIView):
 
     @method_decorator(requires_user_role(UserRole.Browse))
     def get(self, request, project_id):
-        """List all available point clouds.
+        """List all available point clouds or optionally a sub set.
         ---
         parameters:
           - name: project_id
@@ -107,56 +212,76 @@ class PointCloudList(APIView):
             type: number
             paramType: form
             required: false
-            defaultValue: 1
+          - name: pointcloud_ids
+            description: A list of point cloud IDs to which the query is constrained.
+            type: array
+            paramType: path
+            required: false
         """
         with_images = get_request_bool(request.query_params, 'with_images', False)
         with_points = get_request_bool(request.query_params, 'with_points', False)
         sample_ratio = float(request.query_params.get('sample_ratio', '1.0'))
         simple = get_request_bool(request.query_params, 'simple', False)
+        pointcloud_ids = get_request_list(request.query_params,
+                'pointcloud_ids', None, map_fn=int)
 
-        # Check permissions. If there are no permission assigned at all,
-        # everyone can read a point cloud.
-        cursor = connection.cursor()
-        cursor.execute("""
-            SELECT pc.id, pc.name, pc.description, pc.user_id, pc.creation_time,
-                pc.edition_time
-            FROM pointcloud pc
-            LEFT OUTER JOIN pointcloud_user_object_permission puop
-                ON pc.id = puop.content_object_id
-            LEFT OUTER JOIN pointcloud_group_object_permission pgop
-                ON pc.id = pgop.content_object_id
-            LEFT OUTER JOIN auth_permission ap_u
-                ON ap_u.id = puop.permission_id
-            LEFT OUTER JOIN auth_permission ap_g
-                ON ap_g.id = pgop.permission_id
-            LEFT OUTER JOIN auth_user_groups ug
-                ON ug.group_id = pgop.group_id
-            WHERE pc.project_id = %(project_id)s AND (
-                (puop.id IS NULL AND pgop.id IS NULL) OR
-                (puop.user_id = %(user_id)s AND ap_u.codename = 'can_read') OR
-                (ug.user_id = %(user_id)s AND ap_g.codename ='can_read'))
-        """, {
-            'project_id': project_id,
-            'user_id': request.user.id
-        })
+        pointclouds = list_pointclouds(project_id, request.user.id, simple,
+                with_images, with_points, sample_ratio, pointcloud_ids)
 
-        if simple:
-            pointcloud_data = [{
-                'id': pc[0],
-                'name': pc[1],
-            } for pc in cursor.fetchall()]
-        else:
-            pointcloud_data = [{
-                'id': pc[0],
-                'name': pc[1],
-                'description': pc[2],
-                'user_id': pc[3],
-                'creation_time': pc[4],
-                'edition_time': pc[5],
-                'project_id': project_id,
-            } for pc in cursor.fetchall()]
+        return JsonResponse(pointclouds, safe=False)
 
-        return JsonResponse(pointcloud_data, safe=False)
+
+    @method_decorator(requires_user_role(UserRole.Browse))
+    def post(self, request, project_id):
+        """List all available point clouds or optionally a sub set.
+        ---
+        parameters:
+          - name: project_id
+            description: Project of the returned point clouds
+            type: integer
+            paramType: path
+            required: true
+          - name: simple
+            description: Wheter or not only ID and name should be returned
+            type: bool
+            paramType: form
+            required: false
+            defaultValue: false
+          - name: with_images
+            description: Wheter linked images should returned as well.
+            type: bool
+            paramType: form
+            required: false
+            defaultValue: false
+          - name: with_points
+            description: Wheter linked points should returned as well.
+            type: bool
+            paramType: form
+            required: false
+            defaultValue: false
+          - name: sample_ratio
+            description: Number in [0,1] to optionally sample point cloud
+            type: number
+            paramType: form
+            required: false
+          - name: pointcloud_ids
+            description: A list of point cloud IDs to which the query is constrained.
+            type: array
+            paramType: path
+            required: false
+        """
+        with_images = get_request_bool(request.POST, 'with_images', False)
+        with_points = get_request_bool(request.POST, 'with_points', False)
+        sample_ratio = float(request.POST.get('sample_ratio', '1.0'))
+        simple = get_request_bool(request.POST, 'simple', False)
+        pointcloud_ids = get_request_list(request.POST,
+                'pointcloud_ids', None, map_fn=int)
+
+        pointclouds = list_pointclouds(project_id, request.user.id, simple,
+                with_images, with_points, sample_ratio, pointcloud_ids)
+
+        return JsonResponse(pointclouds, safe=False)
+
 
     @method_decorator(requires_user_role(UserRole.Annotate))
     def put(self, request, project_id):

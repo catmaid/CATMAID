@@ -748,6 +748,7 @@ def intersects(request, project_id, volume_id):
         'intersects': result[0]
     })
 
+
 @api_view(['POST'])
 @requires_user_role([UserRole.Browse])
 def get_volume_entities(request, project_id):
@@ -779,41 +780,38 @@ def get_volume_entities(request, project_id):
 
     return JsonResponse(dict(cursor.fetchall()))
 
-def getPrimaryVolumes(project_id):
-    '''
-        Helper function that returns list of all volumes considered as primary neuropils 
-        by using the standardized volume naming schema to filter out the others - modified version of get_volume_details
 
-    '''
-    params = {
-        'project_id': project_id
-    }
-
-    query = '''
-    SELECT id, project_id, name, comment, user_id, editor_id,
-                 creation_time, edition_time, Box3D(geometry), ST_Asx3D(geometry)
-             FROM catmaid_volume v
-             WHERE v.project_id= %(project_id)s AND 
-                  (name LIKE '%%_R' OR name LIKE '%%_L' OR char_length(name)<5) AND char_length(name) <= 10 AND 
-                   name NOT LIKE 'v14%%'
-    '''
-
+def get_primary_volumes_by_name(project_id):
+    """Helper function that returns list of all volumes considered as primary
+    neuropils by using the standardized volume naming schema to filter out the
+    others - modified version of get_volume_details.
+    """
     cursor = connection.cursor()
-    cursor.execute(query, params)
+    cursor.execute('''
+        SELECT id, project_id, name, comment, user_id, editor_id, creation_time,
+            edition_time, Box3D(geometry), ST_Asx3D(geometry)
+        FROM catmaid_volume v
+        WHERE v.project_id= %(project_id)s
+            AND (name LIKE '%%_R' OR name LIKE '%%_L' OR char_length(name)<5)
+            AND char_length(name) <= 10
+            AND name NOT LIKE 'v14%%'
+    ''', {
+        'project_id': project_id
+    })
     volume = cursor.fetchall()
 
     return volume
 
-def makeVolumeBB(project_id):
-    '''
-        Helper function - Directly copied from within the get_volume_details functions - just wrapped it in a for loop so that it
-        would include information on all relevant neuropils 
-    '''
-    myTupList = []
-    v = getPrimaryVolumes(project_id)
-    for volume in v:
 
-    # Parse bounding box into dictionary, coming in format "BOX3D(0 0 0,1 1 1)"
+def make_volume_bb(project_id):
+    """Helper function - Directly copied from within the get_volume_details
+    functions - just wrapped it in a for loop so that it would include
+    information on all relevant neuropils.
+    """
+    myTupList = []
+    v = get_primary_volumes_by_name(project_id)
+    for volume in v:
+        # Parse bounding box into dictionary, coming in format "BOX3D(0 0 0,1 1 1)"
         bbox_matches = re.search(bbox_re, volume[8])
         if not bbox_matches or len(bbox_matches.groups()) != 6:
             raise ValueError("Couldn't create bounding box for geometry")
@@ -837,14 +835,13 @@ def makeVolumeBB(project_id):
     return myTupList
 
 
-def getBBintersections(project_id):
-    '''
-    helper function that returns paramSet - a dictionary of dictionaries as: 
-    {'volume name' : {'project_id':int,'minx':float, 'miny':float, 'minz':float, 'maxx':float, 'maxy':float, 
-     'maxz':float, 'halfzdiff':float, 'min_nodes': int, 'min_cable':int}}
-
-    '''
-    volumeSet = makeVolumeBB(project_id)
+def get_bb_intersections(project_id):
+    """Helper function that returns paramSet - a dictionary of dictionaries as:
+    {'volume name' : {'project_id':int,'minx':float, 'miny':float, 'minz':float,
+    'maxx':float, 'maxy':float, 'maxz':float, 'halfzdiff':float, 'min_nodes':
+    int, 'min_cable':int}}
+    """
+    volumeSet = make_volume_bb(project_id)
     paramSet = {}
     for volume in volumeSet:
         params = {
@@ -871,25 +868,23 @@ def getBBintersections(project_id):
 
 @api_view(['GET', 'POST'])
 @requires_user_role(UserRole.Browse)
-def skeletonInnervations(skeleton_ids, project_id):
-    '''
-        Test environment only contains two skeletons - based on that, sql query always returns list of all 
-        SKIDs but all data (about both skeletons) is contained in the first SKID in the list - if this changes,
-        write an else statement for: len(cleanResults) >1.
-        ---
-        parameters:
-            - name: skeleton_ids
-              required: True
-              type: array [int]
-              paramType: Form
-            - name: paramSet
-              required: True
-              type: dict
-              paramType: functionCall
-    '''
-    
-
-    paramSet = getBBintersections(skeleton_ids)
+def get_skeleton_innervations(skeleton_ids, project_id):
+    """Test environment only contains two skeletons - based on that, sql query
+    always returns list of all SKIDs but all data (about both skeletons) is
+    contained in the first SKID in the list - if this changes, write an else
+    statement for: len(cleanResults) >1.
+    ---
+    parameters:
+        - name: skeleton_ids
+          required: True
+          type: array [int]
+          paramType: Form
+        - name: paramSet
+          required: True
+          type: dict
+          paramType: functionCall
+    """
+    paramSet = get_bb_intersections(skeleton_ids)
     
     skelVols = {}
     myResults = {}

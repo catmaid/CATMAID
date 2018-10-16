@@ -170,7 +170,7 @@ jQuery.expr[":"].icontainsnot = jQuery.expr.createPseudo(function(arg) {
   };
 
   THREE.Lut.prototype.addColorMap("greenred",
-    [[0.0, '0x6fff5c'], [0.2, '0x7DFFE9'], [0.6, '0x85ADFF'],
+    [[0.0, '0x6fff5c'], [0.1, '0x00FFFF'], [0.4, '0x85ADFF'],
      [0.8, '0xFF99FF'], [1.0, '0xFF4F4F']]);
 
 })(CATMAID);

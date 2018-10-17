@@ -129,21 +129,35 @@ class Command(BaseCommand):
         self.stdout.write('Check if all meshes consist only of triangles...', ending='')
         cursor = connection.cursor()
         cursor.execute("""
-            SELECT g.volume_id,
-                    (g.gdump).path[1] as triangle_id,
-                    COUNT(*) as n_points
-              FROM (
-                SELECT v.id AS volume_id,
-                    ST_DumpPoints(geometry) AS gdump
-                FROM catmaid_volume v
-              ) AS g
-            GROUP BY volume_id, (g.gdump).path[1]
-            HAVING COUNT(*) <> 4;
+            SELECT volume_id, triangle_id, path, txtpoints
+            FROM (
+                SELECT volume_id,
+                    (v.gdump).path[1],
+                    array_agg((v.gdump).path order by (v.gdump).path[3] ASC),
+                    array_agg((v.gdump).geom order by (v.gdump).path[3] ASC) as points,
+                    array_agg(ST_AsText((v.gdump).geom) ORDER BY (v.gdump).path[3] ASC) as txtpoints
+                FROM (
+                    SELECT volume_id, gdump
+                    FROM (
+                        SELECT v.id AS volume_id,
+                            ST_DumpPoints(geometry) AS gdump
+                        FROM catmaid_volume v
+                    ) v(volume_id, gdump)
+                ) v(volume_id, gdump)
+                GROUP BY v.volume_id, (v.gdump).path[1]
+            ) triangle(volume_id, triangle_id, path, points, txtpoints)
+            WHERE array_length(points, 1) <> 4
+                OR ST_X(points[1]) <> ST_X(points[4])
+                OR ST_Y(points[1]) <> ST_Y(points[4])
+                OR ST_Z(points[1]) <> ST_Z(points[4]);
         """)
-        n_non_triangles = len(list(cursor.fetchall()))
+        non_triangles = list(cursor.fetchall())
+        n_non_triangles = len(non_triangles)
         if n_non_triangles > 0:
             self.stdout.write('FAILED: found {} non-triangle meshes in project {}'.format(
                     n_non_triangles, project_id))
+            self.stdout.write('\tThe following volumes contain those geometries: {}'.format(
+                    ', '.join(nt[0] for nt in non_triangles)))
             passed = False
         else:
             self.stdout.write('OK')

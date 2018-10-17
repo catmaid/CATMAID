@@ -142,6 +142,11 @@ Miscellaneous:
 - Admin: a user import view is now available to import users from other CATMAID
   instances. It requires superuser permissions on the remote instance.
 
+- DB integrity check management command: volumes are now checked to make sure
+  all faces are triangles. The --tracing [true|false] and --volumes [true|false]
+  command line parameters now allow to explicitly test only some parts of the
+  database. By default all is tested.
+
 
 ### Bug fixes
 

@@ -7,6 +7,7 @@ import progressbar
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection
 from catmaid.models import Project
+from catmaid.util import str2bool
 
 class Command(BaseCommand):
     help = '''
@@ -15,6 +16,10 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--project_id', nargs='*', type=int, default=[])
+        parser.add_argument("--tracing", type=str2bool, nargs='?',
+                        const=True, default=True, help="Check tracing data.")
+        parser.add_argument("--volumes", type=str2bool, nargs='?',
+                        const=True, default=True, help="Check volumes data.")
 
     def handle(self, *args, **options):
         project_ids = options['project_id']
@@ -23,17 +28,29 @@ class Command(BaseCommand):
 
         passed = True
         for project_id in project_ids:
-            passed = passed and self.check_project(project_id)
+            passed = passed and self.check_project(project_id, options)
 
         if not passed:
             sys.exit(1)
 
-    def check_project(self, project_id):
+    def check_project(self, project_id, options):
         if not Project.objects.filter(id=project_id).exists():
             raise CommandError('Project with id %s does not exist.' % project_id)
-        project_passed = True
         self.stdout.write('Checking integrity of project %s' % project_id)
 
+        passed = True
+        if options['tracing']:
+            passed = passed and self.check_tracing_data(project_id)
+
+        if options['volumes']:
+            passed = passed and self.check_volumes(project_id)
+
+        self.stdout.write('')
+
+        return passed
+
+
+    def check_tracing_data(self, project_id):
         self.stdout.write('Check that no connected treenodes are in different skeletons...', ending='')
         cursor = connection.cursor()
         cursor.execute('''
@@ -102,9 +119,34 @@ class Command(BaseCommand):
                     project_passed = False
                     row = cursor.fetchone()
                     self.stdout.write('FAILED: node %s in skeleton %s has no path to root' % row)
+
         if test_passed:
             self.stdout.write('OK')
 
-        self.stdout.write('')
 
-        return project_passed
+    def check_volumes(self, project_id):
+        passed = True
+        self.stdout.write('Check if all meshes consist only of triangles...', ending='')
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT g.volume_id,
+                    (g.gdump).path[1] as triangle_id,
+                    COUNT(*) as n_points
+              FROM (
+                SELECT v.id AS volume_id,
+                    ST_DumpPoints(geometry) AS gdump
+                FROM catmaid_volume v
+              ) AS g
+            GROUP BY volume_id, (g.gdump).path[1]
+            HAVING COUNT(*) <> 4;
+        """)
+        n_non_triangles = len(list(cursor.fetchall()))
+        if n_non_triangles > 0:
+            self.stdout.write('FAILED: found {} non-triangle meshes in project {}'.format(
+                    n_non_triangles, project_id))
+            passed = False
+        else:
+            self.stdout.write('OK')
+            passed = passed and True
+
+        return passed

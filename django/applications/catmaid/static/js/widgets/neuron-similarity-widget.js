@@ -1638,7 +1638,7 @@
                       let imageSource = CATMAID.Pointcloud.getImagePath(project.id, pointcloud.id, image.id);
                       let description = image.description ? image.description : '(no description)';
                       let imageTitle = `${image.name} (${image.id}): ${description}`;
-                      span.append('<img src="' + imageSource + '" title="' + imageTitle + '" style="height: 150px;" />');
+                      span.append('<img src="' + imageSource + '" title="' + imageTitle + '" style="height: 150px; margin: 0 0.4em 0 0.4em;" />');
                     }
                   });
                 })

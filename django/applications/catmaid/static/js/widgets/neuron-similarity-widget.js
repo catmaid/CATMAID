@@ -19,6 +19,7 @@
 
     this.lastSimilarityQuery = null;
     this.showOnlyMatchesInResult = true;
+    this.showPointCloudImages = false;
     // Whether or not the results are displayed in a dialog (rather than a
     // window).
     this.resultMode = 'window';
@@ -1261,6 +1262,15 @@
             CATMAID.msg("Success", "Point cloud form reset");
           }
         }, {
+          type: 'checkbox',
+          label: 'With images',
+          id: 'neuron-similarity-pointcloud-with-images' + widget.widgetID,
+          value: widget.showPointCloudImages,
+          onclick: function() {
+            widget.showPointCloudImages = this.checked;
+            widget.refresh();
+          },
+        }, {
           type: 'child',
           element: newPointcloudSection,
         }, {
@@ -1564,6 +1574,14 @@
                 }
               }
             }, {
+              title: "Images",
+              orderable: false,
+              class: "cm-center",
+              visible: widget.showPointCloudImages,
+              render: function(data, type, row, meta) {
+                return `<span class="image-list" data-pointcloud-id="${row.id}"></span>`;
+              }
+            }, {
               title: "Action",
               class: 'cm-center',
               render: function(data, type, row, meta) {
@@ -1601,6 +1619,32 @@
           if (pointcloudId) {
             widget.pointCloudSelection[pointcloudId] = !widget.pointCloudSelection[pointcloudId];
           }
+        }).on('draw', function() {
+          // Update image colum, if visible
+          if (widget.showPointCloudImages) {
+            // Get image information on currently displayed point clouds
+            let table = $(this).closest('table');
+            let datatable = table.DataTable();
+            let pageData = datatable.rows({'page': 'current'}).data();
+            let pagePointcloudIds = pageData.map(function(p) { return p.id; }).toArray();
+            if (pagePointcloudIds && pagePointcloudIds.length > 0) {
+              CATMAID.Pointcloud.list(project.id, false, true, pagePointcloudIds)
+                .then(function(result) {
+                  // Find span elements of individual point clouds
+                  result.forEach(function(pointcloud) {
+                    let span = $(`span.image-list[data-pointcloud-id=${pointcloud.id}]`, table).empty();
+
+                    for (let image of pointcloud.images) {
+                      let imageSource = CATMAID.Pointcloud.getImagePath(project.id, pointcloud.id, image.id);
+                      let description = image.description ? image.description : '(no description)';
+                      let imageTitle = `${image.name} (${image.id}): ${description}`;
+                      span.append('<img src="' + imageSource + '" title="' + imageTitle + '" style="height: 150px;" />');
+                    }
+                  });
+                })
+                .catch(CATMAID.handleError);
+            }
+          }
         });
 
         // Add a toggle-all checkbox for point cloud selection
@@ -1615,7 +1659,10 @@
       refresh: function(widget) {
         let table = document.getElementById(widget.idPrefix + 'pointcloud-table');
         if (table) {
-          $(table).DataTable().ajax.reload();
+          let datatable = $(table).DataTable();
+          datatable.column(6).visible(widget.showPointCloudImages);
+          datatable.ajax.reload();
+
         }
       }
     },

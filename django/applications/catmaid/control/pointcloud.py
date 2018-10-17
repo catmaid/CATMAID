@@ -143,12 +143,15 @@ def list_pointclouds(project_id, user_id, simple, with_images, with_points, samp
         pointcloud_data = []
         if with_images:
             for pc in cursor.fetchall():
-                images = [{
-                    'id': iid,
-                    'name': pc[7][n],
-                    'description': pc[8][n],
-                    'source_path': pc[9][n],
-                } for n, iid in enumerate(pc[6])]
+                if pc[6]:
+                    images = [{
+                        'id': iid,
+                        'name': pc[7][n],
+                        'description': pc[8][n],
+                        'source_path': pc[9][n],
+                    } for n, iid in enumerate(pc[6])]
+                else:
+                    images = []
 
                 data = {
                     'id': pc[0],

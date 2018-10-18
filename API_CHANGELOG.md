@@ -28,6 +28,12 @@ included in this changelog.
 - `GET /{project_id}/labels/detail`:
   Returns a list of of label objects, each with a name field and an ID field.
 
+- `POST /{project_id}/volumes/import`:
+  Import volumes as STL files.
+
+- `GET /{project_id}/volumes/{volume_id}/export.{extension}`:
+  Export a particular volume. Currentl only exports AS STL are supported.
+
 ### Modifications
 
 - `POST /{project_id}/skeletons/node-label`:
@@ -54,6 +60,13 @@ included in this changelog.
   marked as soma in the SWC export. The first matching condition in this order
   wins.
 
+- `GET /{project_id}/volumes/`:
+  The return format changed. Instead of a list of volume objects an object with
+  a 'columns' field and a 'data' field are returned. The data fields contains a
+  list of lists, with each inner list being a volume. The entries are described
+  by the 'columns' field. Along with the already returned fields, annotations
+  are now retuned as well.
+
 ### Deprecations
 
 None.
@@ -74,6 +87,9 @@ None.
 - `POST /{project_ids}/skeletons/in-bounding-box`:
   Accepts the same parameters as the GET variant, but allows for larger
   skeleton_ids list.
+
+- `GET /{project_id}/volumes/entities`:
+  Return a mapping of volume IDs to their respective class instance ID.
 
 ### Modifications
 

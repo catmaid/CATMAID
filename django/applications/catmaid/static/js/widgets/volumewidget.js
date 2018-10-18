@@ -67,15 +67,29 @@
               if (0 === files.length) {
                 CATMAID.error("Choose at least one file!");
               } else {
-                Array.from(files).forEach(this.addVolumeFromFile);
+                this.addVolumesFromSTL(Array.from(files).filter(function(file){
+                  if (file.name.endsWith("stl")){
+                    return true;
+                  } else {
+                    this.addVolumeFromFile(file).catch(CATMAID.handleError);
+                  }
+                },this)).catch(CATMAID.handleError);
               }
             }).bind(this));
+        hiddenFileButton.setAttribute('multiple', true);
         controls.appendChild(hiddenFileButton);
 
         var openFile = document.createElement('button');
+        openFile.setAttribute('title','Supports Json and ascii-stl files');
         openFile.appendChild(document.createTextNode('Add from file'));
         openFile.onclick = hiddenFileButton.click.bind(hiddenFileButton);
         controls.appendChild(openFile);
+
+        var annotate = document.createElement('button');
+        annotate.appendChild(document.createTextNode('Annotate'));
+        annotate.setAttribute('title', 'Annotate all selected volumes');
+        annotate.onclick = this.annotateSelectedVolumes.bind(this);
+        controls.appendChild(annotate);
 
         let self = this;
         CATMAID.DOM.appendNumericField(
@@ -136,7 +150,7 @@
         table.style.width = "100%";
         var header = table.createTHead();
         var hrow = header.insertRow(0);
-        var columns = ['Name', 'Id', 'Comment', 'User', 'Creation time',
+        var columns = ['', 'Name', 'Id', 'Comment', 'Annotations', 'User', 'Creation time',
             'Editor', 'Edition time', 'Action'];
         columns.forEach(function(c) {
           hrow.insertCell().appendChild(document.createTextNode(c));
@@ -148,23 +162,49 @@
         container.appendChild(tableContainer);
         this.datatable = $(table).DataTable({
           lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
-          ajax: {
-            url: CATMAID.makeURL(project.id +  "/volumes/"),
-            dataSrc: ""
+          ajax: function(data, callback, settings) {
+
+            CATMAID.fetch(project.id +  "/volumes/")
+              .then(function(volumeData) {
+                let volumes = volumeData.data.map(function(volume) {
+                  return new CATMAID.Volume(CATMAID.tools.buildObject(volumeData.columns, volume));
+                });
+                callback({
+                  draw: data.draw,
+                  data: volumes
+                });
+              })
+              .catch(CATMAID.handleError);
           },
           columns: [
-            {data: "name"},
+            {
+              render: function(data, type, row, meta) {
+                return '<input type="checkbox" data-role="select" ' +
+                    (row.selected ? 'checked' : '') + ' />';
+              }
+            },
+            {data: "title"},
             {data: "id"},
             {data: "comment"},
             {
-              data: "user",
+              data: "annotations",
+              render: function (data, type, row, meta) {
+                if (type === 'display') {
+                  return data.join(', ');
+                } else {
+                  return data;
+                }
+              }
+            },
+            {
+              data: "user_id",
               render: function(data, type, row, meta) {
                 return CATMAID.User.safe_get(data).login;
               }
             },
             {data: "creation_time"},
             {
-              data: "editor",
+              data: "editor_id",
               render: function(data, type, row, meta) {
                 return CATMAID.User.safe_get(data).login;
               }
@@ -175,9 +215,16 @@
               orderable: false,
               defaultContent: '<a href="#" data-action="remove">Remove</a> ' +
                   '<a href="#" data-action="list-skeletons">List skeletons</a> ' +
-                  '<a href="#" data-action="list-connectors">List connectors</a>'
+                  '<a href="#" data-action="list-connectors">List connectors</a>' +
+                  '<a href="#" data-action="export-STL">Export STL</a>'
             }
           ],
+        })
+        .on('change', 'input[data-role=select]', function() {
+          var table = $(this).closest('table');
+          var tr = $(this).closest('tr');
+          var data =  $(table).DataTable().row(tr).data();
+          data.selected = this.checked;
         });
 
         // Remove volume if 'remove' was clicked
@@ -294,9 +341,25 @@
           return false;
         });
 
+        // Connector intersection list
+        $(table).on('click', 'a[data-action="export-STL"]', function() {
+          var tr = $(this).closest("tr");
+          var volume = self.datatable.row(tr).data();
+          var headers = {Accept: ['model/x.stl-ascii', 'model/stl']};
+          CATMAID.fetch("/" + project.id + "/volumes/" + volume.id + "/export.stl", "GET", undefined, true, undefined, undefined, undefined, headers)
+            .then(function(volume_file) {
+              var blob = new Blob([volume_file], {type: 'model/x.stl-ascii'});
+              saveAs(blob, volume.name + '.stl');
+            })
+            .catch(CATMAID.handleError);
+
+          // Prevent event from bubbling up.
+          return false;
+        });
+
         // Display a volume if clicked
         var self = this;
-        $(table).on('click', 'tbody td', function() {
+        $(table).on('dblclick', 'tbody td', function() {
           var tr = $(this).closest("tr");
           var volume = self.datatable.row(tr).data();
           self.loadVolume(volume.id)
@@ -545,23 +608,41 @@
    * @param {String} files The file to load
    */
   VolumeManagerWidget.prototype.addVolumeFromFile = function(file) {
-      var self = this;
-      var reader = new FileReader();
-      reader.onload = function(e) {
-          var volumes = JSON.parse(e.target.result);
-          // Try to load volumes and record invalid ones
-          var invalidVolumes = volumes.filter(function(v) {
-            var volumeType = volumeTypes[v.type];
-            var properties = v.properties;
-            if (volumeType && properties) {
-              volumeType.createVolume(properties);
-            } else {
-              // Return true for invalid volume types
-              return !volumeType;
-            }
-          });
-      };
-      reader.readAsText(file);
+      return new Promise(function(resolve, reject) {
+        var self = this;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var volumes = JSON.parse(e.target.result);
+            // Try to load volumes and record invalid ones
+            var invalidVolumes = volumes.filter(function(v) {
+              var volumeType = volumeTypes[v.type];
+              var properties = v.properties;
+              if (volumeType && properties) {
+                volumeType.createVolume(properties);
+              } else {
+                // Return true for invalid volume types
+                return !volumeType;
+              }
+            });
+        };
+        reader.readAsText(file);
+      });
+  };
+
+  VolumeManagerWidget.prototype.addVolumesFromSTL = function(files) {
+    var self = this;
+    var data = new FormData();
+    files.forEach(function(file){
+      data.append(file.name, file, file.name);
+    });
+    return new Promise(function(resolve, reject) {
+      CATMAID.fetch(project.id + "/volumes/import", "POST", data, undefined, undefined, undefined, undefined, {"Content-type" : null})
+        .then(function(data){
+          CATMAID.msg("success", Object.keys(data).length + " mesh(s) loaded");
+          self.redraw();
+        })
+        .catch(CATMAID.handleError);
+    });
   };
 
   /**
@@ -571,6 +652,39 @@
     this.editVolume(null);
   };
 
+
+  /**
+   * Annotate all currently selected volumes.
+   */
+  VolumeManagerWidget.prototype.annotateSelectedVolumes = function() {
+    if (!this.datatable) {
+      return;
+    }
+
+    let allVolumes = this.datatable.rows({'search': 'applied' }).data().toArray();
+    let selectedVolumeIds = allVolumes.filter(function(v) {
+      return v.selected;
+    }).map(function(v) {
+      return v.id;
+    });
+
+    if (selectedVolumeIds.length === 0) {
+      CATMAID.warn("No volumes selected");
+      return;
+    }
+
+    // Retrieve class instance IDs for volumes
+    CATMAID.fetch(project.id + '/volumes/entities/', 'POST', {
+        volume_ids: selectedVolumeIds
+      })
+      .then(function(ciMapping) {
+        return CATMAID.annotate(Object.values(ciMapping));
+      })
+      .then(function() {
+        CATMAID.msg("Success", "Annotations added");
+      })
+      .catch(CATMAID.handleError);
+  };
 
   var getVolumeType = function(volume) {
     if (volume instanceof CATMAID.AlphaShapeVolume) {

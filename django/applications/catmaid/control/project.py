@@ -23,7 +23,8 @@ needed_classes = {
     'annotation': "An arbitrary annotation",
     'stack_property': 'A property which a stack has',
     'landmark': "A particular type of location",
-    "landmarkgroup": "A type of collection that groups landmarks"
+    "landmarkgroup": "A type of collection that groups landmarks",
+    'volume': 'A region of space'
 }
 
 # All relations needed by the tracing system alongside their
@@ -34,6 +35,7 @@ needed_relations = {
     'annotated_with': "Something is annotated by something else.",
     'has_property': 'A thing which has an arbitrary property',
     'close_to': 'Something is spatially in the neighborhood of something else',
+    'model_of': "Marks something as a model of something else."
 }
 
 # All client datastores needed by the tracing system along their descriptions.

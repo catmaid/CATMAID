@@ -1,17 +1,23 @@
 # -*- coding: utf-8 -*-
 
 import json
+import os
 import re
+from xml.etree import ElementTree as ET
+
+from django.conf import settings
 
 from catmaid.control.authentication import requires_user_role, user_can_edit
+from catmaid.control.common import get_request_list
 from catmaid.models import UserRole, Project, Volume
 from catmaid.serializers import VolumeSerializer
 
 from django.db import connection
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 
-from rest_framework.decorators import api_view
+from rest_framework import renderers
+from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.response import Response
 
 from six.moves import map
@@ -103,11 +109,33 @@ class PostGISVolume(object):
                 raise ValueError("Can't create new volume without mesh")
 
             cursor.execute("""
-                INSERT INTO catmaid_volume (user_id, project_id, editor_id, name,
-                        comment, creation_time, edition_time, geometry)
-                VALUES (%(uid)s, %(pid)s, %(uid)s, %(t)s, %(c)s, now(), now(), """ +
-                           surface + """)
-                RETURNING id;""", params)
+                WITH v AS (
+                    INSERT INTO catmaid_volume (user_id, project_id, editor_id, name,
+                            comment, creation_time, edition_time, geometry)
+                    VALUES (%(uid)s, %(pid)s, %(uid)s, %(t)s, %(c)s, now(), now(), """ +
+                               surface + """)
+                    RETURNING user_id, project_id, id
+                ), ci AS (
+                    INSERT INTO class_instance (user_id, project_id, name, class_id)
+                    SELECT %(uid)s, project_id, %(t)s, id
+                    FROM class
+                    WHERE project_id = %(pid)s AND class_name = 'volume'
+                    RETURNING id
+                ), r AS (
+                    SELECT id FROM relation
+                    WHERE project_id = %(pid)s AND relation_name = 'model_of'
+                )
+                INSERT INTO volume_class_instance
+                    (user_id, project_id, relation_id, volume_id, class_instance_id)
+                SELECT
+                    v.user_id,
+                    v.project_id,
+                    r.id,
+                    v.id,
+                    ci.id
+                FROM v, ci, r
+                RETURNING volume_id
+                """, params)
 
         return cursor.fetchone()[0]
 
@@ -166,19 +194,32 @@ class BoxVolume(PostGISVolume):
         self.max_z = get_req_coordinate(options, "max_z")
 
     def get_geometry(self):
-        return """ST_GeomFromEWKT('POLYHEDRALSURFACE (
-            ((%(lx)s %(ly)s %(lz)s, %(lx)s %(hy)s %(lz)s, %(hx)s %(hy)s %(lz)s,
-              %(hx)s %(ly)s %(lz)s, %(lx)s %(ly)s %(lz)s)),
-            ((%(lx)s %(ly)s %(lz)s, %(lx)s %(hy)s %(lz)s, %(lx)s %(hy)s %(hz)s,
-              %(lx)s %(ly)s %(hz)s, %(lx)s %(ly)s %(lz)s)),
-            ((%(lx)s %(ly)s %(lz)s, %(hx)s %(ly)s %(lz)s, %(hx)s %(ly)s %(hz)s,
-              %(lx)s %(ly)s %(hz)s, %(lx)s %(ly)s %(lz)s)),
-            ((%(hx)s %(hy)s %(hz)s, %(hx)s %(ly)s %(hz)s, %(lx)s %(ly)s %(hz)s,
-              %(lx)s %(hy)s %(hz)s, %(hx)s %(hy)s %(hz)s)),
-            ((%(hx)s %(hy)s %(hz)s, %(hx)s %(ly)s %(hz)s, %(hx)s %(ly)s %(lz)s,
-              %(hx)s %(hy)s %(lz)s, %(hx)s %(hy)s %(hz)s)),
-            ((%(hx)s %(hy)s %(hz)s, %(hx)s %(hy)s %(lz)s, %(lx)s %(hy)s %(lz)s,
-              %(lx)s %(hy)s %(hz)s, %(hx)s %(hy)s %(hz)s)))')"""
+        return """ST_GeomFromEWKT('TIN (
+            (({0}, {2}, {1}, {0})),
+            (({1}, {2}, {3}, {1})),
+
+            (({0}, {1}, {5}, {0})),
+            (({0}, {5}, {4}, {0})),
+
+            (({2}, {6}, {7}, {2})),
+            (({2}, {7}, {3}, {2})),
+
+            (({4}, {7}, {6}, {4})),
+            (({4}, {5}, {7}, {4})),
+
+            (({0}, {6}, {2}, {0})),
+            (({0}, {4}, {6}, {0})),
+
+            (({1}, {3}, {5}, {1})),
+            (({3}, {7}, {5}, {3})))')
+        """.format(*[
+            '%({a})s %({b})s %({c})s'.format(**{
+                'a': 'hx' if i & 0b001 else 'lx',
+                'b': 'hy' if i & 0b010 else 'ly',
+                'c': 'hz' if i & 0b100 else 'lz',
+            })
+            for i in range(8)
+        ])
 
     def get_params(self):
         return {
@@ -190,6 +231,99 @@ class BoxVolume(PostGISVolume):
             "hz": self.max_z,
             "id": self.id
         }
+
+
+def _chunk(iterable, length, fn=None):
+    if not fn:
+        fn = lambda x: x
+
+    items = []
+    it = iter(iterable)
+    while True:
+        try:
+            items.append(fn(next(it)))
+        except StopIteration:
+            if items:
+                raise ValueError(
+                    "Iterable did not have a multiple of {} items ({} spare)".format(length, len(items))
+                )
+            else:
+                return
+        else:
+            if len(items) == length:
+                yield tuple(items)
+                items = []
+
+
+def _x3d_to_points(x3d, fn=None):
+    indexed_triangle_set = ET.fromstring(x3d)
+    assert indexed_triangle_set.tag == "IndexedTriangleSet"
+    assert len(indexed_triangle_set) == 1
+
+    coordinate = indexed_triangle_set[0]
+    assert coordinate.tag == "Coordinate"
+    assert len(coordinate) == 0
+    points_str = coordinate.attrib["point"]
+
+    for item in _chunk(points_str.split(' '), 3, fn):
+        yield item
+
+
+def _x3d_to_stl_ascii(x3d):
+    solid_fmt = """
+solid
+{}
+endsolid
+            """.strip()
+    facet_fmt = """
+facet normal 0 0 0
+outer loop
+{}
+endloop
+endfacet
+            """.strip()
+    vertex_fmt = "vertex {} {} {}"
+
+    triangle_strs = []
+    for triangle in _chunk(_x3d_to_points(x3d), 3):
+        vertices = '\n'.join(vertex_fmt.format(*point) for point in triangle)
+        triangle_strs.append(facet_fmt.format(vertices))
+
+    return solid_fmt.format('\n'.join(triangle_strs))
+
+
+class InvalidSTLError(ValueError):
+    pass
+
+
+def _stl_ascii_to_indexed_triangles(stl_str):
+    stl_items = stl_str.strip().split()
+    if stl_items[0] != "solid" or "endsolid" not in stl_items[-2:]:
+        raise InvalidSTLError("Malformed solid header/ footer")
+    start = 1 if stl_items[1] == "facet" else 2
+    stop = -1 if stl_items[-2] == "endfacet" else -2
+    vertices = []
+    triangles = []
+    for facet in _chunk(stl_items[start:stop], 21):
+        if any([
+            facet[:2] != ("facet", "normal"),
+            facet[5:7] != ("outer", "loop"),
+            facet[-2:] != ("endloop", "endfacet")
+        ]):
+            raise InvalidSTLError("Malformed facet/loop header/footer")
+
+        this_triangle = []
+        for vertex in _chunk(facet[7:-2], 4):
+            if vertex[0] != "vertex":
+                raise InvalidSTLError("Malformed vertex")
+            vertex_id = len(vertices)
+            vertices.append([float(item) for item in vertex[1:]])
+            this_triangle.append(vertex_id)
+        if len(this_triangle) != 3:
+            raise InvalidSTLError("Expected triangle, got {} points".format(this_triangle))
+        triangles.append(this_triangle)
+
+    return vertices, triangles
 
 
 volume_type = {
@@ -218,10 +352,31 @@ def volume_collection(request, project_id):
         # FIXME: Parsing our PostGIS geometry with GeoDjango doesn't work
         # anymore since Django 1.8. Therefore, the geometry fields isn't read.
         # See: https://github.com/catmaid/CATMAID/issues/1250
-        fields = ('id', 'name', 'comment', 'user', 'editor', 'project',
-                'creation_time', 'edition_time')
-        volumes = Volume.objects.filter(project_id=project_id).values(*fields)
-        return Response(volumes)
+
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT v.id, v.name, v.comment, v.user_id, v.editor_id, v.project_id,
+                v.creation_time, v.edition_time,
+                JSON_AGG(ann.name) FILTER (WHERE ann.name IS NOT NULL) AS annotations
+            FROM catmaid_volume v
+            LEFT JOIN volume_class_instance vci ON vci.volume_id = v.id
+            LEFT JOIN class_instance_class_instance cici
+                ON cici.class_instance_a = vci.class_instance_id
+            LEFT JOIN class_instance ann ON ann.id = cici.class_instance_b
+            WHERE v.project_id = %(pid)s
+                AND (
+                    cici.relation_id IS NULL OR
+                    cici.relation_id = (
+                        SELECT id FROM relation
+                        WHERE project_id = %(pid)s AND relation_name = 'annotated_with'
+                    )
+                )
+            GROUP BY v.id
+            """, {'pid': project_id})
+        return JsonResponse({
+            'columns': [r[0] for r in cursor.description],
+            'data': cursor.fetchall()
+        })
 
 def get_volume_details(project_id, volume_id):
     cursor = connection.cursor()
@@ -294,7 +449,17 @@ def remove_volume(request, project_id, volume_id):
         raise Exception("You don't have permissions to delete this volume")
 
     cursor.execute("""
-        DELETE FROM catmaid_volume WHERE id=%s
+        WITH v AS (
+            DELETE FROM catmaid_volume WHERE id=%s RETURNING id
+        ), vci AS (
+            DELETE FROM volume_class_instance
+            USING v
+            WHERE volume_id = v.id
+            RETURNING class_instance_id
+        )
+        DELETE FROM class_instance
+        USING vci
+        WHERE id = vci.class_instance_id;
     """, (volume_id,))
 
     return Response({
@@ -441,6 +606,101 @@ def add_volume(request, project_id):
         "volume_id": volume_id
     })
 
+
+@api_view(['POST'])
+@requires_user_role([UserRole.Import])
+def import_volumes(request, project_id):
+    """Import triangle mesh volumes from an uploaded files.
+
+    Currently only STL representation is supported.
+    ---
+    consumes: multipart/form-data
+    parameters:
+      - name: file
+        required: true
+        description: >
+            Triangle mesh file to import. Multiple files can be provided, with
+            each being imported as a mesh named by its base filename.
+        paramType: body
+        dataType: File
+    type:
+      '{base_filename}':
+        description: ID of the volume created from this file
+        type: integer
+        required: true
+    """
+    fnames_to_id = dict()
+    for uploadedfile in request.FILES.values():
+        if uploadedfile.size > settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:  # todo: use different setting
+            return HttpResponse(
+                'File too large. Maximum file size is {} bytes.'.format(settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE),
+                status=413)
+
+        filename = uploadedfile.name
+        name, extension = os.path.splitext(filename)
+        if extension.lower() == ".stl":
+            stl_str = uploadedfile.read().decode('utf-8')
+
+            try:
+                vertices, triangles = _stl_ascii_to_indexed_triangles(stl_str)
+            except InvalidSTLError as e:
+                raise ValueError("Invalid STL file ({})".format(str(e)))
+
+            mesh = TriangleMeshVolume(
+                project_id, request.user.id,
+                {"type": "trimesh", "title": name, "mesh": [vertices, triangles]}
+            )
+            fnames_to_id[filename] = mesh.save()
+        else:
+            return HttpResponse('File type "{}" not understood. Known file types: stl'.format(extension), status=415)
+
+    return JsonResponse(fnames_to_id)
+
+
+class AnyRenderer(renderers.BaseRenderer):
+    """A DRF renderer that returns the data directly with a wildcard media type.
+
+    This is useful for bypassing response content type negotiation.
+    """
+    media_type = '*/*'
+
+    def render(self, data, media_type=None, renderer_context=None):
+        return data
+
+
+@api_view(['GET'])
+@renderer_classes((AnyRenderer,))
+@requires_user_role([UserRole.Browse])
+def export_volume(request, project_id, volume_id, extension):
+    """Export volume as a triangle mesh file.
+
+    The extension of the endpoint and `ACCEPT` header media type are both used
+    to determine the format of the export.
+
+    Supported formats by extension and media type:
+    ##### STL
+      - `model/stl`, `model/x.stl-ascii`: ASCII STL
+
+    """
+    acceptable = {
+        'stl': ['model/stl', 'model/x.stl-ascii'],
+    }
+    if extension.lower() in acceptable:
+        media_types = request.META.get('HTTP_ACCEPT', '').split(',')
+        for media_type in media_types:
+            if media_type in acceptable[extension]:
+                details = get_volume_details(project_id, volume_id)
+                ascii_details = _x3d_to_stl_ascii(details['mesh'])
+                response = HttpResponse(content_type=media_type)
+                response.write(ascii_details)
+                return response
+        return HttpResponse('Media types "{}" not understood. Known types for {}: {}'.format(
+            ', '.join(media_types), extension, ', '.join(acceptable[extension])), status=415)
+    else:
+        return HttpResponse('File type "{}" not understood. Known file types: {}'.format(
+            extension, ', '.join(acceptable.values())), status=415)
+
+
 @api_view(['GET'])
 @requires_user_role([UserRole.Browse])
 def intersects(request, project_id, volume_id):
@@ -490,3 +750,34 @@ def intersects(request, project_id, volume_id):
     return JsonResponse({
         'intersects': result[0]
     })
+
+@api_view(['POST'])
+@requires_user_role([UserRole.Browse])
+def get_volume_entities(request, project_id):
+    """Retrieve a mapping of volume IDs to entity (class instance) IDs.
+    ---
+    parameters:
+      - name: volume_ids
+        description: A list of volume IDs to map
+        paramType: query
+    """
+    volume_ids = get_request_list(request.POST, 'volume_ids', map_fn=int)
+
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT vci.volume_id, vci.class_instance_id
+        FROM volume_class_instance vci
+        JOIN UNNEST(%(volume_ids)s::int[]) volume(id)
+        ON volume.id = vci.volume_id
+        WHERE project_id = %(project_id)s
+        AND relation_id = (
+            SELECT id FROM relation
+            WHERE relation_name = 'model_of'
+            AND project_id = %(project_id)s
+        )
+    """, {
+        'volume_ids': volume_ids,
+        'project_id': project_id
+    })
+
+    return JsonResponse(dict(cursor.fetchall()))

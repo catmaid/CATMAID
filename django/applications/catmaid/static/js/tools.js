@@ -822,4 +822,14 @@ CATMAID.tools = CATMAID.tools || {};
     return path.substring(start, end);
   };
 
+  /**
+   * Create an object from matched arrays of keys and values.
+   */
+  tools.buildObject = function (keys, values) {
+    return keys.reduce(function (obj, k, i) {
+      obj[k] = values[i];
+      return obj;
+    }, {});
+  };
+
 })(CATMAID.tools);

@@ -94,6 +94,7 @@ class HistoryTableTests(TransactionTestCase):
         'point_set',
         'image_data',
         'pointcloud_image_data',
+        'volume_class_instance',
 
         # Non-CATMAID tables
         'auth_group',
@@ -181,6 +182,7 @@ class HistoryTableTests(TransactionTestCase):
         'treenode__history',
         'treenode_class_instance__history',
         'treenode_connector__history',
+        'volume_class_instance__history',
 
         # History tables of versioned non-CATMAID tables
         'auth_group__history',

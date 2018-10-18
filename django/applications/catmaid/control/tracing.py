@@ -28,7 +28,6 @@ needed_classes = {
 needed_relations = {
     'labeled_as': "Something is labeled by sth. else.",
     'element_of': "A generic element-of relationship",
-    'model_of': "Marks something as a model of something else.",
     'presynaptic_to': "Something is presynaptic to something else.",
     'postsynaptic_to': "Something is postsynaptic to something else.",
     'abutting': "Two things abut against each other",

@@ -93,6 +93,14 @@ Docker:
   environment cariables: CM_DEBUG, CM_FORCE_CONFIG_UPDATE, CM_WRITABLE_PATH,
   CM_NODE_LIMIT, CM_NODE_PROVIDERS, CM_SUBDIRECTORY, CM_CSRF_TRUSTED_ORIGINS.
 
+Volumes:
+
+- Annotations can now be used on volumes too. The "Annotate" button in the
+  Volume Manager can be used to annotate all selected volumes.
+
+- The "Add from file" button in the Volume Manager can now be used to import
+  volumes from STL files.
+
 CLI importer:
 
 - With the help of a few additional progress bars, import progress can be better

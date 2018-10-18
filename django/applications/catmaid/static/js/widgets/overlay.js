@@ -4167,7 +4167,17 @@ SkeletonAnnotations.TracingOverlay.prototype.editRadius = function(treenode_id, 
     }).then(function(nodeId) {
       return CATMAID.commands.execute(new CATMAID.UpdateNodeRadiusCommand(self.state,
             project.id, nodeId, radius, updateMode));
-    }).catch(CATMAID.handleError);
+    })
+    .then(function(result) {
+      if (result && result.updatedNodes) {
+        let updatedNodes = Object.keys(result.updatedNodes);
+        CATMAID.statusBar.replaceLastSticky("Updated radius of " +
+            updatedNodes.length + " nodes", 'darkgreen', 1500);
+      } else {
+        CATMAID.statusBar.replaceLastSticky("Unexpected radius update response", 'green', 1500);
+      }
+    })
+    .catch(CATMAID.handleError);
   }
 
   function show_dialog(defaultRadius) {

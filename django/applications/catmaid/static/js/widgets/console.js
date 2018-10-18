@@ -128,6 +128,14 @@
       view.classList.remove('warning');
     };
 
+    this.replaceLastSticky = function(obj, color, time) {
+      this.replaceLast(obj, color);
+      this.blocked = true;
+      setTimeout((function() {
+        this.blocked = false;
+      }).bind(this), time || 3000);
+    };
+
     this.unblock = function() {
       this.blocked = false;
     };

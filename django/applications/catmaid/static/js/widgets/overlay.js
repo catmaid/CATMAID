@@ -4161,8 +4161,7 @@ SkeletonAnnotations.TracingOverlay.prototype.editRadius = function(treenode_id, 
   var self = this;
 
   function updateRadius(radius, updateMode) {
-    // Default update mode to this node only
-    updateMode = updateMode || 0;
+    updateMode = updateMode || self.editRadius_defaultValue;
     self.promiseNode(treenode_id).then(function(nodeId) {
       return self.submit().then(Promise.resolve.bind(Promise, nodeId));
     }).then(function(nodeId) {

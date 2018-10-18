@@ -14,7 +14,7 @@ django-taggit==0.22.2
 djangorestframework==3.5.4
 jsonfield==2.0.2
 kombu==4.2.1
-matplotlib==2.1.0
+matplotlib==2.2.3
 mock==1.0.1
 msgpack==0.5.6; platform_python_implementation != 'PyPy'
 msgpack_python==0.5.6

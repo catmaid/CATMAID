@@ -147,6 +147,8 @@ Miscellaneous:
 
 - WebGL layers are now preferred by default.
 
+- Project statistics: a top ten of the largest neurons is now displayed.
+
 - Admin: a user import view is now available to import users from other CATMAID
   instances. It requires superuser permissions on the remote instance.
 

@@ -554,6 +554,7 @@
     this.refresh_project_statistics = function() {
       this.refresh_history();
       this.refreshNodecount();
+      this.refreshLargestNeurons();
     };
 
     this.refreshNodecount = function() {
@@ -565,6 +566,45 @@
           update_piechart(response, "piechart_treenode_holder");
         })
         .catch(CATMAID.handleError);
+    };
+
+    this.refreshLargestNeurons = function() {
+      let self = this;
+      return CATMAID.fetch(project.id + '/stats/cable-length', 'GET', {
+          'n_skeletons': 10,
+        })
+        .then(function(result) {
+          let models = result.reduce(function(o, si) {
+            o[si[0]] = new CATMAID.SkeletonModel(si[0]);
+            return o;
+          }, {});
+          return CATMAID.NeuronNameService.getInstance().registerAll(self, models)
+            .then(function() {
+              return result;
+            });
+        })
+        .then(function(result) {
+          let target = document.getElementById("project-stats-largest-neurons");
+          if (!target) {
+            CATMAID.warn("Could not find target element");
+            return;
+          }
+          let NNS = CATMAID.NeuronNameService.getInstance();
+          let ul = target.appendChild(document.createElement('ul'));
+          for (let i=0; i<result.length; ++i) {
+            let li = ul.appendChild(document.createElement('li'));
+            let liKey = li.appendChild(document.createElement('span'));
+            liKey.appendChild(document.createTextNode((i+1) + '.'));
+            let liLink = li.appendChild(document.createElement('a'));
+            liLink.href = '#';
+            liLink.dataset.skeletonId = result[i][0];
+            liLink.dataset.role = 'select-skeleton';
+            liLink.appendChild(document.createTextNode(NNS.getName(result[i][0])));
+            let scoreSpan = li.appendChild(document.createElement('span'));
+            scoreSpan.classList.add('cable-length');
+            scoreSpan.appendChild(document.createTextNode(' (' + Math.round(result[i][1]) + 'nm)'));
+          }
+        });
     };
 
     this.refresh_history = function() {
@@ -681,7 +721,14 @@
           '<div class="buttonpanel" data-role="piechart_treenode_controls"></div>' +
           '<div id="piechart_treenode_holder"></div>' +
           '<br clear="all" />' +
+          '<h3>Largest neurons</h3>' +
+          '<div id="project-stats-largest-neurons"></div>' +
           '</div>';
+
+        $(container).on('click', 'a[data-role=select-skeleton]', function() {
+          let skeletonId = parseInt(this.dataset.skeletonId, 10);
+          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
+        });
 
         var self = this;
 

@@ -34,6 +34,10 @@ included in this changelog.
 - `GET /{project_id}/volumes/{volume_id}/export.{extension}`:
   Export a particular volume. Currentl only exports AS STL are supported.
 
+- `GET /{projec_id}/stats/cable-length`:
+  GET the top N largest skeletons. N can be specified using the 'n_skeletons'
+  parameter.
+
 ### Modifications
 
 - `POST /{project_id}/skeletons/node-label`:

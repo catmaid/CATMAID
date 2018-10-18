@@ -22,6 +22,39 @@ from catmaid.models import ClassInstance, Connector, Treenode, User, UserRole, \
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
+def stats_cable_length(request, project_id=None):
+    """ Get the largest skeletons based on cable length.
+    ---
+    parameters:
+    - name: n_skeletoons
+      description: |
+        How many skeletons should be returned
+      required: false
+      type: integer
+      paramType: form
+    """
+    cursor = connection.cursor()
+    n_skeletons = int(request.GET.get('n_skeletons', '0'))
+
+    cursor.execute("""
+        SELECT skeleton_id, cable_length
+        FROM catmaid_skeleton_summary
+        WHERE project_id = %(project_id)s
+        ORDER BY cable_length DESC
+        {limit}
+    """.format(**{
+        'limit': 'LIMIT {}'.format(n_skeletons) if n_skeletons else '',
+    }), {
+        'project_id': project_id,
+    })
+
+    result = list(cursor.fetchall())
+
+    return JsonResponse(result, safe=False)
+
+
+@api_view(['GET'])
+@requires_user_role(UserRole.Browse)
 def stats_nodecount(request, project_id=None):
     """ Get the total number of created nodes per user.
     ---

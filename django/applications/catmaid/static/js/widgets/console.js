@@ -100,6 +100,9 @@
       } else {
         sp.appendChild(document.createTextNode(toStr(obj)));
       }
+      if (color) {
+        sp.style.color = color;
+      }
       view.replaceChild(sp, view.lastChild);
       return;
     };

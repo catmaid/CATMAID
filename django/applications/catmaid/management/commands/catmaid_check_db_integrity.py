@@ -1,13 +1,26 @@
 # -*- coding: utf-8 -*-
 
+import logging
 import sys
-
+import numpy as np
 import progressbar
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection
 from catmaid.models import Project
 from catmaid.util import str2bool
+
+
+logger = logging.getLogger(__name__)
+
+winding_check_enabled = True
+try:
+    from trimesh import Trimesh
+    from trimesh.grouping import merge_vertices_hash
+except ImportError:
+    logger.warn('Optional depedency "trimesh" not found. Won\'t be able to check volume triange winding.')
+    winding_check_enabled = False
+
 
 class Command(BaseCommand):
     help = '''
@@ -162,5 +175,65 @@ class Command(BaseCommand):
         else:
             self.stdout.write('OK')
             passed = passed and True
+
+
+        self.stdout.write('Check if all triangles have the same orientation...', ending='')
+        if winding_check_enabled:
+            cursor.execute("""
+                SELECT volume_id, triangle_id, points
+                        FROM (
+                        SELECT volume_id,
+                            (v.gdump).path[1],
+                            /* Points need to be ordered by index to be comparable. */
+                            array_agg(ARRAY[ST_X((v.gdump).geom), ST_Y((v.gdump).geom), ST_Z((v.gdump).geom)] order by (v.gdump).path[ 3] ASC) as points
+                        FROM (
+                            SELECT volume_id, gdump
+                            FROM (
+                                SELECT v.id AS volume_id,
+                                    ST_DumpPoints(geometry) AS gdump
+                                FROM catmaid_volume v
+                            ) v(volume_id, gdump)
+                        ) v(volume_id, gdump)
+                        GROUP BY v.volume_id, (v.gdump).path[1]
+                        ) triangle(volume_id, triangle_id, points)
+                        WHERE array_length(points, 1) = 4;
+            """)
+            volumes = {}
+            for tri in cursor.fetchall():
+                entry = volumes.get(tri[0])
+                if not entry:
+                    entry = {
+                        'volume_id': tri[0],
+                        'vertices': [],
+                        'faces': [],
+                    }
+                    volumes[tri[0]] = entry
+                vertices = entry['vertices']
+                faces = entry['faces']
+                vertex_offset = len(vertices)
+                vertices.extend(tri[2])
+                faces.append([vertex_offset, vertex_offset + 1, vertex_offset + 2])
+
+            volumes_with_inconsistent_winding = []
+            for volume_id, details in volumes.items():
+                mesh = Trimesh(vertices=np.array(vertices), faces=np.array(faces),
+                        process=False)
+                # Merge all vertices in trimeshs
+                merge_vertices_hash(mesh)
+                # Check if the winding is consistent
+                if not mesh.is_winding_consistent:
+                    volumes_with_inconsistent_winding.append(volume_id)
+                details['mesh'] = mesh
+
+            if volumes_with_inconsistent_winding:
+                self.stdout.write('FAILED: The following volumes have an ' +
+                        'inconsistent winding: {}'.format(', '.join(
+                                volumes_with_inconsistent_winding)))
+            else:
+                self.stdout.write('OK')
+
+            passed = passed and not volumes_with_inconsistent_winding
+        else:
+            self.stdout.write('Not enabled (pip intall trimesh to enable)')
 
         return passed

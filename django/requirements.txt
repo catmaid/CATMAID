@@ -10,7 +10,7 @@ django-formtools==2.1
 django-guardian==1.4.9
 django-pipeline==1.6.14
 django-rest-swagger==2.1.2
-django-taggit==0.22.2
+django-taggit==0.23.0
 djangorestframework==3.5.4
 jsonfield==2.0.2
 kombu==4.2.1

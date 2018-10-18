@@ -28,7 +28,7 @@ psycopg2cffi==2.7.7;  platform_python_implementation == 'PyPy'
 python-dateutil==2.6.1
 pytz==2018.4
 PyYAML==3.12
-requests==2.18.4
+requests==2.19.1
 scipy==1.0.0
 sqlparse==0.2.4
 ujson==1.35

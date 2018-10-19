@@ -1462,8 +1462,14 @@
     // first element (empty upper left cell).
     var lines = [['""']];
 
+    let options = {
+      relative: this.relativeDisplay,
+      totalConnectivity: this.connectivityData,
+      relationMap: this.relationMap,
+    };
+
     var walked = this.walkMatrix(this.matrix, handleColumn.bind(window, lines[0]),
-        handleRow.bind(window, lines), handleCell);
+        handleRow.bind(window, lines), handleCell, undefined, options);
 
     // Export concatenation of all lines, delimited buy new-line characters
     if (walked) {
@@ -1504,6 +1510,12 @@
     // doesn't work correctly, and some content has to be provided.
     var lines = [[' ']];
 
+    let options = {
+      relative: this.relativeDisplay,
+      totalConnectivity: this.connectivityData,
+      relationMap: this.relationMap,
+    };
+
     // Create header
     function handleColumn(line, id, colGroup, name, skeletonIDs) {
       var n = (name && name.length) ? name : '""';
@@ -1525,7 +1537,7 @@
     }
 
     var walked = this.walkMatrix(this.matrix, handleColumn.bind(window, lines[0]),
-        handleRow.bind(window, lines), handleCell);
+        handleRow.bind(window, lines), handleCell, undefined, options);
 
     // Export concatenation of all lines, delimited buy new-line characters
     if (!walked) {

@@ -5,7 +5,7 @@ from itertools import chain
 from django.db import connection
 from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
-from catmaid.control.neuron_annotations import (get_annotated_entities,
+from catmaid.control.annotation import (get_annotated_entities,
         get_annotation_to_id_map)
 from django.contrib.auth.hashers import make_password
 from catmaid.control.tracing import check_tracing_setup

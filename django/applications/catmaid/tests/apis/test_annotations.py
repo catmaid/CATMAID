@@ -2,8 +2,8 @@
 
 import json
 
-from catmaid.control.neuron_annotations import _annotate_entities
-from catmaid.control.neuron_annotations import create_annotation_query
+from catmaid.control.annotation import _annotate_entities
+from catmaid.control.annotation import create_annotation_query
 
 from .common import CatmaidApiTestCase
 

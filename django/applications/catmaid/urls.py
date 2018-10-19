@@ -12,7 +12,7 @@ from rest_framework.decorators import api_view
 
 from catmaid.control import (authentication, user, group, log, message, client,
         common, project, stack, stackgroup, tile, tracing, stats,
-        neuron_annotations as annotations, textlabel, label, link, connector,
+        annotation, textlabel, label, link, connector,
         neuron, node, treenode, suppressed_virtual_treenode, skeleton,
         skeletonexport, treenodeexport, cropping, data_view, ontology,
         classification, notifications, roi, clustering, volume, noop,
@@ -156,14 +156,14 @@ urlpatterns += [
 
 # Annotations
 urlpatterns += [
-    url(r'^(?P<project_id>\d+)/annotations/$', annotations.list_annotations),
-    url(r'^(?P<project_id>\d+)/annotations/query$', annotations.annotations_for_entities),
-    url(r'^(?P<project_id>\d+)/annotations/forskeletons$', annotations.annotations_for_skeletons),
-    url(r'^(?P<project_id>\d+)/annotations/table-list$', annotations.list_annotations_datatable),
-    url(r'^(?P<project_id>\d+)/annotations/add$', record_view("annotations.add")(annotations.annotate_entities)),
-    url(r'^(?P<project_id>\d+)/annotations/remove$', record_view("annotations.remove")(annotations.remove_annotations)),
-    url(r'^(?P<project_id>\d+)/annotations/(?P<annotation_id>\d+)/remove$', record_view("annotations.remove")(annotations.remove_annotation)),
-    url(r'^(?P<project_id>\d+)/annotations/query-targets$', annotations.query_annotated_classinstances),
+    url(r'^(?P<project_id>\d+)/annotations/$', annotation.list_annotations),
+    url(r'^(?P<project_id>\d+)/annotations/query$', annotation.annotations_for_entities),
+    url(r'^(?P<project_id>\d+)/annotations/forskeletons$', annotation.annotations_for_skeletons),
+    url(r'^(?P<project_id>\d+)/annotations/table-list$', annotation.list_annotations_datatable),
+    url(r'^(?P<project_id>\d+)/annotations/add$', record_view("annotations.add")(annotation.annotate_entities)),
+    url(r'^(?P<project_id>\d+)/annotations/remove$', record_view("annotations.remove")(annotation.remove_annotations)),
+    url(r'^(?P<project_id>\d+)/annotations/(?P<annotation_id>\d+)/remove$', record_view("annotations.remove")(annotation.remove_annotation)),
+    url(r'^(?P<project_id>\d+)/annotations/query-targets$', annotation.query_annotated_classinstances),
 ]
 
 # Text labels

@@ -33,7 +33,7 @@ from catmaid.control.common import (insert_into_log, get_class_to_id_map,
         get_relation_to_id_map, _create_relation, get_request_bool,
         get_request_list, Echo)
 from catmaid.control.neuron import _delete_if_empty
-from catmaid.control.neuron_annotations import (annotations_for_skeleton,
+from catmaid.control.annotation import (annotations_for_skeleton,
         create_annotation_query, _annotate_entities, _update_neuron_annotations)
 from catmaid.control.review import get_review_status
 from catmaid.control.tree_util import find_root, reroot, edge_count_to_root

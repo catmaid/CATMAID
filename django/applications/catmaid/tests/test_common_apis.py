@@ -12,7 +12,7 @@ from guardian.utils import get_anonymous_user
 from guardian.management import create_anonymous_user
 
 from catmaid.control.project import validate_project_setup
-from catmaid.control.neuron_annotations import _annotate_entities
+from catmaid.control.annotation import _annotate_entities
 from catmaid.fields import Double3D, Integer3D
 from catmaid.models import Project, Stack, ProjectStack, StackMirror
 from catmaid.models import ClassInstance, Log

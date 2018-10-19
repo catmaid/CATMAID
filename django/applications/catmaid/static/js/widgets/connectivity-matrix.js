@@ -36,6 +36,8 @@
     this.rotateColumnHeaders = false;
     // Display manual order edit controls
     this.displayOrderFields = false;
+    // How groups should be aggregated (sum, min, max,avg)
+    this.groupAggregate = 'sum';
     // Whether or not to display connectivity counts as percentage to total
     // connectivity.
     this.relativeDisplay = false;
@@ -381,6 +383,30 @@
         ungroupBoth.setAttribute("title", "Ungroup all rows and columns");
         ungroupBoth.onclick = this.ungroup.bind(this, true, true);
         tabs['Groups'].appendChild(ungroupBoth);
+
+        CATMAID.DOM.appendElement(tabs['Groups'], {
+          type: 'select',
+          label: 'Aggregate',
+          title: 'Select how group member connectivity counts should be aggregated.',
+          value: this.groupAggregate,
+          entries: [{
+            title: 'Sum',
+            value: 'sum'
+          }, {
+            title: 'Min',
+            value: 'min'
+          }, {
+            title: 'Max',
+            value: 'max'
+          }, {
+            title: 'Average',
+            value: 'avg'
+          }],
+          onchange: function() {
+            self.groupAggregate = this.value;
+            self.refresh();
+          }
+        });
 
         // Display tab
         var sortOptionNames = sortOptions.map(function(o) {
@@ -822,11 +848,8 @@
         handleColumn.bind(this, colHeader, colNames, colSkids),
         handleRow.bind(window, table, rowNames, rowSkids),
         handleCell.bind(this),
-        handleCompletion.bind(this, table, rowNames, rowSkids, colNames, colSkids), {
-          relative: this.relativeDisplay,
-          totalConnectivity: this.connectivityData,
-          relationMap: this.relationMap,
-        });
+        handleCompletion.bind(this, table, rowNames, rowSkids, colNames, colSkids),
+          this.makeVisitorOptions());
 
     if (walked) {
       // Add optional order fields
@@ -1360,7 +1383,8 @@
         var colName = colGroup ? colId : nns.getName(colId);
         var connections = aggregateMatrix(m, r, c,
             rowGroup ? rowGroup.length : 1,
-            colGroup ? colGroup.length : 1);
+            colGroup ? colGroup.length : 1,
+            options.groupAggregate);
 
         // Create and handle in and out cells
         var rowSkids = rowGroup ? rowGroup : [rowId];
@@ -1462,12 +1486,7 @@
     // first element (empty upper left cell).
     var lines = [['""']];
 
-    let options = {
-      relative: this.relativeDisplay,
-      totalConnectivity: this.connectivityData,
-      relationMap: this.relationMap,
-    };
-
+    let options = this.makeVisitorOptions();
     var walked = this.walkMatrix(this.matrix, handleColumn.bind(window, lines[0]),
         handleRow.bind(window, lines), handleCell, undefined, options);
 
@@ -1496,6 +1515,15 @@
     }
   };
 
+  ConnectivityMatrixWidget.prototype.makeVisitorOptions = function() {
+    return {
+      relative: this.relativeDisplay,
+      totalConnectivity: this.connectivityData,
+      relationMap: this.relationMap,
+      groupAggregate: this.groupAggregate,
+    };
+  };
+
   /**
    * Export the currently displayed matrix as XLSX file using jQuery DataTables.
    */
@@ -1510,11 +1538,7 @@
     // doesn't work correctly, and some content has to be provided.
     var lines = [[' ']];
 
-    let options = {
-      relative: this.relativeDisplay,
-      totalConnectivity: this.connectivityData,
-      relationMap: this.relationMap,
-    };
+    let options = this.makeVisitorOptions();
 
     // Create header
     function handleColumn(line, id, colGroup, name, skeletonIDs) {
@@ -1572,16 +1596,41 @@
     });
   };
 
+  let knownAggregates = {
+    'sum': function sum(a, b, n) {
+      return a + b;
+    },
+    'min': function min(a, b, n) {
+      return b > a ? a : b;
+    },
+    'max': function max(a, b, n) {
+      return b > a ? b : a;
+    },
+    'avg': function avg(a, b, n) {
+      return a + ((b - a) / (n+1));
+    },
+  };
+
   /**
    * Aggregate the values of a connectivity matrix over the specified number of
    * rows and columns, starting from the given position.
    */
-  function aggregateMatrix(matrix, r, c, nRows, nCols) {
+  function aggregateMatrix(matrix, r, c, nRows, nCols, aggregateName) {
+    aggregateName = aggregateName || 'sum';
+
+    let agg = knownAggregates[aggregateName];
+    if (!agg) {
+      throw new CATMAID.ValueError("Unknown aggregate function: " + aggregateName);
+    }
+
     var n = 0;
 
     for (var i=0; i<nRows; ++i) {
       for (var j=0; j<nCols; ++j) {
-        n += matrix[r + i][c + j].count;
+        let count = matrix[r + i][c + j].count;
+        let loops = i * nCols + j;
+        // No need for arregation in first iteration
+        n = loops === 0 ? count : agg(n, count, loops);
       }
     }
 

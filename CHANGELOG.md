@@ -21,6 +21,9 @@ Connectivity matrix:
   as CSV without displaying it using the "Auto-connectivity CSV" button. This
   makes it possible to export larger connectivity matrices in a usable format.
 
+- The aggregation method for the connectivity count in groups can now be
+  selected. Available are: sum (default), min, max and average.
+
 3D viewer:
 
 - Treenodes that are linked to connector nodes can now be scaled independently

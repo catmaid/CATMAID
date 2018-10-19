@@ -41,11 +41,15 @@ def get_annotation_to_id_map(project_id, annotations, relations=None,
     mapping = dict(cursor.fetchall())
     return mapping
 
-def get_annotated_entities(project, params, relations, classes,
+def get_annotated_entities(project_id, params, relations=None, classes=None,
         allowed_classes=['neuron', 'annotation'], sort_by=None, sort_dir=None,
         range_start=None, range_length=None, with_annotations=True, with_skeletons=True):
     """Get a list of annotated entities based on the passed in search criteria.
     """
+    if not relations:
+        relations = get_relation_to_id_map(project_id)
+    if not classes:
+        classes = get_class_to_id_map(project_id)
     # Get IDs of constraining classes.
     allowed_class_idx = {classes[c]:c for c in allowed_classes}
     allowed_class_ids = list(allowed_class_idx.keys())
@@ -83,7 +87,7 @@ def get_annotated_entities(project, params, relations, classes,
                     key.startswith('sub_annotated_with'):
                 if len(params[key]) > 0:
                     annotation_names |= set(params[key].split(','))
-        annotation_id_map = get_annotation_to_id_map(project.id, list(annotation_names))
+        annotation_id_map = get_annotation_to_id_map(project_id, list(annotation_names))
         def to_id(name):
             id = annotation_id_map.get(name)
             if not id:
@@ -114,7 +118,7 @@ def get_annotated_entities(project, params, relations, classes,
         'ci.class_id = ANY (%(class_ids)s)'
     ]
     params = {
-        "project_id": project.id,
+        "project_id": project_id,
         "class_ids": allowed_class_ids,
         "annotated_with": relations['annotated_with'],
         "model_of": relations['model_of']
@@ -144,7 +148,7 @@ def get_annotated_entities(project, params, relations, classes,
             filters.append("ci.name {op} %(name)s".format(op=op))
 
     # Map annotation sets to their expanded sub-annotations
-    sub_annotation_ids = get_sub_annotation_ids(project, annotation_sets_to_expand,
+    sub_annotation_ids = get_sub_annotation_ids(project_id, annotation_sets_to_expand,
             relations, classes)
 
     # Collect all annotations and their sub-annotation IDs (if requested) in a

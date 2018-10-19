@@ -8,12 +8,13 @@ import pytz
 from itertools import chain
 
 from django.db import connection
-from django.utils.six import StringIO
 from catmaid.models import Connector
 from catmaid.tests.apis.common import CatmaidApiTestCase
 from catmaid.control import stats
 from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
 from guardian.shortcuts import assign_perm
+from io import StringIO
+
 
 class StatsApiTests(CatmaidApiTestCase):
 

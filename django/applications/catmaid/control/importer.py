@@ -6,7 +6,6 @@ import json
 import yaml
 import urllib
 import requests
-import six
 
 from collections import OrderedDict, defaultdict
 
@@ -373,7 +372,7 @@ class ProjectSelector(object):
         # Mark projects as known
         if projects and known_project_filter:
             # Mark known stacks, i.e. the ones having the same image base
-            for key, p in six.iteritems(projects):
+            for key, p in projects.items():
                 for s in p.stacks:
                     # Mark a project as known if an existing project shares the
                     # same title and the same mirrors.
@@ -421,7 +420,7 @@ class ProjectSelector(object):
                 for row in cursor.fetchall():
                   stack_map[tuple(sorted(row[1]))].append(row[0])
 
-                for key, p in six.iteritems(projects):
+                for key, p in projects.items():
                     if p.already_known:
                         # Name matches have precedence
                         continue
@@ -1110,7 +1109,7 @@ def import_projects( user, pre_projects, tags, permissions,
                 # existing project is the only link.
                 links = {ss:[l for l in currently_linked_stacks if ss.equals(l)] \
                         for ss in pp.stacks}
-                all_stacks_linked = all(len(l) == 1 for l in six.itervalues(links))
+                all_stacks_linked = all(len(l) == 1 for l in links.values())
 
                 if 'ignore' == pp.action:
                     # Ignore all projects that are marked to be ignored
@@ -1199,7 +1198,7 @@ def import_projects( user, pre_projects, tags, permissions,
                       # existing ones that have a valid link to the existing
                       # project.
                       stack = existing_stack
-                      for k,v in six.iteritems(stack_properties):
+                      for k,v in stack_properties.items():
                         if hasattr(stack, k):
                             setattr(stack, k, v)
                         else:
@@ -1253,7 +1252,7 @@ def import_projects( user, pre_projects, tags, permissions,
                       elif 'override' == known_stack_action:
                           # Find a linked (!) and matching mirror
                           for mirror in known_mirrors:
-                              for k,v in six.iteritems(mirror_properties):
+                              for k,v in mirror_properties.items():
                                 if hasattr(mirror, k):
                                     setattr(mirror, k, v)
                                 else:
@@ -1313,12 +1312,12 @@ def import_projects( user, pre_projects, tags, permissions,
                 ensure_class_instances(p, pp.classification, user)
 
             # Add classification and link to stacks
-            for s, classification in six.iteritems(stack_classification):
+            for s, classification in stack_classification.items():
                 ensure_class_instances(p, classification,  user, stack=s)
 
             # Save stack groups
             referenced_stackgroups = {}
-            for sg, linked_stacks in six.iteritems(stack_groups):
+            for sg, linked_stacks in stack_groups.items():
                 existing_stackgroups = StackGroup.objects.filter(title=sg)
 
                 if len(existing_stackgroups) > 1:

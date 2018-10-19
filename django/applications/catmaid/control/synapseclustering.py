@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import six
 import numpy as np
 from numpy import array, float32
 from numpy.linalg import norm
@@ -163,7 +162,7 @@ def segregationIndex( synapseGroups, skeleton_id, weightOutputs=True ):
 
     if weightOutputs:
         nTargets = countTargets( skeleton_id )
-        for group in six.itervalues(synapseGroups):
+        for group in synapseGroups.values():
             for i, synDirection in enumerate(group.relations):
                 if synDirection == PRE:
                     nout[group] += nTargets[ group.connector_ids[i] ]
@@ -171,7 +170,7 @@ def segregationIndex( synapseGroups, skeleton_id, weightOutputs=True ):
                 else:
                     ngrp[group] +=1
     else:
-        for group in six.itervalues(synapseGroups):
+        for group in synapseGroups.values():
             for synDirection in group.relations:
                 if synDirection == PRE:
                     nout[group] += 1

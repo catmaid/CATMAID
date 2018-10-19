@@ -14,7 +14,7 @@ from guardian.utils import get_anonymous_user
 
 from rest_framework.authentication import TokenAuthentication
 
-from six import StringIO
+from io import StringIO
 
 
 logger = logging.getLogger(__name__)

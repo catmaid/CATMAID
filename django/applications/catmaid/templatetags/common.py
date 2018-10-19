@@ -6,8 +6,6 @@ from django import template
 from django.conf import settings
 from django.utils.safestring import SafeText
 
-from six import string_types
-
 
 register = template.Library()
 
@@ -49,7 +47,7 @@ def get_or_none(dictionary, option):
 def is_string_type(val):
     """ Returns whether the passed type is a string type.
     """
-    return val in string_types or val == SafeText
+    return val == str or val == SafeText
 
 @register.filter
 def sort(l):

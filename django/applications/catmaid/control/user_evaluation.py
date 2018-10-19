@@ -2,7 +2,6 @@
 
 import json
 import pytz
-import six
 
 from datetime import datetime, timedelta
 from collections import defaultdict, namedtuple
@@ -17,9 +16,6 @@ from catmaid.models import Treenode, Log, Relation, TreenodeConnector, \
 from catmaid.control.review import get_review_status
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.tree_util import lazy_load_trees
-
-# Python 2 and 3 compatible map iterator
-from six.moves import map
 
 
 def _find_nearest(tree, nodes, loc1):
@@ -121,8 +117,8 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations):
             return start_date <= date <= end_date
 
         # Total number of synapses related to nodes reviewed within the epoch
-        epoch_n_pre = sum(len(r.get(relations['presynaptic_to'], [])) for r in six.itervalues(nodes_synapses))
-        epoch_n_post = sum(len(r.get(relations['postsynaptic_to'], [])) for r in six.itervalues(nodes_synapses))
+        epoch_n_pre = sum(len(r.get(relations['presynaptic_to'], [])) for r in nodes_synapses.values())
+        epoch_n_post = sum(len(r.get(relations['postsynaptic_to'], [])) for r in nodes_synapses.values())
 
         # Find out synapses added by the reviewer within the epoch, keyed by treenode user
         reviewer_n_pre = defaultdict(int)
@@ -183,7 +179,7 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations):
                 edges = tree[node]
                 if edges:
                     # Replace node with its parent
-                    node = next(six.iterkeys(edges))
+                    node = next(edges.keys())
                 merges[tree.node[node]['user_id']] += 1
 
         # Count nodes created by the reviewer, as well as
@@ -206,7 +202,7 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations):
                 for node in addition:
                     edges = tree[node]
                     if edges:
-                        parent = next(six.iterkeys(edges))
+                        parent = next(edges.keys())
                         creator_id = tree.node[parent]['user_id']
                         if creator_id != reviewer_id:
                             appended[creator_id].append(len(addition))
@@ -289,7 +285,7 @@ def _evaluate(project_id, user_id, start_date, end_date, max_gap, min_nodes):
     review_status = get_review_status(skeleton_ids)
 
     not_fully_reviewed = set()
-    for skid, status in six.iteritems(review_status):
+    for skid, status in review_status.items():
         if status[0] != status[1]:
             not_fully_reviewed.add(skid)
 
@@ -304,8 +300,8 @@ def _evaluate(project_id, user_id, start_date, end_date, max_gap, min_nodes):
         reviews[r.skeleton_id][r.treenode_id].append(r)
 
     # Sort all reviews of all treenodes by review time, most recent first
-    for skid, tid_to_rs in six.iteritems(reviews):
-        for tid, rs in six.iteritems(tid_to_rs):
+    for skid, tid_to_rs in reviews.items():
+        for tid, rs in tid_to_rs.items():
             rs.sort(key=lambda r: r.review_time)
             rs.reverse()
 
@@ -340,7 +336,7 @@ def _evaluate(project_id, user_id, start_date, end_date, max_gap, min_nodes):
 
     d = []
 
-    for skid, arbor_epoch_ops in six.iteritems(evaluations):
+    for skid, arbor_epoch_ops in evaluations.items():
         for epoch_ops in arbor_epoch_ops:
             if 0 == epoch_ops.user_node_counts[user_id]:
                 # user did not contribute at all to this chunk

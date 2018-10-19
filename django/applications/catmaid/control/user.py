@@ -2,7 +2,6 @@
 
 import json
 import django.contrib.auth.views as django_auth_views
-import six
 
 from guardian.utils import get_anonymous_user
 
@@ -76,7 +75,7 @@ def user_list_datatable(request):
 
     # This field can be used to only return users that have used a certain
     # annotation.
-    annotations = [v for k,v in six.iteritems(request.POST)
+    annotations = [v for k,v in request.POST.items()
             if k.startswith('annotations[')]
 
     for annotation in annotations:

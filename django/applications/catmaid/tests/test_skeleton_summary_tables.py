@@ -2,7 +2,6 @@
 
 import json
 import time
-import six
 
 from django.db import connection, transaction, InternalError
 from django.test import TestCase, TransactionTestCase

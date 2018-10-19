@@ -4,7 +4,6 @@ import itertools
 import math
 import networkx as nx
 import re
-import six
 
 from collections import defaultdict
 
@@ -510,9 +509,9 @@ def update_node_radii(node_ids, radii, cursor=None):
 @requires_user_role(UserRole.Annotate)
 def update_radii(request, project_id=None):
     """Update the radius of one or more nodes"""
-    treenode_ids = [int(v) for k,v in six.iteritems(request.POST) \
+    treenode_ids = [int(v) for k,v in request.POST.items() \
         if k.startswith('treenode_ids[')]
-    radii = [float(v) for k,v in six.iteritems(request.POST) \
+    radii = [float(v) for k,v in request.POST.items() \
         if k.startswith('treenode_radii[')]
     # Make sure the back-end is in the expected state
     cursor = connection.cursor()

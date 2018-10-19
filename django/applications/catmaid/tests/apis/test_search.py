@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-import six
 
 from catmaid.models import ClassInstance
 
@@ -70,7 +69,7 @@ class SearchApiTests(CatmaidApiTestCase):
                 {"id":2468, "name":"skeleton 2468", "class_name":"skeleton"},
                 {"id":361, "name":"skeleton 361", "class_name":"skeleton"},
                 {"id":373, "name":"skeleton 373", "class_name":"skeleton"}]
-        six.assertCountEqual(self, expected_result, parsed_response)
+        self.assertCountEqual(expected_result, parsed_response)
 
 
     def test_search_with_nodes_and_nonode_label(self):
@@ -111,7 +110,7 @@ class SearchApiTests(CatmaidApiTestCase):
             {"id":2342, "name":"uncertain end", "class_name":"label", "nodes":[
                 {"id":403, "x":7840, "y":2380, "z":0, "skid":373}]},
         ]
-        six.assertCountEqual(self, expected_result, parsed_response)
+        self.assertCountEqual(expected_result, parsed_response)
 
         # Add a duplicate record of the label, without any node links
         label = ClassInstance.objects.get(id=2342)
@@ -130,7 +129,7 @@ class SearchApiTests(CatmaidApiTestCase):
             {"id":2342, "name":"uncertain end", "class_name":"label", "nodes":[
                 {"id":403, "x":7840, "y":2380, "z":0, "skid":373}]}
         ]
-        six.assertCountEqual(self, expected_result2, parsed_response2)
+        self.assertCountEqual(expected_result2, parsed_response2)
 
 
     def test_search_with_nodes(self):

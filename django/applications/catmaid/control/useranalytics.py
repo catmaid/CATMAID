@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import six
 import numpy as np
 from datetime import timedelta, datetime
 from dateutil import parser as dateparser
@@ -31,8 +30,6 @@ try:
 except ImportError:
     logger.warning("CATMAID was unable to laod the matplotlib module. "
         "User analytics will not be available")
-
-from six.moves import range
 
 
 class Bout(object):
@@ -525,7 +522,7 @@ def eventsPerIntervalPerDayPlot(ax,times,start_date,end_date,interval=60):
     ind = 0
     cm = plt.get_cmap('jet',len(timebins))
     dats = []
-    for dat in six.itervalues(timebins):
+    for dat in timebins.values():
         if np.sum(dat)==0:
             ignoredDays += 1
         else:

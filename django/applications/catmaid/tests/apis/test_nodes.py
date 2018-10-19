@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-import six
 
 from django.db import connection
 
@@ -147,7 +146,7 @@ class NodesApiTests(CatmaidApiTestCase):
             [367, 7030.0, 1980.0, 0.0],
             [387, 9030.0, 1480.0, 0.0]
         ]
-        six.assertCountEqual(self, expected_result, parsed_response)
+        self.assertCountEqual(expected_result, parsed_response)
         self.assertEqual(sorted(expected_result), sorted(parsed_response))
 
 
@@ -432,7 +431,7 @@ class NodesApiTests(CatmaidApiTestCase):
                 # Treat links separately, because they come in a list of
                 # unspecified different order.
                 if 7 == n:
-                    six.assertCountEqual(self, row[n], parsed_row[n])
+                    self.assertCountEqual(row[n], parsed_row[n])
                 else:
                     self.assertEqual(e, parsed_row[n])
 
@@ -512,7 +511,7 @@ class NodesApiTests(CatmaidApiTestCase):
                 # Treat links separately, because they come in a list of
                 # unspecified different order.
                 if 7 == n:
-                    six.assertCountEqual(self, row[n], parsed_row[n])
+                    self.assertCountEqual(row[n], parsed_row[n])
                 else:
                     self.assertEqual(e, parsed_row[n])
         self.assertEqual({}, parsed_response[2])

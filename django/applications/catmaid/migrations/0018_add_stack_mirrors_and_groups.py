@@ -3,7 +3,6 @@
 
 from collections import defaultdict
 import re
-import six
 
 import catmaid.fields
 import django.contrib.postgres.fields.jsonb
@@ -54,7 +53,7 @@ def forward_update_stack_groups(apps, schema_editor):
     if not sg_id_mapping:
         return
 
-    sg_pattern = ','.join(["({}, {})".format(k, v) for k,v in six.iteritems(sg_id_mapping)])
+    sg_pattern = ','.join(["({}, {})".format(k, v) for k,v in sg_id_mapping.items()])
     cursor = connection.cursor()
     cursor.execute("""
         INSERT INTO stack_stack_group (stack_id, stack_group_id, group_relation_id, position)
@@ -107,7 +106,7 @@ def forward_migrate_overlays(apps, schema_editor):
     for group in sgs:
         sg_titles[group[1]].append(group[0])
 
-    for title, stack_ids in six.iteritems(stack_titles):
+    for title, stack_ids in stack_titles.items():
         group_ids = sg_titles[title]
         for stack_id, group_id in zip(stack_ids, group_ids):
             stack_id_mapping[stack_id] = group_id
@@ -123,7 +122,7 @@ def forward_migrate_overlays(apps, schema_editor):
         FROM stack s
         JOIN (VALUES {}) AS sgim (s_id, sg_id) ON sgim.s_id = s.id
     """.format(
-        ','.join(['({}, {})'.format(k, v) for k, v in six.iteritems(stack_id_mapping)])))
+        ','.join(['({}, {})'.format(k, v) for k, v in stack_id_mapping.items()])))
 
     # Create stacks for each overlay.
     # Note stack is still the old stack model at this point.
@@ -158,8 +157,8 @@ def forward_migrate_overlays(apps, schema_editor):
         JOIN (VALUES {}) AS nsim (o_id, s_id) ON nsim.o_id = o.id
         JOIN (VALUES {}) AS sgim (s_id, sg_id) ON sgim.s_id = o.stack_id
     """.format(
-        ','.join(['({}, {})'.format(k, v) for k, v in six.iteritems(overlay_stacks_ids)]),
-        ','.join(['({}, {})'.format(k, v) for k, v in six.iteritems(stack_id_mapping)])))
+        ','.join(['({}, {})'.format(k, v) for k, v in overlay_stacks_ids.items()]),
+        ','.join(['({}, {})'.format(k, v) for k, v in stack_id_mapping.items()])))
 
 
 forward_create_stack_mirrors = """

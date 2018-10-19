@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-import six
 import yaml
 
 from ast import literal_eval
@@ -152,9 +151,9 @@ class ImportExportTests(TestCase):
 
             # Test required fields
             self.assertEqual(stack['title'], p2s.title)
-            six.assertCountEqual(self, literal_eval(stack['dimension']),
+            self.assertCountEqual(literal_eval(stack['dimension']),
                     literal_eval(str(p2s.dimension)))
-            six.assertCountEqual(self, literal_eval(stack['resolution']),
+            self.assertCountEqual(literal_eval(stack['resolution']),
                     literal_eval(str(p2s.resolution)))
             self.assertEqual(stack['zoomlevels'], p2s.num_zoom_levels)
 
@@ -187,7 +186,7 @@ class ImportExportTests(TestCase):
 
             # Test project-stack link
             ps = ProjectStack.objects.get(project=p2.id, stack=p2s)
-            six.assertCountEqual(self, literal_eval(stack.get('translation', '(0,0,0)')),
+            self.assertCountEqual(literal_eval(stack.get('translation', '(0,0,0)')),
                     literal_eval(str(ps.translation)))
 
             # Test stack groups

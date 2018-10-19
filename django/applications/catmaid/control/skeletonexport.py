@@ -6,7 +6,6 @@ import logging
 import msgpack
 import networkx as nx
 import pytz
-import six
 import struct
 
 from functools import partial
@@ -33,8 +32,6 @@ from psycopg2.extras import DateTimeTZRange
 
 from catmaid.control.tree_util import edge_count_to_root, partition
 
-# Python 2 and 3 compatible map and zip iterator
-from six.moves import map, zip
 
 try:
     from exportneuroml import neuroml_single_cell, neuroml_network
@@ -1152,12 +1149,12 @@ def _measure_skeletons(skeleton_ids):
             skeletons[row[2]] = skeleton
         skeleton.nodes[row[0]] = Node(row[1], row[3], row[4], row[5])
 
-    for skeleton in six.itervalues(skeletons):
+    for skeleton in skeletons.values():
         nodes = skeleton.nodes
         tree = nx.DiGraph()
         root = None
         # Accumulate children
-        for nodeID, node in six.iteritems(nodes):
+        for nodeID, node in nodes.items():
             if not node.parent_id:
                 root = nodeID
                 continue
@@ -1170,7 +1167,7 @@ def _measure_skeletons(skeleton_ids):
             # Measure raw cable, given that we have the parent already
             skeleton.raw_cable += distance
         # Utilize accumulated children and the distances to them
-        for nodeID, node in six.iteritems(nodes):
+        for nodeID, node in nodes.items():
             # Count end nodes and branch nodes
             n_children = len(node.children)
             if not node.parent_id:
@@ -1192,9 +1189,9 @@ def _measure_skeletons(skeleton_ids):
             oids = node.children.copy()
             if node.parent_id:
                 oids[node.parent_id] = skeleton.nodes[node.parent_id].children[nodeID]
-            sum_distances = sum(six.itervalues(oids))
+            sum_distances = sum(oids.values())
             wx, wy, wz = 0, 0, 0
-            for oid, distance in six.iteritems(oids):
+            for oid, distance in oids.items():
                 other = skeleton.nodes[oid]
                 w = distance / sum_distances if sum_distances != 0 else 0
                 wx += other.x * w
@@ -1206,7 +1203,7 @@ def _measure_skeletons(skeleton_ids):
         # Find out nodes that belong to the principal branch
         principal_branch_nodes = set(sorted(partition(tree, root), key=len)[-1])
         # Compute smoothed cable length, also for principal branch
-        for nodeID, node in six.iteritems(nodes):
+        for nodeID, node in nodes.items():
             if not node.parent_id:
                 # root node
                 continue
@@ -1256,7 +1253,7 @@ def _measure_skeletons(skeleton_ids):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def measure_skeletons(request, project_id=None):
-    skeleton_ids = tuple(int(v) for k,v in six.iteritems(request.POST) if k.startswith('skeleton_ids['))
+    skeleton_ids = tuple(int(v) for k,v in request.POST.items() if k.startswith('skeleton_ids['))
     def asRow(skid, sk):
         return (skid, int(sk.raw_cable), int(sk.smooth_cable), sk.n_pre, sk.n_post, len(sk.nodes), sk.n_branch, sk.n_ends, sk.principal_branch_cable)
     return JsonResponse([asRow(skid, sk) for skid, sk in _measure_skeletons(skeleton_ids).iteritems()], safe=False)
@@ -1294,7 +1291,7 @@ def _skeleton_neuroml_cell(skeleton_id, preID, postID):
 def skeletons_neuroml(request, project_id=None):
     """ Export a list of skeletons each as a Cell in NeuroML. """
     project_id = int(project_id) # sanitize
-    skeleton_ids = tuple(int(v) for k,v in six.iteritems(request.POST) if k.startswith('skids['))
+    skeleton_ids = tuple(int(v) for k,v in request.POST.items() if k.startswith('skids['))
 
     cursor = connection.cursor()
 
@@ -1364,7 +1361,7 @@ def export_neuroml_level3_v181(request, project_id=None):
         # Dictionary of presynaptic skeleton ID vs map of postsynaptic skeleton ID vs list of tuples with presynaptic treenode ID and postsynaptic treenode ID.
         connections = defaultdict(partial(defaultdict, list))
 
-        for connectorID, m in six.iteritems(connectors):
+        for connectorID, m in connectors.items():
             for pre_treenodeID, skID1 in m[presynaptic_to]:
                 for post_treenodeID, skID2 in m[postsynaptic_to]:
                     connections[skID1][skID2].append((pre_treenodeID, post_treenodeID))
@@ -1645,7 +1642,7 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None):
 def skeleton_connectors_by_partner(request, project_id):
     """ Return a dict of requested skeleton vs relation vs partner skeleton vs list of connectors.
     Connectors lacking a skeleton partner will of course not be included. """
-    skeleton_ids = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('skids['))
+    skeleton_ids = set(int(v) for k,v in request.POST.items() if k.startswith('skids['))
     cursor = connection.cursor()
 
     relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
@@ -1695,7 +1692,7 @@ def partners_by_connector(request, project_id=None):
     if not skid:
         raise Exception("Need a reference skeleton ID!")
     skid = int(skid)
-    connectors = tuple(int(v) for k,v in six.iteritems(request.POST) if k.startswith('connectors['))
+    connectors = tuple(int(v) for k,v in request.POST.items() if k.startswith('connectors['))
     rel_type = int(request.POST.get("relation", 0))
     size_mode = int(request.POST.get("size_mode", 0))
 

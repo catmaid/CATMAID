@@ -3,7 +3,6 @@
 from django.conf import settings
 from catmaid.control.dvid import get_server_info
 
-from six.moves import map, zip
 
 class DVIDDimension:
     def __init__(self, x, y, z):

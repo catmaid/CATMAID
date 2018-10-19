@@ -4,7 +4,6 @@ import json
 
 from functools import wraps
 from itertools import groupby
-from six import string_types
 
 from guardian.core import ObjectPermissionChecker
 from guardian.models import UserObjectPermission, GroupObjectPermission
@@ -121,7 +120,7 @@ def check_user_role(user, project, roles):
 
     if not has_role:
         # Check the indicated role(s)
-        if isinstance(roles, string_types):
+        if isinstance(roles, str):
             roles = [roles]
         for role in roles:
             if role == UserRole.Annotate:
@@ -179,7 +178,7 @@ def requires_user_role_for_any_project(roles):
             role_codesnames = set()
             role_codesnames.add('can_administer')
 
-            if isinstance(roles, string_types):
+            if isinstance(roles, str):
                 roles = [roles]
             for role in roles:
                 if role == UserRole.Annotate:

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-import six
 import yaml
 
 from ast import literal_eval
@@ -179,9 +178,9 @@ class ProjectsApiTests(CatmaidApiTestCase):
                     self.assertEqual(sg_link.group_relation.name, sge['relation'])
 
                 # Make sure we have seen all relevant stack groups
-                six.assertCountEqual(self, valid_stackgroup_ids, seen_stackgroups)
+                self.assertCountEqual(valid_stackgroup_ids, seen_stackgroups)
 
             # Make sure we have seen all relevant stacks
-            six.assertCountEqual(self, valid_stack_ids, seen_stacks)
+            self.assertCountEqual(valid_stack_ids, seen_stacks)
 
-        six.assertCountEqual(self, valid_project_ids, seen_projects)
+        self.assertCountEqual(valid_project_ids, seen_projects)

@@ -2,7 +2,6 @@ import ujson
 import msgpack
 import psycopg2
 import progressbar
-import six
 import time
 
 from collections import defaultdict
@@ -211,7 +210,7 @@ class Command(BaseCommand):
                         pbar.update(min(z, max_z))
 
         self.stdout.write('Sorting data')
-        for pid, data in six.iteritems(project_results):
+        for pid, data in project_results.items():
             self.stdout.write('Top 2 queries with nodes per zoom and extent in project {}'.format(pid))
             nonzero_data = list(filter(lambda x: x['n_nodes'] > 0, data))
             sorted_data = sorted(nonzero_data, key=lambda x: (-x['width'], -x['height'], -x['n_nodes'], x['time']))

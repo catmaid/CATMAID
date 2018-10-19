@@ -12,7 +12,7 @@ from catmaid.models import UserRole, TILE_SOURCE_TYPES
 from catmaid.control.common import ConfigurationError
 from catmaid.control.authentication import requires_user_role
 
-from six import StringIO
+from io import StringIO
 
 
 logger = logging.getLogger(__name__)

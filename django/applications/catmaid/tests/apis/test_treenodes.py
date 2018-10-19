@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-import six
 
 from operator import itemgetter
 
@@ -351,8 +350,8 @@ class TreenodesApiTests(CatmaidApiTestCase):
                 [[377, 356, 1, 6730.0, 2700.0, 0.0],
                  [409, 421, 1, 6260.0, 3990.0, 0.0]],
                 {"uncertain end": [403]}]
-        six.assertCountEqual(self, parsed_response[0], expected_response[0])
-        six.assertCountEqual(self, parsed_response[1], expected_response[1])
+        self.assertCountEqual(parsed_response[0], expected_response[0])
+        self.assertCountEqual(parsed_response[1], expected_response[1])
         self.assertEqual(parsed_response[2], expected_response[2])
 
 
@@ -859,15 +858,15 @@ class TreenodesApiTests(CatmaidApiTestCase):
 
         # The response has updated timetamps (since we updated nodes), we have
         # to compare fields manually to ignore them
-        for k,v in six.iteritems(expected_response):
+        for k,v in expected_response.items():
             self.assertIn(k, parsed_response)
             if 'updated_nodes' == k:
                 continue
             self.assertEqual(v, parsed_response.get(k))
-        for k,v in six.iteritems(expected_response['updated_nodes']):
+        for k,v in expected_response['updated_nodes'].items():
             self.assertIn(k, parsed_response['updated_nodes'])
             result_node = parsed_response['updated_nodes'][k]
-            for p,pv in six.iteritems(v):
+            for p,pv in v.items():
                 self.assertIn(p, result_node)
                 result_value = result_node.get(p)
                 if 'edition_time' == p:

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import re
-import six
 
 from collections import defaultdict
 
@@ -16,8 +15,6 @@ from catmaid.models import UserRole, Project, Class, ClassInstance, \
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 from catmaid.control.common import (get_relation_to_id_map,
         get_class_to_id_map, get_request_bool, get_request_list)
-
-from six.moves import range, map
 
 
 def get_annotation_to_id_map(project_id, annotations, relations=None,
@@ -51,7 +48,7 @@ def get_annotated_entities(project, params, relations, classes,
     """
     # Get IDs of constraining classes.
     allowed_class_idx = {classes[c]:c for c in allowed_classes}
-    allowed_class_ids = list(six.iterkeys(allowed_class_idx))
+    allowed_class_ids = list(allowed_class_idx.keys())
 
     # One list of annotation sets for requested annotations and one for those
     # of which subannotations should be included
@@ -556,8 +553,8 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map, losi
         'cici_id': e[2]
     } for e in qs}
 
-    update = set(six.iterkeys(annotation_map))
-    existing = set(six.iterkeys(existing_annotations))
+    update = set(annotation_map.keys())
+    existing = set(existing_annotations.keys())
     missing = update - existing
 
     if losing_neuron_id:
@@ -567,7 +564,7 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map, losi
                 'class_instance_b__name', 'id')
 
         losing_existing_annotations = dict(qs)
-        losing_missing = frozenset(six.iterkeys(losing_existing_annotations)) & missing
+        losing_missing = frozenset(losing_existing_annotations.keys()) & missing
 
         if losing_missing:
             cici_ids = [losing_existing_annotations[k] for k in losing_missing]
@@ -588,7 +585,7 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map, losi
     _annotate_entities(project_id, [neuron_id], missing_map)
 
     to_delete = existing - update
-    to_delete_ids = tuple(link['annotation_id'] for name, link in six.iteritems(existing_annotations) \
+    to_delete_ids = tuple(link['annotation_id'] for name, link in existing_annotations.items() \
         if name in to_delete)
 
     ClassInstanceClassInstance.objects.filter(project=project_id,
@@ -691,7 +688,7 @@ def _annotate_entities(project_id, entity_ids, annotation_map,
             expanded_annotations = {annotation: entity_ids}
 
         # Make sure the annotation's class instance exists.
-        for a, a_entity_ids in six.iteritems(expanded_annotations):
+        for a, a_entity_ids in expanded_annotations.items():
             ci, created = ClassInstance.objects.get_or_create(
                     project_id=project_id, name=a,
                     class_column=annotation_class,
@@ -907,7 +904,7 @@ def create_annotation_query(project_id, param_dict):
 
     # Meta annotations are annotations that are used to annotate other
     # annotations.
-    meta_annotations = [v for k,v in six.iteritems(param_dict)
+    meta_annotations = [v for k,v in param_dict.items()
             if k.startswith('annotations[')]
     for meta_annotation in meta_annotations:
         annotation_query = annotation_query.filter(
@@ -916,7 +913,7 @@ def create_annotation_query(project_id, param_dict):
 
     # If information about annotated annotations is found, the current query
     # will include only annotations that are meta annotations for it.
-    annotated_annotations = [v for k,v in six.iteritems(param_dict)
+    annotated_annotations = [v for k,v in param_dict.items()
             if k.startswith('annotates[')]
     for sub_annotation in annotated_annotations:
         annotation_query = annotation_query.filter(
@@ -925,7 +922,7 @@ def create_annotation_query(project_id, param_dict):
 
     # If parallel_annotations is given, only annotations are returned, that
     # are used alongside with these.
-    parallel_annotations = [v for k,v in six.iteritems(param_dict)
+    parallel_annotations = [v for k,v in param_dict.items()
             if k.startswith('parallel_annotations[')]
     for p_annotation in parallel_annotations:
         annotation_query = annotation_query.filter(
@@ -960,7 +957,7 @@ def create_annotation_query(project_id, param_dict):
 
     # If annotations to ignore are passed in, they won't appear in the
     # result set.
-    ignored_annotations = [v for k,v in six.iteritems(param_dict)
+    ignored_annotations = [v for k,v in param_dict.items()
             if k.startswith('ignored_annotations[')]
     if ignored_annotations:
         annotation_query = annotation_query.exclude(
@@ -1192,7 +1189,7 @@ def list_annotations(request, project_id=None):
         if uid is not None:
             ls.append({'id': uid, 'name': username})
     # Flatten dictionary to list
-    annotations = tuple({'name': ids[aid], 'id': aid, 'users': users} for aid, users in six.iteritems(annotation_dict))
+    annotations = tuple({'name': ids[aid], 'id': aid, 'users': users} for aid, users in annotation_dict.items())
     return JsonResponse({'annotations': annotations})
 
 

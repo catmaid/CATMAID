@@ -10,7 +10,6 @@ from catmaid.models import Message, ChangeRequest
 from catmaid.consumers import msg_user
 from catmaid.control.common import makeJSON_legacy_list
 
-from six.moves import map as imap
 
 @login_required
 def get_latest_unread_date(request):
@@ -44,7 +43,7 @@ def list_messages(request, project_id=None):
             'time': str(message.time)
         }
 
-    messages = list(imap(message_to_dict, messages))
+    messages = list(map(message_to_dict, messages))
 
     # Add a dummy message that includes the count of open notifications.
     # This is used to add the red badge to the notifications icon.

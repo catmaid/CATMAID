@@ -3,7 +3,6 @@
 import json
 import networkx as nx
 from networkx.readwrite import json_graph
-import six
 
 from django.http import JsonResponse
 from django.db.models import Count
@@ -60,9 +59,9 @@ def get_wiring_diagram(project_id=None, lower_treenode_number_limit=0):
     nodes_tmp={}
     edges=[]
 
-    for k,v in six.iteritems(result):
+    for k,v in result.items():
 
-        for kk,vv in six.iteritems(v):
+        for kk,vv in v.items():
 
             edges.append(
                     {"id": str(k)+"_"+str(kk),
@@ -75,7 +74,7 @@ def get_wiring_diagram(project_id=None, lower_treenode_number_limit=0):
             nodes_tmp[kk]=None
 
     nodes=[]
-    for k,v in six.iteritems(nodes_tmp):
+    for k,v in nodes_tmp.items():
         nodes.append(
                 {
                 "id": str(k),

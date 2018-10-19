@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import time
-import six
 
 from django.db import connection, transaction, InternalError
 from django.test import TestCase, TransactionTestCase
@@ -513,7 +512,7 @@ class HistoryTableTests(TransactionTestCase):
         class_history_entry = new_class_history[-1][0]
 
         # Expect all fields of the original table to match the history table
-        for k,v in six.iteritems(class_details):
+        for k,v in class_details.items():
             self.assertEqual(v, class_history_entry[k])
 
         # It is now expected that the range of the history interval will end with
@@ -548,9 +547,9 @@ class HistoryTableTests(TransactionTestCase):
         class_history_2_entry_2 = new_class_2_history[-1][0]
 
         # Expect all fields of the original table to match the history table
-        for k,v in six.iteritems(class_details):
+        for k,v in class_details.items():
             self.assertEqual(v, class_history_2_entry_1[k])
-        for k,v in six.iteritems(new_class_details):
+        for k,v in new_class_details.items():
             self.assertEqual(v, class_history_2_entry_2[k])
 
         # It is now expected that the range in the first interval will
@@ -621,7 +620,7 @@ class HistoryTableTests(TransactionTestCase):
         project_history_entry = new_project_history[-1][0]
 
         # Expect all fields of the original table to match the history table
-        for k,v in six.iteritems(project_details):
+        for k,v in project_details.items():
             self.assertEqual(v, project_history_entry[k])
 
         # It is now expected that the range of the history interval will end with
@@ -661,9 +660,9 @@ class HistoryTableTests(TransactionTestCase):
         project_history_2_entry_2 = new_project_2_history[-1][0]
 
         # Expect all fields of the original table to match the history table
-        for k,v in six.iteritems(project_details):
+        for k,v in project_details.items():
             self.assertEqual(v, project_history_2_entry_1[k])
-        for k,v in six.iteritems(new_project_details):
+        for k,v in new_project_details.items():
             self.assertEqual(v, project_history_2_entry_2[k])
 
         # It is now expected that the range in the first interval will
@@ -720,7 +719,7 @@ class HistoryTableTests(TransactionTestCase):
         class_history_entry = new_class_history[-1][0]
 
         # Expect all fields of the original table to match the history table
-        for k,v in six.iteritems(class_details):
+        for k,v in class_details.items():
             self.assertEqual(v, class_history_entry[k])
 
         # It is now expected that the range in the first interval will end with
@@ -789,7 +788,7 @@ class HistoryTableTests(TransactionTestCase):
         project_history_entry = new_project_history[-1][0]
 
         # Expect all fields of the original table to match the history table
-        for k,v in six.iteritems(project_details):
+        for k,v in project_details.items():
             self.assertEqual(v, project_history_entry[k])
 
         # It is now expected that the range in the first interval will end with
@@ -1090,9 +1089,9 @@ class HistoryTableTests(TransactionTestCase):
         class_2_history_entry = class_history[-1][0] #newer
 
         # Expect all fields of the original table to match the history table
-        for k,v in six.iteritems(class_details):
+        for k,v in class_details.items():
             self.assertEqual(v, class_1_history_entry[k])
-        for k,v in six.iteritems(class_2_details):
+        for k,v in class_2_details.items():
             self.assertEqual(v, class_2_history_entry[k])
 
         # It is now expected that the range of the history interval will end with
@@ -1169,9 +1168,9 @@ class HistoryTableTests(TransactionTestCase):
         project_2_history_entry = truncate_history[-1][0] #newer
 
         # Expect all fields of the original table to match the history table
-        for k,v in six.iteritems(project_details):
+        for k,v in project_details.items():
             self.assertEqual(v, project_1_history_entry[k])
-        for k,v in six.iteritems(project_2_details):
+        for k,v in project_2_details.items():
             self.assertEqual(v, project_2_history_entry[k])
 
         # It is now expected that the range of the history interval will end with
@@ -1225,7 +1224,7 @@ class HistoryTableTests(TransactionTestCase):
         self.assertEqual(len(after_insert_history_view),
             len(original_class_history_view) + 1)
         last_view_entry = after_insert_history_view[-1][0]
-        for k, v in six.iteritems(class_details):
+        for k, v in class_details.items():
             self.assertEqual(v, last_view_entry[k])
 
         # Update row in new transaction (to have new timestamp)
@@ -1243,10 +1242,10 @@ class HistoryTableTests(TransactionTestCase):
         self.assertEqual(len(after_update_history_view),
             len(after_insert_history_view) + 1)
         last_view_entry = after_update_history_view[-1][0]
-        for k, v in six.iteritems(updated_class_details):
+        for k, v in updated_class_details.items():
             self.assertEqual(v, last_view_entry[k])
         second_last_view_entry = after_update_history_view[-2][0]
-        for k, v in six.iteritems(class_details):
+        for k, v in class_details.items():
             self.assertEqual(v, second_last_view_entry[k])
 
     def test_history_table_creation_no_primary_key(self):
@@ -1305,7 +1304,7 @@ class HistoryTableTests(TransactionTestCase):
         attr_result = [r[0] for r in cursor.fetchall()]
         expected_cols = ['id', 'name', 'sys_period', 'exec_transaction_id']
 
-        six.assertCountEqual(self, attr_result, expected_cols)
+        self.assertCountEqual(attr_result, expected_cols)
 
         cursor.execute("""
             SELECT drop_history_table('_history_test_'::regclass);

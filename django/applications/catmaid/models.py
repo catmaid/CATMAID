@@ -5,7 +5,6 @@ import logging
 import sys
 import re
 import urllib
-import six
 import colorsys
 
 from django import forms
@@ -299,7 +298,7 @@ class ClassInstance(models.Model):
 
         # sort by count
         from operator import itemgetter
-        connected_skeletons = six.itervalues(connected_skeletons_dict)
+        connected_skeletons = connected_skeletons_dict.values()
         result = reversed(sorted(connected_skeletons, key=itemgetter('id__count')))
         return result
 

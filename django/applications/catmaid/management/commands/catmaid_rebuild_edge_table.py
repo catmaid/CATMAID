@@ -8,8 +8,6 @@ from django.db import connection, transaction
 from catmaid.models import Project
 from catmaid.control.edge import rebuild_edge_tables
 
-from six.moves import input
-
 
 class DryRunRollback(Exception):
     pass

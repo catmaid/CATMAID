@@ -2,7 +2,6 @@
 
 import json
 import re
-import six
 
 from collections import defaultdict
 
@@ -189,7 +188,7 @@ def get_data_view( request, data_view_id ):
         for sgl in stackgroup_links:
             stackgroup_index[sgl.stack_group_id] = sgl.stack_group
             stackgroup_members[sgl.stack_group_id].add(sgl.stack.id)
-        for sg, members in six.iteritems(stackgroup_members):
+        for sg, members in stackgroup_members.items():
             # Only accept stack groups of which all member stacks are linked to
             # the same project.
             member_project_ids = set()

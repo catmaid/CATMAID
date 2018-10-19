@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import six
-
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 

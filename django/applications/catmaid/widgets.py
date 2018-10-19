@@ -2,7 +2,6 @@
 
 from django import forms
 from django.forms.widgets import Widget
-from six import string_types
 
 import catmaid.fields
 
@@ -43,7 +42,7 @@ class Integer3DWidget(LabeledMultiWidget):
     def decompress(self, value):
         from catmaid.fields import Integer3D
         if value:
-            if isinstance(value, string_types):
+            if isinstance(value, str):
                 try:
                     # Expect value to be of the form '(0,0,0)'
                     str_list = value.replace('(', '').replace(')', '').split(',')
@@ -71,7 +70,7 @@ class Double3DWidget(LabeledMultiWidget):
     def decompress(self, value):
         from catmaid.fields import Double3D
         if value:
-            if isinstance(value, string_types):
+            if isinstance(value, str):
                 try:
                     # Expect value to be of the form '(0,0,0)'
                     str_list = value.replace('(', '').replace(')', '').split(',')
@@ -104,7 +103,7 @@ class RGBAWidget(LabeledMultiWidget):
         if value:
             if isinstance(value, tuple) or isinstance(value, list):
                 return value
-            elif isinstance(value, string_types):
+            elif isinstance(value, str):
                 try:
                     # Expect value to be of the form '(0,0,0,0)'
                     str_list = value.replace('(', '').replace(')', '').split(',')

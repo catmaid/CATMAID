@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
-from six import string_types
 
 import psycopg2
 from psycopg2.extensions import register_adapter, adapt, AsIs
 from psycopg2.extras import CompositeCaster, register_composite
-import six
 import re
 
 from django import forms
@@ -26,7 +24,7 @@ from catmaid.widgets import Double3DWidget, Integer3DWidget, RGBAWidget, Downsam
 
 class CompositeFactory(CompositeCaster):
     def make(self, values):
-        return self.composite_python_class(**dict(six.moves.zip(self.attnames, values)))
+        return self.composite_python_class(**dict(zip(self.attnames, values)))
 
 _missing_types = {}
 
@@ -64,8 +62,7 @@ class CompositeMeta(type):
                 register_adapter(cls.composite_python_class, adapt_composite)
 
 
-@six.add_metaclass(CompositeMeta)
-class CompositeField(models.Field):
+class CompositeField(models.Field, metaclass=CompositeMeta):
     """Base class for PostgreSQL composite fields.
 
     Rather than use psycopg2's default namedtuple types, adapt to a custom
@@ -266,7 +263,7 @@ class RGBAField(models.Field):
         # here; return a new RGBA for any falsy value:
         elif not value:
             return RGBA()
-        elif isinstance(value, string_types):
+        elif isinstance(value, str):
             return RGBA.from_str(value)
         else:
             return RGBA()    #.from_str(value)

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-import six
 
 from catmaid.control.neuron_annotations import _annotate_entities
 from catmaid.control.neuron_annotations import create_annotation_query
@@ -175,7 +174,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
              "id": 2389,
              "name": "neuron 2389"}]
         self.assertEqual(parsed_response['totalRecords'], 2)
-        six.assertCountEqual(self, parsed_response['entities'], expected_entities)
+        self.assertCountEqual(parsed_response['entities'], expected_entities)
 
         # Test conjunctive behavior
         response = self.client.post(
@@ -201,7 +200,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
              "id": 233,
              "name": "branched neuron"}])
         self.assertEqual(parsed_response['totalRecords'], 1)
-        six.assertCountEqual(self, parsed_response['entities'], expected_entities)
+        self.assertCountEqual(parsed_response['entities'], expected_entities)
 
         # Test meta-annotation querying
         response = self.client.post(
@@ -231,7 +230,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
              "name": "C"}
         ]
         self.assertEqual(parsed_response['totalRecords'], 2)
-        six.assertCountEqual(self, parsed_response['entities'], expected_entities)
+        self.assertCountEqual(parsed_response['entities'], expected_entities)
 
         # Test that an empty request returns everything.
         response = self.client.post(
@@ -254,4 +253,4 @@ class AnnotationsApiTests(CatmaidApiTestCase):
             'name': 'downstream-A'}
         ]
         self.assertEqual(parsed_response['totalRecords'], 1)
-        six.assertCountEqual(self, parsed_response['entities'], expected_entities)
+        self.assertCountEqual(parsed_response['entities'], expected_entities)

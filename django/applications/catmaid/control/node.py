@@ -29,9 +29,6 @@ from catmaid.control.common import (get_relation_to_id_map, get_request_bool,
 from PIL import Image, ImageDraw
 from aggdraw import Draw, Pen, Brush, Font
 
-from six.moves import map as imap
-from six import add_metaclass, print_
-
 
 ORIENTATIONS = {
     'xy': 0,
@@ -225,8 +222,8 @@ class CachedMsgpackNodeProvder(BasicNodeProvider):
             return None, None
 
 
-@add_metaclass(ABCMeta)
-class PostgisNodeProvider(BasicNodeProvider):
+class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
+
     CONNECTOR_STATEMENT_NAME = 'get_connectors_postgis'
     connector_query = None
 
@@ -316,7 +313,7 @@ class PostgisNodeProvider(BasicNodeProvider):
         """
         params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
         params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
-        params['sanitized_treenode_ids'] = list(imap(int, extra_treenode_ids or []))
+        params['sanitized_treenode_ids'] = list(map(int, extra_treenode_ids or []))
 
         if self.prepared_statements:
             # Use a prepared statement to get the treenodes
@@ -350,7 +347,7 @@ class PostgisNodeProvider(BasicNodeProvider):
         """
         params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
         params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
-        params['sanitized_connector_ids'] = list(imap(int, missing_connector_ids or []))
+        params['sanitized_connector_ids'] = list(map(int, missing_connector_ids or []))
 
         if self.prepared_statements:
             # Use a prepared statement to get connectors
@@ -868,7 +865,7 @@ def get_configured_node_providers(provider_entries, connection=None):
     return node_providers
 
 
-def update_node_query_cache(node_providers=None, log=print_):
+def update_node_query_cache(node_providers=None, log=print):
     if not node_providers:
         node_providers = settings.NODE_PROVIDERS
 
@@ -934,7 +931,7 @@ def get_tracing_bounding_box(project_id, cursor=None):
 
 def update_cache(project_id, data_type, orientations, steps,
         node_limit=None, n_largest_skeletons_limit=None, delete=False,
-        bb_limits=None, log=print_):
+        bb_limits=None, log=print):
     if data_type not in ('json', 'json_text', 'msgpack'):
         raise ValueError('Type must be one of: json, json_text, msgpack')
     if len(steps) != len(orientations):

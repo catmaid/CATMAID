@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-import six
 
 from catmaid.models import Connector, TreenodeConnector
 from catmaid.state import make_nocheck_state
@@ -209,7 +208,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
             }],
         ]
         self.assertEqual(len(expected_result), len(parsed_response))
-        six.assertCountEqual(self, expected_result, parsed_response)
+        self.assertCountEqual(expected_result, parsed_response)
 
 
     def test_create_connector(self):

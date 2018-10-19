@@ -2,17 +2,12 @@
 
 # A 'tree' is a networkx.DiGraph with a single root node (a node without parents)
 
-import six
-
 from operator import itemgetter
 from networkx import Graph, DiGraph
 from collections import defaultdict
 from math import sqrt
 from itertools import islice
 from catmaid.models import Treenode
-from six.moves import range
-
-from six.moves import zip as izip
 
 
 def find_root(tree):
@@ -49,7 +44,7 @@ def find_common_ancestor(tree, nodes, ds=None, root_node=None):
         return nodes[0], 0
     distances = ds if ds else edge_count_to_root(tree, root_node=root_node)
     # Pick the pair with the shortest edge count to root
-    first, second = sorted(six.iteritems({node: distances(node) for node in nodes}), key=itemgetter(1))[:2]
+    first, second = sorted({node: distances(node) for node in nodes}.items(), key=itemgetter(1))[:2]
     # Start from the second, and bring it to an edge count equal to the first
     while second[1] < first[1]:
         second = (next(tree.predecessors_iter(second[0])), second[1] - 1)
@@ -194,7 +189,7 @@ def spanning_tree(tree, preserve):
 def cable_length(tree, locations):
     """ locations: a dictionary of nodeID vs iterable of node position (1d, 2d, 3d, ...)
     Returns the total cable length. """
-    return sum(sqrt(sum(pow(loc2 - loc1, 2) for loc1, loc2 in izip(locations[a], locations[b]))) for a,b in tree.edges_iter())
+    return sum(sqrt(sum(pow(loc2 - loc1, 2) for loc1, loc2 in zip(locations[a], locations[b]))) for a,b in tree.edges_iter())
 
 
 def lazy_load_trees(skeleton_ids, node_properties):
@@ -221,7 +216,7 @@ def lazy_load_trees(skeleton_ids, node_properties):
             skid = t[2]
             tree = DiGraph()
 
-        fields = {k: v for k,v in izip(props, islice(t, 3, 3 + len(props)))}
+        fields = {k: v for k,v in zip(props, islice(t, 3, 3 + len(props)))}
         tree.add_node(t[0], fields)
 
         if t[1]:

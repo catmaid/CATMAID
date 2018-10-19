@@ -20,9 +20,6 @@ from rest_framework import renderers
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.response import Response
 
-from six.moves import map
-from six import string_types
-
 
 num = '[-+]?[0-9]*.?[0-9]+'
 bbox_re = r'BOX3D\(({0})\s+({0})\s+({0}),\s*({0})\s+({0})\s+({0})\)'.format(num)
@@ -149,7 +146,7 @@ class TriangleMeshVolume(PostGISVolume):
             mesh_type = type(input_mesh)
             if list == mesh_type:
                 self.mesh = input_mesh
-            elif mesh_type in string_types:
+            elif mesh_type == str:
                 self.mesh = json.loads(input_mesh)
             else:
                 raise ValueError("Unknown mesh type: " + str(mesh_type))

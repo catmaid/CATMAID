@@ -2,7 +2,6 @@
 
 import json
 import networkx as nx
-import six
 
 from networkx.algorithms import weakly_connected_component_subgraphs
 from collections import defaultdict
@@ -24,7 +23,6 @@ from catmaid.control.connector import KNOWN_LINK_PAIRS
 from catmaid.control.tree_util import simplify
 from catmaid.control.synapseclustering import tree_max_density
 
-from six.moves import range, zip as izip
 
 def make_new_synapse_count_array():
     return [0, 0, 0, 0, 0]
@@ -61,14 +59,14 @@ def basic_graph(project_id, skeleton_ids, relations=None,
 
     return {
         'edges': tuple((s, t, count)
-                for s, edge in six.iteritems(edges)
-                for t, count in six.iteritems(edge))
+                for s, edge in edges.items()
+                for t, count in edge.items())
     }
 
     '''
     return {'edges': [{'source': pre,
                        'target': post,
-                       'weight': count} for pre, edge in six.iteritems(edges) for post, count in six.iteritems(edge)]}
+                       'weight': count} for pre, edge in edges.items() for post, count in edge.items()]}
     '''
 
     """ Can't get the variable to be set with all the skeleton IDs
@@ -154,7 +152,7 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold,
 
     # Create the edges of the graph from the connectors, which was populated as a side effect of 'split_by_confidence'
     edges = defaultdict(partial(defaultdict, make_new_synapse_count_array)) # pre vs post vs count
-    for c in six.itervalues(connectors):
+    for c in connectors.values():
         for pre in c[source_rel_id]:
             for post in c[target_rel_id]:
                 edges[pre[0]][post[0]][min(pre[1], post[1]) - 1] += 1
@@ -162,8 +160,8 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold,
     return {
         'nodes': nodeIDs,
         'edges': [(s, t, count)
-                for s, edge in six.iteritems(edges)
-                for t, count in six.iteritems(edge)]
+                for s, edge in edges.items()
+                for t, count in edge.items()]
     }
 
 
@@ -296,7 +294,7 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
 
     # Create the edges of the graph
     edges = defaultdict(partial(defaultdict, make_new_synapse_count_array)) # pre vs post vs count
-    for c in six.itervalues(connectors):
+    for c in connectors.values():
         for pre in c[source_rel_id]:
             for post in c[target_rel_id]:
                 edges[pre[0]][post[0]][min(pre[1], post[1]) - 1] += 1
@@ -304,8 +302,8 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
     return {
         'nodes': nodeIDs,
         'edges': [(s, t, count)
-                for s, edge in six.iteritems(edges)
-                for t, count in six.iteritems(edge)],
+                for s, edge in edges.items()
+                for t, count in edge.items()],
         'branch_nodes': branch_nodeIDs,
         'intraedges': intraedges
     }
@@ -315,7 +313,7 @@ def populate_connectors(chunkIDs, chunks, cs, connectors):
     # Build up edges via the connectors
     for c in cs:
         # c is (treenode_id, connector_id, relation_id, confidence)
-        for chunkID, chunk in izip(chunkIDs, chunks):
+        for chunkID, chunk in zip(chunkIDs, chunks):
             if c[0] in chunk:
                 connectors[c[1]][c[2]].append((chunkID, c[3]))
                 break
@@ -344,7 +342,7 @@ def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, in
 
     chunks, chunkIDs = subgraphs(digraph, skeleton_id)
 
-    for i, chunkID, chunk in izip(count(start=1), chunkIDs, chunks):
+    for i, chunkID, chunk in zip(count(start=1), chunkIDs, chunks):
         # Populate edge properties with the weight
         for parent, child in chunk.edges_iter():
             chunk[parent][child]['weight'] = norm(subtract(locations[child], locations[parent]))
@@ -355,7 +353,7 @@ def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, in
             nodes.append(chunkID)
             continue
 
-        treenode_ids, connector_ids, relation_ids, confidences = list(izip(*blob))
+        treenode_ids, connector_ids, relation_ids, confidences = list(zip(*blob))
 
         if 0 == len(connector_ids):
             nodes.append(chunkID)
@@ -365,22 +363,22 @@ def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, in
         max_density = tree_max_density(chunk.to_undirected(), treenode_ids,
                 connector_ids, relation_ids, [bandwidth])
         # Get first element of max_density
-        domains = next(six.itervalues(max_density))
+        domains = next(iter(max_density.values()))
 
         # domains is a dictionary of index vs SynapseGroup instance
 
         if 1 == len(domains):
-            for connector_id, relation_id, confidence in izip(connector_ids, relation_ids, confidences):
+            for connector_id, relation_id, confidence in zip(connector_ids, relation_ids, confidences):
                 connectors[connector_id][relation_id].append((chunkID, confidence))
             nodes.append(chunkID)
             continue
 
         # Create edges between domains
         # Pick one treenode from each domain to act as anchor
-        anchors = {d.node_ids[0]: (i+k, d) for k, d in six.iteritems(domains)}
+        anchors = {d.node_ids[0]: (i+k, d) for k, d in domains.items()}
 
         # Create new Graph where the edges are the edges among synapse domains
-        mini = simplify(chunk, six.iterkeys(anchors))
+        mini = simplify(chunk, anchors.keys())
 
         # Many side effects:
         # * add internal edges to intraedges
@@ -394,7 +392,7 @@ def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, in
                 index, domain = blob
                 domainID = '%s_%s' % (chunkID, index)
                 nodes.append(domainID)
-                for connector_id, relation_id in izip(domain.connector_ids, domain.relations):
+                for connector_id, relation_id in zip(domain.connector_ids, domain.relations):
                     confidence = confidences[connector_ids.index(connector_id)]
                     connectors[connector_id][relation_id].append((domainID, confidence))
             else:
@@ -598,14 +596,14 @@ def skeleton_graph(request, project_id=None):
         return slow_graph(request, project_id)
 
     project_id = int(project_id)
-    skeleton_ids = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('skeleton_ids['))
+    skeleton_ids = set(int(v) for k,v in request.POST.items() if k.startswith('skeleton_ids['))
     confidence_threshold = min(int(request.POST.get('confidence_threshold', 0)), 5)
     bandwidth = float(request.POST.get('bandwidth', 0)) # in nanometers
     cable_spread = float(request.POST.get('cable_spread', 2500)) # in nanometers
     path_confluence = int(request.POST.get('path_confluence', 10)) # a count
-    expand = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('expand['))
+    expand = set(int(v) for k,v in request.POST.items() if k.startswith('expand['))
     with_overall_counts = get_request_bool(request.POST, 'with_overall_counts', False)
-    expand = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('expand['))
+    expand = set(int(v) for k,v in request.POST.items() if k.startswith('expand['))
     link_types = get_request_list(request.POST, 'link_types', None)
 
     graph = _skeleton_graph(project_id, skeleton_ids,

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-import six
 
 from django.contrib.auth.models import Permission
 from django.db import connection, transaction
@@ -126,7 +125,7 @@ class InsertionTest(TestCase):
         the custom psycopg2 driver is needed for.)
         """
         p = self.insert_project()
-        self.assertIsInstance(p.id, six.integer_types)
+        self.assertIsInstance(p.id, int)
 
     def test_stack_insertion(self):
         p = self.insert_project()
@@ -459,9 +458,9 @@ class ViewPageTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         expected_result = [{'reviewer_id': int(r), 'accept_after': t}
-                for r,t in six.iteritems(whitelist)]
+                for r,t in whitelist.items()]
         parsed_response = json.loads(response.content.decode('utf-8'))
-        six.assertCountEqual(self, parsed_response, expected_result)
+        self.assertCountEqual(parsed_response, expected_result)
         for pr in parsed_response:
             rid = pr['reviewer_id']
             self.assertEqual(whitelist[str(rid)], pr['accept_after'])
@@ -486,8 +485,8 @@ class ViewPageTests(TestCase):
                 [],
                 []]
         self.assertEqual(len(parsed_response), len(expected_response))
-        six.assertCountEqual(self, parsed_response[0], expected_response[0])
-        six.assertCountEqual(self, parsed_response[1], expected_response[1])
+        self.assertCountEqual(parsed_response[0], expected_response[0])
+        self.assertCountEqual(parsed_response[1], expected_response[1])
         self.assertEqual(parsed_response[2], expected_response[2])
         self.assertEqual(parsed_response[3], expected_response[3])
         self.assertEqual(parsed_response[4], expected_response[4])
@@ -518,8 +517,8 @@ class ViewPageTests(TestCase):
                 [],
                 [[new_annotation_link_id]]]
         self.assertEqual(len(parsed_response), len(expected_response))
-        six.assertCountEqual(self, parsed_response[0], expected_response[0])
-        six.assertCountEqual(self, parsed_response[1], expected_response[1])
+        self.assertCountEqual(parsed_response[0], expected_response[0])
+        self.assertCountEqual(parsed_response[1], expected_response[1])
         self.assertEqual(parsed_response[2], expected_response[2])
         self.assertEqual(parsed_response[3], expected_response[3])
         self.assertEqual(parsed_response[4], expected_response[4])
@@ -541,8 +540,8 @@ class ViewPageTests(TestCase):
                 [[377, 5, 356, 5, 285, 235, 1, 0],
                  [409, 5, 421, 5, 415, 235, 1, 0]],
                 {"uncertain end": [403]}]
-        six.assertCountEqual(self, parsed_response[0], expected_response[0])
-        six.assertCountEqual(self, parsed_response[1], expected_response[1])
+        self.assertCountEqual(parsed_response[0], expected_response[0])
+        self.assertCountEqual(parsed_response[1], expected_response[1])
         self.assertEqual(parsed_response[2], expected_response[2])
 
     def test_export_compact_arbor_with_minutes(self):
@@ -563,11 +562,11 @@ class ViewPageTests(TestCase):
                  [409, 5, 421, 5, 415, 235, 1, 0]],
                 {"uncertain end": [403]},
                 {"21951837": [377, 403, 405, 407, 409]}]
-        six.assertCountEqual(self, parsed_response[0], expected_response[0])
-        six.assertCountEqual(self, parsed_response[1], expected_response[1])
+        self.assertCountEqual(parsed_response[0], expected_response[0])
+        self.assertCountEqual(parsed_response[1], expected_response[1])
         self.assertEqual(parsed_response[2], expected_response[2])
-        for k, v in six.iteritems(expected_response[3]):
-            six.assertCountEqual(self, parsed_response[3][k], v)
+        for k, v in expected_response[3].items():
+            self.assertCountEqual(parsed_response[3][k], v)
 
 
 class TreenodeTests(TestCase):

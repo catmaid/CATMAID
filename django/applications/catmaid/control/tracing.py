@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-import six
 
 from django.http import JsonResponse
 
@@ -161,7 +160,7 @@ def setup_tracing(project_id, user=None):
             'user': user,
         }
         data_type = type(needed_relations[r])
-        if data_type in six.string_types or data_type == six.text_type:
+        if data_type == str:
             defaults['description'] = needed_relations[r]
         else:
             defaults.update(needed_relations[r])
@@ -171,19 +170,19 @@ def setup_tracing(project_id, user=None):
             project_id=project_id,
             defaults=defaults)
     # Add missing sampler states
-    for sn, sd in six.iteritems(needed_sampler_states):
+    for sn, sd in needed_sampler_states.items():
         SamplerState.objects.get_or_create(
             name=sn, defaults={'description': sd})
     # Add missing sampler interval states
-    for sn, sd in six.iteritems(needed_sampler_interval_states):
+    for sn, sd in needed_sampler_interval_states.items():
         SamplerIntervalState.objects.get_or_create(
             name=sn, defaults={'description': sd})
     # Add missing sampler domain types
-    for sn, sd in six.iteritems(needed_sampler_domain_types):
+    for sn, sd in needed_sampler_domain_types.items():
         SamplerDomainType.objects.get_or_create(
             name=sn, defaults={'description': sd})
     # Add missing sampler connector states
-    for sn, sd in six.iteritems(needed_sampler_connector_states):
+    for sn, sd in needed_sampler_connector_states.items():
         SamplerConnectorState.objects.get_or_create(
             name=sn, defaults={'description': sd})
 

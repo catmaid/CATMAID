@@ -13,8 +13,6 @@ from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
         Relation, Connector, Project, Treenode, TreenodeClassInstance,
         TreenodeConnector, User, ReducedInfoUser, ExportUser)
 
-from six.moves import input, map
-
 import logging
 logger = logging.getLogger(__name__)
 

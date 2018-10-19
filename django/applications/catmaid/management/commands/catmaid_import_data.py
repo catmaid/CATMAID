@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import inspect
-import six
 import catmaid.models
 import progressbar
 
@@ -15,8 +14,6 @@ from catmaid.control.edge import rebuild_edge_tables
 from catmaid.models import (Class, ClassClass, ClassInstance,
         ClassInstanceClassInstance, Project, Relation, User, Treenode,
         Connector, Concept, SkeletonSummary)
-
-from six.moves import input
 
 import logging
 logger = logging.getLogger(__name__)
@@ -77,7 +74,7 @@ class FileImporter:
         self.user = user
         self.create_unknown_users = options['create_unknown_users']
         self.user_map = dict(User.objects.all().values_list('username', 'id'))
-        self.user_id_map = dict((v,k) for k,v in six.iteritems(self.user_map))
+        self.user_id_map = dict((v,k) for k,v in self.user_map.items())
         self.preserve_ids = options['preserve_ids']
 
         self.format = 'json'
@@ -201,7 +198,7 @@ class FileImporter:
                     prefix=bar_prefix):
                 obj = deserialized_object.object
                 obj_type = type(obj)
-                for fk_field, fk_type in six.iteritems(fk_fields):
+                for fk_field, fk_type in fk_fields.items():
                     # Get import object with the former ID referenced in
                     # this field.
                     current_ref = getattr(obj, fk_field)
@@ -359,7 +356,7 @@ class FileImporter:
         need_separate_import = []
         objects_to_save = defaultdict(list)
         import_objects_by_type_and_id = defaultdict(dict)
-        for object_type, import_objects in six.iteritems(import_data):
+        for object_type, import_objects in import_data.items():
             # Allow user reference updates in CATMAID objects
             if object_type not in user_updatable_classes:
                 need_separate_import.append(object_type)

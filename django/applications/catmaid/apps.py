@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import six
 import logging
 
 from catmaid import history
@@ -148,8 +147,8 @@ class CATMAIDConfig(AppConfig):
 
     # A list of settings that are expected to be available.
     required_setting_fields = {
-        "VERSION": six.string_types,
-        "CATMAID_URL": six.string_types,
+        "VERSION": str,
+        "CATMAID_URL": str,
         "ONTOLOGY_DUMMY_PROJECT_ID": int,
         "PROFILE_INDEPENDENT_ONTOLOGY_WORKSPACE_IS_DEFAULT": bool,
         "PROFILE_SHOW_TEXT_LABEL_TOOL": bool,
@@ -164,23 +163,23 @@ class CATMAIDConfig(AppConfig):
         "IMPORTER_DEFAULT_TILE_WIDTH": int,
         "IMPORTER_DEFAULT_TILE_HEIGHT": int,
         "IMPORTER_DEFAULT_TILE_SOURCE_TYPE": int,
-        "IMPORTER_DEFAULT_IMAGE_BASE": six.string_types,
-        "MEDIA_HDF5_SUBDIRECTORY": six.string_types,
-        "MEDIA_CROPPING_SUBDIRECTORY": six.string_types,
-        "MEDIA_ROI_SUBDIRECTORY": six.string_types,
-        "MEDIA_TREENODE_SUBDIRECTORY": six.string_types,
+        "IMPORTER_DEFAULT_IMAGE_BASE": str,
+        "MEDIA_HDF5_SUBDIRECTORY": str,
+        "MEDIA_CROPPING_SUBDIRECTORY": str,
+        "MEDIA_ROI_SUBDIRECTORY": str,
+        "MEDIA_TREENODE_SUBDIRECTORY": str,
         "GENERATED_FILES_MAXIMUM_SIZE": int,
         "USER_REGISTRATION_ALLOWED": bool,
         "NEW_USER_DEFAULT_GROUPS": list,
         "STATIC_EXTENSION_FILES": list,
-        "STATIC_EXTENSION_ROOT": six.string_types,
+        "STATIC_EXTENSION_ROOT": str,
     }
 
     def validate_configuration(self):
         """Make sure CATMAID is configured properly and raise an error if not.
         """
         # Make sure all expected settings are available.
-        for field, data_type in six.iteritems(CATMAIDConfig.required_setting_fields):
+        for field, data_type in CATMAIDConfig.required_setting_fields.items():
             if not hasattr(settings, field):
                 raise ImproperlyConfigured(
                         "Please add the %s settings field" % field)

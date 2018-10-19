@@ -2,7 +2,6 @@
 
 import json
 import re
-import six
 import platform
 
 from django.shortcuts import get_object_or_404
@@ -15,8 +14,7 @@ from catmaid.models import ReviewerWhitelist
 from .common import CatmaidApiTestCase
 
 from unittest import skipIf
-
-from six import StringIO
+from io import StringIO
 
 # Some skeleton back-end functionality is not available if PyPy is used. This
 # variable is used to skip the respective tests (which otherwise would fail).
@@ -395,7 +393,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [2468, 2388, 235, 2411, 2364]
-        six.assertCountEqual(self, expected_result, parsed_response['skeletons'])
+        self.assertCountEqual(expected_result, parsed_response['skeletons'])
 
         response = self.client.post(
                 '/%d/skeletons/within-spatial-distance' % (self.test_project_id,),
@@ -403,7 +401,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [2462, 2433, 373]
-        six.assertCountEqual(self, expected_result, parsed_response['skeletons'])
+        self.assertCountEqual(expected_result, parsed_response['skeletons'])
 
 
     def test_skeleton_permissions(self):
@@ -802,7 +800,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
                 {'skids[0]': 235, 'skids[1]': 373})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
-        [[[c.sort() for c in six.itervalues(p)] for p in six.itervalues(t)] for t in six.itervalues(parsed_response)]
+        [[[c.sort() for c in p.values()] for p in t.values()] for t in parsed_response.values()]
         expected_result = {
             '235': {
                 'presynaptic_to': {

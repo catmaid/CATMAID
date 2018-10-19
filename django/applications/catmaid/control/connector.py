@@ -2,7 +2,6 @@
 
 import copy
 import json
-import six
 import logging
 
 from datetime import datetime, timedelta
@@ -25,8 +24,6 @@ from catmaid.control.common import (cursor_fetch_dictionary,
         get_relation_to_id_map, get_class_to_id_map, get_request_bool,
         get_request_list)
 
-# Python 2 and 3 compatible map iterator
-from six.moves import map, filter
 
 logger = logging.getLogger(__name__)
 
@@ -406,7 +403,7 @@ def list_connectors(request, project_id=None):
             tags[row[0]].append(row[1])
 
         # Sort labels by name
-        for connector_id, labels in six.iteritems(tags):
+        for connector_id, labels in tags.items():
             labels.sort(key=lambda k: k.upper())
 
     partners = defaultdict(list)
@@ -535,7 +532,7 @@ def list_connector_links(request, project_id=None):
             tags[row[0]].append(row[1])
 
         # Sort labels by name
-        for connector_id, labels in six.iteritems(tags):
+        for connector_id, labels in tags.items():
             labels.sort(key=lambda k: k.upper())
 
     return JsonResponse({
@@ -585,7 +582,7 @@ def _connector_skeletons(connector_ids, project_id):
 def connector_skeletons(request, project_id=None):
     """ See _connector_skeletons """
     connector_ids = get_request_list(request.POST, 'connector_ids', map_fn=int)
-    cs = tuple(six.iteritems(_connector_skeletons(connector_ids, project_id)))
+    cs = tuple(_connector_skeletons(connector_ids, project_id).items())
     return JsonResponse(cs, safe=False)
 
 

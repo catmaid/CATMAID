@@ -9,7 +9,6 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase
 from django.test.client import Client
-from django.utils.six import StringIO
 from guardian.shortcuts import assign_perm
 from catmaid.models import Class, ClassInstance, Project, User, Treenode
 
@@ -114,13 +113,13 @@ class GetTokenTest(TestCase):
             self.assertIn('Created new', output)
 
     def test_user_input_username(self):
-        with mock.patch('six.moves.input') as mock_input:
+        with mock.patch('input') as mock_input:
             mock_input.return_value = self.username
             output = self.attempt_command('--password', self.password)
             self.assertIn('Created new', output)
 
     def test_user_input_username_password(self):
-        with mock.patch('six.moves.input') as mock_input, mock.patch('getpass.getpass') as mock_getpass:
+        with mock.patch('input') as mock_input, mock.patch('getpass.getpass') as mock_getpass:
             mock_input.return_value = self.username
             mock_getpass.return_value = self.password
             output = self.attempt_command()

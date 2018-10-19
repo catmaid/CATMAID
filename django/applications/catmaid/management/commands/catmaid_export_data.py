@@ -13,6 +13,7 @@ from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
         Relation, Connector, Project, Treenode, TreenodeClassInstance,
         TreenodeConnector, User, ReducedInfoUser, ExportUser)
 
+
 import logging
 logger = logging.getLogger(__name__)
 

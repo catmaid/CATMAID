@@ -90,6 +90,10 @@ Reconstruction sampler:
 - The Synapse tab now also shows all leaf nodes of an interval. This makes it
   easier to find the places where an interval needs to be continued.
 
+Tracing layer:
+
+- Tracign layer: cycle open end in reverse using Shift + Alt + R.
+
 Docker:
 
 - More CATMAID configuration options are now accessible through Docker

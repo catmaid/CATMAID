@@ -198,4 +198,12 @@ QUnit.test('Utilities test', function( assert ) {
     assert.strictEqual(CATMAID.tools.extractFileNameNoExt('abc.d.txt'), 'abc.d',
         'CATMAID.tools.extractFileName() works');
   })();
+
+  // Test mod
+  (function() {
+    assert.strictEqual(CATMAID.tools.mod(3, 5), 3, 'CATMAID.tools.mod() works');
+    assert.strictEqual(CATMAID.tools.mod(8, 5), 3, 'CATMAID.tools.mod() works');
+    assert.strictEqual(CATMAID.tools.mod(-2, 5), 3, 'CATMAID.tools.mod() works');
+    assert.strictEqual(CATMAID.tools.mod(-8, 5), 2, 'CATMAID.tools.mod() works');
+  })();
 });

@@ -681,12 +681,13 @@
     }));
 
     this.addAction(new CATMAID.Action({
-      helpText: "Go to nearest open leaf node (subsequent <kbd>Shift</kbd>+<kbd>R</kbd>: cycle through other open leaves; with <kbd>Alt</kbd>: most recent rather than nearest)",
-      keyShortcuts: { "R": [ "r", "Alt + r", "Alt + Shift + r", "Shift + r" ] },
+      helpText: "Go to nearest open leaf node (subsequent <kbd>Shift</kbd>+<kbd>R</kbd>: cycle through other open leaves; with <kbd>Alt</kbd>: most recent rather than nearest, <kbd>Shift</kbd>+<kbd>Alt</kbd>: cycle in reverse)",
+      keyShortcuts: { "R": [ "r", "Alt + r", "Alt + Shift + R", "Shift + r"] },
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
-        activeTracingLayer.tracingOverlay.goToNextOpenEndNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, e.altKey);
+        activeTracingLayer.tracingOverlay.goToNextOpenEndNode(SkeletonAnnotations.getActiveNodeId(),
+            e.shiftKey, e.altKey, e.shiftKey && e.altKey);
         return true;
       }
     }));

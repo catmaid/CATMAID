@@ -4664,10 +4664,11 @@ SkeletonAnnotations.TracingOverlay.prototype.goToLastEditedNode = function(skele
  * other. If a virtual node is passed in, the request is done for its real
  * parent.
  */
-SkeletonAnnotations.TracingOverlay.prototype.goToNextOpenEndNode = function(nodeID, cycle, byTime) {
+SkeletonAnnotations.TracingOverlay.prototype.goToNextOpenEndNode = function(
+    nodeID, cycle, byTime, reverse) {
   if (this.isIDNull(nodeID)) return;
   if (cycle) {
-    this.cycleThroughOpenEnds(nodeID, byTime);
+    this.cycleThroughOpenEnds(nodeID, byTime, reverse);
   } else {
     var self = this;
     if (!SkeletonAnnotations.isRealNode(nodeID)) {
@@ -4695,7 +4696,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNextOpenEndNode = function(node
             self.nextOpenEnds = { tnid: nodeID, skid: skid, ends: [], byTime: null };
           } else {
             self.nextOpenEnds = { tnid: nodeID, skid: skid, ends: json, byTime: null };
-            self.cycleThroughOpenEnds(nodeID, byTime);
+            self.cycleThroughOpenEnds(nodeID, byTime, reverse);
           }
         });
   }
@@ -4706,8 +4707,9 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNextOpenEndNode = function(node
  * (or the first) and select the node. If sorting by time is requested and no
  * sorting took place so for, sort all open ends by time.
  */
-SkeletonAnnotations.TracingOverlay.prototype.cycleThroughOpenEnds = function (treenode_id, byTime) {
-  if (typeof this.nextOpenEnds === 'undefined' ||
+SkeletonAnnotations.TracingOverlay.prototype.cycleThroughOpenEnds = function(
+    treenode_id, byTime, reverse) {
+  if (this.nextOpenEnds === undefined ||
       this.nextOpenEnds.ends.length === 0 ||
       this.nextOpenEnds.skid !== SkeletonAnnotations.getActiveSkeletonId()) {
     // Can not cycle because open ends data is missing or invalid. Fetch it.
@@ -4730,7 +4732,8 @@ SkeletonAnnotations.TracingOverlay.prototype.cycleThroughOpenEnds = function (tr
   // Cycle through ends. If treenode_id was not in the end (such as when first
   // selecting an end), currentEnd will be -1, so the following line will make
   // it 0 and still produce the desired behavior.
-  currentEnd = (currentEnd + 1) % this.nextOpenEnds.ends.length;
+  let offset = reverse ? -1 : 1;
+  currentEnd = CATMAID.tools.mod(currentEnd + offset, this.nextOpenEnds.ends.length);
 
   var node = this.nextOpenEnds.ends[currentEnd];
   this.moveTo(node[1][2], node[1][1], node[1][0], this.selectNode.bind(this, node[0]));

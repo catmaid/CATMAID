@@ -832,4 +832,11 @@ CATMAID.tools = CATMAID.tools || {};
     }, {});
   };
 
+  /**
+   * A modulo function that can deal with negative numbers.
+   */
+  tools.mod = function(a, b) {
+    return ((a % b) + b) % b;
+  };
+
 })(CATMAID.tools);

@@ -3032,7 +3032,7 @@
                     $('input', landmarkPrefixSetting).val(getLandmarkPrefixSuggestion());
                   }
                 }),
-                "The first volume, it's bounding box corners will make up the landmark locations of group A.").get(0));
+                "The first volume, it's bounding box corners will make up the landmark locations of group A."));
 
         // Group name A
         var groupNameA = '';
@@ -3061,7 +3061,7 @@
                     $('input', landmarkPrefixSetting).val(getLandmarkPrefixSuggestion());
                   }
                 }),
-                "The second volume, it's bounding box corners will make up the landmark locations of group B.").get(0));
+                "The second volume, it's bounding box corners will make up the landmark locations of group B."));
 
         // Group name B
         var groupNameB = '';

@@ -1164,7 +1164,7 @@
     wrapper.appendChild(placeholder);
     var labeledWrapper = CATMAID.DOM.createLabeledControl(
         label, wrapper, helptext);
-    return labeledWrapper;
+    return labeledWrapper.get(0);
   };
 
 	DOM.createCheckbox = function(label, value, onclickFn, id) {

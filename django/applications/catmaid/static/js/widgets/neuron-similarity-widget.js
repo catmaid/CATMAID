@@ -448,7 +448,7 @@
           }
         }, {
           type: 'radio',
-          label: 'Query objects',
+          label: 'Query skeletons',
           name: 'query',
           title: 'Query a set of skeletons',
           value: 'skeleton',

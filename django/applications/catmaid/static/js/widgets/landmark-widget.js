@@ -114,6 +114,11 @@
         this.handleUpdatedSkeletonSources, this);
     this.removeDisplay();
 
+    if (this.displayTransformations && this.displayTransformations.length > 0) {
+      this.displayTransformations.length = 0;
+      CATMAID.Landmarks.trigger(CATMAID.Landmarks.EVENT_DISPLAY_TRANSFORM_REMOVED);
+    }
+
     // Reset original reference lines setting when the last landmark widget
     // closes.
     if (LandmarkWidget.nInstances === 0) {
@@ -626,6 +631,7 @@
           let widget = target3dViewers[j];
           widget.showLandmarkTransform(t, false);
         }
+        CATMAID.Landmarks.trigger(CATMAID.Landmarks.EVENT_DISPLAY_TRANSFORM_REMOVED);
       }
     }
   };
@@ -1006,6 +1012,9 @@
     let lst = new CATMAID.LandmarkSkeletonTransformation(skeletons,
         fromGroupId, toGroupId);
     this.displayTransformations.push(lst);
+
+    // Announce that there is a new display tranformation available
+    CATMAID.Landmarks.trigger(CATMAID.Landmarks.EVENT_DISPLAY_TRANSFORM_ADDED);
   };
 
   /**
@@ -1027,6 +1036,7 @@
               fromGroupId, toGroupId);
           self.displayTransformations.push(lst);
         }
+        CATMAID.Landmarks.trigger(CATMAID.Landmarks.EVENT_DISPLAY_TRANSFORM_ADDED);
       })
       .catch(CATMAID.handleError);
   };

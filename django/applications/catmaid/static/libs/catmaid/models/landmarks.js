@@ -343,6 +343,11 @@
     this.id = CATMAID.tools.uuidv4();
   };
 
+  // Provide some basic events
+  Landmarks.EVENT_DISPLAY_TRANSFORM_ADDED = "display_transform_added";
+  Landmarks.EVENT_DISPLAY_TRANSFORM_REMOVED = "display_transform_removed";
+  CATMAID.asEventSource(Landmarks);
+
   // Export namespace
   CATMAID.Landmarks = Landmarks;
   CATMAID.LandmarkSkeletonTransformation = LandmarkSkeletonTransformation;

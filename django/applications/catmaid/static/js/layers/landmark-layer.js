@@ -25,7 +25,7 @@
     this.displayTransformations = [];
 
     // A set of custom models that allows custom coloring of nodes
-    this.skeletonDisplayModels = {};
+    this.skeletonDisplayModels = new Map();
 
     CATMAID.PixiLayer.prototype._initBatchContainer.call(this);
     this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements({
@@ -54,21 +54,21 @@
    */
   LandmarkLayer.prototype.initColors = function() {
     if (this.options.overrideColor) {
-      this.skeletonDisplayModels = {};
+      this.skeletonDisplayModels = new Map();
       if (this.graphics) {
         this.graphics.overlayGlobals.skeletonDisplayModels = this.skeletonDisplayModels;
       }
       for (let n in this.nodes) {
         let node = this.nodes[n];
-        let model = this.skeletonDisplayModels[n.skeleton_id];
+        let model = this.skeletonDisplayModels.get(n.skeleton_id);
         if (!model) {
-          this.skeletonDisplayModels[node.skeleton_id] = new CATMAID.SkeletonModel(
-              n.skeleton_id, '', new THREE.Color(this.options.overrideColor));
+          this.skeletonDisplayModels.set(node.skeleton_id, new CATMAID.SkeletonModel(
+              n.skeleton_id, '', new THREE.Color(this.options.overrideColor)));
         }
       }
     } else {
       // Reset color override models
-      this.skeletonDisplayModels = {};
+      this.skeletonDisplayModels = new Map();
       if (this.graphics) {
         this.graphics.overlayGlobals.skeletonDisplayModels = this.skeletonDisplayModels;
       }
@@ -93,8 +93,8 @@
         this.initColors(options);
       } else {
         // Update color
-        for (let m in this.skeletonDisplayModels) {
-          this.skeletonDisplayModels[m].color.setStyle(options.overrideColor);
+        for (let m of this.skeletonDisplayModels.values()) {
+          m.color.setStyle(options.overrideColor);
         }
       }
 
@@ -203,19 +203,20 @@
       // Disable most unused node instances, keeping a small caching buffer.
       this.graphics.disableBeyond(addedNodes.length, 0);
 
+      this.initColors();
+
       // Draw node edges and circles, including the ones for virtual nodes.
       for (var i=0, imax=addedNodes.length; i<imax; ++i) {
         addedNodes[i].createGraphics();
       }
 
       // Update colors
-      this.initColors();
       for (let n in this.nodes) {
         this.nodes[n].updateColors();
       }
     } else {
       for (let skeletonId in this.nodes) {
-        this.nodes[skeletonId].obliterate();
+        this.nodes[skeletonId].disable();
       }
       this.nodes = {};
     }

@@ -2493,7 +2493,15 @@
           order: [],
           columns: [
             {
+              orderable: false,
+              class: 'cm-center',
+              render: function(data, type, row, meta) {
+                return meta.row + 1;
+              },
+            },
+            {
               data: 'skeletons',
+              class: 'cm-center',
               title: 'Skeletons',
               orderable: false,
               render: function(data, type, row, meta) {
@@ -2506,6 +2514,7 @@
 
             {
               data: 'fromGroupId',
+              class: 'cm-center',
               title: 'Source landmark group',
               orderable: false,
               render: function(data, type, row, meta) {
@@ -2520,6 +2529,7 @@
             },
             {
               data: 'toGroupId',
+              class: 'cm-center',
               title: 'Target landmark group',
               orderable: false,
               render: function(data, type, row, meta) {
@@ -2534,6 +2544,7 @@
             },
             {
               title: 'Action',
+              class: 'cm-center',
               orderable: false,
               render: function(data, type, row, meta) {
                 return '<a href="#" data-action="delete-transformation">Delete</a>';

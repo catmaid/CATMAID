@@ -1021,6 +1021,7 @@ class NblastConfig(UserFocusedModel):
     resample_step = models.FloatField(default=1000)
     tangent_neighbors = models.IntegerField(default=5)
 
+
     class Meta:
         db_table = "nblast_config"
 
@@ -1050,6 +1051,8 @@ class NblastSimilarity(UserFocusedModel):
         related_name='target_type_set')
     query_objects = ArrayField(models.IntegerField())
     target_objects = ArrayField(models.IntegerField())
+    normalized = models.TextField(default='raw')
+    use_alpha = models.BooleanField(default=False)
 
     class Meta:
         db_table = "nblast_similarity"

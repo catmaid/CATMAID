@@ -99,6 +99,10 @@
    * @param queryType  {String}   (optional) Type of query IDs, 'skeleton' or 'pointcloud'.
    * @param targetType {String}   (optional) Type of target IDs, 'skeleton' or 'pointcloud'.
    * @param name       {String}   The name of the query.
+   * @param normaized  {Boolean}  (optional) Whether to divide scores by self-match score.
+   *                              Default: false.
+   * @param useAlpha   {Boolean}  (optional) Whether to consider local directions in the
+   *                              similarity calulation. Default: false.
    * @param queryMeta  {Object}   (optional) Data that represents query objects in more detail.
    *                              Used with type 'transformed-skeleton' and maps skeleton IDs
    *                              to their transformed data.
@@ -109,7 +113,8 @@
    * @returns {Promise} Resolves once the similarity query is queued.
    */
   Similarity.computeSimilarity = function(projectId, configId, queryIds,
-      targetIds, queryType, targetType, name, queryMeta, targetMeta) {
+      targetIds, queryType, targetType, name, normalized, useAlpha,
+      queryMeta, targetMeta) {
     return CATMAID.fetch(projectId + '/similarity/queries/similarity', 'POST', {
       'query_ids': queryIds,
       'target_ids': targetIds,
@@ -119,6 +124,8 @@
       'query_meta': queryMeta,
       'target_meta': targetMeta,
       'name': name,
+      'normalized': normalized,
+      'use_alpha': useAlpha,
     });
   };
 

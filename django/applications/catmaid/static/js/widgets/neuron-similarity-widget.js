@@ -464,6 +464,8 @@
         let configId = null;
         let queryType = 'skeleton';
         let targetType = 'skeleton';
+        let normalizedScores = false;
+        let useAlpha = false;
 
         widget.updateDisplayTransformationCache();
 
@@ -652,6 +654,22 @@
             targetSelect.querySelector('select').disabled = true;
           },
         }, {
+          type: 'checkbox',
+          label: 'Normailized',
+          title: 'Whether to divide scores by the self-match score.',
+          value: normalizedScores,
+          onclick: function() {
+            normalizedScores = this.checked;
+          },
+        }, {
+          type: 'checkbox',
+          label: 'Use alpha',
+          title: 'Whether to consider local directions in the similarity calculation.',
+          value: useAlpha,
+          onclick: function() {
+            useAlpha = this.checked;
+          },
+        }, {
           type: 'child',
           element: configSelectWrapper,
         }, {
@@ -694,7 +712,7 @@
               let loadingPromises = [];
               let queryIds = [];
               let queryMeta;
-              let effectiveQueryType = targetType;
+              let effectiveQueryType = queryType;
               if (queryType === 'skeleton') {
                 let querySkeletonSource = CATMAID.skeletonListSources.getSource(querySource);
                 if (!querySkeletonSource) {
@@ -778,7 +796,8 @@
                 .then(function() {
                   return CATMAID.Similarity.computeSimilarity(project.id, configId,
                       queryIds, targetIds, effectiveQueryType, effectiveTargetType,
-                      newQueryName, queryMeta, targetMeta);
+                      newQueryName, normalizedScores ? 'normalized' : 'raw', useAlpha,
+                      queryMeta, targetMeta);
                 })
                 .then(function(response) {
                   widget.lastSimilarityQuery = response;
@@ -878,6 +897,24 @@
                 }
               }
             }, {
+              data: "use_alpha",
+              title: "Alpha",
+              class: "cm-center",
+              searchable: true,
+              orderable: true,
+              render: function(data, type, row, meta) {
+                return data ? "Yes" : "No";
+              },
+            }, {
+              data: "normalized",
+              title: "Normalized",
+              class: "cm-center",
+              searchable: true,
+              orderable: true,
+              render: function(data, type, row, meta) {
+                return data === 'raw' ? "No" : "Yes";
+              }
+            }, {
               data: "query_objects",
               title: "Query objects",
               orderable: false,
@@ -892,6 +929,8 @@
                   return '<span title="' + qo.length + ' skeleton(s)"><em>Skeletons:</em> ' + text + '</span>';
                 } else if (row.query_type === 'pointcloud') {
                   return '<span title="' + qo.length + ' point cloud(s)"><em>Point clouds:</em> ' + text + '</span>';
+                } else if (row.query_type === 'pointset') {
+                  return '<span title="' + qo.length + ' transformed skeleton(s)"><em>Transformed skeletons:</em> ' + text + '</span>';
                 } else {
                   return '<span title="' + qo.length + ' unknown object(s)"><em>Unknown type:</em> ' + text + '</span>';
                 }
@@ -911,6 +950,8 @@
                   return '<span title="' + to.length + ' skeleton(s)"><em>Skeletons:</em> ' + text + '</span>';
                 } else if (row.target_type === 'pointcloud') {
                   return '<span title="' + to.length + ' point cloud(s)"><em>Point clouds:</em> ' + text + '</span>';
+                } else if (row.query_type === 'pointset') {
+                  return '<span title="' + to.length + ' transformed skeleton(s)"><em>Transformed skeletons:</em> ' + text + '</span>';
                 } else {
                   return '<span title="' + to.length + ' unknown object(s)"><em>Unknown type:</em> ' + text + '</span>';
                 }

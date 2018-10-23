@@ -494,7 +494,8 @@ def compute_all_by_all_skeleton_similarity(project_id, user_id,
 
 
 def nblast(project_id, config_id, query_object_ids, target_object_ids,
-        query_type='skeleton', target_type='skeleton', omit_failures=True):
+        query_type='skeleton', target_type='skeleton', omit_failures=True,
+        normalized='raw', use_alpha=False):
     """Create NBLAST score for forward similarity from query objects to target
     objects. Objects can either be pointclouds or skeletons, which has to be
     reflected in the respective type parameter. This is executing essentially
@@ -678,11 +679,16 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
         smat.do_slot_assign('distbreaks', rdistbreaks)
         smat.do_slot_assign('dotprodbreaks', rdotbreaks)
 
-        logger.debug('Computing score')
+        logger.debug('Computing score (alpha: {a}, noramlized: {n}'.format(**{
+            'a': 'Yes' if use_alpha else 'No',
+            'n': 'No' if normalized == 'raw' else 'Yes',
+        }))
         # Use defaults also used in nat.nblast.
         nblast_params['smat'] = smat
         nblast_params['NNDistFun'] = rnblast.lodsby2dhist
-        scores = rnblast.NeuriteBlast(query_dps, target_dps, **nblast_params);
+        nblast_params['UseAlpha'] = use_alpha
+        nblast_params['normalised'] = False if normalized == 'raw' else True
+        scores = rnblast.NeuriteBlast(query_dps, target_dps, **nblast_params)
 
         # NBLAST by default will simplify the result in cases where there is
         # only a one to one correspondence. Fix this to our expectation to have

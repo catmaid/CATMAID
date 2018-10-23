@@ -81,6 +81,8 @@ def serialize_similarity(similarity):
         'target_objects': similarity.target_objects,
         'query_type': similarity.query_type_id,
         'target_type': similarity.target_type_id,
+        'use_alpha': similarity.use_alpha,
+        'normalized': similarity.normalized,
     }
 
 
@@ -543,7 +545,8 @@ def compute_nblast(project_id, user_id, similarity_id):
 
         scoring_info = nblast(project_id, config.id, query_object_ids,
                 target_object_ids, similarity.query_type_id,
-                similarity.target_type_id)
+                similarity.target_type_id, normalized=similarity.normalized,
+                use_alpha=similarity.use_alpha)
 
         # Update config and samples
         if scoring_info.get('errors'):
@@ -616,6 +619,18 @@ def compare_skeletons(request, project_id):
         type: string
         paramType: form
         required: false
+      - name: normalized
+        description: Whether to divide scores by the self-match score.
+        type: boolean
+        paramType: form
+        required: false
+        defaultValue: false
+      - name: use_alpha
+        description: Whether to consider local directions in the similarity computation
+        type: boolean
+        paramType: form
+        required: false
+        defaultValue: false
       - name: query_type_id
         description: Type of query data
         enum: [skeleton, point-cloud]
@@ -694,6 +709,10 @@ def compare_skeletons(request, project_id):
             raise ValueError("Did not expect 'query_meta' parameter with {} target type".format(query_type_id))
         target_meta = json.loads(target_meta)
 
+    # Other parameters
+    normalized = request.POST.get('normalized', 'raw')
+    use_alpha = get_request_bool(request.POST, 'use_alpha', False)
+
     with transaction.atomic():
         # In case of a pointset, new pointset model objects needs to be created
         # before the similariy query is created.
@@ -729,7 +748,8 @@ def compare_skeletons(request, project_id):
         similarity = NblastSimilarity.objects.create(project_id=project_id,
                 user=request.user, name=name, status='queued', config_id=config_id,
                 query_objects=query_ids, target_objects=target_ids,
-                query_type_id=query_type_id, target_type_id=target_type_id)
+                query_type_id=query_type_id, target_type_id=target_type_id,
+                normalized=normalized, use_alpha=use_alpha)
         similarity.save()
 
     task = compute_nblast.delay(project_id, request.user.id, similarity.id)

@@ -2,7 +2,7 @@
 import os
 
 from django.core.management.base import BaseCommand, CommandError
-from fjango.conf import settings
+from django.conf import settings
 from catmaid.control.similarity import install_dependencies
 
 

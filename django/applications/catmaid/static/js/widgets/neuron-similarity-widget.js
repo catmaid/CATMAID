@@ -23,6 +23,7 @@
     // Whether or not the results are displayed in a dialog (rather than a
     // window).
     this.resultMode = 'window';
+    this.displayTransformationCache = {};
 
     // A currently displayed import job in the point cloud tab.
     this.importJob = null;
@@ -36,6 +37,10 @@
         this.handleAddedConfig, this);
     CATMAID.Similarity.on(CATMAID.Similarity.EVENT_CONFIG_DELETED,
         this.handleDeletedConfig, this);
+    CATMAID.Landmarks.on(CATMAID.Landmarks.EVENT_DISPLAY_TRANSFORM_ADDED,
+        this.updateDisplayTransformOptions, this);
+    CATMAID.Landmarks.on(CATMAID.Landmarks.EVENT_DISPLAY_TRANSFORM_REMOVED,
+        this.updateDisplayTransformOptions, this);
   };
 
   NeuronSimilarityWidget.prototype = {};
@@ -54,6 +59,10 @@
         this.handleAddedConfig, this);
     CATMAID.Similarity.off(CATMAID.Similarity.EVENT_CONFIG_DELETED,
         this.handleDeletedConfig, this);
+    CATMAID.Landmarks.off(CATMAID.Landmarks.EVENT_DISPLAY_TRANSFORM_ADDED,
+        this.updateDisplayTransformOptions, this);
+    CATMAID.Landmarks.off(CATMAID.Landmarks.EVENT_DISPLAY_TRANSFORM_REMOVED,
+        this.updateDisplayTransformOptions, this);
   };
 
   NeuronSimilarityWidget.prototype.getWidgetConfiguration = function() {
@@ -342,6 +351,33 @@
         .map(pcId => parseInt(pcId, 10));
   };
 
+  NeuronSimilarityWidget.prototype.getSelectedSkeletonTransformations = function(
+      transform, landmarkGroupIndex, landmarkIndex, transformedDataTarget) {
+    let transformation = transform.displayTransform;
+    let skeletonIds = [];
+
+    CATMAID.Landmarks.addProvidersToTransformation(
+        transformation, landmarkGroupIndex, landmarkIndex);
+
+    let promises = [];
+
+    for (let skeletonId in transformation.skeletons) {
+      let skeletonModel = transformation.skeletons[skeletonId];
+      skeletonIds.push(skeletonModel.id);
+      let getSkeleton = transformation.nodeProvider.get(skeletonId)
+        .then(function(json) {
+          transformedDataTarget[skeletonId] = json;
+        })
+        .catch(CATMAID.handleError);
+      promises.push(getSkeleton);
+    }
+
+    return Promise.all(promises)
+      .then(function() {
+        return skeletonIds;
+      });
+  };
+
   NeuronSimilarityWidget.prototype.updatePointClouds = function() {
     let widget = this;
     return CATMAID.Pointcloud.listAll(project.id)
@@ -357,6 +393,67 @@
       });
   };
 
+  NeuronSimilarityWidget.prototype.updateDisplayTransformationCache = function() {
+    let dts = NeuronSimilarityWidget.getAvailableDisplayTransformations();
+    this.displayTransformationCache = dts;
+  };
+
+  NeuronSimilarityWidget.getAvailableDisplayTransformations = function() {
+    let windows = CATMAID.WindowMaker.getOpenWindows('landmarks', false,
+      undefined, true);
+    let displayTransformations = [];
+
+    for (let widget of windows.values()) {
+      for (let dt=0; dt<widget.displayTransformations.length; ++dt) {
+        displayTransformations.push({
+          widget: widget,
+          displayTransform: widget.displayTransformations[dt],
+          index: dt,
+        });
+      }
+    }
+
+    return displayTransformations;
+  };
+
+  NeuronSimilarityWidget.prototype.updateDisplayTransformSelect = function(select) {
+    // Clear select
+    while (select.options.length) {
+      select.remove(0);
+    }
+
+    let dts = this.displayTransformationCache;
+    for (let i=0; i < dts.length; ++i) {
+      let dt = dts[i];
+      // Select first element by default
+      let selected = i === 0;
+      select.add(new Option(`${dt.widget.getName()}: Transform ${dt.index + 1}`, i, selected, selected));
+    }
+
+    if (dts.length === 0) {
+      select.setAttribute('disabled', 'disabled');
+      select.add(new Option('(none)', 'none'));
+    } else {
+      select.removeAttribute('disabled');
+    }
+
+    return dts.length;
+  };
+
+  NeuronSimilarityWidget.prototype.updateDisplayTransformOptions = function() {
+    this.updateDisplayTransformationCache();
+
+    let transformedQuerySourceSelect = document.getElementById(this.idPrefix +
+        'transformed-query-source');
+    if (!transformedQuerySourceSelect) throw new CATMAID.ValueError("Transformed query element not found");
+    this.updateDisplayTransformSelect(transformedQuerySourceSelect);
+
+    let transformedTargetSourceSelect = document.getElementById(this.idPrefix +
+        'transformed-target-source');
+    if (!transformedTargetSourceSelect) throw new CATMAID.ValueError("Transformed target element not found");
+    this.updateDisplayTransformSelect(transformedTargetSourceSelect);
+  };
+
   NeuronSimilarityWidget.Modes = {
     similarity: {
       title: "Neuron similarity",
@@ -367,6 +464,8 @@
         let configId = null;
         let queryType = 'skeleton';
         let targetType = 'skeleton';
+
+        widget.updateDisplayTransformationCache();
 
         let newScoringSection = document.createElement('span');
         newScoringSection.classList.add('section-header');
@@ -381,6 +480,18 @@
           querySource = e.target.value;
         };
 
+        let transformedQuerySelect = document.createElement('label');
+        let transformedQuerySourceSelect = document.createElement('select');
+        widget.updateDisplayTransformSelect(transformedQuerySourceSelect);
+        transformedQuerySourceSelect.setAttribute('id', widget.idPrefix + 'transformed-query-source');
+        if (queryType !== 'tranasformed-skeleton') {
+          transformedQuerySourceSelect.setAttribute('disabled', 'disabled');
+        }
+        transformedQuerySelect.appendChild(transformedQuerySourceSelect);
+        transformedQuerySourceSelect.onchange = function(e) {
+          querySource = e.target.value;
+        };
+
         let targetSelect = document.createElement('label');
         let targetSourceSelect = CATMAID.skeletonListSources.createUnboundSelect(widget.getName() + ' Target source');
         targetSourceSelect.setAttribute('id', widget.idPrefix + 'target-source');
@@ -388,6 +499,19 @@
         targetSource = targetSourceSelect.value;
         targetSourceSelect.onchange = function(e) {
           targetSource = e.target.value;
+        };
+
+
+        let transformedTargetSelect = document.createElement('label');
+        let transformedTargetSourceSelect = document.createElement('select');
+        widget.updateDisplayTransformSelect(transformedTargetSourceSelect);
+        transformedTargetSourceSelect.setAttribute('id', widget.idPrefix + 'transformed-target-source');
+        if (targetType !== 'tranasformed-skeleton') {
+          transformedTargetSourceSelect.setAttribute('disabled', 'disabled');
+        }
+        transformedTargetSelect.appendChild(transformedTargetSourceSelect);
+        transformedTargetSourceSelect.onchange = function(e) {
+          querySource = e.target.value;
         };
 
         let configSelectWrapper = document.createElement('label');
@@ -456,10 +580,26 @@
           onclick: function() {
             queryType = 'skeleton';
             querySelect.querySelector('select').disabled = false;
+            transformedQuerySelect.querySelector('select').disabled = true;
           },
         }, {
           type: 'child',
           element: querySelect,
+        }, {
+          type: 'radio',
+          label: 'Query transformed skeletons',
+          name: 'query',
+          title: 'Query a set of transformed skeletons, defined as display transformation in any Landmark Widget',
+          value: 'transformed-skeleton',
+          checked: queryType === 'transformed-skeleton',
+          onclick: function() {
+            queryType = 'transformed-skeleton';
+            querySelect.querySelector('select').disabled = true;
+            transformedQuerySelect.querySelector('select').disabled = false;
+          },
+        }, {
+          type: 'child',
+          element: transformedQuerySelect,
         }, {
           type: 'radio',
           label: 'Query point clouds',
@@ -487,6 +627,21 @@
           element: targetSelect,
         }, {
           type: 'radio',
+          label: 'Target transformed skeletons',
+          name: 'target',
+          title: 'Target a set of transformed skeletons, defined as display transformation in any Landmark Widget',
+          value: 'transformed-skeleton',
+          checked: queryType === 'transformed-skeleton',
+          onclick: function() {
+            targetType = 'transformed-skeleton';
+            querySelect.querySelector('select').disabled = true;
+            transformedQuerySelect.querySelector('select').disabled = false;
+          },
+        }, {
+          type: 'child',
+          element: transformedTargetSelect,
+        }, {
+          type: 'radio',
           label: 'Target point clouds',
           name: 'target',
           checked: targetType === 'pointcloud',
@@ -503,49 +658,137 @@
           type: 'button',
           label: 'Compute similarity',
           onclick: function() {
-            let queryIds = [];
-            if (queryType === 'skeleton') {
-              let querySkeletonSource = CATMAID.skeletonListSources.getSource(querySource);
-              if (!querySkeletonSource) {
-                CATMAID.error("Can't find source: " + querySource);
-                return;
+            // If transformed skeletons are used as query or target, we need to
+            // get all available landmark groups.
+            let prepare = Promise.resolve();
+            let landmarkGroupIndex;
+            let landmarkIndex;
+            if (queryType === 'transformed-skeleton' || targetType === 'transformed-skeleton') {
+              prepare = CATMAID.Landmarks.listGroups(project.id, true, true, true, true)
+                .then(function(result) {
+                  landmarkGroupIndex = result.reduce(CATMAID.Landmarks.addToIdIndex, new Map());
+                  return CATMAID.Landmarks.list(project.id, true);
+                })
+                .then(function(result) {
+                  landmarkIndex = result.reduce(CATMAID.Landmarks.addToIdIndex, new Map());
+                });
+            }
+
+            let toPointSet = function(data) {
+              return [data[3], data[4], data[5]];
+            };
+
+            let makeTransformedSkeletonPointsets = function(data) {
+              // TODO: Maybe resample in place?
+              let newData = {};
+              for (let skeletonId in data) {
+                newData[skeletonId] = {
+                  'points': data[skeletonId][0].map(toPointSet),
+                  'name': 'Transformed skeleton ' + skeletonId,
+                };
               }
-              queryIds = querySkeletonSource.getSelectedSkeletons();
-            } else if (queryType === 'pointcloud') {
-              queryIds = widget.getSelectedPointClouds();
-            } else {
-              throw new CATMAID.ValueError("Unknown query type: " +  queryType);
-            }
+              return newData;
+            };
 
-            let targetIds = [];
-            if (targetType === 'skeleton') {
-              let targetSkeletonSource = CATMAID.skeletonListSources.getSource(targetSource);
-              if (!targetSkeletonSource) {
-                CATMAID.error("Can't find source: " + targetSource);
-                return;
+            prepare.then(function() {
+              let loadingPromises = [];
+              let queryIds = [];
+              let queryMeta;
+              let effectiveQueryType = targetType;
+              if (queryType === 'skeleton') {
+                let querySkeletonSource = CATMAID.skeletonListSources.getSource(querySource);
+                if (!querySkeletonSource) {
+                  CATMAID.error("Can't find source: " + querySource);
+                  return;
+                }
+                queryIds = querySkeletonSource.getSelectedSkeletons();
+              } else if (queryType === 'pointcloud') {
+                queryIds = widget.getSelectedPointClouds();
+              } else if (queryType === 'transformed-skeleton') {
+                let transformedQuerySourceSelect = document.getElementById(widget.idPrefix +
+                    'transformed-query-source');
+                if (!transformedQuerySourceSelect) throw new CATMAID.ValueError("Transformed query element not found");
+                let selectedTransformationIndex = transformedQuerySourceSelect.value;
+                if (!/\d+/.test(selectedTransformationIndex)) {
+                  CATMAID.warn("No transformed query skeletons selected");
+                  return;
+                }
+                let selectedTransformation =
+                    widget.displayTransformationCache[selectedTransformationIndex];
+
+                // Map orignal skeleton IDs to their transformations
+                let transformedData = {};
+                loadingPromises.push(widget.getSelectedSkeletonTransformations(
+                    selectedTransformation, landmarkGroupIndex, landmarkIndex,
+                    transformedData)
+                  .then(function(skeletonIds) {
+                    queryIds = skeletonIds;
+                    // Transmit skeletons as smaller and more generic point set.
+                    queryMeta = JSON.stringify(makeTransformedSkeletonPointsets(transformedData));
+                    effectiveQueryType = 'pointset';
+                  }));
+              } else {
+                throw new CATMAID.ValueError("Unknown query type: " +  queryType);
               }
-              targetIds = targetSkeletonSource.getSelectedSkeletons();
-            } else if (targetType === 'pointcloud') {
-              targetIds = widget.getSelectedPointClouds();
-            } else {
-              throw new CATMAID.ValueError("Unknown target type: " +  targetType);
-            }
 
-            // Make sure there is a selected config. Default to first element, if none was selected explicitly.
-            if (configSelect.options.length > 0 && configSelect.value === -1) {
-              configId = parseInt(configSelect.options[0].value, 10);
-            }
+              let targetIds = [];
+              let targetMeta;
+              let effectiveTargetType = targetType;
+              if (targetType === 'skeleton') {
+                let targetSkeletonSource = CATMAID.skeletonListSources.getSource(targetSource);
+                if (!targetSkeletonSource) {
+                  CATMAID.error("Can't find source: " + targetSource);
+                  return;
+                }
+                targetIds = targetSkeletonSource.getSelectedSkeletons();
+              } else if (targetType === 'pointcloud') {
+                targetIds = widget.getSelectedPointClouds();
+              } else if (targetType === 'transformed-skeleton') {
+                let transformedTargetSourceSelect = document.getElementById(widget.idPrefix +
+                    'transformed-target-source');
+                if (!transformedTargetSourceSelect) throw new CATMAID.ValueError("Transformed target element not found");
+                let selectedTransformationIndex = transformedTargetSourceSelect.value;
+                if (!/\d+/.test(selectedTransformationIndex)) {
+                  CATMAID.warn("No transformed target skeletons selected");
+                  return;
+                }
+                let selectedTransformation =
+                    widget.displayTransformationCache[selectedTransformationIndex];
 
-            CATMAID.Similarity.computeSimilarity(project.id, configId,
-                queryIds, targetIds, queryType, targetType, newQueryName)
-              .then(function(response) {
-                widget.lastSimilarityQuery = response;
-                return widget.update();
-              })
-              .catch(function(error) {
-                widget.lastSimilarityQuery = null;
-                CATMAID.handleError(error);
-              });
+                let transformedData = {};
+                loadingPromises.push(widget.getSelectedSkeletonTransformations(
+                    selectedTransformation, landmarkGroupIndex, landmarkIndex,
+                    transformedData)
+                  .then(function(skeletonIds) {
+                    targetIds = skeletonIds;
+                    // Transmit skeletons as smaller and more generic point set.
+                    targetMeta = makeTransformedSkeletonPointsets(transformedData);
+                    effectiveTargetType = 'pointset';
+                  }));
+              } else {
+                throw new CATMAID.ValueError("Unknown target type: " +  targetType);
+              }
+
+              // Make sure there is a selected config. Default to first element, if none was selected explicitly.
+              if (configSelect.options.length > 0 && configSelect.value === -1) {
+                configId = parseInt(configSelect.options[0].value, 10);
+              }
+
+              return Promise.all(loadingPromises)
+                .then(function() {
+                  return CATMAID.Similarity.computeSimilarity(project.id, configId,
+                      queryIds, targetIds, effectiveQueryType, effectiveTargetType,
+                      newQueryName, queryMeta, targetMeta);
+                })
+                .then(function(response) {
+                  widget.lastSimilarityQuery = response;
+                  return widget.update();
+                });
+            })
+            .catch(function(error) {
+              widget.lastSimilarityQuery = null;
+              CATMAID.handleError(error);
+            });
           }
         }];
       },
@@ -750,6 +993,8 @@
         let configSelect = document.getElementById(widget.idPrefix + 'config-select');
         if (!configSelect) throw new CATMAID.ValueError("Config select element not found");
         NeuronSimilarityWidget.updateConfigSelect(configSelect);
+
+        widget.updateDisplayTransformOptions();
       }
     },
     configrations: {

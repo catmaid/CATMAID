@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
+import json
 import logging
 
 from celery.task import task
+from itertools import chain
 from django.db import connection, transaction
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
@@ -16,7 +18,7 @@ from catmaid.control.authentication import (requires_user_role,
 from catmaid.control.common import (insert_into_log, get_class_to_id_map,
         get_relation_to_id_map, _create_relation, get_request_bool,
         get_request_list)
-from catmaid.models import (NblastConfig, NblastSample, Project,
+from catmaid.models import (NblastConfig, NblastSample, Project, PointSet,
         NblastConfigDefaultDistanceBreaks, NblastConfigDefaultDotBreaks,
         NblastSimilarity, PointCloud, UserRole)
 from catmaid.control.nat import (compute_scoring_matrix, nblast,
@@ -628,6 +630,16 @@ def compare_skeletons(request, project_id):
         paramType: form
         defaultValue: skeleton
         required: false
+      - name: query_meta
+        description: Extra data for the selected query type. A JSON encoded string is expected.
+        type: string
+        paramType: form
+        required: false
+      - name: target_meta
+        description: Extra data for the selected target type. A JSON encoded string is expected.
+        type: string
+        paramType: form
+        required: false
     """
     name = request.POST.get('name', None)
     if not name:
@@ -660,7 +672,7 @@ def compare_skeletons(request, project_id):
         raise ValueError("NBLAST config #" + config.id +
             " doesn't have a computed scoring.")
 
-    valid_type_ids = ('skeleton', 'pointcloud')
+    valid_type_ids = ('skeleton', 'pointcloud', 'pointset')
 
     query_type_id = request.POST.get('query_type_id', 'skeleton')
     if query_type_id not in valid_type_ids:
@@ -670,7 +682,50 @@ def compare_skeletons(request, project_id):
     if target_type_id not in valid_type_ids:
         raise ValueError("Need valid target type id ({})".format(', '.join(valid_type_ids)))
 
+    # Load potential query or target meta data
+    query_meta = request.POST.get('query_meta')
+    if query_meta:
+        if not query_type_id == 'pointset':
+            raise ValueError("Did not expect 'query_meta' parameter with {} query type".format(query_type_id))
+        query_meta = json.loads(query_meta)
+    target_meta = request.POST.get('target_meta')
+    if target_meta:
+        if not target_type_id == 'pointset':
+            raise ValueError("Did not expect 'query_meta' parameter with {} target type".format(query_type_id))
+        target_meta = json.loads(target_meta)
+
     with transaction.atomic():
+        # In case of a pointset, new pointset model objects needs to be created
+        # before the similariy query is created.
+        if query_type_id == 'pointset':
+            created_ids = []
+            for pointset_id in query_ids:
+                pointset_data = query_meta.get(str(pointset_id))
+                if not pointset_data:
+                    raise ValueError("Could not find data for pointset {}".format(pointset_id))
+                flat_points = list(chain.from_iterable(pointset_data['points']))
+                pointset = PointSet.objects.create(project_id=project_id,
+                        user=request.user, name=pointset_data['name'],
+                        description=pointset_data.get('description'),
+                        points=flat_points)
+                pointset.save()
+                created_ids.append(pointset.id)
+            query_ids = created_ids
+        if target_type_id == 'pointset':
+            created_ids = []
+            for pointset_id in target_ids:
+                pointset_data = target_meta.get(str(pointset_id))
+                if not pointset_data:
+                    raise ValueError("Could not find data for pointset {}".format(pointset_id))
+                flat_points = list(chain.from_iterable(pointset_data['points']))
+                pointset = PointSet.objects.create(project_id=project_id,
+                        user=request.user, name=pointset_data['name'],
+                        description=pointset_data.get('description'),
+                        points=flat_points)
+                pointset.save()
+                created_ids.append(pointset.id)
+            target_ids = created_ids
+
         similarity = NblastSimilarity.objects.create(project_id=project_id,
                 user=request.user, name=name, status='queued', config_id=config_id,
                 query_objects=query_ids, target_objects=target_ids,

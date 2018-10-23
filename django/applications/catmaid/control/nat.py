@@ -683,12 +683,27 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
             'a': 'Yes' if use_alpha else 'No',
             'n': 'No' if normalized == 'raw' else 'Yes',
         }))
+
         # Use defaults also used in nat.nblast.
+        normalize_initial_score = normalized == 'normalized'
         nblast_params['smat'] = smat
         nblast_params['NNDistFun'] = rnblast.lodsby2dhist
         nblast_params['UseAlpha'] = use_alpha
-        nblast_params['normalised'] = False if normalized == 'raw' else True
-        scores = rnblast.NeuriteBlast(query_dps, target_dps, **nblast_params)
+        nblast_params['normalised'] = normalize_initial_score
+
+        if normalized == 'mean':
+            # The scoring matrix needs to include the reverse scores as well, we
+            # therefore need an all-by-all scoring matrix for all query/target
+            # objects.
+            all_obj_dps = query_dps + target_dps
+            scores = rnblast.NeuriteBlast(all_obj_dps, all_obj_dps, **nblast_params)
+            scores = rnblast.sub_score_mat(query_object_ids, target_object_ids, **{
+                'scoremat': scores,
+                'normalisation': 'mean',
+            })
+        else:
+            scores = rnblast.NeuriteBlast(query_dps, target_dps, **nblast_params)
+
 
         # NBLAST by default will simplify the result in cases where there is
         # only a one to one correspondence. Fix this to our expectation to have

@@ -16,7 +16,7 @@ from catmaid.control.common import get_request_bool, urljoin
 from catmaid.control.authentication import requires_user_role
 from catmaid.models import (Message, User, UserRole, NblastConfig,
         NblastConfigDefaultDistanceBreaks, NblastConfigDefaultDotBreaks,
-        PointCloud)
+        PointCloud, PointSet)
 
 from celery.task import task
 
@@ -583,6 +583,25 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
                         '.progress': 'none',
                         'OmitFailures': omit_failures,
                     })
+        elif query_type == 'pointset':
+            logger.debug('Fetching query point sets')
+            pointsets = []
+            for psid in query_object_ids:
+                target_pointset = PointSet.objects.get(pk=psid)
+                n_points = len(target_pointset.points) / 3
+                point_data = Matrix(robjects.FloatVector(target_pointset.points),
+                        nrow=n_points, byrow=True)
+                pointsets.append(point_data)
+
+            query_objects = rnat.as_neuronlist(pointsets)
+
+            logger.debug('Computing query pointset stats')
+            query_dps = rnat.dotprops(query_objects.ro / 1e3, **{
+                        'k': config.tangent_neighbors,
+                        'resample': 1,
+                        '.progress': 'none',
+                        'OmitFailures': omit_failures,
+                    })
         else:
             raise ValueError("Unknown query type: {}".format(query_type))
 
@@ -619,6 +638,25 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
             target_objects = rnat.as_neuronlist(pointclouds)
 
             logger.debug('Computing target pointcloud stats')
+            target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
+                        'k': config.tangent_neighbors,
+                        'resample': 1,
+                        '.progress': 'none',
+                        'OmitFailures': omit_failures,
+                    })
+        elif query_type == 'pointset':
+            logger.debug('Fetching target point sets')
+            pointsets = []
+            for psid in target_object_ids:
+                target_pointset = PointSet.objects.get(pk=psid)
+                n_points = len(target_pointset.points) / 3
+                point_data = Matrix(robjects.FloatVector(target_pointset.points),
+                        nrow=n_points, byrow=True)
+                pointsets.append(point_data)
+
+            target_objects = rnat.as_neuronlist(pointsets)
+
+            logger.debug('Computing target pointset stats')
             target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
                         'k': config.tangent_neighbors,
                         'resample': 1,

@@ -454,7 +454,7 @@
           value: 'skeleton',
           checked: queryType === 'skeleton',
           onclick: function() {
-            targetType = 'skeleton';
+            queryType = 'skeleton';
             querySelect.querySelector('select').disabled = false;
           },
         }, {

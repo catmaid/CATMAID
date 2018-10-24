@@ -620,11 +620,12 @@ def compare_skeletons(request, project_id):
         paramType: form
         required: false
       - name: normalized
-        description: Whether to divide scores by the self-match score.
-        type: boolean
+        description: Whether and how scores should be normalized.
+        type: string
+        enum: [raw, normalized, mean]
         paramType: form
         required: false
-        defaultValue: false
+        defaultValue: mean
       - name: use_alpha
         description: Whether to consider local directions in the similarity computation
         type: boolean
@@ -710,7 +711,7 @@ def compare_skeletons(request, project_id):
         target_meta = json.loads(target_meta)
 
     # Other parameters
-    normalized = request.POST.get('normalized', 'raw')
+    normalized = request.POST.get('normalized', 'mean')
     use_alpha = get_request_bool(request.POST, 'use_alpha', False)
 
     with transaction.atomic():
@@ -756,7 +757,7 @@ def compare_skeletons(request, project_id):
 
     return JsonResponse({
         'task_id': task.task_id,
-        'similarity': serialize_similarity(similarity)
+        'similarity': serialize_similarity(similarity),
     })
 
 

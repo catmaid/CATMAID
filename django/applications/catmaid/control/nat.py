@@ -546,6 +546,9 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
             rdomc.registerDoMC(settings.MAX_PARALLEL_ASYNC_WORKERS)
             nblast_params['.parallel'] = True
 
+        effective_query_object_ids = query_object_ids
+        effective_target_object_ids = target_object_ids
+
         # Query objects
         if query_type == 'skeleton':
             logger.debug('Fetching query skeletons')
@@ -576,6 +579,9 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
                 pointclouds.append(point_data)
 
             query_objects = rnat.as_neuronlist(pointclouds)
+            effective_query_object_ids = list(map(
+                    lambda x: "pointcloud-{}".format(x), query_object_ids))
+            query_objects.names = robjects.StrVector(effective_query_object_ids)
 
             logger.debug('Computing query pointcloud stats')
             query_dps = rnat.dotprops(query_objects.ro / 1e3, **{
@@ -595,6 +601,9 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
                 pointsets.append(point_data)
 
             query_objects = rnat.as_neuronlist(pointsets)
+            effective_query_object_ids = list(map(
+                    lambda x: "pointset-{}".format(x), query_object_ids))
+            query_objects.names = robjects.StrVector(effective_query_object_ids)
 
             logger.debug('Computing query pointset stats')
             query_dps = rnat.dotprops(query_objects.ro / 1e3, **{
@@ -637,6 +646,9 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
                 pointclouds.append(point_data)
 
             target_objects = rnat.as_neuronlist(pointclouds)
+            effective_target_object_ids = list(map(
+                    lambda x: "pointcloud-{}".format(x), target_object_ids))
+            target_objects.names = robjects.StrVector(effective_target_object_ids)
 
             logger.debug('Computing target pointcloud stats')
             target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
@@ -645,7 +657,7 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
                         '.progress': 'none',
                         'OmitFailures': omit_failures,
                     })
-        elif query_type == 'pointset':
+        elif target_type == 'pointset':
             logger.debug('Fetching target point sets')
             pointsets = []
             for psid in target_object_ids:
@@ -653,9 +665,13 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
                 n_points = len(target_pointset.points) / 3
                 point_data = Matrix(robjects.FloatVector(target_pointset.points),
                         nrow=n_points, byrow=True)
+                dataframe.append(psid)
                 pointsets.append(point_data)
 
             target_objects = rnat.as_neuronlist(pointsets)
+            effective_target_object_ids =list(map(
+                    lambda x: "pointset-{}".format(x), target_object_ids))
+            target_objects.names = robjects.StrVector(effective_target_object_ids)
 
             logger.debug('Computing target pointset stats')
             target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
@@ -692,15 +708,13 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
         nblast_params['normalised'] = normalize_initial_score
 
         if normalized == 'mean':
-            # The scoring matrix needs to include the reverse scores as well, we
-            # therefore need an all-by-all scoring matrix for all query/target
-            # objects.
-            all_obj_dps = query_dps + target_dps
-            scores = rnblast.NeuriteBlast(all_obj_dps, all_obj_dps, **nblast_params)
-            scores = rnblast.sub_score_mat(query_object_ids, target_object_ids, **{
-                'scoremat': scores,
-                'normalisation': 'mean',
-            })
+            all_objects = robjects.r.c(query_dps, target_dps)
+            all_scores = rnblast.NeuriteBlast(all_objects, all_objects, **nblast_params)
+            scores = rnblast.sub_score_mat(effective_query_object_ids,
+                    effective_target_object_ids, **{
+                        'scoremat': all_scores,
+                        'normalisation': 'mean',
+                    })
         else:
             scores = rnblast.NeuriteBlast(query_dps, target_dps, **nblast_params)
 

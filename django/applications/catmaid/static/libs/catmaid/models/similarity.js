@@ -99,8 +99,11 @@
    * @param queryType  {String}   (optional) Type of query IDs, 'skeleton' or 'pointcloud'.
    * @param targetType {String}   (optional) Type of target IDs, 'skeleton' or 'pointcloud'.
    * @param name       {String}   The name of the query.
-   * @param normaized  {Boolean}  (optional) Whether to divide scores by self-match score.
-   *                              Default: false.
+   * @param normaized  {String}   (optional) Whether scores should be left
+   *                              untouched ('raw'), should be normalized by
+   *                              self-match ('normalized') or replaced with
+   *                              their normalized mean with the normalized
+   *                              reverse score ('mean'). Default is 'mean'.
    * @param useAlpha   {Boolean}  (optional) Whether to consider local directions in the
    *                              similarity calulation. Default: false.
    * @param queryMeta  {Object}   (optional) Data that represents query objects in more detail.

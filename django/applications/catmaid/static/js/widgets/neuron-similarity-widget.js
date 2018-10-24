@@ -464,7 +464,7 @@
         let configId = null;
         let queryType = 'skeleton';
         let targetType = 'skeleton';
-        let normalizedScores = false;
+        let normalizedScores = 'mean';
         let useAlpha = false;
 
         widget.updateDisplayTransformationCache();
@@ -654,12 +654,17 @@
             targetSelect.querySelector('select').disabled = true;
           },
         }, {
-          type: 'checkbox',
-          label: 'Normailized',
-          title: 'Whether to divide scores by the self-match score.',
+          type: 'select',
+          label: 'Normailization',
+          title: 'Scoring values can be normalized either by the self match-score or the mean with the reverse score.',
           value: normalizedScores,
-          onclick: function() {
-            normalizedScores = this.checked;
+          entries: [
+            {title: 'None', value: 'raw'},
+            {title: 'Self-match', value: 'normalize'},
+            {title: 'Mean', value: 'mean'},
+          ],
+          onchange: function() {
+            normalizedScores = this.value;
           },
         }, {
           type: 'checkbox',
@@ -796,8 +801,7 @@
                 .then(function() {
                   return CATMAID.Similarity.computeSimilarity(project.id, configId,
                       queryIds, targetIds, effectiveQueryType, effectiveTargetType,
-                      newQueryName, normalizedScores ? 'normalized' : 'raw', useAlpha,
-                      queryMeta, targetMeta);
+                      newQueryName, normalizedScores, useAlpha, queryMeta, targetMeta);
                 })
                 .then(function(response) {
                   widget.lastSimilarityQuery = response;
@@ -912,7 +916,14 @@
               searchable: true,
               orderable: true,
               render: function(data, type, row, meta) {
-                return data === 'raw' ? "No" : "Yes";
+                if (data === 'raw') {
+                  return 'None';
+                } else if (data === 'normalized') {
+                  return 'Self-match';
+                } else if (data === 'mean') {
+                  return 'Mean';
+                }
+                return 'Unknown: ' + data;
               }
             }, {
               data: "query_objects",

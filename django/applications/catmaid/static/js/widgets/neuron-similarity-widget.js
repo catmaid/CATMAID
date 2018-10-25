@@ -660,7 +660,7 @@
           value: normalizedScores,
           entries: [
             {title: 'None', value: 'raw'},
-            {title: 'Self-match', value: 'normalize'},
+            {title: 'Self-match', value: 'normalized'},
             {title: 'Mean', value: 'mean'},
           ],
           onchange: function() {

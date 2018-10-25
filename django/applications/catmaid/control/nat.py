@@ -546,6 +546,11 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
             rdomc.registerDoMC(settings.MAX_PARALLEL_ASYNC_WORKERS)
             nblast_params['.parallel'] = True
 
+        # If both query and target IDs are of the same type, the target list of
+        # object IDs can't contain any of the query IDs.
+        if query_type == target_type:
+            target_object_ids = list(set(target_object_ids) - set(query_object_ids))
+
         effective_query_object_ids = query_object_ids
         effective_target_object_ids = target_object_ids
 

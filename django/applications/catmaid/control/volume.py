@@ -7,6 +7,7 @@ from xml.etree import ElementTree as ET
 
 from django.conf import settings
 
+from catmaid.control.annotation import get_annotated_entities
 from catmaid.control.authentication import requires_user_role, user_can_edit
 from catmaid.control.common import get_request_list
 from catmaid.models import UserRole, Project, Volume
@@ -803,20 +804,71 @@ def get_primary_volumes_by_name(project_id):
     return volume
 
 
-def make_volume_bb(project_id):
-    """Helper function - Directly copied from within the get_volume_details
-    functions - just wrapped it in a for loop so that it would include
-    information on all relevant neuropils.
+def find_volumes(project_id, annotation=None,
+        transitive_annotation=True):
+    """Find volumes in the passed in project, optionally require a particular
+    annotation. If <transitive_annotation> is True, volumes that are
+    transitively annotated by the passed in annotation are considered too.
     """
-    myTupList = []
-    v = get_primary_volumes_by_name(project_id)
-    for volume in v:
+    extra_joins = []
+    extra_where = []
+    extra_params = {}
+
+    if annotation:
+        query_params = {
+            'annotated_with': [annotation],
+            'sub_annotated_with': [annotation],
+            'annotation_reference': 'name',
+        }
+        query_result = get_annotated_entities(project_id, query_params,
+                allowed_classes=['volume'], with_annotations=False,
+                with_skeletons=False)
+        candidate_volume_ci_ids = [ci['id'] for ci in query_result['entities']]
+
+        extra_params['candidate_volume_ids'] = candidate_volume_ids
+
+        extra_joins.append("""
+            JOIN volume_class_instance vci
+                ON vci.volume_id = v.id
+            JOIN UNNEST(%(candidate_volume_ids)s::bigint[]) candidate(id)
+                ON candidate.id = vci.class_instance_id
+        """)
+
+        extra_wheres.append("""
+            AND vci.relation_id = (
+                SELECT id
+                FROM relation
+                WHERE project_id = %(project_id)s
+                    AND relation_name = 'model_of'
+            )
+        """)
+
+    params = {
+        'project_id': project_id,
+    }
+    params.update(extra_params)
+
+    cursor = connection.cursor()
+    cursor.execute('''
+        SELECT id, project_id, name, comment, user_id, editor_id, creation_time,
+            edition_time, Box3D(geometry), ST_Asx3D(geometry)
+        FROM catmaid_volume v
+        {extra_joins}
+        WHERE v.project_id= %(project_id)s
+        {extra_where}
+    '''.format(**{
+       'extra_joins': '\n'.join(extra_joins),
+       'extra_where': '\n'.join(extra_where),
+    }), params)
+
+    volume_details = []
+    for volume in cursor.fetchall():
         # Parse bounding box into dictionary, coming in format "BOX3D(0 0 0,1 1 1)"
         bbox_matches = re.search(bbox_re, volume[8])
         if not bbox_matches or len(bbox_matches.groups()) != 6:
             raise ValueError("Couldn't create bounding box for geometry")
         bbox = list(map(float, bbox_matches.groups()))
-        myTuple = {
+        volume_details.append({
             'id': volume[0],
             'project_id': volume[1],
             'name': volume[2],
@@ -830,151 +882,153 @@ def make_volume_bb(project_id):
                 'max': {'x': bbox[3], 'y': bbox[4], 'z': bbox[5]}
             },
             'mesh': volume[9]
-        }
-        myTupList.append(myTuple)
-    return myTupList
+        })
 
-
-def get_bb_intersections(project_id):
-    """Helper function that returns paramSet - a dictionary of dictionaries as:
-    {'volume name' : {'project_id':int,'minx':float, 'miny':float, 'minz':float,
-    'maxx':float, 'maxy':float, 'maxz':float, 'halfzdiff':float, 'min_nodes':
-    int, 'min_cable':int}}
-    """
-    volumeSet = make_volume_bb(project_id)
-    paramSet = {}
-    for volume in volumeSet:
-        params = {
-            'project_id': project_id
-        }
-        bbmin, bbmax = volume['bbox']['min'], volume['bbox']['max']
-        params['minx'] = bbmin['x']
-        params['miny'] = bbmin['y']
-        params['minz'] = bbmin['z']
-        params['maxx'] = bbmax['x']
-        params['maxy'] = bbmax['y']
-        params['maxz'] = bbmax['z']
-
-        params['halfzdiff'] = abs(params['maxz'] - params['minz']) * 0.5
-        params['halfz'] = params['minz'] + (params['maxz'] - params['minz']) * 0.5
-        params['min_nodes'] = 1 #int(data.get('min_nodes', 0))
-        params['min_cable'] = 1 #int(data.get('min_cable', 0))
-       #params['skeleton_ids'] = get_request_list(data, 'skeleton_ids', map_fn=int)
-        paramSet[volume['name']] = params
-
-    return paramSet
-
+    return volume_details
 
 
 @api_view(['GET', 'POST'])
 @requires_user_role(UserRole.Browse)
-def get_skeleton_innervations(skeleton_ids, project_id):
+def get_skeleton_innervations(request, project_id):
     """Test environment only contains two skeletons - based on that, sql query
     always returns list of all SKIDs but all data (about both skeletons) is
     contained in the first SKID in the list - if this changes, write an else
     statement for: len(cleanResults) >1.
     ---
     parameters:
+        - name: project_id
+          required: true
+          description: The project to operate in
+          type: integer
+          paramType: path
         - name: skeleton_ids
-          required: True
-          type: array [int]
-          paramType: Form
-        - name: paramSet
-          required: True
-          type: dict
-          paramType: functionCall
+          description: Constrain results to these skeletons
+          required: false
+          type: array
+          items:
+            type: integer
+          paramType: form
+        - name: annotation
+          description: An annotation potential target volumes need to have
+          type: string
+          required: false
+        - name: min_nodes
+          description: A minimum number of nodes result skeleton need to have.
+          required: false
+          type: boolean
+        - name: min_cable
+          description: A minimum number of cable length esult skeleton need to have.
+          required: false
+          type: boolean
     """
-    paramSet = get_bb_intersections(skeleton_ids)
-    
-    skelVols = {}
-    myResults = {}
-    for i in skeleton_ids:
-        myResults[str(i)] = {}
-        skelVols[str(i)] = []
+    skeleton_ids = get_request_list(request.POST, 'skeleton_ids', map_fn=int)
+    volume_annotation = request.POST.get('annotation')
+    min_nodes = request.POST.get('min_nodes')
+    if min_nodes:
+        min_nodes = int(min_nodes)
+    min_cable = request.POST.get('min_cable')
+    if min_cable:
+        min_cable = int(min_cable)
 
-    for params in paramSet:
-        extra_where = []
-        extra_joins = []
+    volume_intersections = _get_skeleton_innervations(project_id, skeleton_ids,
+            volume_annotation, min_nodes, min_cable)
+
+    return JsonResponse(volume_intersections)
 
 
-        paramSet[params]['skeleton_ids'] = skeleton_ids
-        needs_summary = paramSet[params]['min_nodes'] > 0 or paramSet[params]['min_cable'] > 0
+def _get_skeleton_innervations(project_id, skeleton_ids, volume_annotation,
+        min_nodes=None, min_cable=None):
+    # Build an intersection query for each volume bounding box with the passed
+    # in set of skeletons.
+    query_parts = []
+    query_params = {
+        'project_id': project_id,
+    }
+    for volume in find_volumes(project_id, volume_annotation):
+        param_prefix = 'v{}-'.format(volume['id'])
+        query_parts.append("""
+            SELECT DISTINCT %({prefix}volume_id)s, t.skeleton_id
+            FROM treenode t
+            JOIN (
+                SELECT te.id
+                FROM treenode_edge te
+                WHERE te.edge &&& ST_MakeLine(ARRAY[
+                    ST_MakePoint(%({prefix}left)s, %({prefix}bottom)s, %({prefix}z2)s),
+                    ST_MakePoint(%({prefix}right)s, %({prefix}top)s, %({prefix}z1)s)] ::geometry[])
+                AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+                    ST_MakePoint(%({prefix}left)s,  %({prefix}top)s,    %({prefix}halfz)s),
+                    ST_MakePoint(%({prefix}right)s, %({prefix}top)s,    %({prefix}halfz)s),
+                    ST_MakePoint(%({prefix}right)s, %({prefix}bottom)s, %({prefix}halfz)s),
+                    ST_MakePoint(%({prefix}left)s,  %({prefix}bottom)s, %({prefix}halfz)s),
+                    ST_MakePoint(%({prefix}left)s,  %({prefix}top)s,    %({prefix}halfz)s)]::geometry[])),
+                    %({prefix}halfzdiff)s)
+                AND te.project_id = %(project_id)s
+            ) intersection(id)
+                ON intersection.id = t.id
+        """.format(prefix=param_prefix))
+        bb = volume['bbox']
+        new_params = {}
+        new_params[param_prefix + 'volume_id'] = volume['id']
+        new_params[param_prefix + 'left'] = bb['min']['x']
+        new_params[param_prefix + 'right'] = bb['max']['x']
+        new_params[param_prefix + 'top'] = bb['min']['y']
+        new_params[param_prefix + 'bottom'] = bb['max']['y']
+        new_params[param_prefix + 'z1'] = bb['min']['z']
+        new_params[param_prefix + 'z2'] = bb['max']['z']
+        new_params[param_prefix + 'halfz'] = bb['min']['z'] + (bb['max']['z'] - bb['min']['z']) * 0.5
+        new_params[param_prefix + 'halfzdiff'] = abs(bb['max']['z'] - bb['min']['z']) * 0.5
+        query_params.update(new_params)
 
-        #extra_joins.append(skeletonIDs)
-        if paramSet[params]['min_nodes'] > 1:
-            extra_where.append("""
-                css.num_nodes >= %(min_nodes)s
-            """)
-        if needs_summary:
-            extra_joins.append("""
-                JOIN catmaid_skeleton_summary css
-                    ON css.skeleton_id = skeleton.id
-            """)
-        if paramSet[params]['min_cable'] > 0:
-            extra_where.append("""
-                css.cable_length >= %(min_cable)s
-            """)
-        if skeleton_ids:
-            extra_joins.append("""
-                        JOIN UNNEST(%(skeleton_ids)s::int[]) query_skeleton(id)
-                            ON query_skeleton.id = skeleton.id
-                    """)
-        node_query = """
-                    SELECT DISTINCT t.skeleton_id
-                    FROM (
-                      SELECT te.id, te.edge
-                        FROM treenode_edge te
-                        WHERE floatrange(ST_ZMin(te.edge),
-                             ST_ZMax(te.edge), '[]') && floatrange(%(minz)s, %(maxz)s, '[)')
-                          AND te.project_id = %(project_id)s
-                      ) e
-                      JOIN treenode t
-                        ON t.id = e.id
-                      WHERE e.edge && ST_MakeEnvelope(%(minx)s, %(miny)s, %(maxx)s, %(maxy)s)
-                        AND ST_3DDWithin(e.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
-                            ST_MakePoint(%(minx)s, %(miny)s, %(halfz)s),
-                            ST_MakePoint(%(maxx)s, %(miny)s, %(halfz)s),
-                            ST_MakePoint(%(maxx)s, %(maxy)s, %(halfz)s),
-                            ST_MakePoint(%(minx)s, %(maxy)s, %(halfz)s),
-                            ST_MakePoint(%(minx)s, %(miny)s, %(halfz)s)]::geometry[])),
-                            %(halfzdiff)s)
-                """
-        if extra_where:
-            extra_where = 'WHERE ' + '\nAND '.join(extra_where)
-        else:
-            extra_where = ''
-        query = """
-            SELECT skeleton.id
+    # It is possible to provide extra constraints, based on node count, length
+    # and skeleton IDs.
+    extra_where = []
+    extra_joins = []
+
+    needs_summary = min_nodes or min_cable
+
+    if needs_summary:
+        extra_joins.append("""
+            JOIN catmaid_skeleton_summary css
+                ON css.skeleton_id = skeleton.id
+        """)
+    if min_nodes:
+        extra_where.append("""
+            css.num_nodes >= %(min_nodes)s
+        """)
+        query_params['min_nodes'] = min_nodes
+    if min_cable:
+        extra_where.append("""
+            css.cable_length >= %(min_cable)s
+        """)
+        query_params['min_cable'] = min_cable
+    if skeleton_ids:
+        extra_joins.append("""
+            JOIN UNNEST(%(skeleton_ids)s::bigint[]) query_skeleton(id)
+                ON query_skeleton.id = skeleton.id
+        """)
+        query_params['skeleton_ids'] = skeleton_ids
+
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT volume_id, skeleton_id
+        FROM (
+            SELECT DISTINCT volume_id, skeleton_id
             FROM (
-                {node_query}
-            ) skeleton(id)
-            {extra_joins}
-            {extra_where}
-        """.format(**{
-            'extra_joins': '\n'.join(extra_joins),
-            'extra_where': extra_where,
-            'node_query': node_query,
-        })
-        cursor = connection.cursor()
-        cursor.execute(query, paramSet[params])
-        for i in myResults:
-            myResults[i][params] = cursor.fetchall()
+            {bb_queries}
+            ) vi(volume_id, skeleton_id)
+        ) volume_intersection(volume_id, skeleton_id)
+        {extra_joins}
+        {extra_where}
+    """.format(**{
+        'bb_queries': '\nUNION ALL\n'.join(query_parts),
+        'extra_joins': '\n'.join(extra_joins),
+        'extra_where': '\n'.join(extra_where),
+    }), query_params)
 
-    cleanedResults = {}
-    for i in myResults:
-        for item in myResults[i]:
-            if len(myResults[i][item]) >= 1:
-                cleanedResults[i] = myResults[i]
-                break
-    if(len(cleanedResults)) == 1:
-        cleanedResults = cleanedResults[list(cleanedResults.keys())[0]]
-        cleanResults = {}
-        for bb in cleanedResults:
-            if len(cleanedResults[bb]) >0:
-                cleanResults[bb] = cleanedResults[bb]
-                for tup in cleanResults[bb]:
-                    skelVols[str(tup[0])].append(bb)
+    # For each skeleton, collect a list volumes of which the bounding box was
+    # intersected.
+    skeleton_intersections = defaultdict(list)
+    for volume_id, skeleton_id in cursor.fetchall():
+        skeleton_intersections[skeleton_id].append(volume_id)
 
-    #insert else statement here if data returned does not match test environment                
-         
-    return skelVols
+    return skeleton_intersections

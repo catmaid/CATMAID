@@ -35,8 +35,12 @@ included in this changelog.
   Export a particular volume. Currentl only exports AS STL are supported.
 
 - `GET /{projec_id}/stats/cable-length`:
-  GET the top N largest skeletons. N can be specified using the 'n_skeletons'
+  Get the top N largest skeletons. N can be specified using the 'n_skeletons'
   parameter.
+
+- `POST /{project_id}/volumes/skeleton-innervations`:
+  Get a list of all volume/skeleton combinations that intersect. This can be
+  constrained by volume annotation, skeleton IDs, cable length and node count.
 
 ### Modifications
 

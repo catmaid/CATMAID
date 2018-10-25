@@ -112,12 +112,15 @@
    * @param targetMeta {Object}   (optional) Data that represents target objects in more detail.
    *                              Used with type 'transformed-skeleton' and maps skeleton IDs
    *                              to their transformed data.
+   * @param removeTargetDuplicates {Boolean} (optional) Whether to remove all
+   *                              target objects from a query that are also part
+   *                              of the query. Default: true.
    *
    * @returns {Promise} Resolves once the similarity query is queued.
    */
   Similarity.computeSimilarity = function(projectId, configId, queryIds,
       targetIds, queryType, targetType, name, normalized, useAlpha,
-      queryMeta, targetMeta) {
+      queryMeta, targetMeta, removeTargetDuplicates) {
     return CATMAID.fetch(projectId + '/similarity/queries/similarity', 'POST', {
       'query_ids': queryIds,
       'target_ids': targetIds,
@@ -129,6 +132,7 @@
       'name': name,
       'normalized': normalized,
       'use_alpha': useAlpha,
+      'remove_target_duplicates': removeTargetDuplicates,
     });
   };
 

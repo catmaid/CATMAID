@@ -466,6 +466,7 @@
         let targetType = 'skeleton';
         let normalizedScores = 'mean';
         let useAlpha = false;
+        let removeTargetDuplicates = true;
 
         widget.updateDisplayTransformationCache();
 
@@ -654,6 +655,14 @@
             targetSelect.querySelector('select').disabled = true;
           },
         }, {
+          type: 'checkbox',
+          label: 'No self-matches',
+          title: 'If enabled, the target list will be cleaned of all query objects',
+          value: removeTargetDuplicates,
+          onclick: function() {
+            removeTargetDuplicates = this.checked;
+          },
+        }, {
           type: 'select',
           label: 'Normailization',
           title: 'Scoring values can be normalized either by the self match-score or the mean with the reverse score.',
@@ -801,7 +810,8 @@
                 .then(function() {
                   return CATMAID.Similarity.computeSimilarity(project.id, configId,
                       queryIds, targetIds, effectiveQueryType, effectiveTargetType,
-                      newQueryName, normalizedScores, useAlpha, queryMeta, targetMeta);
+                      newQueryName, normalizedScores, useAlpha, queryMeta, targetMeta,
+                      removeTargetDuplicates);
                 })
                 .then(function(response) {
                   widget.lastSimilarityQuery = response;

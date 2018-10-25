@@ -522,7 +522,7 @@ def compute_nblast_config(config_id, user_id):
 
 
 @task()
-def compute_nblast(project_id, user_id, similarity_id):
+def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates):
     try:
         with transaction.atomic():
             similarity = NblastSimilarity.objects.select_related('config').get(
@@ -546,7 +546,8 @@ def compute_nblast(project_id, user_id, similarity_id):
         scoring_info = nblast(project_id, config.id, query_object_ids,
                 target_object_ids, similarity.query_type_id,
                 similarity.target_type_id, normalized=similarity.normalized,
-                use_alpha=similarity.use_alpha)
+                use_alpha=similarity.use_alpha,
+                remove_target_duplicates=remove_target_duplicates)
 
         # Update config and samples
         if scoring_info.get('errors'):
@@ -656,6 +657,11 @@ def compare_skeletons(request, project_id):
         type: string
         paramType: form
         required: false
+      - name: remove_target_duplicates
+        description: Remove all target objects that appear also in the query.
+        type: boolean
+        required: false
+        defaultValue: true
     """
     name = request.POST.get('name', None)
     if not name:
@@ -713,6 +719,8 @@ def compare_skeletons(request, project_id):
     # Other parameters
     normalized = request.POST.get('normalized', 'mean')
     use_alpha = get_request_bool(request.POST, 'use_alpha', False)
+    remove_target_duplicates = get_request_bool(request.POST,
+            'remove_target_duplicates', True)
 
     with transaction.atomic():
         # In case of a pointset, new pointset model objects needs to be created
@@ -753,7 +761,8 @@ def compare_skeletons(request, project_id):
                 normalized=normalized, use_alpha=use_alpha)
         similarity.save()
 
-    task = compute_nblast.delay(project_id, request.user.id, similarity.id)
+    task = compute_nblast.delay(project_id, request.user.id, similarity.id,
+            remove_target_duplicates)
 
     return JsonResponse({
         'task_id': task.task_id,

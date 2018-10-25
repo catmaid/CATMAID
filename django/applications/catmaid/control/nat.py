@@ -495,7 +495,7 @@ def compute_all_by_all_skeleton_similarity(project_id, user_id,
 
 def nblast(project_id, config_id, query_object_ids, target_object_ids,
         query_type='skeleton', target_type='skeleton', omit_failures=True,
-        normalized='raw', use_alpha=False):
+        normalized='raw', use_alpha=False, remove_target_duplicates=True):
     """Create NBLAST score for forward similarity from query objects to target
     objects. Objects can either be pointclouds or skeletons, which has to be
     reflected in the respective type parameter. This is executing essentially
@@ -548,7 +548,7 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
 
         # If both query and target IDs are of the same type, the target list of
         # object IDs can't contain any of the query IDs.
-        if query_type == target_type:
+        if query_type == target_type and remove_target_duplicates:
             target_object_ids = list(set(target_object_ids) - set(query_object_ids))
 
         effective_query_object_ids = query_object_ids

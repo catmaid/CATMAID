@@ -5,6 +5,7 @@ import numpy as np
 from datetime import timedelta, datetime
 from dateutil import parser as dateparser
 import pytz
+import io
 
 from django.db import connection
 from django.http import HttpResponse
@@ -109,10 +110,9 @@ def plot_useranalytics(request, project_id):
 
     # Use raw text rather than SVG fonts or pathing.
     plt.rcParams['svg.fonttype'] = 'none'
-    canvas = FigureCanvasSVG(f)
-    response = HttpResponse(content_type='image/svg+xml')
-    canvas.print_svg(response)
-    return response
+    buf = io.BytesIO()
+    plt.savefig(buf, format='svg')
+    return HttpResponse(buf.getvalue(), content_type='image/svg+xml')
 
 def eventTimes(user_id, project_id, start_date, end_date, all_writes=True):
     """ Returns a tuple containing a list of tree node edition times, connector

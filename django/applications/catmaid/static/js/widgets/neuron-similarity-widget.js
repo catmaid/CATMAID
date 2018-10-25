@@ -690,6 +690,10 @@
           type: 'button',
           label: 'Compute similarity',
           onclick: function() {
+            if (configId === 'none') {
+              CATMAID.warn('No similarity configuration selected');
+              return;
+            }
             // If transformed skeletons are used as query or target, we need to
             // get all available landmark groups.
             let prepare = Promise.resolve();

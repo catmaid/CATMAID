@@ -137,7 +137,7 @@
      * Displays the widget open dialog.
      */
     OpenWidgetDialog.prototype.show = function() {
-      this.dialog.show('650', '380', true, undefined, this._onresize.bind(this));
+      this.dialog.show('700', '380', true, undefined, this._onresize.bind(this));
 
 			// Allow content to overflow the dialog borders. This is needed for
 			// displaying all annotation autocompletion options.

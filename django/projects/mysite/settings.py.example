@@ -96,3 +96,5 @@ STATIC_EXTENSION_ROOT = 'CATMAIDPATH/django/staticext'
 # Gives Django access to installed CATMAID extensions - do not change without good reason.
 # See https://catmaid.readthedocs.io/en/stable/extensions.html for more details
 INSTALLED_APPS += tuple('{}.apps.{}Config'.format(app_name, app_name.title()) for app_name in INSTALLED_EXTENSIONS)
+
+WEBPACK_LOADER['DEFAULT']['CACHE'] = not DEBUG

@@ -1,5 +1,6 @@
 {% load pipeline %}
 {% load common %}
+{% load render_bundle from webpack_loader %}
 
 <!DOCTYPE html>
 <html class="mod-no-js">
@@ -60,6 +61,8 @@
     {% for f in STATIC_EXTENSION_FILES %}
       <script type="text/javascript" src="{{ STATIC_EXTENSION_URL }}{{ f }}"></script>
     {% endfor %}
+
+    {% render_bundle 'main' %}
   </head>
 
   <body onload="CATMAID.initWebClient();" class="catmaid"><a></a>

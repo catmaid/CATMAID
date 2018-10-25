@@ -83,6 +83,7 @@ INSTALLED_APPS = (
     'pgcompat',
     'performancetests',
     'pipeline',
+    'webpack_loader',
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_swagger',
@@ -350,6 +351,16 @@ COMPRESSED_FILE_IDS = [key for key in pipelinefiles.JAVASCRIPT \
         and key not in COPY_ONLY_FILE_IDS]
 
 INSTALLED_EXTENSIONS = tuple(pipelinefiles.installed_extensions)
+
+WEBPACK_LOADER = {
+    'DEFAULT': {
+        'BUNDLE_DIR_NAME': 'js/webpack_bundles/', # must end with slash
+        'STATS_FILE': os.path.join(PROJECT_ROOT, 'applications', 'catmaid', 'webpack-stats.json'),
+        'POLL_INTERVAL': 0.1,
+        'TIMEOUT': None,
+        'IGNORE': ['.+\.hot-update.js', '.+\.map']
+    }
+}
 
 # Make Git based version of CATMAID available as a settings field
 VERSION = utils.get_version()

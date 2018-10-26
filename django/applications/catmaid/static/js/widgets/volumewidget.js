@@ -185,7 +185,10 @@
             },
             {data: "title"},
             {data: "id"},
-            {data: "comment"},
+            {
+              data: "comment",
+              width: "20%",
+            },
             {
               data: "annotations",
               render: function (data, type, row, meta) {
@@ -213,10 +216,11 @@
             {
               data: null,
               orderable: false,
-              defaultContent: '<a href="#" data-action="remove">Remove</a> ' +
-                  '<a href="#" data-action="list-skeletons">List skeletons</a> ' +
-                  '<a href="#" data-action="list-connectors">List connectors</a>' +
-                  '<a href="#" data-action="export-STL">Export STL</a>'
+              width: '15%',
+              defaultContent: '<ul class="resultTags"><li><a href="#" data-action="remove">Remove</a></li> ' +
+                  '<li><a href="#" data-action="list-skeletons">List skeletons</a></li> ' +
+                  '<li><a href="#" data-action="list-connectors">List connectors</a></li>' +
+                  '<li><a href="#" data-action="export-STL">Export STL</a></ul></ul>'
             }
           ],
         })

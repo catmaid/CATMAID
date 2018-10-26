@@ -1213,7 +1213,10 @@
     var nf = document.createElement('input');
     if (id) nf.setAttribute('id', id);
     nf.setAttribute('type', type);
-    nf.setAttribute('value', value);
+
+    if (value !== undefined) {
+      nf.setAttribute('value', value);
+    }
 
     if (attrs) {
       for (var a in attrs) {

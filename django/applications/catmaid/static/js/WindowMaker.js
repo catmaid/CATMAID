@@ -16,12 +16,15 @@ var WindowMaker = new function()
   // A serializer to stringify widget state.
   var stateSerializer = new CATMAID.JsonSerializer();
 
-  var createContainer = function(id) {
+  var createContainer = function(id, expandContent) {
     var container = document.createElement("div");
     if (id) {
       container.setAttribute("id", id);
     }
-    container.setAttribute("class", "windowContent");
+    container.classList.add("windowContent");
+    if (!expandContent) {
+      container.classList.add("padded-content");
+    }
     return container;
   };
 
@@ -308,7 +311,7 @@ var WindowMaker = new function()
     }
 
     // Create content, ID and createContent() are optional
-    var content = createContainer(config.contentID);
+    var content = createContainer(config.contentID, config.expandContent);
     if (config.class) {
       $(content).addClass(config.class);
     }
@@ -1648,7 +1651,8 @@ var WindowMaker = new function()
 
     $(bar).tabs();
 
-    var container = createContainer("view_in_3d_webgl_widget" + WA.widgetID);
+    var container = createContainer("view_in_3d_webgl_widget" + WA.widgetID, true);
+    container.classList.add('expand');
     content.appendChild(container);
 
     var canvas = document.createElement('div');
@@ -1790,7 +1794,7 @@ var WindowMaker = new function()
 
     content.appendChild(buttons);
 
-    var container = createContainer('connectivity_graph_plot_div' + GP.widgetID);
+    var container = createContainer('connectivity_graph_plot_div' + GP.widgetID, true);
     content.appendChild(container);
 
     var plot = document.createElement('div');
@@ -1981,7 +1985,7 @@ var WindowMaker = new function()
     content.style.backgroundColor = "#ffffff";
     addWindowConfigButton(win, NN);
 
-    var container = createContainer("neuron-navigator" + NN.widgetID);
+    var container = createContainer("neuron-navigator" + NN.widgetID, true);
     container.classList.add('navigator_widget');
 
     // Add container to DOM
@@ -2001,7 +2005,7 @@ var WindowMaker = new function()
   var createHtmlWindow = function (params) {
     var win = new CMWWindow(params.title);
     var content = win.getFrame();
-    var container = createContainer();
+    var container = createContainer(undefined, true);
     content.appendChild(container);
     content.style.backgroundColor = "#ffffff";
 

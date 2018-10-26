@@ -16,6 +16,7 @@
    */
   var ReconstructionSampler = function() {
     this.widgetID = this.registerInstance();
+    this.idPrefix = "reconstruction-sampler-" + this.widgetID;
 
     this.workflow = new CATMAID.Workflow({
       steps: [
@@ -56,10 +57,37 @@
       'interpolatableY': get(state.interpolatableY, project.interpolatableSections.y),
       'interpolatableZ': get(state.interpolatableZ, project.interpolatableSections.z),
       'binaryIntervalColors': get(state.binaryIntervalColors, true),
-      'leafHandling': get(state.leafHandling, 'ignore'),
+      'leafHandling': get(state.leafHandling, 'merge-or-create'),
+      'mergeLimit': get(state.mergeLimit, 0.2),
     };
     this.workflow.setState(this.state);
     this.workflow.selectStep(0);
+  };
+
+  /**
+   * Init state based on the current sampler user interface controls.
+   */
+  ReconstructionSampler.prototype.initFromUI = function() {
+    let state = {
+      'intervalLength': Number(document.getElementById(this.idPrefix + '-interval-length').value),
+      'intervalError': Number(document.getElementById(this.idPrefix + '-max-error').value),
+      'createIntervalBoundingNodes': document.getElementById(this.idPrefix + '-create-bounding-nodes').checked,
+      'reviewRequired': document.getElementById(this.idPrefix + '-review-required').checked,
+      'leafHandling': document.getElementById(this.idPrefix + '-leaf-handling').value,
+      'mergeLimit': Number(document.getElementById(this.idPrefix + '-merge-limit').value) / 100.0,
+    };
+    this.init(state);
+  };
+
+  ReconstructionSampler.prototype.setFromSampler = function(sampler) {
+    this.state['samplerId'] = sampler['id'];
+    this.state['skeletonId'] = sampler['skeleton_id'];
+    this.state['intervalLength'] = sampler['interval_length'];
+    this.state['intervalError'] = sampler['interval_error'];
+    this.state['createIntervalBoundingNodes'] = sampler['create_interval_boundaries'];
+    this.state['reviewRequired'] = sampler['review_required'];
+    this.state['leafHandling'] = sampler['leaf_segment_handling'];
+    this.state['mergeLimit'] = sampler['merge_limit'];
   };
 
   ReconstructionSampler.prototype.destroy = function() {
@@ -204,6 +232,20 @@
 
   BackboneWorkflowStep.prototype.createControls = function(widget) {
     var self = this;
+
+    var mergeLimitDisabled = widget.state['mergeLimit'] !== 'merge-or-create' &&
+        widget.state['mergeLimit'] !== 'merge';
+    var mocMergeLimit = CATMAID.DOM.createNumericField(undefined, 'Merge limit (%)',
+        'When the "Merge or create" or "Merge" leaf handling mode is selected, this ' +
+        'value can be used to limit to what percentage of the interval ' +
+        'length should be merged. A value of zero or 100 disables the limit ' +
+        'effectively.', Number(100 * widget.state['mergeLimit']).toFixed(0),
+        undefined, function() {
+          widget.state['mergeLimit'] = Number(this.value) / 100.0;
+        }, 4, mergeLimitDisabled, false, 1, 0, 100);
+    var mocMergeLimitInput = mocMergeLimit.querySelector('input');
+    mocMergeLimitInput.setAttribute('id', widget.idPrefix + '-merge-limit');
+
     return [
       {
         type: 'button',
@@ -211,7 +253,7 @@
         onclick: function() {
           var skeletonId = SkeletonAnnotations.getActiveSkeletonId();
           if (skeletonId) {
-            widget.init(widget.state);
+            widget.initFromUI();
             widget.state['skeletonId'] = skeletonId;
             widget.update();
           } else {
@@ -223,12 +265,13 @@
         type: 'button',
         label: 'New session',
         onclick: function() {
-          widget.init(self.state);
+          widget.initFromUI();
           widget.update();
           CATMAID.msg("Info", "Stared new sampler session");
         }
       },
       {
+        id: widget.idPrefix + '-interval-length',
         type: 'numeric',
         label: 'Interval length (nm)',
         title: 'Default length of intervals created in domains of this sampler',
@@ -239,6 +282,7 @@
         }
       },
       {
+        id: widget.idPrefix + '-max-error',
         type: 'numeric',
         label: 'Max error (nm)',
         title: 'If the interval error with existing nodes is bigger than this value and ' +
@@ -250,6 +294,7 @@
         }
       },
       {
+        id: widget.idPrefix + '-create-bounding-nodes',
         type: 'checkbox',
         label: 'Create bounding nodes',
         title: 'To match the interval length exactly, missing nodes can be created at respective locations.',
@@ -259,6 +304,7 @@
         }
       },
       {
+        id: widget.idPrefix + '-review-required',
         type: 'checkbox',
         label: 'Review required',
         title: 'Whether domains and intervals can only be completed if they are reviewed completely',
@@ -364,6 +410,7 @@
         }
       },
       {
+        id: widget.idPrefix + '-leaf-handling',
         type: 'select',
         label: 'Leaf handling',
         title: 'Select how leaf segments should be handled',
@@ -383,7 +430,13 @@
         }],
         onchange: function() {
           widget.state['leafHandling'] = this.value;
+          mocMergeLimitInput.disabled = this.value !== 'merge-or-create' &&
+              this.value !== 'merge';
         }
+      },
+      {
+        type: 'child',
+        element: mocMergeLimit
       },
       {
         type: 'button',
@@ -483,7 +536,7 @@
         {
           data: "id",
           title: "Id",
-          orderable: false,
+          orderable: true,
           class: "cm-center",
           render: function(data, type, row, meta) {
             return row.id;
@@ -537,6 +590,20 @@
         {data: "interval_error", title: "Max error", orderable: true, class: 'cm-center'},
         {data: "leaf_segment_handling", title: "Leaf handling", orderable: true, class: 'cm-center'},
         {
+          data: "merge_limit",
+          title: "Merge limit",
+          orderable: true,
+          class: "cm-center",
+          render: function(data, type, row, meta) {
+            if (row.leaf_segment_handling === 'merge-or-create' ||
+                row.leaf_segment_handling === 'merge') {
+              return Number(row.merge_limit).toFixed(2);
+            } else {
+              return '-';
+            }
+          }
+        },
+        {
           data: "create_interval_boundaries",
           title: "Create interval boundaries",
           orderable: true,
@@ -588,11 +655,7 @@
         var table = $(this).closest('table');
         var tr = $(this).closest('tr');
         var data =  $(table).DataTable().row(tr).data();
-
-        var samplerId = parseInt(this.dataset.samplerId, 10);
-
-        widget.state['skeletonId'] = data.skeleton_id;
-        widget.state['samplerId'] = data.id;
+        widget.setFromSampler(data);
         widget.workflow.advance();
         widget.update();
       }
@@ -615,9 +678,7 @@
       var table = $(this).closest('table');
       var tr = $(this).closest('tr');
       var data =  $(table).DataTable().row(tr).data();
-
-      widget.state['skeletonId'] = data.skeleton_id;
-      widget.state['samplerId'] = data.id;
+      widget.setFromSampler(data);
       widget.workflow.advance();
       widget.update();
     });
@@ -673,6 +734,11 @@
       CATMAID.warn("No valid leaf handling option found");
       return;
     }
+    var mergeLimit = widget.state['mergeLimit'];
+    if (!mergeLimit && mergeLimit !== 0.0) {
+      CATMAID.warn("No valid merge limit option found");
+      return;
+    }
 
     var arbor = widget.state['arbor'];
     // Get arbor if not already cached
@@ -713,6 +779,7 @@
             interval_length: intervalLength,
             interval_error: intervalError,
             leaf_segment_handling: leafHandling,
+            merge_limit: mergeLimit,
             domains: [fakeDomain]
           };
           let preferSmallerError = true;
@@ -731,7 +798,7 @@
           let intervalConfiguration = CATMAID.Sampling.intervalsFromModels(
             workParser.arbor, workParser.positions, fakeDomain, intervalLength,
             intervalError, preferSmallerError, createIntervalBoundingNodes,
-            leafHandling, true);
+            leafHandling, true, undefined, undefined, mergeLimit);
           let intervals = intervalConfiguration.intervals;
 
           // Show 3D viewer confirmation dialog
@@ -745,7 +812,8 @@
                 dialog.close();
               }
             },
-            shadingMethod: colorMethod,
+            colorMethod: colorMethod,
+            shadingMethod: 'sampler-domain',
             extraControls: [
               {
                 type: 'checkbox',
@@ -789,7 +857,7 @@
 
             // Set new shading and coloring methods
             glWidget.options.color_method = colorMethod;
-            glWidget.options.shading_method = 'sampler-intervals';
+            glWidget.options.shading_method = 'none';
             glWidget.options.interpolate_vertex_colots = false;
 
             // Look at center of mass of skeleton and update screen
@@ -834,6 +902,11 @@
       CATMAID.warn("Can't create sampler without leafHandling parameter");
       return;
     }
+    var mergeLimit = widget.state['mergeLimit'];
+    if (undefined === mergeLimit) {
+      CATMAID.warn("Can't create sampler without mergeLimit parameter");
+      return;
+    }
     CATMAID.fetch(project.id + '/samplers/add', 'POST', {
       skeleton_id: skeletonId,
       interval_length: intervalLength,
@@ -841,6 +914,7 @@
       create_interval_boundaries: createIntervalBoundingNodes,
       review_required: reviewRequired,
       leaf_segment_handling: leafHandling,
+      merge_limit: mergeLimit,
     }).then(function(result) {
       // TODO: Should probably go to next step immediately
       widget.update();
@@ -979,6 +1053,8 @@
     var table = document.createElement('table');
     content.appendChild(table);
 
+    var domainLengths = new Map();
+
     var datatable = $(table).DataTable({
       dom: "lrfhtip",
       autoWidth: false,
@@ -1009,7 +1085,7 @@
         {
           data: "id",
           title: "Id",
-          orderable: false,
+          orderable: true,
           class: "cm-center",
           render: function(data, type, row, meta) {
             return row.id;
@@ -1033,12 +1109,14 @@
           title: "Cable length (nm)",
           orderable: true,
           class: "cm-center",
+          type: "num",
           render: function(data, type, row, meta) {
             // Create arbor for domain and measure cable length
             let arbor = widget.state['arbor'];
             let domainArbor = CATMAID.Sampling.domainArbor(arbor.arbor, row.start_node_id,
                 row.ends.map(function(end) { return end.node_id; }));
             let l = Math.round(domainArbor.cableLength(arbor.positions));
+            domainLengths.set(row.id, l);
             return l < 1 ? '< 1' : l;
           }
         },
@@ -1110,6 +1188,7 @@
         var data =  $(table).DataTable().row(tr).data();
 
         widget.state['domain'] = data;
+        widget.state['domainLength'] = domainLengths.get(data.id);
         widget.workflow.advance();
         widget.update();
       }
@@ -1120,8 +1199,8 @@
       var table = $(this).closest('table');
       var tr = $(this).closest('tr');
       var data =  $(table).DataTable().row(tr).data();
-
       widget.state['domain'] = data;
+      widget.state['domainLength'] = domainLengths.get(data.id);
       widget.workflow.advance();
       widget.update();
     });
@@ -1291,7 +1370,7 @@
 
             // Set new shading and coloring methods
             widget.options.color_method = 'sampler-domains';
-            widget.options.shading_method = 'sampler-domains';
+            widget.options.shading_method = 'none';
             widget.options.interpolate_vertex_colots = false;
             widget.updateSkeletonColors()
               .then(function() { widget.render(); });
@@ -1358,13 +1437,19 @@
       onclick: function() {
         self.ignoreCompleted = this.checked;
       }
-    },
-    {
+    }, {
       type: 'button',
       label: 'Create intervals',
       title: 'Create a new set of intervals for the current domain',
       onclick: function() {
         self.createNewIntervals(widget);
+      }
+    }, {
+      type: 'button',
+      label: 'Uncovered domain parts',
+      title: 'Show information on domain parts that are not covered by intervals.',
+      onclick: function() {
+        self.showUncoveredDomainInfo(widget);
       }
     }, {
       type: 'button',
@@ -1385,6 +1470,8 @@
     var samplerId = widget.state['samplerId'];
     var skeletonId = widget.state['skeletonId'];
     var domain = widget.state['domain'];
+    var domainLength = widget.state['domainLength'];
+    var leafHandling = widget.state['leafHandling'];
 
     var p = content.appendChild(document.createElement('p'));
     p.appendChild(document.createTextNode('Each domain is sampled by intervals ' +
@@ -1410,10 +1497,24 @@
     var completedIntervalCable = '...';
     p3.appendChild(document.createTextNode(', Sampler: #' + samplerId +
         ', Domain: #' + domain.id + ', Interval length: ' + intervalLength +
-        'nm, Completed interval cable: '));
+        'nm, Leaf handling: ' + leafHandling));
+    p3.appendChild(document.createElement('br'));
+    p3.appendChild(document.createTextNode('Total interval cable: '));
+    var totalIntervalSpan = p3.appendChild(document.createElement('span'));
+    totalIntervalSpan.setAttribute('data-type', 'total-sum');
+    totalIntervalSpan.appendChild(document.createTextNode('...'));
+    p3.appendChild(document.createTextNode(' / '));
+    var totalRatioSpan = p3.appendChild(document.createElement('span'));
+    totalRatioSpan.setAttribute('data-type', 'total-ratio');
+    totalRatioSpan.appendChild(document.createTextNode('...'));
+    p3.appendChild(document.createTextNode(', Completed interval cable: '));
     var completedIntervalSpan = p3.appendChild(document.createElement('span'));
     completedIntervalSpan.setAttribute('data-type', 'completed-sum');
     completedIntervalSpan.appendChild(document.createTextNode('...'));
+    p3.appendChild(document.createTextNode(' / '));
+    var completedRatioSpan = p3.appendChild(document.createElement('span'));
+    completedRatioSpan.setAttribute('data-type', 'completed-ratio');
+    completedRatioSpan.appendChild(document.createTextNode('...'));
 
     // Create a data table with all available domains or a filtered set
     var table = document.createElement('table');
@@ -1454,21 +1555,35 @@
                 // Update cable length map and find completed sum
                 cableMap.clear();
                 var completedSum = 0;
+                var totalSum = 0;
                 for (let i=0; i<result.length; ++i) {
                   let interval = result[i];
                   let arbor = widget.state['arbor'];
                   let intervalLength = arbor.arbor.cableLengthBetweenNodes(arbor.positions,
                     interval.start_node_id, interval.end_node_id, true);
                   cableMap.set(interval.id, intervalLength);
+                  totalSum += intervalLength;
                   if (interval.state_id === completedStateId) {
                     completedSum += intervalLength;
                   }
                 }
 
-                // Update interval length span element
+                var totalRatio = 100.0 * totalSum / domainLength;
+                var completedRatio = 100.0 * completedSum / domainLength;
+
+                // Update interval length span elements
+                $(totalIntervalSpan).empty();
+                totalIntervalSpan.appendChild(document.createTextNode(
+                    Math.round(totalSum) + 'nm'));
+                $(totalRatioSpan).empty();
+                totalRatioSpan.appendChild(document.createTextNode(
+                    Number(totalRatio).toFixed(2) + '%'));
                 $(completedIntervalSpan).empty();
                 completedIntervalSpan.appendChild(document.createTextNode(
                     Math.round(completedSum) + 'nm'));
+                $(completedRatioSpan).empty();
+                completedRatioSpan.appendChild(document.createTextNode(
+                    Number(completedRatio).toFixed(2) + '%'));
               })
               .then(callback.bind(window, {
                 draw: data.draw,
@@ -1482,7 +1597,7 @@
         {
           data: "id",
           title: "Id",
-          orderable: false,
+          orderable: true,
           class: "cm-center",
           render: function(data, type, row, meta) {
             return row.id;
@@ -1520,6 +1635,7 @@
           title: "Cable length (nm)",
           orderable: true,
           class: "cm-center",
+          type: "num",
           render: function(data, type, row, meta) {
             // Create arbor for domain and measure cable length
             if (cableMap.has(row.id)) {
@@ -1690,6 +1806,11 @@
       CATMAID.warn("No valid leaf handling parameter found");
       return;
     }
+    var mergeLimit = widget.state['mergeLimit'];
+    if (!mergeLimit && mergeLimit !== 0.0) {
+      CATMAID.warn("No valid merge limit parameter found");
+      return;
+    }
 
     var arbor = widget.state['arbor'];
     // Get arbor if not already cached
@@ -1736,7 +1857,8 @@
         return CATMAID.Sampling.intervalsFromModels(workParser.arbor,
             workParser.positions, domainDetails, intervalLength,
             intervalError, preferSmallerError,
-            createIntervalBoundingNodes, leafHandling, true, false, interpolatedNodes);
+            createIntervalBoundingNodes, leafHandling, true, false,
+            interpolatedNodes, mergeLimit);
       })
       .then(function(intervalConfiguration) {
         return new Promise(function(resolve, reject) {
@@ -1750,7 +1872,8 @@
                 intervalLength + "nm each, " + intervalConfiguration.addedNodes.length +
                 " new nodes are created to match intervals",
             showControlPanel: false,
-            shadingMethod: colorMethod,
+            colorMethod: colorMethod,
+            shadingMethod: 'sampler-domain',
             extraControls: [
               {
                 type: 'checkbox',
@@ -1806,8 +1929,11 @@
             glWidget.options.shading_method = 'sampler-domains';
             glWidget.options.interpolate_vertex_colots = false;
 
-            // Make sure only the active domain is visible
-            glWidget.options.allowed_sampler_domains = new Set([activeDomainId]);
+            // Make sure only the active domain is visible fully and other
+            // parts of the skeleton only a little.
+            glWidget.options.sampler_domain_shading_other_weight = 0.2;
+            glWidget.options.allowed_sampler_domain_ids.length = 0;
+            glWidget.options.allowed_sampler_domain_ids.push(activeDomainId);
 
             glWidget.updateSkeletonColors()
               .then(function() { glWidget.render(); });
@@ -1911,6 +2037,211 @@
         widget.update();
       });
   };
+
+  /**
+   * Compute a historgram on the length of all segments of a skeleton that part
+   * of a domain, but not part of an interval. It is assumed that the first
+   * interval starts at the domain start node.
+   */
+  IntervalWorkflowStep.prototype.showUncoveredDomainInfo = function(widget) {
+    let domainIntervals = widget.state['domainIntervals'];
+    if (!domainIntervals) {
+      CATMAID.warn("Please wait until intervals are loaded");
+      return;
+    }
+
+    let skeletonId = widget.state['skeletonId'];
+    if (!skeletonId) {
+      throw new CATMAID.ValueError("Need skeleton ID for interval review");
+    }
+    let arbor = widget.state['arbor'];
+    if (!arbor) {
+      CATMAID.warn("Need domain for synapse workflow step");
+      return;
+    }
+    let domain = widget.state['domain'];
+    if (domain === undefined) {
+      CATMAID.warn("Need domain for synapse workflow step");
+      return;
+    }
+    let intervalLength = widget.state['intervalLength'];
+    if (!intervalLength) {
+      CATMAID.warn("No valid interval length found");
+      return;
+    }
+    let intervalError = widget.state['intervalError'];
+    if (!intervalError && intervalError !== 0) {
+      CATMAID.warn("No valid interval error value found");
+      return;
+    }
+    let leafHandling = widget.state['leafHandling'];
+    if (!leafHandling) {
+      CATMAID.warn("No valid leaf handling option found");
+      return;
+    }
+    let mergeLimit = widget.state['mergeLimit'];
+    if (!mergeLimit && mergeLimit != 0.0) {
+      CATMAID.warn("No valid merge limit option found");
+      return;
+    }
+
+    let domainListIntervals = domainIntervals.map(function(i) {
+      // [intervalId, startNodeId, endNodeId
+      return [i.id, i.start_node_id, i.end_node_id];
+    });
+
+    var intervalMap = {};
+    CATMAID.Sampling.updateIntervalMap(arbor.arbor, domainListIntervals,
+        intervalMap, domain.start_node_id);
+
+    // Get domain arbor
+    let domainArbor = CATMAID.Sampling.domainArborFromModel(arbor.arbor, domain);
+    let successors = domainArbor.allSuccessors();
+    let workingSet = [[domain.start_node_id, null]];
+    let domainEnds = domain.ends.reduce(function(o, e) {
+      o[e.node_id] = true;
+      return o;
+    }, {});
+
+    let positions = arbor.positions;
+    let intervalFragments = [];
+    let currentFragment = null;
+    let leafFragmentLengths = {};
+    while (workingSet.length > 0) {
+      let currentNodeInfo = workingSet.shift();
+      let currentNodeId = currentNodeInfo[0];
+      let lastNodeId = currentNodeInfo[1];
+      let currentFragmentId = currentNodeInfo[2];
+
+      let intervalId = intervalMap[currentNodeId];
+      if (currentNodeId != domain.start_node_id &&
+          (intervalId === undefined || intervalId === null)) {
+        // This node is part of the domain, but part of no interval. This
+        // should only happen at the end of branches. While we don't have to
+        // expect more valid intervals on this branch, continue traversal for
+        // the sake of robustness.
+        if (!currentFragmentId && currentFragmentId !== 0) {
+          // Add last node, we need it for distance computations.
+          currentFragmentId = lastNodeId;
+          intervalFragments.push(lastNodeId);
+        }
+
+        // Compute and aggregate length
+        let lastPos = positions[lastNodeId];
+        let pos = positions[currentNodeId];
+        if (!lastPos) {
+          CATMAID.warn("Couldn't find position for last node " + fragment[i-1]);
+        }
+        if (!pos) {
+          CATMAID.warn("Couldn't find position for current node " + fragment[i]);
+        }
+        let length = leafFragmentLengths[currentFragmentId] || 0;
+        leafFragmentLengths[currentFragmentId] = length + lastPos.distanceTo(pos);
+      } else {
+        // If the current node is part of an interval, make sure it isn't
+        // counted as part of an ignored leaf fragment.
+        currentFragmentId = null;
+      }
+
+      // If we hit a domain end, we stop looking for successors in this branch
+      // and can continue with the next node on another branch.
+      if (domainEnds[currentNodeId]) {
+        continue;
+      }
+
+      let succ = successors[currentNodeId];
+      if (succ && succ.length > 0) {
+        for (let k=0; k<succ.length; ++k) {
+          let succId = succ[k];
+          workingSet.push([succId, currentNodeId, currentFragmentId]);
+        }
+      } else {
+        currentFragment = null;
+      }
+    }
+
+    // Compute lengths.
+    let ignoredFragmentLengths = intervalFragments.map(function(fragmentId) {
+      return leafFragmentLengths[fragmentId];
+    });
+
+    // Show diagram
+    let dialog = new CATMAID.OptionsDialog(ignoredFragmentLengths.length +
+        ' ignored leaf fragments', {
+      'Download CSV': function() {
+        let today = new Date();
+        let filename = 'catmaid-sampler-ignored-intervals-' + today.getFullYear() +
+            '-' + (today.getMonth() + 1) + '-' + today.getDate() + '.csv';
+        let data = "\"Ignored fragment length (nm)\"\n" + ignoredFragmentLengths.join("\n");
+        saveAs(new Blob([data], {type: 'text/plain'}), filename);
+      },
+      'Ok': function() {},
+    });
+
+    dialog.appendMessage("Histogram of the lengths of " + ignoredFragmentLengths.length +
+        " ignored leaf fragments in domain " + domain.id + ". Click on the bins to " +
+        "open respective fragment start nodes in a table.");
+
+    let plot = document.createElement('div');
+    dialog.appendChild(plot);
+
+    let resizeDialog = function() {
+      Plotly.Plots.resize(plot);
+    };
+
+    dialog.show(600, 400, false, undefined, resizeDialog);
+
+    let trace = {
+      x: ignoredFragmentLengths,
+      type: 'histogram',
+    };
+    let data = [trace];
+    Plotly.newPlot(plot, data, {
+      autosize: false,
+      width: 500,
+      height: 200,
+      margin: {
+        l: 30,
+        r: 20,
+        b: 50,
+        t: 20,
+        pad: 4
+      },
+      xaxis: {
+        title: 'Binned length (nm) of ignored leaf fragments'
+      }});
+
+    // Open a table with all treenodes that are part in the respective bin of
+    // the histogram.
+    plot.on('plotly_click', function(eventData){
+      let pts = '';
+      let points = eventData.points;
+      for(let i=0; i<points.length; i++){
+        let a = arbor;
+        let dataIndices = points[i].pointIndices;
+        if (dataIndices.length > 0) {
+          let fragmentStartNodeIds = dataIndices.map(x => intervalFragments[x]);
+          openTreenodeTable(skeletonId, fragmentStartNodeIds);
+        } else {
+          CATMAID.msg("Note", "No data points in selected bin");
+        }
+      }
+    });
+  };
+
+  function openTreenodeTable(skeletonId, nodeIds) {
+    let treenodeTable = WindowMaker.create('treenode-table').widget;
+    // Add a node filter
+    for (let i=0; i<nodeIds.length; ++i) {
+      treenodeTable.filter_nodeids.add(nodeIds[i]);
+    }
+    // Disable node type filter
+    treenodeTable.setNodeTypeFilter("");
+    // Add models
+    let models = {};
+    models[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
+    treenodeTable.append(models);
+  }
 
   var reviewInterval = function(skeletonId, interval) {
     var reviewWidget = WindowMaker.create('review-widget').widget;
@@ -2048,6 +2379,10 @@
   };
 
   SynapseWorkflowStep.prototype.updateContent = function(content, widget) {
+    var arbor = widget.state['arbor'];
+    if (!arbor) {
+      throw new CATMAID.ValueError("Need arbor for synapse workflow step");
+    }
     var interval = widget.state['interval'];
     if (!interval) {
       throw new CATMAID.ValueError("Need interval for synapse workflow step");
@@ -2115,6 +2450,12 @@
     var upstreamTable = document.createElement('table');
     content.appendChild(upstreamTable);
 
+    var leafHeader = content.appendChild(document.createElement('h3'));
+    leafHeader.appendChild(document.createTextNode('Leaf nodes'));
+    leafHeader.style.clear = 'both';
+    var leafTable = document.createElement('table');
+    content.appendChild(leafTable);
+
     // Get current arbor. Don't use the cached one, because the user is expected
     // to change the arbor in this step.
     var prepare = CATMAID.Sampling.getArbor(skeletonId)
@@ -2136,7 +2477,8 @@
       .then(function() {
         self.datatables = [
           self.makeConnectorTable(widget, downstreamTable, interval, skeletonId, "presynaptic_to"),
-          self.makeConnectorTable(widget, upstreamTable, interval, skeletonId, "postsynaptic_to")
+          self.makeConnectorTable(widget, upstreamTable, interval, skeletonId, "postsynaptic_to"),
+          self.makeLeafNodeTable(widget, leafTable, arbor.arbor, self.intervalTreenodes, skeletonId),
         ];
       })
       .catch(CATMAID.handleError);
@@ -2200,7 +2542,7 @@
         {
           data: "id",
           title: "Connector",
-          orderable: false,
+          orderable: true,
           class: "cm-center",
           render: function(data, type, row, meta) {
             if (type === "display") {
@@ -2328,6 +2670,100 @@
 
     datatable.on('click', 'a[data-action=select-node]', function() {
       var nodeId = this.dataset.nodeId;
+      SkeletonAnnotations.staticMoveToAndSelectNode(nodeId);
+    });
+
+    return datatable;
+  };
+
+  SynapseWorkflowStep.prototype.makeLeafNodeTable = function(widget, table,
+      arbor, intervalNodes, skeletonId) {
+    let self = this;
+    let datatable = $(table).DataTable({
+      dom: "lrfhtip",
+      autoWidth: false,
+      paging: true,
+      lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+      ajax: function(data, callback, settings) {
+        // Find leaf nodes in interval nodes
+        let successors = arbor.allSuccessorsCount();
+        let leaves = [];
+        for (let nodeId of intervalNodes) {
+          if (!successors[nodeId]) {
+            leaves.push(nodeId);
+          }
+        }
+
+        if (!leaves || leaves.length === 0) {
+          callback({
+            draw: data.draw,
+            data: []
+          });
+          return;
+        }
+
+        CATMAID.fetch(project.id + '/treenodes/compact-detail', 'POST', {
+          'treenode_ids': leaves,
+        })
+        .then(function(leafDetail) {
+          callback({
+            draw: data.draw,
+            data: leafDetail
+          });
+        })
+        .catch(CATMAID.handleError);
+      },
+      order: [[2, 'desc']],
+      columns: [
+        {
+          data: 0,
+          title: "Node",
+          orderable: true,
+          class: "cm-center",
+          render: function(data, type, row, meta) {
+            if (type === "display") {
+              return '<a href="#" data-action="select-node" data-node-id="' +
+                  data + '">' + data + '</a>';
+            }
+            return data;
+          }
+        },
+        {
+          data: 9,
+          title: "User",
+          orderable: true,
+          class: "cm-center",
+          render: function(data, type, row, meta) {
+            return CATMAID.User.safe_get(data).login;
+          }
+        },
+        {
+          data: 8,
+          title: "Last edited on (UTC)",
+          class: "cm-center",
+          orderable: true,
+          render: function(data, type, row, meta) {
+            return formatDate(new Date(data));
+          }
+        },
+        {
+          title: "Action",
+          orderable: true,
+          class: "cm-center",
+          render: function(data, type, row, meta) {
+            return '<a href="#" data-action="select-node">select</a>';
+          }
+        }
+      ],
+      createdRow: function( row, data, dataIndex ) {
+        row.setAttribute('data-node-id', data[0]);
+      },
+      drawCallback: function(settings) {
+        highlightActiveNode.call(this);
+      }
+    }).on('click', 'a[data-action=select-node]', function() {
+      let row = this.closest('tr');
+      let nodeId = parseInt(row.dataset.nodeId, 10);
       SkeletonAnnotations.staticMoveToAndSelectNode(nodeId);
     });
 
@@ -2670,7 +3106,7 @@
         {
           data: "skeleton_id",
           title: "Skeleton",
-          orderable: false,
+          orderable: true,
           class: "cm-center",
           render: function(data, type, row, meta) {
             if (type === "display") {

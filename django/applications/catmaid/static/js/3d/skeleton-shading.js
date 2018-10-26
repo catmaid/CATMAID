@@ -404,6 +404,15 @@
           var nDomains = domains.length;
           for (var j=0; j<nDomains; ++j) {
             var domain = domains[j];
+            var allowedDomainIds = options.viewerOptions.allowed_sampler_domain_ids;
+
+            // Ignore domain, if a domain filter exists and this domain isn't
+            // allowed.
+            if (allowedDomainIds && allowedDomainIds > 0 &&
+                allowedDomainIds.indexOf(domain.id) === -1) {
+              continue;
+            }
+
             domainColorIndex.set(domain.id, nAddedDomains % nColors);
             ++nAddedDomains;
 
@@ -481,7 +490,43 @@
           return lut.getColor(vertex.z);
         };
       }
-    }
+    },
+    'skeleton-x-lut': {
+      vertexColorizer: function(skeleton, options) {
+        let lutResolution = options.lutResolution || 256;
+        let lut = new THREE.Lut(options.colorMap || "rainbow", lutResolution);
+        let bb = skeleton.getBoundingBox();
+        lut.setMin(bb.min.x);
+        lut.setMax(bb.max.x);
+        return function(vertex) {
+          return lut.getColor(vertex.x);
+        };
+      }
+    },
+    'skeleton-y-lut': {
+      vertexColorizer: function(skeleton, options) {
+        let lutResolution = options.lutResolution || 256;
+        let lut = new THREE.Lut(options.colorMap || "rainbow", lutResolution);
+        let bb = skeleton.getBoundingBox();
+        lut.setMin(bb.min.y);
+        lut.setMax(bb.max.y);
+        return function(vertex) {
+          return lut.getColor(vertex.y);
+        };
+      }
+    },
+    'skeleton-z-lut': {
+      vertexColorizer: function(skeleton, options) {
+        let lutResolution = options.lutResolution || 256;
+        let lut = new THREE.Lut(options.colorMap || "rainbow", lutResolution);
+        let bb = skeleton.getBoundingBox();
+        lut.setMin(bb.min.z);
+        lut.setMax(bb.max.z);
+        return function(vertex) {
+          return lut.getColor(vertex.z);
+        };
+      }
+    },
   };
 
   let makeSamplerIntervalColorizer = function(skeleton, options) {
@@ -503,21 +548,31 @@
       var nDomains = domains.length;
       for (var j=0; j<nDomains; ++j) {
         // Get intervals for domain
-        var domain = domains[j];
+        let domain = domains[j];
+
+        // Skip this domain if the user set 'allowed_sampler_domains'
+        if (options.viewerOptions.allowed_sampler_domain_ids &&
+            options.viewerOptions.allowed_sampler_domain_ids.length > 0 &&
+            options.viewerOptions.allowed_sampler_domain_ids.indexOf(domain.id) === -1) {
+          continue;
+        }
+
         if (!domain.intervals || domain.intervals.length === 0) {
           let addedIntervals = CATMAID.Sampling.intervalsFromModels(
               arbor, positions, domain, sampler.interval_length,
               sampler.interval_error, true, true, sampler.leaf_segment_handling,
-              true, intervalMap);
+              true, intervalMap, undefined, sampler.merge_limit);
           let mockIntervals = addedIntervals.intervals.map(function(ai, i) {
             // use the negative index as ID for now. There should not be
             // any collissions.
             return [-1 * i, parseInt(ai[0], 10), parseInt(ai[1], 10), null];
           });
-          CATMAID.Sampling.updateIntervalMap(arbor, mockIntervals, intervalMap);
+          CATMAID.Sampling.updateIntervalMap(arbor, mockIntervals, intervalMap, domain.start_node_id);
         } else if (intervalMap) {
           // Update interval map with existing intervals
-          CATMAID.Sampling.updateIntervalMap(arbor, domain.intervals, intervalMap);
+          CATMAID.Sampling.updateIntervalMap(arbor, domain.intervals,
+              intervalMap, domain.start_node_id,
+              options.viewerOptions.allowed_sampler_interval_ids);
         }
       }
     }
@@ -552,6 +607,16 @@
         let domains = sampler.domains;
         let nDomains = domains.length;
         for (var j=0; j<nDomains; ++j) {
+          let domain = domains[j];
+          let allowedIntervalIds = options.viewerOptions.allowed_sampler_domain_ids;
+
+          // Skip this domain if the user set 'allowed_sampler_domains'
+          if (allowedIntervalIds &&
+              allowedIntervalIds.length > 0 &&
+              allowedIntervalIds.indexOf(domain.id) === -1) {
+            continue;
+          }
+
           // Get domain arbor
           let domainArbor = CATMAID.Sampling.domainArborFromModel(arbor, domain);
           let successors = domainArbor.allSuccessors();
@@ -563,7 +628,9 @@
             let isIntervalStart = workingSetIntervalStart.shift();
 
             let intervalId = intervalMap[currentNodeId];
-            if (intervalId === undefined || intervalId === null) {
+            if (currentNodeId != domain.start_node_id &&
+                (intervalId === undefined || intervalId === null) &&
+                allowedIntervalIds.length === 0) {
               // This node is part of the domain, but part of no interval. This
               // can only happen at the end of branches and we don't have to
               // expect more valid intervals on this branch. Therefore, we can
@@ -577,7 +644,7 @@
               colorMap.set(intervalId, intervalColor);
             }
 
-            // Check all succcessors of current reference node if they are part
+            // Check all successors of current reference node if they are part
             // of an interval that is different from the current one. If so,
             // assign the picked color for that interval already.
             let succ = successors[currentNodeId];
@@ -592,9 +659,10 @@
                 // color.
                 let succIntervalId = intervalMap[succId];
                 if (succIntervalId && succIntervalId !== intervalId) {
-                  // All branches start at same node. If the current reference
-                  // node is the first one of looked at of its interval, it ...
-                  if (isIntervalStart) {
+                  // All branches start at same node. If there are branches
+                  // (more than one successor interval), color them all the
+                  // same.
+                  if (isIntervalStart && succ.length > 1) {
                     colorMap.set(succIntervalId, intervalColor);
                   } else {
                     colorMap.set(succIntervalId, nextColor);
@@ -959,12 +1027,14 @@
         for (var i=0; i<samplers.length; ++i) {
           var sampler = samplers[i];
           CATMAID.Sampling.samplerEdges(arbor, sampler, samplerEdges,
-              options.allowed_sampler_domains);
+              options.allowed_sampler_domain_ids);
         }
+
+        var nonDomainWeight = options.sampler_domain_shading_other_weight || 0;
 
         // Add all nodes in all domains
         var nodeWeights = arbor.nodesArray().reduce(function(o, d) {
-          o[d] = samplerEdges[d] === undefined ? 0 : 1;
+          o[d] = samplerEdges[d] === undefined ? nonDomainWeight : 1;
           return o;
         }, {});
 
@@ -975,6 +1045,7 @@
       prepare: initSamplerIntervals,
       weights: function(skeleton, options) {
         var arbor = skeleton.createArbor();
+        var positions = skeleton.getPositions();
         var samplers = skeleton.samplers;
         if (!samplers) {
           // Weight each node zero if there are no samplers
@@ -988,7 +1059,7 @@
         var intervalMap = {};
         for (var i=0; i<samplers.length; ++i) {
           var sampler = samplers[i];
-          CATMAID.Sampling.intervalEdges(arbor, skeleton.getPositions(),
+          CATMAID.Sampling.intervalEdges(arbor, positions,
               sampler, true, true, true, intervalMap);
         }
 
@@ -1132,6 +1203,7 @@
             yOffset: options.yOffset,
             zDim: options.zDim,
             zOffset: options.zOffset,
+            viewerOptions: options
           });
         } else {
           return function(vertex) {

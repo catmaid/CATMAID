@@ -15,6 +15,8 @@ Publications using CATMAID
 
 * Tatsuya C. Murakami, Tomoyuki Mano, Shu Saikawa, Shuhei A. Horiguchi, Daichi Shigeta, Kousuke Baba, Hiroshi Sekiya, Yoshihiro Shimizu, Kenji F. Tanaka, Hiroshi Kiyonari, Masamitsu Iino, Hideki Mochizuki, Kazuki Tainaka & Hiroki R. Ueda. `A three-dimensional single-cell-resolution whole-brain atlas using CUBIC-X expansion microscopy and tissue clearing <https://www.nature.com/articles/s41593-018-0109-1>`_, Nature Neuroscience, 2018.
 
+* Zhihao Zheng, J. Scott Lauritzen, Eric Perlman, Camenzind G. Robinson, Matthew Nichols, Daniel Milkie, Omar Torrens, John Price, Corey,  B. Fisher, Nadiya Sharifi, Steven A. Calle-Schuler, Lucia Kmecova, Iqbal J. Ali, Bill Karsh, Eric T. Trautman, John A. Bogovic, Philipp Hanslovsky, Gregory S.X.E. Jefferis, Michael Kazhdan, Khaled Khairy, Stephan Saalfeld, Richard D. Fetter, Davi D. Bock. `A Complete Electron Microscopy Volume of the Brain of Adult Drosophila melanogaster <https://www.cell.com/cell/abstract/S0092-8674(18)30787-6>`_, Cell, 2018.
+
 2017
 ~~~~
 

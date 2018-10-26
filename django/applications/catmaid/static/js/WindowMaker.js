@@ -416,7 +416,11 @@ var WindowMaker = new function()
             onclick: function() {
               let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
               if (activeSkeletonId) {
-                WA.lookAtSkeleton(activeSkeletonId);
+                if (WA.hasSkeleton(activeSkeletonId)) {
+                  WA.lookAtSkeleton(activeSkeletonId);
+                } else {
+                  CATMAID.warn('Active skeleton not loaded in 3D Viewer');
+                }
               } else {
                 CATMAID.warn('No skeleton selected!');
               }
@@ -539,6 +543,9 @@ var WindowMaker = new function()
      ['x-lut', 'X Width rainbow'],
      ['y-lut', 'Y Height rainbow'],
      ['z-lut', 'Z Depth rainbow'],
+     ['skeleton-x-lut', 'X Width rainbow per skeleton'],
+     ['skeleton-y-lut', 'Y Height rainbow per skeleton'],
+     ['skeleton-z-lut', 'Z Depth rainbow per skeleton'],
      ['sampler-domains', 'Reconstrucion sampler domains'],
      ['binary-sampler-intervals', 'Reconstrucion sampler intervals (2 colors)'],
      ['multicolor-sampler-intervals', 'Reconstrucion sampler intervals (11 colors)']
@@ -809,6 +816,15 @@ var WindowMaker = new function()
           [volumeSelectionWrapper],
           ['Faces ', o.meshes_faces, function() { WA.options.meshes_faces = this.checked;}, false],
           [WA.createMeshColorButton()],
+          {
+            type: 'checkbox',
+            label: 'Pickable',
+            title: 'Whether or not to include volumes when picking a location using Shift + Click',
+            value: WA.options.volume_location_picking,
+            onclick: function() {
+              WA.options.volume_location_picking = this.checked;
+            }
+          },
           [landmarkGroupSelection],
           {
             type: 'numeric',
@@ -921,10 +937,18 @@ var WindowMaker = new function()
     var nodeScalingInput = DOM.appendNumericField(tabs['View settings'],
         'Node handle scaling', 'Size of handle spheres for tagged nodes.',
         o.skeleton_node_scaling, null, function() {
-              WA.options.skeleton_node_scaling = Math.max(0, this.value) || 1.0;
+              WA.options.skeleton_node_scaling = Math.max(0, parseInt(this.value, 10)) || 1.0;
               WA.adjustContent();
               WA.updateSkeletonNodeHandleScaling(this.value);
-        }, 3, undefined, false, 0.1, 0);
+        }, 3, undefined, false, 10, 0);
+
+    var linkNodeScalingInput = DOM.appendNumericField(tabs['View settings'],
+        'Link site scaling', 'Size of handle spheres for nodes linked to connectors.',
+        o.link_node_scaling, null, function() {
+              WA.options.link_node_scaling = Math.max(0, parseInt(this.value, 10)) || 1.0;
+              WA.adjustContent();
+              WA.updateLinkNodeHandleScaling(this.value);
+        }, 3, undefined, false, 10, 0);
 
     var textScalingInput = DOM.appendNumericField(tabs['View settings'],
         'Text scaling', 'Scaling of text.', o.text_scaling, null, function() {
@@ -1137,7 +1161,53 @@ var WindowMaker = new function()
           ['Min. synapse-free cable', o.min_synapse_free_cable, ' nm', function() {
             WA.updateShadingParameter('min_synapse_free_cable', this.value, 'synapse-free'); }, 6],
           ['Strahler number', o.strahler_cut, '', function() { WA.updateShadingParameter('strahler_cut', this.value, ['dendritic-backbone', 'single-strahler-number', 'strahler-threshold']); }, 4],
-          ['Tag (regex):', o.tag_regex, '', function() { WA.updateShadingParameter('tag_regex', this.value, 'downstream-of-tag'); }, 4]
+          ['Tag (regex):', o.tag_regex, '', function() { WA.updateShadingParameter('tag_regex', this.value, 'downstream-of-tag'); }, 4],
+          {
+            type: 'text',
+            label: 'Sampler domain IDs',
+            placeholder: '1, 2, …',
+            title: 'If a sampler domain shading or coloring method is used, only these domains will be shown.',
+            value: o.allowed_sampler_domain_ids.join(', '),
+            onchange: function() {
+              WA.options.allowed_sampler_domain_ids = this.value.split(',').filter(
+                  function(s) {
+                    s = s.trim();
+                    return s.length > 0;
+                  }).map(function(s) {
+                    var val = parseInt(s, 10);
+                    if (isNaN(val)) {
+                      throw new CATMAID.ValueError("No number: " + s.trim());
+                    }
+                    return val;
+                  });
+              WA.updateSkeletonColors()
+                .then(function() { WA.render(); });
+            },
+            length: 4,
+          },
+          {
+            type: 'text',
+            label: 'Sampler interval IDs',
+            placeholder: '1, 2, …',
+            title: 'If a sampler interval shading or coloring method is used, only these intervals will be shown.',
+            value: o.allowed_sampler_interval_ids.join(', '),
+            onchange: function() {
+              WA.options.allowed_sampler_interval_ids = this.value.split(',').filter(
+                  function(s) {
+                    s = s.trim();
+                    return s.length > 0;
+                  }).map(function(s) {
+                    var val = parseInt(s, 10);
+                    if (isNaN(val)) {
+                      throw new CATMAID.ValueError("No number: " + s.trim());
+                    }
+                    return val;
+                  });
+              WA.updateSkeletonColors()
+                .then(function() { WA.render(); });
+            },
+            length: 4,
+          },
         ]);
 
     var axisOptions = document.createElement('select');
@@ -1481,6 +1551,7 @@ var WindowMaker = new function()
     // updated here explicitly. At some point we might want to have some sort of
     // observer for this.
     nodeScalingInput.value = WA.options.skeleton_node_scaling;
+    linkNodeScalingInput.value = WA.options.link_node_scaling;
 
     // Arrange previously created selection table below 3D viewer. To do this,
     // the Selection Table has to be moved out of its split node and moved into

@@ -61,7 +61,7 @@ def get_request_list(request_dict, name, default=None, map_fn=identity):
         k = []
         for i in range(max_index):
             v = d.get(i)
-            if not v:
+            if not v and v != 0:
                 continue
             if parsedict == type(v):
                 k.append(flatten(v, max_index))
@@ -101,9 +101,10 @@ def get_request_list(request_dict, name, default=None, map_fn=identity):
     if items:
         return items
 
-    items = [map_fn(v) for v in request_dict.getlist(name, [])]
-    if items:
-        return items
+    if hasattr(request_dict, 'getlist'):
+        items = [map_fn(v) for v in request_dict.getlist(name, [])]
+        if items:
+            return items
 
     return default
 

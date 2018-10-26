@@ -903,7 +903,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements(
       this,
       pixiLayer.batchContainer,
-      this._skeletonDisplaySource.skeletonModels);
+      this._skeletonDisplaySource);
   this.graphics.setNodeRadiiVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_node_radii);
 
   // Initialize tracing window, if any
@@ -2082,7 +2082,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
                   extension: extension,
                   keepOrder: false,
                   merge: function(fromId, toId) {
-                    merge(dialog.get_combined_annotation_set(), fromId, toId);
+                    merge(this.get_combined_annotation_set(), fromId, toId);
                   }
                 });
                 dialog.show(extension);
@@ -4089,7 +4089,7 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
         $('body').off('keydown.catmaidRadiusSelect');
         fakeNode.removeSurroundingCircle();
         if (fakeNode.id === id) {
-          fakeNode.obliterate();
+          fakeNode.disable();
         }
         return true;
       }
@@ -4101,7 +4101,7 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
       $('body').off('keydown.catmaidRadiusSelect');
       // Remove circle and call callback
       fakeNode.removeSurroundingCircle(displayRadius);
-      fakeNode.obliterate();
+      fakeNode.disable();
       self.redraw();
     }
   }
@@ -4870,7 +4870,7 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteConnectorNode =
 
         // Delete this connector from overlay (to not require a database update).
         delete self.nodes[connectorId];
-        connectornode.obliterate();
+        connectornode.disable();
         self.pixiLayer._renderIfReady();
 
         CATMAID.statusBar.replaceLast("Deleted connector #" + connectorId);
@@ -4917,10 +4917,15 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
     var parent = node.parent;
     delete self.nodes[node.id];
     if (children) {
+      let changedChildren = json.children ? json.children : [];
+      let childEditTimeMap = new Map(changedChildren);
       for (var childId in children) {
         var child = children[childId];
         child.parent = parent;
         child.parent_id = node.parent_id;
+        if (childEditTimeMap.has(child.id)) {
+          child.edition_time_iso_str = childEditTimeMap.get(child.id);
+        }
         if (parent) {
           parent.addChildNode(child);
         }
@@ -4933,7 +4938,7 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
     // Store node ID before node gets reset
     var nodeId = node.id;
 
-    node.obliterate();
+    node.disable();
     node.drawEdges(false);
     if (parent) parent.drawEdges(true);
     self.pixiLayer._renderIfReady();

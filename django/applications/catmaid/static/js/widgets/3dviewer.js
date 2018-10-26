@@ -74,6 +74,22 @@
     options.interpolated_sections_x = Array.from(project.interpolatableSections.x);
     options.interpolated_sections_y = Array.from(project.interpolatableSections.y);
     options.interpolated_sections_z = Array.from(project.interpolatableSections.z);
+
+    // If a project and a loaded stack is available, initialize the node scaling
+    // for skeletons so that it makes nodes not too big for higher resolutions
+    // and not too small for lower ones.
+    if (project && project.focusedStackViewer) {
+      let stack = project.focusedStackViewer.primaryStack;
+      options.skeleton_node_scaling = 2 * Math.min(stack.resolution.x,
+          stack.resolution.y, stack.resolution.z);
+      options.link_node_scaling = 2 * Math.min(stack.resolution.x,
+          stack.resolution.y, stack.resolution.z);
+    }
+
+    // Make the scaling factor look a bit prettier by rounding to two decimals
+    options.skeleton_node_scaling = Number(options.skeleton_node_scaling.toFixed(2));
+    options.link_node_scaling = Number(options.link_node_scaling.toFixed(2));
+
     return options;
   };
 
@@ -83,7 +99,8 @@
     }
     this.container = container;
     this.submit = new submitterFn();
-    this.space = new this.Space(canvasWidth, canvasHeight, this.container, project.focusedStackViewer.primaryStack, this.options);
+    this.space = new this.Space(canvasWidth, canvasHeight, this.container,
+        project.focusedStackViewer.primaryStack, this.loadedVolumes, this.options);
     this.updateActiveNode();
     project.on(CATMAID.Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
     project.on(CATMAID.Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
@@ -939,7 +956,7 @@
       sk.synapticTypes.forEach(function(type) {
         var vs = (sk.connectoractor ? sk.connectorgeometry : sk.geometry)[type].vertices;
         for (var i=0; i<vs.length; i+=2) {
-          rows.push([vs[i].node_id, skid, vs[i+1].node_id, type].join(','));
+          rows.push([vs[i].node_id, skid, vs[i].treenode_id, type].join(','));
         }
       });
     });
@@ -1094,7 +1111,7 @@
         synapticTypes.forEach(function(type) {
           var vs = sk.geometry[type].vertices;
           for (var i=0; i<vs.length; i+=2) {
-            if (within[vs[i+1].node_id]) connectors[vs[i].node_id] = true;
+            if (within[vs[i].treenode_id]) connectors[vs[i].node_id] = true;
           }
         });
         // Find partner skeletons
@@ -1200,6 +1217,7 @@
     this.triangulated_lines = true;
     this.skeleton_line_width = 3;
     this.skeleton_node_scaling = 1.0;
+    this.link_node_scaling = 1.0;
     this.invert_shading = false;
     this.interpolate_vertex_colots = true;
     this.follow_active = false;
@@ -1228,6 +1246,10 @@
     this.interpolated_sections_z = [];
     this.interpolate_broken_sections = false;
     this.apply_filter_rules = true;
+    this.volume_location_picking = false;
+    this.allowed_sampler_domain_ids = [];
+    this.allowed_sampler_interval_ids = [];
+    this.sampler_domain_shading_other_weight = 0;
   };
 
   WebGLApplication.prototype.Options.prototype = {};
@@ -1281,7 +1303,7 @@
     });
   };
 
-  function generateSprite(colorr, opacity) {
+  function generateSprite(color, opacity) {
     var canvas = document.createElement( 'canvas' );
     canvas.width = 16;
     canvas.height = 16;
@@ -1695,15 +1717,18 @@
         'skeletonIds': filteredConnectorIds.length ? visible_skeletons : []
       };
 
+      let updatedSkeletons = [];
       for (var skeleton_id in skeletons) {
         if (skeletons.hasOwnProperty(skeleton_id)) {
           skeletons[skeleton_id].remove_connector_selection();
           if (skeleton_id in visible_set) {
             skeletons[skeleton_id].create_connector_selection( common );
             skeletons[skeleton_id].updateConnectorRestictionVisibilities();
+            updatedSkeletons.push(skeletons[skeleton_id]);
           }
         }
       }
+      this.space.updateRestrictedConnectorColors(updatedSkeletons);
     } else {
       skids.forEach(function(skid) {
         skeletons[skid].remove_connector_selection();
@@ -2608,8 +2633,10 @@
   };
 
   /** Defines the properties of the 3d space and also its static members like the bounding box and the missing sections. */
-  WebGLApplication.prototype.Space = function( w, h, container, stack, options ) {
+  WebGLApplication.prototype.Space = function( w, h, container, stack,
+      loadedVolumes, options ) {
     this.stack = stack;
+    this.loadedVolumes = loadedVolumes;
     this.container = container; // used by MouseControls
     this.options = options;
     // FIXME: If the expected container configuration isn't found, we create a
@@ -2628,13 +2655,6 @@
     };
     // Absolute center in Space coordinates (not stack coordinates)
     this.center = this.createCenter();
-
-    // Set the node scaling for skeletons so that it makes nodes not too big for
-    // higher resolutions and not too small for lower ones.
-    options.skeleton_node_scaling = 2 * Math.min(stack.resolution.x,
-        stack.resolution.y, stack.resolution.z);
-    // Make the scaling factor look a bit prettier by rounding to two decimals
-    options.skeleton_node_scaling = Number(options.skeleton_node_scaling.toFixed(2));
 
     this.userColormap = {};
 
@@ -4900,6 +4920,19 @@
     var ambientLight = new THREE.AmbientLight(0xffffff);
     this.scene.add(ambientLight);
 
+    // Hide volumes if they aren't include in picking
+    let originalVolumeVisibility = new Map();
+    if (!o.volume_location_picking) {
+      for (let volumeId of this.loadedVolumes.keys()) {
+        let volume = this.loadedVolumes.get(volumeId);
+        for (let i=0; i<volume.meshes.length; ++i) {
+          let m = volume.meshes[i].material;
+          originalVolumeVisibility.set(volumeId, m.visible);
+          m.visible = false;
+        }
+      }
+    }
+
     // Prepare all spheres for picking by coloring them with an ID.
     mapToPickables(this, this.content.skeletons, function(skeleton) {
       color++;
@@ -5139,6 +5172,16 @@
     // Reset Z plane material and visibility
     if (o.show_zplane && zplane) {
       zplane.material = originalMaterials.get(zplane);
+    }
+
+    // Reset volumes to original visibility
+    if (!o.volume_location_picking) {
+      for (let volumeId of this.loadedVolumes.keys()) {
+        let volume = this.loadedVolumes.get(volumeId);
+        for (let i=0; i<volume.meshes.length; ++i) {
+          volume.meshes[i].material.visible = originalVolumeVisibility.get(volumeId);
+        }
+      }
     }
 
     // Reset lighting, assuming no change in position
@@ -5488,6 +5531,14 @@
     this.connectorSelection = null;
   };
 
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getBoundingBox = function() {
+    let geometry = this.geometry['neurite'];
+    if (!geometry.boundingBox) {
+      geometry.computeBoundingBox();
+    }
+    return geometry.boundingBox;
+  };
+
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getVertexCount = function() {
     let geometry = this.geometry['neurite'];
     if (geometry.isBufferGeometry) {
@@ -5772,7 +5823,7 @@
     return this.synapticTypes.reduce((function(o, type, k) {
       var vs = this.geometry[type].vertices;
       for (var i=0, l=vs.length; i<l; i+=2) {
-        var treenode_id = vs[i+1].node_id,
+        var treenode_id = vs[i].treenode_id,
             count = o[treenode_id];
         if (count) o[treenode_id] = count + 1;
         else o[treenode_id] = 1;
@@ -5791,7 +5842,7 @@
       var vs = this.geometry[type].vertices,
           syn = {};
       for (var i=0, l=vs.length; i<l; i+=2) {
-        var treenode_id = vs[i+1].node_id,
+        var treenode_id = vs[i].treenode_id,
             count = syn[treenode_id];
         if (count) syn[treenode_id] = count + 1;
         else syn[treenode_id] = 1;
@@ -5809,7 +5860,7 @@
       var vs = this.geometry[type].vertices;
       for (var i=0, l=vs.length; i<l; i+=2) {
         var connector_id = vs[i].node_id,
-            treenode_id = vs[i+1].node_id,
+            treenode_id = vs[i].treenode_id,
             list = o[treenode_id],
             synapse = {type: k,
                        connector_id: connector_id};
@@ -5827,7 +5878,7 @@
       var vs = this.geometry[type].vertices;
       for (var i=0, l=vs.length; i<l; i+=2) {
         var connector_id = vs[i].node_id,
-            treenode_id = vs[i+1].node_id,
+            treenode_id = vs[i].treenode_id,
             list = o[connector_id];
         if (list) {
           list.push(connector_id);
@@ -6126,8 +6177,7 @@
   };
 
   /**
-   * Scale node handles of a skeletons. These are the special tag spheres and the
-   * synaptic spheres.
+   * Scale node handles of a skeletons. These are the special tag spheres.
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.scaleNodeHandles = function(value) {
     // Both special tag handlers and connector partner nodes are stored as
@@ -6136,6 +6186,15 @@
     if (this.specialTagSphereCollection) {
       this.specialTagSphereCollection.geometry.scaleTemplate(value, value, value);
     }
+  };
+
+  /**
+   * Scale link node handles of a skeletons. These are all synaptic spheres.
+   */
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.scaleLinkNodeHandles = function(value) {
+    // Both special tag handlers and connector partner nodes are stored as
+    // indexed buffer geometry. Therefore, only the template geometry has to be
+    // scaled.
     if (this.connectorSphereCollection) {
       this.connectorSphereCollection.geometry.scaleTemplate(value, value, value);
     }
@@ -6430,13 +6489,14 @@
               o[c[0]] = new THREE.Color().set(colorizer(i));
               return o;
             }, {});
+      var notComputableColor = new THREE.Color(0.4, 0.4, 0.4);
 
       var fnConnectorValue = function(node_id, connector_id) {
         return density_hill_map[node_id];
       };
 
       var fnMakeColor = function(value) {
-        return cluster_colors[value];
+        return cluster_colors[value] || notComputableColor;
       };
 
       this.synapticTypes.forEach(function(type) {
@@ -6470,12 +6530,16 @@
     // Set colors per-vertex
     var seen = {},
         seen_materials = {},
-        colors = [],
-        vertices = this.geometry[type].vertices;
+        colors = [];
 
-    for (var i=0; i<vertices.length; i+=2) {
-      var connector_id = vertices[i].node_id,
-          node_id = vertices[i+1].node_id,
+    for (let nodeId in this.synapticSpheres) {
+      let bufferObject = this.synapticSpheres[nodeId];
+      if (bufferObject.type !== type) {
+        continue;
+      }
+
+      var connector_id = bufferObject.connector_id,
+          node_id = bufferObject.node_id,
           value = fnConnectorValue(node_id, connector_id);
 
       var color = seen[value];
@@ -6489,19 +6553,16 @@
       colors.push(color);
       colors.push(color);
 
-      var bufferObject = this.synapticSpheres[node_id];
-      if (bufferObject) {
-        bufferObject.color = color;
-        // TODO: Might not be needed anymore: why should we store this extra
-        // material anyway.
-        var material = seen_materials[value];
-        if (!material) {
-          material = bufferObject.material.clone();
-          material.color = color;
-          seen_materials[value] = material;
-        }
-        bufferObject.material = material;
+      bufferObject.color = color;
+      // TODO: Might not be needed anymore: why should we store this extra
+      // material anyway.
+      var material = seen_materials[value];
+      if (!material) {
+        material = bufferObject.material.clone();
+        material.color = color;
+        seen_materials[value] = material;
       }
+      bufferObject.material = material;
     }
 
     this.geometry[type].colors = colors;
@@ -6577,7 +6638,7 @@
     this.connectorgeometry[this.CTYPES[2]] = new THREE.Geometry();
     this.connectorgeometry[this.CTYPES[3]] = new THREE.Geometry();
 
-    var scaling = this.space.options.skeleton_node_scaling;
+    var scaling = this.space.options.link_node_scaling;
     var materialType = this.space.options.neuron_material;
 
     this.synapticTypes.forEach(function(type) {
@@ -6592,9 +6653,9 @@
         var v = vertices1[i];
         if (common_connector_IDs.hasOwnProperty(v.node_id)) {
           var v2 = vertices1[i+1];
-          vertices2.push(v2);
           vertices2.push(v);
-          connectors.push([v2, material, type]);
+          vertices2.push(v2);
+          connectors.push([v2, material, type, {connector_id: v.node_id, node_id: v.treenode_id}]);
         }
       }
 
@@ -6615,7 +6676,7 @@
         var partnerSpheres = {};
         var visible = this.connectorVisibility[type];
         geometry.createAll(connectors, scaling, visible, null, function(v, m, o, bufferObject) {
-          partnerSpheres[v.node_id] = bufferObject;
+          partnerSpheres[o[3].node_id] = bufferObject;
         });
 
         var sphereMaterial = geometry.createMaterial(materialType);
@@ -6717,6 +6778,7 @@
     }).bind(this), (function(v, m, o, bufferObject) {
       let nodeId = o[3];
       bufferObject.node_id = nodeId;
+      bufferObject.connector_id = o[4];
       bufferObject.type = this.synapticTypes[o[2]];
       this.synapticSpheres[nodeId] = bufferObject;
     }).bind(this));
@@ -7093,7 +7155,7 @@
         let nodeLabels = labels.get(v1);
         if (!nodeLabels) {
           nodeLabels = [];
-          labels.set([node[0], v1], nodeLabels);
+          labels.set(v1, [node[0], nodeLabels]);
         }
         nodeLabels.push('uncertain');
       }
@@ -7142,13 +7204,14 @@
       var type = con[2];
       if (type === -1) return;
       var v1 = new THREE.Vector3(con[3], con[4], con[5]);
+      v1.treenode_id = con[0];
       v1.node_id = con[1];
       var v2 = vs[con[0]];
       if (v1 && v2) {
         this.createEdge(v1, v2, this.geometry[this.synapticTypes[type]]);
         var defaultMaterial = this.space.staticContent.synapticColors[type] ||
           this.space.staticContent.synapticColors.default;
-        partner_nodes.push([v2, defaultMaterial, type, con[0]]);
+        partner_nodes.push([v2, defaultMaterial, type, con[0], con[1]]);
       } else if (!silent) {
         throw new CATMAID.ValueError("Connector loading failed, not all vertices available");
       }
@@ -7173,11 +7236,12 @@
           this.tags[tag].forEach(function(nodeID) {
             if (!this.specialTagSpheres[nodeID] && (!(silent && !vs[nodeID]))) {
               let node = vs[nodeID];
-              let nodeLabels = labels.get(node);
-              if (!nodeLabels) {
-                nodeLabels = [];
-                labels.set([nodeID, node], nodeLabels);
+              let nodeData = labels.get(node);
+              if (!nodeData) {
+                nodeData = [nodeID, []];
+                labels.set(node, nodeData);
               }
+              let nodeLabels = nodeData[1];
               if (labelType === 'custom') {
                 // Promote custom tag matches to make sure they are displayed
                 nodeLabels.unshift(labelType);
@@ -7193,17 +7257,19 @@
 
     // Create buffer geometry for connectors
     if (partner_nodes.length > 0) {
-      this.createPartnerSpheres(partner_nodes, options.skeleton_node_scaling,
+      this.createPartnerSpheres(partner_nodes, options.link_node_scaling,
           options.neuron_material, preventSceneUpdate);
     }
 
     // Create buffer geometry for labels
     if (labels.size > 0) {
       let displayedLabels = Array.from(labels).map(function(l) {
+        let nodeId = l[1][0];
+        let nodeLabels = l[1][1];
         // Select first label, if multiple
-        let labelType = l[1][0];
+        let labelType = nodeLabels[0];
         let color = this[labelType];
-        return [l[0][1], color, l[0][0]];
+        return [l[0], color, nodeId];
       }, this.space.staticContent.labelColors);
       this.createLabelSpheres(displayedLabels, options.skeleton_node_scaling,
           options.neuron_material, preventSceneUpdate);
@@ -7558,6 +7624,15 @@
     this.options.skeleton_node_scaling = value;
     var sks = this.space.content.skeletons;
     Object.keys(sks).forEach(function(skid) { sks[skid].scaleNodeHandles(value); });
+    this.space.render();
+  };
+
+  WebGLApplication.prototype.updateLinkNodeHandleScaling = function(value) {
+    value = CATMAID.tools.validateNumber(value, "Invalid link node scaling value", 0);
+    if (!value) return;
+    this.options.link_node_scaling = value;
+    var sks = this.space.content.skeletons;
+    Object.keys(sks).forEach(function(skid) { sks[skid].scaleLinkNodeHandles(value); });
     this.space.render();
   };
 

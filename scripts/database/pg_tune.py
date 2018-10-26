@@ -134,7 +134,7 @@ with open(CONF_FILE) as conf_file:
     else:
         full_config = conf_file.read()
         if PGTUNED_STRING in full_config:
-            print 'Configuration has already been tuned.'
+            print('Configuration has already been tuned.')
         else:
             conf_file.seek(0)
             set_config(conf_file, OUTPUT_FILE, CONFIGS)

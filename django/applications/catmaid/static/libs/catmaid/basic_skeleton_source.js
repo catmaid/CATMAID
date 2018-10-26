@@ -223,12 +223,29 @@
 
   /**
    * Return true if the given skeleton ID is known to this source. Otherwise,
-   * return false.
+   * return false. Same as has().
    *
    * @param skeletonID {number} The skeleton ID to test
    */
   BasicSkeletonSource.prototype.hasSkeleton = function(skeletonID) {
     return skeletonID in this.skeletonModels;
+  };
+
+  /**
+   * Return true if the given skeleton ID is known to this source. Otherwise,
+   * return false. Same as hasSkeleton().
+   *
+   * @param skeletonID {number} The skeleton ID to test
+   */
+  BasicSkeletonSource.prototype.has= function(skeletonID) {
+    return skeletonID in this.skeletonModels;
+  };
+
+  /**
+   * Get a single known skeleton model or undefined if unknown.
+   */
+  BasicSkeletonSource.prototype.get = function(skeletonID) {
+    return this.skeletonModels[skeletonID];
   };
 
 

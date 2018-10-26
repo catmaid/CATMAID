@@ -1287,7 +1287,7 @@
             element: CATMAID.skeletonListSources.createSelect(this)
           }, {
             type: 'select',
-            id: 'extra' + this.widgetID,
+            relativeId: 'extra' + this.widgetID,
             label: 'Extra',
             title: 'List problems with connected neurons',
             entries: [
@@ -1298,7 +1298,7 @@
             ]
           }, {
             type: 'select',
-            id: 'adjacents' + this.widgetID,
+            relativeId: 'adjacents' + this.widgetID,
             label: 'Adjacents',
             title: 'Maximum distance (hops) from a node when checking of duplicate connectors',
             entries: adjacents

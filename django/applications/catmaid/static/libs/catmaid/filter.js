@@ -797,7 +797,7 @@
     },
     // Options: tag
     "uparbor": {
-      name: "Prunned arbor",
+      name: "Pruned arbor",
       prepare: ["arbor", "tags"],
       filter: function(skeletonId, neuron, input, options) {
         var skeleton = input.skeletons[skeletonId];

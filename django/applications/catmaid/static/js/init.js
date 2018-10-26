@@ -401,13 +401,41 @@ var project;
           if (tool) {
             project.setTool(new tool());
           }
+
+          var locationIsProvided = typeof zp == "number" &&
+              typeof yp == "number" && typeof xp == "number";
           if (init_active_node_id) {
             // initialization hack
             SkeletonAnnotations.init_active_node_id = init_active_node_id;
-          }
-          if (init_active_skeleton_id) {
+
+            if (!locationIsProvided) {
+              return CATMAID.Nodes.getLocation(init_active_node_id)
+                .then(function(result) {
+                   return project.moveTo(result[3], result[2], result[1])
+                      .then(function(){
+                         return SkeletonAnnotations.staticSelectNode(init_active_node_id);
+                      });
+                })
+                .catch(function() {
+                  CATMAID.warn('Could not select node ' + init_active_node_id);
+                });
+            }
+          } else if (init_active_skeleton_id) {
             // initialization hack
             SkeletonAnnotations.init_active_skeleton_id = init_active_skeleton_id;
+
+            if (!locationIsProvided) {
+              return CATMAID.Skeletons.getRootNode(project.id, init_active_skeleton_id)
+                .then(function(result) {
+                   return project.moveTo(result.z, result.y, result.x)
+                      .then(function(){
+                         return SkeletonAnnotations.staticSelectNode(result.root_id);
+                      });
+                })
+                .catch(function() {
+                  CATMAID.warn('Could not select skeleton ' + init_active_skeleton_id);
+                });
+            }
           }
         })
         .catch(function(e) {

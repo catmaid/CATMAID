@@ -144,6 +144,13 @@
     }
   },
   {
+    "pk": 4,
+    "model": "catmaid.project",
+    "fields": {
+      "title": "Test"
+    }
+  },
+  {
     "pk": 5,
     "model": "catmaid.project",
     "fields": {

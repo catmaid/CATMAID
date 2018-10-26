@@ -131,13 +131,21 @@ def get_annotated_entities(project, params, relations, classes,
     if end_date:
         params['end_date'] = end_date
 
-    # If a name is given, add this to the query
+    # If a name is given, add this to the query. If its first character is a
+    # slash, treat it as regex.
     if name:
-        if name_not:
-            filters.append("ci.name !~* %(name)s")
+        is_regex = name.startswith('/')
+        if is_regex:
+            op = '~*'
+            params["name"] = name[1:]
         else:
-            filters.append("ci.name ~* %(name)s")
-        params["name"] = name
+            op = '~~*'
+            params["name"] = '%' + name + '%'
+
+        if name_not:
+            filters.append("ci.name !{op} %(name)s".format(op=op))
+        else:
+            filters.append("ci.name {op} %(name)s".format(op=op))
 
     # Map annotation sets to their expanded sub-annotations
     sub_annotation_ids = get_sub_annotation_ids(project, annotation_sets_to_expand,

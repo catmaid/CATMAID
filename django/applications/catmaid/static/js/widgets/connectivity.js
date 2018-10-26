@@ -56,6 +56,8 @@
       this.handleChangedSkeleton, this);
     CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
       this.handleDeletedSkeleton, this);
+    CATMAID.Annotations.on(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+      this.handleChangedAnnotations, this);
   };
 
   SkeletonConnectivity.prototype = Object.create(CATMAID.SkeletonSource.prototype);
@@ -187,6 +189,8 @@
         this.handleChangedSkeleton, this);
     CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
         this.handleDeletedSkeleton, this);
+    CATMAID.Annotations.off(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+        this.handleChangedAnnotations, this);
   };
 
   SkeletonConnectivity.prototype.getWidgetConfiguration = function() {
@@ -455,6 +459,10 @@
    * Get models for all skeletons in this source.
    */
   SkeletonConnectivity.prototype.getSkeletonModels = function(onlySelected) {
+    return this._getSkeletonModels(onlySelected, true);
+  };
+
+  SkeletonConnectivity.prototype._getSkeletonModels = function(onlySelected, filter) {
     var self = this;
     var widgetID = this.widgetID;
     var skeletons = this.skeletons;
@@ -471,7 +479,8 @@
     // filtering at the moment. Therefore, the table is read.
     this.partnerSets.forEach(function(ps) {
       var table = $('#' + ps.id + '_connectivity_table' + this.widgetID);
-      var data = table.DataTable().rows({order: 'current', search: 'applied'}).nodes();
+      var searchMode = filter ? 'applied' : 'none';
+      var data = table.DataTable().rows({order: 'current', search: searchMode}).nodes();
       data.reduce(function(o, tr) {
         var skid = tr.dataset.skeletonId;
         if ((self.skeletonSelection[skid] || !onlySelected) && !models[skid]) {
@@ -487,6 +496,10 @@
 
   SkeletonConnectivity.prototype.getSkeletons = function() {
     return Object.keys(this.getSkeletonModels()).map(m => parseInt(m, 10));
+  };
+
+  SkeletonConnectivity.prototype._getSkeletons = function(onlySelected, filter) {
+    return Object.keys(this._getSkeletonModels(onlySelected, filter)).map(m => parseInt(m, 10));
   };
 
   /**
@@ -520,6 +533,15 @@
         this.update();
       }
     }
+  };
+
+  /**
+   * If annotations change, update the widget's annotation map. This currently
+   * disregards the changed entities and could therefore be more efficient.
+   */
+  SkeletonConnectivity.prototype.handleChangedAnnotations = function(
+      changedEntities, annotations) {
+    this._updateAnnotationMap(true);
   };
 
   /**
@@ -2111,7 +2133,7 @@
     if (!this.annotationMapping || force) {
       // Get all data that is needed for the fallback list
       get = CATMAID.fetch(project.id + '/skeleton/annotationlist', 'POST', {
-            skeleton_ids: this.getSkeletons(),
+            skeleton_ids: this._getSkeletons(false, false),
             metaannotations: 0,
             neuronnames: 0,
           })

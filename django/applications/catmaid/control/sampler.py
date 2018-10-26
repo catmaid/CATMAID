@@ -136,6 +136,7 @@ def list_samplers(request, project_id):
            'interval_length': s.interval_length,
            'interval_error': s.interval_error,
            'leaf_segment_handling': s.leaf_segment_handling,
+           'merge_limit': s.merge_limit,
            'review_required': s.review_required,
            'create_interval_boundaries': s.create_interval_boundaries,
            'state_id': s.sampler_state_id,
@@ -189,6 +190,13 @@ def add_sampler(request, project_id):
        paramType: form
        required: false
        default: ignore
+     - name: merge_limit
+       description: A leaf handling option for merge-or-create mode. A value between 0 and 1 representing the interval length ratio up to which a merge is allowed.
+       type: string
+       paramType: form
+       required: false
+       default: 0
+       default: ignore
     """
     skeleton_id = request.POST.get('skeleton_id')
     if skeleton_id:
@@ -229,6 +237,15 @@ def add_sampler(request, project_id):
     else:
         leaf_segment_handling = 'ignore'
 
+    merge_limit = request.POST.get('merge_limit')
+    if merge_limit:
+        merge_limit = float(merge_limit)
+    else:
+        merge_limit = 0
+
+    if merge_limit < 0 or merge_limit > 1.0:
+        raise ValueError("Merge limit needs to be between 0 and 1")
+
     sampler_state = SamplerState.objects.get(name="open");
 
     sampler = Sampler.objects.create(
@@ -236,6 +253,7 @@ def add_sampler(request, project_id):
         interval_length=interval_length,
         interval_error=interval_error,
         leaf_segment_handling=leaf_segment_handling,
+        merge_limit=merge_limit,
         review_required=review_required,
         create_interval_boundaries=create_interval_boundaries,
         sampler_state=sampler_state,
@@ -248,6 +266,7 @@ def add_sampler(request, project_id):
         "interval_length": sampler.interval_length,
         "interval_error": sampler.interval_error,
         "leaf_segment_handling": sampler.leaf_segment_handling,
+        "merge_limit": sampler.merge_limit,
         "review_required": sampler.review_required,
         "create_interval_boundaries": sampler.create_interval_boundaries,
         "sampler_state": sampler.sampler_state_id,
@@ -308,12 +327,24 @@ def delete_sampler(request, project_id, sampler_id):
             SET extra_float_digits = 3;
 
             WITH sampler_treenode AS (
-                -- Get all treenodes linked to intervals of this sampler.
-                SELECT DISTINCT UNNEST(ARRAY[i.start_node_id, i.end_node_id]) AS id
-                FROM catmaid_samplerinterval i
-                JOIN catmaid_samplerdomain d
-                    ON i.domain_id = d.id
-                WHERE d.sampler_id = %(sampler_id)s
+                -- Get all treenodes linked to intervals of this sampler. Only
+                -- select those nodes that are referenced by no other sampler
+                -- (using an anti join).
+                SELECT DISTINCT all_added_nodes.id
+                FROM (
+                    SELECT DISTINCT UNNEST(ARRAY[i.start_node_id, i.end_node_id]) AS id
+                    FROM catmaid_samplerinterval i
+                    JOIN catmaid_samplerdomain d
+                        ON i.domain_id = d.id
+                    WHERE d.sampler_id = %(sampler_id)s
+                ) all_added_nodes
+                JOIN catmaid_samplerinterval csi
+                    ON csi.start_node_id = all_added_nodes.id
+                    OR csi.end_node_id = all_added_nodes.id
+                JOIN catmaid_samplerdomain csd
+                    ON csd.id = csi.domain_id
+                GROUP BY all_added_nodes.id
+                HAVING COUNT(DISTINCT csd.sampler_id) = 1
             ), sampler_created_treenode AS (
                 -- Find all treenodes that were created by the sampler and are
                 -- undmodified.

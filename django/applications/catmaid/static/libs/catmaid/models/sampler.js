@@ -52,12 +52,21 @@
    * The passed in interval map will be update with nodes from the arbor that
    * are covered by the passed in interval list.
    */
-  Sampling.updateIntervalMap = function(arbor, intervals, targetEdgeMap) {
+  Sampling.updateIntervalMap = function(arbor, intervals, targetEdgeMap,
+      domainStartId, intervalFilter) {
     for (var i=0, imax=intervals.length; i<imax; ++i) {
       let interval = intervals[i];
       let intervalId = interval[0];
       let startNodeId = interval[1];
       let endNodeId = interval[2];
+
+      // If an interval fitler exists, show only intervals allowed by it.
+      if (intervalFilter &&
+          intervalFilter.length > 0 &&
+          intervalFilter.indexOf(intervalId) === -1) {
+        continue;
+      }
+
       // Try to walk from interval end to start, assuming that an interval
       // starts closer to root than it ends.
       let currentNodeId = endNodeId;
@@ -65,7 +74,11 @@
         targetEdgeMap[currentNodeId] = intervalId;
         currentNodeId = arbor.edges[currentNodeId];
         if (currentNodeId == startNodeId) {
-          targetEdgeMap[startNodeId] = interval[0];
+          // Don't set the start node of an interval explicitly. Start nodes are
+          // either the end of another interval or the domain start.
+          if (currentNodeId == domainStartId || !targetEdgeMap[currentNodeId]) {
+            targetEdgeMap[currentNodeId] = intervalId;
+          }
           break;
         }
         if (!currentNodeId) {
@@ -106,7 +119,7 @@
    */
   Sampling.intervalsFromModels = function(arbor, positions, domainDetails,
       intervalLength, intervalError, preferSmallerError, createNewNodes,
-      leafHandling, updateArborData, targetEdgeMap, nodeBlacklist) {
+      leafHandling, updateArborData, targetEdgeMap, nodeBlacklist, mergeLimit) {
     if (!intervalLength) {
       throw new CATMAID.ValueError("Need interval length for interval creation");
     }
@@ -172,8 +185,9 @@
           // segment handling strategies.
           } else if (j === 0) {
             let isFirstInterval = intervalStartIdx === (partition.length - 1);
-            let canBeMerged = leafHandling === 'merge' ||
-                leafHandling === 'merge-or-create';
+            let fragmentLengthRatio = dist / intervalLength;
+            let canBeMerged = fragmentLengthRatio <= mergeLimit &&
+                (leafHandling === 'merge' || leafHandling === 'merge-or-create');
             if (canBeMerged && !isFirstInterval) {
               // Add the collected nodes of the current interval to the last
               // interval. This only is allowed if this interval isn't the first
@@ -227,7 +241,9 @@
 
           // If this or the last node is closer
           if (distanceToLast < distanceToThis) {
-            if (distanceToLast < intervalError) {
+            // If the last node is close enough and is not the start of the
+            // current interval, select it as interval boundary.
+            if (distanceToLast < intervalError && intervalStartIdx !== j + 1) {
               // Use last node, because it is closer than this node and closer
               // than the allowed interval error.
               selectedNode = partition[j+1];
@@ -284,10 +300,12 @@
 
               // Prepare point ID for next point
               newPointId++;
-            } else if (preferSmallerError && distanceToLast < distanceToThis && !lastIsFirst) {
+            } else if (preferSmallerError && intervalStartIdx !== j + 1 &&
+                distanceToLast < distanceToThis && !lastIsFirst) {
               // Optionally, make the interval smaller if this means being closer to
               // the ideal interval length. This can only be done if the current
-              // interval has at least a length of 2.
+              // interval has at least a length of 2 and the previous node isn't
+              // the interval start.
               selectedNode = partition[j+1];
               // To properly continue from the last node with the next interval,
               // move index back one step.
@@ -337,7 +355,9 @@
     edges = target || {};
 
     var edges = sampler.domains.reduce(function(o, d) {
-      if (allowedDomains && !allowedDomains.has(d.id)) {
+      if (allowedDomains &&
+          allowedDomains.length > 0 &&
+          allowedDomains.indexOf(d.id) === -1) {
         return o;
       }
 
@@ -367,7 +387,8 @@
     return sampler.domains.reduce(function(o, d) {
       var intervalConfiguration = Sampling.intervalsFromModels(arbor, positions,
           d, sampler.interval_length, sampler.interval_error, preferSmallerError,
-          createNewNodes, sampler.leaf_segment_handling, updateArborData, target);
+          createNewNodes, sampler.leaf_segment_handling, updateArborData, target,
+          sampler.merge_limit);
       o[d.id] = intervalConfiguration.intervals;
       return o;
     }, {});

@@ -15,7 +15,7 @@ backward = """
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('catmaid', '0050_create_volume_class_and_instances'),
+        ('catmaid', '0051_add_alpha_and_normalization_columns_to_nblast'),
     ]
 
     operations = [

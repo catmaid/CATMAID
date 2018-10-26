@@ -48,6 +48,7 @@ class Exporter():
         self.export_users = options['export_users']
         self.required_annotations = options['required_annotations']
         self.excluded_annotations = options['excluded_annotations']
+        self.exclusion_is_final = options['exclusion_is_final']
         self.original_placeholder_context = options['original_placeholder_context']
         self.target_file = options.get('file', None)
         if self.target_file:
@@ -121,12 +122,18 @@ class Exporter():
             skeleton_id_constraints = list(chain.from_iterable([n['skeleton_ids'] for n in neuron_info]))
             neuron_ids = [n['id'] for n in neuron_info]
 
-            # Remove excluded skeletons
+            # Remove excluded skeletons if either a) exclusion_is_final is set
+            # or b) the annotation target is *not* annotated with a required
+            # annotation or one of its sub-annotations.
             if exclude_skeleton_id_constraints:
-                skeleton_id_constraints = [skid for skid in skeleton_id_constraints
-                                           if skid not in exclude_skeleton_id_constraints]
-                neuron_ids = [nid for nid in neuron_ids
-                              if nid not in exclude_neuron_id_constraint]
+                if exclusion_is_final:
+                    skeleton_id_constraints = [skid for skid in skeleton_id_constraints
+                                            if skid not in exclude_skeleton_id_constraints]
+                    neuron_ids = [nid for nid in neuron_ids
+                                if nid not in exclude_neuron_id_constraint]
+                else:
+                    # Find all a
+                    pass
 
             entities = ClassInstance.objects.filter(pk__in=neuron_ids)
 
@@ -512,6 +519,10 @@ class Command(BaseCommand):
             action='store_true', help='Should placeholder nodes be exported')
         parser.add_argument('--original-placeholder-context', dest='original_placeholder_context',
             action='store_true', default=False, help='Whether or not exported placeholder nodes refer to their original skeltons and neurons')
+        parser.add_argument('---exclusion-is-final', dest='exclusion_is_final',
+            action='store_true', default=False, help='Whether or not neurons ' +
+            'should be excluded if in addition to an exclusion annotation ' +
+            'they are also annotated with a required (inclusion) annotation.')
 
     def ask_for_project(self, title):
         """ Return a valid project object.

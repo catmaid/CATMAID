@@ -51,15 +51,20 @@
        * Create controls to refresh volumes.
        */
       createControls: function(controls) {
+        let tabNames = ['Main'];
+        let tabs = CATMAID.DOM.addTabGroup(controls, '-volumes', tabNames);
+
+        let mainTab = tabs['Main'];
+
         var refresh = document.createElement('button');
         refresh.appendChild(document.createTextNode('Refresh'));
         refresh.onclick = this.redraw.bind(this);
-        controls.appendChild(refresh);
+        mainTab.appendChild(refresh);
 
         var add = document.createElement('button');
         add.appendChild(document.createTextNode('Add new volume'));
         add.onclick = this.addVolume.bind(this);
-        controls.appendChild(add);
+        mainTab.appendChild(add);
 
         var hiddenFileButton = CATMAID.DOM.createFileButton(false, false,
             (function(event) {
@@ -77,23 +82,23 @@
               }
             }).bind(this));
         hiddenFileButton.setAttribute('multiple', true);
-        controls.appendChild(hiddenFileButton);
+        mainTab.appendChild(hiddenFileButton);
 
         var openFile = document.createElement('button');
         openFile.setAttribute('title','Supports Json and ascii-stl files');
         openFile.appendChild(document.createTextNode('Add from file'));
         openFile.onclick = hiddenFileButton.click.bind(hiddenFileButton);
-        controls.appendChild(openFile);
+        mainTab.appendChild(openFile);
 
         var annotate = document.createElement('button');
         annotate.appendChild(document.createTextNode('Annotate'));
         annotate.setAttribute('title', 'Annotate all selected volumes');
         annotate.onclick = this.annotateSelectedVolumes.bind(this);
-        controls.appendChild(annotate);
+        mainTab.appendChild(annotate);
 
         let self = this;
         CATMAID.DOM.appendNumericField(
-            controls,
+            mainTab,
             "Min skeleton nodes", "If \"List skeletons\" is clicked for a " +
             "volume, only skeletons with at least this many nodes will be shown.",
             2,
@@ -109,7 +114,7 @@
             5,
             "#");
         CATMAID.DOM.appendNumericField(
-            controls,
+            mainTab,
             "Min skeleton length (nm)", "If \"List skeletons\" is clicked for a " +
             "volume, only skeletons with at least a cable length of this will be shown.",
             0,
@@ -127,7 +132,7 @@
 
         // The skeleton source
         var sourceSelect = CATMAID.DOM.appendSelect(
-            controls,
+            mainTab,
             "skeleton-constraint-source",
             "Skeleton constraints",
             [{title: '(none)', value: 'none'}],
@@ -137,6 +142,9 @@
               self.selectedSkeletonConstraintSource = this.value;
             });
         this.updateSkeletonConstraintSourceSelect(sourceSelect);
+
+        // Init tabs
+        $(controls).tabs();
       },
 
       contentID: 'volume_manger_content',

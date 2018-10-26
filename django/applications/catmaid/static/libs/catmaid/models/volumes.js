@@ -232,7 +232,21 @@
         }
       };
 
-    }
+    },
+
+    /**
+     * Find all skeleton intersecting volumes.
+     *
+     * @param projetId    {integer}   The project to operate in.
+     * @param skeletonIds {integer[]} The skeletons to find intersecting volumes for.
+     * @param annotation  {string}    (optional) An annotation that is expected
+     *                                on intersecting volumes.
+     * @returns Promise resolving with result.
+     */
+    findSkeletonInnervations: function(projectId, skeletonIds, annotation) {
+      return CATMAID.fetch(projectId + '/volumes/skeleton-innervations');
+    },
+
   };
 
   // Add events

@@ -33,10 +33,14 @@
     // listing skeletons in a volume.
     this.selectedSkeletonConstraintSource = 'none';
 
+    // The skeleton source selected for innervation checks
+    this.innervationSkeletonSource = 'none';
+    this.innervationVolumeAnnotation = '';
+
     CATMAID.skeletonListSources.on(CATMAID.SkeletonSourceManager.EVENT_SOURCE_ADDED,
-        this.updateSkeletonConstraintSources, this);
+        this.handleChangedSkeletonSources, this);
     CATMAID.skeletonListSources.on(CATMAID.SkeletonSourceManager.EVENT_SOURCE_REMOVED,
-        this.updateSkeletonConstraintSources, this);
+        this.handleChangedSkeletonSources, this);
   };
 
   VolumeManagerWidget.prototype.getName = function() {
@@ -51,10 +55,11 @@
        * Create controls to refresh volumes.
        */
       createControls: function(controls) {
-        let tabNames = ['Main'];
+        let tabNames = ['Main', 'Skeleton innervations'];
         let tabs = CATMAID.DOM.addTabGroup(controls, '-volumes', tabNames);
 
         let mainTab = tabs['Main'];
+        let innervationTab = tabs['Skeleton innervations'];
 
         var refresh = document.createElement('button');
         refresh.appendChild(document.createTextNode('Refresh'));
@@ -133,15 +138,48 @@
         // The skeleton source
         var sourceSelect = CATMAID.DOM.appendSelect(
             mainTab,
-            "skeleton-constraint-source",
+            undefined,
             "Skeleton constraints",
             [{title: '(none)', value: 'none'}],
             "Only list skeletons for a volume from this skeleton source",
             'none',
             function(e) {
               self.selectedSkeletonConstraintSource = this.value;
-            });
-        this.updateSkeletonConstraintSourceSelect(sourceSelect);
+            },
+            "skeleton-constraint-source");
+        this.updateSkeletonSourceSelect(sourceSelect,
+            this.selectedSkeletonConstraintSource);
+
+
+        // Skeleton innervations tab
+        var innervationSourceSelect = CATMAID.DOM.appendSelect(
+            innervationTab,
+            undefined,
+            "Skeletons",
+            [{title: '(none)', value: 'none'}],
+            'The skeletons for which volume intersections are checked.',
+            'none',
+            function(e) {
+              self.innervationSkeletonSource = this.value;
+            },
+            "skeleton-innervation-source");
+        this.updateSkeletonSourceSelect(innervationSourceSelect,
+            this.innervationSkeletonSource);
+
+        CATMAID.DOM.appendElement(innervationTab, {
+          type: 'text',
+          label: 'Volume annotation',
+          title: 'Only check against volumes with this annotation.',
+          onchange: function(e) {
+            self.innervationVolumeAnnotation = this.value.trim();
+          },
+        });
+
+        CATMAID.DOM.appendElement(innervationTab, {
+          type: 'button',
+          label: 'Find innervations',
+          onclick: this.findInnervations.bind(this),
+        });
 
         // Init tabs
         $(controls).tabs();
@@ -391,9 +429,9 @@
       this.currentContext = null;
     }
     SkeletonAnnotations.off(CATMAID.SkeletonSourceManager.EVENT_SOURCE_ADDED,
-        this.updateSkeletonConstraintSources, this);
+        this.handleChangedSkeletonSources, this);
     SkeletonAnnotations.off(CATMAID.SkeletonSourceManager.EVENT_SOURCE_REMOVED,
-        this.updateSkeletonConstraintSources, this);
+        this.handleChangedSkeletonSources, this);
   };
 
   /**
@@ -410,20 +448,26 @@
   /**
    *
    */
-  VolumeManagerWidget.prototype.updateSkeletonConstraintSources = function() {
-    let sourceSelectSelector = "select#volume_manager_controls_skeleton-constraint-source";
+  VolumeManagerWidget.prototype.handleChangedSkeletonSources = function() {
+    let sourceSelectSelector = "select#skeleton-constraint-source";
     let sourceSelect = document.querySelector(sourceSelectSelector);
-    if (!sourceSelect) {
-      return;
+    if (sourceSelect) {
+      this.updateSkeletonSourceSelect(sourceSelect, this.selectedSkeletonConstraintSource);
+      this.selectedSkeletonConstraintSource = sourceSelect.value;
     }
-    this.updateSkeletonConstraintSourceSelect(sourceSelect);
-    this.selectedSkeletonConstraintSource = sourceSelect.value;
+
+    let innervationSourceSelectSelector = "select#skeleton-innervation-source";
+    let innervationSourceSelect = document.querySelector(innervationSourceSelectSelector);
+    if (innervationSourceSelect) {
+      this.updateSkeletonSourceSelect(innervationSourceSelect, this.innervationSkeletonSource);
+      this.innervationSkeletonSource = innervationSourceSelect.value;
+    }
   };
 
   /**
    * Update a particular select element with the most recent sources.
    */
-  VolumeManagerWidget.prototype.updateSkeletonConstraintSourceSelect = function(sourceSelect) {
+  VolumeManagerWidget.prototype.updateSkeletonSourceSelect = function(sourceSelect, selectedValue) {
     // Find index of current value in new source list
     let availableSources = CATMAID.skeletonListSources.getSourceNames();
     let newIndexInNewSources = -1;
@@ -442,7 +486,7 @@
     }, [{title: '(none)', value: 'none'}]);
 
     CATMAID.DOM.appendOptionsToSelect(sourceSelect, sourceOptions,
-        this.selectedSkeletonConstraintSource, true);
+        selectedValue, true);
   };
 
   /**
@@ -664,6 +708,35 @@
     this.editVolume(null);
   };
 
+  /**
+   * Ask the back-end for all volumes that intersect with the selected
+   * skeletons.
+   */
+  VolumeManagerWidget.prototype.findInnervations = function() {
+    let annotation = this.innervationVolumeAnnotation;
+    if (!this.innervationSkeletonSource ||
+        this.innervationSkeletonSource === 'none') {
+      CATMAID.warn("No skeleton source selected");
+      return;
+    }
+
+    let source = CATMAID.skeletonListSources.getSource(
+        this.innervationSkeletonSource);
+    if (!source) {
+      throw new CATMAID.ValueError("Can't find skeleton source: " +
+          this.innervationSkeletonSource);
+    }
+    let skeletonIds = source.getSelectedSkeletons();
+    if (skeletonIds.length === 0) {
+      CATMAID.warn("No skeletons selected in source " + source.getName());
+      return;
+    }
+    CATMAID.Volumes.findSkeletonInnervations(project.id, skeletonIds, annotation)
+      .then(function(result) {
+        CATMAID.msg('ok', 'ok');
+      })
+      .catch(CATMAID.handleError);
+  };
 
   /**
    * Annotate all currently selected volumes.

@@ -28,33 +28,3 @@
 .annotation-container ul {
   display: inline;
 }
-
-.resultTags {
-  margin: 4px 0;
-  padding: 0;
-}
-
-.resultTags li {
-  display: inline-block;
-  background-color: #eef;
-  list-style-type: none;
-  padding: 0 6px 0 6px;
-  margin: 2px 2px;
-  cursor: pointer;
-  -webkit-border-radius: 5px;
-  border-radius: 5px;
-}
-
-.resultTags li:hover {
-  background-color: #eee;
-}
-
-.resultTags div.remove_annotation {
-  display: inline;
-  background-image: url(../images/minus_small.png);
-  background-color: #eef;
-  background-position: right;
-  background-repeat: no-repeat;
-  padding: 0 0 0 17px;
-  cursor: pointer;
-}

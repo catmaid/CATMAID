@@ -19,9 +19,12 @@
      * @returns {Object} Promise that is resolved with a list of objects
      *                   representing volumes.
      */
-    listAll: function(projectId) {
+    listAll: function(projectId, skeletonIds) {
       var url = projectId + '/volumes/';
-      return CATMAID.fetch(url, 'GET').then(function (volumes) {
+      let method = skeletonIds ? 'POST' : 'GET';
+      return CATMAID.fetch(url, method, {
+        'skeleton_ids': skeletonIds,
+      }).then(function (volumes) {
         return volumes.data.map(function (vol) {
           return CATMAID.tools.buildObject(volumes.columns, vol);
         });

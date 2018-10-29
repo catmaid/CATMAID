@@ -340,41 +340,76 @@ def validate_vtype(vtype):
                 volume_type.keys().join(", "))
     return vtype
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 @requires_user_role([UserRole.Browse])
 def volume_collection(request, project_id):
     """Get a collection of all available volumes.
+    ---
+    parameters:
+      - name: project_id
+        description: Project to operate in
+        type: integer
+        paramType: path
+        required: true
+      - name: volume_ids
+        description: Only return specified volumes
+        paramType: form
+        type: array
+        items:
+            type: integer
+        required: false
     """
     if request.method == 'GET':
-        p = get_object_or_404(Project, pk=project_id)
-        # FIXME: Parsing our PostGIS geometry with GeoDjango doesn't work
-        # anymore since Django 1.8. Therefore, the geometry fields isn't read.
-        # See: https://github.com/catmaid/CATMAID/issues/1250
+        data = request.GET
+    elif request.method == 'POST':
+        data = request.POST
+    else:
+        raise ValueError("Unsupported HTTP method" + request.method)
 
-        cursor = connection.cursor()
-        cursor.execute("""
-            SELECT v.id, v.name, v.comment, v.user_id, v.editor_id, v.project_id,
-                v.creation_time, v.edition_time,
-                JSON_AGG(ann.name) FILTER (WHERE ann.name IS NOT NULL) AS annotations
-            FROM catmaid_volume v
-            LEFT JOIN volume_class_instance vci ON vci.volume_id = v.id
-            LEFT JOIN class_instance_class_instance cici
-                ON cici.class_instance_a = vci.class_instance_id
-            LEFT JOIN class_instance ann ON ann.id = cici.class_instance_b
-            WHERE v.project_id = %(pid)s
-                AND (
-                    cici.relation_id IS NULL OR
-                    cici.relation_id = (
-                        SELECT id FROM relation
-                        WHERE project_id = %(pid)s AND relation_name = 'annotated_with'
-                    )
+    p = get_object_or_404(Project, pk=project_id)
+    volume_ids = get_request_list(data, 'volume_ids', [], map_fn=int)
+
+    params = {
+        'project_id': project_id,
+    }
+
+    extra_joins = []
+
+    if volume_ids:
+        extra_joins.append("""
+            JOIN UNNEST(%(volume_ids)s::bigint[]) query_volume(id)
+                ON query_volume.id = v.id
+        """)
+        params['volume_ids'] = volume_ids
+
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT v.id, v.name, v.comment, v.user_id, v.editor_id, v.project_id,
+            v.creation_time, v.edition_time,
+            JSON_AGG(ann.name) FILTER (WHERE ann.name IS NOT NULL) AS annotations
+        FROM catmaid_volume v
+        LEFT JOIN volume_class_instance vci ON vci.volume_id = v.id
+        LEFT JOIN class_instance_class_instance cici
+            ON cici.class_instance_a = vci.class_instance_id
+        LEFT JOIN class_instance ann ON ann.id = cici.class_instance_b
+        {extra_joins}
+        WHERE v.project_id = %(project_id)s
+            AND (
+                cici.relation_id IS NULL OR
+                cici.relation_id = (
+                    SELECT id FROM relation
+                    WHERE project_id = %(project_id)s AND relation_name = 'annotated_with'
                 )
-            GROUP BY v.id
-            """, {'pid': project_id})
-        return JsonResponse({
-            'columns': [r[0] for r in cursor.description],
-            'data': cursor.fetchall()
-        })
+            )
+        GROUP BY v.id
+        """.format(**{
+            'extra_joins': '\n'.join(extra_joins),
+        }), params)
+
+    return JsonResponse({
+        'columns': [r[0] for r in cursor.description],
+        'data': cursor.fetchall()
+    })
 
 def get_volume_details(project_id, volume_id):
     cursor = connection.cursor()

@@ -43,6 +43,11 @@ included in this changelog.
   provided with a 'skeleton_ids' parameter. This can be constrained by volume
   annotation, cable length and node count.
 
+- `POST /{project_id}/volumes/`:
+  Previously only the GET method would be supported. With the introduction of an
+  optional `volume_ids` parameter, POST can be used as well. This parameter can
+  be used to constrain the returned set of volumes.
+
 ### Modifications
 
 - `POST /{project_id}/skeletons/node-label`:
@@ -75,6 +80,11 @@ included in this changelog.
   list of lists, with each inner list being a volume. The entries are described
   by the 'columns' field. Along with the already returned fields, annotations
   are now retuned as well.
+
+- `GET /{project_id}/volumes/`:
+  An optional `volume_ids` parameter can now be used and the POST method is
+  supported as well (to transfer larger volume ID lists). This parameter can be
+  used to constrain the returned set of volumes.
 
 ### Deprecations
 

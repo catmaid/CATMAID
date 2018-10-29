@@ -1330,6 +1330,25 @@
     return select;
   };
 
+  DOM.createSelectElement = function(relId, label, entries, title, value, onChangeFn,
+      id) {
+    id = id ? id : (relId ? (div.id + '_' + relId) : undefined);
+    let select = CATMAID.DOM.createSelect(id, entries, value);
+    var labelElement = document.createElement('label');
+    if (title) {
+      select.title = title;
+      labelElement.setAttribute('title', title);
+    }
+    if (onChangeFn) {
+      select.onchange= onChangeFn;
+    }
+
+    labelElement.appendChild(document.createTextNode(label || ''));
+    labelElement.appendChild(select);
+
+    return labelElement;
+  };
+
   /**
    * Create a tab group and add it to the passed in container. The widget ID is
    * expected to be unique.
@@ -1527,23 +1546,11 @@
   /**
    * Append a new select element to another element.
    */
-  DOM.appendSelect = function(div, relId, label, entries, title, value, onChangeFn, id) {
-    id = id ? id : (relId ? (div.id + '_' + relId) : undefined);
-    var select = CATMAID.DOM.createSelect(id, entries, value);
-    div.appendChild(select);
-    if (title) {
-      select.title = title;
-    }
-    if (onChangeFn) {
-      select.onchange= onChangeFn;
-    }
-    if (label) {
-      var labelElement = document.createElement('label');
-      labelElement.setAttribute('title', title);
-      labelElement.appendChild(document.createTextNode(label));
-      labelElement.appendChild(select);
-      div.appendChild(labelElement);
-    }
+  DOM.appendSelect = function(div, relId, label, entries, title, value,
+      onChangeFn, id) {
+    let select = CATMAID.DOM.createSelectElement(relId, label, entries, title,
+        value, onChangeFn, id);
+    div.append(select);
     return select;
   };
 

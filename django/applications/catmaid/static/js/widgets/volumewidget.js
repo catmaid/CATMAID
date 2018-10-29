@@ -62,45 +62,17 @@
        * Create controls to refresh volumes.
        */
       createControls: function(controls) {
-        let tabNames = ['Main', 'Skeleton innervations'];
+        let tabNames = ['Main', 'Add volumes', 'Skeleton innervations'];
         let tabs = CATMAID.DOM.addTabGroup(controls, '-volumes', tabNames);
 
         let mainTab = tabs['Main'];
+        let addTab = tabs['Add volumes'];
         let innervationTab = tabs['Skeleton innervations'];
 
         var refresh = document.createElement('button');
         refresh.appendChild(document.createTextNode('Refresh'));
         refresh.onclick = this.redraw.bind(this);
         mainTab.appendChild(refresh);
-
-        var add = document.createElement('button');
-        add.appendChild(document.createTextNode('Add new volume'));
-        add.onclick = this.addVolume.bind(this);
-        mainTab.appendChild(add);
-
-        var hiddenFileButton = CATMAID.DOM.createFileButton(false, false,
-            (function(event) {
-              var files = event.target.files;
-              if (0 === files.length) {
-                CATMAID.error("Choose at least one file!");
-              } else {
-                this.addVolumesFromSTL(Array.from(files).filter(function(file){
-                  if (file.name.endsWith("stl")){
-                    return true;
-                  } else {
-                    this.addVolumeFromFile(file).catch(CATMAID.handleError);
-                  }
-                },this)).catch(CATMAID.handleError);
-              }
-            }).bind(this));
-        hiddenFileButton.setAttribute('multiple', true);
-        mainTab.appendChild(hiddenFileButton);
-
-        var openFile = document.createElement('button');
-        openFile.setAttribute('title','Supports Json and ascii-stl files');
-        openFile.appendChild(document.createTextNode('Add from file'));
-        openFile.onclick = hiddenFileButton.click.bind(hiddenFileButton);
-        mainTab.appendChild(openFile);
 
         var annotate = document.createElement('button');
         annotate.appendChild(document.createTextNode('Annotate'));
@@ -162,6 +134,37 @@
             "skeleton-constraint-source");
         this.updateSkeletonSourceSelect(sourceSelect,
             this.selectedSkeletonConstraintSource);
+
+
+        // Add tab
+        var add = document.createElement('button');
+        add.appendChild(document.createTextNode('Add new volume'));
+        add.onclick = this.addVolume.bind(this);
+        addTab.appendChild(add);
+
+        var hiddenFileButton = CATMAID.DOM.createFileButton(false, false,
+            (function(event) {
+              var files = event.target.files;
+              if (0 === files.length) {
+                CATMAID.error("Choose at least one file!");
+              } else {
+                this.addVolumesFromSTL(Array.from(files).filter(function(file){
+                  if (file.name.endsWith("stl")){
+                    return true;
+                  } else {
+                    this.addVolumeFromFile(file).catch(CATMAID.handleError);
+                  }
+                },this)).catch(CATMAID.handleError);
+              }
+            }).bind(this));
+        hiddenFileButton.setAttribute('multiple', true);
+        addTab.appendChild(hiddenFileButton);
+
+        var openFile = document.createElement('button');
+        openFile.setAttribute('title','Supports Json and ascii-stl files');
+        openFile.appendChild(document.createTextNode('Add from file'));
+        openFile.onclick = hiddenFileButton.click.bind(hiddenFileButton);
+        addTab.appendChild(openFile);
 
 
         // Skeleton innervations tab

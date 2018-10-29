@@ -18,6 +18,13 @@
   var VolumeManagerWidget = function(options) {
     options = options || {};
 
+    this.idPrefix = 'volume-manager';
+
+    // The current edit mode
+    this.mode = 'list';
+    this.modes = ['list', 'add', 'innervations'];
+
+    this.content = null;
     // Stores information about current widget mode
     this.currentContext = null;
     // Access to the displayed DataTable
@@ -43,6 +50,8 @@
     // Whether client side filtering should be performed (or only boundingn box
     // checks should be displayed).
     this.innervationClientSideFiltering = true;
+    // The innervated volume IDs
+    this.innervationVolumeIdFilter = null;
 
     CATMAID.skeletonListSources.on(CATMAID.SkeletonSourceManager.EVENT_SOURCE_ADDED,
         this.handleChangedSkeletonSources, this);
@@ -57,412 +66,52 @@
   VolumeManagerWidget.prototype.getWidgetConfiguration = function() {
     return {
       controlsID: 'volume_manager_controls',
-
-      /**
-       * Create controls to refresh volumes.
-       */
       createControls: function(controls) {
-        let tabNames = ['Main', 'Add volumes', 'Skeleton innervations'];
-        let tabs = CATMAID.DOM.addTabGroup(controls, '-volumes', tabNames);
+        var self = this;
+        var tabNames = this.modes.map(function(m) {
+          return VolumeManagerWidget.Modes[m].title;
+        }, this);
+        var tabs = CATMAID.DOM.addTabGroup(controls, '-volumes', tabNames);
+        this.modes.forEach(function(mode, i) {
+          var mode = VolumeManagerWidget.Modes[mode];
+          var tab = tabs[mode.title];
+          CATMAID.DOM.appendToTab(tab, mode.createControls(this));
+          tab.dataset.index = i;
+        }, this);
+        this.tabControls = $(controls).tabs({
+          active: this.modes.indexOf(this.mode),
+          activate: function(event, ui) {
+            var oldStepIndex = parseInt(ui.oldPanel.attr('data-index'), 10);
+            var newStepIndex = parseInt(ui.newPanel.attr('data-index'), 10);
 
-        let mainTab = tabs['Main'];
-        let addTab = tabs['Add volumes'];
-        let innervationTab = tabs['Skeleton innervations'];
-
-        var refresh = document.createElement('button');
-        refresh.appendChild(document.createTextNode('Refresh'));
-        refresh.onclick = this.redraw.bind(this);
-        mainTab.appendChild(refresh);
-
-        var annotate = document.createElement('button');
-        annotate.appendChild(document.createTextNode('Annotate'));
-        annotate.setAttribute('title', 'Annotate all selected volumes');
-        annotate.onclick = this.annotateSelectedVolumes.bind(this);
-        mainTab.appendChild(annotate);
-
-        var show3d = document.createElement('button');
-        show3d.appendChild(document.createTextNode('Show selected in 3D'));
-        show3d.setAttribute('title', 'Show all selected volumes in a 3D viewer');
-        show3d.onclick = this.showSelectedVolumesIn3d.bind(this);
-        mainTab.appendChild(show3d);
-
-        let self = this;
-        CATMAID.DOM.appendNumericField(
-            mainTab,
-            "Min skeleton nodes", "If \"List skeletons\" is clicked for a " +
-            "volume, only skeletons with at least this many nodes will be shown.",
-            2,
-            undefined,
-            function() {
-              let value = parseInt(this.value, 10);
-              if (value === undefined || Number.isNaN(value)) {
-                CATMAID.warn("Minimum skeleton nodes need to be a number");
-                return;
+            var tabs = $(self.tabControls);
+            var activeIndex = tabs.tabs('option', 'active');
+            if (activeIndex !== self.modes.indexOf(self.mode)) {
+              if (!self.setMode(self.modes[activeIndex])) {
+                // Return to old tab if selection was unsuccessful
+                if (oldStepIndex !== newStepIndex) {
+                  $(event.target).tabs('option', 'active', oldStepIndex);
+                }
               }
-              self.minFilterNodes = value;
-            },
-            5,
-            "#");
-        CATMAID.DOM.appendNumericField(
-            mainTab,
-            "Min skeleton length (nm)", "If \"List skeletons\" is clicked for a " +
-            "volume, only skeletons with at least a cable length of this will be shown.",
-            0,
-            undefined,
-            function() {
-              let value = parseFloat(this.value);
-              if (value === undefined || Number.isNaN(value)) {
-                CATMAID.warn("Minimum skeleton length need to be a number");
-                return;
-              }
-              self.minFilterCable = value;
-            },
-            8,
-            "nm");
-
-        // The skeleton source
-        var sourceSelect = CATMAID.DOM.appendSelect(
-            mainTab,
-            undefined,
-            "Skeleton constraints",
-            [{title: '(none)', value: 'none'}],
-            "Only list skeletons for a volume from this skeleton source",
-            'none',
-            function(e) {
-              self.selectedSkeletonConstraintSource = this.value;
-            },
-            "skeleton-constraint-source");
-        this.updateSkeletonSourceSelect(sourceSelect,
-            this.selectedSkeletonConstraintSource);
-
-
-        // Add tab
-        var add = document.createElement('button');
-        add.appendChild(document.createTextNode('Add new volume'));
-        add.onclick = this.addVolume.bind(this);
-        addTab.appendChild(add);
-
-        var hiddenFileButton = CATMAID.DOM.createFileButton(false, false,
-            (function(event) {
-              var files = event.target.files;
-              if (0 === files.length) {
-                CATMAID.error("Choose at least one file!");
-              } else {
-                this.addVolumesFromSTL(Array.from(files).filter(function(file){
-                  if (file.name.endsWith("stl")){
-                    return true;
-                  } else {
-                    this.addVolumeFromFile(file).catch(CATMAID.handleError);
-                  }
-                },this)).catch(CATMAID.handleError);
-              }
-            }).bind(this));
-        hiddenFileButton.setAttribute('multiple', true);
-        addTab.appendChild(hiddenFileButton);
-
-        var openFile = document.createElement('button');
-        openFile.setAttribute('title','Supports Json and ascii-stl files');
-        openFile.appendChild(document.createTextNode('Add from file'));
-        openFile.onclick = hiddenFileButton.click.bind(hiddenFileButton);
-        addTab.appendChild(openFile);
-
-
-        // Skeleton innervations tab
-        var innervationSourceSelect = CATMAID.DOM.appendSelect(
-            innervationTab,
-            undefined,
-            "Skeletons",
-            [{title: '(none)', value: 'none'}],
-            'The skeletons for which volume intersections are checked.',
-            'none',
-            function(e) {
-              self.innervationSkeletonSource = this.value;
-            },
-            "skeleton-innervation-source");
-        this.updateSkeletonSourceSelect(innervationSourceSelect,
-            this.innervationSkeletonSource, true);
-
-        CATMAID.DOM.appendElement(innervationTab, {
-          type: 'text',
-          label: 'Volume annotation',
-          title: 'Only check against volumes with this annotation.',
-          onchange: function(e) {
-            self.innervationVolumeAnnotation = this.value.trim();
-          },
-        });
-
-        CATMAID.DOM.appendElement(innervationTab, {
-          type: 'button',
-          label: 'Find innervations',
-          onclick: this.findInnervations.bind(this),
-        });
-
-        CATMAID.DOM.appendElement(innervationTab, {
-          type: 'button',
-          label: 'Show results in 3D',
-          onclick: function() {
-            let source = CATMAID.skeletonListSources.getSource(
-                self.innervationSkeletonSource);
-            if (!source) {
-              throw new CATMAID.ValueError("Can't find skeleton source: " +
-                  self.innervationSkeletonSource);
+              self.update();
             }
-            let skeletonIds = source.getSelectedSkeletons();
-            if (skeletonIds.length === 0) {
-              CATMAID.warn("No skeletons selected in source " + source.getName());
-              return;
-            }
-
-            if (!self.volumeIdFilter) {
-              CATMAID.warn("No results to show");
-              return;
-            }
-
-            self.showSelectedVolumesIn3d(skeletonIds);
           }
         });
-
-        // Init tabs
-        $(controls).tabs();
       },
-
       contentID: 'volume_manger_content',
-
-      /**
-       * Create content, which is basically a DataTable instance, getting Data
-       * from the back-end.
-       */
       createContent: function(container) {
-        var table = document.createElement('table');
-        table.style.width = "100%";
-        var header = table.createTHead();
-        var hrow = header.insertRow(0);
-        var columns = ['', 'Name', 'Id', 'Comment', 'Annotations', 'User', 'Creation time',
-            'Editor', 'Edition time', 'Action'];
-        columns.forEach(function(c) {
-          hrow.insertCell().appendChild(document.createTextNode(c));
-        });
+        this.content = container;
 
-        var tableContainer = document.createElement('div');
-        tableContainer.setAttribute('class', 'volume-list');
-        tableContainer.appendChild(table);
-        container.appendChild(tableContainer);
-        let self = this;
-        this.datatable = $(table).DataTable({
-          lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
-          ajax: function(data, callback, settings) {
-
-            CATMAID.fetch(project.id +  "/volumes/")
-              .then(function(volumeData) {
-                let volumeDetails = volumeData.data;
-                if (self.volumeIdFilter && self.volumeIdFilter.size > 0) {
-                  volumeDetails = volumeDetails.filter(function(v) {
-                    return self.volumeIdFilter.has(v[0]);
-                  });
-                }
-                let volumes = volumeDetails.map(function(volume) {
-                  return new CATMAID.Volume(CATMAID.tools.buildObject(volumeData.columns, volume));
-                });
-                callback({
-                  draw: data.draw,
-                  data: volumes
-                });
-              })
-              .catch(CATMAID.handleError);
-          },
-          columns: [
-            {
-              render: function(data, type, row, meta) {
-                return '<input type="checkbox" data-role="select" ' +
-                    (row.selected ? 'checked' : '') + ' />';
-              }
-            },
-            {data: "title"},
-            {data: "id"},
-            {
-              data: "comment",
-              width: "20%",
-            },
-            {
-              data: "annotations",
-              render: function (data, type, row, meta) {
-                if (type === 'display') {
-                  return data.join(', ');
-                } else {
-                  return data;
-                }
-              }
-            },
-            {
-              data: "user_id",
-              render: function(data, type, row, meta) {
-                return CATMAID.User.safe_get(data).login;
-              }
-            },
-            {data: "creation_time"},
-            {
-              data: "editor_id",
-              render: function(data, type, row, meta) {
-                return CATMAID.User.safe_get(data).login;
-              }
-            },
-            {data: "edition_time"},
-            {
-              data: null,
-              orderable: false,
-              width: '15%',
-              defaultContent: '<ul class="resultTags"><li><a href="#" data-action="remove">Remove</a></li> ' +
-                  '<li><a href="#" data-action="list-skeletons">List skeletons</a></li> ' +
-                  '<li><a href="#" data-action="list-connectors">List connectors</a></li>' +
-                  '<li><a href="#" data-action="export-STL">Export STL</a></ul></ul>'
-            }
-          ],
-        })
-        .on('change', 'input[data-role=select]', function() {
-          var table = $(this).closest('table');
-          var tr = $(this).closest('tr');
-          var data =  $(table).DataTable().row(tr).data();
-          data.selected = this.checked;
-        });
-
-        // Remove volume if 'remove' was clicked
-        $(table).on('click', 'a[data-action="remove"]', function() {
-          var tr = $(this).closest("tr");
-          var volume = self.datatable.row(tr).data();
-
-          var confirmDialog = new CATMAID.OptionsDialog("Remove volume", {
-            "Yes": function() {
-              CATMAID.fetch(project.id + '/volumes/' + volume.id + '/', 'DELETE')
-                .then(function(json) {
-                  CATMAID.msg('Success', 'Volume ' + json.volume_id + ' removed');
-                  self.redraw();
-                })
-                .catch(CATMAID.handleError);
-            },
-            "No": CATMAID.noop
-          });
-          confirmDialog.appendMessage("Are you sure you want to delete volume "
-              + volume.id + " (" + volume.name + ")?");
-          confirmDialog.show(500,'auto');
-
-          // Prevent event from bubbling up.
-          return false;
-        });
-
-        // Skeleton intersection list
-        $(table).on('click', 'a[data-action="list-skeletons"]', function() {
-          var tr = $(this).closest("tr");
-          var volume = self.datatable.row(tr).data();
-          CATMAID.Volumes.get(project.id, volume.id)
-            .then(function(volume) {
-              let bb = volume.bbox;
-              let skeletonConstraints;
-              if (self.selectedSkeletonConstraintSource &&
-                  self.selectedSkeletonConstraintSource!== 'none') {
-                let source = CATMAID.skeletonListSources.getSource(
-                    self.selectedSkeletonConstraintSource);
-                if (!source) {
-                  throw new CATMAID.ValueError("Can't find skeleton source: " +
-                      self.selectedSkeletonConstraintSource);
-                }
-                let skeletonIds = source.getSelectedSkeletons();
-                if (skeletonIds.length > 0) {
-                  skeletonConstraints = skeletonIds;
-                }
-              }
-              return CATMAID.Skeletons.inBoundingBox(project.id, bb.min.x,
-                  bb.min.y, bb.min.z, bb.max.x, bb.max.y, bb.max.z,
-                  self.minFilterNodes, self.minFilterCable, skeletonConstraints);
-            })
-            .then(function(skeletonIds) {
-              if (!skeletonIds || skeletonIds.length === 0) {
-                CATMAID.warn('Found no intersecting skeletons');
-              } else {
-                var handles = CATMAID.WindowMaker.create('selection-table');
-                if (!handles) {
-                  throw new CATMAID.ValueError("Could not create Selection Table");
-                }
-                handles.widget.addSkeletons(skeletonIds)
-                  .then(function() {
-                    CATMAID.msg('Success', 'Found ' + skeletonIds.length + ' skeletons');
-                  })
-                  .catch(CATMAID.handleError);
-              }
-            })
-            .catch(CATMAID.handleError);
-
-          // Prevent event from bubbling up.
-          return false;
-        });
-
-        // Connector intersection list
-        $(table).on('click', 'a[data-action="list-connectors"]', function() {
-          var tr = $(this).closest("tr");
-          var volume = self.datatable.row(tr).data();
-          CATMAID.Volumes.get(project.id, volume.id)
-            .then(function(volume) {
-              let bb = volume.bbox;
-              let skeletonConstraints;
-              if (self.selectedSkeletonConstraintSource &&
-                  self.selectedSkeletonConstraintSource!== 'none') {
-                let source = CATMAID.skeletonListSources.getSource(
-                    self.selectedSkeletonConstraintSource);
-                if (!source) {
-                  throw new CATMAID.ValueError("Can't find skeleton source: " +
-                      self.selectedSkeletonConstraintSource);
-                }
-                let skeletonIds = source.getSelectedSkeletons();
-                if (skeletonIds.length > 0) {
-                  skeletonConstraints = skeletonIds;
-                }
-              }
-              return CATMAID.Connectors.inBoundingBox(project.id, bb.min.x,
-                  bb.min.y, bb.min.z, bb.max.x, bb.max.y, bb.max.z, undefined,
-                  true, true, skeletonConstraints);
-            })
-            .then(function(connectorData) {
-              if (!connectorData || connectorData.length === 0) {
-                CATMAID.warn('Found no connectors in volume');
-              } else {
-                var connectorListHandles = CATMAID.ConnectorList.fromRawData(connectorData);
-                // Add a node filter for the selected volume
-                var strategy = CATMAID.NodeFilterStrategy['volume'];
-                var rule = new CATMAID.NodeFilterRule(strategy, {
-                  'volumeId': volume.id
-                });
-                connectorListHandles.widget.filterRules.push(rule);
-              }
-            })
-            .catch(CATMAID.handleError);
-
-          // Prevent event from bubbling up.
-          return false;
-        });
-
-        // Connector intersection list
-        $(table).on('click', 'a[data-action="export-STL"]', function() {
-          var tr = $(this).closest("tr");
-          var volume = self.datatable.row(tr).data();
-          var headers = {Accept: ['model/x.stl-ascii', 'model/stl']};
-          CATMAID.fetch("/" + project.id + "/volumes/" + volume.id + "/export.stl", "GET", undefined, true, undefined, undefined, undefined, headers)
-            .then(function(volume_file) {
-              var blob = new Blob([volume_file], {type: 'model/x.stl-ascii'});
-              saveAs(blob, volume.name + '.stl');
-            })
-            .catch(CATMAID.handleError);
-
-          // Prevent event from bubbling up.
-          return false;
-        });
-
-        // Display a volume if clicked
-        $(table).on('dblclick', 'tbody td', function() {
-          var tr = $(this).closest("tr");
-          var volume = self.datatable.row(tr).data();
-          self.loadVolume(volume.id)
-            .then(self.editVolume.bind(self))
-            .catch(CATMAID.handleError);
-        });
+        this.modes.forEach(function(modeKey, i) {
+          let mode = VolumeManagerWidget.Modes[modeKey];
+          let content = container.appendChild(document.createElement('div'));
+          content.setAttribute('id', `${this.idPrefix}-content-${modeKey}`);
+          content.style.display = 'none';
+          mode.createContent(content, this);
+        }, this);
+      },
+      init: function() {
+        this.update();
       },
     };
   };
@@ -479,6 +128,35 @@
         this.handleChangedSkeletonSources, this);
     SkeletonAnnotations.off(CATMAID.SkeletonSourceManager.EVENT_SOURCE_REMOVED,
         this.handleChangedSkeletonSources, this);
+  };
+
+  VolumeManagerWidget.prototype.update = function() {
+    delete this.content.dataset.msg;
+    // Show only active mode
+    for (let i=0; i<this.modes.length; ++i) {
+      let modeKey = this.modes[i];
+      let activeMode = modeKey === this.mode;
+      let mode = VolumeManagerWidget.Modes[modeKey];
+      let visible = false;
+      if (activeMode) {
+        let msg = CATMAID.tools.callIfFn(mode.getMessage, this);
+        if (msg) {
+         this.content.dataset.msg = msg;
+        } else {
+          visible = true;
+        }
+      }
+      let modeContent = document.querySelector(`div#${this.idPrefix}-content-${modeKey}`);
+      if (modeContent) {
+        modeContent.style.display = visible ? 'block': 'none';
+      }
+    }
+    let tabs = $(this.tabControls);
+    var activeIndex = tabs.tabs('option', 'active');
+    var widgetIndex = this.modes.indexOf(this.mode);
+    if (activeIndex !== widgetIndex) {
+      tabs.tabs('option', 'active', widgetIndex);
+    }
   };
 
   /**
@@ -566,7 +244,7 @@
    * Request volume details, show edit controls and display a bounding box
    * overlay. If no volume ID is given, a new volume is assumed.
    */
-  VolumeManagerWidget.prototype.editVolume = function(volume) {
+  VolumeManagerWidget.prototype.editVolume = function(volume, target) {
     var self = this;
     var createNewVolume = !volume;
 
@@ -574,9 +252,14 @@
       CATMAID.tools.callIfFn(this.currentContext.onExit);
     }
 
-    var $content = $('#volume_manger_content');
-    // Hide table
-    $("div.volume-list", $content).hide();
+    if (!target) {
+      throw new CATMAID.ValueError("Need target element!");
+    }
+    // Empty target
+    while (target.lastChild) {
+      target.removeChild(target.lastChild);
+    }
+    let $target = $(target);
 
     // Display inline editor for properties of new volume
     var $addContent = $(document.createElement('div'));
@@ -609,9 +292,9 @@
           "The geometry type of this volume.", undefined, volumeType);
       $addContent.append(typeSelect);
       $('select', typeSelect).on('change', function() {
-        $("div.volume-properties", $content).remove();
+        $("div.volume-properties", $target).remove();
         self.newVolumeType = this.value;
-        self.editVolume();
+        self.editVolume(null, target);
       });
     }
 
@@ -644,12 +327,11 @@
     };
     $addContent.append($('<div class="clear" />'));
     $addContent.append($('<div />')
-        .append($('<button>Cancel</Cancel>')
+        .append($('<button>Reset</Cancel>')
           .on('click', function(e) {
             onClose(false, function() {
-              // Show table
-              $("div.volume-list", $content).show();
-              $("div.volume-properties", $content).remove();
+              // Reinitialize volume editing
+              self.editVolume(null, target);
             });
           }))
         .append($('<button>Save</Cancel>')
@@ -661,9 +343,8 @@
                 onClose(true, function() {
                   volume.save()
                     .then(function(result) {
-                      // Show table, remove volume settings
-                      $("div.volume-list", $content).show();
-                      $("div.volume-properties", $content).remove();
+                      // Reinitialize volume editing
+                      self.editVolume(null, target);
                     }).catch(CATMAID.handleError)
                     .then(function() {
                       $.unblockUI();
@@ -681,7 +362,7 @@
             setTimeout(save, 100);
           })));
 
-    $content.append($addContent);
+    $(target).append($addContent);
 
     function volumeChanged(field, newValue, oldValue) {
       if (CATMAID.tools.isFn(onUpdate)) {
@@ -750,13 +431,6 @@
   };
 
   /**
-   * Add a new  volume. Edit it its properties directly in the widget.
-   */
-  VolumeManagerWidget.prototype.addVolume = function() {
-    this.editVolume(null);
-  };
-
-  /**
    * Ask the back-end for all volumes that intersect with the selected
    * skeletons.
    */
@@ -795,14 +469,14 @@
       })
       .then(function(result) {
         // Update data table, select and show only result volumes.
-        let table = document.querySelector('div.volume-list table');
+        let table = document.querySelector(`div#${self.idPrefix}-content-innervations table`);
         if (!table) {
           throw new CATMAID.ValueError('Could not find volume table');
         }
         let datatable = $(table).DataTable();
 
         // Set a filter
-        self.volumeIdFilter = result.reduce(function(s, v) {
+        self.innervationVolumeIdFilter = result.reduce(function(s, v) {
           v.volume_ids.forEach(s.add, s);
           return s;
         }, new Set());
@@ -812,9 +486,10 @@
           let data = datatable.rows().data();
           for (let i=0; i<data.length; ++i) {
             let v = data[i];
-            v.selected = self.volumeIdFilter.has(v.id);
+            v.selected = self.innervationVolumeIdFilter.has(v.id);
           }
           datatable.rows().invalidate();
+          self.update();
         });
       })
       .catch(CATMAID.handleError);
@@ -856,16 +531,8 @@
   /**
    * Show all selected volumes in a new 3D Viewer.
    */
-  VolumeManagerWidget.prototype.showSelectedVolumesIn3d = function(skeletonIds) {
-    if (!this.datatable) {
-      return;
-    }
-
-    let selectedVolumes = this.datatable.rows().data().toArray().filter(function(v) {
-      return v.selected;
-    });
-
-    if (selectedVolumes.length === 0) {
+  VolumeManagerWidget.prototype.showSelectedVolumesIn3d = function(volumeIds, skeletonIds) {
+    if (!volumeIds || volumeIds.length === 0) {
       CATMAID.warn('No volumes selected');
       return;
     }
@@ -887,12 +554,673 @@
     }
 
     let lut = new THREE.Lut("rainbow", 10);
-    lut.setMax(selectedVolumes.length - 1);
+    lut.setMax(volumeIds.length - 1);
 
-    selectedVolumes.forEach(function(v, i) {
+    volumeIds.forEach(function(v, i) {
       let color = lut.getColor(i);
       widget3d.showVolume(v.id, true, color, 0.3, true);
     });
+  };
+
+  VolumeManagerWidget.prototype.setMode = function(mode) {
+    var index = this.modes.indexOf(mode);
+    if (index === -1) {
+      throw new CATMAID.ValueError('Unknown Volume Manager mode: ' + mode);
+    }
+    this.mode = mode;
+    this.update();
+    return true;
+  };
+
+  VolumeManagerWidget.Modes = {
+    list: {
+      title: 'Main',
+      createControls: function(widget) {
+        let minNodes = CATMAID.DOM.createNumericField(
+            undefined,
+            "Min skeleton nodes", "If \"List skeletons\" is clicked for a " +
+            "volume, only skeletons with at least this many nodes will be shown.",
+            2,
+            undefined,
+            function() {
+              let value = parseInt(this.value, 10);
+              if (value === undefined || Number.isNaN(value)) {
+                CATMAID.warn("Minimum skeleton nodes need to be a number");
+                return;
+              }
+              widget.minFilterNodes = value;
+            },
+            5,
+            "#");
+        let minCable = CATMAID.DOM.createNumericField(
+            undefined,
+            "Min skeleton length (nm)", "If \"List skeletons\" is clicked for a " +
+            "volume, only skeletons with at least a cable length of this will be shown.",
+            0,
+            undefined,
+            function() {
+              let value = parseFloat(this.value);
+              if (value === undefined || Number.isNaN(value)) {
+                CATMAID.warn("Minimum skeleton length need to be a number");
+                return;
+              }
+              widget.minFilterCable = value;
+            },
+            8,
+            "nm");
+
+        // The skeleton source
+        let sourceSelectContainer = CATMAID.DOM.createSelectElement(
+            undefined,
+            "Skeleton constraints",
+            [{title: '(none)', value: 'none'}],
+            "Only list skeletons for a volume from this skeleton source",
+            'none',
+            function(e) {
+              widget.selectedSkeletonConstraintSource = this.value;
+            },
+            "skeleton-constraint-source");
+        let sourceSelect = sourceSelectContainer.querySelector('select');
+
+        widget.updateSkeletonSourceSelect(sourceSelect,
+            widget.selectedSkeletonConstraintSource);
+
+        return [{
+          type: 'button',
+          label: 'Refresh',
+          title: 'Reload the displayed volume list',
+          onclick: widget.redraw.bind(widget),
+        }, {
+          type: 'button',
+          label: 'Annotate',
+          title: 'Add an annotation to all selected volumes',
+          oncliick: widget.annotateSelectedVolumes.bind(widget),
+        }, {
+          type: 'button',
+          label: 'Show selected in 3D',
+          title: 'Show all selected volumesin a new 3D Viewer',
+          onclick: function() {
+            let selectedVolumes = widget.datatable.rows().data().toArray().filter(function(v) {
+              return v.selected;
+            });
+            widget.showSelectedVolumesIn3d(selectedVolumes);
+          }
+        }, {
+          type: 'child',
+          element: minNodes,
+        }, {
+          type: 'child',
+          element: minCable,
+        }, {
+          type: 'child',
+          element: sourceSelectContainer,
+        }];
+      },
+      createContent: function(container, widget) {
+        var table = document.createElement('table');
+        table.style.width = "100%";
+        var header = table.createTHead();
+        var hrow = header.insertRow(0);
+        var columns = ['', 'Name', 'Id', 'Comment', 'Annotations', 'User', 'Creation time',
+            'Editor', 'Edition time', 'Action'];
+        columns.forEach(function(c) {
+          hrow.insertCell().appendChild(document.createTextNode(c));
+        });
+
+        var tableContainer = document.createElement('div');
+        tableContainer.setAttribute('class', 'volume-list');
+        tableContainer.appendChild(table);
+        container.appendChild(tableContainer);
+        widget.datatable = $(table).DataTable({
+          lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+          ajax: function(data, callback, settings) {
+
+            CATMAID.fetch(project.id +  "/volumes/")
+              .then(function(volumeData) {
+                let volumeDetails = volumeData.data;
+                if (widget.volumeIdFilter && widget.volumeIdFilter.size > 0) {
+                  volumeDetails = volumeDetails.filter(function(v) {
+                    return widget.volumeIdFilter.has(v[0]);
+                  });
+                }
+                let volumes = volumeDetails.map(function(volume) {
+                  return new CATMAID.Volume(CATMAID.tools.buildObject(volumeData.columns, volume));
+                });
+                callback({
+                  draw: data.draw,
+                  data: volumes
+                });
+              })
+              .catch(CATMAID.handleError);
+          },
+          columns: [
+            {
+              render: function(data, type, row, meta) {
+                return '<input type="checkbox" data-role="select" ' +
+                    (row.selected ? 'checked' : '') + ' />';
+              }
+            },
+            {data: "title"},
+            {data: "id"},
+            {
+              data: "comment",
+              width: "20%",
+            },
+            {
+              data: "annotations",
+              render: function (data, type, row, meta) {
+                if (type === 'display') {
+                  return data.join(', ');
+                } else {
+                  return data;
+                }
+              }
+            },
+            {
+              data: "user_id",
+              render: function(data, type, row, meta) {
+                return CATMAID.User.safe_get(data).login;
+              }
+            },
+            {data: "creation_time"},
+            {
+              data: "editor_id",
+              render: function(data, type, row, meta) {
+                return CATMAID.User.safe_get(data).login;
+              }
+            },
+            {data: "edition_time"},
+            {
+              data: null,
+              orderable: false,
+              width: '15%',
+              defaultContent: '<ul class="resultTags"><li><a href="#" data-action="remove">Remove</a></li> ' +
+                  '<li><a href="#" data-action="list-skeletons">List skeletons</a></li> ' +
+                  '<li><a href="#" data-action="list-connectors">List connectors</a></li>' +
+                  '<li><a href="#" data-action="export-STL">Export STL</a></ul></ul>'
+            }
+          ],
+        })
+        .on('change', 'input[data-role=select]', function() {
+          var table = $(this).closest('table');
+          var tr = $(this).closest('tr');
+          var data =  $(table).DataTable().row(tr).data();
+          data.selected = this.checked;
+        });
+
+        // Remove volume if 'remove' was clicked
+        $(table).on('click', 'a[data-action="remove"]', function() {
+          var tr = $(this).closest("tr");
+          var volume = widget.datatable.row(tr).data();
+
+          var confirmDialog = new CATMAID.OptionsDialog("Remove volume", {
+            "Yes": function() {
+              CATMAID.fetch(project.id + '/volumes/' + volume.id + '/', 'DELETE')
+                .then(function(json) {
+                  CATMAID.msg('Success', 'Volume ' + json.volume_id + ' removed');
+                  widget.redraw();
+                })
+                .catch(CATMAID.handleError);
+            },
+            "No": CATMAID.noop
+          });
+          confirmDialog.appendMessage("Are you sure you want to delete volume "
+              + volume.id + " (" + volume.name + ")?");
+          confirmDialog.show(500,'auto');
+
+          // Prevent event from bubbling up.
+          return false;
+        });
+
+        // Skeleton intersection list
+        $(table).on('click', 'a[data-action="list-skeletons"]', function() {
+          var tr = $(this).closest("tr");
+          var volume = widget.datatable.row(tr).data();
+          CATMAID.Volumes.get(project.id, volume.id)
+            .then(function(volume) {
+              let bb = volume.bbox;
+              let skeletonConstraints;
+              if (widget.selectedSkeletonConstraintSource &&
+                  widget.selectedSkeletonConstraintSource!== 'none') {
+                let source = CATMAID.skeletonListSources.getSource(
+                    widget.selectedSkeletonConstraintSource);
+                if (!source) {
+                  throw new CATMAID.ValueError("Can't find skeleton source: " +
+                      widget.selectedSkeletonConstraintSource);
+                }
+                let skeletonIds = source.getSelectedSkeletons();
+                if (skeletonIds.length > 0) {
+                  skeletonConstraints = skeletonIds;
+                }
+              }
+              return CATMAID.Skeletons.inBoundingBox(project.id, bb.min.x,
+                  bb.min.y, bb.min.z, bb.max.x, bb.max.y, bb.max.z,
+                  widget.minFilterNodes, widget.minFilterCable, skeletonConstraints);
+            })
+            .then(function(skeletonIds) {
+              if (!skeletonIds || skeletonIds.length === 0) {
+                CATMAID.warn('Found no intersecting skeletons');
+              } else {
+                var handles = CATMAID.WindowMaker.create('selection-table');
+                if (!handles) {
+                  throw new CATMAID.ValueError("Could not create Selection Table");
+                }
+                handles.widget.addSkeletons(skeletonIds)
+                  .then(function() {
+                    CATMAID.msg('Success', 'Found ' + skeletonIds.length + ' skeletons');
+                  })
+                  .catch(CATMAID.handleError);
+              }
+            })
+            .catch(CATMAID.handleError);
+
+          // Prevent event from bubbling up.
+          return false;
+        });
+
+        // Connector intersection list
+        $(table).on('click', 'a[data-action="list-connectors"]', function() {
+          var tr = $(this).closest("tr");
+          var volume = widget.datatable.row(tr).data();
+          CATMAID.Volumes.get(project.id, volume.id)
+            .then(function(volume) {
+              let bb = volume.bbox;
+              let skeletonConstraints;
+              if (widget.selectedSkeletonConstraintSource &&
+                  widget.selectedSkeletonConstraintSource!== 'none') {
+                let source = CATMAID.skeletonListSources.getSource(
+                    widget.selectedSkeletonConstraintSource);
+                if (!source) {
+                  throw new CATMAID.ValueError("Can't find skeleton source: " +
+                      widget.selectedSkeletonConstraintSource);
+                }
+                let skeletonIds = source.getSelectedSkeletons();
+                if (skeletonIds.length > 0) {
+                  skeletonConstraints = skeletonIds;
+                }
+              }
+              return CATMAID.Connectors.inBoundingBox(project.id, bb.min.x,
+                  bb.min.y, bb.min.z, bb.max.x, bb.max.y, bb.max.z, undefined,
+                  true, true, skeletonConstraints);
+            })
+            .then(function(connectorData) {
+              if (!connectorData || connectorData.length === 0) {
+                CATMAID.warn('Found no connectors in volume');
+              } else {
+                var connectorListHandles = CATMAID.ConnectorList.fromRawData(connectorData);
+                // Add a node filter for the selected volume
+                var strategy = CATMAID.NodeFilterStrategy['volume'];
+                var rule = new CATMAID.NodeFilterRule(strategy, {
+                  'volumeId': volume.id
+                });
+                connectorListHandles.widget.filterRules.push(rule);
+              }
+            })
+            .catch(CATMAID.handleError);
+
+          // Prevent event from bubbling up.
+          return false;
+        });
+
+        // Connector intersection list
+        $(table).on('click', 'a[data-action="export-STL"]', function() {
+          var tr = $(this).closest("tr");
+          var volume = widget.datatable.row(tr).data();
+          var headers = {Accept: ['model/x.stl-ascii', 'model/stl']};
+          CATMAID.fetch("/" + project.id + "/volumes/" + volume.id + "/export.stl", "GET", undefined, true, undefined, undefined, undefined, headers)
+            .then(function(volume_file) {
+              var blob = new Blob([volume_file], {type: 'model/x.stl-ascii'});
+              saveAs(blob, volume.name + '.stl');
+            })
+            .catch(CATMAID.handleError);
+
+          // Prevent event from bubbling up.
+          return false;
+        });
+
+        // Display a volume if clicked
+        $(table).on('dblclick', 'tbody td', function() {
+          var tr = $(this).closest("tr");
+          var volume = widget.datatable.row(tr).data();
+          widget.loadVolume(volume.id)
+            .then(widget.editVolume.bind(widget))
+            .catch(CATMAID.handleError);
+        });
+      },
+    },
+    add: {
+      title: 'Add volume',
+      createControls: function(widget) {
+        var hiddenFileButton = CATMAID.DOM.createFileButton(false, false,
+            (function(event) {
+              var files = event.target.files;
+              if (0 === files.length) {
+                CATMAID.error("Choose at least one file!");
+              } else {
+                widget.addVolumesFromSTL(Array.from(files).filter(function(file){
+                  if (file.name.endsWith("stl")){
+                    return true;
+                  } else {
+                    widget.addVolumeFromFile(file).catch(CATMAID.handleError);
+                  }
+                },this)).catch(CATMAID.handleError);
+              }
+            }).bind(this));
+        hiddenFileButton.setAttribute('multiple', true);
+
+        return [{
+            type: 'child',
+            element: hiddenFileButton,
+          }, {
+            type: 'button',
+            label: 'Add from file',
+            title: 'Supports JSON and ASCII-STL files',
+            onclick: hiddenFileButton.click.bind(hiddenFileButton),
+          }];
+      },
+      createContent(content, widget) {
+        widget.editVolume(null, content);
+      }
+    },
+    innervations: {
+      title: 'Skeleton innervations',
+      createControls: function(widget) {
+        var innervationSourceSelectContainer = CATMAID.DOM.createSelectElement(
+            undefined,
+            "Skeletons",
+            [{title: '(none)', value: 'none'}],
+            'The skeletons for which volume intersections are checked.',
+            'none',
+            function(e) {
+              widget.innervationSkeletonSource = this.value;
+            },
+            "skeleton-innervation-source");
+        let innervationSourceSelect = innervationSourceSelectContainer.querySelector('select');
+        widget.updateSkeletonSourceSelect(innervationSourceSelect,
+            widget.innervationSkeletonSource, true);
+
+        return [{
+          type: 'child',
+          element: innervationSourceSelect,
+        }, {
+          type: 'text',
+          label: 'Volume annotation',
+          title: 'Only check against volumes with this annotation.',
+          onchange: function(e) {
+            widget.innervationVolumeAnnotation = this.value.trim();
+          },
+        }, {
+          type: 'button',
+          label: 'Find innervations',
+          onclick: widget.findInnervations.bind(widget),
+        }, {
+          type: 'button',
+          label: 'Show results in 3D',
+          onclick: function() {
+            let source = CATMAID.skeletonListSources.getSource(
+                widget.innervationSkeletonSource);
+            if (!source) {
+              throw new CATMAID.ValueError("Can't find skeleton source: " +
+                  widget.innervationSkeletonSource);
+            }
+            let skeletonIds = source.getSelectedSkeletons();
+            if (skeletonIds.length === 0) {
+              CATMAID.warn("No skeletons selected in source " + source.getName());
+              return;
+            }
+
+            if (!widget.innervationSkeletonSource) {
+              CATMAID.warn("No results to show");
+              return;
+            }
+            let selectedVolumes = widget.innervationsDatatable.rows().data().toArray().filter(function(v) {
+              return v.selected;
+            });
+
+            widget.showSelectedVolumesIn3d(selectedVolumes, skeletonIds);
+          }
+        }];
+      },
+      createContent: function(container, widget) {
+        var table = document.createElement('table');
+        table.style.width = "100%";
+        var header = table.createTHead();
+        var hrow = header.insertRow(0);
+        var columns = ['', 'Name', 'Id', 'Comment', 'Annotations', 'User', 'Creation time',
+            'Editor', 'Edition time', 'Action'];
+        columns.forEach(function(c) {
+          hrow.insertCell().appendChild(document.createTextNode(c));
+        });
+
+        var tableContainer = document.createElement('div');
+        tableContainer.setAttribute('class', 'volume-list');
+        tableContainer.appendChild(table);
+        container.appendChild(tableContainer);
+        widget.innervationsDatatable = $(table).DataTable({
+          lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+          ajax: function(data, callback, settings) {
+            if (widget.innervationVolumeIdFilter) {
+              CATMAID.fetch(project.id +  "/volumes/", "POST", {
+                  'volume_ids': widget.innervationVolumeIdFilter ?
+                      Array.from(widget.innervationVolumeIdFilter) : undefined,
+                })
+                .then(function(volumeData) {
+                  let volumes = volumeData.data.map(function(volume) {
+                    return new CATMAID.Volume(CATMAID.tools.buildObject(volumeData.columns, volume));
+                  });
+                  callback({
+                    draw: data.draw,
+                    data: volumes
+                  });
+                })
+                .catch(CATMAID.handleError);
+            } else {
+              callback({
+                draw: data.draw,
+                data: [],
+              });
+            }
+          },
+          columns: [
+            {
+              render: function(data, type, row, meta) {
+                return '<input type="checkbox" data-role="select" ' +
+                    (row.selected ? 'checked' : '') + ' />';
+              }
+            },
+            {data: "title"},
+            {data: "id"},
+            {
+              data: "comment",
+              width: "20%",
+            },
+            {
+              data: "annotations",
+              render: function (data, type, row, meta) {
+                if (type === 'display') {
+                  return data.join(', ');
+                } else {
+                  return data;
+                }
+              }
+            },
+            {
+              data: "user_id",
+              render: function(data, type, row, meta) {
+                return CATMAID.User.safe_get(data).login;
+              }
+            },
+            {data: "creation_time"},
+            {
+              data: "editor_id",
+              render: function(data, type, row, meta) {
+                return CATMAID.User.safe_get(data).login;
+              }
+            },
+            {data: "edition_time"},
+            {
+              data: null,
+              orderable: false,
+              width: '15%',
+              defaultContent: '<ul class="resultTags"><li><a href="#" data-action="remove">Remove</a></li> ' +
+                  '<li><a href="#" data-action="list-skeletons">List skeletons</a></li> ' +
+                  '<li><a href="#" data-action="list-connectors">List connectors</a></li>' +
+                  '<li><a href="#" data-action="export-STL">Export STL</a></ul></ul>'
+            }
+          ],
+        })
+        .on('change', 'input[data-role=select]', function() {
+          var table = $(this).closest('table');
+          var tr = $(this).closest('tr');
+          var data =  $(table).DataTable().row(tr).data();
+          data.selected = this.checked;
+        });
+
+        // Remove volume if 'remove' was clicked
+        $(table).on('click', 'a[data-action="remove"]', function() {
+          var tr = $(this).closest("tr");
+          var volume = widget.datatable.row(tr).data();
+
+          var confirmDialog = new CATMAID.OptionsDialog("Remove volume", {
+            "Yes": function() {
+              CATMAID.fetch(project.id + '/volumes/' + volume.id + '/', 'DELETE')
+                .then(function(json) {
+                  CATMAID.msg('Success', 'Volume ' + json.volume_id + ' removed');
+                  widget.redraw();
+                })
+                .catch(CATMAID.handleError);
+            },
+            "No": CATMAID.noop
+          });
+          confirmDialog.appendMessage("Are you sure you want to delete volume "
+              + volume.id + " (" + volume.name + ")?");
+          confirmDialog.show(500,'auto');
+
+          // Prevent event from bubbling up.
+          return false;
+        });
+
+        // Skeleton intersection list
+        $(table).on('click', 'a[data-action="list-skeletons"]', function() {
+          var tr = $(this).closest("tr");
+          var volume = widget.datatable.row(tr).data();
+          CATMAID.Volumes.get(project.id, volume.id)
+            .then(function(volume) {
+              let bb = volume.bbox;
+              let skeletonConstraints;
+              if (widget.selectedSkeletonConstraintSource &&
+                  widget.selectedSkeletonConstraintSource!== 'none') {
+                let source = CATMAID.skeletonListSources.getSource(
+                    widget.selectedSkeletonConstraintSource);
+                if (!source) {
+                  throw new CATMAID.ValueError("Can't find skeleton source: " +
+                      widget.selectedSkeletonConstraintSource);
+                }
+                let skeletonIds = source.getSelectedSkeletons();
+                if (skeletonIds.length > 0) {
+                  skeletonConstraints = skeletonIds;
+                }
+              }
+              return CATMAID.Skeletons.inBoundingBox(project.id, bb.min.x,
+                  bb.min.y, bb.min.z, bb.max.x, bb.max.y, bb.max.z,
+                  widget.minFilterNodes, widget.minFilterCable, skeletonConstraints);
+            })
+            .then(function(skeletonIds) {
+              if (!skeletonIds || skeletonIds.length === 0) {
+                CATMAID.warn('Found no intersecting skeletons');
+              } else {
+                var handles = CATMAID.WindowMaker.create('selection-table');
+                if (!handles) {
+                  throw new CATMAID.ValueError("Could not create Selection Table");
+                }
+                handles.widget.addSkeletons(skeletonIds)
+                  .then(function() {
+                    CATMAID.msg('Success', 'Found ' + skeletonIds.length + ' skeletons');
+                  })
+                  .catch(CATMAID.handleError);
+              }
+            })
+            .catch(CATMAID.handleError);
+
+          // Prevent event from bubbling up.
+          return false;
+        });
+
+        // Connector intersection list
+        $(table).on('click', 'a[data-action="list-connectors"]', function() {
+          var tr = $(this).closest("tr");
+          var volume = widget.datatable.row(tr).data();
+          CATMAID.Volumes.get(project.id, volume.id)
+            .then(function(volume) {
+              let bb = volume.bbox;
+              let skeletonConstraints;
+              if (widget.selectedSkeletonConstraintSource &&
+                  widget.selectedSkeletonConstraintSource!== 'none') {
+                let source = CATMAID.skeletonListSources.getSource(
+                    widget.selectedSkeletonConstraintSource);
+                if (!source) {
+                  throw new CATMAID.ValueError("Can't find skeleton source: " +
+                      widget.selectedSkeletonConstraintSource);
+                }
+                let skeletonIds = source.getSelectedSkeletons();
+                if (skeletonIds.length > 0) {
+                  skeletonConstraints = skeletonIds;
+                }
+              }
+              return CATMAID.Connectors.inBoundingBox(project.id, bb.min.x,
+                  bb.min.y, bb.min.z, bb.max.x, bb.max.y, bb.max.z, undefined,
+                  true, true, skeletonConstraints);
+            })
+            .then(function(connectorData) {
+              if (!connectorData || connectorData.length === 0) {
+                CATMAID.warn('Found no connectors in volume');
+              } else {
+                var connectorListHandles = CATMAID.ConnectorList.fromRawData(connectorData);
+                // Add a node filter for the selected volume
+                var strategy = CATMAID.NodeFilterStrategy['volume'];
+                var rule = new CATMAID.NodeFilterRule(strategy, {
+                  'volumeId': volume.id
+                });
+                connectorListHandles.widget.filterRules.push(rule);
+              }
+            })
+            .catch(CATMAID.handleError);
+
+          // Prevent event from bubbling up.
+          return false;
+        });
+
+        // Connector intersection list
+        $(table).on('click', 'a[data-action="export-STL"]', function() {
+          var tr = $(this).closest("tr");
+          var volume = widget.datatable.row(tr).data();
+          var headers = {Accept: ['model/x.stl-ascii', 'model/stl']};
+          CATMAID.fetch("/" + project.id + "/volumes/" + volume.id + "/export.stl", "GET", undefined, true, undefined, undefined, undefined, headers)
+            .then(function(volume_file) {
+              var blob = new Blob([volume_file], {type: 'model/x.stl-ascii'});
+              saveAs(blob, volume.name + '.stl');
+            })
+            .catch(CATMAID.handleError);
+
+          // Prevent event from bubbling up.
+          return false;
+        });
+
+        // Display a volume if clicked
+        $(table).on('dblclick', 'tbody td', function() {
+          var tr = $(this).closest("tr");
+          var volume = widget.datatable.row(tr).data();
+          widget.loadVolume(volume.id)
+            .then(widget.editVolume.bind(widget))
+            .catch(CATMAID.handleError);
+        });
+      },
+      getMessage: function(widget) {
+        if (!widget.innervationVolumeIdFilter || widget.innervationVolumeIdFilter.size === 0) {
+          return "Please define your query in the toolbar above";
+        }
+      },
+    },
   };
 
   var getVolumeType = function(volume) {

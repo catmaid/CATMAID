@@ -39,8 +39,9 @@ included in this changelog.
   parameter.
 
 - `POST /{project_id}/volumes/skeleton-innervations`:
-  Get a list of all volume/skeleton combinations that intersect. This can be
-  constrained by volume annotation, skeleton IDs, cable length and node count.
+  Get a list of all volume/skeleton combinations that intersect. Skeletons are
+  provided with a 'skeleton_ids' parameter. This can be constrained by volume
+  annotation, cable length and node count.
 
 ### Modifications
 

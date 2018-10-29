@@ -805,27 +805,28 @@ def get_primary_volumes_by_name(project_id):
 
 
 def find_volumes(project_id, annotation=None,
-        transitive_annotation=True):
+        transitive_annotation=True, simple=False):
     """Find volumes in the passed in project, optionally require a particular
     annotation. If <transitive_annotation> is True, volumes that are
     transitively annotated by the passed in annotation are considered too.
     """
+    extra_select = []
     extra_joins = []
     extra_where = []
     extra_params = {}
 
     if annotation:
         query_params = {
-            'annotated_with': [annotation],
-            'sub_annotated_with': [annotation],
+            'annotated_with': annotation,
+            'sub_annotated_with': annotation,
             'annotation_reference': 'name',
         }
-        query_result = get_annotated_entities(project_id, query_params,
+        query_result, _ = get_annotated_entities(project_id, query_params,
                 allowed_classes=['volume'], with_annotations=False,
                 with_skeletons=False)
-        candidate_volume_ci_ids = [ci['id'] for ci in query_result['entities']]
+        candidate_volume_ci_ids = [ci['id'] for ci in query_result]
 
-        extra_params['candidate_volume_ids'] = candidate_volume_ids
+        extra_params['candidate_volume_ids'] = candidate_volume_ci_ids
 
         extra_joins.append("""
             JOIN volume_class_instance vci
@@ -834,7 +835,7 @@ def find_volumes(project_id, annotation=None,
                 ON candidate.id = vci.class_instance_id
         """)
 
-        extra_wheres.append("""
+        extra_where.append("""
             AND vci.relation_id = (
                 SELECT id
                 FROM relation
@@ -843,6 +844,11 @@ def find_volumes(project_id, annotation=None,
             )
         """)
 
+    if not simple:
+        extra_select.extend(['Box3D(v.geometry)', 'v.project_id', 'v.name',
+                'v.comment', 'v.user_id', 'v.editor_id', 'v.creation_time',
+                'v.edition_time'])
+
     params = {
         'project_id': project_id,
     }
@@ -850,39 +856,45 @@ def find_volumes(project_id, annotation=None,
 
     cursor = connection.cursor()
     cursor.execute('''
-        SELECT id, project_id, name, comment, user_id, editor_id, creation_time,
-            edition_time, Box3D(geometry), ST_Asx3D(geometry)
+        SELECT v.id
+        {extra_select}
         FROM catmaid_volume v
         {extra_joins}
         WHERE v.project_id= %(project_id)s
         {extra_where}
     '''.format(**{
-       'extra_joins': '\n'.join(extra_joins),
-       'extra_where': '\n'.join(extra_where),
+        'extra_select': ','.join([''] + extra_select),
+        'extra_joins': '\n'.join(extra_joins),
+        'extra_where': '\n'.join(extra_where),
     }), params)
 
     volume_details = []
     for volume in cursor.fetchall():
-        # Parse bounding box into dictionary, coming in format "BOX3D(0 0 0,1 1 1)"
-        bbox_matches = re.search(bbox_re, volume[8])
-        if not bbox_matches or len(bbox_matches.groups()) != 6:
-            raise ValueError("Couldn't create bounding box for geometry")
-        bbox = list(map(float, bbox_matches.groups()))
-        volume_details.append({
-            'id': volume[0],
-            'project_id': volume[1],
-            'name': volume[2],
-            'comment': volume[3],
-            'user_id': volume[4],
-            'editor_id': volume[5],
-            'creation_time': volume[6],
-            'edition_time': volume[7],
-            'bbox': {
-                'min': {'x': bbox[0], 'y': bbox[1], 'z': bbox[2]},
-                'max': {'x': bbox[3], 'y': bbox[4], 'z': bbox[5]}
-            },
-            'mesh': volume[9]
-        })
+        if simple:
+            volume_details.append({
+                'id': volume[0],
+            })
+        else:
+            # Parse bounding box into dictionary, coming in format "BOX3D(0 0 0,1 1 1)"
+            bbox_matches = re.search(bbox_re, volume[8])
+            if not bbox_matches or len(bbox_matches.groups()) != 6:
+                raise ValueError("Couldn't create bounding box for geometry")
+            bbox = list(map(float, bbox_matches.groups()))
+            volume_details.append({
+                'id': volume[0],
+                'project_id': volume[1],
+                'name': volume[2],
+                'comment': volume[3],
+                'user_id': volume[4],
+                'editor_id': volume[5],
+                'creation_time': volume[6],
+                'edition_time': volume[7],
+                'bbox': {
+                    'min': {'x': bbox[0], 'y': bbox[1], 'z': bbox[2]},
+                    'max': {'x': bbox[3], 'y': bbox[4], 'z': bbox[5]}
+                },
+                'mesh': volume[9]
+            })
 
     return volume_details
 
@@ -922,6 +934,8 @@ def get_skeleton_innervations(request, project_id):
           type: boolean
     """
     skeleton_ids = get_request_list(request.POST, 'skeleton_ids', map_fn=int)
+    if not skeleton_ids:
+        raise ValueError('Need skeleton IDs')
     volume_annotation = request.POST.get('annotation')
     min_nodes = request.POST.get('min_nodes')
     if min_nodes:
@@ -933,7 +947,7 @@ def get_skeleton_innervations(request, project_id):
     volume_intersections = _get_skeleton_innervations(project_id, skeleton_ids,
             volume_annotation, min_nodes, min_cable)
 
-    return JsonResponse(volume_intersections)
+    return JsonResponse(volume_intersections, safe=False)
 
 
 def _get_skeleton_innervations(project_id, skeleton_ids, volume_annotation,
@@ -943,41 +957,15 @@ def _get_skeleton_innervations(project_id, skeleton_ids, volume_annotation,
     query_parts = []
     query_params = {
         'project_id': project_id,
+        'volume_ids': [v['id'] for v in
+                find_volumes(project_id, volume_annotation, simple=True)],
+        'skeleton_ids': skeleton_ids,
     }
-    for volume in find_volumes(project_id, volume_annotation):
-        param_prefix = 'v{}-'.format(volume['id'])
-        query_parts.append("""
-            SELECT DISTINCT %({prefix}volume_id)s, t.skeleton_id
-            FROM treenode t
-            JOIN (
-                SELECT te.id
-                FROM treenode_edge te
-                WHERE te.edge &&& ST_MakeLine(ARRAY[
-                    ST_MakePoint(%({prefix}left)s, %({prefix}bottom)s, %({prefix}z2)s),
-                    ST_MakePoint(%({prefix}right)s, %({prefix}top)s, %({prefix}z1)s)] ::geometry[])
-                AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
-                    ST_MakePoint(%({prefix}left)s,  %({prefix}top)s,    %({prefix}halfz)s),
-                    ST_MakePoint(%({prefix}right)s, %({prefix}top)s,    %({prefix}halfz)s),
-                    ST_MakePoint(%({prefix}right)s, %({prefix}bottom)s, %({prefix}halfz)s),
-                    ST_MakePoint(%({prefix}left)s,  %({prefix}bottom)s, %({prefix}halfz)s),
-                    ST_MakePoint(%({prefix}left)s,  %({prefix}top)s,    %({prefix}halfz)s)]::geometry[])),
-                    %({prefix}halfzdiff)s)
-                AND te.project_id = %(project_id)s
-            ) intersection(id)
-                ON intersection.id = t.id
-        """.format(prefix=param_prefix))
-        bb = volume['bbox']
-        new_params = {}
-        new_params[param_prefix + 'volume_id'] = volume['id']
-        new_params[param_prefix + 'left'] = bb['min']['x']
-        new_params[param_prefix + 'right'] = bb['max']['x']
-        new_params[param_prefix + 'top'] = bb['min']['y']
-        new_params[param_prefix + 'bottom'] = bb['max']['y']
-        new_params[param_prefix + 'z1'] = bb['min']['z']
-        new_params[param_prefix + 'z2'] = bb['max']['z']
-        new_params[param_prefix + 'halfz'] = bb['min']['z'] + (bb['max']['z'] - bb['min']['z']) * 0.5
-        new_params[param_prefix + 'halfzdiff'] = abs(bb['max']['z'] - bb['min']['z']) * 0.5
-        query_params.update(new_params)
+
+    # First, get the bounding box of each query skeleton and find the ones
+    # intersecting the query volume bounding boxess. Next, check if there are
+    # infact any edges of those skeltons that intersect with the volume bounding
+    # box. If so, these are returned.
 
     # It is possible to provide extra constraints, based on node count, length
     # and skeleton IDs.
@@ -989,7 +977,7 @@ def _get_skeleton_innervations(project_id, skeleton_ids, volume_annotation,
     if needs_summary:
         extra_joins.append("""
             JOIN catmaid_skeleton_summary css
-                ON css.skeleton_id = skeleton.id
+                ON css.skeleton_id = sv.id
         """)
     if min_nodes:
         extra_where.append("""
@@ -1001,34 +989,57 @@ def _get_skeleton_innervations(project_id, skeleton_ids, volume_annotation,
             css.cable_length >= %(min_cable)s
         """)
         query_params['min_cable'] = min_cable
-    if skeleton_ids:
-        extra_joins.append("""
-            JOIN UNNEST(%(skeleton_ids)s::bigint[]) query_skeleton(id)
-                ON query_skeleton.id = skeleton.id
-        """)
-        query_params['skeleton_ids'] = skeleton_ids
 
     cursor = connection.cursor()
     cursor.execute("""
-        SELECT volume_id, skeleton_id
-        FROM (
-            SELECT DISTINCT volume_id, skeleton_id
-            FROM (
-            {bb_queries}
-            ) vi(volume_id, skeleton_id)
-        ) volume_intersection(volume_id, skeleton_id)
+        WITH q_volume AS (
+            SELECT v.id,
+            Box3D(v.geometry) AS bb
+            FROM catmaid_volume v
+            JOIN UNNEST(%(volume_ids)s::bigint[]) query_volume(id)
+                ON query_volume.id = v.id
+        ),
+        skeleton_bb AS (
+                SELECT skeleton.id AS id,
+                        ST_Envelope(ST_Collect(te.edge)) as bb
+                FROM UNNEST(%(skeleton_ids)s::bigint[]) skeleton(id)
+                JOIN treenode t
+                        ON t.skeleton_id = skeleton.id
+                JOIN treenode_edge te
+                        ON te. id = t.id
+                GROUP BY skeleton.id
+        ),
+        skeleton_vol AS (
+                SELECT sb.id, v_match.id AS volume_id, v_match.bb
+                FROM skeleton_bb sb
+                CROSS JOIN LATERAL (
+                        SELECT v.id, v.bb
+                        FROM q_volume v
+                        -- Require bounding box intersection
+                        WHERE v.bb &&& sb.bb
+                ) v_match
+        )
+        SELECT sv.id AS skeleton_id, array_agg(sv.volume_id)
+        FROM skeleton_vol sv
         {extra_joins}
+        WHERE EXISTS(
+                SELECT 1
+                FROM treenode t
+                JOIN treenode_edge te
+                        ON t.id = te.id
+                WHERE t.project_id = %(project_id)s
+                AND t.skeleton_id = sv.id
+                AND te.edge &&& sv.bb
+        )
         {extra_where}
+        GROUP BY sv.id
     """.format(**{
-        'bb_queries': '\nUNION ALL\n'.join(query_parts),
         'extra_joins': '\n'.join(extra_joins),
         'extra_where': '\n'.join(extra_where),
     }), query_params)
 
-    # For each skeleton, collect a list volumes of which the bounding box was
-    # intersected.
-    skeleton_intersections = defaultdict(list)
-    for volume_id, skeleton_id in cursor.fetchall():
-        skeleton_intersections[skeleton_id].append(volume_id)
-
+    skeleton_intersections = list(map(lambda x: {
+        'skeleton_id': x[0],
+        'volume_ids': x[1]
+    }, cursor.fetchall()))
     return skeleton_intersections

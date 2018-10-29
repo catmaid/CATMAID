@@ -244,7 +244,10 @@
      * @returns Promise resolving with result.
      */
     findSkeletonInnervations: function(projectId, skeletonIds, annotation) {
-      return CATMAID.fetch(projectId + '/volumes/skeleton-innervations');
+      return CATMAID.fetch(projectId + '/volumes/skeleton-innervations', 'POST', {
+        'skeleton_ids': skeletonIds,
+        'annotation': annotation,
+      });
     },
 
   };

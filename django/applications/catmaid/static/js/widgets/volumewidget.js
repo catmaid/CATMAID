@@ -108,6 +108,12 @@
         annotate.onclick = this.annotateSelectedVolumes.bind(this);
         mainTab.appendChild(annotate);
 
+        var show3d = document.createElement('button');
+        show3d.appendChild(document.createTextNode('Show selected in 3D'));
+        show3d.setAttribute('title', 'Show all selected volumes in a 3D viewer');
+        show3d.onclick = this.showSelectedVolumesIn3d.bind(this);
+        mainTab.appendChild(show3d);
+
         let self = this;
         CATMAID.DOM.appendNumericField(
             mainTab,
@@ -186,6 +192,31 @@
           type: 'button',
           label: 'Find innervations',
           onclick: this.findInnervations.bind(this),
+        });
+
+        CATMAID.DOM.appendElement(innervationTab, {
+          type: 'button',
+          label: 'Show results in 3D',
+          onclick: function() {
+            let source = CATMAID.skeletonListSources.getSource(
+                self.innervationSkeletonSource);
+            if (!source) {
+              throw new CATMAID.ValueError("Can't find skeleton source: " +
+                  self.innervationSkeletonSource);
+            }
+            let skeletonIds = source.getSelectedSkeletons();
+            if (skeletonIds.length === 0) {
+              CATMAID.warn("No skeletons selected in source " + source.getName());
+              return;
+            }
+
+            if (!self.volumeIdFilter) {
+              CATMAID.warn("No results to show");
+              return;
+            }
+
+            self.showSelectedVolumesIn3d(skeletonIds);
+          }
         });
 
         // Init tabs
@@ -817,6 +848,48 @@
         CATMAID.msg("Success", "Annotations added");
       })
       .catch(CATMAID.handleError);
+  };
+
+  /**
+   * Show all selected volumes in a new 3D Viewer.
+   */
+  VolumeManagerWidget.prototype.showSelectedVolumesIn3d = function(skeletonIds) {
+    if (!this.datatable) {
+      return;
+    }
+
+    let selectedVolumes = this.datatable.rows().data().toArray().filter(function(v) {
+      return v.selected;
+    });
+
+    if (selectedVolumes.length === 0) {
+      CATMAID.warn('No volumes selected');
+      return;
+    }
+
+    let models = null;
+    if (skeletonIds) {
+      models = skeletonIds.reduce(function(o, s) {
+        o[s] = new CATMAID.SkeletonModel(s);
+        return o;
+      }, {});
+    }
+
+    let widget3d = WindowMaker.create('3d-viewer').widget;
+    widget3d.options.shading_method = 'none';
+    widget3d.options.color_method = 'none';
+
+    if (models) {
+      widget3d.append(models);
+    }
+
+    let lut = new THREE.Lut("rainbow", 10);
+    lut.setMax(selectedVolumes.length - 1);
+
+    selectedVolumes.forEach(function(v, i) {
+      let color = lut.getColor(i);
+      widget3d.showVolume(v.id, true, color, 0.3, true);
+    });
   };
 
   var getVolumeType = function(volume) {

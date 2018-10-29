@@ -276,9 +276,9 @@ CATMAID.tools = CATMAID.tools || {};
   tools.callIfFn = function(fn) {
     if (CATMAID.tools.isFn(fn)) {
       if (arguments.length > 1) {
-        fn.apply(window, Array.prototype.slice.call(arguments, 1));
+        return fn.apply(window, Array.prototype.slice.call(arguments, 1));
       } else {
-        fn();
+        return fn();
       }
     }
   };

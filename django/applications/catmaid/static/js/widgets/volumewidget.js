@@ -1213,13 +1213,13 @@
             .then(function(volume) {
               let bb = volume.bbox;
               let skeletonConstraints;
-              if (widget.selectedSkeletonConstraintSource &&
-                  widget.selectedSkeletonConstraintSource!== 'none') {
+              if (widget.innervationSkeletonSource &&
+                  widget.innervationSkeletonSource!== 'none') {
                 let source = CATMAID.skeletonListSources.getSource(
-                    widget.selectedSkeletonConstraintSource);
+                    widget.innervationSkeletonSource);
                 if (!source) {
                   throw new CATMAID.ValueError("Can't find skeleton source: " +
-                      widget.selectedSkeletonConstraintSource);
+                      widget.innervationSkeletonSource);
                 }
                 let skeletonIds = source.getSelectedSkeletons();
                 if (skeletonIds.length > 0) {
@@ -1259,13 +1259,13 @@
             .then(function(volume) {
               let bb = volume.bbox;
               let skeletonConstraints;
-              if (widget.selectedSkeletonConstraintSource &&
-                  widget.selectedSkeletonConstraintSource!== 'none') {
+              if (widget.innervationSkeletonSource &&
+                  widget.innervationSkeletonSource!== 'none') {
                 let source = CATMAID.skeletonListSources.getSource(
-                    widget.selectedSkeletonConstraintSource);
+                    widget.innervationSkeletonSource);
                 if (!source) {
                   throw new CATMAID.ValueError("Can't find skeleton source: " +
-                      widget.selectedSkeletonConstraintSource);
+                      widget.innervationSkeletonSource);
                 }
                 let skeletonIds = source.getSelectedSkeletons();
                 if (skeletonIds.length > 0) {

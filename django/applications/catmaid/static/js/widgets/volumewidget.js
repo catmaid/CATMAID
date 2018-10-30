@@ -433,7 +433,7 @@
     });
   };
 
-  function handleFilteredData(target, filter, filtered) {
+  function handleFilteredData(target, filter, filters, filtered) {
     for (let isectSkeletonId of filtered.skeletons) {
       let volumeList = target.get(isectSkeletonId);
       if (!volumeList) {
@@ -448,7 +448,7 @@
     if (nextFilter) {
       return nextFilter.execute(undefined, true)
         .then(function(filtered) {
-          return handleFilteredData(target, nextFilter, filtered);
+          return handleFilteredData(target, nextFilter, filters, filtered);
         });
     }
   }
@@ -537,7 +537,7 @@
 
           return firstFilter.execute(undefined, true)
             .then(function(filtered) {
-              return handleFilteredData(filteredResultMap, firstFilter, filtered);
+              return handleFilteredData(filteredResultMap, firstFilter, filters, filtered);
             })
             .then(function() {
               let filteredResult = result.filter(function(r) {

@@ -135,6 +135,9 @@
     // Start position for the rotation, relative to the target
     var startPosition = camera.position.clone().sub(targetPosition);
 
+    let originalUp = camera.up.clone();
+    let workingUp = new THREE.Vector3();
+
     var m = new THREE.Matrix4();
 
     // Return update function
@@ -165,6 +168,10 @@
       // (relative to target), rotating it and make it a world position by adding
       // it to the target.
       camera.position.copy(startPosition).applyMatrix4(m).add(targetPosition);
+      // Prevent Three.js from trying to keep the camera facing up.
+      workingUp.copy(originalUp);
+      workingUp.applyMatrix4(m);
+      camera.up.copy(workingUp);
     };
   };
 

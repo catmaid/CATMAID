@@ -189,6 +189,8 @@ Miscellaneous:
 
 - 3D viewer: all synaptic site spheres are created and colored again.
 
+- 3D viewer: camera won't flip anymore if it is upside down during animations.
+
 - Tracing overlay: the border of the tracing window is now properly rendered.
 
 - Tracing overlay: child node edition times are now correctly updated if the

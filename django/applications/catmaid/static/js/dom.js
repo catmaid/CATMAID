@@ -1330,9 +1330,7 @@
     return select;
   };
 
-  DOM.createSelectElement = function(relId, label, entries, title, value, onChangeFn,
-      id) {
-    id = id ? id : (relId ? (div.id + '_' + relId) : undefined);
+  DOM.createSelectElement = function(label, entries, title, value, onChangeFn, id) {
     let select = CATMAID.DOM.createSelect(id, entries, value);
     var labelElement = document.createElement('label');
     if (title) {
@@ -1548,9 +1546,11 @@
    */
   DOM.appendSelect = function(div, relId, label, entries, title, value,
       onChangeFn, id) {
-    let select = CATMAID.DOM.createSelectElement(relId, label, entries, title,
-        value, onChangeFn, id);
-    div.append(select);
+    id = id ? id : (relId ? (div.id + '_' + relId) : undefined);
+    let selectWrapper = CATMAID.DOM.createSelectElement(label, entries, title, value,
+        onChangeFn, id);
+    div.append(selectWrapper);
+    let select = selectWrapper.querySelector('select');
     return select;
   };
 

@@ -707,7 +707,6 @@
 
         // The skeleton source
         let sourceSelectContainer = CATMAID.DOM.createSelectElement(
-            undefined,
             "Skeleton constraints",
             [{title: '(none)', value: 'none'}],
             "Only list skeletons for a volume from this skeleton source",
@@ -1022,7 +1021,6 @@
       title: 'Skeleton innervations',
       createControls: function(widget) {
         var innervationSourceSelectContainer = CATMAID.DOM.createSelectElement(
-            undefined,
             "Skeletons",
             [{title: '(none)', value: 'none'}],
             'The skeletons for which volume intersections are checked.',

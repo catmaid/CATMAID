@@ -131,10 +131,10 @@
   CATMAID.NodeFilter = NodeFilter;
 
 
-  CATMAID.SkeletonFilter= function(rules, skeletonIndex) {
+  CATMAID.SkeletonFilter= function(rules, skeletonIndex, cache) {
     this.rules = rules;
     this.skeletonIndex = skeletonIndex;
-    this.input = {};
+    this.input = cache || {};
   };
 
 

@@ -52,6 +52,9 @@
     this.innervationClientSideFiltering = true;
     // The innervated volume IDs
     this.innervationVolumeIdFilter = null;
+    // Whether client-side filtering should be used to filter skeleton/volume
+    // intersections exactly.
+    this.innervationExactFiltering = true;
 
     CATMAID.skeletonListSources.on(CATMAID.SkeletonSourceManager.EVENT_SOURCE_ADDED,
         this.handleChangedSkeletonSources, this);
@@ -430,6 +433,26 @@
     });
   };
 
+  function handleFilteredData(target, filter, filtered) {
+    for (let isectSkeletonId of filtered.skeletons) {
+      let volumeList = target.get(isectSkeletonId);
+      if (!volumeList) {
+        volumeList = [];
+        target.set(isectSkeletonId, volumeList);
+      }
+      // We know there is only a single rule.
+      volumeList.push(filter.rules[0].options['volumeId']);
+    }
+
+    let nextFilter = filters.pop();
+    if (nextFilter) {
+      return nextFilter.execute(undefined, true)
+        .then(function(filtered) {
+          return handleFilteredData(target, nextFilter, filtered);
+        });
+    }
+  }
+
   /**
    * Ask the back-end for all volumes that intersect with the selected
    * skeletons.
@@ -462,10 +485,77 @@
         }
         // If client side filtering is enabled, further filter the result with
         // actual node filters.
-        if (clientSideFiltering) {
+        if (!self.innervationExactFiltering) {
+          return result;
+        } else {
+          // Create filter
+          let skeletonModels = skeletonIds.reduce(function(o, s) {
+            o[s] = new CATMAID.SkeletonModel(s);
+            return o;
+          }, {});
+          let rules = [];
+          let filterStrategy = CATMAID.SkeletonFilterStrategy['volume'];
 
-        }
-        return result;
+          let volumeSkeletonMap = new Map();
+          // Results are organized by skeleton ID. We have to execute one volume
+          // filter rule per volume on all skeleton models.
+          for (let i=0; i<result.length; ++i) {
+            let innervations = result[i];
+            let skeletonId = innervations.skeleton_id;
+            for (let j=0; j<innervations.volume_ids.length; ++j) {
+              let volumeId = innervations.volume_ids[j];
+              let skeletonList = volumeSkeletonMap.get(volumeId);
+              if (!skeletonList) {
+                skeletonList = [];
+                volumeSkeletonMap.set(volumeId, skeletonList);
+              }
+              skeletonList.push(skeletonId);
+            }
+          }
+
+          // With a list of potentially intersecting skeletons for each volume,
+          // we need to create a new filter for each folume and execute it,
+          // keeping the input data cache and updating the results accordingly.
+          let inputCache = {};
+          let filters = [];
+          for (let volumeId of volumeSkeletonMap.keys()) {
+            let rules = [new CATMAID.SkeletonFilterRule(filterStrategy, {
+              volumeId: volumeId,
+            })];
+            let filter = new CATMAID.SkeletonFilter(rules, skeletonModels, inputCache);
+            filters.push(filter);
+          }
+
+          if (!filters || filters.length === 0) {
+            throw new CATMAID.ValueError("Could not generate skeleton volume filters");
+          }
+
+          // Execute first filter to fill cache for other filters (mainly for
+          // skeleton IDs.
+          let filteredResultMap = new Map();
+          let firstFilter = filters.pop();
+
+          return firstFilter.execute(undefined, true)
+            .then(function(filtered) {
+              return handleFilteredData(filteredResultMap, firstFilter, filtered);
+            })
+            .then(function() {
+              let filteredResult = result.filter(function(r) {
+                return filteredResultMap.has(r.skeleton_id);
+              });
+              let lDiff = result.length - filteredResult.length;
+              if (lDiff > 0) {
+                CATMAID.msg("Filtered skeletons", `Filtered additional ${lDiff} ` +
+                    `skeletons by exact client-side tests`);
+              }
+              return Array.from(filteredResultMap.keys()).map(function(skeletonId) {
+                return {
+                  'skeleton_id': skeletonId,
+                  'volume_ids': filteredResultMap.get(skeletonId),
+                };
+              });
+            });
+          }
       })
       .then(function(result) {
         // Update data table, select and show only result volumes.
@@ -950,6 +1040,14 @@
             widget.innervationVolumeAnnotation = this.value.trim();
           },
         }, {
+          type: 'checkbox',
+          label: 'Exact filtering',
+          title: 'If enabled, skeletons are tested if they truly intersect with a volume and not only its bounding box. This can take longer.',
+          value: widget.innervationExactFiltering,
+          onclick: function() {
+            widget.innervationExactFiltering = this.checked;
+          },
+        }, {
           type: 'button',
           label: 'Find innervations',
           onclick: widget.findInnervations.bind(widget),
@@ -1079,7 +1177,7 @@
         // Remove volume if 'remove' was clicked
         $(table).on('click', 'a[data-action="remove"]', function() {
           var tr = $(this).closest("tr");
-          var volume = widget.datatable.row(tr).data();
+          var volume = widget.innervationsDatatable.row(tr).data();
 
           var confirmDialog = new CATMAID.OptionsDialog("Remove volume", {
             "Yes": function() {
@@ -1103,7 +1201,7 @@
         // Skeleton intersection list
         $(table).on('click', 'a[data-action="list-skeletons"]', function() {
           var tr = $(this).closest("tr");
-          var volume = widget.datatable.row(tr).data();
+          var volume = widget.innervationsDatatable.row(tr).data();
           CATMAID.Volumes.get(project.id, volume.id)
             .then(function(volume) {
               let bb = volume.bbox;
@@ -1149,7 +1247,7 @@
         // Connector intersection list
         $(table).on('click', 'a[data-action="list-connectors"]', function() {
           var tr = $(this).closest("tr");
-          var volume = widget.datatable.row(tr).data();
+          var volume = widget.innervationsDatatable.row(tr).data();
           CATMAID.Volumes.get(project.id, volume.id)
             .then(function(volume) {
               let bb = volume.bbox;
@@ -1193,7 +1291,7 @@
         // Connector intersection list
         $(table).on('click', 'a[data-action="export-STL"]', function() {
           var tr = $(this).closest("tr");
-          var volume = widget.datatable.row(tr).data();
+          var volume = widget.innervationsDatatable.row(tr).data();
           var headers = {Accept: ['model/x.stl-ascii', 'model/stl']};
           CATMAID.fetch("/" + project.id + "/volumes/" + volume.id + "/export.stl", "GET", undefined, true, undefined, undefined, undefined, headers)
             .then(function(volume_file) {
@@ -1209,7 +1307,7 @@
         // Display a volume if clicked
         $(table).on('dblclick', 'tbody td', function() {
           var tr = $(this).closest("tr");
-          var volume = widget.datatable.row(tr).data();
+          var volume = widget.innervationsDatatable.row(tr).data();
           widget.loadVolume(volume.id)
             .then(widget.editVolume.bind(widget))
             .catch(CATMAID.handleError);

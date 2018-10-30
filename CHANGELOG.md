@@ -102,11 +102,19 @@ Docker:
 
 Volumes:
 
+- The general widget controls are now distributed across tabs.
+
 - Annotations can now be used on volumes too. The "Annotate" button in the
   Volume Manager can be used to annotate all selected volumes.
 
 - The "Add from file" button in the Volume Manager can now be used to import
   volumes from STL files.
+
+- The "Skeleton innervations" tab allows to search for volumes that intersect
+  with a set of query skeletons. A volume annotation can be specified to look
+  only at volumes having this annotation. Optionally, exact result computation
+  can be disabled to only compute skeleton/bounding-box intersections. This is
+  slightly faster, but leads to false positives.
 
 CLI importer:
 

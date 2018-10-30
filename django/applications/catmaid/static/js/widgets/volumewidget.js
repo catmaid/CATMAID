@@ -1089,11 +1089,12 @@
         table.style.width = "100%";
         var header = table.createTHead();
         var hrow = header.insertRow(0);
-        var columns = ['', 'Name', 'Id', 'Comment', 'Annotations', 'User', 'Creation time',
+        var columns = ['', '', 'Name', 'Id', 'Comment', 'Annotations', 'User', 'Creation time',
             'Editor', 'Edition time', 'Action'];
         columns.forEach(function(c) {
           hrow.insertCell().appendChild(document.createTextNode(c));
         });
+        let lut = new THREE.Lut("rainbow", 10);
 
         var tableContainer = document.createElement('div');
         tableContainer.setAttribute('class', 'volume-list');
@@ -1111,6 +1112,7 @@
                   let volumes = volumeData.data.map(function(volume) {
                     return new CATMAID.Volume(CATMAID.tools.buildObject(volumeData.columns, volume));
                   });
+                  lut.setMax(volumes.length - 1);
                   callback({
                     draw: data.draw,
                     data: volumes
@@ -1126,9 +1128,18 @@
           },
           columns: [
             {
+              class: 'cm-center',
               render: function(data, type, row, meta) {
                 return '<input type="checkbox" data-role="select" ' +
                     (row.selected ? 'checked' : '') + ' />';
+              }
+            },
+            {
+              orderable: false,
+              class: 'cm-center',
+              render: function(data, type, row, meta) {
+                let color = lut.getColor(meta.row);
+                return `<span class="color"><i class="fa fa-circle" style="color: ${color.getStyle()}"></i></span>`;
               }
             },
             {data: "title"},

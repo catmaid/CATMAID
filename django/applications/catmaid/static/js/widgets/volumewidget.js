@@ -1102,6 +1102,7 @@
         container.appendChild(tableContainer);
         widget.innervationsDatatable = $(table).DataTable({
           lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+          autoWidth: false,
           ajax: function(data, callback, settings) {
             if (widget.innervationVolumeIdFilter) {
               CATMAID.fetch(project.id +  "/volumes/", "POST", {
@@ -1129,6 +1130,7 @@
           columns: [
             {
               class: 'cm-center',
+              width: '5%',
               render: function(data, type, row, meta) {
                 return '<input type="checkbox" data-role="select" ' +
                     (row.selected ? 'checked' : '') + ' />';
@@ -1136,6 +1138,7 @@
             },
             {
               orderable: false,
+              width: '5%',
               class: 'cm-center',
               render: function(data, type, row, meta) {
                 let color = lut.getColor(meta.row);
@@ -1146,7 +1149,6 @@
             {data: "id"},
             {
               data: "comment",
-              width: "20%",
             },
             {
               data: "annotations",
@@ -1160,18 +1162,27 @@
             },
             {
               data: "user_id",
+              class: 'cm-center',
+              width: '10%',
               render: function(data, type, row, meta) {
                 return CATMAID.User.safe_get(data).login;
               }
             },
-            {data: "creation_time"},
+            {
+              data: "creation_time",
+              width: '15%',
+            },
             {
               data: "editor_id",
+              class: 'cm-center',
               render: function(data, type, row, meta) {
                 return CATMAID.User.safe_get(data).login;
               }
             },
-            {data: "edition_time"},
+            {
+              data: "edition_time",
+              width: '15%',
+            },
             {
               data: null,
               orderable: false,

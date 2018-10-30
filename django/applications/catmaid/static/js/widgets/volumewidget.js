@@ -114,6 +114,12 @@
         }, this);
       },
       init: function() {
+        this.modes.forEach(function(mode, i) {
+          var mode = VolumeManagerWidget.Modes[mode];
+          if (CATMAID.tools.isFn(mode.init)) {
+            mode.init(this);
+          }
+        }, this);
         this.update();
       },
     };
@@ -1036,6 +1042,7 @@
           type: 'text',
           label: 'Volume annotation',
           title: 'Only check against volumes with this annotation.',
+          id: `${widget.idPrefix}-volume-annotation`,
           onchange: function(e) {
             widget.innervationVolumeAnnotation = this.value.trim();
           },
@@ -1312,6 +1319,12 @@
             .then(widget.editVolume.bind(widget))
             .catch(CATMAID.handleError);
         });
+      },
+      init: function(widget) {
+        let annotationInput = document.querySelector(`input#${widget.idPrefix}-volume-annotation`);
+        if (annotationInput) {
+          CATMAID.annotations.add_autocomplete_to_input(annotationInput);
+        }
       },
       getMessage: function(widget) {
         if (!widget.innervationVolumeIdFilter || widget.innervationVolumeIdFilter.size === 0) {

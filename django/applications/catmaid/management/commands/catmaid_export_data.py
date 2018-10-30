@@ -89,7 +89,7 @@ class Exporter():
                 'annotated_with': ",".join(annotation_ids),
                 'sub_annotated_with': ",".join(annotation_ids)
             }
-            neuron_info, num_total_records = get_annotated_entities(self.project,
+            neuron_info, num_total_records = get_annotated_entities(self.project.id,
                     query_params, relations, classes, ['neuron'], with_skeletons=True)
 
             logger.info("Found {} neurons with the following exclusion annotations: {}".format(
@@ -112,7 +112,7 @@ class Exporter():
                 'annotated_with': ",".join(annotation_ids),
                 'sub_annotated_with': ",".join(annotation_ids)
             }
-            neuron_info, num_total_records = get_annotated_entities(self.project,
+            neuron_info, num_total_records = get_annotated_entities(self.project.id,
                     query_params, relations, classes, ['neuron'], with_skeletons=True)
 
             logger.info("Found {} neurons with the following annotations: {}".format(

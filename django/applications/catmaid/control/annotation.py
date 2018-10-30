@@ -525,7 +525,7 @@ def query_annotated_classinstances(request, project_id = None):
     range_length = request.POST.get('range_length', None)
     with_annotations = get_request_bool(request.POST, 'with_annotations', False)
 
-    entities, num_total_records = get_annotated_entities(p, request.POST,
+    entities, num_total_records = get_annotated_entities(p.id, request.POST,
             relations, classes, allowed_classes, sort_by, sort_dir, range_start,
             range_length, with_annotations)
 

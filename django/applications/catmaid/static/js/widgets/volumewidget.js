@@ -729,7 +729,7 @@
           type: 'button',
           label: 'Annotate',
           title: 'Add an annotation to all selected volumes',
-          oncliick: widget.annotateSelectedVolumes.bind(widget),
+          onclick: widget.annotateSelectedVolumes.bind(widget),
         }, {
           type: 'button',
           label: 'Show selected in 3D',

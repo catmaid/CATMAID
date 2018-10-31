@@ -379,7 +379,7 @@
                 let color = lut.getColor(i);
                 let entry = row[1][i];
                 let name =  getTargetName(entry[0]);
-                elements.push(`<span class="result-element"><span class="li">${i+1}.</span><span class="li-body"><span class="result-info"><a href="#" data-pointcloud-id="${entry[0]}" data-role="select-pointcloud">${name}</a><span class="score">Score: ${entry[2]}</span><span class="color"><i class="fa fa-circle" style="color: ${color.getStyle()}"></i></span><span class="actions" data-pointcloud-id="${entry[0]}"><a href="#" data-role="show-single-3d" data-target-index="${i}">3D Viewer</a><a href="#" data-role="show-images">Images</a></span></span>`);
+                elements.push(`<span class="result-element"><span class="li">${i+1}.</span><span class="li-body"><span class="result-info"><a href="#" data-color="${color.getStyle()}"  data-pointcloud-id="${entry[0]}" data-role="select-pointcloud">${name}</a><span class="score">Score: ${entry[2]}</span><span class="color"><i class="fa fa-circle" style="color: ${color.getStyle()}"></i></span><span class="actions" data-pointcloud-id="${entry[0]}"><a href="#" data-role="show-single-3d" data-target-index="${i}">3D Viewer</a><a href="#" data-role="show-images">Images</a></span></span>`);
                 elements.push('<span class="result-images">');
                 let pointcloud = pointClouds.get(entry[0]);
                 if (pointcloud && pointcloud.images) {
@@ -429,6 +429,10 @@
     }).on('click', 'a[data-role=select-skeleton]', function() {
       let skeletonId = parseInt(this.dataset.skeletonId, 10);
       CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
+    }).on('click', 'a[data-role=select-pointcloud]', function() {
+      let pointcloudId = parseInt(this.dataset.pointcloudId, 10);
+      let color = this.dataset.color;
+      NeuronSimilarityDetailWidget.showPointcloud3d(pointcloudId, color);
     }).on('click', 'a[data-role=show-all-3d]', function() {
       var table = $(this).closest('table');
       var tr = $(this).closest('tr');
@@ -491,6 +495,19 @@
     } else if (similarity.target_type === 'pointcloud') {
       widget3d.showPointCloud(targetObjectId, true, color);
     }
+  };
+
+  /**
+   * Open a new 3D Viewer and show a particular point cloud in it, optionally in
+   * a predefiend color.
+   */
+  NeuronSimilarityDetailWidget.showPointcloud3d = function(pointcloudId, color, pointcloudSample) {
+    let widget3d = WindowMaker.create('3d-viewer').widget;
+    widget3d.options.shading_method = 'none';
+    widget3d.options.color_method = 'none';
+    widget3d.options.pointcloud_sample = pointcloudSample || 1.0;
+    widget3d.showPointCloud(pointcloudId, true,
+        color ? new THREE.Color(color) : undefined);
   };
 
   NeuronSimilarityDetailWidget.showAllSimilarityResults = function(similarity,

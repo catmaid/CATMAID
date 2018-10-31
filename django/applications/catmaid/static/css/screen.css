@@ -560,6 +560,8 @@ table.neuron_annotations_query_fields {
 .padded-content,
 .CMWFrame .padded-content {
   padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  box-sizing: border-box;
 }
 
 .buttonpanel {

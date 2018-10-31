@@ -149,7 +149,10 @@ var WindowMaker = new function()
     var height = win.getContentHeight();
     if (buttonPanel !== undefined) {
       var $bar = typeof(buttonPanel) === "string" ? $('#' + buttonPanel) : $(buttonPanel);
-      height = height - ($bar.is(':visible') ? $bar.height() : 0);
+      var domElement = $bar[0];
+      if (domElement) {
+        height = height - ($bar.is(':visible') ? domElement.getBoundingClientRect().height : 0);
+      }
     }
     return height;
   };

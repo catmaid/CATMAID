@@ -320,9 +320,6 @@
       let selected = e.target.checked;
       let sourceName = e.target.value;
       self.targeted3dViewerNames.set(sourceName, selected);
-      if (!selected) {
-        self.removeDisplayFrom3dViewer(sourceName);
-      }
       self.updateDisplay();
     };
     targetSelectContainer.appendChild(select);
@@ -703,7 +700,8 @@
           this.landmarkGroupIndex, this.landmarkIndex, i);
       for (let j=0; j<target3dViewers.length; ++j) {
         let widget = target3dViewers[j];
-        widget.showLandmarkTransform(transformation, true);
+        let selected = this.targeted3dViewerNames.get(widget.getName());
+        widget.showLandmarkTransform(transformation, selected);
       }
     }
   };

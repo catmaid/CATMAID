@@ -94,6 +94,63 @@ Tracing layer:
 
 - Tracign layer: cycle open end in reverse using Shift + Alt + R.
 
+Neuron similarity:
+
+- The new Neuron Similarity Widget makes it possible to compare neurons to each
+  other, to neurons transformed based on landmarks as well as to arbitrary point
+  clouds. Point clouds can for instance be created from light microscopy data.
+  It creates a similarity ranking based on NBLAST. To open the widget, use Ctrl
+  + Space or the Open Widget button and then search for "Neuron similarity".
+
+- To compare two different objects, NBLAST will compare a query object pairwise
+  with potential target objects. It iterates over each point of the query
+  object, find the closest point in a target object and computes a score based
+  on the distance of these points and their orientation to each other.
+
+- This scoring is done based on a scoring matrix, which needs to be created
+  before any comparisons can be made. Scoring matrices are typically reused and
+  don't need to be recomputed every time. The "Configurations" tab allows to
+  create new similarity matrices and lists existing ones. For a new scoring
+  matrix, probabilities for distance and orientation are computed for both a set
+  of of similar neurons and a representative sample of random neurons. Both are
+  combined into a single matrix in which a value of zero makes a particular a
+  pair of points equally likely to be random or to be a match. Values above zero
+  make a match more likely. Computed similarity matrices can be visualized by
+  clicking the "View" link in the Scoring column of the respective similarity
+  configuration.
+
+- With a similarity matrix computed, similarity queries ca be performed from the
+  "Neuron similarity" tab. In its most basic form, this compares neurons to
+  other neurons. It is also possible to select transformed neurons and point
+  clouds as query type or target type in a search. This however requires
+  additional setup (see below). Query and target skeletons can be selected by
+  selecting a skeleton source for each. A similarity matrix has to be selected
+  as well, but all other options have reasonable defaults. A click on "Compute
+  similarity" queues a new similarity request, which is computed asynchronously.
+  Once the task is complete its table entry will switch its status to
+  "complete".
+
+- Once completed, the similarity query results can be viewed by clicking on
+  "View" in the "Scoring" column. This will open a new result window (or
+  dialog, if selected in the "View" option), which shows the similarity ranking.
+
+- To query with or against transformed skeletons, a landamark based "display
+  transformation" has to be created. To do so, open the Landmark Widget, and
+  create a transformation in its "Display" tab. Transformations created this way
+  are selectable from the Similarity Widget, if "transformed skeletons" is
+  selected for either query or target. Depending on available landmark groups,
+  this could be for instance a skeleton transformation to its contralateral
+  location.
+
+- The Point cloud tab allows to import individual point clouds, along with an
+  optional transformation and representative images. It also provides a list of
+  all point clouds that are visible to the current user. A group visibility
+  option during import allows to restrict visibility of imported point clouds to
+  selected groups (which need to be added from the admin interface).
+
+- The "Point cloud import" tab allows to import many point clouds at the same
+  time, optionally transformed and with linked representative images.
+
 Docker:
 
 - More CATMAID configuration options are now accessible through Docker

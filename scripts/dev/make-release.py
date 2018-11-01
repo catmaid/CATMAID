@@ -94,6 +94,7 @@ class CatmaidRelease(object):
         # Update files references a CATMAID version
         self.update_changelog()
         self.update_api_changelog()
+        self.update_version()
         self.update_documentation()
 
         # Create release commit
@@ -183,6 +184,17 @@ class CatmaidRelease(object):
         update_api_doc('apidoc')
         self.git.add(os.path.join(self.project_root, 'sphinx-doc/source/_static/api'))
         log("done")
+
+
+    def update_version(self):
+        def contentfilter(doc_data):
+            # Set CATMAID's base version
+            doc_data = re.sub("^BASE_VERSION\s=.*$", "BASE_VERSION = '{}'".format(self.release_name),
+                doc_data, 1, re.MULTILINE)
+
+            return doc_data
+
+        self.update_file("django/projects/mysite/utils.py", contentfilter)
 
 
     def update_file(self, relative_path, filterfn):

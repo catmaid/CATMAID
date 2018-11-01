@@ -125,6 +125,9 @@ class CATMAIDConfig(AppConfig):
 
     def ready(self):
         """Perform initialization for back-end"""
+        logger.info("CATMAID version {}".format(settings.VERSION))
+
+        # Make sure all settings variables are of the type we expect.
         self.validate_configuration()
 
         # If prepared statements are enabled, make sure they are created for

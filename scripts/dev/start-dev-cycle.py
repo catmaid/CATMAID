@@ -72,6 +72,14 @@ def update_documentation(doc_data):
 
     return doc_data
 
+
+def update_version(doc_data):
+    doc_data = re.sub("^BASE_VERSION\s=.*$", "version = '{}'".format(self.release_name),
+        doc_data, 1, re.MULTILINE)
+
+    return doc_data
+
+
 def start_dev_cycle(catmaid_folder):
     """Prepare changelog and documentation for a new development cycle.
     """
@@ -84,6 +92,9 @@ def start_dev_cycle(catmaid_folder):
 
     # Add new header to API CHANGELOG
     update_file(os.path.join(project_root, 'API_CHANGELOG.md'), update_api_changelog)
+
+    # Change reference version
+    update_file(os.path.join(project_root, "django/projects/mysite.utils.py", update_version)
 
     # Update version references in documentation
     update_file(os.path.join(project_root, "sphinx-doc/source/conf.py"), update_documentation)

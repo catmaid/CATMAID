@@ -13,12 +13,12 @@ from collections import defaultdict, deque
 from math import sqrt
 from datetime import datetime
 
-from django.db.models.query import QuerySet # For mypy
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import connection
 from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.db.models.query import QuerySet
 
 from rest_framework.decorators import api_view
 

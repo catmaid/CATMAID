@@ -50,6 +50,8 @@
     // Whether client side filtering should be performed (or only boundingn box
     // checks should be displayed).
     this.innervationClientSideFiltering = true;
+    // Whether innervating skeletons should be displayed in the table.
+    this.innervationSkeletonColumn = false;
     // The innervated volume IDs
     this.innervationVolumeIdFilter = null;
     // The skeletons per innervated skeleton.
@@ -135,6 +137,7 @@
       CATMAID.tools.callIfFn(this.currentContext.onExit);
       this.currentContext = null;
     }
+    CATMAID.NeuronNameService.getInstance().unregister(this);
     SkeletonAnnotations.off(CATMAID.SkeletonSourceManager.EVENT_SOURCE_ADDED,
         this.handleChangedSkeletonSources, this);
     SkeletonAnnotations.off(CATMAID.SkeletonSourceManager.EVENT_SOURCE_REMOVED,
@@ -156,6 +159,7 @@
         } else {
           visible = true;
         }
+        CATMAID.tools.callIfFn(mode.update, this);
       }
       let modeContent = document.querySelector(`div#${this.idPrefix}-content-${modeKey}`);
       if (modeContent) {
@@ -566,6 +570,18 @@
           }
       })
       .then(function(result) {
+        // Register with name service
+        let skeletonModels = result.reduce(function(o, r) {
+          o[r.skeleton_id] = new CATMAID.SkeletonModel(r.skeleton_id);
+          return o;
+        }, {});
+        return CATMAID.NeuronNameService.getInstance().registerAll(self, skeletonModels)
+          .then(function() {
+            // Return original result
+            return result;
+          });
+      })
+      .then(function(result) {
         // Update data table, select and show only result volumes.
         let table = document.querySelector(`div#${self.idPrefix}-content-innervations table`);
         if (!table) {
@@ -681,6 +697,11 @@
     this.update();
     return true;
   };
+
+  function makeSkeletonLink(skeletonId) {
+    let name = CATMAID.NeuronNameService.getInstance().getName(skeletonId);
+    return '<li><a href="#" data-action="select-skeleton" data-skeleton-id="' + skeletonId + '">' + name + '</a></li>';
+  }
 
   VolumeManagerWidget.Modes = {
     list: {
@@ -1095,7 +1116,16 @@
             });
 
             widget.showSelectedVolumesIn3d(selectedVolumes, skeletonIds);
-          }
+          },
+        }, {
+          type: 'checkbox',
+          label: 'Skeleton column',
+          title: 'Whether or not to show a skeleton column for each volume.',
+          value: widget.innervationSkeletonColumn,
+          onclick: function(e) {
+            widget.innervationSkeletonColumn = this.checked;
+            widget.update();
+          },
         }];
       },
       createContent: function(container, widget) {
@@ -1103,8 +1133,9 @@
         table.style.width = "100%";
         var header = table.createTHead();
         var hrow = header.insertRow(0);
-        var columns = ['', '', 'Name', 'Id', 'Comment', 'Annotations', 'User', 'Creation time',
-            'Editor', 'Edition time', 'Action'];
+        var columns = ['', '', 'Name', 'Id', 'Comment', 'Annotations',
+          'Skeletons', 'User', 'Creation time', 'Editor', 'Edition time',
+          'Action'];
         columns.forEach(function(c) {
           hrow.insertCell().appendChild(document.createTextNode(c));
         });
@@ -1175,9 +1206,22 @@
               }
             },
             {
+              name: 'skeletons',
+              visible: widget.innervationSkeletonColumn,
+              render: function(data, type, row, meta) {
+                let skeletonIds = widget.innervationSkeletonMap.get(row.id);
+                if (!skeletonIds || skeletonIds.length === 0) {
+                  return '<em>(none)</em>';
+                } else {
+                  return '<ul class="resultTags">' +
+                      skeletonIds.map(makeSkeletonLink).join(' ') + '</ul>';
+                }
+              }
+            },
+            {
               data: "user_id",
               class: 'cm-center',
-              width: '10%',
+              width: '5%',
               render: function(data, type, row, meta) {
                 return CATMAID.User.safe_get(data).login;
               }
@@ -1213,6 +1257,14 @@
           var tr = $(this).closest('tr');
           var data =  $(table).DataTable().row(tr).data();
           data.selected = this.checked;
+        })
+        .on('click', 'a[data-action=select-skeleton]', function() {
+          let skeletonId = parseInt(this.dataset.skeletonId, 10);
+          if (!skeletonId) {
+            CATMAID.warn("Could not find skeleton ID");
+            return;
+          }
+          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
         });
 
         // Remove volume if 'remove' was clicked
@@ -1347,6 +1399,12 @@
       getMessage: function(widget) {
         if (!widget.innervationVolumeIdFilter || widget.innervationVolumeIdFilter.size === 0) {
           return "Please define your query in the toolbar above";
+        }
+      },
+      update: function(widget) {
+        if (widget.innervationsDatatable) {
+          widget.innervationsDatatable.column('skeletons:name').visible(
+              widget.innervationSkeletonColumn);
         }
       },
     },

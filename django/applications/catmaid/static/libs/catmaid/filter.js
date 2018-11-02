@@ -283,9 +283,14 @@
 
     if (needsArbor || needsTags || needsPartners) {
       if (input.skeletons === undefined) { input.skeletons = {}; }
-      var fetchSkeletons = CATMAID.SkeletonFilter.fetchArbors(skeletonIds,
-          needsArbor, needsPartners, needsTags, needsTime, input.skeletons);
-      prepareActions.push(fetchSkeletons);
+      let neededSkeletonIds = skeletonIds.filter(function(skeletonId) {
+        return !input.skeletons[skeletonId];
+      });
+      if (neededSkeletonIds.length > 0) {
+        let fetchSkeletons = CATMAID.SkeletonFilter.fetchArbors(skeletonIds,
+            needsArbor, needsPartners, needsTags, needsTime, input.skeletons);
+        prepareActions.push(fetchSkeletons);
+      }
     }
 
     if (neededInput.has("volume")) {
@@ -293,7 +298,7 @@
       var volumeIds = new Set();
       for (var i=0; i<rules.length; ++i) {
         var volumeId = rules[i].options['volumeId'];
-        if (volumeId !== undefined) {
+        if (volumeId !== undefined && !input.volumes[volumeId]) {
           volumeIds.add(volumeId);
         }
       }

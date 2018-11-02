@@ -315,13 +315,13 @@ def compact_skeleton_detail(request:HttpRequest, project_id=None, skeleton_id=No
     # Sanitize
     project_id = int(project_id)
     skeleton_id = int(skeleton_id)
-    with_connectors    = get_request_bool(request.GET, "with_connectors", False)
-    with_tags          = get_request_bool(request.GET, "with_tags", False)
-    with_history       = get_request_bool(request.GET, "with_history", False)
+    with_connectors = get_request_bool(request.GET, "with_connectors", False)
+    with_tags = get_request_bool(request.GET, "with_tags", False)
+    with_history = get_request_bool(request.GET, "with_history", False)
     with_merge_history = get_request_bool(request.GET, "with_merge_history", False)
-    with_reviews       = get_request_bool(request.GET, "with_reviews", False)
-    with_annotations   = get_request_bool(request.GET, "with_annotations", False)
-    with_user_info     = get_request_bool(request.GET, "with_user_info", False)
+    with_reviews = get_request_bool(request.GET, "with_reviews", False)
+    with_annotations = get_request_bool(request.GET, "with_annotations", False)
+    with_user_info = get_request_bool(request.GET, "with_user_info", False)
     return_format = request.GET.get('format', 'json')
     ordered = get_request_bool(request.GET, "ordered", False)
 
@@ -353,15 +353,15 @@ def compact_skeleton(request:HttpRequest, project_id=None, skeleton_id=None,
     project_id = int(project_id)
     skeleton_id = int(skeleton_id)
     with_connectors = int(with_connectors) != 0
-    with_tags       = int(with_tags) != 0
-    with_history       = get_request_bool(request.GET, "with_history", False)
+    with_tags = int(with_tags) != 0
+    with_history = get_request_bool(request.GET, "with_history", False)
     # Indicate if history of merged in skeletons should also be included if
     # history is returned. Ignored if history is not retrieved.
     with_merge_history = get_request_bool(request.GET, "with_merge_history", False)
-    with_reviews       = get_request_bool(request.GET, "with_reviews", False)
-    with_annotations   = get_request_bool(request.GET, "with_annotations", False)
-    with_user_info     = get_request_bool(request.GET, "with_user_info", False)
-    ordered            = get_request_bool(request.GET, "ordered", False)
+    with_reviews = get_request_bool(request.GET, "with_reviews", False)
+    with_annotations = get_request_bool(request.GET, "with_annotations", False)
+    with_user_info = get_request_bool(request.GET, "with_user_info", False)
+    ordered = get_request_bool(request.GET, "ordered", False)
 
     result = _compact_skeleton(project_id, skeleton_id, with_connectors,
                                with_tags, with_history, with_merge_history,

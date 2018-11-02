@@ -52,6 +52,8 @@
     this.innervationClientSideFiltering = true;
     // The innervated volume IDs
     this.innervationVolumeIdFilter = null;
+    // The skeletons per innervated skeleton.
+    this.innervationSkeletonMap = new Map();
     // Whether client-side filtering should be used to filter skeleton/volume
     // intersections exactly.
     this.innervationExactFiltering = true;
@@ -576,6 +578,18 @@
           v.volume_ids.forEach(s.add, s);
           return s;
         }, new Set());
+        self.innervationSkeletonMap = result.reduce(function(m, v) {
+          for (let i=0; i<v.volume_ids.length; ++i) {
+            let volumeId = v.volume_ids[i];
+            let skeletonList = m.get(volumeId);
+            if (!skeletonList) {
+              skeletonList = [];
+              m.set(volumeId, skeletonList);
+            }
+            skeletonList.push(v.skeleton_id);
+          }
+          return m;
+        }, new Map());
 
         datatable.ajax.reload(function() {
           // Deselect all rows that aren't in the result set
@@ -1229,41 +1243,24 @@
         $(table).on('click', 'a[data-action="list-skeletons"]', function() {
           var tr = $(this).closest("tr");
           var volume = widget.innervationsDatatable.row(tr).data();
-          CATMAID.Volumes.get(project.id, volume.id)
-            .then(function(volume) {
-              let bb = volume.bbox;
-              let skeletonConstraints;
-              if (widget.innervationSkeletonSource &&
-                  widget.innervationSkeletonSource!== 'none') {
-                let source = CATMAID.skeletonListSources.getSource(
-                    widget.innervationSkeletonSource);
-                if (!source) {
-                  throw new CATMAID.ValueError("Can't find skeleton source: " +
-                      widget.innervationSkeletonSource);
-                }
-                let skeletonIds = source.getSelectedSkeletons();
-                if (skeletonIds.length > 0) {
-                  skeletonConstraints = skeletonIds;
-                }
-              }
-              return CATMAID.Skeletons.inBoundingBox(project.id, bb.min.x,
-                  bb.min.y, bb.min.z, bb.max.x, bb.max.y, bb.max.z,
-                  widget.minFilterNodes, widget.minFilterCable, skeletonConstraints);
-            })
-            .then(function(skeletonIds) {
-              if (!skeletonIds || skeletonIds.length === 0) {
-                CATMAID.warn('Found no intersecting skeletons');
-              } else {
-                var handles = CATMAID.WindowMaker.create('selection-table');
-                if (!handles) {
-                  throw new CATMAID.ValueError("Could not create Selection Table");
-                }
-                handles.widget.addSkeletons(skeletonIds)
-                  .then(function() {
-                    CATMAID.msg('Success', 'Found ' + skeletonIds.length + ' skeletons');
-                  })
-                  .catch(CATMAID.handleError);
-              }
+          if (!widget.innervationSkeletonMap) {
+            CATMAID.warn("Could not find innervation skeleton map");
+            return;
+          }
+
+          let skeletonIds = widget.innervationSkeletonMap.get(volume.id);
+          if (!skeletonIds) {
+            CATMAID.warn("Could not find any innervating skeletons");
+            return;
+          }
+
+          var handles = CATMAID.WindowMaker.create('selection-table');
+          if (!handles) {
+            throw new CATMAID.ValueError("Could not create Selection Table");
+          }
+          handles.widget.addSkeletons(skeletonIds)
+            .then(function() {
+              CATMAID.msg('Success', 'Found ' + skeletonIds.length + ' skeletons');
             })
             .catch(CATMAID.handleError);
 

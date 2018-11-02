@@ -266,7 +266,8 @@
      */
     inBoundingBox: function(projectId, minX, minY, minZ, maxX, maxY, maxZ,
         minNodes, minCable, skeletonIds) {
-      return CATMAID.fetch(project.id + '/skeletons/in-bounding-box', 'GET', {
+      let method = skeletonIds ? 'POST' : 'GET';
+      return CATMAID.fetch(project.id + '/skeletons/in-bounding-box', method, {
         'minx': minX,
         'miny': minY,
         'minz': minZ,

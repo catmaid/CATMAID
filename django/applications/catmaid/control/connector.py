@@ -81,6 +81,9 @@ KNOWN_LINK_PAIRS = {
 
 LINK_RELATION_NAMES = [r['relation'] for r in LINK_TYPES]
 
+UNDIRECTED_LINK_TYPES =[p['source'] for p in KNOWN_LINK_PAIRS.values()
+            if p['source'] == p['target']]
+
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
 def connector_types(request, project_id):
@@ -196,7 +199,8 @@ def _many_to_many_synapses(skids1, skids2, relation_name, project_id):
     cursor = connection.cursor()
 
     relations = get_relation_to_id_map(project_id, cursor=cursor)
-    gapjunction_id = relations.get('gapjunction_with', -1)
+    relation_id = relations[relation_name]
+    undirected_link_ids = [relations[l] for l in UNDIRECTED_LINK_TYPES]
 
     cursor.execute('''
     SELECT tc1.connector_id, c.location_x, c.location_y, c.location_z,
@@ -208,22 +212,23 @@ def _many_to_many_synapses(skids1, skids2, relation_name, project_id):
          treenode_connector tc2,
          treenode t1,
          treenode t2,
-         relation r1,
          connector c
-    WHERE tc1.skeleton_id IN (%s)
+    WHERE tc1.skeleton_id = ANY(%(skeleton_ids_1)s::int[])
       AND tc1.connector_id = c.id
-      AND tc2.skeleton_id IN (%s)
+      AND tc2.skeleton_id = ANY(%(skeleton_ids_2)s::int[])
       AND tc1.connector_id = tc2.connector_id
-      AND tc1.relation_id = r1.id
-      AND r1.relation_name = '%s'
-      AND (tc1.relation_id != tc2.relation_id OR tc1.relation_id = %d)
+      AND tc1.relation_id = %(relation_id)s
+      AND (tc1.relation_id != tc2.relation_id
+        OR tc1.relation_id = ANY(%(undir_rel_ids)s::int[]))
       AND tc1.id != tc2.id
       AND tc1.treenode_id = t1.id
       AND tc2.treenode_id = t2.id
-    ''' % (','.join(map(str, skids1)),
-           ','.join(map(str, skids2)),
-           relation_name,
-           gapjunction_id))
+    ''', {
+        'skeleton_ids_1': skids1,
+        'skeleton_ids_2': skids2,
+        'relation_id': relation_id,
+        'undir_rel_ids': undirected_link_ids,
+    })
 
     return tuple((row[0], (row[1], row[2], row[3]),
                   row[4], row[5], row[6], row[7],

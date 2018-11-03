@@ -648,12 +648,24 @@ class Command(BaseCommand):
             target = Project.objects.get(pk=options['target'])
 
         override_user = None
-        if not options['user']:
-            if not options['map_users']:
-                override_user = ask_for_user("All imported objects need a user. " +
-                        "Alterantively to selecting one --map-users can be used.")
-        else:
+        if options['user']:
             override_user = User.objects.get(pk=options['user'])
+            logger.info("All imported objects will be owned by user \"{}\"".format(
+                    overrude_user.username))
+        else:
+            if options['map_users']:
+                logger.info("Useres referenced in import will be mapped to "
+                        "existing users if the username matches")
+            if options['create_unknown_users']:
+                logger.info("Unknown users will be created")
+
+            if not options['map_users'] and not options['create_unknown_users']::
+                override_user = ask_for_user("All imported objects need a user. "
+                        "Either override the owner of all imported objects "
+                        "using the --user option or map imported users using "
+                        "the --map-users option to existing users with a "
+                        "matching username. Additionally, unknown users "
+                        "can be created using the --create-unknown-users option.")
 
         importer = Importer(source, target, override_user, options)
         importer.import_data()

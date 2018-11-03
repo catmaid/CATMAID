@@ -94,6 +94,9 @@ Tracing layer:
 
 - Tracign layer: cycle open end in reverse using Shift + Alt + R.
 
+- Alt + Click now opens consistently the link type context menu, regardless of
+  whether a treenode or connector node is currently selected.
+
 Neuron similarity:
 
 - The new Neuron Similarity Widget makes it possible to compare neurons to each

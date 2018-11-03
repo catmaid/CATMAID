@@ -1502,8 +1502,27 @@
             // to existing treenode or connectornode
             if (atnType === SkeletonAnnotations.TYPE_CONNECTORNODE) {
               var atnSubType = SkeletonAnnotations.getActiveNodeSubType();
-              if ((e.altKey && !e.shiftKey) ||
-                  atnSubType === CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR) {
+
+              // If the Alt key is pressed, we want to show a menu for
+              // connector type selection.
+              if (e.altKey && !e.shiftKey) {
+                if (!CATMAID.mayEdit()) {
+                  CATMAID.error("You lack permissions to add links between node #" +
+                      node.id + " and connector #" + atnID);
+                  return;
+                }
+                catmaidTracingOverlay.askForConnectorType()
+                  .then(function(selection) {
+                    if (selection) {
+                      SkeletonAnnotations.atn.subtype = selection.value;
+                      catmaidTracingOverlay.createLink(node.id, atnID, selection.relation)
+                        .catch(CATMAID.handleError);
+                    }
+                  });
+                return;
+              }
+
+              if (atnSubType === CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR) {
                 if (!CATMAID.mayEdit()) {
                   CATMAID.error("You lack permissions to declare node #" + node.id +
                       " as having a gap junction with connector #" + atnID);

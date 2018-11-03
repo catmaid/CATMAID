@@ -3207,6 +3207,45 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
 };
 
 
+SkeletonAnnotations.TracingOverlay.prototype.askForConnectorType = function() {
+  let self = this;
+  return CATMAID.Connectors.linkTypes(project.id)
+    .then(function(linkTypes) {
+      return new Promise(function(resolve, reject) {
+        if (self.connectorTypeMenu) {
+          self.connectorTypeMenu.hide();
+        }
+        // Display connector link type selection UI
+        self.connectorTypeMenu = new CATMAID.ContextMenu({
+          select: function(selection) {
+            resolve({
+              relation: selection.item.data.relation,
+              value: selection.item.value,
+              title: selection.item.title,
+            });
+          },
+          hide: function(selected) {
+            self.connectorTypeMenu = null;
+            if (!selected) {
+              resolve();
+            }
+          },
+          items: linkTypes.map(function(t) {
+            return {
+              title: t.name,
+              value: t.type_id,
+              data: {
+                relation: t.relation
+              }
+            };
+          })
+        });
+        self.connectorTypeMenu.show(true);
+      });
+    });
+};
+
+
 /**
  * Three possible actions can happen: 1. if both insert and link are false, a
  * new node will be appended as child to the active node. 2. if insert is true,
@@ -3272,41 +3311,14 @@ SkeletonAnnotations.TracingOverlay.prototype._createNodeOrLink = function(insert
         };
 
         if (postLink && !link) {
-          create = CATMAID.Connectors.linkTypes(project.id)
-            .then(function(linkTypes) {
-              return new Promise(function(resolve, reject) {
-                if (self.connectorTypeMenu) {
-                  self.connectorTypeMenu.hide();
-                }
-                // Display connector link type selection UI
-                self.connectorTypeMenu = new CATMAID.ContextMenu({
-                  select: function(selection) {
-                    // Create a new custom connector
-                    var msg = "Created " + selection.item.title.toLowerCase() +
-                        " connector with treenode #" + atn.id;
-                    var data = selection.item.data;
-                    createConnector(selection.item.data.relation, selection.item.value, msg)
-                      .then(resolve)
-                      .catch(reject);
-                  },
-                  hide: function(selected) {
-                    self.connectorTypeMenu = null;
-                    if (!selected) {
-                      resolve();
-                    }
-                  },
-                  items: linkTypes.map(function(t) {
-                    return {
-                      title: t.name,
-                      value: t.type_id,
-                      data: {
-                        relation: t.relation
-                      }
-                    };
-                  })
-                });
-                self.connectorTypeMenu.show(true);
-              });
+          create = this.askForConnectorType()
+            .then(function(selection) {
+              if (selection) {
+                // Create a new custom connector
+                var msg = "Created " + selection.title.toLowerCase() +
+                    " connector with treenode #" + atn.id;
+                return createConnector(selection.relation, selection.value, msg);
+              }
             });
         } else if (CATMAID.Connectors.SUBTYPE_ABUTTING_CONNECTOR === newConnectorType) {
           // Create a new abutting connection
@@ -3339,7 +3351,7 @@ SkeletonAnnotations.TracingOverlay.prototype._createNodeOrLink = function(insert
           CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " abutting to active connector");
           create = this.createTreenodeWithLink(atn.id, phys_x, phys_y, phys_z, -1, 5,
               "abutting", postCreateFn);
-        } else if (CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR === atn.subtype || postLink) {
+        } else if (CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR === atn.subtype) {
           // create new treenode (and skeleton) as a gap junction to activated connector
           CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " with gap junction to active connector");
           create = this.createGapjunctionTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5,
@@ -3350,6 +3362,8 @@ SkeletonAnnotations.TracingOverlay.prototype._createNodeOrLink = function(insert
           create = this.createTreenodeWithLink(atn.id, phys_x, phys_y, phys_z, -1, 5,
               "close_to", postCreateFn);
         } else {
+          CATMAID.warn("Couldn't find matching link type for connector with type " +
+              atn.subtype);
           return null;
         }
       }

@@ -660,12 +660,12 @@ class Command(BaseCommand):
                 logger.info("Unknown users will be created")
 
             if not options['map_users'] and not options['create_unknown_users']::
-                override_user = ask_for_user("All imported objects need a user. "
-                        "Either override the owner of all imported objects "
-                        "using the --user option or map imported users using "
-                        "the --map-users option to existing users with a "
-                        "matching username. Additionally, unknown users "
-                        "can be created using the --create-unknown-users option.")
+                override_user = ask_for_user("All imported objects need a user "
+                        "and no mapping or creation option was provided. Please "
+                        "select a user that should take ownership of all "
+                        "imported objects. Alternatively, use the --map-users "
+                        "option to map imported users to existing users based "
+                        "on their username.")
 
         importer = Importer(source, target, override_user, options)
         importer.import_data()

@@ -169,7 +169,7 @@ def get_swc_string(project_id, skeleton_id, treenodes_qs:QuerySet, linearize_ids
 
     if linearize_ids:
         # Find successors for each node
-        successors:DefaultDict = defaultdict(list) # incomplete annotation
+        successors = defaultdict(list) # type: DefaultDict
         root = None
         for tn in all_rows:
             node, parent = tn[0], tn[6]
@@ -623,8 +623,8 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
             raise Exception("Skeleton #%s doesn't exist" % skeleton_id)
         # Otherwise returns an empty list of nodes
 
-    connectors:Tuple = ()
-    tags:DefaultDict = defaultdict(list) # incomplete type
+    connectors = () # type: Tuple
+    tags = defaultdict(list) # type: DefaultDict
     reviews = []
 
     if with_connectors or with_tags or with_annotations:
@@ -770,7 +770,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
         for r in cursor.fetchall():
             reviews.append(r)
 
-    annotations:List[Optional[Tuple]] = []
+    annotations = [] # type: List[Optional[Tuple]]
     if with_annotations:
         history_suffix = '__with_history' if with_history else ''
         link_history_query = ', annotation_link.edition_time' if with_history else ''
@@ -830,9 +830,9 @@ def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,
 
     cursor = connection.cursor()
 
-    nodes:Tuple = ()
+    nodes = () # type: Tuple
     connectors = []
-    tags:DefaultDict = defaultdict(list) # incomplete type
+    tags = defaultdict(list) # type: DefaultDict
 
     if 0 != with_nodes:
         if with_time:
@@ -939,7 +939,7 @@ def compact_arbor(request:HttpRequest, project_id=None, skeleton_id=None, with_n
 
 def _treenode_time_bins(skeleton_id=None):
     """ Return a map of time bins (minutes) vs. list of nodes. """
-    minutes:DefaultDict = defaultdict(list) # incomplete type
+    minutes = defaultdict(list) # type: DefaultDict
     epoch = datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
 
     for row in Treenode.objects.filter(skeleton_id=int(skeleton_id)).values_list('id', 'creation_time'):
@@ -1010,7 +1010,8 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
     # array of properties: id, parent_id, user_id, x, y, z, radius, confidence
     nodes = tuple(cursor.fetchall())
 
-    tags:DefaultDict = defaultdict(list) # node ID vs list of tags
+    tags = defaultdict(list) # type: DefaultDict
+                             # node ID vs list of tags
     connectors = []
 
     # Get all reviews for this skeleton
@@ -1131,11 +1132,12 @@ def _measure_skeletons(skeleton_ids):
             self.wx = x # weighted average of itself and neighbors
             self.wy = y
             self.wz = z
-            self.children:Dict[Any, float] = {} # node ID vs distance - is first type an int or an str?
+            self.children = {} # type: Dict[Any, float]
+                               # node ID vs distance - is first type an int or an str?
 
     class Skeleton():
         def __init__(self):
-            self.nodes:Dict[Any, Node] = {}
+            self.nodes = {} # type: Dict[Any, Node]
             self.raw_cable = 0
             self.smooth_cable = 0
             self.principal_branch_cable = 0
@@ -1144,7 +1146,8 @@ def _measure_skeletons(skeleton_ids):
             self.n_pre = 0
             self.n_post = 0
 
-    skeletons:DefaultDict = defaultdict(dict) # skeleton ID vs (node ID vs Node)
+    skeletons = defaultdict(dict) # type: DefaultDict
+                                  # skeleton ID vs (node ID vs Node)
     for row in cursor.fetchall():
         skeleton = skeletons.get(row[2])
         if not skeleton:
@@ -1279,8 +1282,10 @@ def _skeleton_neuroml_cell(skeleton_id, preID, postID):
     WHERE tc.skeleton_id = %s
       AND (tc.relation_id = %s OR tc.relation_id = %s)
     ''' % (skeleton_id, preID, postID))
-    pre:DefaultDict = defaultdict(list) # treenode ID vs list of connector ID
-    post:DefaultDict = defaultdict(list) # incomplete type
+    pre = defaultdict(list) # type: DefaultDict
+                            # treenode ID vs list of connector ID
+    post = defaultdict(list) # type: DefaultDict
+                             # incomplete type
     for row in cursor.fetchall():
         if row[2] == preID:
             pre[row[0]].append(row[1])
@@ -1356,13 +1361,13 @@ def export_neuroml_level3_v181(request:HttpRequest, project_id=None) -> HttpResp
         ''' % (skeleton_strings, presynaptic_to, postsynaptic_to))
 
         # Dictionary of connector ID vs map of relation_id vs list of treenode IDs
-        connectors:DefaultDict = defaultdict(partial(defaultdict, list)) # incomplete type
+        connectors = defaultdict(partial(defaultdict, list)) # type: DefaultDict
 
         for row in cursor.fetchall():
             connectors[row[1]][row[2]].append((row[0], row[3]))
 
         # Dictionary of presynaptic skeleton ID vs map of postsynaptic skeleton ID vs list of tuples with presynaptic treenode ID and postsynaptic treenode ID.
-        connections:DefaultDict = defaultdict(partial(defaultdict, list)) # incomplete type
+        connections = defaultdict(partial(defaultdict, list)) # type: DefaultDict
 
         for connectorID, m in connectors.items():
             for pre_treenodeID, skID1 in m[presynaptic_to]:
@@ -1398,7 +1403,7 @@ def export_neuroml_level3_v181(request:HttpRequest, project_id=None) -> HttpResp
         ''' % (skeleton_strings, postsynaptic_to, presynaptic_to, constraint))
 
         # Dictionary of skeleton ID vs list of treenode IDs at which the neuron receives inputs
-        inputs:DefaultDict = defaultdict(list) # incomplete type
+        inputs = defaultdict(list) # type: DefaultDict
         for row in cursor.fetchall():
             inputs[row[0]].append(row[1])
 
@@ -1506,7 +1511,7 @@ def _export_review_skeleton(project_id=None, skeleton_id=None,
 
     # Create all sequences, as long as possible and always from end towards root
     distances = edge_count_to_root(g, root_node=root_id) # distance in number of edges from root
-    seen:Set = set() # incomplete type
+    seen = set() # type: Set
     sequences = []
     # Iterate end nodes sorted from highest to lowest distance to root
     endNodeIDs = (nID for nID in g.nodes() if 0 == len(g.successors(nID)))
@@ -1526,7 +1531,7 @@ def _export_review_skeleton(project_id=None, skeleton_id=None,
 
     # Calculate status
 
-    segments:List[Dict] = []
+    segments = [] # type: List[Dict]
     for sequence in sorted(sequences, key=len, reverse=True):
         segments.append({
             'id': len(segments),
@@ -1634,7 +1639,7 @@ def export_review_skeleton(request:HttpRequest, project_id=None, skeleton_id=Non
       required: true
     """
     try:
-        subarbor_node_id:Optional[int] = int(request.POST.get('subarbor_node_id', ''))
+        subarbor_node_id = int(request.POST.get('subarbor_node_id', '')) # type: Optional[int]
     except ValueError:
         subarbor_node_id = None
 
@@ -1666,7 +1671,7 @@ def skeleton_connectors_by_partner(request:HttpRequest, project_id) -> JsonRespo
     ''' % (','.join(map(str, skeleton_ids)), pre, post, pre, post))
 
     # Dict of skeleton vs relation vs skeleton vs list of connectors
-    partners:DefaultDict = defaultdict(partial(defaultdict, partial(defaultdict, list))) # incomplete type
+    partners = defaultdict(partial(defaultdict, partial(defaultdict, list))) # type: DefaultDict
 
     for row in cursor.fetchall():
         relation_name = 'presynaptic_to' if row[1] == pre else 'postsynaptic_to'
@@ -1679,7 +1684,7 @@ def skeleton_connectors_by_partner(request:HttpRequest, project_id) -> JsonRespo
 def export_skeleton_reviews(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonResponse:
     """ Return a map of treenode ID vs list of reviewer IDs,
     without including any unreviewed treenode. """
-    m:DefaultDict = defaultdict(list) # incomplete type
+    m = defaultdict(list) # type: DefaultDict
     for row in Review.objects.filter(skeleton_id=int(skeleton_id)).values_list('treenode_id', 'reviewer_id', 'review_time').iterator():
         m[row[0]].append(row[1:3])
 

@@ -3321,6 +3321,9 @@ SkeletonAnnotations.TracingOverlay.prototype._createNodeOrLink = function(insert
           var synapseType = postLink ? 'post' : 'pre';
           create = createConnector(synapseType + "synaptic_to", newConnectorType,
               "Created connector with " + synapseType + "synaptic treenode #" + atn.id);
+        } else if (CATMAID.Connectors.SUBTYPE_ATTACHMENT_CONNECTOR == newConnectorType) {
+          create = createConnector("attached_to", newConnectorType,
+              `Created attachment connector for treenode ${atn.id}`);
         } else {
           CATMAID.warn("Unknown connector type selected");
           return Promise.resolve();

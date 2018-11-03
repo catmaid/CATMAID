@@ -253,6 +253,9 @@ Miscellaneous:
 - Tracing overlay: child node edition times are now correctly updated if the
   parent is deleted, which fixes occasional state matching errors.
 
+- Tracing overlay: Shift + Click now works also with attachment connectors,
+  should they be selected as default connector type in the settings.
+
 - Reconstruction sampler: deleting samplers while other samplers on the same
   neuron refer to the same created boundary nodes no longer causes an error.
 

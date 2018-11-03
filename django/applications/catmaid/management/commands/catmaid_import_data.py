@@ -101,8 +101,8 @@ class FileImporter:
                     obj_username = import_user.username
                     existing_user_id = self.user_map.get(obj_username)
                 else:
-                    raise ValueError("Could not find referenced user {} " +
-                            "in imported data".format(obj_user_ref_id))
+                    raise ValueError("Could not find referenced user " +
+                            "\"{}\" in imported data".format(obj_user_ref_id))
 
                 # Map users if usernames match
                 if existing_user_id is not None:
@@ -115,15 +115,15 @@ class FileImporter:
                         mapped_user_ids.add(obj_user_ref_id)
                         mapped_user_target_ids.add(existing_user_id)
                     elif import_user:
-                        raise CommandError("Referenced user \"{}\" exists "
-                                "both in database and in import data. If the "
+                        raise CommandError("Referenced user \"{}\"".format(obj_username)
+                                "exists both in database and in import data. If the "
                                 "existing user should be used, please use the "
-                                "--map-users option".format(obj_username))
+                                "--map-users option")
                     else:
-                        raise CommandError("Referenced user \"{}\" exists "
-                                "in database, but not in import data. If the "
+                        raise CommandError("Referenced user \"{}\"".format(obj_username)
+                                "exists in database, but not in import data. If the "
                                 " existing user should be used, please use the "
-                                "--map-users option".format(obj_username))
+                                "--map-users option")
                 elif import_user:
                     if import_user.id in self.user_id_map:
                         import_user.id = None
@@ -142,9 +142,9 @@ class FileImporter:
                         created_users[obj_username] = user
                     obj.user = user
                 else:
-                    raise CommandError("User \"{}\" is not found in "
-                            "existing data or import data. Please use --user or "
-                            "--create-unknown-users".format(obj_username))
+                    raise CommandError("User \"{}\" is not ".format(obj_username)
+                            "found in existing data or import data. Please use "
+                            "--user or --create-unknown-users")
 
     def reset_ids(self, target_classes, import_objects,
             import_objects_by_type_and_id, existing_classes,

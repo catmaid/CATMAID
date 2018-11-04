@@ -19,7 +19,8 @@ from catmaid.fields import Double3D
 from catmaid.models import Project, Stack, ProjectStack, Connector, \
         ConnectorClassInstance, Treenode, TreenodeConnector, UserRole
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
-from catmaid.control.link import create_treenode_links
+from catmaid.control.link import (create_treenode_links, LINK_TYPES,
+        LINK_RELATION_NAMES, UNDIRECTED_LINK_TYPES)
 from catmaid.control.common import (cursor_fetch_dictionary,
         get_relation_to_id_map, get_class_to_id_map, get_request_bool,
         get_request_list)
@@ -27,62 +28,6 @@ from catmaid.control.common import (cursor_fetch_dictionary,
 
 logger = logging.getLogger(__name__)
 
-
-LINK_TYPES = [
-    {
-        'name': 'Presynaptic',
-        'type': 'Synaptic',
-        'relation': 'presynaptic_to'
-    }, {
-        'name': 'Postsynaptic',
-        'type': 'Synaptic',
-        'relation': 'postsynaptic_to'
-    }, {
-        'name': 'Abutting',
-        'type': 'Abutting',
-        'relation': 'abutting'
-    }, {
-        'name': 'Gap junction',
-        'type': 'Gap junction',
-        'relation': 'gapjunction_with'
-    }, {
-        'name': 'Attachment',
-        'type': 'Attachment',
-        'relation': 'attached_to'
-    }, {
-        'name': 'Close to',
-        'type': 'Spatial',
-        'relation': 'close_to'
-    }
-]
-
-KNOWN_LINK_PAIRS = {
-    'synaptic-connector': {
-        'source': 'presynaptic_to',
-        'target': 'postsynaptic_to'
-    },
-    'abutting-connector': {
-        'source': 'abutting',
-        'target': 'abutting'
-    },
-    'gapjunction-connector': {
-        'source': 'gapjunction_with',
-        'target': 'gapjunction_with'
-    },
-    'attachment-connector': {
-        'source': 'attached_to',
-        'target': 'close_to'
-    },
-    'spatial-connector': {
-        'source': 'attached_to',
-        'target': 'close_to'
-    }
-}
-
-LINK_RELATION_NAMES = [r['relation'] for r in LINK_TYPES]
-
-UNDIRECTED_LINK_TYPES =[p['source'] for p in KNOWN_LINK_PAIRS.values()
-            if p['source'] == p['target']]
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
@@ -193,7 +138,7 @@ def _many_to_many_synapses(skids1, skids2, relation_name, project_id):
     Return all rows that connect skeletons of one set with another set with a
     specific relation.
     """
-    if relation_name not in ('postsynaptic_to', 'presynaptic_to', 'gapjunction_with'):
+    if relation_name not in LINK_RELATION_NAMES:
         raise Exception("Cannot accept a relation named '%s'" % relation_name)
 
     cursor = connection.cursor()

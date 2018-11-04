@@ -19,7 +19,7 @@ from catmaid.models import UserRole
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import (get_relation_to_id_map, get_request_bool,
         get_request_list)
-from catmaid.control.connector import KNOWN_LINK_PAIRS
+from catmaid.control.link import KNOWN_LINK_PAIRS
 from catmaid.control.tree_util import simplify
 from catmaid.control.synapseclustering import tree_max_density
 

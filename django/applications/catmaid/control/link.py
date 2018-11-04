@@ -11,6 +11,86 @@ from catmaid.models import UserRole, Project, Relation, Treenode, Connector, \
         TreenodeConnector, ClassInstance
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 
+
+LINK_TYPES = [
+    {
+        'name': 'Presynaptic',
+        'type': 'Synaptic',
+        'relation': 'presynaptic_to',
+        'isreciprocal': False,
+        'cardinality': 1,
+    }, {
+        'name': 'Postsynaptic',
+        'type': 'Synaptic',
+        'relation': 'postsynaptic_to',
+        'isreciprocal': False,
+        'cardinality': None,
+    }, {
+        'name': 'Abutting',
+        'type': 'Abutting',
+        'relation': 'abutting',
+        'isreciprocal': True,
+        'cardinality': None,
+    }, {
+        'name': 'Gap junction',
+        'type': 'Gap junction',
+        'relation': 'gapjunction_with',
+        'isreciprocal': True,
+        'cardinality': 2,
+    }, {
+        'name': 'Attachment',
+        'type': 'Attachment',
+        'relation': 'attached_to',
+        'isreciprocal': False,
+        'cardinality': None,
+    }, {
+        'name': 'Close to',
+        'type': 'Spatial',
+        'relation': 'close_to',
+        'isreciprocal': True,
+        'cardinality': None,
+    },
+]
+
+
+KNOWN_LINK_PAIRS = {
+    'synaptic-connector': {
+        'source': 'presynaptic_to',
+        'target': 'postsynaptic_to',
+        'name': 'synaptic',
+
+    },
+    'abutting-connector': {
+        'source': 'abutting',
+        'target': 'abutting'
+    },
+    'gapjunction-connector': {
+        'source': 'gapjunction_with',
+        'target': 'gapjunction_with'
+    },
+    'attachment-connector': {
+        'source': 'attached_to',
+        'target': 'close_to'
+    },
+    'spatial-connector': {
+        'source': 'attached_to',
+        'target': 'close_to'
+    },
+}
+
+
+LINK_RELATION_NAMES = [r['relation'] for r in LINK_TYPES]
+
+
+UNDIRECTED_LINK_TYPES =[p['relation'] for p in LINK_TYPES if p['isreciprocal']]
+
+
+UNDIRECTED_BINARY_LINK_TYPES =[p['relation'] for p in LINK_TYPES
+            if p['isreciprocal'] and p.get('cardinality', None) == 2]
+
+LINKS_BY_RELATION = {l['relation']:l for l in LINK_TYPES}
+
+
 @requires_user_role(UserRole.Annotate)
 def create_link(request, project_id=None):
     """ Create a link between a connector and a treenode
@@ -77,14 +157,15 @@ def create_link(request, project_id=None):
         if (gapjunction_links.count() != 0):
             return JsonResponse({'error': 'Connector %s cannot have both a gap junction and a postsynaptic node.' % to_id})
 
-    if link_type == 'gapjunction_with':
+    if link_type in UNDIRECTED_BINARY_LINK_TYPES:
         # Enforce only two gap junction links
-        gapjunction_links = TreenodeConnector.objects.filter(project=project, connector=to_connector, relation=relation)
+        undirected_links = TreenodeConnector.objects.filter(project=project, connector=to_connector, relation=relation)
         synapse_links = TreenodeConnector.objects.filter(project=project, connector=to_connector, relation__relation_name__endswith='synaptic_to')
-        if (gapjunction_links.count() > 1):
-            return JsonResponse({'error': 'Connector %s can only have two gap junction connections.' % to_id})
+        name = LINKS_BY_RELATION[link_type]['name'].lower();
+        if (undirected_links.count() > 1):
+            return JsonResponse({'error': 'Connector {} can only have two {} connections.'.format(to_id, name)})
         if (synapse_links.count() != 0):
-            return JsonResponse({'error': 'Connector %s is part of a synapse, and gap junction can not be added.' % to_id})
+            return JsonResponse({'error': 'Connector {} is part of a synapse, and {} can not be added.'.format(to_id, name)})
 
     link = TreenodeConnector(
         user=request.user,

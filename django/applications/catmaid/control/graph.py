@@ -19,7 +19,7 @@ from django.http import JsonResponse
 from catmaid.models import Relation, UserRole
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map, get_request_list
-from catmaid.control.connector import KNOWN_LINK_PAIRS
+from catmaid.control.link import KNOWN_LINK_PAIRS
 from catmaid.control.review import get_treenodes_to_reviews
 from catmaid.control.tree_util import simplify, find_root, reroot, partition, \
         spanning_tree, cable_length

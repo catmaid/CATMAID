@@ -220,6 +220,10 @@ Miscellaneous:
   Unless the search string starts with '/', no regular expressions are used,
   but a regular case insensitive text search.
 
+- Connectivity widget: all available link types can no be selected to be
+  displayed. Both the gapjunction and attachment checkboxes have been removed in
+  favor of a more generic list select element.
+
 - WebGL layers are now preferred by default.
 
 - Project statistics: a top ten of the largest neurons is now displayed.

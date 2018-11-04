@@ -23,6 +23,8 @@
     this.showGapjunctionTable = false;
     // Hide attachment  connections by default
     this.showAttachmentTable = false;
+    // A set of visible link types
+    this.visibleLinkTypes = new Set(['incoming', 'outgoing']);
     // Ordering of neuron table, by default no ordering is applied
     this.currentOrder = [];
     // If no original colors are used, new skeleton models will be colored
@@ -238,6 +240,27 @@
         plot2.onclick = this.openStackedBarChart.bind(this);
         controls.appendChild(plot2);
 
+        var linkTypeSelection = CATMAID.DOM.createAsyncPlaceholder(
+            CATMAID.DOM.initLinkTypeList({
+              byPartnerReference: true,
+              context: this,
+              color: false,
+              getSelectedLinkTypes: function() {
+                return Array.from(self.visibleLinkTypes);
+              },
+              setLinkTypeVisibility: function(linkId, visible) {
+                if (visible) {
+                  self.visibleLinkTypes.add(linkId);
+                } else {
+                  self.visibleLinkTypes.delete(linkId);
+                }
+              },
+              update: self.update.bind(self),
+            }));
+        var linkTypeSelectionWrapper = document.createElement('span');
+        linkTypeSelectionWrapper.appendChild(linkTypeSelection);
+        controls.append(linkTypeSelectionWrapper);
+
         var layoutToggle = document.createElement('input');
         layoutToggle.setAttribute('id', 'connectivity-layout-toggle-' + this.widgetID);
         layoutToggle.setAttribute('type', 'checkbox');
@@ -309,35 +332,6 @@
         rotateHeaderLabel.appendChild(rotateHeader);
         rotateHeaderLabel.appendChild(document.createTextNode('Partner header 90°'));
         controls.appendChild(rotateHeaderLabel);
-
-        var gapjunctionToggle = document.createElement('input');
-        gapjunctionToggle.setAttribute('id', 'connectivity-gapjunctiontable-toggle-' + this.widgetID);
-        gapjunctionToggle.setAttribute('type', 'checkbox');
-        if (this.showGapjunctionTable) {
-          gapjunctionToggle.setAttribute('checked', 'checked');
-        }
-        gapjunctionToggle.onchange = function() {
-          self.showGapjunctionTable = this.checked;
-        };
-        var gapjunctionLabel = document.createElement('label');
-        gapjunctionLabel.appendChild(gapjunctionToggle);
-        gapjunctionLabel.appendChild(document.createTextNode('Show gap junctions'));
-        controls.appendChild(gapjunctionLabel);
-
-        var attachmentToggle = document.createElement('input');
-        attachmentToggle.setAttribute('id', 'connectivity-attachmenttable-toggle-' + this.widgetID);
-        attachmentToggle.setAttribute('type', 'checkbox');
-        if (this.showAttachmentTable) {
-          attachmentToggle.setAttribute('checked', 'checked');
-        }
-        attachmentToggle.onchange = function() {
-          self.showAttachmentTable = this.checked;
-          self.update();
-        };
-        var attachmentLabel = document.createElement('label');
-        attachmentLabel.appendChild(attachmentToggle);
-        attachmentLabel.appendChild(document.createTextNode('Show attachments'));
-        controls.appendChild(attachmentLabel);
 
         var filterRulesToggle = document.createElement('input');
         filterRulesToggle.setAttribute('id', 'connectivity-filterrules-toggle-' + this.widgetID);
@@ -572,7 +566,11 @@
     'gapjunction': {name: 'Gap junction', rel: 'gapjunction_with',
         pTitle: 'Gap junction with neuron', ctrShort: 'gj'},
     'attachment': {name: 'Attachment', rel: 'attached_to',
-        pTitle: 'Linked to neuron', ctrShort: 'site'}
+        pTitle: 'Linked to neuron', ctrShort: 'site'},
+    'abutting': {name: 'Abutting', rel: 'abbutting',
+        pTitle: 'Abutting partners', ctrShort: 'abt'},
+    'close_object': {name: 'Close object', rel: 'close_to',
+        pTitle: 'Close object', ctrShort: 'cls'},
   };
 
   SkeletonConnectivity.prototype.update = function() {
@@ -588,13 +586,7 @@
       delete oldPartnerModels[skid];
     }
 
-    var partnerSetIds = ['incoming', 'outgoing'];
-    if (this.showGapjunctionTable) {
-      partnerSetIds.push('gapjunction');
-    }
-    if (this.showAttachmentTable) {
-      partnerSetIds.push('attachment');
-    }
+    var partnerSetIds = Array.from(this.visibleLinkTypes);
 
     // Get annotation filters
     let annotationFilterInUse = false;
@@ -624,6 +616,9 @@
       // Create partner sets
       partnerSetIds.forEach(function(psId) {
         var type = partnerSetTypes[psId];
+        if (!type) {
+          return;
+        }
         let ps = new PartnerSet(psId, type.name, type.rel, json[psId],
             type.pTitle, type.ctrShort);
         if (annotationFilterMap[psId]) {

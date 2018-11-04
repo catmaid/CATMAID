@@ -92,9 +92,7 @@ LINK_TYPES = [
 KNOWN_LINK_PAIRS = {
     'synaptic-connector': {
         'source': 'presynaptic_to',
-        'target': 'postsynaptic_to',
-        'name': 'synaptic',
-
+        'target': 'postsynaptic_to'
     },
     'abutting-connector': {
         'source': 'abutting',
@@ -131,6 +129,7 @@ UNDIRECTED_LINK_TYPES =[p['relation'] for p in LINK_TYPES if p['isreciprocal']]
 
 UNDIRECTED_BINARY_LINK_TYPES =[p['relation'] for p in LINK_TYPES
             if p['isreciprocal'] and p.get('cardinality', None) == 2]
+
 
 LINKS_BY_RELATION = {l['relation']:l for l in LINK_TYPES}
 

@@ -569,9 +569,9 @@
   var partnerSetTypes = {
     'incoming': {name: 'Upstream', rel: 'presynaptic_to'},
     'outgoing': {name: 'Downstream', rel: 'postsynaptic_to'},
-    'gapjunctions': {name: 'Gap junction', rel: 'gapjunction_with',
+    'gapjunction': {name: 'Gap junction', rel: 'gapjunction_with',
         pTitle: 'Gap junction with neuron', ctrShort: 'gj'},
-    'attachments': {name: 'Attachment', rel: 'attached_to',
+    'attachment': {name: 'Attachment', rel: 'attached_to',
         pTitle: 'Linked to neuron', ctrShort: 'site'}
   };
 
@@ -590,10 +590,10 @@
 
     var partnerSetIds = ['incoming', 'outgoing'];
     if (this.showGapjunctionTable) {
-      partnerSetIds.push('gapjunctions');
+      partnerSetIds.push('gapjunction');
     }
     if (this.showAttachmentTable) {
-      partnerSetIds.push('attachments');
+      partnerSetIds.push('attachment');
     }
 
     // Get annotation filters
@@ -612,6 +612,7 @@
       'source_skeleton_ids': skids,
       'boolean_op': $('#connectivity_operation' + this.widgetID).val(),
       'with_nodes': this.applyFilterRules && this.filterRules.length > 0,
+      'link_types': partnerSetIds,
     }, false, 'update_connectivity_table', true)
     .then(function(json) {
       // Remove present partner sets

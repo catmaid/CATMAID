@@ -32,6 +32,7 @@ from catmaid.control.authentication import requires_user_role, \
 from catmaid.control.common import (insert_into_log, get_class_to_id_map,
         get_relation_to_id_map, _create_relation, get_request_bool,
         get_request_list, Echo)
+from catmaid.control.link import LINK_TYPES
 from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.annotation import (annotations_for_skeleton,
         create_annotation_query, _annotate_entities, _update_neuron_annotations)
@@ -1317,25 +1318,12 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2,
 
     return partners, reviewers
 
-def _skeleton_info_raw(project_id, skeletons, op, with_nodes=False):
+def _skeleton_info_raw(project_id, skeletons, op, with_nodes=False,
+        allowed_link_types=None):
     cursor = connection.cursor()
 
     # Obtain the IDs of the 'presynaptic_to', 'postsynaptic_to' and 'model_of' relations
     relation_ids = get_relation_to_id_map(project_id)
-
-    # Obtain partner skeletons and their info
-    incoming, incoming_reviewers = _connected_skeletons(skeletons, op,
-            relation_ids['postsynaptic_to'], relation_ids['presynaptic_to'],
-            relation_ids['model_of'], cursor, with_nodes)
-    outgoing, outgoing_reviewers = _connected_skeletons(skeletons, op,
-            relation_ids['presynaptic_to'], relation_ids['postsynaptic_to'],
-            relation_ids['model_of'], cursor, with_nodes)
-    gapjunctions, gapjunctions_reviewers = _connected_skeletons(skeletons, op,
-            relation_ids.get('gapjunction_with', -1), relation_ids.get('gapjunction_with', -1),
-            relation_ids['model_of'], cursor, with_nodes)
-    attachments, attachments_reviewers = _connected_skeletons(skeletons, op,
-            relation_ids.get('attached_to', -1), relation_ids.get('close_to', -1),
-            relation_ids['model_of'], cursor, with_nodes)
 
     def prepare(partners):
         for partnerID in partners.keys():
@@ -1346,22 +1334,21 @@ def _skeleton_info_raw(project_id, skeletons, op, with_nodes=False):
                 partners[partnerID] = partner.__dict__
             else:
                 del partners[partnerID]
+        return partners
 
-    prepare(incoming)
-    prepare(outgoing)
-    prepare(gapjunctions)
-    prepare(attachments)
+    skeleton_info = {}
+    for link_type in LINK_TYPES:
+        partner_reference = link_type['partner_reference']
+        if allowed_link_types and partner_reference not in allowed_link_types:
+            continue
+        connectivity, reviews = _connected_skeletons(skeletons, op,
+            relation_ids[link_type['relation']],
+            relation_ids[link_type['partner_relation']],
+            relation_ids['model_of'], cursor, with_nodes)
+        skeleton_info[partner_reference] = prepare(connectivity)
+        skeleton_info[partner_reference + '_reviewers'] = reviews
 
-    return {
-        'incoming': incoming,
-        'outgoing': outgoing,
-        'gapjunctions': gapjunctions,
-        'attachments': attachments,
-        'incoming_reviewers': incoming_reviewers,
-        'outgoing_reviewers': outgoing_reviewers,
-        'gapjunctions_reviewers': gapjunctions_reviewers,
-        'attachments_reviewers': attachments_reviewers,
-    }
+    return skeleton_info
 
 @api_view(['POST'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -1397,6 +1384,15 @@ def skeleton_info_raw(request, project_id=None):
           type: voolean
           paramType: form
           default: false
+        - name: link_types,
+          description:  |
+            A list of allowed link types: incoming, outgoing, abutting,
+            gapjunction, tightjunction, desmosome, attachment, close_object.
+          type: array
+          items:
+            type: string
+          required: false
+          defaultValue: [incoming, outgoing]
     models:
       skeleton_info_raw_partners:
         id: skeleton_info_raw_partners
@@ -1480,8 +1476,11 @@ def skeleton_info_raw(request, project_id=None):
     op = str(request.POST.get('boolean_op')) # values: AND, OR
     op = {'AND': 'AND', 'OR': 'OR'}[op] # sanitize
     with_nodes = get_request_bool(request.POST, 'with_nodes', False)
+    allowed_link_types = get_request_list(request.POST, 'link_types',
+            ['incoming', 'outgoing'])
 
-    skeleton_info = _skeleton_info_raw(project_id, skeletons, op, with_nodes)
+    skeleton_info = _skeleton_info_raw(project_id, skeletons, op, with_nodes,
+            allowed_link_types)
 
     return JsonResponse(skeleton_info)
 

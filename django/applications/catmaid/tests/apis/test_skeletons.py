@@ -258,7 +258,8 @@ class SkeletonsApiTests(CatmaidApiTestCase):
             '/%d/skeletons/connectivity' % (self.test_project_id,),
             {'source_skeleton_ids[0]': 235,
              'source_skeleton_ids[1]': 373,
-             'boolean_op': 'OR'})
+             'boolean_op': 'OR',
+             'link_types': ['incoming', 'outgoing', 'gapjunction', 'attachment']})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
@@ -267,10 +268,10 @@ class SkeletonsApiTests(CatmaidApiTestCase):
                          "373": {"skids": {"235": [0, 0, 0, 0, 2]}, "num_nodes": 5}},
             "incoming": {"235": {"skids": {"373": [0, 0, 0, 0, 2]}, "num_nodes": 28}},
             "incoming_reviewers": [],
-            "gapjunctions": {},
-            "gapjunctions_reviewers": [],
-            "attachments": {},
-            "attachments_reviewers": []}
+            "gapjunction": {},
+            "gapjunction_reviewers": [],
+            "attachment": {},
+            "attachment_reviewers": []}
         self.assertEqual(expected_result, parsed_response)
 
         # Test for conjunctive connectivity.
@@ -278,7 +279,8 @@ class SkeletonsApiTests(CatmaidApiTestCase):
             '/%d/skeletons/connectivity' % (self.test_project_id,),
             {'source_skeleton_ids[0]': 235,
              'source_skeleton_ids[1]': 373,
-             'boolean_op': 'AND'})
+             'boolean_op': 'AND',
+             'link_types': ['incoming', 'outgoing', 'gapjunction', 'attachment']})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
@@ -286,10 +288,10 @@ class SkeletonsApiTests(CatmaidApiTestCase):
             "outgoing": {},
             "incoming": {},
             "incoming_reviewers": [],
-            "gapjunctions": {},
-            "gapjunctions_reviewers": [],
-            "attachments": {},
-            "attachments_reviewers": []}
+            "gapjunction": {},
+            "gapjunction_reviewers": [],
+            "attachment": {},
+            "attachment_reviewers": []}
         self.assertEqual(expected_result, parsed_response)
 
 

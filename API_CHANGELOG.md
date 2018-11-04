@@ -86,6 +86,14 @@ included in this changelog.
   supported as well (to transfer larger volume ID lists). This parameter can be
   used to constrain the returned set of volumes.
 
+- `POST /{project_id}/skeletons/connectivity`:
+  A new optional option 'link_types' allows to specify which connectivity types
+  should be returned. By default 'incoming' and 'outgoing' is returned.
+  Additionally, the following options are allowed: gapjunction, abutting,
+  attachment, close_object. The return field names have also been adapted to
+  these parameters and match them. Instead of 'gapjunctions' and 'attachments',
+  the fields are now named 'gapjunction' and 'attachment'.
+
 ### Deprecations
 
 None.

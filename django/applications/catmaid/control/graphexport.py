@@ -35,7 +35,8 @@ def export_jsongraph(request, project_id):
         order = 0
 
     while order != 0:
-        incoming, outgoing = _skeleton_info_raw( project_id, request.user.id, skeletonlist, 'OR' )[0:2]
+        skeleton_info = _skeleton_info_raw( project_id, request.user.id, skeletonlist, 'OR' )[0:2]
+        incoming, outgoing = skeleton_info['incoming'], skeleton_info['outgoing']
         skeletonlist = set( skeletonlist ).union( set(incoming.keys()) ).union( set(outgoing.keys()) )
         order -= 1
     

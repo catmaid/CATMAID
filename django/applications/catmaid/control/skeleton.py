@@ -1352,7 +1352,16 @@ def _skeleton_info_raw(project_id, skeletons, op, with_nodes=False):
     prepare(gapjunctions)
     prepare(attachments)
 
-    return incoming, outgoing, gapjunctions, attachments, incoming_reviewers, outgoing_reviewers, gapjunctions_reviewers, attachments_reviewers
+    return {
+        'incoming': incoming,
+        'outgoing': outgoing,
+        'gapjunctions': gapjunctions,
+        'attachments': attachments,
+        'incoming_reviewers': incoming_reviewers,
+        'outgoing_reviewers': outgoing_reviewers,
+        'gapjunctions_reviewers': gapjunctions_reviewers,
+        'attachments_reviewers': attachments_reviewers,
+    }
 
 @api_view(['POST'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -1472,19 +1481,9 @@ def skeleton_info_raw(request, project_id=None):
     op = {'AND': 'AND', 'OR': 'OR'}[op] # sanitize
     with_nodes = get_request_bool(request.POST, 'with_nodes', False)
 
-    incoming, outgoing, gapjunctions, attachments, incoming_reviewers, \
-    outgoing_reviewers, gapjunctions_reviewers, attachments_reviewers = \
-        _skeleton_info_raw(project_id, skeletons, op, with_nodes)
+    skeleton_info = _skeleton_info_raw(project_id, skeletons, op, with_nodes)
 
-    return JsonResponse({
-                'incoming': incoming,
-                'outgoing': outgoing,
-                'gapjunctions': gapjunctions,
-                'attachments': attachments,
-                'incoming_reviewers': incoming_reviewers,
-                'outgoing_reviewers': outgoing_reviewers,
-                'gapjunctions_reviewers': gapjunctions_reviewers,
-                'attachments_reviewers': attachments_reviewers})
+    return JsonResponse(skeleton_info)
 
 
 @api_view(['POST'])

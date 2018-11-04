@@ -334,7 +334,18 @@
             GG.filterEdges($('#graph_edge_threshold' + GG.widgetID).val(),
                            $('#graph_edge_confidence_threshold' + GG.widgetID).val()); };
 
-        var linkTypeSelection = CATMAID.DOM.createAsyncPlaceholder(CATMAID.GroupGraph.initLinkTypeList(GG));
+        var linkTypeSelection = CATMAID.DOM.createAsyncPlaceholder(
+          CATMAID.DOM.initLinkTypeList({
+            getSelectedLinkTypes: function() {
+              return GG.selectedLinkTypes;
+            },
+            update: GG.update.bind(GG),
+            setLinkTypeVisibility: GG.setLinkTypeVisibility.bind(GG),
+            color: true,
+            getLinkTypeColor: GG.getLinkTypeColor.bind(GG),
+            getLinkTypeOpacity: GG.getLinkTypeOpacity.bind(GG),
+            updateLinkTypeColor: GG.updateLinkTypeColor.bind(GG)
+          }));
         var linkTypeSelectionWrapper = document.createElement('span');
         linkTypeSelectionWrapper.appendChild(linkTypeSelection);
 
@@ -693,7 +704,17 @@
         edgeLabelFnNames, edgeLabelFnValues, this.edge_label_strategy);
 
     var linkTypeSelection = CATMAID.DOM.createAsyncPlaceholder(
-        CATMAID.GroupGraph.initLinkTypeList(this));
+      CATMAID.DOM.initLinkTypeList({
+        getSelectedLinkTypes: (function() {
+          return this.selectedLinkTypes;
+        }).bind(this),
+        update: this.update.bind(this),
+        setLinkTypeVisibility: this.setLinkTypeVisibility.bind(this),
+        color: true,
+        getLinkTypeColor: this.getLinkTypeColor.bind(this),
+        getLinkTypeOpacity: this.getLinkTypeOpacity.bind(this),
+        updateLinkTypeColor: this.updateLinkTypeColor.bind(this)
+      }));
     var linkTypeSelectionWrapper = document.createElement('span');
     linkTypeSelectionWrapper.appendChild(linkTypeSelection);
 
@@ -778,80 +799,6 @@
 
     dialog.show(440, 'auto', true);
   };
-
-    // Update link type list
-  GroupGraph.initLinkTypeList = function(target) {
-    return CATMAID.Connectors.linkTypes(project.id)
-      .then(function(json) {
-        var seenLinkTypes = new Set();
-        var linkTypes = json.sort(function(a, b) {
-          return CATMAID.tools.compareStrings(a.type, b.type);
-        }).filter(function(lt, i, a) {
-          // Remove duplicates
-          let isNew = !seenLinkTypes.has(lt.type);
-          seenLinkTypes.add(lt.type);
-          return isNew;
-        }).map(function(lt) {
-          return {
-            title: lt.type,
-            value: lt.type_id
-          };
-        });
-        var selectedLinkTypes = target.selectedLinkTypes;
-        // Create actual element based on the returned data
-        var node = CATMAID.DOM.createCheckboxSelect('Link types', linkTypes,
-            selectedLinkTypes, true);
-
-        // Add color buttons for already display options
-        $('input:checked', node).each(function(e) {
-          var li = this.closest('li');
-          if (!li) {
-            return;
-          }
-          var linkTypeId = this.value;
-          var linkTypeControls = li.appendChild(document.createElement('span'));
-          linkTypeControls.setAttribute('data-role', 'link-type-controls');
-          CATMAID.DOM.appendColorButton(linkTypeControls, 'c',
-            'Change the color of this link type',
-            undefined, undefined, {
-              initialColor: target.getLinkTypeColor(linkTypeId),
-              initialAlpha: target.getLinkTypeOpacity(linkTypeId),
-              onColorChange: target.updateLinkTypeColor.bind(target, linkTypeId)
-            });
-        });
-
-        // Add a selection handler
-        node.onchange = function(e) {
-          var visible = e.target.checked;
-          var linkTypeId = e.target.value;
-          target.setLinkTypeVisibility(linkTypeId, visible);
-          target.update();
-
-          // Add extra display controls for enabled volumes
-          var li = e.target.closest('li');
-          if (!li) {
-            return;
-          }
-          if (visible) {
-            var linkTypeControls = li.appendChild(document.createElement('span'));
-            linkTypeControls.setAttribute('data-role', 'link-type-controls');
-            CATMAID.DOM.appendColorButton(linkTypeControls, 'c',
-              'Change the color of this link type',
-              undefined, undefined, {
-                initialColor: target.getLinkTypeColor(linkTypeId),
-                initialAlpha: target.getLinkTypeOpacity(linkTypeId),
-                onColorChange: target.updateLinkTypeColor.bind(target, linkTypeId)
-              });
-          } else {
-            var linkTypeControls = li.querySelector('span[data-role=link-type-controls]');
-            if (linkTypeControls) {
-              li.removeChild(linkTypeControls);
-            }
-          }
-        };
-        return node;
-      });
-    };
 
   GroupGraph.prototype.init = function() {
     var options = {

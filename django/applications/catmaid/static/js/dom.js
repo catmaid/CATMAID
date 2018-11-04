@@ -1683,6 +1683,96 @@
     return radioWrapper;
   };
 
+  DOM.initLinkTypeList = function(target) {
+    return CATMAID.Connectors.linkTypes(project.id)
+      .then(function(json) {
+        var seenLinkTypes = new Set();
+        let linkTypes;
+        if (target.byPartnerReference) {
+          linkTypes = json.sort(function(a, b) {
+            return CATMAID.tools.compareStrings(a.partner_reference, b.partner_reference);
+          }).map(function(lt) {
+            return {
+              title: lt.partner_reference,
+              value: lt.partner_reference
+            };
+          });
+        } else {
+          linkTypes = json.sort(function(a, b) {
+            return CATMAID.tools.compareStrings(a.type, b.type);
+          }).filter(function(lt, i, a) {
+            // Remove duplicates
+            let isNew = !seenLinkTypes.has(lt.type);
+            seenLinkTypes.add(lt.type);
+            return isNew;
+          }).map(function(lt) {
+            return {
+              title: lt.type,
+              value: lt.type_id
+            };
+          });
+        }
+
+        var selectedLinkTypes = target.getSelectedLinkTypes();
+        // Create actual element based on the returned data
+        var node = CATMAID.DOM.createCheckboxSelect('Link types', linkTypes,
+            selectedLinkTypes, true);
+
+        // Add color buttons for already display options
+        if (target.color) {
+          $('input:checked', node).each(function(e) {
+            var li = this.closest('li');
+            if (!li) {
+              return;
+            }
+            var linkTypeId = this.value;
+            var linkTypeControls = li.appendChild(document.createElement('span'));
+            linkTypeControls.setAttribute('data-role', 'link-type-controls');
+            CATMAID.DOM.appendColorButton(linkTypeControls, 'c',
+              'Change the color of this link type',
+              undefined, undefined, {
+                initialColor: target.getLinkTypeColor(linkTypeId),
+                initialAlpha: target.getLinkTypeOpacity(linkTypeId),
+                onColorChange: target.updateLinkTypeColor.bind(window, linkTypeId)
+              });
+          });
+        }
+
+        // Add a selection handler
+        node.onchange = function(e) {
+          var visible = e.target.checked;
+          var linkTypeId = e.target.value;
+          target.setLinkTypeVisibility(linkTypeId, visible);
+          target.update();
+
+          // Add extra display controls for enabled volumes
+          var li = e.target.closest('li');
+          if (!li) {
+            return;
+          }
+          if (target.color) {
+            if (visible) {
+              var linkTypeControls = li.appendChild(document.createElement('span'));
+              linkTypeControls.setAttribute('data-role', 'link-type-controls');
+              CATMAID.DOM.appendColorButton(linkTypeControls, 'c',
+                'Change the color of this link type',
+                undefined, undefined, {
+                  initialColor: target.getLinkTypeColor(linkTypeId),
+                  initialAlpha: target.getLinkTypeOpacity(linkTypeId),
+                  onColorChange: target.updateLinkTypeColor.bind(target, linkTypeId)
+                });
+            } else {
+              var linkTypeControls = li.querySelector('span[data-role=link-type-controls]');
+              if (linkTypeControls) {
+                li.removeChild(linkTypeControls);
+              }
+            }
+          }
+        };
+        return node;
+      });
+    };
+
   // Export DOM namespace
   CATMAID.DOM = DOM;
 

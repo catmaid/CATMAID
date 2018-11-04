@@ -31,6 +31,8 @@ needed_relations = {
     'postsynaptic_to': "Something is postsynaptic to something else.",
     'abutting': "Two things abut against each other",
     'gapjunction_with': "Something has a gap junction with something else",
+    'tightjunction_with': "A tight juction between two objects",
+    'desmosome_with': "A desmosome between two objects",
     'attached_to': "Something is considered attached/linked to something else",
     'adjacent_to': { 'description': "Next to each other", 'isreciprocal': True },
     'mirror_of': { 'description': "A mirror configuration to each other", 'isreciprocal': True },

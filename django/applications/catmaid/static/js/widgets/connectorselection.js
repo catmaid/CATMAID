@@ -24,6 +24,10 @@
           text = 'Synapses presynaptic to';
         } else if ('gapjunction_with' === relation) {
           text = 'Gap junctions with';
+        } else if ('tightjunction_with' === relation) {
+          text = 'Tight junction with';
+        } else if ('desmosome_with' === relation) {
+          text = 'Desmosome with';
         }
         if (text !== undefined) {
           text += ' neuron' + (skids1.length > 1 ? 's' : '') + ' '

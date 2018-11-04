@@ -366,6 +366,8 @@
   Connectors.SUBTYPE_SYNAPTIC_CONNECTOR = "synaptic-connector";
   Connectors.SUBTYPE_ABUTTING_CONNECTOR = "abutting-connector";
   Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR = "gapjunction-connector";
+  Connectors.SUBTYPE_TIGHTJUNCTION_CONNECTOR = "tightjunction-connector";
+  Connectors.SUBTYPE_DESMOSOME_CONNECTOR = "desmosome-connector";
   Connectors.SUBTYPE_ATTACHMENT_CONNECTOR = "attachment-connector";
 
   Connectors.relationToSubtype = function(relationName) {
@@ -379,6 +381,10 @@
       return Connectors.SUBTYPE_ATTACHMENT_CONNECTOR;
     } else if ('close_to' === relationName) {
       return Connectors.SUBTYPE_ATTACHMENT_CONNECTOR;
+    } else if ('tightjunction_with' === relationName) {
+      return Connectors.SUBTYPE_TIGHTJUNCTION_CONNECTOR;
+    } else if ('desmosome_with' === relationName) {
+      return Connectors.SUBTYPE_DESMOSOME_CONNECTOR;
     } else {
       throw new CATMAID.ValueError('Unknown connector link relation: ' + relationName);
     }

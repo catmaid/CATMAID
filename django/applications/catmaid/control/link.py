@@ -50,6 +50,24 @@ LINK_TYPES = [
         'partner_reference': 'gapjunction',
         'partner_relation': 'gapjunction_with',
     }, {
+        'name': 'Tight junction',
+        'type': 'Tight junction',
+        'type_id': 'tightjunction-connector',
+        'relation': 'tightjunction_with',
+        'isreciprocal': True,
+        'cardinality': 2,
+        'partner_reference': 'tightjunction',
+        'partner_relation': 'tightjunction_with',
+    }, {
+        'name': 'Desmosome',
+        'type': 'Desmosome',
+        'type_id': 'desmosome-connector',
+        'relation': 'desmosome_with',
+        'isreciprocal': True,
+        'cardinality': 2,
+        'partner_reference': 'desmosome',
+        'partner_relation': 'desmosome_with',
+    }, {
         'name': 'Attachment',
         'type': 'Attachment',
         'type_id': 'attachment-connector',
@@ -86,6 +104,14 @@ KNOWN_LINK_PAIRS = {
         'source': 'gapjunction_with',
         'target': 'gapjunction_with'
     },
+    'tightjunction-connector': {
+        'source': 'tightjunction_with',
+        'target': 'tightjunction_with',
+    },
+    'desmosome-connector': {
+        'source': 'desmosome_with',
+        'target': 'desmosome_with',
+    },
     'attachment-connector': {
         'source': 'attached_to',
         'target': 'close_to'
@@ -114,7 +140,8 @@ def create_link(request, project_id=None):
     """ Create a link between a connector and a treenode
 
     Currently the following link types (relations) are supported:
-    presynaptic_to, postsynaptic_to, abutting, gapjunction_with.
+    presynaptic_to, postsynaptic_to, abutting, gapjunction_with,
+    tightjunction_with, desmosome_with.
     """
     from_id = int(request.POST.get('from_id', 0))
     to_id = int(request.POST.get('to_id', 0))

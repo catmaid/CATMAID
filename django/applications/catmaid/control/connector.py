@@ -108,7 +108,7 @@ def one_to_many_synapses(request, project_id=None):
     if not skids:
         raise ValueError("No skeleton IDs for 'many' provided")
 
-    relation_name = request.POST.get('relation') # expecting presynaptic_to, postsynaptic_to, or gapjunction_with
+    relation_name = request.POST.get('relation')
 
     rows = _many_to_many_synapses([skid], skids, relation_name, project_id)
     return JsonResponse(rows, safe=False)
@@ -127,7 +127,7 @@ def many_to_many_synapses(request, project_id=None):
     if not skids2:
         raise ValueError("No skeleton IDs for second list 'many' provided")
 
-    relation_name = request.POST.get('relation') # expecting presynaptic_to, postsynaptic_to, or gapjunction_with
+    relation_name = request.POST.get('relation')
 
     rows = _many_to_many_synapses(skids1, skids2, relation_name, project_id)
     return JsonResponse(rows, safe=False)
@@ -386,7 +386,8 @@ def list_connector_links(request, project_id=None):
     The result data set includes information about linked connectors on a given
     input set of skeletons. These links are further constrained by relation
     type, with currently support available for: postsynaptic_to,
-    presynaptic_to, abutting, gapjunction_with.
+    presynaptic_to, abutting, gapjunction_with, tightjunction_with,
+    desmosome_with.
 
     Returned is an object containing an array of links to connectors and a set
     of tags for all connectors found (if not disabled). The link array contains

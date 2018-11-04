@@ -1532,6 +1532,26 @@
                 SkeletonAnnotations.atn.subtype = CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR;
                 catmaidTracingOverlay.createLink(node.id, atnID, "gapjunction_with")
                   .catch(CATMAID.handleError);
+              } else if (atnSubType === CATMAID.Connectors.SUBTYPE_TIGHTJUNCTION_CONNECTOR) {
+                if (!CATMAID.mayEdit()) {
+                  CATMAID.error("You lack permissions to declare node #" + node.id +
+                      " as having a tight junction with connector #" + atnID);
+                  return;
+                }
+                // careful, atnID is a connector
+                SkeletonAnnotations.atn.subtype = CATMAID.Connectors.SUBTYPE_TIGHTJUNCTION_CONNECTOR;
+                catmaidTracingOverlay.createLink(node.id, atnID, "tightjunction_with")
+                  .catch(CATMAID.handleError);
+              } else if (atnSubType === CATMAID.Connectors.SUBTYPE_DESMOSOME_CONNECTOR) {
+                if (!CATMAID.mayEdit()) {
+                  CATMAID.error("You lack permissions to declare node #" + node.id +
+                      " linked to desmosome connector #" + atnID);
+                  return;
+                }
+                // careful, atnID is a connector
+                SkeletonAnnotations.atn.subtype = CATMAID.Connectors.SUBTYPE_DESMOSOME_CONNECTOR;
+                catmaidTracingOverlay.createLink(node.id, atnID, "desmosome_with")
+                  .catch(CATMAID.handleError);
               }  else if (atnSubType === CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR) {
                 if (!CATMAID.mayEdit()) {
                   CATMAID.error("You lack permissions to declare node #" + node.id +
@@ -1767,7 +1787,10 @@
               }
               if (connectornode.subtype === CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR) {
                 linkType = "gapjunction_with";
-                connectornode.subtype = CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR;
+              } else if (CATMAID.Connectors.SUBTYPE_TIGHTJUNCTION_CONNECTOR === connectornode.subtype) {
+                linkType = "tightjunction_with";
+              } else if (CATMAID.Connectors.SUBTYPE_DESMOSOME_CONNECTOR) {
+                linkType = "desmosome_with";
               } else if (CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR === connectornode.subtype) {
                 linkType = (e.altKey ? 'post' : 'pre') + "synaptic_to";
               } else if (CATMAID.Connectors.SUBTYPE_ABUTTING_CONNECTOR === connectornode.subtype) {
@@ -1980,6 +2003,10 @@
           stroke_color = settings.postsynaptic_to_rel_color;
         } else if (relationName === 'gapjunction_with') {
           stroke_color = settings.gapjunction_rel_color;
+        } else if (relationName === 'tightjunction_with') {
+          stroke_color = settings.tightjunction_rel_color;
+        } else if (relationName === 'desmosome_with') {
+          stroke_color = settings.desmosome_rel_color;
         } else if (relationName === 'attached_to') {
           stroke_color = settings.attachment_rel_color;
         } else if (relationName === 'close_to') {

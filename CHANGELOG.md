@@ -220,6 +220,10 @@ Miscellaneous:
   Unless the search string starts with '/', no regular expressions are used,
   but a regular case insensitive text search.
 
+- Two new connector types are available: "tight junction" and "desmosome". Both
+  can be created through the Alt + Click menu, are reciprocal and two links at
+  one connector are allowed for each type.
+
 - Connectivity widget: all available link types can no be selected to be
   displayed. Both the gapjunction and attachment checkboxes have been removed in
   favor of a more generic list select element.

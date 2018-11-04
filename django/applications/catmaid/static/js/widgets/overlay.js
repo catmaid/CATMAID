@@ -1067,6 +1067,12 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
           gapjunction_rel_color: {
             default: 0x9F25C2
           },
+          tightjunction_rel_color: {
+            default: 0x2585c2
+          },
+          desmosome_rel_color: {
+            default: 0x46b1c4
+          },
           attachment_rel_color: {
             default: 0xDD6602
           },
@@ -2358,6 +2364,68 @@ SkeletonAnnotations.TracingOverlay.prototype.createGapjunctionTreenode = functio
 };
 
 /**
+ * Create a new treenode that has a tight junction with the given @connectorID.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.createTightjunctionTreenode = function (
+    connectorID, phys_x, phys_y, phys_z, radius, confidence, afterCreate)
+{
+  // Check that connectorID doesn't already have two tight junction links
+  // and that connectorID doesn't have post- or presynaptic links
+  // (It is also checked in the server on attempting to create a link.
+  // Here, it is checked for convenience to avoid creating an isolated treenode for no reason.)
+  var connectorNode = this.nodes.get(connectorID);
+  if (!connectorNode) {
+    return Promise.reject(new CATMAID.ValueError( "Connector #" +
+        connectorID + " is not loaded. Browse to " +
+        "its section and make sure it is selected."));
+  }
+  var counts = connectorNode.links.reduce(countRelationNames, {});
+
+  if (CATMAID.tools.getDefined(counts['tightjunction_with'], 0) > 1) {
+    return Promise.reject(new CATMAID.Warning(
+        "The connector already has two tight junction nodes!"));
+  }
+  if (CATMAID.tools.getDefined(counts['presynaptic_to'], 0) > 0 ||
+      CATMAID.tools.getDefined(counts['postsynaptic_to'], 0) > 0) {
+    return Promise.reject(new CATMAID.Warning(
+        "Tight junction can not be added as the connector is part of a synapse!"));
+  }
+  return this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius,
+      confidence, "tightjunction_with", afterCreate);
+};
+
+/**
+ * Create a new treenode that has a desmosome with the given @connectorID.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.createDesmosomeTreenode = function (
+    connectorID, phys_x, phys_y, phys_z, radius, confidence, afterCreate)
+{
+  // Check that connectorID doesn't already have two tight junction links
+  // and that connectorID doesn't have post- or presynaptic links
+  // (It is also checked in the server on attempting to create a link.
+  // Here, it is checked for convenience to avoid creating an isolated treenode for no reason.)
+  var connectorNode = this.nodes.get(connectorID);
+  if (!connectorNode) {
+    return Promise.reject(new CATMAID.ValueError( "Connector #" +
+        connectorID + " is not loaded. Browse to " +
+        "its section and make sure it is selected."));
+  }
+  var counts = connectorNode.links.reduce(countRelationNames, {});
+
+  if (CATMAID.tools.getDefined(counts['desmosome_with'], 0) > 1) {
+    return Promise.reject(new CATMAID.Warning(
+        "The desmosome connector already has two nodes!"));
+  }
+  if (CATMAID.tools.getDefined(counts['presynaptic_to'], 0) > 0 ||
+      CATMAID.tools.getDefined(counts['postsynaptic_to'], 0) > 0) {
+    return Promise.reject(new CATMAID.Warning(
+        "Desmosome can not be added as the connector is part of a synapse!"));
+  }
+  return this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius,
+      confidence, "desmosome_with", afterCreate);
+};
+
+/**
  * Create a new treenode and link it immediately to the given connector with the
  * specified link_type.
  */
@@ -2759,6 +2827,10 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
         subtype = CATMAID.Connectors.SUBTYPE_ABUTTING_CONNECTOR;
       } else if (relation_name == 'gapjunction_with') {
         subtype = CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR;
+      } else if (relation_name === 'tightjunction_with') {
+        subtype = CATMAID.Connectors.SUBTYPE_TIGHTJUNCTION_CONNECTOR;
+      } else if (relation_name === 'desmosome_with') {
+        subtype = CATMAID.Connectors.SUBTYPE_DESMOSOME_CONNECTOR;
       } else if (relation_name == 'attached_to') {
         subtype = CATMAID.Connectors.SUBTYPE_ATTACHMENT_CONNECTOR;
       }
@@ -3328,6 +3400,12 @@ SkeletonAnnotations.TracingOverlay.prototype._createNodeOrLink = function(insert
           // Create a new abutting connection
           create = createConnector("gapjunction_with", newConnectorType,
               "Created gap junction connector with treenode #" + atn.id);
+        } else if (CATMAID.Connectors.SUBTYPE_TIGHTJUNCTION_CONNECTOR === newConnectorType) {
+          create = createConnector("tightjunction_with", newConnectorType,
+              "Created tight junction connector with treenode #" + atn.id);
+        } else if (CATMAID.Connectors.SUBTYPE_DESMOSOME_CONNECTOR === newConnectorType) {
+          create = createConnector("desmosome_with", newConnectorType,
+              "Created desmosome connector with treenode #" + atn.id);
         } else if (CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR === newConnectorType) {
           // Create a new synaptic connector
           var synapseType = postLink ? 'post' : 'pre';
@@ -3355,6 +3433,14 @@ SkeletonAnnotations.TracingOverlay.prototype._createNodeOrLink = function(insert
           // create new treenode (and skeleton) as a gap junction to activated connector
           CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " with gap junction to active connector");
           create = this.createGapjunctionTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5,
+              postCreateFn);
+        } else if (CATMAID.Connectors.SUBTYPE_TIGHTJUNCTION_CONNECTOR === atn.subtype) {
+          CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " with tight junction to active connector");
+          create = this.createTightjunctionTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5,
+              postCreateFn);
+        } else if (CATMAID.Connectors.SUBTYPE_DESMOSOME_CONNECTOR === atn.subtype) {
+          CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " with link to active desmosome connector");
+          create = this.createDesmosomeTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5,
               postCreateFn);
         } else if (CATMAID.Connectors.SUBTYPE_ATTACHMENT_CONNECTOR === atn.subtype) {
           // create new treenode (and skeleton) close to to activated connector
@@ -4891,6 +4977,10 @@ SkeletonAnnotations.TracingOverlay.prototype.printTreenodeInfo = function(nodeID
         prefix = "Abutting connector node #" + node.id;
       } else if (CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR === node.subtype) {
         prefix = "Gap junction connector node #" + node.id;
+      } else if (CATMAID.Connectors.SUBTYPE_TIGHTJUNCTION_CONNECTOR === node.subtype) {
+        prefix = "Tight junction connector node #" + node.id;
+      } else if (CATMAID.Connectors.SUBTYPE_DESMOSOME_CONNECTOR === node.subtype) {
+        prefix = "Desmosome connector node #" + node.id;
       } else if (CATMAID.Connectors.SUBTYPE_ATTACHMENT_CONNECTOR === node.subtype) {
         prefix = "Attachment connector node #" + node.id;
       } else if (CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR === node.subtype) {

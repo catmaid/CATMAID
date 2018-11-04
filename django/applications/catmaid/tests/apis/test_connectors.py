@@ -19,39 +19,68 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                 'name': 'Presynaptic',
                 'relation': 'presynaptic_to',
                 'relation_id': 1023,
-                'type': 'Synaptic'
+                'type': 'Synaptic',
+                'type_id': 'synaptic-connector',
+                'partner_reference': 'outgoing',
+                'partner_relation': 'postsynaptic_to',
+                'cardinality': 1,
+                'isreciprocal': False,
             },
             {
                 'name': 'Postsynaptic',
                 'relation': 'postsynaptic_to',
                 'relation_id': 1024,
-                'type': 'Synaptic'
+                'type': 'Synaptic',
+                'type_id': 'synaptic-connector',
+                'partner_reference': 'incoming',
+                'partner_relation': 'presynaptic_to',
+                'cardinality': None,
+                'isreciprocal': False,
             },
             {
                 'name': 'Abutting',
                 'relation': 'abutting',
                 'relation_id': 102461,
-                'type': 'Abutting'
+                'type': 'Abutting',
+                'type_id': 'abutting-connector',
+                'partner_reference': 'abutting',
+                'partner_relation': 'abutting',
+                'cardinality': None,
+                'isreciprocal': True,
             },
             {
                 'name': 'Gap junction',
                 'relation': 'gapjunction_with',
                 'relation_id': 1025,
-                'type': 'Gap junction'
+                'type': 'Gap junction',
+                'type_id': 'gapjunction-connector',
+                'partner_reference': 'gapjunction',
+                'partner_relation': 'gapjunction_with',
+                'cardinality': 2,
+                'isreciprocal': True,
             },
             {
                 'name': 'Attachment',
                 'relation': 'attached_to',
                 'relation_id': 1026,
-                'type': 'Attachment'
+                'type': 'Attachment',
+                'type_id': 'attachment-connector',
+                'partner_reference': 'attachment',
+                'partner_relation': 'close_to',
+                'cardinality': None,
+                'isreciprocal': False,
             },
             {
                 'name': 'Close to',
                 'relation': 'close_to',
                 'relation_id': 1027,
-                'type': 'Spatial'
+                'type': 'Spatial',
+                'type_id': 'spatial-connector',
+                'partner_reference': 'close_object',
+                'partner_relation': 'close_to',
+                'cardinality': None,
+                'isreciprocal': True,
             }]
-
 
         self.assertListEqual(expected_result, parsed_response)
 

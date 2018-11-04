@@ -1754,8 +1754,18 @@
               alert("Can not join two connector nodes!");
             } else if (atnType === SkeletonAnnotations.TYPE_NODE) {
               var linkType;
-              if ((e.altKey && !e.shiftKey) ||
-                  connectornode.subtype === CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR) {
+              if (e.altKey && !e.shiftKey) {
+                catmaidTracingOverlay.askForConnectorType()
+                  .then(function(selection) {
+                    if (selection) {
+                      connectornode.subtype = selection.value;
+                      catmaidTracingOverlay.createLink(atnID, connectornode.id, selection.relation)
+                        .catch(CATMAID.handleError);
+                    }
+                  });
+                return;
+              }
+              if (connectornode.subtype === CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR) {
                 linkType = "gapjunction_with";
                 connectornode.subtype = CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR;
               } else if (CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR === connectornode.subtype) {

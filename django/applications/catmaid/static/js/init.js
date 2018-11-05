@@ -376,8 +376,6 @@ var project;
       CATMAID.toolActions, 'toolbox_project', ''));
     $('#toolbox_edit').replaceWith(CATMAID.createButtonsFromActions(
       CATMAID.EditTool.actions, 'toolbox_edit', ''));
-    $('#toolbox_segmentation').replaceWith(CATMAID.createButtonsFromActions(
-      CATMAID.SegmentationTool.actions, 'toolbox_segmentation', ''));
     $('#toolbox_data').replaceWith(CATMAID.createButtonsFromActions(
       CATMAID.TracingTool.actions, 'toolbox_data', ''));
 
@@ -390,7 +388,6 @@ var project;
     document.getElementById( "toolbox_edit" ).style.display = "none";
     document.getElementById( "toolbox_ontology" ).style.display = "none";
     document.getElementById( "toolbox_data" ).style.display = "none";
-    document.getElementById( "toolbox_segmentation" ).style.display = "none";
     document.getElementById( "toolbox_show" ).style.display = "none";
 
     document.getElementById( "account" ).onkeydown = login_oninputreturn;
@@ -437,7 +434,6 @@ var project;
         var tools = {
           navigator: CATMAID.Navigator,
           tracingtool: CATMAID.TracingTool,
-          segmentationtool: CATMAID.SegmentationTool,
           classification_editor: null
         };
 

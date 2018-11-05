@@ -221,7 +221,7 @@ def test_r_environment():
 
         if(!require("devtools")) install.packages("devtools")
         devtools::install_github(c("jefferis/nat", "jefferislab/nat.nblast",
-                "jefferis/rcatmaid", "jefferislab/elmr"))
+                "jefferis/rcatmaid", "jefferis/elmr"))
 
         This is required to let CATMAID compute NBLAST scores.
         """)
@@ -236,7 +236,7 @@ def setup_r_environment():
     robjects.r("""
         if(!require("devtools")) install.packages("devtools")
         devtools::install_github(c("jefferis/nat", "jefferislab/nat.nblast",
-                "jefferis/rcatmaid", "jefferislab/elmr"))
+                "jefferis/rcatmaid", "jefferis/elmr"))
         install.packages("doMC")
     """)
 

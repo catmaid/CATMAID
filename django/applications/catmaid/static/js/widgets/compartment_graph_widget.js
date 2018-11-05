@@ -3936,6 +3936,9 @@
       if (alphaChanged) {
         linkType.opacity = opacity;
       }
+      if (colorChanged || alphaChanged) {
+        this.updateEdgeGraphics(true);
+      }
       return false;
     } else {
       linkType = {};

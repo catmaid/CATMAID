@@ -286,6 +286,8 @@ Miscellaneous:
 - Connectivity widget: annotations on neurons (used for filtering) are now
   properly updated when they are changed in another part of CATMAID.
 
+- Graph widget: edge color updates now trigger a redraw operation again.
+
 - CLI importer: the ID sequence for the auth_user table is now properly reset
   after an import.
 

@@ -467,6 +467,7 @@
         let normalizedScores = 'mean';
         let useAlpha = false;
         let removeTargetDuplicates = true;
+        let simplify = true;
 
         widget.updateDisplayTransformationCache();
 
@@ -711,6 +712,15 @@
             useAlpha = this.checked;
           },
         }, {
+          type: 'checkbox',
+          label: 'Simplify neurons',
+          id: widget.idPrefix + 'simplify-skeletons',
+          title: 'Whether or not neurons should be simplified by removing parts below the 10. branch level',
+          value: simplify,
+          onclick: function() {
+            simplify = this.checked;
+          },
+        }, {
           type: 'child',
           element: configSelectWrapper,
         }, {
@@ -846,7 +856,7 @@
                   return CATMAID.Similarity.computeSimilarity(project.id, configId,
                       queryIds, targetIds, effectiveQueryType, effectiveTargetType,
                       newQueryName, normalizedScores, useAlpha, queryMeta, targetMeta,
-                      removeTargetDuplicates);
+                      removeTargetDuplicates, simplify);
                 })
                 .then(function(response) {
                   widget.lastSimilarityQuery = response;
@@ -1036,7 +1046,10 @@
             }]
         }).on('click', 'a[data-role=recompute-similarity]', function() {
           let data = datatable.row($(this).parents('tr')).data();
-          CATMAID.Similarity.recomputeSimilarity(project.id, data.id)
+          let simplify = $('#' + widget.idPrefix + 'simplify-skeletons').prop('checked');
+          let requiredBranches = 10;
+          CATMAID.Similarity.recomputeSimilarity(project.id, data.id, simplify,
+              requiredBranches)
             .then(function() {
               CATMAID.msg('Success', 'NBLAST similarity recomputation queued');
               widget.refresh();

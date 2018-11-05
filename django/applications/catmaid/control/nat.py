@@ -208,6 +208,7 @@ def test_r_environment():
     setup_is_ok = False
     try:
         rnat = importr('nat')
+        relmr = importr('elmr')
         rnblast = importr('nat.nblast')
         rcatmaid = importr('catmaid')
         setup_is_ok = True
@@ -220,7 +221,7 @@ def test_r_environment():
 
         if(!require("devtools")) install.packages("devtools")
         devtools::install_github(c("jefferis/nat", "jefferislab/nat.nblast",
-                "jefferis/rcatmaid"))
+                "jefferis/rcatmaid", "jefferislab/elmr"))
 
         This is required to let CATMAID compute NBLAST scores.
         """)
@@ -235,7 +236,7 @@ def setup_r_environment():
     robjects.r("""
         if(!require("devtools")) install.packages("devtools")
         devtools::install_github(c("jefferis/nat", "jefferislab/nat.nblast",
-                "jefferis/rcatmaid"))
+                "jefferis/rcatmaid", "jefferislab/elmr"))
         install.packages("doMC")
     """)
 
@@ -534,6 +535,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             server_params['authpassword'] = settings.CATMAID_HTTP_AUTH_PASS
 
         rnat = importr('nat')
+        relmr = importr('elmr')
         rnblast = importr('nat.nblast')
         rcatmaid = importr('catmaid')
         Matrix = robjects.r.matrix
@@ -590,6 +592,14 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                         '.progress': 'none',
                         'OmitFailures': omit_failures,
                     })
+            if simplify:
+                logger.debug("Simplifying query neurons, removing parts below branch level {}".format(required_branches))
+                query_objects = robjects.r.nlapply(query_objects,
+                        relmr.simplify_neuron, **{
+                            'n': required_branches,
+                            'OmitFailures': omit_failures,
+                            '.parallel': True,
+                        })
             logger.debug('Computing query skeleton stats')
             query_dps = rnat.dotprops(query_objects.ro / 1e3, **{
                         'k': config.tangent_neighbors,
@@ -662,6 +672,15 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                             'OmitFailures': omit_failures,
                         })
 
+                if simplify:
+                    logger.debug("Simplifying target neurons, removing parts below branch level {}".format(required_branches))
+                    target_objects = robjects.r.nlapply(target_objects,
+                            relmr.simplify_neuron, **{
+                                'n': required_branches,
+                                'OmitFailures': omit_failures,
+                                '.parallel': True,
+                            })
+
                 logger.debug('Computing target skeleton stats')
                 target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
                             'k': config.tangent_neighbors,
@@ -669,11 +688,6 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                             '.progress': 'none',
                             'OmitFailures': omit_failures,
                         })
-
-                if simplify:
-                    #TODO
-                    pass
-
             elif target_type == 'pointcloud':
                 logger.debug('Fetching {} target point clouds'.format(len(target_object_ids)))
                 pointclouds = []

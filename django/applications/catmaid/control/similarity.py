@@ -558,7 +558,7 @@ def get_all_object_ids(project_id, user_id, object_type, min_nodes=500,
 
 @task()
 def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
-        use_cache=True):
+        simplify=True, required_branches=10, use_cache=True):
     try:
         min_nodes = 500
         min_soma_nodes = 20
@@ -605,7 +605,8 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                 similarity.query_type_id, similarity.target_type_id,
                 normalized=similarity.normalized,
                 use_alpha=similarity.use_alpha,
-                remove_target_duplicates=remove_target_duplicates)
+                remove_target_duplicates=remove_target_duplicates,
+                simplify=simplify, required_branches=required_branches)
 
         # Update config and samples
         if scoring_info.get('errors'):
@@ -720,6 +721,16 @@ def compare_skeletons(request, project_id):
         type: boolean
         required: false
         defaultValue: true
+      - name: simplify
+        description: Whether or not to simplify neurons and remove parts below a specified branch point level.
+        type: boolean
+        required: false
+        defaultValue: true
+      - name: required_branches
+        description: The required branch levels if neurons should be simplified.
+        type: boolean
+        required: false
+        defaultValue: 10
     """
     name = request.POST.get('name', None)
     if not name:
@@ -732,6 +743,9 @@ def compare_skeletons(request, project_id):
         raise ValueError("Need NBLAST configuration ID")
     else:
         config_id = int(config_id)
+
+    simplify = get_request_bool(request.POST, 'simplify', True)
+    required_branches = int(request.POST.get('required_branches', '10'))
 
     valid_type_ids = ('skeleton', 'pointcloud', 'pointset')
 
@@ -823,7 +837,7 @@ def compare_skeletons(request, project_id):
         similarity.save()
 
     task = compute_nblast.delay(project_id, request.user.id, similarity.id,
-            remove_target_duplicates)
+            remove_target_duplicates, simplify, required_branches)
 
     return JsonResponse({
         'task_id': task.task_id,
@@ -894,9 +908,12 @@ class SimilarityDetail(APIView):
 def recompute_similarity(request, project_id, similarity_id):
     """Recompute the similarity matrix of the passed in NBLAST configuration.
     """
+    simplify = get_request_bool(request.GET, 'simplify', True)
+    required_branches = int(request.GET.get('required_branches', '10'))
     can_edit_or_fail(request.user, similarity_id, 'nblast_similarity')
     task = compute_nblast.delay(project_id, request.user.id, similarity_id,
-            remove_target_duplicates=True)
+            remove_target_duplicates=True, simplify=simplify,
+            required_branches=required_branches)
 
     return JsonResponse({
         'status': 'queued',

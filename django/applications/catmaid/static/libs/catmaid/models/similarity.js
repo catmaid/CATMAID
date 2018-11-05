@@ -115,12 +115,17 @@
    * @param removeTargetDuplicates {Boolean} (optional) Whether to remove all
    *                              target objects from a query that are also part
    *                              of the query. Default: true.
+   * @param simplify   {Boolean}  (optional) Whether or not neurons should be
+   *                              simplified by removing parts below a certain
+   *                              branch level. Default: true.
+   * @param requiredBranches {Integer} (optional) The number of branch levels to
+   *                              keep when simplifying neurons.
    *
    * @returns {Promise} Resolves once the similarity query is queued.
    */
   Similarity.computeSimilarity = function(projectId, configId, queryIds,
       targetIds, queryType, targetType, name, normalized, useAlpha,
-      queryMeta, targetMeta, removeTargetDuplicates) {
+      queryMeta, targetMeta, removeTargetDuplicates, simplify, requiredBranches) {
     return CATMAID.fetch(projectId + '/similarity/queries/similarity', 'POST', {
       'query_ids': queryIds,
       'target_ids': targetIds,
@@ -133,14 +138,19 @@
       'normalized': normalized,
       'use_alpha': useAlpha,
       'remove_target_duplicates': removeTargetDuplicates,
+      'simplify': simplify,
+      'required_branches': required_branches,
     });
   };
 
   /**
    * Queue recomputation of a similarity configuration.
    */
-  Similarity.recomputeSimilarity = function(projectId, similarityId) {
-    return CATMAID.fetch(projectId + '/similarity/queries/' + similarityId + '/recompute');
+  Similarity.recomputeSimilarity = function(projectId, similarityId, simplify, requiredBranches) {
+    return CATMAID.fetch(projectId + '/similarity/queries/' + similarityId + '/recompute', 'GET', {
+      'simplify': simplify,
+      'required_branches': requiredBranches,
+    });
   };
 
   /**

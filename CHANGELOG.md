@@ -160,6 +160,9 @@ Docker:
   environment cariables: CM_DEBUG, CM_FORCE_CONFIG_UPDATE, CM_WRITABLE_PATH,
   CM_NODE_LIMIT, CM_NODE_PROVIDERS, CM_SUBDIRECTORY, CM_CSRF_TRUSTED_ORIGINS.
 
+- The Git commit from which a Docker image was built is now preserved and
+  included in the CATMAID's version information.
+
 Volumes:
 
 - The general widget controls are now distributed across tabs.

@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import annotations  # For Python <3.7
-
 import array
 import json
 import logging

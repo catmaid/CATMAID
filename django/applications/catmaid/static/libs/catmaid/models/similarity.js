@@ -179,16 +179,20 @@
   Similarity.getReferencedSkeletonModels = function(similarity) {
     let targetModels = {};
     if (similarity.target_type === 'skeleton') {
-      similarity.target_objects.reduce(function(o, to) {
-        o[to] = new CATMAID.SkeletonModel(to);
-        return o;
-      }, targetModels);
+      if (similarity.target_objects) {
+        similarity.target_objects.reduce(function(o, to) {
+          o[to] = new CATMAID.SkeletonModel(to);
+          return o;
+        }, targetModels);
+      }
     }
     if (similarity.query_type === 'skeleton') {
-      similarity.query_objects.reduce(function(o, to) {
-        o[to] = new CATMAID.SkeletonModel(to);
-        return o;
-      }, targetModels);
+      if (similarity.query_object) {
+        similarity.query_objects.reduce(function(o, to) {
+          o[to] = new CATMAID.SkeletonModel(to);
+          return o;
+        }, targetModels);
+      }
     }
     return targetModels;
   };

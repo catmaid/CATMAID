@@ -521,9 +521,49 @@ def compute_nblast_config(config_id, user_id):
         return "Recomputing NBLAST Configuration failed"
 
 
+def get_all_object_ids(project_id, user_id, object_type, min_nodes=500,
+        min_soma_nodes=20, soma_tags=('soma')):
+    """Return all IDs of objects that fit the query parameters.
+    """
+    cursor = connection.cursor()
+
+    if object_type == 'skeleton':
+        extra_where = []
+        params = {
+            'project_id': project_id,
+        }
+
+        if min_nodes:
+            extra_where.append("""
+                css.num_nodes >= %(min_nodes)s
+            """)
+            params['min_nodes'] = min_nodes
+
+        cursor.execute("""
+            SELECT skeleton_id
+            FROM catmaid_skeleton_summary css
+            WHERE project_id = %(project_id)s
+            {extra_where}
+        """.format(**{
+            'extra_where': ' AND '.join([''] + extra_where) if extra_where else ''
+        }), params)
+
+        return [o[0] for o in cursor.fetchall()]
+    elif object_type == 'pointcloud':
+        return [pc['id'] for pc in list_pointclouds(project_id, user_id, simple=True)]
+    else:
+        raise ValueError("Referring to all pointset objects at the same time "
+                "isn't supported yet")
+
+
 @task()
-def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates):
+def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
+        use_cache=True):
     try:
+        min_nodes = 500
+        min_soma_nodes = 20
+        soma_tags = ('soma',)
+
         with transaction.atomic():
             similarity = NblastSimilarity.objects.select_related('config').get(
                     project_id=project_id, pk=similarity_id)
@@ -532,6 +572,23 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates)
 
         query_object_ids = similarity.query_objects
         target_object_ids = similarity.target_objects
+
+        # Fill in object IDs, if not yet present
+        updated = False
+        if not query_object_ids:
+            query_object_ids = get_all_object_ids(project_id, user_id,
+                    similarity.query_type_id, min_nodes, min_soma_nodes,
+                    soma_tags)
+            similarity.query_objects = query_object_ids
+            updated = True
+        if not target_object_ids:
+            target_object_ids = get_all_object_ids(project_id, user_id,
+                    similarity.target_type_id, min_nodes, min_soma_nodes,
+                    soma_tags)
+            similarity.target_objects = target_object_ids
+            updated = True
+        if updated:
+            similarity.save()
 
         config = similarity.config
         if not config.status == 'complete':
@@ -543,9 +600,10 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates)
             raise ValueError("NBLAST config #" + config.id +
                 " doesn't have a computed scoring.")
 
-        scoring_info = nblast(project_id, config.id, query_object_ids,
-                target_object_ids, similarity.query_type_id,
-                similarity.target_type_id, normalized=similarity.normalized,
+        scoring_info = nblast(project_id, user_id, config.id,
+                query_object_ids, target_object_ids,
+                similarity.query_type_id, similarity.target_type_id,
+                normalized=similarity.normalized,
                 use_alpha=similarity.use_alpha,
                 remove_target_duplicates=remove_target_duplicates)
 
@@ -675,12 +733,25 @@ def compare_skeletons(request, project_id):
     else:
         config_id = int(config_id)
 
-    query_ids = get_request_list(request.POST, 'query_ids', map_fn=int)
-    if not query_ids:
+    valid_type_ids = ('skeleton', 'pointcloud', 'pointset')
+
+    query_type_id = request.POST.get('query_type_id', 'skeleton')
+    if query_type_id not in valid_type_ids:
+        raise ValueError("Need valid query type id ({})".format(', '.join(valid_type_ids)))
+
+    target_type_id = request.POST.get('target_type_id', 'skeleton')
+    if target_type_id not in valid_type_ids:
+        raise ValueError("Need valid target type id ({})".format(', '.join(valid_type_ids)))
+
+    # Read potential query and target IDs. In case of skeletons and point
+    # clouds, no IDs need to be provided, in which case all skeletons and point
+    # clouds, respectively, will be used.
+    query_ids = get_request_list(request.POST, 'query_ids', [], map_fn=int)
+    if not query_ids and query_type_id not in ('skeleton', 'pointcloud'):
         raise ValueError("Need set of query objects (skeletons or point clouds) to compare")
 
     target_ids = get_request_list(request.POST, 'target_ids', map_fn=int)
-    if not target_ids:
+    if not target_ids and target_type_id not in ('skeleton', 'pointcloud'):
         raise ValueError("Need set of target objects (skeletons or point clouds) to compare against")
 
     config = NblastConfig.objects.get(project_id=project_id, pk=config_id)
@@ -693,16 +764,6 @@ def compare_skeletons(request, project_id):
     if not config.scoring:
         raise ValueError("NBLAST config #" + config.id +
             " doesn't have a computed scoring.")
-
-    valid_type_ids = ('skeleton', 'pointcloud', 'pointset')
-
-    query_type_id = request.POST.get('query_type_id', 'skeleton')
-    if query_type_id not in valid_type_ids:
-        raise ValueError("Need valid query type id ({})".format(', '.join(valid_type_ids)))
-
-    target_type_id = request.POST.get('target_type_id', 'skeleton')
-    if target_type_id not in valid_type_ids:
-        raise ValueError("Need valid target type id ({})".format(', '.join(valid_type_ids)))
 
     # Load potential query or target meta data
     query_meta = request.POST.get('query_meta')
@@ -834,7 +895,8 @@ def recompute_similarity(request, project_id, similarity_id):
     """Recompute the similarity matrix of the passed in NBLAST configuration.
     """
     can_edit_or_fail(request.user, similarity_id, 'nblast_similarity')
-    task = compute_nblast.delay(project_id, request.user.id, similarity_id)
+    task = compute_nblast.delay(project_id, request.user.id, similarity_id,
+            remove_target_duplicates=True)
 
     return JsonResponse({
         'status': 'queued',

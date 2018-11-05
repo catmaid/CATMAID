@@ -9,6 +9,7 @@ import numpy
 from datetime import datetime
 from itertools import chain
 
+from django.db import connection
 from django.conf import settings
 from django.http import JsonResponse, HttpResponse
 
@@ -326,14 +327,14 @@ def compute_scoring_matrix(project_id, user_id, matching_skeleton_ids,
         # Get neurons
         # nb also convert from nm to um, resample to 1µm spacing and use k=5
         # nearest neighbours of each point to define tangent vector
-        logger.debug('Fetching matching skeletons')
+        logger.debug('Fetching {} matching skeletons'.format(len(matching_skeleton_ids)))
         matching_neurons = rcatmaid.read_neurons_catmaid(
                 robjects.IntVector(matching_skeleton_ids), **{
                     'conn': conn,
                     '.progress': 'none',
                     'OmitFailures': omit_failures,
                 })
-        logger.debug('Fetching random skeletons')
+        logger.debug('Fetching {} random skeletons'.format(len(random_skeleton_ids)))
         nonmatching_neurons = rcatmaid.read_neurons_catmaid(
                 robjects.IntVector(random_skeleton_ids), **{
                     'conn': conn,
@@ -493,9 +494,11 @@ def compute_all_by_all_skeleton_similarity(project_id, user_id,
     }
 
 
-def nblast(project_id, config_id, query_object_ids, target_object_ids,
+def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         query_type='skeleton', target_type='skeleton', omit_failures=True,
-        normalized='raw', use_alpha=False, remove_target_duplicates=True):
+        normalized='raw', use_alpha=False, remove_target_duplicates=True,
+        min_nodes=500, min_soma_nodes=20, simplify=True, required_branches=10,
+        soma_tags=('soma', )):
     """Create NBLAST score for forward similarity from query objects to target
     objects. Objects can either be pointclouds or skeletons, which has to be
     reflected in the respective type parameter. This is executing essentially
@@ -535,6 +538,13 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
         rcatmaid = importr('catmaid')
         Matrix = robjects.r.matrix
 
+        # Indicate an all-by-all computation. This disabled <remove_target_duplicates>.
+        all_by_all = not query_object_ids and not target_object_ids and \
+                query_type == target_type
+        if all_by_all:
+            logger.debug('Disabling remove_target_duplicates option due to all-by-all computation')
+            remove_target_duplicates = False
+
         conn = rcatmaid.catmaid_login(**server_params)
         nblast_params = {}
 
@@ -546,6 +556,23 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
             rdomc.registerDoMC(settings.MAX_PARALLEL_ASYNC_WORKERS)
             nblast_params['.parallel'] = True
 
+        cursor = connection.cursor()
+
+        # In case either query_object_ids or target_object_ids is not given, the
+        # value will be filled in with all objects of the respective type.
+        from catmaid.control.similarity import get_all_object_ids
+        if all_by_all:
+            query_object_ids = get_all_object_ids(project_id, user_id,
+                    query_type, min_nodes, min_soma_nodes, soma_tags)
+            target_object_ids = query_object_ids
+        else:
+            if not query_object_ids:
+                query_object_ids = get_all_object_ids(project_id, user_id,
+                        query_type, min_nodes, min_soma_nodes, soma_tags)
+            if not target_object_ids:
+                target_object_ids = get_all_object_ids(project_id, user_id,
+                        target_type, min_nodes, min_soma_nodes, soma_tags)
+
         # If both query and target IDs are of the same type, the target list of
         # object IDs can't contain any of the query IDs.
         if query_type == target_type and remove_target_duplicates:
@@ -556,7 +583,7 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
 
         # Query objects
         if query_type == 'skeleton':
-            logger.debug('Fetching query skeletons')
+            logger.debug('Fetching {} query skeletons'.format(len(query_object_ids)))
             query_objects = rcatmaid.read_neurons_catmaid(
                     robjects.IntVector(query_object_ids), **{
                         'conn': conn,
@@ -571,7 +598,7 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
                         'OmitFailures': omit_failures,
                     })
         elif query_type == 'pointcloud':
-            logger.debug('Fetching query point clouds')
+            logger.debug('Fetching {} query point clouds'.format(len(query_object_ids)))
             pointclouds = []
             for pcid in query_object_ids:
                 target_pointcloud = PointCloud.objects.prefetch_related('points').get(pk=pcid)
@@ -596,7 +623,7 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
                         'OmitFailures': omit_failures,
                     })
         elif query_type == 'pointset':
-            logger.debug('Fetching query point sets')
+            logger.debug('Fetching {} query point sets'.format(len(query_object_ids)))
             pointsets = []
             for psid in query_object_ids:
                 target_pointset = PointSet.objects.get(pk=psid)
@@ -620,73 +647,83 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
         else:
             raise ValueError("Unknown query type: {}".format(query_type))
 
-        # Target objects
-        if target_type == 'skeleton':
-            logger.debug('Fetching target skeletons')
-            target_objects = rcatmaid.read_neurons_catmaid(
-                    robjects.IntVector(target_object_ids), **{
-                        'conn': conn,
-                        '.progress': 'none',
-                        'OmitFailures': omit_failures,
-                    })
-
-            logger.debug('Computing target skeleton stats')
-            target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
-                        'k': config.tangent_neighbors,
-                        'resample': 1,
-                        '.progress': 'none',
-                        'OmitFailures': omit_failures,
-                    })
-        elif target_type == 'pointcloud':
-            logger.debug('Fetching target point clouds')
-            pointclouds = []
-            for pcid in target_object_ids:
-                target_pointcloud = PointCloud.objects.prefetch_related('points').get(pk=pcid)
-                points_flat = list(chain.from_iterable(
-                        (p.location_x, p.location_y, p.location_z)
-                        for p in target_pointcloud.points.all()))
-                n_points = len(points_flat) / 3
-                point_data = Matrix(robjects.FloatVector(points_flat),
-                        nrow=n_points, byrow=True)
-                pointclouds.append(point_data)
-
-            target_objects = rnat.as_neuronlist(pointclouds)
-            effective_target_object_ids = list(map(
-                    lambda x: "pointcloud-{}".format(x), target_object_ids))
-            target_objects.names = robjects.StrVector(effective_target_object_ids)
-
-            logger.debug('Computing target pointcloud stats')
-            target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
-                        'k': config.tangent_neighbors,
-                        'resample': 1,
-                        '.progress': 'none',
-                        'OmitFailures': omit_failures,
-                    })
-        elif target_type == 'pointset':
-            logger.debug('Fetching target point sets')
-            pointsets = []
-            for psid in target_object_ids:
-                target_pointset = PointSet.objects.get(pk=psid)
-                n_points = len(target_pointset.points) / 3
-                point_data = Matrix(robjects.FloatVector(target_pointset.points),
-                        nrow=n_points, byrow=True)
-                dataframe.append(psid)
-                pointsets.append(point_data)
-
-            target_objects = rnat.as_neuronlist(pointsets)
-            effective_target_object_ids =list(map(
-                    lambda x: "pointset-{}".format(x), target_object_ids))
-            target_objects.names = robjects.StrVector(effective_target_object_ids)
-
-            logger.debug('Computing target pointset stats')
-            target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
-                        'k': config.tangent_neighbors,
-                        'resample': 1,
-                        '.progress': 'none',
-                        'OmitFailures': omit_failures,
-                    })
+        # Target objects, only needed if no all-by-all computation is done
+        if all_by_all:
+            logger.debug('All-by-all computation: using query objects and dps for target')
+            target_objects = query_objects
+            target_dps = query_dps
         else:
-            raise ValueError("Unknown target type: {}".format(target_type))
+            if target_type == 'skeleton':
+                logger.debug('Fetching {} target skeletons'.format(len(target_object_ids)))
+                target_objects = rcatmaid.read_neurons_catmaid(
+                        robjects.IntVector(target_object_ids), **{
+                            'conn': conn,
+                            '.progress': 'none',
+                            'OmitFailures': omit_failures,
+                        })
+
+                logger.debug('Computing target skeleton stats')
+                target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
+                            'k': config.tangent_neighbors,
+                            'resample': 1,
+                            '.progress': 'none',
+                            'OmitFailures': omit_failures,
+                        })
+
+                if simplify:
+                    #TODO
+                    pass
+
+            elif target_type == 'pointcloud':
+                logger.debug('Fetching {} target point clouds'.format(len(target_object_ids)))
+                pointclouds = []
+                for pcid in target_object_ids:
+                    target_pointcloud = PointCloud.objects.prefetch_related('points').get(pk=pcid)
+                    points_flat = list(chain.from_iterable(
+                            (p.location_x, p.location_y, p.location_z)
+                            for p in target_pointcloud.points.all()))
+                    n_points = len(points_flat) / 3
+                    point_data = Matrix(robjects.FloatVector(points_flat),
+                            nrow=n_points, byrow=True)
+                    pointclouds.append(point_data)
+
+                target_objects = rnat.as_neuronlist(pointclouds)
+                effective_target_object_ids = list(map(
+                        lambda x: "pointcloud-{}".format(x), target_object_ids))
+                target_objects.names = robjects.StrVector(effective_target_object_ids)
+
+                logger.debug('Computing target pointcloud stats')
+                target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
+                            'k': config.tangent_neighbors,
+                            'resample': 1,
+                            '.progress': 'none',
+                            'OmitFailures': omit_failures,
+                        })
+            elif target_type == 'pointset':
+                logger.debug('Fetching {} target point sets'.format(len(target_object_ids)))
+                pointsets = []
+                for psid in target_object_ids:
+                    target_pointset = PointSet.objects.get(pk=psid)
+                    n_points = len(target_pointset.points) / 3
+                    point_data = Matrix(robjects.FloatVector(target_pointset.points),
+                            nrow=n_points, byrow=True)
+                    dataframe.append(psid)
+                    pointsets.append(point_data)
+
+                target_objects = rnat.as_neuronlist(pointsets)
+                effective_target_object_ids =list(map(
+                        lambda x: "pointset-{}".format(x), target_object_ids))
+                target_objects.names = robjects.StrVector(effective_target_object_ids)
+
+                logger.debug('Computing target pointset stats')
+                target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
+                            'k': config.tangent_neighbors,
+                            'resample': 1,
+                            '.progress': 'none',
+                            'OmitFailures': omit_failures,
+                        })
+            else:
+                raise ValueError("Unknown target type: {}".format(target_type))
 
         # Restore R matrix for use with nat.nblast.
         cells = list(chain.from_iterable(config.scoring))
@@ -735,7 +772,7 @@ def nblast(project_id, config_id, query_object_ids, target_object_ids,
             # we have to transpose it using the 't()' R function.
             similarity = numpy.asarray(robjects.r['t'](scores)).tolist()
 
-        logger.debug('Done')
+        logger.debug('NBLAST computation done')
 
     except (IOError, OSError, ValueError) as e:
         logger.exception(e)

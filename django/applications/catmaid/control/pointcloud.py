@@ -72,8 +72,8 @@ def serialize_image_data(image, simple=False):
         }
 
 
-def list_pointclouds(project_id, user_id, simple, with_images, with_points, sample_ratio,
-        pointcloud_ids):
+def list_pointclouds(project_id, user_id, simple, with_images=False,
+        with_points=True, sample_ratio=1.0, pointcloud_ids=None):
     extra_select = []
     extra_join = []
     query_params = {

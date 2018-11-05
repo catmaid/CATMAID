@@ -463,7 +463,7 @@
         let targetSource = null;
         let configId = null;
         let queryType = 'skeleton';
-        let targetType = 'skeleton';
+        let targetType = 'all-skeletons';
         let normalizedScores = 'mean';
         let useAlpha = false;
         let removeTargetDuplicates = true;
@@ -590,6 +590,18 @@
           element: querySelect,
         }, {
           type: 'radio',
+          label: 'Query all skeletons',
+          name: 'query',
+          title: 'Query against all skeletons',
+          value: 'all-skeletons',
+          checked: queryType === 'all-skeletons',
+          onclick: function() {
+            targetType = 'all-skeletons';
+            querySelect.querySelector('select').disabled = true;
+            transformedQuerySelect.querySelector('select').disabled = true;
+          },
+        }, {
+          type: 'radio',
           label: 'Query transformed skeletons',
           name: 'query',
           title: 'Query a set of transformed skeletons, defined as display transformation in any Landmark Widget',
@@ -613,6 +625,7 @@
           onclick: function() {
             queryType = 'pointcloud';
             querySelect.querySelector('select').disabled = true;
+            transformedQuerySelect.querySelector('select').disabled = true;
           },
         }, {
           type: 'radio',
@@ -624,10 +637,23 @@
           onclick: function() {
             targetType = 'skeleton';
             targetSelect.querySelector('select').disabled = false;
+            transformedTargetSelect.querySelector('select').disabled = true;
           },
         }, {
           type: 'child',
           element: targetSelect,
+        }, {
+          type: 'radio',
+          label: 'Target all skeletons',
+          name: 'target',
+          title: 'Query against all skeletons',
+          value: 'all-skeletons',
+          checked: targetType === 'all-skeletons',
+          onclick: function() {
+            targetType = 'all-skeletons';
+            targetSelect.querySelector('select').disabled = true;
+            transformedTargetSelect.querySelector('select').disabled = true;
+          },
         }, {
           type: 'radio',
           label: 'Target transformed skeletons',
@@ -653,6 +679,7 @@
           onclick: function() {
             targetType = 'pointcloud';
             targetSelect.querySelector('select').disabled = true;
+            transformedTargetSelect.querySelector('select').disabled = true;
           },
         }, {
           type: 'checkbox',
@@ -738,6 +765,8 @@
                   return;
                 }
                 queryIds = querySkeletonSource.getSelectedSkeletons();
+              } else if (queryType === 'all-skeletons') {
+                effectiveQueryType = 'skeleton';
               } else if (queryType === 'pointcloud') {
                 queryIds = widget.getSelectedPointClouds();
               } else if (queryType === 'transformed-skeleton') {
@@ -777,6 +806,8 @@
                   return;
                 }
                 targetIds = targetSkeletonSource.getSelectedSkeletons();
+              } else if (targetType === 'all-skeletons') {
+                effectiveTargetType = 'skeleton';
               } else if (targetType === 'pointcloud') {
                 targetIds = widget.getSelectedPointClouds();
               } else if (targetType === 'transformed-skeleton') {
@@ -946,18 +977,19 @@
               class: 'cm-center',
               render: function(data, type, row, meta) {
                 let qo = row.query_objects;
-                let allBins = qo.join(', ');
+                let allBins = qo ? qo.join(', ') : 'all';
                 let text = (qo && qo.length > 4) ?
                     (qo[0] + ', ' +  qo[1] +  ' … ' + qo[qo.length - 2] + ', ' + qo[qo.length - 1]) :
                     allBins;
+                let length = qo ? qo.length : 'all';
                 if (row.query_type === 'skeleton') {
-                  return '<span title="' + qo.length + ' skeleton(s)"><em>Skeletons:</em> ' + text + '</span>';
+                  return '<span title="' + length + ' skeleton(s)"><em>Skeletons:</em> ' + text + '</span>';
                 } else if (row.query_type === 'pointcloud') {
-                  return '<span title="' + qo.length + ' point cloud(s)"><em>Point clouds:</em> ' + text + '</span>';
+                  return '<span title="' + length + ' point cloud(s)"><em>Point clouds:</em> ' + text + '</span>';
                 } else if (row.query_type === 'pointset') {
-                  return '<span title="' + qo.length + ' transformed skeleton(s)"><em>Transformed skeletons:</em> ' + text + '</span>';
+                  return '<span title="' + length + ' transformed skeleton(s)"><em>Transformed skeletons:</em> ' + text + '</span>';
                 } else {
-                  return '<span title="' + qo.length + ' unknown object(s)"><em>Unknown type:</em> ' + text + '</span>';
+                  return '<span title="' + length + ' unknown object(s)"><em>Unknown type:</em> ' + text + '</span>';
                 }
               }
             }, {
@@ -967,18 +999,19 @@
               class: 'cm-center',
               render: function(data, type, row, meta) {
                 let to = row.target_objects;
-                let allBins = to.join(', ');
+                let allBins = to ? to.join(', ') : 'all';
                 let text = (to && to.length > 4) ?
                     (to[0] + ', ' +  to[1] +  ' … ' + to[to.length - 2] + ', ' + to[to.length - 1]) :
                     allBins;
+                let length = to ? to.length : 'all';
                 if (row.target_type === 'skeleton') {
-                  return '<span title="' + to.length + ' skeleton(s)"><em>Skeletons:</em> ' + text + '</span>';
+                  return '<span title="' + length + ' skeleton(s)"><em>Skeletons:</em> ' + text + '</span>';
                 } else if (row.target_type === 'pointcloud') {
-                  return '<span title="' + to.length + ' point cloud(s)"><em>Point clouds:</em> ' + text + '</span>';
+                  return '<span title="' + length + ' point cloud(s)"><em>Point clouds:</em> ' + text + '</span>';
                 } else if (row.query_type === 'pointset') {
-                  return '<span title="' + to.length + ' transformed skeleton(s)"><em>Transformed skeletons:</em> ' + text + '</span>';
+                  return '<span title="' + length + ' transformed skeleton(s)"><em>Transformed skeletons:</em> ' + text + '</span>';
                 } else {
-                  return '<span title="' + to.length + ' unknown object(s)"><em>Unknown type:</em> ' + text + '</span>';
+                  return '<span title="' + length + ' unknown object(s)"><em>Unknown type:</em> ' + text + '</span>';
                 }
               }
             }, {

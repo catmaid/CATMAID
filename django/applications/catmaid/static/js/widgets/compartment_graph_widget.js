@@ -1460,6 +1460,10 @@
                        weight: count}};
     };
 
+    let asSynapticEdge = function(edge) {
+      return asEdge(edge, 'synaptic-connector');
+    };
+
     var asNode = function(nodeID) {
         nodeID = nodeID + '';
         var i_ = nodeID.indexOf('_'),
@@ -1517,7 +1521,7 @@
       // Append all new nodes and edges from the subgraphs
       elements.nodes = elements.nodes.concat(sg.nodes);
       elements.edges = elements.edges.concat(sg.edges);
-      elements.edges = elements.edges.concat(sg.edges_raw.map(asEdge)); // 2nd arg to asEdge can be undefined
+      elements.edges = elements.edges.concat(sg.edges_raw.map(asSynapticEdge)); // Sub-graphs only respect synaptic connectors at the moment.
 
       // Update nodes: some couldn't be split
       sg.unsplittable_skids.forEach(function(skid) {

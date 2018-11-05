@@ -1421,7 +1421,7 @@
           (function(skid) {
             var mode = this.subgraphs[skid],
                 with_tags = (mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS || mode === this.SUBGRAPH_SPLIT_AT_TAG ? 1 : 0);
-            return django_url + project.id + '/' + skid + '/1/1/' + with_tags + '/compact-arbor';
+            return CATMAID.makeURL(project.id + '/' + skid + '/1/1/' + with_tags + '/compact-arbor');
           }).bind(this),
           function(skid) { return {}; },
           function(skid, json) { morphologies[skid] = json; },
@@ -1919,7 +1919,7 @@
 
     }).bind(this);
 
-    requestQueue.register(django_url + project.id + "/annotations/forskeletons", "POST",
+    requestQueue.register(CATMAID.makeURL(project.id + "/annotations/forskeletons"), "POST",
                           {skeleton_ids: Object.keys(models)}, f);
   };
 
@@ -1944,7 +1944,7 @@
     var with_overall_counts = edgeLabelStrategy.requires &&
         edgeLabelStrategy.requires.has('originIndex');
 
-    requestQueue.replace(django_url + project.id + "/skeletons/confidence-compartment-subgraph",
+    requestQueue.replace(CATMAID.makeURL(project.id + "/skeletons/confidence-compartment-subgraph"),
         "POST",
         {
           skeleton_ids: skeleton_ids,
@@ -2152,7 +2152,7 @@
         accum = $.extend({}, s.split_partners); // TODO unused?
 
     var grow = function(skids, n_circles, callback) {
-          requestQueue.register(django_url + project.id + "/graph/circlesofhell",
+          requestQueue.register(CATMAID.makeURL(project.id + "/graph/circlesofhell"),
               "POST",
               {skeleton_ids: skids,
                n_circles: n_circles,
@@ -2160,7 +2160,7 @@
                min_post: p.min_downstream},
               CATMAID.jsonResponseHandler(function(json) {
                 if (p.filter_regex !== '') {
-                  requestQueue.register(django_url + project.id + "/annotations/forskeletons",
+                  requestQueue.register(CATMAID.makeURL(project.id + "/annotations/forskeletons"),
                       "POST",
                       {skeleton_ids: json[0]},
                       CATMAID.jsonResponseHandler(function (json) {
@@ -2299,7 +2299,7 @@
     var new_skids = {};
 
     var findPaths = function(source_skids, target_skids, n_hops, process, continuation) {
-      requestQueue.register(django_url + project.id + "/graph/dps", "POST",
+      requestQueue.register(CATMAID.makeURL(project.id + "/graph/dps"), "POST",
           {sources: source_skids,
            targets: target_skids,
            n_hops: n_hops,
@@ -2526,7 +2526,7 @@
       // if neither user_ids nor whitelist is specified, returns the union
       if ('own-review' === mode) postData['user_ids'] = [CATMAID.session.userid];
       else if ('whitelist-review' === mode) postData['whitelist'] = true;
-      requestQueue.register(django_url + project.id + "/skeletons/review-status", "POST",
+      requestQueue.register(CATMAID.makeURL(project.id + "/skeletons/review-status"), "POST",
           postData,
           function(status, text) {
             if (status !== 200) return;
@@ -3401,7 +3401,7 @@
     fetchSkeletons(
         targets,
         function(skid) {
-          return django_url + project.id + '/connector/list/one_to_many';
+          return CATMAID.makeURL(project.id + '/connector/list/one_to_many');
         },
         function(target) {
           return {skid: target,
@@ -3448,7 +3448,7 @@
     fetchSkeletons(
         Object.keys(edges), // targets could have changed if some failed to load
         function(skid) {
-          return django_url + project.id + '/' + skid + '/1/1/0/compact-arbor';
+          return CATMAID.makeURL(project.id + '/' + skid + '/1/1/0/compact-arbor');
         },
         function(skid) {
           return {}; // POST
@@ -3782,7 +3782,7 @@
           this.clear();
           this.setContent(json);
           // Find out which ones exist
-          requestQueue.register(django_url + project.id + '/skeleton/neuronnames', "POST",
+          requestQueue.register(CATMAID.makeURL(project.id + '/skeleton/neuronnames'), "POST",
               {skids: Object.keys(skids)},
               (function(status, text) {
                 if (200 !== status) return;

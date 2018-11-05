@@ -150,8 +150,8 @@
    * undo already executed commands and redo commands that have been undone are
    * not yet overridden (by the application of a new command).
    *
-   * @param {integer] The maximum number of history entries. Optional, defaults
-   *                  to not limiting the number of entries.
+   * @param {number} maxEntries (optional) The maximum number of history entries.
+   *                             Defaults to not limiting the number of entries.
    */
   var CommandHistory = function(maxEntries) {
     // Contains Command instances

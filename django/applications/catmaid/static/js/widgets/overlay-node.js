@@ -1789,7 +1789,7 @@
                 linkType = "gapjunction_with";
               } else if (CATMAID.Connectors.SUBTYPE_TIGHTJUNCTION_CONNECTOR === connectornode.subtype) {
                 linkType = "tightjunction_with";
-              } else if (CATMAID.Connectors.SUBTYPE_DESMOSOME_CONNECTOR) {
+              } else if (CATMAID.Connectors.SUBTYPE_DESMOSOME_CONNECTOR === connectornode.subtype) {
                 linkType = "desmosome_with";
               } else if (CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR === connectornode.subtype) {
                 linkType = (e.altKey ? 'post' : 'pre') + "synaptic_to";

@@ -139,7 +139,7 @@
       'use_alpha': useAlpha,
       'remove_target_duplicates': removeTargetDuplicates,
       'simplify': simplify,
-      'required_branches': required_branches,
+      'required_branches': requiredBranches,
     });
   };
 

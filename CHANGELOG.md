@@ -97,6 +97,10 @@ Tracing layer:
 - Alt + Click now opens consistently the link type context menu, regardless of
   whether a treenode or connector node is currently selected.
 
+- The layer options now allow to select a user who's tracing data won't be
+  fetched from the server. The main motivation is to hide data imported by a
+  dedicated import user by default and not even fetch it from the server.
+
 Neuron similarity:
 
 - The new Neuron Similarity Widget makes it possible to compare neurons to each

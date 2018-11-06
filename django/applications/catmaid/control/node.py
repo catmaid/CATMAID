@@ -326,6 +326,7 @@ class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
         else:
             n_largest_skeletons_limit= params.get('n_largest_skeletons_limit') or 0
             n_last_edited_skeletons_limit = params.get('n_last_edited_skeletons_limit') or 0
+            hidden_last_editor_id = params.get('hidden_last_editor_id')
 
             limit = n_largest_skeletons_limit + n_last_edited_skeletons_limit
 
@@ -364,6 +365,18 @@ class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
                 '''.format(**{
                     'summary': ' UNION '.join(summary)
                 })
+
+            # User constraints are joined separately, so they are AND-combined
+            if hidden_last_editor_id is not None:
+                query += """
+                    JOIN (
+                        SELECT skeleton_id
+                        FROM catmaid_skeleton_summary css
+                        WHERE project_id = %(project_id)s
+                        AND last_editor_id <> %(hidden_last_editor_id)s
+                    ) visible(skeleton_id)
+                        ON visible.skeleton_id = t1.skeleton_id
+                """
 
             if limit:
                 # Add new limit
@@ -926,6 +939,7 @@ def update_node_query_cache(node_providers=None, log=print):
 
         n_largest_skeletons_limit = options.get('n_largest_skeletons_limit', None)
         n_last_edited_skeletons_limit = options.get('n_last_edited_skeletons_limit', None)
+        hidden_last_editor_id = options.get('hidden_last_editor_id')
 
         data_type = CACHE_NODE_PROVIDER_DATA_TYPES.get(key)
         if not data_type:
@@ -943,6 +957,7 @@ def update_node_query_cache(node_providers=None, log=print):
                     node_limit=node_limit,
                     n_largest_skeletons_limit=n_largest_skeletons_limit,
                     n_last_edited_skeletons_limit=n_last_edited_skeletons_limit,
+                    hidden_last_editor_id=hidden_last_editor_id,
                     delete=clean_cache, log=log)
 
 
@@ -971,7 +986,7 @@ def get_tracing_bounding_box(project_id, cursor=None):
 
 def update_cache(project_id, data_type, orientations, steps, node_limit=None,
         n_largest_skeletons_limit=None, n_last_edited_skeletons_limit=None,
-        delete=False, bb_limits=None, log=print):
+        hidden_last_editor_id=None, delete=False, bb_limits=None, log=print):
     if data_type not in ('json', 'json_text', 'msgpack'):
         raise ValueError('Type must be one of: json, json_text, msgpack')
     if len(steps) != len(orientations):
@@ -1034,6 +1049,11 @@ def update_cache(project_id, data_type, orientations, steps, node_limit=None,
         params['n_last_edited_skeletons_limit'] = int(n_last_edited_skeletons_limit)
         log((' -> Allowing {} most recently edited skeletons in the '
                 'field of view in eeach section'). format(n_last_edited_skeletons_limit))
+
+    if hidden_last_editor_id:
+        param['hidden_last_editor_id'] = int(hidden_last_editor_id)
+        log((' -> Only nodes not edited last by user {} will be allowed'.format(
+                hidden_last_editor_id)))
 
     min_z = bb[0][2]
     max_z = bb[1][2]
@@ -1217,6 +1237,12 @@ def node_list_tuples(request, project_id=None, provider=None):
       required: false
       type: integer
       paramType: form
+    - name: hidden_last_editor_id
+      description: |
+        No nodes edited last by this user will be retuned.
+      required: false
+      type: integer
+      paramType: form
     type:
     - type: array
       items:
@@ -1241,6 +1267,7 @@ def node_list_tuples(request, project_id=None, provider=None):
     params['limit'] = settings.NODE_LIST_MAXIMUM_COUNT
     params['n_largest_skeletons_limit'] = int(data.get('n_largest_skeletons_limit', 0))
     params['n_last_edited_skeletons_limit'] = int(data.get('n_last_edited_skeletons_limit', 0))
+    params['hidden_last_editor_id'] = int(data['hidden_last_editor_id']) if 'hidden_last_editor_id' in data else None
     params['project_id'] = project_id
     include_labels = get_request_bool(data, 'labels', False)
     target_format = data.get('format', 'json')

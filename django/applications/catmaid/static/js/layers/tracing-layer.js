@@ -64,6 +64,15 @@
       }
     });
 
+    Object.defineProperty(this, 'hiddenLastEditorId', {
+      get: function() {
+        return this.tracingOverlay.hiddenLastEditorId;
+      },
+      set: function(value) {
+        this.tracingOverlay.hiddenLastEditorId = value;
+      }
+    });
+
     Object.defineProperty(this, 'tracingWindowWidth', {
       get: function() {
         return this.tracingOverlay.tracingWindowWidth;
@@ -227,6 +236,13 @@
       min: 0,
       value: this.nLastEditedSkeletonLimit,
       help: 'Limit the displayed skeletons to the N most recently edited ones. A value of zero disables the limit.'
+    }, {
+      name: 'hiddenLastEditorId',
+      displayName: 'Hide data last edited by',
+      type: 'select',
+      value: this.hiddenLastEditorId,
+      options: [['none', '(None)']].concat(CATMAID.User.list('id-login')),
+      help: 'Limit the displayed skeletons to those that have not been edited last by the specified user.',
     }];
   };
 
@@ -239,6 +255,9 @@
       this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('nLastEditedSkeletonLimit' === name) {
       this.nLastEditedSkeletonLimit = value;
+      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
+    } else if ('hiddenLastEditorId' === name) {
+      this.hiddenLastEditorId = value;
       this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('tracingWindowWidth' === name) {
       this.tracingWindowWidth = parseInt(value, 10);

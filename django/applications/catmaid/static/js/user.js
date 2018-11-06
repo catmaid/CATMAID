@@ -47,6 +47,28 @@
     return User.prototype.users;
   };
 
+  User.list = function(mode) {
+    mode = mode || 'objects';
+
+    let userDb = User.prototype.users;
+    let users = User.sortedIds('login');
+
+    if (mode === 'objects') {
+      for (let i=0; i<users.length; ++i) {
+        users[i] = userDb[users[i]];
+      }
+    } else if (mode === 'id-login') {
+      for (let i=0; i<users.length; ++i) {
+        let u = userDb[users[i]];
+        users[i] = [u.id, u.login];
+      }
+    } else {
+      throw new CATMAID.ValueError("Unknown mode: " + mode);
+    }
+
+    return users;
+  };
+
   /**
    * Return a list of all user IDs, sorted by the given field. If non is given,
    * the full name is used.

@@ -747,6 +747,8 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   this.nLargestSkeletonsLimit = SkeletonAnnotations.TracingOverlay.Settings.session.n_largest_skeletons_limit;
   /** Limit the requested skeletons to the N most recently edited ones. */
   this.nLastEditedSkeletonLimit = SkeletonAnnotations.TracingOverlay.Settings.session.n_last_edited_skeletons_limit;
+  /** Optionally, hide all skeletons edited last by a particular user. */
+  this.hiddenLastEditorId = SkeletonAnnotations.TracingOverlay.Settings.session.hidden_last_editor_id;
   /** An optional margin in pixels that is subtracted from the left and right of
    * the node query box, effectively not loading data in this region.*/
   this.tracingWindowWidth = SkeletonAnnotations.TracingOverlay.Settings.session.tracing_window_width;
@@ -1099,6 +1101,9 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
           },
           n_last_edited_skeletons_limit: {
             default: 0
+          },
+          hidden_last_editor_id: {
+            default: 'none',
           },
           tracing_window_width: {
             default: 300
@@ -3704,6 +3709,10 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
 
     if (self.nLastEditedSkeletonLimit > 0) {
       params['n_last_edited_skeletons_limit'] = self.nLastEditedSkeletonLimit;
+    }
+
+    if (self.hiddenLastEditorId && self.hiddenLastEditorId !== 'none') {
+      params['hidden_last_editor_id'] = self.hiddenLastEditorId;
     }
 
     var success = function (json) {

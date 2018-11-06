@@ -94,6 +94,10 @@ included in this changelog.
   these parameters and match them. Instead of 'gapjunctions' and 'attachments',
   the fields are now named 'gapjunction' and 'attachment'.
 
+- `GET /{project_id}/annotations/`:
+  Supports now an optional boolean parameter named `simple`, which returns only
+  names and IDs and is therefore much faster.
+
 ### Deprecations
 
 None.

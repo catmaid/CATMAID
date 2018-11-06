@@ -45,7 +45,9 @@
   };
 
   AnnotationCache.prototype.update = function(callback) {
-    return CATMAID.fetch(project.id + '/annotations/', 'POST', {})
+    return CATMAID.fetch(project.id + '/annotations/', 'GET', {
+      simple: true,
+    })
       .then((function(json) {
         // Empty cache
         this.annotation_ids = {};

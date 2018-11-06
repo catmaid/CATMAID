@@ -4,7 +4,7 @@ import re
 
 from collections import defaultdict
 
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.db import connection
 
@@ -1160,10 +1160,32 @@ def list_annotations(request, project_id=None):
         required: true
     """
 
-    if not request.POST:
+    if request.method == 'GET':
         cursor = connection.cursor()
+        simple = get_request_bool(request.GET, 'simple', False)
         classes = get_class_to_id_map(project_id, ('annotation',), cursor)
         relations = get_relation_to_id_map(project_id, ('annotated_with',), cursor)
+
+        # In case a simple representation should be returned, return a simple
+        # list of name - ID mappings.
+        if simple:
+            cursor.execute("""
+                SELECT row_to_json(wrapped)::text
+                FROM (
+                    SELECT array_to_json(array_agg(row_to_json(annotation))) AS annotations
+                    FROM (
+                        SELECT ci.id, ci.name
+                        FROM class_instance ci
+                        WHERE project_id = %(project_id)s
+                            AND class_id = %(annotation_class_id)s
+                    ) annotation
+                ) wrapped
+            """, {
+                'project_id': project_id,
+                'annotation_class_id': classes['annotation'],
+            })
+            annotation_json_text = cursor.fetchone()[0]
+            return HttpResponse(annotation_json_text, content_type='application/json')
 
         cursor.execute('''
             SELECT DISTINCT ci.name, ci.id, u.id, u.username
@@ -1176,10 +1198,12 @@ def list_annotations(request, project_id=None):
                        ''',
             (classes['annotation'], relations['annotated_with']))
         annotation_tuples = cursor.fetchall()
-    else:
+    elif request.method == 'POST':
         annotation_query = create_annotation_query(project_id, request.POST)
         annotation_tuples = annotation_query.distinct().values_list('name', 'id',
             'cici_via_b__user__id', 'cici_via_b__user__username')
+    else:
+        raise ValueError("Unsupported HTTP method")
 
     # Create a set mapping annotation names to its users
     ids = {}

@@ -55,6 +55,15 @@
       }
     });
 
+    Object.defineProperty(this, 'nLastEditedSkeletonLimit', {
+      get: function() {
+        return this.tracingOverlay.nLastEditedSkeletonLimit;
+      },
+      set: function(value) {
+        this.tracingOverlay.nLastEditedSkeletonLimit = value;
+      }
+    });
+
     Object.defineProperty(this, 'tracingWindowWidth', {
       get: function() {
         return this.tracingOverlay.tracingWindowWidth;
@@ -210,6 +219,14 @@
       min: 0,
       value: this.nLargestSkeletonsLimit,
       help: 'Limit the displayed skeletons to the N largest in terms of cable length. A value of zero disables the limit.'
+    }, {
+      name: 'nLastEditedSkeletonLimit',
+      displayName: 'Limit to N last edited skeletons',
+      type: 'number',
+      step: 100,
+      min: 0,
+      value: this.nLastEditedSkeletonLimit,
+      help: 'Limit the displayed skeletons to the N most recently edited ones. A value of zero disables the limit.'
     }];
   };
 
@@ -219,6 +236,9 @@
       this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('nLargestSkeletonsLimit' === name) {
       this.nLargestSkeletonsLimit = value;
+      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
+    } else if ('nLastEditedSkeletonLimit' === name) {
+      this.nLastEditedSkeletonLimit = value;
       this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('tracingWindowWidth' === name) {
       this.tracingWindowWidth = parseInt(value, 10);

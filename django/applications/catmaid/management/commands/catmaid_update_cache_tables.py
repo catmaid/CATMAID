@@ -41,6 +41,8 @@ class Command(BaseCommand):
             default=settings.NODE_LIST_MAXIMUM_COUNT, help='Override node limit from settings. 0 means no limit'),
         parser.add_argument('--n-largest-skeletons-limit', dest='n_largest_skeletons_limit',
                 default=None, help='Only show treenodes of the N largest skeletons in the field of view'),
+        parser.add_argument('--n-last-edited-skeletons-limit', dest='n_last_edited_skeletons_limit',
+                default=None, help='Only show treenodes of the N most recently edited skeletons in the field of view'),
         parser.add_argument('--from-config', action="store_true", dest='from_config',
                 default=False, help="Update cache based on NODE_PROVIDERS variable in settings")
 
@@ -96,6 +98,10 @@ class Command(BaseCommand):
         if options['n_largest_skeletons_limit']:
             n_largest_skeletons_limit = int(options['n_largest_skeletons_limit'])
 
+        n_last_edited_skeletons_limit = None
+        if options['n_last_edited_skeletons_limit']:
+            n_last_edited_skeletons_limit = int(options['n_last_edited_skeletons_limit'])
+
         data_type = options['data_type']
 
         if data_type not in ('json', 'json_text', 'msgpack'):
@@ -106,6 +112,6 @@ class Command(BaseCommand):
         for p in projects:
             self.stdout.write('Updating cache for project {}'.format(p.id))
             update_cache(p.id, data_type, orientations, steps, node_limit,
-                    n_largest_skeletons_limit, delete, bb_limits,
-                    log=self.stdout.write)
+                    n_largest_skeletons_limit, n_last_edited_skeletons_limit,
+                    delete, bb_limits, log=self.stdout.write)
             self.stdout.write('Updated cache for project {}'.format(p.id))

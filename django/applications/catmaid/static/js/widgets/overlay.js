@@ -745,6 +745,8 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   this.transferFormat = SkeletonAnnotations.TracingOverlay.Settings.session.transfer_mode;
   /** Limit the requested skeletons to the N largest in terms of cable length */
   this.nLargestSkeletonsLimit = SkeletonAnnotations.TracingOverlay.Settings.session.n_largest_skeletons_limit;
+  /** Limit the requested skeletons to the N most recently edited ones. */
+  this.nLastEditedSkeletonLimit = SkeletonAnnotations.TracingOverlay.Settings.session.n_last_edited_skeletons_limit;
   /** An optional margin in pixels that is subtracted from the left and right of
    * the node query box, effectively not loading data in this region.*/
   this.tracingWindowWidth = SkeletonAnnotations.TracingOverlay.Settings.session.tracing_window_width;
@@ -1093,6 +1095,9 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
             default: true
           },
           n_largest_skeletons_limit: {
+            default: 0
+          },
+          n_last_edited_skeletons_limit: {
             default: 0
           },
           tracing_window_width: {
@@ -3695,6 +3700,10 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
 
     if (self.nLargestSkeletonsLimit > 0) {
       params['n_largest_skeletons_limit'] = self.nLargestSkeletonsLimit;
+    }
+
+    if (self.nLastEditedSkeletonLimit > 0) {
+      params['n_last_edited_skeletons_limit'] = self.nLastEditedSkeletonLimit;
     }
 
     var success = function (json) {

@@ -324,15 +324,55 @@ class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
                     %(sanitized_treenode_ids)s)
             '''.format(self.TREENODE_STATEMENT_NAME), params)
         else:
+            n_largest_skeletons_limit= params.get('n_largest_skeletons_limit') or 0
+            n_last_edited_skeletons_limit = params.get('n_last_edited_skeletons_limit') or 0
+
+            limit = n_largest_skeletons_limit + n_last_edited_skeletons_limit
+
+            print(limit)
+
             query = self.treenode_query_psycopg
-            if params.get('n_largest_skeletons_limit'):
-                query = self.treenode_query_psycopg.rstrip('LIMIT %(limit)s')
-                query += '''
-                    JOIN catmaid_skeleton_summary css
-                        ON css.skeleton_id = t1.skeleton_id
+
+            if limit:
+                # If there is a new limit, strip the old one away
+                query = query.rstrip('LIMIT %(limit)s')
+
+            # The parenthesises around the individual filters are needed for the
+            # union operator.
+            summary = []
+            if n_largest_skeletons_limit:
+                summary.append("""
+                    (SELECT skeleton_id
+                    FROM catmaid_skeleton_summary css
+                    WHERE project_id = %(project_id)s
                     ORDER BY css.cable_length DESC
-                    LIMIT %(n_largest_skeletons_limit)s
-                '''
+                    LIMIT %(n_largest_skeletons_limit)s)
+                """)
+            if n_last_edited_skeletons_limit:
+                summary.append("""
+                    (SELECT skeleton_id
+                    FROM catmaid_skeleton_summary css
+                    WHERE project_id = %(project_id)s
+                    ORDER BY css.last_edition_time DESC
+                    LIMIT %(n_last_edited_skeletons_limit)s)
+                """)
+
+            if summary:
+                query += '''
+                    JOIN (
+                        {summary}
+                    ) summary(skeleton_id)
+                        ON summary.skeleton_id = t1.skeleton_id
+                '''.format(**{
+                    'summary': ' UNION '.join(summary)
+                })
+
+            if limit:
+                # Add new limit
+                query += """
+                    LIMIT %(custom_limit)s
+                """
+                params['custom_limit'] = limit
 
             cursor.execute(query, params)
 
@@ -887,6 +927,7 @@ def update_node_query_cache(node_providers=None, log=print):
         clean_cache = options.get('clean', False)
 
         n_largest_skeletons_limit = options.get('n_largest_skeletons_limit', None)
+        n_last_edited_skeletons_limit = options.get('n_last_edited_skeletons_limit', None)
 
         data_type = CACHE_NODE_PROVIDER_DATA_TYPES.get(key)
         if not data_type:
@@ -903,6 +944,7 @@ def update_node_query_cache(node_providers=None, log=print):
             update_cache(project_id, data_type, orientations, steps,
                     node_limit=node_limit,
                     n_largest_skeletons_limit=n_largest_skeletons_limit,
+                    n_last_edited_skeletons_limit=n_last_edited_skeletons_limit,
                     delete=clean_cache, log=log)
 
 
@@ -929,9 +971,9 @@ def get_tracing_bounding_box(project_id, cursor=None):
 
     return row
 
-def update_cache(project_id, data_type, orientations, steps,
-        node_limit=None, n_largest_skeletons_limit=None, delete=False,
-        bb_limits=None, log=print):
+def update_cache(project_id, data_type, orientations, steps, node_limit=None,
+        n_largest_skeletons_limit=None, n_last_edited_skeletons_limit=None,
+        delete=False, bb_limits=None, log=print):
     if data_type not in ('json', 'json_text', 'msgpack'):
         raise ValueError('Type must be one of: json, json_text, msgpack')
     if len(steps) != len(orientations):
@@ -987,8 +1029,13 @@ def update_cache(project_id, data_type, orientations, steps,
 
     if n_largest_skeletons_limit:
         params['n_largest_skeletons_limit'] = int(n_largest_skeletons_limit)
-        log(' -> Limiting nodes in each section to the ones of the ' +
-                '{} largest skeletons in the field of view'.format(n_largest_skeletons_limit))
+        log((' -> Allowing {} largest skeletons in the field of view in '
+                'each section').format(n_largest_skeletons_limit))
+
+    if n_last_edited_skeletons_limit:
+        params['n_last_edited_skeletons_limit'] = int(n_last_edited_skeletons_limit)
+        log((' -> Allowing {} most recently edited skeletons in the '
+                'field of view in eeach section'). format(n_last_edited_skeletons_limit))
 
     min_z = bb[0][2]
     max_z = bb[1][2]
@@ -1166,6 +1213,12 @@ def node_list_tuples(request, project_id=None, provider=None):
       required: false
       type: integer
       paramType: form
+    - name: n_last_edited_skeletons_limit
+      description: |
+        Maximum number of most recently edited skeletons.
+      required: false
+      type: integer
+      paramType: form
     type:
     - type: array
       items:
@@ -1189,6 +1242,7 @@ def node_list_tuples(request, project_id=None, provider=None):
     # Limit the number of retrieved treenodes within the section
     params['limit'] = settings.NODE_LIST_MAXIMUM_COUNT
     params['n_largest_skeletons_limit'] = int(data.get('n_largest_skeletons_limit', 0))
+    params['n_last_edited_skeletons_limit'] = int(data.get('n_last_edited_skeletons_limit', 0))
     params['project_id'] = project_id
     include_labels = get_request_bool(data, 'labels', False)
     target_format = data.get('format', 'json')

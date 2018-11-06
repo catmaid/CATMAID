@@ -231,6 +231,10 @@ Miscellaneous:
   displayed. Both the gapjunction and attachment checkboxes have been removed in
   favor of a more generic list select element.
 
+- Tracing layer: the displayed tracing data can now be constrained to show only
+  the N most recently edited skeletons. This settings adds to the skeletons
+  selected by the N largest skeletons filter.
+
 - WebGL layers are now preferred by default.
 
 - Project statistics: a top ten of the largest neurons is now displayed.

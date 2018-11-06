@@ -3641,19 +3641,19 @@
   };
 
   /**
-   * Get a pixel count estimation for loading a whole Z section of all tile
+   * Get a pixel count estimation for loading a whole Z section of all stack
    * layers in the passed in stack viewer for the given zoom level.
    */
   function getZPlanePixelCountEstimate(stackViewer, textureZoomLevel) {
-    let tileLayers = stackViewer.getLayersOfType(CATMAID.TileLayer);
+    let stackLayers = stackViewer.getLayersOfType(CATMAID.StackLayer);
     let pixelCountEstimate = 0;
 
-    for (let i=0; i<tileLayers.length; ++i) {
-      let tileLayer = tileLayers[i];
-      let stack = tileLayer.stack;
+    for (let i=0; i<stackLayers.length; ++i) {
+      let stackLayer = stackLayers[i];
+      let stack = stackLayer.getStack();
       // Estimate number of data to be transferred.
       let zoomLevel = "max" === textureZoomLevel ? stack.MAX_S : Math.min(stack.MAX_S, textureZoomLevel);
-      let tileSource = tileLayer.stack.createTileSourceForMirror(tileLayer.mirrorIndex);
+      let tileSource = stack.createTileSourceForMirror(stackLayer.mirrorIndex);
       let nHTiles = getNZoomedParts(stack.dimension.x, zoomLevel, tileSource.tileWidth);
       let nVTiles = getNZoomedParts(stack.dimension.y, zoomLevel, tileSource.tileHeight);
 

@@ -172,6 +172,7 @@ JAVASCRIPT['catmaid'] = {
         'js/tools/roi-tool.js',
         'js/tools/segmentation-tool.js',
         'js/tools/*.js',
+        'js/layers/stack-layer.js',
         'js/layers/tile-layer.js',
         'js/layers/pixi-layer.js',
         'js/layers/*.js',

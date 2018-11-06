@@ -302,9 +302,9 @@
    */
   StackViewer.prototype.updateTitle = function() {
     var title = this.primaryStack.title;
-    var tileLayer = this._layers.get('TileLayer');
-    if (tileLayer) {
-      var mirror = this.primaryStack.mirrors[tileLayer.mirrorIndex];
+    var stackLayer = this._layers.get('StackLayer');
+    if (stackLayer) {
+      var mirror = this.primaryStack.mirrors[stackLayer.mirrorIndex];
       title = title + " | " + mirror.title;
     }
 
@@ -533,7 +533,7 @@
 
 
   /**
-   * align and update the tiles to be ( x, y ) in the image center
+   * align and update the stacks to be ( x, y ) in the image center
    */
   StackViewer.prototype.redraw = function (completionCallback) {
     var allQueued = false, semaphore = 0, layer,
@@ -929,13 +929,13 @@
       this._layers.delete(key);
       this._layerOrder.splice(this._layerOrder.indexOf(key), 1);
 
-      if (layer instanceof CATMAID.TileLayer) {
+      if (layer instanceof CATMAID.StackLayer) {
         var self = this;
         var otherStackLayers = this._layers.forEach(function (otherLayer) {
-          return otherLayer instanceof CATMAID.TileLayer && otherLayer.stack.id === layer.stack.id;
+          return otherLayer instanceof CATMAID.StackLayer && otherLayer.stack.id === layer.stack.id;
         });
 
-        // If this was the last tile layer for a particular stack...
+        // If this was the last stack layer for a particular stack...
         if (!otherStackLayers) {
           // Remove that stack from this stack viewer and update the tool.
           this._stacks = this._stacks.filter(function (s) { return s.id !== layer.stack.id; });
@@ -963,7 +963,7 @@
     if (this._layers.size === 1) return false;
 
     var layer = this._layers.get(key);
-    if ( typeof layer !== "undefined" && layer && layer instanceof CATMAID.TileLayer ) {
+    if ( typeof layer !== "undefined" && layer && layer instanceof CATMAID.StackLayer ) {
       return layer.stack.id !== this.primaryStack.id;
     }
     else
@@ -1000,7 +1000,7 @@
   };
 
   /**
-   * Add a tile layer for a stack to this stack viewer.
+   * Add a stack layer to this stack viewer.
    * @param {Stack} stack The stack associated with this layer.
    * @param {Object} layer The layer to add.
    */
@@ -1013,7 +1013,7 @@
     if (StackViewer.Settings.session.respect_broken_sections_new_stacks) {
       this._brokenSliceStacks.add(stack);
     }
-    this.addLayer('TileLayer' + stack.id, layer);
+    this.addLayer('StackLayer' + stack.id, layer);
     if (this._tool) {
       this._tool.unregister(this);
       this._tool.register(this);
@@ -1022,17 +1022,17 @@
   };
 
   /**
-   * Replace a stack's tile layer with a new one.
+   * Replace a stack's layer with a new one.
    *
    * @param {Object} oldLayerKey Key for the layer to be replaced.
-   * @param {Object} newLayer    New layer, must be a tile layer for the
+   * @param {Object} newLayer    New layer, must be a stack layer for the
    *                             same stack as the existing layer.
    */
   StackViewer.prototype.replaceStackLayer = function (oldLayerKey, newLayer) {
     var oldLayer = this._layers.get(oldLayerKey);
 
     if (!oldLayer || oldLayer.stack !== newLayer.stack) {
-      throw new Error('Can only replace a tile layer with a new tile layer for the same stack.');
+      throw new Error('Can only replace a stack layer with a new layer for the same stack.');
     }
 
     this._layers.set(oldLayerKey, newLayer);

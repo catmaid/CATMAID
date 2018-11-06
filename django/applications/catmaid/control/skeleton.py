@@ -2014,7 +2014,20 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         # the skeleton id of the from-skeleton.
 
         response_on_error = 'Could not update Treenode table with new skeleton id for joined treenodes.'
+
         Treenode.objects.filter(skeleton=to_skid).update(skeleton=from_skid)
+        cursor = connection.cursor()
+        cursor.execute("""
+            -- Set transaction user ID to update skeleton summary more precicely in trigger function.
+            SET LOCAL catmaid.user_id=%(user_id)s;
+            UPDATE treenode
+            SET skeleton_id = %(from_skeleton_id)s
+            WHERE skeleton_id = %(to_skeleton_id)s
+        """, {
+            'user_id': user.id,
+            'from_skeleton_id': from_skid,
+            'to_skeleton_id': to_skid,
+        })
 
         response_on_error = 'Could not update TreenodeConnector table.'
         TreenodeConnector.objects.filter(

@@ -658,6 +658,7 @@ def delete_treenode(request, project_id=None):
 
     response_on_error = ''
     deleted_neuron = False
+    cursor = connection.cursor()
     try:
         if not parent_id:
             children = []
@@ -708,7 +709,6 @@ def delete_treenode(request, project_id=None):
             # Treenode is not root, it has a parent and perhaps children.
             # Reconnect all the children to the parent.
             response_on_error = 'Could not update parent id of children nodes'
-            cursor = connection.cursor()
             cursor.execute("""
                 UPDATE treenode SET parent_id = %s
                 WHERE project_id = %s AND parent_id = %s
@@ -718,8 +718,19 @@ def delete_treenode(request, project_id=None):
             # return as child info.
             children = cursor.fetchall()
 
-        # Remove treenode
+        # Remove treenode. Set the current user name in a transaction local
+        # variable. This is done to communicate the current user to the trigger
+        # that updates the skeleton summary table.
         response_on_error = 'Could not delete treenode.'
+        cursor.execute("""
+            SET LOCAL catmaid.user_id=%(user_id)s;
+            DELETE FROM treenode
+            WHERE project_id=%(project_id)s AND id=%(treenode_id)s
+        """, {
+            'user_id': request.user.id,
+            'project_id': project_id,
+            'treenode_id': treenode_id,
+        })
         Treenode.objects.filter(project_id=project_id, pk=treenode_id).delete()
         return JsonResponse({
             'x': treenode.location_x,

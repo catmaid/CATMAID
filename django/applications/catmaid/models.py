@@ -1352,6 +1352,7 @@ class SkeletonSummary(models.Model):
     last_summary_update = models.DateTimeField(default=timezone.now)
     original_creation_time = models.DateTimeField(default=timezone.now)
     last_edition_time = models.DateTimeField(default=timezone.now)
+    last_editor = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     num_nodes = models.IntegerField(null=False, default=0)
     cable_length = models.FloatField(null=False, default=0)
 

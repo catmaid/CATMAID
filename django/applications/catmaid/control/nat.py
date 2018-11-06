@@ -552,11 +552,14 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
         config = NblastConfig.objects.get(project_id=project_id, pk=config_id)
 
+        parallel = False
         if settings.MAX_PARALLEL_ASYNC_WORKERS > 1:
             #' # Parallelise NBLASTing across 4 cores using doMC package
             rdomc = importr('doMC')
             rdomc.registerDoMC(settings.MAX_PARALLEL_ASYNC_WORKERS)
-            nblast_params['.parallel'] = True
+            parallel = True
+
+        nblast_params['.parallel'] = parallel
 
         cursor = connection.cursor()
 
@@ -598,7 +601,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                         relmr.simplify_neuron, **{
                             'n': required_branches,
                             'OmitFailures': omit_failures,
-                            '.parallel': True,
+                            '.parallel': parallel,
                         })
             logger.debug('Computing query skeleton stats')
             query_dps = rnat.dotprops(query_objects.ro / 1e3, **{
@@ -678,7 +681,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                             relmr.simplify_neuron, **{
                                 'n': required_branches,
                                 'OmitFailures': omit_failures,
-                                '.parallel': True,
+                                '.parallel': parallel,
                             })
 
                 logger.debug('Computing target skeleton stats')

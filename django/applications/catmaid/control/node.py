@@ -329,8 +329,6 @@ class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
 
             limit = n_largest_skeletons_limit + n_last_edited_skeletons_limit
 
-            print(limit)
-
             query = self.treenode_query_psycopg
 
             if limit:

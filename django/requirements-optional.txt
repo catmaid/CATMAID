@@ -1,1 +1,2 @@
 rpy2==2.9.4
+pgmagick==0.7.4; platform_python_implementation != 'PyPy'

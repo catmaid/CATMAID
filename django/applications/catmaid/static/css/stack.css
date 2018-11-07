@@ -118,16 +118,16 @@ div.smallMapView_hidden div.smallMapRect div {
 }
 
 div.LayerControl {
-  border: solid 1px #00F;
+  border-right: solid 1px #00F;
   margin: 0;
   padding: 8px;
   position: relative;
-  top: 10px;
-  left: 10px;
-  width: 40em;
+  top: 0;
+  left: 0;
+  width: 42em;
   min-width: 13em;
   max-width: 80%;
-  height: 65%;
+  height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
   color: #FFFFFF;
@@ -207,7 +207,7 @@ div.LayerControl li.highlight {
 
 .layerControl .layerFilterControl input.remove {
   position: absolute;
-  left: 0.5em;
+  left: 2em;
 }
 
 .layerControl .layerFilterControl h5 {

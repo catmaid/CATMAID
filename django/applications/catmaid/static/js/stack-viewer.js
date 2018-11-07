@@ -152,6 +152,10 @@
   $.extend(StackViewer.prototype, new InstanceRegistry());
   StackViewer.prototype.constructor = StackViewer;
 
+  StackViewer.EVENT_STACK_LAYER_ADDED = 'stackviewer_stack_layer_added';
+  StackViewer.EVENT_STACK_LAYER_REMOVED = 'stackviewer_stack_layer_removed';
+  CATMAID.asEventSource(StackViewer);
+
   /**
    * Get a valid Z location based on all stacks that are selected to be
    * respected.
@@ -945,6 +949,8 @@
             this._tool.register(this);
           }
         }
+
+        StackViewer.trigger(StackViewer.EVENT_STACK_LAYER_REMOVED, layer, this);
       }
 
       this.layercontrol.refresh();
@@ -1019,6 +1025,8 @@
       this._tool.register(this);
     }
     this.resize();
+
+    StackViewer.trigger(StackViewer.EVENT_STACK_LAYER_ADDED, layer, this);
   };
 
   /**
@@ -1053,6 +1061,10 @@
     }
 
     this.resize();
+
+    StackViewer.trigger(StackViewer.EVENT_STACK_LAYER_REMOVED, oldLayer, this);
+    StackViewer.trigger(StackViewer.EVENT_STACK_LAYER_ADDED, newLayer, this);
+
     this.layercontrol.refresh();
     this.updateTitle();
     this.redraw();

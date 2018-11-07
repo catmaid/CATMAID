@@ -1172,7 +1172,7 @@ def list_annotations(request, project_id=None):
             cursor.execute("""
                 SELECT row_to_json(wrapped)::text
                 FROM (
-                    SELECT array_to_json(array_agg(row_to_json(annotation))) AS annotations
+                    SELECT COALESCE(array_to_json(array_agg(row_to_json(annotation))), '[]'::json) AS annotations
                     FROM (
                         SELECT ci.id, ci.name
                         FROM class_instance ci

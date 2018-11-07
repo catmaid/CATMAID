@@ -3,8 +3,6 @@
 import argparse
 import math
 
-from django.utils.encoding import python_2_unicode_compatible
-
 
 # Respected precision
 epsilon = 0.001
@@ -12,7 +10,6 @@ epsilon = 0.001
 def same(a, b, eps=epsilon):
     return abs(a - b) < eps
 
-@python_2_unicode_compatible
 class Point3D:
     """A simple container to hold three coordinate values.
     """

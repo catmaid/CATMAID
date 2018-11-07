@@ -18,7 +18,6 @@ from django.db.models import Q
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from django.utils import timezone
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 
 from guardian.models import (UserObjectPermissionBase,
@@ -44,7 +43,6 @@ class UserRole(object):
     Import = 'Import'
     QueueComputeTask = 'QueueComputeTask'
 
-@python_2_unicode_compatible
 class Project(models.Model):
     title = models.TextField()
     comment = models.TextField(blank=True, null=True)
@@ -96,7 +94,6 @@ TILE_SOURCE_TYPES = (
     (10, '10: H2N5 tiles'),
 )
 
-@python_2_unicode_compatible
 class Stack(models.Model):
     title = models.TextField(help_text="Descriptive title of this stack.")
     dimension = Integer3DField(help_text="The pixel dimensionality of the "
@@ -129,7 +126,6 @@ class Stack(models.Model):
         return -1 if self.downsample_factors is None else len(self.downsample_factors) - 1
 
 
-@python_2_unicode_compatible
 class StackMirror(models.Model):
     stack = models.ForeignKey(Stack, on_delete=models.CASCADE)
     title = models.TextField(help_text="Descriptive title of this stack mirror.")
@@ -156,7 +152,6 @@ class StackMirror(models.Model):
         return self.stack.title + " (" + self.title + ")"
 
 
-@python_2_unicode_compatible
 class ProjectStack(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     stack = models.ForeignKey(Stack, on_delete=models.CASCADE)
@@ -197,7 +192,6 @@ def create_concept_sub_table(table_name):
                     FOR EACH ROW EXECUTE PROCEDURE on_edit()''' % (table_name, table_name))
 
 
-@python_2_unicode_compatible
 class Class(models.Model):
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -412,7 +406,6 @@ class ClassInstanceClassInstance(models.Model):
     class Meta:
         db_table = "class_instance_class_instance"
 
-@python_2_unicode_compatible
 class BrokenSlice(models.Model):
     stack = models.ForeignKey(Stack, on_delete=models.CASCADE)
     index = models.IntegerField()
@@ -424,7 +417,6 @@ class BrokenSlice(models.Model):
         return "Broken section {} in stack {}".format(self.index, self.stack)
 
 
-@python_2_unicode_compatible
 class InterpolatableSection(models.Model):
     """Opposed to the broken slice, an interpolated slice is not supposed to be
     removed, but data on it can be interpolated if the user chooses so to
@@ -912,7 +904,6 @@ class StackClassInstance(models.Model):
         db_table = "stack_class_instance"
 
 
-@python_2_unicode_compatible
 class StackGroupRelation(models.Model):
     name = models.TextField(max_length=80)
 
@@ -923,7 +914,6 @@ class StackGroupRelation(models.Model):
         return self.name
 
 
-@python_2_unicode_compatible
 class StackGroup(models.Model):
     title = models.TextField(default="", max_length=80)
     comment = models.TextField(blank=True, null=True,
@@ -1058,7 +1048,6 @@ class NblastSimilarity(UserFocusedModel):
         db_table = "nblast_similarity"
 
 
-@python_2_unicode_compatible
 class PointCloud(UserFocusedModel):
     """A point cloud. Its points are linked through the point_cloud_point
     relation.
@@ -1178,7 +1167,6 @@ class Log(UserFocusedModel):
         db_table = "log"
 
 
-@python_2_unicode_compatible
 class DataViewType(models.Model):
     title = models.TextField()
     code_type = models.TextField()
@@ -1238,7 +1226,6 @@ class DataView(models.Model):
                 dv.save()
 
 
-@python_2_unicode_compatible
 class SamplerState(models.Model):
     name = models.TextField()
     description = models.TextField()
@@ -1247,7 +1234,6 @@ class SamplerState(models.Model):
         return self.name
 
 
-@python_2_unicode_compatible
 class Sampler(UserFocusedModel):
     interval_length = models.FloatField()
     interval_error = models.FloatField()
@@ -1262,7 +1248,6 @@ class Sampler(UserFocusedModel):
         return "Sampler for {}".format(self.skeleton_id)
 
 
-@python_2_unicode_compatible
 class SamplerIntervalState(models.Model):
     name = models.TextField()
     description = models.TextField()
@@ -1271,7 +1256,6 @@ class SamplerIntervalState(models.Model):
         return self.name
 
 
-@python_2_unicode_compatible
 class SamplerInterval(UserFocusedModel):
     domain = models.ForeignKey('SamplerDomain', db_index=True, on_delete=models.CASCADE)
     interval_state = models.ForeignKey(SamplerIntervalState, db_index=True, on_delete=models.CASCADE)
@@ -1287,7 +1271,6 @@ class SamplerInterval(UserFocusedModel):
         return "({}, {})".format(self.start_node_id, self.end_node_id)
 
 
-@python_2_unicode_compatible
 class SamplerConnectorState(models.Model):
     name = models.TextField()
     description = models.TextField()
@@ -1296,7 +1279,6 @@ class SamplerConnectorState(models.Model):
         return self.name
 
 
-@python_2_unicode_compatible
 class SamplerConnector(UserFocusedModel):
     interval = models.ForeignKey('SamplerInterval', db_index=True, on_delete=models.CASCADE)
     connector = models.ForeignKey('Connector', db_index=True, on_delete=models.CASCADE)
@@ -1306,7 +1288,6 @@ class SamplerConnector(UserFocusedModel):
         return "({}, {})".format(self.start_node_id, self.end_node_id)
 
 
-@python_2_unicode_compatible
 class SamplerDomainType(models.Model):
     name = models.TextField()
     description = models.TextField()
@@ -1315,7 +1296,6 @@ class SamplerDomainType(models.Model):
         return self.name
 
 
-@python_2_unicode_compatible
 class SamplerDomain(UserFocusedModel):
     sampler = models.ForeignKey(Sampler, on_delete=models.CASCADE)
     start_node = models.ForeignKey(Treenode, on_delete=models.CASCADE)
@@ -1326,7 +1306,6 @@ class SamplerDomain(UserFocusedModel):
         return "Start: {}".format(self.start_node_id)
 
 
-@python_2_unicode_compatible
 class SamplerDomainEnd(models.Model):
     domain = models.ForeignKey(SamplerDomain, on_delete=models.CASCADE, db_index=True)
     end_node = models.ForeignKey(Treenode, on_delete=models.CASCADE)
@@ -1334,7 +1313,6 @@ class SamplerDomainEnd(models.Model):
     def __str__(self):
         return "End: {}".format(self.end_node_id)
 
-@python_2_unicode_compatible
 class SkeletonSummary(models.Model):
     """Holds summary information on individual skeletons. Data insertion and
     updates are managed by the database through triggers. The skeleton field
@@ -1360,7 +1338,6 @@ class SkeletonSummary(models.Model):
         return "Skeleton {} summary ({} nodes, {} nm)".format(
                 self.skeleton_id, self.num_nodes, self.cable_length)
 
-@python_2_unicode_compatible
 class StatsSummary(models.Model):
     class Meta:
         db_table = "catmaid_stats_summary"
@@ -1426,7 +1403,6 @@ def distinct_user_color():
     return distinct_color
 
 
-@python_2_unicode_compatible
 class UserProfile(models.Model):
     """ A class that stores a set of custom user preferences.
     See: http://digitaldreamer.net/blog/2010/12/8/custom-user-profile-and-extend-user-admin-django/

@@ -12,7 +12,6 @@ from django.core.exceptions import ValidationError
 from django.dispatch import receiver, Signal
 from django.db import models
 from django.db.backends import signals as db_signals
-from django.utils.encoding import python_2_unicode_compatible
 
 
 from catmaid.widgets import Double3DWidget, Integer3DWidget, RGBAWidget, DownsampleFactorsWidget
@@ -95,7 +94,6 @@ def register_composite_connection_created(sender, connection, **kwargs):
 # ------------------------------------------------------------------------
 # Classes to support the integer3d compound type:
 
-@python_2_unicode_compatible
 class Integer3D(object):
 
     def __init__(self, x=0, y=0, z=0):
@@ -153,7 +151,6 @@ class Integer3DField(CompositeField):
 # ------------------------------------------------------------------------
 # Classes to support the double3d compound type:
 
-@python_2_unicode_compatible
 class Double3D(object):
 
     def __init__(self, x=0, y=0, z=0):
@@ -210,7 +207,6 @@ class Double3DField(models.Field):
 # ------------------------------------------------------------------------
 # Classes to support the rgba compound type:
 
-@python_2_unicode_compatible
 class RGBA(object):
 
     def __init__(self, r=0, g=0, b=0, a=0):

@@ -970,7 +970,15 @@
 
     var layer = this._layers.get(key);
     if ( typeof layer !== "undefined" && layer && layer instanceof CATMAID.StackLayer ) {
-      return layer.stack.id !== this.primaryStack.id;
+      if (layer.stack.id === this.primaryStack.id) {
+        // If this layer is for the primary stack, it is only removable if
+        // there are other primary stack layers.
+        return this.getLayersOfType(CATMAID.StackLayer)
+          .filter(s => s.stack.id === this.primaryStack.id)
+          .length > 1;
+      }
+
+      return true;
     }
     else
       return false;

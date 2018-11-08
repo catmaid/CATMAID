@@ -6,6 +6,15 @@
 
 - Python 3 is now required for the back-end. We recommend the use of Python 3.6.
 
+- CATMAID's version information is now presented in a different form. It follows
+  the pattern `<base-version>[-dev]-<commit>`. The `<base-version>` is baked
+  into the source code on a release. The `-dev` part will only be present if
+  CATMAID's `dev` branch is used for deployment. It won't be present for
+  `master` branch based setups. The `<commit>` part is the 10 digit version of
+  the Git commit ID. This version representation is now also consistent with
+  what is display in Docker images. In the rare event that no commit information
+  can be found, `<commit>` will fallback to "unknown". This version will now
+  also logged during start-up of the back-end.
 
 ### Features and enhancements
 

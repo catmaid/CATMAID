@@ -89,6 +89,28 @@ CATMAID.tools = CATMAID.tools || {};
     return ++UNIQUE_ID;
   };
 
+  tools.urlJoin = function(a, b) {
+    if (a) {
+      if (b) {
+        if (a[a.length - 1] === '/') {
+          if (b[0] === '/') {
+              return a + b.slice(1);
+          }
+          return a + b;
+        } else {
+          if (b[0] === '/') {
+            return a + b;
+          }
+          return a + '/' + b;
+        }
+      }
+      return a;
+    } else if (b) {
+      return b;
+    }
+    return undefined;
+  };
+
   /**
    * Parse the query part of a URL and return an object containing all the GET
    * properties.

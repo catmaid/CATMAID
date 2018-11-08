@@ -206,4 +206,15 @@ QUnit.test('Utilities test', function( assert ) {
     assert.strictEqual(CATMAID.tools.mod(-2, 5), 3, 'CATMAID.tools.mod() works');
     assert.strictEqual(CATMAID.tools.mod(-8, 5), 2, 'CATMAID.tools.mod() works');
   })();
+
+  // Test urlJoin
+  (function() {
+    assert.strictEqual(CATMAID.tools.urlJoin(null, null), undefined, 'CATMAID.tools.urlJoin() works');
+    assert.strictEqual(CATMAID.tools.urlJoin('a', null), 'a', 'CATMAID.tools.urlJoin() works');
+    assert.strictEqual(CATMAID.tools.urlJoin(null, 'b'), 'b', 'CATMAID.tools.urlJoin() works');
+    assert.strictEqual(CATMAID.tools.urlJoin('a', 'b'), 'a/b', 'CATMAID.tools.urlJoin() works');
+    assert.strictEqual(CATMAID.tools.urlJoin('a/', 'b'), 'a/b', 'CATMAID.tools.urlJoin() works');
+    assert.strictEqual(CATMAID.tools.urlJoin('a', '/b'), 'a/b', 'CATMAID.tools.urlJoin() works');
+    assert.strictEqual(CATMAID.tools.urlJoin('a/', '/b'), 'a/b', 'CATMAID.tools.urlJoin() works');
+  })();
 });

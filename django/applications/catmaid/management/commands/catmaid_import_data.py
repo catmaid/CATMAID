@@ -9,6 +9,7 @@ from django.apps import apps
 from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection, transaction
+from catmaid.apps import get_system_user
 from catmaid.control.annotationadmin import copy_annotations
 from catmaid.control.edge import rebuild_edge_tables
 from catmaid.models import (Class, ClassClass, ClassInstance,
@@ -286,11 +287,13 @@ class FileImporter:
             # trigger during import.
             pre_create_summaries = False
             if object_type == ClassInstance and pre_create_summaries:
+                last_editor = get_system_user()
                 skeleton_class_id = all_classes.get('skeleton')
                 for deserialized_object in objects:
                     obj = deserialized_object.object
                     if obj.class_column_id == skeleton_class_id:
-                        r = SkeletonSummary.objects.get_or_create(project=self.target, skeleton_id=obj.id)
+                        r = SkeletonSummary.objects.get_or_create(project=self.target,
+                                skeleton_id=obj.id, defaults={'last_editor': last_editor})
                         explicitly_created_summaries += 1
 
         logger.info("".join(["{} foreign key references updated, {} did not ",

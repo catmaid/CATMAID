@@ -444,7 +444,7 @@
               if (samplerCount1 > 0) {
                 dialog.appendMessage("The active skeleton is currentely used in " +
                     samplerCount1 + samplerNoun1 + ". There are multiple options " +
-                    "for how to deal with his in a merge operation. In each " +
+                    "for how to handle this in a merge operation. In each " +
                     "case, no swap operation is allowed and the sampled " +
                     "skeleton will remain the \"winner\" of the merge to avoid a " +
                     "re-rooting operation. If the fragment is merged outside of a " +

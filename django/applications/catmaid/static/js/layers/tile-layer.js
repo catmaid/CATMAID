@@ -663,6 +663,62 @@
     }
   };
 
+  /** @inheritdoc */
+  TileLayer.prototype.pixelValueInScaleLevel = function (stackX, stackY, stackZ) {
+    // If buffering, do not know if any loaded value is valid.
+    if (null !== this._swapBuffersTimeout) return;
+
+    var scaledStackPosition = this.stackViewer.scaledPositionInStack(this.stack);
+    var tileInfo = this.tilesForLocation(
+        scaledStackPosition.xc,
+        scaledStackPosition.yc,
+        scaledStackPosition.z,
+        scaledStackPosition.s,
+        this.efficiencyThreshold);
+    var stackViewBox = this.stackViewer.createStackViewBox();
+
+    var relX = (stackX - stackViewBox.min.x) / (stackViewBox.max.x - stackViewBox.min.x),
+        relY = (stackY - stackViewBox.min.y) / (stackViewBox.max.y - stackViewBox.min.y);
+
+    if (relX < 0 || relX >= 1 ||
+        relY < 0 || relY >= 1 ||
+        stackZ !== scaledStackPosition.z) {
+      return;
+    }
+
+    var scaledX = relX * this.stackViewer.viewWidth + scaledStackPosition.xc;
+    var scaledY = relY * this.stackViewer.viewHeight + scaledStackPosition.yc;
+
+    let pixelTileInfo = this.tilesForLocation(
+        scaledX,
+        scaledY,
+        scaledStackPosition.z,
+        scaledStackPosition.s,
+        0.0);
+
+    if (pixelTileInfo.top > 0 || pixelTileInfo.left > 0) return;
+
+    let xd = this.colTransform(pixelTileInfo.firstCol - this._tileFirstC);
+    let yd = this.rowTransform(pixelTileInfo.firstRow - this._tileFirstR);
+
+    return this._tilePixel(
+        this._tiles[yd][xd],
+        -pixelTileInfo.left / (pixelTileInfo.mag * pixelTileInfo.anisotropy.x),
+        -pixelTileInfo.top / (pixelTileInfo.mag * pixelTileInfo.anisotropy.y));
+  };
+
+  /**
+   * Get a pixel value from a tile.
+   */
+  TileLayer.prototype._tilePixel = function (tile, x, y) {
+    var img = tile;
+    var canvas = document.createElement('canvas');
+    var context = canvas.getContext('2d');
+    context.drawImage(img, 0, 0);
+
+    return context.getImageData(x, y, 1, 1).data;
+  };
+
   CATMAID.TileLayer = TileLayer;
 
 })(CATMAID);

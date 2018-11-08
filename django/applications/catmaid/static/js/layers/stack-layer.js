@@ -486,6 +486,14 @@
     return this.opacity;
   };
 
+  /**
+   * Get the pixel value (from the current scale level) at an (unscaled) stack
+   * coordinate if it is currently in the field of view.
+   */
+  StackLayer.prototype.pixelValueInScaleLevel = function (stackX, stackY, stackZ) {
+    throw new CATMAID.Error('Not implemented');
+  };
+
   StackLayer.Settings = new CATMAID.Settings(
       // Note that for legacy compatibility this settings name is still
       // 'tile-layer'.

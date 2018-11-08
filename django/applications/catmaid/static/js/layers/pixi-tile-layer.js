@@ -276,6 +276,7 @@
   PixiTileLayer.prototype._swapBuffers = function (force, timeout) {
     if (timeout && timeout !== this._swapBuffersTimeout) return;
     window.clearTimeout(this._swapBuffersTimeout);
+    this._swapBuffersTimeout = null;
 
     for (var i = 0; i < this._tiles.length; ++i) {
       for (var j = 0; j < this._tiles[0].length; ++j) {
@@ -338,6 +339,16 @@
     var newTileLayer = this.constructCopy({}, CATMAID.TileLayer);
     var layerKey = this.stackViewer.getLayerKey(this);
     this.stackViewer.replaceStackLayer(layerKey, newTileLayer);
+  };
+
+  /** @inheritdoc */
+  PixiTileLayer.prototype._tilePixel = function (tile, x, y) {
+    var img = tile.texture.baseTexture.source;
+    var canvas = document.createElement('canvas');
+    var context = canvas.getContext('2d');
+    context.drawImage(img, 0, 0);
+
+    return context.getImageData(x, y, 1, 1).data;
   };
 
   CATMAID.PixiTileLayer = PixiTileLayer;

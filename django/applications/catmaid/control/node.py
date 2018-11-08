@@ -87,7 +87,7 @@ class BasicNodeProvider(object):
 def get_extra_nodes(params, project_id, explicit_treenode_ids,
         explicit_connector_ids, include_labels, with_relation_map):
     explicit_node_params = copy.deepcopy(params)
-    # Update params so tha we don't query any nodes spatially
+    # Update params so that we don't query any nodes spatially
     explicit_node_params['left'] = float('inf')
     explicit_node_params['right'] = float('inf')
     explicit_node_params['top'] = float('inf')

@@ -1027,7 +1027,17 @@
     if (StackViewer.Settings.session.respect_broken_sections_new_stacks) {
       this._brokenSliceStacks.add(stack);
     }
-    this.addLayer('StackLayer' + stack.id, layer);
+
+    // Create a unique key for this layer.
+    let base_key = 'StackLayer' + stack.id;
+    var key = base_key;
+    var duplicate = 1;
+    while (this._layers.has(key)) {
+      key = base_key + '-' + duplicate;
+      duplicate += 1;
+    }
+
+    this.addLayer(key, layer);
     if (this._tool) {
       this._tool.unregister(this);
       this._tool.register(this);

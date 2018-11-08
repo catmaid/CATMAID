@@ -194,6 +194,13 @@ Volumes:
 
 CLI importer:
 
+- If no user information except for IDs is present in the imported data, the
+  importer will by default ask for a username and create new inactive users for
+  those IDs (and update the referenced IDs). Alternatively, the --map-user-ids
+  parameter can be specified, which will make the importer map referenced IDs to
+  existing users. If an existing user with the respective ID is not available,
+  the user is asked for a username and a new user will be created.
+
 - With the help of a few additional progress bars, import progress can be better
   monitored.
 

@@ -86,6 +86,7 @@ class FileImporter:
         parameters and are expected to have the types set, set and dict.
         """
         map_users = self.options['map_users']
+        map_user_ids = self.options['map_user_ids']
         # Try to look at every user reference field in CATMAID.
         for ref in ('user', 'reviewer', 'editor'):
             id_ref = ref + "_id"
@@ -95,56 +96,87 @@ class FileImporter:
                 obj_user_ref_id = getattr(obj, id_ref)
                 import_user = import_users.get(obj_user_ref_id)
                 existing_user_id = None
+                existing_user_same_id = self.user_id_map.get(obj_user_ref_id)
 
+                # If user data is imported, <imported_user> will be available
+                # and using matching to existing users is done by name. If
+                # there is no user data for this user in the imported data,
+                # mapping can optionally be done by ID or new users are
+                # created.
                 if import_user:
                     import_user = import_user.object
                     obj_username = import_user.username
                     existing_user_id = self.user_map.get(obj_username)
-                else:
-                    raise ValueError("Could not find referenced user " +
-                            "\"{}\" in imported data".format(obj_user_ref_id))
 
-                # Map users if usernames match
-                if existing_user_id is not None:
-                    # If a user with this username exists already, update
-                    # the user reference the existing user if --map-users is
-                    # set. If no existing user is available, use imported user,
-                    # if available. Otherwise complain.
-                    if map_users:
-                        setattr(obj, id_ref, existing_user_id)
-                        mapped_user_ids.add(obj_user_ref_id)
-                        mapped_user_target_ids.add(existing_user_id)
+                    # Map users if usernames match
+                    if existing_user_id is not None:
+                        # If a user with this username exists already, update
+                        # the user reference the existing user if --map-users is
+                        # set. If no existing user is available, use imported user,
+                        # if available. Otherwise complain.
+                        if map_users:
+                            setattr(obj, id_ref, existing_user_id)
+                            mapped_user_ids.add(obj_user_ref_id)
+                            mapped_user_target_ids.add(existing_user_id)
+                        elif import_user:
+                            raise CommandError("Referenced user \"{}\"".format(obj_username) +
+                                    "exists both in database and in import data. If the " +
+                                    "existing user should be used, please use the " +
+                                    "--map-users option")
+                        else:
+                            raise CommandError("Referenced user \"{}\"".format(obj_username) +
+                                    "exists in database, but not in import data. If the " +
+                                    " existing user should be used, please use the " +
+                                    "--map-users option")
                     elif import_user:
-                        raise CommandError("Referenced user \"{}\"".format(obj_username) +
-                                "exists both in database and in import data. If the " +
-                                "existing user should be used, please use the " +
-                                "--map-users option")
+                        if import_user.id in self.user_id_map:
+                            import_user.id = None
+                            import_user.save()
+                        else:
+                            import_user.is_active = False
+                        created_users[obj_username] = import_user
+                        obj.user = import_user
+                    elif self.create_unknown_users:
+                        user = created_users.get(obj_username)
+                        if not user:
+                            logger.info("Created new inactive user: " + obj_username)
+                            user = User.objects.create(username=obj_username)
+                            user.is_active = False
+                            user.save()
+                            created_users[obj_username] = user
+                        obj.user = user
                     else:
-                        raise CommandError("Referenced user \"{}\"".format(obj_username) +
-                                "exists in database, but not in import data. If the " +
-                                " existing user should be used, please use the " +
-                                "--map-users option")
-                elif import_user:
-                    if import_user.id in self.user_id_map:
-                        import_user.id = None
-                        import_user.save()
-                    else:
-                        import_user.is_active = False
-                    created_users[obj_username] = import_user
-                    obj.user = import_user
+                        raise CommandError("User \"{}\" is not ".format(obj_username) +
+                                "found in existing data or import data. Please use " +
+                                "--user or --create-unknown-users")
+                elif map_user_ids and existing_user_same_id is not None:
+                    mapped_user_ids.add(obj_user_ref_id)
+                    mapped_user_target_ids.add(obj_user_ref_id)
                 elif self.create_unknown_users:
-                    user = created_users.get(obj_username)
+                    user = created_users.get(obj_user_ref_id)
                     if not user:
-                        logger.info("Created new inactive user: " + obj_username)
-                        user = User.objects.create(username=obj_username)
+                        logger.info("Creating new inactive user for imported " +
+                                "user ID {}. No name information was ".format(obj_user_ref_id) +
+                                "available, please enter a new username.")
+                        while True:
+                            logger.info('test')
+                            new_username = input("New username: ").strip()
+                            if not new_username:
+                                logger.info("Please enter a valid username")
+                            elif self.user_map.get(new_username):
+                                logger.info("The username '{}' ".format(new_username) +
+                                        "exists already, choose a different one")
+                            else:
+                                break
+
+                        user = User.objects.create(username=new_username)
                         user.is_active = False
                         user.save()
-                        created_users[obj_username] = user
+                        created_users[obj_user_ref_id] = user
                     obj.user = user
                 else:
-                    raise CommandError("User \"{}\" is not ".format(obj_username) +
-                            "found in existing data or import data. Please use " +
-                            "--user or --create-unknown-users")
+                    raise ValueError("Could not find referenced user " +
+                            "\"{}\" in imported. Try using --map-users or ".format(obj_user_ref_id))
 
     def reset_ids(self, target_classes, import_objects,
             import_objects_by_type_and_id, existing_classes,
@@ -438,7 +470,7 @@ class FileImporter:
 
         if len(created_users) > 0:
             logger.info("Created {} new users: {}".format(len(created_users),
-                    ", ".join(sorted(created_users.keys()))))
+                    ", ".join(sorted([u.username for u in created_users.values()]))))
         else:
             logger.info("No unmapped users imported")
 
@@ -576,6 +608,9 @@ class Command(BaseCommand):
         parser.add_argument('--map-users', dest='map_users', default=True,
                 const=True, type=lambda x: (str(x).lower() == 'true'), nargs='?',
                 help='Use existing user if username matches')
+        parser.add_argument('--map-user-ids', dest='map_user_ids', default=False,
+                const=True, type=lambda x: (str(x).lower() == 'true'), nargs='?',
+                help='Use existing user if user ID matches as a last option before new users would be created')
         parser.add_argument('--create-unknown-users', dest='create_unknown_users', default=True,
             action='store_true', help='Create new inactive users for unmapped or unknown users referenced in inport data.')
         parser.add_argument('--preserve-ids', dest='preserve_ids', default=False,
@@ -654,12 +689,16 @@ class Command(BaseCommand):
                     overrude_user.username))
         else:
             if options['map_users']:
-                logger.info("Useres referenced in import will be mapped to "
+                logger.info("Users referenced in import will be mapped to "
                         "existing users if the username matches")
+            if options['map_user_ids']:
+                logger.info("Users referenced only as ID in import will be "
+                        "mapped to existing users with matching IDs.")
             if options['create_unknown_users']:
                 logger.info("Unknown users will be created")
 
-            if not options['map_users'] and not options['create_unknown_users']:
+            if not options['map_users'] and not options['create_unknown_users'] \
+                    and not options['map_user_ids']:
                 override_user = ask_for_user("All imported objects need a user "
                         "and no mapping or creation option was provided. Please "
                         "select a user that should take ownership of all "

@@ -43,6 +43,10 @@ script:
   - cd django/projects
   - python manage.py migrate --noinput
   - python manage.py collectstatic --link --noinput
+  # Make sure there is no migration information missing. Makemigrations returns
+  # a non-zero exit code (1) when a new migration is created and otherwise zero.
+  - python manage.py makemigrations catmaid
+  # Run tests
   - coverage run manage.py test catmaid.tests
   # Remove login requirement from QUnit test page
   - sed -i 's/login_required(\([^)]*\))/\1/g' ../applications/catmaid/urls.py

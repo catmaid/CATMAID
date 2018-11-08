@@ -421,8 +421,7 @@
         .filter(function (modeKey) { // Filter modes that are not different from normal.
           var glBlendFuncs = glBlendModes[PIXI.BLEND_MODES[modeKey]];
           return modeKey == 'NORMAL' ||
-              glBlendFuncs[0] !== normBlendFuncs[0] ||
-              glBlendFuncs[1] !== normBlendFuncs[1]; })
+              !CATMAID.tools.arraysEqual(glBlendFuncs, normBlendFuncs); })
         .map(function (modeKey) {
           return modeKey.toLowerCase().replace(/_/, ' '); });
   };

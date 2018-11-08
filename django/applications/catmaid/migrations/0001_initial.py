@@ -3618,7 +3618,7 @@ initial_state_operations = [
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
             ('translation', catmaid.fields.Double3DField(default=(0, 0, 0))),
-            ('orientation', models.IntegerField(default=0, choices=[(0, b'xy'), (1, b'xz'), (2, b'zy')])),
+            ('orientation', models.IntegerField(default=0, choices=[(0, 'xy'), (1, 'xz'), (2, 'zy')])),
             ('project', models.ForeignKey(to='catmaid.Project', on_delete=models.CASCADE)),
         ],
         options={
@@ -3786,7 +3786,7 @@ initial_state_operations = [
             ('creation_time', models.DateTimeField(default=timezone.now)),
             ('edition_time', models.DateTimeField(default=timezone.now)),
             ('location_coordinate', models.FloatField()),
-            ('orientation', models.SmallIntegerField(choices=[(0, b'z'), (1, b'y'), (2, b'x')])),
+            ('orientation', models.SmallIntegerField(choices=[(0, 'z'), (1, 'y'), (2, 'x')])),
         ],
         options={
             'db_table': 'suppressed_virtual_treenode',
@@ -4096,6 +4096,11 @@ initial_state_operations = [
         name='clientdata',
         unique_together=set([('datastore', 'key', 'project', 'user')]),
     ),
+    migrations.AlterField(
+        model_name='clientdatastore',
+        name='name',
+        field=models.CharField(max_length=255, unique=True, validators=[django.core.validators.RegexValidator('^[\\w-]+$', 'Only alphanumeric characters and hyphens are allowed.')]),
+        ),
     migrations.AddField(
         model_name='classinstanceclassinstance',
         name='project',

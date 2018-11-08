@@ -19,8 +19,8 @@ class Migration(migrations.Migration):
             name='SkeletonSummary',
             fields=[
                 # Create skeleton ID constraint manually below
-                ('skeleton', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
-                        primary_key=True, serialize=False, to='catmaid.ClassInstance', db_constraint=False)),
+                ('skeleton', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE,
+                        primary_key=True, serialize=False, to='catmaid.ClassInstance')),
                 ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='catmaid.Project')),
                 ('last_summary_update', models.DateTimeField(default=django.utils.timezone.now)),
                 ('original_creation_time', models.DateTimeField(default=django.utils.timezone.now)),

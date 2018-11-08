@@ -24,6 +24,6 @@ class Migration(migrations.Migration):
                 ('can_annotate', 'Can annotate projects'),
                 ('can_browse', 'Can browse projects'),
                 ('can_import', 'Can import into projects'),
-                ('can_queue_compute_task', 'Can queue resource-intense tasks'))},
+                ('can_queue_compute_task', 'Can queue resource-intensive tasks'))},
         )
     ]

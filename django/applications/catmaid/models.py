@@ -520,6 +520,17 @@ class UserFocusedModel(models.Model):
         abstract = True
 
 
+class NonCascadingUserFocusedModel(models.Model):
+    objects = UserFocusedManager()
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+    project = models.ForeignKey(Project, on_delete=models.DO_NOTHING)
+    creation_time = models.DateTimeField(default=timezone.now)
+    edition_time = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        abstract = True
+
+
 class Textlabel(models.Model):
     type = models.CharField(max_length=32)
     text = models.TextField(default="Edit this text ...")
@@ -960,8 +971,9 @@ NblastConfigDefaultDistanceBreaks = (0, 0.75, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 7,
         8, 9, 10, 12, 14, 16, 20, 25, 30, 40, 500)
 
 
-class PointSet(UserFocusedModel):
-    """Store a set of points.
+class PointSet(NonCascadingUserFocusedModel):
+    """Store a set of points. A non-cascading user focused model is used,
+    because cascading deletes are handled on the database level.
     """
     name = models.TextField()
     description = models.TextField()
@@ -971,9 +983,11 @@ class PointSet(UserFocusedModel):
         db_table = "point_set"
 
 
-class NblastSample(UserFocusedModel):
+class NblastSample(NonCascadingUserFocusedModel):
     """Store binned distance and dot product information of the sample neuron
-    set in a histogram as well as a probability density based on it.
+    set in a histogram as well as a probability density based on it. A
+    non-cascading user focused model is used, because cascading deletes are
+    handled on the database level.
     """
     name = models.TextField()
     sample_neurons = ArrayField(models.IntegerField())
@@ -986,17 +1000,14 @@ class NblastSample(UserFocusedModel):
         db_table = "nblast_sample"
 
 
-class NblastConfig(UserFocusedModel):
+class NblastConfig(NonCascadingUserFocusedModel):
     """A NBLAST configuration that defines histogram binning and which
     NblastSample entries define the match sampling and the random sampling.
     Based on those it can keep a base scoring matrix. Referential integretry
-    (delete cascade) is taken care of by the database.
+    (delete cascade) is taken care of by the database. A non-cascading user
+    focused model is used, because cascading deletes are handled on the database
+    level.
     """
-    user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
-    creation_time = models.DateTimeField(default=timezone.now)
-    edition_time = models.DateTimeField(default=timezone.now)
-    project = models.ForeignKey(Project, on_delete=models.DO_NOTHING)
-
     name = models.TextField()
     status = models.TextField()
     distance_breaks = ArrayField(models.FloatField(
@@ -1025,20 +1036,20 @@ class NblastSkeletonSourceType(models.Model):
         db_table = "nblast_skeleton_source_type"
 
 
-class NblastSimilarity(UserFocusedModel):
+class NblastSimilarity(NonCascadingUserFocusedModel):
     """A model to represent computed similarity matrices for a particular
     configuration using a set of query and target objects (skeleton IDs or point
-    cloud IDs). Referential integretry (delete cascade) is taken care of by the
-    database.
+    cloud IDs). A non-cascading user focused model is used, because cascading
+    deletes are handled on the database level as well.
     """
     name = models.TextField()
     status = models.TextField()
     config = models.ForeignKey(NblastConfig, on_delete=models.DO_NOTHING)
     scoring = ArrayField(ArrayField(models.FloatField()))
     query_type = models.ForeignKey(NblastSkeletonSourceType,
-        related_name='query_type_set')
+        related_name='query_type_set', on_delete=models.DO_NOTHING)
     target_type = models.ForeignKey(NblastSkeletonSourceType,
-        related_name='target_type_set')
+        related_name='target_type_set', on_delete=models.DO_NOTHING)
     query_objects = ArrayField(models.IntegerField())
     target_objects = ArrayField(models.IntegerField())
     normalized = models.TextField(default='raw')
@@ -1048,9 +1059,10 @@ class NblastSimilarity(UserFocusedModel):
         db_table = "nblast_similarity"
 
 
-class PointCloud(UserFocusedModel):
+class PointCloud(NonCascadingUserFocusedModel):
     """A point cloud. Its points are linked through the point_cloud_point
-    relation.
+    relation. A non-cascading user focused model is used, because cascading
+    deletes are handled on the database level as well.
     """
 
     name = models.TextField()
@@ -1103,8 +1115,10 @@ class PointCloudPoint(models.Model):
         db_table = 'pointcloud_point'
 
 
-class ImageData(UserFocusedModel):
-    """A piece of image data that can be linked to other entities.
+class ImageData(NonCascadingUserFocusedModel):
+    """A piece of image data that can be linked to other entities. A
+    non-cascading user focused model is used, because cascading deletes are
+    handled on the database level as well.
     """
     name = models.TextField()
     description = models.TextField(default="")

@@ -255,7 +255,7 @@ class Migration(migrations.Migration):
                 ('file_extension', models.TextField(blank=True, default='jpg', help_text='The file extension of the data files.')),
                 ('tile_width', models.IntegerField(default=256, help_text='The width of one tile.')),
                 ('tile_height', models.IntegerField(default=256, help_text='The height of one tile.')),
-                ('tile_source_type', models.IntegerField(choices=[(1, '1: File-based image stack'), (2, '2: Request query-based image stack'), (3, '3: HDF5 via CATMAID backend'), (4, '4: File-based image stack with zoom level directories'), (5, '5: Directory-based image stack'), (6, '6: DVID imageblk voxels'), (7, '7: Render service'), (8, '8: DVID imagetile tiles'), (9, '9: FlixServer tiles')], default=1, help_text='This represents how the tile data is organized. See <a href="http://catmaid.org/page/tile_sources.html">tile source conventions documentation</a>.')),
+                ('tile_source_type', models.IntegerField(choices=[(1, '1: File-based image stack'), (2, '2: Request query-based image stack'), (3, '3: HDF5 via CATMAID backend'), (4, '4: File-based image stack with zoom level directories'), (5, '5: Directory-based image stack'), (6, '6: DVID imageblk voxels'), (7, '7: Render service'), (8, '8: DVID imagetile tiles'), (9, '9: FlixServer tiles'), (10, '10: H2N5 tiles')], default=1, help_text='This represents how the tile data is organized. See <a href="http://catmaid.org/page/tile_sources.html">tile source conventions documentation</a>.')),
                 ('position', models.IntegerField(default=0)),
             ],
             options={

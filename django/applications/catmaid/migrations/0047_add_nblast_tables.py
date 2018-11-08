@@ -229,6 +229,20 @@ class Migration(migrations.Migration):
             backward_create_tables,
             [
                 migrations.CreateModel(
+                    name='PointSet',
+                    fields=[
+                        ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                        ('creation_time', models.DateTimeField(default=django.utils.timezone.now)),
+                        ('edition_time', models.DateTimeField(default=django.utils.timezone.now)),
+                        ('name', models.TextField()),
+                        ('description', models.TextField()),
+                        ('points', django.contrib.postgres.fields.ArrayField(base_field=models.FloatField(), size=None)),
+                    ],
+                    options={
+                        'db_table': 'point_set',
+                    },
+                ),
+                migrations.CreateModel(
                     name='ImageData',
                     fields=[
                         ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
@@ -371,6 +385,18 @@ class Migration(migrations.Migration):
                     field=models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to=settings.AUTH_USER_MODEL),
                 ),
                 migrations.AddField(
+                    model_name='pointset',
+                    name='project',
+                    field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.DO_NOTHING, to='catmaid.Project'),
+                    preserve_default=False,
+                ),
+                migrations.AddField(
+                    model_name='pointset',
+                    name='user',
+                    field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.DO_NOTHING, to=settings.AUTH_USER_MODEL),
+                    preserve_default=False,
+                ),
+                migrations.AddField(
                     model_name='nblastsimilarity',
                     name='project',
                     field=models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to='catmaid.Project'),
@@ -404,6 +430,18 @@ class Migration(migrations.Migration):
                     model_name='nblastconfig',
                     name='match_sample',
                     field=models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, related_name='match_config_set', to='catmaid.NblastSample'),
+                ),
+                migrations.AddField(
+                    model_name='nblastsample',
+                    name='sample_pointclouds',
+                    field=django.contrib.postgres.fields.ArrayField(base_field=models.IntegerField(), default=1, size=None),
+                    preserve_default=False,
+                ),
+                migrations.AddField(
+                    model_name='nblastsample',
+                    name='sample_pointsets',
+                    field=django.contrib.postgres.fields.ArrayField(base_field=models.IntegerField(), default=1, size=None),
+                    preserve_default=False,
                 ),
                 migrations.AddField(
                     model_name='nblastconfig',

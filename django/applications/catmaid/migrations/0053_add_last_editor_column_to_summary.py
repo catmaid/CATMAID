@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from django.db import migrations
+from django.conf import settings
+from django.db import migrations, models
 
 forward = """
     -- The summary table does not have a history table associated.
@@ -598,5 +599,12 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL(forward, backward),
+        migrations.RunSQL(forward, backward, [
+            migrations.AddField(
+                model_name='skeletonsummary',
+                name='last_editor',
+                field=models.ForeignKey(default=1, on_delete=models.deletion.DO_NOTHING, to=settings.AUTH_USER_MODEL),
+                preserve_default=False,
+            ),
+        ]),
     ]

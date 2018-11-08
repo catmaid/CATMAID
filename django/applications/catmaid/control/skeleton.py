@@ -1036,10 +1036,15 @@ def split_skeleton(request, project_id=None):
 def create_subgraph(source_graph, target_graph, start_node, end_nodes):
     """Extract a subgraph out of <source_graph> into <target_graph>.
     """
-    for n in source_graph.successors_iter(start_node):
-        target_graph.add_path([start_node,n])
-        if n not in end_nodes:
-            create_subgraph(source_graph, target_graph, n, end_nodes)
+    working_set = [start_node]
+
+    # Create a graph for the domain
+    while working_set:
+        current_node = working_set.pop(0)
+        for n in source_graph.successors_iter(current_node):
+            target_graph.add_path([start_node,n])
+            if n not in end_nodes:
+                working_set.append(n)
 
 
 def prune_samplers(skeleton_id, graph, treenode_parent, treenode):

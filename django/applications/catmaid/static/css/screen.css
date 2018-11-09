@@ -1621,3 +1621,16 @@ button.files-loaded {
   padding: 0 0 0 17px;
   cursor: pointer;
 }
+
+.axes-3d-viewer {
+  width: 100px;
+  height: 100px;
+  background-color: #fff;
+  border: 1px solid grey;
+  margin: 20px;
+  padding: 0px;
+  position: absolute;
+  right: 0px;
+  bottom: 0px;
+  z-index: 100;
+}

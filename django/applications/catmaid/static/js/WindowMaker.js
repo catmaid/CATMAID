@@ -950,6 +950,7 @@ var WindowMaker = new function()
             },
             length: 10
           },
+          ['Axes', o.show_axes, function() { WA.setAxesVisibility(this.checked); }, false],
           ['Debug', o.debug, function() { WA.setDebug(this.checked); }, false],
           ['Line width', o.skeleton_line_width, null, function() { WA.updateSkeletonLineWidth(this.value); }, 4],
           {
@@ -1665,6 +1666,10 @@ var WindowMaker = new function()
 
     var scaleBar = document.createElement('div');
     canvas.appendChild(scaleBar);
+
+    var axes = document.createElement('div');
+    axes.classList.add('axes-3d-viewer');
+    canvas.appendChild(axes);
 
     // Add window to DOM, init WebGLView (requires element in DOM) and
     // create a staging list. The listeners are added last to prevent

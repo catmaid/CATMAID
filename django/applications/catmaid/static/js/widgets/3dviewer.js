@@ -1197,6 +1197,7 @@
     this.show_active_node = true;
     this.active_node_on_top = false;
     this.active_node_respects_radius = true;
+    this.show_axes = false;
     this.show_floor = true;
     this.floor_color = '#535353';
     this.show_background = true;
@@ -2816,6 +2817,12 @@
     this.scaleBar.setVisibility(
       this.options.show_ortho_scale_bar && this.options.camera_view == 'orthographic');
 
+    // Axes
+    this.axesRectWidth = 100;
+    this.axesRectHeight = 100;
+    this.axesDisplay = this.container.children[1] || document.createElement('div');
+    this.setAxesVisibility(this.options.show_axes);
+
     this.canvasWidth = w;
     this.canvasHeight = h;
 
@@ -2835,7 +2842,6 @@
     this.pickingTexture = new THREE.WebGLRenderTarget(w, h);
     this.pickingTexture.texture.generateMipmaps = false;
 
-
     this.view = new this.View(this);
     this.lights = this.createLights(this.dimensions, this.center, this.view.camera);
     this.lights.forEach(function(l) {
@@ -2849,6 +2855,22 @@
 
     this.content = new this.Content(options);
     this.scene.add(this.content.active_node.mesh);
+
+    // Axes camera and scene
+    this.axesCamera = new THREE.PerspectiveCamera(50, this.axesRectWidth / this.axesRectHeight, 1, 1000);
+    this.axesCamera.up = this.view.camera.up;
+    let axisHelper = new THREE.AxisHelper(100);
+    var colors = axisHelper.geometry.attributes.color;
+
+    colors.setXYZ( 0, 1, 0, 0 ); // index, R, G, B
+    colors.setXYZ( 1, 1, 0, 0 ); // red
+    colors.setXYZ( 2, 0, 0.7, 0 );
+    colors.setXYZ( 3, 0, 0.7, 0 ); // green
+    colors.setXYZ( 4, 0, 0, 1 );
+    colors.setXYZ( 5, 0, 0, 1 ); // blue
+
+    this.axesScene = new THREE.Scene();
+    this.axesScene.add(axisHelper);
   };
 
   WebGLApplication.prototype.Space.prototype = {};
@@ -2880,6 +2902,7 @@
     this.canvasHeight = canvasHeight;
     this.view.camera.setSize(canvasWidth, canvasHeight);
     this.view.camera.updateProjectionMatrix();
+    this.axesCamera.updateProjectionMatrix();
     this.pickingTexture.setSize(canvasWidth, canvasHeight);
     this.view.renderer.setSize(canvasWidth, canvasHeight);
     this.staticContent.setSize(canvasWidth, canvasHeight);
@@ -3037,6 +3060,10 @@
       s.setTextVisibility(visMap[skid].text ? visible : false);
       s.setMetaVisibility(visMap[skid].meta ? visible : false);
     }
+  };
+
+  WebGLApplication.prototype.Space.prototype.setAxesVisibility = function(visible) {
+    this.axesDisplay.style.display = visible ? 'display' : 'none';
   };
 
   WebGLApplication.prototype.Space.prototype.TextGeometryCache = function(options) {
@@ -3431,6 +3458,8 @@
       this.box.visible = options.show_box;
       space.scene.add(this.box);
     }
+
+    space.axesDisplay.style.display = options.show_axes ? 'block' : 'none';
 
     if (options.show_zplane) {
       var zplaneOptions = {
@@ -4096,6 +4125,14 @@
       this.renderer.setClearColor(clearColor);
     }
 
+    this.axesRenderer = new THREE.WebGLRenderer();
+    this.axesRenderer.setClearColor(0xf0f0f0, 1);
+    this.axesRenderer.setSize(this.space.axesRectWidth, this.space.axesRectHeight );
+    while (this.space.axesDisplay.lastChild) {
+      this.space.axesDisplay.removeChild(this.axesDisplay.lastChild);
+    }
+    this.space.axesDisplay.appendChild(this.axesRenderer.domElement);
+
     this.space.container.appendChild(this.renderer.domElement);
     this.mouseControls = new this.MouseControls();
     this.mouseControls.attach(this, this.renderer.domElement);
@@ -4158,11 +4195,22 @@
   WebGLApplication.prototype.Space.prototype.View.prototype.render = function(beforeRender) {
     if (this.controls) {
       this.controls.update();
+
+      if (this.space.options.show_axes) {
+        this.space.axesCamera.position.copy(this.camera.position);
+        this.space.axesCamera.position.sub(this.controls.target);
+        this.space.axesCamera.position.setLength(300);
+        this.space.axesCamera.lookAt(this.space.axesScene.position);
+      }
     }
     if (this.renderer) {
       CATMAID.tools.callIfFn(beforeRender, this.scene, this.renderer, this.camera);
       this.renderer.clear();
       this.renderer.render(this.space.scene, this.camera);
+    }
+
+    if (this.axesRenderer && this.space.options.show_axes) {
+      this.axesRenderer.render(this.space.axesScene, this.space.axesCamera);
     }
   };
 
@@ -7761,6 +7809,12 @@
   WebGLApplication.prototype.setDebug = function(debug) {
     this.options.debug = !!debug;
     this.space.setDebug(this.options.debug);
+    this.space.render();
+  };
+
+  WebGLApplication.prototype.setAxesVisibility = function(visible) {
+    this.options.show_axes = visible;
+    this.space.setAxesVisibility(visible);
     this.space.render();
   };
 

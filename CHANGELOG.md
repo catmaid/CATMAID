@@ -52,6 +52,9 @@ Connectivity matrix:
 - Add custom connector coloring. The pre and post colors can be adjusted in the
   "Shading parameters" tab.
 
+- The X/Y/Z/ axes can now be displayed in the lower right corner using the
+  "Axes" checkbox in the "View settings" tab.
+
 Reconstruction sampler:
 
 - Improve performance of interval length computation

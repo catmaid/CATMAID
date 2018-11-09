@@ -80,7 +80,7 @@ var RequestQueue = function(originUrl, csrfToken)
       if (!(headerName in item.headers)) xmlHttp.setRequestHeader(headerName, extraHeaders[headerName]);
     }
     for (var headerName in item.headers) {
-      if (item.headers.headerName !== null && item.headers.headerName !== undefined) xmlHttp.setRequestHeader(headerName, item.headers[headerName]);
+      if (item.headers[headerName]!== null && item.headers[headerName]!== undefined) xmlHttp.setRequestHeader(headerName, item.headers[headerName]);
     }
     xmlHttp.onreadystatechange = callback;
     xmlHttp.send( item.data );

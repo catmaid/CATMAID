@@ -54,7 +54,7 @@
 
     this.tilesContainer = document.createElement('div');
     this.tilesContainer.className = 'sliceTiles';
-    this.tilesContainer.classList.add('interpolation-mode-' + (this._interpolationMode ? 'linear' : 'nearest'));
+    this.tilesContainer.classList.add('interpolation-mode-' + this.getEffectiveInterpolationMode());
 
     if (this.tileSource.transposeTiles.has(this.stack.orientation)) {
       // Some tile sources may provide transposed tiles versus CATMAID's
@@ -80,16 +80,15 @@
   TileLayer.prototype = Object.create(CATMAID.StackLayer.prototype);
   TileLayer.prototype.constructor = TileLayer;
 
-  /**
-   * Sets the interpolation mode for tile textures to linear pixel interpolation
-   * or nearest neighbor.
-   * @param {boolean} linear True for linear, false for nearest neighbor.
-   */
-  TileLayer.prototype.setInterpolationMode = function (linear) {
-    this.tilesContainer.classList.remove('interpolation-mode-' + (this._interpolationMode ? 'linear' : 'nearest'));
-    this._interpolationMode = linear;
-    this.tilesContainer.classList.add('interpolation-mode-' + (this._interpolationMode ? 'linear' : 'nearest'));
+  /** @inheritdoc */
+  TileLayer.prototype.setInterpolationMode = function (mode) {
+    CATMAID.StackLayer.prototype.setInterpolationMode.call(this, mode);
+    for (let possible of Object.values(CATMAID.StackLayer.INTERPOLATION_MODES)) {
+      this.tilesContainer.classList.remove('interpolation-mode-' + possible);
+    }
+    this.tilesContainer.classList.add('interpolation-mode-' + this.getEffectiveInterpolationMode());
   };
+
   /**
    * Remove any DOM created by this layer from the stack viewer.
    */

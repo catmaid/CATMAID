@@ -1610,7 +1610,7 @@ var project;
           !hideStackLayer,
           hideStackLayer ? 0 : 1,
           !useExistingViewer,
-          CATMAID.StackLayer.Settings.session.linear_interpolation,
+          CATMAID.StackLayer.INTERPOLATION_MODES.INHERIT,
           true);
 
       if (!useExistingViewer) {

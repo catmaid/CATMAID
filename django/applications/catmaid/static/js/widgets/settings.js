@@ -424,11 +424,14 @@
       // Tile interpolation
       var tileInterpolation = $('<select/>');
       var interpolationModes = [
-        {name: 'Smoothly blur pixels (linear)', id: 'linear'},
-        {name: 'Keep images pixelated (nearest)', id: 'nearest'}
+        {name: 'Smoothly blur pixels (linear)', id: CATMAID.StackLayer.INTERPOLATION_MODES.LINEAR},
+        {name: 'Keep images pixelated (nearest)', id: CATMAID.StackLayer.INTERPOLATION_MODES.NEAREST}
       ];
+      let setInterpolation = CATMAID.StackLayer.Settings[SETTINGS_SCOPE].linear_interpolation ?
+          CATMAID.StackLayer.INTERPOLATION_MODES.LINEAR :
+          CATMAID.StackLayer.INTERPOLATION_MODES.NEAREST;
       interpolationModes.forEach(function(o) {
-        var selected = (o.id === (CATMAID.StackLayer.Settings[SETTINGS_SCOPE].linear_interpolation ? 'linear' : 'nearest'));
+        var selected = (o.id === setInterpolation);
         this.append(new Option(o.name, o.id, selected, selected));
       }, tileInterpolation);
 
@@ -443,14 +446,20 @@
           SETTINGS_SCOPE));
       tileInterpolation.on('change', function(e) {
         var interp = this.value === 'linear';
-        CATMAID.StackLayer.Settings[SETTINGS_SCOPE].linear_interpolation = interp;
-        project.getStackViewers().forEach(function (stackViewer) {
-          stackViewer.getLayers().forEach(function (layer) {
-            if (layer instanceof CATMAID.StackLayer) {
-              layer.setInterpolationMode(interp);
-            }
-          });
-        });
+        CATMAID.StackLayer.Settings.set(
+              'linear_interpolation',
+              interp,
+              SETTINGS_SCOPE)
+           .then(function() {
+              project.getStackViewers().forEach(function (stackViewer) {
+                stackViewer.getLayers().forEach(function (layer) {
+                  if (layer instanceof CATMAID.StackLayer) {
+                    layer.refreshInterpolationMode();
+                  }
+                });
+              });
+           })
+           .catch(CATMAID.handleError);
       });
 
       // Layer insertion strategy

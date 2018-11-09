@@ -28,7 +28,7 @@
     this._oldZ = undefined;
 
     this._tileRequest = {};
-    this._pixiInterpolationMode = this._interpolationMode ? PIXI.SCALE_MODES.LINEAR : PIXI.SCALE_MODES.NEAREST;
+    this._updatePixiInterpolationMode();
   }
 
   PixiTileLayer.prototype = Object.create(CATMAID.TileLayer.prototype);
@@ -47,10 +47,15 @@
     }
   };
 
+  PixiTileLayer.prototype._updatePixiInterpolationMode = function () {
+    let linear = this.getEffectiveInterpolationMode() === CATMAID.StackLayer.INTERPOLATION_MODES.LINEAR;
+    this._pixiInterpolationMode = linear ? PIXI.SCALE_MODES.LINEAR : PIXI.SCALE_MODES.NEAREST;
+  };
+
   /** @inheritdoc */
-  PixiTileLayer.prototype.setInterpolationMode = function (linear) {
-    this._interpolationMode = linear;
-    this._pixiInterpolationMode = this._interpolationMode ? PIXI.SCALE_MODES.LINEAR : PIXI.SCALE_MODES.NEAREST;
+  PixiTileLayer.prototype.setInterpolationMode = function (mode) {
+    CATMAID.StackLayer.prototype.setInterpolationMode.call(this, mode);
+    this._updatePixiInterpolationMode();
     for (var i = 0; i < this._tiles.length; ++i) {
       for (var j = 0; j < this._tiles[0].length; ++j) {
         var texture = this._tiles[i][j].texture;

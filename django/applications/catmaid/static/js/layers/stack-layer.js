@@ -14,8 +14,7 @@
    * @param {number}  opacity      Opacity to draw the layer.
    * @param {boolean} showOverview Whether to show a "minimap" overview of the
    *                               stack.
-   * @param {boolean} linearInterpolation Whether to use linear or nearest
-   *                               neighbor texture interpolation.
+   * @param {string} interpolationMode Interpolation mode for image data.
    * @param {boolean} readState    Whether last used mirror and custom mirrors
    *                               should be read from a browser cookie.
    * @param {boolean} changeMirrorIfNoData Whether to automatically switch to
@@ -30,7 +29,7 @@
       visibility,
       opacity,
       showOverview,
-      linearInterpolation,
+      interpolatonMode,
       readState,
       changeMirrorIfNoData) {
 
@@ -92,7 +91,7 @@
      * neighbor.
      * @type {boolean}
      */
-    this._interpolationMode = linearInterpolation;
+    this._interpolationMode = interpolatonMode;
 
     CATMAID.checkTileSourceCanary(project, this.stack, this.tileSource)
         .then(this._handleCanaryCheck.bind(this));
@@ -152,11 +151,31 @@
 
   /**
    * Sets the interpolation mode for tile textures to linear pixel interpolation
-   * or nearest neighbor.
-   * @param {boolean} linear True for linear, false for nearest neighbor.
+   * nearest neighbor, or to inherit from the global settings.
+   * @param {string}    mode    Values from StackLayer.INTERPOLATION_MODE.
    */
-  StackLayer.prototype.setInterpolationMode = function (linear) {
-    throw new CATMAID.Error('Not implemented');
+  StackLayer.prototype.setInterpolationMode = function (mode) {
+    this._interpolationMode = mode;
+  };
+
+  /**
+   * Refresh the currently set interpolation mode to account for any changes
+   * in global settings.
+   */
+  StackLayer.prototype.refreshInterpolationMode = function () {
+    this.setInterpolationMode(this._interpolationMode);
+  };
+
+  /**
+   * Return the effective interpolation mode for this layer.
+   * @return {string}
+   */
+  StackLayer.prototype.getEffectiveInterpolationMode = function () {
+    return (this._interpolationMode === CATMAID.StackLayer.INTERPOLATION_MODES.INHERIT) ?
+        (CATMAID.StackLayer.Settings.session.linear_interpolation ?
+            CATMAID.StackLayer.INTERPOLATION_MODES.LINEAR :
+            CATMAID.StackLayer.INTERPOLATION_MODES.NEAREST) :
+        this._interpolationMode;
   };
 
   /**
@@ -341,7 +360,7 @@
         return [idx, mirror.title];
       }),
       help: 'Select from which image host to request image data for this stack.'
-    }, {
+    },{
       name: 'customMirrors',
       displayName: 'Custom mirrors',
       type: 'buttons',
@@ -354,6 +373,12 @@
           name: 'Clear',
           onclick: this.clearCustomMirrors.bind(this)
         }]
+    },{
+      name: 'interpolationMode',
+      displayName: 'Interpolation',
+      type: 'select',
+      value: this._interpolationMode,
+      options: Object.values(CATMAID.StackLayer.INTERPOLATION_MODES).map(mode => [mode, mode]),
     }];
 
     if (this.tileSource) {
@@ -395,6 +420,8 @@
           this.switchToDomStackLayer();
         }
       }
+    } else if ('interpolationMode' === name) {
+      this.setInterpolationMode(value);
     } else if (this.tileSource && CATMAID.tools.isFn(this.tileSource.setSetting)) {
       return this.tileSource.setSetting(name, value);
     }
@@ -435,7 +462,7 @@
       visibility: this.visibility,
       opacity: this.opacity,
       showOverview: !!this.overviewLayer,
-      linearInterpolation: this._interpolationMode,
+      interpolationMode: this._interpolationMode,
       readState: this._readState,
       changeMirrorIfNoData: this.changeMirrorIfNoData
     };
@@ -448,7 +475,7 @@
         args.visibility,
         args.opacity,
         args.showOverview,
-        args.linearInterpolation,
+        args.interpolationMode,
         args.readState,
         args.changeMirrorIfNoData);
   };
@@ -492,6 +519,12 @@
    */
   StackLayer.prototype.pixelValueInScaleLevel = function (stackX, stackY, stackZ) {
     throw new CATMAID.Error('Not implemented');
+  };
+
+  StackLayer.INTERPOLATION_MODES = {
+    NEAREST: 'nearest',
+    LINEAR: 'linear',
+    INHERIT: 'inherit'
   };
 
   StackLayer.Settings = new CATMAID.Settings(

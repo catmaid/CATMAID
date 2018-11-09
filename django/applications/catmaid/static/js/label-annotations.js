@@ -141,7 +141,7 @@
       let layerFilters = stackLayer.getAvailableFilters ? stackLayer.getAvailableFilters() : [];
       if (LABEL_FILTER_KEY in layerFilters && !this.stackLayerFilters.has(stackLayer)) {
         stackLayer.setBlendMode('add');
-        stackLayer.setInterpolationMode(false);  // Nearest neighbor interpolation.
+        stackLayer.setInterpolationMode(CATMAID.StackLayer.INTERPOLATION_MODES.NEAREST);
         stackLayer.isHideable = true;
         let filter = new (layerFilters[LABEL_FILTER_KEY])();
         this.updateFilter(filter);

@@ -5392,6 +5392,11 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
     return false;
   }
 
+  if (!node.parent_id && node.children && node.children.size > 0) {
+    CATMAID.warn("Can't delete root node if there are still child nodes");
+    return false;
+  }
+
   if (!SkeletonAnnotations.isRealNode(nodeId)) {
     return this.toggleVirtualNodeSuppression(nodeId);
   }

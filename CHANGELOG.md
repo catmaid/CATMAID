@@ -180,15 +180,6 @@ Neuron similarity:
 - The "Point cloud import" tab allows to import many point clouds at the same
   time, optionally transformed and with linked representative images.
 
-Docker:
-
-- More CATMAID configuration options are now accessible through Docker
-  environment cariables: CM_DEBUG, CM_FORCE_CONFIG_UPDATE, CM_WRITABLE_PATH,
-  CM_NODE_LIMIT, CM_NODE_PROVIDERS, CM_SUBDIRECTORY, CM_CSRF_TRUSTED_ORIGINS.
-
-- The Git commit from which a Docker image was built is now preserved and
-  included in the CATMAID's version information.
-
 Volumes:
 
 - The general widget controls are now distributed across tabs.
@@ -204,6 +195,15 @@ Volumes:
   only at volumes having this annotation. Optionally, exact result computation
   can be disabled to only compute skeleton/bounding-box intersections. This is
   slightly faster, but leads to false positives.
+
+Docker:
+
+- More CATMAID configuration options are now accessible through Docker
+  environment cariables: CM_DEBUG, CM_FORCE_CONFIG_UPDATE, CM_WRITABLE_PATH,
+  CM_NODE_LIMIT, CM_NODE_PROVIDERS, CM_SUBDIRECTORY, CM_CSRF_TRUSTED_ORIGINS.
+
+- The Git commit from which a Docker image was built is now preserved and
+  included in the CATMAID's version information.
 
 CLI importer:
 

@@ -17,7 +17,6 @@ def get_stackgroup_info(request, project_id, stackgroup_id):
         .filter(stack_group=stackgroup_id) \
         .order_by('position') \
         .select_related('group_relation')
-    stacks = [l.stack_id for l in stackgroup_links]
 
     result = {
         'id': stackgroup.id,

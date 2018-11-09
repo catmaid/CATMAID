@@ -9,8 +9,7 @@ import errno
 
 # This variable contains a reference version of the current code-base. It is
 # updated by release and dev-cycle scripts.
-BASE_VERSION = '2018.11.09'
-
+BASE_VERSION = '2018.11.09-dev'
 # This file is created as part of our Docker build. It is looked for as
 # fall-back, should no git be available.
 DOCKER_VERSION_PATH = '/home/git-commit'

@@ -4,6 +4,7 @@
 
   class LabelAnnotations {
     constructor() {
+      this.groupManagingStack = new Map();
       this.managers = new Map();
       this.active = undefined;
     }
@@ -15,6 +16,7 @@
     clear() {
       for (const [_stack, manager] of this.managers.entries()) manager.unregister();
       this.managers.clear();
+      this.groupManagingStack.clear();
       this.active = undefined;
     }
 
@@ -22,11 +24,43 @@
       let manager = this.managers.get(stack.id);
 
       if (!manager) {
-        manager = new LabelStackAnnotations(stack);
-        this.managers.set(stack.id, manager);
+        // Find all stack groups to which this stack belongs.
+        return CATMAID.fetch(project.id + '/stack/' + stack.id + '/groups')
+            .then(response =>
+              // Get the info of all of these groups.
+              Promise.all(response.stack_group_ids.map(
+                  sg_id => CATMAID.fetch(project.id + '/stackgroup/' + sg_id + '/info')))
+            )
+            .then(sg_infos => {
+              // Find stack groups where this stack is an (ortho)view.
+              let ortho_sgs = sg_infos
+                  .filter(sg_info => sg_info.stacks
+                      .find(s => s.id === stack.id)
+                      .relation === 'view');
+
+              // Find if an existing manager for any of these stack groups exists.
+              let managing_stack_id = ortho_sgs.find(sg => this.groupManagingStack.get(sg.id));
+
+              if (typeof managing_stack_id !== 'undefined') {
+                manager = this.managers.get(managing_stack_id);
+              } else {
+                // If no manager exists, create a new one.
+                managing_stack_id = stack.id;
+                manager = new LabelStackAnnotations(stack);
+                ortho_sgs.forEach(sg => this.groupManagingStack.set(sg.id, managing_stack_id));
+                // Add all other stack (ortho)views in all (ortho)view groups
+                // to this manager.
+                ortho_sgs.forEach(sg => sg.stacks
+                    .filter(s => s.relation === 'view')
+                    .forEach(s => manager.addStackID(s.id)));
+                this.managers.set(stack.id, manager);
+              }
+
+              return manager;
+            });
       }
 
-      return manager;
+      return Promise.resolve(manager);
     }
   }
 
@@ -39,17 +73,19 @@
 
   class LabelStackAnnotations {
     constructor(
-      stack
+      primaryStack
     ) {
-      this.stack = stack;
+      this.primaryStack = primaryStack;
+      this.stackIDs = new Set([this.primaryStack.id]);
       this.activeLabelID = undefined;
+
       this.specialLabels = {
         background: 0,
       };
-      if (this.stack.metadata &&
-          this.stack.metadata.catmaidLabelMeta &&
-          this.stack.metadata.catmaidLabelMeta.specialLabels) {
-        $.extend(this.specialLabels, this.stack.metadata.catmaidLabelMeta.specialLabels);
+      if (this.primaryStack.metadata &&
+          this.primaryStack.metadata.catmaidLabelMeta &&
+          this.primaryStack.metadata.catmaidLabelMeta.specialLabels) {
+        $.extend(this.specialLabels, this.primaryStack.metadata.catmaidLabelMeta.specialLabels);
       }
       this.stackLayerFilters = new Map();
 
@@ -59,6 +95,12 @@
           this.registerStackLayer, this);
       CATMAID.StackViewer.on(CATMAID.StackViewer.EVENT_STACK_LAYER_REMOVED,
           this.unregisterStackLayer, this);
+
+      this.registerAllStackLayers();
+    }
+
+    addStackID(stackID) {
+      this.stackIDs.add(stackID);
     }
 
     unregister() {
@@ -94,7 +136,7 @@
     }
 
     registerStackLayer(stackLayer, stackViewer) {
-      if (this.stack.id !== stackLayer.stack.id) return;
+      if (!this.stackIDs.has(stackLayer.stack.id)) return;
 
       let layerFilters = stackLayer.getAvailableFilters ? stackLayer.getAvailableFilters() : [];
       if (LABEL_FILTER_KEY in layerFilters && !this.stackLayerFilters.has(stackLayer)) {
@@ -113,7 +155,7 @@
     }
 
     unregisterStackLayer(stackLayer, stackViewer) {
-      if (this.stack.id !== stackLayer.stack.id) return;
+      if (!this.stackIDs.has(stackLayer.stack.id)) return;
 
       this.stackLayerFilters.delete(stackLayer);
     }

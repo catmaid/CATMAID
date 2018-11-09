@@ -874,6 +874,31 @@ class Postgis2dBlurryNodeProvider(PostgisNodeProvider):
           ON (geom_connector_id = c.id)
     """
 
+
+class ExtraNodesOnlyNodeProvider(BasicNodeProvider):
+    """Ignore the field of view and return only extra treenodes and connector
+    nodes. This is mainly useful when sourcing node data from different
+    locations.
+    """
+
+    def get_tuples(self, params, project_id, explicit_treenode_ids,
+            explicit_connector_ids, include_labels, with_relation_map):
+
+        # No regular tracing data lookup needs to be done.
+        tuples = []
+        # If there are exta nodes required, query them explicitely using a
+        # regular Postgis 2D query. Inject the result into cached data.
+        if explicit_treenode_ids or explicit_connector_ids:
+            extra_tuples, extra_type = get_extra_nodes(params, project_id,
+                explicit_treenode_ids, explicit_connector_ids, include_labels,
+                with_relation_map)
+            if extra_type != 'json':
+                raise ValueError("Unexpected type")
+
+            return extra_tuples, extra_type
+        return tuples, 'json'
+
+
 # A map of all available node providers that can be used.
 AVAILABLE_NODE_PROVIDERS = {
     'postgis3d': Postgis3dNodeProvider,
@@ -883,6 +908,7 @@ AVAILABLE_NODE_PROVIDERS = {
     'cached_json': CachedJsonNodeNodeProvder,
     'cached_json_text': CachedJsonTextNodeProvder,
     'cached_msgpack': CachedMsgpackNodeProvder,
+    'extra_nodes_only': ExtraNodesOnlyNodeProvider,
 }
 
 

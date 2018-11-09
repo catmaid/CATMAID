@@ -110,6 +110,16 @@ Tracing layer:
   fetched from the server. The main motivation is to hide data imported by a
   dedicated import user by default and not even fetch it from the server.
 
+- Similar to image data mirrors, it is now possible to configure read-only
+  tracing data mirror servers from which the tracing data will load all data
+  except for the active node, which will be read from the main server. This is
+  particularly useful if connecting to the main server from a remote location.
+  To make this work reliably, it is expected that physical replication is setup
+  on the database level that mirrors the main server constantly. A separate
+  CATMAID instance needs to be setup on the mirror server as well. To configure
+  this, the "Read-only CATMAID mirrors" option in the settings widget can be
+  used together with the "Read-only mirror index".
+
 Neuron similarity:
 
 - The new Neuron Similarity Widget makes it possible to compare neurons to each

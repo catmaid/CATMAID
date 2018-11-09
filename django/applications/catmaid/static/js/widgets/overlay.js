@@ -1114,6 +1114,12 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
           apply_tracing_window: {
             default: false
           },
+          read_only_mirrors: {
+            default: []
+          },
+          read_only_mirror_index: {
+            default: -1
+          },
           update_while_panning: {
             default: false
           },
@@ -2717,7 +2723,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   // Look-up some frequently used objects
   var primaryStack = this.stackViewer.primaryStack;
 
-  // Add extra nodes
+  // Add extra nodes first
   if (extraNodes) {
     for (var i=0, max=extraNodes.length; i<max; ++i) {
       var n = extraNodes[i];
@@ -3597,6 +3603,30 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       return;
     }
 
+    // Normally, all nodes are fetched in one go. In certain caching
+    // situations or when a read-only mirror is used, the active skeleton is
+    // fetched separately in a separate request to ensure most recent data.
+    let dedicatedActiveSkeletonUpdate = false;
+
+    let mainUrl = CATMAID.makeURL(project.id + '/node/list');
+    let url = mainUrl;
+    let headers;
+    // If there is a read-only mirror defined, get all nodes from there and
+    // do an extra query for the active node from the regular back-end.
+    let mirrorIndex = SkeletonAnnotations.TracingOverlay.Settings.session.read_only_mirror_index;
+    if (mirrorIndex > -1) {
+      let mirrorServer = SkeletonAnnotations.TracingOverlay.Settings.session.read_only_mirrors[mirrorIndex - 1];
+      if (mirrorServer) {
+        dedicatedActiveSkeletonUpdate = true;
+        url = CATMAID.tools.urlJoin(mirrorServer.url, project.id + '/node/list');
+        if (mirrorServer.auth && mirrorServer.auth.trim().length > 0) {
+          headers = {
+            'X-Authorization': mirrorServer.auth,
+          };
+        }
+      }
+    }
+
     var treenodeIDs = [];
     var connectorIDs = [];
     var extraNodes;
@@ -3683,19 +3713,23 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
     // could get larger than the project space position. And this would require
     // to lower the bounding box's minimum by that difference to have all views
     // show the same nodes.
-
-    var params = {
+    let params = {
       left: wx0,
       top: wy0,
       z1: wz0,
       right: wx1,
       bottom: wy1,
       z2: wz1,
-      treenode_ids: treenodeIDs,
-      connector_ids: connectorIDs,
       labels: self.getLabelStatus(),
       with_relation_map: self.relationMap ? 'none' : 'all'
     };
+
+    // Extra treenode IDs and connector Ids are only fetched through the primary
+    // query, if no dedicated quert for the active node is performed.
+    if (!dedicatedActiveSkeletonUpdate) {
+      params['treenode_ids'] = treenodeIDs;
+      params['connector_ids'] = connectorIDs;
+    }
 
     let transferFormat = self.transferFormat;
     let binaryTransfer = transferFormat != 'json';
@@ -3715,9 +3749,58 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       params['hidden_last_editor_id'] = self.hiddenLastEditorId;
     }
 
+    // TODO: To authenticate with the mirror server, an API token needs to
+    // be specified.
+    // TODO: make parallel request to mirror and main source.
+
     var success = function (json) {
       // Bail if the overlay was destroyed or suspended before this callback.
       if (self.suspended) {
+        return;
+      }
+
+      // Before updating the internal node representation, update the active
+      // node, if this is required.
+      if (dedicatedActiveSkeletonUpdate &&
+          (treenodeIDs.length > 0 || connectorIDs.length > 0)) {
+        let extraParams = CATMAID.tools.deepCopy(params);
+        extraParams['src'] = 'extra_nodes_only';
+        extraParams['treenode_ids'] = treenodeIDs;
+        extraParams['connector_ids'] = connectorIDs;
+        extraParams['format'] = 'json';
+        // To not query all nodes in the field of view, update the parameter
+        // object
+        self.submit(
+          mainUrl,
+          'GET',
+          extraParams,
+          function(data, dataSize) {
+            // We expect JSON format for extra nodes only queries
+            let extraData = JSON.parse(data);
+
+            // Call success() again, but now with dedicatedActiveSkeletonUpdate
+            // set to false, so the actual update can happen, and with json
+            // being the original response from the read-only mirror. This id
+            // done by adding (or creating) an extra data
+            let originalExtraData = json[5];
+            if (!originalExtraData) {
+              originalExtraData = [];
+              json[5] = originalExtraData;
+            }
+            originalExtraData.push(extraData);
+
+            // We re-use this success() function and want to prevent a second
+            // dedicated active node update.
+            dedicatedActiveSkeletonUpdate = false;
+            success(json);
+          },
+          false,
+          true,
+          errCallback,
+          false,
+          'stack-' + self.stackViewer.getId() + '-active-node-' + '-url-' + url,
+          true);
+
         return;
       }
 
@@ -3745,7 +3828,6 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       }
     };
 
-    var url = CATMAID.makeURL(project.id + '/node/list');
     if (regularTransfer) {
       // Check the node list cache for an exactly matching request. Only request
       // from the backend if not found.
@@ -3761,8 +3843,10 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
         json = self.createSubViewNodeListFromCache(params);
       }
 
-      // Finally, if a cache entry was found, use it
+      // Finally, if a cache entry was found, use it and update the active node,
+      // if any.
       if (json) {
+        dedicatedActiveSkeletonUpdate = true;
         success(json);
       } else {
         self.tracingDataUrl = url + '?' + RequestQueue.encodeObject(params);
@@ -3793,7 +3877,8 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
           false,
           'stack-' + self.stackViewer.getId() + '-url-' + url,
           true,
-          binaryTransfer ? 'arraybuffer' : undefined);
+          binaryTransfer ? 'arraybuffer' : undefined,
+          headers);
       }
     } else {
       params['view_width'] = stackViewer.viewWidth;

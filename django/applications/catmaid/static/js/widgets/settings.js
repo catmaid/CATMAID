@@ -1018,6 +1018,78 @@
         SETTINGS_SCOPE
       ));
 
+      var tracingReadOnlyMirrorInput = CATMAID.DOM.createInputSetting(
+          "Read-only CATMAID mirrors",
+          SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].read_only_mirrors.map(function(m) {
+            return m.url + '|' + m.auth;
+          }).join(', '),
+          "A list of read-only CATMAID mirror servers and API keys that can be " +
+          "used to query tracing data from. This can be enabled using the read " +
+          "only mirror index below. Individual entries are separated by commas " +
+          "and have The form \"url|apikey. The API key (including \"|\" is " +
+          "optional. URLs need to include the protocol, " +
+          "e.g.: https://example.com/catmaid/, https://example2.com/catmaid2/|apikey2",
+          function() {
+            let error = false;
+            let mirrors = this.value.split(',')
+              .map(function(m) { return m.trim(); })
+              .filter(function(m) { return m.length > 0; })
+              .map(function(m) {
+                let parts = m.split('|');
+                if (parts) {
+                  return {
+                    url: parts[0],
+                    auth: parts[1],
+                  };
+                } else {
+                  error = true;
+                  return {
+                    url: null,
+                    auth: null,
+                  };
+                }
+              });
+            if (error) {
+              CATMAID.statusBar.replaceLast('Invalid read-only mirror definition');
+            } else {
+              SkeletonAnnotations.TracingOverlay.Settings
+                  .set(
+                    'read_only_mirrors',
+                    mirrors,
+                    SETTINGS_SCOPE);
+            }
+          });
+      $('input', tracingReadOnlyMirrorInput)
+        .css('width', '30em')
+        .css('font-family', 'monospace');
+
+      ds.append(wrapSettingsControl(
+          tracingReadOnlyMirrorInput,
+          SkeletonAnnotations.TracingOverlay.Settings,
+          'read_only_mirrors',
+          SETTINGS_SCOPE));
+
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createNumericInputSetting(
+              "Read-only mirror index",
+              SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].read_only_mirror_index,
+              1,
+              "Selects a mirror by index from the above mirror list, starting with 1. Empty values, -1 or 0 will disable this.",
+              function() {
+                var newIndex = parseInt(this.value, 10);
+                if (!newIndex || Number.isNaN(newIndex)) {
+                  newIndex = -1;
+                }
+                SkeletonAnnotations.TracingOverlay.Settings
+                    .set(
+                      'read_only_mirror_index',
+                      newIndex,
+                      SETTINGS_SCOPE);
+              }),
+          SkeletonAnnotations.TracingOverlay.Settings,
+          'read_only_mirror_index',
+          SETTINGS_SCOPE));
+
 
       var dsNodeColors = CATMAID.DOM.addSettingsContainer(ds, "Skeleton colors", true);
       dsNodeColors.append(CATMAID.DOM.createCheckboxSetting(

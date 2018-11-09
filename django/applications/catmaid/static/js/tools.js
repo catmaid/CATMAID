@@ -89,6 +89,10 @@ CATMAID.tools = CATMAID.tools || {};
     return ++UNIQUE_ID;
   };
 
+  /**
+   * Join two strings <a> and <b> so that no slash character is doubled should
+   * <a> end with one and <b> starts with one.
+   */
   tools.urlJoin = function(a, b) {
     if (a) {
       if (b) {

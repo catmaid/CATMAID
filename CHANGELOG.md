@@ -1,5 +1,6 @@
-## Under development
+## 2018.11.09
 
+Contributors: Andrew Champion, Chris Barnes, Tom Kazimiers, William Patton, Eric Trautman
 
 
 # Notes

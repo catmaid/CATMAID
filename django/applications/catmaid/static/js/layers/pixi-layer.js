@@ -65,6 +65,18 @@
     if (allReady) this.renderer.render(this.stage);
   };
 
+  /**
+   * Renderer the content of this context to a URL-encoded type.
+   * @param  {@string} type               URL encoding format, e.g., 'image/png'
+   * @param  {@PIXI.RenderTexture} canvas Target render texture, to reuse.
+   * @return {string}                     URL-encoded content.
+   */
+  PixiContext.prototype.toDataURL = function (type, canvas) {
+    canvas = canvas || new PIXI.RenderTexture.create(this.renderer.width, this.renderer.height);
+    this.renderer.render(this.stage, canvas);
+    return this.renderer.plugins.extract.canvas(canvas).toDataURL(type);
+  };
+
 
   /**
    * Loads textures from URLs, tracks use through reference counting, caches

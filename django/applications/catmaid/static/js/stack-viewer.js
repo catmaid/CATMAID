@@ -1131,6 +1131,17 @@
     }).bind(this));
   };
 
+  /**
+   * Renderer the WebGL content of this viewer to a URL-encoded type.
+   * @param  {@string} type               URL encoding format, e.g., 'image/png'
+   * @param  {@PIXI.RenderTexture} canvas Target render texture, to reuse.
+   * @return {string}                     URL-encoded content.
+   */
+  StackViewer.prototype.toDataURL = function (type, canvas) {
+    let context = CATMAID.PixiLayer.contexts.get(this);
+    if (context) return context.toDataURL(type, canvas);
+  };
+
   StackViewer.Settings = new CATMAID.Settings(
       'stack-viewer',
       {

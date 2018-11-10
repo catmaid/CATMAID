@@ -273,7 +273,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     # Update project statistics every night at 23:45.
     'daily-project-stats-summary-update': {
-        'task': 'catmaid.tasks.update_project_statistics',
+        'task': 'catmaid.tasks.update_project_statistics_from_scratch',
         'schedule': crontab(hour=23, minute=45)
     }
 }

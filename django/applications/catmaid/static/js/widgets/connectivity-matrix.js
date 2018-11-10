@@ -1662,7 +1662,8 @@
         var percent = (100.0 * count / totalConnections).toFixed(2);
         a.appendChild(document.createTextNode(percent + '%'));
       } else {
-        a.appendChild(document.createTextNode(count));
+        // If the number contains any digits, limit them to two
+        a.appendChild(document.createTextNode(count % 1 ? count.toFixed(2) : count));
       }
       a.setAttribute('href', '#');
       a.setAttribute('sourceIDs', JSON.stringify(sourceIDs));

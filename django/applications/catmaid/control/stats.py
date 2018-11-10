@@ -66,6 +66,7 @@ def stats_nodecount(request, project_id=None):
       default: false
       type: boolean
       paramType: form
+      defaultValue: false
     """
     cursor = connection.cursor()
     names = dict(User.objects.values_list('id', 'username'))

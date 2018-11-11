@@ -189,14 +189,14 @@
    * Remove any DOM created by this layer from the stack viewer.
    */
   StackLayer.prototype.unregister = function () {
-    throw new CATMAID.Error('Not implemented');
+    throw new CATMAID.NotImplementedError();
   };
 
   /**
    * Update and draw the stack based on the current position and scale.
    */
   StackLayer.prototype.redraw = function (completionCallback, blocking) {
-    throw new CATMAID.Error('Not implemented');
+    throw new CATMAID.NotImplementedError();
   };
 
   /**
@@ -205,7 +205,7 @@
    * @param  {number} height Height of the view in pixels.
    */
   StackLayer.prototype.resize = function (width, height, completionCallback, blocking) {
-    throw new CATMAID.Error('Not implemented');
+    throw new CATMAID.NotImplementedError();
   };
 
   /**
@@ -217,7 +217,7 @@
    * @param  {function(number, number)} progressCallback
    */
   StackLayer.prototype.cacheLocations = function (locations, progressCallback) {
-    throw new CATMAID.Error('Not implemented');
+    throw new CATMAID.NotImplementedError();
   };
 
   /**
@@ -442,7 +442,7 @@
    * @return {Element} View for this layer.
    */
   StackLayer.prototype.getView = function () {
-    throw new CATMAID.Error('Not implemented');
+    throw new CATMAID.NotImplementedError();
   };
 
   /**
@@ -503,7 +503,7 @@
    * @param {number} val New opacity.
    */
   StackLayer.prototype.setOpacity = function (val) {
-    throw new CATMAID.Error('Not implemented');
+    throw new CATMAID.NotImplementedError();
   };
 
   /**
@@ -518,7 +518,7 @@
    * coordinate if it is currently in the field of view.
    */
   StackLayer.prototype.pixelValueInScaleLevel = function (stackX, stackY, stackZ) {
-    throw new CATMAID.Error('Not implemented');
+    throw new CATMAID.NotImplementedError();
   };
 
   StackLayer.INTERPOLATION_MODES = {

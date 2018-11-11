@@ -138,7 +138,7 @@
    */
   CATMAID.AbstractTileSource.prototype.getTileURL = function (
       project, stack, slicePixelPosition, col, row, zoomLevel) {
-    throw new CATMAID.Error('Not implemented');
+    throw new CATMAID.NotImplementedError();
   };
 
   CATMAID.AbstractTileSource.prototype.getOverviewLayer = function (layer) {
@@ -161,7 +161,7 @@
   CATMAID.AbstractTileSourceWithOverview.prototype = Object.create(CATMAID.AbstractTileSource.prototype);
 
   CATMAID.AbstractTileSourceWithOverview.prototype.getOverviewURL = function (stack, slicePixelPosition) {
-    throw new CATMAID.Error('Not implemented');
+    throw new CATMAID.NotImplementedError();
   };
 
   CATMAID.AbstractTileSourceWithOverview.prototype.getOverviewLayer = function (layer) {

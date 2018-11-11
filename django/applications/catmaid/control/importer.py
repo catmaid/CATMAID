@@ -814,7 +814,7 @@ class DataFileForm(forms.Form):
         widget=forms.TextInput(attrs={'size':'40'}),
         help_text="Optionally, you can apply a <em>glob filter</em> to the " \
                   "projects found in your data folder.")
-    known_project_filter = forms.MultipleChoiceField(KNOWN_PROJECT_FILTERS,
+    known_project_filter = forms.MultipleChoiceField(choices=KNOWN_PROJECT_FILTERS,
             label='Projects are known if', initial=('name', 'stacks'),
             widget=forms.CheckboxSelectMultiple(), required=False,
             help_text='Select what makes makes a project known. An OR operation ' \

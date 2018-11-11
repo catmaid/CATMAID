@@ -620,7 +620,7 @@ def update_radius(request, project_id=None, treenode_id=None):
 
     if 5 == option:
         # Update radius of all nodes (in a single query)
-        skeleton_id = Treenode.objects.filter(pk=treenode_id).values('skeleton_id')
+        skeleton_id = Treenode.objects.get(pk=treenode_id).skeleton_id
         include = list(Treenode.objects.filter(skeleton_id=skeleton_id) \
                 .values_list('id', flat=True))
 

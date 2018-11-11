@@ -10,6 +10,12 @@ class Migration0018Tests(MigrationTest):
     before = '0017_update_edge_indices'
     after = '0018_add_stack_mirrors_and_groups'
 
+    def migrate_kwargs(self):
+        return {
+            'verbosity': 0,
+            'interactive': False,
+        }
+
     def test_migrate_overlays_to_stack_groups(self):
         OldStack = self.get_model_before('Stack')
         Overlay = self.get_model_before('Overlay')

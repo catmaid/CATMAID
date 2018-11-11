@@ -1,34 +1,29 @@
 # -*- coding: utf-8 -*-
 
-# This implementation was copied from:
+# This implementation is based on
 # https://github.com/m-haziq/django-rest-swagger-docs#integrating-django-rest-swagger
 
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework_swagger import renderers
-from rest_framework.schemas import SchemaGenerator
+from rest_framework.schemas.inspectors import AutoSchema
 from requests.compat import urljoin
-import six
 import yaml
 import coreapi
 
 
-class CustomSchemaGenerator(SchemaGenerator):
-    def get_link(self, path, method, view):
-        fields = self.get_path_fields(path, method, view)
+class CustomSchema(AutoSchema):
+    def get_link(self, path, method, base_url):
+        fields = self.get_path_fields(path, method)
         existing_field_names = [f.name for f in fields]
 
         _method_desc = None
         api_doc = None
         yaml_doc = None
+
+        view = self.view
         if view:
             # If there ar method specific methods, check them for documentation
             doc = None
-            m = method.lower()
-            method_fn = getattr(view, m, None)
-            if method_fn and method_fn.__doc__:
-                doc = method_fn.__doc__
+            method_name = getattr(view, 'action', method.lower())
+            method_docstring = getattr(view, method_name, None).__doc__
 
             if not doc and view.__doc__:
                 doc = view.__doc__
@@ -60,7 +55,7 @@ class CustomSchemaGenerator(SchemaGenerator):
 
             params_type = type(params)
             if params_type == dict:
-                for param_name, param in six.iteritems(params):
+                for param_name, param in params.items():
                     if not param.get('name'):
                         param['name'] = param_name
                 params = list(params.values())
@@ -87,37 +82,23 @@ class CustomSchemaGenerator(SchemaGenerator):
                 except ValueError:
                     fields.append(field)
         else:
-            fields += self.get_serializer_fields(path, method, view)
+            fields += self.get_serializer_fields(path, method)
 
-        fields += self.get_pagination_fields(path, method, view)
-        fields += self.get_filter_fields(path, method, view)
+        fields += self.get_pagination_fields(path, method)
+        fields += self.get_filter_fields(path, method)
 
         if fields and any([field.location in ('form', 'body') for field in fields]):
-            encoding = self.get_encoding(path, method, view)
+            encoding = self.get_encoding(path, method)
         else:
             encoding = None
 
-        if self.url and path.startswith('/'):
+        if base_url and path.startswith('/'):
             path = path[1:]
 
         return coreapi.Link(
-            url=urljoin(self.url, path),
+            url=urljoin(base_url, path),
             action=method.lower(),
             encoding=encoding,
             fields=fields,
             description=_method_desc
         )
-
-
-class SwaggerSchemaView(APIView):
-    exclude_from_schema = True
-    permission_classes = [AllowAny]
-    renderer_classes = [
-        renderers.OpenAPIRenderer,
-        renderers.SwaggerUIRenderer
-    ]
-
-    def get(self, request):
-        generator = CustomSchemaGenerator()
-        schema = generator.get_schema(request=request)
-        return Response(schema)

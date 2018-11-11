@@ -1042,7 +1042,7 @@ def create_subgraph(source_graph, target_graph, start_node, end_nodes):
     while working_set:
         current_node = working_set.pop(0)
         for n in source_graph.successors_iter(current_node):
-            target_graph.add_path([start_node,n])
+            target_graph.add_path([current_node,n])
             if n not in end_nodes:
                 working_set.append(n)
 
@@ -1067,10 +1067,10 @@ def prune_samplers(skeleton_id, graph, treenode_parent, treenode):
         for domain in sampler.samplerdomain_set.all():
             domain_ends = domain.samplerdomainend_set.all()
             domain_end_map = dict(map(lambda de: (de.end_node_id, de.id), domain_ends))
-            domain_end_ids = domain_end_map.keys()
+            domain_end_ids = set(domain_end_map.keys())
             # Construct a graph for the domain and split it too.
             domain_graph = nx.DiGraph()
-            create_subgraph(graph, domain_graph, domain.start_node_id, domain_ends)
+            create_subgraph(graph, domain_graph, domain.start_node_id, domain_end_ids)
 
             # If the subgraph is empty, this domain doesn't intersect with
             # the split off part. Therefore, this domain needs no update.
@@ -2180,10 +2180,10 @@ def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleto
         for domain in sampler.samplerdomain_set.all():
             domain_ends = domain.samplerdomainend_set.all()
             domain_end_map = dict(map(lambda de: (de.end_node_id, de.id), domain_ends))
-            domain_end_ids = domain_end_map.keys()
+            domain_end_ids = set(domain_end_map.keys())
             # Construct a graph for the domain and split it too.
             domain_graph = nx.DiGraph()
-            create_subgraph(graph, domain_graph, domain.start_node_id, domain_ends)
+            create_subgraph(graph, domain_graph, domain.start_node_id, domain_end_ids)
 
             # If the subgraph is empty, this domain doesn't intersect with
             # the split off part. Therefore, this domain needs no update.

@@ -27,6 +27,14 @@ def update_project_statistics():
 
 
 @shared_task
+def update_project_statistics_from_scratch():
+    """Call management command to update all project statistics
+    """
+    call_command('catmaid_populate_summary_tables', clean=True)
+    return "Updated project statistics summary"
+
+
+@shared_task
 def update_node_query_cache():
     """Update the query cache of changed sections for node providers defined in
     the NODE_PROVIDERS settings variable.

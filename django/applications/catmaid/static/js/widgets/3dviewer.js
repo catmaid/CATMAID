@@ -4125,11 +4125,13 @@
       this.renderer.setClearColor(clearColor);
     }
 
-    this.axesRenderer = new THREE.WebGLRenderer();
+    this.axesRenderer = new THREE.WebGLRenderer({
+      antialias: true,
+    });
     this.axesRenderer.setClearColor(0xf0f0f0, 1);
     this.axesRenderer.setSize(this.space.axesRectWidth, this.space.axesRectHeight );
     while (this.space.axesDisplay.lastChild) {
-      this.space.axesDisplay.removeChild(this.axesDisplay.lastChild);
+      this.space.axesDisplay.removeChild(this.space.axesDisplay.lastChild);
     }
     this.space.axesDisplay.appendChild(this.axesRenderer.domElement);
 

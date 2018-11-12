@@ -16,6 +16,8 @@ python create_configuration.py
 sed -i -e "s?^\(ALLOWED_HOSTS = \).*?\1['*']?g" projects/mysite/settings.py
 # Enable static file serving without DEBUG = True
 echo "SERVE_STATIC = True" >> projects/mysite/settings.py
+# TODO: Enable pipeline. Right now it doesn't seem to play well with Sauce Labs.
+echo "PIPELINE['PIPELINE_ENABLED'] = False" >> projects/mysite/settings.py
 # Disable cache-busting for front-end tests
 echo "STATICFILES_STORAGE = 'pipeline.storage.PipelineStorage'" >> projects/mysite/settings.py
 # Enable front-end tess

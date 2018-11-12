@@ -7,7 +7,9 @@ from guardian.utils import get_anonymous_user
 
 from django.http import JsonResponse
 from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib.auth.models import User
+from django.contrib.auth import views as auth_views
 
 from catmaid.control.authentication import access_check
 from catmaid.control.common import get_request_bool
@@ -160,6 +162,14 @@ def update_user_profile(request):
 
     return JsonResponse({'success': 'Updated user profile'})
 
-@user_passes_test(not_anonymous)
-def change_password(request, **kwargs):
-    return django_auth_views.password_change(request, **kwargs)
+
+class NonAnonymousPasswordChangeView(UserPassesTestMixin, auth_views.PasswordChangeView):
+    """Only allow password changes for non-anonymous users.
+    """
+
+    def test_func(self):
+        return not_anonymous(self.request.user)
+
+    def handle_no_permission(self):
+        return auth_views.redirect_to_login(self.request.get_full_path(),
+                self.get_login_url(), self.get_redirect_field_name())

@@ -4,8 +4,7 @@
 	{% for group, options, index in widget.subwidgets.0.optgroups %}
 		<li>
 			{% for option in options %}
-				{# TODO: `wrap_label` behavior will change in the next Django version. #}
-				{% include option.template_name with widget=option wrap_label=True %}
+				{% include option.template_name with widget=option %}
 			{% endfor %}
 			{% if index == 1 %}
 				{% include widget.subwidgets.1.template_name with widget=widget.subwidgets.1 %}

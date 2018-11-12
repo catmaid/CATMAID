@@ -309,7 +309,9 @@ class ViewPageTests(TestCase):
              'can_browse': [3],
              'can_import': [],
              'can_queue_compute_task': [],
-             'delete_project': []}, [u'test1']]
+             'delete_project': [],
+             'view_project': [],
+            }, [u'test1']]
         self.assertEqual(expected_result, parsed_response)
 
 

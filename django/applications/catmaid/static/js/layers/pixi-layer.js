@@ -17,10 +17,20 @@
    * @param {StackViewer} stackViewer The stack viewer to which this context belongs.
    */
   function PixiContext(stackViewer) {
+    let options = {
+        transparent: true,
+        backgroundColor: 0x000000,
+        antialias: true,
+        stencil: true};
+    let view = document.createElement('canvas');
+    let rawContext = view.getContext('webgl2', options);
+
+    options.context = rawContext;
+    options.view = view;
     this.renderer = new PIXI.autoDetectRenderer(
         stackViewer.getView().clientWidth,
         stackViewer.getView().clientHeight,
-        {transparent: true, backgroundColor: 0x000000, antialias: true});
+        options);
     this.stage = new PIXI.Container();
     this.layersRegistered = new Set();
 

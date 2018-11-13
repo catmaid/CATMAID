@@ -73,6 +73,7 @@ class CatmaidRelease(object):
     changelog_dev_title = "## Under development"
     changelog_contributor_label = "Contributors:"
     api_changelog_dev_title = "## Under development"
+    update_dev_title = "# Under development"
 
     def __init__(self, catmaid_folder):
         self.git = sh.git.bake(_cwd=catmaid_folder)
@@ -94,6 +95,7 @@ class CatmaidRelease(object):
         # Update files references a CATMAID version
         self.update_changelog()
         self.update_api_changelog()
+        self.update_update_info()
         self.update_version()
         self.update_documentation()
 
@@ -166,6 +168,16 @@ class CatmaidRelease(object):
             return api_changelog_data
 
         self.update_file("API_CHANGELOG.md", contentfilter)
+
+    def update_update_info(self):
+        def contentfilter(update_data):
+            # Replace first occurrence of development header
+            update_data = re.sub("^{}$".format(self.update_dev_title),
+                 "## {}".format(self.release_name), update_data, 1, re.MULTILINE)
+
+            return update_data
+
+        self.update_file("UPDATE.md", contentfilter)
 
     def update_documentation(self):
         def contentfilter(doc_data):

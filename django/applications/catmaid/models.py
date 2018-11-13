@@ -1159,7 +1159,7 @@ class NeuronSearch(forms.Form):
     search = forms.CharField(max_length=100, required=False)
     cell_body_location = forms.ChoiceField(
         choices=((('a', 'Any'),)+CELL_BODY_CHOICES))
-    order_by = forms.ChoiceField(SORT_ORDERS_CHOICES)
+    order_by = forms.ChoiceField(choices=SORT_ORDERS_CHOICES)
 
     def minimal_search_path(self):
         result = ""

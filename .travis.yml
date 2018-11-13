@@ -15,8 +15,8 @@ addons:
   postgresql: 9.6
   sauce_connect:
     username: catmaid
-  jwt:
-    secure: "hj6rvwzab8ptfMKvRyqCZnWqun2uEv69nLCGxLXiDk9QZOUv/UG8PU060m6DTHtYE8iJw5E6qhTIhLKlpPadYptkxmiOXVGKlU6jam8SLKsSbHbdFsoziIPnU4mpqNgjvZ7Xb7xoTmYcd15G7Du3qgTHc28TeT5F9XnyfyDCH7M="
+    access_key:
+      secure: "rFiPF3KRokQqUaMHzr34wdt98pbYKyO47CFm9sJPO/HOKePhDCW6bMhiNa4x5Q2T5oAb0SRb/6CECExlGtA4mnzC5u47S8E9TidlZZ1m/n2TRZr2cvzhBJFhnYYZxcF8+6vCKq4DWVU+wD2/4wWktIHkcBJ9XMErl8HyICUHzLo="
 before_install:
   - mkdir tmp
   - travis_retry sudo apt-get update -y -qq

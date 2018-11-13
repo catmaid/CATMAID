@@ -377,15 +377,15 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
-    'VIEW_DESCRIPTION_FUNCTION':
-        'custom_rest_swagger_googledoc.get_googledocstring',
-        # Parser classes priority-wise for Swagger
+    'VIEW_DESCRIPTION_FUNCTION': 'custom_rest_swagger_googledoc.get_googledocstring',
+    # Parser classes priority-wise for Swagger
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.FormParser',
         'rest_framework.parsers.MultiPartParser',
         'rest_framework.parsers.JSONParser',
     ],
-    'URL_FORMAT_OVERRIDE': None
+    'DEFAULT_SCHEMA_CLASS': 'custom_swagger_schema.CustomSchema',
+    'URL_FORMAT_OVERRIDE': None,
 }
 
 SWAGGER_SETTINGS = {

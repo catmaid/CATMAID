@@ -6,8 +6,6 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import TemplateView
 
-import django.contrib.auth.views as djauth
-
 from rest_framework.decorators import api_view
 
 from catmaid.control import (authentication, user, group, log, message, client,
@@ -55,7 +53,8 @@ urlpatterns += [
     url(r'^user-list$', user.user_list),
     url(r'^user-table-list$', user.user_list_datatable),
     url(r'^user-profile/update$', user.update_user_profile),
-    url(r'^user/password_change/$', user.change_password, {'post_change_redirect': 'catmaid:home'}),
+    url(r'^user/password_change/$', user.NonAnonymousPasswordChangeView.as_view(
+            success_url='catmaid:home', raise_exception=False)),
 ]
 
 # Groups

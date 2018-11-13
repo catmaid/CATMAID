@@ -41,7 +41,7 @@ MEDIA_URL = '/CATMAID_SUBDIR/files/'
 # The URL where static files can be accessed, relative to the domain's root
 STATIC_URL = '/CATMAID_SUBDIR/static/'
 # The absolute local path where the static files get collected to
-STATIC_ROOT =  'CATMAIDPATH/django/static'
+STATIC_ROOT = 'CATMAIDPATH/django/static'
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -91,7 +91,7 @@ IMPORTER_DEFAULT_IMAGE_BASE = 'http://CATMAID_SERVERNAME/CATMAID_SUBDIR/data'
 # The URL under which custom front-end code can be made available
 STATIC_EXTENSION_URL = '/CATMAID_SUBDIR/staticext/'
 # The absolute local path where the static extension files live
-STATIC_EXTENSION_ROOT =  'CATMAIDPATH/django/staticext'
+STATIC_EXTENSION_ROOT = 'CATMAIDPATH/django/staticext'
 
 # Gives Django access to installed CATMAID extensions - do not change without good reason.
 # See https://catmaid.readthedocs.io/en/stable/extensions.html for more details

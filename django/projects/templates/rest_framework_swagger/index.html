@@ -1,4 +1,4 @@
-{% extends 'rest_framework_swagger/base.html' %}
+{% extends 'rest_framework_swagger/index.html' %}
 
 {% block logo %}
     <a id="logo"
@@ -8,28 +8,57 @@
     </a>
 {% endblock %}
 
+{% block extra_styles %}
+  <style>
+    div.information-container div.info p,
+    div.information-container div.info a {
+      font-size: xx-large;
+    }
+  </style>
+{% endblock %}
+
 {% block extra_scripts %}
   <script>
-    $(document).on('ready', function() {
-      var patchTimeoutTime = 100;
+    document.addEventListener('DOMContentLoaded', function() {
+      let patchTimeoutTime = 100;
 
-      var patchUI = function() {
-          var target = $('div.info_description');
-        if (target.length > 0) {
-          target.append('<p>This is an API for accessing project, stack and ' +
+      let patchUI = function() {
+        let target = document.querySelector('div.information-container div.info');
+        if (target) {
+          while (target.lastChild) {
+            target.removeChild(target.lastChild);
+          }
+          target.innerHTML = '<p>This is an API for accessing project, stack and ' +
               'annotation data for this CATMAID instance. More information ' +
-              'is available at <a href="http://catmaid.org/page/api.html">catmaid.org</a></p>');
-          target.append('<p><a href="mailto:catmaid@googlegroups.com">Contact the developers</a>' +
-            ' <a href="https://github.com/catmaid/CATMAID" style="margin-left: 1em;">View the code</a> (GPLv3)</p>');
+              'is available at <a href="http://catmaid.org/page/api.html">catmaid.org</a>.</p>' +
+              '<p><a href="mailto:catmaid@googlegroups.com">Contact the developers</a>' +
+              ' <a href="https://github.com/catmaid/CATMAID" style="margin-left: 1em;">View the code</a> (GPLv3)</p>';
         } else {
           window.setTimeout(patchUI, patchTimeoutTime);
         }
       }
 
-      $('head title').text('CATMAID API documentation (Swagger UI)');
-      $('span.logo__title').text('CATMAID API documentation');
-      $('img.logo__img').attr('src', '{{ STATIC_URL }}/images/catmaidlogo.svg');
-      $('a#logo').attr('href', 'http://www.catmaid.org');
+      let title = document.querySelector('head title');
+      if (title) {
+        title.appendChild(document.createTextNode('CATMAID API documentation (Swagger UI)'));
+      }
+      let logoImage = document.querySelector('div.topbar a.link img');
+      if (logoImage) {
+        logoImage.src = '{{ STATIC_URL }}/images/catmaidlogo.svg';
+        logoImage.alt = 'CATMAID API documentation';
+        logoImage.title = 'CATMAID API documentation';
+      }
+      let logoSpan = document.querySelector('div.topbar a.link span');
+      if (logoSpan) {
+        while (logoSpan.lastChild) {
+          logoSpan.removeChild(logoSpan.lastChild);
+        }
+        logoSpan.appendChild(document.createTextNode('CATMAID API documentation'));
+      }
+      let logoLink = document.querySelector('div.topbar a.link');
+      if (logoLink) {
+        logoLink.href = 'http://www.catmaid.org';
+      }
 
       patchTimeout = window.setTimeout(patchUI, patchTimeoutTime);
     });

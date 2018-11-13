@@ -12,7 +12,7 @@ class TestView(models.Model):
     """
     method = models.CharField(max_length=50)
     url = models.TextField()
-    data = JSONField(blank=True, default={})
+    data = JSONField(blank=True, default=dict)
     creation_time = models.DateTimeField(default=timezone.now)
 
     def __unicode__(self):

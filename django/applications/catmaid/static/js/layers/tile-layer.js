@@ -52,6 +52,9 @@
     this._buffering = false;
     this._swapBuffersTimeout = null;
 
+    this.tileWidth = this.tileSource.tileWidth;
+    this.tileHeight = this.tileSource.tileHeight;
+
     this.tilesContainer = document.createElement('div');
     this.tilesContainer.className = 'sliceTiles';
     this.tilesContainer.classList.add('interpolation-mode-' + this.getEffectiveInterpolationMode());
@@ -185,8 +188,8 @@
       }
     }
 
-    var effectiveTileWidth = this.tileSource.tileWidth * tileInfo.mag * tileInfo.anisotropy.x;
-    var effectiveTileHeight = this.tileSource.tileHeight * tileInfo.mag * tileInfo.anisotropy.y;
+    var effectiveTileWidth = this.tileWidth * tileInfo.mag * tileInfo.anisotropy.x;
+    var effectiveTileHeight = this.tileHeight * tileInfo.mag * tileInfo.anisotropy.y;
 
     var rows = this._tiles.length, cols = this._tiles[0].length;
 
@@ -391,8 +394,8 @@
    */
   TileLayer.prototype.resize = function (width, height, completionCallback, blocking) {
     this._anisotropy = this.stack.anisotropy(Math.ceil(this.stackViewer.s));
-    var cols = Math.ceil(width / this.tileSource.tileWidth / this._anisotropy.x) + 1;
-    var rows = Math.ceil(height / this.tileSource.tileHeight / this._anisotropy.y) + 1;
+    var cols = Math.ceil(width / this.tileWidth / this._anisotropy.x) + 1;
+    var rows = Math.ceil(height / this.tileHeight / this._anisotropy.y) + 1;
     if (this._tiles.length === 0 || this._tiles.length !== rows || this._tiles[0].length !== cols)
       this._initTiles(rows, cols);
     this.redraw(completionCallback, blocking);
@@ -515,8 +518,8 @@
     }
 
     var anisotropy = this.stack.anisotropy(zoom);
-    var effectiveTileWidth = this.tileSource.tileWidth * mag * anisotropy.x;
-    var effectiveTileHeight = this.tileSource.tileHeight * mag * anisotropy.y;
+    var effectiveTileWidth = this.tileWidth * mag * anisotropy.x;
+    var effectiveTileHeight = this.tileHeight * mag * anisotropy.y;
 
     var fr = Math.floor(yc / effectiveTileHeight);
     var fc = Math.floor(xc / effectiveTileWidth);
@@ -566,9 +569,9 @@
 
     // Clamp last tile coordinates within the slice edges.
     lc = Math.min(lc, Math.floor((this.stack.dimension.x / this.stack.downsample_factors[zoom].x - 1)
-                      / this.tileSource.tileWidth));
+                      / this.tileWidth));
     lr = Math.min(lr, Math.floor((this.stack.dimension.y / this.stack.downsample_factors[zoom].y - 1)
-                      / this.tileSource.tileHeight));
+                      / this.tileHeight));
 
     return {
       firstRow:  fr,

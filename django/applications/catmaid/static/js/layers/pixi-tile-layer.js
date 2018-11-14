@@ -98,7 +98,7 @@
 
     var graphic = new PIXI.Graphics();
     graphic.beginFill(0xFFFFFF,0);
-    graphic.drawRect(0,0,this.tileSource.tileWidth,this.tileSource.tileHeight);
+    graphic.drawRect(0, 0, this.tileWidth, this.tileHeight);
     graphic.endFill();
     var emptyTex = graphic.generateCanvasTexture();
 
@@ -112,8 +112,8 @@
       for (var j = 0; j < cols; ++j) {
         this._tiles[i][j] = new PIXI.Sprite(emptyTex);
         this.batchContainer.addChild(this._tiles[i][j]);
-        this._tiles[i][j].position.x = j * this.tileSource.tileWidth * this._anisotropy.x;
-        this._tiles[i][j].position.y = i * this.tileSource.tileHeight * this._anisotropy.y;
+        this._tiles[i][j].position.x = j * this.tileWidth * this._anisotropy.x;
+        this._tiles[i][j].position.y = i * this.tileHeight * this._anisotropy.y;
 
         if (this.tileSource.transposeTiles.has(this.stack.orientation)) {
           this._tiles[i][j].scale.x = -1.0;
@@ -239,9 +239,9 @@
           tile.visible = false;
           this._tilesBuffer[i][j] = false;
         }
-        x += this.tileSource.tileWidth;
+        x += this.tileWidth;
       }
-      y += this.tileSource.tileHeight;
+      y += this.tileHeight;
     }
 
     if (tileInfo.z    === this._oldZ &&

@@ -93,10 +93,9 @@
     });
   };
 
-  /**
-   * Creates a new tile source, based on a source type.
-   */
-  CATMAID.getTileSource = function(tileSourceType, baseURL, fileExtension, tileWidth, tileHeight) {
+  CATMAID.TileSources = {};
+
+  CATMAID.TileSources.getTypeConstructor = function (tileSourceType) {
     // Map tile source types to corresponding constructors. This could also be
     // represented as an array, but is this way more clear and readable.
     var tileSources = {
@@ -113,9 +112,23 @@
       '11': CATMAID.N5ImageBlockSource
     };
 
-    var TileSource = tileSources[tileSourceType];
+    return tileSources[tileSourceType];
+  };
+
+  CATMAID.TileSources.typeIsImageBlockSource = function (tileSourceType) {
+    return CATMAID.TileSources.getTypeConstructor(tileSourceType).prototype
+        instanceof CATMAID.AbstractImageBlockSource;
+  };
+
+  /**
+   * Creates a new tile source, based on a source type.
+   */
+  CATMAID.TileSources.get = function(
+      id, tileSourceType, baseURL, fileExtension, tileWidth, tileHeight) {
+    let TileSource = CATMAID.TileSources.getTypeConstructor(tileSourceType);
+
     if (TileSource) {
-      var source = new TileSource(baseURL, fileExtension, tileWidth, tileHeight);
+      var source = new TileSource(id, baseURL, fileExtension, tileWidth, tileHeight);
       source.tileWidth = tileWidth;
       source.tileHeight = tileHeight;
       return source;
@@ -123,7 +136,8 @@
   };
 
 
-  CATMAID.AbstractTileSource = function (baseURL, fileExtension, tileWidth, tileHeight) {
+  CATMAID.AbstractTileSource = function (id, baseURL, fileExtension, tileWidth, tileHeight) {
+    this.id = id;
     this.baseURL = baseURL;
     this.fileExtension = fileExtension;
     this.tileWidth = tileWidth;
@@ -415,7 +429,7 @@
    *
    * Source type: 9
    */
-  CATMAID.FlixServerTileSource = function(baseURL, fileExtension, tileWidth, tileHeight) {
+  CATMAID.FlixServerTileSource = function() {
     CATMAID.AbstractTileSource.apply(this, arguments);
 
     this.color = null;

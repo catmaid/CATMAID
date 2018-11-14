@@ -554,7 +554,8 @@
       }
       var selectedMirror = mirror;
 
-      return CATMAID.getTileSource(
+      return CATMAID.TileSources.get(
+          selectedMirror.id,
           selectedMirror.tile_source_type,
           selectedMirror.image_base,
           selectedMirror.file_extension,
@@ -583,6 +584,15 @@
       if (this.metadata) {
         return this.metadata.catmaidLabelMeta;
       }
+    };
+
+    self.imageBlockMirrors = function () {
+      return self.mirrors
+          .filter(m => CATMAID.TileSources.typeIsImageBlockSource(m.tile_source_type));
+    };
+
+    self.isReorientable = function () {
+      return self.imageBlockMirrors().length !== 0;
     };
   }
 

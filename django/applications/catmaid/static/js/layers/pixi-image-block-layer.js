@@ -6,14 +6,34 @@
     constructor(...args) {
       super(...args);
 
-      this._blockCache = new CATMAID.ImageBlock.Cache(this.tileSource);
+      this._blockCache = CATMAID.ImageBlock.GlobalCacheManager.get(this.tileSource);
       this._blockCache.on(
           CATMAID.ImageBlock.Cache.EVENT_BLOCK_CHANGED,
           this._onBlockChanged, this);
       this.fillValue = 0;
+
+      if (this.stack instanceof CATMAID.ReorientedStack) {
+        this.dimPerm = this.stack.baseToSelfPerm;
+        this.recipDimPerm = this.stack.selfToBasePerm;
+      } else {
+        this.dimPerm = this.recipDimPerm = [0, 1, 2];
+      }
+
+      // TODO need to set tile width based on block size, but that's async
+      this.tileSource.promiseReady.then(() => {
+        let blockSize = this.tileSource.blockSize(0);
+        blockSize = CATMAID.ReorientedStack.permute(blockSize, this.dimPerm);
+        this.tileWidth = blockSize[0];
+        this.tileHeight = blockSize[1];
+        if (this._tiles.length) {
+          // If tiles have been initialized, reinitialize.
+          this.resize(this.stackViewer.viewWidth, this.stackViewer.viewHeight);
+        }
+      });
     }
 
     _onBlockChanged({zoomLevel, x, y, z}) {
+      [x, y, z] = CATMAID.ReorientedStack.permute([x, y, z], this.dimPerm);
       let coord = [zoomLevel, x, y, z];
 
       for (var i = 0; i < this._tiles.length; ++i) {
@@ -93,7 +113,9 @@
       var loading = false;
       var y = 0;
       var slicePixelPosition = [tileInfo.z];
-      var blockSizeZ = this.tileSource.blockSize(tileInfo.zoom)[2];
+      var blockSizeZ = CATMAID.ReorientedStack.permute(
+        this.tileSource.blockSize(tileInfo.zoom),
+        this.dimPerm)[2];
       var zi = Math.floor(tileInfo.z / blockSizeZ);
       var blockZ = tileInfo.z % blockSizeZ;
 
@@ -125,9 +147,9 @@
             tile.visible = false;
             this._tilesBuffer[i][j] = false;
           }
-          x += this.tileSource.tileWidth;
+          x += this.tileWidth;
         }
-        y += this.tileSource.tileHeight;
+        y += this.tileHeight;
       }
 
       if (tileInfo.z    === this._oldZ &&
@@ -145,12 +167,14 @@
         window.clearTimeout(this._swapBuffersTimeout);
         this._swapBuffersTimeout = window.setTimeout(this._swapBuffers.bind(this, true), 3000);
         Promise.all(toLoad.map(([[i, j], coord]) => {
-          let blockCoord = coord.slice(0, 4);
+          let [zoomLevel, ...blockCoord] = coord.slice(0, 4);
+          blockCoord = CATMAID.ReorientedStack.permute(blockCoord, this.recipDimPerm);
 
-          return this._blockCache.readBlock(...blockCoord)
+          return this._blockCache.readBlock(zoomLevel, ...blockCoord)
             .then(block => {
               if (!CATMAID.tools.arraysEqual(this._tilesBuffer[i][j], coord)) return;
 
+              block = block.transpose(...this.dimPerm);
               let slice = block.pick(null, null, blockZ);
 
               if (slice.shape[0] < this.tileSource.tileWidth ||

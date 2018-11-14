@@ -1607,12 +1607,28 @@ var project;
       project.destroy();
     }
 
+    let reorient = false;
+    if (stackID.endsWith) {
+      if (stackID.endsWith('_xy')) {
+        stackID = stackID.substring(0, stackID.length - 3);
+        reorient = CATMAID.Stack.ORIENTATION_XY;
+      } else if (stackID.endsWith('_xz')) {
+        stackID = stackID.substring(0, stackID.length - 3);
+        reorient = CATMAID.Stack.ORIENTATION_XZ;
+      } else if (stackID.endsWith('_zy')) {
+        stackID = stackID.substring(0, stackID.length - 3);
+        reorient = CATMAID.Stack.ORIENTATION_ZY;
+      }
+    }
+
     CATMAID.ui.catchEvents("wait");
     var open = CATMAID.fetch(projectID + '/stack/' + stackID + '/info')
       .then(function(json) {
         return handle_openProjectStack(json,
             useExistingViewer ? project.focusedStackViewer : undefined,
-            mirrorIndex)
+            mirrorIndex,
+            undefined,
+            reorient)
           .then(function() {
             if (noLayout) {
               return;
@@ -1710,7 +1726,7 @@ var project;
    * @return {Promise}                 A promise yielding the stack viewer
    *                                   containing the new stack.
    */
-  function handle_openProjectStack( e, stackViewer, mirrorIndex, hide )
+  function handle_openProjectStack( e, stackViewer, mirrorIndex, hide, reorient )
   {
     if (!stackViewer) {
       CATMAID.throwOnInsufficientWebGlContexts(1);
@@ -1767,21 +1783,24 @@ var project;
             }
           }).catch(CATMAID.handleError);
 
-        return loadStack(e, undefined, hide);
+        return loadStack(e, undefined, hide, reorient);
       });
     } else {
       // Call loadStack() asynchronously to catch potential errors in the
       // promise handling code. Otherwise, an error during the construction of
       // one stack viewer will cancel the following ones.
       return new Promise(function(resolve, reject) {
-        resolve(loadStack(e, stackViewer, hide));
+        resolve(loadStack(e, stackViewer, hide, reorient));
       });
     }
 
-    function loadStack(e, stackViewer, hideStackLayer) {
+    function loadStack(e, stackViewer, hideStackLayer, reorient) {
       var useExistingViewer = typeof stackViewer !== 'undefined';
 
       var stack = new CATMAID.Stack.fromStackInfoJson(e);
+      if (CATMAID.tools.isNumber(reorient)) {
+        stack = new CATMAID.ReorientedStack(stack, reorient);
+      }
 
       // If this is a label stack, not a raw stack, create a label annotation
       // manager.

@@ -158,6 +158,7 @@ JAVASCRIPT['catmaid'] = {
         'js/network-api.js',
         'js/project.js',
         'js/stack.js',
+        'js/reoriented-stack.js',
         'js/stack-viewer.js',
         'js/tile-source.js',
         'js/treelines.js',

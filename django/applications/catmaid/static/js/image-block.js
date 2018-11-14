@@ -4,6 +4,25 @@
 
   var ImageBlock = {};
 
+  ImageBlock.CacheManager = class CacheManager {
+    constructor() {
+      this.caches = new Map();
+    }
+
+    get(source, capacity) {
+      let cache = this.caches.get(source.id);
+
+      if (!cache) {
+        cache = new ImageBlock.Cache(source, capacity);
+        this.caches.set(source.id, cache);
+      }
+
+      return cache;
+    }
+  };
+
+  ImageBlock.GlobalCacheManager = new ImageBlock.CacheManager();
+
   ImageBlock.Cache = class Cache {
     constructor(source, capacity = 256) {
       this.source = source;

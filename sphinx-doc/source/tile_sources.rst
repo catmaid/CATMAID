@@ -354,4 +354,4 @@ a function that returns an object with the appropriate ``getTileURL``,
 ``getOverviewURL``, and ``getOverviewLayer`` methods. The overview URL should
 locate a thumbnail of the current stack z-section. Then map the
 ``tileSourceType`` enumeration of your tile source type to your implementation
-in ``CATMAID.getTileSource``.
+in ``CATMAID.TileSources``.

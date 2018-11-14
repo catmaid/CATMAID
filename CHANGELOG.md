@@ -1,6 +1,14 @@
 ## Under development
 
 
+### Notes
+
+- A virtualenv update is required.
+
+- All \*.pyc files in the folders `django/applications/catmaid/migrations/`,
+  `django/applications/performancetests/migrations/` and
+  `django/applications/pgcompat/migrations/` need to be deleted.
+
 
 ### Features and enhancements
 

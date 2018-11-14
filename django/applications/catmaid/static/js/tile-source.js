@@ -109,7 +109,8 @@
       '7': CATMAID.RenderServTileSource,
       '8': CATMAID.DVIDImagetileTileSource,
       '9': CATMAID.FlixServerTileSource,
-      '10': CATMAID.H2N5TileSource
+      '10': CATMAID.H2N5TileSource,
+      '11': CATMAID.N5ImageBlockSource
     };
 
     var TileSource = tileSources[tileSourceType];
@@ -496,6 +497,126 @@
       .replace('%AXIS_1%', row * this.tileHeight)
       .replace('%AXIS_2%', slicePixelPosition[0])
       + '.' + this.fileExtension;
+  };
+
+
+  CATMAID.AbstractImageBlockSource = class AbstractImageBlockSource
+      extends CATMAID.AbstractTileSource {
+
+    blockSize(zoomLevel) {
+      throw new CATMAID.NotImplementedError();
+    }
+
+    readBlock(zoomLevel, xi, yi, zi) {
+      throw new CATMAID.NotImplementedError();
+    }
+  };
+
+
+  /**
+   * Image block source type for N5 datasets.
+   * See https://github.com/saalfeldlab/n5
+   * See https://github.com/aschampion/n5-wasm
+   *
+   * Source type: 11
+   */
+  CATMAID.N5ImageBlockSource = class N5ImageBlockSource extends CATMAID.AbstractImageBlockSource {
+    constructor(...args) {
+      super(...args);
+
+      this.hasScaleLevels = this.baseURL.includes('%SCALE_DATASET%');
+      this.datasetURL = this.baseURL.substring(0, this.baseURL.lastIndexOf('/'));
+      let sliceDims = this.baseURL.substring(this.baseURL.lastIndexOf('/') + 1);
+      this.sliceDims = sliceDims.split('_').map(d => parseInt(d, 10));
+      let n5DirIndex = this.datasetURL.lastIndexOf('.n5');
+      this.rootURL = n5DirIndex === -1 ?
+          (new URL(this.datasetURL)).origin :
+          this.datasetURL.substring(0, n5DirIndex + 3);
+      this.datasetPathFormat = this.datasetURL.substring(this.rootURL.length + 1);
+
+      this.datasetAttributes = [];
+      this.promiseReady = N5ImageBlockSource.loadN5()
+          .then(n5wasm => n5wasm.N5HTTPFetch.open(this.rootURL).then(r => this.reader = r))
+          .then(() => this.populateDatasetAttributes());
+      this.ready = false;
+    }
+
+    static loadN5() {
+      return import('../libs/n5-wasm/n5_wasm.ch.js')
+          .then(n5wasm => n5wasm.booted.then(() => n5wasm));
+    }
+
+    getTileURL() {
+      // TODO: necessary for canary check
+      return;
+    }
+
+    populateDatasetAttributes(zoomLevel = 0) {
+      let datasetPath = this.datasetPath(zoomLevel);
+      return this.reader
+          .dataset_exists(datasetPath)
+          .then(exists => {
+            if (exists) {
+              return this.reader.get_dataset_attributes(datasetPath)
+                  .then(dataAttrs => this.datasetAttributes[zoomLevel] = dataAttrs)
+                  .then(() => {
+                    if (this.hasScaleLevels) {
+                      return this.populateDatasetAttributes(zoomLevel + 1);
+                    }
+                  });
+            }
+          })
+          .then(() => this.ready = true);
+    }
+
+    blockSize(zoomLevel) {
+      if (!this.ready) return [
+        this.tileWidth,
+        this.tileHeight,
+        1
+      ];
+      let bs = this.datasetAttributes[zoomLevel].get_block_size();
+      return [
+        bs[this.sliceDims[0]],
+        bs[this.sliceDims[1]],
+        bs[this.sliceDims[2]]
+      ];
+    }
+
+    readBlock(zoomLevel, ...sourceCoord) {
+      return this.promiseReady.then(() => {
+        let path = this.datasetPath(zoomLevel);
+        let dataAttrs = this.datasetAttributes[zoomLevel];
+        let n = 1;
+        let stride = this.datasetAttributes[zoomLevel].get_block_size()
+            .map(s => { let rn = n; n *= s; return rn; });
+
+        let reciprocalDims = Array.from(Array(this.sliceDims.length).keys())
+            .sort((a, b) => this.sliceDims[a] < this.sliceDims[b] ?
+                -1 :
+                (this.sliceDims[b] < this.sliceDims[a]) | 0);
+        let blockCoord = [
+          sourceCoord[reciprocalDims[0]],
+          sourceCoord[reciprocalDims[1]],
+          sourceCoord[reciprocalDims[2]]
+        ];
+
+        return this.reader
+            .read_block(path, dataAttrs, blockCoord.map(BigInt))
+            .then(block =>
+                new nj.NdArray(nj.ndarray(block.get_data(), block.get_size(), stride))
+                    .transpose(...this.sliceDims));
+      });
+    }
+
+    datasetPath(zoomLevel) {
+      return this.datasetPathFormat
+          .replace('%SCALE_DATASET%', this.scaleLevelPath(zoomLevel));
+    }
+
+    scaleLevelPath(zoomLevel) {
+      return 's' + zoomLevel;
+    }
   };
 
 

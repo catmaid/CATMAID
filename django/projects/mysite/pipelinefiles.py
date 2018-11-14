@@ -92,6 +92,7 @@ libraries_js = OrderedDict([
     ('sylvester', ['sylvester.js']),
     ('msgpack-lite', ['msgpack.min.js']),
     ('numeric', ['numeric-1.2.6.js']),
+    ('numjs', ['numjs.min.js']),
     ('three.js', ['three.js', 'controls/TrackballControls.js',
                  'camera/CombinedCamera.js', 'Detector.js',
                  'lines/LineSegmentsGeometry.js', 'lines/LineGeometry.js',

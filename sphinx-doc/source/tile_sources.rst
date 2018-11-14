@@ -299,6 +299,37 @@ Tile source types are listed by the enumeration integer ID referenced by
    While ``%AXIS_0%`` and ``%AXIS_1%`` could be inferred by parsing the URL
    for the slicing dimensions, note that ``%AXIS_2%`` could not.
 
+11. N5 image blocks
+**************
+
+   This type supports loading **image blocks** from
+   `N5 <https://github.com/saalfeldlab/n5>`_ served over HTTP.
+
+   Unlike other sources, ``sourceBaseUrl`` is not a valid URL on its
+   own. It contains several substitution strings the CATMAID replaces on each
+   tile request. This is necessary to support n-dimensional volumes. The
+   substitution strings are:
+
+   ``%SCALE_DATASET%`` (optional)
+      Where to insert the dataset name for different scale levels. Currently
+      these are ``s0``, ``s1``, etc., but in the future may be read from the
+      N5 attributes of the parent dataset of where this substitution string
+      appears.
+
+   Further, ``sourceBaseUrl`` has special path components. It should end in a
+   path component specifying the ordered dimensions from which image data
+   should be sliced, separated by underscores. For example, ``2_1_0`` will
+   slices N5 dimensions 2, 1, and 0 as the x, y, and z stack dimensions,
+   respectively.
+
+   This tile source will also look for a path component ending in ``.n5`` to
+   use as the N5 root directory. If it does not find such a component, it will
+   assume the origin is the root N5 directory.
+
+   For example::
+
+    https://catmaid.org/path/root.n5/group/dataset/%SCALE_DATASET%/raw/0_1_2
+
 Backend Representation
 ----------------------
 

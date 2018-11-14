@@ -15,7 +15,9 @@ django/applications/catmaid/static/libs/jquery/**
 django/applications/catmaid/static/libs/jsTree/**
 django/applications/catmaid/static/libs/jsnetworkx/**
 django/applications/catmaid/static/libs/modernizr/**
+django/applications/catmaid/static/libs/n5-wasm/**
 django/applications/catmaid/static/libs/numeric/**
+django/applications/catmaid/static/libs/numjs/**
 django/applications/catmaid/static/libs/pixi.js/**
 django/applications/catmaid/static/libs/promise-polyfill/**
 django/applications/catmaid/static/libs/raphael/**

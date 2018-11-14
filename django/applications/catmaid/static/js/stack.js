@@ -273,19 +273,19 @@
     case Stack.ORIENTATION_XZ:
       projectToStackZ = function( zp, yp, xp )
       {
-        return Math.floor( ( yp - translation.y ) / resolution.z );
+        return Math.floor((yp - translation.y) / resolution.z + yp * Number.EPSILON);
       };
       break;
     case Stack.ORIENTATION_ZY:
       projectToStackZ = function( zp, yp, xp )
       {
-        return Math.floor( ( xp - translation.x ) / resolution.z );
+        return Math.floor((xp - translation.x) / resolution.z + xp * Number.EPSILON);
       };
       break;
     default:
       projectToStackZ = function( zp, yp, xp )
       {
-        return Math.floor( ( zp - translation.z ) / resolution.z );
+        return Math.floor((zp - translation.z) / resolution.z + zp * Number.EPSILON);
       };
     }
 

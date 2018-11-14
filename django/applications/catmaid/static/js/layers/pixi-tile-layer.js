@@ -18,6 +18,13 @@
     CATMAID.TileLayer.apply(this, arguments);
     CATMAID.PixiLayer.call(this);
 
+    // If the selected source is block data, return an appropriate layer instead.
+    if (this.tileSource instanceof CATMAID.AbstractImageBlockSource &&
+       !(this instanceof CATMAID.PixiImageBlockLayer)) {
+      this.unregister();
+      return this.constructCopy({}, CATMAID.PixiImageBlockLayer);
+    }
+
     // Replace tiles container.
     this.stackViewer.getLayersView().removeChild(this.tilesContainer);
     this.tilesContainer = this.renderer.view;

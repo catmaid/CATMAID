@@ -121,7 +121,7 @@ SkeletonAnnotations.atn.validate = (function() {
 })();
 
 SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1, SELECT: 2, MOVE: 3});
-SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
+SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.SKELETON;
 SkeletonAnnotations.newConnectorType = CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR;
 
 CATMAID.asEventSource(SkeletonAnnotations);

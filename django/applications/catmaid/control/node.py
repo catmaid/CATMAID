@@ -598,7 +598,7 @@ class Postgis3dMultiJoinNodeProvider(Postgis3dNodeProvider):
           FROM extra_nodes en
           JOIN treenode t
           ON en.id = t.id
-          WHERE t.project_id = {project_id};
+          WHERE t.project_id = {project_id}
     '''
 
 
@@ -891,7 +891,7 @@ class Postgis2dMultiJoinNodeProvider(Postgis2dNodeProvider):
           FROM extra_nodes en
           JOIN treenode t
           ON en.id = t.id
-          WHERE t.project_id = {project_id};
+          WHERE t.project_id = {project_id}
     """
 
 

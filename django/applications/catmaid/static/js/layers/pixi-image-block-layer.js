@@ -174,9 +174,10 @@
             .then(block => {
               if (!CATMAID.tools.arraysEqual(this._tilesBuffer[i][j], coord)) return;
 
+              if (block) block = block.transpose(...this.dimPerm);
+
               var slice;
-              if (block) {
-                block = block.transpose(...this.dimPerm);
+              if (block && block.shape[2] > blockZ) {
                 slice = block.pick(null, null, blockZ);
 
                 if (slice.shape[0] < this.tileSource.tileWidth ||

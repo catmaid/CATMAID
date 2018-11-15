@@ -340,6 +340,7 @@
       // Force an update and skeleton tracing mode if stack viewer or layer changed
       if (activeTracingLayer !== layer || activeStackViewer !== parentStackViewer) {
         SkeletonAnnotations.setTracingMode(SkeletonAnnotations.currentmode);
+        this.handleChangedInteractionMode(SkeletonAnnotations.currentmode);
         layer.tracingOverlay.updateNodes();
       }
 
@@ -398,6 +399,8 @@
       project.off(CATMAID.Project.EVENT_STACKVIEW_CLOSED, closeStackViewer, this);
       SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
           handleActiveNodeChange, this);
+      SkeletonAnnotations.off(SkeletonAnnotations.EVENT_INTERACTION_MODE_CHANGED,
+          handleChangedInteractionMode, this);
 
       project.getStackViewers().forEach(function(stackViewer) {
         closeStackViewer(stackViewer);
@@ -1586,7 +1589,34 @@
     // Listen to active node change events
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
         handleActiveNodeChange, this);
+
+    // If the interation mode changes, update the UI
+    SkeletonAnnotations.on(SkeletonAnnotations.EVENT_INTERACTION_MODE_CHANGED,
+        this.handleChangedInteractionMode.bind(this), this);
   }
+
+  /**
+   * Update tracing tool mode button selection state.
+   */
+  TracingTool.prototype.handleChangedInteractionMode = function(newMode, oldMode) {
+    // Deselect all mode buttons
+    document.getElementById("trace_button_move").className = "button";
+    document.getElementById("trace_button_skeleton").className = "button";
+    document.getElementById("trace_button_synapse").className = "button";
+
+    // Activate button for new mode
+    switch (newMode) {
+      case SkeletonAnnotations.MODES.MOVE:
+        document.getElementById("trace_button_move").className = "button_active";
+        break;
+      case SkeletonAnnotations.MODES.SKELETON:
+        document.getElementById("trace_button_skeleton").className = "button_active";
+        break;
+      case SkeletonAnnotations.MODES.SYNAPSE:
+        document.getElementById("trace_button_synapse").className = "button_active";
+        break;
+    }
+  };
 
   /**
    * Refresh various caches, like the annotation cache.

@@ -39,10 +39,6 @@ var SkeletonAnnotations = {
 
   TYPE_NODE : "treenode",
   TYPE_CONNECTORNODE : "connector",
-
-  // Event name constants
-  EVENT_ACTIVE_NODE_CHANGED: "tracing_active_node_changed",
-
 };
 
 
@@ -123,8 +119,6 @@ SkeletonAnnotations.atn.validate = (function() {
 SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1, SELECT: 2, MOVE: 3});
 SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.SKELETON;
 SkeletonAnnotations.newConnectorType = CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR;
-
-CATMAID.asEventSource(SkeletonAnnotations);
 
 /**
  * Sets the active node, if node is not null. Otherwise, the active node is
@@ -464,11 +458,7 @@ SkeletonAnnotations.getActiveStackViewerId = function() {
  * the user clicks on the canvas.
  */
 SkeletonAnnotations.setTracingMode = function (mode, toggle) {
-  // toggles the button correctly
-  // might update the mouse pointer
-  document.getElementById("trace_button_move").className = "button";
-  document.getElementById("trace_button_skeleton").className = "button";
-  document.getElementById("trace_button_synapse").className = "button";
+  let oldMode = this.currentmode;
 
   if (toggle && this.currentmode === mode) {
     this.currentmode = this.MODES.SELECT;
@@ -476,23 +466,19 @@ SkeletonAnnotations.setTracingMode = function (mode, toggle) {
     switch (mode) {
       case this.MODES.MOVE:
         this.currentmode = mode;
-        document.getElementById("trace_button_move").className = "button_active";
         break;
       case this.MODES.SKELETON:
         this.currentmode = mode;
-        document.getElementById("trace_button_skeleton").className = "button_active";
         break;
       case this.MODES.SYNAPSE:
         this.currentmode = mode;
-        document.getElementById("trace_button_synapse").className = "button_active";
         break;
     }
-    var instances = this.TracingOverlay.prototype._instances;
-    for (var stackViewerId in instances) {
-      if (instances.hasOwnProperty(stackViewerId)) {
-        instances[stackViewerId].updateCursor();
-      }
-    }
+  }
+
+  if (oldMode !== this.currentmode) {
+    SkeletonAnnotations.trigger(
+        SkeletonAnnotations.EVENT_INTERACTION_MODE_CHANGED, this.currentmode, oldMode);
   }
 };
 
@@ -695,11 +681,18 @@ SkeletonAnnotations.getZOfVirtualNode = SkeletonAnnotations.getVirtualNodeCompon
 })();
 
 
+// Events for skeleton annotations
+CATMAID.asEventSource(SkeletonAnnotations);
+SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED = "tracing_active_node_changed";
+SkeletonAnnotations.EVENT_INTERACTION_MODE_CHANGED = "interaction_mode_changed";
+
+
 /**
  * Maintain a skeleton source for the active skeleton. Widgets can register to
- * it.
+ * it. This needs to be done after events are established.
  */
 SkeletonAnnotations.activeSkeleton = new CATMAID.ActiveSkeleton();
+
 
 /**
  * Convert a tracing layer node to a minimal list representation, useful for
@@ -979,9 +972,11 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   CATMAID.Connectors.on(CATMAID.Connectors.EVENT_LINK_REMOVED,
       this.simpleUpdateNodes, this);
 
-  // Listen to active node change events
+  // Listen to active node change events and interaction mode changes
   SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.handleActiveNodeChange, this);
+  SkeletonAnnotations.on(SkeletonAnnotations.EVENT_INTERACTION_MODE_CHANGED,
+      this.handleChangedInteractionMode, this);
 
   CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_CONFIDENCE_CHANGED,
     this.handleNodeChange, this);
@@ -1529,6 +1524,8 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
 
   SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.handleActiveNodeChange, this);
+  SkeletonAnnotations.off(SkeletonAnnotations.EVENT_INTERACTION_MODE_CHANGED,
+      this.handleChangedInteractionMode, this);
 
   CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_CONFIDENCE_CHANGED,
       this.handleNodeChange, this);
@@ -5618,6 +5615,13 @@ SkeletonAnnotations.TracingOverlay.prototype.handleActiveNodeChange = function(n
     this.importActiveNode(node);
   }
   this.recolorAllNodes();
+};
+
+/**
+ * Update the mouse cursor on changed interaction modes.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.handleChangedInteractionMode = function(newMode, oldMode) {
+  this.updateCursor();
 };
 
 /**

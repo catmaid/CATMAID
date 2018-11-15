@@ -540,6 +540,68 @@ class Postgis3dNodeProvider(PostgisNodeProvider):
     '''
 
 
+class Postgis3dMultiJoinNodeProvider(Postgis3dNodeProvider):
+    """Like Postgis3dNodeProvider, but doing different joins for the extra set
+    of nodes and the main query.
+    """
+
+    TREENODE_STATEMENT_NAME = PostgisNodeProvider.TREENODE_STATEMENT_NAME + '_3d'
+    treenode_query = '''
+          WITH extra_nodes AS (
+              SELECT UNNEST({sanitized_treenode_ids}::bigint[]) AS id
+          )
+          SELECT
+              t.id,
+              t.parent_id,
+              t.location_x,
+              t.location_y,
+              t.location_z,
+              t.confidence,
+              t.radius,
+              t.skeleton_id,
+              EXTRACT(EPOCH FROM t.edition_time),
+              t.user_id
+          FROM (
+            SELECT DISTINCT ON (id) UNNEST(ARRAY[t2.id, t2.parent_id]) AS id
+            FROM treenode_edge te
+            JOIN treenode t2
+                ON t2.id = te.id
+            WHERE te.edge &&& ST_MakeLine(ARRAY[
+                ST_MakePoint({left}, {bottom}, {z2}),
+                ST_MakePoint({right}, {top}, {z1})] ::geometry[])
+            AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+                ST_MakePoint({left},  {top},    {halfz}),
+                ST_MakePoint({right}, {top},    {halfz}),
+                ST_MakePoint({right}, {bottom}, {halfz}),
+                ST_MakePoint({left},  {bottom}, {halfz}),
+                ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
+                {halfzdiff})
+            AND te.project_id = {project_id}
+          ) bb_treenode
+          JOIN treenode t
+            ON t.id = bb_treenode.id
+          WHERE NOT EXISTS(SELECT 1 FROM extra_nodes en where en.id=t.id)
+
+          UNION ALL
+
+          SELECT
+              t.id,
+              t.parent_id,
+              t.location_x,
+              t.location_y,
+              t.location_z,
+              t.confidence,
+              t.radius,
+              t.skeleton_id,
+              EXTRACT(EPOCH FROM t.edition_time),
+              t.user_id
+          FROM extra_nodes en
+          JOIN treenode t
+          ON en.id = t.id
+          WHERE t.project_id = {project_id};
+    '''
+
+
 class Postgis3dBlurryNodeProvider(PostgisNodeProvider):
     """
     Fetch treenodes with the help of two PostGIS filters: The &&& operator to
@@ -771,6 +833,68 @@ class Postgis2dNodeProvider(PostgisNodeProvider):
     """
 
 
+class Postgis2dMultiJoinNodeProvider(Postgis2dNodeProvider):
+    """
+    Like Postgis2dNodeProvider, but joining twice into treenode table.
+    """
+
+    TREENODE_STATEMENT_NAME = PostgisNodeProvider.TREENODE_STATEMENT_NAME + '_2d'
+    treenode_query = """
+          WITH extra_nodes AS (
+              SELECT UNNEST({sanitized_treenode_ids}::bigint[]) AS id
+          )
+          SELECT
+            t.id,
+            t.parent_id,
+            t.location_x,
+            t.location_y,
+            t.location_z,
+            t.confidence,
+            t.radius,
+            t.skeleton_id,
+            EXTRACT(EPOCH FROM t.edition_time),
+            t.user_id
+          FROM (
+            SELECT DISTINCT ON (id) UNNEST(ARRAY[t2.id, t2.parent_id]) AS id
+            FROM treenode_edge te
+            JOIN treenode t2
+                ON t2.id = te.id
+            WHERE floatrange(ST_ZMin(te.edge),
+                 ST_ZMax(te.edge), '[]') && floatrange({z1}, {z2}, '[)')
+              AND te.project_id = {project_id}
+              AND te.edge && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
+              AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+                  ST_MakePoint({left},  {top},    {halfz}),
+                  ST_MakePoint({right}, {top},    {halfz}),
+                  ST_MakePoint({right}, {bottom}, {halfz}),
+                  ST_MakePoint({left},  {bottom}, {halfz}),
+                  ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
+                  {halfzdiff})
+          ) bb_treenode
+          JOIN treenode t
+            ON t.id = bb_treenode.id
+          WHERE NOT EXISTS(SELECT 1 FROM extra_nodes en where en.id=t.id)
+
+          UNION ALL
+
+          SELECT
+            t.id,
+            t.parent_id,
+            t.location_x,
+            t.location_y,
+            t.location_z,
+            t.confidence,
+            t.radius,
+            t.skeleton_id,
+            EXTRACT(EPOCH FROM t.edition_time),
+            t.user_id
+          FROM extra_nodes en
+          JOIN treenode t
+          ON en.id = t.id
+          WHERE t.project_id = {project_id};
+    """
+
+
 class Postgis2dBlurryNodeProvider(PostgisNodeProvider):
     """
     Fetch treenodes with the help of two PostGIS filters: First, select all
@@ -903,8 +1027,10 @@ class ExtraNodesOnlyNodeProvider(BasicNodeProvider):
 AVAILABLE_NODE_PROVIDERS = {
     'postgis3d': Postgis3dNodeProvider,
     'postgis3dblurry': Postgis3dBlurryNodeProvider,
+    'postgis3dmultijoin': Postgis3dMultiJoinNodeProvider,
     'postgis2d': Postgis2dNodeProvider,
     'postgis2dblurry': Postgis2dBlurryNodeProvider,
+    'postgis2dmultijoin': Postgis2dMultiJoinNodeProvider,
     'cached_json': CachedJsonNodeNodeProvder,
     'cached_json_text': CachedJsonTextNodeProvder,
     'cached_msgpack': CachedMsgpackNodeProvder,

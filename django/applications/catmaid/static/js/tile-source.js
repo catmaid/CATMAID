@@ -643,11 +643,13 @@
         ];
 
         return this.reader
-            .read_block(path, dataAttrs, blockCoord.map(BigInt))
+            .read_block_with_modified_time(path, dataAttrs, blockCoord.map(BigInt))
             .then(block =>
-                block ? new nj.NdArray(nj.ndarray(block.get_data(), block.get_size(), stride))
-                    .transpose(...this.sliceDims) :
-                    block);
+                block ? {
+                    block: new nj.NdArray(nj.ndarray(block.get_data(), block.get_size(), stride))
+                        .transpose(...this.sliceDims),
+                    modified: block.get_modified_time() } :
+                    {block, modified: undefined});
       });
     }
 

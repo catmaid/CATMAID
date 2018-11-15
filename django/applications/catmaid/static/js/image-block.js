@@ -43,8 +43,8 @@
       }
 
       return this.source.readBlock(...zoomBlockCoord)
-          .then(block => {
-            this._stateIDs.set(blockKey, 'fresh');  // TODO
+          .then(({block, modified}) => {
+            this._stateIDs.set(blockKey, modified);
             this._cache.set(blockKey, block);
             return block;
           });

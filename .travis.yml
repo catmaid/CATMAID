@@ -12,7 +12,7 @@ services:
   - postgresql
 addons:
   chrome: stable
-  postgresql: 9.6
+  postgresql: 10
   sauce_connect:
     username: catmaid
     access_key:

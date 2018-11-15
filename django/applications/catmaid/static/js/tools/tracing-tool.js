@@ -339,7 +339,7 @@
 
       // Force an update and skeleton tracing mode if stack viewer or layer changed
       if (activeTracingLayer !== layer || activeStackViewer !== parentStackViewer) {
-        SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SKELETON);
+        SkeletonAnnotations.setTracingMode(SkeletonAnnotations.currentmode);
         layer.tracingOverlay.updateNodes();
       }
 

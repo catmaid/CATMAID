@@ -538,6 +538,21 @@
     constructor(...args) {
       super(...args);
 
+      function supportsDynamicImport() {
+        try {
+          new Function('import("")');
+          return true;
+        } catch (err) {
+          return false;
+        }
+      }
+
+      if (!supportsDynamicImport() || typeof BigInt === 'undefined') {
+        // TODO: should fail gracefully here instead.
+        throw new CATMAID.Error(
+          'Your browser does not support features required for N5 mirrors');
+      }
+
       this.hasScaleLevels = this.baseURL.includes('%SCALE_DATASET%');
       this.datasetURL = this.baseURL.substring(0, this.baseURL.lastIndexOf('/'));
       let sliceDims = this.baseURL.substring(this.baseURL.lastIndexOf('/') + 1);
@@ -556,7 +571,9 @@
     }
 
     static loadN5() {
-      return import('../libs/n5-wasm/n5_wasm.ch.js')
+      // This is done inside a Function/eval so that Firefox does not fail
+      // to parse this whole file because of the dynamic import.
+      return (new Function("return import('../libs/n5-wasm/n5_wasm.ch.js')"))()
           .then(n5wasm => n5wasm.booted.then(() => n5wasm));
     }
 

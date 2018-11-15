@@ -174,22 +174,24 @@
             .then(block => {
               if (!CATMAID.tools.arraysEqual(this._tilesBuffer[i][j], coord)) return;
 
-              block = block.transpose(...this.dimPerm);
-              let slice = block.pick(null, null, blockZ);
+              var slice;
+              if (block) {
+                block = block.transpose(...this.dimPerm);
+                slice = block.pick(null, null, blockZ);
 
-              if (slice.shape[0] < this.tileSource.tileWidth ||
-                  slice.shape[1] < this.tileSource.tileHeight) {
-                let empty = nj.zeros(
-                    [this.tileSource.tileWidth, this.tileSource.tileHeight],
-                    slice.dtype);
-                empty.selection.data.fill(this.fillValue);
-                var sub = empty.hi(slice.shape[0], slice.shape[1]);
+                if (slice.shape[0] < this.tileSource.tileWidth ||
+                    slice.shape[1] < this.tileSource.tileHeight) {
+                  let empty = this._makeEmptySlice();
+                  var sub = empty.hi(slice.shape[0], slice.shape[1]);
 
-                for(let i=0; i<slice.shape[0]; ++i) {
-                  for(let j=0; j<slice.shape[1]; ++j) {
-                    empty.set(i,j, slice.get(i, j));
+                  for(let i=0; i<slice.shape[0]; ++i) {
+                    for(let j=0; j<slice.shape[1]; ++j) {
+                      empty.set(i,j, slice.get(i, j));
+                    }
                   }
                 }
+              } else {
+                slice = this._makeEmptySlice();
               }
 
               // The array is still column major, so transpose to row-major for tex.
@@ -214,6 +216,15 @@
           completionCallback();
         }
       }
+    }
+
+    _makeEmptySlice() {
+      let empty = nj.zeros(
+          [this.tileWidth, this.tileHeight],
+          this.tileSource.dataType());
+      empty.selection.data.fill(this.fillValue);
+
+      return empty;
     }
 
     _dtypeWebGLParams(dtype) {

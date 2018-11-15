@@ -521,6 +521,10 @@
       throw new CATMAID.NotImplementedError();
     }
 
+    dataType() {
+      throw new CATMAID.NotImplementedError();
+    }
+
     readBlock(zoomLevel, xi, yi, zi) {
       throw new CATMAID.NotImplementedError();
     }
@@ -614,6 +618,12 @@
       ];
     }
 
+    dataType () {
+      return this.ready ?
+          this.datasetAttributes[0].get_data_type().toLowerCase() :
+          undefined;
+    }
+
     readBlock(zoomLevel, ...sourceCoord) {
       return this.promiseReady.then(() => {
         let path = this.datasetPath(zoomLevel);
@@ -635,8 +645,9 @@
         return this.reader
             .read_block(path, dataAttrs, blockCoord.map(BigInt))
             .then(block =>
-                new nj.NdArray(nj.ndarray(block.get_data(), block.get_size(), stride))
-                    .transpose(...this.sliceDims));
+                block ? new nj.NdArray(nj.ndarray(block.get_data(), block.get_size(), stride))
+                    .transpose(...this.sliceDims) :
+                    block);
       });
     }
 

@@ -22,10 +22,13 @@ before_install:
   - travis_retry sudo apt-get update -y -qq
   - bash scripts/travis/install_postgres.sh
   - bash scripts/travis/install_python.sh
+  - npm update
 install:
   # Install requirements for running CATMAID and its unit tests
   - ./scripts/travis/install_requirements.sh
   - pip install coveralls flake8
+  - npm --version
+  - unset NODE_ENV
   - npm install --only=dev
   - npm bin
   - export PATH=$(npm bin):$PATH

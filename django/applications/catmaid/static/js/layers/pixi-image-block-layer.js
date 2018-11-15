@@ -180,8 +180,8 @@
               if (block && block.shape[2] > blockZ) {
                 slice = block.pick(null, null, blockZ);
 
-                if (slice.shape[0] < this.tileSource.tileWidth ||
-                    slice.shape[1] < this.tileSource.tileHeight) {
+                if (slice.shape[0] < this.tileWidth ||
+                    slice.shape[1] < this.tileHeight) {
                   let empty = this._makeEmptySlice();
                   var sub = empty.hi(slice.shape[0], slice.shape[1]);
 

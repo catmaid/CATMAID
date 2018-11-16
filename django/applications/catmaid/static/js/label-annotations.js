@@ -71,6 +71,10 @@
 
   const LABEL_FILTER_KEY = 'Object Label Color Map';
 
+  const SPECIAL_LABELS = {
+    background: 0,
+  };
+
   class LabelStackAnnotations {
     constructor(
       primaryStack
@@ -79,14 +83,7 @@
       this.stackIDs = new Set([this.primaryStack.id]);
       this.activeLabelID = undefined;
 
-      this.specialLabels = {
-        background: 0,
-      };
-      if (this.primaryStack.metadata &&
-          this.primaryStack.metadata.catmaidLabelMeta &&
-          this.primaryStack.metadata.catmaidLabelMeta.specialLabels) {
-        $.extend(this.specialLabels, this.primaryStack.metadata.catmaidLabelMeta.specialLabels);
-      }
+      this.specialLabels = Object.assign({}, SPECIAL_LABELS, this.primaryStack.labelMetadata());
       this.stackLayerFilters = new Map();
 
       project.on(CATMAID.Project.EVENT_STACKVIEW_ADDED,

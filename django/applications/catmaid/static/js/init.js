@@ -1595,6 +1595,13 @@ var project;
 
       var stack = new CATMAID.Stack.fromStackInfoJson(e);
 
+      // If this is a label stack, not a raw stack, create a label annotation
+      // manager.
+      // TODO: should eventually use a backend image label space instead.
+      if (!!stack.labelMetadata()) {
+        CATMAID.LabelAnnotations.get(stack);
+      }
+
       if (!useExistingViewer) {
         stackViewer = new CATMAID.StackViewer(project, stack);
       }

@@ -98,7 +98,7 @@ QUnit.test('Tracing overlay test', function( assert ) {
         _renderIfReady: CATMAID.noop
       };
     };
-    FakeOverlay.prototype = Object.create(SkeletonAnnotations.TracingOverlay.prototype);
+    FakeOverlay.prototype = Object.create(CATMAID.TracingOverlay.prototype);
     var fakeOverlay = new FakeOverlay();
 
     // Indicates which nodes are available in our fake backend
@@ -153,7 +153,7 @@ QUnit.test('Tracing overlay test', function( assert ) {
       });
 
     // Delete node
-    SkeletonAnnotations.TracingOverlay.prototype.deleteNode.call(
+    CATMAID.TracingOverlay.prototype.deleteNode.call(
         fakeOverlay, nodeID);
     // Mark the node as deleted in fake backend, once the last request is done
     fakeOverlay.submit.then(function() {

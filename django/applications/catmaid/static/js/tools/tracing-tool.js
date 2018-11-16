@@ -332,7 +332,7 @@
           CATMAID.TracingTool.Settings.session.show_node_labels ? "button_active" : "button";
 
       document.getElementById( "trace_button_togglecolorlength" ).className =
-          SkeletonAnnotations.TracingOverlay.Settings.session.color_by_length ? "button_active" : "button";
+          CATMAID.TracingOverlay.Settings.session.color_by_length ? "button_active" : "button";
 
       // Try to get existing mouse bindings for this layer
       if (!bindings.has(parentStackViewer)) createMouseBindings(parentStackViewer, layer, view);
@@ -944,7 +944,7 @@
         if (!CATMAID.mayView())
           return false;
 
-        var settings = SkeletonAnnotations.TracingOverlay.Settings;
+        var settings = CATMAID.TracingOverlay.Settings;
         var colorByLength = !settings.session.color_by_length;
         settings.set('color_by_length', colorByLength, 'session');
         getTracingLayers().forEach(function(layer) {
@@ -1394,7 +1394,7 @@
         skeletonModels[skid] = new CATMAID.SkeletonModel(
             skid,
             undefined,
-            new THREE.Color(SkeletonAnnotations.TracingOverlay.Settings.session.active_node_color));
+            new THREE.Color(CATMAID.TracingOverlay.Settings.session.active_node_color));
         var viewersWithoutSkel = Array.from(WindowMaker.getOpenWindows('3d-viewer', true).values())
             .filter(function (viewer) { return !viewer.hasSkeleton(skid); });
 

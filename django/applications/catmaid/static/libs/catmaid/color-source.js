@@ -83,7 +83,7 @@
             skeleton_ids: skeletonIds
           })
           .then(function(lengthData) {
-            let colorSteps = SkeletonAnnotations.TracingOverlay.Settings.session.length_color_steps;
+            let colorSteps = CATMAID.TracingOverlay.Settings.session.length_color_steps;
             let lowerStop, upperStop;
             let sortedSteps = colorSteps.sort(function(a, b) {
               if (a.stop < b.stop) return -1;

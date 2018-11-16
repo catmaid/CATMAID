@@ -592,19 +592,19 @@
         var color;
         if (SkeletonAnnotations.getActiveNodeId() === this.id) {
           if (SkeletonAnnotations.isRealNode(this.id)) {
-            color = SkeletonAnnotations.TracingOverlay.Settings.session.active_node_color;
+            color = CATMAID.TracingOverlay.Settings.session.active_node_color;
           } else {
             if (this.overlayGlobals.tracingOverlay.isVirtualNodeSuppressed(this.id)) {
-              color = SkeletonAnnotations.TracingOverlay.Settings.session.active_suppressed_virtual_node_color;
+              color = CATMAID.TracingOverlay.Settings.session.active_suppressed_virtual_node_color;
             } else {
-              color = SkeletonAnnotations.TracingOverlay.Settings.session.active_virtual_node_color;
+              color = CATMAID.TracingOverlay.Settings.session.active_virtual_node_color;
             }
           }
         } else if (null === this.parent_id) {
           // The root node should be colored red unless it's active:
-          color = SkeletonAnnotations.TracingOverlay.Settings.session.root_node_color;
+          color = CATMAID.TracingOverlay.Settings.session.root_node_color;
         } else if (0 === this.children.size) {
-          color = SkeletonAnnotations.TracingOverlay.Settings.session.leaf_node_color;
+          color = CATMAID.TracingOverlay.Settings.session.leaf_node_color;
         } else {
           // If none of the above applies, just colour according to the z difference.
           color = this.colorFromZDiff();
@@ -624,12 +624,12 @@
       this.colorCustom = function (baseColor) {
         if (SkeletonAnnotations.getActiveNodeId() === this.id) {
           if (SkeletonAnnotations.isRealNode(this.id)) {
-            return SkeletonAnnotations.TracingOverlay.Settings.session.active_node_color;
+            return CATMAID.TracingOverlay.Settings.session.active_node_color;
           } else {
             if (this.overlayGlobals.tracingOverlay.isVirtualNodeSuppressed(this.id)) {
-              return SkeletonAnnotations.TracingOverlay.Settings.session.active_suppressed_virtual_node_color;
+              return CATMAID.TracingOverlay.Settings.session.active_suppressed_virtual_node_color;
             } else {
-              return SkeletonAnnotations.TracingOverlay.Settings.session.active_virtual_node_color;
+              return CATMAID.TracingOverlay.Settings.session.active_virtual_node_color;
             }
           }
         } else if (null === this.parent_id) {
@@ -655,19 +655,19 @@
         // zdiff is in sections, therefore the current section is at [0, 1) --
         // notice 0 is inclusive and 1 is exclusive.
         if (this.zdiff >= 1) {
-          return SkeletonAnnotations.TracingOverlay.Settings.session.inactive_skeleton_color_above;
+          return CATMAID.TracingOverlay.Settings.session.inactive_skeleton_color_above;
         } else if (this.zdiff < 0) {
-          return SkeletonAnnotations.TracingOverlay.Settings.session.inactive_skeleton_color_below;
+          return CATMAID.TracingOverlay.Settings.session.inactive_skeleton_color_below;
         } else if (SkeletonAnnotations.getActiveSkeletonId() === this.skeleton_id) {
           if (SkeletonAnnotations.isRealNode(this.id)) {
-            return SkeletonAnnotations.TracingOverlay.Settings.session.active_skeleton_color;
+            return CATMAID.TracingOverlay.Settings.session.active_skeleton_color;
           } else {
-            return SkeletonAnnotations.TracingOverlay.Settings.session.active_skeleton_color_virtual;
+            return CATMAID.TracingOverlay.Settings.session.active_skeleton_color_virtual;
           }
         } else if (SkeletonAnnotations.isRealNode(this.id)) {
-          return SkeletonAnnotations.TracingOverlay.Settings.session.inactive_skeleton_color;
+          return CATMAID.TracingOverlay.Settings.session.inactive_skeleton_color;
         } else {
-          return SkeletonAnnotations.TracingOverlay.Settings.session.inactive_skeleton_color_virtual;
+          return CATMAID.TracingOverlay.Settings.session.inactive_skeleton_color_virtual;
         }
       };
 
@@ -689,9 +689,9 @@
           return baseColor.clone().offsetHSL(-0.1, 0, 0).getHex();
         } else if (SkeletonAnnotations.getActiveSkeletonId() === this.skeleton_id) {
           if (SkeletonAnnotations.isRealNode(this.id)) {
-            return SkeletonAnnotations.TracingOverlay.Settings.session.active_skeleton_color;
+            return CATMAID.TracingOverlay.Settings.session.active_skeleton_color;
           } else {
-            return SkeletonAnnotations.TracingOverlay.Settings.session.active_skeleton_color_virtual;
+            return CATMAID.TracingOverlay.Settings.session.active_skeleton_color_virtual;
           }
         } else if (SkeletonAnnotations.isRealNode(this.id)) {
           return baseColor.getHex();
@@ -1052,11 +1052,11 @@
               height: bbox.height + pad});
 
           if (line) {
-            var lineColor = SkeletonAnnotations.TracingOverlay.Settings.session.active_skeleton_color;
+            var lineColor = CATMAID.TracingOverlay.Settings.session.active_skeleton_color;
             if (r.z !== 0) {
               lineColor = (r.z < 0) ?
-                  SkeletonAnnotations.TracingOverlay.Settings.session.inactive_skeleton_color_above :
-                  SkeletonAnnotations.TracingOverlay.Settings.session.inactive_skeleton_color_below;
+                  CATMAID.TracingOverlay.Settings.session.inactive_skeleton_color_above :
+                  CATMAID.TracingOverlay.Settings.session.inactive_skeleton_color_below;
             }
             line.clear();
             line.lineStyle(self.EDGE_WIDTH, 0xFFFFFF, 1.0);
@@ -1175,7 +1175,7 @@
 
     ptype.AbstractConnectorNode = function() {
       // For drawing:
-      this.markerType = SkeletonAnnotations.TracingOverlay.Settings.session.connector_node_marker;
+      this.markerType = CATMAID.TracingOverlay.Settings.session.connector_node_marker;
       this.NODE_RADIUS = this.markerType === 'disc' ? 8 : 15;
 
       this.CATCH_RADIUS = 0;
@@ -1384,7 +1384,7 @@
        */
       this.initTextures = function(force) {
         var oldMarkerType = this.markerType;
-        this.markerType = SkeletonAnnotations.TracingOverlay.Settings.session.connector_node_marker;
+        this.markerType = CATMAID.TracingOverlay.Settings.session.connector_node_marker;
         force = force && (oldMarkerType === 'disc' ^ this.markerType === 'disc');
         this.NODE_RADIUS = this.markerType === 'disc' ? 8 : 15;
         var g = this.makeMarker();
@@ -1996,7 +1996,7 @@
         this.line.hitArea.points[7] = y1 - norm[1];
 
         var stroke_color;
-        let settings = SkeletonAnnotations.TracingOverlay.Settings.session;
+        let settings = CATMAID.TracingOverlay.Settings.session;
         if (relationName === 'presynaptic_to') {
           stroke_color = settings.presynaptic_to_rel_color;
         } else if (relationName === 'postsynaptic_to') {

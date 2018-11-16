@@ -214,14 +214,14 @@ SkeletonAnnotations.atn.promise = function()
  * Map a stack viewer to a displayed overlay.
  */
 SkeletonAnnotations.getTracingOverlay = function(stackViewerId) {
-  return this.TracingOverlay.prototype._instances[stackViewerId];
+  return CATMAID.TracingOverlay.prototype._instances[stackViewerId];
 };
 
 /**
  * Map a skeleton elements instance to an overlay.
  */
 SkeletonAnnotations.getTracingOverlayBySkeletonElements = function(skeletonElements) {
-  var instances = this.TracingOverlay.prototype._instances;
+  var instances = CATMAID.TracingOverlay.prototype._instances;
   for (var stackViewerId in instances) {
     if (instances.hasOwnProperty(stackViewerId)) {
       var s = instances[stackViewerId];
@@ -246,7 +246,7 @@ SkeletonAnnotations.staticSelectNode = function(nodeId, singleMatchValid, strict
   var nFound = 0;
   var incFound = function() { ++nFound; };
   var selections = [];
-  var instances = this.TracingOverlay.prototype._instances;
+  var instances = CATMAID.TracingOverlay.prototype._instances;
   for (var stackViewerId in instances) {
     if (instances.hasOwnProperty(stackViewerId)) {
       var select = instances[stackViewerId].selectNode(nodeId, strict);
@@ -274,7 +274,7 @@ SkeletonAnnotations.staticSelectNode = function(nodeId, singleMatchValid, strict
  * @return {Promise}               Promise succeeding after move.
  */
 SkeletonAnnotations.staticMoveTo = function(z, y, x) {
-  var instances = SkeletonAnnotations.TracingOverlay.prototype._instances;
+  var instances = CATMAID.TracingOverlay.prototype._instances;
   var movePromises = [];
   for (var stackViewerId in instances) {
     if (instances.hasOwnProperty(stackViewerId)) {
@@ -296,7 +296,7 @@ SkeletonAnnotations.staticMoveTo = function(z, y, x) {
  *                                 all open tracing overlays.
  */
 SkeletonAnnotations.staticMoveToAndSelectNode = function(nodeId) {
-  var instances = SkeletonAnnotations.TracingOverlay.prototype._instances;
+  var instances = CATMAID.TracingOverlay.prototype._instances;
   var preparePromises = [];
   // Save all changes in each layer
   for (var stackViewerId in instances) {
@@ -361,7 +361,7 @@ SkeletonAnnotations.staticMoveToAndSelectNode = function(nodeId) {
  */
 SkeletonAnnotations.staticMoveToAndSelectClosestNode = function(z, y, x,
     skeletonId, respectVirtualNodes) {
-  var instances = SkeletonAnnotations.TracingOverlay.prototype._instances;
+  var instances = CATMAID.TracingOverlay.prototype._instances;
   var locations = [];
   for (var stackViewerId in instances) {
     if (instances.hasOwnProperty(stackViewerId)) {
@@ -705,7 +705,7 @@ var nodeToStateList = function(n) {
 /**
  * The constructor for TracingOverlay.
  */
-SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
+CATMAID.TracingOverlay = function(stackViewer, pixiLayer, options) {
   var options = options || {};
 
   // The stack viewer is needed in the initial name generation of the Tile Layer
@@ -735,26 +735,26 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   this.connectorTypeMenu = null;
   /** Transfer data as msgpack by default.
    * Options: 'json', 'msgpack', 'gif', 'png' */
-  this.transferFormat = SkeletonAnnotations.TracingOverlay.Settings.session.transfer_mode;
+  this.transferFormat = CATMAID.TracingOverlay.Settings.session.transfer_mode;
   /** Limit the requested skeletons to the N largest in terms of cable length */
-  this.nLargestSkeletonsLimit = SkeletonAnnotations.TracingOverlay.Settings.session.n_largest_skeletons_limit;
+  this.nLargestSkeletonsLimit = CATMAID.TracingOverlay.Settings.session.n_largest_skeletons_limit;
   /** Limit the requested skeletons to the N most recently edited ones. */
-  this.nLastEditedSkeletonLimit = SkeletonAnnotations.TracingOverlay.Settings.session.n_last_edited_skeletons_limit;
+  this.nLastEditedSkeletonLimit = CATMAID.TracingOverlay.Settings.session.n_last_edited_skeletons_limit;
   /** Optionally, hide all skeletons edited last by a particular user. */
-  this.hiddenLastEditorId = SkeletonAnnotations.TracingOverlay.Settings.session.hidden_last_editor_id;
+  this.hiddenLastEditorId = CATMAID.TracingOverlay.Settings.session.hidden_last_editor_id;
   /** An optional margin in pixels that is subtracted from the left and right of
    * the node query box, effectively not loading data in this region.*/
-  this.tracingWindowWidth = SkeletonAnnotations.TracingOverlay.Settings.session.tracing_window_width;
+  this.tracingWindowWidth = CATMAID.TracingOverlay.Settings.session.tracing_window_width;
   /** An optional margin in pixels that is subtracted from the top and bottom of
    * the node query box, effectively not loading data in this region.*/
-  this.tracingWindowHeight = SkeletonAnnotations.TracingOverlay.Settings.session.tracing_window_height;
+  this.tracingWindowHeight = CATMAID.TracingOverlay.Settings.session.tracing_window_height;
   /** The DOM element representing the tracing window */
   this._tracingWindowElement = document.createElement('div');
   this._tracingWindowElement.classList.add('tracing-window');
   /** Whether or not to show lines representing the boundary mask */
-  this.applyTracingWindow = SkeletonAnnotations.TracingOverlay.Settings.session.apply_tracing_window;
+  this.applyTracingWindow = CATMAID.TracingOverlay.Settings.session.apply_tracing_window;
   /** Wheter updates can be suspended during a planar panning operation */
-  this.updateWhilePanning = SkeletonAnnotations.TracingOverlay.Settings.session.update_while_panning;
+  this.updateWhilePanning = CATMAID.TracingOverlay.Settings.session.update_while_panning;
   /** A cached copy of the a map from IDs to relation names, set on firt load. **/
   this.relationMap = null;
   /** An optional color source **/
@@ -766,9 +766,9 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
 
   /** Cache of node list request responses, ideally in a memory aware cache. */
   this.nodeListCache = new CATMAID.CacheBuilder.makeMemoryAwareLRUCache(
-      SkeletonAnnotations.TracingOverlay.NODE_LIST_CACHE_CAPACITY,
-      SkeletonAnnotations.TracingOverlay.NODE_LIST_CACHE_LIFETIME,
-      SkeletonAnnotations.TracingOverlay.NODE_LIST_CACHE_MAX_MEM_FILL_RATE,
+      CATMAID.TracingOverlay.NODE_LIST_CACHE_CAPACITY,
+      CATMAID.TracingOverlay.NODE_LIST_CACHE_LIFETIME,
+      CATMAID.TracingOverlay.NODE_LIST_CACHE_MAX_MEM_FILL_RATE,
       true);
 
   /** An accessor to the internal nodes array to get information about the
@@ -913,7 +913,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
       this,
       pixiLayer.batchContainer,
       this._skeletonDisplaySource);
-  this.graphics.setNodeRadiiVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_node_radii);
+  this.graphics.setNodeRadiiVisibility(CATMAID.TracingOverlay.Settings.session.display_node_radii);
 
   // Initialize tracing window, if any
   if (this.apply_tracing_window) {
@@ -921,7 +921,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   }
 
   // Initialize custom node coloring
-  if (SkeletonAnnotations.TracingOverlay.Settings.session.color_by_length) {
+  if (CATMAID.TracingOverlay.Settings.session.color_by_length) {
     var source = new CATMAID.ColorSource('length', this);
     this.setColorSource(source);
   }
@@ -987,18 +987,18 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
       this.simpleUpdateNodes, this);
 };
 
-SkeletonAnnotations.TracingOverlay.prototype = Object.create(CATMAID.SkeletonSource.prototype);
-SkeletonAnnotations.TracingOverlay.prototype.constructor = SkeletonAnnotations.TracingOverlay;
+CATMAID.TracingOverlay.prototype = Object.create(CATMAID.SkeletonSource.prototype);
+CATMAID.TracingOverlay.prototype.constructor = CATMAID.TracingOverlay;
 
-SkeletonAnnotations.TracingOverlay.prototype.EVENT_HIT_NODE_DISPLAY_LIMIT = "tracing_hit_node_display_limit";
+CATMAID.TracingOverlay.prototype.EVENT_HIT_NODE_DISPLAY_LIMIT = "tracing_hit_node_display_limit";
 
-CATMAID.asEventSource(SkeletonAnnotations.TracingOverlay.prototype);
+CATMAID.asEventSource(CATMAID.TracingOverlay.prototype);
 
-SkeletonAnnotations.TracingOverlay.NODE_LIST_CACHE_CAPACITY = 20;
-SkeletonAnnotations.TracingOverlay.NODE_LIST_CACHE_LIFETIME = 60 * 1000;
-SkeletonAnnotations.TracingOverlay.NODE_LIST_CACHE_MAX_MEM_FILL_RATE = 0.75;
+CATMAID.TracingOverlay.NODE_LIST_CACHE_CAPACITY = 20;
+CATMAID.TracingOverlay.NODE_LIST_CACHE_LIFETIME = 60 * 1000;
+CATMAID.TracingOverlay.NODE_LIST_CACHE_MAX_MEM_FILL_RATE = 0.75;
 
-SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
+CATMAID.TracingOverlay.Settings = new CATMAID.Settings(
       'tracing-overlay',
       {
         version: 1,
@@ -1160,7 +1160,7 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
 /**
  * Update currently used mouse cursor based on the current tracing tool mode.
  */
-SkeletonAnnotations.TracingOverlay.prototype.updateCursor = function() {
+CATMAID.TracingOverlay.prototype.updateCursor = function() {
   if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.MOVE) {
     this.view.style.cursor = "move";
   } else {
@@ -1175,7 +1175,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateCursor = function() {
  * the node is available at the moment of the call in the nodes cache. An error
  * is thrown if this is not the case.
  */
-SkeletonAnnotations.TracingOverlay.prototype.promiseNode = function(node)
+CATMAID.TracingOverlay.prototype.promiseNode = function(node)
 {
   var self = this;
 
@@ -1251,7 +1251,7 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNode = function(node)
  * Creates all given nodes, if they are virtual nodes. Otherwise, it is resolved
  * immediately.
  */
-SkeletonAnnotations.TracingOverlay.prototype.promiseNodes = function()
+CATMAID.TracingOverlay.prototype.promiseNodes = function()
 {
   var self = this;
   var args = arguments;
@@ -1295,7 +1295,7 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNodes = function()
  * Execute function fn_real, if the node identified by node_id is a real node
  * (i.e not a virtual node).
  */
-SkeletonAnnotations.TracingOverlay.prototype.executeDependentOnExistence =
+CATMAID.TracingOverlay.prototype.executeDependentOnExistence =
     function(node_id, fn_real, fn_notreal)
 {
   if (SkeletonAnnotations.isRealNode(node_id) && fn_real) {
@@ -1313,7 +1313,7 @@ SkeletonAnnotations.TracingOverlay.prototype.executeDependentOnExistence =
 * action to perform, as written as a question in a dialog to confirm the action
 * if the skeleton has a single node.
 */
-SkeletonAnnotations.TracingOverlay.prototype.executeDependentOnNodeCount =
+CATMAID.TracingOverlay.prototype.executeDependentOnNodeCount =
     function(node_id, fn_one, fn_more)
 {
   this.submit(
@@ -1332,7 +1332,7 @@ SkeletonAnnotations.TracingOverlay.prototype.executeDependentOnNodeCount =
 /**
  * Execute the function fn if the current user has permissions to edit it.
  */
-SkeletonAnnotations.TracingOverlay.prototype.executeIfSkeletonEditable = function(
+CATMAID.TracingOverlay.prototype.executeIfSkeletonEditable = function(
     skeleton_id, fn) {
   var url = CATMAID.makeURL(project.id + '/skeleton/' + skeleton_id + '/permissions');
   requestQueue.register(url, 'POST', null,
@@ -1353,7 +1353,7 @@ SkeletonAnnotations.TracingOverlay.prototype.executeIfSkeletonEditable = functio
  * Ask the user for a new neuron name for the given skeleton and let the name
  * service write it to the skeleton.
  */
-SkeletonAnnotations.TracingOverlay.prototype.renameNeuron = function(skeletonID) {
+CATMAID.TracingOverlay.prototype.renameNeuron = function(skeletonID) {
   if (!skeletonID) return;
   var self = this;
   this.submit(
@@ -1371,19 +1371,19 @@ SkeletonAnnotations.TracingOverlay.prototype.renameNeuron = function(skeletonID)
 /**
  * Register of stack viewer ID vs instances.
  */
-SkeletonAnnotations.TracingOverlay.prototype._instances = {};
+CATMAID.TracingOverlay.prototype._instances = {};
 
 /**
  * Register a new stack with this instance.
  */
-SkeletonAnnotations.TracingOverlay.prototype.register = function (stackViewer) {
+CATMAID.TracingOverlay.prototype.register = function (stackViewer) {
   this._instances[stackViewer.getId()] = this;
 };
 
 /**
  * Unregister this overlay from all stack viewers.
  */
-SkeletonAnnotations.TracingOverlay.prototype.unregister = function () {
+CATMAID.TracingOverlay.prototype.unregister = function () {
   for (var stackViewerId in this._instances) {
     if (this._instances.hasOwnProperty(stackViewerId)) {
       if (this === this._instances[stackViewerId]) {
@@ -1398,14 +1398,14 @@ SkeletonAnnotations.TracingOverlay.prototype.unregister = function () {
  * contents of any one instance may change, and the data of the nodes will
  * change as they are recycled.
  */
-SkeletonAnnotations.TracingOverlay.prototype.getNodes = function() {
+CATMAID.TracingOverlay.prototype.getNodes = function() {
   return this.nodes;
 };
 
 /**
  * The stack viewer this overlay is registered with.
  */
-SkeletonAnnotations.TracingOverlay.prototype.getStackViewer = function() {
+CATMAID.TracingOverlay.prototype.getStackViewer = function() {
   return this.stackViewer;
 };
 
@@ -1414,7 +1414,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getStackViewer = function() {
  * @coords parameter and updates the status bar with the stack and project
  * coordinates of the mouse cursor.
  */
-SkeletonAnnotations.TracingOverlay.prototype.createViewMouseMoveFn = function(stackViewer, coords) {
+CATMAID.TracingOverlay.prototype.createViewMouseMoveFn = function(stackViewer, coords) {
   var pCoords = {'x': 0, 'y': 0, 'z': 0};
   var sCoords = {'x': 0, 'y': 0, 'z': 0};
   return function(e) {
@@ -1442,7 +1442,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createViewMouseMoveFn = function(st
  * be switched, you should return from any event handling, otherwise all kinds
  * of surprising bugs happen...
  */
-SkeletonAnnotations.TracingOverlay.prototype.ensureFocused = function() {
+CATMAID.TracingOverlay.prototype.ensureFocused = function() {
   var win = this.stackViewer.getWindow();
   if (win.hasFocus()) {
     return false;
@@ -1455,7 +1455,7 @@ SkeletonAnnotations.TracingOverlay.prototype.ensureFocused = function() {
 /**
  * Unregister this layer and destroy all UI elements and event handlers.
  */
-SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
+CATMAID.TracingOverlay.prototype.destroy = function() {
   this.updateNodeCoordinatesInDB();
   this.suspended = true;
   this.unregister();
@@ -1542,7 +1542,7 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
  * overlay. If the returned promise should instead become rejected, the <strict>
  * argument can be set to true.
  */
-SkeletonAnnotations.TracingOverlay.prototype.selectNode = function(id, strict) {
+CATMAID.TracingOverlay.prototype.selectNode = function(id, strict) {
   // For the sake of robustness, try parsing the passed in ID as Number. If this
   // yields a valid number, it is used to find the nodes. This is done because
   // the nodes map is typed.
@@ -1571,7 +1571,7 @@ SkeletonAnnotations.TracingOverlay.prototype.selectNode = function(id, strict) {
  * names (e.g. presynaptic_to) to a list of connector IDs. Only existing
  * relation types are represented as fields.
  */
-SkeletonAnnotations.TracingOverlay.prototype.findConnectors = function(node_id) {
+CATMAID.TracingOverlay.prototype.findConnectors = function(node_id) {
   let connectors = {};
   var ConnectorType = SkeletonAnnotations.TYPE_CONNECTORNODE;
   for (var node of this.nodes.values()) {
@@ -1595,7 +1595,7 @@ SkeletonAnnotations.TracingOverlay.prototype.findConnectors = function(node_id) 
 /**
  * Make sure all currently visible nodes have the correct color.
  */
-SkeletonAnnotations.TracingOverlay.prototype.recolorAllNodes = function () {
+CATMAID.TracingOverlay.prototype.recolorAllNodes = function () {
   // Assumes that atn and active_skeleton_id are correct:
   for (var node of this.nodes.values()) {
     node.updateColors();
@@ -1606,7 +1606,7 @@ SkeletonAnnotations.TracingOverlay.prototype.recolorAllNodes = function () {
 /**
  * Make sure all nodes have the correct visibility.
  */
-SkeletonAnnotations.TracingOverlay.prototype.updateVisibilityForAllNodes = function () {
+CATMAID.TracingOverlay.prototype.updateVisibilityForAllNodes = function () {
   // Assumes that atn and active_skeleton_id are correct:
   for (var node of this.nodes.values()) {
     node.updateVisibility(false);
@@ -1623,8 +1623,8 @@ SkeletonAnnotations.TracingOverlay.prototype.updateVisibilityForAllNodes = funct
 /**
  * Set whether the radius of the active node is visible.
  */
-SkeletonAnnotations.TracingOverlay.prototype.updateNodeRadiiVisibility = function () {
-  this.graphics.setNodeRadiiVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_node_radii);
+CATMAID.TracingOverlay.prototype.updateNodeRadiiVisibility = function () {
+  this.graphics.setNodeRadiiVisibility(CATMAID.TracingOverlay.Settings.session.display_node_radii);
   this.recolorAllNodes(); // Necessary to trigger update of radius graphics.
 };
 
@@ -1633,7 +1633,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodeRadiiVisibility = functio
  * bar and the status bar as well as updating SkeletonAnnotations.atn. Can
  * handle virtual nodes.
  */
-SkeletonAnnotations.TracingOverlay.prototype.activateNode = function(node) {
+CATMAID.TracingOverlay.prototype.activateNode = function(node) {
   var atn = SkeletonAnnotations.atn,
       last_skeleton_id = atn.skeleton_id;
   if (node) {
@@ -1652,7 +1652,7 @@ SkeletonAnnotations.TracingOverlay.prototype.activateNode = function(node) {
  * Activate the node nearest to the mouse. Optionally, virtual nodes can be
  * respected.
  */
-SkeletonAnnotations.TracingOverlay.prototype.activateNearestNode = function (respectVirtualNodes) {
+CATMAID.TracingOverlay.prototype.activateNearestNode = function (respectVirtualNodes) {
 
   var nearestnode = this.getClosestNode(this.coords.lastX,
                                         this.coords.lastY,
@@ -1696,7 +1696,7 @@ SkeletonAnnotations.validNodeTest = function(respectVirtualNodes)
  * Expects x and y in scaled (!) stack coordinates. Can be asked to respect
  * virtual nodes.
  */
-SkeletonAnnotations.TracingOverlay.prototype.getClosestNode = function (
+CATMAID.TracingOverlay.prototype.getClosestNode = function (
     xs, ys, zs, radius, respectVirtualNodes)
 {
   var xdiff,
@@ -1742,7 +1742,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getClosestNode = function (
  * Return all node IDs in the overlay within a radius of the given point.
  * Optionally, virtual nodes can be respceted.
  */
-SkeletonAnnotations.TracingOverlay.prototype.findAllNodesWithinRadius = function (
+CATMAID.TracingOverlay.prototype.findAllNodesWithinRadius = function (
     x, y, z, radius, respectVirtualNodes, respectHiddenNodes)
 {
   var xdiff, ydiff, zdiff, distsq, radiussq = radius * radius, node, nodeid;
@@ -1769,7 +1769,7 @@ SkeletonAnnotations.TracingOverlay.prototype.findAllNodesWithinRadius = function
  * Find the point along the edge from node to node.parent nearest (x, y, z),
  * optionally exluding a radius around the nodes.
  */
-SkeletonAnnotations.TracingOverlay.prototype.pointEdgeDistanceSq = function (
+CATMAID.TracingOverlay.prototype.pointEdgeDistanceSq = function (
     x, y, z, node, exclusion)
 {
   var a, b, p, ab, ap, r, ablen;
@@ -1801,7 +1801,7 @@ SkeletonAnnotations.TracingOverlay.prototype.pointEdgeDistanceSq = function (
  * skeleton, including any nodes in additionalNodes. Virtual nodes can
  * optionally be enabled so that these are respected as well.
  */
-SkeletonAnnotations.TracingOverlay.prototype.findNearestSkeletonPoint = function (
+CATMAID.TracingOverlay.prototype.findNearestSkeletonPoint = function (
     x, y, z, skeleton_id, additionalNodes, respectVirtualNodes)
 {
   var nearest = { distsq: Infinity, node: null, point: null };
@@ -1840,7 +1840,7 @@ SkeletonAnnotations.TracingOverlay.prototype.findNearestSkeletonPoint = function
  * point. Includes the active node (atn), its children, and its parent, even if
  * they are beyond one section away. Can optionally respect virtual nodes.
  */
-SkeletonAnnotations.TracingOverlay.prototype.insertNodeInActiveSkeleton = function (
+CATMAID.TracingOverlay.prototype.insertNodeInActiveSkeleton = function (
     phys_x, phys_y, phys_z, atn, respectVirtualNodes)
 {
   var self = this;
@@ -1916,7 +1916,7 @@ SkeletonAnnotations.TracingOverlay.prototype.insertNodeInActiveSkeleton = functi
 /**
  * Remove and hide all node labels.
  */
-SkeletonAnnotations.TracingOverlay.prototype.hideLabels = function() {
+CATMAID.TracingOverlay.prototype.hideLabels = function() {
   this.removeLabels();
   this.show_labels = false;
 };
@@ -1924,7 +1924,7 @@ SkeletonAnnotations.TracingOverlay.prototype.hideLabels = function() {
 /**
  * Remove all node labels in the view.  Empty the node labels array.
  */
-SkeletonAnnotations.TracingOverlay.prototype.removeLabels = function() {
+CATMAID.TracingOverlay.prototype.removeLabels = function() {
   for (var label of this.labels.values()) {
     label.remove();
   }
@@ -1934,14 +1934,14 @@ SkeletonAnnotations.TracingOverlay.prototype.removeLabels = function() {
 /**
  * Return if labels are displayed.
  */
-SkeletonAnnotations.TracingOverlay.prototype.getLabelStatus = function() {
+CATMAID.TracingOverlay.prototype.getLabelStatus = function() {
   return this.show_labels;
 };
 
 /**
  * Show all labels.
  */
-SkeletonAnnotations.TracingOverlay.prototype.showLabels = function() {
+CATMAID.TracingOverlay.prototype.showLabels = function() {
   this.show_labels = true;
   this.updateNodes();
 };
@@ -1949,7 +1949,7 @@ SkeletonAnnotations.TracingOverlay.prototype.showLabels = function() {
 /**
  * Set a coloring source
  */
-SkeletonAnnotations.TracingOverlay.prototype.setColorSource = function(source) {
+CATMAID.TracingOverlay.prototype.setColorSource = function(source) {
   if (this._colorSource && CATMAID.tools.isFn(this._colorSource.unregister)) {
     this._colorSource.unregister();
   }
@@ -1970,7 +1970,7 @@ SkeletonAnnotations.TracingOverlay.prototype.setColorSource = function(source) {
  * Test also if the node is root and display a message if so. In both cases,
  * false is returned. False, otherwise.
  */
-SkeletonAnnotations.TracingOverlay.prototype.checkLoadedAndIsNotRoot = function(nodeID) {
+CATMAID.TracingOverlay.prototype.checkLoadedAndIsNotRoot = function(nodeID) {
   if (null === nodeID || !this.nodes.has(nodeID)) {
     CATMAID.warn("Cannot find node with ID " + nodeID);
     return false;
@@ -1987,7 +1987,7 @@ SkeletonAnnotations.TracingOverlay.prototype.checkLoadedAndIsNotRoot = function(
  * the rerooting should be done, a promise is used to ensure that even virtual
  * nodes are there.
  */
-SkeletonAnnotations.TracingOverlay.prototype.rerootSkeleton = function(nodeID) {
+CATMAID.TracingOverlay.prototype.rerootSkeleton = function(nodeID) {
   if (!this.checkLoadedAndIsNotRoot(nodeID)) return;
   if (!confirm("Do you really want to to reroot the skeleton?")) return;
   var self = this;
@@ -2004,7 +2004,7 @@ SkeletonAnnotations.TracingOverlay.prototype.rerootSkeleton = function(nodeID) {
  * virtual and the skeleton is editable, the node is created after the user
  * pressed OK in the dialog, canceling will not change the virtual node.
  */
-SkeletonAnnotations.TracingOverlay.prototype.splitSkeleton = function(nodeId) {
+CATMAID.TracingOverlay.prototype.splitSkeleton = function(nodeId) {
   if (!this.checkLoadedAndIsNotRoot(nodeId)) return;
   var self = this;
   var node = self.nodes.get(nodeId);
@@ -2070,7 +2070,7 @@ SkeletonAnnotations.TracingOverlay.prototype.splitSkeleton = function(nodeId) {
  * Used to join two skeletons together. Permissions are checked at the server
  * side, returning an error if not allowed.
  */
-SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (fromid, toid) {
+CATMAID.TracingOverlay.prototype.createTreenodeLink = function (fromid, toid) {
   if (fromid === toid) return;
   if (!this.nodes.has(toid)) return;
   var self = this;
@@ -2217,7 +2217,7 @@ SkeletonAnnotations.linkTypePointsOutwards = function(linkType) {
  * @link_type. It is expected, that both nodes are existent. All nodes are
  * updated after this. If the from-node is virtual, it will be created.
  */
-SkeletonAnnotations.TracingOverlay.prototype.createLink = function (fromid, toid,
+CATMAID.TracingOverlay.prototype.createLink = function (fromid, toid,
     link_type, afterCreate)
 {
   var self = this;
@@ -2271,7 +2271,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createLink = function (fromid, toid
  * completionCallback function, it is invoked with one argument: the ID of the
  * newly created connector.
  */
-SkeletonAnnotations.TracingOverlay.prototype.createSingleConnector = function (
+CATMAID.TracingOverlay.prototype.createSingleConnector = function (
     phys_x, phys_y, phys_z, confval, subtype)
 {
   var self = this;
@@ -2295,7 +2295,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createSingleConnector = function (
  * Create a new postsynaptic treenode from a connector. We create the treenode
  * first, then we create the link from the connector.
  */
-SkeletonAnnotations.TracingOverlay.prototype.createPostsynapticTreenode = function (
+CATMAID.TracingOverlay.prototype.createPostsynapticTreenode = function (
     connectorID, phys_x, phys_y, phys_z, radius, confidence, afterCreate)
 {
   return this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius,
@@ -2323,7 +2323,7 @@ var collectLinksByRelation = function(target, l) {
 /**
  * Create a new treenode that is postsynaptic to the given @connectorID.
  */
-SkeletonAnnotations.TracingOverlay.prototype.createPresynapticTreenode = function (
+CATMAID.TracingOverlay.prototype.createPresynapticTreenode = function (
     connectorID, phys_x, phys_y, phys_z, radius, confidence, afterCreate)
 {
   // Check that connectorID doesn't have a presynaptic treenode already (It is
@@ -2348,7 +2348,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createPresynapticTreenode = functio
 /**
  * Create a new treenode that has a gap junction with the given @connectorID.
  */
-SkeletonAnnotations.TracingOverlay.prototype.createGapjunctionTreenode = function (
+CATMAID.TracingOverlay.prototype.createGapjunctionTreenode = function (
     connectorID, phys_x, phys_y, phys_z, radius, confidence, afterCreate)
 {
   // Check that connectorID doesn't already have two gap junction links
@@ -2379,7 +2379,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createGapjunctionTreenode = functio
 /**
  * Create a new treenode that has a tight junction with the given @connectorID.
  */
-SkeletonAnnotations.TracingOverlay.prototype.createTightjunctionTreenode = function (
+CATMAID.TracingOverlay.prototype.createTightjunctionTreenode = function (
     connectorID, phys_x, phys_y, phys_z, radius, confidence, afterCreate)
 {
   // Check that connectorID doesn't already have two tight junction links
@@ -2410,7 +2410,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTightjunctionTreenode = funct
 /**
  * Create a new treenode that has a desmosome with the given @connectorID.
  */
-SkeletonAnnotations.TracingOverlay.prototype.createDesmosomeTreenode = function (
+CATMAID.TracingOverlay.prototype.createDesmosomeTreenode = function (
     connectorID, phys_x, phys_y, phys_z, radius, confidence, afterCreate)
 {
   // Check that connectorID doesn't already have two tight junction links
@@ -2442,7 +2442,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createDesmosomeTreenode = function 
  * Create a new treenode and link it immediately to the given connector with the
  * specified link_type.
  */
-SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
+CATMAID.TracingOverlay.prototype.createTreenodeWithLink = function (
     connectorID, phys_x, phys_y, phys_z, radius, confidence,
     link_type, afterCreate)
 {
@@ -2481,7 +2481,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
  * i.e. not virtual. If a child ID is passed in, a new node is created between
  * this child and the parent node.
  */
-SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID,
+CATMAID.TracingOverlay.prototype.createNode = function (parentID,
     childId, phys_x, phys_y, phys_z, radius, confidence, afterCreate) {
   if (!parentID) { parentID = -1; }
 
@@ -2516,7 +2516,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID,
  * Invoke the callback function after having pushed updated node coordinates
  * to the database. Virtual nodes are ignored.
  */
-SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesInDB = function (callback) {
+CATMAID.TracingOverlay.prototype.updateNodeCoordinatesInDB = function (callback) {
   /**
    * Create a promise that will update all nodes in the back-end that need to be
    * synced.
@@ -2614,7 +2614,7 @@ CATMAID.createVirtualNode = function(graphics, child, parent, stackViewer) {
   return vn;
 };
 
-SkeletonAnnotations.TracingOverlay.prototype.getName = function () {
+CATMAID.TracingOverlay.prototype.getName = function () {
   if (this.stackViewer) {
     return 'Tracing layer (' + this.stackViewer.primaryStack.title + ')';
   } else {
@@ -2622,16 +2622,16 @@ SkeletonAnnotations.TracingOverlay.prototype.getName = function () {
   }
 };
 
-SkeletonAnnotations.TracingOverlay.prototype.append = CATMAID.noop;
-SkeletonAnnotations.TracingOverlay.prototype.clear = CATMAID.noop;
-SkeletonAnnotations.TracingOverlay.prototype.removeSkeletons = CATMAID.noop;
-SkeletonAnnotations.TracingOverlay.prototype.updateModels = CATMAID.noop;
+CATMAID.TracingOverlay.prototype.append = CATMAID.noop;
+CATMAID.TracingOverlay.prototype.clear = CATMAID.noop;
+CATMAID.TracingOverlay.prototype.removeSkeletons = CATMAID.noop;
+CATMAID.TracingOverlay.prototype.updateModels = CATMAID.noop;
 
 /**
  * Get a proxy that dynamically creates skeleton models based on the current
  * state.
  */
-SkeletonAnnotations.TracingOverlay.prototype.getSkeletonModels = function () {
+CATMAID.TracingOverlay.prototype.getSkeletonModels = function () {
   let models = {};
   let skeletonIds = new Set(Array.from(this.nodes.values()).filter(getSkeletonId).map(getSkeletonId));
   for (var skeletonId of skeletonIds) {
@@ -2640,21 +2640,21 @@ SkeletonAnnotations.TracingOverlay.prototype.getSkeletonModels = function () {
   return models;
 };
 
-SkeletonAnnotations.TracingOverlay.prototype.getSelectedSkeletonModels = function () {
+CATMAID.TracingOverlay.prototype.getSelectedSkeletonModels = function () {
   // Return all skeletons, because the active skeleton is taken car of
   // explicitly.
   return this.getSkeletonModels();
 };
 
-SkeletonAnnotations.TracingOverlay.prototype.getSkeletons = function () {
+CATMAID.TracingOverlay.prototype.getSkeletons = function () {
   return Array.from(this.nodes.keys());
 };
 
-SkeletonAnnotations.TracingOverlay.prototype.getSelectedSkeletons = function () {
+CATMAID.TracingOverlay.prototype.getSelectedSkeletons = function () {
   return this.getSkeletons();
 };
 
-SkeletonAnnotations.TracingOverlay.prototype.hasSkeleton = function (skeletonId) {
+CATMAID.TracingOverlay.prototype.hasSkeleton = function (skeletonId) {
   return this.nodes.has(skeletonId);
 };
 
@@ -2693,7 +2693,7 @@ var makeSkeletonModelAccessor = function(skeletonIds) {
  * @param extraNodes is an array of nodes that should be added additionally
  * @returns {Bool} Whether or not a render call has already been queued.
  */
-SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (jso, extraNodes) {
+CATMAID.TracingOverlay.prototype.refreshNodesFromTuples = function (jso, extraNodes) {
   // Due to possible performance implications, the tracing layer won't signal
   // visible node set changes if there are no listeners.
   var triggerEvents = this.hasListeners();
@@ -3007,7 +3007,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
  *
  * @returns Promise resolves when nodes are loaded
  */
-SkeletonAnnotations.TracingOverlay.prototype.loadExtraNodes = function(extraNodes) {
+CATMAID.TracingOverlay.prototype.loadExtraNodes = function(extraNodes) {
   if (!extraNodes || !extraNodes.length) {
     throw new CATMAID.ValueError("No nodes provided");
   }
@@ -3088,7 +3088,7 @@ SkeletonAnnotations.TracingOverlay.prototype.loadExtraNodes = function(extraNode
  *
  * @params {Bool} skipRendering Whether or not node rendering can be skipped.
  */
-SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completionCallback, skipRendering) {
+CATMAID.TracingOverlay.prototype.redraw = function(force, completionCallback, skipRendering) {
   var stackViewer = this.stackViewer;
 
   // Don't udpate if the stack's current section or scale wasn't changed
@@ -3120,14 +3120,14 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
 
   doNotUpdate = !force && (doNotUpdate || this.suspended);
 
-  var screenScale = SkeletonAnnotations.TracingOverlay.Settings.session.screen_scaling;
+  var screenScale = CATMAID.TracingOverlay.Settings.session.screen_scaling;
   this.paper.classed('screen-scale', screenScale);
   // All graphics elements scale automatcally. If in screen scale mode, where
   // the size of all elements should stay the same (regardless of zoom level),
   // counter acting this is required.
   var dynamicScale = screenScale ? (1 / stackViewer.scale) : false;
   this.graphics.scale(
-      SkeletonAnnotations.TracingOverlay.Settings.session.scale,
+      CATMAID.TracingOverlay.Settings.session.scale,
       this.stackViewer.primaryStack.minPlanarRes,
       dynamicScale);
 
@@ -3169,7 +3169,7 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
   }
 };
 
-SkeletonAnnotations.TracingOverlay.prototype.renderIfReady = function() {
+CATMAID.TracingOverlay.prototype.renderIfReady = function() {
   if (this.transferFormat == 'gif' || this.transferFormat == 'png') {
     let target = this.pixiLayer.tracingImage;
     if (!target) {
@@ -3192,7 +3192,7 @@ SkeletonAnnotations.TracingOverlay.prototype.renderIfReady = function() {
  * happen in different divs.  This is actually called from mousedown (or mouseup
  * if we ever need to make click-and-drag work with the left hand button too...)
  */
-SkeletonAnnotations.TracingOverlay.prototype.whenclicked = function (e) {
+CATMAID.TracingOverlay.prototype.whenclicked = function (e) {
   if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.MOVE) {
     return false;
   }
@@ -3257,7 +3257,7 @@ SkeletonAnnotations.TracingOverlay.prototype.whenclicked = function (e) {
  * Create a new node or link depending on the passed in flags. Wrap this action
  * and suspend the tracing overlay while the operation runs.
  */
-SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert, link, postLink) {
+CATMAID.TracingOverlay.prototype.createNodeOrLink = function(insert, link, postLink) {
   var handled = false;
   // To suspend field of view node updates during/post model creation,
   // individual creation functions store a promise in <create>, after the
@@ -3292,7 +3292,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
 };
 
 
-SkeletonAnnotations.TracingOverlay.prototype.askForConnectorType = function() {
+CATMAID.TracingOverlay.prototype.askForConnectorType = function() {
   let self = this;
   return CATMAID.Connectors.linkTypes(project.id)
     .then(function(linkTypes) {
@@ -3342,7 +3342,7 @@ SkeletonAnnotations.TracingOverlay.prototype.askForConnectorType = function() {
  * If no active node is available, a new node, or (if link is true) connector,
  * is created.
  */
-SkeletonAnnotations.TracingOverlay.prototype._createNodeOrLink = function(insert, link, postLink) {
+CATMAID.TracingOverlay.prototype._createNodeOrLink = function(insert, link, postLink) {
   // take into account current local offset coordinates and scale
   var pos_x = this.coords.lastX;
   var pos_y = this.coords.lastY;
@@ -3528,7 +3528,7 @@ SkeletonAnnotations.TracingOverlay.prototype._createNodeOrLink = function(insert
  * If no active node is available, a new node, or (if link is true) connector,
  * is created.
  */
-SkeletonAnnotations.TracingOverlay.prototype.createNewOrExtendActiveSkeleton =
+CATMAID.TracingOverlay.prototype.createNewOrExtendActiveSkeleton =
     function(insert, link, postLink) {
   // Check if there is already a node under the mouse
   // and if so, then activate it
@@ -3565,11 +3565,11 @@ SkeletonAnnotations.TracingOverlay.prototype.createNewOrExtendActiveSkeleton =
   }
 };
 
-SkeletonAnnotations.TracingOverlay.prototype.show = function () {
+CATMAID.TracingOverlay.prototype.show = function () {
   this.view.style.display = "block";
 };
 
-SkeletonAnnotations.TracingOverlay.prototype.hide = function () {
+CATMAID.TracingOverlay.prototype.hide = function () {
   this.view.style.display = "none";
 };
 
@@ -3577,7 +3577,7 @@ SkeletonAnnotations.TracingOverlay.prototype.hide = function () {
  * A wrapper around updateNodes without arguments that can be passed around
  * easier.
  */
-SkeletonAnnotations.TracingOverlay.prototype.simpleUpdateNodes = function () {
+CATMAID.TracingOverlay.prototype.simpleUpdateNodes = function () {
   this.updateNodes();
 };
 
@@ -3586,7 +3586,7 @@ SkeletonAnnotations.TracingOverlay.prototype.simpleUpdateNodes = function () {
  * volume of the current view. Will also push editions (if any) to nodes to the
  * database.
  */
-SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
+CATMAID.TracingOverlay.prototype.updateNodes = function (callback,
     futureActiveNodeID, errCallback) {
   var self = this;
 
@@ -3610,9 +3610,9 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
     let headers;
     // If there is a read-only mirror defined, get all nodes from there and
     // do an extra query for the active node from the regular back-end.
-    let mirrorIndex = SkeletonAnnotations.TracingOverlay.Settings.session.read_only_mirror_index;
+    let mirrorIndex = CATMAID.TracingOverlay.Settings.session.read_only_mirror_index;
     if (mirrorIndex > -1) {
-      let mirrorServer = SkeletonAnnotations.TracingOverlay.Settings.session.read_only_mirrors[mirrorIndex - 1];
+      let mirrorServer = CATMAID.TracingOverlay.Settings.session.read_only_mirrors[mirrorIndex - 1];
       if (mirrorServer) {
         dedicatedActiveSkeletonUpdate = true;
         url = CATMAID.tools.urlJoin(mirrorServer.url, project.id + '/node/list');
@@ -3835,7 +3835,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       // in and back out) based on cached data. If no exact matching node list
       // cache entry was found, try to find a cache entry that encloses the
       // current request bounding box and that didn't have any nodes dropped.
-      var subviewsFromCache = SkeletonAnnotations.TracingOverlay.Settings.session.subviews_from_cache;
+      var subviewsFromCache = CATMAID.TracingOverlay.Settings.session.subviews_from_cache;
       if (subviewsFromCache && !json) {
         json = self.createSubViewNodeListFromCache(params);
       }
@@ -3892,7 +3892,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
   });
 };
 
-SkeletonAnnotations.TracingOverlay.prototype.createSubViewNodeListFromCache = function(params) {
+CATMAID.TracingOverlay.prototype.createSubViewNodeListFromCache = function(params) {
   var nodeList = null;
   var self = this;
   this.nodeListCache.forEachEntry(function(entry) {
@@ -3946,7 +3946,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createSubViewNodeListFromCache = fu
  * parent or a connector. If there is more than one connector, the confidence is
  * set to all connectors.
  */
-SkeletonAnnotations.TracingOverlay.prototype.setConfidence = function(newConfidence, toConnector) {
+CATMAID.TracingOverlay.prototype.setConfidence = function(newConfidence, toConnector) {
   var nodeID = SkeletonAnnotations.getActiveNodeId();
   if (!nodeID) return;
   var node = this.nodes.get(nodeID);
@@ -3972,7 +3972,7 @@ SkeletonAnnotations.TracingOverlay.prototype.setConfidence = function(newConfide
  * @nodeID The ID to test
  * @return false if the nodeID is falsy, true otherwise
  */
-SkeletonAnnotations.TracingOverlay.prototype.isIDNull = function(nodeID) {
+CATMAID.TracingOverlay.prototype.isIDNull = function(nodeID) {
   if (!nodeID) {
     CATMAID.info("Select a node first!");
     return true;
@@ -3984,7 +3984,7 @@ SkeletonAnnotations.TracingOverlay.prototype.isIDNull = function(nodeID) {
  * Move to the previous branch point or the root node, if former is not
  * available. If the treenode is virtual, it's real child is used instead.
  */
-SkeletonAnnotations.TracingOverlay.prototype.goToPreviousBranchOrRootNode = function(treenode_id, e) {
+CATMAID.TracingOverlay.prototype.goToPreviousBranchOrRootNode = function(treenode_id, e) {
   if (this.isIDNull(treenode_id)) return;
   if (!SkeletonAnnotations.isRealNode(treenode_id)) {
     // Use child of virtual node, to make sure a branch before the virtual node
@@ -4023,7 +4023,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToPreviousBranchOrRootNode = func
  * treenode is virtual, it's real parent is used instead. Pressing shift will
  * cause cylcing though all branches.
  */
-SkeletonAnnotations.TracingOverlay.prototype.goToNextBranchOrEndNode = function(treenode_id, e) {
+CATMAID.TracingOverlay.prototype.goToNextBranchOrEndNode = function(treenode_id, e) {
   if (this.isIDNull(treenode_id)) return;
   if (!SkeletonAnnotations.isRealNode(treenode_id)) {
     // Use parent of virtual node, to make sure a branch after the virtual node
@@ -4066,7 +4066,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNextBranchOrEndNode = function(
 /**
  * Select alternative branches to the currently selected one
  */
-SkeletonAnnotations.TracingOverlay.prototype.cycleThroughBranches = function (
+CATMAID.TracingOverlay.prototype.cycleThroughBranches = function (
     treenode_id, node_index, ignoreVirtual) {
   if (typeof this.nextBranches === 'undefined') return Promise.reject("No branch information found");
 
@@ -4106,7 +4106,7 @@ SkeletonAnnotations.TracingOverlay.prototype.cycleThroughBranches = function (
  * Optionally, the selection of virtual nodes can be disabled. This might cause
  * a jump to a location that is farther away than one section.
  */
-SkeletonAnnotations.TracingOverlay.prototype.goToParentNode = function(treenode_id, ignoreVirtual) {
+CATMAID.TracingOverlay.prototype.goToParentNode = function(treenode_id, ignoreVirtual) {
   if (treenode_id === null || treenode_id === undefined) {
     return Promise.reject(new CATMAID.Warning("No treenode to select provided"));
   }
@@ -4149,7 +4149,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToParentNode = function(treenode_
  * @param {number} treenode_id - The node of which to select the child
  * @param {boolean} cycle - If true, subsequent calls cycle through children
  */
-SkeletonAnnotations.TracingOverlay.prototype.goToChildNode = function (treenode_id, cycle, ignoreVirtual) {
+CATMAID.TracingOverlay.prototype.goToChildNode = function (treenode_id, cycle, ignoreVirtual) {
   if (this.isIDNull(treenode_id)) return Promise.reject("No valid node provided");
 
   // If the existing nextBranches was fetched for this treenode, reuse it to
@@ -4222,7 +4222,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToChildNode = function (treenode_
 /**
  * Stores child nodes of a treenode in a local cache.
  */
-SkeletonAnnotations.TracingOverlay.prototype.cacheBranches = function(treenode_id, branches) {
+CATMAID.TracingOverlay.prototype.cacheBranches = function(treenode_id, branches) {
   this.nextBranches = {tnid: treenode_id, branches: branches};
 };
 
@@ -4235,7 +4235,7 @@ SkeletonAnnotations.TracingOverlay.prototype.cacheBranches = function(treenode_i
  * @return {Boolean}             Whether the requested branch information is
  *                               cached.
  */
-SkeletonAnnotations.TracingOverlay.prototype.hasCachedBranches = function (index, treenode_id) {
+CATMAID.TracingOverlay.prototype.hasCachedBranches = function (index, treenode_id) {
   return this.nextBranches && // Branches are cached
       // Requested index is in cache
       this.nextBranches.branches.length && this.nextBranches.branches[0][index] &&
@@ -4247,7 +4247,7 @@ SkeletonAnnotations.TracingOverlay.prototype.hasCachedBranches = function (index
  * Lets the user select a radius around a node with the help of a small
  * measurement tool, passing the selected radius to a callback when finished.
  */
-SkeletonAnnotations.TracingOverlay.prototype.selectRadius = function(treenode_id, no_centering, completionCallback) {
+CATMAID.TracingOverlay.prototype.selectRadius = function(treenode_id, no_centering, completionCallback) {
   if (this.isIDNull(treenode_id)) return;
   var self = this;
   // References the original node the selector was created for
@@ -4359,7 +4359,7 @@ SkeletonAnnotations.TracingOverlay.prototype.selectRadius = function(treenode_id
  * If the measurement tool is used, the dialog display can optionally be
  * disabled
  */
-SkeletonAnnotations.TracingOverlay.prototype.editRadius = function(treenode_id, no_measurement_tool, no_centering, no_dialog) {
+CATMAID.TracingOverlay.prototype.editRadius = function(treenode_id, no_measurement_tool, no_centering, no_dialog) {
   if (this.isIDNull(treenode_id)) return;
   var self = this;
 
@@ -4423,7 +4423,7 @@ SkeletonAnnotations.TracingOverlay.prototype.editRadius = function(treenode_id, 
  * Measure a distance from the current cursor position to the position of the
  * next click using the radius measurement tool.
  */
-SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
+CATMAID.TracingOverlay.prototype.measureRadius = function () {
   var self = this;
 
   var spos = [this.coords.lastX, this.coords.lastY, this.stackViewer.z];
@@ -4503,7 +4503,7 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
  * All moving functions must perform moves via the updateNodeCoordinatesInDB
  * otherwise, coordinates for moved nodes would not be updated.
  */
-SkeletonAnnotations.TracingOverlay.prototype.moveTo = function(z, y, x, fn) {
+CATMAID.TracingOverlay.prototype.moveTo = function(z, y, x, fn) {
   var self = this;
   return self.updateNodeCoordinatesInDB()
     .then(function() {
@@ -4517,7 +4517,7 @@ SkeletonAnnotations.TracingOverlay.prototype.moveTo = function(z, y, x, fn) {
  *
  * @return {Promise} A promise yielding the selected node.
  */
-SkeletonAnnotations.TracingOverlay.prototype.moveToAndSelectNode = function(nodeID) {
+CATMAID.TracingOverlay.prototype.moveToAndSelectNode = function(nodeID) {
   if (nodeID === null || nodeID === undefined) {
     return Promise.reject(new CATMAID.Warning("No node selected"));
   }
@@ -4533,7 +4533,7 @@ SkeletonAnnotations.TracingOverlay.prototype.moveToAndSelectNode = function(node
  * information has to be tretrieved, the request ist queued after all pending
  * requests of this overlay.
  */
-SkeletonAnnotations.TracingOverlay.prototype.getNodeLocation = function (nodeId) {
+CATMAID.TracingOverlay.prototype.getNodeLocation = function (nodeId) {
   if (this.isIDNull(nodeId)) {
     return Promise.reject("No node provided for selection");
   }
@@ -4591,7 +4591,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getNodeLocation = function (nodeId)
  * virtual and not available in the front-end already, it tries to get both
  * real parent and real child of it and determine the correct position.
  */
-SkeletonAnnotations.TracingOverlay.prototype.goToNode = function (nodeID, fn) {
+CATMAID.TracingOverlay.prototype.goToNode = function (nodeID, fn) {
   let self = this;
   return this.getNodeLocation(nodeID)
     .then(function(loc) {
@@ -4610,7 +4610,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNode = function (nodeID, fn) {
  * the nodes are child and parent of the virtual node. If one of the two nodes
  * happens to be at the given Z, the respective node is returned.
  */
-SkeletonAnnotations.TracingOverlay.prototype.getNodeOnSectionAndEdge = function (
+CATMAID.TracingOverlay.prototype.getNodeOnSectionAndEdge = function (
     childID, parentID, reverse) {
   if (childID === parentID) {
     throw new CATMAID.ValueError("Node IDs must be different");
@@ -4713,7 +4713,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getNodeOnSectionAndEdge = function 
  * in project space. If a vitual node ID is provided, its location and ID is
  * returned, too.
  */
-SkeletonAnnotations.TracingOverlay.prototype.promiseNodeLocation = function (
+CATMAID.TracingOverlay.prototype.promiseNodeLocation = function (
     nodeID, ignoreVirtual) {
   var isVirtual = !SkeletonAnnotations.isRealNode(nodeID);
   if (ignoreVirtual && isVirtual) {
@@ -4768,7 +4768,7 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNodeLocation = function (
  * @return {Promise}       A promise returning the array of suppressed virtual
  *                         node objects.
  */
-SkeletonAnnotations.TracingOverlay.prototype.promiseSuppressedVirtualNodes = function(nodeId) {
+CATMAID.TracingOverlay.prototype.promiseSuppressedVirtualNodes = function(nodeId) {
   if (!SkeletonAnnotations.isRealNode(nodeId)) {
     nodeId = SkeletonAnnotations.getChildOfVirtualNode(nodeId);
   }
@@ -4796,7 +4796,7 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseSuppressedVirtualNodes = fun
  * @param  {string}  vnID ID of the virtual node to check.
  * @return {Boolean}      Whether the node is known to be suppressed.
  */
-SkeletonAnnotations.TracingOverlay.prototype.isVirtualNodeSuppressed = function (vnID) {
+CATMAID.TracingOverlay.prototype.isVirtualNodeSuppressed = function (vnID) {
   if (SkeletonAnnotations.isRealNode(vnID));
 
   var childID = SkeletonAnnotations.getChildOfVirtualNode(vnID);
@@ -4819,7 +4819,7 @@ SkeletonAnnotations.TracingOverlay.prototype.isVirtualNodeSuppressed = function 
  * alternatively, the parent if reverse is trueish. Returns a promise which
  * resolves to the node datastructure, return by getNodeOnSectionAndEdge.
  */
-SkeletonAnnotations.TracingOverlay.prototype.moveToNodeOnSectionAndEdge = function (
+CATMAID.TracingOverlay.prototype.moveToNodeOnSectionAndEdge = function (
     childID, parentID, select, reverse) {
   return this.getNodeOnSectionAndEdge(childID, parentID, reverse)
     .then((function(node) {
@@ -4839,7 +4839,7 @@ SkeletonAnnotations.TracingOverlay.prototype.moveToNodeOnSectionAndEdge = functi
  * Move to the node that was edited last and select it. This will always be a
  * real node.
  */
-SkeletonAnnotations.TracingOverlay.prototype.goToLastEditedNode = function(skeletonID) {
+CATMAID.TracingOverlay.prototype.goToLastEditedNode = function(skeletonID) {
   var params;
   if (typeof skeletonID !== 'undefined') {
     if (this.isIDNull(skeletonID)) return;
@@ -4867,7 +4867,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToLastEditedNode = function(skele
  * other. If a virtual node is passed in, the request is done for its real
  * parent.
  */
-SkeletonAnnotations.TracingOverlay.prototype.goToNextOpenEndNode = function(
+CATMAID.TracingOverlay.prototype.goToNextOpenEndNode = function(
     nodeID, cycle, byTime, reverse) {
   if (this.isIDNull(nodeID)) return;
   if (cycle) {
@@ -4910,7 +4910,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNextOpenEndNode = function(
  * (or the first) and select the node. If sorting by time is requested and no
  * sorting took place so for, sort all open ends by time.
  */
-SkeletonAnnotations.TracingOverlay.prototype.cycleThroughOpenEnds = function(
+CATMAID.TracingOverlay.prototype.cycleThroughOpenEnds = function(
     treenode_id, byTime, reverse) {
   if (this.nextOpenEnds === undefined ||
       this.nextOpenEnds.ends.length === 0 ||
@@ -4950,7 +4950,7 @@ SkeletonAnnotations.TracingOverlay.prototype.cycleThroughOpenEnds = function(
  * @param  {boolean} cycle  If true, cycle through results in the previous set.
  * @param  {boolean} repeat If true, repeat the last label search.
  */
-SkeletonAnnotations.TracingOverlay.prototype.goToNearestMatchingTag = function (cycle, repeat) {
+CATMAID.TracingOverlay.prototype.goToNearestMatchingTag = function (cycle, repeat) {
   if (cycle) return this.cycleThroughNearestMatchingTags();
 
   var self = this;
@@ -5028,7 +5028,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNearestMatchingTag = function (
  * Cycle through nodes with labels matching a query retrieved by
  * goToNearestMatchingTag.
  */
-SkeletonAnnotations.TracingOverlay.prototype.cycleThroughNearestMatchingTags = function () {
+CATMAID.TracingOverlay.prototype.cycleThroughNearestMatchingTags = function () {
   if (this.nextNearestMatchingTag.matches.length === 0) {
     CATMAID.info('No nodes with matching tags');
     return;
@@ -5059,7 +5059,7 @@ SkeletonAnnotations.TracingOverlay.prototype.cycleThroughNearestMatchingTags = f
 /**
  * Sets treenode information as status. Can handle virtual nodes.
  */
-SkeletonAnnotations.TracingOverlay.prototype.printTreenodeInfo = function(nodeID, prePrefix, forceExtendedStatus) {
+CATMAID.TracingOverlay.prototype.printTreenodeInfo = function(nodeID, prePrefix, forceExtendedStatus) {
   if (this.isIDNull(nodeID)) return;
   var prefix = "";
   var node = this.nodes.get(nodeID);
@@ -5095,7 +5095,7 @@ SkeletonAnnotations.TracingOverlay.prototype.printTreenodeInfo = function(nodeID
     prefix = prePrefix + " " + prefix;
   }
 
-  if (!(SkeletonAnnotations.TracingOverlay.Settings.session.extended_status_update || forceExtendedStatus)) {
+  if (!(CATMAID.TracingOverlay.Settings.session.extended_status_update || forceExtendedStatus)) {
     if (node) {
       prefix += " created by " + CATMAID.User.safeToString(node.user_id) +
         ", last edited " + CATMAID.tools.contextualDateString((node.edition_time_iso_str));
@@ -5137,7 +5137,7 @@ SkeletonAnnotations.TracingOverlay.prototype.printTreenodeInfo = function(nodeID
  * active node will be switched to its connector (if one uniquely exists). If
  * you then run the command again, it will switch back to the terminal.
  */
-SkeletonAnnotations.TracingOverlay.prototype.switchBetweenTerminalAndConnector = function() {
+CATMAID.TracingOverlay.prototype.switchBetweenTerminalAndConnector = function() {
   var atn = SkeletonAnnotations.atn;
   if (null === atn.id) {
     CATMAID.info("A terminal must be selected in order to switch to its connector");
@@ -5217,7 +5217,7 @@ SkeletonAnnotations.TracingOverlay.prototype.switchBetweenTerminalAndConnector =
  * Delete the connector from the database and removes it from the current view
  * and local objects.
  */
-SkeletonAnnotations.TracingOverlay.prototype._deleteConnectorNode =
+CATMAID.TracingOverlay.prototype._deleteConnectorNode =
     function(connectornode) {
   // Suspennd the node before submitting the request to note catch mouse
   // events on the removed node.
@@ -5267,7 +5267,7 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteConnectorNode =
  * Delete the node from the database and removes it from the current view and
  * local objects.
  */
-SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
+CATMAID.TracingOverlay.prototype._deleteTreenode =
     function(node, wasActiveNode, handleError) {
   var self = this;
   // Make sure all other pending tasks are done before the node is deleted.
@@ -5363,7 +5363,7 @@ SkeletonAnnotations.TracingOverlay.prototype._deleteTreenode =
  * the active node to change before it is queried. This is useful for instance to
  * quickly delete multiple nodes and a changed active node is required.
  */
-SkeletonAnnotations.TracingOverlay.prototype.deleteActiveNode = function() {
+CATMAID.TracingOverlay.prototype.deleteActiveNode = function() {
   var self = this;
   let deleteNode = this.submit.promise(function() {
       return self.deleteNode(SkeletonAnnotations.getActiveNodeId());
@@ -5375,7 +5375,7 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteActiveNode = function() {
  * Delete a node with the given ID. The node can either be a connector or a
  * treenode.
  */
-SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
+CATMAID.TracingOverlay.prototype.deleteNode = function(nodeId) {
   var node = this.nodes.get(nodeId);
   var self = this;
 
@@ -5463,7 +5463,7 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
  * @param  {number}  nodeId ID of the virtual node to suppress or unsuppress.
  * @return {boolean}        Whether a toggle was issued (false for real nodes).
  */
-SkeletonAnnotations.TracingOverlay.prototype.toggleVirtualNodeSuppression = function (nodeId) {
+CATMAID.TracingOverlay.prototype.toggleVirtualNodeSuppression = function (nodeId) {
   if (SkeletonAnnotations.isRealNode(nodeId)) {
     CATMAID.warn("Can not suppress real nodes.");
     return false;
@@ -5520,7 +5520,7 @@ SkeletonAnnotations.TracingOverlay.prototype.toggleVirtualNodeSuppression = func
 /**
  * Get a state representation for a node that is understood by the back-end.
  */
-SkeletonAnnotations.TracingOverlay.prototype.getState = function(nodeId) {
+CATMAID.TracingOverlay.prototype.getState = function(nodeId) {
   var node = this.nodes.get(nodeId);
   if (!node) {
     throw new CATMAID.ValueError("Can't create state: node not found");
@@ -5559,7 +5559,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getState = function(nodeId) {
  * Create A simplified state that will only contain id and edition time of the
  * provided node.
  */
-SkeletonAnnotations.TracingOverlay.prototype.getParentState = function(parentId) {
+CATMAID.TracingOverlay.prototype.getParentState = function(parentId) {
   var node = this.nodes.get(parentId);
   if (!node) {
     throw new CATMAID.ValueError("Can't create state: node not found");
@@ -5568,7 +5568,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getParentState = function(parentId)
   return CATMAID.getParentState(parentId, node.edition_time_iso_str);
 };
 
-SkeletonAnnotations.TracingOverlay.prototype.getEdgeState = function(childId, parentId) {
+CATMAID.TracingOverlay.prototype.getEdgeState = function(childId, parentId) {
   var node = this.nodes.get(parentId);
   if (!node) {
     throw new CATMAID.ValueError("Can't create state: parent not found");
@@ -5594,7 +5594,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getEdgeState = function(childId, pa
  * Return true if the given node ID is part of the given skeleton. Expects the
  * node to be displayed.
  */
-SkeletonAnnotations.TracingOverlay.prototype.nodeIsPartOfSkeleton = function(skeletonID, nodeID) {
+CATMAID.TracingOverlay.prototype.nodeIsPartOfSkeleton = function(skeletonID, nodeID) {
   if (!this.nodes.has(nodeID)) throw new CATMAID.ValueError("Node not loaded");
   return this.nodes.get(nodeID).skeleton_id === skeletonID;
 };
@@ -5606,7 +5606,7 @@ SkeletonAnnotations.TracingOverlay.prototype.nodeIsPartOfSkeleton = function(ske
  * actions started in another view by being able to create state
  * representations involving the active node, e.g. branching or interpolation.
  */
-SkeletonAnnotations.TracingOverlay.prototype.handleActiveNodeChange = function(node) {
+CATMAID.TracingOverlay.prototype.handleActiveNodeChange = function(node) {
   if (node.id && SkeletonAnnotations.Settings.session.skip_suppressed_virtual_nodes) {
     var self = this;
     this.promiseSuppressedVirtualNodes(node.id).then(function () { self.recolorAllNodes(); });
@@ -5620,7 +5620,7 @@ SkeletonAnnotations.TracingOverlay.prototype.handleActiveNodeChange = function(n
 /**
  * Update the mouse cursor on changed interaction modes.
  */
-SkeletonAnnotations.TracingOverlay.prototype.handleChangedInteractionMode = function(newMode, oldMode) {
+CATMAID.TracingOverlay.prototype.handleChangedInteractionMode = function(newMode, oldMode) {
   this.updateCursor();
 };
 
@@ -5630,7 +5630,7 @@ SkeletonAnnotations.TracingOverlay.prototype.handleChangedInteractionMode = func
  *
  * @param {SkeletonAnnotations.atn} node The node to import
  */
-SkeletonAnnotations.TracingOverlay.prototype.importActiveNode = function(node) {
+CATMAID.TracingOverlay.prototype.importActiveNode = function(node) {
   if (!node || !node.id) {
     return;
   }
@@ -5667,7 +5667,7 @@ SkeletonAnnotations.TracingOverlay.prototype.importActiveNode = function(node) {
  * Handle the creation of new nodes. Update our view by manually adding the node
  * to our node store if it is unkown.
  */
-SkeletonAnnotations.TracingOverlay.prototype.handleNewNode = function(node) {
+CATMAID.TracingOverlay.prototype.handleNewNode = function(node) {
   // If we know the new node already, do nothing. We assume it has been taken
   // care of somewhere else.
   if (!node || this.nodes.has(node.id)) return;
@@ -5676,7 +5676,7 @@ SkeletonAnnotations.TracingOverlay.prototype.handleNewNode = function(node) {
   // doesn't catch cases where only the edge between the new node and another
   // node crosses the view. If these cases are important, the allow_lazy_updates
   // setting has to be set to false.
-  if (SkeletonAnnotations.TracingOverlay.Settings.session.allow_lazy_updates) {
+  if (CATMAID.TracingOverlay.Settings.session.allow_lazy_updates) {
     if (!this.isInView(node.x, node.y, node.z)) {
       return;
     }
@@ -5729,7 +5729,7 @@ SkeletonAnnotations.TracingOverlay.prototype.handleNewNode = function(node) {
  * Handle the creation of new connector nodes. Update our view by manually
  * adding the node to our node store if it is unkown.
  */
-SkeletonAnnotations.TracingOverlay.prototype.handleNewConnectorNode = function(node) {
+CATMAID.TracingOverlay.prototype.handleNewConnectorNode = function(node) {
   // If we know the new node already, do nothing. We assume it has been taken
   // care of somewhere else.
   if (!node || this.nodes.has(node.id)) return;
@@ -5738,7 +5738,7 @@ SkeletonAnnotations.TracingOverlay.prototype.handleNewConnectorNode = function(n
   // doesn't catch cases where only the edge between the new node and another
   // node crosses the view. If these cases are important, the allow_lazy_updates
   // setting has to be set to false.
-  if (SkeletonAnnotations.TracingOverlay.Settings.session.allow_lazy_updates) {
+  if (CATMAID.TracingOverlay.Settings.session.allow_lazy_updates) {
     if (!this.isInView(node.x, node.y, node.z)) {
       return;
     }
@@ -5757,7 +5757,7 @@ SkeletonAnnotations.TracingOverlay.prototype.handleNewConnectorNode = function(n
   // TODO: add links
 };
 
-SkeletonAnnotations.TracingOverlay.prototype.isInView = function(px, py, pz) {
+CATMAID.TracingOverlay.prototype.isInView = function(px, py, pz) {
   var vb = this.stackViewer.primaryStack.createStackToProjectBox(
       this.stackViewer.createStackViewBox());
 
@@ -5769,7 +5769,7 @@ SkeletonAnnotations.TracingOverlay.prototype.isInView = function(px, py, pz) {
 /**
  * Update nodes if called with a node that is currently part of this overlay.
  */
-SkeletonAnnotations.TracingOverlay.prototype.handleNodeChange = function(nodeId) {
+CATMAID.TracingOverlay.prototype.handleNodeChange = function(nodeId) {
   if (!this.nodes.has(nodeId)) return;
   this.updateNodes();
 };
@@ -5778,7 +5778,7 @@ SkeletonAnnotations.TracingOverlay.prototype.handleNodeChange = function(nodeId)
  * If the removed connector was selected, unselect it. Update nodes if called
  * with a node that is currently part of this overlay.
  */
-SkeletonAnnotations.TracingOverlay.prototype.handleRemovedConnector = function(nodeId) {
+CATMAID.TracingOverlay.prototype.handleRemovedConnector = function(nodeId) {
   var node = this.nodes.get(nodeId);
   if (!node) {
     return;
@@ -5796,7 +5796,7 @@ SkeletonAnnotations.TracingOverlay.prototype.handleRemovedConnector = function(n
  *
  * @param {number} skeletonID - The ID of the skelton changed.
  */
-SkeletonAnnotations.TracingOverlay.prototype.handleChangedSkeleton = function(skeletonID, changes) {
+CATMAID.TracingOverlay.prototype.handleChangedSkeleton = function(skeletonID, changes) {
   this.updateIfKnown(skeletonID, changes);
 };
 
@@ -5806,7 +5806,7 @@ SkeletonAnnotations.TracingOverlay.prototype.handleChangedSkeleton = function(sk
  *
  * @param {number} skeletonID - The ID of the skelton changed.
  */
-SkeletonAnnotations.TracingOverlay.prototype.handleDeletedSkeleton = function(skeletonID) {
+CATMAID.TracingOverlay.prototype.handleDeletedSkeleton = function(skeletonID) {
   var activeSkeletonID = SkeletonAnnotations.getActiveSkeletonId();
   // Unselect active node, if it was part of the current display
   if (activeSkeletonID == skeletonID) {
@@ -5821,12 +5821,12 @@ SkeletonAnnotations.TracingOverlay.prototype.handleDeletedSkeleton = function(sk
  * @param skeletonID {number} The ID of the skelton changed.
  * @param callback {function} An optional callback, executed after a node update
  */
-SkeletonAnnotations.TracingOverlay.prototype.updateIfKnown = function(skeletonID, changes) {
+CATMAID.TracingOverlay.prototype.updateIfKnown = function(skeletonID, changes) {
   // If changes are provided and lazy updates are allowed, we can skip the
   // update if no change is in the current view. This requires all changes to
   // have a location provided.
   if (changes && changes.length > 0) {
-    if (SkeletonAnnotations.TracingOverlay.Settings.session.allow_lazy_updates) {
+    if (CATMAID.TracingOverlay.Settings.session.allow_lazy_updates) {
       var needsUpdate = false;
       for (var i=0, imax=changes.length; i<imax; ++i) {
         var change = changes[i];
@@ -5858,7 +5858,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateIfKnown = function(skeletonID
  * Update visibility of tracing window DOM element and set its size according to
  * the current settings.
  */
-SkeletonAnnotations.TracingOverlay.prototype.updateTracingWindow = function() {
+CATMAID.TracingOverlay.prototype.updateTracingWindow = function() {
   var lineWidth = 2;
   var lineColor = 0x00FF00;
 
@@ -6259,7 +6259,7 @@ SkeletonAnnotations.VisibilityGroups = new (function () {
 CATMAID.Init.on(CATMAID.Init.EVENT_PROJECT_CHANGED, function () {
   CATMAID.annotations.update(function () {
     SkeletonAnnotations.VisibilityGroups.refresh();
-    SkeletonAnnotations.TracingOverlay.Settings.session.visibility_groups.forEach(function (group, i) {
+    CATMAID.TracingOverlay.Settings.session.visibility_groups.forEach(function (group, i) {
       SkeletonAnnotations.VisibilityGroups.setGroup(i, group);
     });
     SkeletonAnnotations.FastMergeMode.refresh();

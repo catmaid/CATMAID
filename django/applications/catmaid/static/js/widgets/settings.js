@@ -825,7 +825,7 @@
               "Show radii around these nodes. Note that showing radii for " +
               "many nodes will slow down the tracing overlay.",
               function() {
-                SkeletonAnnotations.TracingOverlay.Settings
+                CATMAID.TracingOverlay.Settings
                     .set(
                       'display_node_radii',
                       this.value,
@@ -839,49 +839,49 @@
                       });
                     });
               },
-              SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].display_node_radii),
-          SkeletonAnnotations.TracingOverlay.Settings,
+              CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].display_node_radii),
+          CATMAID.TracingOverlay.Settings,
           'display_node_radii',
           SETTINGS_SCOPE));
 
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createCheckboxSetting(
               'Show extended status bar information',
-              SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].extended_status_update,
+              CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].extended_status_update,
               'If enabled, the status bar will not only show node type and ID ' +
               'when a node is selected. It will also show reviewer and time ' +
               'stamps, but needs to query the back-end to do this.',
               function() {
-                SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].extended_status_update = this.checked;
+                CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].extended_status_update = this.checked;
               }),
-          SkeletonAnnotations.TracingOverlay.Settings,
+          CATMAID.TracingOverlay.Settings,
           'extended_status_update',
           SETTINGS_SCOPE));
 
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createCheckboxSetting(
               'Allow lazy node updates',
-              SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].allow_lazy_updates,
+              CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].allow_lazy_updates,
               'If enabled, tracing layers will only update as a reaction of new ' +
               'node creation if that node is in their view. Otherwise it won\'t ' +
               'update, which causes edge intersections to be missed.',
               function() {
-                SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].allow_lazy_updates = this.checked;
+                CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].allow_lazy_updates = this.checked;
               }),
-          SkeletonAnnotations.TracingOverlay.Settings,
+          CATMAID.TracingOverlay.Settings,
           'allow_lazy_updates',
           SETTINGS_SCOPE));
 
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createCheckboxSetting(
               'Use cached data for matching sub-views',
-              SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].subviews_from_cache,
+              CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].subviews_from_cache,
               'If enabled, CATMAID will use already loaded tracing data when ' +
               'showing sub-views of a previously shown view, e.g. when zooming in.',
               function() {
-                SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].subviews_from_cache = this.checked;
+                CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].subviews_from_cache = this.checked;
               }),
-          SkeletonAnnotations.TracingOverlay.Settings,
+          CATMAID.TracingOverlay.Settings,
           'subviews_from_cache',
           SETTINGS_SCOPE));
 
@@ -898,12 +898,12 @@
           CATMAID.DOM.createRadioSetting(
               'overlay-scaling',
               [{id: 'overlay-scaling-screen', desc: 'Fixed screen size',
-                checked: SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].screen_scaling},
+                checked: CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].screen_scaling},
                {id: 'overlay-scaling-stack', desc: 'Fixed stack size',
-                checked: !SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].screen_scaling}],
+                checked: !CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].screen_scaling}],
               null,
               function () {
-                SkeletonAnnotations.TracingOverlay.Settings
+                CATMAID.TracingOverlay.Settings
                     .set(
                       'screen_scaling',
                       this.value === 'overlay-scaling-screen',
@@ -914,35 +914,35 @@
                       });
                     });
               }).addClass('setting'),
-          SkeletonAnnotations.TracingOverlay.Settings,
+          CATMAID.TracingOverlay.Settings,
           'screen_scaling',
           SETTINGS_SCOPE));
 
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createLabeledControl(
               $('<span>Size adjustment: <span id="overlay-scale-value">' +
-                  (SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].scale*100).toFixed() +
+                  (CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].scale*100).toFixed() +
                   '</span>%</span>'),
               $('<div id="overlay-scaling-slider" />').slider({
                   min: -2,
                   max: 2,
                   step: 0.1,
-                  value: Math.log(SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].scale)/Math.LN2,
+                  value: Math.log(CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].scale)/Math.LN2,
                   change: function (event, ui) {
-                    SkeletonAnnotations.TracingOverlay.Settings
+                    CATMAID.TracingOverlay.Settings
                         .set(
                           'scale',
                           Math.pow(2, ui.value),
                           SETTINGS_SCOPE)
                         .then(function () {
                           $('#overlay-scale-value').text((
-                              SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].scale*100).toFixed());
+                              CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].scale*100).toFixed());
                           project.getStackViewers().forEach(function (s) {
                             SkeletonAnnotations.getTracingOverlay(s.getId()).redraw(true);
                           });
                         });
                   }})),
-          SkeletonAnnotations.TracingOverlay.Settings,
+          CATMAID.TracingOverlay.Settings,
           'scale',
           SETTINGS_SCOPE));
 
@@ -959,7 +959,7 @@
           "Texture to use for connector nodes: classic CATMAID uses 'Disc', but this obscures " +
           "image data underneath the node.",
           function() {
-            SkeletonAnnotations.TracingOverlay.Settings
+            CATMAID.TracingOverlay.Settings
               .set(
                 'connector_node_marker',
                 this.value,
@@ -976,9 +976,9 @@
                 });
               });
           },
-          SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].connector_node_marker
+          CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].connector_node_marker
         ),
-        SkeletonAnnotations.TracingOverlay.Settings,
+        CATMAID.TracingOverlay.Settings,
         'connector_node_marker',
         SETTINGS_SCOPE
       ));
@@ -995,7 +995,7 @@
           "Encoding of tracing data. For large views a binary format like Msgpack can have performance benefits.",
           function() {
             let format = this.value;
-            SkeletonAnnotations.TracingOverlay.Settings
+            CATMAID.TracingOverlay.Settings
               .set(
                 'transfer_mode',
                 this.value,
@@ -1011,16 +1011,16 @@
                 });
               });
           },
-          SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].transfer_mode
+          CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].transfer_mode
         ),
-        SkeletonAnnotations.TracingOverlay.Settings,
+        CATMAID.TracingOverlay.Settings,
         'transfer_mode',
         SETTINGS_SCOPE
       ));
 
       var tracingReadOnlyMirrorInput = CATMAID.DOM.createInputSetting(
           "Read-only CATMAID mirrors",
-          SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].read_only_mirrors.map(function(m) {
+          CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].read_only_mirrors.map(function(m) {
             return m.url + '|' + m.auth;
           }).join(', '),
           "A list of read-only CATMAID mirror servers and API keys that can be " +
@@ -1052,7 +1052,7 @@
             if (error) {
               CATMAID.statusBar.replaceLast('Invalid read-only mirror definition');
             } else {
-              SkeletonAnnotations.TracingOverlay.Settings
+              CATMAID.TracingOverlay.Settings
                   .set(
                     'read_only_mirrors',
                     mirrors,
@@ -1065,14 +1065,14 @@
 
       ds.append(wrapSettingsControl(
           tracingReadOnlyMirrorInput,
-          SkeletonAnnotations.TracingOverlay.Settings,
+          CATMAID.TracingOverlay.Settings,
           'read_only_mirrors',
           SETTINGS_SCOPE));
 
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createNumericInputSetting(
               "Read-only mirror index",
-              SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].read_only_mirror_index,
+              CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].read_only_mirror_index,
               1,
               "Selects a mirror by index from the above mirror list, starting with 1. Empty values, -1 or 0 will disable this.",
               function() {
@@ -1080,13 +1080,13 @@
                 if (!newIndex || Number.isNaN(newIndex)) {
                   newIndex = -1;
                 }
-                SkeletonAnnotations.TracingOverlay.Settings
+                CATMAID.TracingOverlay.Settings
                     .set(
                       'read_only_mirror_index',
                       newIndex,
                       SETTINGS_SCOPE);
               }),
-          SkeletonAnnotations.TracingOverlay.Settings,
+          CATMAID.TracingOverlay.Settings,
           'read_only_mirror_index',
           SETTINGS_SCOPE));
 
@@ -1130,17 +1130,17 @@
           var input = colorControls.get(field);
           var color = $(input).find('input').val();
           color = new THREE.Color(color).getHex();
-          SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE][field] = color;
+          CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE][field] = color;
         });
         updateTracingColors();
       };
 
       var colorControls = new Map();
       colors.forEach(function(field, label) {
-        var color = new THREE.Color(SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE][field]);
+        var color = new THREE.Color(CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE][field]);
         var input = CATMAID.DOM.createInputSetting(label, color.getStyle());
         this.append(wrapSettingsControl(input,
-                                        SkeletonAnnotations.TracingOverlay.Settings,
+                                        CATMAID.TracingOverlay.Settings,
                                         field,
                                         SETTINGS_SCOPE,
                                         updateTracingColors,
@@ -1345,10 +1345,10 @@
             break;
         }
 
-        var settingsCopy = SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].visibility_groups;
+        var settingsCopy = CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].visibility_groups;
         settingsCopy = $.extend([], settingsCopy);
         settingsCopy[groupID] = groupSetting;
-        SkeletonAnnotations.TracingOverlay.Settings
+        CATMAID.TracingOverlay.Settings
             .set(
               'visibility_groups',
               settingsCopy,
@@ -1356,7 +1356,7 @@
             .then(function () {
               SkeletonAnnotations.VisibilityGroups.setGroup(
                   groupID,
-                  SkeletonAnnotations.TracingOverlay.Settings.session.visibility_groups[groupID]);
+                  CATMAID.TracingOverlay.Settings.session.visibility_groups[groupID]);
 
               // Redraw all overlays
               project.getStackViewers().forEach(function(sv) {
@@ -1369,7 +1369,7 @@
       };
 
       visibilityGroups.forEach(function (group) {
-        var scopedSettings = SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].visibility_groups[group.id];
+        var scopedSettings = CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].visibility_groups[group.id];
 
         var groupRadioControl = CATMAID.DOM.createRadioSetting(
               'visibility-group-' + group.id,
@@ -1458,11 +1458,11 @@
 
       dsVisibilityGroups.append(wrapSettingsControl(
           dsVisibilityGroupsRadioWrapper,
-          SkeletonAnnotations.TracingOverlay.Settings,
+          CATMAID.TracingOverlay.Settings,
           'visibility_groups',
           SETTINGS_SCOPE,
           function () {
-            SkeletonAnnotations.TracingOverlay.Settings.session.visibility_groups.forEach(function (group, i) {
+            CATMAID.TracingOverlay.Settings.session.visibility_groups.forEach(function (group, i) {
               SkeletonAnnotations.VisibilityGroups.setGroup(i, group);
             });
 
@@ -1969,7 +1969,7 @@
         'and center and upper bound and center, respectively.'].join('')));
 
     colors.forEach(function(field, label) {
-      var settings = SkeletonAnnotations.TracingOverlay.Settings;
+      var settings = CATMAID.TracingOverlay.Settings;
       var setting = settings[SETTINGS_SCOPE].length_color_steps;
       var step = setting[field];
 
@@ -1999,7 +1999,7 @@
 
     dsNodeColors.append(wrapSettingsControl(
         dsColorWrapper,
-        SkeletonAnnotations.TracingOverlay.Settings,
+        CATMAID.TracingOverlay.Settings,
         'length_color_steps',
         SETTINGS_SCOPE,
         updateTracingColors,
@@ -2015,7 +2015,7 @@
   };
 
   var updateTracingDepthColoring = function(getScope) {
-    if (SkeletonAnnotations.TracingOverlay.Settings.session.color_by_length) {
+    if (CATMAID.TracingOverlay.Settings.session.color_by_length) {
       // Update all tracing layers
       project.getStackViewers().forEach(function(sv) {
         var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
@@ -2032,10 +2032,10 @@
   };
 
   var setSkeletonLengthColors = function(getScope, field, rgb, alpha, colorChanged, alphaChanged, hex) {
-    var setting = SkeletonAnnotations.TracingOverlay.Settings[getScope()].length_color_steps;
+    var setting = CATMAID.TracingOverlay.Settings[getScope()].length_color_steps;
     setting[field].color = parseInt(hex, 16);
     // A copy is needed to convince the settings system that the object cheanged.
-    SkeletonAnnotations.TracingOverlay.Settings.set('length_color_steps', CATMAID.tools.deepCopy(setting), getScope());
+    CATMAID.TracingOverlay.Settings.set('length_color_steps', CATMAID.tools.deepCopy(setting), getScope());
     updateTracingDepthColoring(getScope);
   };
 

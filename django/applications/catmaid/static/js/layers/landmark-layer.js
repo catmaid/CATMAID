@@ -226,7 +226,7 @@
     var stackViewBox = this.stackViewer.createStackViewBox();
     var projectViewBox = this.stackViewer.primaryStack.createStackToProjectBox(stackViewBox);
 
-    var screenScale = SkeletonAnnotations.TracingOverlay.Settings.session.screen_scaling;
+    var screenScale = CATMAID.TracingOverlay.Settings.session.screen_scaling;
     // All graphics elements scale automatcally.
     // If in screen scale mode, where the size of all elements should
     // stay the same (regardless of zoom level), counter acting this is required.
@@ -234,7 +234,7 @@
 
     let userScaleFactor = this.options.scale;
     this.graphics.scale(
-        SkeletonAnnotations.TracingOverlay.Settings.session.scale * userScaleFactor,
+        CATMAID.TracingOverlay.Settings.session.scale * userScaleFactor,
         this.stackViewer.primaryStack.minPlanarRes,
         dynamicScale);
 

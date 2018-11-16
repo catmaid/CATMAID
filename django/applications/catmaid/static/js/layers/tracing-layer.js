@@ -24,7 +24,7 @@
     this.opacity = options.opacity || 1.0; // in the range [0,1]
 
     CATMAID.PixiLayer.prototype._initBatchContainer.call(this);
-    this.tracingOverlay = new SkeletonAnnotations.TracingOverlay(stackViewer, this, options);
+    this.tracingOverlay = new CATMAID.TracingOverlay(stackViewer, this, options);
     this.isHideable = true;
 
     // If the tracing layer state should be updated even though it is hidden

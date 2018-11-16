@@ -28,6 +28,6 @@ python-dateutil==2.6.1
 pytz==2018.4
 PyYAML==3.13
 requests==2.20.0
-scipy==1.0.0
+scipy==1.1.0
 sqlparse==0.2.4
 ujson==1.35

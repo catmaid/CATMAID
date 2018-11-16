@@ -668,7 +668,7 @@
   /** @inheritdoc */
   TileLayer.prototype.pixelValueInScaleLevel = function (stackX, stackY, stackZ) {
     // If buffering, do not know if any loaded value is valid.
-    if (null !== this._swapBuffersTimeout) return;
+    if (null !== this._swapBuffersTimeout) return Promise.resolve();
 
     var scaledStackPosition = this.stackViewer.scaledPositionInStack(this.stack);
     var tileInfo = this.tilesForLocation(
@@ -685,7 +685,7 @@
     if (relX < 0 || relX >= 1 ||
         relY < 0 || relY >= 1 ||
         stackZ !== scaledStackPosition.z) {
-      return;
+      return Promise.resolve();
     }
 
     var scaledX = relX * this.stackViewer.viewWidth + scaledStackPosition.xc;
@@ -698,7 +698,7 @@
         scaledStackPosition.s,
         0.0);
 
-    if (pixelTileInfo.top > 0 || pixelTileInfo.left > 0) return;
+    if (pixelTileInfo.top > 0 || pixelTileInfo.left > 0) return Promise.resolve();
 
     let xd = this.colTransform(pixelTileInfo.firstCol - this._tileFirstC);
     let yd = this.rowTransform(pixelTileInfo.firstRow - this._tileFirstR);
@@ -718,7 +718,7 @@
     var context = canvas.getContext('2d');
     context.drawImage(img, 0, 0);
 
-    return context.getImageData(x, y, 1, 1).data;
+    return Promise.resolve(context.getImageData(x, y, 1, 1).data);
   };
 
   CATMAID.TileLayer = TileLayer;

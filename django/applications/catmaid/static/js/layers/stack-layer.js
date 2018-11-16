@@ -516,6 +516,8 @@
   /**
    * Get the pixel value (from the current scale level) at an (unscaled) stack
    * coordinate if it is currently in the field of view.
+   *
+   * @return {Promise}
    */
   StackLayer.prototype.pixelValueInScaleLevel = function (stackX, stackY, stackZ) {
     throw new CATMAID.NotImplementedError();

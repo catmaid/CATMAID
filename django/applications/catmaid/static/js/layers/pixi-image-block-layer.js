@@ -19,12 +19,15 @@
         this.dimPerm = this.recipDimPerm = [0, 1, 2];
       }
 
+      this.blockSizeZ = 1;
+
       // TODO need to set tile width based on block size, but that's async
       this.tileSource.promiseReady.then(() => {
         let blockSize = this.tileSource.blockSize(0);
         blockSize = CATMAID.ReorientedStack.permute(blockSize, this.dimPerm);
         this.tileWidth = blockSize[0];
         this.tileHeight = blockSize[1];
+        this.blockSizeZ = blockSize[2];
         if (this._tiles.length) {
           // If tiles have been initialized, reinitialize.
           this.resize(this.stackViewer.viewWidth, this.stackViewer.viewHeight);
@@ -112,12 +115,8 @@
       var toLoad = [];
       var loading = false;
       var y = 0;
-      var slicePixelPosition = [tileInfo.z];
-      var blockSizeZ = CATMAID.ReorientedStack.permute(
-        this.tileSource.blockSize(tileInfo.zoom),
-        this.dimPerm)[2];
-      var zi = Math.floor(tileInfo.z / blockSizeZ);
-      var blockZ = tileInfo.z % blockSizeZ;
+      var zi = Math.floor(tileInfo.z / this.blockSizeZ);
+      var blockZ = tileInfo.z % this.blockSizeZ;
 
       // Update tiles.
       for (var i = this._tileOrigR, ti = 0; ti < rows; ++ti, i = (i+1) % rows) {
@@ -166,42 +165,20 @@
         // immediately, so that the buffer will be cleared.
         window.clearTimeout(this._swapBuffersTimeout);
         this._swapBuffersTimeout = window.setTimeout(this._swapBuffers.bind(this, true), 3000);
-        Promise.all(toLoad.map(([[i, j], coord]) => {
-          let [zoomLevel, ...blockCoord] = coord.slice(0, 4);
-          blockCoord = CATMAID.ReorientedStack.permute(blockCoord, this.recipDimPerm);
-
-          return this._blockCache.readBlock(zoomLevel, ...blockCoord)
+        Promise.all(toLoad.map(([[i, j], coord]) => this
+            ._readBlock(...coord.slice(0, 4))
             .then(block => {
               if (!CATMAID.tools.arraysEqual(this._tilesBuffer[i][j], coord)) return;
 
-              if (block) block = block.transpose(...this.dimPerm);
-
-              var slice;
-              if (block && block.shape[2] > blockZ) {
-                slice = block.pick(null, null, blockZ);
-
-                if (slice.shape[0] < this.tileWidth ||
-                    slice.shape[1] < this.tileHeight) {
-                  let empty = this._makeEmptySlice();
-                  var sub = empty.hi(slice.shape[0], slice.shape[1]);
-
-                  for(let i=0; i<slice.shape[0]; ++i) {
-                    for(let j=0; j<slice.shape[1]; ++j) {
-                      empty.set(i,j, slice.get(i, j));
-                    }
-                  }
-                }
-              } else {
-                slice = this._makeEmptySlice();
-              }
+              let slice = this._sliceBlock(block, blockZ);
 
               // The array is still column major, so transpose to row-major for tex.
               slice = slice.transpose(1, 0);
 
               let texture = this._sliceToTexture(slice);
               this._tilesBuffer[i][j] = [coord, texture];
-            });
-        })).then(this._swapBuffers.bind(this, false, undefined));
+            })
+        )).then(this._swapBuffers.bind(this, false, undefined));
         loading = true;
       } else if (!loading) {
         this._oldZoom = this._swapZoom;
@@ -217,6 +194,40 @@
           completionCallback();
         }
       }
+    }
+
+    _readBlock(zoomLevel, x, y, z) {
+      let blockCoord = CATMAID.ReorientedStack.permute([x, y, z], this.recipDimPerm);
+
+      return this._blockCache.readBlock(zoomLevel, ...blockCoord)
+        .then(block => {
+          if (block) block = block.transpose(...this.dimPerm);
+
+          return block;
+        });
+    }
+
+    _sliceBlock(block, blockZ) {
+      var slice;
+      if (block && block.shape[2] > blockZ) {
+        slice = block.pick(null, null, blockZ);
+
+        if (slice.shape[0] < this.tileWidth ||
+            slice.shape[1] < this.tileHeight) {
+          let empty = this._makeEmptySlice();
+          var sub = empty.hi(slice.shape[0], slice.shape[1]);
+
+          for(let i=0; i<slice.shape[0]; ++i) {
+            for(let j=0; j<slice.shape[1]; ++j) {
+              empty.set(i,j, slice.get(i, j));
+            }
+          }
+        }
+      } else {
+        slice = this._makeEmptySlice();
+      }
+
+      return slice;
     }
 
     _makeEmptySlice() {
@@ -339,6 +350,12 @@
         this._completionCallback = null;
         completionCallback();
       }
+    }
+
+    _tilePixel(tile, x, y) {
+      let blockZ = tile.coord[4] % this.blockSizeZ;
+      return this._readBlock(...tile.coord.slice(0, 4))
+          .then(block => this._sliceBlock(block, blockZ).get(Math.round(x), Math.round(y)));
     }
   }
 

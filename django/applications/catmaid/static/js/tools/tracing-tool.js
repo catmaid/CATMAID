@@ -400,7 +400,7 @@
       SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
           handleActiveNodeChange, this);
       SkeletonAnnotations.off(SkeletonAnnotations.EVENT_INTERACTION_MODE_CHANGED,
-          handleChangedInteractionMode, this);
+          this.handleChangedInteractionMode, this);
 
       project.getStackViewers().forEach(function(stackViewer) {
         closeStackViewer(stackViewer);
@@ -1608,7 +1608,7 @@
 
     // If the interation mode changes, update the UI
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_INTERACTION_MODE_CHANGED,
-        this.handleChangedInteractionMode.bind(this), this);
+        this.handleChangedInteractionMode, this);
   }
 
   /**

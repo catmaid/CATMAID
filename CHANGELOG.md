@@ -9,6 +9,8 @@
   `django/applications/performancetests/migrations/` and
   `django/applications/pgcompat/migrations/` need to be deleted.
 
+- Python 3.7 is now supported.
+
 
 ### Features and enhancements
 

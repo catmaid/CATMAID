@@ -3603,6 +3603,12 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       return;
     }
 
+    // Disable non-standard headers to avoid CORS preflight requests for
+    // tracign data mirrors.
+    let headers = {
+      'X-Requested-With': undefined,
+    };
+
     // Normally, all nodes are fetched in one go. In certain caching
     // situations or when a read-only mirror is used, the active skeleton is
     // fetched separately in a separate request to ensure most recent data.
@@ -3610,7 +3616,6 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
 
     let mainUrl = CATMAID.makeURL(project.id + '/node/list');
     let url = mainUrl;
-    let headers;
     // If there is a read-only mirror defined, get all nodes from there and
     // do an extra query for the active node from the regular back-end.
     let mirrorIndex = SkeletonAnnotations.TracingOverlay.Settings.session.read_only_mirror_index;
@@ -3620,9 +3625,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
         dedicatedActiveSkeletonUpdate = true;
         url = CATMAID.tools.urlJoin(mirrorServer.url, project.id + '/node/list');
         if (mirrorServer.auth && mirrorServer.auth.trim().length > 0) {
-          headers = {
-            'X-Authorization': mirrorServer.auth,
-          };
+          headers['X-Authorization'] = mirrorServer.auth;
         }
       }
     }

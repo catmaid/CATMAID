@@ -964,6 +964,22 @@
     }));
 
     this.addAction(new CATMAID.Action({
+      helpText: "Measure the distance between two nodes",
+      buttonName: "distance",
+      buttonID: "trace_button_distance",
+      keyShortcuts: { "F8": ["F8"] },
+      run: function(e) {
+        if (!CATMAID.mayView()) {
+          return false;
+        }
+
+        self.measureNodeDistance();
+
+        return true;
+      }
+    }));
+
+    this.addAction(new CATMAID.Action({
       helpText: "Refresh cached data like neuron names and annotations",
       buttonName: "refresh",
       buttonID: "trace_button_refresh",
@@ -1643,6 +1659,90 @@
       this.autoCacheUpdateInterval= window.setInterval(
           this.refreshCaches.bind(this), this.autoCacheUpdateIntervalLength);
     }
+  };
+
+  /**
+   * Measure the distance between the active node and a second node.
+   */
+  TracingTool.prototype.measureNodeDistance = function() {
+    let firstNodeId = SkeletonAnnotations.getActiveNodeId();
+    let skeletonId = SkeletonAnnotations.getActiveSkeletonId();
+    if (!firstNodeId) {
+      CATMAID.warn("Please select first node");
+      return;
+    }
+
+    let secondNodeId = null;
+
+    let getNode = new Promise(function(resolve, reject) {
+      var dialog = new CATMAID.OptionsDialog("Select node", {
+        'Use active node': function() {
+          secondNodeId = SkeletonAnnotations.getActiveNodeId();
+          if (!secondNodeId) {
+            throw new CATMAID.Warning("No node selected");
+          }
+
+          if (firstNodeId === secondNodeId) {
+            throw new CATMAID.Warning("Please select a node different from the first one");
+          }
+
+          let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+
+          if (skeletonId !== activeSkeletonId) {
+            throw new CATMAID.Warning("The second node isn't part of the same skeleton");
+          }
+
+          let arborTransform;
+          let firstIsVirtual = !SkeletonAnnotations.isRealNode(firstNodeId);
+          let secondIsVirtual = !SkeletonAnnotations.isRealNode(secondNodeId);
+          if (firstIsVirtual || secondIsVirtual) {
+            // If we deal with virtual nodes, insert the virtual node into the
+            // arbor parser to get the exact distance.
+            arborTransform = function(arborParser) {
+              if (firstIsVirtual) {
+                let vnComponents = SkeletonAnnotations.getVirtualNodeComponents(firstNodeId);
+                let parentId = SkeletonAnnotations.getParentOfVirtualNode(firstNodeId, vnComponents);
+                let childId = SkeletonAnnotations.getChildOfVirtualNode(firstNodeId, vnComponents);
+                let vnX = Number(SkeletonAnnotations.getXOfVirtualNode(firstNodeId, vnComponents));
+                let vnY = Number(SkeletonAnnotations.getYOfVirtualNode(firstNodeId, vnComponents));
+                let vnZ = Number(SkeletonAnnotations.getZOfVirtualNode(firstNodeId, vnComponents));
+                arborParser.positions[firstNodeId] = new THREE.Vector3(vnX, vnY, vnZ);
+                arborParser.arbor.edges[firstNodeId] = parentId;
+                arborParser.arbor.edges[childId] = firstNodeId;
+              }
+              if (secondIsVirtual) {
+                let vnComponents = SkeletonAnnotations.getVirtualNodeComponents(secondNodeId);
+                let parentId = SkeletonAnnotations.getParentOfVirtualNode(secondNodeId, vnComponents);
+                let childId = SkeletonAnnotations.getChildOfVirtualNode(secondNodeId, vnComponents);
+                let vnX = Number(SkeletonAnnotations.getXOfVirtualNode(secondNodeId, vnComponents));
+                let vnY = Number(SkeletonAnnotations.getYOfVirtualNode(secondNodeId, vnComponents));
+                let vnZ = Number(SkeletonAnnotations.getZOfVirtualNode(secondNodeId, vnComponents));
+                arborParser.positions[secondNodeId] = new THREE.Vector3(vnX, vnY, vnZ);
+                arborParser.arbor.edges[secondNodeId] = parentId;
+                arborParser.arbor.edges[childId] = firstNodeId;
+              }
+            };
+          }
+
+          resolve(CATMAID.Skeletons.distanceBetweenNodes(project.id, skeletonId,
+              firstNodeId, secondNodeId, arborTransform));
+        }
+      });
+      dialog.appendMessage("Please select a second node on the same skeleton!");
+      dialog.show('auto', 'auto', false);
+    });
+
+    getNode.then(function(length) {
+        var dialog = new CATMAID.OptionsDialog("Node distance", {
+          'Close': function() {},
+        });
+        dialog.appendMessage("The distance between node " +
+            firstNodeId + " and " + secondNodeId + " on skeleton " +
+            skeletonId + " is:");
+        dialog.appendMessage(Math.round(length) + " nm");
+        dialog.show(500, 'auto', false);
+      })
+      .catch(CATMAID.handleError);
   };
 
   /**

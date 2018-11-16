@@ -307,6 +307,73 @@
       });
     },
 
+    /**
+     * Get the cable length in nanometers between two nodes. If the passed in
+     * nodes don't exist in the passed in skeleton or there is no connection
+     * between the nodes, the returned Promise will be rejected with an error.
+     *
+     * @params {Number} projectId  The project to operate in
+     * @params {Number} skeletonId The skeleton the nodes of interest are part of
+     * @params {Number} nodeA      The first node for the distance calculation
+     * @params {Number} nodeB      The second node for the distance calculation
+     * @params {Function} arborTransform (optional) Function that can modify an
+     *                                   existing arbor parser.
+     * @returns {Promise} Resolves in either the distance between nodeA and nodeB
+     *                    or null if no distance could be computed.
+     */
+    distanceBetweenNodes: function(projectId, skeletonId, nodeA, nodeB, arborTransform) {
+
+      // Corner case, node A == node B, no extra work is needed, the distance is zero.
+      if (nodeA == nodeB) {
+        return Promise.resolve(0);
+      }
+
+      return CATMAID.fetch(projectId + '/skeletons/' + skeletonId + '/compact-detail')
+        .then(function(skeletonDetail) {
+          let arborParser = new CATMAID.ArborParser();
+          arborParser.init('compact-skeleton', skeletonDetail);
+          if (CATMAID.tools.isFn(arborTransform)) {
+            arborTransform(arborParser);
+          }
+
+           // Make sure, nodes A and B are actually part of the skeleton.
+           if (!arborParser.positions[nodeA]) {
+             throw new CATMAID.ValueError("Node " + nodeA + " is not part of skeleton " + skeletonId);
+           }
+           if (!arborParser.positions[nodeB]) {
+             throw new CATMAID.ValueError("Node " + nodeB + " is not part of skeleton " + skeletonId);
+           }
+
+          return arborParser;
+        })
+        .then(function(arborParser) {
+          let arbor = arborParser.arbor;
+          let positions = arborParser.positions;
+
+          // Reroot arbor to node A for easy upstream traversal from node B.
+          arbor.reroot(nodeA);
+
+          // Compuet distance from node B to upstream node A.
+          let distance = 0;
+          let childPosition = positions[nodeB];
+          let parent = arbor.edges[nodeB];
+          while (parent) {
+            let parentPosition = positions[parent];
+            distance += childPosition.distanceTo(parentPosition);
+
+            // If the current parent node is found, return with the calculated length.
+            if (parent == nodeA) {
+              return distance;
+            }
+
+            parent = arbor.edges[parent];
+            childPosition = parentPosition;
+          }
+
+          return null;
+        });
+    },
+
   };
 
   // Provide some basic events

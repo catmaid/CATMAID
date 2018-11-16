@@ -14,6 +14,10 @@
 
 ### Features and enhancements
 
+Miscellaneous:
+
+- Add a new Tracing Tool icon button to compute the distance between two nodes
+  on a skeleton. Respects virtual nodes.
 
 
 ### Bug fixes

@@ -63,13 +63,13 @@
   PixiTileLayer.prototype.setInterpolationMode = function (mode) {
     CATMAID.StackLayer.prototype.setInterpolationMode.call(this, mode);
     this._updatePixiInterpolationMode();
+
     for (var i = 0; i < this._tiles.length; ++i) {
       for (var j = 0; j < this._tiles[0].length; ++j) {
         var texture = this._tiles[i][j].texture;
         if (texture && texture.valid &&
             texture.baseTexture.scaleMode !== this._pixiInterpolationMode) {
-          texture.baseTexture.scaleMode = this._pixiInterpolationMode;
-          texture.update();
+          this._setTextureInterpolationMode(texture, this._pixiInterpolationMode);
         }
       }
     }
@@ -217,8 +217,7 @@
                 CATMAID.PixiContext.GlobalTextureManager.inc(source);
                 CATMAID.PixiContext.GlobalTextureManager.dec(tile.texture.baseTexture.imageUrl);
                 if (texture.baseTexture.scaleMode !== this._pixiInterpolationMode) {
-                  texture.baseTexture.scaleMode = this._pixiInterpolationMode;
-                  texture.update();
+                  this._setTextureInterpolationMode(texture, this._pixiInterpolationMode);
                 }
                 tile.texture = texture;
                 tile.visible = true;
@@ -303,8 +302,7 @@
             CATMAID.PixiContext.GlobalTextureManager.dec(tile.texture.baseTexture.imageUrl);
             tile.texture = texture || PIXI.Texture.fromImage(source);
             if (tile.texture.baseTexture.scaleMode !== this._pixiInterpolationMode) {
-              tile.texture.baseTexture.scaleMode = this._pixiInterpolationMode;
-              tile.texture.update();
+              this._setTextureInterpolationMode(tile.texture, this._pixiInterpolationMode);
             }
             tile.visible = true;
           }

@@ -475,6 +475,26 @@
     this.syncFilters();
   };
 
+  PixiLayer.prototype._setTextureInterpolationMode = function (texture, pixiInterpolationMode) {
+    let renderer = this._context.renderer;
+    let gl = renderer.gl;
+    const glScaleMode = pixiInterpolationMode === PIXI.SCALE_MODES.LINEAR ?
+        gl.LINEAR : gl.NEAREST;
+
+    if (texture && texture.valid) {
+      texture.baseTexture.scaleMode = pixiInterpolationMode;
+
+      let glTexture = texture.baseTexture._glTextures[renderer.CONTEXT_UID];
+
+      if (glTexture) {
+        texture.baseTexture._glTextures[renderer.CONTEXT_UID].bind();
+
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, glScaleMode);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, glScaleMode);
+      }
+    }
+  };
+
   /**
    * Retrieve filters supported by this layer.
    * @return {Object.<string,function>} A map of filter names to constructors.

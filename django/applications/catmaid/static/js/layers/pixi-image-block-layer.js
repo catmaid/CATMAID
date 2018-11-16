@@ -265,6 +265,8 @@
       let gl = renderer.gl;
 
       let {format, type, internalFormat, jsArrayType} = this._dtypeWebGLParams(slice.dtype);
+      const glScaleMode = this._pixiInterpolationMode === PIXI.SCALE_MODES.LINEAR ?
+        gl.LINEAR : gl.NEAREST;
 
       let texture = new PIXI.glCore.GLTexture(
           gl,
@@ -286,8 +288,8 @@
         texture.format,
         texture.type,
         new jsArrayType(slice.flatten().selection.data.buffer));
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, glScaleMode);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, glScaleMode);
 
       var baseTex = new PIXI.BaseTexture(new ImageData(1, 1));
       baseTex.hasLoaded = true;
@@ -315,8 +317,7 @@
             if (/*force ||*/ coord.length === 2) {
               tile.texture = coord[1];
               if (tile.texture.baseTexture.scaleMode !== this._pixiInterpolationMode) {
-                tile.texture.baseTexture.scaleMode = this._pixiInterpolationMode;
-                tile.texture.update();
+                this._setTextureInterpolationMode(tile.texture, this._pixiInterpolationMode);
               }
               tile.coord = coord[0];
               tile.visible = true;

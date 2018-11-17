@@ -61,6 +61,10 @@
           {zoomLevel, x, y, z, block});
     }
 
+    evictAll() {
+      this._cache.evictAll();
+    }
+
     _onBlockEviction(key, block) {
       let stateID = this._stateIDs.get(key);
       this._stateIDs.delete(key);

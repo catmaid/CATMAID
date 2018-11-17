@@ -117,9 +117,9 @@
   };
 
   /**
-   * Clear all entries from the cache.
+   * Evict all entries from the cache.
    */
-  LRUCache.prototype.clear = function () {
+  LRUCache.prototype.evictAll = function () {
     this._removeFrom(0);
   };
 

@@ -178,7 +178,7 @@
               let texture = this._sliceToTexture(slice);
               this._tilesBuffer[i][j] = [coord, texture];
             })
-        )).then(this._swapBuffers.bind(this, false, undefined));
+        )).then(this._swapBuffers.bind(this, false, this._swapBuffersTimeout));
         loading = true;
       } else if (!loading) {
         this._oldZoom = this._swapZoom;

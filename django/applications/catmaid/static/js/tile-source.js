@@ -643,18 +643,18 @@
         ];
 
         return this.reader
-            .read_block_with_modified_time(path, dataAttrs, blockCoord.map(BigInt))
+            .read_block_with_etag(path, dataAttrs, blockCoord.map(BigInt))
             .then(block => {
               if (block) {
-                let modified = block.get_modified_time();
+                let etag = block.get_etag();
                 let size = block.get_size();
                 return {
-                  modified,
+                  etag,
                   block: new nj.NdArray(nj.ndarray(block.into_data(), size, stride))
                       .transpose(...this.sliceDims)
                 };
               } else {
-                return {block, modified: undefined};
+                return {block, etag: undefined};
               }
             });
       });

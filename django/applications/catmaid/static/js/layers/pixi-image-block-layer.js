@@ -250,22 +250,17 @@
           internalFormat = gl.LUMINANCE;
           jsArrayType = Uint8Array;
           break;
+        // The default case can be hit when the layer is drawn before the
+        // image block source has fully loaded.
+        default:
+          CATMAID.warn(`Unknown data type for stack layer: ${dtype}, using uint32`);
+          /* falls through */
         case 'uint32':
-          // format = gl.RGBA_INTEGER;
-          // type = gl.UNSIGNED_BYTE;
-          // internalFormat = gl.RGBA8UI;
-          // jsArrayType = Uint8Array;
-          // format = gl.RED_INTEGER;
-          // type = gl.UNSIGNED_INT;
-          // internalFormat = gl.R32UI;
-          // jsArrayType = Uint32Array;
           format = gl.RGBA;
           type = gl.UNSIGNED_BYTE;
           internalFormat = gl.RGBA;
           jsArrayType = Uint8Array;
           break;
-        default:
-          throw new CATMAID.Error(`Unknown data type for stack layer: ${dtype}`);
       }
 
       return {format, type, internalFormat, jsArrayType};

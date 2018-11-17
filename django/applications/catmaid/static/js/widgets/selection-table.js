@@ -721,9 +721,11 @@
     if (this.review_filter === 'Self') postData.user_ids = [CATMAID.session.userid];
     CATMAID.fetch(project.id + '/skeletons/review-status', 'POST', postData)
       .then((function(json) {
-        var valid_skeletons = skeleton_ids.filter(function(skid) {
-          return !!this[skid];
+        var noReviewInfoSkeletonIds = skeleton_ids.filter(function(skid) {
+          return !this[skid];
         }, json);
+
+        var valid_skeletons = skeleton_ids;
 
         var addedModels = {};
         var updatedModels = {};
@@ -748,7 +750,7 @@
             return;
           }
           this.skeletons.push(model);
-          var counts = json[skeleton_id];
+          var counts = json[skeleton_id] || [1, 0];
           this.reviews[skeleton_id] = parseInt(Math.floor(100 * counts[1] / counts[0]));
           this.skeleton_ids[skeleton_id] = this.skeletons.length -1;
           addedModels[skeleton_id] = model;
@@ -773,15 +775,14 @@
         }
 
         // Notify user if not all skeletons are valid
-        var nInvalid = skeleton_ids.length - valid_skeletons.length;
-        if (0 !== nInvalid) {
+        if (0 !== noReviewInfoSkeletonIds.length) {
           var missing = skeleton_ids.filter(function(skid) {
             return !this[skid];
           }, json);
-          var msg = 'Could not load ' + nInvalid + ' skeletons, because they could ' +
-              'not be found. See details for more info.';
-          var detail =  'The following skeletons are missing: ' + missing.join(', ');
-          CATMAID.error(msg, detail);
+          var msg = 'Could not find review summary for ' + noReviewInfoSkeletonIds.length +
+              ' skeletons: ' + noReviewInfoSkeletonIds.join(', ');
+          CATMAID.warn(msg);
+          console.log(msg);
         }
       }).bind(this));
   };

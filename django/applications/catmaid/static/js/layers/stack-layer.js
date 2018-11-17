@@ -93,7 +93,7 @@
      */
     this._interpolationMode = interpolatonMode;
 
-    CATMAID.checkTileSourceCanary(project, this.stack, this.tileSource)
+    this.tileSource.checkCanary(project, this.stack)
         .then(this._handleCanaryCheck.bind(this));
   }
 
@@ -126,10 +126,9 @@
     if (!accessible.normal && this.changeMirrorIfNoData) {
       Promise
           .all(this.stack.mirrors.map(function (mirror, index) {
-            return CATMAID.checkTileSourceCanary(
+            return this.stack.createTileSourceForMirror(index).checkCanary(
                 project,
-                this.stack,
-                this.stack.createTileSourceForMirror(index));
+                this.stack);
           }, this))
           .then((function (mirrorAccessible) {
             var mirrorIndex = mirrorAccessible.findIndex(function (accessible) {
@@ -277,7 +276,7 @@
           customMirrorData.file_extension,
           customMirrorData.tile_width,
           customMirrorData.tile_height);
-      var url = CATMAID.getTileSourceCanaryUrl(project, stack, tileSource);
+      var url = tileSource.getCanaryUrl(project, stack);
       // Open a new browser window with a canary tile
       var win = window.open(url);
     };
@@ -405,7 +404,7 @@
       this.changeMirrorIfNoData = value;
       // If this was set to true, perform a canary test
       if (this.changeMirrorIfNoData) {
-        CATMAID.checkTileSourceCanary(project, this.stack, this.tileSource)
+        this.tileSource.checkCanary(project, this.stack)
             .then(this._handleCanaryCheck.bind(this));
       }
     } else if ('webGL' === name) {

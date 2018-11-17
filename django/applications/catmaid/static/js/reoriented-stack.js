@@ -20,16 +20,6 @@
     ],
   ];
 
-  function permute(arr, perm) {
-    return [arr[perm[0]], arr[perm[1]], arr[perm[2]]];
-  }
-
-  function permuteObj(obj, perm) {
-    let arr = [obj.x, obj.y, obj.z];
-    arr = permute(arr, perm);
-    return {x: arr[0], y: arr[1], z: arr[2]};
-  }
-
   CATMAID.ReorientedStack = class ReorientedStack extends CATMAID.Stack {
     constructor(baseStack, orientation) {
       let selfToBasePerm = ORIENT_PERMS[orientation][baseStack.orientation];
@@ -37,14 +27,15 @@
 
       let imageBlockMirrors = baseStack.imageBlockMirrors();
 
-      let permDownsampleFactors = baseStack.downsample_factors.map(zl => permuteObj(zl, baseToSelfPerm));
+      let permDownsampleFactors = baseStack.downsample_factors.map(
+          zl => CATMAID.tools.permuteCoord(zl, baseToSelfPerm));
 
       super(
           baseStack.id,
           baseStack.title,
-          permuteObj(baseStack.dimension, baseToSelfPerm),
-          permuteObj(baseStack.resolution, baseToSelfPerm),
-          permuteObj(baseStack.translation, baseToSelfPerm),
+          CATMAID.tools.permuteCoord(baseStack.dimension, baseToSelfPerm),
+          CATMAID.tools.permuteCoord(baseStack.resolution, baseToSelfPerm),
+          CATMAID.tools.permuteCoord(baseStack.translation, baseToSelfPerm),
           [], // No broken sections
           permDownsampleFactors,
           baseStack.MIN_S,
@@ -52,7 +43,7 @@
           baseStack.description,
           baseStack.metadata,
           orientation,
-          permuteObj(baseStack.canaryLocation, baseToSelfPerm),
+          CATMAID.tools.permuteCoord(baseStack.canaryLocation, baseToSelfPerm),
           baseStack.placeholderColor,
           imageBlockMirrors
         );
@@ -61,8 +52,5 @@
       this.baseToSelfPerm = baseToSelfPerm;
     }
   };
-
-  CATMAID.ReorientedStack.permute = permute;
-  CATMAID.ReorientedStack.permuteObj = permuteObj;
 
 })(CATMAID);

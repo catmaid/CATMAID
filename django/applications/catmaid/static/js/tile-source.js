@@ -25,74 +25,6 @@
     return dir;
   };
 
-  /**
-   * Create a canary tile URL for a particular project/stack/tileSource
-   * combination.
-   *
-   * @param  {Project} project
-   * @param  {Stack}   stack
-   * @param  {Object}  tileSource
-   * @return {String}  A complete canary tile URL
-   */
-  CATMAID.getTileSourceCanaryUrl = function (project, stack, tileSource) {
-    var canaryLocation = stack.canaryLocation;
-    var col = Math.floor(canaryLocation.x / tileSource.tileWidth);
-    var row = Math.floor(canaryLocation.y / tileSource.tileHeight);
-    return tileSource.getTileURL(project, stack, [canaryLocation.z], col, row, 0);
-  };
-
-  /**
-   * Check whether the canary location for a stack is accessible via this tile
-   * source and what time it takes to load. Checks for normal and CORS requests,
-   * for DOM and WebGL tiles respectively.
-   *
-   * @param  {Project} project
-   * @param  {Stack}   stack
-   * @param  {Object}  tileSource
-   * @param  {Boolean} noCache    Prevent caching by appending a dummy request parameter
-   * @return {Object}             Object with boolean keys normal and cors as
-   *                              well as float keys normalTime and corsTime.
-   */
-  CATMAID.checkTileSourceCanary = function (project, stack, tileSource, noCache) {
-    var url = CATMAID.getTileSourceCanaryUrl(project, stack, tileSource);
-
-    if (noCache) {
-      url += "?nocache=" + Date.now();
-    }
-
-    var normalReq = new Promise(function (resolve, reject) {
-      var normalImg = new Image();
-      var beforeNormalLoad = performance.now();
-
-      normalImg.onload = function () {
-        resolve([true, performance.now() - beforeNormalLoad]);
-      };
-      normalImg.onerror = function () {
-        resolve([false, Infinity]);
-      };
-
-      normalImg.src = url;
-    });
-
-    var beforeCorsLoad = performance.now();
-    var corsReq = fetch(new Request(url, {mode: 'cors', credentials: 'same-origin'}))
-      .then(function (response) {
-        var contentHeader = response.headers.get('Content-Type');
-        return [contentHeader && contentHeader.startsWith('image'),
-            performance.now() - beforeCorsLoad];
-      })
-      .catch(function () { return [false, Infinity]; });
-
-    return Promise.all([normalReq, corsReq]).then(function (result) {
-      return {
-        normal:     result[0][0],
-        normalTime: result[0][1],
-        cors:       result[1][0],
-        corsTime:   result[1][1]
-      };
-    });
-  };
-
   CATMAID.TileSources = {};
 
   CATMAID.TileSources.getTypeConstructor = function (tileSourceType) {
@@ -166,6 +98,72 @@
 
   CATMAID.AbstractTileSource.prototype.setSetting = function (name, value) {
     this[name] = value;
+  };
+
+  /**
+   * Create a canary tile URL for a particular project/stack
+   * combination.
+   *
+   * @param  {Project} project
+   * @param  {Stack}   stack
+   * @return {String}  A complete canary tile URL
+   */
+  CATMAID.AbstractTileSource.prototype.getCanaryUrl = function (project, stack) {
+    var canaryLocation = stack.canaryLocation;
+    var col = Math.floor(canaryLocation.x / this.tileWidth);
+    var row = Math.floor(canaryLocation.y / this.tileHeight);
+    return this.getTileURL(project, stack, [canaryLocation.z], col, row, 0);
+  };
+
+  /**
+   * Check whether the canary location for a stack is accessible via this tile
+   * source and what time it takes to load. Checks for normal and CORS requests,
+   * for DOM and WebGL tiles respectively.
+   *
+   * @param  {Project} project
+   * @param  {Stack}   stack
+   * @param  {Boolean} noCache    Prevent caching by appending a dummy request parameter
+   * @return {Object}             Object with boolean keys normal and cors as
+   *                              well as float keys normalTime and corsTime.
+   */
+  CATMAID.AbstractTileSource.prototype.checkCanary = function (project, stack, noCache) {
+    var url = this.getCanaryUrl(project, stack);
+
+    if (noCache) {
+      url += "?nocache=" + Date.now();
+    }
+
+    var normalReq = new Promise(function (resolve, reject) {
+      var normalImg = new Image();
+      var beforeNormalLoad = performance.now();
+
+      normalImg.onload = function () {
+        resolve([true, performance.now() - beforeNormalLoad]);
+      };
+      normalImg.onerror = function () {
+        resolve([false, Infinity]);
+      };
+
+      normalImg.src = url;
+    });
+
+    var beforeCorsLoad = performance.now();
+    var corsReq = fetch(new Request(url, {mode: 'cors', credentials: 'same-origin'}))
+      .then(function (response) {
+        var contentHeader = response.headers.get('Content-Type');
+        return [contentHeader && contentHeader.startsWith('image'),
+            performance.now() - beforeCorsLoad];
+      })
+      .catch(function () { return [false, Infinity]; });
+
+    return Promise.all([normalReq, corsReq]).then(function (result) {
+      return {
+        normal:     result[0][0],
+        normalTime: result[0][1],
+        cors:       result[1][0],
+        corsTime:   result[1][1]
+      };
+    });
   };
 
 
@@ -561,6 +559,10 @@
       this.datasetURL = this.baseURL.substring(0, this.baseURL.lastIndexOf('/'));
       let sliceDims = this.baseURL.substring(this.baseURL.lastIndexOf('/') + 1);
       this.sliceDims = sliceDims.split('_').map(d => parseInt(d, 10));
+      this.reciprocalSliceDims = Array.from(Array(this.sliceDims.length).keys())
+            .sort((a, b) => this.sliceDims[a] < this.sliceDims[b] ?
+                -1 :
+                (this.sliceDims[b] < this.sliceDims[a]) | 0);
       let n5DirIndex = this.datasetURL.lastIndexOf('.n5');
       this.rootURL = n5DirIndex === -1 ?
           (new URL(this.datasetURL)).origin :
@@ -581,9 +583,12 @@
           .then(n5wasm => n5wasm.booted.then(() => n5wasm));
     }
 
-    getTileURL() {
-      // TODO: necessary for canary check
-      return;
+    getTileURL(project, stack, slicePixelPosition, col, row, zoomLevel) {
+      let z = slicePixelPosition[0] / this.blockSize(zoomLevel)[2];
+      let sourceCoord = [col, row, z];
+      let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);
+
+      return this.rootURL + '/' + this.datasetPath(zoomLevel) + '/' + blockCoord.join('/');
     }
 
     populateDatasetAttributes(zoomLevel = 0) {
@@ -611,11 +616,7 @@
         1
       ];
       let bs = this.datasetAttributes[zoomLevel].get_block_size();
-      return [
-        bs[this.sliceDims[0]],
-        bs[this.sliceDims[1]],
-        bs[this.sliceDims[2]]
-      ];
+      return CATMAID.tools.permute(bs, this.sliceDims);
     }
 
     dataType () {
@@ -632,15 +633,7 @@
         let stride = this.datasetAttributes[zoomLevel].get_block_size()
             .map(s => { let rn = n; n *= s; return rn; });
 
-        let reciprocalDims = Array.from(Array(this.sliceDims.length).keys())
-            .sort((a, b) => this.sliceDims[a] < this.sliceDims[b] ?
-                -1 :
-                (this.sliceDims[b] < this.sliceDims[a]) | 0);
-        let blockCoord = [
-          sourceCoord[reciprocalDims[0]],
-          sourceCoord[reciprocalDims[1]],
-          sourceCoord[reciprocalDims[2]]
-        ];
+        let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);
 
         return this.reader
             .read_block_with_etag(path, dataAttrs, blockCoord.map(BigInt))
@@ -667,6 +660,35 @@
 
     scaleLevelPath(zoomLevel) {
       return 's' + zoomLevel;
+    }
+
+    checkCanary(project, stack, noCache) {
+      let request = (options) => {
+        let url = this.getCanaryUrl(project, stack);
+
+        if (noCache) {
+          url += "?nocache=" + Date.now();
+        }
+
+        let before = performance.now();
+        return fetch(new Request(url, options))
+          .then((response) => {
+            var contentHeader = response.headers.get('Content-Type');
+            return [contentHeader && contentHeader.startsWith('application/octet-stream'),
+                performance.now() - before];
+          })
+          .catch(() => [false, Infinity]);
+      };
+
+      return this.promiseReady.then(() => Promise.all([
+          request(),
+          request({mode: 'cors', credentials: 'same-origin'})
+      ]).then(result => ({
+          normal:     result[0][0],
+          normalTime: result[0][1],
+          cors:       result[1][0],
+          corsTime:   result[1][1]
+      })));
     }
   };
 

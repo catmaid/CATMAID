@@ -24,7 +24,7 @@
       // TODO need to set tile width based on block size, but that's async
       this.tileSource.promiseReady.then(() => {
         let blockSize = this.tileSource.blockSize(0);
-        blockSize = CATMAID.ReorientedStack.permute(blockSize, this.dimPerm);
+        blockSize = CATMAID.tools.permute(blockSize, this.dimPerm);
         this.tileWidth = blockSize[0];
         this.tileHeight = blockSize[1];
         this.blockSizeZ = blockSize[2];
@@ -36,7 +36,7 @@
     }
 
     _onBlockChanged({zoomLevel, x, y, z}) {
-      [x, y, z] = CATMAID.ReorientedStack.permute([x, y, z], this.dimPerm);
+      [x, y, z] = CATMAID.tools.permute([x, y, z], this.dimPerm);
       let coord = [zoomLevel, x, y, z];
 
       for (var i = 0; i < this._tiles.length; ++i) {
@@ -197,7 +197,7 @@
     }
 
     _readBlock(zoomLevel, x, y, z) {
-      let blockCoord = CATMAID.ReorientedStack.permute([x, y, z], this.recipDimPerm);
+      let blockCoord = CATMAID.tools.permute([x, y, z], this.recipDimPerm);
 
       return this._blockCache.readBlock(zoomLevel, ...blockCoord)
         .then(block => {

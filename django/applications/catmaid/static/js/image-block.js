@@ -27,6 +27,7 @@
     constructor(source, capacity = 256) {
       this.source = source;
       this._cache = new CATMAID.LRUCache(capacity);
+      this._deduper = new CATMAID.CoalescingPromiseDeduplicator();
       this._stateIDs = new Map();
       this._dirty = new Set();
 
@@ -42,7 +43,11 @@
         return Promise.resolve(block);
       }
 
-      return this.source.readBlock(...zoomBlockCoord)
+      let blockPromise = this._deduper.dedup(
+          blockKey,
+          () => this.source.readBlock(...zoomBlockCoord));
+
+      return blockPromise
           .then(({block, etag}) => {
             this._stateIDs.set(blockKey, etag);
             this._cache.set(blockKey, block);

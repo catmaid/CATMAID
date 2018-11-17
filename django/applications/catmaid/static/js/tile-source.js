@@ -644,12 +644,19 @@
 
         return this.reader
             .read_block_with_modified_time(path, dataAttrs, blockCoord.map(BigInt))
-            .then(block =>
-                block ? {
-                    block: new nj.NdArray(nj.ndarray(block.get_data(), block.get_size(), stride))
-                        .transpose(...this.sliceDims),
-                    modified: block.get_modified_time() } :
-                    {block, modified: undefined});
+            .then(block => {
+              if (block) {
+                let modified = block.get_modified_time();
+                let size = block.get_size();
+                return {
+                  modified,
+                  block: new nj.NdArray(nj.ndarray(block.into_data(), size, stride))
+                      .transpose(...this.sliceDims)
+                };
+              } else {
+                return {block, modified: undefined};
+              }
+            });
       });
     }
 

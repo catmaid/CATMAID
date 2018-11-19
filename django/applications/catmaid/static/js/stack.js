@@ -9,6 +9,11 @@
   Stack.ORIENTATION_XZ = 1;
   Stack.ORIENTATION_ZY = 2;
 
+  Stack.ORIENTATION_NAMES = [];
+  Stack.ORIENTATION_NAMES[Stack.ORIENTATION_XY] = "XY";
+  Stack.ORIENTATION_NAMES[Stack.ORIENTATION_XZ] = "XZ";
+  Stack.ORIENTATION_NAMES[Stack.ORIENTATION_ZY] = "ZY";
+
   /**
    * A Stack is created with a given pixel resolution, pixel dimension, a
    * translation relative to the project and lists of planes to be excluded

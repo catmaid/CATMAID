@@ -1524,13 +1524,6 @@
       .catch(CATMAID.handleError);
   };
 
-  // Available stack orientations
-  var orientations = {
-    "0": "XY",
-    "1": "XZ",
-    "2": "ZY"
-  };
-
   /**
    * Return a title for a given issue
    */
@@ -1538,7 +1531,7 @@
     if (8 === type) {
       // Node in broken section
       return name + " " + details.section + " of " +
-          orientations[details.orientation] + " stack \"" +
+          CATMAID.Stack.ORIENTATION_NAMES[details.orientation] + " stack \"" +
           details.stack_title  + "\" (id: " + details.stack + ")";
     } else {
       return name;

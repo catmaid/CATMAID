@@ -35,6 +35,21 @@
       });
     }
 
+    _initTiles(rows, cols) {
+      super._initTiles(rows, cols);
+
+      for (var i = 0; i < rows; ++i) {
+        for (var j = 0; j < cols; ++j) {
+          this._tiles[i][j].texture = new PIXI.Texture(new PIXI.BaseTexture(new ImageData(1, 1)));
+          this._tilesBuffer[i][j] = {
+            coord: false,
+            loaded: false,
+            texture: new PIXI.Texture(new PIXI.BaseTexture(new ImageData(1, 1)))
+          };
+        }
+      }
+    }
+
     _onBlockChanged({zoomLevel, x, y, z}) {
       [x, y, z] = CATMAID.tools.permute([x, y, z], this.dimPerm);
       let coord = [zoomLevel, x, y, z];
@@ -137,14 +152,15 @@
             if (!CATMAID.tools.arraysEqual(coord, tile.coord)) {
               tile.visible = false;
               toLoad.push([[i, j], coord]);
-              this._tilesBuffer[i][j] = coord;
+              this._tilesBuffer[i][j].coord = coord;
+              this._tilesBuffer[i][j].loaded = false;
             } else {
               tile.visible = true;
-              this._tilesBuffer[i][j] = false;
+              this._tilesBuffer[i][j].coord = null;
             }
           } else {
             tile.visible = false;
-            this._tilesBuffer[i][j] = false;
+            this._tilesBuffer[i][j].coord = null;
           }
           x += this.tileWidth;
         }
@@ -168,15 +184,17 @@
         Promise.all(toLoad.map(([[i, j], coord]) => this
             ._readBlock(...coord.slice(0, 4))
             .then(block => {
-              if (!CATMAID.tools.arraysEqual(this._tilesBuffer[i][j], coord)) return;
+              if (!this._tilesBuffer[i][j] ||
+                  !CATMAID.tools.arraysEqual(this._tilesBuffer[i][j].coord, coord)) return;
 
               let slice = this._sliceBlock(block, blockZ);
 
               // The array is still column major, so transpose to row-major for tex.
               slice = slice.transpose(1, 0);
 
-              let texture = this._sliceToTexture(slice);
-              this._tilesBuffer[i][j] = [coord, texture];
+              this._sliceToTexture(slice, this._tilesBuffer[i][j].texture);
+              this._tilesBuffer[i][j].coord = coord;
+              this._tilesBuffer[i][j].loaded = true;
             })
         )).then(this._swapBuffers.bind(this, false, this._swapBuffersTimeout));
         loading = true;
@@ -266,7 +284,7 @@
       return {format, type, internalFormat, jsArrayType};
     }
 
-    _sliceToTexture(slice) {
+    _sliceToTexture(slice, pixiTex) {
       let renderer = this._context.renderer;
       let gl = renderer.gl;
 
@@ -274,39 +292,56 @@
       const glScaleMode = this._pixiInterpolationMode === PIXI.SCALE_MODES.LINEAR ?
         gl.LINEAR : gl.NEAREST;
 
-      let texture = new PIXI.glCore.GLTexture(
-          gl,
-          slice.shape[1],
-          slice.shape[0],
-          format,
-          type);
+      let baseTex = pixiTex.baseTexture;
+      let texture = baseTex._glTextures[renderer.CONTEXT_UID];
+      let newTex = false;
+
+      if (!texture || texture.width !== slice.shape[1] || texture.height !== slice.shape[0] ||
+          texture.format !== format || texture.type !== type) {
+        if (texture) gl.deleteTexture(texture.texture);
+        texture = new PIXI.glCore.GLTexture(
+            gl,
+            slice.shape[1],
+            slice.shape[0],
+            format,
+            type);
+        baseTex._glTextures[renderer.CONTEXT_UID] = texture;
+        pixiTex._frame.width = baseTex.width = baseTex.realWidth = texture.width;
+        pixiTex._frame.height = baseTex.height = baseTex.realHeight = texture.height;
+        newTex = true;
+        pixiTex._updateUvs();
+      }
+
       texture.bind();
       gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texImage2D(
-        gl.TEXTURE_2D,
-        0, // Level
-        internalFormat,
-        texture.width,
-        texture.height,
-        0, // Border
-        texture.format,
-        texture.type,
-        new jsArrayType(slice.flatten().selection.data.buffer));
+      if (newTex) {
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0, // Level
+          internalFormat,
+          texture.width,
+          texture.height,
+          0, // Border
+          texture.format,
+          texture.type,
+          new jsArrayType(slice.flatten().selection.data.buffer));
+      } else {
+        gl.texSubImage2D(
+          gl.TEXTURE_2D,
+          0, // Level
+          0, 0,
+          texture.width,
+          texture.height,
+          texture.format,
+          texture.type,
+          new jsArrayType(slice.flatten().selection.data.buffer));
+      }
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, glScaleMode);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, glScaleMode);
 
-      var baseTex = new PIXI.BaseTexture(new ImageData(1, 1));
       baseTex.hasLoaded = true;
-
-      gl.deleteTexture(baseTex._glTextures[renderer.CONTEXT_UID]);
-      baseTex._glTextures[renderer.CONTEXT_UID] = texture;
-
-      baseTex.width = baseTex.realWidth = texture.width;
-      baseTex.height = baseTex.realHeight = texture.height;
-
-      return new PIXI.Texture(baseTex);
     }
 
     _swapBuffers(force, timeout) {
@@ -316,16 +351,20 @@
 
       for (var i = 0; i < this._tiles.length; ++i) {
         for (var j = 0; j < this._tiles[0].length; ++j) {
-          var coord = this._tilesBuffer[i][j];
-          if (coord) {
+          var buff = this._tilesBuffer[i][j];
+          if (buff.coord) {
             var tile = this._tiles[i][j];
 
-            if (/*force ||*/ coord.length === 2) {
-              tile.texture = coord[1];
+            if (/*force ||*/ buff.loaded) {
+              let swap = tile.texture;
+              tile.texture = buff.texture;
+              buff.texture = swap;
+              buff.loaded = false;
+              buff.coord = null;
               if (tile.texture.baseTexture.scaleMode !== this._pixiInterpolationMode) {
                 this._setTextureInterpolationMode(tile.texture, this._pixiInterpolationMode);
               }
-              tile.coord = coord[0];
+              tile.coord = buff.coord;
               tile.visible = true;
             } else if (force) {
               tile.visible = false;

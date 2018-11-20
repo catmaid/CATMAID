@@ -777,12 +777,17 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         else:
             scores = rnblast.NeuriteBlast(query_dps, target_dps, **nblast_params)
 
-
         # NBLAST by default will simplify the result in cases where there is
         # only a one to one correspondence. Fix this to our expectation to have
         # lists for both rows and columns.
         if type(scores) == robjects.vectors.FloatVector:
-            similarity = [numpy.asarray(scores).tolist()]
+            # In case of a single query object, the result should be a single
+            # result vector for the query object. If there are multiple query
+            # objects, there should be one result list per query object.
+            if len(query_object_ids) == 1:
+                similarity = [numpy.asarray(scores).tolist()]
+            else:
+                similarity = [[s] for s in numpy.asarray(scores).tolist()]
         else:
             # Scores are returned with query skeletons as columns, but we want them
             # as rows, because it matches our expected queries more. Therefore

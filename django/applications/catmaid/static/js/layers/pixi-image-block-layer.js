@@ -295,19 +295,16 @@
       let baseTex = pixiTex.baseTexture;
       let texture = baseTex._glTextures[renderer.CONTEXT_UID];
       let newTex = false;
+      let width = slice.shape[1];
+      let height = slice.shape[0];
 
-      if (!texture || texture.width !== slice.shape[1] || texture.height !== slice.shape[0] ||
+      if (!texture || texture.width !== width || texture.height !== height ||
           texture.format !== format || texture.type !== type) {
         if (texture) gl.deleteTexture(texture.texture);
-        texture = new PIXI.glCore.GLTexture(
-            gl,
-            slice.shape[1],
-            slice.shape[0],
-            format,
-            type);
+        texture = new PIXI.glCore.GLTexture(gl, width, height, format, type);
         baseTex._glTextures[renderer.CONTEXT_UID] = texture;
-        pixiTex._frame.width = baseTex.width = baseTex.realWidth = texture.width;
-        pixiTex._frame.height = baseTex.height = baseTex.realHeight = texture.height;
+        pixiTex._frame.width = baseTex.width = baseTex.realWidth = width;
+        pixiTex._frame.height = baseTex.height = baseTex.realHeight = height;
         newTex = true;
         pixiTex._updateUvs();
       }
@@ -341,11 +338,11 @@
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, glScaleMode);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, glScaleMode);
 
-      baseTex.hasLoaded = true;
+      pixiTex.valid = baseTex.hasLoaded = true;
     }
 
     _swapBuffers(force, timeout) {
-      if (timeout && timeout !== this._swapBuffersTimeout) return;
+      if (timeout && this._swapBuffersTimeout && timeout !== this._swapBuffersTimeout) return;
       window.clearTimeout(this._swapBuffersTimeout);
       this._swapBuffersTimeout = null;
 
@@ -358,13 +355,13 @@
             if (/*force ||*/ buff.loaded) {
               let swap = tile.texture;
               tile.texture = buff.texture;
+              tile.coord = buff.coord;
               buff.texture = swap;
               buff.loaded = false;
               buff.coord = null;
               if (tile.texture.baseTexture.scaleMode !== this._pixiInterpolationMode) {
                 this._setTextureInterpolationMode(tile.texture, this._pixiInterpolationMode);
               }
-              tile.coord = buff.coord;
               tile.visible = true;
             } else if (force) {
               tile.visible = false;

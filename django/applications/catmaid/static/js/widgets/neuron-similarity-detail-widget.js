@@ -343,7 +343,10 @@
     let nTargetObjects = similarity.target_objects.length;
     let nTargetObjectsToAdd = showTopN ? Math.min(showTopN, nTargetObjects) : nTargetObjects;
     let lut = new THREE.Lut("greenred", 10);
-    lut.setMax(nTargetObjectsToAdd - 1);
+    // Set the LUT range to the number of displayed objects. If there is only
+    // one, make sure, the LUT range is [0,1], because it won't provide colors
+    // otherwise.
+    lut.setMax(Math.max(1, nTargetObjectsToAdd - 1));
 
     $(table).DataTable({
       dom: 'lfrtip',

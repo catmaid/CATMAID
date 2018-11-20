@@ -224,7 +224,7 @@
         }
         lastFrameTime = thisFrameTime;
 
-        change(callback);
+        window.requestAnimationFrame(() => change(callback));
       };
 
       var target = e.target;

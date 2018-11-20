@@ -13,9 +13,12 @@ from collections import defaultdict, deque
 from math import sqrt
 from datetime import datetime
 
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
+
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import connection
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.db.models.query import QuerySet
 
 from rest_framework.decorators import api_view
 
@@ -39,7 +42,7 @@ except ImportError:
     logging.getLogger(__name__).warning("NeuroML module could not be loaded.")
 
 
-def default(obj):
+def default(obj:Union[DateTimeTZRange, datetime]) -> str:
     """Default JSON serializer."""
 
     if isinstance(obj, DateTimeTZRange):
@@ -52,7 +55,7 @@ def default(obj):
     raise TypeError('Not sure how to serialize object of type %s: %s' % (type(obj), obj,))
 
 
-def get_treenodes_qs(project_id=None, skeleton_id=None, with_labels=True):
+def get_treenodes_qs(project_id=None, skeleton_id=None, with_labels:bool=True) -> Tuple[QuerySet, QuerySet, QuerySet]:
     treenode_qs = Treenode.objects.filter(skeleton_id=skeleton_id)
     if with_labels:
         labels_qs = TreenodeClassInstance.objects.filter(
@@ -67,8 +70,8 @@ def get_treenodes_qs(project_id=None, skeleton_id=None, with_labels=True):
     return treenode_qs, labels_qs, labelconnector_qs
 
 
-def get_swc_string(project_id, skeleton_id, treenodes_qs, linearize_ids=False,
-        soma_markers=None):
+def get_swc_string(project_id, skeleton_id, treenodes_qs:QuerySet, linearize_ids:bool=False,
+        soma_markers:List[str]=None) -> str:
     """
     Structure identifiers (www.neuromorpho.org):
     0 - undefined
@@ -166,7 +169,7 @@ def get_swc_string(project_id, skeleton_id, treenodes_qs, linearize_ids=False,
 
     if linearize_ids:
         # Find successors for each node
-        successors = defaultdict(list)
+        successors = defaultdict(list)  # type: DefaultDict
         root = None
         for tn in all_rows:
             node, parent = tn[0], tn[6]
@@ -195,7 +198,7 @@ def get_swc_string(project_id, skeleton_id, treenodes_qs, linearize_ids=False,
         result += " ".join(map(str, row)) + "\n"
     return result
 
-def export_skeleton_response(request, project_id=None, skeleton_id=None, format=None):
+def export_skeleton_response(request:HttpRequest, project_id=None, skeleton_id=None, format:str=None) -> Union[HttpResponse, JsonResponse]:
     treenode_qs, labels_qs, labelconnector_qs = get_treenodes_qs(project_id, skeleton_id)
 
     # Make sure we export in consistent order
@@ -214,7 +217,7 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
-def compact_skeleton_detail(request, project_id=None, skeleton_id=None):
+def compact_skeleton_detail(request:HttpRequest, project_id=None, skeleton_id=None) -> Union[HttpResponse, JsonResponse]:
     """Get a compact treenode representation of a skeleton, optionally with the
     history of individual nodes and connectors.
 
@@ -338,8 +341,8 @@ def compact_skeleton_detail(request, project_id=None, skeleton_id=None):
                 })
 
 @requires_user_role(UserRole.Browse)
-def compact_skeleton(request, project_id=None, skeleton_id=None,
-        with_connectors=None, with_tags=None):
+def compact_skeleton(request:HttpRequest, project_id=None, skeleton_id=None,
+        with_connectors=None, with_tags=None) -> JsonResponse:
     """Get a compact treenode representation of a skeleton, optionally with the
     history of individual nodes and connectors. This does exactly the same as
     compact_skeleton_detail(), but provides a slightly different interface. This
@@ -349,7 +352,7 @@ def compact_skeleton(request, project_id=None, skeleton_id=None,
     # Sanitize
     project_id = int(project_id)
     skeleton_id = int(skeleton_id)
-    with_connectors  = int(with_connectors) != 0
+    with_connectors = int(with_connectors) != 0
     with_tags = int(with_tags) != 0
     with_history = get_request_bool(request.GET, "with_history", False)
     # Indicate if history of merged in skeletons should also be included if
@@ -374,7 +377,7 @@ def compact_skeleton(request, project_id=None, skeleton_id=None,
 
 @api_view(['POST'])
 @requires_user_role(UserRole.Browse)
-def compact_skeleton_detail_many(request, project_id=None):
+def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[HttpResponse, JsonResponse]:
     """Get a compact treenode representation of a list of skeletons, optionally
     with the history of individual nodes and connectors.
 
@@ -620,8 +623,8 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
             raise Exception("Skeleton #%s doesn't exist" % skeleton_id)
         # Otherwise returns an empty list of nodes
 
-    connectors = ()
-    tags = defaultdict(list)
+    connectors = ()  # type: Tuple
+    tags = defaultdict(list)  # type: DefaultDict
     reviews = []
 
     if with_connectors or with_tags or with_annotations:
@@ -767,7 +770,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
         for r in cursor.fetchall():
             reviews.append(r)
 
-    annotations = []
+    annotations = []  # type: List[Optional[Tuple]]
     if with_annotations:
         history_suffix = '__with_history' if with_history else ''
         link_history_query = ', annotation_link.edition_time' if with_history else ''
@@ -827,9 +830,9 @@ def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,
 
     cursor = connection.cursor()
 
-    nodes = ()
+    nodes = ()  # type: Tuple
     connectors = []
-    tags = defaultdict(list)
+    tags = defaultdict(list)  # type: DefaultDict
 
     if 0 != with_nodes:
         if with_time:
@@ -923,7 +926,7 @@ def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,
 
 
 @requires_user_role(UserRole.Browse)
-def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None):
+def compact_arbor(request:HttpRequest, project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None) -> JsonResponse:
     with_time = get_request_bool(request.GET, "with_time", False)
     ordered = get_request_bool(request.GET, "ordered", False)
     nodes, connectors, tags = _compact_arbor(project_id, skeleton_id,
@@ -936,7 +939,7 @@ def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, w
 
 def _treenode_time_bins(skeleton_id=None):
     """ Return a map of time bins (minutes) vs. list of nodes. """
-    minutes = defaultdict(list)
+    minutes = defaultdict(list)  # type: DefaultDict
     epoch = datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
 
     for row in Treenode.objects.filter(skeleton_id=int(skeleton_id)).values_list('id', 'creation_time'):
@@ -946,7 +949,7 @@ def _treenode_time_bins(skeleton_id=None):
 
 
 @requires_user_role([UserRole.Browse])
-def treenode_time_bins(request, project_id=None, skeleton_id=None):
+def treenode_time_bins(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonResponse:
     minutes = _treenode_time_bins(skeleton_id)
     return JsonResponse(minutes, safe=False, json_dumps_params={
         'separators': (',', ':')
@@ -954,8 +957,8 @@ def treenode_time_bins(request, project_id=None, skeleton_id=None):
 
 
 @requires_user_role([UserRole.Browse])
-def compact_arbor_with_minutes(request, project_id=None, skeleton_id=None,
-        with_nodes=None, with_connectors=None, with_tags=None):
+def compact_arbor_with_minutes(request:HttpRequest, project_id=None, skeleton_id=None,
+        with_nodes=None, with_connectors=None, with_tags=None) -> JsonResponse:
     ordered = get_request_bool(request.GET, "ordered", False)
     nodes, connectors, tags = _compact_arbor(project_id, skeleton_id,
             with_nodes, with_connectors, with_tags, ordered=ordered)
@@ -1007,7 +1010,8 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
     # array of properties: id, parent_id, user_id, x, y, z, radius, confidence
     nodes = tuple(cursor.fetchall())
 
-    tags = defaultdict(list) # node ID vs list of tags
+    tags = defaultdict(list)  # type: DefaultDict
+                              # node ID vs list of tags
     connectors = []
 
     # Get all reviews for this skeleton
@@ -1016,7 +1020,7 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
     else:
         reviews = get_treenodes_to_reviews(skeleton_ids=[skeleton_id])
 
-    if 0 == lean: # meaning not lean
+    if 0 == lean:  # meaning not lean
         # Text tags
         cursor.execute("SELECT id FROM relation WHERE project_id=%s AND relation_name='labeled_as'" % int(project_id))
         labeled_as = cursor.fetchall()[0][0]
@@ -1068,7 +1072,7 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
 
 # DEPRECATED. Will be removed.
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def skeleton_for_3d_viewer(request, project_id=None, skeleton_id=None):
+def skeleton_for_3d_viewer(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonResponse:
     return JsonResponse(_skeleton_for_3d_viewer(skeleton_id, project_id,
             with_connectors=request.POST.get('with_connectors', True),
             lean=int(request.POST.get('lean', 0)),
@@ -1080,15 +1084,15 @@ def skeleton_for_3d_viewer(request, project_id=None, skeleton_id=None):
 
 # DEPRECATED. Will be removed.
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def skeleton_with_metadata(request, project_id=None, skeleton_id=None):
+def skeleton_with_metadata(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonResponse:
 
-    def default(obj):
+    def default(obj) -> int:
         """Default JSON serializer."""
         import calendar, datetime
 
         if isinstance(obj, datetime.datetime):
             if obj.utcoffset() is not None:
-                obj = obj - obj.utcoffset()
+                obj = obj - obj.utcoffset()  # type: ignore
             millis = int(
                 calendar.timegm(obj.timetuple()) * 1000 +
                 obj.microsecond / 1000
@@ -1119,9 +1123,21 @@ def _measure_skeletons(skeleton_ids):
     # TODO  by partitioning the skeleton into sequences of x,y,z representing the slabs
     # TODO  and then convolving them.
 
+    class Node():
+        def __init__(self, parent_id, x, y, z):
+            self.parent_id = parent_id
+            self.x = x
+            self.y = y
+            self.z = z
+            self.wx = x  # weighted average of itself and neighbors
+            self.wy = y
+            self.wz = z
+            self.children = {}  # type: Dict[Any, float]
+                                # node ID vs distance - is first type an int or an str?
+
     class Skeleton():
         def __init__(self):
-            self.nodes = {}
+            self.nodes = {}  # type: Dict[Any, Node]
             self.raw_cable = 0
             self.smooth_cable = 0
             self.principal_branch_cable = 0
@@ -1130,18 +1146,8 @@ def _measure_skeletons(skeleton_ids):
             self.n_pre = 0
             self.n_post = 0
 
-    class Node():
-        def __init__(self, parent_id, x, y, z):
-            self.parent_id = parent_id
-            self.x = x
-            self.y = y
-            self.z = z
-            self.wx = x # weighted average of itself and neighbors
-            self.wy = y
-            self.wz = z
-            self.children = {} # node ID vs distance
-
-    skeletons = defaultdict(dict) # skeleton ID vs (node ID vs Node)
+    skeletons = defaultdict(dict)  # type: DefaultDict
+                                   # skeleton ID vs (node ID vs Node)
     for row in cursor.fetchall():
         skeleton = skeletons.get(row[2])
         if not skeleton:
@@ -1252,7 +1258,7 @@ def _measure_skeletons(skeleton_ids):
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def measure_skeletons(request, project_id=None):
+def measure_skeletons(request:HttpRequest, project_id=None) -> JsonResponse:
     skeleton_ids = tuple(int(v) for k,v in request.POST.items() if k.startswith('skeleton_ids['))
     def asRow(skid, sk):
         return (skid, int(sk.raw_cable), int(sk.smooth_cable), sk.n_pre, sk.n_post, len(sk.nodes), sk.n_branch, sk.n_ends, sk.principal_branch_cable)
@@ -1260,7 +1266,7 @@ def measure_skeletons(request, project_id=None):
 
 
 def _skeleton_neuroml_cell(skeleton_id, preID, postID):
-    skeleton_id = int(skeleton_id) # sanitize
+    skeleton_id = int(skeleton_id)  # sanitize
     cursor = connection.cursor()
 
     cursor.execute('''
@@ -1276,8 +1282,10 @@ def _skeleton_neuroml_cell(skeleton_id, preID, postID):
     WHERE tc.skeleton_id = %s
       AND (tc.relation_id = %s OR tc.relation_id = %s)
     ''' % (skeleton_id, preID, postID))
-    pre = defaultdict(list) # treenode ID vs list of connector ID
-    post = defaultdict(list)
+    pre = defaultdict(list)  # type: DefaultDict
+                             # treenode ID vs list of connector ID
+    post = defaultdict(list)  # type: DefaultDict
+                              # incomplete type
     for row in cursor.fetchall():
         if row[2] == preID:
             pre[row[0]].append(row[1])
@@ -1288,7 +1296,7 @@ def _skeleton_neuroml_cell(skeleton_id, preID, postID):
 
 
 @requires_user_role(UserRole.Browse)
-def skeletons_neuroml(request, project_id=None):
+def skeletons_neuroml(request:HttpRequest, project_id=None) -> HttpResponse:
     """ Export a list of skeletons each as a Cell in NeuroML. """
     project_id = int(project_id) # sanitize
     skeleton_ids = tuple(int(v) for k,v in request.POST.items() if k.startswith('skids['))
@@ -1311,7 +1319,7 @@ def skeletons_neuroml(request, project_id=None):
 
 
 @requires_user_role(UserRole.Browse)
-def export_neuroml_level3_v181(request, project_id=None):
+def export_neuroml_level3_v181(request:HttpRequest, project_id=None) -> HttpResponse:
     """Export the NeuroML Level 3 version 1.8.1 representation of one or more skeletons.
     Considers synapses among the requested skeletons only. """
     skeleton_ids = tuple(int(v) for v in request.POST.getlist('skids[]'))
@@ -1353,13 +1361,13 @@ def export_neuroml_level3_v181(request, project_id=None):
         ''' % (skeleton_strings, presynaptic_to, postsynaptic_to))
 
         # Dictionary of connector ID vs map of relation_id vs list of treenode IDs
-        connectors = defaultdict(partial(defaultdict, list))
+        connectors = defaultdict(partial(defaultdict, list))  # type: DefaultDict
 
         for row in cursor.fetchall():
             connectors[row[1]][row[2]].append((row[0], row[3]))
 
         # Dictionary of presynaptic skeleton ID vs map of postsynaptic skeleton ID vs list of tuples with presynaptic treenode ID and postsynaptic treenode ID.
-        connections = defaultdict(partial(defaultdict, list))
+        connections = defaultdict(partial(defaultdict, list))  # type: DefaultDict
 
         for connectorID, m in connectors.items():
             for pre_treenodeID, skID1 in m[presynaptic_to]:
@@ -1395,7 +1403,7 @@ def export_neuroml_level3_v181(request, project_id=None):
         ''' % (skeleton_strings, postsynaptic_to, presynaptic_to, constraint))
 
         # Dictionary of skeleton ID vs list of treenode IDs at which the neuron receives inputs
-        inputs = defaultdict(list)
+        inputs = defaultdict(list)  # type: DefaultDict
         for row in cursor.fetchall():
             inputs[row[0]].append(row[1])
 
@@ -1416,7 +1424,7 @@ def skeleton_swc(*args, **kwargs):
 
 
 def _export_review_skeleton(project_id=None, skeleton_id=None,
-                            subarbor_node_id=None):
+                            subarbor_node_id:Optional[int]=None) -> List[Dict]:
     """ Returns a list of segments for the requested skeleton. Each segment
     contains information about the review status of this part of the skeleton.
     If a valid subarbor_node_id is given, only data for the sub-arbor is
@@ -1468,8 +1476,8 @@ def _export_review_skeleton(project_id=None, skeleton_id=None,
                           })
         if reviews[t[0]]:
             reviewed.add(t[0])
-        if t[1]: # if parent
-            g.add_edge(t[1], t[0]) # edge from parent to child
+        if t[1]:  # if parent
+            g.add_edge(t[1], t[0])  # edge from parent to child
         else:
             root_id = t[0]
 
@@ -1502,8 +1510,8 @@ def _export_review_skeleton(project_id=None, skeleton_id=None,
                              "subarbor (%s) in provided skeleton (%s)" % (subarbor_node_id, skeleton_id))
 
     # Create all sequences, as long as possible and always from end towards root
-    distances = edge_count_to_root(g, root_node=root_id) # distance in number of edges from root
-    seen = set()
+    distances = edge_count_to_root(g, root_node=root_id)  # distance in number of edges from root
+    seen = set()  # type: Set
     sequences = []
     # Iterate end nodes sorted from highest to lowest distance to root
     endNodeIDs = (nID for nID in g.nodes() if 0 == len(g.successors(nID)))
@@ -1523,7 +1531,7 @@ def _export_review_skeleton(project_id=None, skeleton_id=None,
 
     # Calculate status
 
-    segments = []
+    segments = []  # type: List[Dict]
     for sequence in sorted(sequences, key=len, reverse=True):
         segments.append({
             'id': len(segments),
@@ -1535,7 +1543,7 @@ def _export_review_skeleton(project_id=None, skeleton_id=None,
 
 @api_view(['POST'])
 @requires_user_role(UserRole.Browse)
-def export_review_skeleton(request, project_id=None, skeleton_id=None):
+def export_review_skeleton(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonResponse:
     """Export skeleton as a set of segments with per-node review information.
 
     Export the skeleton as a list of segments of non-branching node paths,
@@ -1631,7 +1639,7 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None):
       required: true
     """
     try:
-        subarbor_node_id = int(request.POST.get('subarbor_node_id', ''))
+        subarbor_node_id = int(request.POST.get('subarbor_node_id', ''))  # type: Optional[int]
     except ValueError:
         subarbor_node_id = None
 
@@ -1639,7 +1647,7 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None):
     return JsonResponse(segments, safe=False)
 
 @requires_user_role(UserRole.Browse)
-def skeleton_connectors_by_partner(request, project_id):
+def skeleton_connectors_by_partner(request:HttpRequest, project_id) -> JsonResponse:
     """ Return a dict of requested skeleton vs relation vs partner skeleton vs list of connectors.
     Connectors lacking a skeleton partner will of course not be included. """
     skeleton_ids = set(int(v) for k,v in request.POST.items() if k.startswith('skids['))
@@ -1663,7 +1671,7 @@ def skeleton_connectors_by_partner(request, project_id):
     ''' % (','.join(map(str, skeleton_ids)), pre, post, pre, post))
 
     # Dict of skeleton vs relation vs skeleton vs list of connectors
-    partners = defaultdict(partial(defaultdict, partial(defaultdict, list)))
+    partners = defaultdict(partial(defaultdict, partial(defaultdict, list)))  # type: DefaultDict
 
     for row in cursor.fetchall():
         relation_name = 'presynaptic_to' if row[1] == pre else 'postsynaptic_to'
@@ -1673,10 +1681,10 @@ def skeleton_connectors_by_partner(request, project_id):
 
 
 @requires_user_role(UserRole.Browse)
-def export_skeleton_reviews(request, project_id=None, skeleton_id=None):
+def export_skeleton_reviews(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonResponse:
     """ Return a map of treenode ID vs list of reviewer IDs,
     without including any unreviewed treenode. """
-    m = defaultdict(list)
+    m = defaultdict(list)  # type: DefaultDict
     for row in Review.objects.filter(skeleton_id=int(skeleton_id)).values_list('treenode_id', 'reviewer_id', 'review_time').iterator():
         m[row[0]].append(row[1:3])
 
@@ -1685,7 +1693,7 @@ def export_skeleton_reviews(request, project_id=None, skeleton_id=None):
     })
 
 @requires_user_role(UserRole.Browse)
-def partners_by_connector(request, project_id=None):
+def partners_by_connector(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Return a list of skeleton IDs related to the given list of connector IDs of the given skeleton ID.
     Will optionally filter for only presynaptic (relation=0) or only postsynaptic (relation=1). """
     skid = request.POST.get('skid', None)
@@ -1729,7 +1737,7 @@ HAVING count(*) %s 1
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
-def neuroglancer_skeleton(request, project_id=None, skeleton_id=None):
+def neuroglancer_skeleton(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonResponse:
     """Export a morphology-only skeleton in neuroglancer's binary format.
     """
     cursor = connection.cursor()
@@ -1763,7 +1771,7 @@ def neuroglancer_skeleton(request, project_id=None, skeleton_id=None):
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
-def treenode_overview(request, project_id=None, skeleton_id=None):
+def treenode_overview(request:HttpRequest, project_id=None, skeleton_id=None) -> HttpResponse:
     """Get information on a skeleton's treenodes, reviews and labels.
     ---
     parameters:

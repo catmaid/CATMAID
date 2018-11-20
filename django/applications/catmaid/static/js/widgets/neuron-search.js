@@ -578,7 +578,7 @@
    * steps that should be used.
    */
   NeuronSearch.prototype.add_result_table_row = function(entity, add_row_fn,
-      indent)
+      indent, selected)
   {
     // Build table row
     var tr = document.createElement('tr');
@@ -600,6 +600,7 @@
     cb.setAttribute('entity_id', entity.id);
     cb.setAttribute('class', 'result' + this.widgetID + '_' +
             entity.id);
+    cb.checked = !!selected;
     var a = document.createElement('a');
     a.setAttribute('href', '#');
     // For a neuron, ask the neuron name service about the name
@@ -993,20 +994,44 @@
 
     // Add handler to the checkbox in front of each entity
     var create_cb_handler = function(widget) {
+
+      let addSkeletonModels = function(target, entity, selected) {
+        if (entity.type !== 'neuron') return;
+        for (let i=0, max=entity.skeleton_ids.length; i<max; ++i) {
+          let model = new CATMAID.SkeletonModel(entity.skeleton_ids[i]);
+          model.selected = selected;
+          target[model.id] = model;
+        }
+      };
+
       return function() {
             var clicked_cb = this;
             var is_checked = this.checked;
             var entity_id = $(this).attr('entity_id');
+            let changedEntityIds = [entity_id];
             // Update the entities selection state
             widget.entity_selection_map[entity_id] = is_checked;
             // Find updated skeleton models
             var changedModels = {};
             var entity = widget.entityMap[entity_id];
             if ('neuron' === entity.type) {
-              for (var i=0, max=entity.skeleton_ids.length; i<max; ++i) {
-                var model = widget.getSkeletonModel(entity.skeleton_ids[i]);
-                model.selected = is_checked;
-                changedModels[model.id] = model;
+              addSkeletonModels(changedModels, entity, is_checked);
+            } else if ('annotation' === entity.type) {
+              let tr = this.closest('tr');
+              let expansionId = parseInt(tr.getAttribute('expanded'), 10);
+              // If an annotation is selected and it is open, toggle the selection all the
+              // neurons it annotates accordingly
+              if (expansionId && !Number.isNaN(expansionId)) {
+                let expansionContent = widget.queryResults[expansionId];
+                if (expansionContent) {
+                  for (let e of expansionContent) {
+                    if (e.type === 'neuron') {
+                      widget.entity_selection_map[e.id] = is_checked;
+                      changedEntityIds.push(e.id);
+                      addSkeletonModels(changedModels, e, is_checked);
+                    }
+                  }
+                }
               }
             }
             if (!CATMAID.tools.isEmpty(changedModels)) {
@@ -1014,13 +1039,17 @@
             }
             // Due to expanded annotations, an entity can appear multiple times. Look
             // therefore for copies of the current one to toggle it as well.
-            $("#neuron_annotations_query_results_table" + widget.widgetID).find(
-                'td input[entity_id=' + entity_id + ']').each(function() {
-                    if (this != clicked_cb) {
-                      // Set property without firing event
-                      $(this).prop('checked', is_checked);
-                    }
-                });
+            let updateCheckbox = function() {
+              if (this !== clicked_cb) {
+                // Set property without firing event
+                $(this).prop('checked', is_checked);
+              }
+            };
+            let widgetContaienr = $("#neuron_annotations_query_results_table" + widget.widgetID);
+            for (let i=0; i<changedEntityIds.length; ++i) {
+              let changedEntityId = changedEntityIds[i];
+              widgetContaienr.find('td input[entity_id=' + changedEntityId + ']').each(updateCheckbox);
+            }
         };
     };
     $table.off('change.cm').on('change.cm', 'input[type=checkbox][entity_id]',
@@ -1142,13 +1171,15 @@
                 return o;
               }, []);
 
-              // Mark entities as unselected, create result table rows
+              // Mark entities as selected if they are markes as such in the
+              // widget.
               e.entities.filter(function(entity, i, a) {
-                self.entity_selection_map[entity.id] = false;
+                let selected = !!self.entity_selection_map[entity.id];
+                self.entity_selection_map[entity.id] = selected;
                 if(!(entity.id in self.entityMap)) {
                   self.entityMap[entity.id] = entity;
                 }
-                self.add_result_table_row(entity, appender, indent + 1);
+                self.add_result_table_row(entity, appender, indent + 1, selected);
               });
 
               // The order of the query result array doesn't matter.

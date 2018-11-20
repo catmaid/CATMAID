@@ -1056,6 +1056,10 @@
   };
 
   SelectionTable.prototype.GUI.prototype.clear = function() {
+    if (this.datatable) {
+      // Reset pagination
+      this.datatable.page(0);
+    }
     this.update();
   };
 

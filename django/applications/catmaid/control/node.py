@@ -1068,7 +1068,7 @@ def get_configured_node_providers(provider_entries, connection=None):
     return node_providers
 
 
-def update_node_query_cache(node_providers=None, log=print):
+def update_node_query_cache(node_providers=None, log=print, force=False):
     if not node_providers:
         node_providers = settings.NODE_PROVIDERS
 
@@ -1096,6 +1096,11 @@ def update_node_query_cache(node_providers=None, log=print):
         data_type = CACHE_NODE_PROVIDER_DATA_TYPES.get(key)
         if not data_type:
             log("Skipping non-caching node provider: {}".format(key))
+            continue
+
+        enabled = options.get('enabled', True)
+        if not enabled and not force:
+            log("Skipping disabled node provider: {}".format(key))
             continue
 
         for project_id in project_ids:

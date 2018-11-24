@@ -742,6 +742,8 @@ var SkeletonAnnotations = {};
     this.nLastEditedSkeletonLimit = CATMAID.TracingOverlay.Settings.session.n_last_edited_skeletons_limit;
     /** Optionally, hide all skeletons edited last by a particular user. */
     this.hiddenLastEditorId = CATMAID.TracingOverlay.Settings.session.hidden_last_editor_id;
+    /** Optional node provider override **/
+    this.nodeProviderOverride = 'none';
     /** An optional margin in pixels that is subtracted from the left and right of
      * the node query box, effectively not loading data in this region.*/
     this.tracingWindowWidth = CATMAID.TracingOverlay.Settings.session.tracing_window_width;
@@ -3749,6 +3751,10 @@ var SkeletonAnnotations = {};
 
       if (self.hiddenLastEditorId && self.hiddenLastEditorId !== 'none') {
         params['hidden_last_editor_id'] = self.hiddenLastEditorId;
+      }
+
+      if (self.nodeProviderOverride && self.nodeProviderOverride !== 'none') {
+        params['src'] = self.nodeProviderOverride;
       }
 
       // TODO: To authenticate with the mirror server, an API token needs to

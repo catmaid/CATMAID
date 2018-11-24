@@ -73,6 +73,15 @@
       }
     });
 
+    Object.defineProperty(this, 'nodeProviderOverride', {
+      get: function() {
+        return this.tracingOverlay.nodeProviderOverride;
+      },
+      set: function(value) {
+        this.tracingOverlay.nodeProviderOverride = value;
+      }
+    });
+
     Object.defineProperty(this, 'tracingWindowWidth', {
       get: function() {
         return this.tracingOverlay.tracingWindowWidth;
@@ -243,6 +252,18 @@
       value: this.hiddenLastEditorId,
       options: [['none', '(None)']].concat(CATMAID.User.list('id-login')),
       help: 'Limit the displayed skeletons to those that have not been edited last by the specified user.',
+    }, {
+      name: 'nodeProviderOverride',
+      displayName: 'Node provider',
+      type: 'select',
+      value: this.nodeProviderOverride,
+      options: [['none', 'Auto'], ['postgis2d', '2D index'],
+          ['postgis2dblurry', '2D index blurry'],
+          ['postgis2dmultijoin', '2D index multi-join'],
+          ['postgis3d', '3D index'],
+          ['postgis3dblurry', '3D index blurry'],
+          ['postgis3dmultijoin', '3D index multi-join']],
+      help: 'Override the back-end selected node provider',
     }];
   };
 
@@ -258,6 +279,9 @@
       this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('hiddenLastEditorId' === name) {
       this.hiddenLastEditorId = value;
+      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
+    } else if ('nodeProviderOverride' === name) {
+      this.nodeProviderOverride = value;
       this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('tracingWindowWidth' === name) {
       this.tracingWindowWidth = parseInt(value, 10);

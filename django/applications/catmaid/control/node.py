@@ -406,10 +406,9 @@ class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
                     })
             elif extra_join:
                 query = """
-                    WITH basic_query AS (
+                    SELECT basic_query.* FROM (
                         {query}
-                    )
-                    SELECT basic_query.* FROM basic_query
+                    ) basic_query
                     {extra_join}
                 """.format(**{
                     'query': query,

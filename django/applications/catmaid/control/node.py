@@ -341,49 +341,80 @@ class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
             summary = []
             if n_largest_skeletons_limit:
                 summary.append("""
-                    (SELECT skeleton_id
-                    FROM catmaid_skeleton_summary css
-                    WHERE project_id = %(project_id)s
-                    ORDER BY css.cable_length DESC
+                    (SELECT * FROM query
+                    JOIN (
+                        SELECT skeleton_id
+                        FROM catmaid_skeleton_summary css
+                        WHERE project_id = %(project_id)s
+                        ORDER BY css.cable_length DESC
+                    ) sub
+                    ON sub.skeleton_id = query.skeleton_id
                     LIMIT %(n_largest_skeletons_limit)s)
                 """)
             if n_last_edited_skeletons_limit:
                 summary.append("""
-                    (SELECT skeleton_id
-                    FROM catmaid_skeleton_summary css
-                    WHERE project_id = %(project_id)s
-                    ORDER BY css.last_edition_time DESC
+                    (SELECT * FROM query
+                    JOIN (
+                        SELECT skeleton_id
+                        FROM catmaid_skeleton_summary css
+                        WHERE project_id = %(project_id)s
+                        ORDER BY css.last_edition_time DESC
+                    ) sub
+                    ON sub.skeleton_id = query.skeleton_id
                     LIMIT %(n_last_edited_skeletons_limit)s)
                 """)
 
-            if summary:
-                query += '''
-                    JOIN (
-                        {summary}
-                    ) summary(skeleton_id)
-                        ON summary.skeleton_id = t1.skeleton_id
-                '''.format(**{
-                    'summary': ' UNION '.join(summary)
-                })
 
+            extra_join = ''
             # User constraints are joined separately, so they are AND-combined
             if hidden_last_editor_id is not None:
-                query += """
+                extra_join = """
                     JOIN (
                         SELECT skeleton_id
                         FROM catmaid_skeleton_summary css
                         WHERE project_id = %(project_id)s
                         AND last_editor_id <> %(hidden_last_editor_id)s
                     ) visible(skeleton_id)
-                        ON visible.skeleton_id = t1.skeleton_id
+                        ON visible.skeleton_id = basic_query.skeleton_id
                 """
 
-            if limit:
-                # Add new limit
-                query += """
-                    LIMIT %(custom_limit)s
-                """
-                params['custom_limit'] = limit
+            if summary:
+                if extra_join:
+                    query = '''
+                        WITH basic_query AS (
+                            {query}
+                        ), query AS (
+                            SELECT basic_query.*
+                            FROM basic_query
+                            {extra_join}
+                        )
+                        {summary}
+                    '''.format(**{
+                        'query': query,
+                        'summary': ' UNION '.join(summary),
+                        'extra_join': extra_join,
+                    })
+                else:
+                    query = '''
+                        WITH query AS (
+                            {query}
+                        )
+                        {summary}
+                    '''.format(**{
+                        'query': query,
+                        'summary': ' UNION '.join(summary),
+                    })
+            elif extra_join:
+                query = """
+                    WITH basic_query AS (
+                        {query}
+                    )
+                    SELECT basic_query.* FROM basic_query
+                    {extra_join}
+                """.format(**{
+                    'query': query,
+                    'extra_join': extra_join,
+                })
 
             cursor.execute(query, params)
 
@@ -551,16 +582,16 @@ class Postgis3dMultiJoinNodeProvider(Postgis3dNodeProvider):
               SELECT UNNEST({sanitized_treenode_ids}::bigint[]) AS id
           )
           SELECT
-              t.id,
-              t.parent_id,
-              t.location_x,
-              t.location_y,
-              t.location_z,
-              t.confidence,
-              t.radius,
-              t.skeleton_id,
-              EXTRACT(EPOCH FROM t.edition_time),
-              t.user_id
+              t1.id,
+              t1.parent_id,
+              t1.location_x,
+              t1.location_y,
+              t1.location_z,
+              t1.confidence,
+              t1.radius,
+              t1.skeleton_id,
+              EXTRACT(EPOCH FROM t1.edition_time),
+              t1.user_id
           FROM (
             SELECT DISTINCT ON (id) UNNEST(ARRAY[t2.id, t2.parent_id]) AS id
             FROM treenode_edge te
@@ -578,27 +609,27 @@ class Postgis3dMultiJoinNodeProvider(Postgis3dNodeProvider):
                 {halfzdiff})
             AND te.project_id = {project_id}
           ) bb_treenode
-          JOIN treenode t
-            ON t.id = bb_treenode.id
-          WHERE NOT EXISTS(SELECT 1 FROM extra_nodes en where en.id=t.id)
+          JOIN treenode t1
+            ON t1.id = bb_treenode.id
+          WHERE NOT EXISTS(SELECT 1 FROM extra_nodes en where en.id=t1.id)
 
           UNION ALL
 
           SELECT
-              t.id,
-              t.parent_id,
-              t.location_x,
-              t.location_y,
-              t.location_z,
-              t.confidence,
-              t.radius,
-              t.skeleton_id,
-              EXTRACT(EPOCH FROM t.edition_time),
-              t.user_id
+              t1.id,
+              t1.parent_id,
+              t1.location_x,
+              t1.location_y,
+              t1.location_z,
+              t1.confidence,
+              t1.radius,
+              t1.skeleton_id,
+              EXTRACT(EPOCH FROM t1.edition_time),
+              t1.user_id
           FROM extra_nodes en
-          JOIN treenode t
-          ON en.id = t.id
-          WHERE t.project_id = {project_id}
+          JOIN treenode t1
+          ON en.id = t1.id
+          WHERE t1.project_id = {project_id}
     '''
 
 
@@ -844,16 +875,16 @@ class Postgis2dMultiJoinNodeProvider(Postgis2dNodeProvider):
               SELECT UNNEST({sanitized_treenode_ids}::bigint[]) AS id
           )
           SELECT
-            t.id,
-            t.parent_id,
-            t.location_x,
-            t.location_y,
-            t.location_z,
-            t.confidence,
-            t.radius,
-            t.skeleton_id,
-            EXTRACT(EPOCH FROM t.edition_time),
-            t.user_id
+            t1.id,
+            t1.parent_id,
+            t1.location_x,
+            t1.location_y,
+            t1.location_z,
+            t1.confidence,
+            t1.radius,
+            t1.skeleton_id,
+            EXTRACT(EPOCH FROM t1.edition_time),
+            t1.user_id
           FROM (
             SELECT DISTINCT ON (id) UNNEST(ARRAY[t2.id, t2.parent_id]) AS id
             FROM treenode_edge te
@@ -871,27 +902,27 @@ class Postgis2dMultiJoinNodeProvider(Postgis2dNodeProvider):
                   ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
                   {halfzdiff})
           ) bb_treenode
-          JOIN treenode t
-            ON t.id = bb_treenode.id
-          WHERE NOT EXISTS(SELECT 1 FROM extra_nodes en where en.id=t.id)
+          JOIN treenode t1
+            ON t1.id = bb_treenode.id
+          WHERE NOT EXISTS(SELECT 1 FROM extra_nodes en where en.id=t1.id)
 
           UNION ALL
 
           SELECT
-            t.id,
-            t.parent_id,
-            t.location_x,
-            t.location_y,
-            t.location_z,
-            t.confidence,
-            t.radius,
-            t.skeleton_id,
-            EXTRACT(EPOCH FROM t.edition_time),
-            t.user_id
+            t1.id,
+            t1.parent_id,
+            t1.location_x,
+            t1.location_y,
+            t1.location_z,
+            t1.confidence,
+            t1.radius,
+            t1.skeleton_id,
+            EXTRACT(EPOCH FROM t1.edition_time),
+            t1.user_id
           FROM extra_nodes en
-          JOIN treenode t
-          ON en.id = t.id
-          WHERE t.project_id = {project_id}
+          JOIN treenode t1
+          ON en.id = t1.id
+          WHERE t1.project_id = {project_id}
     """
 
 

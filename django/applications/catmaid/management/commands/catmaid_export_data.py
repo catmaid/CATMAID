@@ -279,24 +279,18 @@ class Exporter():
         exported_tids = set()
         if treenodes:
             treenode_skeleton_ids = set(t.skeleton_id for t in treenodes)
-            skeletons = ClassInstance.objects.filter(
+            n_skeletons = ClassInstance.objects.filter(
                     project=self.project,
-                    id__in=treenode_skeleton_ids)
-            self.to_serialize.append(skeletons)
-
+                    id__in=treenode_skeleton_ids).count()
             neuron_links = ClassInstanceClassInstance.objects \
-                    .select_related('class_instance_b').filter(
-                            project=self.project,
-                            class_instance_a__in=treenode_skeleton_ids,
-                            relation=relations.get('model_of'))
-            self.to_serialize.append(neuron_links)
-
-            neurons = [l.class_instance_b for l in neuron_links]
-            self.to_serialize.append(neurons)
+                    .filter(project=self.project, class_instance_a__in=treenode_skeleton_ids, \
+                           relation=relations.get('model_of'))
+            n_neuron_links = len(neuron_links)
+            neurons = set([l.class_instance_b_id for l in neuron_links])
 
             exported_tids = set(treenodes.values_list('id', flat=True))
             logger.info("Exporting {} treenodes in {} skeletons and {} neurons".format(
-                    len(exported_tids), len(skeletons), len(neurons)))
+                    len(exported_tids), n_skeletons, len(neurons)))
 
         # Get current maximum concept ID
         cursor = connection.cursor()

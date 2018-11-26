@@ -4314,6 +4314,9 @@ var SkeletonAnnotations = {};
             $('body').off('keydown.catmaidRadiusSelect');
             originalNode.removeSurroundingCircle();
             return true;
+          } else if ('Enter' === event.key) {
+            hideCircleAndCallback();
+            return true;
           }
           return false;
         });

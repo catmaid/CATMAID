@@ -19,6 +19,9 @@ Miscellaneous:
 - Add a new Tracing Tool icon button to compute the distance between two nodes
   on a skeleton. Respects virtual nodes.
 
+- Confirming a radius selection (Shift + Y) can now also be done using the Enter
+  key.
+
 
 ### Bug fixes
 

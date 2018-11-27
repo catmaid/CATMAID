@@ -25,6 +25,9 @@ Miscellaneous:
 
 ### Bug fixes
 
+- The Connectivity Graph Plot draws now individual bars in each sub-plot
+  side-by-side and uses the same neuron names as other widgets (from CATMAID's
+  neuron name service).
 
 
 ## 2018.11.09

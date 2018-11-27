@@ -1887,6 +1887,7 @@
     this.incoming = incoming;
     this.outgoing = outgoing;
     this.widgetID = this.registerInstance();
+    CATMAID.NeuronNameService.getInstance().registerAll(this, skeletons);
   };
 
   ConnectivityGraphPlot.prototype = {};
@@ -1903,6 +1904,7 @@
    * Custom destroy handler, that deletes all fields of this instance when called.
    */
   ConnectivityGraphPlot.prototype.destroy = function() {
+    CATMAID.NeuronNameService.getInstance().unregister(this);
     this.unregisterInstance();
     Object.keys(this).forEach(function(key) { delete this[key]; }, this);
   };
@@ -1911,6 +1913,13 @@
    * Custom resize handler, that redraws the graphs when called.
    */
   ConnectivityGraphPlot.prototype.resize = function() {
+    this.draw();
+  };
+
+  /**
+   * Redraw if neuron names change.
+   */
+  ConnectivityGraphPlot.prototype.updateNeuronNames = function() {
     this.draw();
   };
 
@@ -2018,9 +2027,14 @@
 
       // Colors: an array of hex values
       var colors = colorizer(skeletonIds);
-      var names = skeletonIds.map(function(skid) {
-        return this[skid].baseName;
-      }, skeletons);
+      let nns = CATMAID.NeuronNameService.getInstance();
+      let nameMap = skeletonIds.reduce(function(o, skid) {
+        o[skid] = nns.getName(skid);
+        return o;
+      }, {});
+      let names = skeletonIds.map(function(skid) {
+        return nameMap[skid];
+      });
 
       // Don't let the canvas be less than 400px wide
       if (container_width < 400) {
@@ -2032,7 +2046,7 @@
           id = "connectivity_plot_" + title + widgetID;
 
       CATMAID.svgutil.insertMultipleBarChart(container, id, width, height,
-          "N synapses", "N " + title + " Partners", names, a, colors,
+          "N synapses", "N " + title + " Partners", names, nameMap, a, colors,
           a.map(function(block, i) { return i+1; }));
     };
 

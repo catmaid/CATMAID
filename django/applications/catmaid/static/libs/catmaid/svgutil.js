@@ -67,7 +67,7 @@
           container, id,
           cwidth, cheight,
           x_label, y_label,
-          names, data,
+          names, nameMap, data,
           colors, x_axis_labels) {
       // The SVG element representing the plot
       var margin = {top: 20, right: 20, bottom: 30, left: 40},
@@ -122,7 +122,7 @@
               .data(function(block) { return block; })
           .enter().append("rect")
               .attr("width", x1.rangeBand())
-              .attr("x", function(d) { return x1(d.series); })
+              .attr("x", function(d) { return x1(nameMap[d.series.id]); })
               .attr("y", function(d) { return y(d.count); })
               .attr("height", function(d) { return height - y(d.count); })
               .style("fill", function(d, i) { return colors[i]; /*color(d.series);*/ });

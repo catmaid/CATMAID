@@ -168,11 +168,11 @@ supports tiff (check e.g. with the help of "gm convert -list format").
 3. Install and configure PostgreSQL
 ###################################
 
-If you are comfortable with creating a new PostgreSQL database
-for CATMAID, then you should do that and continue to the next
-section. If you decide to do so, please make sure to also install the
-``postgis`` extension for the new CATMAID database. The advice here is a
-suggested approach for people who are unsure what to do.
+If you are comfortable with creating a new PostgreSQL database for CATMAID, then
+you should do that and continue to the next section. If you decide to do so,
+please make sure to also install the ``postgis`` extension and the ``pg_trgm``
+extension for the new CATMAID database. The advice here is a suggested approach
+for people who are unsure what to do.
 
 If you are uncomfortable with using the PostgreSQL interactive
 terminal from the command line, you may wish to install an

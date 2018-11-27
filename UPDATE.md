@@ -7,6 +7,10 @@ and other administration related changes are listed in order.
   `django/applications/performancetests/migrations/` and
   `django/applications/pgcompat/migrations/` need to be deleted.
 
+- Should migration 0057 fail due a permission error, the Postgres extension
+  "pg_trgm" has to be installed manually into the CATMAID database using a
+  Postgres superuser: CREATE EXTENSION pg_trgm;
+
 ## 2018.11.09
 
 - Python 3 is now required for the back-end. We recommend the use of Python 3.6.

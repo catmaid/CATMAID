@@ -11,6 +11,10 @@
 
 - Python 3.7 is now supported.
 
+- Should migration 0057 fail due a permission error, the Postgres extension
+  "pg_trgm" has to be installed manually into the CATMAID database using a
+  Postgres superuser: CREATE EXTENSION pg_trgm;
+
 
 ### Features and enhancements
 
@@ -22,6 +26,8 @@ Miscellaneous:
 - Confirming a radius selection (Shift + Y) can now also be done using the Enter
   key.
 
+- Neuron name searches and annotations should be much faster on larger
+  instances.
 
 ### Bug fixes
 

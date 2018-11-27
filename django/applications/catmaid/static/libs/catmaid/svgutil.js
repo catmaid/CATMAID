@@ -122,7 +122,7 @@
               .data(function(block) { return block; })
           .enter().append("rect")
               .attr("width", x1.rangeBand())
-              .attr("x", function(d) { return x1(d.series); })
+              .attr("x", function(d) { return x1(d.series.baseName); })
               .attr("y", function(d) { return y(d.count); })
               .attr("height", function(d) { return height - y(d.count); })
               .style("fill", function(d, i) { return colors[i]; /*color(d.series);*/ });

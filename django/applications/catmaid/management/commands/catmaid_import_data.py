@@ -559,8 +559,8 @@ class FileImporter:
             FOR EACH STATEMENT EXECUTE PROCEDURE on_delete_treenode_update_summary_and_edges();
         """)
 
-        logger.info("Updating edge tables")
-        rebuild_edge_tables(log=lambda msg: logger.info(msg))
+        logger.info("Updating edge tables for project {}".format(self.target.id))
+        rebuild_edge_tables(project_ids=[self.target.id], log=lambda msg: logger.info(msg))
 
         logger.info("Updated skeleton summary tables")
         cursor.execute("""

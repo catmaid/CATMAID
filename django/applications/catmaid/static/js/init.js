@@ -827,6 +827,19 @@ var project;
         });
   };
 
+  /**
+   * Returns an empty APIInfo object.
+   */
+  Client.prototype.getLocalAPIInfo = function() {
+    return {
+      name: 'Local',
+      url: '',
+      api_key: undefined,
+      http_auth_user: undefined,
+      http_auth_pass: undefined,
+    };
+  };
+
   // Publicly accessible session
   CATMAID.session = null;
 

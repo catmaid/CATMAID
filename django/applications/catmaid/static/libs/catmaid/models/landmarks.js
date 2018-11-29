@@ -520,7 +520,7 @@
             landmarkGroupIndex, landmarkIndex, i);
       } catch (error) {
         CATMAID.warn(error ? error.message : "Unknown error");
-        return;
+        return false;
       }
 
       // Landmarks are needed for bounding box computation and visualization.
@@ -643,6 +643,8 @@
           return transformation.loading;
         }
       };
+
+      return true;
     },
 
 

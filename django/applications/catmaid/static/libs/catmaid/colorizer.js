@@ -66,4 +66,8 @@
     Colorizer.call(obj);
   };
 
+  CATMAID.Colorizer = function() {
+    CATMAID.asColorizer(this);
+  };
+
 })(CATMAID);

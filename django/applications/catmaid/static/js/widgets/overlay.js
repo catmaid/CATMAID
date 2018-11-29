@@ -2587,6 +2587,14 @@ var SkeletonAnnotations = {};
       return null;
     }
 
+    return CATMAID._createVirtualNode(graphics, child, parent, stackViewer);
+  };
+
+  /**
+   * The actual implementation of createVirtualNode(), without precondition
+   * checks to allow faster execution if this was tested before.
+   */
+  CATMAID._createVirtualNode = function(graphics, child, parent, stackViewer, onlyInView) {
     var z = stackViewer.z;
 
     // Define X and Y so that they are on the intersection of the line between
@@ -2884,7 +2892,7 @@ var SkeletonAnnotations = {};
       // Virtual nodes can only exists if both parent and child are not on the
       // current section and not both above or below.
       if ((n.zdiff < 0 && pn.zdiff > 0) || (n.zdiff > 0 && pn.zdiff < 0)) {
-        var vn = CATMAID.createVirtualNode(this.graphics, n, pn, this.stackViewer);
+        var vn = CATMAID._createVirtualNode(this.graphics, n, pn, this.stackViewer);
         if (vn) {
           ++nAddedVirtualNodes;
           n.parent = vn;

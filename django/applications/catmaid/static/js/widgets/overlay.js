@@ -2590,6 +2590,10 @@ var SkeletonAnnotations = {};
     return CATMAID._createVirtualNode(graphics, child, parent, stackViewer);
   };
 
+  let _virtualNodeCreationTmpVector = new THREE.Vector3();
+  let _virtualNodeCreationTmpLine = new THREE.Line3(
+      new THREE.Vector3(), new THREE.Vector3());
+
   /**
    * The actual implementation of createVirtualNode(), without precondition
    * checks to allow faster execution if this was tested before.
@@ -2599,10 +2603,10 @@ var SkeletonAnnotations = {};
 
     // Define X and Y so that they are on the intersection of the line between
     // child and parent and the current section.
-    var pos = CATMAID.tools.intersectLineWithPlane(
-        child.x, child.y, child.z,
-        parent.x, parent.y, parent.z,
-        stackViewer.plane, new THREE.Vector3());
+    _virtualNodeCreationTmpLine.start.set(child.x, child.y, child.z);
+    _virtualNodeCreationTmpLine.end.set(parent.x, parent.y, parent.z);
+    let pos = stackViewer.plane.intersectLine(_virtualNodeCreationTmpLine,
+        _virtualNodeCreationTmpVector);
 
     // The ID should be different for the the same child and parent in different
     // Z sections to distinguish virtual nodes on different sections. Therefore,

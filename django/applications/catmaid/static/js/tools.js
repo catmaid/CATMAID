@@ -370,16 +370,17 @@ CATMAID.tools = CATMAID.tools || {};
     }
   };
 
+  let _intersectLineWithPlaneTmpLine = new THREE.Line3(
+      new THREE.Vector3(), new THREE.Vector3());
+
   /**
    * Return the intersection of the line given by the two points with
    * a THREE.js plane.
    */
   tools.intersectLineWithPlane = function(x1, y1, z1, x2, y2, z2, plane, target) {
-    var line = new THREE.Line3(
-        new THREE.Vector3(x1, y1, z1),
-        new THREE.Vector3(x2, y2, z2));
-
-    return plane.intersectLine(line, target);
+    _intersectLineWithPlaneTmpLine.start.set(x1, y1, z1);
+    _intersectLineWithPlaneTmpLine.end.set(x2, y2, z2);
+    return plane.intersectLine(_intersectLineWithPlaneTmpLine, target);
   };
 
   /**

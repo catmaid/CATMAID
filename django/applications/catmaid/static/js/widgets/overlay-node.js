@@ -717,6 +717,9 @@
       // Looked up to prevent frequent namespace lookups.
       let intersectLineWithPlane = CATMAID.tools.intersectLineWithPlane;
       let intersectionTarget = new THREE.Vector3();
+      let intersectionWorkingLine = new THREE.Line3(new THREE.Vector3(),
+          new THREE.Vector3());
+      let intersectionWorkingPlane = new THREE.Plane();
 
       /**
        * Get the intersection X and Y coordinate between node and and two with the
@@ -728,14 +731,14 @@
           return [node1[node1.planeX], node1[node1.planeY]];
         } else {
           let sv = this.overlayGlobals.tracingOverlay.stackViewer;
-          let plane = sv.plane.clone();
-          plane.constant += sv.primaryStack.resolution.z *
+          intersectionWorkingPlane.copy(sv.plane);
+          intersectionWorkingPlane.constant += sv.primaryStack.resolution.z *
             (sv.primaryStack.projectToStackZ(node2.z, node2.y, node2.x)
             - sv.z + zDiff);
-          let intersection = intersectLineWithPlane(
-              node1.x, node1.y, node1.z,
-              node2.x, node2.y, node2.z,
-              plane, intersectionTarget);
+          intersectionWorkingLine.start.set(node1.x, node1.y, node1.z);
+          intersectionWorkingLine.end.set(node2.x, node2.y, node2.z);
+          let intersection = intersectionWorkingPlane.intersectLine(intersectionWorkingLine,
+              intersectionTarget);
           if (!intersection) {
             return null;
           } else {

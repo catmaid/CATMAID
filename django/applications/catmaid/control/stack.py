@@ -4,7 +4,7 @@ import json
 import logging
 
 from django.conf import settings
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 from django.shortcuts import get_object_or_404
 
 from ..models import UserRole, Project, Stack, ProjectStack, \
@@ -96,7 +96,7 @@ def get_stack_info_response(p, s, ps, mirror_data, broken_slices):
     return result
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def list_stack_tags(request, project_id=None, stack_id=None):
+def list_stack_tags(request:HttpRequest, project_id=None, stack_id=None) -> JsonResponse:
     """ Return the tags associated with the stack.
     """
     s = get_object_or_404(Stack, pk=stack_id)
@@ -109,7 +109,7 @@ def list_stack_tags(request, project_id=None, stack_id=None):
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def update_stack_tags(request, project_id=None, stack_id=None, tags=None):
+def update_stack_tags(request:HttpRequest, project_id=None, stack_id=None, tags=None) -> JsonResponse:
     """ Updates the given stack with the supplied tags. All
     existing tags will be replaced.
     """
@@ -128,7 +128,7 @@ def update_stack_tags(request, project_id=None, stack_id=None, tags=None):
     return JsonResponse("", safe=False)
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def stack_info(request, project_id=None, stack_id=None):
+def stack_info(request:HttpRequest, project_id=None, stack_id=None) -> JsonResponse:
     result = get_stack_info(project_id, stack_id)
     return JsonResponse(result, safe=False, json_dumps_params={
         'sort_keys': True,
@@ -136,7 +136,7 @@ def stack_info(request, project_id=None, stack_id=None):
     })
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def stacks(request, project_id=None):
+def stacks(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Returns a response containing the JSON object with menu information
     about the project's stacks.
     """

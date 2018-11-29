@@ -724,11 +724,14 @@
       /**
        * Get the intersection X and Y coordinate between node and and two with the
        * plane that is @zDiff units above node two. If it happens that there is no
-       * difference in Z, node one's X and Y coordinate are returned.
+       * difference in Z, node one's X and Y coordinate are returned. The target
+       * parameter is expected to be a two element list, into which the result
+       * is copied.
        */
-      this.getIntersection = function(node1, node2, zDiff) {
+      this.getIntersection = function(node1, node2, zDiff, target) {
         if (0 === zDiff) {
-          return [node1[node1.planeX], node1[node1.planeY]];
+          target[0] = node1[node1.planeX];
+          target[1] = node1[node1.planeY];
         } else {
           let sv = this.overlayGlobals.tracingOverlay.stackViewer;
           intersectionWorkingPlane.copy(sv.plane);
@@ -742,12 +745,22 @@
           if (!intersection) {
             return null;
           } else {
-            return [intersection[node1.planeX], intersection[node1.planeY]];
+            target[0] = intersection[node1.planeX];
+            target[1] = intersection[node1.planeY];
           }
         }
+
+        return target;
       };
 
-      /** Updates the coordinates of the line from the node to the parent. */
+      // A shared inersection target to avoid creating new objects when
+      // redrawing a line to a parent node. These variablesa re internal to
+      // drawLineToParent().
+      let _parentIntersectionTarget = [null, null];
+      let _childIntersectionTarget = [null, null];
+
+      /** Updates the coordinates of the line from the node to the parent. Is
+       * called frequently. */
       this.drawLineToParent = function() {
         if (!this.parent) {
           return;
@@ -760,9 +773,11 @@
         // Z, draw the line only until it meets with the next non-boken slice,
         // in direction of the child or the parent, respectively.
         var childLocation = this.getIntersection(this, this.parent,
-            Math.max(this.dToSecBefore, Math.min(this.dToSecAfter, this.zdiff)));
+            Math.max(this.dToSecBefore, Math.min(this.dToSecAfter, this.zdiff)),
+            _parentIntersectionTarget);
         var parentLocation = this.getIntersection(this.parent, this,
-            Math.max(this.dToSecBefore, Math.min(this.dToSecAfter, this.parent.zdiff)));
+            Math.max(this.dToSecBefore, Math.min(this.dToSecAfter, this.parent.zdiff)),
+            _childIntersectionTarget);
 
         // If no intersection was found between the child-parent edge and the
         // plane, don't draw the line.

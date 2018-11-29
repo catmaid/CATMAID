@@ -541,6 +541,19 @@
             }
           });
 
+        function updateQueryVisibility() {
+          querySelect.querySelector('select').disabled = queryType !== 'skeleton';
+          transformedQuerySelect.querySelector('select').disabled = queryType !== 'transformed-skeleton';
+        }
+
+        function updateTargetVisibility() {
+          targetSelect.querySelector('select').disabled = targetType !== 'skeleton';
+          transformedTargetSelect.querySelector('select').disabled = targetType !== 'transformed-skeleton';
+        }
+
+        updateQueryVisibility();
+        updateTargetVisibility();
+
         return [{
           type: 'button',
           label: 'Refresh',
@@ -573,115 +586,63 @@
           length: 8,
           onchange: function() {
             newQueryName = this.value;
-          }
-        }, {
-          type: 'radio',
-          label: 'Query skeletons',
-          name: 'query',
-          title: 'Query a set of skeletons',
-          value: 'skeleton',
-          checked: queryType === 'skeleton',
-          onclick: function() {
-            queryType = 'skeleton';
-            querySelect.querySelector('select').disabled = false;
-            transformedQuerySelect.querySelector('select').disabled = true;
           },
+        }, {
+          type: 'select',
+          label: 'Query',
+          title: 'Select the query object type',
+          value: queryType,
+          entries: [{
+            title: 'Skeleton source',
+            value:  'skeleton',
+          }, {
+            title: 'All skeletons',
+            value: 'all-skeletons',
+          }, {
+            title: 'Transformed skeletons',
+            value: 'transformed-skeletons',
+          }, {
+            title: 'Point clouds',
+            value: 'pointclouds',
+          }],
+          onchange: function() {
+            queryType = this.value;
+            updateQueryVisibility();
+          }
         }, {
           type: 'child',
           element: querySelect,
         }, {
-          type: 'radio',
-          label: 'Query all skeletons',
-          name: 'query',
-          title: 'Query against all skeletons',
-          value: 'all-skeletons',
-          checked: queryType === 'all-skeletons',
-          onclick: function() {
-            targetType = 'all-skeletons';
-            querySelect.querySelector('select').disabled = true;
-            transformedQuerySelect.querySelector('select').disabled = true;
-          },
-        }, {
-          type: 'radio',
-          label: 'Query transformed skeletons',
-          name: 'query',
-          title: 'Query a set of transformed skeletons, defined as display transformation in any Landmark Widget',
-          value: 'transformed-skeleton',
-          checked: queryType === 'transformed-skeleton',
-          onclick: function() {
-            queryType = 'transformed-skeleton';
-            querySelect.querySelector('select').disabled = true;
-            transformedQuerySelect.querySelector('select').disabled = false;
-          },
-        }, {
           type: 'child',
           element: transformedQuerySelect,
         }, {
-          type: 'radio',
-          label: 'Query point clouds',
-          name: 'query',
-          checked: targetType === 'pointcloud',
-          title: 'Query a set of point clouds selected in the "Point clouds" tab.',
-          value: 'pointcloud',
-          onclick: function() {
-            queryType = 'pointcloud';
-            querySelect.querySelector('select').disabled = true;
-            transformedQuerySelect.querySelector('select').disabled = true;
-          },
-        }, {
-          type: 'radio',
-          label: 'Target skeletons',
-          name: 'target',
-          title: 'Query against a set of target skeletons',
-          value: 'skeleton',
-          checked: targetType === 'skeleton',
-          onclick: function() {
-            targetType = 'skeleton';
-            targetSelect.querySelector('select').disabled = false;
-            transformedTargetSelect.querySelector('select').disabled = true;
-          },
+          type: 'select',
+          label: 'Target',
+          title: 'Select the target object type',
+          value: targetType,
+          entries: [{
+            title: 'Skeleton source',
+            value:  'skeleton',
+          }, {
+            title: 'All skeletons',
+            value: 'all-skeletons',
+          }, {
+            title: 'Transformed skeletons',
+            value: 'transformed-skeletons',
+          }, {
+            title: 'Point clouds',
+            value: 'pointclouds',
+          }],
+          onchange: function() {
+            targetType = this.value;
+            updateTargetVisibility();
+          }
         }, {
           type: 'child',
           element: targetSelect,
         }, {
-          type: 'radio',
-          label: 'Target all skeletons',
-          name: 'target',
-          title: 'Query against all skeletons',
-          value: 'all-skeletons',
-          checked: targetType === 'all-skeletons',
-          onclick: function() {
-            targetType = 'all-skeletons';
-            targetSelect.querySelector('select').disabled = true;
-            transformedTargetSelect.querySelector('select').disabled = true;
-          },
-        }, {
-          type: 'radio',
-          label: 'Target transformed skeletons',
-          name: 'target',
-          title: 'Target a set of transformed skeletons, defined as display transformation in any Landmark Widget',
-          value: 'transformed-skeleton',
-          checked: queryType === 'transformed-skeleton',
-          onclick: function() {
-            targetType = 'transformed-skeleton';
-            querySelect.querySelector('select').disabled = true;
-            transformedQuerySelect.querySelector('select').disabled = false;
-          },
-        }, {
           type: 'child',
           element: transformedTargetSelect,
-        }, {
-          type: 'radio',
-          label: 'Target point clouds',
-          name: 'target',
-          checked: targetType === 'pointcloud',
-          title: 'Query against the set of target point clouds selected in the "Point clouds" tab.',
-          value: targetType === 'pointcloud',
-          onclick: function() {
-            targetType = 'pointcloud';
-            targetSelect.querySelector('select').disabled = true;
-            transformedTargetSelect.querySelector('select').disabled = true;
-          },
         }, {
           type: 'checkbox',
           label: 'No self-matches',

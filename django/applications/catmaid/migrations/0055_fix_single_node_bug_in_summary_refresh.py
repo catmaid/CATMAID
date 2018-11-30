@@ -124,7 +124,7 @@ class Migration(migrations.Migration):
     """
 
     dependencies = [
-        ('catmaid', '0056_complete_django_auth_user_update'),
+        ('catmaid', '0054_update_skeleton_summary_refresh_function'),
     ]
 
     operations = [

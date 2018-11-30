@@ -2,7 +2,7 @@
 import re
 import json
 
-from Typing import Dict
+from typing import Dict
 
 from functools import wraps
 from itertools import groupby

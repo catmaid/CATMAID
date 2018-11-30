@@ -3,7 +3,6 @@
 /* global
   Arbor,
   CATMAID,
-  project,
   msgpack,
   requestQueue
   */

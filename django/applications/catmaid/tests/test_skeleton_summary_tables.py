@@ -310,3 +310,34 @@ class SkeletonSummaryTableTests(TransactionTestCase):
         # Check summary of removed skeleton
         skeleton_summary = self.get_summary(cursor, skeleton_id_a)
         self.assertIs(skeleton_summary, None)
+
+    def test_recreation_in_sql(self):
+        """Test whether a recreation from scratch of the summary table works as
+        expected.
+        """
+        self.authenticate()
+
+        # Create new skeleton
+        response = self.client.post('/%d/treenode/create' % self.project_id, {
+            'x': 1,
+            'y': 2,
+            'z': 3,
+            'confidence': 5,
+            'parent_id': -1,
+            'radius': 2
+        })
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        skeleton_id = parsed_response['skeleton_id']
+
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT refresh_skeleton_summary_table();
+        """)
+
+        # Expect basic summary setup
+        initial_skeleton_summary = self.get_summary(cursor, skeleton_id)
+        self.assertIsNot(initial_skeleton_summary, None)
+        self.assertEqual(initial_skeleton_summary['cable_length'], 0.0)
+        self.assertEqual(initial_skeleton_summary['num_nodes'], 1)

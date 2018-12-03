@@ -155,12 +155,12 @@ def stacks(request, project_id=None):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stack_groups(request, project_id=None, stack_id=None):
-    stackgroup_links = StackStackGroup.objects \
+    stack_group_ids = StackStackGroup.objects \
         .filter(stack=stack_id) \
-        .select_related('group_relation')
+        .values_list('stack_group_id', flat=True)
 
     result = {
-        'stack_group_ids': [l.stack_group_id for l in stackgroup_links]
+        'stack_group_ids': stack_group_ids
     }
 
     return JsonResponse(result)

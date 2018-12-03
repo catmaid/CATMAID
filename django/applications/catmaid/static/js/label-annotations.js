@@ -41,7 +41,7 @@
               // Find if an existing manager for any of these stack groups exists.
               let managing_stack_id = ortho_sgs.find(sg => this.groupManagingStack.get(sg.id));
 
-              if (typeof managing_stack_id !== 'undefined') {
+              if (managing_stack_id !== undefined) {
                 manager = this.managers.get(managing_stack_id);
               } else {
                 // If no manager exists, create a new one.

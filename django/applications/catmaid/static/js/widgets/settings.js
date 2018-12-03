@@ -262,9 +262,9 @@
     };
 
     /**
-     * Adds TileLayer settings to the given container.
+     * Adds StackLayer settings to the given container.
      */
-    var addTileLayerSettings = function(container)
+    var addStackLayerSettings = function(container)
     {
       var ds = CATMAID.DOM.addSettingsContainer(container, "Stack view");
 
@@ -320,16 +320,16 @@
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createCheckboxSetting(
               "Prefer WebGL Layers",
-              CATMAID.TileLayer.Settings[SETTINGS_SCOPE].prefer_webgl,
+              CATMAID.StackLayer.Settings[SETTINGS_SCOPE].prefer_webgl,
               'Choose whether to use WebGL or Canvas tile layer rendering when ' +
               'supported by your tile source and browser. Note that your tile ' +
               'source server may need to be <a href="http://enable-cors.org/">' +
               'configured to enable use in WebGL</a>. (Note: you must reload ' +
               'the page for this setting to take effect.)',
               function() {
-                CATMAID.TileLayer.Settings[SETTINGS_SCOPE].prefer_webgl = this.checked;
+                CATMAID.StackLayer.Settings[SETTINGS_SCOPE].prefer_webgl = this.checked;
               }),
-          CATMAID.TileLayer.Settings,
+          CATMAID.StackLayer.Settings,
           'prefer_webgl',
           SETTINGS_SCOPE));
 
@@ -337,14 +337,14 @@
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createCheckboxSetting(
               "Hide layers if nearest section broken",
-              CATMAID.TileLayer.Settings[SETTINGS_SCOPE].hide_if_nearest_section_broken,
+              CATMAID.StackLayer.Settings[SETTINGS_SCOPE].hide_if_nearest_section_broken,
               'Whether to hide tile layers by default if the nearest section ' +
               'is marked as broken, rather than displaying the nearest non-broken ' +
               'section. This can be adjusted for each individual layer.',
               function() {
-                CATMAID.TileLayer.Settings[SETTINGS_SCOPE].hide_if_nearest_section_broken = this.checked;
+                CATMAID.StackLayer.Settings[SETTINGS_SCOPE].hide_if_nearest_section_broken = this.checked;
               }),
-          CATMAID.TileLayer.Settings,
+          CATMAID.StackLayer.Settings,
           'hide_if_nearest_section_broken',
           SETTINGS_SCOPE));
 
@@ -424,11 +424,14 @@
       // Tile interpolation
       var tileInterpolation = $('<select/>');
       var interpolationModes = [
-        {name: 'Smoothly blur pixels (linear)', id: 'linear'},
-        {name: 'Keep images pixelated (nearest)', id: 'nearest'}
+        {name: 'Smoothly blur pixels (linear)', id: CATMAID.StackLayer.INTERPOLATION_MODES.LINEAR},
+        {name: 'Keep images pixelated (nearest)', id: CATMAID.StackLayer.INTERPOLATION_MODES.NEAREST}
       ];
+      let setInterpolation = CATMAID.StackLayer.Settings[SETTINGS_SCOPE].linear_interpolation ?
+          CATMAID.StackLayer.INTERPOLATION_MODES.LINEAR :
+          CATMAID.StackLayer.INTERPOLATION_MODES.NEAREST;
       interpolationModes.forEach(function(o) {
-        var selected = (o.id === (CATMAID.TileLayer.Settings[SETTINGS_SCOPE].linear_interpolation ? 'linear' : 'nearest'));
+        var selected = (o.id === setInterpolation);
         this.append(new Option(o.name, o.id, selected, selected));
       }, tileInterpolation);
 
@@ -438,19 +441,25 @@
               tileInterpolation,
               'Choose how to interpolate pixel values when image tiles ' +
               'are magnified.'),
-          CATMAID.TileLayer.Settings,
+          CATMAID.StackLayer.Settings,
           'linear_interpolation',
           SETTINGS_SCOPE));
       tileInterpolation.on('change', function(e) {
         var interp = this.value === 'linear';
-        CATMAID.TileLayer.Settings[SETTINGS_SCOPE].linear_interpolation = interp;
-        project.getStackViewers().forEach(function (stackViewer) {
-          stackViewer.getLayers().forEach(function (layer) {
-            if (layer instanceof CATMAID.TileLayer) {
-              layer.setInterpolationMode(interp);
-            }
-          });
-        });
+        CATMAID.StackLayer.Settings.set(
+              'linear_interpolation',
+              interp,
+              SETTINGS_SCOPE)
+           .then(function() {
+              project.getStackViewers().forEach(function (stackViewer) {
+                stackViewer.getLayers().forEach(function (layer) {
+                  if (layer instanceof CATMAID.StackLayer) {
+                    layer.refreshInterpolationMode();
+                  }
+                });
+              });
+           })
+           .catch(CATMAID.handleError);
       });
 
       // Layer insertion strategy
@@ -1923,7 +1932,7 @@
 
       // Add all settings
       addGeneralSettings(space);
-      addTileLayerSettings(space);
+      addStackLayerSettings(space);
       addGridSettings(space);
       addTracingSettings(space);
 

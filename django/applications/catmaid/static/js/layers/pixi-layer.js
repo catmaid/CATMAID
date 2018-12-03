@@ -65,6 +65,18 @@
     if (allReady) this.renderer.render(this.stage);
   };
 
+  /**
+   * Renderer the content of this context to a URL-encoded type.
+   * @param  {@string} type               URL encoding format, e.g., 'image/png'
+   * @param  {@PIXI.RenderTexture} canvas Target render texture, to reuse.
+   * @return {string}                     URL-encoded content.
+   */
+  PixiContext.prototype.toDataURL = function (type, canvas) {
+    canvas = canvas || new PIXI.RenderTexture.create(this.renderer.width, this.renderer.height);
+    this.renderer.render(this.stage, canvas);
+    return this.renderer.plugins.extract.canvas(canvas).toDataURL(type);
+  };
+
 
   /**
    * Loads textures from URLs, tracks use through reference counting, caches
@@ -421,8 +433,7 @@
         .filter(function (modeKey) { // Filter modes that are not different from normal.
           var glBlendFuncs = glBlendModes[PIXI.BLEND_MODES[modeKey]];
           return modeKey == 'NORMAL' ||
-              glBlendFuncs[0] !== normBlendFuncs[0] ||
-              glBlendFuncs[1] !== normBlendFuncs[1]; })
+              !CATMAID.tools.arraysEqual(glBlendFuncs, normBlendFuncs); })
         .map(function (modeKey) {
           return modeKey.toLowerCase().replace(/_/, ' '); });
   };
@@ -655,9 +666,10 @@
           numberInput.min = '0';
           numberInput.max = '16777215';
           numberInput.step = '1';
+          numberInput.value = PixiLayer.Filters.arr2int(this.pixiFilter[param.name]);
           (function(setParam, numberInput) {
             numberInput.onchange = function() {
-              setParam(int2arr(Number(this.value)));
+              setParam(PixiLayer.Filters.int2arr(Number(this.value)));
             };
           })(self.setParam.bind(self, param.name), numberInput);
           numberDiv.appendChild(numberInput);
@@ -910,7 +922,7 @@
    * @param num
    * @returns {Array.<*>}
    */
-  var int2arr = function(num) {
+  PixiLayer.Filters.int2arr = function(num) {
     var arr = [];
     var divisor;
     var remainder = num;
@@ -924,7 +936,7 @@
     return arr;
   };
 
-  var arr2int = function(arr) {
+  PixiLayer.Filters.arr2int = function(arr) {
     var out = 0;
     for (var i = 0; i < arr.length-1; i++) {
       out += Math.floor(arr[i]*255) * Math.pow(256, i);
@@ -954,37 +966,37 @@
     var fragmentSrc = `
       uniform vec4 unknownLabel;
       uniform vec4 unknownColor;
-      
+
       uniform vec4 backgroundLabel;
       uniform vec4 backgroundColor;
-      
+
       uniform float foregroundAlpha;
       uniform float seed;
-      
+
       varying vec2 vTextureCoord;
       uniform sampler2D uSampler;
-      
+
       float whenEq(vec4 x, vec4 y) {
           return 1.0 - sign(distance(x, y));
       }
-      
+
       vec4 hashToColor(vec4 label) {
           const float SCALE = 33452.5859; // Some large constant to make the truncation interesting.
           label = fract(label * SCALE); // Truncate some information.
           label += dot(label, label.wzyx + 100.0 * seed); // Mix channels and add the salt.
           return vec4(fract((label.xzy + label.ywz) * label.zyw), 1.0) * foregroundAlpha;
       }
-      
+
       void main(void){
           vec4 current = texture2D(uSampler, vTextureCoord);
-      
+
           float isUnknown = whenEq(current, unknownLabel);
           float isBackground = whenEq(current, backgroundLabel);
-      
+
           vec4 final = unknownColor * isUnknown;
           final += backgroundColor * isBackground;
           final += hashToColor(current) * (1.0 - min(isUnknown + isBackground, 1.0));
-      
+
           gl_FragColor.rgba = final;
       }
     `;

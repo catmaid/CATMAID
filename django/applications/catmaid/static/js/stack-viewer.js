@@ -152,6 +152,10 @@
   $.extend(StackViewer.prototype, new InstanceRegistry());
   StackViewer.prototype.constructor = StackViewer;
 
+  StackViewer.EVENT_STACK_LAYER_ADDED = 'stackviewer_stack_layer_added';
+  StackViewer.EVENT_STACK_LAYER_REMOVED = 'stackviewer_stack_layer_removed';
+  CATMAID.asEventSource(StackViewer);
+
   /**
    * Get a valid Z location based on all stacks that are selected to be
    * respected.
@@ -302,9 +306,9 @@
    */
   StackViewer.prototype.updateTitle = function() {
     var title = this.primaryStack.title;
-    var tileLayer = this._layers.get('TileLayer');
-    if (tileLayer) {
-      var mirror = this.primaryStack.mirrors[tileLayer.mirrorIndex];
+    var stackLayer = this._layers.get('StackLayer');
+    if (stackLayer) {
+      var mirror = this.primaryStack.mirrors[stackLayer.mirrorIndex];
       title = title + " | " + mirror.title;
     }
 
@@ -533,7 +537,7 @@
 
 
   /**
-   * align and update the tiles to be ( x, y ) in the image center
+   * align and update the stacks to be ( x, y ) in the image center
    */
   StackViewer.prototype.redraw = function (completionCallback) {
     var allQueued = false, semaphore = 0, layer,
@@ -929,13 +933,13 @@
       this._layers.delete(key);
       this._layerOrder.splice(this._layerOrder.indexOf(key), 1);
 
-      if (layer instanceof CATMAID.TileLayer) {
+      if (layer instanceof CATMAID.StackLayer) {
         var self = this;
         var otherStackLayers = this._layers.forEach(function (otherLayer) {
-          return otherLayer instanceof CATMAID.TileLayer && otherLayer.stack.id === layer.stack.id;
+          return otherLayer instanceof CATMAID.StackLayer && otherLayer.stack.id === layer.stack.id;
         });
 
-        // If this was the last tile layer for a particular stack...
+        // If this was the last stack layer for a particular stack...
         if (!otherStackLayers) {
           // Remove that stack from this stack viewer and update the tool.
           this._stacks = this._stacks.filter(function (s) { return s.id !== layer.stack.id; });
@@ -945,6 +949,8 @@
             this._tool.register(this);
           }
         }
+
+        StackViewer.trigger(StackViewer.EVENT_STACK_LAYER_REMOVED, layer, this);
       }
 
       this.layercontrol.refresh();
@@ -963,8 +969,16 @@
     if (this._layers.size === 1) return false;
 
     var layer = this._layers.get(key);
-    if ( typeof layer !== "undefined" && layer && layer instanceof CATMAID.TileLayer ) {
-      return layer.stack.id !== this.primaryStack.id;
+    if ( typeof layer !== "undefined" && layer && layer instanceof CATMAID.StackLayer ) {
+      if (layer.stack.id === this.primaryStack.id) {
+        // If this layer is for the primary stack, it is only removable if
+        // there are other primary stack layers.
+        return this.getLayersOfType(CATMAID.StackLayer)
+          .filter(s => s.stack.id === this.primaryStack.id)
+          .length > 1;
+      }
+
+      return true;
     }
     else
       return false;
@@ -1000,7 +1014,7 @@
   };
 
   /**
-   * Add a tile layer for a stack to this stack viewer.
+   * Add a stack layer to this stack viewer.
    * @param {Stack} stack The stack associated with this layer.
    * @param {Object} layer The layer to add.
    */
@@ -1013,26 +1027,38 @@
     if (StackViewer.Settings.session.respect_broken_sections_new_stacks) {
       this._brokenSliceStacks.add(stack);
     }
-    this.addLayer('TileLayer' + stack.id, layer);
+
+    // Create a unique key for this layer.
+    let base_key = 'StackLayer' + stack.id;
+    var key = base_key;
+    var duplicate = 1;
+    while (this._layers.has(key)) {
+      key = base_key + '-' + duplicate;
+      duplicate += 1;
+    }
+
+    this.addLayer(key, layer);
     if (this._tool) {
       this._tool.unregister(this);
       this._tool.register(this);
     }
     this.resize();
+
+    StackViewer.trigger(StackViewer.EVENT_STACK_LAYER_ADDED, layer, this);
   };
 
   /**
-   * Replace a stack's tile layer with a new one.
+   * Replace a stack's layer with a new one.
    *
    * @param {Object} oldLayerKey Key for the layer to be replaced.
-   * @param {Object} newLayer    New layer, must be a tile layer for the
+   * @param {Object} newLayer    New layer, must be a stack layer for the
    *                             same stack as the existing layer.
    */
   StackViewer.prototype.replaceStackLayer = function (oldLayerKey, newLayer) {
     var oldLayer = this._layers.get(oldLayerKey);
 
     if (!oldLayer || oldLayer.stack !== newLayer.stack) {
-      throw new Error('Can only replace a tile layer with a new tile layer for the same stack.');
+      throw new Error('Can only replace a stack layer with a new layer for the same stack.');
     }
 
     this._layers.set(oldLayerKey, newLayer);
@@ -1053,6 +1079,10 @@
     }
 
     this.resize();
+
+    StackViewer.trigger(StackViewer.EVENT_STACK_LAYER_REMOVED, oldLayer, this);
+    StackViewer.trigger(StackViewer.EVENT_STACK_LAYER_ADDED, newLayer, this);
+
     this.layercontrol.refresh();
     this.updateTitle();
     this.redraw();
@@ -1099,6 +1129,17 @@
     refLines = refLines.fadeOut(delay, (function() {
       this.showReferenceLines(visible);
     }).bind(this));
+  };
+
+  /**
+   * Renderer the WebGL content of this viewer to a URL-encoded type.
+   * @param  {@string} type               URL encoding format, e.g., 'image/png'
+   * @param  {@PIXI.RenderTexture} canvas Target render texture, to reuse.
+   * @return {string}                     URL-encoded content.
+   */
+  StackViewer.prototype.toDataURL = function (type, canvas) {
+    let context = CATMAID.PixiLayer.contexts.get(this);
+    if (context) return context.toDataURL(type, canvas);
   };
 
   StackViewer.Settings = new CATMAID.Settings(

@@ -338,9 +338,9 @@
 
       // For now, present available stacks in order that individual stack
       // viewers are set to.
-      var tileLayers = project.focusedStackViewer.getOrderedLayersOfType(CATMAID.TileLayer);
-      var stacks = tileLayers.map(function(l) {
-        return l.stack;
+      var stackLayers = project.focusedStackViewer.getOrderedLayersOfType(CATMAID.StackLayer);
+      var stacks = stackLayers.map(function(l) {
+        return l.getStack();
       });
 
       // initialize the stacks we offer to crop

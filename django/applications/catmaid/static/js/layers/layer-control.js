@@ -14,7 +14,7 @@
     this.view = document.createElement( "div" );
     this.view.className = "LayerControl";
     this.view.id = "LayerControl" + stackViewer.id;
-    this.view.style.zIndex = 8;
+    this.view.style.zIndex = 6;
 
     stackViewer.getView().appendChild( this.view );
   };

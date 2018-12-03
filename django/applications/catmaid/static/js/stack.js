@@ -578,6 +578,12 @@
     self.removeMirror = function(mirrorIndex) {
       self.mirrors.splice(mirrorIndex, 1);
     };
+
+    self.labelMetadata = function () {
+      if (this.metadata) {
+        return this.metadata.catmaidLabelMeta;
+      }
+    };
   }
 
   /**

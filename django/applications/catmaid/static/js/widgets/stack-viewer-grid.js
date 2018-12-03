@@ -595,11 +595,11 @@
 
         var panelStackViewer = new CATMAID.StackViewer(project, stack, panelWindow);
 
-        var tileLayer =  this.sourceStackViewer.getLayer('TileLayer').constructCopy(
+        var stackLayer = this.sourceStackViewer.getLayer('StackLayer').constructCopy(
           {stackViewer: panelStackViewer, displayName: `Image data (${stack.title})`}
           );
 
-        panelStackViewer.addLayer("TileLayer", tileLayer);
+        panelStackViewer.addLayer("StackLayer", stackLayer);
 
         panelStackViewer.layercontrol.refresh();
         this.stackViewers.push(panelStackViewer);

@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 
 from ..models import UserRole, Project, Stack, ProjectStack, \
-        BrokenSlice, StackMirror
+        BrokenSlice, StackMirror, StackStackGroup
 from .authentication import requires_user_role
 
 logger = logging.getLogger(__name__)
@@ -152,3 +152,15 @@ def stacks(request, project_id=None):
         'sort_keys': True,
         'indent': 4
     })
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def stack_groups(request, project_id=None, stack_id=None):
+    stack_group_ids = StackStackGroup.objects \
+        .filter(stack=stack_id) \
+        .values_list('stack_group_id', flat=True)
+
+    result = {
+        'stack_group_ids': stack_group_ids
+    }
+
+    return JsonResponse(result)

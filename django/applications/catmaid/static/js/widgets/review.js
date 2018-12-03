@@ -1144,12 +1144,12 @@
       var counterContainer = $('#counting-cache');
       counterContainer.empty();
       project.getStackViewers().forEach(function(stackViewer) {
-        var tilelayer = stackViewer.getLayer('TileLayer');
+        var stackLayer = stackViewer.getLayer('StackLayer');
         // Create loading information text for each stack viewer.
         var layerCounter = document.createElement('div');
         counterContainer.append(layerCounter);
-        if (tilelayer) {
-          tilelayer.cacheLocations(locations,
+        if (stackLayer) {
+          stackLayer.cacheLocations(locations,
               loadImageCallback.bind(self, layerCounter, stackViewer.primaryStack.title));
         }
       });

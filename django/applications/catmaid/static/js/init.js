@@ -1362,13 +1362,13 @@ var project;
                       stacks: stacks
                     };
                     CATMAID.layoutStackViewers();
-                    // Make all tile layers visible, they have been initialized
+                    // Make all stack layers visible, they have been initialized
                     // invisible.
                     for (var i=0; i<loadedStackViewers.length; ++i) {
                       var sv = loadedStackViewers[i];
-                      var tileLayers = sv.getLayersOfType(CATMAID.TileLayer);
-                      for (var j=0; j<tileLayers.length; ++j) {
-                        var tl = tileLayers[j];
+                      var stackLayers = sv.getLayersOfType(CATMAID.StackLayer);
+                      for (var j=0; j<stackLayers.length; ++j) {
+                        var tl = stackLayers[j];
                         tl.setOpacity(1.0);
                         tl.redraw();
                       }
@@ -1517,7 +1517,7 @@ var project;
    * @param  {StackViewer} stackViewer Viewer to which to add the stack.
    * @param  {number}      mirrorIndex Optional mirror index, defaults to
    *                                   the first available.
-   * @param  {Boolean} hide            The stack's tile layer will initially be
+   * @param  {Boolean} hide            The stack's layer will initially be
    *                                   hidden.
    * @return {Promise}                 A promise yielding the stack viewer
    *                                   containing the new stack.
@@ -1590,10 +1590,17 @@ var project;
       });
     }
 
-    function loadStack(e, stackViewer, hideTileLayer) {
+    function loadStack(e, stackViewer, hideStackLayer) {
       var useExistingViewer = typeof stackViewer !== 'undefined';
 
       var stack = new CATMAID.Stack.fromStackInfoJson(e);
+
+      // If this is a label stack, not a raw stack, create a label annotation
+      // manager.
+      // TODO: should eventually use a backend image label space instead.
+      if (!!stack.labelMetadata()) {
+        CATMAID.LabelAnnotations.get(stack);
+      }
 
       if (!useExistingViewer) {
         stackViewer = new CATMAID.StackViewer(project, stack);
@@ -1601,29 +1608,27 @@ var project;
 
       document.getElementById( "toolbox_project" ).style.display = "block";
 
-      var tilelayerConstructor = CATMAID.TileLayer.Settings.session.prefer_webgl ?
-          CATMAID.PixiTileLayer :
-          CATMAID.TileLayer;
-      var tilelayer = new tilelayerConstructor(
+      var stackLayerConstructor = CATMAID.StackLayer.preferredConstructorForStack();
+      var stackLayer = new stackLayerConstructor(
           stackViewer,
           "Image data (" + stack.title + ")",
           stack,
           mirrorIndex,
-          !hideTileLayer,
-          hideTileLayer ? 0 : 1,
+          !hideStackLayer,
+          hideStackLayer ? 0 : 1,
           !useExistingViewer,
-          CATMAID.TileLayer.Settings.session.linear_interpolation,
+          CATMAID.StackLayer.INTERPOLATION_MODES.INHERIT,
           true);
 
       if (!useExistingViewer) {
-        stackViewer.addLayer( "TileLayer", tilelayer );
+        stackViewer.addLayer("StackLayer", stackLayer);
 
         project.addStackViewer( stackViewer );
 
         // refresh the overview handler to also register the mouse events on the buttons
         stackViewer.layercontrol.refresh();
       } else {
-        stackViewer.addStackLayer(stack, tilelayer);
+        stackViewer.addStackLayer(stack, stackLayer);
       }
 
       CATMAID.ui.releaseEvents();

@@ -377,6 +377,8 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
+    # If no authentication is possible, use guardian's anonymous user
+    'UNAUTHENTICATED_USER': 'guardian.utils.get_anonymous_user',
     'VIEW_DESCRIPTION_FUNCTION': 'custom_rest_swagger_googledoc.get_googledocstring',
     # Parser classes priority-wise for Swagger
     'DEFAULT_PARSER_CLASSES': [

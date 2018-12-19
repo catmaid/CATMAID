@@ -154,9 +154,8 @@ def requires_user_role(roles):
                 # The user can execute the function.
                 return f(request, *args, **kwargs)
             else:
-                msg = "The user '%s' with ID %s does not have a necessary role in the " \
-                      "project %d" % (u.first_name + ' ' + u.last_name, u.id, \
-                      int(kwargs['project_id']))
+                msg = "User '{}' with ID {} does not have the required permissions in " \
+                      "project {}".format(u.username, u.id, int(kwargs['project_id']))
                 raise PermissionError(msg)
 
         return wraps(f)(inner_decorator)
@@ -195,9 +194,8 @@ def requires_user_role_for_any_project(roles):
                 # The user can execute the function.
                 return f(request, *args, **kwargs)
             else:
-                msg = "The user '%s' with ID %s does not have a necessary " \
-                      "role in any project" \
-                      % (u.first_name + ' ' + u.last_name, u.id)
+                msg = "User '{}' with ID {} does not have the required permissions " \
+                      "in any project".format(u.username, u.id)
                 raise PermissionError(msg)
 
         return wraps(f)(inner_decorator)
@@ -232,14 +230,14 @@ def get_objects_and_perms_for_user(user, codenames, klass, use_groups=True, any_
     # Extract a list of tuples that contain an object's primary
     # key and a permission codename that the user has on them.
     user_obj_perms = UserObjectPermission.objects\
-        .filter(user=user)\
+        .filter(user=user.id)\
         .filter(permission__content_type=ctype)\
         .filter(permission__codename__in=codenames)\
         .values_list('object_pk', 'permission__codename')
     data = list(user_obj_perms)
     if use_groups:
         groups_obj_perms = GroupObjectPermission.objects\
-            .filter(group__user=user)\
+            .filter(group__user=user.id)\
             .filter(permission__content_type=ctype)\
             .filter(permission__codename__in=codenames)\
             .values_list('object_pk', 'permission__codename')

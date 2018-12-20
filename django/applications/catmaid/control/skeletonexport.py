@@ -564,7 +564,8 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
                 treenode.radius,
                 treenode.confidence,
                 treenode.edition_time,
-                treenode.creation_time
+                treenode.creation_time,
+                1 as ordering
             FROM treenode
             WHERE treenode.skeleton_id = %(skeleton_id)s
             UNION ALL
@@ -578,7 +579,8 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
                 treenode__history.radius,
                 treenode__history.confidence,
                 COALESCE(lower(treenode__history.sys_period), treenode__history.edition_time),
-                COALESCE(upper(treenode__history.sys_period), treenode__history.edition_time)
+                COALESCE(upper(treenode__history.sys_period), treenode__history.edition_time),
+                2 as ordering
             FROM treenode__history
             WHERE treenode__history.skeleton_id = %(skeleton_id)s
         '''
@@ -597,7 +599,8 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
                     th.radius,
                     th.confidence,
                     COALESCE(lower(th.sys_period), th.edition_time),
-                    COALESCE(upper(th.sys_period), th.edition_time)
+                    COALESCE(upper(th.sys_period), th.edition_time),
+                    3 as ordering
                 FROM treenode__history th
                 JOIN treenode t
                     ON th.id = t.id
@@ -610,7 +613,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
             {order}
         """.format(**{
             'query': query,
-            'order': 'ORDER BY treenode.id' if ordered else '',
+            'order': 'ORDER BY treenode.id, ordering' if ordered else 'ORDER BY ordering',
         })
 
         cursor.execute(query, params)
@@ -675,17 +678,19 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
                         {user_select}
                 FROM (
                     SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
-                        tc.edition_time, tc.creation_time, tc.user_id
+                        tc.edition_time, tc.creation_time, tc.user_id,
+                        1 AS ordering
                     FROM treenode_connector tc
                     WHERE tc.skeleton_id = %(skeleton_id)s
                     UNION ALL
                     SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
                         COALESCE(lower(tc.sys_period), tc.edition_time),
                         COALESCE(upper(tc.sys_period), tc.edition_time),
-                        tc.user_id
+                        tc.user_id, 2 AS ordering
                     FROM treenode_connector__history tc
                     WHERE tc.skeleton_id = %(skeleton_id)s
                     {extra_query}
+                    {order}
                 ) links(treenode_id, connector_id, relation_id, valid_from, valid_to, user_id)
                 JOIN connector__with_history c
                     ON links.connector_id = c.id
@@ -699,7 +704,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
                     SELECT tch.treenode_id, tch.connector_id, tch.relation_id,
                         COALESCE(lower(tch.sys_period), tch.edition_time),
                         COALESCE(upper(tch.sys_period), tch.edition_time),
-                        tch.user_id
+                        tch.user_id, 3 AS ordering
                     FROM treenode_connector__history tch
                     JOIN treenode_connector tc
                         ON tc.id = tch.id
@@ -709,7 +714,11 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
             else:
                 extra_query = ''
 
-            cursor.execute(query.format(extra_query=extra_query, user_select=user_select), params)
+            cursor.execute(query.format(**{
+                'extra_query': extra_query,
+                'user_select': user_select,
+                'order': 'ORDER BY 1, ordering' if ordered else 'ORDER BY ordering',
+            }), params)
 
             if with_user_info:
                 connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5], row[6], row[7], row[8]) for row in cursor.fetchall())

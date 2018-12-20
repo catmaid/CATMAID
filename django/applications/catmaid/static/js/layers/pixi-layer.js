@@ -276,7 +276,13 @@
 
       if (outKey !== null) {
         delete this._counts[outKey];
-        PIXI.utils.TextureCache[outKey].destroy(true);
+        // While it is reasonable to expect the texture cache entry to be there,
+        // there are reports where the destroy() call on a cached texture
+        // failed, because of an unavailable entry. To mitigate this, an extra
+        // check is performed until the root cause for this problem is found.
+        if (PIXI.utils.TextureCache[outKey]) {
+          PIXI.utils.TextureCache[outKey].destroy(true);
+        }
         delete PIXI.utils.TextureCache[outKey];
       }
 

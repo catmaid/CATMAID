@@ -223,5 +223,37 @@
       .catch(CATMAID.handleError);
   };
 
+  /**
+   * Annotate all neurons of the passed in skeletons with the base name of their
+   * neurons.
+   */
+  CATMAID.annotateSkeletonsWithName = function(skeletonIds) {
+    return new Promise(function(resolve, reject) {
+
+      // Complain if the user has no annotation permissions for the current project
+      if (!CATMAID.mayEdit()) {
+        CATMAID.error("You don't have have permission to add annotations");
+        return;
+      }
+
+      // Show a confirmation dialog to the user
+      var dialog = new CATMAID.OptionsDialog("Name annotation");
+      dialog.appendMessage("This will make sure that each of the " +
+        `${skeletonIds.length} neurons will have its neuron base name ` +
+        'annotated, which in turn is annotated with the "Name" ' +
+        'annotation. Continue?');
+      dialog.onOK = function() {
+        CATMAID.Annotations.addMissingNeuronNames(project.id, skeletonIds)
+          .then(resolve)
+          .catch(reject);
+      };
+      dialog.onCancel = function() {
+        reject(CATMAID.Warning("Canceled by user"));
+      };
+
+      dialog.show(500, 'auto', true);
+    });
+  };
+
 })(CATMAID);
 

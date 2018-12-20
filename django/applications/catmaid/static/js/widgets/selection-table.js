@@ -119,6 +119,19 @@
         annotate.onclick = this.annotate_skeleton_list.bind(this);
         buttons.appendChild(annotate);
 
+        var annotateName = document.createElement('input');
+        annotateName.setAttribute("type", "button");
+        annotateName.setAttribute("value", "Add name ann.");
+        annotateName.setAttribute('title', 'Add all neuron names as annotations, meta-annotated with "Name"');
+        annotateName.onclick = function() {
+          self.annotateSkeletonsWithName()
+            .then(function() {
+              CATMAID.msg("Success", "Added name annotations");
+            })
+            .catch(CATMAID.handleError);
+        };
+        buttons.appendChild(annotateName);
+
         var c = CATMAID.DOM.appendSelect(buttons, null, 'Color scheme ',
             ['CATMAID',
              'category10',

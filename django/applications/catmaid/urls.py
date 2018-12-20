@@ -161,6 +161,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/annotations/forskeletons$', annotation.annotations_for_skeletons),
     url(r'^(?P<project_id>\d+)/annotations/table-list$', annotation.list_annotations_datatable),
     url(r'^(?P<project_id>\d+)/annotations/add$', record_view("annotations.add")(annotation.annotate_entities)),
+    url(r'^(?P<project_id>\d+)/annotations/add-neuron-names$', record_view("annotations.addneuronname")(annotation.add_neuron_name_annotations)),
     url(r'^(?P<project_id>\d+)/annotations/remove$', record_view("annotations.remove")(annotation.remove_annotations)),
     url(r'^(?P<project_id>\d+)/annotations/(?P<annotation_id>\d+)/remove$', record_view("annotations.remove")(annotation.remove_annotation)),
     url(r'^(?P<project_id>\d+)/annotations/query-targets$', annotation.query_annotated_classinstances),

@@ -753,13 +753,15 @@ def _annotate_entities_with_name(project_id, user_id, entity_ids):
 
     missing_name_annotations = entity_names - set(existing_name_annotations.keys())
     if missing_name_annotations:
+        # Escape single quotes by double-quoting
+        escaped_name_annotations = [n.replace("'", "''") for n in missing_name_annotations]
         cursor.execute("""
             INSERT INTO class_instance (user_id, project_id, class_id, name)
             VALUES {n_list}
             RETURNING name, id;
         """.format(**{
             'n_list': '(' + '),('.join(map(lambda x: "{}, {}, {}, '{}'".format(
-                    user_id, project_id, annotation_class.id, x), missing_name_annotations)) + ')',
+                    user_id, project_id, annotation_class.id, x), escaped_name_annotations)) + ')',
         }))
         added_annotations = dict(cursor.fetchall())
         existing_name_annotations.update(added_annotations)

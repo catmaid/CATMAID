@@ -35,6 +35,11 @@ Miscellaneous:
   side-by-side and uses the same neuron names as other widgets (from CATMAID's
   neuron name service).
 
+- Information based on historic information like the history animation in the 3D
+  Viewer and the Neuron History widget includes merge information now correctly.
+  Before, merge nodes were represented twice in a time slice that included the
+  merge.
+
 
 ## 2018.11.09
 

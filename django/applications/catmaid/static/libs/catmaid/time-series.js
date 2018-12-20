@@ -288,12 +288,12 @@
       // Make sure the entry which encodes the creation time (live entry),
       // has its upper bound set to null (to represent infinity). All
       // entries are sorted already, we therefore only need to check the
-      // first (youngest) entry.
-      if (upperBound <= lowerBound ||
-          upperBound.getTime() === lowerBound.getTime()) {
-        lowerBound = upperBound;
+      // first (youngest) entry, which is the live table entry unless its upper
+      // bound is larger than the lower bound.
+      if (entries.length === 0 && (
+          upperBound <= lowerBound ||
+          upperBound.getTime() === lowerBound.getTime())) {
         upperBound = null;
-        n[timestampIndex] = n[timestampIndex + 1];
         n[timestampIndex + 1] = null;
       }
 

@@ -10,11 +10,16 @@ import errno
 # This variable contains a reference version of the current code-base. It is
 # updated by release and dev-cycle scripts.
 BASE_VERSION = '2018.11.09'
-
-# This file is created as part of our Docker build. It is looked for as
-# fall-back, should no git be available.
-DOCKER_VERSION_PATH = '/home/git-commit'
-
+# This commit is the reference commit of the BASE_VERSION above. Technically, it
+# is the commit right before the BASE_VERSION, because the release script will
+# change these fields and onlt create the actual release commit after the changes.
+BASE_COMMIT = '41b78058de2bceb4148958b49d02404381bbcba9'
+# These files are created as part of our Docker build and are looked for as
+# fall-back, should no git environment be available. The VERSION_INFO_PATH file
+# contains the commit ID of the code and the COUNT_INFO_PATH file contains the
+# commit distance to the the BASE_COMMIT above.
+VERSION_INFO_PATH = '/home/git-version'
+COUNT_INFO_PATH = '/home/git-base-count'
 # The length to which Git commit IDs should be truncated to.
 GIT_COMMIT_LENGTH = 10
 
@@ -27,23 +32,25 @@ def get_version():
     try:
         dir = os.path.dirname(os.path.realpath(__file__))
         # Universal newlines is used to get both Python 2 and 3 to use text mode.
-        p = subprocess.Popen("/usr/bin/git rev-parse HEAD", cwd=os.path.dirname(dir),
+        p = subprocess.Popen("/usr/bin/git describe", cwd=os.path.dirname(dir),
                 shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 universal_newlines=True)
         (out, error) = p.communicate()
         if error:
             # Fall-back to docker version file, if it exists
-            version_file = open(DOCKER_VERSION_PATH, 'r')
-            commit = version_file.read().rstrip().encode('utf-8').decode('utf-8')
+            version_file = open(VERSION_INFO_PATH, 'r')
+            version_info = version_file.read().rstrip().encode('utf-8').decode('utf-8')
+            version_info = version_info[:GIT_COMMIT_LENGTH]
+            count_file = open(COUNT_INFO_PATH, 'r')
+            count_info = count_file.read().rstrip().encode('utf-8').decode('utf-8')
         else:
-            commit = out.rstrip().encode('utf-8').decode('utf-8')
-
-        # Shorten commit ID
-        commit = commit[:GIT_COMMIT_LENGTH]
+            describe_info = out.rstrip().encode('utf-8').decode('utf-8')
+            version_parts = describe_info.split('-')
+            version_info = version_parts[2][1:]
+            count_info = version_parts[1]
+        return '{}-{}-{}'.format(BASE_VERSION, count_info, version_info)
     except:
-        commit = "unknown"
-
-    return '{}-{}'.format(BASE_VERSION, commit)
+        return '{}-unknown'.format(BASE_VERSION)
 
 
 def relative(*path_components):

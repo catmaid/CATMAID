@@ -311,6 +311,10 @@
     CATMAID.annotate_neurons_of_skeletons(this.getSelectedSkeletons());
   };
 
+  SkeletonSource.prototype.annotateSkeletonsWithName = function() {
+    return CATMAID.annotateSkeletonsWithName(this.getSelectedSkeletons());
+  };
+
   /**
    * Return an array of source subscriptions that have the given source
    * associated.

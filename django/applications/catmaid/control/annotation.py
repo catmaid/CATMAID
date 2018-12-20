@@ -728,6 +728,102 @@ def _annotate_entities(project_id, entity_ids, annotation_map,
 
     return annotation_objects, new_annotations
 
+
+def _annotate_entities_with_name(project_id, user_id, entity_ids):
+    cursor = connection.cursor()
+
+    annotated_with = Relation.objects.get(project_id=project_id,
+            relation_name='annotated_with')
+
+    annotation_class = Class.objects.get(project_id=project_id,
+                                         class_name='annotation')
+
+    name_annotation, _ = ClassInstance.objects.get_or_create(project_id=project_id,
+                class_column=annotation_class, name='Name', defaults={
+                    'user_id': user_id,
+                })
+
+    entity_name_map = dict(ClassInstance.objects.filter(
+            pk__in=entity_ids).values_list('id', 'name'))
+    entity_names = set(entity_name_map.values())
+
+    existing_name_annotations = dict(ClassInstance.objects.filter(
+            project_id=project_id, class_column=annotation_class,
+            name__in=entity_names).values_list('name', 'id'))
+
+    missing_name_annotations = entity_names - set(existing_name_annotations.keys())
+    if missing_name_annotations:
+        cursor.execute("""
+            INSERT INTO class_instance (user_id, project_id, class_id, name)
+            VALUES {n_list}
+            RETURNING name, id;
+        """.format(**{
+            'n_list': '(' + '),('.join(map(lambda x: "{}, {}, {}, '{}'".format(
+                    user_id, project_id, annotation_class.id, x), missing_name_annotations)) + ')',
+        }))
+        added_annotations = dict(cursor.fetchall())
+        existing_name_annotations.update(added_annotations)
+
+    # Now with all name annotations available we need to make sure all of them
+    # have the meta annotation 'Name'.
+    cursor.execute("""
+        INSERT INTO class_instance_class_instance (project_id, user_id,
+                class_instance_a, class_instance_b, relation_id)
+        SELECT %(project_id)s, %(user_id)s, ci.id, %(name_ann_id)s, %(rel_id)s
+        FROM class_instance ci
+        JOIN UNNEST(%(name_ann_names)s::text[]) q(name)
+            ON q.name = ci.name
+        LEFT JOIN class_instance_class_instance cici
+            ON cici.class_instance_a = ci.id
+            AND cici.class_instance_b = %(name_ann_id)s
+            AND cici.relation_id = %(rel_id)s
+        WHERE cici.id IS NULL
+            AND ci.project_id = %(project_id)s
+            AND ci.class_id = %(annotation_class_id)s
+        RETURNING id
+    """, {
+        'project_id': project_id,
+        'user_id': user_id,
+        'name_ann_id': name_annotation.id,
+        'rel_id': annotated_with.id,
+        'annotation_class_id': annotation_class.id,
+        'name_ann_names': list(existing_name_annotations.keys()),
+    })
+    created_name_links = cursor.fetchall()
+
+    # Now we have valid name annotations for each target entity. The final step
+    # is to link those name annotations to the entities.
+    cursor.execute("""
+        INSERT INTO class_instance_class_instance (project_id, user_id,
+                class_instance_a, class_instance_b, relation_id)
+        SELECT %(project_id)s, %(user_id)s, ci.id, ci_name.id, %(rel_id)s
+        FROM class_instance ci
+        JOIN UNNEST(%(entity_ids)s::bigint[]) q(id)
+            ON q.id = ci.id
+        JOIN class_instance ci_name
+            ON ci_name.name = ci.name
+        LEFT JOIN class_instance_class_instance cici
+            ON cici.class_instance_a = ci.id
+            AND cici.class_instance_b = ci_name.id
+            AND cici.relation_id = %(rel_id)s
+        WHERE cici.id IS NULL
+            AND ci.project_id = %(project_id)s
+            AND ci_name.project_id = %(project_id)s
+            AND ci_name.class_id = %(annotation_class_id)s
+        RETURNING class_instance_a
+    """, {
+        'project_id': project_id,
+        'user_id': user_id,
+        'name_ann_id': name_annotation.id,
+        'rel_id': annotated_with.id,
+        'entity_ids': entity_ids,
+        'annotation_class_id': annotation_class.id,
+    })
+
+    updated_cis = cursor.fetchall()
+
+    return updated_cis, created_name_links
+
 @requires_user_role(UserRole.Annotate)
 def annotate_entities(request, project_id = None):
     p = get_object_or_404(Project, pk = project_id)
@@ -778,6 +874,57 @@ def annotate_entities(request, project_id = None):
         'new_annotations': list(new_annotations)
     }
 
+    return JsonResponse(result)
+
+@api_view(['POST'])
+@requires_user_role(UserRole.Annotate)
+def add_neuron_name_annotations(request, project_id = None):
+    """Add missing neuron name annotations.
+
+    To each passed in neuron, a list of neuron IDs and/or skelton IDs, the
+    neuron name stored in the neuron's base name is added as annotation. Each
+    neuron name annotation is meta-annotated with a "Name" annotation.
+    ---
+    parameters:
+      skeleton_ids:
+        type: array
+        description: A list of skeleton IDs to update
+        required: false
+        items:
+            type: integer
+      entity_ids:
+        type: array
+        description: A list of target entity IDs to update
+        required: false
+        items:
+            type: integer
+    """
+    p = get_object_or_404(Project, pk = project_id)
+
+    entity_ids = get_request_list(request.POST, 'entity_ids', [], map_fn=int)
+    skeleton_ids = get_request_list(request.POST, 'skeleton_ids', [], map_fn=int)
+
+    if not any(entity_ids):
+        if not any(skeleton_ids):
+            raise ValueError("Need either 'skeleton_ids' or 'entity_ids'")
+        entity_ids = []
+
+    if any(skeleton_ids):
+        skid_to_eid = dict(ClassInstance.objects.filter(project = p,
+                class_column__class_name = 'neuron',
+                cici_via_b__relation__relation_name = 'model_of',
+                cici_via_b__class_instance_a__in = skeleton_ids).values_list(
+                        'cici_via_b__class_instance_a', 'id'))
+        entity_ids += [skid_to_eid[skid] for skid in skeleton_ids]
+
+    updated_cis, created_name_links = _annotate_entities_with_name(
+            project_id, request.user.id, entity_ids)
+
+    result = {
+        'message': 'success',
+        'updated_cis': updated_cis,
+        'created_meta_links': len(created_name_links),
+    }
     return JsonResponse(result)
 
 

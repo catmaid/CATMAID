@@ -204,6 +204,16 @@
         });
     },
 
+    /**
+     * Annotate all neurons of the passed in skeletons with the base name of their
+     * neurons.
+     */
+    addMissingNeuronNames: function(projectId, skeletonIds) {
+      return CATMAID.fetch(projectId + '/annotations/add-neuron-names', 'POST', {
+          'skeleton_ids': skeletonIds,
+        });
+    }
+
   };
 
   // Collect annotation related events in a dedicated object

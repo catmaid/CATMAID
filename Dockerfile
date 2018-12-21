@@ -35,18 +35,13 @@ RUN mkdir -p /opt/virtualenvs \
 
 ADD . /home/
 
-# Add Git commit build information to container by creating the files
-# /home/git-commit and /home/git-base-count. The former is a file with the
-# commit ID tof the enclosing git environment. The latter file contains the
-# number of commits from this commit to the reference commit stored in the file
-# django/projects/mysite/utils.py. This is needed, because we can't expect the
-# git environment to have all git names (DockerHub doesn't). Otherwise we could
-# use git describe.
+# Add Git commit build information to container by copying the Git repo (.git
+# folder) into the container to run "git describe" and pipe its result in the
+# file /home/git-version. After this is done, the repo is removed again from the
+# container. We expect the environment to have a full git history, including
+# tags. For DockerHub this is ensured with a post_checkout hook.
 COPY .git /home/.git
-RUN cd /home/ \
-    && cat /home/.git/$(cat /home/.git/HEAD | awk '{print $2}') > /home/git-commit \
-    && commit=$(grep -i -o '^BASE_COMMIT.*=.\+$' /home/django/projects/mysite/utils.py | sed -e "s/.*=\s\+['\"]\(.*\)['\"]$/\1/") \
-    && git rev-list --count $commit.. > /home/git-base-count
+RUN cd /home/ && git describe > /home/git-version && rm -r /home/.git
 
 # uWSGI setup
 RUN /bin/bash -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh \

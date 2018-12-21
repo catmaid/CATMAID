@@ -14,14 +14,10 @@ BASE_VERSION = '2018.11.09'
 # is the commit right before the BASE_VERSION, because the release script will
 # change these fields and onlt create the actual release commit after the changes.
 BASE_COMMIT = '41b78058de2bceb4148958b49d02404381bbcba9'
-# These files are created as part of our Docker build and are looked for as
+# These file is created as part of our Docker build and is looked at as
 # fall-back, should no git environment be available. The VERSION_INFO_PATH file
-# contains the commit ID of the code and the COUNT_INFO_PATH file contains the
-# commit distance to the the BASE_COMMIT above.
+# contains the "git describe" output of the build environment.
 VERSION_INFO_PATH = '/home/git-version'
-COUNT_INFO_PATH = '/home/git-base-count'
-# The length to which Git commit IDs should be truncated to.
-GIT_COMMIT_LENGTH = 10
 
 
 def get_version():
@@ -39,16 +35,11 @@ def get_version():
         if error:
             # Fall-back to docker version file, if it exists
             version_file = open(VERSION_INFO_PATH, 'r')
-            version_info = version_file.read().rstrip().encode('utf-8').decode('utf-8')
-            version_info = version_info[:GIT_COMMIT_LENGTH]
-            count_file = open(COUNT_INFO_PATH, 'r')
-            count_info = count_file.read().rstrip().encode('utf-8').decode('utf-8')
+            describe_info = version_file.read().rstrip().encode('utf-8').decode('utf-8')
         else:
             describe_info = out.rstrip().encode('utf-8').decode('utf-8')
-            version_parts = describe_info.split('-')
-            version_info = version_parts[2][1:]
-            count_info = version_parts[1]
-        return '{}-{}-{}'.format(BASE_VERSION, count_info, version_info)
+
+        return describe_info
     except:
         return '{}-unknown'.format(BASE_VERSION)
 

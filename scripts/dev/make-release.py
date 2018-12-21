@@ -84,6 +84,10 @@ class CatmaidRelease(object):
         today = date.today()
         self.release_name = today.strftime("%Y.%m.%d")
 
+        # Get current commit ID
+        self.last_commit_id = self.git("rev-parse", "HEAD").stdout.decode('utf-8').replace('\n', '')
+        log("Last commit: {}".format(self.last_commit_id))
+
         if not confirm("Release name: \"{}\"".format(self.release_name)):
             exit(True)
 
@@ -202,6 +206,8 @@ class CatmaidRelease(object):
         def contentfilter(doc_data):
             # Set CATMAID's base version
             doc_data = re.sub("^BASE_VERSION\s=.*$", "BASE_VERSION = '{}'".format(self.release_name),
+                doc_data, 1, re.MULTILINE)
+            doc_data = re.sub("^BASE_COMMIT\s=.*$", "BASE_COMMIT = '{}'".format(self.last_commit_id),
                 doc_data, 1, re.MULTILINE)
 
             return doc_data

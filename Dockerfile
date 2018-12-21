@@ -35,6 +35,14 @@ RUN mkdir -p /opt/virtualenvs \
 
 ADD . /home/
 
+# Add Git commit build information to container by copying the Git repo (.git
+# folder) into the container to run "git describe" and pipe its result in the
+# file /home/git-version. After this is done, the repo is removed again from the
+# container. We expect the environment to have a full git history, including
+# tags. For DockerHub this is ensured with a post_checkout hook.
+COPY .git /home/.git
+RUN cd /home/ && git describe > /home/git-version && rm -r /home/.git
+
 # uWSGI setup
 RUN /bin/bash -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh \
     && workon catmaid \
@@ -51,11 +59,6 @@ RUN mkdir /etc/ssl/private-copy; \
     mv /etc/ssl/private-copy /etc/ssl/private; \
     chmod -R 0700 /etc/ssl/private; \
     chown -R postgres /etc/ssl/private
-
-# Add Git commit build information to container
-COPY .git/HEAD /home/.git/HEAD
-COPY .git/refs /home/.git/refs
-RUN cat /home/.git/$(cat /home/.git/HEAD | awk '{print $2}') > /home/git-commit
 
 ENTRYPOINT ["/home/scripts/docker/catmaid-entry.sh"]
 

@@ -222,8 +222,14 @@ var WindowMaker = new function()
 
     /* be the first window */
     var rootWindow = CATMAID.rootWindow;
-    if (rootWindow.getFrame().parentNode != document.body) {
-      document.body.appendChild(rootWindow.getFrame());
+
+    let windowContainer = document.getElementById("windows");
+    if (!windowContainer) {
+      throw new CATMAID.ValueError("Could not find window container");
+    }
+
+    if (rootWindow.getFrame().parentNode != windowContainer) {
+      windowContainer.appendChild(rootWindow.getFrame());
       document.getElementById("content").style.display = "none";
     }
 

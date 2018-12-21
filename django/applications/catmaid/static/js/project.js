@@ -283,8 +283,8 @@
      */
     this.register = function() {
       document.getElementById("toolbox_edit").style.display = "block";
-      document.getElementById( "content" ).style.display = "none";
-      document.body.appendChild( view );
+      document.getElementById("content").style.display = "none";
+      document.getElementById("windows").appendChild(view);
     };
 
     /**
@@ -301,7 +301,7 @@
 
       try
       {
-        document.body.removeChild( view );
+        document.getElementById("windows").removeChild( view );
       }
       catch ( error ) {}
       self.id = 0;

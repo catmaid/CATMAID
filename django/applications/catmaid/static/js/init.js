@@ -1163,9 +1163,13 @@ var project;
         var rootWindow = CATMAID.rootWindow;
 
         /* be the first window */
-        if ( rootWindow.getFrame().parentNode != document.body )
+        let windowContainer = document.getElementById('windows');
+        if (!windowContainer) {
+          throw new CATMAID.ValueError("Could not find window container");
+        }
+        if (rootWindow.getFrame().parentNode != windowContainer)
         {
-          document.body.appendChild( rootWindow.getFrame() );
+          windowContainer.appendChild( rootWindow.getFrame() );
           document.getElementById( "content" ).style.display = "none";
         }
 

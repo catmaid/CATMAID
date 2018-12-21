@@ -1216,7 +1216,11 @@ var project;
   // a function for creating data view menu handlers
   var handleDataViewSelection = function(id) {
     // close any open project and its windows
-    CATMAID.rootWindow.closeAllChildren();
+    if (project) {
+      project.destroy();
+    } else {
+      CATMAID.rootWindow.closeAllChildren();
+    }
 
     CATMAID.DataViews.getConfig(id)
       .then(function(config) {

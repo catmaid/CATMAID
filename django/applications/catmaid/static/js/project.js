@@ -92,6 +92,7 @@
 
       // Announce that a new stack view was added
       this.trigger(Project.EVENT_STACKVIEW_ADDED, stackViewer);
+      Project.trigger(Project.EVENT_STACKVIEW_ADDED, stackViewer);
     };
 
     /**
@@ -137,6 +138,7 @@
           // Announce that this stack view was closed. Do this before
           // potentially destroying the project.
           this.trigger(Project.EVENT_STACKVIEW_CLOSED, removedViews[0]);
+          Project.trigger(Project.EVENT_STACKVIEW_CLOSED, removedViews[0]);
 
           if ( stackViewers.length === 0 )
             self.destroy();
@@ -155,6 +157,7 @@
       if ( tool )
         self.focusedStackViewer.setTool( tool );
       this.trigger(Project.EVENT_STACKVIEW_FOCUS_CHANGED, stackViewer);
+      Project.trigger(Project.EVENT_STACKVIEW_FOCUS_CHANGED, stackViewer);
     };
 
     /**
@@ -243,11 +246,15 @@
           }
           window.onresize();
           WindowMaker.setKeyShortcuts();
+          self.trigger(Project.EVENT_TOOL_CHANGED, tool);
+          Project.trigger(Project.EVENT_TOOL_CHANGED, tool);
         })
         .catch(function(error) {
           if (initError) {
             // Unselect all tools on initialization errors
             self.setTool(null);
+            self.trigger(Project.EVENT_TOOL_CHANGED, null);
+            Project.trigger(Project.EVENT_TOOL_CHANGED, null);
           }
           CATMAID.handleError(error);
         });
@@ -320,6 +327,7 @@
       CATMAID.statusBar.printCoords('');
       
       this.trigger(Project.EVENT_PROJECT_DESTROYED);
+      Project.trigger(Project.EVENT_PROJECT_DESTROYED);
       project = null;
     };
 
@@ -363,6 +371,8 @@
           tool.redraw();
         self.trigger(Project.EVENT_LOCATION_CHANGED, self.coordinates.x,
           self.coordinates.y, self.coordinates.z);
+        Project.trigger(Project.EVENT_LOCATION_CHANGED, self.coordinates.x,
+          self.coordinates.y, self.coordinates.z);
         if (typeof completionCallback !== "undefined") {
           completionCallback();
         }
@@ -394,6 +404,8 @@
         if (tool && tool.redraw)
           tool.redraw();
         self.trigger(Project.EVENT_LOCATION_CHANGED, self.coordinates.x,
+          self.coordinates.y, self.coordinates.z);
+        Project.trigger(Project.EVENT_LOCATION_CHANGED, self.coordinates.x,
           self.coordinates.y, self.coordinates.z);
         if (typeof completionCallback !== "undefined") {
           completionCallback();
@@ -607,11 +619,13 @@
 
   // Add event support to project and define some event constants
   CATMAID.asEventSource(Project.prototype);
+  CATMAID.asEventSource(Project);
   Project.EVENT_STACKVIEW_ADDED = 'project_stackview_added';
   Project.EVENT_STACKVIEW_CLOSED = 'project_stackview_closed';
   Project.EVENT_STACKVIEW_FOCUS_CHANGED = 'project_stackview_focus_changed';
   Project.EVENT_LOCATION_CHANGED = 'project_location_changed';
   Project.EVENT_PROJECT_DESTROYED = 'project_project_destroyed';
+  Project.EVENT_TOOL_CHANGED = 'project_tool_changed';
 
   Project.prototype.updateInterpolatableLocations = function() {
     var self = this;

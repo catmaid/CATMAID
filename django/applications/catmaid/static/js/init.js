@@ -103,6 +103,8 @@ var project;
    * CATMAID's web front-end.
    */
   var Client = function(options) {
+    let self = this;
+
     // Lazy load images in container with ID "content" and class "lazy".
     this.blazy = new Blazy({
       selector: ".lazy",
@@ -119,6 +121,21 @@ var project;
 
     // The spinner icon in the top right corner
     this._spinner = null;
+    // The context help icon in the top right corner
+    this._contextHelpButton = null;
+    // The context help container
+    this._contextHelp = document.createElement('div');
+    this._contextHelp.setAttribute('id', 'context-help');
+    this._contextHelp.addEventListener('click', function(e) {
+      // Close context help on click on close
+      if (e.target.closest('.close-box')) {
+        self.setContextHelpVisibility(false);
+      }
+    });
+
+    this.showContextHelp = Client.Settings.session.context_help_visibility;
+    // Indicates if help visibility is defined through URL.
+    this.contextHelpVisibilityEnforced = false;
 
     // Timeout reference for message updates if no websockets are available
     this._messageTimeout = undefined;
@@ -136,12 +153,17 @@ var project;
       updateLayoutMenu();
     });
 
+    CATMAID.Project.on(CATMAID.Project.EVENT_TOOL_CHANGED,
+        this._handleProjectToolChange, this);
+    CATMAID.Project.on(CATMAID.Project.EVENT_PROJECT_DESTROYED,
+        this._handleProjectDestroyed, this);
+
     // Show and hide a spinner icon in the top right corner during active
     // requests.
     CATMAID.RequestQueue.on(CATMAID.RequestQueue.EVENT_REQUEST_STARTED,
-        this.showSpinner.bind(this));
+        this._handleRequestStart, this);
     CATMAID.RequestQueue.on(CATMAID.RequestQueue.EVENT_REQUEST_ENDED,
-        this.hideSpinner.bind(this));
+        this._handleRequestEnd, this);
 
     this.init(options);
   };
@@ -165,6 +187,9 @@ var project;
         },
         binary_data_transfer: {
           default: true
+        },
+        context_help_visibility: {
+          default: false
         }
       }
     });
@@ -192,6 +217,17 @@ var project;
               configurable: true,
             },
           });
+
+          CATMAID.client.updateContextHelp();
+          // Show context help if configured for this project or if enforced
+          // through first URL open.
+          if (CATMAID.client.contextHelpVisibilityEnforced) {
+            CATMAID.client.setContextHelpVisibility(CATMAID.client.showContextHelp);
+          } else {
+            CATMAID.client.setContextHelpVisibility(CATMAID.Client.Settings.session.context_help_visibility);
+          }
+          // This should only applied the first time.
+          CATMAID.client.contextHelpVisibilityEnforced = false;
         });
   });
 
@@ -221,6 +257,7 @@ var project;
     var init_active_skeleton_id;
     var singleStackViewer = false;
     var initialDataviewId = null;
+    var help;
 
     var account;
     var password;
@@ -239,6 +276,12 @@ var project;
       if ( isNaN( s ) ) s = undefined;
       if ( options[ "active_skeleton_id" ] ) init_active_skeleton_id = parseInt( options[ "active_skeleton_id" ] );
       if ( options[ "active_node_id" ] ) init_active_node_id = parseInt( options[ "active_node_id" ] );
+
+      if ( options.hasOwnProperty("help") ) help = options["help"] !== "false";
+      if (help !== undefined) {
+        this.setContextHelpVisibility(help);
+        this.contextHelpVisibilityEnforced = true;
+      }
 
       if ( !(
           typeof z == "undefined" ||
@@ -373,6 +416,7 @@ var project;
     document.getElementById( "user_menu" ).appendChild( user_menu.getView() );
 
     var self = this;
+
     var loadView;
     if (initialDataviewId) {
       loadView = CATMAID.DataViews.getConfig(initialDataviewId)
@@ -491,7 +535,13 @@ var project;
           }
           return Promise.resolve();
         }
-      }).catch(CATMAID.handleError);
+      })
+      .catch(CATMAID.handleError)
+      .then(function() {
+        if (help !== undefined) {
+          self.setContextHelpVisibility(help);
+        }
+      });
 
     // the text-label toolbar
 
@@ -510,6 +560,16 @@ var project;
     // change global bottom bar height, hide the copyright notice
     // and move the statusBar
     CATMAID.statusBar.setBottom();
+
+    // Context help button
+    self._contextHelpButton = document.getElementById('context-help-button');
+    if (self._contextHelpButton) {
+      self._contextHelpButton.addEventListener('click', function() {
+        self.setContextHelpVisibility(!self.showContextHelp);
+      });
+    }
+    self.updateContextHelp();
+    self.setContextHelpVisibility(CATMAID.Client.Settings.session.context_help_visibility);
 
     window.onresize();
 
@@ -1317,23 +1377,120 @@ var project;
     return false;
   };
 
-  Client.prototype.showSpinner = function() {
+  Client.prototype._handleProjectToolChange = function() {
+    this.updateContextHelp();
+  };
+
+  Client.prototype._handleProjectDestroyed = function() {
+    this.updateContextHelp(true);
+  };
+
+  Client.prototype._handleRequestStart = function() {
+    this.setSpinnerVisibility(true);
+    this.setContextHelpButtonVisibility(false);
+  };
+
+  Client.prototype._handleRequestEnd = function() {
+    this.setSpinnerVisibility(false);
+    this.setContextHelpButtonVisibility(true);
+  };
+
+  Client.prototype.setSpinnerVisibility = function(visible) {
     if (!this._spinner) {
       this._spinner = document.getElementById( "spinner" );
     }
     if (this._spinner) {
-      this._spinner.style.display = "block";
+      this._spinner.style.display = visible ? "block" : "none";
     }
   };
 
-  Client.prototype.hideSpinner = function() {
-    if (!this._spinner) {
-      this._spinner = document.getElementById( "spinner" );
+  Client.prototype.setContextHelpButtonVisibility = function(visible) {
+    if (!this._contextHelpButton) {
+      this._contextHelpButton = document.getElementById("context-help-button");
     }
-    if (this._spinner) {
-      this._spinner.style.display = "none";
+    if (this._contextHelpButton) {
+      this._contextHelpButton.style.display = visible ? "block" : "none";
     }
   };
+
+  Client.prototype.setContextHelpVisibility = function(visible) {
+    if (!this._contextHelp) {
+      this._contextHelp = document.getElementById("context-help");
+    }
+    let dialogContainer = document.getElementById('dialogs');
+    if (this._contextHelp && dialogContainer) {
+      if (visible) {
+        dialogContainer.appendChild(this._contextHelp);
+      } else if (this._contextHelp.parentNode == dialogContainer) {
+        dialogContainer.removeChild(this._contextHelp);
+      }
+    }
+    this.showContextHelp = visible;
+  };
+
+  Client.prototype.updateContextHelp = function(forceNoProject) {
+    if (!this._contextHelp) {
+      this._contextHelp = document.getElementById("context-help");
+    }
+    if (!this._contextHelp) {
+      return;
+    }
+
+    let content = [
+      '<div class="close-box"><i class="fa fa-close"></i></div>',
+      '<div class="content">',
+      '<h1>Overview</h1>',
+      '<p>CATMAID is a collaborative platform for browsing large image stacks, ',
+      'neuron reconstruction, circuit and morphology ananlysis as well as ',
+      'ontology annotation.</p>'
+    ];
+
+    if (project && !forceNoProject) {
+      Array.prototype.push.apply(content, [
+        '<p>With a project open, the top bar provides access to ',
+        'various tools. The first section contains general tools (<em>Open Widget</em>, ',
+        '<em>Navigator</em>, <em>Settings</em>, <em>Help</em>). The second section ',
+        'shows all enabled workflow tools (<em>Neuron reconstruction</em>, ',
+        '<em>Ontologies</em>, ...). With a particular workflow tool selected, a ',
+        'provides quick access icons for widgets related to this tool.</p>',
+        '<p>There is a dynamically adjusted scale displayed in the lower left ',
+        'corner. The little blue/white box in the lower left corner is used to ',
+        'toggle the display of the layer settings, which all the configuration ',
+        'of all displayed <em>layers</em> in the current <em>Stack Viewer</em>. ',
+        'If <em>WebGL</em> is enabled, tools like additive color blending, look ',
+        'up tables or contrast / saturation / brighness adjustment can be ',
+        'configured there.  The lower right corner provides access to a thumbnail ',
+        'sized overview image of the current location.<p>'
+      ]);
+
+      let tool = project.getTool();
+      if (tool && CATMAID.tools.isFn(tool.getContextHelp)) {
+        content.push(tool.getContextHelp());
+      }
+    } else {
+      Array.prototype.push.apply(content, [
+        '<p>The front-page is organized in so called ',
+        '<em>data views</em>. In their simplest form the current ',
+        'data view shows all projects visible to the current user ',
+        'along with their linked <em>Stacks</em> and <em>Stack groups</em>.</p>',
+        '<p>Other views are, however, possible as well so that other ',
+        'or filered content might be shown. Custom data views can be ',
+        'configured in the admin interface. The context menu for the ',
+        '<em>Home</em> menu link in the top tool bar provides access ',
+        'to all available data views. The small icon at the right of ',
+        'each menu entry allows to link directly to a particular view.</p>',
+        '<p>The <em>Projects menu</em> provides an alternate way to access ',
+        'visible projects. For each project, stacks and stack groups are ',
+        'shown in the menu. ',
+        'Clicking on a particular <em>Stack</em> or <em>Stack group</em> ',
+        'link will open the respective project along with the selected ',
+        'stack selection.</p>'
+      ]);
+    }
+
+    this._contextHelp.innerHTML = content.join('');
+  };
+
 
   // Export Client
   CATMAID.Client = Client;

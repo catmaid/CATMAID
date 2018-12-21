@@ -191,6 +191,75 @@ label.checkbox-label input {
   position: relative;
 }
 
+#context-help-button {
+  font-size: 1.55em;
+  margin-left: auto;
+  margin-right: auto;
+  color: #9191c3;
+  position: absolute;
+  bottom: auto;
+}
+
+#context-help-button:hover {
+  color: #0000ff;
+  cursor: pointer;
+}
+
+#context-help {
+  position: absolute;
+  width: 35em;
+  height: 30em;
+  color: #fff;
+  right: 0;
+  margin-right: 2em;
+  margin-top: 2.9em;
+  overflow: visible;
+  border: 1px white solid;
+  background-color: #000;
+  max-height: 65%;
+  z-index: 10;
+}
+
+div#context-help {}
+
+#context-help h1 {
+  display: block;
+  font-size: 1.17em;
+  margin-block-start: 1em;
+  margin-block-end: 1em;
+  margin-inline-start: 0px;
+  margin-inline-end: 0px;
+  font-weight: bold;
+}
+
+#context-help h1,
+#context-help p {
+  margin-left: 0.5em;
+}
+#context-help .content {
+  opacity: 0.7;
+  overflow: auto;
+  margin-top: 1.2em;
+  margin-bottom: 4em;
+  height: calc(100% - 1.2em);
+}
+
+#context-help .close-box {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 1.3em;
+  height: 1.2em;
+  background-color: blue;
+  color: white;
+  text-align: center;
+  opacity: 1;
+}
+
+#context-help .close-box:hover {
+  cursor: pointer;
+}
+
 #content {
 	position: absolute;
 	left: 0;

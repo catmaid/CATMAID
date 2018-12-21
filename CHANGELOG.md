@@ -29,6 +29,14 @@ Miscellaneous:
 - Neuron name searches and annotations should be much faster on larger
   instances.
 
+- Context aware help: by clicking the new question mark icon in the upper right
+  corner, a context aware help dialog can be displayed on top of all other
+  CATMAID tools. It provides some general guidance for the intended workflow
+  with individual tools. This can be enable to be displayed by default as part
+  of the Settings Widget. The display of this can also be enabled in a link to a
+  view by appending `&help=true`. This will be added automatically if a help
+  dialog is open during URL creation.
+
 ### Bug fixes
 
 - The Connectivity Graph Plot draws now individual bars in each sub-plot

@@ -72,7 +72,7 @@
         <div class="menu">
           <div id="home_box" class="box">
             <div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';">
-              <p><a onclick="CATMAID.rootWindow.closeAllChildren(); return false;">Home</a></p>
+              <p><a onclick="if (project) { project.destroy(); } return false;">Home</a></p>
               <div class="pulldown" id="dataview_menu"></div></div>
           </div>
           <div id="projectmenu_box" class="box">
@@ -101,6 +101,7 @@
         <div class="box" id="toolbox_data" style="display:none"></div>
 
         <div id="spinner_box" class="box_right">
+            <i id="context-help-button" class="fa fa-question-circle-o" alt="Show context help information"></i>
             <div id="spinner"><img src="{{ STATIC_URL }}images/wait_bgtransgrey.gif" alt="spinner" /></div>
         </div>
         <div class="menu">
@@ -222,6 +223,8 @@
     </div>
 
     <div id="windows"></div>
+
+    <div id="dialogs"></div>
 
     <!-- Dump for elements that should be available in the DOM but not visible for now -->
     <div id="dump" style="display:none">

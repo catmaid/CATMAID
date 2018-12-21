@@ -259,6 +259,18 @@
           CATMAID.Client.Settings,
           'binary_data_transfer',
           SETTINGS_SCOPE));
+
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              'Show context help',
+              CATMAID.Client.Settings[SETTINGS_SCOPE].context_help_visibility,
+              'Show a context aware help window.',
+              function() {
+                CATMAID.Client.Settings[SETTINGS_SCOPE].context_help_visibility = this.checked;
+              }),
+          CATMAID.Client.Settings,
+          'binary_data_transfer',
+          SETTINGS_SCOPE));
     };
 
     /**

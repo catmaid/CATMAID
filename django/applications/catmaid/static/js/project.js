@@ -471,6 +471,11 @@
           url += "&sid" + i + "=" + sv.primaryStack.id + "&s" + i + "=" + sv.s;
         }
       }
+
+      if (CATMAID.client.showContextHelp) {
+        url += "&help=true";
+      }
+
       return url;
     };
 

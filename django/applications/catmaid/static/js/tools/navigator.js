@@ -683,6 +683,19 @@
     }
   };
 
+  Navigator.prototype.getContextHelp = function() {
+    return [
+      '<h1>Navigation</h1>',
+      '<p>Both the <em>Left</em> and <em>Right Mouse Button</em> can be used to ',
+      'move in the plane (pan). The coordinates of the current location in ',
+      'stack space are displayed in the <em>X</em> and <em>Y</em> input boxes ',
+      'in the second tool bar. Additionally, the <em>Arrow Keys</em> can be used ',
+      'for planar movement. The two sliders in the toolbar allow to change ',
+      '<em>Z</em> and the <em>Zoom Level</em>.</p>',
+    ].join('');
+  };
+
+
   Navigator.Settings = new CATMAID.Settings(
       'navigator',
       {

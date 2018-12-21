@@ -1745,6 +1745,44 @@
       .catch(CATMAID.handleError);
   };
 
+  TracingTool.prototype.getContextHelp = function() {
+    return [
+      '<h1>Tracing tool</h1>',
+      '<p>The Tracing Tool provides access to many tools related ',
+      'to neuron reconstruction and circuit analysis. The widgets ',
+      'displayed in the third batch of icons in the top bar are only ',
+      'a sub-set of the most common tools. More widgets can be opened ',
+      'using the <em>Open Widget Dialog</em>, accessible through ',
+      '<kbd>Ctrl</kbd> + <kbd>Space</em> or the first icon in the top tool ',
+      'bar. </p>',
+      '<p>The first three icons in the second toolbar select the interaction ',
+      'mode, which by default is tracing (first icon). Each click with the <em>',
+      'Left Mouse Button</em> (LMB) will create a new skeleton node or cause an ',
+      'other action, depending on the pressed modifiers (See Help <kbd>F1</kbd>). ',
+      'The second interaction mode is called <em>Synapse Dropping Mode</em>, in ',
+      'which each <em>LMB</em> click will create a new synapse. The last ',
+      'interaction mode is <em>Navigation Mode</em>, in which both LMB and RMB ',
+      'drag events cause planar movement.</p>',
+      '<h1>Navigation</h1>',
+      '<p>The <em>Right Mouse Button</em> (RMB) can be used to move in the plane ',
+      '(pan) as well as the <em>Arrow Keys</em>. The coordinates of the current ',
+      'location in <em>stack space</em> are displayed in the <em>X</em> and ',
+      '<em>Y</em> input boxes in the second tool bar. This two sliders in the ',
+      'toolbar allow to change <em>Z</em> and the <em>Zoom Level</em>. The ',
+      'lower right corner displays the current location in both <em>stack space</em> ',
+      'and <em>physical space</em> in the status bar.</p>',
+      '<h1>Neuron handling</h1>',
+      '<p>The Tracing Tool will add a <em>Tracing Layer</em> to all open Stack ',
+      'Viewers. In skeletons consisting of "treenodes" and edges model neurons in ',
+      'the underlying image data. New nodes can be created by clicking the LMB or ',
+      'by using the <kbd>Z</kbd> key. Synapses can be created using <kbd>Shift</kbd> ',
+      '+ LMB. These actions can be undone using <kbd>Ctrl</kbd> + <kbd>Z</kbd></p>. ',
+      '<p>Generally, nodes can be selected either by clicking or by selecting the node ',
+      'closest to the mouse cursor using the <kbd>G</kbd> key. This is especially ',
+      'useful in Navigation Mode.</p>'
+    ].join('');
+  };
+
   /**
    * Move to and select a node in the specified neuron or skeleton nearest
    * the current project position.

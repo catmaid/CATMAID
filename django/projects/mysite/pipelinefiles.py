@@ -114,9 +114,10 @@ libraries_js = OrderedDict([
     ('whammy', ['whammy.js']),
     ('blazy', ['blazy.min.js']),
     ('geometry', ['geometry.js', 'intersects.js']), # order matters
-    ('catmaid', ['request.js', 'CATMAID.js', 'error.js', 'events.js', 'state.js',
-                'command.js', 'models/*.js', 'skeleton_source.js',
-                'datastores.js', 'settings-manager.js', '*.js']),
+    ('catmaid', ['namespace.js', 'error.js', 'events.js', 'request.js',
+                'CATMAID.js', 'state.js', 'command.js', 'models/*.js',
+                'skeleton_source.js', 'datastores.js', 'settings-manager.js',
+                '*.js']),
 ])
 
 JAVASCRIPT = OrderedDict()

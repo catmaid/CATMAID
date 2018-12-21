@@ -1,12 +1,8 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-// Declare the CATMAID namespace
-var CATMAID = {};
-
 // Global request queue
-// TODO: Move into CATMAID namespace
-var requestQueue = new RequestQueue();
+var requestQueue = new CATMAID.RequestQueue();
 
 // Add some basic functionality
 (function(CATMAID) {
@@ -255,10 +251,10 @@ var requestQueue = new RequestQueue();
         CATMAID.getCookie(CATMAID.csrfCookieName, true) :
         undefined;
 
-    window.requestQueue = new RequestQueue(CATMAID.backendURL, csrfCookie);
+    window.requestQueue = new CATMAID.RequestQueue(CATMAID.backendURL, csrfCookie);
     $.ajaxPrefilter(function (options, origOptions, jqXHR) {
       if (0 === options.url.indexOf(CATMAID.backendURL) &&
-          !RequestQueue.csrfSafe(options.type)) {
+          !CATMAID.RequestQueue.csrfSafe(options.type)) {
         jqXHR.setRequestHeader('X-CSRFToken', csrfCookie);
       }
     });

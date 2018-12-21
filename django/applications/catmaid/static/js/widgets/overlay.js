@@ -4,7 +4,6 @@
   CATMAID,
   project,
   requestQueue,
-  RequestQueue,
   submitterFn,
   user_groups,
   msgpack
@@ -3869,7 +3868,7 @@ var SkeletonAnnotations = {};
           dedicatedActiveSkeletonUpdate = true;
           success(json);
         } else {
-          self.tracingDataUrl = url + '?' + RequestQueue.encodeObject(params);
+          self.tracingDataUrl = url + '?' + CATMAID.RequestQueue.encodeObject(params);
           self.submit(
             url,
             'GET',
@@ -3903,7 +3902,7 @@ var SkeletonAnnotations = {};
       } else {
         params['view_width'] = stackViewer.viewWidth;
         params['view_height'] = stackViewer.viewHeight;
-        self.tracingDataUrl = url + '?' + RequestQueue.encodeObject(params);
+        self.tracingDataUrl = url + '?' + CATMAID.RequestQueue.encodeObject(params);
         success([
           [],
           [],

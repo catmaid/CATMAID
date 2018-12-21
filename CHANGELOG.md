@@ -15,6 +15,12 @@
   "pg_trgm" has to be installed manually into the CATMAID database using a
   Postgres superuser: CREATE EXTENSION pg_trgm;
 
+- CATMAID's version information changes back to a plain `git describe` format.
+  This results overall in a simpler setup and makes live easier for some
+  third-party front-ends, because the commit counter is included again. The
+  version display is now the same `git describe` format for both regular setups
+  and Docker containers.
+
 
 ### Features and enhancements
 

@@ -482,7 +482,6 @@
     // initialise
     var self = this;
     this.id = pid;
-    if ( typeof requestQueue == "undefined" ) requestQueue = new RequestQueue();
 
     var tool = null;
 

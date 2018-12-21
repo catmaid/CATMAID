@@ -21,25 +21,8 @@
     var self = this;
     var queue = [];		//!< queue of waiting requests
     var xmlHttp = new XMLHttpRequest();
-    var spinner = null;
     // Extra headers are stored as key value pairs in an object
     var extraHeaders = {};
-
-    var showSpinner = function()
-    {
-      if ( !spinner )
-        spinner = document.getElementById( "spinner" );
-      if ( spinner )
-        spinner.style.display = "block";
-    };
-
-    var hideSpinner = function()
-    {
-      if ( !spinner )
-        spinner = document.getElementById( "spinner" );
-      if ( spinner )
-        spinner.style.display = "none";
-    };
 
     /**
      * Test whether a request is for the same host as the origin URL configured
@@ -55,7 +38,7 @@
 
     var send = function()
     {
-      showSpinner();
+      RequestQueue.trigger(CATMAID.RequestQueue.EVENT_REQUEST_STARTED, self);
       var item = queue[0];
       xmlHttp.open(
         item.method,
@@ -95,7 +78,7 @@
       if ( xmlHttp.readyState == 4 )
       {
         var advance = true;
-        hideSpinner();
+        RequestQueue.trigger(CATMAID.RequestQueue.EVENT_REQUEST_ENDED, self);
         try {
           // Throw exception in case of a network error
           if (xmlHttp.status === 0) {
@@ -305,6 +288,12 @@
 
     return q;
   };
+
+  // Basic events of the queue
+  CATMAID.asEventSource(RequestQueue);
+  RequestQueue.EVENT_REQUEST_STARTED = 'requestqueue_request_started';
+  RequestQueue.EVENT_REQUEST_ENDED = 'requestqueue_request_ended';
+
 
   // Export into namespace
   CATMAID.RequestQueue = RequestQueue;

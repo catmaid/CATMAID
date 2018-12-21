@@ -117,6 +117,9 @@ var project;
     // Currently visible projects
     this.projects = null;
 
+    // The spinner icon in the top right corner
+    this._spinner = null;
+
     // Timeout reference for message updates if no websockets are available
     this._messageTimeout = undefined;
 
@@ -132,6 +135,13 @@ var project;
     CATMAID.Layout.on(CATMAID.Layout.EVENT_USER_LAYOUT_CHANGED, function () {
       updateLayoutMenu();
     });
+
+    // Show and hide a spinner icon in the top right corner during active
+    // requests.
+    CATMAID.RequestQueue.on(CATMAID.RequestQueue.EVENT_REQUEST_STARTED,
+        this.showSpinner.bind(this));
+    CATMAID.RequestQueue.on(CATMAID.RequestQueue.EVENT_REQUEST_ENDED,
+        this.hideSpinner.bind(this));
 
     this.init(options);
   };
@@ -1297,6 +1307,24 @@ var project;
       }
     }
     return false;
+  };
+
+  Client.prototype.showSpinner = function() {
+    if (!this._spinner) {
+      this._spinner = document.getElementById( "spinner" );
+    }
+    if (this._spinner) {
+      this._spinner.style.display = "block";
+    }
+  };
+
+  Client.prototype.hideSpinner = function() {
+    if (!this._spinner) {
+      this._spinner = document.getElementById( "spinner" );
+    }
+    if (this._spinner) {
+      this._spinner.style.display = "none";
+    }
   };
 
   // Export Client

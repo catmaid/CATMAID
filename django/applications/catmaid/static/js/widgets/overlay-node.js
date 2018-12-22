@@ -488,7 +488,7 @@
         this.stackScaling = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
         this.scaling = baseScale * (dynamicScale ? dynamicScale : 1);
         this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * this.stackScaling;//baseScale * (dynamicScale ? 1 : resScale);
-        this.confidenceFontSize = this.CONFIDENCE_FONT_PT*this.stackScaling + 'pt';
+        this.confidenceFontSize = this.CONFIDENCE_FONT_PT + 'pt';
         this.textResolution = resScale;
 
         this.pixelsPerUnitSq = 1 / (this.stackScaling * this.stackScaling);
@@ -2104,7 +2104,7 @@
         this.stackScaling = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
         this.scaling = baseScale * (dynamicScale ? dynamicScale : 1);
         this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * this.stackScaling;
-        this.confidenceFontSize = this.CONFIDENCE_FONT_PT * this.stackScaling + 'pt';
+        this.confidenceFontSize = this.CONFIDENCE_FONT_PT + 'pt';
         this.textResolution = resScale;
       };
 
@@ -2164,6 +2164,8 @@
           this.line.addChild(text);
         }
 
+        text.scale.x = this.stackScaling;
+        text.scale.y = this.stackScaling;
         text.x = newConfidenceX;
         text.y = newConfidenceY;
         text.tint = fillColor;

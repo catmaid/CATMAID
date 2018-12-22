@@ -79,7 +79,7 @@ QUnit.test('Tracing overlay test', function( assert ) {
         },
       });
       this.selectNode = function() {};
-      this.submit = submitterFn();
+      this.submit = CATMAID.submitterFn();
       var space = {
         min: {x: -Infinity, y: -Infinity, z: -Infinity},
         max: {x: Infinity, y: Infinity, z: Infinity}

@@ -13,7 +13,7 @@
     this.projectId = null;
     this.currentSkeletonId = null;
     this.currentSubarborNodeId = null;
-    this.submit = submitterFn();
+    this.submit = CATMAID.submitterFn();
     var self = this;
     self.mode = 'node-review';
     self.skeleton_segments = null;

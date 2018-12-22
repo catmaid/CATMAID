@@ -7,7 +7,7 @@ QUnit.test('Submitter test', function( assert ) {
   (function() {
     var results = [];
     var done = assert.async();
-    var submit = submitterFn();
+    var submit = CATMAID.submitterFn();
     submit.then(createSleepPromise.bind(this, 1000, 1, results, false));
     submit.then(createSleepPromise.bind(this, 10, 2, results, false));
     submit.then(function() {
@@ -22,7 +22,7 @@ QUnit.test('Submitter test', function( assert ) {
   (function() {
     var results = [];
     var done = assert.async();
-    var submit = submitterFn();
+    var submit = CATMAID.submitterFn();
     submit.then(createSleepPromise.bind(this, 1000, 1, results, true));
     submit.then(createSleepPromise.bind(this, 10, 2, results, false));
     submit.then(function() {
@@ -46,7 +46,7 @@ QUnit.test('Submitter test', function( assert ) {
     var done2 = assert.async();
     var done3 = assert.async();
     var done4 = assert.async();
-    var submit = submitterFn();
+    var submit = CATMAID.submitterFn();
     submit.then(function(value) {
       assert.strictEqual(value, undefined,
           "Submitter is initialized with no last result.");
@@ -77,7 +77,7 @@ QUnit.test('Submitter test', function( assert ) {
     var done1 = assert.async();
     var done2 = assert.async();
     var done3 = assert.async();
-    var submit = submitterFn();
+    var submit = CATMAID.submitterFn();
     submit.then(function() {
       done1();
       return new Promise(function(resolve, reject) {

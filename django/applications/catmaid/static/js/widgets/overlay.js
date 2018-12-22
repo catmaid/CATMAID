@@ -4,7 +4,6 @@
   CATMAID,
   project,
   requestQueue,
-  submitterFn,
   user_groups,
   msgpack
 */
@@ -718,7 +717,7 @@ var SkeletonAnnotations = {};
     // Register instance
     this.register(stackViewer);
 
-    this.submit = submitterFn();
+    this.submit = CATMAID.submitterFn();
 
     /** The ID vs Node or ConnectorNode instance. */
     this.nodes = new Map();

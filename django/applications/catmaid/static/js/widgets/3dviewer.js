@@ -8,7 +8,6 @@
   project,
   SkeletonAnnotations,
   SkeletonRegistry,
-  submitterFn,
   SynapseClustering,
   WindowMaker
  */
@@ -100,7 +99,7 @@
       return;
     }
     this.container = container;
-    this.submit = new submitterFn();
+    this.submit = new CATMAID.submitterFn();
     this.space = new this.Space(canvasWidth, canvasHeight, this.container,
         project.focusedStackViewer.primaryStack, this.loadedVolumes, this.options);
     this.updateActiveNode();
@@ -5110,7 +5109,7 @@
     var idMap = {};
     var skeletonIdMap = {};
     var skeletonMap = {};
-    var submit = new submitterFn();
+    var submit = new CATMAID.submitterFn();
     var originalMaterials = new Map();
     var originalVisibility = {};
     var originalConnectorPreVisibility =

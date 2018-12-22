@@ -3593,6 +3593,24 @@ var SkeletonAnnotations = {};
     this.updateNodes();
   };
 
+  function parseNodeResponse(data, transferFormat) {
+    let response;
+    if (transferFormat === 'msgpack') {
+      response = msgpack.decode(new Uint8Array(data));
+    } else if (transferFormat === 'png' || transferFormat == 'gif') {
+      response = new Uint8Array(data);
+    } else {
+      response = JSON.parse(data);
+    }
+
+    // Validate
+    if (!response) {
+      throw new CATMAID.ValueError("Couldn't parse response");
+    }
+
+    return response;
+  }
+
   /**
    * Update treeline nodes by querying them from the server with the bounding
    * volume of the current view. Will also push editions (if any) to nodes to the
@@ -3767,149 +3785,173 @@ var SkeletonAnnotations = {};
         params['src'] = self.nodeProviderOverride;
       }
 
-      // TODO: To authenticate with the mirror server, an API token needs to
-      // be specified.
-      // TODO: make parallel request to mirror and main source.
+      // Check the node list cache for an exactly matching request. Only request
+      // from the backend if not found.
+      var paramsKey = JSON.stringify(params);
 
-      var success = function (json) {
-        // Bail if the overlay was destroyed or suspended before this callback.
-        if (self.suspended) {
-          return;
-        }
+      // Allow multiple parallel requests within one submit() entry, collect
+      // them in array <requests>.
+      let work = self.submit().promise()
+        .then(function() {
+          let requests = [];
+          let extraUpdate = dedicatedActiveSkeletonUpdate &&
+              (treenodeIDs.length > 0 || connectorIDs.length > 0);
 
-        // Before updating the internal node representation, update the active
-        // node, if this is required.
-        if (dedicatedActiveSkeletonUpdate &&
-            (treenodeIDs.length > 0 || connectorIDs.length > 0)) {
-          let extraParams = CATMAID.tools.deepCopy(params);
-          extraParams['src'] = 'extra_nodes_only';
-          extraParams['treenode_ids'] = treenodeIDs;
-          extraParams['connector_ids'] = connectorIDs;
-          extraParams['format'] = 'json';
-          // To not query all nodes in the field of view, update the parameter
-          // object
-          self.submit(
-            mainUrl,
-            'GET',
-            extraParams,
-            function(data, dataSize) {
-              // We expect JSON format for extra nodes only queries
-              let extraData = JSON.parse(data);
+          if (regularTransfer) {
+            var json = self.nodeListCache.get(paramsKey);
 
+            // Special case: allow fast sub-views of a previous view (e.g. when zooming
+            // in and back out) based on cached data. If no exact matching node list
+            // cache entry was found, try to find a cache entry that encloses the
+            // current request bounding box and that didn't have any nodes dropped.
+            var subviewsFromCache = CATMAID.TracingOverlay.Settings.session.subviews_from_cache;
+            if (subviewsFromCache && !json) {
+              json = self.createSubViewNodeListFromCache(params);
+            }
+
+            // Finally, if a cache entry was found, use it and update the active node,
+            // if any.
+            if (json) {
+              dedicatedActiveSkeletonUpdate = true;
+              requests.push(Promise.resolve(json));
+            } else {
+              self.tracingDataUrl = url + '?' + CATMAID.RequestQueue.encodeObject(params);
+              requests.push(CATMAID.fetch({
+                absoluteURL: url,
+                method: 'GET',
+                data: params,
+                blockUI: false,
+                replace: true,
+                errCallback: errCallback,
+                quiet: false,
+                id: 'stack-' + self.stackViewer.getId() + '-url-' + url,
+                raw: true,
+                responseType: binaryTransfer ? 'arraybuffer' : undefined,
+                headers: headers,
+                details: true,
+                parallel: extraUpdate,
+              }).then(function(r) {
+                // Parse response
+                let response = parseNodeResponse(r.data, transferFormat);
+
+                if (!response.error) {
+                  // Add to cache
+                  self.nodeListCache.set(paramsKey, response, r.dataSize);
+                }
+
+                return response;
+              }));
+            }
+          } else {
+            params['view_width'] = stackViewer.viewWidth;
+            params['view_height'] = stackViewer.viewHeight;
+            self.tracingDataUrl = url + '?' + CATMAID.RequestQueue.encodeObject(params);
+            requests.push(Promise.resolve([
+                [],
+                [],
+                {},
+                false,
+                {}
+              ]));
+          }
+
+          // Before updating the internal node representation, update the active
+          // node, if this is required.
+          if (extraUpdate) {
+            // TODO: To authenticate with the mirror server, an API token needs to
+            // be specified.
+            let extraParams = CATMAID.tools.deepCopy(params);
+            extraParams['src'] = 'extra_nodes_only';
+            extraParams['treenode_ids'] = treenodeIDs;
+            extraParams['connector_ids'] = connectorIDs;
+            extraParams['format'] = 'json';
+            // To not query all nodes in the field of view, update the parameter
+            // object
+            requests.push(CATMAID.fetch({
+                relativeURL: mainUrl,
+                method: 'GET',
+                data: extraParams,
+                blockUI: false,
+                replace: true,
+                errCallback: errCallback,
+                quiet: false,
+                id: 'stack-' + self.stackViewer.getId() + '-url-' + url,
+                raw: true,
+                details: true,
+                parallel: true,
+              }).then(function(r) {
+                // Parse response
+                return parseNodeResponse(r.data, transferFormat);
+              }));
+          }
+
+          return Promise.all(requests);
+        })
+        .then(function(responses) {
+          // Bail if the overlay was destroyed or suspended before this callback.
+          if (self.suspended) {
+            return;
+          }
+
+          if (!responses || responses.length === 0) {
+            CATMAID.warn("No tracing data responses");
+            return;
+          }
+
+          // The final response builds on the main response.
+          let response = responses[0];
+
+          if (response.error) {
+            if (response.error === 'REPLACED') {
+              return;
+            } else {
+              throw new CATMAID.ValueError("Unexpected response: " + response);
+            }
+          }
+
+          // Add extra data, if any
+          if (responses.length > 1) {
+            for (let i=1; i<responses.length; ++i) {
+              let extraData = responses[i];
               // Call success() again, but now with dedicatedActiveSkeletonUpdate
               // set to false, so the actual update can happen, and with json
               // being the original response from the read-only mirror. This id
               // done by adding (or creating) an extra data
-              let originalExtraData = json[5];
+              let originalExtraData = response[5];
               if (!originalExtraData) {
                 originalExtraData = [];
-                json[5] = originalExtraData;
+                response[5] = originalExtraData;
               }
               originalExtraData.push(extraData);
 
-              // We re-use this success() function and want to prevent a second
-              // dedicated active node update.
+              // Indicate no extra call is needed anymore
               dedicatedActiveSkeletonUpdate = false;
-              success(json);
-            },
-            false,
-            true,
-            errCallback,
-            false,
-            'stack-' + self.stackViewer.getId() + '-active-node-' + '-url-' + url,
-            true);
-
-          return;
-        }
-
-        var renderingQueued = self.refreshNodesFromTuples(json, extraNodes);
-
-        // initialization hack for "URL to this view"
-        var nodeSelected = false;
-        if (SkeletonAnnotations.hasOwnProperty('init_active_node_id')) {
-          nodeSelected = true;
-          self.activateNode(self.nodes.get(SkeletonAnnotations.init_active_node_id));
-          delete SkeletonAnnotations.init_active_node_id;
-        }
-        if (SkeletonAnnotations.hasOwnProperty('init_active_skeleton_id')) {
-          if (!nodeSelected) {
-            SkeletonAnnotations.staticMoveToAndSelectClosestNode(project.coordinates.x,
-                project.coordinates.y, project.coordinates.z,
-                SkeletonAnnotations.init_active_skeleton_id, true);
+            }
           }
-          delete SkeletonAnnotations.init_active_skeleton_id;
-        }
 
-        self.redraw(false, undefined, renderingQueued);
-        if (typeof callback !== "undefined") {
-          callback();
-        }
-      };
+          var renderingQueued = self.refreshNodesFromTuples(response, extraNodes);
 
-      if (regularTransfer) {
-        // Check the node list cache for an exactly matching request. Only request
-        // from the backend if not found.
-        var paramsKey = JSON.stringify(params);
-        var json = self.nodeListCache.get(paramsKey);
+          // initialization hack for "URL to this view"
+          var nodeSelected = false;
+          if (SkeletonAnnotations.hasOwnProperty('init_active_node_id')) {
+            nodeSelected = true;
+            self.activateNode(self.nodes.get(SkeletonAnnotations.init_active_node_id));
+            delete SkeletonAnnotations.init_active_node_id;
+          }
+          if (SkeletonAnnotations.hasOwnProperty('init_active_skeleton_id')) {
+            if (!nodeSelected) {
+              SkeletonAnnotations.staticMoveToAndSelectClosestNode(project.coordinates.x,
+                  project.coordinates.y, project.coordinates.z,
+                  SkeletonAnnotations.init_active_skeleton_id, true);
+            }
+            delete SkeletonAnnotations.init_active_skeleton_id;
+          }
 
-        // Special case: allow fast sub-views of a previous view (e.g. when zooming
-        // in and back out) based on cached data. If no exact matching node list
-        // cache entry was found, try to find a cache entry that encloses the
-        // current request bounding box and that didn't have any nodes dropped.
-        var subviewsFromCache = CATMAID.TracingOverlay.Settings.session.subviews_from_cache;
-        if (subviewsFromCache && !json) {
-          json = self.createSubViewNodeListFromCache(params);
-        }
-
-        // Finally, if a cache entry was found, use it and update the active node,
-        // if any.
-        if (json) {
-          dedicatedActiveSkeletonUpdate = true;
-          success(json);
-        } else {
-          self.tracingDataUrl = url + '?' + CATMAID.RequestQueue.encodeObject(params);
-          self.submit(
-            url,
-            'GET',
-            params,
-            function(data, dataSize) {
-              if (transferFormat === 'msgpack') {
-                data = msgpack.decode(new Uint8Array(data));
-              } else if (transferFormat === 'png' || transferFormat == 'gif') {
-                data = new Uint8Array(data);
-              } else {
-                data = JSON.parse(data);
-              }
-              if (!data) {
-                throw new CATMAID.ValueError("Couldn't parse response");
-              }
-              if (data.error) {
-                throw new CATMAID.ValueError("Unexpected response: " + data);
-              }
-              self.nodeListCache.set(paramsKey, data, dataSize);
-              success(data);
-            },
-            false,
-            true,
-            errCallback,
-            false,
-            'stack-' + self.stackViewer.getId() + '-url-' + url,
-            true,
-            binaryTransfer ? 'arraybuffer' : undefined,
-            headers);
-        }
-      } else {
-        params['view_width'] = stackViewer.viewWidth;
-        params['view_height'] = stackViewer.viewHeight;
-        self.tracingDataUrl = url + '?' + CATMAID.RequestQueue.encodeObject(params);
-        success([
-          [],
-          [],
-          {},
-          false,
-          {}
-        ]);
-      }
+          self.redraw(false, undefined, renderingQueued);
+          if (typeof callback !== "undefined") {
+            callback();
+          }
+        });
     });
   };
 

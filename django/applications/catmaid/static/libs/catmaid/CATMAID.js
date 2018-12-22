@@ -387,9 +387,11 @@ var requestQueue = new CATMAID.RequestQueue();
       responseType, headers, parallel, details) {
     // Alternatively, accept a single argument that provides all parameters as
     // fields.
+    let absoluteURL;
     if (arguments.length === 1 && typeof(arguments[0]) !== "string") {
       let options = arguments[0];
       relativeURL = options.relativeURL;
+      absoluteURL = options.absoluteURL;
       method = options.method;
       data = options.data;
       raw = options.raw;
@@ -400,9 +402,11 @@ var requestQueue = new CATMAID.RequestQueue();
       parallel = options.parallel;
       details = options.details;
     }
+
+    let url = absoluteURL ? absoluteURL : CATMAID.makeURL(relativeURL);
+
     method = method || 'GET';
     return new Promise(function(resolve, reject) {
-      var url = CATMAID.makeURL(relativeURL);
       let queue = parallel ? requestQueue.clone() : requestQueue;
       var fn = replace ? queue.replace : queue.register;
       fn.call(requestQueue, url, method, data, function(status, text, xml, dataSize) {

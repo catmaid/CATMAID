@@ -383,12 +383,29 @@ var requestQueue = new CATMAID.RequestQueue();
    *                          with keys/ values like the object's. These override
    *                          default headers and the queue's extraHeaders.
    */
-  CATMAID.fetch = function(relativeURL, method, data, raw, id, replace, responseType, headers) {
+  CATMAID.fetch = function(relativeURL, method, data, raw, id, replace,
+      responseType, headers, parallel, details) {
+    // Alternatively, accept a single argument that provides all parameters as
+    // fields.
+    if (arguments.length === 1 && typeof(arguments[0]) !== "string") {
+      let options = arguments[0];
+      relativeURL = options.relativeURL;
+      method = options.method;
+      data = options.data;
+      raw = options.raw;
+      id = options.id;
+      replace = options.replace;
+      responseType = options.responseType;
+      headers = options.headers;
+      parallel = options.parallel;
+      details = options.details;
+    }
     method = method || 'GET';
     return new Promise(function(resolve, reject) {
       var url = CATMAID.makeURL(relativeURL);
-      var fn = replace ? requestQueue.replace : requestQueue.register;
-      fn.call(requestQueue, url, method, data, function(status, text, xml) {
+      let queue = parallel ? requestQueue.clone() : requestQueue;
+      var fn = replace ? queue.replace : queue.register;
+      fn.call(requestQueue, url, method, data, function(status, text, xml, dataSize) {
         // Validation throws an error for bad requests and wrong JSON data,
         // which would causes the promise to become rejected automatically if
         // this wasn't an asynchronously called function. But since this is the
@@ -396,10 +413,24 @@ var requestQueue = new CATMAID.RequestQueue();
         try {
           if (raw) {
             var response = CATMAID.validateResponse(status, text, xml, responseType);
-            resolve(text);
+            if (details) {
+              resolve({
+                data: text,
+                dataSize: dataSize,
+              });
+            } else {
+              resolve(text);
+            }
           } else {
             var json = CATMAID.validateJsonResponse(status, text, xml);
-            resolve(json);
+            if (details) {
+              resolve({
+                data: json,
+                dataSize: dataSize,
+              });
+            } else {
+              resolve(json);
+            }
           }
         } catch (e) {
           reject(e);

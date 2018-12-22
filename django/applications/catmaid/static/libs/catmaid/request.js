@@ -215,7 +215,14 @@
        */
       removeHeader: function(name) {
         delete extraHeaders[name];
-      }
+      },
+
+      /**
+       * Create a new request queue with the same parameters.
+       */
+      clone: function() {
+        return new RequestQueue(originUrl, csrfToken);
+      },
     };
   };
 

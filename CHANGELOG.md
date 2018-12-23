@@ -43,6 +43,12 @@ Miscellaneous:
   view by appending `&help=true`. This will be added automatically if a help
   dialog is open during URL creation.
 
+- CLI importer: recompute materializations (edges, connectors) explicitly only
+  for imported data, which improves performance in typical scenarios (import is
+  small compared to existing data). If the old behavior of recomputing
+  everything in the target project should be used in cases where a full data
+  base is imported, the --update-project-materializations switch can be used.
+
 ### Bug fixes
 
 - The Connectivity Graph Plot draws now individual bars in each sub-plot

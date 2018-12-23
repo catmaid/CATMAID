@@ -11,7 +11,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import connection, transaction
 from catmaid.apps import get_system_user
 from catmaid.control.annotationadmin import copy_annotations
-from catmaid.control.edge import rebuild_edge_tables
+from catmaid.control.edge import rebuild_edge_tables, rebuild_edges_selectively
 from catmaid.models import (Class, ClassClass, ClassInstance,
         ClassInstanceClassInstance, Project, Relation, User, Treenode,
         Connector, Concept, SkeletonSummary)
@@ -559,14 +559,52 @@ class FileImporter:
             FOR EACH STATEMENT EXECUTE PROCEDURE on_delete_treenode_update_summary_and_edges();
         """)
 
-        logger.info("Updating edge tables for project {}".format(self.target.id))
-        rebuild_edge_tables(project_ids=[self.target.id], log=lambda msg: logger.info(msg))
+        if self.options.get('update_project_materializations'):
+            logger.info("Updating edge tables for project {}".format(self.target.id))
+            rebuild_edge_tables(project_ids=[self.target.id], log=lambda msg: logger.info(msg))
 
-        logger.info("Updated skeleton summary tables")
-        cursor.execute("""
-            DELETE FROM catmaid_skeleton_summary;
-            SELECT refresh_skeleton_summary_table();
-        """)
+            logger.info("Updated skeleton summary tables")
+            cursor.execute("""
+                DELETE FROM catmaid_skeleton_summary;
+                SELECT refresh_skeleton_summary_table();
+            """)
+        else:
+            logger.info("Finding imported skeleton IDs and connector IDs")
+
+            connector_ids = []
+            connectors = objects_to_save.get(Connector)
+            if connectors:
+                connector_ids.extend(i.id for i in import_objects)
+
+            # Find all skeleton classes both in imported data and existing data.
+            skeleton_classes = set()
+            classes = objects_to_save.get(Class)
+            if classes:
+                for c in classes:
+                    if c.class_name == 'skeleton':
+                        skeleton_classes.add(c.id)
+            cursor.execute("""
+                SELECT id FROM class WHERE class_name = 'skeleton'
+            """)
+            for row in cursor.fetchall():
+                skeleton_classes.add(row[0])
+
+            skeleton_ids = []
+            class_instances = objects_to_save.get(ClassInstance)
+            if class_instances:
+                for deserialized_object in class_instances:
+                    ci = deserialized_object.object
+                    # Check if the class reference is a "skeleton" class
+                    if ci.class_column_id in skeleton_classes:
+                        skeleton_ids.append(ci.id)
+
+            if skeleton_ids or connector_ids:
+                logger.info("Updating edge tables for {} skeleton(s) and {} " \
+                        "connector(s)".format(len(skeleton_ids), len(connector_ids)))
+                rebuild_edges_selectively(skeleton_ids, connector_ids, log=lambda msg: logger.info(msg))
+            else:
+                logger.info("No materialization to update: no skeleton IDs or " \
+                        "connector IDs found in imported data")
 
 
 class InternalImporter:
@@ -620,6 +658,8 @@ class Command(BaseCommand):
                 action='store_true', help='Use IDs provided in import data. Warning: this can cause changes in existing data.')
         parser.add_argument('--no-analyze', dest='analyze_db', default=True,
                 action='store_false', help='If ANALYZE to update database statistics should not be called after the import.')
+        parser.add_argument('--update-project-materializations', dest='update_project_materializations', default=False,
+                action='store_true', help='Whether all materializations (edges, summary) of the current project should be updated or only the ones of imported skeletons.')
 
     def ask_for_project(self, title):
         """ Return a valid project object.

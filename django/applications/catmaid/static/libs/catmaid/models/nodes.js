@@ -354,7 +354,49 @@
     getLocation: function(nodeId) {
       return CATMAID.fetch(project.id + "/node/get_location",
           'POST', {tnid: nodeId});
-    }
+    },
+
+    /**
+     * Get list of suppressed virtual nodes for the passed in node ID.
+     *
+     * @param {number} projectId Project to operate in.
+     * @param {number} nodeId    Treenode to look up supporessed virtual nodes for.
+     * @returns Promise resolving in list of suppressed virtual nodes.
+     */
+    getSuppressdVirtualNodes: function(projectId, nodeId) {
+      return CATMAID.fetch(project.id + "/treenodes/" + nodeId + "/suppressed-virtual/");
+    },
+
+    /**
+     * Suppress virtual nodes of a particular real node.
+     *
+     * @param {number} projectId   Project to operate in.
+     * @param {number} nodeId      Treenode to suppress virtual node for.
+     * @param {string} orientation View through data set, either 'x', 'y', or 'z'.
+     * @param {array}  coordinate  The location of the virtual node to suppress.
+     * @returns Promise resolving in success information.
+     */
+    addSuppressedVirtualNode: function(projectId, nodeId, orientation, coordinate) {
+      return CATMAID.fetch(project.id + '/treenodes/' + childId + '/suppressed-virtual/',
+          'POST', {
+            orientation: orientation,
+            location_coordinate: coordinate,
+          });
+    },
+
+    /**
+     * Delete a particular suppressed virtual node marked on a real node.
+     *
+     * @param {number} projectId    The project to operate in.
+     * @param {number} nodeId       Treenode for which a suppressed virtual node
+     *                              should be deleted.
+     * @param {number} suppressedId Virtual node ID to delete suppressing for.
+     * @returns Promise resolving in success information.
+     */
+    deleteSuppresedVirtualNode: function(projectId, nodeId, suppressedId) {
+      let url = projectId + '/treenodes/' + childId + '/suppressed-virtual/' + suppressedId;
+      return CATMAID.fetch(url, 'DELETE');
+    },
 
   };
 

@@ -3,7 +3,6 @@
 /* global
   CATMAID,
   project,
-  requestQueue,
   user_groups,
   msgpack
 */
@@ -4845,14 +4844,12 @@ var SkeletonAnnotations = {};
     } else {
       // Request suppressed virtual treenodes from backend.
       var self = this;
-      return new Promise(function(resolve, reject) {
-        var url = CATMAID.makeURL(project.id + "/treenodes/" + nodeId + "/suppressed-virtual/");
-        requestQueue.register(url, 'GET', undefined, CATMAID.jsonResponseHandler(resolve, reject));
-      }).then(function (json) {
-        var node = self.nodes.get(nodeId);
-        if (node) node.suppressed = json.length ? json : [];
-        return json;
-      });
+      return CATMAID.Nodes.getSuppressdVirtualNodes(project.id, nodeId)
+        .then(function (json) {
+          var node = self.nodes.get(nodeId);
+          if (node) node.suppressed = json.length ? json : [];
+          return json;
+        });
     }
   };
 
@@ -5554,29 +5551,25 @@ var SkeletonAnnotations = {};
           .indexOf(true);
       if (-1 !== match) {
         var suppressedId = suppressed[match].id;
-        requestQueue.register(
-            CATMAID.makeURL(project.id + '/treenodes/' + childId + '/suppressed-virtual/' + suppressedId),
-            'DELETE',
-            undefined,
-            CATMAID.jsonResponseHandler(function () {
-              var node = self.nodes.get(childId);
-              if (node) node.suppressed = undefined;
-              self.recolorAllNodes();
-              CATMAID.info('Unsuppressed virtual parent of ' + childId + ' at ' +
-                           orientationName + '=' + coordinate);
-            }));
+        CATMAID.Nodes.deleteSuppresedVirtualNode(project.id, childId, suppressedId)
+          .then(function() {
+            var node = self.nodes.get(childId);
+            if (node) node.suppressed = undefined;
+            self.recolorAllNodes();
+            CATMAID.info('Unsuppressed virtual parent of ' + childId + ' at ' +
+                         orientationName + '=' + coordinate);
+          })
+          .catch(CATMAID.handleError);
       } else {
-        requestQueue.register(
-            CATMAID.makeURL(project.id + '/treenodes/' + childId + '/suppressed-virtual/'),
-            'POST',
-            {orientation: orientation, location_coordinate: coordinate},
-            CATMAID.jsonResponseHandler(function (json) {
-              var node = self.nodes.get(childId);
-              if (node && node.suppressed) node.suppressed.push(json);
-              self.recolorAllNodes();
-              CATMAID.info('Suppressed virtual parent of ' + childId + ' at ' +
-                           orientationName + '=' + coordinate);
-            }));
+        CATMAID.Nodes.addSuppressedVirtualNode(project.id, childId, orientation, coordinate)
+          .then(function(json) {
+            var node = self.nodes.get(childId);
+            if (node && node.suppressed) node.suppressed.push(json);
+            self.recolorAllNodes();
+            CATMAID.info('Suppressed virtual parent of ' + childId + ' at ' +
+                         orientationName + '=' + coordinate);
+          })
+          .catch(CATMAID.handleError);
       }
     });
 

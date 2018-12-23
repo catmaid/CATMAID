@@ -11,6 +11,10 @@
   "use strict";
 
   var lineNormal = function (x1, y1, x2, y2) {
+    return setLineNormal(x1, y1, x2, y2, [null, null]);
+  };
+
+  let setLineNormal = function(x1, y1, x2, y2, target) {
     var xdiff = x2 - x1,
         ydiff = y2 - y1,
         length = Math.sqrt(xdiff*xdiff + ydiff*ydiff),
@@ -19,7 +23,9 @@
         nx = length === 0 ? 0 : -ydiff / length,
         ny = length === 0 ? 1 : xdiff / length;
 
-    return [nx, ny];
+    target[0] = nx;
+    target[1] = ny;
+    return target;
   };
 
   var RADII_VISIBILITY = ['none', 'active-node', 'active-skeleton', 'all'];
@@ -754,10 +760,11 @@
       };
 
       // A shared inersection target to avoid creating new objects when
-      // redrawing a line to a parent node. These variablesa re internal to
+      // redrawing a line to a parent node. These variables are internal to
       // drawLineToParent().
       let _parentIntersectionTarget = [null, null];
       let _childIntersectionTarget = [null, null];
+      let _normTarget = [null, null];
 
       /** Updates the coordinates of the line from the node to the parent. Is
        * called frequently. */
@@ -825,8 +832,8 @@
         var lineColor = this.colorFromZDiff();
         line.tint = lineColor;
 
-        var norm = lineNormal(childLocation[0], childLocation[1],
-                              parentLocation[0], parentLocation[1]);
+        var norm = setLineNormal(childLocation[0], childLocation[1],
+            parentLocation[0], parentLocation[1], _normTarget);
         var s = this.BASE_EDGE_WIDTH * 2.0;
         norm[0] *= s;
         norm[1] *= s;
@@ -1953,6 +1960,10 @@
           });
       };
 
+      // A shared cache for the line normal computation in the update() function
+      // below. This variable is internal to that function.
+      let _updateNormalCache = [null, null];
+
       this.update = function(x1, y1, x2, y2, relationName, confidence, tgtRadius, srcRadius) {
         var xdiff = (x2 - x1);
         var ydiff = (y2 - y1);
@@ -1987,7 +1998,7 @@
         this.line.lineTo(x2new, y2new);
 
         // Draw arrowhead.
-        var norm = lineNormal(x1, y1, x2, y2);
+        var norm = setLineNormal(x1, y1, x2, y2, _updateNormalCache);
         var s = 1.5 * this.EDGE_WIDTH;
         var x2a = x2new - xdiff * 2 * s / length,
             y2a = y2new - ydiff * 2 * s / length;
@@ -2117,16 +2128,20 @@
     /** Used for confidence between treenode nodes and confidence between
      * a connector and a treenode. */
     (function(classes) {
+      // Cache for confidence text textures by confidence number.
       var confidenceTextCache = {};
+      // Cache for line normal computation to avoid recreation of this array on
+      // every call.
+      var norm = [null, null];
 
       var updateConfidenceText = function (x, y,
                                            parentx, parenty,
                                            fillColor,
                                            confidence,
                                            existing) {
+        setLineNormal(x, y, parentx, parenty, norm);
         var text,
             numberOffset = 0.8 * this.CONFIDENCE_FONT_PT * this.stackScaling,
-            norm = lineNormal(x, y, parentx, parenty),
             newConfidenceX = (x + parentx) / 2 + norm[0] * numberOffset,
             newConfidenceY = (y + parenty) / 2 + norm[1] * numberOffset;
 

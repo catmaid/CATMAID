@@ -2164,10 +2164,8 @@
           this.line.addChild(text);
         }
 
-        text.scale.x = this.stackScaling;
-        text.scale.y = this.stackScaling;
-        text.x = newConfidenceX;
-        text.y = newConfidenceY;
+        text.scale.set(this.stackScaling, this.stackScaling);
+        text.position.set(newConfidenceX, newConfidenceY);
         text.tint = fillColor;
 
         return text;

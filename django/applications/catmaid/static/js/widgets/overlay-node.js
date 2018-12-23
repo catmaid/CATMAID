@@ -572,16 +572,27 @@
              this.overlayGlobals.skeletonDisplayModels.has(this.skeleton_id));
       };
 
+      // A shared empty list to indicate the absence of associated visibility
+      // groups to save memory in situations with many treenodes.
+      let _emptyVisibilityGroupList = [];
+
+      /**
+       * Set and returns the list of visibility groups associated with this
+       * treenode. If there are no visibility groups associated, a sharead empty
+       * list is returned.
+       */
       this.getVisibilityGroups = function (noCache) {
         if (this.visibilityGroups && !noCache) return this.visibilityGroups;
 
-        this.visibilityGroups = [];
-
+        let visibilityGroups;
         for (var groupID = SkeletonAnnotations.VisibilityGroups.groups.length - 1; groupID >= 0; groupID--) {
-          if (SkeletonAnnotations.VisibilityGroups.isNodeInGroup(groupID, this))
-            this.visibilityGroups.push(groupID);
+          if (SkeletonAnnotations.VisibilityGroups.isNodeInGroup(groupID, this)) {
+            if (!visibilityGroups) visibilityGroups = [];
+            visibilityGroups.push(groupID);
+          }
         }
 
+        this.visibilityGroups = visibilityGroups ? visibilityGroups : _emptyVisibilityGroupList;
         return this.visibilityGroups;
       };
 

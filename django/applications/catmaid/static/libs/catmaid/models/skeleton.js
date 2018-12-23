@@ -374,6 +374,18 @@
         });
     },
 
+    /**
+     * Retrieve user permissions for a particular skeleton.
+     *
+     * @param {number} projectId  The project to operate in.
+     * @param {number} skeletonId The skeleton to get permissions for.
+     * @returns Promise resolving in permission information.
+     */
+    getPermissions: function(projectId, skeletonId) {
+      var url = projectId + '/skeleton/' + skeletonId + '/permissions';
+      return CATMAID.fetch(url, 'POST');
+    },
+
   };
 
   // Provide some basic events

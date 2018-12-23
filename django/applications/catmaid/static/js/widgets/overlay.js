@@ -1334,19 +1334,19 @@ var SkeletonAnnotations = {};
    */
   CATMAID.TracingOverlay.prototype.executeIfSkeletonEditable = function(
       skeleton_id, fn) {
-    var url = CATMAID.makeURL(project.id + '/skeleton/' + skeleton_id + '/permissions');
-    requestQueue.register(url, 'POST', null,
-       CATMAID.jsonResponseHandler(function(permissions) {
-          // Check permissions
-          if (!permissions.can_edit) {
-            new CATMAID.ErrorDialog("This skeleton is locked by another user " +
-                "and you are not part of the other user's group. You don't " +
-                "have permission to modify it.").show();
-            return;
-          }
-          // Execute continuation
-          fn();
-       }));
+    CATMAID.Skeletons.getPermissions(project.id, skeleton_id)
+      .then(function(permissions) {
+        // Check permissions
+        if (!permissions.can_edit) {
+          new CATMAID.ErrorDialog("This skeleton is locked by another user " +
+              "and you are not part of the other user's group. You don't " +
+              "have permission to modify it.").show();
+          return;
+        }
+        // Execute continuation
+        return fn();
+      })
+      .catch(CATMAID.handleError);
   };
 
   /**

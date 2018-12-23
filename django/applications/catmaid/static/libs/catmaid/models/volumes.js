@@ -253,6 +253,21 @@
       });
     },
 
+    /**
+     * Find out if the passed in location intersects with the bounding box of
+     * the passed in volume.
+     *
+     * @param {number} projectId The project to operate in.
+     * @param {number} volumeId  The volume to check the boundinx box for.
+     * @param {number} x         The X coordinate of the point to check.
+     * @param {number} y         The Y coordinate of the point to check.
+     * @param {number} z         The Z coordinate of the point to check.
+     * @returns Promise resolving in intersection information.
+     */
+    intersectsBoundingBox: function(projectId, volumeId, x, y, z) {
+      let url = project.id + "/volumes/" + volumeId + "/intersect";
+      return CATMAID.fetch(url, "GET", {x: x, y: y, z: z});
+    },
   };
 
   // Add events

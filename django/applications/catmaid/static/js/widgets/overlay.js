@@ -592,15 +592,15 @@ var SkeletonAnnotations = {};
       }
 
       // Test for intersection with the volume
-      requestQueue.register(CATMAID.makeURL(project.id + "/volumes/" +
-            newNodeWarningVolumeID + "/intersect"), "GET", {
-              x: node.x, y: node.y, z: node.z
-            }, CATMAID.jsonResponseHandler(function(json) {
-              if (!json.intersects) {
-                CATMAID.warn("Node #" + node.id +
-                    " was created outside of volume " + newNodeWarningVolumeID);
-              }
-            }));
+      CATMAID.Volumes.intersectsBoundingBox(project.id, newNodeWarningVolumeID,
+          node.x, node.y, node.z)
+        .then(function(json) {
+          if (!json.intersects) {
+            CATMAID.warn("Node #" + node.id +
+                " was created outside of volume " + newNodeWarningVolumeID);
+          }
+        })
+        .catch(CATMAID.handleError);
     };
 
 

@@ -25,7 +25,7 @@
     // listing links with specific skeletons.
     this.focusSetSource = 'none';
     this.focusSetRelation = options.focusSetRelationId || 'none';
-    this.partnerSetSource = 'none';
+    this.partnerSetSource = options.partnerSetSource || 'none';
     this.partnerSetExcludedSkeletonIds = new Set(options.partnerSetExcludedSkeletonIds || []);
     this.partnerSetRelation = options.partnerSetRelationId || 'none';
 
@@ -58,13 +58,76 @@
    * @returns {Object} Window handle and widget instance.
    */
   ConnectorList.fromRawData = function(data, focusSetRelationId,
-      partnerSetRelationId, partnerSetExcludedSkeletonIds) {
+      partnerSetRelationId, partnerSetExcludedSkeletonIds, partnerSetSource) {
     return CATMAID.WindowMaker.create('connector-list', {
       data: data,
       focusSetRelationId: focusSetRelationId,
       partnerSetRelationId: partnerSetRelationId,
-      partnerSetExcludedSkeletonIds: partnerSetExcludedSkeletonIds
+      partnerSetExcludedSkeletonIds: partnerSetExcludedSkeletonIds,
+      partnerSetSource: partnerSetSource,
     });
+  };
+
+  ConnectorList.fromSkeletonIds = function(skeletonIds, queryRelation, nodeIds,
+      source) {
+    let containsAllowedNode;
+    if (nodeIds) {
+      let allowedNodeIds = new Set(nodeIds.map(Number));
+      containsAllowedNode = function(p) {
+        return allowedNodeIds.has(p[1]);
+      };
+    }
+
+    CATMAID.fetch(project.id + '/connectors/', 'POST', {
+        'skeleton_ids': skeletonIds,
+        'with_tags': 'false',
+        'relation_type': queryRelation,
+        'with_partners': true,
+      })
+      .then(function(result) {
+        // Only allow links that are connecting to nodes in the passed in list.
+        let allowedConnectors;
+        if (nodeIds) {
+          allowedConnectors = result.connectors.filter(function(c) {
+            let partners = result.partners[c[0]];
+            return partners.some(containsAllowedNode);
+          });
+        } else {
+          allowedConnectors = result.connectors;
+        }
+        let skeletonIdSet = new Set(skeletonIds);
+        // Create entries of the following format:
+        // [connector_id, x, y, z, skeleton_id, confidence, creator_id,
+        // treenode_id, creation_time, edition_time, relation_id]
+        let connectorData = allowedConnectors.reduce(function(o, c) {
+          let partners = result.partners[c[0]];
+          for (let i=0; i<partners.length; ++i) {
+            // Partners: link_id, treenode_id, skeleton_id, relation_id,
+            // confidence, user_id, creation_time, edition_time
+            let p = partners[i];
+            // We don't want links to the focused skeletons
+            if (skeletonIdSet.has(p[2])) {
+              o.push([c[0], c[1], c[2], c[3], p[2], p[4], p[5], p[1], p[6], p[7], p[3]]);
+            }
+          }
+          return o;
+        }, []);
+
+        return Promise.all([
+          connectorData,
+          CATMAID.Relations.list(project.id),
+        ]);
+      })
+      .then(function(results) {
+        let connectorData = results[0];
+        let relationMap = results[1];
+
+        let focusSetRelationId;// = relationMap[relation];
+        let connectorList = CATMAID.ConnectorList.fromRawData(
+          connectorData, focusSetRelationId, undefined, undefined,
+          source).widget;
+      })
+      .catch(CATMAID.handleError);
   };
 
   $.extend(ConnectorList.prototype, new InstanceRegistry());
@@ -337,7 +400,7 @@
       }
       let skeletonIds = source.getSelectedSkeletons();
       if (skeletonIds.length > 0) {
-        partnerSetSkeletonIds = skeletonIds;
+        partnerSetSkeletonIds = skeletonIds.map(Number);
       }
     }
 

@@ -240,6 +240,12 @@
         plot2.onclick = this.openStackedBarChart.bind(this);
         controls.appendChild(plot2);
 
+        var showLinks = document.createElement('input');
+        showLinks.setAttribute("type", "button");
+        showLinks.setAttribute("value", "List links");
+        showLinks.onclick = this.listLinks.bind(this);
+        controls.appendChild(showLinks);
+
         var linkTypeSelection = CATMAID.DOM.createAsyncPlaceholder(
             CATMAID.DOM.initLinkTypeList({
               byPartnerReference: true,
@@ -1874,6 +1880,12 @@
 
   SkeletonConnectivity.prototype.openStackedBarChart = function() {
     var SF = WindowMaker.create("synapse-fractions");
+  };
+
+  SkeletonConnectivity.prototype.listLinks = function() {
+    let skeletonIds = this.getSelectedSkeletons().map(Number);
+    let connectorListHandles = CATMAID.ConnectorList.fromSkeletonIds(
+        skeletonIds, undefined, undefined, this.getName());
   };
 
   /**

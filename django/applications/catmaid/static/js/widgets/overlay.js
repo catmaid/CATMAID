@@ -3594,11 +3594,15 @@ var SkeletonAnnotations = {};
 
   function parseNodeResponse(data, transferFormat) {
     let response;
-    if (transferFormat === 'msgpack') {
-      response = msgpack.decode(new Uint8Array(data));
-    } else if (transferFormat === 'png' || transferFormat == 'gif') {
-      response = new Uint8Array(data);
-    } else {
+    try {
+      if (transferFormat === 'msgpack') {
+        response = msgpack.decode(new Uint8Array(data));
+      } else if (transferFormat === 'png' || transferFormat == 'gif') {
+        response = new Uint8Array(data);
+      } else {
+        response = JSON.parse(data);
+      }
+    } catch(e) {
       response = JSON.parse(data);
     }
 

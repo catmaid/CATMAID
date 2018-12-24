@@ -250,6 +250,9 @@ IMPORTED_SKELETON_FILE_MAXIMUM_SIZE = 5242880
 # The maximum allowed image size for imported images. The default is 3MB.
 IMPORTED_IMAGE_FILE_MAXIMUM_SIZE = 3145728
 
+# The maximum allowd body data size, default is 10 MB.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 8 * 1024**2
+
 # Specifies if user registration is allowed
 USER_REGISTRATION_ALLOWED = False
 

@@ -364,6 +364,10 @@ CATMAID
   an optional statistics summary table. Consider running this command regularly
   over, e.g. over night using Celery or a cron job.
 
+* If large client requests result in status 400 errors, you might need to raise
+  the ``DATA_UPLOAD_MAX_MEMORY_SIZE`` setting, which is the maximum allowed
+  request body size in bytes. It defaults to 10 MB (83886080).
+
 Making CATMAID available through SSL
 ------------------------------------
 

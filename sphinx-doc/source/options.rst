@@ -47,3 +47,9 @@ overridden in ``settings.py``. Below is an explanation of all available settings
      This means if ``MAX_PARALLEL_ASYNC_WORKERS`` is set to ``3`` and assuming
      ``CELERY_WORKER_CONCURRENCY`` is set to ``2``, asyncronous procerssing in
      CATMAID can be expected to use a maximum f ``6`` processes.
+
+.. glossary::
+  ``DATA_UPLOAD_MAX_MEMORY_SIZE``
+     This option controls the maximum allowed requests size that the client
+     application is allowed to send in bytes. By default this is set to 10 MB.
+     If a requests exceeds this limit, error code 400 is returned.

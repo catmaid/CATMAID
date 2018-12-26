@@ -115,9 +115,9 @@ libraries_js = OrderedDict([
     ('blazy', ['blazy.min.js']),
     ('geometry', ['geometry.js', 'intersects.js']), # order matters
     ('catmaid', ['namespace.js', 'error.js', 'events.js', 'request.js',
-                'CATMAID.js', 'state.js', 'command.js', 'models/*.js',
-                'skeleton_source.js', 'datastores.js', 'settings-manager.js',
-                '*.js']),
+                'tools.js', 'lru-cache.js', 'CATMAID.js', 'state.js',
+                'command.js', 'models/*.js', 'skeleton_source.js',
+                'datastores.js', 'settings-manager.js', '*.js']),
 ])
 
 JAVASCRIPT = OrderedDict()
@@ -146,7 +146,6 @@ for k, v in six.iteritems(non_pipeline_js):
 # Regular CATMAID front-end files
 JAVASCRIPT['catmaid'] = {
     'source_filenames': (
-        'js/tools.js',
         'js/CATMAID.js',
         'js/dom.js',
         'js/extensions.js',

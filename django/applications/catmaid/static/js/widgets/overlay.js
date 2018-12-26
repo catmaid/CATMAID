@@ -2955,7 +2955,7 @@ var SkeletonAnnotations = {};
       // For every node ID
       var m = labelData;
       // Scale labels relative to confidence text labels to account for overlay scaling.
-      var fontSize = parseFloat(this.graphics.ArrowLine.prototype.confidenceFontSize) * 0.75;
+      var fontSize = parseFloat(this.graphics.ArrowLine.prototype.scaledConfidenceFontSize) * 0.75;
       var labeledNodes = Object.keys(m);
       for (var i=0, imax=labeledNodes.length; i<imax; ++i) {
         var nid = parseInt(labeledNodes[i], 10);

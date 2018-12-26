@@ -331,6 +331,7 @@
     ptype.NodePrototype = new (function() {
       this.CONFIDENCE_FONT_PT = 15;
       this.confidenceFontSize = this.CONFIDENCE_FONT_PT + 'pt';
+      this.scaledConfidenceFontSize = this.CONFIDENCE_FONT_PT + 'pt';
       // Store current node scaling factor
       this.scaling = 1.0;
       this.baseScale = 1.0;
@@ -494,7 +495,7 @@
         this.stackScaling = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
         this.scaling = baseScale * (dynamicScale ? dynamicScale : 1);
         this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * this.stackScaling;//baseScale * (dynamicScale ? 1 : resScale);
-        this.confidenceFontSize = this.CONFIDENCE_FONT_PT + 'pt';
+        this.scaledConfidenceFontSize = this.CONFIDENCE_FONT_PT * this.stackScaling + 'pt';
         this.textResolution = resScale;
 
         this.pixelsPerUnitSq = 1 / (this.stackScaling * this.stackScaling);
@@ -1027,7 +1028,7 @@
             .append('g')
             .classed('radiuslabel', true)
             .attr({ 'pointer-events': 'none'});
-        var fontSize = parseFloat(ptype.ArrowLine.prototype.confidenceFontSize) * 0.75;
+        var fontSize = parseFloat(ptype.ArrowLine.prototype.scaledConfidenceFontSize) * 0.75;
         var pad = fontSize * 0.5;
         var labelShadow = label.append('rect').attr({
             x: this[this.planeX],
@@ -1905,6 +1906,7 @@
       this.CATCH_SCALE = 3;
       this.CONFIDENCE_FONT_PT = 15;
       this.confidenceFontSize = this.CONFIDENCE_FONT_PT + 'pt';
+      this.scaledConfidenceFontSize = this.CONFIDENCE_FONT_PT + 'pt';
       this.scaling = 1.0;
 
       /** Function to assign to the graphical arrow. */
@@ -2126,7 +2128,7 @@
         this.stackScaling = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
         this.scaling = baseScale * (dynamicScale ? dynamicScale : 1);
         this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * this.stackScaling;
-        this.confidenceFontSize = this.CONFIDENCE_FONT_PT + 'pt';
+        this.scaledConfidenceFontSize = this.CONFIDENCE_FONT_PT * this.stackScaling + 'pt';
         this.textResolution = resScale;
       };
 

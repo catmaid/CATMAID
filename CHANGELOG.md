@@ -31,6 +31,10 @@ Measurement table:
   are displayed for all independent fragments of a skeleton after a set of node
   filter rules has been applied.
 
+- With the help of the "Sum fragments" toggle all fragments that result from a
+  node filter application can be aggregated into one row by summing individual
+  values.
+
 Miscellaneous:
 
 - Add a new Tracing Tool icon button to compute the distance between two nodes

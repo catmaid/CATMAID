@@ -26,6 +26,9 @@
     // Whether or not skeletons show be listed that don't have any match in an
     // active node filter.
     this.showFilterUnmatchedSkeletons = false;
+    // Whether or not fragments of each skeleton should be aggregated into a
+    // single row.
+    this.aggregateFragments = false;
   };
 
   SkeletonMeasurementsTable.prototype = Object.create(CATMAID.SkeletonSource.prototype);
@@ -116,6 +119,22 @@
         filterRulesLabel.appendChild(filterRulesToggle);
         filterRulesLabel.appendChild(document.createTextNode('Apply node filter rules'));
         controls.appendChild(filterRulesLabel);
+
+        var aggFragmentsToggle = document.createElement('input');
+        aggFragmentsToggle.setAttribute('id', 'connectivity-filterrules-toggle-' + this.widgetID);
+        aggFragmentsToggle.setAttribute('type', 'checkbox');
+        if (this.aggregateFragments) {
+          aggFragmentsToggle.setAttribute('checked', 'checked');
+        }
+        aggFragmentsToggle.onchange = function() {
+          self.aggregateFragments = this.checked;
+          self.update();
+        };
+        var aggFragmentsLabel = document.createElement('label');
+        aggFragmentsLabel.appendChild(aggFragmentsToggle);
+        aggFragmentsLabel.appendChild(document.createTextNode('Sum fragments'));
+        aggFragmentsLabel.setAttribute('title', 'If a skeleton is split into disconnected fragments (e.g. due to a node filter), all fragments of a skeleton can be displayed as aggregated values (sums) or as individual rows.');
+        controls.appendChild(aggFragmentsLabel);
       },
       createContent: function(content) {
         var headings = '<tr>' + this.getLabels(true).map(function(label) {
@@ -195,6 +214,7 @@
           let filterActive = self.applyFilterRules && self.filterRules.length > 0;
           if (filterActive) {
             let fractions = arbor.connectedFractions(Array.from(self.allowedNodes));
+            let aggRow;
             for (let i=0; i<fractions.length; ++i) {
               let fractionArbor = fractions[i];
               let fractionArborParser = new CATMAID.ArborParser();
@@ -213,12 +233,33 @@
                   n_branching = be.n_branches,
                   n_ends = be.ends.length;
 
-              rows.push([SkeletonMeasurementsTable.prototype._makeStringLink(name, skid),
-                    skid, fractionArbor.root, `${i+1}/${fractions.length}`, raw_cable, smooth_cable,
-                    lower_bound_cable, n_inputs, n_outputs, n_presynaptic_sites,
-                    n_nodes, n_branching, n_ends]);
+              let fragmentRow = [SkeletonMeasurementsTable.prototype._makeStringLink(name, skid),
+                  skid, fractionArbor.root, `${i+1}/${fractions.length}`,
+                  raw_cable, smooth_cable, lower_bound_cable, n_inputs, n_outputs,
+                  n_presynaptic_sites, n_nodes, n_branching, n_ends];
+              if (self.aggregateFragments) {
+                  if (aggRow) {
+                    aggRow[2].push(fragmentRow[2]);
+                    aggRow[3] = fragmentRow[3];
+                    for (let j=4; j<fragmentRow.length; ++j) {
+                      aggRow[j] += fragmentRow[j];
+                    }
+                  } else {
+                    aggRow = fragmentRow;
+                    aggRow[2] = [aggRow[2]];
+
+                  }
+              } else {
+                rows.push(fragmentRow);
+              }
             }
+
             fractionsAdded = fractions.length > 0;
+
+            // If an aggregate row was created, add it to the result set.
+            if (aggRow) {
+              rows.push(aggRow);
+            }
           }
 
           // If no fractions were added, full measurements will be added.
@@ -357,6 +398,10 @@
     this.highlight(SkeletonAnnotations.getActiveSkeletonId());
   };
 
+  let toNodelink = function(nodeId) {
+    return `<a href="#" data-role="select-node" data-node-id="${nodeId}">${nodeId}</a>`;
+  };
+
   SkeletonMeasurementsTable.prototype.init = function() {
     if (this.table) this.table.destroy();
 
@@ -389,7 +434,11 @@
         }, {
           targets: 2,
           render: function(data, type, row, meta) {
-            return `<a href="#" data-role="select-node">${data}</a>`;
+            if (data instanceof Array) {
+              return data.map(toNodelink).join(', ');
+            } else {
+              return `<a href="#" data-role="select-node" data-node-id="${data}">${data}</a>`;
+            }
           },
         }],
         createdRow: function(row, data, index) {
@@ -400,10 +449,8 @@
       this.highlightActiveSkeleton();
     }).bind(this))
     .on('click', 'a[data-role=select-node]', function() {
-      var table = $(this).closest('table');
-      var tr = $(this).closest('tr');
-      var data =  $(table).DataTable().row(tr).data();
-      SkeletonAnnotations.staticMoveToAndSelectNode(data[2]);
+      let nodeId = this.dataset.nodeId;
+      SkeletonAnnotations.staticMoveToAndSelectNode(nodeId);
     })
     .on('click', 'a[data-role=select-skeleton]', function() {
       var table = $(this).closest('table');

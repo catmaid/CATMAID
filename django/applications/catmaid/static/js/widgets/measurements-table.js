@@ -16,6 +16,16 @@
     this.table = null;
     this.models = {};
     this.sigma = 200;
+
+    // A set of filter rules to apply to the handled skeletons
+    this.filterRules = [];
+    // Filter rules can optionally be disabled
+    this.applyFilterRules = true;
+    // A set of nodes allowed by node filters
+    this.allowedNodes = new Set();
+    // Whether or not skeletons show be listed that don't have any match in an
+    // active node filter.
+    this.showFilterUnmatchedSkeletons = false;
   };
 
   SkeletonMeasurementsTable.prototype = Object.create(CATMAID.SkeletonSource.prototype);
@@ -23,7 +33,18 @@
 
   $.extend(SkeletonMeasurementsTable.prototype, new InstanceRegistry());
 
-  SkeletonMeasurementsTable.prototype.labels = ['Neuron', 'Skeleton', 'Raw cable (nm)', 'Smooth cable (nm)', 'Lower-bound cable (nm)', 'N inputs', 'N outputs', 'N presynaptic sites', 'N nodes', 'N branch nodes', 'N end nodes'];
+  SkeletonMeasurementsTable.prototype.getLabels = function(forceAll) {
+    let labels = ['Neuron', 'Skeleton',
+      'Raw cable (nm)', 'Smooth cable (nm)', 'Lower-bound cable (nm)',
+      'N inputs', 'N outputs', 'N presynaptic sites', 'N nodes',
+      'N branch nodes', 'N end nodes'];
+
+    if (forceAll || (this.applyFilterRules && this.filterRules.length > 0)) {
+      labels.splice(2, 0, 'Fragment start', 'Fragment');
+    }
+
+    return labels;
+  };
 
   SkeletonMeasurementsTable.prototype.getName = function() {
     return "Measurements " + this.widgetID;
@@ -34,6 +55,7 @@
       controlsID: "skeleton_measurements_table_controls" + this.widgetID,
       contentID: "skeleton_measurements_table" + this.widgetID,
       createControls: function(controls) {
+        let self = this;
         controls.appendChild(document.createTextNode('From'));
         controls.appendChild(CATMAID.skeletonListSources.createSelect(this));
 
@@ -73,9 +95,32 @@
         exportXLSX.setAttribute("title", "Export a spreadsheet file compatible to Microsoft Excel and Libre Office, colors are preserved");
         exportXLSX.onclick = this.exportXLSX.bind(this);
         controls.appendChild(exportXLSX);
+
+        var filterRulesToggle = document.createElement('input');
+        filterRulesToggle.setAttribute('id', 'connectivity-filterrules-toggle-' + this.widgetID);
+        filterRulesToggle.setAttribute('type', 'checkbox');
+        if (this.applyFilterRules) {
+          filterRulesToggle.setAttribute('checked', 'checked');
+        }
+        filterRulesToggle.onchange = function() {
+          self.applyFilterRules = this.checked;
+          if (self.filterRules.length > 0) {
+            if (this.checked) {
+              self.updateFilter();
+            } else {
+              self.update();
+            }
+          }
+        };
+        var filterRulesLabel = document.createElement('label');
+        filterRulesLabel.appendChild(filterRulesToggle);
+        filterRulesLabel.appendChild(document.createTextNode('Apply node filter rules'));
+        controls.appendChild(filterRulesLabel);
       },
       createContent: function(content) {
-        var headings = '<tr>' + this.labels.map(function(label) { return '<th>' + label + '</th>'; }).join('') + '</tr>';
+        var headings = '<tr>' + this.getLabels(true).map(function(label) {
+            return '<th>' + label + '</th>';
+        }).join('') + '</tr>';
 
         content.innerHTML =
           '<table cellpadding="0" cellspacing="0" border="0" class="display" id="skeleton_measurements_table' + this.widgetID + '">' +
@@ -88,7 +133,11 @@
       },
       init: function() {
         this.init();
-      }
+      },
+      filter: {
+        rules: this.filterRules,
+        update: this.updateFilter.bind(this),
+      },
     };
   };
 
@@ -123,8 +172,10 @@
   };
 
   SkeletonMeasurementsTable.prototype.load = function(models, sigma, fnDone) {
+    let self = this;
     var rows = [],
-        failed = [];
+        failed = [],
+        unmatched = [];
 
     fetchSkeletons(
         Object.keys(models).map(Number),
@@ -133,24 +184,65 @@
         },
         function(skid) { return {}; },
         function(skid, json) {
-          var ap = new CATMAID.ArborParser().init('compact-arbor', json),
+          let ap = new CATMAID.ArborParser().init('compact-arbor', json),
               arbor = ap.arbor,
               positions = ap.positions,
-              raw_cable = Math.round(arbor.cableLength(positions)) | 0,
-              smooth_cable = Math.round(arbor.smoothCableLength(positions, sigma)) | 0,
-              lower_bound_cable = Math.round(arbor.topologicalCopy().cableLength(positions)) | 0,
-              n_presynaptic_sites = ap.n_output_connectors,
-              n_outputs = ap.n_outputs,
-              n_inputs = ap.n_inputs,
-              n_nodes = arbor.countNodes(),
-              be = arbor.findBranchAndEndNodes(),
-              n_branching = be.n_branches,
-              n_ends = be.ends.length;
-          var name = CATMAID.NeuronNameService.getInstance().getName(skid);
-          rows.push([SkeletonMeasurementsTable.prototype._makeStringLink(name, skid), skid,
-                     raw_cable, smooth_cable, lower_bound_cable,
-                     n_inputs, n_outputs, n_presynaptic_sites,
-                     n_nodes, n_branching, n_ends]);
+              name = CATMAID.NeuronNameService.getInstance().getName(skid);
+
+          // If node filtering should be performed, create required information
+          // for each fragment.
+          let fractionsAdded = false;
+          let filterActive = self.applyFilterRules && self.filterRules.length > 0;
+          if (filterActive) {
+            let fractions = arbor.connectedFractions(Array.from(self.allowedNodes));
+            for (let i=0; i<fractions.length; ++i) {
+              let fractionArbor = fractions[i];
+              let fractionArborParser = new CATMAID.ArborParser();
+              fractionArborParser.arbor = fractionArbor;
+              fractionArborParser.positions = positions;
+              fractionArborParser.synapses(json[1], true);
+
+              let raw_cable = Math.round(fractionArbor.cableLength(positions)) | 0,
+                  smooth_cable = Math.round(fractionArbor.smoothCableLength(positions, sigma)) | 0,
+                  lower_bound_cable = Math.round(fractionArbor.topologicalCopy().cableLength(positions)) | 0,
+                  n_presynaptic_sites = fractionArborParser.n_output_connectors,
+                  n_outputs = fractionArborParser.n_outputs,
+                  n_inputs = fractionArborParser.n_inputs,
+                  n_nodes = fractionArbor.countNodes(),
+                  be = fractionArbor.findBranchAndEndNodes(),
+                  n_branching = be.n_branches,
+                  n_ends = be.ends.length;
+
+              rows.push([SkeletonMeasurementsTable.prototype._makeStringLink(name, skid),
+                    skid, fractionArbor.root, `${i+1}/${fractions.length}`, raw_cable, smooth_cable,
+                    lower_bound_cable, n_inputs, n_outputs, n_presynaptic_sites,
+                    n_nodes, n_branching, n_ends]);
+            }
+            fractionsAdded = fractions.length > 0;
+          }
+
+          // If no fractions were added, full measurements will be added.
+          if (!fractionsAdded) {
+            if (filterActive) {
+              unmatched.push(skid);
+            }
+            if (!filterActive || self.showFilterUnmatchedSkeletons) {
+              let raw_cable = Math.round(arbor.cableLength(positions)) | 0,
+                  smooth_cable = Math.round(arbor.smoothCableLength(positions, sigma)) | 0,
+                  lower_bound_cable = Math.round(arbor.topologicalCopy().cableLength(positions)) | 0,
+                  n_presynaptic_sites = ap.n_output_connectors,
+                  n_outputs = ap.n_outputs,
+                  n_inputs = ap.n_inputs,
+                  n_nodes = arbor.countNodes(),
+                  be = arbor.findBranchAndEndNodes(),
+                  n_branching = be.n_branches,
+                  n_ends = be.ends.length;
+
+              rows.push([SkeletonMeasurementsTable.prototype._makeStringLink(name, skid),
+                    skid, arbor.root, '1/1', raw_cable, smooth_cable, lower_bound_cable,
+                    n_inputs, n_outputs, n_presynaptic_sites, n_nodes, n_branching, n_ends]);
+            }
+          }
         },
         function(skid) {
           failed.push(skid);
@@ -159,6 +251,9 @@
           fnDone(rows);
           if (failed.length > 0) {
               alert("Skeletons that failed to load: " + failed);
+          }
+          if (unmatched.length > 0) {
+            CATMAID.warn(`${unmatched.length} skeleton(s) are unmatched entirely by the active node filters`);
           }
         });
   };
@@ -195,10 +290,19 @@
       this.table.draw();
   };
 
-  SkeletonMeasurementsTable.prototype.update = function() {
+  SkeletonMeasurementsTable.prototype.update = function(skipNodeFilter) {
+    let nodeFiltersInUse = this.applyFilterRules && this.filterRules.length > 0;
+    if (this.table) {
+      this.table.column(2).visible(nodeFiltersInUse);
+      this.table.column(3).visible(nodeFiltersInUse);
+    }
+    if (!skipNodeFilter && nodeFiltersInUse) {
+      return this.updateFilter();
+    } else {
       var models = this.models;
       this.clear();
       this.append(models);
+    }
   };
 
   SkeletonMeasurementsTable.prototype.updateModels = function(models) {
@@ -256,32 +360,60 @@
   SkeletonMeasurementsTable.prototype.init = function() {
     if (this.table) this.table.destroy();
 
-    var n_labels = this.labels.length;
+    let nodeFiltersInUse = this.applyFilterRules && this.filterRules.length > 0;
+    let labels = this.getLabels(true);
+    var n_labels = labels.length;
 
     this.table = $('table#skeleton_measurements_table' + this.widgetID).DataTable({
         destroy: true,
         dom: '<"H"lr>t<"F"ip>',
         processing: true,
-        // Enable sorting locally, and prevent sorting from calling the
-        // fnServerData to reload the table -- an expensive and undesirable
-        // operation.
         serverSide: false,
         autoWidth: false,
         pageLength: -1,
         lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
         jQueryUI: true,
-        columns: this.labels.map((function() {
-          return this;
-        }).bind({
-          searchable: true,
-          sortable: true
-        })),
+        columns: labels.map(function(title) {
+          return {
+            title: title,
+            class: "cm-center",
+            searchable: true,
+            sortable: true,
+          };
+        }),
+        columnDefs: [{
+          targets: 1,
+          render: function(data, type, row, meta) {
+            return `<a href="#" data-role="select-skeleton">${data}</a>`;
+          },
+        }, {
+          targets: 2,
+          render: function(data, type, row, meta) {
+            return `<a href="#" data-role="select-node">${data}</a>`;
+          },
+        }],
         createdRow: function(row, data, index) {
           row.dataset.skeletonId = data[1];
         }
-    }).on('draw.dt', (function() {
+    })
+    .on('draw.dt', (function() {
       this.highlightActiveSkeleton();
-    }).bind(this));
+    }).bind(this))
+    .on('click', 'a[data-role=select-node]', function() {
+      var table = $(this).closest('table');
+      var tr = $(this).closest('tr');
+      var data =  $(table).DataTable().row(tr).data();
+      SkeletonAnnotations.staticMoveToAndSelectNode(data[2]);
+    })
+    .on('click', 'a[data-role=select-skeleton]', function() {
+      var table = $(this).closest('table');
+      var tr = $(this).closest('tr');
+      var data =  $(table).DataTable().row(tr).data();
+      CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', data[1]);
+    });
+
+    this.table.column(2).visible(nodeFiltersInUse);
+    this.table.column(3).visible(nodeFiltersInUse);
   };
 
   SkeletonMeasurementsTable.prototype.updateNeuronNames = function() {
@@ -314,8 +446,15 @@
 
   SkeletonMeasurementsTable.prototype.exportCSV = function() {
     if (!this.table) return;
-    var skeletonRows = this.table.rows({search: 'applied'}).data();
-    var header = this.labels.map(CATMAID.tools.quote).join(',');
+
+    var skeletonRows = [];
+    let table = this.table;
+    let nns = CATMAID.NeuronNameService.getInstance();
+    this.table.rows({search: 'applied'}).every(function (rowIdx) {
+      skeletonRows.push(table.cells(this.node(), ':visible').data().toArray());
+    });
+
+    var header = this.getLabels().map(CATMAID.tools.quote).join(',');
     var csv = header + '\n' + skeletonRows.map(function(row) {
       return '"' + $(row[0]).text() + '",' + row.slice(1).join(',');
     }).join('\n');
@@ -327,7 +466,12 @@
    * Export the currently displayed measurmenent table as XLSX file using jQuery DataTables.
    */
   SkeletonMeasurementsTable.prototype.exportXLSX = function() {
-    var data = this.table ? this.table.rows({search: 'applied'}).data().toArray() : [];
+    var data = [];
+    let table = this.table;
+    let nns = CATMAID.NeuronNameService.getInstance();
+    this.table.rows({search: 'applied'}).every(function (rowIdx) {
+      data.push(table.cells(this.node(), ':visible').data().toArray());
+    });
     if (0 === data.length) {
       CATMAIR.error("Please load some data first.");
       return;
@@ -338,7 +482,7 @@
     var lines = [];
 
     // Add header
-    lines.push(this.labels.slice(0));
+    lines.push(this.getLabels().slice(0));
 
     // Add data
     data.forEach(function(row) {
@@ -355,6 +499,32 @@
       boldFirstRow: true,
       filename: 'catmaid-skeleton-metrics-' + date,
     });
+  };
+
+  /**
+   * Reevaluate the current set of node filter rules to update the set of
+   * allowed nodes.
+   */
+  SkeletonMeasurementsTable.prototype.updateFilter = function(options) {
+    var skeletonIds = Object.keys(this.models).map(CATMAID.tools.getId, this.models);
+    if (skeletonIds.length === 0 || this.filterRules.length === 0) {
+      this.update(true);
+      return Promise.resolve();
+    }
+
+    var self = this;
+    var filter = new CATMAID.SkeletonFilter(this.filterRules, this.models);
+    filter.execute()
+      .then(function(filteredNodes) {
+        self.allowedNodes = new Set(Object.keys(filteredNodes.nodes).map(function(n) {
+          return parseInt(n, 10);
+        }));
+        if (0 === self.allowedNodes.length) {
+          CATMAID.warn("No points left after filter application");
+        }
+        self.update(true);
+      })
+      .catch(CATMAID.handleError);
   };
 
   // Make measurement table available in CATMAID namespace

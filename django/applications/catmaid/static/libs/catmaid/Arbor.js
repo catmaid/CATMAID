@@ -1681,6 +1681,7 @@ Arbor.prototype.connectedFractions = function(nodes) {
   for (var i=0; i<nodes.length; ++i) {
     var node = nodes[i];
     if (seen[node]) continue;
+    if (!this.contains(node)) continue;
     var p = new Arbor(),
         p_root = node;
     p.root = node;

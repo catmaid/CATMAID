@@ -95,7 +95,7 @@
 
   /** Parse connectors from compact-arbor.
    */
-  ArborParser.prototype.synapses = function(rows) {
+  ArborParser.prototype.synapses = function(rows, testIfInArbor) {
     var io = [{partners: {},
                count: 0,
                connectors: {}},
@@ -107,6 +107,12 @@
           t = io[row[6]], // 6: 0 for pre, 1 for post
           node = row[0], // 0: treenode ID
           count = t[node];
+
+      // Optionally, count synapses only on particular nodes
+      if (testIfInArbor && !this.arbor.contains(node)) {
+        continue;
+      }
+
       if (count) t[node] = count + 1;
       else t[node] = 1;
       t.count += 1;

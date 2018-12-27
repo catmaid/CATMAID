@@ -24,6 +24,13 @@
 
 ### Features and enhancements
 
+Measurement table:
+
+- Node filters are now supported. Like in other widgets, the respective panel
+  can be opened through the funnel icon in the widget title bar. Measurements
+  are displayed for all independent fragments of a skeleton after a set of node
+  filter rules has been applied.
+
 Miscellaneous:
 
 - Add a new Tracing Tool icon button to compute the distance between two nodes

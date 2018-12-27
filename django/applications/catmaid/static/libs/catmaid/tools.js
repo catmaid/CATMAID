@@ -866,4 +866,13 @@ CATMAID.tools = CATMAID.tools || {};
     return ((a % b) + b) % b;
   };
 
+  /**
+   * Return "id" field of the value stored under the passed in key in the
+   * current context. This is useful for map() or filter() functions.
+   */
+  tools.getId = function(key) {
+    let value = this[key];
+    return value ? value.id : undefined;
+  };
+
 })(CATMAID.tools);

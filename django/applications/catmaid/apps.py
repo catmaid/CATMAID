@@ -191,7 +191,7 @@ class CATMAIDConfig(AppConfig):
             else:
                 allowed_types = (data_type,)
 
-            if not isinstance(getattr(settings, field), allowed_types):
+            if not isinstance(getattr(settings, field), allowed_types): # type: ignore
                 current_type = type(getattr(settings, field))
                 if len(allowed_types) == 1:
                     raise ImproperlyConfigured("Please make sure settings field %s "

@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 
+from builtins import str
+
 from datetime import datetime
 import logging
 import sys
 import re
 import urllib
+import urllib.parse
 import colorsys
+
+from typing import Dict, Tuple
 
 from django import forms
 from django.conf import settings
@@ -242,7 +247,7 @@ class ClassInstance(models.Model):
         relations = dict((r.relation_name, r.id) for r in Relation.objects.filter(project=project_id))
         classes = dict((c.class_name, c.id) for c in Class.objects.filter(project=project_id))
 
-        connected_skeletons_dict = {}
+        connected_skeletons_dict = {} # type: Dict
         # Find connectivity for each skeleton and add neuron name
         for skeleton in skeletons:
             qs_tc = TreenodeConnector.objects.filter(
@@ -345,15 +350,15 @@ class ClassInstance(models.Model):
 
     def lines_as_str(self):
         # FIXME: not expected to work yet
-        return ', '.join([unicode(x) for x in self.lines.all()])
+        return ', '.join([str(x) for x in self.lines.all()])
 
     def to_dict(self):
-        # FIXME: not expected to work yet
+        # FIXME: not expected to work yet. Neuron is not defined!
         return {'id': self.id,
                 'trakem2_id': self.trakem2_id,
                 'lineage' : 'unknown',
                 'neurotransmitters': [],
-                'cell_body_location': [self.cell_body, Neuron.cell_body_choices_dict[self.cell_body]],
+                'cell_body_location': [self.cell_body, Neuron.cell_body_choices_dict[self.cell_body]], # type: ignore
                 'name': self.name}
 
 
@@ -876,21 +881,22 @@ class CardinalityRestriction(models.Model):
             return num_linked_ci < self.value
         elif self.cardinality_type == 3:
             # Exactly n for each sub type
-            subclass_links_q = get_subclass_links()
+            subclass_links_q = get_subclass_links() # type: ignore
+                                                    # FIXME: Probably a serious bug - I can't find where this function is supposed to be defined
             for link in subclass_links_q:
                 num_linked_ci = self.get_num_class_instances(ci, link.class_a_id)
                 if num_linked_ci != self.value:
                     return True
         elif self.cardinality_type == 4:
             # Max n for each sub type
-            subclass_links_q = get_subclass_links()
+            subclass_links_q = get_subclass_links() # type: ignore
             for link in subclass_links_q:
                 num_linked_ci = self.get_num_class_instances(ci, link.class_a_id)
                 if num_linked_ci > self.value:
                     return True
         elif self.cardinality_type == 5:
             # Min n for each sub type
-            subclass_links_q = get_subclass_links()
+            subclass_links_q = get_subclass_links() # type: ignore
             for link in subclass_links_q:
                 num_linked_ci = self.get_num_class_instances(ci, link.class_a_id)
                 if num_linked_ci < self.value:
@@ -1168,7 +1174,7 @@ class NeuronSearch(forms.Form):
                       ('cell_body_location', '/cell_body_location/', "-1")]
         for p in parameters:
             if self.cleaned_data[p[0]] != p[2]:
-                result += p[1] + urllib.quote(str(self.cleaned_data[p[0]]))
+                result += p[1] + urllib.parse.quote(str(self.cleaned_data[p[0]]))
         return result
 
 
@@ -1410,7 +1416,7 @@ def distinct_user_color():
     nr_users = User.objects.exclude(id__exact=-1).count()
 
     if nr_users < len(initial_colors):
-        distinct_color = initial_colors[nr_users]
+        distinct_color = initial_colors[nr_users] # type: Tuple
     else:
         distinct_color = colorsys.hsv_to_rgb(random(), random(), 1.0) + (1,)
 
@@ -1590,10 +1596,6 @@ class ChangeRequest(UserFocusedModel):
 
     # TODO: get the project from the treenode/connector so it doesn't have to specified when creating a request
 
-    def status_name(self):
-        self.is_valid() # Make sure invalid state is current
-        return ['Open', 'Approved', 'Rejected', 'Invalid'][self.status]
-
     def is_valid(self):
         """ Returns a boolean value indicating whether the change request is still valid."""
 
@@ -1604,7 +1606,7 @@ class ChangeRequest(UserFocusedModel):
                 exec(self.validate_action)
                 if 'is_valid' not in dir():
                     raise Exception('validation action did not define is_valid')
-                if not is_valid:
+                if not is_valid: # type: ignore
                     # Cache the result so we don't have to do the exec next time.
                     # TODO: can a request ever be temporarily invalid?
                     self.status = ChangeRequest.INVALID
@@ -1615,6 +1617,10 @@ class ChangeRequest(UserFocusedModel):
             is_valid = False
 
         return is_valid
+
+    def status_name(self):
+        self.is_valid() # Make sure invalid state is current
+        return ['Open', 'Approved', 'Rejected', 'Invalid'][self.status]
 
     def approve(self, *args, **kwargs):
         if not self.is_valid():

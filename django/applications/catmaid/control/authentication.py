@@ -2,6 +2,8 @@
 import re
 import json
 
+from typing import Dict
+
 from functools import wraps
 from itertools import groupby
 
@@ -266,7 +268,7 @@ def user_project_permissions(request):
     anonymous requests, because it reports as authenticated and a profile will
     be returned.
     """
-    permissions = {}
+    permissions = {} # type: Dict
     if request.user.is_authenticated:
         projectPerms = get_perms_for_model(Project)
         permNames = [perm.codename for perm in projectPerms]

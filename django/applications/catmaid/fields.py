@@ -100,7 +100,7 @@ class Integer3D(object):
         self.x, self.y, self.z = x, y, z
 
     integer_re = '[-+0-9]+'
-    tuple_pattern = re.compile('^\((%s),\s*(%s),\s*(%s)\)$'%((integer_re,)*3))
+    tuple_pattern = re.compile('^\((%s),\s*(%s),\s*(%s)\)$' % (integer_re, integer_re, integer_re))
 
     @classmethod
     def from_str(cls, s):
@@ -157,7 +157,7 @@ class Double3D(object):
         self.x, self.y, self.z = x, y, z
 
     double_re = '[-+0-9\.Ee]+'
-    tuple_pattern = re.compile(r'^\((%s),\s*(%s),\s*(%s)\)$' % ((double_re,)*3))
+    tuple_pattern = re.compile(r'^\((%s),\s*(%s),\s*(%s)\)$' % (double_re, double_re, double_re))
 
     @classmethod
     def from_str(cls, s):
@@ -213,7 +213,7 @@ class RGBA(object):
         self.r, self.g, self.b, self.a = r, g, b, a
 
     double_re = '[-+0-9\.Ee]+'
-    tuple_pattern = re.compile(r'^\((%s),\s*(%s),\s*(%s),\s*(%s)\)$' % ((double_re,)*4))
+    tuple_pattern = re.compile(r'^\((%s),\s*(%s),\s*(%s),\s*(%s)\)$' % (double_re, double_re, double_re, double_re))
 
     @classmethod
     def from_str(cls, s):

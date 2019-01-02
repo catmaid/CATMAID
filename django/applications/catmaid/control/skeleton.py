@@ -1595,8 +1595,8 @@ def connectivity_matrix_csv(request:HttpRequest, project_id) -> StreamingHttpRes
     writer = csv.writer(pseudo_buffer, quoting=csv.QUOTE_NONNUMERIC)
 
     response = StreamingHttpResponse((writer.writerow(row) for row in csv_data), # type: ignore
-            content_type='text/csv') # FIXME: writerow does not have a return; this is definitely a bug
-                                    
+            content_type='text/csv')
+
     filename = 'catmaid-connectivity-matrix.csv'
     response['Content-Disposition'] = 'attachment; filename={}'.format(filename)
 

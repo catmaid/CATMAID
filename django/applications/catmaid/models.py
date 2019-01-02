@@ -881,22 +881,21 @@ class CardinalityRestriction(models.Model):
             return num_linked_ci < self.value
         elif self.cardinality_type == 3:
             # Exactly n for each sub type
-            subclass_links_q = get_subclass_links() # type: ignore
-                                                    # FIXME: Probably a serious bug - I can't find where this function is supposed to be defined
+            subclass_links_q = get_subclass_links_qs() # type: ignore
             for link in subclass_links_q:
                 num_linked_ci = self.get_num_class_instances(ci, link.class_a_id)
                 if num_linked_ci != self.value:
                     return True
         elif self.cardinality_type == 4:
             # Max n for each sub type
-            subclass_links_q = get_subclass_links() # type: ignore
+            subclass_links_q = get_subclass_links_qs() # type: ignore
             for link in subclass_links_q:
                 num_linked_ci = self.get_num_class_instances(ci, link.class_a_id)
                 if num_linked_ci > self.value:
                     return True
         elif self.cardinality_type == 5:
             # Min n for each sub type
-            subclass_links_q = get_subclass_links() # type: ignore
+            subclass_links_q = get_subclass_links_qs() # type: ignore
             for link in subclass_links_q:
                 num_linked_ci = self.get_num_class_instances(ci, link.class_a_id)
                 if num_linked_ci < self.value:

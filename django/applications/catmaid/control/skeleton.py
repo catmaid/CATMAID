@@ -1140,7 +1140,7 @@ def prune_samplers(skeleton_id, graph, treenode_parent, treenode):
             # can be removed as well.
             if len(domain_intervals) == len(intervals_to_delete):
                 domain.delete()
-                ++n_deleted_sampler_domains
+                n_deleted_sampler_domains += 1
     return {
         'n_samplers': len(samplers),
         'n_deleted_domains': n_deleted_sampler_domains,
@@ -2296,16 +2296,16 @@ def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleto
                 new_domain = SamplerDomain.objects.create(project_id=project_id,
                         user_id=user_id, sampler=sampler, start_node_id=lose_treenode_id,
                         domain_type=regular_domain_type)
-                ++n_added_domains
+                n_added_domains += 1
                 for leaf in lose_graph_end_nodes:
                     SamplerDomainEnd.objects.create(domain=new_domain,
                             end_node_id=leaf)
-                    ++n_added_domain_ends
+                    n_added_domain_ends += 1
 
         # Add new domain ends
         for end_node in new_domain_ends:
             SamplerDomainEnd.objects.create(domain=domain, end_node_id=end_node)
-            ++n_added_domain_ends
+            n_added_domain_ends += 1
 
     return {
         'n_samplers': n_samplers_win + n_samplers_lose,

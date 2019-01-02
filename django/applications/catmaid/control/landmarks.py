@@ -1597,7 +1597,7 @@ class LandmarkGroupMaterializer(APIView):
                     })
 
             if created:
-                ++n_created_landmarks
+                n_created_landmarks += 1
             elif not reuse_existing_landmarks:
                 raise ValueError('A landmark with name "' + landmark_name + '" exists alrady')
 

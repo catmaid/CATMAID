@@ -311,56 +311,6 @@ class ClassInstance(models.Model):
             project_id,
             ConnectivityDirection.POSTSYNAPTIC_PARTNERS, skeletons)
 
-    def cell_body_location(self):
-        qs = list(ClassInstance.objects.filter(
-                class_column__class_name='cell_body_location',
-                cici_via_b__relation__relation_name='has_cell_body',
-                cici_via_b__class_instance_a=self))
-        if len(qs) == 0:
-            return 'Unknown'
-        elif len(qs) == 1:
-            return qs[0].name
-        elif qs:
-            raise Exception("Multiple cell body locations found for neuron '%s'" % (self.name,))
-
-    def set_cell_body_location(self, new_location):
-        # FIXME: for the moment, just hardcode the user ID:
-        user = User.objects.get(pk=3)
-        if new_location not in [x[1] for x in CELL_BODY_CHOICES]:
-            raise Exception("Incorrect cell body location '%s'" % (new_location,))
-        # Just delete the ClassInstance - ON DELETE CASCADE should deal with the rest:
-        ClassInstance.objects.filter(
-            cici_via_b__relation__relation_name='has_cell_body',
-            cici_via_b__class_instance_a=self).delete()
-        if new_location != 'Unknown':
-            location = ClassInstance()
-            location.name = new_location
-            location.project = self.project
-            location.user = user
-            location.class_column = Class.objects.get(class_name='cell_body_location', project=self.project)
-            location.save()
-            r = Relation.objects.get(relation_name='has_cell_body', project=self.project)
-            cici = ClassInstanceClassInstance()
-            cici.class_instance_a = self
-            cici.class_instance_b = location
-            cici.relation = r
-            cici.user = user
-            cici.project = self.project
-            cici.save()
-
-    def lines_as_str(self):
-        # FIXME: not expected to work yet
-        return ', '.join([str(x) for x in self.lines.all()])
-
-    def to_dict(self):
-        # FIXME: not expected to work yet. Neuron is not defined!
-        return {'id': self.id,
-                'trakem2_id': self.trakem2_id,
-                'lineage' : 'unknown',
-                'neurotransmitters': [],
-                'cell_body_location': [self.cell_body, Neuron.cell_body_choices_dict[self.cell_body]], # type: ignore
-                'name': self.name}
-
 
 class Relation(models.Model):
     # Repeat the columns inherited from 'concept'

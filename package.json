@@ -22,7 +22,7 @@
     "lint:js": "jshint --config=.travis.jshintrc --exclude-path=.travis.jshintignore django/applications",
     "lint:css": "csslint django/applications/catmaid/static/css",
     "lint": "npm-run-all lint:*",
-    "doc": "jsdoc -r django/applications/catmaid/static/js",
+    "jsdoc": "jsdoc -r django/applications/catmaid/static/js",
     "karma": "karma start karma.conf.js"
   }
 }

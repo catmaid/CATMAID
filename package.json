@@ -1,20 +1,28 @@
 {
   "devDependencies": {
-    "sinon": "5.0.7",
-    "karma-chrome-launcher": "2.2.0",
-    "karma-sinon": "1.0.5",
-    "karma-qunit": "2.1.0",
     "csslint": "1.0.5",
-    "qunit": "2.6.1",
+    "jsdoc": "3.5.5",
     "jshint": "2.9.5",
     "karma": "2.0.2",
-    "jsdoc": "3.5.5",
-    "optimist": "0.6.1",
+    "karma-chrome-launcher": "2.2.0",
+    "karma-qunit": "2.1.0",
+    "karma-sinon": "1.0.5",
+    "minimatch": "3.0.4",
     "mkdirp": "0.5.1",
-    "minimatch": "3.0.4"
+    "optimist": "0.6.1",
+    "qunit": "2.6.1",
+    "sinon": "5.0.7",
+    "npm-run-all": "^4.1.5"
   },
   "dependencies": {
     "bootprint": "^1.0.2",
     "bootprint-openapi": "^1.1.0"
+  },
+  "scripts": {
+    "lint:js": "jshint --config=.travis.jshintrc --exclude-path=.travis.jshintignore django/applications",
+    "lint:css": "csslint django/applications/catmaid/static/css",
+    "lint": "npm-run-all lint:*",
+    "jsdoc": "jsdoc -r django/applications/catmaid/static/js",
+    "karma": "karma start karma.conf.js"
   }
 }

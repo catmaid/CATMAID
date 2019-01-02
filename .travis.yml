@@ -23,26 +23,21 @@ before_install:
   - travis_retry sudo apt-get update -y -qq
   - bash scripts/travis/install_postgres.sh
   - bash scripts/travis/install_python.sh
-  - npm update
+  - nvm install 11
 install:
   # Install requirements for running CATMAID and its unit tests
   - ./scripts/travis/install_requirements.sh
   - pip install coveralls flake8
-  - npm --version
-  - unset NODE_ENV
-  - npm install --only=dev
-  - npm bin
-  - export PATH=$(npm bin):$PATH
+  - npm install
 before_script:
   # Set up and start postgres, create database, write config files
   - ./scripts/travis/setup_database.sh
   - ./scripts/travis/configure_catmaid.sh
 script:
   - flake8 --config=.travis.flake8 --statistics --count --exit-zero -q -q django
-  - jshint --config=.travis.jshintrc --exclude-path=.travis.jshintignore django/applications
-  - $TRAVIS_BUILD_DIR/node_modules/.bin/jsdoc -r django/applications/catmaid/static/js
-  - cd django/applications/catmaid/static/css
-  - $TRAVIS_BUILD_DIR/node_modules/.bin/csslint .
+    # see "scripts" in package.json
+  - npm run lint
+  - npm run jsdoc
   - cd $TRAVIS_BUILD_DIR
   - cd django/projects
   - python manage.py migrate --noinput
@@ -58,6 +53,6 @@ script:
   - sleep 5
   - cd ../..
   # Run QUnit through karma in headless Chrome
-  - karma start karma.conf.js
+  - npm run karma
 after_success:
   - cd django/projects && coveralls

@@ -1092,8 +1092,7 @@ def prune_samplers(skeleton_id, graph, treenode_parent, treenode):
             ends_to_remove = filter(lambda nid: nid in new_sk_domain_nodes, domain_end_ids)
 
             if ends_to_remove:
-                domain_end_ids = list(map(lambda x: domain_end_map[x], ends_to_remove)) # type: ignore
-                                                                                        # FIXME - set vs list
+                domain_end_ids = set(map(lambda x: domain_end_map[x], ends_to_remove)) # type: ignore
                 SamplerDomainEnd.objects.filter(domain_id__in=domain_end_ids).delete()
 
             if treenode_parent.parent_id is not None and \

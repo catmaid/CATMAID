@@ -133,7 +133,7 @@ var project;
       }
     });
 
-    this.showContextHelp = Client.Settings.session.context_help_visibility;
+    this.showContextHelp = false;
     // Indicates if help visibility is defined through URL.
     this.contextHelpVisibilityEnforced = false;
 

@@ -569,7 +569,6 @@ var project;
       });
     }
     self.updateContextHelp();
-    self.setContextHelpVisibility(CATMAID.Client.Settings.session.context_help_visibility);
 
     window.onresize();
 

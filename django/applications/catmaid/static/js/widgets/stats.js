@@ -589,6 +589,11 @@
             CATMAID.warn("Could not find target element");
             return;
           }
+          // Clear target container
+          while (target.lastChild) {
+            target.removeChild(target.lastChild);
+          }
+          // Add top ten
           let NNS = CATMAID.NeuronNameService.getInstance();
           let ul = target.appendChild(document.createElement('ul'));
           for (let i=0; i<result.length; ++i) {

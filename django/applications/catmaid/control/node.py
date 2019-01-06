@@ -347,9 +347,23 @@ class GridCachedNodeProvider(CachedNodeProvider):
         # (index 0) will be read. An LOD of 4 means, the first four entries will
         # be read. What this means exactly in terms of nodes is defined by the
         # grid cache itself in terms of its bucket size and bucket count (levels).
-        lod_min = 1
+        lod_type = params.get('lod_type', 'percent')
         lod = params.get('lod', 'max')
-        lod_max = lod_levels if lod == 'max' or lod in (0, '0') else min(int(lod), lod_levels)
+
+        lod_min = 1
+        if lod_type == 'percent':
+            if lod == 'max':
+                lod = 1.0
+            else:
+                lod = max(0.0, min(1.0, float(lod)))
+            lod_max = max(1.0, int(lod * lod_levels))
+        elif lod_type == 'absolute':
+            if lod == 'max' or lod in (0, '0'):
+                lod_max = lod_levels
+            else:
+                lod_max = min(int(lod), lod_levels)
+        else:
+            raise ValueError("Unknown LOD type: {}".format(lod_type))
 
         # Do the actual grid cell lookup in a separate query, to only use
         # constant values in the index checks. The Z index condition is slightly
@@ -383,6 +397,7 @@ class GridCachedNodeProvider(CachedNodeProvider):
             'lod_max': lod_max,
         })
         rows = cursor.fetchall()
+
 
         if rows and rows[0]:
             # It is the first LOD of the LOD set of the first result cell.
@@ -2078,6 +2093,7 @@ def node_list_tuples(request, project_id=None, provider=None):
                 orientation = 'xz'
     params['orientation'] = orientation
     params['lod'] = data.get('lod', 'max')
+    params['lod_type'] = data.get('lod_type', 'absolute')
 
     if override_provider:
         node_providers = get_configured_node_providers([override_provider])

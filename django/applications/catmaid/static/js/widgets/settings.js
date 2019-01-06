@@ -1111,6 +1111,48 @@
           'read_only_mirror_index',
           SETTINGS_SCOPE));
 
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Adaptive LOD",
+              CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].adaptive_lod,
+              "If level of detail (LOD) information is available for a request, " +
+              "adaptive LOD will choose the LOD value based on the current zoom level.",
+              function() {
+                CATMAID.TracingOverlay.Settings
+                    .set(
+                      'adaptive_lod',
+                      this.checked,
+                      SETTINGS_SCOPE);
+              }),
+          CATMAID.TracingOverlay.Settings,
+          'adaptive_lod',
+          SETTINGS_SCOPE));
+
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createInputSetting(
+              "Adaptive LOD zoom range",
+              CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].adaptive_lod_scale_range.join(', '),
+              "Define two numbers A and B, separated by a comma. This settings defines " +
+              "a range of zoom level percentages to which available level of detail (LOD) " +
+              "information is mapped.",
+              function() {
+                let newValues = this.value.split(',')
+                    .map(s => s.trim()).filter(s => s.length > 0).map(Number);
+
+                if (newValues.length != 2) {
+                  CATMAID.warn("Invalid LOD range");
+                  return;
+                }
+                CATMAID.TracingOverlay.Settings
+                    .set(
+                      'adaptive_lod_scale_range',
+                      newValues,
+                      SETTINGS_SCOPE);
+              }),
+          CATMAID.TracingOverlay.Settings,
+          'adaptive_lod_scale_range',
+          SETTINGS_SCOPE));
+
 
       var dsNodeColors = CATMAID.DOM.addSettingsContainer(ds, "Skeleton colors", true);
       dsNodeColors.append(CATMAID.DOM.createCheckboxSetting(

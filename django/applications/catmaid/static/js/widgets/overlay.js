@@ -89,7 +89,7 @@ var SkeletonAnnotations = {};
           },
           fast_split_mode: {
             default: {universal: 'none'}
-          }
+          },
         },
         migrations: {}
       });
@@ -754,7 +754,8 @@ var SkeletonAnnotations = {};
     this.applyTracingWindow = CATMAID.TracingOverlay.Settings.session.apply_tracing_window;
     /** Wheter updates can be suspended during a planar panning operation */
     this.updateWhilePanning = CATMAID.TracingOverlay.Settings.session.update_while_panning;
-    /** The level of detail (highter = more detail, "max" everything). */
+    /** The level of detail (highter = more detail, "max" or 0 = everything).
+     * This is only supported if a cache based node provider is used. */
     this.levelOfDetail = 'max';
     /** A cached copy of the a map from IDs to relation names, set on firt load. **/
     this.relationMap = null;
@@ -1134,6 +1135,24 @@ var SkeletonAnnotations = {};
                 stop: 5000000
               }]
             },
+            adaptive_lod: {
+              default: true,
+            },
+            adaptive_lod_scale_range: {
+              // A list of two elements defining a range in zoom level space which
+              // is mapped to the min and max LOD level, if available, by the
+              // back-end. Both represent percentages on the zoom level scale in
+              // the range [0,1]. A value of 0 means zoom level 0 (i.e. original
+              // size) and a value of 1 means the "max" zoom level, whatever it
+              // may be for the current stack. A value of 0.3 means a third from
+              // the available zoom range. The default value of [0, 1] maps
+              // the whole zoom range to the whole LOD range. The mapping is
+              // inverted for the look-up, i.e. the lower percentage (first
+              // value) is mapped to the maximum LOD (everything visible) and
+              // larger percentage (second value) is mapped to the lowest
+              // possible LOD (1).
+              default: [0, 1.0],
+            }
           },
           migrations: {
             0: function (settings) {
@@ -3532,6 +3551,29 @@ var SkeletonAnnotations = {};
   };
 
   /**
+   * Obtain the effective level of detail value.
+   */
+  CATMAID.TracingOverlay.prototype.getEffectiveLOD = function() {
+    let adaptiveLevelOfDetail = CATMAID.TracingOverlay.Settings.session.adaptive_lod;
+    if (!adaptiveLevelOfDetail) {
+      return this.levelOfDetail;
+    }
+    let zoomRange = CATMAID.TracingOverlay.Settings.session.adaptive_lod_scale_range;
+
+    // Determine percentage of current zoom level within zoom level bounds.
+    let zoomPercent = this.stackViewer.s / this.stackViewer.primaryStack.MAX_S;
+
+    // Clamp zoom percentage to zoom range and and get ratio of the clamped zoom
+    // percentage value relative to the zoom range.
+    zoomPercent = Math.max(zoomRange[0], Math.min(zoomRange[1], zoomPercent));
+
+    // Get the inverse percentage, because we want to express a percentage where
+    // 0% means lowest LOD and 100% is the highest LOD. If we are zoomed out
+    // further, the LOD will be smaller.
+    return 1.0 -  (zoomPercent - zoomRange[0]) / (zoomRange[1] - zoomRange[0]);
+  };
+
+  /**
    * If there is an active node and the current location is above an existing node
    * of another skeleton, both skeletons are joined at those nodes (if permissions
    * allow) if link is true. If link is not true, the other node will be selected.
@@ -3747,6 +3789,12 @@ var SkeletonAnnotations = {};
           wy1 = stackViewer.primaryStack.stackToProjectY(z1, y1, x1),
           wz1 = stackViewer.primaryStack.stackToProjectZ(z1, y1, x1);
 
+
+      // Get level of detail information, which some back-end node providers
+      // (namely caching ones) can use to return only a subset of the data.
+      let adaptiveLevelOfDetail = CATMAID.TracingOverlay.Settings.session.adaptive_lod;
+      let effectiveLOD = self.getEffectiveLOD();
+
       // As long as stack space Z coordinates are always clamped to the last
       // section (i.e. if floor() is used instead of round() when transforming),
       // there is no need to compensate for rounding mismatches of stack view's
@@ -3763,7 +3811,8 @@ var SkeletonAnnotations = {};
         z2: wz1,
         labels: self.getLabelStatus(),
         with_relation_map: self.relationMap ? 'none' : 'all',
-        lod: self.levelOfDetail,
+        lod: effectiveLOD,
+        lod_type: adaptiveLevelOfDetail ? 'percent' : 'absolute',
       };
 
       // Extra treenode IDs and connector Ids are only fetched through the primary

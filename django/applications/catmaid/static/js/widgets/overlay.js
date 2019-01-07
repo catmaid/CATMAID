@@ -1135,8 +1135,8 @@ var SkeletonAnnotations = {};
                 stop: 5000000
               }]
             },
-            adaptive_lod: {
-              default: true,
+            lod_mode: {
+              default: "adaptive",
             },
             adaptive_lod_scale_range: {
               // A list of two elements defining a range in zoom level space which
@@ -1152,6 +1152,11 @@ var SkeletonAnnotations = {};
               // larger percentage (second value) is mapped to the lowest
               // possible LOD (1).
               default: [0, 1.0],
+            },
+            lod_mapping: {
+              // Map zoom levels to LOD percentages, interpolate percentages
+              // inbetween.
+              default: [[0,1], [1,0]],
             }
           },
           migrations: {
@@ -3554,23 +3559,57 @@ var SkeletonAnnotations = {};
    * Obtain the effective level of detail value.
    */
   CATMAID.TracingOverlay.prototype.getEffectiveLOD = function() {
-    let adaptiveLevelOfDetail = CATMAID.TracingOverlay.Settings.session.adaptive_lod;
-    if (!adaptiveLevelOfDetail) {
+    let lodMode = CATMAID.TracingOverlay.Settings.session.lod_mode;
+    if (lodMode === 'absolute') {
       return this.levelOfDetail;
+    } else if (lodMode === 'adaptive') {
+      let zoomRange = CATMAID.TracingOverlay.Settings.session.adaptive_lod_scale_range;
+
+      // Determine percentage of current zoom level within zoom level bounds.
+      let zoomPercent = this.stackViewer.s / this.stackViewer.primaryStack.MAX_S;
+
+      // Clamp zoom percentage to zoom range and and get ratio of the clamped zoom
+      // percentage value relative to the zoom range.
+      zoomPercent = Math.max(zoomRange[0], Math.min(zoomRange[1], zoomPercent));
+
+      // Get the inverse percentage, because we want to express a percentage where
+      // 0% means lowest LOD and 100% is the highest LOD. If we are zoomed out
+      // further, the LOD will be smaller.
+      return 1.0 -  (zoomPercent - zoomRange[0]) / (zoomRange[1] - zoomRange[0]);
+    } else if (lodMode === 'mapping') {
+      let mapping = CATMAID.TracingOverlay.Settings.session.lod_mapping;
+      if (!mapping || mapping.length === 0) {
+        return 1;
+      }
+      // Find first closest zoom levels to the current one.
+      let zoom = this.stackViewer.s;
+      let smallerEntry, exactEntry, largerEntry;
+      for (let i=0; i<mapping.length; ++i) {
+        if (mapping[i][0] === zoom) {
+          exactEntry = mapping[i];
+        } else if (mapping[i][0] < zoom) {
+          smallerEntry = smallerEntry === undefined ? mapping[i] :
+              (mapping[i][0] < smallerEntry[0] ? smallerEntry : mapping[i]);
+        } else if (mapping[i][0] > zoom) {
+          largerEntry = largerEntry === undefined ? mapping[i] :
+              (mapping[i][0] > largerEntry[0] ? largerEntry : mapping[i]);
+        }
+      }
+      if (exactEntry !== undefined) {
+        return exactEntry[1];
+      }
+      if (smallerEntry && largerEntry) {
+        return (smallerEntry[1] + largerEntry[1]) / 2.0;
+      } else if (smallerEntry) {
+        return smallerEntry[1];
+      } else if (largerEntry) {
+        return largerEntry[1];
+      } else {
+        return 1.0;
+      }
+    } else {
+      throw new CATMAID.ValueError("Unknown LOD mode: " + lodMode);
     }
-    let zoomRange = CATMAID.TracingOverlay.Settings.session.adaptive_lod_scale_range;
-
-    // Determine percentage of current zoom level within zoom level bounds.
-    let zoomPercent = this.stackViewer.s / this.stackViewer.primaryStack.MAX_S;
-
-    // Clamp zoom percentage to zoom range and and get ratio of the clamped zoom
-    // percentage value relative to the zoom range.
-    zoomPercent = Math.max(zoomRange[0], Math.min(zoomRange[1], zoomPercent));
-
-    // Get the inverse percentage, because we want to express a percentage where
-    // 0% means lowest LOD and 100% is the highest LOD. If we are zoomed out
-    // further, the LOD will be smaller.
-    return 1.0 -  (zoomPercent - zoomRange[0]) / (zoomRange[1] - zoomRange[0]);
   };
 
   /**
@@ -3792,7 +3831,8 @@ var SkeletonAnnotations = {};
 
       // Get level of detail information, which some back-end node providers
       // (namely caching ones) can use to return only a subset of the data.
-      let adaptiveLevelOfDetail = CATMAID.TracingOverlay.Settings.session.adaptive_lod;
+      let lodMode = CATMAID.TracingOverlay.Settings.session.lod_mode;
+      let percentLOD = lodMode !== 'absolute';
       let effectiveLOD = self.getEffectiveLOD();
 
       // As long as stack space Z coordinates are always clamped to the last
@@ -3812,7 +3852,7 @@ var SkeletonAnnotations = {};
         labels: self.getLabelStatus(),
         with_relation_map: self.relationMap ? 'none' : 'all',
         lod: effectiveLOD,
-        lod_type: adaptiveLevelOfDetail ? 'percent' : 'absolute',
+        lod_type: percentLOD ? 'percent' : 'absolute',
       };
 
       // Extra treenode IDs and connector Ids are only fetched through the primary

@@ -174,7 +174,7 @@
           type: 'radio',
           name: name,
           id: val.id,
-          value: val.id
+          value: val.value !== undefined ? val.value : val.id
       }, helptext).prop('checked', val.checked).change(handler)));
     }, $('<div />'));
   };

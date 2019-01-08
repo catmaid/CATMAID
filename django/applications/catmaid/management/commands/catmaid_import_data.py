@@ -576,13 +576,14 @@ class FileImporter:
             connector_ids = []
             connectors = objects_to_save.get(Connector)
             if connectors:
-                connector_ids.extend(i.id for i in import_objects)
+                connector_ids.extend(i.object.id for i in connectors)
 
             # Find all skeleton classes both in imported data and existing data.
             skeleton_classes = set()
             classes = objects_to_save.get(Class)
             if classes:
-                for c in classes:
+                for deserialized_object in classes:
+                    c = deserialized_object.object
                     if c.class_name == 'skeleton':
                         skeleton_classes.add(c.id)
             cursor.execute("""

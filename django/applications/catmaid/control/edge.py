@@ -208,7 +208,7 @@ def rebuild_edges_selectively(skeleton_ids, connector_ids=[], log=None):
                     SELECT count(*)
                     FROM connector_geom cg
                     JOIN UNNEST(%(connector_ids)s::bigint[]) q(connector_id)
-                        ON q.connector_id = cg.connector_id
+                        ON q.connector_id = cg.id
                 """, {
                     'connector_ids': connector_ids,
                 })
@@ -320,6 +320,8 @@ def rebuild_edges_selectively(skeleton_ids, connector_ids=[], log=None):
                     WHERE q.connector_id = tc.connector_id
                         AND t.id = tc.treenode_id
                         AND c.id = tc.connector_id
+                    -- This value might exist already if it has been added through a connected skeleton
+                    ON CONFLICT DO NOTHING
                 ''', {
                     'connector_ids': connector_ids,
                 })
@@ -370,7 +372,7 @@ def rebuild_edges_selectively(skeleton_ids, connector_ids=[], log=None):
                     SELECT count(*)
                     FROM connector_geom cg
                     JOIN UNNEST(%(connector_ids)s::bigint[]) q(connector_id)
-                        ON q.connector_id = cg.connector_id
+                        ON q.connector_id = cg.id
                 """, {
                     'connector_ids': connector_ids,
                 })

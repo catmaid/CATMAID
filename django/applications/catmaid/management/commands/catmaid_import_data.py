@@ -234,23 +234,26 @@ class FileImporter:
                     # Get import object with the former ID referenced in
                     # this field.
                     current_ref = getattr(obj, fk_field)
-                    # Get updated model objects of the referenced type
-                    imported_objects_by_id = import_objects_by_type_and_id[fk_type]
-                    ref_obj = imported_objects_by_id.get(current_ref)
 
-                    if ref_obj:
-                        # Update foreign key reference to ID of newly saved
-                        # object. Only for treenodes this is expected to result
-                        # in not yet available data
-                        if object_type == Treenode and fk_type == Treenode:
-                            imported_parent_nodes.append((obj, current_ref))
-                        elif ref_obj.id is None:
-                            raise ValueError("The referenced {} object '{}' with import ID {} wasn't stored yet".format(
-                                    fk_type, str(ref_obj), current_ref))
-                        setattr(obj, fk_field, ref_obj.id)
-                        updated_fk_ids += 1
-                    else:
-                        unchanged_fk_ids += 1
+                    # Only attempt a mapping if the foreign key isn't NULL
+                    if current_ref:
+                        # Get updated model objects of the referenced type
+                        imported_objects_by_id = import_objects_by_type_and_id[fk_type]
+                        ref_obj = imported_objects_by_id.get(current_ref)
+
+                        if ref_obj:
+                            # Update foreign key reference to ID of newly saved
+                            # object. Only for treenodes this is expected to result
+                            # in not yet available data
+                            if object_type == Treenode and fk_type == Treenode:
+                                imported_parent_nodes.append((obj, current_ref))
+                            elif ref_obj.id is None:
+                                raise ValueError("The referenced {} object '{}' with import ID {} wasn't stored yet".format(
+                                        fk_type, str(ref_obj), current_ref))
+                            setattr(obj, fk_field, ref_obj.id)
+                            updated_fk_ids += 1
+                        else:
+                            unchanged_fk_ids += 1
 
                 # Save objects if they should either be imported or have change
                 # foreign key fields

@@ -160,7 +160,6 @@ class FileImporter:
                                 "user ID {}. No name information was ".format(obj_user_ref_id) +
                                 "available, please enter a new username.")
                         while True:
-                            logger.info('test')
                             new_username = input("New username: ").strip()
                             if not new_username:
                                 logger.info("Please enter a valid username")

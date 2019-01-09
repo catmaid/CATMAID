@@ -368,6 +368,13 @@ CATMAID
   the ``DATA_UPLOAD_MAX_MEMORY_SIZE`` setting, which is the maximum allowed
   request body size in bytes. It defaults to 10 MB (83886080).
 
+* Consider using node grid cache for large tracing data set, which can speed up
+  loading and supports level-of-detail as well as dynamic updates based on
+  database events. Automatic cache updates require ``SPATIAL_UPDATE_NOTIFICATIONS``
+  to be set to true in ``settings.py`` (default). If caching is not an option,
+  make sure to set ``SPATIAL_UPDATE_NOTIFICATIONS = False`` if you deal with
+  large skeletons (>50k nodes) to make operations like joins faster.
+
 Making CATMAID available through SSL
 ------------------------------------
 

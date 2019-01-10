@@ -13,6 +13,8 @@ Publications using CATMAID
 2018
 ~~~~
 
+* Luis A. Bezares-Calderón, Jürgen Berger, Sanja Jasek, Csaba Verasztó, Sara Mendes, Martin Gühmann, Rodrigo Almeda, Réza Shahidi, Gáspár Jékely. `Neural circuitry of a polycystin-mediated hydrodynamic startle response for predator avoidance <https://elifesciences.org/articles/36262>`_, eLife, 2018.
+
 * Johannes Felsenberg, Pedro F. Jacob, Thomas Walker, Oliver Barnstedt, Amelia J. Edmondson-Stait, Markus W. Pleijzier, Nils Otto, Philipp Schlegel, Nadiya Sharifi, Emmanuel Perisse, Carlas S. Smith, J. Scott Lauritzen, Marta Costa, Gregory S.X.E. Jefferis, Davi D. Bock, Scott Waddell `Integration of Parallel Opposing Memories Underlies Memory Extinction <https://www.cell.com/cell/fulltext/S0092-8674(18)31037-7>`_, Cell, 2018
 
 * Michael-John Dolan, Ghislain Belliart-Guérin, Alexander Shakeel Bates, Shahar Frechter, Aurélie Lampin-Saint-Amaux, Yoshinori Aso, Ruairí J.V. Roberts, Philipp Schlegel, Allan Wong, Adnan Hammad, Davi Bock, Gerald M. Rubin, Thomas Preat, Pierre-Yves Plaçais, Gregory S.X.E. Jefferis `Communication from Learned to Innate Olfactory Processing Centers Is Required for Memory Retrieval in Drosophila <https://www.cell.com/neuron/fulltext/S0896-6273(18)30742-6>`_, Neuron, 2018

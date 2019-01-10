@@ -12,6 +12,7 @@ Administrator Documentation
    permissions
    celery
    websockets
+   tracing-caches
    history_tables
    docker
    userprofiles

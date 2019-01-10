@@ -2107,7 +2107,7 @@ def node_list_tuples(request, project_id=None, provider=None):
 
 def _node_list_tuples_query(params, project_id, node_provider,
         explicit_treenode_ids=tuple(), explicit_connector_ids=tuple(),
-        include_labels=False, with_relation_map=True):
+        include_labels=False, with_relation_map='used'):
     """The returned JSON data is sensitive to indices in the array, so care
     must be taken never to alter the order of the variables in the SQL
     statements without modifying the accesses to said data both in this

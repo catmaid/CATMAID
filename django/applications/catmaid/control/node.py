@@ -2,9 +2,12 @@
 
 import copy
 import json
+import math
 import msgpack
 import ujson
 import psycopg2.extras
+import progressbar
+import struct
 
 from collections import defaultdict
 from abc import ABCMeta
@@ -101,8 +104,16 @@ def get_extra_nodes(params, project_id, explicit_treenode_ids,
         explicit_treenode_ids, explicit_connector_ids, include_labels,
         with_relation_map)
 
-class CachedJsonNodeNodeProvder(BasicNodeProvider):
-    """Retrieve cached msgpack data from the node_query_cache table.
+class CachedNodeProvider(BasicNodeProvider):
+    """A node provider that is based on cached data.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cache_id = kwargs.get('cache_id')
+
+class CachedJsonNodeNodeProvder(CachedNodeProvider):
+    """Retrieve cached JSON data from the node_query_cache table.
     """
 
     def get_tuples(self, params, project_id, explicit_treenode_ids,
@@ -140,8 +151,8 @@ class CachedJsonNodeNodeProvder(BasicNodeProvider):
             return None, None
 
 
-class CachedJsonTextNodeProvder(BasicNodeProvider):
-    """Retrieve cached msgpack data from the node_query_cache table.
+class CachedJsonTextNodeProvder(CachedNodeProvider):
+    """Retrieve cached JSON text data from the node_query_cache table.
     """
 
     def get_tuples(self, params, project_id, explicit_treenode_ids,
@@ -180,7 +191,7 @@ class CachedJsonTextNodeProvder(BasicNodeProvider):
             return None, None
 
 
-class CachedMsgpackNodeProvder(BasicNodeProvider):
+class CachedMsgpackNodeProvder(CachedNodeProvider):
     """Retrieve cached msgpack data from the node_query_cache table.
     """
 
@@ -221,6 +232,222 @@ class CachedMsgpackNodeProvder(BasicNodeProvider):
         else:
             return None, None
 
+
+def get_pack_array_header(n):
+    """Return binary header for msgpack conform array header. This is is size
+    dependent. See:
+    https://github.com/msgpack/msgpack-python/blob/8b6ce53cce40e528af7cce89f358f7dde1a09289/msgpack/fallback.py#L907
+    """
+    if n <= 0x0f:
+        return struct.pack('B', 0x90 + n)
+    if n <= 0xffff:
+        return struct.pack(">BH", 0xdc, n)
+    if n <= 0xffffffff:
+        return struct.pack(">BI", 0xdd, n)
+    raise ValueError("Array is too large")
+
+
+class GridCachedNodeProvider(CachedNodeProvider):
+    """Find nodes in node grid caches.
+    """
+
+    data_type = 'json'
+
+    def update_tuples(self, target, decoded_extra_tuples, encoded_extra_tuples=None):
+        if self.data_type == 'json':
+            if len(target) == 5:
+                target.append([])
+            extra_tuples = target[5]
+            extra_tuples.extend(encoded_extra_tuples)
+            extra_tuples.extend(decoded_extra_tuples)
+            return target
+        elif self.data_type == 'json_text':
+            target_json = json.dumps(decoded_extra_tuples)
+            if encoded_extra_tuples:
+                for eet in encoded_extra_tuples:
+                    if eet:
+                        if eet[-1] == ']':
+                            target_json = '[' + eet + ', ' + target_json[1:]
+                        else:
+                            raise ValueError("Unexpected encoded JSON text tuple format")
+            if target[-2] == '}':
+                # If cached response doesn't contain any extra nodes, add a
+                # new field
+                return target[0:-1] + ', ' + target_json + ']'
+            elif tuples[-2] == ']':
+                return target[0:-2] + ', ' + target_json[1:] + ']'
+            else:
+                raise ValueError("Unexpected cached JSON text tuple format")
+        elif self.data_type == 'msgpack':
+            total_extra_tuples = len(decoded_extra_tuples)
+            if encoded_extra_tuples:
+                total_extra_tuples += len(encoded_extra_tuples)
+            # To inject msgpack data, we first check the binary data
+            # representing the list length. In the eaiest case, we have five
+            # elements (\x95) and we can just append the data and change the
+            # list length.
+            if target[0] == b'\x95':
+                # Construct a new msgpack array manually to not create
+                # unnecessary copies.
+                extra_msgpack = b''
+                if encoded_extra_tuples:
+                    extra_msgpack = b''.join(t for t in encoded_extra_tuples if t)
+                    total_extra_tuples -= sum(1 for t in encoded_extra_tuples if not t)
+                else:
+                    extra_msgpack = b''
+
+                for det in decoded_extra_tuples:
+                    extra_msgpack += msgpack.packb(det)
+                bin_len = get_pack_array_header(total_extra_tuples)
+
+                # Extend the five-element list with extra tuples by making it a
+                # six element list and just appending the extra list
+                return bytes(b'\x96' + target[1:] + bin_len + extra_msgpack)
+            else:
+                raise ValueError("Unexpected cached Msgpack tuple format")
+        else:
+            raise ValueError("Unexpected cached JSON tuple format")
+
+    def get_tuples(self, params, project_id, explicit_treenode_ids,
+            explicit_connector_ids, include_labels, with_relation_map):
+        # Find a fitting grid index, return empty result if there is none.
+        cursor = connection.cursor()
+        params['volume'] = (params['right'] - params['left']) * \
+                (params['bottom'] - params['top']) * (params['z2'] - params['z1'])
+
+        # For JSONB type cache, use ujson to decode, this is roughly 2x faster
+        psycopg2.extras.register_default_jsonb(loads=ujson.loads)
+        # Find grid that has a cell configuration closest to what we are looking for.
+        cursor.execute("""
+            SELECT id, cell_width, cell_height, cell_depth, n_lod_levels
+            FROM node_grid_cache g
+            WHERE project_id = %(project_id)s
+            ORDER BY @((g.cell_width::double precision * g.cell_height::double precision * g.cell_depth::double precision) - %(volume)s::double precision) ASC
+            LIMIT 1;
+        """, params)
+
+        grid_data = cursor.fetchone()
+        if not grid_data:
+            return None, None
+
+        grid_id, cell_width, cell_height, cell_depth, lod_levels = grid_data[0], \
+                grid_data[1], grid_data[2], grid_data[3], grid_data[4]
+
+        min_w_i = int(params['left'] // cell_width)
+        min_h_i = int(params['top'] // cell_height)
+        min_d_i = int(params['z1'] // cell_depth)
+
+        max_w_i = int(params['right'] // cell_width)
+        max_h_i = int(params['bottom'] // cell_height)
+        max_d_i = int(params['z2'] // cell_depth)
+
+        # Get the LOD this query wants to work with. It defines the index in the
+        # data array up to which entries will be read for the data returned to
+        # the caller. For instance, an LOD of 1 means, only the first entry
+        # (index 0) will be read. An LOD of 4 means, the first four entries will
+        # be read. What this means exactly in terms of nodes is defined by the
+        # grid cache itself in terms of its bucket size and bucket count (levels).
+        lod_type = params.get('lod_type', 'percent')
+        lod = params.get('lod', 'max')
+
+        lod_min = 1
+        if lod_type == 'percent':
+            if lod == 'max':
+                lod = 1.0
+            else:
+                lod = max(0.0, min(1.0, float(lod)))
+            lod_max = max(1.0, int(lod * lod_levels))
+        elif lod_type == 'absolute':
+            if lod == 'max' or lod in (0, '0'):
+                lod_max = lod_levels
+            else:
+                lod_max = min(int(lod), lod_levels)
+        else:
+            raise ValueError("Unknown LOD type: {}".format(lod_type))
+
+        # Do the actual grid cell lookup in a separate query, to only use
+        # constant values in the index checks. The Z index condition is slightly
+        # special, because the parameter is exclusive
+        cursor.execute("""
+            SELECT {data_type_column}[%(lod_min)s:%(lod_max)s]
+            FROM node_grid_cache_cell c
+            LEFT JOIN dirty_node_grid_cache_cell dc
+                -- Alternative: use ON dc.id = c.id and have update function
+                -- create ID entries in the dirty table.
+                ON dc.grid_id = c.grid_id
+                AND dc.x_index = c.x_index
+                AND dc.y_index = c.y_index
+                AND dc.z_index = c.z_index
+            WHERE c.grid_id = %(grid_id)s
+                AND c.x_index >= %(min_x_index)s AND c.x_index <= %(max_x_index)s
+                AND c.y_index >= %(min_y_index)s AND c.y_index <= %(max_y_index)s
+                AND c.z_index >= %(min_z_index)s AND c.z_index < %(max_z_index)s
+                AND {data_type_column} IS NOT NULL
+        """.format(**{
+            'data_type_column': self.data_type + '_data',
+        }), {
+            'grid_id': grid_id,
+            'min_x_index': min_w_i,
+            'min_y_index': min_h_i,
+            'min_z_index': min_d_i,
+            'max_x_index': max_w_i,
+            'max_y_index': max_h_i,
+            'max_z_index': max_d_i,
+            'lod_min': lod_min,
+            'lod_max': lod_max,
+        })
+        rows = cursor.fetchall()
+
+
+        if rows and rows[0]:
+            # It is the first LOD of the LOD set of the first result cell.
+            first_cell_lods = rows[0][0]
+            tuples = first_cell_lods[0]
+
+            # All extra LODs that are included are transmitted as extra tuples.
+            extra_lod_cells = first_cell_lods[1:]
+            encoded_extra_tuples = [r for r in extra_lod_cells if r]
+
+            # Add all result LODs of each returned grid cell to extra tuples
+            for extra_row in rows[1:]:
+                encoded_extra_tuples.extend(r for r in extra_row[0])
+
+            # If there are exta nodes required, query them explicitely using a
+            # regular Postgis 2D query. Inject the result into cached data.
+            decoded_extra_tuples = None
+            if explicit_treenode_ids or explicit_connector_ids:
+                decoded_extra_tuples, extra_type = get_extra_nodes(params, project_id,
+                    explicit_treenode_ids, explicit_connector_ids, include_labels,
+                    with_relation_map)
+                if extra_type != 'json':
+                    raise ValueError("Unexpected type")
+
+            tuples = self.update_tuples(tuples,
+                    [decoded_extra_tuples] if decoded_extra_tuples else [],
+                    encoded_extra_tuples)
+
+            return tuples, self.data_type
+        else:
+            return None, None
+
+
+class GridCachedJsonNodeProvider(GridCachedNodeProvider):
+    data_type = 'json'
+
+
+class GridCachedJsonTextNodeProvider(GridCachedNodeProvider):
+    data_type = 'json_text'
+
+
+class GridCachedMsgpackNodeProvider(GridCachedNodeProvider):
+    data_type = 'msgpack'
+
+    def get_tuples(self, *args, **kwargs):
+        tuples, dt = super().get_tuples(*args, **kwargs)
+        if tuples:
+            return bytes(tuples), dt
+        else:
+            return tuples, dt
 
 class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
 
@@ -1065,6 +1292,9 @@ AVAILABLE_NODE_PROVIDERS = {
     'cached_json_text': CachedJsonTextNodeProvder,
     'cached_msgpack': CachedMsgpackNodeProvder,
     'extra_nodes_only': ExtraNodesOnlyNodeProvider,
+    'cached_json_grid': GridCachedJsonNodeProvider,
+    'cached_json_text_grid': GridCachedJsonTextNodeProvider,
+    'cached_msgpack_grid': GridCachedMsgpackNodeProvider,
 }
 
 
@@ -1076,7 +1306,8 @@ CACHE_NODE_PROVIDER_DATA_TYPES = {
 }
 
 
-def get_configured_node_providers(provider_entries, connection=None):
+def get_configured_node_providers(provider_entries, connection=None,
+        enabled_only=False):
     node_providers = []
     for entry in provider_entries:
         options = {}
@@ -1090,8 +1321,10 @@ def get_configured_node_providers(provider_entries, connection=None):
             key = entry
 
         Provider = AVAILABLE_NODE_PROVIDERS.get(key)
+        include = options.get('enabled', True) or not enabled_only
         if Provider:
-            node_providers.append(Provider(connection, **options))
+            if include:
+                node_providers.append(Provider(connection, **options))
         else:
             raise ValueError('Unknown node provider: ' + key)
 
@@ -1122,6 +1355,9 @@ def update_node_query_cache(node_providers=None, log=print, force=False):
         n_largest_skeletons_limit = options.get('n_largest_skeletons_limit', None)
         n_last_edited_skeletons_limit = options.get('n_last_edited_skeletons_limit', None)
         hidden_last_editor_id = options.get('hidden_last_editor_id')
+        lod_levels = options.get('lod_levels')
+        lod_bucket_size = options.get('lod_bucket_size')
+        lod_strategy = options.get('lod_strategy')
 
         data_type = CACHE_NODE_PROVIDER_DATA_TYPES.get(key)
         if not data_type:
@@ -1144,15 +1380,39 @@ def update_node_query_cache(node_providers=None, log=print, force=False):
                     node_limit=node_limit,
                     n_largest_skeletons_limit=n_largest_skeletons_limit,
                     n_last_edited_skeletons_limit=n_last_edited_skeletons_limit,
-                    hidden_last_editor_id=hidden_last_editor_id,
+                    hidden_last_editor_id=hidden_last_editor_id, lod_levels=lod_levels,
+                    lod_bucket_size=lod_bucket_size, lod_strategy=lod_strategy,
                     delete=clean_cache, log=log)
 
 
-def get_tracing_bounding_box(project_id, cursor=None):
+def get_tracing_bounding_box(project_id, cursor=None, bb_limits=None):
     """Return the tracing data bounding box.
     """
     if not cursor:
         cursor = connection.cursor()
+
+    params = {
+        'project_id': project_id,
+    }
+
+    extra_filter = ''
+    if bb_limits:
+        extra_filter = '''
+            AND ST_XMin(edge) >= %(min_x)s
+            AND ST_YMin(edge) >= %(min_y)s
+            AND ST_ZMin(edge) >= %(min_z)s
+            AND ST_XMax(edge) <= %(max_x)s
+            AND ST_YMax(edge) <= %(max_y)s
+            AND ST_ZMax(edge) <= %(max_z)s
+        '''
+        params.update({
+            'min_x': bb_limits[0][0],
+            'min_y': bb_limits[0][1],
+            'min_z': bb_limits[0][2],
+            'max_x': bb_limits[1][0],
+            'max_y': bb_limits[1][1],
+            'max_z': bb_limits[1][2],
+        })
 
     cursor.execute("""
         SELECT ARRAY[ST_XMin(bb.box), ST_YMin(bb.box), ST_ZMin(bb.box)],
@@ -1160,10 +1420,11 @@ def get_tracing_bounding_box(project_id, cursor=None):
         FROM (
             SELECT ST_3DExtent(edge) box FROM treenode_edge
             WHERE project_id = %(project_id)s
+            {extra_filter}
         ) bb;
-    """, {
-        'project_id': project_id
-    })
+    """.format(**{
+        'extra_filter': extra_filter,
+    }), params)
 
     row = cursor.fetchone()
     if not row:
@@ -1171,9 +1432,77 @@ def get_tracing_bounding_box(project_id, cursor=None):
 
     return row
 
+
+def get_lod_buckets(result_tuple, lod_levels, lod_bucket_size, lod_strategy):
+    nodes = result_tuple[0]
+    connectors = result_tuple[1]
+    n_nodes_to_add = len(nodes)
+    n_connectors_to_add = len(connectors)
+
+    # Split data into LOD buckets, assume filtering and sorting has been
+    # done in the node provider.
+    result_buckets = [[]] * lod_levels
+    half_bucket_size = int(lod_bucket_size / 2)
+    connector_slice_end = 0
+    node_slice_end = 0
+    n_total_imported_nodes = 0
+    for lod_level in range(0, lod_levels):
+        node_slice_start = node_slice_end
+        connector_slice_start = connector_slice_end
+        if lod_level == lod_levels - 1:
+            # Last log level takes all remaining elements
+            node_slice_end = len(result_tuple[0])
+            connector_slice_end = len(result_tuple[1])
+        elif lod_strategy == 'linear':
+            offset = half_bucket_size
+        elif lod_strategy == 'quadratic':
+            offset = int(half_bucket_size * (lod_level + 1) ** 2)
+        elif lod_strategy == 'exponential':
+            offset = int(half_bucket_size * 2 ** lod_level)
+        else:
+            raise ValueError("Unknown LOD strategy: {}".format(lod_strategy))
+
+        node_slice_end = min(n_nodes_to_add, node_slice_end + offset)
+        connector_slice_end =  min(n_connectors_to_add, connector_slice_start + offset)
+
+        # Try to reuse unused connector half for nodes and vice versa
+        availble_nodes = offset - (node_slice_end - node_slice_start)
+        availble_connector_nodes = offset - (connector_slice_end - connector_slice_start)
+        if availble_connector_nodes:
+            if node_slice_end < n_nodes_to_add:
+                node_slice_end = min(node_slice_end, node_slice_end + availble_connector_nodes)
+        if availble_nodes:
+            if connector_slice_end < n_connectors_to_add:
+                connector_slice_end = min(connector_slice_end, connector_slice_end + availble_nodes)
+
+        n_imported_entries = (node_slice_end - node_slice_start) + \
+                (connector_slice_end - connector_slice_start)
+        n_total_imported_nodes += n_imported_entries
+        if n_imported_entries:
+            # Format: [[treenodes], [connectors], {labels}, node_limit_reached,
+            # {relation_map}, {exstraNodes}]
+            result_buckets[lod_level] = [
+                result_tuple[0][node_slice_start:node_slice_end],
+                result_tuple[1][connector_slice_start:connector_slice_end],
+                {}, False, {},
+            ]
+
+    # Provide data other than treenodes and connectors in first bucket. In case
+    # there was no data in the first place, assign the original result to the
+    # first bucket.
+    if result_buckets[0]:
+        for col in range(2, len(result_tuple)):
+            result_buckets[0][col] = result_tuple[col]
+    else:
+        result_buckets[0] = result_tuple
+
+    return result_buckets
+
+
 def update_cache(project_id, data_type, orientations, steps, node_limit=None,
         n_largest_skeletons_limit=None, n_last_edited_skeletons_limit=None,
-        hidden_last_editor_id=None, delete=False, bb_limits=None, log=print):
+        hidden_last_editor_id=None, lod_levels=1, lod_bucket_size=500,
+        lod_strategy='quadratic', delete=False, bb_limits=None, log=print):
     if data_type not in ('json', 'json_text', 'msgpack'):
         raise ValueError('Type must be one of: json, json_text, msgpack')
     if len(steps) != len(orientations):
@@ -1235,12 +1564,15 @@ def update_cache(project_id, data_type, orientations, steps, node_limit=None,
     if n_last_edited_skeletons_limit:
         params['n_last_edited_skeletons_limit'] = int(n_last_edited_skeletons_limit)
         log((' -> Allowing {} most recently edited skeletons in the '
-                'field of view in eeach section'). format(n_last_edited_skeletons_limit))
+                'field of view in each section'). format(n_last_edited_skeletons_limit))
 
     if hidden_last_editor_id:
         param['hidden_last_editor_id'] = int(hidden_last_editor_id)
         log((' -> Only nodes not edited last by user {} will be allowed'.format(
                 hidden_last_editor_id)))
+
+    log(' -> Level-of-detail steps: {}, bucket size: {}, strategy: {}'.format(
+            lod_levels, lod_bucket_size, lod_strategy))
 
     min_z = bb[0][2]
     max_z = bb[1][2]
@@ -1250,7 +1582,8 @@ def update_cache(project_id, data_type, orientations, steps, node_limit=None,
     update_json_text_cache = 'json_text' in data_types
     update_msgpack_cache = 'msgpack' in data_types
 
-    provider = Postgis2dNodeProvider()
+    # TODO: Use matching settings node provider
+    provider = Postgis3dNodeProvider()
     types = ', '.join(data_types)
 
     for o, step in zip(orientations, steps):
@@ -1261,35 +1594,306 @@ def update_cache(project_id, data_type, orientations, steps, node_limit=None,
             params['z1'] = z
             params['z2'] = z + step
             result_tuple = _node_list_tuples_query(params, project_id, provider)
+            result_buckets = get_lod_buckets(result_tuple, lod_levels,
+                    lod_bucket_size, lod_strategy)
 
             if update_json_cache:
                 data = ujson.dumps(result_tuple)
                 cursor.execute("""
-                    INSERT INTO node_query_cache (project_id, orientation, depth, update_time, json_data)
-                    VALUES (%s, %s, %s, now(), %s)
+                    INSERT INTO node_query_cache (project_id, orientation, depth,
+                        update_time, n_lod_levels, lod_min_bucket_size, json_data)
+                    VALUES (%s, %s, %s, now(), %s, %s %s)
                     ON CONFLICT (project_id, orientation, depth)
                     DO UPDATE SET json_data = EXCLUDED.json_data, update_time = EXCLUDED.update_time;
-                """, (project_id, orientation_id, z, json.dumps(result_tuple)))
+                """, (project_id, orientation_id, z, lod_levels, lod_bucket_size,
+                        [None if not v else json.dumps(v) for v in result_buckets]))
 
             if update_json_text_cache:
                 data = ujson.dumps(result_tuple)
                 cursor.execute("""
-                    INSERT INTO node_query_cache (project_id, orientation, depth, update_time, json_text_data)
-                    VALUES (%s, %s, %s, now(), %s)
+                    INSERT INTO node_query_cache (project_id, orientation, depth,
+                        update_time, n_lod_levels, lod_min_bucket_size, json_text_data)
+                    VALUES (%s, %s, %s, now(), %s, %s, %s)
                     ON CONFLICT (project_id, orientation, depth)
                     DO UPDATE SET json_text_data = EXCLUDED.json_text_data, update_time = EXCLUDED.update_time;
-                """, (project_id, orientation_id, z, json.dumps(result_tuple)))
+                """, (project_id, orientation_id, z, lod_levels, lod_bucket_size,
+                        [None if not v else json.dumps(v) for v in result_buckets]))
 
             if update_msgpack_cache:
-                data = msgpack.packb(result_tuple)
                 cursor.execute("""
-                    INSERT INTO node_query_cache (project_id, orientation, depth, update_time, msgpack_data)
+                    INSERT INTO node_query_cache (project_id, orientation, depth,
+                        update_time, n_lod_levels, lod_bucket_size, msgpack_data)
                     VALUES (%s, %s, %s, now(), %s)
                     ON CONFLICT (project_id, orientation, depth)
                     DO UPDATE SET msgpack_data = EXCLUDED.msgpack_data, update_time = EXCLUDED.update_time;
-                """, (project_id, orientation_id, z, psycopg2.Binary(data)))
+                """, (project_id, orientation_id, z, lod_levels, lod_bucket_size,
+                        [None if not v else psycopg2.Binary(msgpack.packb(v)) for v in result_buckets]))
 
             z += step
+
+
+def update_grid_cache(project_id, data_type, orientations,
+        cell_width=settings.DEFAULT_CACHE_GRID_CELL_WIDTH,
+        cell_height=settings.DEFAULT_CACHE_GRID_CELL_HEIGHT,
+        cell_depth=settings.DEFAULT_CACHE_GRID_CELL_DEPTH,
+        node_limit=None, n_largest_skeletons_limit=None,
+        n_last_edited_skeletons_limit=None, hidden_last_editor_id=None,
+        delete=False, bb_limits=None, log=print, progress=True,
+        allow_empty=False, lod_levels=1, lod_bucket_size=500,
+        lod_strategy='quadratic'):
+    if data_type not in ('json', 'json_text', 'msgpack'):
+        raise ValueError('Type must be one of: json, json_text, msgpack')
+    if project_id is None:
+        raise ValueError('Need project ID')
+    if not cell_width:
+        raise ValueError('Need non-zero cell width information')
+    if not cell_height:
+        raise ValueError('Need non-zero cell height information')
+    if not cell_depth:
+        raise ValueError('Need non-zero cell depth information')
+
+    orientation_ids = list(map(lambda x: ORIENTATIONS[x], orientations))
+
+    cursor = connection.cursor()
+
+    log(' -> Finding tracing data bounding box')
+    row = get_tracing_bounding_box(project_id, cursor, bb_limits)
+    bb = [row[0], row[1]]
+    if None in bb[0] or None in bb[1]:
+        log(' -> Found no valid bounding box, skipping project: {}'.format(bb))
+        return
+    if bb_limits:
+        bb[0][0] = max(bb[0][0], bb_limits[0][0])
+        bb[0][1] = max(bb[0][1], bb_limits[0][1])
+        bb[0][2] = max(bb[0][2], bb_limits[0][2])
+        bb[1][0] = min(bb[1][0], bb_limits[1][0])
+        bb[1][1] = min(bb[1][1], bb_limits[1][1])
+        bb[1][2] = min(bb[1][2], bb_limits[1][2])
+        log(' -> Found bounding box within limits: {}'.format(bb))
+    else:
+        log(' -> Found bounding box: {}'.format(bb))
+
+    if delete:
+        for n, o in enumerate(orientations):
+            orientation_id = orientation_ids[n]
+            log(' -> Deleting existing grid cache entries in orientation {}'.format(project_id, o))
+            cursor.execute("""
+                DELETE FROM node_grid_cache
+                WHERE project_id = %(project_id)s
+                AND orientation = %(orientation)s
+                CASCADE
+            """, {
+                'project_id': project_id,
+                'orientation': orientation_id
+            })
+
+    params = {
+        'left':   bb[0][0],
+        'top':    bb[0][1],
+        'z1':     bb[0][2],
+        'right':  bb[1][0],
+        'bottom': bb[1][1],
+        'z2':     bb[1][2],
+        'project_id': project_id,
+        'limit':  node_limit
+    }
+
+    if n_largest_skeletons_limit:
+        params['n_largest_skeletons_limit'] = int(n_largest_skeletons_limit)
+        log((' -> Allowing {} largest skeletons in the field of view in '
+                'each section').format(n_largest_skeletons_limit))
+
+    if n_last_edited_skeletons_limit:
+        params['n_last_edited_skeletons_limit'] = int(n_last_edited_skeletons_limit)
+        log((' -> Allowing {} most recently edited skeletons in the '
+                'field of view in each section'). format(n_last_edited_skeletons_limit))
+
+    if hidden_last_editor_id:
+        param['hidden_last_editor_id'] = int(hidden_last_editor_id)
+        log((' -> Only nodes not edited last by user {} will be allowed'.format(
+                hidden_last_editor_id)))
+
+    data_types = [data_type]
+    update_json_cache = 'json' in data_types
+    update_json_text_cache = 'json_text' in data_types
+    update_msgpack_cache = 'msgpack' in data_types
+
+    provider = Postgis3dNodeProvider()
+    types = ', '.join(data_types)
+
+    for o in orientations:
+        orientation_id = ORIENTATIONS[o]
+        log(' -> Populating grid cache for orientation {} with block size {} (x, y, z) for types: {}'.format(
+                o, (cell_width, cell_height, cell_depth), types))
+
+        cursor.execute("""
+            SELECT id
+            FROM node_grid_cache
+            WHERE project_id = %(project_id)s
+                AND orientation = %(orientation)s
+                AND cell_width = %(cell_width)s
+                AND cell_height = %(cell_height)s
+                AND cell_depth = %(cell_depth)s
+            ORDER BY cell_width, cell_height, cell_depth DESC
+        """, {
+            'project_id': project_id,
+            'orientation': orientation_id,
+            'cell_width': cell_width,
+            'cell_height': cell_height,
+            'cell_depth': cell_depth,
+            'n_largest_sk_limit': n_largest_skeletons_limit or None,
+            'n_last_edit_limit': n_last_edited_skeletons_limit or None,
+            'hidden_last_editor_id': hidden_last_editor_id or None,
+        })
+        grid_ids = cursor.fetchall()
+        if grid_ids:
+            grid_id = grid_ids[0]
+        else:
+            cursor.execute("""
+                INSERT INTO node_grid_cache (project_id, orientation,
+                    cell_width, cell_height, cell_depth, n_largest_skeletons_limit,
+                    n_last_edited_skeletons_limit, hidden_last_editor_id,
+                    n_lod_levels, lod_min_bucket_size, lod_strategy, allow_empty,
+                    has_json_data, has_json_text_data, has_msgpack_data)
+                VALUES (%(project_id)s, %(orientation)s, %(cell_width)s,
+                    %(cell_height)s, %(cell_depth)s, %(n_largest_sk_limit)s,
+                    %(n_last_edit_limit)s, %(hidden_last_editor_id)s,
+                    %(n_lod_levels)s, %(lod_min_bucket_size)s, %(lod_strategy)s,
+                    %(allow_empty)s, %(has_json_data)s, %(has_json_text_data)s,
+                    %(has_msgpack_data)s)
+                RETURNING id;
+            """, {
+                'project_id': project_id,
+                'orientation': orientation_id,
+                'cell_width': cell_width,
+                'cell_height': cell_height,
+                'cell_depth': cell_depth,
+                'n_largest_sk_limit': n_largest_skeletons_limit or None,
+                'n_last_edit_limit': n_last_edited_skeletons_limit or None,
+                'hidden_last_editor_id': hidden_last_editor_id or None,
+                'n_lod_levels': lod_levels or None,
+                'lod_min_bucket_size': lod_bucket_size or None,
+                'lod_strategy': lod_strategy or None,
+                'allow_empty': allow_empty,
+                'has_json_data': update_json_cache,
+                'has_json_text_data': update_json_text_cache,
+                'has_msgpack_data': update_msgpack_cache,
+            })
+            grid_id = cursor.fetchone()[0]
+
+        # Only look at cells that cover the bounding box
+        min_w_i = int(params['left'] // cell_width)
+        min_h_i = int(params['top'] // cell_height)
+        min_d_i = int(params['z1'] // cell_depth)
+
+        max_w_i = int(params['right'] // cell_width)
+        max_h_i = int(params['bottom'] // cell_height)
+        max_d_i = int(params['z2'] // cell_depth)
+
+        n_cells_w = max_w_i - min_w_i + 1
+        n_cells_h = max_h_i - min_h_i + 1
+        n_cells_d = max_d_i - min_d_i + 1
+        n_cells = n_cells_w * n_cells_h * n_cells_d
+
+        log(' -> Grid dimension (cells per dimension X, Y and Z): {}, {}, {} Total cells: {}'.format(
+                n_cells_w, n_cells_h, n_cells_d, n_cells))
+
+        log(' -> Level-of-detail steps: {}, bucket size: {}, strategy: {}'.format(
+                lod_levels, lod_bucket_size, lod_strategy))
+
+        if progress:
+            bar = progressbar.ProgressBar(max_value=n_cells, redirect_stdout=True).start()
+
+        counter = 0
+        created = 0
+        for d_i in range(min_d_i, max_d_i + 1):
+            for h_i in range(min_h_i, max_h_i + 1):
+                for w_i in range(min_w_i, max_w_i + 1):
+                    if progress:
+                        counter += 1
+                        bar.update(counter)
+
+                    added = update_grid_cell(project_id, grid_id, w_i, h_i, d_i,
+                            cell_width, cell_height, cell_depth, provider,
+                            params, allow_empty, lod_levels, lod_bucket_size,
+                            lod_strategy, update_json_cache,
+                            update_json_text_cache, update_msgpack_cache, cursor)
+                    if added:
+                        created += 1
+        log(' -> Materialized {} grid cells'.format(created))
+        if progress:
+            bar.finish()
+
+
+def update_grid_cell(project_id, grid_id, w_i, h_i, d_i, cell_width,
+        cell_height, cell_depth, provider, params, allow_empty, lod_levels,
+        lod_bucket_size, lod_strategy, update_json_cache,
+        update_json_text_cache, update_msgpack_cache, cursor):
+    params['left'] = w_i * cell_width
+    params['right'] = (w_i + 1) * cell_width
+    params['top'] = h_i * cell_height
+    params['bottom'] = (h_i + 1) * cell_width
+    params['z1'] = d_i * cell_depth
+    params['z2'] = (d_i + 1) * cell_depth
+
+    result_tuple = _node_list_tuples_query(params, project_id, provider,
+            include_labels=True)
+
+    if not (allow_empty or result_tuple[0] or result_tuple[1]):
+        return False
+
+    result_buckets = get_lod_buckets(result_tuple, lod_levels,
+            lod_bucket_size, lod_strategy)
+
+    if update_json_cache:
+        cursor.execute("""
+            INSERT INTO node_grid_cache_cell (grid_id,
+                x_index, y_index, z_index, update_time, json_data)
+            VALUES (%(grid_id)s, %(x_index)s, %(y_index)s, %(z_index)s,
+                now(), %(data)s::jsonb[])
+            ON CONFLICT (grid_id, x_index, y_index, z_index)
+            DO UPDATE SET json_data = EXCLUDED.json_data, update_time = EXCLUDED.update_time;
+        """, {
+            'grid_id': grid_id,
+            'x_index': w_i,
+            'y_index': h_i,
+            'z_index': d_i,
+            'data': [None if not v else json.dumps(v) for v in result_buckets],
+        })
+
+    if update_json_text_cache:
+        cursor.execute("""
+            INSERT INTO node_grid_cache_cell (grid_id,
+                x_index, y_index, z_index, update_time, json_text_data)
+            VALUES (%(grid_id)s, %(x_index)s, %(y_index)s, %(z_index)s,
+                now(), %(data)s)
+            ON CONFLICT (grid_id, x_index, y_index, z_index)
+            DO UPDATE SET json_text_data = EXCLUDED.json_text_data, update_time = EXCLUDED.update_time;
+        """, {
+            'grid_id': grid_id,
+            'x_index': w_i,
+            'y_index': h_i,
+            'z_index': d_i,
+            'data': [None if not v else json.dumps(v) for v in result_buckets],
+        })
+
+    if update_msgpack_cache:
+        cursor.execute("""
+            INSERT INTO node_grid_cache_cell (grid_id,
+                x_index, y_index, z_index, update_time, msgpack_data)
+            VALUES (%(grid_id)s, %(x_index)s, %(y_index)s, %(z_index)s,
+                now(), %(data)s)
+            ON CONFLICT (grid_id, x_index, y_index, z_index)
+            DO UPDATE SET msgpack_data = EXCLUDED.msgpack_data, update_time = EXCLUDED.update_time;
+        """, {
+            'grid_id': grid_id,
+            'x_index': w_i,
+            'y_index': h_i,
+            'z_index': d_i,
+            'data':  [None if not v else psycopg2.Binary(msgpack.packb(v)) for v in result_buckets],
+        })
+
+    return True
 
 
 def prepare_db_statements(connection):
@@ -1488,6 +2092,8 @@ def node_list_tuples(request, project_id=None, provider=None):
             else:
                 orientation = 'xz'
     params['orientation'] = orientation
+    params['lod'] = data.get('lod', 'max')
+    params['lod_type'] = data.get('lod_type', 'absolute')
 
     if override_provider:
         node_providers = get_configured_node_providers([override_provider])
@@ -1501,7 +2107,7 @@ def node_list_tuples(request, project_id=None, provider=None):
 
 def _node_list_tuples_query(params, project_id, node_provider,
         explicit_treenode_ids=tuple(), explicit_connector_ids=tuple(),
-        include_labels=False, with_relation_map=True):
+        include_labels=False, with_relation_map='used'):
     """The returned JSON data is sensitive to indices in the array, so care
     must be taken never to alter the order of the variables in the SQL
     statements without modifying the accesses to said data both in this

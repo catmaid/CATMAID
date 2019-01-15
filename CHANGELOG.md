@@ -35,6 +35,28 @@ Measurement table:
   node filter application can be aggregated into one row by summing individual
   values.
 
+Administration:
+
+- A grid based node query cache can now be used to speed up tracing data
+  retrieval by precomputing intersection results. This can be useful for larger
+  field of views in big data set. It supports multiple levels of detail per grid
+  cell and can therefore provide a somewhat uniform sampling when limiting the
+  number of displayed nodes. The sorting of this LOD configuration can be
+  controlled so that e.g. only the top N largest skeletons will be shown per
+  cell with growing LOD. The documentation has more details. This cache can be
+  kept up updated using two extra worker processes that listen to database
+  changes, implemented as management commands `catmaid_spatial_update_worker`
+  and `catmaid_cache_update_worker`.
+
+- The database can now emit notifications on tracing data changes using the
+  "catmaid.spatial-update" channel and when grid cache cells get marked dirty
+  on the "catmaid.dirty-cacche" channel. These can be subscribed to using
+  Postgres' LISTEN command. To enable emitting these events and let cache update
+  workers work, set `SPATIAL_UPDATE_NOTIFICATIONS = True` in `settings.py`. This
+  is disabled by default, because sending events for spatial cache updates can
+  add slightly more time to spatial queries, which will mainly be relevant for
+  importing and merging large skeleotons.
+
 Miscellaneous:
 
 - Add a new Tracing Tool icon button to compute the distance between two nodes

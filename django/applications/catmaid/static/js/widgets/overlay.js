@@ -89,7 +89,7 @@ var SkeletonAnnotations = {};
           },
           fast_split_mode: {
             default: {universal: 'none'}
-          }
+          },
         },
         migrations: {}
       });
@@ -754,6 +754,9 @@ var SkeletonAnnotations = {};
     this.applyTracingWindow = CATMAID.TracingOverlay.Settings.session.apply_tracing_window;
     /** Wheter updates can be suspended during a planar panning operation */
     this.updateWhilePanning = CATMAID.TracingOverlay.Settings.session.update_while_panning;
+    /** The level of detail (highter = more detail, "max" or 0 = everything).
+     * This is only supported if a cache based node provider is used. */
+    this.levelOfDetail = 'max';
     /** A cached copy of the a map from IDs to relation names, set on firt load. **/
     this.relationMap = null;
     /** An optional color source **/
@@ -1132,6 +1135,29 @@ var SkeletonAnnotations = {};
                 stop: 5000000
               }]
             },
+            lod_mode: {
+              default: "adaptive",
+            },
+            adaptive_lod_scale_range: {
+              // A list of two elements defining a range in zoom level space which
+              // is mapped to the min and max LOD level, if available, by the
+              // back-end. Both represent percentages on the zoom level scale in
+              // the range [0,1]. A value of 0 means zoom level 0 (i.e. original
+              // size) and a value of 1 means the "max" zoom level, whatever it
+              // may be for the current stack. A value of 0.3 means a third from
+              // the available zoom range. The default value of [0, 1] maps
+              // the whole zoom range to the whole LOD range. The mapping is
+              // inverted for the look-up, i.e. the lower percentage (first
+              // value) is mapped to the maximum LOD (everything visible) and
+              // larger percentage (second value) is mapped to the lowest
+              // possible LOD (1).
+              default: [0, 1.0],
+            },
+            lod_mapping: {
+              // Map zoom levels to LOD percentages, interpolate percentages
+              // inbetween.
+              default: [[0,1], [1,0]],
+            }
           },
           migrations: {
             0: function (settings) {
@@ -2754,6 +2780,10 @@ var SkeletonAnnotations = {};
     if (extraData) {
       for (var i=0, imax=extraData.length; i<imax; ++i) {
         let d = extraData[i];
+        if (!d) {
+          // Ignore invalid entries.
+          continue;
+        }
         // Exta treenodes
         if (d[0] && d[0].length > 0) {
           Array.prototype.push.apply(jsonNodes, d[0]);
@@ -3526,6 +3556,63 @@ var SkeletonAnnotations = {};
   };
 
   /**
+   * Obtain the effective level of detail value.
+   */
+  CATMAID.TracingOverlay.prototype.getEffectiveLOD = function() {
+    let lodMode = CATMAID.TracingOverlay.Settings.session.lod_mode;
+    if (lodMode === 'absolute') {
+      return this.levelOfDetail;
+    } else if (lodMode === 'adaptive') {
+      let zoomRange = CATMAID.TracingOverlay.Settings.session.adaptive_lod_scale_range;
+
+      // Determine percentage of current zoom level within zoom level bounds.
+      let zoomPercent = this.stackViewer.s / this.stackViewer.primaryStack.MAX_S;
+
+      // Clamp zoom percentage to zoom range and and get ratio of the clamped zoom
+      // percentage value relative to the zoom range.
+      zoomPercent = Math.max(zoomRange[0], Math.min(zoomRange[1], zoomPercent));
+
+      // Get the inverse percentage, because we want to express a percentage where
+      // 0% means lowest LOD and 100% is the highest LOD. If we are zoomed out
+      // further, the LOD will be smaller.
+      return 1.0 -  (zoomPercent - zoomRange[0]) / (zoomRange[1] - zoomRange[0]);
+    } else if (lodMode === 'mapping') {
+      let mapping = CATMAID.TracingOverlay.Settings.session.lod_mapping;
+      if (!mapping || mapping.length === 0) {
+        return 1;
+      }
+      // Find first closest zoom levels to the current one.
+      let zoom = this.stackViewer.s;
+      let smallerEntry, exactEntry, largerEntry;
+      for (let i=0; i<mapping.length; ++i) {
+        if (mapping[i][0] === zoom) {
+          exactEntry = mapping[i];
+        } else if (mapping[i][0] < zoom) {
+          smallerEntry = smallerEntry === undefined ? mapping[i] :
+              (mapping[i][0] < smallerEntry[0] ? smallerEntry : mapping[i]);
+        } else if (mapping[i][0] > zoom) {
+          largerEntry = largerEntry === undefined ? mapping[i] :
+              (mapping[i][0] > largerEntry[0] ? largerEntry : mapping[i]);
+        }
+      }
+      if (exactEntry !== undefined) {
+        return exactEntry[1];
+      }
+      if (smallerEntry && largerEntry) {
+        return (smallerEntry[1] + largerEntry[1]) / 2.0;
+      } else if (smallerEntry) {
+        return smallerEntry[1];
+      } else if (largerEntry) {
+        return largerEntry[1];
+      } else {
+        return 1.0;
+      }
+    } else {
+      throw new CATMAID.ValueError("Unknown LOD mode: " + lodMode);
+    }
+  };
+
+  /**
    * If there is an active node and the current location is above an existing node
    * of another skeleton, both skeletons are joined at those nodes (if permissions
    * allow) if link is true. If link is not true, the other node will be selected.
@@ -3741,6 +3828,13 @@ var SkeletonAnnotations = {};
           wy1 = stackViewer.primaryStack.stackToProjectY(z1, y1, x1),
           wz1 = stackViewer.primaryStack.stackToProjectZ(z1, y1, x1);
 
+
+      // Get level of detail information, which some back-end node providers
+      // (namely caching ones) can use to return only a subset of the data.
+      let lodMode = CATMAID.TracingOverlay.Settings.session.lod_mode;
+      let percentLOD = lodMode !== 'absolute';
+      let effectiveLOD = self.getEffectiveLOD();
+
       // As long as stack space Z coordinates are always clamped to the last
       // section (i.e. if floor() is used instead of round() when transforming),
       // there is no need to compensate for rounding mismatches of stack view's
@@ -3756,7 +3850,9 @@ var SkeletonAnnotations = {};
         bottom: wy1,
         z2: wz1,
         labels: self.getLabelStatus(),
-        with_relation_map: self.relationMap ? 'none' : 'all'
+        with_relation_map: self.relationMap ? 'none' : 'all',
+        lod: effectiveLOD,
+        lod_type: percentLOD ? 'percent' : 'absolute',
       };
 
       // Extra treenode IDs and connector Ids are only fetched through the primary
@@ -3932,28 +4028,43 @@ var SkeletonAnnotations = {};
             }
           }
 
-          var renderingQueued = self.refreshNodesFromTuples(response, extraNodes);
-
-          // initialization hack for "URL to this view"
-          var nodeSelected = false;
-          if (SkeletonAnnotations.hasOwnProperty('init_active_node_id')) {
-            nodeSelected = true;
-            self.activateNode(self.nodes.get(SkeletonAnnotations.init_active_node_id));
-            delete SkeletonAnnotations.init_active_node_id;
+          // If there is no relation map cached yet and also none was returned,
+          // inject retrieval of relation map
+          let wrapUp;
+          if (!self.relationMap && (!response[4] || CATMAID.tools.isEmpty(response[4]))) {
+            wrapUp = CATMAID.Relations.getNameMap(project.id, false)
+              .then(function(map) {
+                self.relationMap = map;
+                return response;
+              });
+          } else {
+            wrapUp = Promise.resolve(response);
           }
-          if (SkeletonAnnotations.hasOwnProperty('init_active_skeleton_id')) {
-            if (!nodeSelected) {
-              SkeletonAnnotations.staticMoveToAndSelectClosestNode(project.coordinates.x,
-                  project.coordinates.y, project.coordinates.z,
-                  SkeletonAnnotations.init_active_skeleton_id, true);
+
+          wrapUp.then(function(response) {
+            var renderingQueued = self.refreshNodesFromTuples(response, extraNodes);
+
+            // initialization hack for "URL to this view"
+            var nodeSelected = false;
+            if (SkeletonAnnotations.hasOwnProperty('init_active_node_id')) {
+              nodeSelected = true;
+              self.activateNode(self.nodes.get(SkeletonAnnotations.init_active_node_id));
+              delete SkeletonAnnotations.init_active_node_id;
             }
-            delete SkeletonAnnotations.init_active_skeleton_id;
-          }
+            if (SkeletonAnnotations.hasOwnProperty('init_active_skeleton_id')) {
+              if (!nodeSelected) {
+                SkeletonAnnotations.staticMoveToAndSelectClosestNode(project.coordinates.x,
+                    project.coordinates.y, project.coordinates.z,
+                    SkeletonAnnotations.init_active_skeleton_id, true);
+              }
+              delete SkeletonAnnotations.init_active_skeleton_id;
+            }
 
-          self.redraw(false, undefined, renderingQueued);
-          if (typeof callback !== "undefined") {
-            callback();
-          }
+            self.redraw(false, undefined, renderingQueued);
+            if (typeof callback !== "undefined") {
+              callback();
+            }
+          });
         });
     });
   };
@@ -3978,7 +4089,8 @@ var SkeletonAnnotations = {};
           entryParams.top <= params.top &&
           entryParams.bottom >= params.bottom &&
           entryParams.z1 <= params.z1 &&
-          entryParams.z2 >= params.z2;
+          entryParams.z2 >= params.z2 &&
+          entryParams.lod == params.lod;
       // Only allow cached entries that either require no extra treenodes or
       // connectors or have matching extra nodes.
       let extraNodesMatch =

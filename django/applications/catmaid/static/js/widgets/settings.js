@@ -1111,6 +1111,102 @@
           'read_only_mirror_index',
           SETTINGS_SCOPE));
 
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createRadioSetting(
+              'lod-mode',
+              [{id: 'lod-mode-absolute', desc: 'Absolute value', value: 'absolute',
+                checked: CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].lod_mode === 'absolute'},
+               {id: 'lod-mode-adaptive', desc: 'Adaptive linear mapping', value: 'adaptive',
+                checked: CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].lod_mode === 'adaptive'},
+               {id: 'lod-mode-mapping', desc: 'Zoom-to-LOD-percentage mapping', value: 'mapping',
+                checked: CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].lod_mode === 'mapping'},
+              ],
+              null,
+              function () {
+                CATMAID.TracingOverlay.Settings
+                    .set(
+                      'lod_mode',
+                      this.value,
+                      SETTINGS_SCOPE)
+                    .then(function () {
+                      project.getStackViewers().forEach(function (s) {
+                        SkeletonAnnotations.getTracingOverlay(s.getId()).redraw(true);
+                      });
+                    });
+              }).addClass('setting'),
+          CATMAID.TracingOverlay.Settings,
+          'lod_mode',
+          SETTINGS_SCOPE));
+
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createInputSetting(
+              "Adaptive LOD zoom range",
+              CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].adaptive_lod_scale_range.join(', '),
+              "Define two numbers A and B, separated by a comma. This settings defines " +
+              "a range of zoom level percentages to which available level of detail (LOD) " +
+              "information is mapped.",
+              function() {
+                let newValues = this.value.split(',')
+                    .map(s => s.trim()).filter(s => s.length > 0).map(Number);
+
+                if (newValues.length != 2) {
+                  CATMAID.warn("Invalid LOD range");
+                  return;
+                }
+                CATMAID.TracingOverlay.Settings
+                    .set(
+                      'adaptive_lod_scale_range',
+                      newValues,
+                      SETTINGS_SCOPE);
+              }),
+          CATMAID.TracingOverlay.Settings,
+          'adaptive_lod_scale_range',
+          SETTINGS_SCOPE));
+
+      let mapArrayToStr = function(a) {
+        return a.join(':');
+      };
+
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createInputSetting(
+              "Zoom to LOD mapping",
+              CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].lod_mapping.map(mapArrayToStr).join(', '),
+              "Define number pairs of the form A:B, separated by commas. The first value defines a zoom " +
+              "level and the second one the LOD level percentage in the range 0-1 that should be used at " +
+              "the zoom level. Zoom levels in between are lineraly interpolated.",
+              function() {
+                let newValues = this.value.split(',')
+                    .map(s => {
+                      let a = s.split(':');
+                      if (!a || a.length !== 2) {
+                        CATMAID.warn("Invalid mapping");
+                        return '';
+                      }
+                      let a0 = Number(a[0].trim());
+                      let a1 = Number(a[1].trim());
+                      if (a0 === undefined || Number.isNaN(a0) ||
+                          a1 === undefined || Number.isNaN(a1)) {
+                        CATMAID.warn("Invalid mapping");
+                        return '';
+                      }
+                      return [a0, a1];
+                    })
+                    .filter(s => s.length > 0);
+
+                if (newValues.length == 0) {
+                  CATMAID.warn("Invalid LOD range");
+                  return;
+                }
+                CATMAID.TracingOverlay.Settings
+                    .set(
+                      'lod_mapping',
+                      newValues,
+                      SETTINGS_SCOPE);
+              }),
+          CATMAID.TracingOverlay.Settings,
+          'lod_mapping',
+          SETTINGS_SCOPE));
+
 
       var dsNodeColors = CATMAID.DOM.addSettingsContainer(ds, "Skeleton colors", true);
       dsNodeColors.append(CATMAID.DOM.createCheckboxSetting(

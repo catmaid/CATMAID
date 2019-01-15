@@ -1342,6 +1342,59 @@ class NodeQueryCache(models.Model):
         unique_together = (('project', 'orientation', 'depth'),)
 
 
+class NodeGridCache(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.DO_NOTHING)
+    orientation = models.IntegerField(default=0, null=False)
+    cell_width = models.IntegerField(null=False)
+    cell_height = models.IntegerField(null=False)
+    cell_depth = models.IntegerField(null=False)
+    n_lod_levels = models.IntegerField(null=False, default=1)
+    lod_strategy = models.TextField(null=False, default='quadratic')
+    lod_min_bucket_size = models.IntegerField(null=False, default=500)
+    n_largest_skeletons_limit = models.IntegerField(null=True)
+    n_last_edited_skeletons_limit = models.IntegerField(null=True)
+    hidden_last_editor = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+    allow_empty = models.BooleanField(default=False, null=False)
+    has_json_data = models.BooleanField(default=False, null=False)
+    has_json_text_data = models.BooleanField(default=False, null=False)
+    has_msgpack_data = models.BooleanField(default=False, null=False)
+    enabled = models.BooleanField(default=True, null=False)
+
+    class Meta:
+        db_table = "node_grid_cache"
+        unique_together = (('project', 'orientation', 'cell_width', 'cell_height', 'cell_depth'),)
+
+
+class NodeGridCacheCell(models.Model):
+    grid = models.ForeignKey(NodeGridCache, on_delete=models.DO_NOTHING)
+    x_index = models.IntegerField(null=False)
+    y_index = models.IntegerField(null=False)
+    z_index = models.IntegerField(null=False)
+    update_time = models.DateTimeField(default=timezone.now, null=False)
+    json_data = JSONField(blank=True, null=True)
+    json_text_data = models.TextField(blank=True, null=True)
+    msgpack_data = models.BinaryField(null=True)
+
+    class Meta:
+        db_table = "node_grid_cache_cell"
+        unique_together = (('grid', 'x_index', 'y_index', 'z_index'),)
+
+
+class DirtyNodeGridCacheCell(models.Model):
+    """A dirty cache grid cell. Referential integrety is taken care of on the
+    database level.
+    """
+    #grid_cell = models.OneToOneField(NodeGridCacheCell, on_delete=models.DO_NOTHING, primary_key=True)
+    grid = models.ForeignKey(NodeGridCache, on_delete=models.DO_NOTHING)
+    x_index = models.IntegerField(null=False)
+    y_index = models.IntegerField(null=False)
+    z_index = models.IntegerField(null=False)
+    invalidation_time = models.DateTimeField(default=timezone.now, null=False)
+
+    class Meta:
+        db_table = "dirty_node_grid_cache_cell"
+        unique_together = (('grid', 'x_index', 'y_index', 'z_index'),)
+
 initial_colors = ((1, 0, 0, 1),
                   (0, 1, 0, 1),
                   (0, 0, 1, 1),

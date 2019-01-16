@@ -18,6 +18,13 @@
     CATMAID.TileLayer.apply(this, arguments);
     CATMAID.PixiLayer.call(this);
 
+    // If the selected source is block data, return an appropriate layer instead.
+    if (this.tileSource instanceof CATMAID.AbstractImageBlockSource &&
+       !(this instanceof CATMAID.PixiImageBlockLayer)) {
+      this.unregister();
+      return this.constructCopy({}, CATMAID.PixiImageBlockLayer);
+    }
+
     // Replace tiles container.
     this.stackViewer.getLayersView().removeChild(this.tilesContainer);
     this.tilesContainer = this.renderer.view;
@@ -56,13 +63,13 @@
   PixiTileLayer.prototype.setInterpolationMode = function (mode) {
     CATMAID.StackLayer.prototype.setInterpolationMode.call(this, mode);
     this._updatePixiInterpolationMode();
+
     for (var i = 0; i < this._tiles.length; ++i) {
       for (var j = 0; j < this._tiles[0].length; ++j) {
         var texture = this._tiles[i][j].texture;
         if (texture && texture.valid &&
             texture.baseTexture.scaleMode !== this._pixiInterpolationMode) {
-          texture.baseTexture.scaleMode = this._pixiInterpolationMode;
-          texture.update();
+          this._setTextureInterpolationMode(texture, this._pixiInterpolationMode);
         }
       }
     }
@@ -91,7 +98,7 @@
 
     var graphic = new PIXI.Graphics();
     graphic.beginFill(0xFFFFFF,0);
-    graphic.drawRect(0,0,this.tileSource.tileWidth,this.tileSource.tileHeight);
+    graphic.drawRect(0, 0, this.tileWidth, this.tileHeight);
     graphic.endFill();
     var emptyTex = graphic.generateCanvasTexture();
 
@@ -105,8 +112,8 @@
       for (var j = 0; j < cols; ++j) {
         this._tiles[i][j] = new PIXI.Sprite(emptyTex);
         this.batchContainer.addChild(this._tiles[i][j]);
-        this._tiles[i][j].position.x = j * this.tileSource.tileWidth * this._anisotropy.x;
-        this._tiles[i][j].position.y = i * this.tileSource.tileHeight * this._anisotropy.y;
+        this._tiles[i][j].position.x = j * this.tileWidth * this._anisotropy.x;
+        this._tiles[i][j].position.y = i * this.tileHeight * this._anisotropy.y;
 
         if (this.tileSource.transposeTiles.has(this.stack.orientation)) {
           this._tiles[i][j].scale.x = -1.0;
@@ -210,8 +217,7 @@
                 CATMAID.PixiContext.GlobalTextureManager.inc(source);
                 CATMAID.PixiContext.GlobalTextureManager.dec(tile.texture.baseTexture.imageUrl);
                 if (texture.baseTexture.scaleMode !== this._pixiInterpolationMode) {
-                  texture.baseTexture.scaleMode = this._pixiInterpolationMode;
-                  texture.update();
+                  this._setTextureInterpolationMode(texture, this._pixiInterpolationMode);
                 }
                 tile.texture = texture;
                 tile.visible = true;
@@ -232,9 +238,9 @@
           tile.visible = false;
           this._tilesBuffer[i][j] = false;
         }
-        x += this.tileSource.tileWidth;
+        x += this.tileWidth;
       }
-      y += this.tileSource.tileHeight;
+      y += this.tileHeight;
     }
 
     if (tileInfo.z    === this._oldZ &&
@@ -296,8 +302,7 @@
             CATMAID.PixiContext.GlobalTextureManager.dec(tile.texture.baseTexture.imageUrl);
             tile.texture = texture || PIXI.Texture.fromImage(source);
             if (tile.texture.baseTexture.scaleMode !== this._pixiInterpolationMode) {
-              tile.texture.baseTexture.scaleMode = this._pixiInterpolationMode;
-              tile.texture.update();
+              this._setTextureInterpolationMode(tile.texture, this._pixiInterpolationMode);
             }
             tile.visible = true;
           }
@@ -353,7 +358,7 @@
     var context = canvas.getContext('2d');
     context.drawImage(img, 0, 0);
 
-    return context.getImageData(x, y, 1, 1).data;
+    return Promise.resolve(context.getImageData(x, y, 1, 1).data);
   };
 
   CATMAID.PixiTileLayer = PixiTileLayer;

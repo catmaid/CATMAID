@@ -116,4 +116,9 @@
   CATMAID.PreConditionError.prototype = Object.create(CATMAID.Error.prototype);
   CATMAID.PreConditionError.prototype.constructor = CATMAID.PreConditionError;
 
+  /**
+   * An error type to indicate an abstract method is not implemented.
+   */
+  CATMAID.NotImplementedError = class NotImplementedError extends CATMAID.Error {};
+
 })(CATMAID);

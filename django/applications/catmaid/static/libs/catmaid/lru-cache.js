@@ -20,7 +20,11 @@
     this.lifetime = lifetime ? lifetime : Infinity;
     this.resetLifetimeOnHit = false;
     this._store = [];
+
+    CATMAID.asEventSource(this);
   }
+
+  LRUCache.EVENT_EVICTED = 'lrucache_event_evicted';
 
   /**
    * Get a cached value from the cache by its key.
@@ -42,6 +46,7 @@
           this._store.unshift(entry);
           return entry.value;
         } else {
+          this.trigger(LRUCache.EVENT_EVICTED, key, entry.value);
           // Value is expired. Leave it out of the cache and return undefined.
           return;
         }
@@ -89,7 +94,9 @@
    * Remove all items that don't fit in anymore.
    */
   LRUCache.prototype.removeExcessItems = function() {
-    if (this._store.length > this.capacity) this._store.length = this.capacity;
+    if (this._store.length > this.capacity) {
+      this._removeFrom(this.capacity);
+    }
   };
 
   /**
@@ -102,6 +109,7 @@
       var entry = this._store[i];
 
       if (entry && entry.key === key) {
+        // Note that eviction events *must not* be fired on explicit deletion.
         this._store.splice(i, 1);
         return;
       }
@@ -109,10 +117,20 @@
   };
 
   /**
-   * Clear all entries from the cache.
+   * Evict all entries from the cache.
    */
-  LRUCache.prototype.clear = function () {
-    this._store.length = 0;
+  LRUCache.prototype.evictAll = function () {
+    this._removeFrom(0);
+  };
+
+  LRUCache.prototype._removeFrom = function (index) {
+    // If there are no eviction listeners, the removal can be done more quickly.
+    if (this.hasListeners()) {
+      let removed = this._store.splice(index);
+      removed.forEach(({key, value}) => this.trigger(LRUCache.EVENT_EVICTED, key, value));
+    } else {
+      this._store.length = index;
+    }
   };
 
   /**

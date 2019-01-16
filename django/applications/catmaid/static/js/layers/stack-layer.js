@@ -93,7 +93,7 @@
      */
     this._interpolationMode = interpolatonMode;
 
-    CATMAID.checkTileSourceCanary(project, this.stack, this.tileSource)
+    this.tileSource.checkCanary(project, this.stack)
         .then(this._handleCanaryCheck.bind(this));
   }
 
@@ -126,10 +126,9 @@
     if (!accessible.normal && this.changeMirrorIfNoData) {
       Promise
           .all(this.stack.mirrors.map(function (mirror, index) {
-            return CATMAID.checkTileSourceCanary(
+            return this.stack.createTileSourceForMirror(index).checkCanary(
                 project,
-                this.stack,
-                this.stack.createTileSourceForMirror(index));
+                this.stack);
           }, this))
           .then((function (mirrorAccessible) {
             var mirrorIndex = mirrorAccessible.findIndex(function (accessible) {
@@ -189,14 +188,14 @@
    * Remove any DOM created by this layer from the stack viewer.
    */
   StackLayer.prototype.unregister = function () {
-    throw new CATMAID.Error('Not implemented');
+    throw new CATMAID.NotImplementedError();
   };
 
   /**
    * Update and draw the stack based on the current position and scale.
    */
   StackLayer.prototype.redraw = function (completionCallback, blocking) {
-    throw new CATMAID.Error('Not implemented');
+    throw new CATMAID.NotImplementedError();
   };
 
   /**
@@ -205,7 +204,7 @@
    * @param  {number} height Height of the view in pixels.
    */
   StackLayer.prototype.resize = function (width, height, completionCallback, blocking) {
-    throw new CATMAID.Error('Not implemented');
+    throw new CATMAID.NotImplementedError();
   };
 
   /**
@@ -217,7 +216,7 @@
    * @param  {function(number, number)} progressCallback
    */
   StackLayer.prototype.cacheLocations = function (locations, progressCallback) {
-    throw new CATMAID.Error('Not implemented');
+    throw new CATMAID.NotImplementedError();
   };
 
   /**
@@ -277,7 +276,7 @@
           customMirrorData.file_extension,
           customMirrorData.tile_width,
           customMirrorData.tile_height);
-      var url = CATMAID.getTileSourceCanaryUrl(project, stack, tileSource);
+      var url = tileSource.getCanaryUrl(project, stack);
       // Open a new browser window with a canary tile
       var win = window.open(url);
     };
@@ -405,7 +404,7 @@
       this.changeMirrorIfNoData = value;
       // If this was set to true, perform a canary test
       if (this.changeMirrorIfNoData) {
-        CATMAID.checkTileSourceCanary(project, this.stack, this.tileSource)
+        this.tileSource.checkCanary(project, this.stack)
             .then(this._handleCanaryCheck.bind(this));
       }
     } else if ('webGL' === name) {
@@ -442,7 +441,7 @@
    * @return {Element} View for this layer.
    */
   StackLayer.prototype.getView = function () {
-    throw new CATMAID.Error('Not implemented');
+    throw new CATMAID.NotImplementedError();
   };
 
   /**
@@ -503,7 +502,7 @@
    * @param {number} val New opacity.
    */
   StackLayer.prototype.setOpacity = function (val) {
-    throw new CATMAID.Error('Not implemented');
+    throw new CATMAID.NotImplementedError();
   };
 
   /**
@@ -516,9 +515,11 @@
   /**
    * Get the pixel value (from the current scale level) at an (unscaled) stack
    * coordinate if it is currently in the field of view.
+   *
+   * @return {Promise}
    */
   StackLayer.prototype.pixelValueInScaleLevel = function (stackX, stackY, stackZ) {
-    throw new CATMAID.Error('Not implemented');
+    throw new CATMAID.NotImplementedError();
   };
 
   StackLayer.INTERPOLATION_MODES = {

@@ -17,10 +17,20 @@
    * @param {StackViewer} stackViewer The stack viewer to which this context belongs.
    */
   function PixiContext(stackViewer) {
+    let options = {
+        transparent: true,
+        backgroundColor: 0x000000,
+        antialias: true,
+        stencil: true};
+    let view = document.createElement('canvas');
+    let rawContext = view.getContext('webgl2', options);
+
+    options.context = rawContext;
+    options.view = view;
     this.renderer = new PIXI.autoDetectRenderer(
         stackViewer.getView().clientWidth,
         stackViewer.getView().clientHeight,
-        {transparent: true, backgroundColor: 0x000000, antialias: true});
+        options);
     this.stage = new PIXI.Container();
     this.layersRegistered = new Set();
 
@@ -463,6 +473,26 @@
       child.blendMode = PIXI.BLEND_MODES[modeKey];
     });
     this.syncFilters();
+  };
+
+  PixiLayer.prototype._setTextureInterpolationMode = function (texture, pixiInterpolationMode) {
+    let renderer = this._context.renderer;
+    let gl = renderer.gl;
+    const glScaleMode = pixiInterpolationMode === PIXI.SCALE_MODES.LINEAR ?
+        gl.LINEAR : gl.NEAREST;
+
+    if (texture && texture.valid) {
+      texture.baseTexture.scaleMode = pixiInterpolationMode;
+
+      let glTexture = texture.baseTexture._glTextures[renderer.CONTEXT_UID];
+
+      if (glTexture) {
+        texture.baseTexture._glTextures[renderer.CONTEXT_UID].bind();
+
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, glScaleMode);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, glScaleMode);
+      }
+    }
   };
 
   /**

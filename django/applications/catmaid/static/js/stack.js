@@ -9,6 +9,11 @@
   Stack.ORIENTATION_XZ = 1;
   Stack.ORIENTATION_ZY = 2;
 
+  Stack.ORIENTATION_NAMES = [];
+  Stack.ORIENTATION_NAMES[Stack.ORIENTATION_XY] = "XY";
+  Stack.ORIENTATION_NAMES[Stack.ORIENTATION_XZ] = "XZ";
+  Stack.ORIENTATION_NAMES[Stack.ORIENTATION_ZY] = "ZY";
+
   /**
    * A Stack is created with a given pixel resolution, pixel dimension, a
    * translation relative to the project and lists of planes to be excluded
@@ -273,19 +278,19 @@
     case Stack.ORIENTATION_XZ:
       projectToStackZ = function( zp, yp, xp )
       {
-        return Math.floor( ( yp - translation.y ) / resolution.z );
+        return Math.floor((yp - translation.y) / resolution.z + yp * Number.EPSILON);
       };
       break;
     case Stack.ORIENTATION_ZY:
       projectToStackZ = function( zp, yp, xp )
       {
-        return Math.floor( ( xp - translation.x ) / resolution.z );
+        return Math.floor((xp - translation.x) / resolution.z + xp * Number.EPSILON);
       };
       break;
     default:
       projectToStackZ = function( zp, yp, xp )
       {
-        return Math.floor( ( zp - translation.z ) / resolution.z );
+        return Math.floor((zp - translation.z) / resolution.z + zp * Number.EPSILON);
       };
     }
 
@@ -554,7 +559,8 @@
       }
       var selectedMirror = mirror;
 
-      return CATMAID.getTileSource(
+      return CATMAID.TileSources.get(
+          selectedMirror.id,
           selectedMirror.tile_source_type,
           selectedMirror.image_base,
           selectedMirror.file_extension,
@@ -583,6 +589,15 @@
       if (this.metadata) {
         return this.metadata.catmaidLabelMeta;
       }
+    };
+
+    self.imageBlockMirrors = function () {
+      return self.mirrors
+          .filter(m => CATMAID.TileSources.typeIsImageBlockSource(m.tile_source_type));
+    };
+
+    self.isReorientable = function () {
+      return self.imageBlockMirrors().length !== 0;
     };
   }
 

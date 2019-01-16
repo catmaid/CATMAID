@@ -316,6 +316,8 @@
       title = title + ' (Offset ' + this._offset.join(', ') + ')';
     }
 
+    title = title + " | " + CATMAID.Stack.ORIENTATION_NAMES[this.primaryStack.orientation];
+
     this._stackWindow.setTitle(title);
   };
 

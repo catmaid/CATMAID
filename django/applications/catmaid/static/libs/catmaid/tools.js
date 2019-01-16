@@ -764,6 +764,22 @@ CATMAID.tools = CATMAID.tools || {};
   };
 
   /**
+   * Permute one array by indices given in another.
+   */
+  tools.permute = function(arr, perm) {
+    return Array.from(perm, p => arr[p]);
+  };
+
+  /**
+   * Permute an xyz coordinate object by xyz order indices given in another.
+   */
+  tools.permuteCoord = function(obj, perm) {
+    let arr = [obj.x, obj.y, obj.z];
+    arr = CATMAID.tools.permute(arr, perm);
+    return {x: arr[0], y: arr[1], z: arr[2]};
+  };
+
+  /**
    * Create a UUIDv4 based on Math.random. From:
    * https://stackoverflow.com/questions/105034
    */

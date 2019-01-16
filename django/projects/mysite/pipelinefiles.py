@@ -170,7 +170,6 @@ JAVASCRIPT['catmaid'] = {
         'js/tools/navigator.js',
         'js/tools/box-selection-tool.js',
         'js/tools/roi-tool.js',
-        'js/tools/segmentation-tool.js',
         'js/tools/*.js',
         'js/layers/stack-layer.js',
         'js/layers/tile-layer.js',

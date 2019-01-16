@@ -30,7 +30,7 @@ Required Query Parameters
 
 ``tool`` (string)
     Name of the tool to open. Must be one of ``navigator``, ``tracingtool``,
-    ``segmentationtool`` or ``classification_editor``.
+    or ``classification_editor``.
 
 Optional Query Parameters
 -------------------------

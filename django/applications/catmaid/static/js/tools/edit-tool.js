@@ -64,18 +64,6 @@
         }));
     }
 
-    if (CATMAID.userprofile.show_segmentation_tool) {
-      editToolActions.push(
-        new CATMAID.Action({
-           helpText: "Segmentation Tool",
-           buttonID: 'edit_button_segmentation',
-           buttonName: 'canvas',
-           run: function (e) {
-              project.setTool( new CATMAID.SegmentationTool() );
-           }
-        }));
-    }
-
     if (CATMAID.userprofile.show_tracing_tool) {
       editToolActions.push(
         new CATMAID.Action({

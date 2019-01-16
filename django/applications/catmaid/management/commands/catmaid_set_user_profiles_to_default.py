@@ -29,7 +29,6 @@ class Command(BaseCommand):
             up.show_text_label_tool = settings.PROFILE_SHOW_TEXT_LABEL_TOOL
             up.show_tagging_tool = settings.PROFILE_SHOW_TAGGING_TOOL
             up.show_cropping_tool = settings.PROFILE_SHOW_CROPPING_TOOL
-            up.show_segmentation_tool = settings.PROFILE_SHOW_SEGMENTATION_TOOL
             up.show_tracing_tool = settings.PROFILE_SHOW_TRACING_TOOL
             up.show_ontology_tool = settings.PROFILE_SHOW_ONTOLOGY_TOOL
             # Save the changes

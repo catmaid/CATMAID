@@ -179,26 +179,16 @@
       'table_treenode': {},
       'selectedneuron': null,
       'selectedskeleton': null,
-          'selectedassembly': null
     };
 
     this.setSelectObject = function( type, id ) {
         this.selectedObjects.selectedneuron = null;
         this.selectedObjects.selectedskeleton = null;
-        this.selectedObjects.selectedassembly = null;
         if( type == "neuron" ) {
             this.selectedObjects.selectedneuron = id;
         } else if( type == "skeleton" ) {
             this.selectedObjects.selectedskeleton = id;
-        } else if( type == "assembly" ) {
-            this.selectedObjects.selectedassembly = id;
         }
-        // if the segmentation tool is select, we need to update
-        // the assembly id
-        if( self.getTool().toolname === 'segmentationtool' ) {
-            SegmentationAnnotations.set_current_assembly_id( this.selectedObjects.selectedassembly );
-        }
-
     };
 
     this.hideToolbars = function() {
@@ -208,7 +198,6 @@
     };
 
     this.hideToolboxes = function() {
-      document.getElementById( "toolbox_segmentation" ).style.display = "none";
       document.getElementById( "toolbox_data" ).style.display = "none";
     };
 
@@ -319,13 +308,12 @@
       // TODO: bars should be unset by tool on unregister
       document.getElementById("toolbox_edit").style.display = "none";
       document.getElementById("toolbox_data").style.display = "none";
-      document.getElementById("toolbox_segmentation").style.display = "none";
       document.getElementById( "toolbox_project" ).style.display = "none";
       document.getElementById( "toolbar_nav" ).style.display = "none";
 
       CATMAID.statusBar.replaceLast('');
       CATMAID.statusBar.printCoords('');
-      
+
       this.trigger(Project.EVENT_PROJECT_DESTROYED);
       Project.trigger(Project.EVENT_PROJECT_DESTROYED);
       project = null;

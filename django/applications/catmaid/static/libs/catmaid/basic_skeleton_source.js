@@ -265,6 +265,15 @@
   };
 
   /**
+   * Return a single model for the passed in skeleton ID.
+   */
+  BasicSkeletonSource.prototype.getSkeletonModel = function(skeletonID) {
+    if (this.has(skeletonID)) {
+      return this.skeletonModels[skeletonID].clone();
+    }
+  };
+
+  /**
    * Return models object for all known skeleton IDs. Override for more specific
    * and actual selection behavior.
    */

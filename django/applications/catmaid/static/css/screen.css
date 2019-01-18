@@ -1703,3 +1703,7 @@ button.files-loaded {
   bottom: 0px;
   z-index: 100;
 }
+
+.system-check .dataTables_wrapper {
+  padding-left: 1.9em;
+}

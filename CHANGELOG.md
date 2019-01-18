@@ -57,6 +57,14 @@ Administration:
   add slightly more time to spatial queries, which will mainly be relevant for
   importing and merging large skeleotons.
 
+System check widget:
+
+- A subset of important database statistics are now displayed if a user has the
+  "can_administer" permission in a project. These statistics include e.g. cache
+  hit ratio, temporary files, requested checkpoints and replication lag. For
+  most of them a rule of thumb suggestion on how a value should behave is
+  provided as well.
+
 Miscellaneous:
 
 - Add a new Tracing Tool icon button to compute the distance between two nodes

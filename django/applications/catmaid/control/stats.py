@@ -3,6 +3,7 @@
 import json
 import time
 import pytz
+import os
 from datetime import timedelta, datetime
 from dateutil import parser as dateparser
 
@@ -11,8 +12,11 @@ from django.http import JsonResponse
 from django.db.models.aggregates import Count
 from django.db import connection, transaction
 from django.utils import timezone
+from django.utils.decorators import method_decorator
 
 from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map, get_request_bool
@@ -974,3 +978,83 @@ def populate_import_nodecount_stats_summary(project_id, incremental=True,
         ON CONFLICT (project_id, user_id, date) DO UPDATE
         SET n_imported_treenodes = EXCLUDED.n_imported_treenodes;
     """, dict(project_id=project_id, incremental=incremental))
+
+
+class ServerStats(APIView):
+
+    @method_decorator(requires_user_role(UserRole.Admin))
+    def get(self, request, project_id):
+        """Return an object that represents the state of various server and
+        database objects.
+        """
+
+        return Response({
+            'time': self.get_current_timestamp(),
+            'server': self.get_server_stats(),
+            'database': self.get_database_stats(),
+        })
+
+
+    def get_current_timestamp(self):
+        return datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+
+
+    def get_server_stats(self):
+        return {
+            'load_avg': os.getloadavg(),
+        }
+
+    def get_database_stats(self):
+        cursor = connection.cursor()
+        cursor.execute("select current_database()")
+        db_name = cursor.fetchone()[0]
+
+        cursor.execute("SELECT version()")
+        db_version = cursor.fetchone()[0]
+
+        cursor.execute("""
+            SELECT (xact_commit * 100) / (xact_commit + xact_rollback),
+                deadlocks, conflicts, temp_files, pg_size_pretty(temp_bytes),
+                blks_read, blks_hit
+            FROM pg_stat_database WHERE datname = %(db_name)s
+        """, {
+            'db_name': db_name,
+        })
+        db_stats = cursor.fetchone();
+
+        cursor.execute("""
+            SELECT checkpoints_timed, checkpoints_req, buffers_clean,
+                maxwritten_clean, buffers_backend_fsync,
+                extract(epoch from now() - pg_last_xact_replay_timestamp())
+            FROM pg_stat_bgwriter
+        """)
+        bgwriter_stats = cursor.fetchone();
+
+        return {
+            'version': db_version,
+            # Should be above 95%
+            'c_ratio': db_stats[0],
+            # Should be < 10
+            'deadlocks': db_stats[1],
+            # Should be < 10
+            'conflicts': db_stats[2],
+            # Should be < 100
+            'temp_files': db_stats[3],
+            # Should be < 10 GB
+            'temp_size': db_stats[4],
+            # blks_hit/blks_read Should be > 90%
+            'blks_read': db_stats[5],
+            'blks_hit': db_stats[6],
+            'cache_hit_ratio': db_stats[6]/db_stats[5],
+            # Should be checkpoints_req < checkpoints_timed
+            'checkpoints_req': bgwriter_stats[0],
+            'checkpoints_timed': bgwriter_stats[1],
+            # Should be high
+            'buffers_clean': bgwriter_stats[2],
+            # Should be 0
+            'maxwritten_clean': bgwriter_stats[3],
+            # Should be 0
+            'buffers_backend_fsync': bgwriter_stats[4],
+            # Should be close to 0 or 0
+            'replication_lag': bgwriter_stats[5],
+        }

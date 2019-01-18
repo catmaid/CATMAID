@@ -152,6 +152,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/stats/history$', stats.stats_history),
     url(r'^(?P<project_id>\d+)/stats/user-history$', stats.stats_user_history),
     url(r'^(?P<project_id>\d+)/stats/user-activity$', stats.stats_user_activity),
+    url(r'^(?P<project_id>\d+)/stats/server$', stats.ServerStats.as_view()),
 ]
 
 # Annotations

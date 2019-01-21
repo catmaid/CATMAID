@@ -48,9 +48,9 @@
 
     this._barSize = false;
 
-    this._handle.onmousedown = this._handleMouseDown.bind(this);
-    this._barTop.onmousedown = this._barMouseDown.bind(this, -1);
-    this._barBottom.onmousedown = this._barMouseDown.bind(this, 1);
+    this._handle.onpointerdown = this._handlePointerDown.bind(this);
+    this._barTop.onpointerdown = this._barPointerDown.bind(this, -1);
+    this._barBottom.onpointerdown = this._barPointerDown.bind(this, 1);
 
     var inputViewClass;
 
@@ -80,8 +80,8 @@
     // CATMAID.ui.removeEvent will not recognize methods bound at different times
     // as equal.
     this._boundHandleMove = this._handleMove.bind(this);
-    this._boundHandleMouseUp = this._handleMouseUp.bind(this);
-    this._boundBarMouseUp = this._barMouseUp.bind(this);
+    this._boundHandlePointerUp = this._handlePointerUp.bind(this);
+    this._boundBarPointerUp = this._barPointerUp.bind(this);
 
     this.extraValidate = CATMAID.tools.isFn(validate) ? validate : null;
 
@@ -111,17 +111,17 @@
       switch ( type )
       {
       case Slider.HORIZONTAL:
-        area1.onmousedown = this._barMouseDown.bind(this, 1);
-        area2.onmousedown = this._barMouseDown.bind(this, -1);
+        area1.onpointerdown = this._barPointerDown.bind(this, 1);
+        area2.onpointerdown = this._barPointerDown.bind(this, -1);
         break;
       case Slider.VERTICAL:
-        area1.onmousedown = this._barMouseDown.bind(this, -1);
-        area2.onmousedown = this._barMouseDown.bind(this, 1);
+        area1.onpointerdown = this._barPointerDown.bind(this, -1);
+        area2.onpointerdown = this._barPointerDown.bind(this, 1);
         break;
       }
 
-      area1.onmouseup = this._boundBarMouseUp;
-      area2.onmouseup = this._boundBarMouseUp;
+      area1.onpointerup = this._boundBarPointerUp;
+      area2.onpointerup = this._boundBarPointerUp;
 
       map.appendChild( area1 );
       map.appendChild( area2 );
@@ -355,38 +355,38 @@
   };
 
   /**
-   * mouse button pressed on handle
+   * pointer button pressed on handle
    */
-  Slider.prototype._handleMouseDown = function( e )
+  Slider.prototype._handlePointerDown = function( e )
   {
     this._getBarSize();
     this._virtualHandlePos = this._barSize * this._handlePos / 100;
 
-    CATMAID.ui.registerEvent( "onmousemove", this._boundHandleMove );
-    CATMAID.ui.registerEvent( "onmouseup", this._boundHandleMouseUp );
+    CATMAID.ui.registerEvent( "onpointermove", this._boundHandleMove );
+    CATMAID.ui.registerEvent( "onpointerup", this._boundHandlePointerUp );
     CATMAID.ui.setCursor( "pointer" );
     CATMAID.ui.catchEvents();
-    CATMAID.ui.onmousedown( e );
+    CATMAID.ui.onpointerdown( e );
 
     return false;
   };
 
   /**
-   * mouse button released on handle (on the ui.mouseCatcher respectively)
+   * pointer button released on handle (on the ui.mouseCatcher respectively)
    */
-  Slider.prototype._handleMouseUp = function( e )
+  Slider.prototype._handlePointerUp = function( e )
   {
     if ( this._timer ) window.clearTimeout( this._timer );
 
     CATMAID.ui.releaseEvents();
-    CATMAID.ui.removeEvent( "onmousemove", this._boundHandleMove );
-    CATMAID.ui.removeEvent( "onmouseup", this._boundHandleMouseUp );
+    CATMAID.ui.removeEvent( "onpointermove", this._boundHandleMove );
+    CATMAID.ui.removeEvent( "onpointerup", this._boundHandlePointerUp );
 
     return false;
   };
 
   /**
-   * mouse moved on handle (on the mouseCatcher respectively)
+   * pointer moved on handle (on the mouseCatcher respectively)
    */
   Slider.prototype._handleMove = function( e )
   {
@@ -463,30 +463,30 @@
   };
 
   /**
-   * mouse down on the bar, so move in the specified direction, setting a timer
+   * pointer down on the bar, so move in the specified direction, setting a timer
    */
-  Slider.prototype._barMouseDown = function( step, e )
+  Slider.prototype._barPointerDown = function( step, e )
   {
     if ( this._timer ) window.clearTimeout( this._timer );
 
-    CATMAID.ui.registerEvent( "onmouseup", this._boundBarMouseUp );
+    CATMAID.ui.registerEvent( "onpointerup", this._boundBarPointerUp );
     CATMAID.ui.setCursor( "auto" );
     CATMAID.ui.catchEvents();
-    CATMAID.ui.onmousedown( e );
+    CATMAID.ui.onpointerdown( e );
 
     this._moveWithTimeout(step, e.shiftKey);
     return false;
   };
 
   /**
-   * mouse up on the top or bottom bar, so clear the timer
+   * pointer up on the top or bottom bar, so clear the timer
    */
-  Slider.prototype._barMouseUp = function( e )
+  Slider.prototype._barPointerUp = function( e )
   {
     if ( this._timer ) window.clearTimeout( this._timer );
 
     CATMAID.ui.releaseEvents();
-    CATMAID.ui.removeEvent( "onmouseup", this._boundBarMouseUp );
+    CATMAID.ui.removeEvent( "onpointerup", this._boundBarPointerUp );
 
     return false;
   };

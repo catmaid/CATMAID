@@ -37,22 +37,22 @@ Menu = function () {
       var row = table.insertRow(-1);
       row.className = "menu_item";
       if (typeof content[key].action == "object") {
-        row.onmouseover = function (e) {
+        row.onpointerover = function (e) {
           if (this.className == "menu_item") this.className = "menu_item_hover";
           this.cells[0].firstChild.lastChild.style.display = "block";
           return false;
         };
-        row.onmouseout = function (e) {
+        row.onpointerout = function (e) {
           if (this.className == "menu_item_hover") this.className = "menu_item";
           this.cells[0].firstChild.lastChild.style.display = "none";
           return false;
         };
       } else {
-        row.onmouseover = function (e) {
+        row.onpointerover = function (e) {
           if (this.className == "menu_item") this.className = "menu_item_hover";
           return false;
         };
-        row.onmouseout = function (e) {
+        row.onpointerout = function (e) {
           if (this.className == "menu_item_hover") this.className = "menu_item";
           return false;
         };

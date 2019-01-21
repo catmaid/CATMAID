@@ -93,10 +93,10 @@
     var stacks_menu_item = document.createElement("div");
     stacks_menu_item.setAttribute("class", "menu_item");
     stacks_menu_item.setAttribute("style", "float:left");
-    stacks_menu_item.onmouseover = function() {
+    stacks_menu_item.onpointerover = function() {
       this.lastChild.style.display = 'block';
     };
-    stacks_menu_item.onmouseout = function() {
+    stacks_menu_item.onpointerout = function() {
       this.lastChild.style.display = 'none';
     };
     var stacks_p = document.createElement("p");
@@ -402,7 +402,7 @@
     };
 
     /**
-     * unregister all stack viewer related mouse and keyboard controls
+     * unregister all stack viewer related pointer and keyboard controls
      */
     this.unregister = function()
     {

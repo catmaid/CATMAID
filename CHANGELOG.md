@@ -76,6 +76,8 @@ Miscellaneous:
 - Neuron name searches and annotations should be much faster on larger
   instances.
 
+- Basic support for touch screens (e.g. phones and tablets) is now implemented.
+
 - Context aware help: by clicking the new question mark icon in the upper right
   corner, a context aware help dialog can be displayed on top of all other
   CATMAID tools. It provides some general guidance for the intended workflow

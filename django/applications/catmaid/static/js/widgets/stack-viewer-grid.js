@@ -586,7 +586,7 @@
         var panelWindow = new CMWWindow('Mini stack viewer');
         this.panelWindows.push(panelWindow);
         // prevent dragging
-        $(panelWindow.getFrame()).children('.stackInfo_selected').get(0).onmousedown = function () {return true;};
+        $(panelWindow.getFrame()).children('.stackInfo_selected').get(0).onpointerdown = function () {return true;};
         panelWindow.parent = gridWindow;
 
         var panel = panelWindow.getFrame();

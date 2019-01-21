@@ -43,10 +43,10 @@
   };
 
   // bind event handlers to current calling context
-  this.onmousedown_bound = this.onmousedown.bind(this);
-  this.onmouseup_bound = this.onmouseup.bind(this);
-  this.onmousemove_pos_bound = this.onmousemove.pos.bind(this);
-  this.onmousemove_crop_bound = this.onmousemove.crop.bind(this);
+  this.onpointerdown_bound = this.onpointerdown.bind(this);
+  this.onpointerup_bound = this.onpointerup.bind(this);
+  this.onpointermove_pos_bound = this.onpointermove.pos.bind(this);
+  this.onpointermove_crop_bound = this.onpointermove.crop.bind(this);
   }
 
   // Let the RoiTool inherit from the BoxSelectionTool
@@ -218,26 +218,26 @@
   };
 
   /**
-   * Handles mousedown events.
+   * Handles pointerdown events.
    */
-  RoiTool.prototype.onmousedown = function( e )
+  RoiTool.prototype.onpointerdown = function( e )
   {
     var b = CATMAID.ui.getMouseButton( e );
     switch ( b )
     {
     case 2:
-      CATMAID.ui.removeEvent( "onmousemove", this.onmousemove_crop_bound );
-      CATMAID.ui.removeEvent( "onmouseup", this.onmouseup_bound );
+      CATMAID.ui.removeEvent( "onpointermove", this.onpointermove_crop_bound );
+      CATMAID.ui.removeEvent( "onpointerup", this.onpointerup_bound );
       break;
     default:
       var m = CATMAID.ui.getMouse( e, this.stackViewer.getView() );
       this.createCropBox( m.offsetX, m.offsetY );
 
-      CATMAID.ui.registerEvent( "onmousemove", this.onmousemove_crop_bound );
-      CATMAID.ui.registerEvent( "onmouseup", this.onmouseup_bound );
+      CATMAID.ui.registerEvent( "onpointermove", this.onpointermove_crop_bound );
+      CATMAID.ui.registerEvent( "onpointerup", this.onpointerup_bound );
       CATMAID.ui.catchEvents( "crosshair" );
     }
-    CATMAID.ui.onmousedown( e );
+    CATMAID.ui.onpointerdown( e );
 
     //! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
     document.body.firstChild.focus();
@@ -246,11 +246,11 @@
   };
 
   /**
-   * Keeps two mousemove event handlers. The first (pos) shown the current
+   * Keeps two pointermove event handlers. The first (pos) shown the current
    * position in the status line and the second one (crop) adjusts the crop box
    * while moving.
    */
-  RoiTool.prototype.onmousemove = {
+  RoiTool.prototype.onpointermove = {
     pos : function ( e )
     {
       var xp;
@@ -305,11 +305,11 @@
     }
   };
 
-  RoiTool.prototype.onmouseup = function ( e )
+  RoiTool.prototype.onpointerup = function ( e )
   {
     CATMAID.ui.releaseEvents();
-    CATMAID.ui.removeEvent( "onmousemove", this.onmousemove_crop_bound );
-    CATMAID.ui.removeEvent( "onmouseup", this.onmouseup_bound );
+    CATMAID.ui.removeEvent( "onpointermove", this.onpointermove_crop_bound );
+    CATMAID.ui.removeEvent( "onpointerup", this.onpointerup_bound );
     this.updateControls();
   };
 
@@ -349,8 +349,8 @@
     this.mouseCatcher.style.cursor = "crosshair";
     // create and remember mouse bindings, bound to the
     // current context (this).
-    this.mouseCatcher.onmousedown = this.onmousedown_bound;
-    this.mouseCatcher.onmousemove = this.onmousemove_pos_bound;
+    this.mouseCatcher.onpointerdown = this.onpointerdown_bound;
+    this.mouseCatcher.onpointermove = this.onpointermove_pos_bound;
 
     var onmousewheel = this.onmousewheel.bind(this);
     this.mouseCatcher.addEventListener( "wheel", onmousewheel, false );

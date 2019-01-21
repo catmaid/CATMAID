@@ -105,6 +105,7 @@ libraries_js = OrderedDict([
     ('threex', ['*.js']),
     ('plotly', ['*.js']),
     ('pixi.js', ['*.js']),
+    ('pointyjs', ['*.js']),
     ('cytoscapejs', ['cytoscape.js', 'cytoscape-spread.js',
                     'arbor.js', 'cytoscape-arbor.js',
                     'cola.js', 'cytoscape-cola.js',

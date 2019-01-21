@@ -844,7 +844,7 @@ var SkeletonAnnotations = {};
     this.nextNearestMatchingTag = {matches: [], query: null, radius: Infinity};
 
     /* lastX, lastY: in unscaled stack coordinates, for the 'z' key to know where
-     * the mouse was. */
+     * the pointer was. */
     this.coords = {lastX: null, lastY: null};
 
     /* Padding beyond screen borders in X and Y for fetching data and updating
@@ -898,7 +898,14 @@ var SkeletonAnnotations = {};
     this.view.style.zIndex = 5;
     // Custom cursor for tracing
     this.updateCursor();
-    this.view.onmousemove = this.createViewMouseMoveFn(this.stackViewer, this.coords);
+
+    //CATMAID.ui.registerEvent("onpointerdown", onpointerdown);
+    this._boundPointerDown = this._pointerDown.bind(this);
+    this._boundPointerMove = this._pointerMove.bind(this);
+    this._boundPointerUp = this._pointerUp.bind(this);
+    this.view.addEventListener('pointerdown', this._boundPointerDown);
+    this.view.addEventListener('pointermove', this._boundPointerMove);
+    this.view.addEventListener('pointerup', this._boundPointerUp);
     // We don't want browser contet menus on the tracing layer
     this.view.addEventListener('contextmenu', function(e) {
       e.preventDefault();
@@ -1183,7 +1190,7 @@ var SkeletonAnnotations = {};
         });
 
   /**
-   * Update currently used mouse cursor based on the current tracing tool mode.
+   * Update currently used pointer based on the current tracing tool mode.
    */
   CATMAID.TracingOverlay.prototype.updateCursor = function() {
     if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.MOVE) {
@@ -1435,17 +1442,20 @@ var SkeletonAnnotations = {};
   };
 
   /**
-   * Stores the current mouse coordinates in unscaled stack coordinates in the
+   * Stores the current pointer coordinates in unscaled stack coordinates in the
    * @coords parameter and updates the status bar with the stack and project
-   * coordinates of the mouse cursor.
+   * coordinates of the pointer.
    */
-  CATMAID.TracingOverlay.prototype.createViewMouseMoveFn = function(stackViewer, coords) {
-    var pCoords = {'x': 0, 'y': 0, 'z': 0};
-    var sCoords = {'x': 0, 'y': 0, 'z': 0};
+  CATMAID.TracingOverlay.prototype.setLocationFromEvent = (function() {
+    let pCoords = {'x': 0, 'y': 0, 'z': 0};
+    let sCoords = {'x': 0, 'y': 0, 'z': 0};
+
     return function(e) {
-      var m = CATMAID.ui.getMouse(e, stackViewer.getView(), true);
+      let stackViewer = this.stackViewer;
+      let coords = this.coords;
+      let m = CATMAID.ui.getMouse(e, this.stackViewer.getView(), true);
       if (m) {
-        var screenPosition = stackViewer.screenPosition();
+        let screenPosition = stackViewer.screenPosition();
         coords.lastX = screenPosition.left + m.offsetX / stackViewer.scale / stackViewer.primaryStack.anisotropy(0).x;
         coords.lastY = screenPosition.top  + m.offsetY / stackViewer.scale / stackViewer.primaryStack.anisotropy(0).y;
         sCoords.x = coords.lastX;
@@ -1458,8 +1468,30 @@ var SkeletonAnnotations = {};
             coords.lastY.toFixed(1) + ", " + stackViewer.z.toFixed(1) +'] px, P: [' +
             pCoords.x.toFixed(1) + ', ' + pCoords.y.toFixed(1) + ', ' + pCoords.z.toFixed(1) + '] nm');
       }
-      return true; // Bubble mousemove events.
     };
+  })();
+
+  /**
+   * Update the internal location.
+   */
+  CATMAID.TracingOverlay.prototype._pointerDown = function(e) {
+    this.setLocationFromEvent(e);
+    return true; // Bubble pointerdown events.
+  };
+
+  /**
+   */
+  CATMAID.TracingOverlay.prototype._pointerMove = function(e) {
+    this.setLocationFromEvent(e);
+    return true; // Bubble pointermove events.
+  };
+
+  /**
+   * Update the internal location.
+   */
+  CATMAID.TracingOverlay.prototype._pointerUp = function(e) {
+    this.setLocationFromEvent(e);
+    return true; // Bubble pointerup events.
   };
 
   /**
@@ -1494,8 +1526,9 @@ var SkeletonAnnotations = {};
       this.graphics = null;
     }
     if (this.view) {
-      this.view.onmousemove = null;
-      this.view.onmousedown = null;
+      this.view.removeEventListener('pointerdown', this._boundPointerDown);
+      this.view.removeEventListener('pointermove', this._boundPointerMove);
+      this.view.removeEventListener('pointerup', this._boundPointerUp);
       this.view = null;
     }
     if (this._sourceToggleEl && this._sourceToggleEl.parentNode) {
@@ -1674,7 +1707,7 @@ var SkeletonAnnotations = {};
   };
 
   /**
-   * Activate the node nearest to the mouse. Optionally, virtual nodes can be
+   * Activate the node nearest to the pointer. Optionally, virtual nodes can be
    * respected.
    */
   CATMAID.TracingOverlay.prototype.activateNearestNode = function (respectVirtualNodes) {
@@ -2809,8 +2842,7 @@ var SkeletonAnnotations = {};
       }
     }
 
-    var transmittedRelations = Object.keys(relationMap);
-    if (transmittedRelations.length > 0) {
+    if (relationMap && !CATMAID.tools.isEmpty(relationMap)) {
       // Update cached copy
       this.relationMap = relationMap;
     } else if (!this.relationMap) {
@@ -3229,8 +3261,8 @@ var SkeletonAnnotations = {};
   /**
    * TODO This doc below is obsolete
    * This isn't called "onclick" to avoid confusion - click events aren't
-   * generated when clicking in the overlay since the mousedown and mouseup events
-   * happen in different divs.  This is actually called from mousedown (or mouseup
+   * generated when clicking in the overlay since the pointerdown and pointerup events
+   * happen in different divs.  This is actually called from pointerdown (or pointerup
    * if we ever need to make click-and-drag work with the left hand button too...)
    */
   CATMAID.TracingOverlay.prototype.whenclicked = function (e) {
@@ -3250,15 +3282,18 @@ var SkeletonAnnotations = {};
       return;
     }
 
-    var m = CATMAID.ui.getMouse(e, this.view);
+    // Make sure we have the most recent coordinates available. The tracing
+    // overlay tracks pointer movement, but this function is executed by the
+    // tracing tool and depending on the order of how listeners are executed,
+    // this function can be first and can't rely on the general location
+    // tracking.
+    this.setLocationFromEvent(e);
+
+    var m = CATMAID.ui.getMouse(e, this.view, true);
 
     // Construct an event mocking the actual click that can be passed to the
     // tracing overlay. If it is handled there, do nothing here.
-    var eventFields = {};
-    for (var p in e) {
-      eventFields[p] = e[p];
-    }
-    var mockClick = new MouseEvent('mousedown', eventFields);
+    var mockClick = new PointerEvent('pointerdown', e);
     var handled = !this.pixiLayer.renderer.view.dispatchEvent(mockClick);
 
     if (!handled) {
@@ -3287,7 +3322,7 @@ var SkeletonAnnotations = {};
     }
 
     if (handled) {
-      e.stopPropagation();
+      //e.stopPropagation();
       e.preventDefault();
       return true;
     }
@@ -3628,7 +3663,7 @@ var SkeletonAnnotations = {};
    */
   CATMAID.TracingOverlay.prototype.createNewOrExtendActiveSkeleton =
       function(insert, link, postLink) {
-    // Check if there is already a node under the mouse
+    // Check if there is already a node under the pointer
     // and if so, then activate it
     var atn = SkeletonAnnotations.atn;
     if (this.coords.lastX !== null && this.coords.lastY !== null) {
@@ -5398,7 +5433,7 @@ var SkeletonAnnotations = {};
    */
   CATMAID.TracingOverlay.prototype._deleteConnectorNode =
       function(connectornode) {
-    // Suspennd the node before submitting the request to note catch mouse
+    // Suspennd the node before submitting the request to note catch pointer
     // events on the removed node.
     connectornode.suspend();
     var self = this;
@@ -5793,7 +5828,7 @@ var SkeletonAnnotations = {};
   };
 
   /**
-   * Update the mouse cursor on changed interaction modes.
+   * Update the pointer on changed interaction modes.
    */
   CATMAID.TracingOverlay.prototype.handleChangedInteractionMode = function(newMode, oldMode) {
     this.updateCursor();
@@ -6189,7 +6224,7 @@ var SkeletonAnnotations = {};
           this.tagbox.append(this.recentLabels
               .sort(CATMAID.tools.compareStrings)
               .map(function (label) {
-                  return $("<button>" + label + "</button>").mousedown(function () {
+                  return $("<button>" + label + "</button>").on('pointerdown', function () {
                     input.tagEditorAddTag(label);
                     return false;
                   });
@@ -6201,7 +6236,7 @@ var SkeletonAnnotations = {};
           .css('position', 'absolute')
           .appendTo("#" + tracingOverlay.view.id)
 
-          .mousedown(function (event) {
+          .on('pointerdown', function (event) {
             if ("" === input.tagEditorGetTags()) {
               SkeletonAnnotations.Tag.updateTags(tracingOverlay);
               SkeletonAnnotations.Tag.removeTagbox();

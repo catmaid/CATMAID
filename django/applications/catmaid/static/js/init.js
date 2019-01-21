@@ -356,7 +356,7 @@ var project;
     document.body.appendChild( CATMAID.statusBar.getView() );
 
     var a_url = document.getElementById( "a_url" );
-    a_url.onmouseover = function( e )
+    a_url.onpointerover = function( e )
     {
       this.href = project.createURL();
       return true;
@@ -1832,7 +1832,7 @@ var project;
 
         project.addStackViewer( stackViewer );
 
-        // refresh the overview handler to also register the mouse events on the buttons
+        // refresh the overview handler to also register the pointer events on the buttons
         stackViewer.layercontrol.refresh();
       } else {
         stackViewer.addStackLayer(stack, stackLayer);

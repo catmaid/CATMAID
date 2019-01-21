@@ -175,14 +175,14 @@ CMWRootNode.prototype.getAvailableHeight = function () {
 CMWRootNode.prototype.catchDrag = function () {
   this._boundReleaseDrag = this._boundReleaseDrag || this.releaseDrag.bind(this);
   CATMAID.ui.catchFocus();
-  CATMAID.ui.registerEvent("onmouseup", this._boundReleaseDrag);
+  CATMAID.ui.registerEvent("onpointerup", this._boundReleaseDrag);
   CATMAID.ui.catchEvents();
   if (this.child !== null) this.child.catchDrag();
 };
 
 CMWRootNode.prototype.releaseDrag = function () {
   CATMAID.ui.releaseEvents();
-  CATMAID.ui.removeEvent("onmouseup", this._boundReleaseDrag);
+  CATMAID.ui.removeEvent("onpointerup", this._boundReleaseDrag);
   if (this.child !== null) this.child.releaseDrag();
 };
 
@@ -900,7 +900,7 @@ function CMWWindow(title) {
 
   var closeHandle = document.createElement("p");
   closeHandle.className = "stackClose";
-  closeHandle.onmousedown = this.close.bind(this);
+  closeHandle.onpointerdown = this.close.bind(this);
   closeHandle.appendChild(document.createTextNode("close [ x ]"));
 
   var titleBar = document.createElement("div");
@@ -924,22 +924,22 @@ function CMWWindow(title) {
 
   this.listeners = [];
 
-  this.frame.onmousedown = this.focus.bind(this);
+  this.frame.onpointerdown = this.focus.bind(this);
 
   var self = this;
 
-  this.frame.onmouseenter = function (e) {
+  this.frame.onpointerenter = function (e) {
     self.callListeners(CMWWindow.POINTER_ENTER);
     return false;
   };
 
-  titleBar.onmousedown = function (e) {
+  titleBar.onpointerdown = function (e) {
     CMWWindow.selectedWindow = self;
     self.getRootNode().catchDrag();
     return false;
   };
 
-  this.eventCatcher.onmousemove = function (e) {
+  this.eventCatcher.onpointermove = function (e) {
     if (self != CMWWindow.selectedWindow) {
       var m = CATMAID.ui.getMouse(e, self.eventCatcher);
       var min = Infinity;
@@ -968,12 +968,12 @@ function CMWWindow(title) {
     return false;
   };
 
-  this.eventCatcher.onmouseout = function () {
+  this.eventCatcher.onpointerout = function () {
     self.eventCatcher.className = "eventCatcher";
     return false;
   };
 
-  this.eventCatcher.onmouseup = function (e) {
+  this.eventCatcher.onpointerup = function (e) {
     if ( !( CMWWindow.selectedWindow == self || self.eventCatcher.className == "eventCatcher" ) )
     {
       var sourceSplitNode = CMWWindow.selectedWindow.getParent();
@@ -1257,7 +1257,7 @@ function ResizeHandle(type, node) {
     return view;
   };
 
-  var onmousemove = {
+  var onpointermove = {
     h: function (e) {
       node.changeWidth( CATMAID.ui.diffX );
       return false;
@@ -1268,36 +1268,36 @@ function ResizeHandle(type, node) {
     }
   };
 
-  var onmouseup = {
+  var onpointerup = {
     h: function (e) {
       CATMAID.ui.releaseEvents();
-      CATMAID.ui.removeEvent("onmousemove", onmousemove.h);
-      CATMAID.ui.removeEvent("onmouseup", onmouseup.h);
+      CATMAID.ui.removeEvent("onpointermove", onpointermove.h);
+      CATMAID.ui.removeEvent("onpointerup", onpointerup.h);
       return false;
     },
     v: function (e) {
       CATMAID.ui.releaseEvents();
-      CATMAID.ui.removeEvent("onmousemove", onmousemove.v);
-      CATMAID.ui.removeEvent("onmouseup", onmouseup.v);
+      CATMAID.ui.removeEvent("onpointermove", onpointermove.v);
+      CATMAID.ui.removeEvent("onpointerup", onpointerup.v);
       return false;
     }
   };
 
-  var onmousedown = {
+  var onpointerdown = {
     h: function (e) {
-      CATMAID.ui.registerEvent("onmousemove", onmousemove.h);
-      CATMAID.ui.registerEvent("onmouseup", onmouseup.h);
+      CATMAID.ui.registerEvent("onpointermove", onpointermove.h);
+      CATMAID.ui.registerEvent("onpointerup", onpointerup.h);
       CATMAID.ui.catchEvents("e-resize");
-      CATMAID.ui.onmousedown(e);
+      CATMAID.ui.onpointerdown(e);
       CATMAID.ui.catchFocus();
 
       return false;
     },
     v: function (e) {
-      CATMAID.ui.registerEvent("onmousemove", onmousemove.v);
-      CATMAID.ui.registerEvent("onmouseup", onmouseup.v);
+      CATMAID.ui.registerEvent("onpointermove", onpointermove.v);
+      CATMAID.ui.registerEvent("onpointerup", onpointerup.v);
       CATMAID.ui.catchEvents("s-resize");
-      CATMAID.ui.onmousedown(e);
+      CATMAID.ui.onpointerdown(e);
       CATMAID.ui.catchFocus();
 
       return false;
@@ -1311,6 +1311,6 @@ function ResizeHandle(type, node) {
   if (type != "v") type = "h";
   var view = document.createElement("div");
   view.className = "resize_handle_" + type;
-  view.onmousedown = onmousedown[type];
-  view.onmouseup = onmouseup[type];
+  view.onpointerdown = onpointerdown[type];
+  view.onpointerup = onpointerup[type];
 }

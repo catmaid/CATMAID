@@ -307,7 +307,7 @@
     var toggle = document.createElement('i');
     toggle.setAttribute('class', iconClass);
     toggle.classList.add('windowButton');
-    toggle.onmousedown = handler;
+    toggle.onpointerdown = handler;
 
     if (title) {
       toggle.setAttribute('title', title);
@@ -1074,7 +1074,7 @@
     customContent.appendChild(content);
     container.appendChild(customContent);
 
-    var onmousedown = function() {
+    var onpointerdown = function() {
       toggleExpansion();
     };
 
@@ -1088,15 +1088,15 @@
         if (expanded) {
           customContent.style.display = 'none';
           CATMAID.ui.releaseEvents();
-          CATMAID.ui.removeEvent("onmousedown", onmousedown);
+          CATMAID.ui.removeEvent("onpointerdown", onpointerdown);
         } else {
           customContent.style.display = 'block';
           $(customContent).scrollintoview();
 
-          // Enable general UI click handler to close drop down if the mouse was
-          // clicked outside of the control.
+          // Enable general UI click handler to close drop down if the pointer
+          // was clicked outside of the control.
           CATMAID.ui.catchEvents();
-          CATMAID.ui.registerEvent("onmousedown", onmousedown);
+          CATMAID.ui.registerEvent("onpointerdown", onpointerdown);
         }
         // TODO: find a better counter-action to scrollIntoView below. But
         // currently this is needed for CATMAID windows after the custom

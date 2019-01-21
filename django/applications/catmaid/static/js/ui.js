@@ -31,9 +31,9 @@
     var currentSequence = new Set();
 
     var events = {};
-    events[ "onmousemove" ] = []; //!< bound to eventCatcher
-    events[ "onmousedown" ] = [];
-    events[ "onmouseup" ] = []; //!< bound to eventCatcher
+    events[ "onpointermove" ] = []; //!< bound to eventCatcher
+    events[ "onpointerdown" ] = [];
+    events[ "onpointerup" ] = []; //!< bound to eventCatcher
     events[ "onwheel" ] = [];
     events[ "onresize" ] = [];    //!< bound to the window itself
 
@@ -46,6 +46,7 @@
      * focus() call will not succeed. */
     var focusCatcher = document.createElement( "a" );
     focusCatcher.id = "focusCatcher";
+    focusCatcher.setAttribute('draggable', 'false');
     document.body.appendChild( focusCatcher );
 
     /**
@@ -349,7 +350,7 @@
     };
 
     /**
-     * get the mouse button normalized to gecko enumeration
+     * get the pointer button normalized to gecko enumeration
      * 1 - left
      * 2 - middle
      * 3 - right
@@ -385,7 +386,7 @@
     };
 
     /**
-     * get the mouse location absolute and relative to the element, which fired the event
+     * get the pointer location absolute and relative to the element, which fired the event
      */
     this.getMouse = function( e, relativeTo, propagate )
     {
@@ -421,9 +422,9 @@
       return m;
     };
 
-    this.onmousemove = function( e )
+    this.onpointermove = function( e )
     {
-      var m = self.getMouse( e );
+      var m = self.getMouse(e);
       if ( m )
       {
         self.diffX = m.x - lastX;
@@ -432,17 +433,17 @@
         lastY = m.y;
 
         var r = true;
-        for ( var i = 0; r && i < events[ "onmousemove" ].length; ++i )
-          r = events[ "onmousemove" ][ i ]( e );
+        for ( var i = 0; r && i < events[ "onpointermove" ].length; ++i )
+          r = events[ "onpointermove" ][ i ]( e );
 
         return r;
       }
       else return false;
     };
 
-    this.onmousedown = function( e )
+    this.onpointerdown = function( e )
     {
-      var m = self.getMouse( e );
+      var m = self.getMouse(e);
       if ( m )
       {
         lastX = m.x;
@@ -466,17 +467,17 @@
         }
 
         var r = true;
-        for ( var i = 0; i < events[ "onmousedown" ].length; ++i )
-          r = r && events[ "onmousedown" ][ i ]( e );
+        for ( var i = 0; i < events[ "onpointerdown" ].length; ++i )
+          r = r && events[ "onpointerdown" ][ i ]( e );
 
         return r;
       }
       else return;
     };
 
-    this.onmouseup = function( e )
+    this.onpointerup = function( e )
     {
-      var m = self.getMouse( e );
+      var m = self.getMouse(e);
       if ( m )
       {
         lastX = m.x;
@@ -500,17 +501,17 @@
         }
 
         var r = true;
-        for ( var i = 0; i < events[ "onmouseup" ].length; ++i )
-          r = r && events[ "onmouseup" ][ i ]( e );
+        for ( var i = 0; i < events[ "onpointerup" ].length; ++i )
+          r = r && events[ "onpointerup" ][ i ]( e );
         return r;
       }
       else return;
     };
 
     /**
-     * catch mouse and keyboard events
+     * catch pointer and keyboard events
      *
-     * @todo recognise mouse button, catch keyboard events
+     * @todo recognise pointer button, catch keyboard events
      */
     this.catchEvents = function(
         c     //!< optional cursor style
@@ -522,7 +523,7 @@
     };
 
     /**
-     * release mouse and keyboard events
+     * release pointer and keyboard events
      */
     this.releaseEvents = function()
     {
@@ -539,9 +540,14 @@
       focusCatcher.focus();
     };
 
+
+    this.dispatchEvent = function(event) {
+      return eventCatcher.dispatchEvent(event);
+    };
+
     /**
      * Toggle the display of an overlay over all of the front end that allows
-     * users to draw a rectangle with their mouse under which all checkboxes will
+     * users to draw a rectangle with their pointer under which all checkboxes will
      * be toggled.
      */
     this.toggleRectCheckboxSelect = function(checkOnly) {
@@ -576,9 +582,13 @@
     window.onresize = this.onresize;
     window.onresize();
 
-    eventCatcher.onmousedown = self.onmousedown;
-    eventCatcher.onmouseout = eventCatcher.onmouseup = self.onmouseup;
-    eventCatcher.onmousemove = self.onmousemove;
+    eventCatcher.onpointerdown = self.onpointerdown;
+    eventCatcher.onpointermove = self.onpointermove;
+
+    eventCatcher.onpointerout = self.onpointerup;
+    eventCatcher.onpointerup = self.onpointerup;
+    eventCatcher.onpointerleave = self.onpointerup;
+    eventCatcher.onpointercancel = self.onpointerup;
 
     // Register global key listener
     document.onkeydown = onkeydown;
@@ -804,7 +814,7 @@
       posy = e.clientY + document.body.scrollTop
         + document.documentElement.scrollTop;
     }
-    // posx and posy contain the mouse position relative to the document
+    // posx and posy contain the pointer position relative to the document
     return {'x': posx, 'y': posy};
   };
 
@@ -822,7 +832,7 @@
   };
 
   /**
-   * Global mouse position tracker.
+   * Global pointer position tracker.
    * @return {{x: number, y: number}} Mouse coordinates of the last bubbled event.
    */
   CATMAID.UI.getLastMouse = function () {

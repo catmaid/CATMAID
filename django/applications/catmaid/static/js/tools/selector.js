@@ -43,7 +43,7 @@
       // nothing to do here
     };
 
-    var onmousemove =
+    var onpointermove =
     {
       pos : function( e )
       {
@@ -93,7 +93,7 @@
       }
     };
 
-    var onmouseup = function( e )
+    var onpointerup = function( e )
     {
       switch ( CATMAID.ui.getMouseButton( e ) )
       {
@@ -101,8 +101,8 @@
         break;
       case 2:
         CATMAID.ui.releaseEvents();
-        CATMAID.ui.removeEvent( "onmousemove", onmousemove.move );
-        CATMAID.ui.removeEvent( "onmouseup", onmouseup );
+        CATMAID.ui.removeEvent( "onpointermove", onpointermove.move );
+        CATMAID.ui.removeEvent( "onpointerup", onpointerup );
         break;
       case 3:
         break;
@@ -110,7 +110,7 @@
       return false;
     };
 
-    var onmousedown = function( e )
+    var onpointerdown = function( e )
     {
       switch ( CATMAID.ui.getMouseButton( e ) )
       {
@@ -118,10 +118,10 @@
         // select something ...
         break;
       case 2:
-        CATMAID.ui.registerEvent( "onmousemove", onmousemove.move );
-        CATMAID.ui.registerEvent( "onmouseup", onmouseup );
+        CATMAID.ui.registerEvent( "onpointermove", onpointermove.move );
+        CATMAID.ui.registerEvent( "onpointerup", onpointerup );
         CATMAID.ui.catchEvents( "move" );
-        CATMAID.ui.onmousedown( e );
+        CATMAID.ui.onpointerdown( e );
         CATMAID.ui.catchFocus();
         break;
       case 3:
@@ -242,8 +242,8 @@
 
       stackViewer = parentStackViewer;
 
-      mouseCatcher.onmousedown = onmousedown;
-      mouseCatcher.onmousemove = onmousemove.pos;
+      mouseCatcher.onpointerdown = onpointerdown;
+      mouseCatcher.onpointermove = onpointermove.pos;
       mouseCatcher.addEventListener( "wheel", onmousewheel, false );
 
       mouseCatcher.style.cursor = "url(" + STATIC_URL_JS + "images/svg-circle.cur) 15 15, crosshair";

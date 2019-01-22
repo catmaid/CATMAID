@@ -1111,7 +1111,7 @@
           e.stopPropagation();
           e.preventDefault();
         });
-        c.on('click', function (event) {
+        c.on('pointerupoutside', function (event) {
           var e = event.data.originalEvent;
           e.stopPropagation();
           e.preventDefault();

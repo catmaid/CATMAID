@@ -527,7 +527,7 @@
         var g = this.makeMarker();
 
         var tracingOverlay = this.overlayGlobals.tracingOverlay;
-        var texture = tracingOverlay.pixiLayer._context.renderer.generateTexture(g, PIXI.SCALE_MODES.DEFAULT, 1);
+        var texture = tracingOverlay.pixiLayer._context.renderer.generateTexture(g, PIXI.settings.SCALE_MODES, 1);
 
         if (this.NODE_TEXTURE) {
           var oldBaseTexture = this.NODE_TEXTURE.baseTexture;
@@ -1427,7 +1427,7 @@
         var g = this.makeMarker();
 
         var tracingOverlay = this.overlayGlobals.tracingOverlay;
-        var texture = tracingOverlay.pixiLayer._context.renderer.generateTexture(g, PIXI.SCALE_MODES.DEFAULT, 1);
+        var texture = tracingOverlay.pixiLayer._context.renderer.generateTexture(g, PIXI.settings.SCALE_MODES, 1);
 
         if (!force && this.NODE_TEXTURE) {
           var oldBaseTexture = this.NODE_TEXTURE.baseTexture;
@@ -2187,7 +2187,7 @@
           cachedText.alpha = 1.0;
           cachedText.resolution = this.textResolution;
           var texture = this.overlayGlobals.tracingOverlay.pixiLayer._context.renderer.generateTexture(
-              cachedText, PIXI.SCALE_MODES.DEFAULT, 1);
+              cachedText, PIXI.settings.SCALE_MODES, 1);
           confidenceTextCache[confidence] = cachedText;
         } else if (cachedText.style.fontSize !== this.confidenceFontSize) {
           cachedText.style = {
@@ -2197,7 +2197,7 @@
               baseline: 'middle'};
           cachedText.resolution = this.textResolution;
           var texture = this.overlayGlobals.tracingOverlay.pixiLayer._context.renderer.generateTexture(
-              cachedText, PIXI.SCALE_MODES.DEFAULT, 1);
+              cachedText, PIXI.settings.SCALE_MODES, 1);
         }
 
         if (existing) {

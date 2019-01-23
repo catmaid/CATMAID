@@ -826,46 +826,30 @@
   function previewRemoteSkeletons(remote, projectId, neuronAnnotation) {
     // Get all remote skeletons
     let isLocalUrl = !(remote && remote.length > 0);
-    let url = CATMAID.tools.urlJoin(remote.url, projectId + '/annotations/query-targets');
-    let headers;
-    if (remote.api_key) {
-      headers = {
-        'X-Authorization': 'Token ' + remote.api_key,
-      };
-    }
+    let api = isLocalUrl ? null : remote;
     let params = {
       'annotated_with': [neuronAnnotation],
       'annotation_reference': 'name',
       'types': ['neuron'],
     };
-    let options = {
-      method: 'POST',
-      data: params,
-      headers: headers,
-    };
-    if (isLocalUrl) {
-      options.relativeURL = url;
-    } else {
-      options.absoluteURL = url;
-    }
-    CATMAID.fetch(options)
-      .then(result => {
+
+    CATMAID.fetch({
+        url: projectId + '/annotations/query-targets',
+        method: 'POST',
+        data: params,
+        api: api,
+      }).then(result => {
         let skeletonIds = result.entities.reduce((l, e) => {
           Array.prototype.push.apply(l, e.skeleton_ids);
           return l;
         }, []);
         // Fetch skeletons
         let promises = skeletonIds.map(skeletonId => {
-          let skeletonUrl = CATMAID.tools.urlJoin(remote.url, projectId + '/' + skeletonId + '/1/1/1/compact-arbor');
-          let arborFetchOptions = {
-            method: 'POST',
-            headers:  headers
-          };
-          if (isLocalUrl) arborFetchOptions.relativeURL = skeletonUrl;
-          else arborFetchOptions.absoluteURL = skeletonUrl;
-
-          return CATMAID.fetch(arborFetchOptions)
-            .then(function(result) {
+          return CATMAID.fetch({
+              url: projectId + '/' + skeletonId + '/1/1/1/compact-arbor',
+              method: 'POST',
+              api: api,
+            }) .then(function(result) {
               var ap = new CATMAID.ArborParser();
               ap.tree(result[0]);
               return [skeletonId, ap];
@@ -885,7 +869,7 @@
         }
         // Create dialog
         var dialog = new CATMAID.Confirmation3dDialog({
-          title: `Preview of all remote neurons annotated with "${neuronAnnotation}"`,
+          title: `Preview of all ${skeletonIds.length} remote neurons annotated with "${neuronAnnotation}"`,
           showControlPanel: false,
           buttons: {
             "Close": () => dialog.close(),
@@ -2610,39 +2594,31 @@
               }));
             } else {
               // In case, no particular source remote is defined, we use the local instance.
-              if (!sourceRemote || sourceRemote.length === 0) {
-
-              } else {
-                // Find selected remote configuration based on name
-                let remoteConfigs = CATMAID.Client.Settings.session.remote_catmaid_instances;
-                if (!remoteConfigs) {
-                  return Promise.reject("No configured remote instances found");
-                }
-                let remote = remoteConfigs.filter(function(rc) {
-                  return rc.name === sourceRemote;
-                });
-                if (remote.length === 0) {
-                  return Promise.reject("No matching remote found");
-                }
-                if (remote.length > 1) {
-                  return Promise.reject("Found more than one matching remote config");
-                }
-                let rc = remote[0];
-                // Fetch projects from remote
-                let url = CATMAID.tools.urlJoin(rc.url, '/projects/');
-                let headers;
-                if (rc.api_key) {
-                  headers = {
-                    'X-Authorization': "Token " + rc.api_key,
-                    'X-Requested-With': undefined,
-                  };
-                }
+              // Find selected remote configuration based on name
+              let remoteConfigs = CATMAID.Client.Settings.session.remote_catmaid_instances;
+              if (!remoteConfigs) {
+                return Promise.reject("No configured remote instances found");
               }
-              return CATMAID.fetch({absoluteURL: url, method: 'GET', headers: headers})
-                .then(projects => {
+              let remote = remoteConfigs.filter(function(rc) {
+                return rc.name === sourceRemote;
+              });
+              if (remote.length === 0) {
+                return Promise.reject("No matching remote found");
+              }
+              if (remote.length > 1) {
+                return Promise.reject("Found more than one matching remote config");
+              }
+              // Expect exactly one matching remote.
+              let api = new CATMAID.API.fromSetting(remote[0]);
+              // Fetch projects from remote.
+              return CATMAID.fetch({
+                  url: '/projects/',
+                  method: 'GET',
+                  api: api,
+                }).then(projects => {
                   return projects.map(p => {
                     return {
-                      title: p.title + '(' + p.id + ')',
+                      title: p.title + ' (' + p.id + ')',
                       value: p.id,
                     };
                   });
@@ -2723,9 +2699,7 @@
               return;
             }
             let rc;
-            if (sourceRemote.length === 0) {
-              rc = CATMAID.client.getLocalAPIInfo();
-            } else {
+            if (sourceRemote.length > 0) {
               // Find selected remote configuration based on name
               let remoteConfigs = CATMAID.Client.Settings.session.remote_catmaid_instances;
               if (!remoteConfigs) {
@@ -2836,7 +2810,6 @@
         });
 
         // Project select
-        // TODO: don't require remote definition for instance local data
         let getSourceGroupList = function() {
           if (!sourceRemote || sourceRemote.length === 0) {
             return Promise.resolve(groupOptions);
@@ -2857,18 +2830,11 @@
             if (remote.length > 1) {
               return Promise.reject("Found more than one matching remote config");
             }
-            let rc = remote[0];
+            // Expect exactly one remote configuration match.
+            let api = CATMAID.API.fromSetting(remote[0]);
             // Fetch projects from remote
-            let url = CATMAID.tools.urlJoin(rc.url, sourceProject + '/landmarks/groups/');
-            let headers;
-            if (rc.api_key) {
-              headers = {
-                'X-Authorization': "Token " + rc.api_key,
-                'X-Requested-With': undefined,
-              };
-            }
             return CATMAID.fetch({
-                absoluteURL: url,
+                url: sourceProject + '/landmarks/groups/',
                 method: 'GET',
                 data: {
                   with_members: true,
@@ -2876,7 +2842,7 @@
                   with_links: true,
                   with_relations: true,
                 },
-                headers: headers,
+                api: api,
               })
               .then(remoteGroups => {
                 return remoteGroups.map(p => {

@@ -2858,7 +2858,7 @@
     // Axes camera and scene
     this.axesCamera = new THREE.PerspectiveCamera(50, this.axesRectWidth / this.axesRectHeight, 1, 1000);
     this.axesCamera.up = this.view.camera.up;
-    let axisHelper = new THREE.AxisHelper(100);
+    let axisHelper = new THREE.AxesHelper(100);
     var colors = axisHelper.geometry.attributes.color;
 
     colors.setXYZ( 0, 1, 0, 0 ); // index, R, G, B

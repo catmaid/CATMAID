@@ -1059,6 +1059,19 @@ div.review-block::after {
 
 .dropdown-panel .setting label{
   padding: 0.2em;
+  margin: 0.1em 0.35em;
+  display: inline-block;
+}
+
+.dropdown-panel input,
+.dropdown-panel select,
+.dropdown-panel button {
+  vertical-align: middle;
+  margin-left: 0.3em;
+}
+
+.dropdown-panel input[type=radio] {
+  margin-bottom: 0.3em;
 }
 
 .setting {

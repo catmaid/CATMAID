@@ -17,7 +17,7 @@
    *                            CATMAID.INTERSECTION
    * @param {number}  skid      (optional) Skeleton ID to constrain this filter to
    * @param {string}  name      (optional) Name to constrain this filter to
-   * @param (boolean} invert    (optional) Whether or not to invert the filter
+   * @param {boolean} invert    (optional) Whether or not to invert the filter
    *                            result (default is false).
    */
   CATMAID.SkeletonFilterRule = function(strategy, options, mergeMode, skid,
@@ -37,6 +37,13 @@
    * strategy it has an optional list skeletons it is valid for. If this list is
    * not empty the application of this rule will be ignored for all other
    * skeletons.
+   *
+   * @param {string}  strategy  A NodeFilterStrategy key to specify the filter
+   * @param {object}  options   A set of options that is passed to the filter
+   * @param {number}  mergeMode (optional) Either CATMAID.UNION (default) or
+   *                            CATMAID.INTERSECTION
+   * @param {boolean} invert    (optional) Whether or not to invert the filter
+   *                            result (default is false).
    */
   CATMAID.NodeFilterRule = function(strategy, options, mergeMode, invert = false) {
     this.skip = false;

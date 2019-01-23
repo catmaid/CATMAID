@@ -555,7 +555,8 @@
         table.style.width = "100%";
         var header = table.createTHead();
         var hrow = header.insertRow(0);
-        var columns = ['On', 'Name', 'Merge mode', 'Options', 'Is skeleton', 'Has name', 'Action'];
+        var columns = ['On', 'Name', 'Merge mode', 'Options', 'Is skeleton',
+            'Invert', 'Has name', 'Action'];
         columns.forEach(function(c) {
           hrow.insertCell().appendChild(document.createTextNode(c));
         });
@@ -621,6 +622,15 @@
                 }
               },
               visible: type === 'skeleton',
+            },
+            {
+              orderable: false,
+              render: function(data, type, row, meta) {
+                if (type === "display") {
+                  return row.invert ? 'Yes' : 'No';
+                }
+                return row.invert;
+              },
             },
             {
               orderable: false,
@@ -692,7 +702,7 @@
           return false;
         });
 
-        // Get available filter strategeis
+        // Get available filter strategies
         var Strategy = CATMAID.FilterStrategies.get(type);
         var nodeFilters = Object.keys(Strategy).reduce(function(o, p) {
           o[Strategy[p].name] = p;
@@ -804,14 +814,25 @@
       }));
     $target.append(nodeFilterSettings);
 
+    let newRuleInvert = false;
+    let invertRuleLabel = document.createElement('label');
+    let invertRuleCb = invertRuleLabel.appendChild(document.createElement('input'));
+    invertRuleCb.setAttribute('type', 'checkbox');
+    invertRuleCb.addEventListener('change', function(e) {
+      newRuleInvert = this.checked;
+    });
+    invertRuleLabel.appendChild(document.createTextNode('Invert'));
+    $target.append(invertRuleLabel);
+
     var addRuleButton = document.createElement('button');
     addRuleButton.appendChild(document.createTextNode("Add new filter rule"));
     addRuleButton.onclick = function() {
       var TypeSpecificRule = CATMAID.FilterRules.get(type);
       var typeSpecificFactories = CATMAID.FilterStrategies.get(type);
       var strategy = typeSpecificFactories[newRuleStrategy];
-      var rule = new TypeSpecificRule( strategy,
-          newRuleOptions, newRuleMergeMode, newRuleSkeletonID, newRuleSkeletonName);
+      var rule = new TypeSpecificRule(strategy, newRuleOptions,
+          newRuleMergeMode, newRuleSkeletonID, newRuleSkeletonName,
+          newRuleInvert);
 
       updateNodeFilterSettings(newRuleStrategy);
 

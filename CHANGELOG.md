@@ -57,6 +57,14 @@ Administration:
   add slightly more time to spatial queries, which will mainly be relevant for
   importing and merging large skeleotons.
 
+Node and skeleton filters:
+
+- Filter rules support now an "invert" option during creation, which allows to
+  create filters that include everything but whatever is matched by a particular
+  filter strategy. This can be useful e.g. during neuron review to only look at
+  segments that have been created by people other than oneself or connectivity
+  everywhere excluding a particular compartment.
+
 System check widget:
 
 - A subset of important database statistics are now displayed if a user has the

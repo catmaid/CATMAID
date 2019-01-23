@@ -10,11 +10,22 @@
    * strategy it has an optional list skeletons it is valid for. If this list is
    * not empty the application of this rule will be ignored for all other
    * skeletons.
+   *
+   * @param {string}  strategy  A SkeletonFilterStrategy key to specify the filter
+   * @param {object}  options   A set of options that is passed to the filter
+   * @param {number}  mergeMode (optional) Either CATMAID.UNION (default) or
+   *                            CATMAID.INTERSECTION
+   * @param {number}  skid      (optional) Skeleton ID to constrain this filter to
+   * @param {string}  name      (optional) Name to constrain this filter to
+   * @param (boolean} invert    (optional) Whether or not to invert the filter
+   *                            result (default is false).
    */
-  CATMAID.SkeletonFilterRule = function(strategy, options, mergeMode, skid, name) {
+  CATMAID.SkeletonFilterRule = function(strategy, options, mergeMode, skid,
+      name, invert = false) {
     this.skip = false;
     this.mergeMode = mergeMode || CATMAID.UNION;
     this.strategy = strategy;
+    this.invert = invert;
     this.options = options;
     this.validOnlyForSkid = skid;
     this.validOnlyForName = name;
@@ -27,15 +38,21 @@
    * not empty the application of this rule will be ignored for all other
    * skeletons.
    */
-  CATMAID.NodeFilterRule = function(strategy, options, mergeMode) {
+  CATMAID.NodeFilterRule = function(strategy, options, mergeMode, invert = false) {
     this.skip = false;
     this.mergeMode = mergeMode || CATMAID.UNION;
     this.strategy = strategy;
+    this.invert = invert;
     this.options = options;
   };
 
   var addToObject = function(o, key) {
     o[key] = true;
+    return o;
+  };
+
+  var removeFromObject = function(o, key) {
+    delete o[key];
     return o;
   };
 
@@ -73,12 +90,29 @@
 
       var allowedNodes = new Set();
 
+      // If the rule can't invert by itself, try naive inversion implementation,
+      // which requires an arbor. Therefore, check if arbor is available.
+      let noOwnInversion = !rule.strategy.canInvert;
+      if (rule.invert && noOwnInversion &&
+          (!inputMap.skeleton || !inputMap.skeleton.arbor)) {
+        CATMAID.warn(`Can't invert rule "${rule.name}", because it doesn't require arbor and arbor isn't available.`);
+        return;
+      }
+
       // Apply rules and get back a set of valid nodes for each skeleton
       sourceNodeIds.forEach(function(nodeId) {
         // Get valid point list from this skeleton with the current filter
         var node = nodeIndex.get(nodeId);
         var nodeCollection = rule.strategy.filter(nodeId, node,
-            inputMap, rule.options);
+            inputMap, rule.options, rule.invert);
+        // If the results should be inverted for this rule and the rule
+        // implementation can't invert by its own, invert naively here.
+        if (rule.invert && noOwnInversion) {
+          let unfilteredNode = {};
+          unfilteredNode[nodeId] = true;
+          nodeCollection = CATMAID.SkeletonFilterStrategy.invert(nodeCollection,
+              unfilteredNode);
+        }
         // Merge all point sets for this rule. How this is done exactly (i.e.
         // OR or AND) is configured separately.
         if (nodeCollection && !CATMAID.tools.isEmpty(nodeCollection)) {
@@ -104,6 +138,7 @@
   NodeFilter.prototype.execute = function(mapResultNode, keepInputCache) {
     var rules = CATMAID.NodeFilter.getActiveRules(this.rules);
 
+    let invert = this.invert;
     var nodeIndex = this.nodeIndex;
     var nodeIds = Array.from(nodeIndex.keys());
 
@@ -113,7 +148,8 @@
     }
     return prepareFilterInput(nodeIds, rules, this.input)
       .then(function(input) {
-        return executeNodeFilterRules(rules, nodeIndex, input, mapResultNode);
+        return executeNodeFilterRules(rules, nodeIndex, input, mapResultNode,
+            invert);
       });
   };
 
@@ -483,12 +519,27 @@
 
       var allowedSkeletons = new Set();
 
+      // If the rule can't invert by itself, try naive inversion implementation,
+      // which requires an arbor. Therefore, check if arbor is available.
+      let noOwnInversion = !rule.strategy.canInvert;
+      if (rule.invert && noOwnInversion &&
+          (!inputMap.skeleton || !inputMap.skeleton.arbor)) {
+        CATMAID.warn(`Can't invert rule "${rule.name}", because it doesn't require arbor and arbor isn't available.`);
+        return;
+      }
+
       // Apply rules and get back a set of valid nodes for each skeleton
       Object.keys(sourceSkeletons).forEach(function(skid) {
         // Get valid point list from this skeleton with the current filter
         var neuron = skeletonIndex[skid];
         var nodeCollection = rule.strategy.filter(skid, neuron,
-            inputMap, rule.options);
+            inputMap, rule.options, rule.invert);
+        // If the results should be inverted for this rule and the rule
+        // implementation can't invert by its own, invert naively here.
+        if (rule.invert && noOwnInversion) {
+          nodeCollection = CATMAID.SkeletonFilterStrategy.invert(nodeCollection,
+              inputMap.skeleton.arbor);
+        }
         // Merge all point sets for this rule. How this is done exactly (i.e.
         // OR or AND) is configured separately.
         if (nodeCollection && !CATMAID.tools.isEmpty(nodeCollection)) {
@@ -613,17 +664,20 @@
     "take-all": {
       name: "Take all nodes",
       prepare: ["location"],
-      filter: function(nodeId, node, input, options) {
-        return node;
+      caninvert: true,
+      filter: function(nodeId, node, input, options, invert) {
+        return invert ? node : {};
       }
     },
     "volume": {
       name: "Volume",
       prepare: ["locations", "volume"],
-      filter: function(nodeId, node, input, options) {
+      canInvert: true,
+      filter: function(nodeId, node, input, options, invert) {
         var volume = input.volumes[options.volumeId];
         var includedNodes = {};
-        if (volume.intersector.contains(node)) {
+        let intersects = volume.intersector.contains(node);
+        if ((intersects && !invert) || (!intersects && invert)) {
           includedNodes[nodeId] = node;
         }
         return includedNodes;
@@ -663,61 +717,97 @@
     "take-all": {
       name: "Take all nodes of each skeleton",
       prepare: ["arbor"],
-      filter: function(skeletonId, neuron, input, options) {
-        var skeleton = input.skeletons[skeletonId];
-        return skeleton.arbor.nodes();
+      canInvert: true,
+      filter: function(skeletonId, neuron, input, options, invert) {
+        if (invert) {
+          return {};
+        } else {
+          var skeleton = input.skeletons[skeletonId];
+          return skeleton.arbor.nodes();
+        }
       }
     },
     "endnodes": {
       name: "Only end nodes",
       prepare: ["arbor"],
-      filter: function(skeletonId, neuron, input, options) {
+      canInvert: true,
+      filter: function(skeletonId, neuron, input, options, invert) {
         var skeleton = input.skeletons[skeletonId];
         var arbor = skeleton.arbor;
         var endIds = arbor.findBranchAndEndNodes().ends;
-        var endNodes = {};
+        var resultNodes = {};
         var nodes = arbor.nodes();
-        for (var i=0; i<endIds.length; ++i) {
-          var nodeId = endIds[i];
-          if (nodes.hasOwnProperty(nodeId)) {
-            endNodes[nodeId] = nodes[nodeId];
+        if (!invert) {
+          for (var i=0; i<endIds.length; ++i) {
+            var nodeId = endIds[i];
+            if (nodes.hasOwnProperty(nodeId)) {
+              resultNodes[nodeId] = nodes[nodeId];
+            }
+          }
+          if (options.includeRoot) {
+            var rootNode = nodes[arbor.root];
+            if (rootNode) {
+              resultNodes[arbor.root] = rootNode;
+            }
+          }
+        } else {
+          resultNodes = nodes;
+          for (var i=0; i<endIds.length; ++i) {
+            var nodeId = endIds[i];
+            if (nodes.hasOwnProperty(nodeId)) {
+              delete resultNodes[nodeId];
+            }
+          }
+          if (options.includeRoot) {
+            delete resultNodes[arbor.root];
           }
         }
-        if (options.includeRoot) {
-          var rootNode = nodes[arbor.root];
-          if (rootNode) {
-            endNodes[arbor.root] = rootNode;
-          }
-        }
-        return endNodes;
+        return resultNodes;
       }
     },
     "branches": {
       name: "Only branch nodes",
       prepare: ["arbor"],
-      filter: function(skeletonId, neuron, input, options) {
+      canInvert: true,
+      filter: function(skeletonId, neuron, input, options, invert) {
         var skeleton = input.skeletons[skeletonId];
         var arbor = skeleton.arbor;
         var branchIds = Object.keys(arbor.findBranchAndEndNodes().branches);
-        var branchNodes = {};
+        var resultNodes = {};
         var nodes = arbor.nodes();
-        for (var i=0; i<branchIds.length; ++i) {
-          var nodeId = branchIds[i];
-          if (nodes.hasOwnProperty(nodeId)) {
-            branchNodes[nodeId] = nodes[nodeId];
+        if (!invert) {
+          for (var i=0; i<branchIds.length; ++i) {
+            var nodeId = branchIds[i];
+            if (nodes.hasOwnProperty(nodeId)) {
+              resultNodes[nodeId] = nodes[nodeId];
+            }
+          }
+        } else {
+          resultNodes = nodes;
+          for (var i=0; i<branchIds.length; ++i) {
+            var nodeId = branchIds[i];
+            if (nodes.hasOwnProperty(nodeId)) {
+              delete resultNodes[nodeId];
+            }
           }
         }
-        return branchNodes;
+        return resultNodes;
       }
     },
     // Options: tag
     'tags': {
       name: "Only tagged nodes",
       prepare: ["arbor", "tags"],
-      filter: function(skeletonId, neuron, input, options) {
+      canInvert: true,
+      filter: function(skeletonId, neuron, input, options, invert) {
         var skeleton = input.skeletons[skeletonId];
         var tags = skeleton.tags;
-        return tags[options.tag].reduce(addToObject, {}) || null;
+        if (!invert) {
+          return tags[options.tag].reduce(addToObject, {}) || null;
+        } else {
+          let nodes = skeleton.arbor.nodes();
+          return tags[options.tag].reduce(removeFromObject, nodes) || null;
+        }
       }
     },
     // Looks for soma tags on root nodes and make sure there is only one root
@@ -725,7 +815,8 @@
     "soma": {
       name: "Only soma",
       prepare: ["arbor", "tags"],
-      filter: function(skeletonId, neuron, input, options) {
+      canInvert: true,
+      filter: function(skeletonId, neuron, input, options, invert) {
         var skeleton = input.skeletons[skeletonId];
         var arbor = skeleton.arbor;
         var tags = skeleton.tags;
@@ -748,14 +839,19 @@
             }
           }
         }
-        return somaTaggedNodes.reduce(addToObject, {}) || null;
+        if (!invert) {
+          return somaTaggedNodes.reduce(addToObject, {}) || null;
+        } else {
+          return somaTaggedNodes.reduce(removeFromObject, arbor.nodes()) || null;
+        }
       }
     },
     // Options: tag, expected
     "subarbor": {
       name: "Use a sub-arbor starting from a tag",
       prepare: ["arbor", "tags"],
-      filter: function(skeletonId, neuron, input, options) {
+      canInvert: true,
+      filter: function(skeletonId, neuron, input, options, invert) {
         var skeleton = input.skeletons[skeletonId];
         var arbor = skeleton.arbor;
         var tags = skeleton.tags;
@@ -764,48 +860,70 @@
           console.log("CANNOT extract dendrite for " + neuron.name + ", cuts: " + cuts);
           return {};
         }
-        return cuts.reduce(function(nodes, cut) {
-          return $.extend(nodes, arbor.subArbor(cut).nodes());
-        }, {});
+
+        let subarborNodes = cuts.reduce(function(nodes, cut) {
+            return $.extend(nodes, arbor.subArbor(cut).nodes());
+          }, {});
+
+        if (!invert) {
+          return subarborNodes;
+        } else {
+          return Object.keys(subarborNodes).reduce(removeFromObject, arbor.nodes());
+        }
       }
     },
     // Options: tag
     "subarbor-any": {
       name: "Use all sub-arbors starting from a tag",
       prepare: ["arbor", "tags"],
-      filter: function(skeletonId, neuron, input, options) {
+      canInvert: true,
+      filter: function(skeletonId, neuron, input, options, invert) {
         var skeleton = input.skeletons[skeletonId];
         var arbor = skeleton.arbor;
         var tags = skeleton.tags;
         var cuts = tags[options.tag];
-        return cuts.reduce(function(nodes, cut) {
+        let subarborNodes = cuts.reduce(function(nodes, cut) {
           return $.extend(nodes, arbor.subArbor(cut).nodes());
         }, {});
+
+        if (!invert) {
+          return subarborNodes;
+        } else {
+          return Object.keys(subarborNodes).reduce(removeFromObject, arbor.nodes());
+        }
       }
     },
     // Options: tag
     "uparbor": {
       name: "Pruned arbor",
       prepare: ["arbor", "tags"],
-      filter: function(skeletonId, neuron, input, options) {
+      canInvert: true,
+      filter: function(skeletonId, neuron, input, options, invert) {
         var skeleton = input.skeletons[skeletonId];
         var arbor = skeleton.arbor;
         var tags = skeleton.tags;
         var cuts = tags[options.tag];
         var nodes = arbor.nodes();
-        cuts.forEach(function(cut) {
+        let uparborNodes = cuts.forEach(function(cut) {
           arbor.subArbor(cut).nodesArray().forEach(function(node) {
             delete nodes[node];
           });
         });
-        return nodes;
+
+
+        if (!invert) {
+          return uparborNodes;
+        } else {
+          return Object.keys(uparborNodes).reduce(removeFromObject, arbor.nodes());
+        }
       }
     },
     // Options: tagStart, tagEnd
     "single-region": {
       name: "Use a region",
       prepare: ["arbor", "tags"],
-      filter: function(skeletonId, neuron, input, options) {
+      canInvert: true,
+      filter: function(skeletonId, neuron, input, options, invert) {
         var skeleton = input.skeletons[skeletonId];
         var arbor = skeleton.arbor;
         var tags = skeleton.tags;
@@ -826,33 +944,47 @@
         sub1.subArbor(end).nodesArray().forEach(function(node) {
           delete sub1.edges[node];
         });
-        return sub1.nodes();
+        let sub1Nodes = sub1.nodes();
+
+        if (!invert) {
+          return sub1Nodes;
+        } else {
+          return Object.keys(sub1Nodes).reduce(removeFromObject, arbor.nodes());
+        }
       }
     },
     // Options: tag, region
     "binary-split": {
       name: "Binary split",
       prepare: ["arbor", "tags"],
-      filter: function(skeletonId, neuron, input, options) {
+      canInvert: true,
+      filter: function(skeletonId, neuron, input, options, invert) {
         var skeleton = input.skeletons[skeletonId];
         var arbor = skeleton.arbor;
         var tags = skeleton.tags;
         var cuts = tags[options.tag];
+        let resultNodes = null;
         if (!cuts || cuts.length !== 1) {
           console.log("CANNOT extract dendrite for " + neuron.name + ", cuts: " + cuts);
           return null;
         }
         if ("downstream" === options.region) {
-          return arbor.subArbor(cuts[0]).nodes();
+          resultNodes = arbor.subArbor(cuts[0]).nodes();
         } else if ("upstream" === options.region) {
           var dend = arbor.clone();
           arbor.subArbor(cuts[0]).nodesArray().forEach(function(node) {
             delete dend.edges[node];
           });
-          return dend.nodes();
+          resultNodes = dend.nodes();
         } else {
           console.log("CANNOT extract dendrite for " + neuron.name + ", unknown region: " + neuron.strategy.region);
           return null;
+        }
+
+        if (!invert) {
+          return resultNodes;
+        } else {
+          return Object.keys(resultNodes).reduce(removeFromObject, arbor.nodes());
         }
       }
     },
@@ -860,8 +992,9 @@
     // another set of skeletons.
     "synaptic": {
       name: "Synaptic connections to other neurons",
-      prepare: ["partners"],
-      filter: function(skeletonId, neuron, input, options) {
+      prepare: ["partners", "arbor"],
+      canInvert: true,
+      filter: function(skeletonId, neuron, input, options, invert) {
         var skeleton = input.skeletons[skeletonId];
         var partners = skeleton.partners;
         var selectedPartners;
@@ -902,26 +1035,40 @@
           }
         }
 
-        return synapticNodes;
+        if (!invert) {
+          return synapticNodes;
+        } else {
+          return Object.keys(synapticNodes).reduce(removeFromObject, skeleton.arbor.nodes());
+        }
       }
     },
     "axon": {
       name: "Axon",
       prepare: ["arbor", "partners", "tags"],
-      filter: function(skeletonId, neuron, input, options) {
+      canInvert: true,
+      filter: function(skeletonId, neuron, input, options, invert) {
         var skeleton = input.skeletons[skeletonId];
         var axon = computeAxonArbor(skeleton.arbor, skeleton.positions,
             skeleton.tags, skeleton.partnersRaw);
-        return axon ? axon.nodes() : {};
+
+        let axonNodes = axon ? axon.nodes() : {};
+
+        if (!invert) {
+          return axonNodes;
+        } else {
+          return Object.keys(axonNodes).reduce(removeFromObject, skeleton.arbor.nodes());
+        }
       }
     },
     "dendrites": {
       name: "Dendrites",
       prepare: ["arbor", "partners", "tags"],
-      filter: function(skeletonId, neuron, input, options) {
+      canInvert: true,
+      filter: function(skeletonId, neuron, input, options, invert) {
         var skeleton = input.skeletons[skeletonId];
         var axon = computeAxonArbor(skeleton.arbor, skeleton.positions,
             skeleton.tags, skeleton.partnersRaw);
+        let resultNodes = {};
         if (axon) {
           // Find all nodes not in axon
           var dendriteNodes = skeleton.arbor.nodes();
@@ -929,16 +1076,21 @@
           for (var i=0, max=axonNodeIds.length; i<max; ++i) {
             delete dendriteNodes[axonNodeIds[i]];
           }
-          return dendriteNodes;
+          resultNodes = dendriteNodes;
+        }
+
+        if (!invert) {
+          return resultNodes;
         } else {
-          return {};
+          return Object.keys(resultNodes).reduce(removeFromObject, skeleton.arbor.nodes());
         }
       }
     },
     "volume": {
       name: "Volume",
       prepare: ["arbor", "volume"],
-      filter: function(skeletonId, neuron, input, options) {
+      canInvert: true,
+      filter: function(skeletonId, neuron, input, options, invert) {
         var skeleton = input.skeletons[skeletonId];
         var volume = input.volumes[options.volumeId];
         var intersector = volume.intersector;
@@ -952,13 +1104,19 @@
             includedNodes[nodeId] = nodes[nodeId];
           }
         }
-        return includedNodes;
+
+        if (!invert) {
+          return includedNodes;
+        } else {
+          return Object.keys(includedNodes).reduce(removeFromObject, skeleton.arbor.nodes());
+        }
       }
     },
     'users': {
       name: "Created by user(s)",
       prepare: ["arbor"],
-      filter: function(skeletonId, neuron, input, options) {
+      canInvert: true,
+      filter: function(skeletonId, neuron, input, options, invert) {
         var skeleton = input.skeletons[skeletonId];
         var nodes = skeleton.nodesRaw;
         var includedNodes = {};
@@ -968,13 +1126,19 @@
             includedNodes[node[0]] = true;
           }
         }
-        return includedNodes;
+
+        if (!invert) {
+          return includedNodes;
+        } else {
+          return Object.keys(includedNodes).reduce(removeFromObject, skeleton.arbor.nodes());
+        }
       }
     },
     'date': {
       name: "Date range",
       prepare: ["arbor", "time"],
-      filter: function(skeletonId, neuron, input, options) {
+      canInvert: true,
+      filter: function(skeletonId, neuron, input, options, invert) {
         var skeleton = input.skeletons[skeletonId];
         var nodes = skeleton.nodesRaw;
         var includedNodes = {};
@@ -995,13 +1159,19 @@
             }
           }
         }
-        return includedNodes;
+
+        if (!invert) {
+          return includedNodes;
+        } else {
+          return Object.keys(includedNodes).reduce(removeFromObject, skeleton.arbor.nodes());
+        }
       }
     },
     'strahler': {
       name: 'Strahler number',
       prepare: ['arbor'],
-      filter: function(skeletonId, neuron, input, options) {
+      canInvert: true,
+      filter: function(skeletonId, neuron, input, options, invert) {
         var skeleton = input.skeletons[skeletonId];
         var arbor = skeleton.arbor;
         var nodes = arbor.nodesArray();
@@ -1036,29 +1206,43 @@
         } else {
           throw new CATMAID.ValueError("Unknown strahler filter operation: " + op);
         }
-        return includedNodes;
+
+        if (!invert) {
+          return includedNodes;
+        } else {
+          return Object.keys(includedNodes).reduce(removeFromObject, arbor.nodes());
+        }
       }
     },
     'sampler-domain': {
       name: "Sampler domain",
       prepare: ['arbor', 'domains'],
-      filter: function(skeletonId, neuron, input, options) {
+      canInvert: true,
+      filter: function(skeletonId, neuron, input, options, invert) {
         let skeleton = input.skeletons[skeletonId];
         let arbor = skeleton.arbor;
         let domain = input.domain;
+        let includedNodes = {};
         try {
           let domainArbor = CATMAID.Sampling.domainArbor(arbor, domain.start_node_id,
               domain.ends.map(function(end) { return end.node_id; }));
-          return domainArbor.nodes();
+          includedNodes = domainArbor.nodes();
         } catch (error) {
-          return {};
+          includedNodes = {};
+        }
+
+        if (!invert) {
+          return includedNodes;
+        } else {
+          return Object.keys(includedNodes).reduce(removeFromObject, arbor.nodes());
         }
       }
     },
     'sampler-interval': {
       name: "Sampler interval",
       prepare: ['arbor', 'intervals'],
-      filter: function(skeletonId, neuron, input, options) {
+      canInvert: true,
+      filter: function(skeletonId, neuron, input, options, invert) {
         var skeleton = input.skeletons[skeletonId];
         var arbor = skeleton.arbor;
         var intervalId = options.intervalId;
@@ -1074,28 +1258,35 @@
               return o;
             }, new Set());
 
+        var includedNodes = {};
         try {
           var intervalNodes = CATMAID.Sampling.getIntervalNodes(arbor,
             interval.start_node_id, interval.end_node_id,
             otherIntervalBoundaries);
 
-          var includedNodes = {};
           for (var nodeId of intervalNodes) {
             includedNodes[nodeId] = true;
           }
-          return includedNodes;
         } catch (error) {
-          return {};
+          includedNodes = {};
+        }
+
+        if (!invert) {
+          return includedNodes;
+        } else {
+          return Object.keys(includedNodes).reduce(removeFromObject, arbor.nodes());
         }
       }
     },
     'in-skeleton-source': {
       name: "In skeleton source",
       prepare: ['arbor'],
-      filter: function(skeletonId, neuron, input, options) {
+      canInvert: true,
+      filter: function(skeletonId, neuron, input, options, invert) {
         // If skeleton in set in mapping of other neurons, add all its nodes.
         var otherNeurons = options.otherNeurons;
-        if (otherNeurons && otherNeurons.hasOwnProperty(skeletonId)) {
+        let hasSkeleton = otherNeurons && otherNeurons.hasOwnProperty(skeletonId);
+        if ((hasSkeleton && !invert) || (!hasSkeleton && invert)) {
           var skeleton = input.skeletons[skeletonId];
           return skeleton.arbor.nodes();
         } else {
@@ -1103,6 +1294,15 @@
         }
       }
     }
+  };
+
+  /**
+   * Naive inversion implementation that creates a new node collection based on
+   * the passed-in arbor and the nodes that are not part of the passed-in node
+   * collection.
+   */
+  CATMAID.SkeletonFilterStrategy.invert = function(nodeCollection, arbor) {
+    return Object.keys(nodeCollection).reduce(removeFromObject, arbor.nodes());
   };
 
   /**

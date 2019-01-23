@@ -819,7 +819,7 @@
           this.overlayGlobals.skeletonElements.containers.lines.addChild(this.line);
           line.node = this;
           line.interactive = true;
-          line.on('click', ptype.pointerEventManager.edge_mc_click);
+          line.on('pointerupoutside', ptype.pointerEventManager.edge_mc_click);
           line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
           line.moveTo(0, 0);
           line.lineTo(0, 0);

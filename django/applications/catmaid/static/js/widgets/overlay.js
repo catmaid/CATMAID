@@ -3269,6 +3269,10 @@ var SkeletonAnnotations = {};
     if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.MOVE) {
       return false;
     }
+
+    // Ignore this event, if preventDefault() has been called.
+    if (e.defaultPrevented) return;
+
     if (this.ensureFocused()) {
       e.stopPropagation();
       return;

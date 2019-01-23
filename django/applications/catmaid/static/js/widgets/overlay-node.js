@@ -1108,12 +1108,10 @@
         // Don't let pointer down events bubble up
         c.on('pointerdown', function (event) {
           var e = event.data.originalEvent;
-          e.stopPropagation();
           e.preventDefault();
         });
         c.on('pointerupoutside', function (event) {
           var e = event.data.originalEvent;
-          e.stopPropagation();
           e.preventDefault();
           if (onclickHandler) { onclickHandler(); }
           return true;
@@ -1513,7 +1511,6 @@
        */
       var mc_click = function(event) {
         var e = event.data.originalEvent;
-        //e.stopPropagation();
         e.preventDefault();
         var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(this.node.overlayGlobals.skeletonElements);
         if (catmaidTracingOverlay.ensureFocused()) {
@@ -1676,7 +1673,6 @@
           }
         }
 
-        e.stopPropagation();
         e.preventDefault();
 
         if (!CATMAID.mayEdit() || !node.canEdit()) {
@@ -1747,7 +1743,7 @@
         }
         dragging = false;
         var e = event.data.originalEvent;
-        //e.stopPropagation();
+        e.preventDefault();
         if (!checkNodeID(this)) return;
         o = null;
         var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(this.node.overlayGlobals.skeletonElements);
@@ -1809,7 +1805,6 @@
 
       var connector_mc_click = function(event) {
         var e = event.data.originalEvent;
-        e.stopPropagation();
         e.preventDefault();
         var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(this.node.overlayGlobals.skeletonElements);
         if (catmaidTracingOverlay.ensureFocused()) {
@@ -1879,7 +1874,6 @@
         }
         var node = this.node;
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-          e.stopPropagation();
           e.preventDefault();
           catmaidTracingOverlay.activateNode(node);
           catmaidTracingOverlay.splitSkeleton(node.id);
@@ -1930,7 +1924,6 @@
       /** Function to assign to the graphical arrow. */
       this.pointerdown = function (event) {
         var e = event.data.originalEvent;
-        e.stopPropagation();
         if(!(e.shiftKey && (e.ctrlKey || e.metaKey))) {
           return;
         }

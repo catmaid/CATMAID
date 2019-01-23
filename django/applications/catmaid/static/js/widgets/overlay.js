@@ -3274,7 +3274,7 @@ var SkeletonAnnotations = {};
     if (e.defaultPrevented) return;
 
     if (this.ensureFocused()) {
-      e.stopPropagation();
+      e.preventDefault();
       return;
     }
 
@@ -3318,7 +3318,7 @@ var SkeletonAnnotations = {};
       } else {
         if (!CATMAID.mayEdit()) {
           CATMAID.statusBar.replaceLast("You don't have permission.");
-          e.stopPropagation();
+          e.preventDefault();
           return;
         }
         handled = this.createNodeOrLink(insert, link, postLink);
@@ -3326,7 +3326,6 @@ var SkeletonAnnotations = {};
     }
 
     if (handled) {
-      //e.stopPropagation();
       e.preventDefault();
       return true;
     }
@@ -6246,12 +6245,12 @@ var SkeletonAnnotations = {};
               SkeletonAnnotations.Tag.removeTagbox();
               tracingOverlay.updateNodes();
             }
-            event.stopPropagation();
+            event.preventDefault();
           })
 
           .keydown(function (event) {
             if ('Enter' === event.key) {
-              event.stopPropagation();
+              event.preventDefault();
               var val = input.val().trim();
               if ("" === val) {
                 SkeletonAnnotations.Tag.updateTags(tracingOverlay);
@@ -6265,7 +6264,7 @@ var SkeletonAnnotations = {};
 
           .keyup(function (event) {
             if ('Escape' === event.key) {
-              event.stopPropagation();
+              event.preventDefault();
               SkeletonAnnotations.Tag.removeTagbox();
             }
           });

@@ -406,7 +406,6 @@
       {
         if (!propagate) {
           e.preventDefault();
-          e.stopPropagation();
         }
       }
       else if ( event )

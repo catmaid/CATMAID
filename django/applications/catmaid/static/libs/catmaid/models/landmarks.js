@@ -25,7 +25,7 @@
      * List all landmarks in a project, optionally with location information.
      */
     list: function(projectId, with_locations) {
-      return CATMAID.fetch(project.id +  "/landmarks/", "GET", {
+      return CATMAID.fetch(projectId +  "/landmarks/", "GET", {
           with_locations: with_locations
         });
     },
@@ -88,7 +88,7 @@
      * information.
      */
     listGroups: function(projectId, with_members, with_locations, with_links, with_relations) {
-      return CATMAID.fetch(project.id +  "/landmarks/groups/", "GET", {
+      return CATMAID.fetch(projectId +  "/landmarks/groups/", "GET", {
           with_members: !!with_members,
           with_locations: !!with_locations,
           with_links: !!with_links,
@@ -529,7 +529,7 @@
           if (transformation.landmarkCache && transformation.landmarkCache[landmarkGroupId]) {
             return Promise.resolve(transformation.landmarkCache[landmarkGroupId]);
           } else {
-            return CATMAID.Landmarks.getGroup(project.id, landmarkGroupId, true, true)
+            return CATMAID.Landmarks.getGroup(projectId, landmarkGroupId, true, true)
               .then(function(landmarkGroup) {
                 if (!transformation.landmarkCache) {
                   transformation.landmarkCache = {};
@@ -619,10 +619,10 @@
               transformation.loading = Promise.resolve(transformation.skeletonCache[skeletonId]);
             } else {
               // Get skeleton data and transform it
-              transformation.loading = CATMAID.fetch(project.id + '/skeletons/' + skeletonId + '/compact-detail', 'GET', {
-                  with_tags: false,
-                  with_connectors: false,
-                  with_history: false
+              transformation.loading = CATMAID.fetch(projectId + '/skeletons/' + skeletonId + '/compact-detail', 'GET', {
+                    with_tags: false,
+                    with_connectors: false,
+                    with_history: false
                 })
                 .then(function(response) {
                   // If the source group ID is the same as the target group ID,

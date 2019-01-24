@@ -26,17 +26,19 @@ def get_annotation_to_id_map(project_id, annotations, relations=None,
     if not classes:
         classes = get_class_to_id_map(project_id)
 
-    name_template = ",".join("(%s)" for _ in annotations)
-    params = annotations + [project_id]
-
     cursor = connection.cursor()
     cursor.execute("""
         SELECT ci.name, ci.id
         FROM class_instance ci
-        JOIN (VALUES {}) query_annotation(name)
-        ON ci.name = query_annotation.name
-        WHERE project_id = %s
-    """.format(name_template), params)
+        JOIN UNNEST(%(annotations)s::text[]) query_annotation(name)
+            ON ci.name = query_annotation.name
+        WHERE project_id = %(project_id)s
+            AND ci.class_id = %(class_id)s
+    """, {
+        'project_id': project_id,
+        'class_id': classes['annotation'],
+        'annotations': annotations,
+    })
 
     mapping = dict(cursor.fetchall())
     return mapping

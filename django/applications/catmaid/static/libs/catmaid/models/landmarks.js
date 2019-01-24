@@ -529,7 +529,8 @@
           if (transformation.landmarkCache && transformation.landmarkCache[landmarkGroupId]) {
             return Promise.resolve(transformation.landmarkCache[landmarkGroupId]);
           } else {
-            return CATMAID.Landmarks.getGroup(projectId, landmarkGroupId, true, true)
+            return CATMAID.Landmarks.getGroup(transformation.projectId,
+                landmarkGroupId, true, true)
               .then(function(landmarkGroup) {
                 if (!transformation.landmarkCache) {
                   transformation.landmarkCache = {};
@@ -619,7 +620,8 @@
               transformation.loading = Promise.resolve(transformation.skeletonCache[skeletonId]);
             } else {
               // Get skeleton data and transform it
-              transformation.loading = CATMAID.fetch(projectId + '/skeletons/' + skeletonId + '/compact-detail', 'GET', {
+              transformation.loading = CATMAID.fetch(transformation.projectId +
+                  '/skeletons/' + skeletonId + '/compact-detail', 'GET', {
                     with_tags: false,
                     with_connectors: false,
                     with_history: false
@@ -658,11 +660,29 @@
 
   };
 
-  let LandmarkSkeletonTransformation = function(skeletons, fromGroupId, toGroupId) {
+  /**
+   * Describes a skeleton transformation, optionally with the source being a
+   * remote CATMAID instance.
+   *
+   * @param {number}   projectId   The source project, where to find <fromGroupId>
+   * @param {object[]} skeletons   A list of skeleton models to transform.
+   * @param {number}   fromGroupId The landmark group from which to transform
+   *                               the skeleton, looked for in remote API, if
+   *                               <api> is passed in, otherwise in <projectId>.
+   * @param {number}   toGroupId   The landmark group to transform skeletons to,
+   *                               expected to be the local <projectId>.
+   * @param {API}      fromApi     (Optional) API instance to declare to load
+   *                               skeletons from.
+   *
+   */
+  let LandmarkSkeletonTransformation = function(projectId, skeletons,
+      fromGroupId, toGroupId, fromApi = null) {
+    this.projectId = projectId;
     this.skeletons = skeletons;
     this.fromGroupId = parseInt(fromGroupId, 10);
     this.toGroupId = parseInt(toGroupId, 10);
     this.id = CATMAID.tools.uuidv4();
+    this.fromApi = fromApi;
   };
 
   // Provide some basic events

@@ -701,7 +701,7 @@
       let transformation = this.displayTransformations[i];
       let providerAdded = CATMAID.Landmarks.addProvidersToTransformation(
           transformation, this.landmarkGroupIndex, this.landmarkIndex, i);
-      if (providesAdded) {
+      if (providerAdded) {
         for (let j=0; j<target3dViewers.length; ++j) {
           let widget = target3dViewers[j];
           let selected = this.targeted3dViewerNames.get(widget.getName());
@@ -713,15 +713,26 @@
 
   /**
    * Add a new display transformation for a set of skeletons.
+   *
+   * @param {number} projectId   Source project of the transformation
+   * @param {object} skeletons   Object mapping skeleton IDs to skeleton models
+   * @param {number} fromGroupId Landmark group to transform skeletons from
+   * @param {number} toGroupId   Landmark group to transform skeletons to
+   * @param {API} api (Optional) A remote API to load the source data from. If
+   *                             passed in skeletons and from groups are
+   *                             expected to be there.
+   * @returns new LandmarkSkeletonTransformation instance
    */
-  LandmarkWidget.prototype.addDisplayTransformation = function(skeletons,
-      fromGroupId, toGroupId) {
-    let lst = new CATMAID.LandmarkSkeletonTransformation(skeletons,
-        fromGroupId, toGroupId);
+  LandmarkWidget.prototype.addDisplayTransformation = function(projectId,
+      skeletons, fromGroupId, toGroupId, api) {
+    let lst = new CATMAID.LandmarkSkeletonTransformation(projectId, skeletons,
+        fromGroupId, toGroupId, api);
     this.displayTransformations.push(lst);
 
     // Announce that there is a new display tranformation available
     CATMAID.Landmarks.trigger(CATMAID.Landmarks.EVENT_DISPLAY_TRANSFORM_ADDED);
+
+    return lst;
   };
 
   /**
@@ -739,8 +750,8 @@
         for (let i=0; i<groups.length; ++i) {
           let toGroupId = groups[i];
           let skeletons = getSkeletonModels();
-          let lst = new CATMAID.LandmarkSkeletonTransformation(skeletons,
-              fromGroupId, toGroupId);
+          let lst = new CATMAID.LandmarkSkeletonTransformation(projectId,
+            skeletons, fromGroupId, toGroupId);
           self.displayTransformations.push(lst);
         }
         CATMAID.Landmarks.trigger(CATMAID.Landmarks.EVENT_DISPLAY_TRANSFORM_ADDED);
@@ -825,24 +836,9 @@
    */
   function previewRemoteSkeletons(remote, projectId, neuronAnnotation) {
     // Get all remote skeletons
-    let isLocalUrl = !(remote && remote.length > 0);
-    let api = isLocalUrl ? null : remote;
-    let params = {
-      'annotated_with': [neuronAnnotation],
-      'annotation_reference': 'name',
-      'types': ['neuron'],
-    };
-
-    CATMAID.fetch({
-        url: projectId + '/annotations/query-targets',
-        method: 'POST',
-        data: params,
-        api: api,
-      }).then(result => {
-        let skeletonIds = result.entities.reduce((l, e) => {
-          Array.prototype.push.apply(l, e.skeleton_ids);
-          return l;
-        }, []);
+    let api = remote ? remote : null;
+    CATMAID.Skeletons.byAnnotation(projectId, [neuronAnnotation], api)
+      .then(function(skeletonIds) {
         // Fetch skeletons
         let promises = skeletonIds.map(skeletonId => {
           return CATMAID.fetch({
@@ -881,7 +877,7 @@
         var glWidget = dialog.webglapp;
         var models = skeletonIds.reduce( (o, skid, i) => {
           o[skid] = new CATMAID.SkeletonModel(skid, undefined,
-              colorizer.pickColor());
+              colorizer.pickColor(), api);
           return o;
         }, {} );
 
@@ -2570,6 +2566,28 @@
         let sourceRemote = '';
         let sourceProject = project.id;
         let sourceNeuronAnnotation = '';
+
+        // Find selected remote configuration based on name
+        let getRemote = function() {
+          let remoteConfigs = CATMAID.Client.Settings.session.remote_catmaid_instances;
+          if (!remoteConfigs) {
+            CATMAID.warn("No configured remote instances found");
+            return;
+          }
+          let remote = remoteConfigs.filter(function(rc) {
+            return rc.name === sourceRemote;
+          });
+          if (remote.length === 0) {
+            CATMAID.warn("No matching remote found");
+            return;
+          }
+          if (remote.length > 1) {
+            CATMAID.warn("Found more than one matching remote config");
+            return;
+          }
+          return CATMAID.API.fromSetting(remote[0]);
+        };
+
         if (widget.showOtherProjectOptions) {
           // Remote select
           let remoteOptions = CATMAID.Client.Settings.session.remote_catmaid_instances.reduce(function(o, rci) {
@@ -2700,24 +2718,10 @@
             }
             let rc;
             if (sourceRemote.length > 0) {
-              // Find selected remote configuration based on name
-              let remoteConfigs = CATMAID.Client.Settings.session.remote_catmaid_instances;
-              if (!remoteConfigs) {
-                CATMAID.warn("No configured remote instances found");
+              rc = getRemote();
+              if (!rc) {
                 return;
               }
-              let remote = remoteConfigs.filter(function(rc) {
-                return rc.name === sourceRemote;
-              });
-              if (remote.length === 0) {
-                CATMAID.warn("No matching remote found");
-                return;
-              }
-              if (remote.length > 1) {
-                CATMAID.warn("Found more than one matching remote config");
-                return;
-              }
-              rc = remote[0];
             }
             previewRemoteSkeletons(rc, sourceProject, sourceNeuronAnnotation);
           };
@@ -2939,8 +2943,36 @@
               let addButton = document.createElement('button');
               addButton.appendChild(document.createTextNode('Add transformation'));
               addButton.onclick = function() {
+                if (!fromGroup) {
+                  CATMAID.error("Need source landmark group");
+                  return;
+                }
                 if (widget.showOtherProjectOptions) {
-
+                  if (displayTargetRelation) {
+                    CATMAID.warn("Display target relations aren't yet supported for remote sources");
+                    return;
+                  }
+                  // If skeletons are loaded from a remote API, the skeleton
+                  // source needs to load the remote objects first.
+                  let remote;
+                  if (sourceRemote.length > 0) {
+                    remote = getRemote();
+                    if (!remote) {
+                      return;
+                    }
+                  }
+                  let api = remote ? remote : null;
+                  CATMAID.Skeletons.byAnnotation(project.id, [sourceNeuronAnnotation], api)
+                    .then(function(skeletonIds) {
+                      let skeletonModels = skeletonIds.map(skid =>
+                          new CATMAID.SkeletonModel(skid, undefined, undefined, api));
+                      widget.addDisplayTransformation(sourceProject,
+                          skeletonModels, fromGroup, toGroup, api);
+                      CATMAID.msg("Success", "Transformation added");
+                      widget.updateDisplay();
+                      widget.update();
+                    })
+                    .catch(CATMAID.handleError);
                 } else {
                   if (!skeletonSource) {
                     CATMAID.error("Need a skeleton source");
@@ -2949,11 +2981,6 @@
                   let source = CATMAID.skeletonListSources.getSource(skeletonSource);
                   if (!source) {
                     CATMAID.error("Can't find source: " + sourceSelect.value);
-                    return;
-                  }
-
-                  if (!fromGroup) {
-                    CATMAID.error("Need source landmark group");
                     return;
                   }
 
@@ -2974,8 +3001,8 @@
                     }
 
                     let skeletonModels = source.getSelectedSkeletonModels();
-                    widget.addDisplayTransformation(skeletonModels, fromGroup,
-                        toGroup, displayTargetRelation);
+                    widget.addDisplayTransformation(sourceProject, skeletonModels,
+                        fromGroup, toGroup, displayTargetRelation);
                     CATMAID.msg("Success", "Transformation added");
                     widget.updateDisplay();
                     widget.update();

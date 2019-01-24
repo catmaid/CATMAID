@@ -386,6 +386,30 @@
       return CATMAID.fetch(url, 'POST');
     },
 
+    /**
+     * Get a list of skeleton IDs based on their annotation, optionally from a
+     * remote server.
+     */
+    byAnnotation: function(projectId, annotationNames, api) {
+      let params = {
+        'annotated_with': annotationNames,
+        'annotation_reference': 'name',
+        'types': ['neuron'],
+      };
+      return CATMAID.fetch({
+          url: projectId + '/annotations/query-targets',
+          method: 'POST',
+          data: params,
+          api: api,
+        }).then(result => {
+          let skeletonIds = result.entities.reduce((l, e) => {
+            Array.prototype.push.apply(l, e.skeleton_ids);
+            return l;
+          }, []);
+          return skeletonIds;
+        });
+      },
+
   };
 
   // Provide some basic events

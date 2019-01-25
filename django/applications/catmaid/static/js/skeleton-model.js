@@ -9,10 +9,15 @@
 
   /**
    * Represent a skeleton and some properties of it.
+   *
+   * @param {number}      id    Unique identifier of skeleton
+   * @param {string}      name  (Optional) Name of skeleton, default is empty
+   * @param {THREE.Color} color (Optional) Color of skeleton, default is yellow
+   * @param {API}         api   (Optional) api of where to find this skeleton
    */
-  var SkeletonModel = function( id, neuronname, color ) {
+  var SkeletonModel = function( id, name, color, api = undefined) {
       this.id = parseInt(id);
-      this.baseName = neuronname || "";
+      this.baseName = name || "";
       this.selected = true;
       this.pre_visible = true;
       this.post_visible = true;
@@ -20,6 +25,7 @@
       this.meta_visible = true;
       this.color = color || new THREE.Color(defaultColor);
       this.opacity = 1; // from 0 to 1
+      this.api = api;
   };
 
   SkeletonModel.prototype = {};
@@ -40,6 +46,7 @@
     m.text_visible = this.text_visible;
     m.meta_visible = this.meta_visible;
     m.opacity = this.opacity;
+    m.api = this.api;
     return m;
   };
 

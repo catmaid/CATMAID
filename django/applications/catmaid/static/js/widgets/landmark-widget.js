@@ -32,6 +32,15 @@
     // Maps landmark group IDs to landmark group objects.
     this.landmarkGroupIndex = null;
 
+    // Optionally, landmarks from other CATMAID APIs can be used, which require
+    // their own index.
+    this.sourceLandmarks = null;
+    this.sourceLandmarkIndex = null;
+    this.sourceLandmarkNameIndex = null;
+    this.sourceLandmarkGroups = null;
+    this.sourceLandmarkGroupMemberships = null;
+    this.sourceLandmarkGroupIndex = null;
+
     // A list of selected files to import
     this.filesToImport = [];
     // How many lines to skip during import
@@ -495,6 +504,35 @@
     ]);
   };
 
+  LandmarkWidget.prototype.updateSourceLandmarks = function(api, projectId) {
+    var self = this;
+    return CATMAID.Landmarks.list(projectId, true, api)
+      .then(function(result) {
+        self.sourceLandmarks = result;
+        self.sourceLandmarkIndex = result.reduce(CATMAID.Landmarks.addToIdIndex, new Map());
+        self.sourceLandmarkNameIndex = result.reduce(addToNameIndex, new Map());
+        return result;
+      });
+  };
+
+  LandmarkWidget.prototype.updateSourceLandmarkGroups = function(api, projectId) {
+    var self = this;
+    return CATMAID.Landmarks.listGroups(project.id, true, true, true, true, api)
+      .then(function(result) {
+        self.sourceLandmarkGroups = result;
+        self.sourceLandmarkGroupMemberships = result.reduce(addLandmarkGroupMembership, new Map());
+        self.sourceLandmarkGroupIndex = result.reduce(CATMAID.Landmarks.addToIdIndex, new Map());
+        return result;
+      });
+  };
+
+  LandmarkWidget.prototype.updateSourceLandmarksAndGroups = function(api, projectId) {
+    return Promise.all([
+      this.updateSourceLandmarks(api, projectId),
+      this.updateSourceLandmarkGroups(api, projectId)
+    ]);
+  };
+
   /**
    * Return a promise that will either resolve with a new selection of group
    * members.
@@ -700,7 +738,8 @@
     for (let i=0; i<this.displayTransformations.length; ++i) {
       let transformation = this.displayTransformations[i];
       let providerAdded = CATMAID.Landmarks.addProvidersToTransformation(
-          transformation, this.landmarkGroupIndex, this.landmarkIndex, i);
+          transformation, this.landmarkGroupIndex, this.landmarkIndex, i,
+          this.sourceLandmarkGroupIndex, this.sourceLandmarkIndex, true);
       if (providerAdded) {
         for (let j=0; j<target3dViewers.length; ++j) {
           let widget = target3dViewers[j];
@@ -2761,7 +2800,7 @@
               orderable: false,
               render: function(data, type, row, meta) {
                 if (type === 'display') {
-                  return Object.keys(data).join(', ');
+                  return data.map(m => m.api ? `${m.id} (${m.api.name})` : m.id).join(', ');
                 }
                 return data;
               }
@@ -2820,36 +2859,11 @@
           } else if (!sourceProject) {
             return Promise.resolve([]);
           } else {
-            // Find selected remote configuration based on name
-            let remoteConfigs = CATMAID.Client.Settings.session.remote_catmaid_instances;
-            if (!remoteConfigs) {
-              return Promise.reject("No configured remote instances found");
-            }
-            let remote = remoteConfigs.filter(function(rc) {
-              return rc.name === sourceRemote;
-            });
-            if (remote.length === 0) {
-              return Promise.reject("No matching remote found");
-            }
-            if (remote.length > 1) {
-              return Promise.reject("Found more than one matching remote config");
-            }
-            // Expect exactly one remote configuration match.
-            let api = CATMAID.API.fromSetting(remote[0]);
+            let api = getRemote();
             // Fetch projects from remote
-            return CATMAID.fetch({
-                url: sourceProject + '/landmarks/groups/',
-                method: 'GET',
-                data: {
-                  with_members: true,
-                  with_locations: true,
-                  with_links: true,
-                  with_relations: true,
-                },
-                api: api,
-              })
-              .then(remoteGroups => {
-                return remoteGroups.map(p => {
+            return widget.updateSourceLandmarksAndGroups(api, sourceProject)
+              .then(results => {
+                return widget.sourceLandmarkGroups.map(p => {
                   return {
                     title: p.name,
                     value: p.id,
@@ -3066,6 +3080,9 @@
                   undefined, true);
               // Add a selection handler
               node.onchange = function(e) {
+                if (e.srcElement.type !== 'radio') {
+                  return;
+                }
                 let volumeId = null;
                 if (e.srcElement.value !== "none") {
                   volumeId = parseInt(e.srcElement.value, 10);

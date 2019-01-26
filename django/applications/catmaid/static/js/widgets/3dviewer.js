@@ -2460,15 +2460,13 @@
         return;
       }
 
-      let skeletonIds = Object.keys(landmarkTransform.skeletons);
       let options = this.options.clone();
       options['shading_method'] = 'none';
       options['color_method'] = 'actor-color';
-      for (let i=0, imax=skeletonIds.length; i<imax; ++i) {
-        let skeletonId = parseInt(skeletonIds[i], 10);
-        let skeletonModel = landmarkTransform.skeletons[skeletonId];
+      for (let i=0, imax=landmarkTransform.skeletons.length; i<imax; ++i) {
+        let skeletonModel = landmarkTransform.skeletons[i];
         // Creat transformed skeleton mesh and add it to scene
-        let initPromise = landmarkTransform.nodeProvider.get(skeletonId)
+        let initPromise = landmarkTransform.nodeProvider.get(skeletonModel.id)
           .then((function(json) {
             let meshes = [];
 

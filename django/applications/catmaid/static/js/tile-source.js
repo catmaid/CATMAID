@@ -629,9 +629,6 @@
       return this.promiseReady.then(() => {
         let path = this.datasetPath(zoomLevel);
         let dataAttrs = this.datasetAttributes[zoomLevel];
-        let n = 1;
-        let stride = this.datasetAttributes[zoomLevel].get_block_size()
-            .map(s => { let rn = n; n *= s; return rn; });
 
         let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);
 
@@ -641,6 +638,8 @@
               if (block) {
                 let etag = block.get_etag();
                 let size = block.get_size();
+                let n = 1;
+                let stride = size.map(s => { let rn = n; n *= s; return rn; });
                 return {
                   etag,
                   block: new nj.NdArray(nj.ndarray(block.into_data(), size, stride))

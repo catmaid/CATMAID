@@ -41,7 +41,7 @@ class Command(BaseCommand):
 
         passed = True
         for project_id in project_ids:
-            passed = passed and self.check_project(project_id, options)
+            passed = self.check_project(project_id, options) and passed
 
         if not passed:
             sys.exit(1)

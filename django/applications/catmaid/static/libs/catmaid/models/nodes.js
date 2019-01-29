@@ -377,7 +377,7 @@
      * @returns Promise resolving in success information.
      */
     addSuppressedVirtualNode: function(projectId, nodeId, orientation, coordinate) {
-      return CATMAID.fetch(project.id + '/treenodes/' + childId + '/suppressed-virtual/',
+      return CATMAID.fetch(project.id + '/treenodes/' + nodeId + '/suppressed-virtual/',
           'POST', {
             orientation: orientation,
             location_coordinate: coordinate,
@@ -394,7 +394,7 @@
      * @returns Promise resolving in success information.
      */
     deleteSuppresedVirtualNode: function(projectId, nodeId, suppressedId) {
-      let url = projectId + '/treenodes/' + childId + '/suppressed-virtual/' + suppressedId;
+      let url = projectId + '/treenodes/' + nodeId + '/suppressed-virtual/' + suppressedId;
       return CATMAID.fetch(url, 'DELETE');
     },
 

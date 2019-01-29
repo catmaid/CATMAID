@@ -7178,15 +7178,15 @@
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.resetToPointInTime =
       function(skeletonModel, options, timestamp, noCache, preventSceneUpdate) {
 
-    if (!this.history) {
-      throw new CATMAID.ValueError("Historic data for skeleton missing");
-    }
-
     if (!skeletonModel) {
       if (!this.skeletonmodel) {
         throw new CATMAID.ValueError("Need either own or new skeleton model");
       }
       skeletonModel = this.skeletonModel;
+    }
+
+    if (!this.history) {
+      throw new CATMAID.ValueError(`Historic data for skeleton ${skeletonModel.id} missing`);
     }
 
     // If no timestamp is given, the present point in time is implied

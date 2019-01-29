@@ -270,7 +270,8 @@
     var stack = this.stack;
     openCanaryLink.onclick = function() {
       var customMirrorData = getMirrorData();
-      var tileSource = CATMAID.getTileSource(
+      var tileSource = CATMAID.TileSources.get(
+          customMirrorData.id,
           customMirrorData.tile_source_type,
           customMirrorData.image_base,
           customMirrorData.file_extension,

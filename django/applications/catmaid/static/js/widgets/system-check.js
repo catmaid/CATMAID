@@ -289,6 +289,19 @@
       comment: 'Indicates what percentage of data reads hit the cache. Should be > 95%',
       render: (value) => `${Number(value).toFixed(2)}%`,
     },
+    'user_blks_read': {
+      name: 'User blocks read',
+      comment: 'Number of disk blocks read in the database from CATMAID\'s own tables only.',
+    },
+    'user_blks_hit': {
+      name: 'Cached user blocks read',
+      comment: 'Number of times blocks for CATMAID\'s own tables were already found in buffer cache.',
+    },
+    'user_cache_hit_ratio': {
+      name: 'User cache hit ratio',
+      comment: 'Indicates what percentage of data reads for CATMAID\'s own tables hit the cache. Should be > 95%',
+      render: (value) => `${Number(value).toFixed(2)}%`,
+    },
     'checkpoints_req': {
       name: 'Requested checkpoins',
       comment: 'Number of times checkpoints have been requeste. Should be < timed checkpoints.',

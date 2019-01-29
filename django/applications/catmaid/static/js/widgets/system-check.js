@@ -324,7 +324,7 @@
     },
     'replication_lag': {
       name: 'Replication lag (sec)',
-      comment: 'If replication is enabled, this shows how far behind replicas are (in seconds). Should be low.',
+      comment: 'If replication is enabled, this shows how far behind this replica is (in seconds). Should be low.',
     }
   };
 

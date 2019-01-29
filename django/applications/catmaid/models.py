@@ -98,6 +98,7 @@ TILE_SOURCE_TYPES = (
     (9, '9: FlixServer tiles'),
     (10, '10: H2N5 tiles'),
     (11, '11: N5 volume'),
+    (12, '12: Boss tiles'),
 )
 
 class Stack(models.Model):

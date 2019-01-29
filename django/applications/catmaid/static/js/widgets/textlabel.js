@@ -79,8 +79,8 @@ function TextlabelTool()
     // register the move toolbar and reuse the mouseCatcher
     self.prototype.register( parentStackViewer, "edit_button_move" );
     // view is the mouseCatcher now
-    var proto_onmousedown = self.prototype.mouseCatcher.onmousedown;
-    self.prototype.mouseCatcher.onmousedown = function( e ) {
+    var proto_onpointerdown = self.prototype.mouseCatcher.onpointerdown;
+    self.prototype.mouseCatcher.onpointerdown = function( e ) {
       switch ( CATMAID.ui.getMouseButton( e ) )
       {
         case 1:
@@ -95,10 +95,10 @@ function TextlabelTool()
             }
           break;
         case 2:
-          proto_onmousedown( e );
+          proto_onpointerdown( e );
           break;
         default:
-          proto_onmousedown( e );
+          proto_onpointerdown( e );
           break;
       }
     };
@@ -131,11 +131,11 @@ function TextlabelTool()
     }
   };
 
-  /** Inactivate only onmousedown, given that the others are injected when onmousedown is called.
+  /** Inactivate only onpointerdown, given that the others are injected when onpointerdown is called.
    * Leave alone onmousewheel: it is different in every browser, and it cannot do any harm to have it active. */
   var inactivateBindings = function() {
     var c = self.prototype.mouseCatcher;
-    ['onmousedown'].map(
+    ['onpointerdown'].map(
       function ( fn ) {
         if (c[fn]) {
           bindings[fn] = c[fn];
@@ -154,7 +154,7 @@ function TextlabelTool()
   };
 
   /**
-   * unregister all stack viewer related mouse and keyboard controls
+   * unregister all stack viewer related pointer and keyboard controls
    */
   this.unregister = function()
   {
@@ -590,7 +590,7 @@ Textlabel = function(
     return true;
   };
 
-  var movemousemove = function( e )
+  var movepointermove = function( e )
   {
     self.location.x += CATMAID.ui.diffX  / scale * resolution.x;
     self.location.y += CATMAID.ui.diffY  / scale * resolution.y;
@@ -601,23 +601,23 @@ Textlabel = function(
     return false;
   };
 
-  var movemouseup = function( e )
+  var movepointerup = function( e )
   {
     apply();
     CATMAID.ui.releaseEvents();
-    CATMAID.ui.removeEvent( "onmousemove", movemousemove );
-    CATMAID.ui.removeEvent( "onmouseup", movemouseup );
+    CATMAID.ui.removeEvent( "onpointermove", movepointermove );
+    CATMAID.ui.removeEvent( "onpointerup", movepointerup );
     return false;
   };
 
-  var movemousedown = function( e )
+  var movepointerdown = function( e )
   {
     self.register( e );
 
-    CATMAID.ui.registerEvent( "onmousemove", movemousemove );
-    CATMAID.ui.registerEvent( "onmouseup", movemouseup );
+    CATMAID.ui.registerEvent( "onpointermove", movepointermove );
+    CATMAID.ui.registerEvent( "onpointerup", movepointerup );
     CATMAID.ui.catchEvents( "move" );
-    CATMAID.ui.onmousedown( e );
+    CATMAID.ui.onpointerdown( e );
 
     //! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
     document.body.firstChild.focus();
@@ -625,7 +625,7 @@ Textlabel = function(
     return false;
   };
 
-  var closemousedown = function( e )
+  var closepointerdown = function( e )
   {
     // prevent possible call of apply() onblur
     textArea.onblur = null;
@@ -700,13 +700,13 @@ Textlabel = function(
   var moveHandle = document.createElement( "div" );
   moveHandle.className = "moveHandle";
   moveHandle.title = "move";
-  moveHandle.onmousedown = movemousedown;
+  moveHandle.onpointerdown = movepointerdown;
   view.appendChild( moveHandle );
 
   var closeHandle = document.createElement( "div" );
   closeHandle.className = "closeHandle";
   closeHandle.title = "delete";
-  closeHandle.onmousedown = closemousedown;
+  closeHandle.onpointerdown = closepointerdown;
   view.appendChild( closeHandle );
 
 

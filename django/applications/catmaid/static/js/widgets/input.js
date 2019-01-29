@@ -15,13 +15,13 @@ name, size, onchange, defaultvalue) {
   };
 
   /**
-   * mouse up, so clear the timer
+   * pointer up, so clear the timer
    */
-  var mouseUp = function (e) {
+  var pointerUp = function (e) {
     if (timer) window.clearTimeout(timer);
 
     CATMAID.ui.releaseEvents();
-    CATMAID.ui.removeEvent("onmouseup", mouseUp);
+    CATMAID.ui.removeEvent("onpointerup", pointerUp);
 
     return false;
   };
@@ -41,15 +41,15 @@ name, size, onchange, defaultvalue) {
   };
 
   /**
-   * mouse down on the increase button, so move up, setting a timer
+   * pointer down on the increase button, so move up, setting a timer
    */
   var topMouseDown = function (e) {
     if (timer) window.clearTimeout(timer);
 
-    CATMAID.ui.registerEvent("onmouseup", mouseUp);
+    CATMAID.ui.registerEvent("onpointerup", pointerUp);
     CATMAID.ui.setCursor("auto");
     CATMAID.ui.catchEvents();
-    CATMAID.ui.onmousedown(e);
+    CATMAID.ui.onpointerdown(e);
 
     decrease();
     return false;
@@ -70,15 +70,15 @@ name, size, onchange, defaultvalue) {
   };
 
   /**
-   * mouse down on the top bar, so move up, setting a timer
+   * pointer down on the top bar, so move up, setting a timer
    */
   var bottomMouseDown = function (e) {
     if (timer) window.clearTimeout(timer);
 
-    CATMAID.ui.registerEvent("onmouseup", mouseUp);
+    CATMAID.ui.registerEvent("onpointerup", pointerUp);
     CATMAID.ui.setCursor("auto");
     CATMAID.ui.catchEvents();
-    CATMAID.ui.onmousedown(e);
+    CATMAID.ui.onpointerdown(e);
 
     increase();
     return false;
@@ -128,11 +128,11 @@ name, size, onchange, defaultvalue) {
   area2.alt = "-";
 
 
-  area1.onmousedown = bottomMouseDown;
-  area2.onmousedown = topMouseDown;
+  area1.onpointerdown = bottomMouseDown;
+  area2.onpointerdown = topMouseDown;
 
-  area1.onmouseup = mouseUp;
-  area2.onmouseup = mouseUp;
+  area1.onpointerup = pointerUp;
+  area2.onpointerup = pointerUp;
 
   map.appendChild(area1);
   map.appendChild(area2);

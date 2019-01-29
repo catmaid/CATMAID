@@ -16,7 +16,7 @@
       return view;
     };
 
-    var onmousedown =
+    var onpointerdown =
     {
       jump : function( e )
       {
@@ -29,10 +29,10 @@
       },
       drag : function( e )
       {
-        CATMAID.ui.registerEvent( "onmousemove", onmousemove );
-        CATMAID.ui.registerEvent( "onmouseup", onmouseup );
+        CATMAID.ui.registerEvent( "onpointermove", onpointermove );
+        CATMAID.ui.registerEvent( "onpointerup", onpointerup );
         CATMAID.ui.catchEvents( "move" );
-        CATMAID.ui.onmousedown( e );
+        CATMAID.ui.onpointerdown( e );
 
         CATMAID.ui.catchFocus();
 
@@ -40,7 +40,7 @@
       }
     };
 
-    var onmousemove = function( e )
+    var onpointermove = function( e )
     {
       stackViewer.moveToPixel( stackViewer.z,
                              stackViewer.y + CATMAID.ui.diffY / scale,
@@ -49,11 +49,11 @@
       return false;
     };
 
-    var onmouseup = function( e )
+    var onpointerup = function( e )
     {
       CATMAID.ui.releaseEvents();
-      CATMAID.ui.removeEvent( "onmousemove", onmousemove );
-      CATMAID.ui.removeEvent( "onmouseup", onmouseup );
+      CATMAID.ui.removeEvent( "onpointermove", onpointermove );
+      CATMAID.ui.removeEvent( "onpointerup", onpointerup );
       return false;
     };
 
@@ -127,11 +127,11 @@
 
     var view = document.createElement( "div" );
     view.className = "smallMapView";
-    view.onmousedown = onmousedown.jump;
+    view.onpointerdown = onpointerdown.jump;
 
     var rect = document.createElement( "div" );
     rect.className = "smallMapRect";
-    rect.onmousedown = onmousedown.drag;
+    rect.onpointerdown = onpointerdown.drag;
     view.appendChild( rect );
 
       var hide = function() {
@@ -148,7 +148,7 @@
     var toggle = document.createElement( "div" );
     toggle.className = "smallMapToggle";
     toggle.title = "hide general view";
-    toggle.onmousedown = function( e )
+    toggle.onpointerdown = function( e )
     {
       if ( typeof event != "undefined" && event )
         event.cancelBubble = true;

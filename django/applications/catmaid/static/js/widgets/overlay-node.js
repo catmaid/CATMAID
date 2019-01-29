@@ -394,7 +394,7 @@
 
           this.overlayGlobals.skeletonElements.containers.nodes.addChild(this.c);
 
-          ptype.mouseEventManager.attach(this.c, this.type);
+          ptype.pointerEventManager.attach(this.c, this.type);
         }
 
         this.c.x = this[this.planeX];
@@ -527,7 +527,7 @@
         var g = this.makeMarker();
 
         var tracingOverlay = this.overlayGlobals.tracingOverlay;
-        var texture = tracingOverlay.pixiLayer._context.renderer.generateTexture(g, PIXI.SCALE_MODES.DEFAULT, 1);
+        var texture = tracingOverlay.pixiLayer._context.renderer.generateTexture(g, PIXI.settings.SCALE_MODES, 1);
 
         if (this.NODE_TEXTURE) {
           var oldBaseTexture = this.NODE_TEXTURE.baseTexture;
@@ -819,7 +819,7 @@
           this.overlayGlobals.skeletonElements.containers.lines.addChild(this.line);
           line.node = this;
           line.interactive = true;
-          line.on('click', ptype.mouseEventManager.edge_mc_click);
+          line.on('pointerupoutside', ptype.pointerEventManager.edge_mc_click);
           line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
           line.moveTo(0, 0);
           line.lineTo(0, 0);
@@ -904,7 +904,7 @@
         this.connectors = null;
         this.visibilityGroups = null;
         if (this.c) {
-          ptype.mouseEventManager.forget(this.c, SkeletonAnnotations.TYPE_NODE);
+          ptype.pointerEventManager.forget(this.c, SkeletonAnnotations.TYPE_NODE);
           this.c.node = null;
           this.c.parent.removeChild(this.c);
           this.c.destroy();
@@ -996,7 +996,7 @@
 
       /**
        * Draws a circle around the treenode and control its radius with the help of
-       * the mouse (and a mouse-to-stack transform function).
+       * the pointer (and a pointer-to-stack transform function).
        */
       this.drawSurroundingCircle = function(drawLine, toStack, stackToProject, onclickHandler) {
         var self = this;
@@ -1012,7 +1012,7 @@
         c.visible = true;
         c.tint = color;
 
-        // Create a line from the node to mouse if requested
+        // Create a line from the node to pointer if requested
         if (drawLine) {
           var line = new PIXI.Graphics();
           line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
@@ -1060,8 +1060,8 @@
         var planeY = this.planeY;
         var planeZ = this.planeZ;
 
-        // Update radius on mouse move
-        c.on('mousemove', function (event) {
+        // Update radius on pointer move
+        c.on('pointermove', function (event) {
           var e = event.data.originalEvent;
           var rS = toStack({x: e.offsetX, y: e.offsetY});
           var rP = stackToProject(rS);
@@ -1105,15 +1105,13 @@
           self.overlayGlobals.tracingOverlay.redraw();
         });
 
-        // Don't let mouse down events bubble up
-        c.on('mousedown', function (event) {
+        // Don't let pointer down events bubble up
+        c.on('pointerdown', function (event) {
           var e = event.data.originalEvent;
-          e.stopPropagation();
           e.preventDefault();
         });
-        c.on('click', function (event) {
+        c.on('pointerupoutside', function (event) {
           var e = event.data.originalEvent;
-          e.stopPropagation();
           e.preventDefault();
           if (onclickHandler) { onclickHandler(); }
           return true;
@@ -1290,7 +1288,7 @@
       };
 
       /**
-       * Suspend all links to disable mouse events.
+       * Suspend all links to disable pointer events.
        */
       this.suspend = function() {
         for (var i=0, imax=this.edges.length; i<imax; ++i) {
@@ -1313,7 +1311,7 @@
         this.id = null;
         if (this.c) {
           this.c.node = null;
-          ptype.mouseEventManager.forget(this.c, SkeletonAnnotations.TYPE_CONNECTORNODE);
+          ptype.pointerEventManager.forget(this.c, SkeletonAnnotations.TYPE_CONNECTORNODE);
           this.c.parent.removeChild(this.c);
           this.c.destroy();
           this.c = null;
@@ -1427,7 +1425,7 @@
         var g = this.makeMarker();
 
         var tracingOverlay = this.overlayGlobals.tracingOverlay;
-        var texture = tracingOverlay.pixiLayer._context.renderer.generateTexture(g, PIXI.SCALE_MODES.DEFAULT, 1);
+        var texture = tracingOverlay.pixiLayer._context.renderer.generateTexture(g, PIXI.settings.SCALE_MODES, 1);
 
         if (!force && this.NODE_TEXTURE) {
           var oldBaseTexture = this.NODE_TEXTURE.baseTexture;
@@ -1496,9 +1494,9 @@
      * Below, the function() is but a namespace that returns a manager object
      * with functions attach and forget.
     */
-    ptype.mouseEventManager = new (function()
+    ptype.pointerEventManager = new (function()
     {
-      /** Variables used for mouse events, which involve a single node at a time.
+      /** Variables used for pointer events, which involve a single node at a time.
        * Includes node.x, node.y, node.id and node.c
        * These are set at mc_start, then used at mc_move, and set to null at mc_up. */
       var o = null;
@@ -1511,9 +1509,8 @@
       /**
        * Here 'this' is the node's circle graphics, and node is the Node instance
        */
-      this.mc_click = function(event) {
+      var mc_click = function(event) {
         var e = event.data.originalEvent;
-        e.stopPropagation();
         e.preventDefault();
         var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(this.node.overlayGlobals.skeletonElements);
         if (catmaidTracingOverlay.ensureFocused()) {
@@ -1650,7 +1647,7 @@
         if (e.shiftKey) return;
         if (!checkNodeID(this)) return;
 
-        // Prevent node related mouse move handling if the naviation mode is
+        // Prevent node related pointer move handling if the naviation mode is
         // enabled.
         if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.MOVE) {
           return;
@@ -1676,7 +1673,6 @@
           }
         }
 
-        e.stopPropagation();
         e.preventDefault();
 
         if (!CATMAID.mayEdit() || !node.canEdit()) {
@@ -1715,10 +1711,6 @@
 
       /** Here `this` is the circle graphic. */
       var mc_up = function(event) {
-        this.removeAllListeners('mousemove')
-            .removeAllListeners('mouseup')
-            .removeAllListeners('mouseupoutside');
-
         var node = this.node;
         var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(
             node.overlayGlobals.skeletonElements);
@@ -1729,13 +1721,29 @@
           catmaidTracingOverlay.activateNode(node);
         }
 
+        if (SkeletonAnnotations.TYPE_NODE === node.type) {
+          this.removeListener("pointerup", mc_click);
+          this.removeListener("pointerupoutside", mc_click);
+        } else {
+          // SkeletonAnnotations.TYPE_CONNECTORNODE
+          this.removeListener("pointerup", connector_mc_click);
+          this.removeListener("pointerupoutside", connector_mc_click);
+        }
+
+        this.removeAllListeners('pointermove')
+            .removeAllListeners('pointerout')
+            .removeAllListeners('pointerleave')
+            .removeAllListeners('pointercancel')
+            .removeListener('pointerup', mc_up)
+            .removeListener('pointerupoutside', mc_up);
+
         if (!dragging) {
           o = null;
           return;
         }
         dragging = false;
         var e = event.data.originalEvent;
-        e.stopPropagation();
+        e.preventDefault();
         if (!checkNodeID(this)) return;
         o = null;
         var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(this.node.overlayGlobals.skeletonElements);
@@ -1765,7 +1773,8 @@
           // Allow middle-click panning
           return;
         }
-        e.stopPropagation();
+
+        // This is needed to return false from dispatchEvent()
         e.preventDefault();
 
         o = {id: node.id,
@@ -1778,14 +1787,24 @@
           catmaidTracingOverlay.activateNode(node);
         }
 
-        this.on('mousemove', mc_move)
-            .on('mouseup', mc_up)
-            .on('mouseupoutside', mc_up);
+        if (SkeletonAnnotations.TYPE_NODE === node.type) {
+          this.on("pointerupoutside", mc_click);
+        } else {
+          // SkeletonAnnotations.TYPE_CONNECTORNODE
+          this.on("pointerup", connector_mc_click);
+          this.on("pointerupoutside", connector_mc_click);
+        }
+
+        this.on('pointermove', mc_move)
+            .on('pointerup', mc_up)
+            .on('pointerupoutside', mc_up)
+            .on('pointerout', mc_up)
+            .on('pointerleave', mc_up)
+            .on('pointercancel', mc_up);
       };
 
       var connector_mc_click = function(event) {
         var e = event.data.originalEvent;
-        e.stopPropagation();
         e.preventDefault();
         var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(this.node.overlayGlobals.skeletonElements);
         if (catmaidTracingOverlay.ensureFocused()) {
@@ -1855,7 +1874,6 @@
         }
         var node = this.node;
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-          e.stopPropagation();
           e.preventDefault();
           catmaidTracingOverlay.activateNode(node);
           catmaidTracingOverlay.splitSkeleton(node.id);
@@ -1863,19 +1881,13 @@
       };
 
       this.attach = function(mc, type) {
-        mc.on('mousedown', mc_start);
-
-        if (SkeletonAnnotations.TYPE_NODE === type) {
-          mc.on("click", this.mc_click);
-        } else {
-          // SkeletonAnnotations.TYPE_CONNECTORNODE
-          mc.on("click", connector_mc_click);
-        }
+        mc.on('pointerdown', mc_start);
       };
 
 
-      var trackedEvents = ['mousedown', 'mousemove', 'mouseup',
-          'mouseupoutside', 'click'];
+      var trackedEvents = ['pointerdown', 'pointermove', 'pointerup',
+        'pointerupoutside', 'pointerout', 'pointerleave', 'pointercancel',
+        'click'];
 
       this.forget = function(mc, type) {
         for (var i=0, imax=trackedEvents.length; i<imax; ++i) {
@@ -1890,8 +1902,8 @@
       this.line = new PIXI.Graphics();
       this.overlayGlobals.skeletonElements.containers.arrows.addChild(this.line);
       this.line.interactive = true;
-      this.line.on('mousedown', this.mousedown);
-      this.line.on('mouseover', this.mouseover);
+      this.line.on('pointerdown', this.pointerdown);
+      this.line.on('pointerover', this.pointerover);
       this.line.hitArea = new PIXI.Polygon(0, 0, 0, 0, 0, 0, 0, 0);
       this.line.link = this;
       this.confidence_text = null;
@@ -1910,9 +1922,8 @@
       this.scaling = 1.0;
 
       /** Function to assign to the graphical arrow. */
-      this.mousedown = function (event) {
+      this.pointerdown = function (event) {
         var e = event.data.originalEvent;
-        e.stopPropagation();
         if(!(e.shiftKey && (e.ctrlKey || e.metaKey))) {
           return;
         }
@@ -1938,7 +1949,7 @@
           });
       };
 
-      this.mouseover = function (event) {
+      this.pointerover = function (event) {
         // If this edge is suspended, don't try to retrieve any information.
         if (this.suspended) {
           return;
@@ -2082,7 +2093,7 @@
       };
 
       /**
-       * Suspend all links to disable mouse events.
+       * Suspend all links to disable pointer events.
        */
       this.suspend = function() {
         this.line.suspended = true;
@@ -2169,7 +2180,7 @@
           cachedText.alpha = 1.0;
           cachedText.resolution = this.textResolution;
           var texture = this.overlayGlobals.tracingOverlay.pixiLayer._context.renderer.generateTexture(
-              cachedText, PIXI.SCALE_MODES.DEFAULT, 1);
+              cachedText, PIXI.settings.SCALE_MODES, 1);
           confidenceTextCache[confidence] = cachedText;
         } else if (cachedText.style.fontSize !== this.confidenceFontSize) {
           cachedText.style = {
@@ -2179,7 +2190,7 @@
               baseline: 'middle'};
           cachedText.resolution = this.textResolution;
           var texture = this.overlayGlobals.tracingOverlay.pixiLayer._context.renderer.generateTexture(
-              cachedText, PIXI.SCALE_MODES.DEFAULT, 1);
+              cachedText, PIXI.settings.SCALE_MODES, 1);
         }
 
         if (existing) {

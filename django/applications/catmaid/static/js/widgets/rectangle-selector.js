@@ -6,7 +6,7 @@
   "use strict";
 
   /**
-   * Draw a rectangle anywhere in the window and get when the mouse is released.
+   * Draw a rectangle anywhere in the window and get when the pointer is released.
    */
   function RectangleSelector(options) {
     options = options || {};
@@ -47,7 +47,7 @@
       this.message.style.top = "calc(" + (this.y + this.offsetY) + "px - 2em)";
     };
 
-    this.handleMouseDown = (function(event) {
+    this.handlePointerDown = (function(event) {
       var mouse = CATMAID.ui.getMouse(event);
       this.x = mouse.x;
       this.y = mouse.y;
@@ -58,7 +58,7 @@
       this.updatePosition();
     }).bind(this);
 
-    this.handleMouseMove = (function(event) {
+    this.handlePointerMove = (function(event) {
       var mouse = CATMAID.ui.getMouse(event);
       this.width = mouse.x - this.x;
       this.height = mouse.y - this.y;
@@ -78,7 +78,7 @@
       this.updatePosition();
     }).bind(this);
 
-    this.handleMouseUp = (function(event) {
+    this.handlePointerUp = (function(event) {
       var wasActive = this.active;
       this.boundingBox.style.display = "none";
       this.message.style.display = "none";
@@ -91,9 +91,9 @@
     this.init = function() {
       this.active = true;
       // Attach pre-bound handlers
-      CATMAID.ui.registerEvent("onmousedown", this.handleMouseDown);
-      CATMAID.ui.registerEvent("onmousemove", this.handleMouseMove);
-      CATMAID.ui.registerEvent("onmouseup", this.handleMouseUp);
+      CATMAID.ui.registerEvent("onpointerdown", this.handlePointerDown);
+      CATMAID.ui.registerEvent("onpointermove", this.handlePointerMove);
+      CATMAID.ui.registerEvent("onpointerup", this.handlePointerUp);
       CATMAID.ui.catchEvents('crosshair');
       // Append bounding box to DOM
       document.body.appendChild(this.boundingBox);
@@ -107,9 +107,9 @@
       document.body.removeChild(this.boundingBox);
       document.body.removeChild(this.message);
       // Detach pre-bound handlers
-      CATMAID.ui.removeEvent("onmousedown", this.handleMouseDown);
-      CATMAID.ui.removeEvent("onmousemove", this.handleMouseMove);
-      CATMAID.ui.removeEvent("onmouseup", this.handleMouseUp);
+      CATMAID.ui.removeEvent("onpointerdown", this.handlePointerDown);
+      CATMAID.ui.removeEvent("onpointermove", this.handlePointerMove);
+      CATMAID.ui.removeEvent("onpointerup", this.handlePointerUp);
     };
   }
 

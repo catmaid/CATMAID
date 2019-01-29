@@ -110,8 +110,15 @@
       self.updateControls();
     };
 
-    var onmousemove = function( e )
+    var onpointermove = function( e )
     {
+      // We need to call the global UI handler explicitly, because we use
+      // pointer events (rather than mouse events), which can only react to
+      // move/down events on the event targets where start happened too. There
+      // might be other listeners registered to the global UI instance, plus it
+      // handles the global cursor location reference.
+      CATMAID.ui.onpointermove( e );
+
       self.stackViewer.moveToPixel(
         self.stackViewer.z,
         self.stackViewer.y - CATMAID.ui.diffY / self.stackViewer.scale
@@ -119,28 +126,46 @@
         self.stackViewer.x - CATMAID.ui.diffX / self.stackViewer.scale
                               / self.stackViewer.primaryStack.anisotropy(0).x,
         self.stackViewer.s );
+
       return true;
     };
 
-    var onmouseup = function( e )
+    var onpointerup = function( e )
     {
-      CATMAID.ui.releaseEvents();
-      CATMAID.ui.removeEvent( "onmousemove", onmousemove );
-      CATMAID.ui.removeEvent( "onmouseup", onmouseup );
+      self.mouseCatcher.style.cursor = 'auto';
+
+      // We need to call the global UI handler explicitly, because we use
+      // pointer events (rather than mouse events), which can only react to
+      // move/down events on the event targets where start happened too. There
+      // might be other listeners registered to the global UI instance, plus it
+      // handles the global cursor location reference.
+      CATMAID.ui.onpointerup( e );
+
+      self.mouseCatcher.removeEventListener('pointerup', onpointerup);
+      self.mouseCatcher.removeEventListener('pointermove', onpointermove);
+
       return false;
     };
 
-    var onmousedown = function( e )
+    var onpointerdown = function( e )
     {
-      CATMAID.ui.registerEvent( "onmousemove", onmousemove );
-      CATMAID.ui.registerEvent( "onmouseup", onmouseup );
-      CATMAID.ui.catchEvents( "move" );
-      CATMAID.ui.onmousedown( e );
+      self.mouseCatcher.style.cursor = 'move';
+
+      // We need to call the global UI handler explicitly, because we use
+      // pointer events (rather than mouse events), which can only react to
+      // move/down events on the event targets where start happened too. There
+      // might be other listeners registered to the global UI instance, plus it
+      // handles the global cursor location reference.
+      CATMAID.ui.onpointerdown( e );
+
+      self.mouseCatcher.addEventListener('pointerup', onpointerup);
+      self.mouseCatcher.addEventListener('pointermove', onpointermove);
 
       CATMAID.ui.catchFocus();
 
       return false;
     };
+    this._onpointerdown = onpointerdown;
 
     var onmousewheel = function (e) {
       var w = CATMAID.ui.getMouseWheel( e );
@@ -279,7 +304,7 @@
 
     this.changeScale = function( val, callback )
     {
-      // Determine if the mouse is over the stack view.
+      // Determine if the pointer is over the stack view.
       var offset = $(self.stackViewer.getView()).offset();
       var m = CATMAID.UI.getLastMouse();
       var x = m.x - offset.left,
@@ -293,7 +318,7 @@
         y += (self.stackViewer.y - self.stackViewer.viewHeight / self.stackViewer.scale / 2);
         self.scalePreservingLastPosition(x, y, val, callback);
       } else {
-        // If the mouse is not over the stack view, zoom towards the center.
+        // If the pointer is not over the stack view, zoom towards the center.
         self.stackViewer.moveToPixel( self.stackViewer.z, self.stackViewer.y, self.stackViewer.x, val, callback );
       }
     };
@@ -562,7 +587,7 @@
 
       self.stackViewer = parentStackViewer;
 
-      self.mouseCatcher.onmousedown = onmousedown;
+      self.mouseCatcher.addEventListener('pointerdown', this._onpointerdown);
       self.mouseCatcher.addEventListener( "wheel", onmousewheel, false );
 
       self.stackViewer.getView().appendChild( self.mouseCatcher );
@@ -604,7 +629,7 @@
     };
 
     /**
-     * unregister all stack related mouse and keyboard controls
+     * unregister all stack related pointer and keyboard controls
      */
     this.unregister = function()
     {

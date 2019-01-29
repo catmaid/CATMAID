@@ -96,7 +96,7 @@
     this._view.appendChild( this.layercontrol.getView() );
 
     // Ask for confirmation before closing the stack via the close button
-    $(this._stackWindow.getFrame()).find('.stackClose').get(0).onmousedown = (function (e) {
+    $(this._stackWindow.getFrame()).find('.stackClose').get(0).onpointerdown = (function (e) {
       var notLastStackViewer = this._project.getStackViewers().length > 1;
       var noConfirm = !CATMAID.Client.Settings.session.confirm_project_closing;
       if (notLastStackViewer || noConfirm ||
@@ -114,7 +114,7 @@
     var controlToggle = document.createElement( "div" );
     controlToggle.className = "stackControlToggle_hidden";
     controlToggle.title = "show/hide layer controls";
-    controlToggle.onmousedown = function(e) {
+    controlToggle.onpointerdown = function(e) {
       if ( typeof event != "undefined" && event )
         event.cancelBubble = true;
       if ( e && e.stopPropagation )
@@ -385,7 +385,7 @@
   /**
    * Get stack coordinates of the current view's top left corner.
    * These values might be used as an offset to get the stack coordinates of a
-   * mouse event handled by the stack.
+   * pointer event handled by the stack.
    */
   StackViewer.prototype.screenPosition = function () {
     var width = this.viewWidth / this.scale / this.primaryStack.anisotropy(0).x;

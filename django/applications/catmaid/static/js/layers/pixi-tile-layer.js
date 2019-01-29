@@ -257,7 +257,10 @@
       // immediately, so that the buffer will be cleared.
       window.clearTimeout(this._swapBuffersTimeout);
       this._swapBuffersTimeout = window.setTimeout(this._swapBuffers.bind(this, true), 3000);
-      var newRequest = CATMAID.PixiContext.GlobalTextureManager.load(toLoad, this._swapBuffers.bind(this, false, this._swapBuffersTimeout));
+      var newRequest = CATMAID.PixiContext.GlobalTextureManager.load(
+          toLoad,
+          this.tileSource.getRequestHeaders(),
+          this._swapBuffers.bind(this, false, this._swapBuffersTimeout));
       CATMAID.PixiContext.GlobalTextureManager.cancel(this._tileRequest);
       this._tileRequest = newRequest;
       loading = true;

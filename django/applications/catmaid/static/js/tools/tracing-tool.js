@@ -165,13 +165,16 @@
     /**
      * Create new mouse bindings for the layer's view.
      */
-    function createMouseBindings(stackViewer, layer, mouseCatcher) {
+    function createPointerBindings(stackViewer, layer, mouseCatcher) {
       // A handle to a delayed update
       var updateTimeout;
 
-      var proto_onmousedown = mouseCatcher.onmousedown;
-      var stackViewerBindings = {
-        onmousedown: function( e ) {
+      // Remove navigator's pointer down handling and replace it with our own.
+      var proto_onpointerdown = self.prototype._onpointerdown;
+      mouseCatcher.removeEventListener('pointerdown', proto_onpointerdown);
+
+      var overlayBindings = {
+        pointerdown: function( e ) {
           var mouseButton = CATMAID.ui.getMouseButton(e);
           // Left mouse click will delegate to tracing overlay
           var fallback = false;
@@ -182,6 +185,7 @@
               layer.tracingOverlay.whenclicked( e );
             }
           }
+
           // Right mouse button and middle mouse button will pan view. And soma
           // will the left mouse button if the tracing overlay returned false.
           if (mouseButton === 2 || mouseButton === 3 || fallback) {
@@ -201,15 +205,14 @@
               updateTimeout = undefined;
             }
 
-            // Handle mouse event
-            proto_onmousedown( e );
+            // Handle pointer event
+            proto_onpointerdown( e );
 
-            CATMAID.ui.registerEvent( "onmousemove", updateStatusBar );
-            CATMAID.ui.registerEvent( "onmouseup",
-              function onmouseup (e) {
-                CATMAID.ui.releaseEvents();
-                CATMAID.ui.removeEvent( "onmousemove", updateStatusBar );
-                CATMAID.ui.removeEvent( "onmouseup", onmouseup );
+            CATMAID.ui.registerEvent( "onpointermove", updateStatusBar );
+            CATMAID.ui.registerEvent( "onpointerup",
+              function onpointerup (e) {
+                CATMAID.ui.removeEvent( "onpointermove", updateStatusBar );
+                CATMAID.ui.removeEvent( "onpointerup", onpointerup );
                 layer.tracingOverlay.off(layer.tracingOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
                     disableLayerUpdate, layer);
                 if (layer.tracingOverlay.suspended) {
@@ -231,23 +234,25 @@
                   // updated through the move already.
                   updateNodesInTracingLayers(true);
                 }
+
+                layer.tracingOverlay.updateCursor();
               });
           }
 
           // If fallback has been set to true, delegate to prototype.
           if (fallback) {
-            proto_onmousedown( e );
+            proto_onpointerdown( e );
           }
         }
       };
 
       // Assign bindings to view
       var view = layer.tracingOverlay.view;
-      for (var fn in stackViewerBindings) {
-        view[fn] = stackViewerBindings[fn];
+      for (var fn in overlayBindings) {
+        view.addEventListener(fn, overlayBindings[fn]);
       }
 
-      bindings.set(stackViewer, stackViewerBindings);
+      bindings.set(stackViewer, overlayBindings);
     }
 
     /**
@@ -324,7 +329,7 @@
       self.prototype.setMouseCatcher(view);
 
       // Register stack viewer with prototype, after the mouse catcher has been set.
-      // This attaches mouse handlers to the view.
+      // This attaches pointer handlers to the view.
       self.prototype.register(parentStackViewer, "edit_button_trace");
 
       // Initialize button state
@@ -334,8 +339,8 @@
       document.getElementById( "trace_button_togglecolorlength" ).className =
           CATMAID.TracingOverlay.Settings.session.color_by_length ? "button_active" : "button";
 
-      // Try to get existing mouse bindings for this layer
-      if (!bindings.has(parentStackViewer)) createMouseBindings(parentStackViewer, layer, view);
+      // Try to get existing pointer bindings for this layer
+      if (!bindings.has(parentStackViewer)) createPointerBindings(parentStackViewer, layer, view);
 
       // Force an update and skeleton tracing mode if stack viewer or layer changed
       if (activeTracingLayer !== layer || activeStackViewer !== parentStackViewer) {
@@ -358,7 +363,7 @@
       var handlers = bindings.get(stackViewer);
       var c = self.prototype.mouseCatcher;
       for (var fn in handlers) {
-        if (c[fn]) delete c[fn];
+        c.removeEventListener(fn, handlers[fn]);
       }
     };
 
@@ -367,12 +372,10 @@
      * given stack viewer.
      */
     var activateBindings = function(stackViewer) {
-      var stackViewerBindings = bindings.get(stackViewer);
+      var handlers = bindings.get(stackViewer);
       var c = self.prototype.mouseCatcher;
-      for (var b in stackViewerBindings) {
-        if (stackViewerBindings.hasOwnProperty(b)) {
-          c[b] = stackViewerBindings[b];
-        }
+      for (var fn in handlers) {
+        c.addEventListener(fn, handlers[fn]);
       }
     };
 

@@ -5,7 +5,7 @@
   "use strict";
 
   // Suppress display of the PIXI banner message in the console.
-  PIXI.utils._saidHello = true;
+  PIXI.utils.skipHello();
 
   PixiLayer.contexts = new Map();
 
@@ -96,6 +96,42 @@
   };
 
 
+  function Loader() {
+    this._queue = new Set();
+  }
+
+  Loader.prototype.constructor = Loader;
+
+  Loader.prototype.add = function (url, headers, completionCallback) {
+    var request = new Request(
+        url,
+        {mode: 'cors', credentials: 'same-origin', headers: headers});
+    this._queue.add(request);
+    var remove = (function () { this._queue.delete(request); }).bind(this);
+    fetch(request)
+        .then(function (response) {
+          return response.blob();
+        })
+        .then(function (blob) {
+          var objUrl = window.URL.createObjectURL(blob);
+          var image = new Image();
+
+          image.onload = function () {
+            var texture = PIXI.Texture.fromLoader(this, url);
+            window.URL.revokeObjectURL(objUrl);
+            completionCallback({url: url, texture: texture});
+          };
+
+          image.src = objUrl;
+        })
+        .then(remove);
+  };
+
+  Loader.prototype.queueLength = function () {
+    return this._queue.size;
+  };
+
+
   /**
    * Loads textures from URLs, tracks use through reference counting, caches
    * unused textures, and frees evicted textures.
@@ -107,11 +143,10 @@
     this._boundResourceLoaded = this._resourceLoaded.bind(this);
     this._concurrency = 16;
     this._counts = {};
-    this._loader = new PIXI.loaders.Loader('', this._concurrency);
-    this._loader.load();
-    this._loader._queue.empty = this._loadFromQueue.bind(this);
+    this._loader = new Loader(this._concurrency);
     this._loading = {};
     this._loadingQueue = [];
+    this._loadingQueueHeaders = {};
     this._loadingRequests = new Set();
     this._unused = [];
     this._unusedCapacity = 256;
@@ -131,7 +166,7 @@
    * @return {Object}            A request tracking object that can be used to
    *                             to cancel this request.
    */
-  PixiContext.TextureManager.prototype.load = function (urls, callback) {
+  PixiContext.TextureManager.prototype.load = function (urls, headers, callback) {
     var request = {urls: urls, callback: callback, remaining: 0};
     // Remove any URLs already cached or being loaded by other requests.
     var newUrls = urls.filter(function (url) {
@@ -144,6 +179,10 @@
         this._loading[url] = new Set([request]);
         return true;
       }
+    }, this);
+
+    newUrls.forEach(function (url) {
+      this._loadingQueueHeaders[url] = headers;
     }, this);
 
     if (request.remaining === 0) {
@@ -164,17 +203,17 @@
    * @private
    */
   PixiContext.TextureManager.prototype._loadFromQueue = function () {
-    var toDequeue = this._concurrency - this._loader._queue.length();
+    var toDequeue = this._concurrency - this._loader.queueLength();
     if (toDequeue < 1) return;
     var remainingQueue = this._loadingQueue.splice(toDequeue);
-    this._loadingQueue.forEach(function (url) {
-      this._loader.add(url,
-                       {crossOrigin: true,
-                        xhrType: PIXI.loaders.Resource.XHR_RESPONSE_TYPE.BLOB},
-                       this._boundResourceLoaded);
-    }, this);
+    var toLoad = this._loadingQueue;
     this._loadingQueue = remainingQueue;
-    this._loader.load();
+    toLoad.forEach(function (url) {
+      this._loader.add(url,
+                       this._loadingQueueHeaders[url],
+                       this._boundResourceLoaded);
+      delete this._loadingQueueHeaders[url];
+    }, this);
   };
 
   /**
@@ -186,11 +225,10 @@
    */
   PixiContext.TextureManager.prototype._resourceLoaded = function (resource) {
     var url = resource.url;
-    delete this._loader.resources[url];
     var requests = this._loading[url];
     delete this._loading[url];
 
-    if (PIXI.utils.TextureCache.hasOwnProperty(url)) {
+    if (url in PIXI.utils.TextureCache) {
       if (resource.texture && !resource.texture.valid) {
         // If there was an error, remove texture from Pixi's cache.
         resource.texture.destroy(true);
@@ -209,6 +247,8 @@
         request.callback();
       }
     }, this);
+
+    this._loadFromQueue();
   };
 
   /**
@@ -769,7 +809,7 @@
     this.updateMatrix();
   };
 
-  PixiLayer.Filters.Invert.prototype = Object.create(PIXI.Filter.prototype);
+  PixiLayer.Filters.Invert.prototype = Object.create(PIXI.filters.ColorMatrixFilter.prototype);
   PixiLayer.Filters.Invert.prototype.constructor = PixiLayer.Filters.Invert;
 
   PixiLayer.Filters.Invert.prototype.updateMatrix = function () {

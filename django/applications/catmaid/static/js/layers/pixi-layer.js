@@ -23,7 +23,15 @@
         antialias: true,
         stencil: true};
     let view = document.createElement('canvas');
+
+    // Try to get WebGL 2 context, if WebGL 2 is unavailable fall back to WebGl 1.
     let rawContext = view.getContext('webgl2', options);
+    if (rawContext) {
+      this.webglVersion = 2;
+    } else {
+      this.webglVersion = 1;
+      rawContext = view.getContext('webgl', options);
+    }
 
     options.context = rawContext;
     options.view = view;

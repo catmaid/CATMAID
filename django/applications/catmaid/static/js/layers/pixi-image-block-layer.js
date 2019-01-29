@@ -6,6 +6,11 @@
     constructor(...args) {
       super(...args);
 
+      // This layer needs WebGL2, raise error if unavailable.
+      if (this._context.webglVersion < 2) {
+        throw new CATMAID.PreConditionError("PixiImageBlockLayer needs WebGL2, but it isn't available.");
+      }
+
       this._blockCache = CATMAID.ImageBlock.GlobalCacheManager.get(this.tileSource);
       this._blockCache.on(
           CATMAID.ImageBlock.Cache.EVENT_BLOCK_CHANGED,

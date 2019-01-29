@@ -2636,6 +2636,10 @@ var SkeletonAnnotations = {};
     let pos = stackViewer.plane.intersectLine(_virtualNodeCreationTmpLine,
         _virtualNodeCreationTmpVector);
 
+    if (!pos) {
+      throw new CATMAID.ValueError(`Can not find intersection between node ${child.id} and ${parent.id} at Z = ${z}`);
+    }
+
     // The ID should be different for the the same child and parent in different
     // Z sections to distinguish virtual nodes on different sections. Therefore,
     // the complete location is part of the ID.

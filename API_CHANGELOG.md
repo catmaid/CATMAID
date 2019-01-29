@@ -10,7 +10,10 @@ None.
 
 ### Modifications
 
-None.
+- `POST|GET /{project_id}/node/list`:
+  Offers a new optional parameter
+  "min_skeleton_length", which can be used to constrain the returned
+  neurons to only those of at least this cable length.
 
 ### Deprecations
 

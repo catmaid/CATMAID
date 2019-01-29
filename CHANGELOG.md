@@ -130,6 +130,10 @@ Miscellaneous:
 - Add a new Tracing Tool icon button to compute the distance between two nodes
   on a skeleton. Respects virtual nodes.
 
+- Tracing layer: a minimum skeleton length can now be specified in the layer
+  options, causing the Tracing Layer to show only nodes of skeletons of at least
+  this cable length (nm).
+
 - Confirming a radius selection (Shift + Y) can now also be done using the Enter
   key.
 

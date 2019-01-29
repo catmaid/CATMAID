@@ -554,6 +554,7 @@ class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
             n_largest_skeletons_limit= params.get('n_largest_skeletons_limit') or 0
             n_last_edited_skeletons_limit = params.get('n_last_edited_skeletons_limit') or 0
             hidden_last_editor_id = params.get('hidden_last_editor_id')
+            min_skeleton_length = params.get('min_skeleton_length')
 
             limit = n_largest_skeletons_limit + n_last_edited_skeletons_limit
 
@@ -603,6 +604,17 @@ class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
                         AND last_editor_id <> %(hidden_last_editor_id)s
                     ) visible(skeleton_id)
                         ON visible.skeleton_id = basic_query.skeleton_id
+                """
+
+            if min_skeleton_length:
+                extra_join = """
+                    JOIN (
+                        SELECT skeleton_id
+                        FROM catmaid_skeleton_summary css
+                        WHERE project_id = %(project_id)s
+                        AND cable_length > %(min_skeleton_length)s
+                    ) min_length(skeleton_id)
+                        ON min_length.skeleton_id = basic_query.skeleton_id
                 """
 
             if summary:
@@ -2034,6 +2046,13 @@ def node_list_tuples(request, project_id=None, provider=None):
       required: false
       type: integer
       paramType: form
+    - name: min_skeleton_length
+      description: |
+        Optional minimum skeleton length, no returned node is of a shorter
+        skeleton.
+      required: false
+      type: float
+      paramType: form
     type:
     - type: array
       items:
@@ -2059,6 +2078,7 @@ def node_list_tuples(request, project_id=None, provider=None):
     params['n_largest_skeletons_limit'] = int(data.get('n_largest_skeletons_limit', 0))
     params['n_last_edited_skeletons_limit'] = int(data.get('n_last_edited_skeletons_limit', 0))
     params['hidden_last_editor_id'] = int(data['hidden_last_editor_id']) if 'hidden_last_editor_id' in data else None
+    params['min_skeleton_length'] = float(data.get('min_skeleton_length', 0))
     params['project_id'] = project_id
     include_labels = get_request_bool(data, 'labels', False)
     target_format = data.get('format', 'json')

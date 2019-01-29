@@ -73,6 +73,15 @@
       }
     });
 
+    Object.defineProperty(this, 'minSkeletonLength', {
+      get: function() {
+        return this.tracingOverlay.minSkeletonLength;
+      },
+      set: function(value) {
+        this.tracingOverlay.minSkeletonLength = value;
+      }
+    });
+
     Object.defineProperty(this, 'nodeProviderOverride', {
       get: function() {
         return this.tracingOverlay.nodeProviderOverride;
@@ -270,6 +279,14 @@
       options: [['none', '(None)']].concat(CATMAID.User.list('id-login')),
       help: 'Limit the displayed skeletons to those that have not been edited last by the specified user.',
     }, {
+      name: 'minSkeletonLength',
+      displayName: 'Min skeleton length (nm)',
+      type: 'number',
+      step: 5000,
+      min: 0,
+      value: this.minSkeletonLength,
+      help: 'Limit the displayed skeletons to the ones of skeletons of at least this length in nm.'
+    }, {
       name: 'nodeProviderOverride',
       displayName: 'Node provider',
       type: 'select',
@@ -296,6 +313,9 @@
       this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('hiddenLastEditorId' === name) {
       this.hiddenLastEditorId = value;
+      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
+    } else if ('minSkeletonLength' === name) {
+      this.minSkeletonLength = value;
       this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('nodeProviderOverride' === name) {
       this.nodeProviderOverride = value;

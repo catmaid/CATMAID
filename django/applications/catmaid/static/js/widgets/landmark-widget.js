@@ -811,7 +811,7 @@
       .then(function(groups) {
         for (let i=0; i<groups.length; ++i) {
           let toGroupId = groups[i];
-          let skeletons = getSkeletonModels();
+          let skeletons = Object.values(getSkeletonModels());
           let lst = new CATMAID.LandmarkSkeletonTransformation(projectId,
             skeletons, fromGroupId, toGroupId);
           self.displayTransformations.push(lst);
@@ -3037,7 +3037,7 @@
                       return;
                     }
 
-                    let skeletonModels = source.getSelectedSkeletonModels();
+                    let skeletonModels = Object.values(source.getSelectedSkeletonModels());
                     widget.addDisplayTransformation(sourceProject, skeletonModels,
                         fromGroup, toGroup, displayTargetRelation);
                     CATMAID.msg("Success", "Transformation added");

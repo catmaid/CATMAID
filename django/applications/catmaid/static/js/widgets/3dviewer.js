@@ -2247,7 +2247,7 @@
       // Bail out if the volume in question is already visible
       if (existingVolume) {
         CATMAID.warn("Volume \"" + volumeId + "\" is already visible.");
-        return;
+        return Promise.resolve();
       }
 
       return CATMAID.Volumes.get(project.id, volumeId)

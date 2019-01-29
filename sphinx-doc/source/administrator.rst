@@ -19,3 +19,4 @@ Administrator Documentation
    additional_backends
    nblast
    admin_faq
+   catmaid_and_rds

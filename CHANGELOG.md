@@ -35,6 +35,58 @@ Measurement table:
   node filter application can be aggregated into one row by summing individual
   values.
 
+Remote CATMAID instances
+
+- Some tools in CATMAID gained support to communicate with other CATMAID
+  instances, e.g. the Landmark Widget (see below). To enable this functionality,
+  remote CATMAID instances can now be added to the user settings.
+
+- The Settings Widget contains now a section labeled "Other CATMAID instances".
+  It allows to manage a list of other CATMAID servers based on their URL, an API
+  key and optional HTTP authentication. This information is stored under an
+  alias.
+
+Landmarks:
+
+- It is now possible to load skeletons and landmarks from other CATMAID
+  instances. Point matches are done on the basis of matching landmark names. To
+  enable the UI for this, check the "Source other projects" checkbox in the
+  Display tab.
+
+- With the "other projects" UI enabled and a remote CATMAID instance configured
+  in the Setting Widget (see above), it is now possible to select a remote
+  CATMAID instance from the "Source remote" dropdown menu. Alternatively, the
+  local instance can be selected if another project from the same instance
+  should be used.
+
+- Next the source project in the selected instance needs to be specified. This
+  list is updated when a different remote instance is selected.
+
+- Skeletons from a remote instance are collected through annotations. The
+  respective annotation has to be entered in the "Source skeleton annotation".
+  With the help of the "Preview" button it is possible to load the matching
+  skeletons from their remote CATMAID to inspect if the correct ones are
+  selected.
+
+- As a last step for the remote data configuration, the source landmark group
+  has to be defined. This list is updated if the source project changes.
+  Landmarks from this group are mapped to the selected target group. The
+  matching is done by name, i.e. no landmarks can have the same names in a
+  group.
+
+- Adding such a transformation adds it to the list at the bottom of the widget,
+  just like with regular transformations and they can be used in the same way.
+  The can be shown in 3D Viewers, superimposed on the Tracing Layer and used in
+  NBLAST queries from the Neuron Similarity Widget (see below).
+
+Neuron Similarity:
+
+- It is now possible to use display transformations defined in the Landmark
+  Widget that reference another CATMAID server as their data source. They can be
+  used both as source and target for NBLAST comparisons. This makes it
+  essentially possible to compare skeletons from another CATMAID project,
+  possibly on another CATMAID server, to local skeletons using NBLAST.
+
 Administration:
 
 - A grid based node query cache can now be used to speed up tracing data

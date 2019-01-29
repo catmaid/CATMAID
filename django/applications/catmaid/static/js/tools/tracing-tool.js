@@ -475,7 +475,8 @@
         CATMAID.NeuronNameService.getInstance().registerAll(label.data(), models)
           .then(function() {
             label.text(prefix + CATMAID.NeuronNameService.getInstance().getName(skeletonId));
-          });
+          })
+          .catch(CATMAID.handleError);
       });
     }
 

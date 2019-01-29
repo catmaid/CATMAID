@@ -352,21 +352,22 @@
   };
 
   NeuronSimilarityWidget.prototype.getSelectedSkeletonTransformations = function(
-      transform, landmarkGroupIndex, landmarkIndex, transformedDataTarget) {
+      transform, landmarkGroupIndex, landmarkIndex, sourceLandmarkGroupIndex,
+      sourceLandmarkIndex, transformedDataTarget) {
     let transformation = transform.displayTransform;
     let skeletonIds = [];
 
     CATMAID.Landmarks.addProvidersToTransformation(
-        transformation, landmarkGroupIndex, landmarkIndex);
+        transformation, landmarkGroupIndex, landmarkIndex,
+        undefined, sourceLandmarkGroupIndex, sourceLandmarkIndex);
 
     let promises = [];
 
-    for (let skeletonId in transformation.skeletons) {
-      let skeletonModel = transformation.skeletons[skeletonId];
+    for (let skeletonModel of transformation.skeletons) {
       skeletonIds.push(skeletonModel.id);
-      let getSkeleton = transformation.nodeProvider.get(skeletonId)
+      let getSkeleton = transformation.nodeProvider.get(skeletonModel.id)
         .then(function(json) {
-          transformedDataTarget[skeletonId] = json;
+          transformedDataTarget[skeletonModel.id] = json;
         })
         .catch(CATMAID.handleError);
       promises.push(getSkeleton);
@@ -600,7 +601,7 @@
             value: 'all-skeletons',
           }, {
             title: 'Transformed skeletons',
-            value: 'transformed-skeletons',
+            value: 'transformed-skeleton',
           }, {
             title: 'Point clouds',
             value: 'pointclouds',
@@ -628,7 +629,7 @@
             value: 'all-skeletons',
           }, {
             title: 'Transformed skeletons',
-            value: 'transformed-skeletons',
+            value: 'transformed-skeleton',
           }, {
             title: 'Point clouds',
             value: 'pointclouds',
@@ -692,19 +693,104 @@
               CATMAID.warn('No similarity configuration selected');
               return;
             }
-            // If transformed skeletons are used as query or target, we need to
-            // get all available landmark groups.
             let prepare = Promise.resolve();
+            // If transformed skeletons are used as query or target, we need to
+            // get all available landmark groups. This can be two different
+            // source landmarks, for both query and target. If either one is
+            // defined, the regular landmarks for the global project need to be
+            // loaded too.
             let landmarkGroupIndex;
             let landmarkIndex;
-            if (queryType === 'transformed-skeleton' || targetType === 'transformed-skeleton') {
-              prepare = CATMAID.Landmarks.listGroups(project.id, true, true, true, true)
+            let querySourceLandmarkGroupIndex;
+            let querySourceLandmarkIndex;
+            let targetSourceLandmarkGroupIndex;
+            let targetSourceLandmarkIndex;
+
+            let loadGlobalProjectLandmarks = function() {
+              return CATMAID.Landmarks.listGroups(project.id, true, true, true, true)
                 .then(function(result) {
                   landmarkGroupIndex = result.reduce(CATMAID.Landmarks.addToIdIndex, new Map());
                   return CATMAID.Landmarks.list(project.id, true);
                 })
                 .then(function(result) {
                   landmarkIndex = result.reduce(CATMAID.Landmarks.addToIdIndex, new Map());
+                });
+            };
+
+            // Map APIs to transformations.
+            let queryLandmarkApi, targetLandmarkApi;
+            if (queryType === 'transformed-skeleton') {
+              let selectedDTIndex = transformedQuerySelect.querySelector('select').selectedOptions[0].value;
+              let selectedDTEntry = widget.displayTransformationCache[selectedDTIndex];
+              if (!selectedDTEntry) {
+                CATMAID.warn("Could not find transformed query skeleton data");
+                return;
+              }
+              let selectedDT = selectedDTEntry.displayTransform;
+              // If no API is defined by the transformation, we assume the
+              // global project from the local API.
+              let querySourceProjectId = CATMAID.tools.getDefined(selectedDT.projectId, project.id);
+              queryLandmarkApi = selectedDT.fromApi;
+
+              prepare = CATMAID.Landmarks.listGroups(querySourceProjectId, true,
+                  true, true, true, queryLandmarkApi)
+                .then(function(result) {
+                  querySourceLandmarkGroupIndex = result.reduce(CATMAID.Landmarks.addToIdIndex, new Map());
+                  return CATMAID.Landmarks.list(querySourceProjectId, true, queryLandmarkApi);
+                })
+                .then(function(result) {
+                  querySourceLandmarkIndex = result.reduce(CATMAID.Landmarks.addToIdIndex, new Map());
+
+                  // If a query landmark API is defined, make sure to also get the
+                  // target.
+                  if (queryLandmarkApi) {
+                    return loadGlobalProjectLandmarks();
+                  } else {
+                    landmarkIndex = querySourceLandmarkIndex;
+                    landmarkGroupIndex = querySourceLandmarkGroupIndex;
+                  }
+                });
+            }
+
+            if (targetType === 'transformed-skeleton') {
+              let selectedDTIndex = transformedTargetSelect.querySelector('select').selectedOptions[0].value;
+              let selectedDTEntry = widget.displayTransformationCache[selectedDTIndex];
+              if (!selectedDTEntry) {
+                CATMAID.warn("Could not find transformed target skeleton data");
+                return;
+              }
+              let selectedDT = selectedDTEntry.displayTransform;
+              // If no API is defined by the transformation, we assume the
+              // global project from the local API.
+              let targetSourceProjectId = CATMAID.tools.getDefined(selectedDT.projectId, project.id);
+              let targetSourceLandmarkApi = selectedDT.fromApi;
+              // Transformations currently only specify the source projects
+              // explicitly. The target is assumed to be the current project.
+              let targetProjectId = project.id;
+
+              // If the query and the target API ar the same or both undefined,
+              // adn the projects are the same, no extra request needs to be
+              // made. This is the common case.
+              let toLandmarkApi = selectedDT.toApi;
+
+              prepare = prepare
+                .then(() => CATMAID.Landmarks.listGroups(targetSourceProjectId,
+                    true, true, true, true, targetSourceLandmarkApi))
+                .then(function(result) {
+                  targetSourceLandmarkGroupIndex = result.reduce(CATMAID.Landmarks.addToIdIndex, new Map());
+                  return CATMAID.Landmarks.list(targetSourceProjectId, true, targetSourceLandmarkApi);
+                })
+                .then(function(result) {
+                  targetSourceLandmarkIndex = result.reduce(CATMAID.Landmarks.addToIdIndex, new Map());
+
+                  // If a query landmark API is defined, make sure to also get the
+                  // target.
+                  if (targetLandmarkApi) {
+                    return loadGlobalProjectLandmarks();
+                  } else if (!landmarkIndex || !landmarkGroupIndex) {
+                    landmarkIndex = querySourceLandmarkIndex;
+                    landmarkGroupIndex = querySourceLandmarkGroupIndex;
+                  }
                 });
             }
 
@@ -756,6 +842,7 @@
                 let transformedData = {};
                 loadingPromises.push(widget.getSelectedSkeletonTransformations(
                     selectedTransformation, landmarkGroupIndex, landmarkIndex,
+                    querySourceLandmarkGroupIndex, querySourceLandmarkIndex,
                     transformedData)
                   .then(function(skeletonIds) {
                     queryIds = skeletonIds;
@@ -796,6 +883,7 @@
                 let transformedData = {};
                 loadingPromises.push(widget.getSelectedSkeletonTransformations(
                     selectedTransformation, landmarkGroupIndex, landmarkIndex,
+                    targetSourceLandmarkGroupIndex, targetSourceLandmarkIndex,
                     transformedData)
                   .then(function(skeletonIds) {
                     targetIds = skeletonIds;

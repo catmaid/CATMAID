@@ -317,9 +317,9 @@
     return null;
   };
 
-  function makeDataPromise(context, skeletonId) {
+  function makeDataPromise(context, skeleton) {
     // The context 'this' is expected to be a LandmarkSkeletonTransformation.
-    context.target.push(context.transform.nodeProvider.get(skeletonId));
+    context.target.push(context.transform.nodeProvider.get(skeleton.id));
     return context;
   }
 
@@ -337,8 +337,7 @@
       if (!transform.nodeProvider) {
         continue;
       }
-      let skeletonIds = Object.keys(transform.skeletons);
-      skeletonIds.reduce(makeDataPromise, {
+      transform.skeletons.reduce(makeDataPromise, {
         target: dataRetrievalJobs,
         transform: transform
       });
@@ -361,7 +360,7 @@
 
         for (let i=0; i<self.displayTransformations.length; ++i) {
           let transform = self.displayTransformations[i];
-          let skeletonIds = Object.keys(transform.skeletons);
+          let skeletonIds = transform.skeletons.map(m => m.id);
 
           for (let j=0; j<skeletonIds.length; ++j) {
             let skeletonId = skeletonIds[j];

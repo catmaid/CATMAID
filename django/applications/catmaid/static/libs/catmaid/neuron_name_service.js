@@ -443,7 +443,7 @@
           /**
            * The actual update function---see below for call.
            */
-          var update = function(data, resolve, reject) {
+          var update = function(skidsToUpdate, data, resolve, reject) {
             var name = function(skid) {
               /**
                * Support function to creat a label, based on meta annotations. Id a
@@ -627,7 +627,15 @@
               return components.join('');
             };
 
-            if (skids) {
+            if (skidsToUpdate) {
+              skidsToUpdate.forEach(function(skid) {
+                // Ignore unknown skeletons
+                if (!managedSkeletons[skid]) {
+                  return;
+                }
+                managedSkeletons[skid].name = name(skid);
+              });
+            } else if (skids) {
               skids.forEach(function(skid) {
                 // Ignore unknown skeletons
                 if (!managedSkeletons[skid]) {
@@ -642,10 +650,8 @@
             }
 
             // Resolve the promise and execute callback, if any
-            resolve();
-            if (callback) {
-              callback();
-            }
+            if (resolve) resolve();
+            if (callback) callback();
           };
 
           // Request information only, if needed
@@ -664,7 +670,7 @@
             if (needsNoBackend || 0 === querySkids.length) {
               // If no back-end is needed, call the update method right away, without
               // any data.
-              update(null, resolve, reject);
+              update(null, null, resolve, reject);
             } else {
               // Check if we need meta annotations
               var needsMetaAnnotations = componentList.some(function(l) {
@@ -675,16 +681,39 @@
                   return 'neuronname' === l.id;
               });
 
-              // Get all data that is needed for the component list
-              return CATMAID.fetch(project.id + '/skeleton/annotationlist', 'POST', {
-                  skeleton_ids: querySkids,
-                  metaannotations: needsMetaAnnotations ? 1 : 0,
-                  neuronnames: needsNeueonNames ? 1 : 0,
-                })
-                .then(function(result) {
-                  update(result, resolve, reject);
-                })
-                .catch(CATMAID.handleError);
+              let queryModels = querySkids.map(skid => managedSkeletons[skid].model);
+
+              // Sort queries by API
+              let querySkidsByAPI = querySkids.reduce((o, s) => {
+                let entry = managedSkeletons[s];
+                let key = entry && entry.model ? (entry.model.api || undefined) : undefined;
+                let apiModels = o.get(key);
+                if (!apiModels) {
+                  apiModels = [];
+                  o.set(key, apiModels);
+                }
+                apiModels.push(s);
+                return o;
+              }, new Map());
+
+              let promiseAnnotations = [];
+              for (let [api, apiSkids] of querySkidsByAPI) {
+                promiseAnnotations.push(
+                    CATMAID.fetch({
+                      url: project.id + '/skeleton/annotationlist',
+                      method: 'POST',
+                      data: {
+                        skeleton_ids: apiSkids,
+                        metaannotations: needsMetaAnnotations ? 1 : 0,
+                        neuronnames: needsNeueonNames ? 1 : 0,
+                      },
+                      api: api,
+                    }).then(result => update(apiSkids, result)));
+              }
+
+              return Promise.all(promiseAnnotations)
+                .then(resolve)
+                .catch(reject);
             }
           });
         },

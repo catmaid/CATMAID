@@ -24,10 +24,15 @@
     /**
      * List all landmarks in a project, optionally with location information.
      */
-    list: function(projectId, with_locations) {
-      return CATMAID.fetch(project.id +  "/landmarks/", "GET", {
+    list: function(projectId, with_locations, api) {
+      return CATMAID.fetch({
+        url: projectId +  "/landmarks/",
+        method: "GET",
+        data: {
           with_locations: with_locations
-        });
+        },
+        api: api,
+      });
     },
 
     /**
@@ -87,24 +92,34 @@
      * information. Optionally, with member, location and link/relation
      * information.
      */
-    listGroups: function(projectId, with_members, with_locations, with_links, with_relations) {
-      return CATMAID.fetch(project.id +  "/landmarks/groups/", "GET", {
-          with_members: !!with_members,
-          with_locations: !!with_locations,
-          with_links: !!with_links,
-          with_relations: !!with_relations
+    listGroups: function(projectId, with_members, with_locations, with_links, with_relations, api) {
+      return CATMAID.fetch({
+          url: projectId +  "/landmarks/groups/",
+          method: "GET",
+          data: {
+            with_members: !!with_members,
+            with_locations: !!with_locations,
+            with_links: !!with_links,
+            with_relations: !!with_relations,
+          },
+          api: api,
         });
     },
 
     /**
      * Get details on a landmark group.
      */
-    getGroup: function(projectId, groupId, with_members, with_locations, with_names) {
-      return CATMAID.fetch(projectId + '/landmarks/groups/' + groupId + '/', 'GET', {
+    getGroup: function(projectId, groupId, with_members, with_locations, with_names, api) {
+      return CATMAID.fetch({
+        url: projectId + '/landmarks/groups/' + groupId + '/',
+        method: 'GET',
+        data: {
           with_members: !!with_members,
           with_locations: !!with_locations,
           with_names: !!with_names
-        });
+        },
+        api: api,
+      });
     },
 
     /**
@@ -344,12 +359,19 @@
       };
     },
 
-    getMlsTransform: function(transformation, landmarkGroupIndex, landmarkIndex, i) {
+    getMlsTransform: function(transformation, landmarkGroupIndex, landmarkIndex,
+        i, sourceLandmarkGroupIndex, sourceLandmarkIndex, byName) {
+      // If no dedicated indices for the source landmarks is provided, use the
+      // general one.
+      sourceLandmarkGroupIndex = sourceLandmarkGroupIndex || landmarkGroupIndex;
+      sourceLandmarkIndex = sourceLandmarkIndex || landmarkIndex;
+
       if (i === undefined) {
         i = 1;
       }
       let matches = CATMAID.Landmarks.getPointMatches(transformation.fromGroupId,
-          transformation.toGroupId, landmarkGroupIndex, landmarkIndex);
+          transformation.toGroupId, landmarkGroupIndex, landmarkIndex,
+          sourceLandmarkGroupIndex, sourceLandmarkIndex, byName);
 
       if (!matches || matches.length === 0) {
         throw new CATMAID.ValueError("Found no point matches for " +
@@ -357,7 +379,8 @@
       }
 
       let invMatches = CATMAID.Landmarks.getPointMatches(transformation.toGroupId,
-          transformation.fromGroupId, landmarkGroupIndex, landmarkIndex);
+          transformation.fromGroupId, sourceLandmarkGroupIndex,
+          sourceLandmarkIndex, landmarkGroupIndex, landmarkIndex, byName);
 
       if (!invMatches || invMatches.length === 0) {
         throw new CATMAID.ValueError("Found no inverse point matches for " +
@@ -397,11 +420,14 @@
      * match, i.e. two locations annotated with the same landmark
      */
     getPointMatches: function(fromGroupId, toGroupId, landmarkGroupIndex,
-        landmarkIndex) {
+        landmarkIndex, sourceLandmarkGroupIndex, sourceLandmarkIndex, byName) {
       if (!landmarkGroupIndex) {
-        throw new CATMAID.ValueError('No landmark group information found');
+        throw new CATMAID.ValueError('No source landmark group information found');
       }
-      let fromGroup = landmarkGroupIndex.get(fromGroupId);
+      if (!sourceLandmarkGroupIndex) {
+        throw new CATMAID.ValueError('No target landmark group information found');
+      }
+      let fromGroup = sourceLandmarkGroupIndex.get(fromGroupId);
       if (!fromGroup) {
         throw new CATMAID.ValueError('Could not find "from" group: ' + fromGroupId);
       }
@@ -410,27 +436,48 @@
         throw new CATMAID.ValueError('Could not find "to" group: ' + toGroupId);
       }
 
-      // Find landmark overlap between both groups
-      let fromLandmarkIds = new Set(fromGroup.members);
-      let toLandmarkIds = new Set(toGroup.members);
+      // Find landmark overlap between both groups. If the the source and target
+      // landmark index is the same, shared landmarks can be dound using IDs,
+      // which is more robust. If the landmark indices differ, the matching is
+      // typically done by name, which leaves more room for error, but should be
+      // just as fine in most situations.
       let sharedLandmarkIds = new Set();
-      for (let toLandmarkId of toLandmarkIds) {
-        if (fromLandmarkIds.has(toLandmarkId)) {
-          sharedLandmarkIds.add(toLandmarkId);
+      if (byName) {
+        let fromLandmarkNames = new Map(fromGroup.members.map(
+            fromId => [sourceLandmarkIndex.get(fromId).name, fromId]));
+        let toLandmarkNames = new Map(toGroup.members.map(
+            toId => [landmarkIndex.get(toId).name, toId]));
+        for (let [toLandmarkName, toLandmarkId] of toLandmarkNames) {
+          if (fromLandmarkNames.has(toLandmarkName)) {
+            sharedLandmarkIds.add([fromLandmarkNames.get(toLandmarkName), toLandmarkId]);
+          }
+        }
+      } else {
+        let fromLandmarkIds = new Set(fromGroup.members);
+        let toLandmarkIds = new Set(toGroup.members);
+        for (let toLandmarkId of toLandmarkIds) {
+          if (fromLandmarkIds.has(toLandmarkId)) {
+            sharedLandmarkIds.add([fromLandmarkIds, toLandmarkId]);
+          }
         }
       }
 
       let matches = [];
 
       // Find all members that have a location linked into both groups
-      for (let landmarkId of sharedLandmarkIds) {
-        let landmark = landmarkIndex.get(landmarkId);
-        if (!landmark) {
-          throw new CATMAID.ValueError("Could not find landmark " + landmarkId);
+      for (let landmarkPair of sharedLandmarkIds) {
+        let [fromLandmarkId, toLandmarkId] = landmarkPair;
+        let fromLandmark = sourceLandmarkIndex.get(fromLandmarkId);
+        let toLandmark = landmarkIndex.get(toLandmarkId);
+        if (!fromLandmark) {
+          throw new CATMAID.ValueError("Could not find from source landmark " + fromLandmarkId);
+        }
+        if (!toLandmark) {
+          throw new CATMAID.ValueError("Could not find from target landmark " + toLandmarkId);
         }
 
-        let linkedFromLocationIdxs = CATMAID.Landmarks.getLinkedGroupLocationIndices(fromGroup, landmark);
-        let linkedToLocationIdxs = CATMAID.Landmarks.getLinkedGroupLocationIndices(toGroup, landmark);
+        let linkedFromLocationIdxs = CATMAID.Landmarks.getLinkedGroupLocationIndices(fromGroup, fromLandmark);
+        let linkedToLocationIdxs = CATMAID.Landmarks.getLinkedGroupLocationIndices(toGroup, toLandmark);
 
         if (linkedFromLocationIdxs.length === 0) {
           CATMAID.warn("Landmark " + landmarkId +
@@ -504,11 +551,28 @@
      * Add both a landmark provider and a node provider to the passed in
      * transformation. These will allow to read transformed skeletons nodes from
      * the transformation.
-     * @param skeletonTransformation {LandmarkSkeletonTransformation} The
-     *                               transformation to update.
+     *
+     * @param {LandmarkSkeletonTransformation} transformation The transformation to update
+     * @param {Object} landmarkGroupIndex Map of landmark group IDs vs. landmark groups
+     * @param {Object} landmarkIndex      Map of landmark IDs vs. landmarks
+     * @param {number} i                  (Optional) Index of transformation in a list of
+     *                                    transformations, mainly useful for debugging.
+     * @param {Object} sourceLandmarkGroupIndex (Optional) Map of landmark group IDs vs.
+     *                                          landmark groups for the source landmark groups.
+     *                                          Default is to use <landmarkGroupIndex>.
+     * @param {Object} sourceLandmarkIndex      (Optional) Map of landmark IDs vs. landmarks
+     *                                          for the source landmarks. Default is to use to
+     *                                          <landmarkIndex>.
+     * @param {Boolean} byName                  (Optional) If true, landmarks are compared by
+     *                                          name, otherwise by ID. Default is false.
      */
     addProvidersToTransformation: function(transformation, landmarkGroupIndex,
-        landmarkIndex, i) {
+        landmarkIndex, i, sourceLandmarkGroupIndex, sourceLandmarkIndex, byName) {
+      // If no dedicated indices for the source landmarks is provided, use the
+      // general one.
+      sourceLandmarkGroupIndex = sourceLandmarkGroupIndex || landmarkGroupIndex;
+      sourceLandmarkIndex = sourceLandmarkIndex || landmarkIndex;
+
       let skeletonModels = Object.keys(transformation.skeletons).reduce(function(o, s) {
         o['transformed-' + s] = transformation.skeletons[s];
         return o;
@@ -517,19 +581,21 @@
       let mls;
       try {
         mls = CATMAID.Landmarks.getMlsTransform(transformation,
-            landmarkGroupIndex, landmarkIndex, i);
+          landmarkGroupIndex, landmarkIndex, i, sourceLandmarkGroupIndex,
+          sourceLandmarkIndex, byName);
       } catch (error) {
         CATMAID.warn(error ? error.message : "Unknown error");
-        return;
+        return false;
       }
 
       // Landmarks are needed for bounding box computation and visualization.
       transformation.landmarkProvider = {
-        get: function(landmarkGroupId) {
+        get: function(landmarkGroupId, sourceApi) {
           if (transformation.landmarkCache && transformation.landmarkCache[landmarkGroupId]) {
             return Promise.resolve(transformation.landmarkCache[landmarkGroupId]);
           } else {
-            return CATMAID.Landmarks.getGroup(project.id, landmarkGroupId, true, true)
+            return CATMAID.Landmarks.getGroup(transformation.projectId,
+                landmarkGroupId, true, true, undefined, sourceApi)
               .then(function(landmarkGroup) {
                 if (!transformation.landmarkCache) {
                   transformation.landmarkCache = {};
@@ -543,7 +609,7 @@
 
       // Compute source and target landmark group boundaries
       let prepare = Promise.all([
-          transformation.landmarkProvider.get(transformation.fromGroupId),
+          transformation.landmarkProvider.get(transformation.fromGroupId, transformation.fromApi),
           transformation.landmarkProvider.get(transformation.toGroupId)])
         .then(function(landmarkGroups) {
           let fromGroup = landmarkGroups[0];
@@ -619,10 +685,15 @@
               transformation.loading = Promise.resolve(transformation.skeletonCache[skeletonId]);
             } else {
               // Get skeleton data and transform it
-              transformation.loading = CATMAID.fetch(project.id + '/skeletons/' + skeletonId + '/compact-detail', 'GET', {
-                  with_tags: false,
-                  with_connectors: false,
-                  with_history: false
+              transformation.loading = CATMAID.fetch({
+                  url: transformation.projectId + '/skeletons/' + skeletonId + '/compact-detail',
+                  method: 'GET',
+                  data: {
+                      with_tags: false,
+                      with_connectors: false,
+                      with_history: false
+                  },
+                  api: transformation.fromApi,
                 })
                 .then(function(response) {
                   // If the source group ID is the same as the target group ID,
@@ -643,6 +714,8 @@
           return transformation.loading;
         }
       };
+
+      return true;
     },
 
 
@@ -656,11 +729,29 @@
 
   };
 
-  let LandmarkSkeletonTransformation = function(skeletons, fromGroupId, toGroupId) {
+  /**
+   * Describes a skeleton transformation, optionally with the source being a
+   * remote CATMAID instance.
+   *
+   * @param {number}   projectId   The source project, where to find <fromGroupId>
+   * @param {object[]} skeletons   A list of skeleton models to transform.
+   * @param {number}   fromGroupId The landmark group from which to transform
+   *                               the skeleton, looked for in remote API, if
+   *                               <api> is passed in, otherwise in <projectId>.
+   * @param {number}   toGroupId   The landmark group to transform skeletons to,
+   *                               expected to be the local <projectId>.
+   * @param {API}      fromApi     (Optional) API instance to declare to load
+   *                               skeletons from.
+   *
+   */
+  let LandmarkSkeletonTransformation = function(projectId, skeletons,
+      fromGroupId, toGroupId, fromApi = null) {
+    this.projectId = projectId;
     this.skeletons = skeletons;
     this.fromGroupId = parseInt(fromGroupId, 10);
     this.toGroupId = parseInt(toGroupId, 10);
     this.id = CATMAID.tools.uuidv4();
+    this.fromApi = fromApi;
   };
 
   // Provide some basic events

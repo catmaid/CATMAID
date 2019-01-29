@@ -379,18 +379,20 @@ var requestQueue = new CATMAID.RequestQueue();
    *                          is replaced by this one.
    * @param {String}  responseType (Optional) An expected response type for the
    *                               request (e.g. text or blob).
-   * @param {Object} headers  (Optional) If an object, set headers on the request
+   * @param {Object}  headers (Optional) If an object, set headers on the request
    *                          with keys/ values like the object's. These override
    *                          default headers and the queue's extraHeaders.
+   * @param {API}     api     (Optional) An API that should be contacted instead
+   *                          of the current environment.
    */
   CATMAID.fetch = function(relativeURL, method, data, raw, id, replace,
-      responseType, headers, parallel, details) {
+      responseType, headers, parallel, details, api) {
     // Alternatively, accept a single argument that provides all parameters as
     // fields.
     let absoluteURL;
     if (arguments.length === 1 && typeof(arguments[0]) !== "string") {
       let options = arguments[0];
-      relativeURL = options.relativeURL;
+      relativeURL = options.relativeURL ? options.relativeURL : options.url;
       absoluteURL = options.absoluteURL;
       method = options.method;
       data = options.data;
@@ -401,9 +403,25 @@ var requestQueue = new CATMAID.RequestQueue();
       headers = options.headers;
       parallel = options.parallel;
       details = options.details;
+      api = options.api;
     }
 
-    let url = absoluteURL ? absoluteURL : CATMAID.makeURL(relativeURL);
+    // If an API instance is provided, relative URLs are replaced with an
+    // absolute URL at the target host and additional request parameters like
+    // API keys and HTTP authentication are added.
+    let url;
+    if (api) {
+      if (api.apiKey && api.apiKey.length > 0) {
+        if (!headers) headers = {};
+        headers['X-Authorization'] = 'Token ' + api.apiKey;
+        headers['X-Requested-With'] = undefined;
+      }
+      // The URL will only be changed if no absolute URL is already provided,
+      // i.e. a relative URL is expected.
+      url = absoluteURL ? absoluteURL : CATMAID.tools.urlJoin(api.url, relativeURL);
+    } else {
+      url = absoluteURL ? absoluteURL : CATMAID.makeURL(relativeURL);
+    }
 
     method = method || 'GET';
     return new Promise(function(resolve, reject) {

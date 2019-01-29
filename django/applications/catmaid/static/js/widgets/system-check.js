@@ -287,7 +287,7 @@
     'cache_hit_ratio': {
       name: 'Cache hit ratio',
       comment: 'Indicates what percentage of data reads hit the cache. Should be > 95%',
-      render: (value) => `${Number(value).toFixed(2)}%`,
+      render: (value) => `${Number(Number(value * 100)).toFixed(2)}%`,
     },
     'user_blks_read': {
       name: 'User blocks read',
@@ -300,7 +300,7 @@
     'user_cache_hit_ratio': {
       name: 'User cache hit ratio',
       comment: 'Indicates what percentage of data reads for CATMAID\'s own tables hit the cache. Should be > 95%',
-      render: (value) => `${Number(value).toFixed(2)}%`,
+      render: (value) => `${Number(Number(value) * 100).toFixed(2)}%`,
     },
     'idx_blks_read': {
       name: 'Index blocks read',
@@ -313,7 +313,7 @@
     'idx_cache_hit_ratio': {
       name: 'Index cache hit ratio',
       comment: 'Indicates what percentage of data reads for table indices that hit the cache. Should be > 95%',
-      render: (value) => `${Number(value).toFixed(2)}%`,
+      render: (value) => `${Number(Number(value) * 100).toFixed(2)}%`,
     },
     'checkpoints_req': {
       name: 'Requested checkpoins',

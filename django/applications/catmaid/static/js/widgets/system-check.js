@@ -302,6 +302,19 @@
       comment: 'Indicates what percentage of data reads for CATMAID\'s own tables hit the cache. Should be > 95%',
       render: (value) => `${Number(value).toFixed(2)}%`,
     },
+    'idx_blks_read': {
+      name: 'Index blocks read',
+      comment: 'Number of disk blocks read in the database from table indices.',
+    },
+    'idx_blks_hit': {
+      name: 'Cached index blocks read',
+      comment: 'Number of times blocks of table indices were already found in buffer cache.',
+    },
+    'idx_cache_hit_ratio': {
+      name: 'Index cache hit ratio',
+      comment: 'Indicates what percentage of data reads for table indices that hit the cache. Should be > 95%',
+      render: (value) => `${Number(value).toFixed(2)}%`,
+    },
     'checkpoints_req': {
       name: 'Requested checkpoins',
       comment: 'Number of times checkpoints have been requeste. Should be < timed checkpoints.',

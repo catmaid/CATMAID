@@ -1031,6 +1031,14 @@ class ServerStats(APIView):
         db_cache = cursor.fetchone()
 
         cursor.execute("""
+            SELECT sum(idx_blks_read) AS idx_read,
+                sum(idx_blks_hit) AS idx_hit,
+                (sum(idx_blks_hit) - sum(idx_blks_read)) / sum(idx_blks_hit) AS ratio
+            FROM pg_statio_user_indexes
+        """)
+        db_idx_cache = cursor.fetchone()
+
+        cursor.execute("""
             SELECT checkpoints_timed, checkpoints_req, buffers_clean,
                 maxwritten_clean, buffers_backend_fsync,
                 extract(epoch from now() - pg_last_xact_replay_timestamp())
@@ -1058,6 +1066,10 @@ class ServerStats(APIView):
             'user_blks_read': db_cache[0],
             'user_blks_hit': db_cache[1],
             'user_cache_hit_ratio': db_cache[1]/(db_cache[0]+db_cache[1]),
+            # user table hit/blks ratio should be > 90%
+            'idx_blks_read': db_idx_cache[0],
+            'idx_blks_hit': db_idx_cache[1],
+            'idx_cache_hit_ratio': db_idx_cache[1]/(db_idx_cache[0]+db_idx_cache[1]),
             # Should be checkpoints_req < checkpoints_timed
             'checkpoints_req': bgwriter_stats[0],
             'checkpoints_timed': bgwriter_stats[1],

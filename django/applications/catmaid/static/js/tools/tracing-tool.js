@@ -351,7 +351,7 @@
 
       activeStackViewer = parentStackViewer;
       activeTracingLayer = layer;
-      activateBindings(parentStackViewer);
+      activateBindings(parentStackViewer, layer);
     };
 
     /**
@@ -371,7 +371,13 @@
      * Replace bindings of the mouse catcher with the stored bindings for the
      * given stack viewer.
      */
-    var activateBindings = function(stackViewer) {
+    var activateBindings = function(stackViewer, layer) {
+
+      // Make sure the parent navigator doesn't handle clicks.
+      var view = layer.tracingOverlay.view;
+      var proto_onpointerdown = self.prototype._onpointerdown;
+      view.removeEventListener('pointerdown', proto_onpointerdown);
+
       var handlers = bindings.get(stackViewer);
       var c = self.prototype.mouseCatcher;
       for (var fn in handlers) {

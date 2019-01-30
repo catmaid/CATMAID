@@ -51,8 +51,9 @@
    * computed asynchronously.
    */
   Similarity.addConfig = function(projectId, name, matchingSkeletonIds,
-      matchingPointSetIds, randomSkeletonIds, numRandomNeurons, lengthRandomNeurons,
-      distanceBreaks, dotBreaks, tangentNeighbors, matchingMeta, matchingSubset) {
+      matchingPointSetIds, randomSkeletonIds, numRandomNeurons,
+      lengthRandomNeurons, minNodesRandomNeurons, distanceBreaks, dotBreaks,
+      tangentNeighbors, matchingMeta, matchingSubset) {
     if ((!matchingSkeletonIds || matchingSkeletonIds.length === 0) &&
         (!matchingPointSetIds || matchingPointSetIds.length === 0)) {
       return Promise.reject(new CATMAID.Warning("No matching set skeleton IDs found"));
@@ -78,6 +79,7 @@
     if (randomSkeletonIds === 'backend') {
       params.n_random_skeletons = numRandomNeurons;
       params.min_length = lengthRandomNeurons;
+      params.min_nodes = minNodesRandomNeurons;
     }
 
     return CATMAID.fetch(project.id + '/similarity/configs/', 'PUT', params)

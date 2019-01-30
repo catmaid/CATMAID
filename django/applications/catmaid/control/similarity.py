@@ -249,6 +249,7 @@ class ConfigurationList(APIView):
         random_sample_id = int(request.data.get('random_sample_id')) \
                 if 'random_sample_id' in request.data else None
         min_length = float(request.data.get('min_length', 0))
+        min_nodes = int(request.data.get('min_nodes', 50))
         user_id = request.user.id
 
         matching_skeleton_ids = get_request_list(request.data,
@@ -323,11 +324,10 @@ class ConfigurationList(APIView):
                 raise PermissionError("User " + str(request.user.id) +
                         " doesn't have permission to queue computation tasks.")
 
-            config = self.compute_random_and_add_delayed(
-                project_id, user_id, name, matching_skeleton_ids,
-                matching_pointset_ids, distance_breaks, dot_breaks, None, None,
-                n_random_skeletons, min_length, tangent_neighbors,
-                matching_subset)
+            config = self.compute_random_and_add_delayed( project_id, user_id, name,
+                    matching_skeleton_ids, matching_pointset_ids,
+                    distance_breaks, dot_breaks, None, None, n_random_skeletons,
+                    min_length, min_nodes, tangent_neighbors, matching_subset)
             return Response(serialize_config(config))
         else:
             raise ValueError("Unknown source: " + source)
@@ -412,7 +412,7 @@ class ConfigurationList(APIView):
             distance_breaks=NblastConfigDefaultDistanceBreaks,
             dot_breaks=NblastConfigDefaultDotBreaks, match_sample_id=None,
             random_sample_id=None, n_random_skeletons=5000, min_length=0,
-            tangent_neighbors=20, matching_subset=None):
+            min_nodes=100, tangent_neighbors=20, matching_subset=None):
         """Select a random set of neurons, optionally of a minimum length and
         queue a job to compute the scoring matrix.
         """
@@ -437,7 +437,7 @@ class ConfigurationList(APIView):
                 """, {
                     'project_id': project_id,
                     'min_cable': min_length,
-                    'min_nodes': 100,
+                    'min_nodes': min_nodes,
                     'skeleton_ids': matching_skeleton_ids
                 })
                 filtered_matching_skeleton_ids = [r[0] for r in cursor.fetchall()]

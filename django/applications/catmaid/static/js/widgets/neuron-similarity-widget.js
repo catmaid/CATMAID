@@ -1182,6 +1182,7 @@
         let backendRandomSelection = true;
         let numRandomNeurons = 1000;
         let lengthRandomNeurons = 10000;
+        let minNodesRandomNeurons = 50;
         let matchingSource = null;
         let matchingTransformation = null;
         let randomSource = null;
@@ -1240,6 +1241,26 @@
             CATMAID.warn("Invalid length");
           } else {
             numRandomNeurons = Math.floor(value);
+          }
+        };
+
+        let randomBackendMinNodes = document.createElement('label');
+        randomBackendMinNodes.appendChild(document.createTextNode('Min N nodes'));
+        randomBackendMinNodes.setAttribute('title', 'A minimum number of nodes needed in each valid skeletons');
+        let randomBackendMinNodesInput = document.createElement('input');
+        randomBackendMinNodes.appendChild(randomBackendMinNodesInput);
+        randomBackendMinNodesInput.setAttribute('type', 'number');
+        randomBackendMinNodesInput.setAttribute('step', '1');
+        randomBackendMinNodesInput.setAttribute('min', '1');
+        randomBackendMinNodesInput.setAttribute('value', minNodesRandomNeurons);
+        randomBackendMinNodesInput.style.width = "6em";
+        randomBackendMinNodesInput.disabled = !backendRandomSelection;
+        randomBackendMinNodesInput.onchange = function() {
+          let value = Number(this.value);
+          if (Number.isNaN(value)) {
+            CATMAID.warn("Invalid length");
+          } else {
+            minNodesRandomNeurons = value;
           }
         };
 
@@ -1351,6 +1372,8 @@
             randomBackendCountInput.disabled = !backendRandomSelection;
             randomBackendMinLength.disabled = !backendRandomSelection;
             randomBackendMinLengthInput.disabled = !backendRandomSelection;
+            randomBackendMinNodes.disabled = !backendRandomSelection;
+            randomBackendMinNodesInput.disabled = !backendRandomSelection;
           }
         }, {
           type: 'child',
@@ -1358,6 +1381,9 @@
         }, {
           type: 'child',
           element: randomBackendMinLength,
+        }, {
+          type: 'child',
+          element: randomBackendMinNodes,
         }, {
           type: 'button',
           label: 'Create similarity matrix',
@@ -1439,8 +1465,9 @@
             Promise.all(loadingPromises)
               .then(() => CATMAID.Similarity.addConfig(project.id, newIndexName,
                 matchingSkeletonIds, matchingPointSetIds, randomSkeletonIds,
-                numRandomNeurons, lengthRandomNeurons, newDistBreaks,
-                newDotBreaks, newTangentNeighbors, matchingMeta, matchingSubset))
+                numRandomNeurons, lengthRandomNeurons, minNodesRandomNeurons,
+                newDistBreaks, newDotBreaks, newTangentNeighbors, matchingMeta,
+                matchingSubset))
               .then(function() {
                 return widget.refresh();
               })

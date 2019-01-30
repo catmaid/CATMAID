@@ -124,8 +124,8 @@
 
           image.src = objUrl;
         })
-        .then(remove)
-        .catch(error => this.handleError(error, url));
+        .catch(error => this.handleError(error, url))
+        .then(remove);
   };
 
   Loader.prototype.handleError = function (error, url) {

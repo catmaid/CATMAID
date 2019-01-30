@@ -241,8 +241,8 @@ def setup_r_environment():
     """)
 
 
-def compute_scoring_matrix(project_id, user_id, matching_skeleton_ids,
-        random_skeleton_ids, distbreaks=NblastConfigDefaultDistanceBreaks,
+def compute_scoring_matrix(project_id, user_id, matching_sample,
+        random_sample, distbreaks=NblastConfigDefaultDistanceBreaks,
         dotbreaks=NblastConfigDefaultDotBreaks, resample_step=1000,
         tangent_neighbors=5, omit_failures=True):
     """Create NBLAST scoring matrix for a set of matching skeleton IDs and a set
@@ -295,6 +295,10 @@ def compute_scoring_matrix(project_id, user_id, matching_skeleton_ids,
         'dotbreaks': dotbreaks,
         'k': tangent_neighbors
     """
+    matching_skeleton_ids = matching_sample.sample_neurons
+    matching_pointset_ids = matching_sample.sample_pointsets
+    random_skeleton_ids = random_sample.sample_neurons
+
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     similarity = None
     matching_histogram = None
@@ -317,6 +321,7 @@ def compute_scoring_matrix(project_id, user_id, matching_skeleton_ids,
         rcatmaid = importr('catmaid')
         rnat = importr('nat')
         rnblast = importr('nat.nblast')
+        Matrix = robjects.r.matrix
 
         conn = rcatmaid.catmaid_login(**server_params)
 
@@ -335,19 +340,50 @@ def compute_scoring_matrix(project_id, user_id, matching_skeleton_ids,
                     '.progress': 'none',
                     'OmitFailures': omit_failures,
                 })
-        logger.debug('Fetching {} random skeletons'.format(len(random_skeleton_ids)))
-        nonmatching_neurons = rcatmaid.read_neurons_catmaid(
-                robjects.IntVector(random_skeleton_ids), **{
-                    'conn': conn,
-                    '.progress': 'none',
-                    'OmitFailures': omit_failures,
-                })
 
         # Create dotprop instances and resample
         logger.debug('Computing matching skeleton stats')
         matching_neurons_dps = rnat.dotprops(matching_neurons.ro / 1e3, **{
                     'k': tangent_neighbors,
                     'resample': 1,
+                    '.progress': 'none',
+                    'OmitFailures': omit_failures,
+                })
+
+        # Get matching point sets, e.g. transformed neurons. They are combined
+        # with matching neurons into one set.
+        if matching_sample.sample_pointsets:
+            pointsets = []
+            for psid in matching_sample.sample_pointsets:
+                target_pointset = PointSet.objects.get(pk=psid)
+                n_points = len(target_pointset.points) / 3
+                point_data = Matrix(robjects.FloatVector(target_pointset.points),
+                        nrow=n_points, byrow=True)
+                pointsets.append(point_data)
+
+            pointset_objects = rnat.as_neuronlist(pointsets)
+            effective_pointset_object_ids = list(map(
+                    lambda x: "pointset-{}".format(x), matching_sample.sample_pointsets))
+            pointset_objects.names = robjects.StrVector(effective_pointset_object_ids)
+
+            logger.debug('Computing matching pointset stats')
+            pointset_dps = rnat.dotprops(pointset_objects.ro / 1e3, **{
+                        'k': tangent_neighbors,
+                        'resample': 1,
+                        '.progress': 'none',
+                        'OmitFailures': omit_failures,
+                    })
+
+            # Append pointsets to list of matching dotprops
+            matching_neurons_dps = robjects.r.c(matching_neurons_dps, pointset_dps)
+
+        # If there is subset of pairs given for the matching dorprops, convert
+        # it into a list that can be understood by R.
+
+        logger.debug('Fetching {} random skeletons'.format(len(random_skeleton_ids)))
+        nonmatching_neurons = rcatmaid.read_neurons_catmaid(
+                robjects.IntVector(random_skeleton_ids), **{
+                    'conn': conn,
                     '.progress': 'none',
                     'OmitFailures': omit_failures,
                 })
@@ -362,8 +398,18 @@ def compute_scoring_matrix(project_id, user_id, matching_skeleton_ids,
 
 
         logger.debug('Computing matching tangent information')
+        # Matches are provided as pairs
+
+        match_subset = robjects.NULL
+        if matching_sample.subset:
+            pass
+
+
+
+
         match_dd = rnblast.calc_dists_dotprods(matching_neurons_dps,
-                subset=robjects.NULL, ignoreSelf=True)
+                subset=match_subset, ignoreSelf=True)
+
         # generate random set of neuron pairs of same length as the matching set
         non_matching_subset = rnblast.neuron_pairs(nonmatching_neurons_dps, n=len(match_dd))
         logger.debug('Computing random tangent information')

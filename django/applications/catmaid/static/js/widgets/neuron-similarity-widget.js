@@ -417,25 +417,28 @@
     return displayTransformations;
   };
 
-  NeuronSimilarityWidget.prototype.updateDisplayTransformSelect = function(select) {
+  NeuronSimilarityWidget.prototype.updateDisplayTransformSelect = function(select, autoDisable, addNoneAlways) {
     // Clear select
     while (select.options.length) {
       select.remove(0);
     }
 
     let dts = this.displayTransformationCache;
+
+    if (dts.length === 0 || addNoneAlways) {
+      if (autoDisable) {
+        select.setAttribute('disabled', 'disabled');
+      }
+      select.add(new Option('(none)', 'none'));
+    } else {
+      select.removeAttribute('disabled');
+    }
+
     for (let i=0; i < dts.length; ++i) {
       let dt = dts[i];
       // Select first element by default
       let selected = i === 0;
       select.add(new Option(`${dt.widget.getName()}: Transform ${dt.index + 1}`, i, selected, selected));
-    }
-
-    if (dts.length === 0) {
-      select.setAttribute('disabled', 'disabled');
-      select.add(new Option('(none)', 'none'));
-    } else {
-      select.removeAttribute('disabled');
     }
 
     return dts.length;
@@ -447,13 +450,27 @@
     let transformedQuerySourceSelect = document.getElementById(this.idPrefix +
         'transformed-query-source');
     if (!transformedQuerySourceSelect) throw new CATMAID.ValueError("Transformed query element not found");
-    this.updateDisplayTransformSelect(transformedQuerySourceSelect);
+    this.updateDisplayTransformSelect(transformedQuerySourceSelect, true);
 
     let transformedTargetSourceSelect = document.getElementById(this.idPrefix +
         'transformed-target-source');
     if (!transformedTargetSourceSelect) throw new CATMAID.ValueError("Transformed target element not found");
-    this.updateDisplayTransformSelect(transformedTargetSourceSelect);
+    this.updateDisplayTransformSelect(transformedTargetSourceSelect, true);
+
+    let configMatchSourceSelect = document.getElementById(this.idPrefix +
+        'config-match-source');
+    if (!configMatchSourceSelect) throw new CATMAID.ValueError("Config match source element not found");
+    this.updateDisplayTransformSelect(configMatchSourceSelect, false, true);
   };
+
+  function loadProjectLandmarks(projectId) {
+    return Promise.all([
+      CATMAID.Landmarks.listGroups(projectId, true, true, true, true)
+        .then(result => result.reduce(CATMAID.Landmarks.addToIdIndex, new Map())),
+      CATMAID.Landmarks.list(projectId, true)
+        .then(result => result.reduce(CATMAID.Landmarks.addToIdIndex, new Map()))
+    ]);
+  }
 
   NeuronSimilarityWidget.Modes = {
     similarity: {
@@ -487,7 +504,7 @@
 
         let transformedQuerySelect = document.createElement('label');
         let transformedQuerySourceSelect = document.createElement('select');
-        widget.updateDisplayTransformSelect(transformedQuerySourceSelect);
+        widget.updateDisplayTransformSelect(transformedQuerySourceSelect, true);
         transformedQuerySourceSelect.setAttribute('id', widget.idPrefix + 'transformed-query-source');
         if (queryType !== 'tranasformed-skeleton') {
           transformedQuerySourceSelect.setAttribute('disabled', 'disabled');
@@ -509,7 +526,7 @@
 
         let transformedTargetSelect = document.createElement('label');
         let transformedTargetSourceSelect = document.createElement('select');
-        widget.updateDisplayTransformSelect(transformedTargetSourceSelect);
+        widget.updateDisplayTransformSelect(transformedTargetSourceSelect, true);
         transformedTargetSourceSelect.setAttribute('id', widget.idPrefix + 'transformed-target-source');
         if (targetType !== 'tranasformed-skeleton') {
           transformedTargetSourceSelect.setAttribute('disabled', 'disabled');
@@ -707,13 +724,10 @@
             let targetSourceLandmarkIndex;
 
             let loadGlobalProjectLandmarks = function() {
-              return CATMAID.Landmarks.listGroups(project.id, true, true, true, true)
-                .then(function(result) {
-                  landmarkGroupIndex = result.reduce(CATMAID.Landmarks.addToIdIndex, new Map());
-                  return CATMAID.Landmarks.list(project.id, true);
-                })
-                .then(function(result) {
-                  landmarkIndex = result.reduce(CATMAID.Landmarks.addToIdIndex, new Map());
+              return loadProjectLandmarks(project.id)
+                .then(results => {
+                  landmarkGroupIndex = results[0];
+                  landmarkIndex = results[1];
                 });
             };
 
@@ -1169,7 +1183,9 @@
         let numRandomNeurons = 1000;
         let lengthRandomNeurons = 10000;
         let matchingSource = null;
+        let matchingTransformation = null;
         let randomSource = null;
+        let similarityMode = 'all';
 
         let newScoringSection = document.createElement('span');
         newScoringSection.classList.add('section-header');
@@ -1184,6 +1200,18 @@
         matchSourceSelect.onchange = function(e) {
           matchingSource = e.target.value;
         };
+
+        let matchTransformedSelect = document.createElement('label');
+        matchTransformedSelect.appendChild(document.createTextNode('Sim. transformed skeletons'));
+        let matchTransformedSourceSelect = document.createElement('select');
+        matchTransformedSourceSelect.setAttribute('id', widget.idPrefix + 'config-match-source');
+        widget.updateDisplayTransformSelect(matchTransformedSourceSelect, false, true);
+        matchTransformedSelect.appendChild(matchTransformedSourceSelect);
+        matchingTransformation = matchTransformedSourceSelect.value;
+        matchTransformedSourceSelect.onchange = function(e) {
+          matchingTransformation = e.target.value;
+        };
+
         let randomSelect = document.createElement('label');
         randomSelect.appendChild(document.createTextNode('Random skeletons'));
         randomSelect.disabled = backendRandomSelection;
@@ -1305,6 +1333,9 @@
           element: matchSelect,
         }, {
           type: 'child',
+          element: matchTransformedSelect,
+        }, {
+          type: 'child',
           element: randomSelect,
         }, {
           type: 'checkbox',
@@ -1339,6 +1370,60 @@
             }
             let matchingSkeletonIds = matchingSkeletonSource.getSelectedSkeletons();
 
+            // Tasks that need to be done before the similarity matrix creation
+            // job can be queued.
+            let loadingPromises = [];
+
+            let toPointSet = function(data) {
+              return [data[3], data[4], data[5]];
+            };
+
+            let makeTransformedSkeletonPointsets = function(data) {
+              let newData = {};
+              for (let skeletonId in data) {
+                newData[skeletonId] = {
+                  'points': data[skeletonId][0].map(toPointSet),
+                  'name': 'Transformed skeleton ' + skeletonId,
+                };
+              }
+              return newData;
+            };
+
+            // If transformed skeletons are used to create the similarity
+            // matrix, send them as pointset type.
+            let matchingPointSetIds, matchingMeta, matchingSubset;
+            if (matchingTransformation) {
+              let selectedTransformationIndex = matchTransformedSourceSelect.value;
+              if (!/\d+/.test(selectedTransformationIndex)) {
+                CATMAID.warn("No transformed matching skeletons selected");
+                return;
+              }
+
+              // We need landmark information
+              loadingPromises.push(
+                loadProjectLandmarks(project.id)
+                  .then(results => {
+                    let landmarkGroupIndex = results[0];
+                    let landmarkIndex = results[1];
+
+                    let selectedTransformation =
+                        widget.displayTransformationCache[selectedTransformationIndex];
+
+                    // Map original skeleton IDs to their transformations
+                    let transformedData = {};
+                    return Promise.all([widget.getSelectedSkeletonTransformations(
+                        selectedTransformation, landmarkGroupIndex, landmarkIndex,
+                        landmarkGroupIndex, landmarkIndex, transformedData), transformedData]);
+                  })
+                  .then(results => {
+                    let skeletonIds = results[0];
+                    let transformedData = results[1];
+                    matchingPointSetIds = skeletonIds;
+                    // Transmit skeletons as smaller and more generic point set.
+                    matchingMeta = JSON.stringify(makeTransformedSkeletonPointsets(transformedData));
+                  }));
+            }
+
             let randomSkeletonIds;
             if (backendRandomSelection) {
               randomSkeletonIds = 'backend';
@@ -1351,9 +1436,11 @@
               randomSkeletonIds = randomSkeletonSource.getSelectedSkeletons();
             }
 
-            CATMAID.Similarity.addConfig(project.id, newIndexName,
-                matchingSkeletonIds, randomSkeletonIds, numRandomNeurons,
-                lengthRandomNeurons, newDistBreaks, newDotBreaks, newTangentNeighbors)
+            Promise.all(loadingPromises)
+              .then(() => CATMAID.Similarity.addConfig(project.id, newIndexName,
+                matchingSkeletonIds, matchingPointSetIds, randomSkeletonIds,
+                numRandomNeurons, lengthRandomNeurons, newDistBreaks,
+                newDotBreaks, newTangentNeighbors, matchingMeta, matchingSubset))
               .then(function() {
                 return widget.refresh();
               })
@@ -1495,10 +1582,20 @@
                 if (row.match_sample) {
                   let ms = row.match_sample;
                   if (type === 'display') {
-                    return '<a href="#" data-role="show-match-sample">ID: ' + ms.id +
-                        ', Neurons: ' + ms.sample_neurons.length + '</a>';
+                    let components = [`ID: ${ms.id}`];
+                    if (ms.sample_neurons && ms.sample_neurons.length > 0) {
+                      components.push('Neurons: ' + ms.sample_neurons.length);
+                    }
+                    if (ms.sample_pointclouds && ms.sample_pointclouds.length > 0) {
+                      components.push('Point clouds: ' + ms.sample_pointclouds.length);
+                    }
+                    if (ms.sample_pointsets && ms.sample_pointsets.length > 0) {
+                      components.push('Point sets: ' + ms.sample_pointsets.length);
+                    }
+                    return '<a href="#" data-role="show-match-sample">' + components.join(', ') + '</a>';
+                  } else {
+                    return ms.id;
                   }
-                  return row.match_sample.id;
                 }
                 return '-';
               }
@@ -1580,6 +1677,8 @@
         if (table) {
           $(table).DataTable().ajax.reload();
         }
+
+        widget.updateDisplayTransformOptions();
       }
     },
     pointclouds: {

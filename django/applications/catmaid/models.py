@@ -944,7 +944,10 @@ class NblastSample(NonCascadingUserFocusedModel):
     """Store binned distance and dot product information of the sample neuron
     set in a histogram as well as a probability density based on it. A
     non-cascading user focused model is used, because cascading deletes are
-    handled on the database level.
+    handled on the database level. Optionally, a subset of sample pairs can be
+    defined which describes pairs of samples as a tuple of four elements each:
+    [sample 1 type, sample 1 id, sample 2 type, sample 2 id] with type being
+    either 0, 1 or 2 for neuron, pointcloud and pointset respectively.
     """
     name = models.TextField()
     sample_neurons = ArrayField(models.IntegerField())
@@ -952,6 +955,7 @@ class NblastSample(NonCascadingUserFocusedModel):
     sample_pointsets = ArrayField(models.IntegerField())
     histogram = ArrayField(ArrayField(models.IntegerField()))
     probability = ArrayField(ArrayField(models.FloatField()))
+    subset = ArrayField(ArrayField(models.IntegerField()), null=True)
 
     class Meta:
         db_table = "nblast_sample"

@@ -47,22 +47,30 @@
   };
 
   /**
-   * Add a new similarity configuration.
+   * Add a new similarity configuration. The actual similarity matrix is
+   * computed asynchronously.
    */
   Similarity.addConfig = function(projectId, name, matchingSkeletonIds,
-      randomSkeletonIds, numRandomNeurons, lengthRandomNeurons, distanceBreaks,
-      dotBreaks, tangentNeighbors) {
-    if (!matchingSkeletonIds || matchingSkeletonIds.length === 0) {
+      matchingPointSetIds, randomSkeletonIds, numRandomNeurons, lengthRandomNeurons,
+      distanceBreaks, dotBreaks, tangentNeighbors, matchingMeta, matchingSubset) {
+    if ((!matchingSkeletonIds || matchingSkeletonIds.length === 0) &&
+        (!matchingPointSetIds || matchingPointSetIds.length === 0)) {
       return Promise.reject(new CATMAID.Warning("No matching set skeleton IDs found"));
     }
     if (!randomSkeletonIds) {
       return Promise.reject(new CATMAID.Warning("No random set skeleton IDs found"));
     }
 
+    let transmittedRandomSkeletonIds = randomSkeletonIds === 'backend' ?
+        undefined : randomSkeletonIds;
+
     let params = {
       name: name,
       matching_skeleton_ids: matchingSkeletonIds,
-      random_skeleton_ids: randomSkeletonIds,
+      matching_pointset_ids: matchingPointSetIds,
+      matching_subset: matchingSubset,
+      matching_meta: matchingMeta,
+      random_skeleton_ids: transmittedRandomSkeletonIds,
       distance_breaks: distanceBreaks,
       dot_breaks: dotBreaks,
       tangent_neighbors: tangentNeighbors,

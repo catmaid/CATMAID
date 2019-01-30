@@ -87,6 +87,12 @@ Neuron Similarity:
   essentially possible to compare skeletons from another CATMAID project,
   possibly on another CATMAID server, to local skeletons using NBLAST.
 
+- Similarity matrices can now include transformed skeletons in their set of
+  similar objects. To do so, create a Display Transformation in the Landmark
+  Widget that represents the wanted transformation and the select it from the
+  "Sim. transformed skeletons" drop down in the Configurations tab of the Neuron
+  Similarity Widget when creating a similarity matrix.
+
 Administration:
 
 - A grid based node query cache can now be used to speed up tracing data

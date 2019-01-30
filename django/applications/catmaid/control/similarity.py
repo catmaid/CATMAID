@@ -36,8 +36,11 @@ def serialize_sample(sample):
         'project_id': sample.project_id,
         'name': sample.name,
         'sample_neurons': sample.sample_neurons,
+        'sample_pointsets': sample.sample_pointsets,
+        'sample_pointclouds': sample.sample_pointclouds,
         'histogram': sample.histogram,
         'probability': sample.probability,
+        'subset': sample.subset,
     }
 
 
@@ -248,6 +251,43 @@ class ConfigurationList(APIView):
         min_length = float(request.data.get('min_length', 0))
         user_id = request.user.id
 
+        matching_skeleton_ids = get_request_list(request.data,
+                'matching_skeleton_ids', map_fn=int)
+        matching_pointset_ids = get_request_list(request.data,
+                'matching_pointset_ids')
+        random_skeleton_ids = get_request_list(request.data,
+                'random_skeleton_ids', map_fn=int)
+        matching_subset = get_request_list(request.data,
+                'matching_subset')
+        matching_meta = request.POST.get('matching_meta')
+
+        # Cancel if user isn't allowed to queue computation tasks
+        p = Project.objects.get(pk=project_id)
+        has_role = check_user_role(request.user, p, UserRole.QueueComputeTask)
+        if not has_role:
+            raise PermissionError("User " + str(request.user.id) +
+                    " doesn't have permission to queue computation tasks.")
+
+        # Load and store point sets, if there are any.
+        if matching_pointset_ids and matching_meta:
+            matching_meta = json.loads(matching_meta)
+            created_ids = []
+            for pointset_id in matching_pointset_ids:
+                pointset_data = matching_meta.get(str(pointset_id))
+                if not pointset_data:
+                    raise ValueError("Could not find data for pointset {}".format(pointset_id))
+                flat_points = list(chain.from_iterable(pointset_data['points']))
+                pointset = PointSet.objects.create(project_id=project_id,
+                        user=request.user, name=pointset_data['name'],
+                        description=pointset_data.get('description'),
+                        points=flat_points)
+                pointset.save()
+                created_ids.append(pointset.id)
+
+            # Update matching point set IDs with actual
+            matching_pointset_ids = created_ids
+
+
         if not dot_breaks:
             dot_breaks = NblastConfigDefaultDotBreaks
 
@@ -262,32 +302,19 @@ class ConfigurationList(APIView):
                     matching_sample_id, random_sample_id)
             return Response(serialize_config(config))
         elif source == 'request':
-            matching_skeleton_ids = get_request_list(request.data,
-                    'matching_skeleton_ids', map_fn=int)
-            random_skeleton_ids = get_request_list(request.data,
-                    'random_skeleton_ids', map_fn=int)
-            if not matching_skeleton_ids:
-                raise ValueError("Need matching_skeleton_ids")
+            if not matching_skeleton_ids and not matching_pointset_ids:
+                raise ValueError("Need matching_skeleton_ids or matching_pointset_ids")
             if not random_skeleton_ids:
                 raise ValueError("Need random_skeleton_ids")
-
-            # Cancel if user isn't allowed to queue computation tasks
-            p = Project.objects.get(pk=project_id)
-            has_role = check_user_role(request.user, p, UserRole.QueueComputeTask)
-            if not has_role:
-                raise PermissionError("User " + str(request.user.id) +
-                        " doesn't have permission to queue computation tasks.")
-
             config = self.add_delayed(matching_skeleton_ids,
-                    random_skeleton_ids, distance_breaks, dot_breaks,
-                    tangent_neighbors=tangent_neighbors)
+                    matching_pointset_ids, random_skeleton_ids, distance_breaks,
+                    dot_breaks, tangent_neighbors=tangent_neighbors,
+                    matching_subset=matching_subset)
             return Response(serialize_config(config))
         elif source == 'backend-random':
-            matching_skeleton_ids = get_request_list(request.data,
-                    'matching_skeleton_ids', map_fn=int)
+            if not matching_skeleton_ids and not matching_pointset_ids:
+                raise ValueError("Need matching_skeleton_ids or matching_pointset_ids")
             n_random_skeletons = int(request.data.get('n_random_skeletons', 5000))
-            if not matching_skeleton_ids:
-                raise ValueError("Need matching_skeleton_ids")
 
             # Cancel if user isn't allowed to queue computation tasks
             p = Project.objects.get(pk=project_id)
@@ -298,8 +325,9 @@ class ConfigurationList(APIView):
 
             config = self.compute_random_and_add_delayed(
                 project_id, user_id, name, matching_skeleton_ids,
-                distance_breaks, dot_breaks, None, None,
-                n_random_skeletons, min_length, tangent_neighbors)
+                matching_pointset_ids, distance_breaks, dot_breaks, None, None,
+                n_random_skeletons, min_length, tangent_neighbors,
+                matching_subset)
             return Response(serialize_config(config))
         else:
             raise ValueError("Unknown source: " + source)
@@ -342,9 +370,10 @@ class ConfigurationList(APIView):
             scoring=None, tangent_neighbors=tangent_neighbors)
 
     def add_delayed(self, project_id, user_id, name, matching_skeleton_ids,
-            random_skeleton_ids, distance_breaks=NblastConfigDefaultDistanceBreaks,
+            matching_pointset_ids, random_skeleton_ids,
+            distance_breaks=NblastConfigDefaultDistanceBreaks,
             dot_breaks=NblastConfigDefaultDotBreaks, match_sample_id=None,
-            random_sample_id=None, tangent_neighbors=20):
+            random_sample_id=None, tangent_neighbors=20, matching_subset=None):
         """Create and queue a new Celery task to create the scoring matrix.
         """
         histogram = []
@@ -355,8 +384,9 @@ class ConfigurationList(APIView):
         else:
             match_sample = NblastSample.objects.create(project_id=project_id,
                     user_id=user_id, name="Matching sample",
-                    sample_neurons=None, histogram=histogram,
-                    probability=probability)
+                    sample_neurons=matching_skeleton_ids,
+                    sample_pointsets=matching_pointset_ids, histogram=histogram,
+                    probability=probability, subset=matching_subset)
 
         if random_sample_id:
             random_sample = NblastSample.objects.get(id=random_sample_id)
@@ -378,9 +408,11 @@ class ConfigurationList(APIView):
         return config
 
     def compute_random_and_add_delayed(self, project_id, user_id, name,
-            matching_skeleton_ids, distance_breaks=NblastConfigDefaultDistanceBreaks,
+            matching_skeleton_ids, matching_pointset_ids,
+            distance_breaks=NblastConfigDefaultDistanceBreaks,
             dot_breaks=NblastConfigDefaultDotBreaks, match_sample_id=None,
-            random_sample_id=None, n_random_skeletons=5000, min_length=0, tangent_neighbors=20):
+            random_sample_id=None, n_random_skeletons=5000, min_length=0,
+            tangent_neighbors=20, matching_subset=None):
         """Select a random set of neurons, optionally of a minimum length and
         queue a job to compute the scoring matrix.
         """
@@ -412,7 +444,9 @@ class ConfigurationList(APIView):
                 match_sample = NblastSample.objects.create(project_id=project_id,
                         user_id=user_id, name="Matching sample",
                         sample_neurons=filtered_matching_skeleton_ids,
-                        histogram=histogram, probability=probability)
+                        sample_pointsets=matching_pointset_ids,
+                        histogram=histogram, probability=probability,
+                        subset=matching_subset)
 
             if random_sample_id:
                 random_sample = NblastSample.objects.get(id=random_sample_id,
@@ -479,7 +513,7 @@ def compute_nblast_config(config_id, user_id):
             config.save()
 
         scoring_info = compute_scoring_matrix(config.project_id, user_id,
-                config.match_sample.sample_neurons, config.random_sample.sample_neurons,
+                config.match_sample, config.random_sample,
                 config.distance_breaks, config.dot_breaks,
                 config.resample_step, config.tangent_neighbors)
 

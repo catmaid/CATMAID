@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.shortcuts import redirect
 from formtools.wizard.views import SessionWizardView
 
-from catmaid.control.common import is_invalid_host
+from catmaid.control.common import is_valid_host
 from catmaid.models import User
 
 
@@ -86,9 +86,9 @@ class ServerForm(forms.Form):
         if http_auth_user and http_auth_pass:
             auth = (http_auth_user, http_auth_pass)
 
-        error = is_invalid_host(host, auth)
-        if error:
-            raise ValidationError({'catmaid_host': [error]})
+        ok, msg = is_valid_host(host, auth)
+        if not ok:
+            raise ValidationError({'catmaid_host': [msg]})
 
         # Make sure this user has admin permissions on the remote server
         if not is_remote_admin(host, api_key, auth):

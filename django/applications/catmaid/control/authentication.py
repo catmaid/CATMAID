@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-import re
-import json
 
-from typing import Dict
+import json
+import re
+
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
 from functools import wraps
 from itertools import groupby
@@ -20,7 +21,7 @@ from django.contrib.auth import authenticate, logout, login
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.forms import UserCreationForm
 from django.db import connection
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpRequest, HttpResponseRedirect, JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import _get_queryset, render
 
@@ -36,7 +37,7 @@ class PermissionError(Exception):
     pass
 
 
-def access_check(user):
+def access_check(user) -> bool:
     """ Returns true if users are logged in or if they have the general
     can_browse permission assigned (i.e. not with respect to a certain object).
     This is used to also allow the not logged in anonymous user to retrieve
@@ -50,7 +51,7 @@ def access_check(user):
     return False
 
 
-def login_user(request):
+def login_user(request:HttpRequest) -> JsonResponse:
     profile_context = {}
     if request.method == 'POST':
         # Try to log the user into the system.
@@ -85,14 +86,14 @@ def login_user(request):
             return user_context_response(request.user, profile_context)
 
 
-def logout_user(request):
+def logout_user(request:HttpRequest) -> JsonResponse:
     logout(request)
     # Return profile context of anonymous user
     anon_user = get_anonymous_user()
     return user_context_response(anon_user)
 
 
-def user_context_response(user, additional_fields=None):
+def user_context_response(user, additional_fields=None) -> JsonResponse:
     cursor = connection.cursor()
     context = {
         'longname': user.get_full_name(),
@@ -108,7 +109,7 @@ def user_context_response(user, additional_fields=None):
     return JsonResponse(context)
 
 
-def check_user_role(user, project, roles):
+def check_user_role(user, project, roles) -> bool:
     """Check that a user has one of a set of roles for a project.
 
     Administrator role satisfies any requirement.
@@ -137,7 +138,6 @@ def check_user_role(user, project, roles):
                 break
 
     return has_role
-
 
 def requires_user_role(roles):
     """
@@ -204,7 +204,7 @@ def requires_user_role_for_any_project(roles):
     return decorated_with_requires_user_role_for_any_project
 
 
-def get_objects_and_perms_for_user(user, codenames, klass, use_groups=True, any_perm=False):
+def get_objects_and_perms_for_user(user, codenames, klass, use_groups=True, any_perm=False) -> Dict:
     """ Similar to what guardian's get_objects_for_user method does,
     this method return a dictionary of object IDs (!) of model klass
     objects with the permissions the user has on them associated.
@@ -258,7 +258,7 @@ def get_objects_and_perms_for_user(user, codenames, klass, use_groups=True, any_
 
     return pk_dict
 
-def user_project_permissions(request):
+def user_project_permissions(request:HttpRequest) -> JsonResponse:
     """ If a user is authenticated, this method returns a dictionary that
     stores whether the user has a specific permission on a project. If a user
     is not authenticated, the request is done by Django's anonymous user, which
@@ -294,7 +294,7 @@ def user_project_permissions(request):
 
     return JsonResponse((permissions, groups), safe=False)
 
-def get_object_permissions(request, ci_id):
+def get_object_permissions(request:HttpRequest, ci_id) -> JsonResponse:
     """ Tests editing permissions of a user on a class_instance and returns the
     result as JSON object."""
     try:
@@ -308,11 +308,11 @@ def get_object_permissions(request, ci_id):
 
     return JsonResponse(permissions)
 
-def can_edit_class_instance_or_fail(user, ci_id, name='object'):
+def can_edit_class_instance_or_fail(user, ci_id, name='object') -> bool:
     """ Returns true if a) the class instance is not locked or b) if the class
     instance is locked and the the user owns the link to the 'locked' annotation
     or (s)he belongs to a group with the same name as the owner of the link.
-    Otherwise, false is returned. The name argument describes the class instance
+    Otherwise raises an exception. The name argument describes the class instance
     and is only used in messages returned to the user.
     """
     ci_id = int(ci_id)
@@ -338,7 +338,7 @@ def can_edit_class_instance_or_fail(user, ci_id, name='object'):
         return True
     raise ObjectDoesNotExist('Could not find %s #%s' % (name, ci_id))
 
-def can_edit_or_fail(user, ob_id, table_name):
+def can_edit_or_fail(user, ob_id:int, table_name) -> bool:
     """ Returns true if the user owns the object or if the user is a superuser.
     Raises an Exception if the user cannot edit the object
     or if the object does not exist.
@@ -369,7 +369,7 @@ def can_edit_or_fail(user, ob_id, table_name):
     raise ObjectDoesNotExist('Object #%s not found in table %s' % (ob_id, table_name))
 
 
-def can_edit_all_or_fail(user, ob_ids, table_name):
+def can_edit_all_or_fail(user, ob_ids, table_name) -> bool:
     """ Returns true if the user owns all the objects or if the user is a superuser.
     Raises an Exception if the user cannot edit the object
     or if the object does not exist."""
@@ -397,8 +397,7 @@ def can_edit_all_or_fail(user, ob_ids, table_name):
         raise Exception('User %s cannot edit all of the %s unique objects from table %s' % (user.username, len(ob_ids), table_name))
     raise ObjectDoesNotExist('One or more of the %s unique objects were not found in table %s' % (len(ob_ids), table_name))
 
-
-def user_can_edit(cursor, user_id, other_user_id):
+def user_can_edit(cursor, user_id, other_user_id) -> bool:
     """ Determine whether the user with id 'user_'id' can edit the work of the user with id 'other_user_id'. This will be the case when the user_id belongs to a group whose name is identical to ther username of other_user_id.
     This function is equivalent to 'other_user_id in user_domain(cursor, user_id), but consumes less resources."""
     # The group with identical name to the username is implicit, doesn't have to exist. Therefore, check this edge case before querying:
@@ -419,7 +418,7 @@ def user_can_edit(cursor, user_id, other_user_id):
     return cursor.rowcount > 0
 
 
-def user_domain(cursor, user_id):
+def user_domain(cursor, user_id) -> Set:
     """ This function returns the set of all other user_id, including the self, that the user has edit rights on via group membership.
     A user can edit nodes of other user(s) when the user belongs to a group named like that other user(s). Belonging to the self group is implicit, and therefore the self group--a group named like the user--doesn't have to exist; the user_id is added to the set in all cases.
     If a user can only edit its own nodes, then the returned set contains only its own user_id. """
@@ -438,9 +437,8 @@ def user_domain(cursor, user_id):
     domain.add(user_id)
     return domain
 
-
 @requires_user_role([UserRole.Annotate])
-def all_usernames(request, project_id=None):
+def all_usernames(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Return an ordered list of all usernames, each entry a list of id and username. """
     cursor = connection.cursor()
     cursor.execute('''
@@ -448,7 +446,7 @@ def all_usernames(request, project_id=None):
     ''')
     return JsonResponse(cursor.fetchall(), safe=False)
 
-def register(request):
+def register(request:HttpRequest) -> Union[HttpResponseRedirect, JsonResponse]:
     # Return right away if user registration is not enabled
     if not settings.USER_REGISTRATION_ALLOWED:
         return HttpResponseRedirect(reverse("catmaid:home"))

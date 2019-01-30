@@ -1,21 +1,22 @@
 # -*- coding: utf-8 -*-
 
-import json
-import networkx as nx
-
-from itertools import combinations, chain
 from collections import defaultdict
 from functools import partial
+from itertools import combinations, chain
+import json
 import math
+import networkx as nx
+
+from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple, Union
 
 from django.db import connection
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 
 from catmaid.models import UserRole
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.skeleton import _neuronnames
 
-def _next_circle(skeleton_set, relations, cursor):
+def _next_circle(skeleton_set:Set, relations, cursor) -> DefaultDict:
     """ Return a dictionary of skeleton IDs in the skeleton_set vs a dictionary of connected skeletons vs how many connections."""
     pre = relations['presynaptic_to']
     post = relations['postsynaptic_to']
@@ -30,18 +31,18 @@ def _next_circle(skeleton_set, relations, cursor):
       AND (tc1.relation_id = %s OR tc1.relation_id = %s)
       AND (tc2.relation_id = %s OR tc2.relation_id = %s)
     ''' % (','.join(map(str, skeleton_set)), pre, post, pre, post))
-    connections = defaultdict(partial(defaultdict, partial(defaultdict, int)))
+    connections = defaultdict(partial(defaultdict, partial(defaultdict, int))) # type: DefaultDict
     for row in cursor.fetchall():
         connections[row[0]][row[1]][row[2]] += 1
     return connections
 
-def _relations(cursor, project_id):
+def _relations(cursor, project_id:Union[int,str]) -> Dict:
     cursor.execute("SELECT relation_name, id FROM relation WHERE project_id = %s AND (relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to')" % int(project_id))
     return dict(cursor.fetchall())
 
-def _clean_mins(request, cursor, project_id):
-    min_pre  = int(request.POST.get('min_pre',  -1))
-    min_post = int(request.POST.get('min_post', -1))
+def _clean_mins(request:HttpRequest, cursor, project_id:Union[int,str]):
+    min_pre = int(request.POST.get('min_pre',  -1)) # type: Union[int, float]
+    min_post = int(request.POST.get('min_post', -1)) # type: Union[int, float]
 
     if -1 == min_pre and -1 == min_post:
         raise Exception("Can't grow: not retrieving any pre or post.")
@@ -57,7 +58,7 @@ def _clean_mins(request, cursor, project_id):
     return mins, relations
 
 @requires_user_role(UserRole.Browse)
-def circles_of_hell(request, project_id=None):
+def circles_of_hell(request:HttpRequest, project_id) -> JsonResponse:
     """ Given a set of one or more skeleton IDs, find all skeletons that connect
     them (n_circles=1), or that connect to others that connect them (n_circles=2), etc.
     Returns a list of unique skeleton IDs that exclude the ones provided as argument.
@@ -91,7 +92,7 @@ def circles_of_hell(request, project_id=None):
 
 
 @requires_user_role(UserRole.Browse)
-def find_directed_paths(request, project_id=None):
+def find_directed_paths(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Given a set of two or more skeleton IDs, find directed paths of connected neurons between them, for a maximum inner path length as given (i.e. origin and destination not counted). A directed path means that all edges are of the same kind, e.g. presynaptic_to. """
 
     sources = set(int(v) for k,v in request.POST.items() if k.startswith('sources['))
@@ -101,7 +102,7 @@ def find_directed_paths(request, project_id=None):
 
     path_length = int(request.POST.get('path_length', 2))
     cursor = connection.cursor()
-    min = int(request.POST.get('min_synapses', -1))
+    min = int(request.POST.get('min_synapses', -1)) # type: Union[int,float]
     if -1 == min:
         min = float('inf')
 
@@ -168,7 +169,7 @@ def find_directed_paths(request, project_id=None):
 
 
 @requires_user_role(UserRole.Browse)
-def find_directed_path_skeletons(request, project_id=None):
+def find_directed_path_skeletons(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Given a set of two or more skeleton Ids, find directed paths of connected neurons between them, for a maximum inner path length as given (i.e. origin and destination not counted), and return the nodes of those paths, including the provided source and target nodes.
         Conceptually identical to find_directed_paths but far more performant. """
 
@@ -179,14 +180,14 @@ def find_directed_path_skeletons(request, project_id=None):
         raise Exception('Need at least 1 skeleton IDs for both sources and targets to find directed paths!')
 
     max_n_hops = int(request.POST.get('n_hops', 2))
-    min_synapses = int(request.POST.get('min_synapses', -1))
+    min_synapses = int(request.POST.get('min_synapses', -1)) # type: Union[int,float]
     if -1 == min_synapses:
         min_synapses = float('inf')
 
     cursor = connection.cursor()
     relations = _relations(cursor, project_id)
 
-    def fetch_adjacent(cursor, skids, relation1, relation2, min_synapses):
+    def fetch_adjacent(cursor, skids, relation1, relation2, min_synapses) -> Iterator[Any]:
         """ Return the list of skids one hop away from the given skids. """
         cursor.execute("""
         SELECT tc2.skeleton_id
@@ -210,7 +211,7 @@ def find_directed_path_skeletons(request, project_id=None):
     pre = relations['presynaptic_to']
     post = relations['postsynaptic_to']
 
-    def fetch_fronts(cursor, skids, max_n_hops, relation1, relation2, min_synapses):
+    def fetch_fronts(cursor, skids, max_n_hops, relation1, relation2, min_synapses) -> List[Set]:
         fronts = [set(skids)]
         for n_hops in range(1, max_n_hops):
             adjacent = set(fetch_adjacent(cursor, fronts[-1], relation1, relation2, min_synapses))

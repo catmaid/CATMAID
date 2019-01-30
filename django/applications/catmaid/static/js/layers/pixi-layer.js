@@ -124,7 +124,12 @@
 
           image.src = objUrl;
         })
-        .then(remove);
+        .then(remove)
+        .catch(error => this.handleError(error, url));
+  };
+
+  Loader.prototype.handleError = function (error, url) {
+    console.log(error, url);
   };
 
   Loader.prototype.queueLength = function () {

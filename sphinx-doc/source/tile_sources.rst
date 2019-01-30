@@ -13,6 +13,12 @@ CATMAID, the parameters which they use to retrieve image data, how this is
 stored in the CATMAID backend, and how to create a new tile source type in the
 CATMAID backend and frontend.
 
+Also note that CATMAID will clamp the display of tiled data by default to zero
+(i.e. no request is made for tiles at coordinate [-1, 0] in the plane). This
+behavior can be changed by adding the boolean field ``clamp`` to the stack's
+``metadata`` field with a value of ``false``. The ``metadata`` field expects a
+JSON format, so the content would look like ``{"clamp": false}``.
+
 Tile Source Parameters
 ----------------------
 

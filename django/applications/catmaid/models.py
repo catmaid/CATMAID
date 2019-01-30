@@ -113,7 +113,9 @@ class Stack(models.Model):
             help_text="Downsampling factors along each dimensions for each zoom level.")
     description = models.TextField(default='', blank=True,
             help_text="Arbitrary text that is displayed alongside the stack.")
-    metadata = JSONField(blank=True, null=True)
+    metadata = JSONField(blank=True, null=True, help_text="Optional JSON for a "
+            "stack. Supported is the boolean field \"clamp\" which can be set "
+            "to \"false\" to disable tile access clamping.")
     attribution = models.TextField(blank=True, null=True,
             help_text="Attribution or citation information for this dataset.")
     canary_location = Integer3DField(default=(0, 0, 0), help_text="Stack space "

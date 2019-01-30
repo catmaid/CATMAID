@@ -268,6 +268,10 @@
     var nextL, nextT, seamRow;
     var slicePixelPosition = [tileInfo.z];
 
+    // Clamping to zero can be disable in the stack.
+    let clamp = this.stackViewer.primaryStack.clamp;
+    let [minCol, minRow] = clamp ? [0, 0] : [tileInfo.firstCol, tileInfo.firstRow];
+
     // Update tiles (or the tile buffer).
     for (var i = this._tileOrigR, ti = 0; ti < rows; ++ti, i = (i+1) % rows) {
       var r = tileInfo.firstRow + ti;
@@ -281,8 +285,8 @@
 
         nextL = l + effectiveTileWidth;
 
-        if (c >= tileInfo.firstCol && c <= tileInfo.lastCol &&
-            r >= tileInfo.firstRow && r <= tileInfo.lastRow && showTiles) {
+        if (c >= minCol && c <= tileInfo.lastCol &&
+            r >= minRow && r <= tileInfo.lastRow && showTiles) {
           var source = this.tileSource.getTileURL(project, this.stack, slicePixelPosition,
               c, r, tileInfo.zoom);
 

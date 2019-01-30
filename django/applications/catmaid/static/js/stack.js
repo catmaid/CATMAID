@@ -95,6 +95,9 @@
       return a.position - b.position;
     });
 
+    // Allow metadata field to override clamping default value (true)
+    this.clamp = metadata ? CATMAID.tools.getDefined(metadata.clamp, true) : true;
+
     this.minPlanarRes = Math.min(resolution.x, resolution.y);
 
     this.anisotropy = function (s) {

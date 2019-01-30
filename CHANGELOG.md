@@ -21,6 +21,10 @@
   version display is now the same `git describe` format for both regular setups
   and Docker containers.
 
+- Tile loading is clamped to (0,0) again, i.e. there are no negative tile
+  coordinates anymore by default. If you need them, set the respective stack's
+  `metadata` field to `{"clamp": false}`.
+
 
 ### Features and enhancements
 

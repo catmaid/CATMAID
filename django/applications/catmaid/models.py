@@ -957,7 +957,7 @@ class NblastSample(NonCascadingUserFocusedModel):
     sample_pointsets = ArrayField(models.IntegerField())
     histogram = ArrayField(ArrayField(models.IntegerField()))
     probability = ArrayField(ArrayField(models.FloatField()))
-    subset = ArrayField(ArrayField(models.IntegerField()), null=True)
+    subset = JSONField(blank=True, null=True)
 
     class Meta:
         db_table = "nblast_sample"

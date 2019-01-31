@@ -69,7 +69,7 @@
       name: name,
       matching_skeleton_ids: matchingSkeletonIds,
       matching_pointset_ids: matchingPointSetIds,
-      matching_subset: matchingSubset,
+      matching_subset: matchingSubset ? JSON.stringify(matchingSubset) : undefined,
       matching_meta: matchingMeta,
       random_skeleton_ids: transmittedRandomSkeletonIds,
       distance_breaks: distanceBreaks,

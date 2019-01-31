@@ -255,12 +255,27 @@ class ConfigurationList(APIView):
         matching_skeleton_ids = get_request_list(request.data,
                 'matching_skeleton_ids', map_fn=int)
         matching_pointset_ids = get_request_list(request.data,
-                'matching_pointset_ids')
+                'matching_pointset_ids', map_fn=int)
         random_skeleton_ids = get_request_list(request.data,
                 'random_skeleton_ids', map_fn=int)
-        matching_subset = get_request_list(request.data,
-                'matching_subset')
         matching_meta = request.POST.get('matching_meta')
+        if matching_meta:
+            matching_meta = json.loads(matching_meta)
+        matching_subset = request.POST.get('matching_subset')
+        if matching_subset:
+            matching_subset = json.loads(matching_subset)
+
+            if type(matching_subset) != list:
+                raise ValueError("Expected matching_subset to be a list")
+
+            for subset in matching_subset:
+                if type(subset) != list:
+                    raise ValueError("Expected all matching_subset elements to be list")
+                for element in subset:
+                    if type(element) != list or len(element) != 2:
+                        raise ValueError("Expeceted subset elements to be lists with two elements")
+                    if type(element[0]) != int or type(element[1]) != int:
+                            raise ValueError("Expected subset selements to consist of ints")
 
         # Cancel if user isn't allowed to queue computation tasks
         p = Project.objects.get(pk=project_id)
@@ -271,7 +286,6 @@ class ConfigurationList(APIView):
 
         # Load and store point sets, if there are any.
         if matching_pointset_ids and matching_meta:
-            matching_meta = json.loads(matching_meta)
             created_ids = []
             for pointset_id in matching_pointset_ids:
                 pointset_data = matching_meta.get(str(pointset_id))
@@ -285,9 +299,18 @@ class ConfigurationList(APIView):
                 pointset.save()
                 created_ids.append(pointset.id)
 
+                # Update matching_subset with actual ID of point set. The subset
+                # is a list of lists that represent the subsets. Each subset
+                # element is a list of two elements [type, id]. For point sets
+                # the ID 1.
+                if matching_subset:
+                    for subset in matching_subset:
+                        for element in subset:
+                            if element[0] == 1 and element[1] == pointset_id:
+                                element[1] = pointset.id
+
             # Update matching point set IDs with actual
             matching_pointset_ids = created_ids
-
 
         if not dot_breaks:
             dot_breaks = NblastConfigDefaultDotBreaks

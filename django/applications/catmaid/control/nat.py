@@ -397,16 +397,55 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
                 })
 
 
-        logger.debug('Computing matching tangent information')
-        # Matches are provided as pairs
-
+        # Matches are provided as subsets of objects that are similar to each
+        # other (within each set). If in use, the subset parameter must be set
+        # to a data.frame with two character columns query and target, that
+        # define a single pair each.
         match_subset = robjects.NULL
         if matching_sample.subset:
-            pass
+            # Find all possible pairs in each subset
+            pairs = []
+            for subset in matching_sample.subset:
+                # Build all possible pairs in this set
+                indices = list(range(len(subset)))
+                while len(indices) > 0:
+                    elem_a = indices.pop(0)
+                    for elem_b in indices:
+                        pairs.append([subset[elem_a], subset[elem_b]])
+                        # TODO: Reverse needed?
 
+            # create query and target names
+            query_names= []
+            target_names = []
+            for pair in pairs:
+                elem_a, elem_b = pair
+                elem_a_type, elem_a_key = elem_a
+                elem_b_type, elem_b_key = elem_b
 
+                if elem_a_type == 1:
+                    query_name = 'pointset-{}'.format(elem_a_key)
+                elif elem_a_type == 2:
+                    query_name = 'pointcloud-{}'.format(elem_a_key)
+                else:
+                    query_name = elem_a_key
 
+                if elem_b_type == 1:
+                    target_name = 'pointset-{}'.format(elem_b_key)
+                elif elem_b_type == 2:
+                    target_name = 'pointcloud-{}'.format(elem_b_key)
+                else:
+                    target_name = elem_b_key
 
+                query_names.append(query_name)
+                target_names.append(target_name)
+
+            logger.debug('Found {} subset pairs'.format(len(query_names)))
+            match_subset = robjects.DataFrame({
+                'query': robjects.StrVector(query_names),
+                'target': robjects.StrVector(target_names),
+            })
+
+        logger.debug('Computing matching tangent information')
         match_dd = rnblast.calc_dists_dotprods(matching_neurons_dps,
                 subset=match_subset, ignoreSelf=True)
 

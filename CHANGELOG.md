@@ -97,6 +97,14 @@ Neuron Similarity:
   "Sim. transformed skeletons" drop down in the Configurations tab of the Neuron
   Similarity Widget when creating a similarity matrix.
 
+- Similarity matrices can now be created with more control over which skeletons
+  are looked at as similar. The drop down menu "Similarity mode" allows to
+  select different groupings of the input skeletons (and transformed skeletons).
+  It is for instance possible to group a neuron and its contralateral partner
+  that has been transformed to the side of the first neuron as similar. A
+  confirmation dialog presents the computed grouping before actually creating a
+  similarity matrix.
+
 Administration:
 
 - A grid based node query cache can now be used to speed up tracing data

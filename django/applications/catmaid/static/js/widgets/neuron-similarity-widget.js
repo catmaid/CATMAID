@@ -429,7 +429,8 @@
       if (autoDisable) {
         select.setAttribute('disabled', 'disabled');
       }
-      select.add(new Option('(none)', 'none'));
+      let selected = addNoneAlways;
+      select.add(new Option('(none)', 'none', selected, selected));
     } else {
       select.removeAttribute('disabled');
     }
@@ -437,7 +438,10 @@
     for (let i=0; i < dts.length; ++i) {
       let dt = dts[i];
       // Select first element by default
-      let selected = i === 0;
+      let selected;
+      if (!addNoneAlways) {
+        selected = i === 0;
+      }
       select.add(new Option(`${dt.widget.getName()}: Transform ${dt.index + 1}`, i, selected, selected));
     }
 
@@ -470,6 +474,78 @@
       CATMAID.Landmarks.list(projectId, true)
         .then(result => result.reduce(CATMAID.Landmarks.addToIdIndex, new Map()))
     ]);
+  }
+
+  function getGroupConfirmation(groups) {
+    return new Promise((resolve, reject) => {
+
+      if (!groups || groups.size === 0) {
+        throw new CATMAID.Warning("No matching skeletons, transformed " +
+            "skeletons or point clouds found.");
+      }
+
+
+      // With groups defined, get user confirmation.
+      let dialog = new CATMAID.OptionsDialog('Confirm ' + groups.size +
+          ' groups');
+      dialog.dialog.classList.add('widget-list');
+      dialog.onOK = () => resolve();
+      dialog.onCancel = () => reject(new CATMAID.Warning("Canceld by user"));
+
+      dialog.appendMessage("Please make sure the displayed groups are correct. " +
+        "The similarity will be computed per group and then merged into a single " +
+        "matrix. The type of each group member is indicated through one or two " +
+        "letters following its ID: Skeletons (S), Transformed Skeletons (TS) and " +
+        "point clouds (PC). The similarity matrix will be created after the group " +
+        "configuration is confirmed.");
+
+      let widgetListContainer = document.createElement('div');
+      let widgetNameTable = widgetListContainer.appendChild(
+          document.createElement('table'));
+      widgetNameTable.style.width = '100%';
+      dialog.appendChild(widgetListContainer);
+
+      let groupList = Array.from(groups.keys()).map(name => ({
+        name: name,
+        members: groups.get(name),
+      }));
+      let nns = CATMAID.NeuronNameService.getInstance();
+
+      let getType = function(type) {
+        if (type === 0) return 'S';
+        if (type === 1) return 'TS';
+        if (Type === 2) return 'PC';
+        return '?';
+      };
+
+      let datatable = $(widgetNameTable).DataTable({
+        dom: 'th<ip>',
+        order: [],
+        data: groupList,
+        language: {
+          info: "Showing _START_ to _END_  of _TOTAL_ group(s)",
+          infoFiltered: "(filtered from _MAX_ total group(s))",
+          emptyTable: 'No groups found',
+          zeroRecords: 'No matching groups found'
+        },
+        columns: [{
+          data: 'name',
+          title: 'Name',
+          render: function(data, type, row, meta) {
+              return (!data || data.length === 0) ? '<em>(none)</em>' : data;
+          },
+          width: '7em',
+        }, {
+          data: 'members',
+          title: 'Group members',
+          render: function(data, type, row, meta) {
+            return data.map(e => `${nns.getName(e[1])} (${getType(e[0])})`).join(', ');
+          },
+        }]
+      });
+
+      dialog.show(800, "auto", true);
+    });
   }
 
   NeuronSimilarityWidget.Modes = {
@@ -1187,6 +1263,8 @@
         let matchingTransformation = null;
         let randomSource = null;
         let similarityMode = 'all';
+        let similarityModeRegex = '';
+        let matchingSubset;
 
         let newScoringSection = document.createElement('span');
         newScoringSection.classList.add('section-header');
@@ -1356,6 +1434,54 @@
           type: 'child',
           element: matchTransformedSelect,
         }, {
+          id: widget.idPrefix + '-similarity-mode',
+          type: 'select',
+          label: 'Similarity mode',
+          title: 'Whether similarity should be computed for the whole group ' +
+              'of skeletons, sub-groups with the same suffix or pairs with ' +
+              'the suffixes _left and _right in their name',
+          value: similarityMode,
+          entries: [{
+            title: 'All skeletons',
+            value: 'all'
+          }, {
+            title: 'Sub-groups with same suffix',
+            value: 'same_suffix'
+          }, {
+            title: 'Pairs with suffixes _left and _right',
+            value: 'lr_suffix'
+          }, {
+            title: 'Skeletons with same name',
+            value: 'same_name',
+          }, {
+            title: 'Custom RegEx',
+            value: 'regex',
+          }],
+          onchange: function() {
+            similarityMode = this.value;
+            let regexInput = document.getElementById('similarity-matrix-custom-regex-' + widget.widgetID);
+            if (regexInput) {
+              regexInput.disabled = similarityMode !== 'regex';
+            }
+          }
+        }, {
+          type: 'text',
+          id: 'similarity-matrix-custom-regex-' + widget.widgetID,
+          placeholder: 'Custom RegEx (no /)',
+          value: similarityModeRegex,
+          length: 10,
+          disabled: similarityMode !== 'regex',
+          onchange: function() {
+            try {
+              let regex = new RegExp(this.value);
+            } catch(error) {
+              similarityModeRegex = '';
+              CATMAID.warn(error);
+              return;
+            }
+            similarityModeRegex = this.value;
+          },
+        }, {
           type: 'child',
           element: randomSelect,
         }, {
@@ -1395,6 +1521,7 @@
               return;
             }
             let matchingSkeletonIds = matchingSkeletonSource.getSelectedSkeletons();
+            let nns = CATMAID.NeuronNameService.getInstance();
 
             // Tasks that need to be done before the similarity matrix creation
             // job can be queued.
@@ -1409,7 +1536,7 @@
               for (let skeletonId in data) {
                 newData[skeletonId] = {
                   'points': data[skeletonId][0].map(toPointSet),
-                  'name': 'Transformed skeleton ' + skeletonId,
+                  'name': nns.getName(skeletonId),
                 };
               }
               return newData;
@@ -1417,7 +1544,7 @@
 
             // If transformed skeletons are used to create the similarity
             // matrix, send them as pointset type.
-            let matchingPointSetIds, matchingMeta, matchingSubset;
+            let matchingPointSetIds, matchingMeta;
             if (matchingTransformation) {
               let selectedTransformationIndex = matchTransformedSourceSelect.value;
               if (!/\d+/.test(selectedTransformationIndex)) {
@@ -1450,6 +1577,107 @@
                   }));
             }
 
+            let prepare = Promise.all(loadingPromises)
+              .then(() => {
+                // Create explicit matching pairs if a similarity mode other than
+                // 'all' is selected.
+                if (similarityMode && similarityMode !== 'all') {
+                  let matchingSources = new Map([
+                      [0, matchingSkeletonIds],
+                      [1, matchingPointSetIds]]);
+                  let groups = new Map();
+
+                  if (similarityMode === 'same_suffix') {
+                    // Find all pairs of objects that end with the same suffix, e.g.
+                    // "_a" and "_b".
+                    for (let [srcId, src] of matchingSources) {
+                      for (let id of src) {
+                        let name = nns.getName(id);
+                        let lastSeperator = name.lastIndexOf('_');
+                        // If no seperator is found, the element will be part of an
+                        // group.with no name.
+                        let groupName = lastSeperator === -1 ? '' : name.substr(lastSeperator + 1);
+                        let group = groups.get(groupName);
+                        if (!group) {
+                          group = [];
+                          groups.set(groupName, group);
+                        }
+                        // Format: [type, id] with type = 0 for skeletons
+                        group.push([srcId, id]);
+                      }
+                    }
+                  } else if (similarityMode === 'lr_suffix') {
+                    // Find all pairs of objects that share the same name before a
+                    // _left and a _right suffix.
+                    for (let [srcId, src] of matchingSources) {
+                      for (let id of src) {
+                        let name = nns.getName(id);
+                        let lastSeperator = name.indexOf('_');
+                        if (lastSeperator === -1) continue;
+
+                        // We only want left and right suffix items
+                        let suffix = name.substr(lastSeperator + 1);
+                        if (suffix !== 'left' && suffix !== 'right') continue;
+
+                        let groupName = name.substr(0, lastSeperator);
+                        let group = groups.get(groupName);
+                        if (!group) {
+                          group = [];
+                          groups.set(groupName, group);
+                        }
+                        // Format: [type, id] with type = 0 for skeletons
+                        group.push([srcId, id]);
+                      }
+                    }
+                  } else if (similarityMode === 'same_name') {
+                    // Find all pairs of objects that share the same name
+                    for (let [srcId, src] of matchingSources) {
+                      for (let id of src) {
+                        let groupName = nns.getName(id);
+                        let group = groups.get(groupName);
+                        if (!group) {
+                          group = [];
+                          groups.set(groupName, group);
+                        }
+                        // Format: [type, id] with type = 0 for skeletons
+                        group.push([srcId, id]);
+                      }
+                    }
+                  } else if (similarityMode === 'regex') {
+                    // Create regex and capture everything before pattern in
+                    // group for easier access.
+                    let regex = new RegExp(`(.*)(${similarityModeRegex})`);
+                    // Find all pairs of objects that share the same name in
+                    // front of a patter described by a custom regex.
+                    for (let [srcId, src] of matchingSources) {
+                      for (let id of src) {
+                        let name = nns.getName(id);
+                        if (!regex.test(name)) {
+                          // Ignore everything not matching
+                          continue;
+                        }
+                        let match = regex.exec(name);
+                        let groupName = match[1];
+                        let group = groups.get(groupName);
+                        if (!group) {
+                          group = [];
+                          groups.set(groupName, group);
+                        }
+                        // Format: [type, id] with type = 0 for skeletons
+                        group.push([srcId, id]);
+                      }
+                    }
+                  } else {
+                    throw new CATMAID.ValueError("Unknown similarity mode: " + similarityMode);
+                  }
+
+                  return getGroupConfirmation(groups)
+                    .then(() => {
+                      matchingSubset = Array.from(groups.keys()).map(k => groups.get(k));
+                    });
+                }
+              });
+
             let randomSkeletonIds;
             if (backendRandomSelection) {
               randomSkeletonIds = 'backend';
@@ -1462,7 +1690,7 @@
               randomSkeletonIds = randomSkeletonSource.getSelectedSkeletons();
             }
 
-            Promise.all(loadingPromises)
+            prepare
               .then(() => CATMAID.Similarity.addConfig(project.id, newIndexName,
                 matchingSkeletonIds, matchingPointSetIds, randomSkeletonIds,
                 numRandomNeurons, lengthRandomNeurons, minNodesRandomNeurons,

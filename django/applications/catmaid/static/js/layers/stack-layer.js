@@ -6,7 +6,7 @@
    * Base class for layers that display an image stack.
    * @constructor
    * @param {StackViewer} stackViewer Stack viewer to which this layer belongs.
-   * @param {string}  displayname  Name displayed in window controls.
+   * @param {string}  displayName  Name displayed in window controls.
    * @param {Stack}   stack        Image stack to display.
    * @param {number}  mirrorIndex  Stack mirror index to use as source. If
    *                               undefined, the fist available mirror is used.
@@ -23,7 +23,7 @@
    */
   function StackLayer(
       stackViewer,
-      displayname,
+      displayName,
       stack,
       mirrorIndex,
       visibility,
@@ -34,7 +34,7 @@
       changeMirrorIfNoData) {
 
     this.stackViewer = stackViewer;
-    this.displayname = displayname;
+    this.displayName = displayName;
     this.stack = stack;
     this.opacity = opacity; // in the range [0,1]
     this.showOverview = showOverview;
@@ -181,7 +181,7 @@
    * Return friendly name of this layer.
    */
   StackLayer.prototype.getLayerName = function () {
-    return this.displayname;
+    return this.displayName;
   };
 
   /**

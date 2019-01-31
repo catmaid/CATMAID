@@ -193,7 +193,7 @@
     var slicePixelPosition = [tileInfo.z];
 
     // Clamping to zero can be disable in the stack.
-    let clamp = this.stackViewer.primaryStack.clamp;
+    let clamp = this.stack.clamp;
     let [minCol, minRow] = clamp ? [0, 0] : [tileInfo.firstCol, tileInfo.firstRow];
 
     // Update tiles.

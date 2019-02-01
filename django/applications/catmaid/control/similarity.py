@@ -360,7 +360,6 @@ class ConfigurationList(APIView):
 
         # Test whether the passed in scoring data actually matches binning
         # information.
-        print(data)
         scoring = data
 
         return NblastConfig.objects.create(project_id=project_id,

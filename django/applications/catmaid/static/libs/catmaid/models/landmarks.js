@@ -678,40 +678,56 @@
         }
       };
 
+      transformation.skeletonPromises = new Map();
       transformation.nodeProvider = {
         get: function(skeletonId) {
-          if (!transformation.loading) {
-            if (transformation.skeletonCache && transformation.skeletonCache[skeletonId]) {
-              transformation.loading = Promise.resolve(transformation.skeletonCache[skeletonId]);
-            } else {
-              // Get skeleton data and transform it
-              transformation.loading = CATMAID.fetch({
-                  url: transformation.projectId + '/skeletons/' + skeletonId + '/compact-detail',
-                  method: 'GET',
-                  data: {
-                      with_tags: false,
-                      with_connectors: false,
-                      with_history: false
-                  },
-                  api: transformation.fromApi,
-                })
-                .then(function(response) {
-                  // If the source group ID is the same as the target group ID,
-                  // don't transform at all.
-                  if (transformation.fromGroupId !== transformation.toGroupId) {
-                    // Transform points and store in cache
-                    response[0].forEach(transformTreenode);
-                  }
-                  if (!transformation.skeletonCache) {
-                    transformation.skeletonCache = {};
-                  }
-                  transformation.skeletonCache[skeletonId] = response;
-                  return response;
-                });
-            }
+          // If skeleton is still in the loading queue, return promise from
+          // there.
+          let skeletonPromise = transformation.skeletonPromises.get(skeletonId);
+          if (skeletonPromise) {
+            return skeletonPromise;
           }
 
-          return transformation.loading;
+          // Return cached version, if available.
+          if (transformation.skeletonCache && transformation.skeletonCache[skeletonId]) {
+            return Promise.resolve(transformation.skeletonCache[skeletonId]);
+          }
+
+          // Otherwise, load from back-end.
+          skeletonPromise = CATMAID.fetch({
+              url: transformation.projectId + '/skeletons/' + skeletonId + '/compact-detail',
+              method: 'GET',
+              data: {
+                  with_tags: false,
+                  with_connectors: false,
+                  with_history: false
+              },
+              api: transformation.fromApi,
+            })
+            .then(function(response) {
+              // If the source group ID is the same as the target group ID,
+              // don't transform at all.
+              if (transformation.fromGroupId !== transformation.toGroupId) {
+                // Transform points and store in cache
+                // TODO: do this in webworker?
+                response[0].forEach(transformTreenode);
+              }
+
+              // Store result in transformation cache
+              if (!transformation.skeletonCache) {
+                transformation.skeletonCache = {};
+              }
+              transformation.skeletonCache[skeletonId] = response;
+
+              // Remove from loading queue
+              transformation.skeletonPromises.delete(skeletonId);
+
+              return response;
+            });
+
+          transformation.skeletonPromises.set(skeletonId, skeletonPromise);
+
+          return skeletonPromise;
         }
       };
 

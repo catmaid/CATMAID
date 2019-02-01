@@ -30,7 +30,7 @@ from catmaid.models import (BrokenSlice, Class, Relation, ClassClass,
         StackStackGroup, ProjectStack, StackClassInstance, StackGroupRelation,
         StackMirror, TILE_SOURCE_TYPES)
 from catmaid.fields import Double3D
-from catmaid.control.common import urljoin, is_invalid_host
+from catmaid.control.common import urljoin, is_valid_host
 from catmaid.control.classification import get_classification_links_qs, \
         link_existing_classification, ClassInstanceClassInstanceProxy
 
@@ -841,13 +841,13 @@ class DataFileForm(forms.Form):
         # Make sure URLs are provided for a remote import
         import_from = form_data['import_from']
         if 'remote-catmaid' == import_from:
-            error = is_invalid_host(form_data['catmaid_host'], auth)
-            if error:
-                raise ValidationError({'catmaid_host': [error]})
+            ok, msg = is_valid_host(form_data['catmaid_host'], auth)
+            if not ok:
+                raise ValidationError({'catmaid_host': [msg]})
         elif 'remote' == import_from:
-            error = is_invalid_host(form_data['remote_host'], auth)
-            if error:
-                raise ValidationError({'remote_host': [error]})
+            ok, msg = is_valid_host(form_data['remote_host'], auth)
+            if not ok:
+                raise ValidationError({'remote_host': [msg]})
 
         return form_data
 

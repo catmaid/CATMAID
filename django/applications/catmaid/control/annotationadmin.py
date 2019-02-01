@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
+
 from django import forms
 from django.conf import settings
 from django.db import connection
@@ -63,7 +65,7 @@ class ConfirmationForm(forms.Form):
     """
     pass
 
-def get_source_type(wizard):
+def get_source_type(wizard) -> str:
     """ Test whether the project import form should be shown."""
     cleaned_data = wizard.get_cleaned_data_for_step('sourcetypeselection') \
         or {'source_type': SOURCE_TYPE_CHOICES[0]}
@@ -181,7 +183,7 @@ def copy_annotations(source_pid, target_pid, import_treenodes=True,
     # again.
     cursor = connection.cursor()
 
-    imported_treenodes = []
+    imported_treenodes = [] # type: List
 
     if import_treenodes:
         # Copy treenodes from source to target
@@ -242,7 +244,7 @@ def copy_annotations(source_pid, target_pid, import_treenodes=True,
             SELECT
             FROM connector_treenode ct
             WHERE ct.project_id=%s
-            ''' % (target_pid, source_pid))
+            ''' % (target_pid, source_pid)) # FIXME "Not all arguments converted during string formatting"
 
     if import_annotations:
         try:
@@ -299,7 +301,7 @@ def copy_annotations(source_pid, target_pid, import_treenodes=True,
                 JOIN class_instance ci_s ON ci_s.id=cici.class_instance_b
                 WHERE cici.project_id=%s AND relation_id=%s
                 ''')
-        except DoesNotExist:
+        except (Class.DoesNotExist, Class.RelationDoesNotExist):
             # No annotations need to be imported if no source annotations are
             # found
             pass

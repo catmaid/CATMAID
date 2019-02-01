@@ -406,8 +406,6 @@ urlpatterns += [
 urlpatterns += [
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/roots/$'.format(integer),
         classification.get_classification_roots),
-    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/number$'.format(integer),
-        classification.get_classification_number),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/setup/test$'.format(integer),
         classification.check_classification_setup_view, name='test_classification_setup'),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/setup/rebuild$'.format(integer),

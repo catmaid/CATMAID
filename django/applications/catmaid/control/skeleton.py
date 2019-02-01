@@ -1005,7 +1005,7 @@ def split_skeleton(request:HttpRequest, project_id=None) -> JsonResponse:
 
     # Update annotations of existing neuron to have only over set
     if upstream_annotation_map:
-        _update_neuron_annotations(project_id, request.user, neuron.id,
+        _update_neuron_annotations(project_id, neuron.id,
                 upstream_annotation_map)
 
     # Update annotations of under skeleton
@@ -2059,7 +2059,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         # Update linked annotations of neuron
         response_on_error = 'Could not update annotations of neuron ' \
                 'with ID %s' % from_neuron['neuronid']
-        _update_neuron_annotations(project_id, user, from_neuron['neuronid'],
+        _update_neuron_annotations(project_id, from_neuron['neuronid'],
                 winning_map, to_neuron['neuronid'])
 
         # Remove the 'losing' neuron if it is empty

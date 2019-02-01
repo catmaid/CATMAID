@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
+from collections import defaultdict
 import re
 
-from collections import defaultdict
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
-from django.http import JsonResponse, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.db import connection
 
@@ -17,8 +18,8 @@ from catmaid.control.common import (get_relation_to_id_map,
         get_class_to_id_map, get_request_bool, get_request_list)
 
 
-def get_annotation_to_id_map(project_id, annotations, relations=None,
-                             classes=None):
+def get_annotation_to_id_map(project_id:Union[int,str], annotations:List, relations=None,
+                             classes=None) -> Dict:
     """Get a dictionary mapping annotation names to annotation IDs in a
     particular project."""
     if not relations:
@@ -43,9 +44,9 @@ def get_annotation_to_id_map(project_id, annotations, relations=None,
     mapping = dict(cursor.fetchall())
     return mapping
 
-def get_annotated_entities(project_id, params, relations=None, classes=None,
+def get_annotated_entities(project_id:Union[int,str], params, relations=None, classes=None,
         allowed_classes=['neuron', 'annotation'], sort_by=None, sort_dir=None,
-        range_start=None, range_length=None, with_annotations=True, with_skeletons=True):
+        range_start=None, range_length=None, with_annotations:bool=True, with_skeletons:bool=True) -> Tuple[List, int]:
     """Get a list of annotated entities based on the passed in search criteria.
     """
     if not relations:
@@ -58,10 +59,9 @@ def get_annotated_entities(project_id, params, relations=None, classes=None,
 
     # One list of annotation sets for requested annotations and one for those
     # of which subannotations should be included
-    annotation_sets = set()
-    not_annotation_sets = set()
-    annotation_sets_to_expand = set()
-    not_annotation_sets = set()
+    annotation_sets = set() # type: Set
+    not_annotation_sets = set() # type: Set
+    annotation_sets_to_expand = set() # type: Set
 
     # Get name, annotator and time constraints, if available
     name = params.get('name', "").strip()
@@ -82,7 +82,7 @@ def get_annotated_entities(project_id, params, relations=None, classes=None,
     # If annotation_names have been passed in, find matching IDs
     if annotation_reference == 'name':
         # Find annotation references
-        annotation_names = set()
+        annotation_names = set() # type: Set
         for key in params:
             if key.startswith('annotated_with') or \
                     key.startswith('not_annotated_with') or \
@@ -90,14 +90,14 @@ def get_annotated_entities(project_id, params, relations=None, classes=None,
                 if len(params[key]) > 0:
                     annotation_names |= set(params[key].split(','))
         annotation_id_map = get_annotation_to_id_map(project_id, list(annotation_names))
-        def to_id(name):
-            id = annotation_id_map.get(name)
+        def to_id(inval) -> int: # Python wants the signatures for "conditional program variants" to be the same, incl variable names
+            id = annotation_id_map.get(inval)
             if not id:
-                raise ValueError("Unknown annotation: " + name)
+                raise ValueError("Unknown annotation: " + inval)
             return id
     else:
-        def to_id(id):
-            return int(id)
+        def to_id(inval) -> int:
+            return int(inval)
 
     # Collect annotations and sub-annotation information. Each entry can be a
     # list of IDs, which will be treated as or-combination.
@@ -290,17 +290,17 @@ def get_annotated_entities(project_id, params, relations=None, classes=None,
     cursor.execute(query.format(**query_fmt_params), params)
 
     entities = []
-    for e in cursor.fetchall():
-        class_name = allowed_class_idx[e[5]]
+    for ent in cursor.fetchall():
+        class_name = allowed_class_idx[ent[5]]
         entity_info = {
-            'id': e[0],
-            'name': e[6],
+            'id': ent[0],
+            'name': ent[6],
             'type': class_name,
         }
 
         # Depending on the type of entity, some extra information is added.
         if class_name == 'neuron':
-            entity_info['skeleton_ids'] = e[7]
+            entity_info['skeleton_ids'] = ent[7]
 
         entities.append(entity_info)
 
@@ -316,20 +316,20 @@ def get_annotated_entities(project_id, params, relations=None, classes=None,
                     'class_instance_a', 'class_instance_b',
                     'class_instance_b__name', 'user__id')
 
-        annotation_dict = {}
+        annotation_dict = {} # type: Dict
         for a in annotations:
             if a[0] not in annotation_dict:
                 annotation_dict[a[0]] = []
             annotation_dict[a[0]].append(
             {'id': a[1], 'name': a[2], 'uid': a[3]})
 
-        for e in entities:
-            e['annotations'] = annotation_dict.get(e['id'], [])
+        for ent in entities:
+            ent['annotations'] = annotation_dict.get(ent['id'], [])
 
     return entities, num_total_records
 
 
-def get_sub_annotation_ids(project_id, annotation_sets, relations, classes):
+def get_sub_annotation_ids(project_id:Union[int,str], annotation_sets, relations, classes) -> Dict:
     """ Sub-annotations are annotations that are annotated with an annotation
     from the annotation_set passed. Additionally, transivitely annotated
     annotations are returned as well. Note that all entries annotation_sets
@@ -348,10 +348,10 @@ def get_sub_annotation_ids(project_id, annotation_sets, relations, classes):
     # A set wrapper to keep a set in a dictionary
     class set_wrapper:
         def __init__(self):
-            self.data = set()
+            self.data = set() # type: Set
 
     # Create a dictionary of all annotations annotating a set of annotations
-    aaa = {}
+    aaa = {} # type: Dict
     for aa in aaa_tuples:
         sa_set = aaa.get(aa[0])
         if sa_set is None:
@@ -361,10 +361,10 @@ def get_sub_annotation_ids(project_id, annotation_sets, relations, classes):
 
     # Collect all sub-annotations by following the annotation hierarchy for
     # every annotation in the annotation set passed.
-    sa_ids = {}
+    sa_ids = {} # type: Dict
     for annotation_set in annotation_sets:
         # Start with an empty result set for each requested annotation set
-        ls = set()
+        ls = set() # type: Set
         for a in annotation_set:
             working_set = set([a])
             while working_set:
@@ -384,7 +384,7 @@ def get_sub_annotation_ids(project_id, annotation_sets, relations, classes):
 
 @api_view(['POST'])
 @requires_user_role([UserRole.Browse])
-def query_annotated_classinstances(request, project_id = None):
+def query_annotated_classinstances(request:HttpRequest, project_id:Optional[Union[int,str]] = None) -> JsonResponse:
     """Query entities based on various constraints
 
     Entities are objects that can be referenced within CATMAID's semantic
@@ -537,9 +537,9 @@ def query_annotated_classinstances(request, project_id = None):
     })
 
 
-def _update_neuron_annotations(project_id, user, neuron_id, annotation_map, losing_neuron_id=None):
+def _update_neuron_annotations(project_id:Union[int,str], neuron_id, annotation_map:Dict[str,Any], losing_neuron_id=None) -> None:
     """ Ensure that the neuron is annotated_with only the annotations given.
-    These annotations are expected to come as dictornary of annotation name
+    These annotations are expected to come as dictionary of annotation name
     versus annotator ID.
 
     If losing_neuron_id is provided, annotations missing on the neuron that
@@ -623,7 +623,7 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map, losi
           to_update_et))
 
 
-def delete_annotation_if_unused(project, annotation, relation):
+def delete_annotation_if_unused(project, annotation, relation) -> Tuple[bool, int]:
     """ Delete the given annotation instance if it is not used anymore.
     Returns a tuple where the first element states if
     """
@@ -647,10 +647,10 @@ def delete_annotation_if_unused(project, annotation, relation):
 
         return True, 0
 
-def _annotate_entities(project_id, entity_ids, annotation_map,
-        update_existing=False):
+def _annotate_entities(project_id:Union[int,str], entity_ids, annotation_map:Dict[str,Any],
+        update_existing=False) -> Tuple[Dict,Set]:
     """ Annotate the entities with the given <entity_ids> with the given
-    annotations. These annotations are expected to come as dictornary of
+    annotations. These annotations are expected to come as dictionary of
     annotation name versus an object with at least the field 'user_id'
     annotator ID. If the 'creation_time' and/or 'edition_time' fields are
     available, they will be used for the respective columns. A listof all
@@ -730,8 +730,7 @@ def _annotate_entities(project_id, entity_ids, annotation_map,
 
     return annotation_objects, new_annotations
 
-
-def _annotate_entities_with_name(project_id, user_id, entity_ids):
+def _annotate_entities_with_name(project_id:Union[int,str], user_id, entity_ids) -> Tuple[List[List[Any]], List[List[Any]]]:
     cursor = connection.cursor()
 
     annotated_with = Relation.objects.get(project_id=project_id,
@@ -829,7 +828,7 @@ def _annotate_entities_with_name(project_id, user_id, entity_ids):
     return updated_cis, created_name_links
 
 @requires_user_role(UserRole.Annotate)
-def annotate_entities(request, project_id = None):
+def annotate_entities(request:HttpRequest, project_id = None) -> JsonResponse:
     p = get_object_or_404(Project, pk = project_id)
 
     # Read keys in a sorted manner
@@ -882,7 +881,7 @@ def annotate_entities(request, project_id = None):
 
 @api_view(['POST'])
 @requires_user_role(UserRole.Annotate)
-def add_neuron_name_annotations(request, project_id = None):
+def add_neuron_name_annotations(request:HttpRequest, project_id = None) -> JsonResponse:
     """Add missing neuron name annotations.
 
     To each passed in neuron, a list of neuron IDs and/or skelton IDs, the
@@ -931,9 +930,8 @@ def add_neuron_name_annotations(request, project_id = None):
     }
     return JsonResponse(result)
 
-
 @requires_user_role(UserRole.Annotate)
-def remove_annotations(request, project_id=None):
+def remove_annotations(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Removes an annotation from one or more entities.
     """
     annotation_ids = get_request_list(request.POST, 'annotation_ids', [], map_fn=int)
@@ -973,7 +971,7 @@ def remove_annotations(request, project_id=None):
 
 
 @requires_user_role(UserRole.Annotate)
-def remove_annotation(request, project_id=None, annotation_id=None):
+def remove_annotation(request:HttpRequest, project_id=None, annotation_id=None) -> JsonResponse:
     """ Removes an annotation from one or more entities.
     """
     entity_ids = get_request_list(request.POST, 'entity_ids', [], map_fn=int)
@@ -1004,8 +1002,7 @@ def remove_annotation(request, project_id=None, annotation_id=None):
         'left_uses': num_left
     })
 
-
-def _remove_annotation(user, project_id, entity_ids, annotation_id):
+def _remove_annotation(user, project_id:Union[int,str], entity_ids, annotation_id) -> Tuple[List, List, int, int]:
     """Remove an annotation made by a certain user in a given project on a set
     of entities (usually neurons and annotations). Returned is a 4-tuple which
     holds the deleted annotation links, the list of links that couldn't be
@@ -1120,48 +1117,9 @@ def create_annotation_query(project_id, param_dict):
 
     return annotation_query
 
-
-def generate_annotation_intersection_query(project_id, annotations):
-    if not annotations:
-        return
-
-    tables = []
-    where = []
-
-    for i, annotation in enumerate(annotations):
-        tables.append("""
-        class_instance c%s,
-        class_instance_class_instance cc%s""" % (i, i))
-
-        where.append("""
-        AND c%s.name = '%s'
-        AND c%s.id = cc%s.class_instance_b
-        AND cc%s.relation_id = r.id""" % (i, annotation, i, i, i))
-
-    q = """
-        SELECT c.id,
-               c.name
-
-        FROM class_instance c,
-             relation r,
-             %s
-
-        WHERE r.relation_name = 'annotated_with'
-        AND c.project_id = %s
-             %s
-
-             %s
-        """ % (',\n    '.join(tables),
-               project_id,
-               '\n'.join(where),
-               '\n        '.join('AND cc%s.class_instance_a = c.id' % i for i in range(len(annotations))))
-
-    return q
-
-
-def generate_co_annotation_query(project_id, co_annotation_ids, classIDs, relationIDs):
+def generate_co_annotation_query(project_id:Union[int,str], co_annotation_ids, classIDs, relationIDs) -> Tuple[str,str]:
     if not co_annotation_ids:
-        return
+        raise ValueError("Need co-annotations")
 
     tables = []
     where = []
@@ -1226,7 +1184,7 @@ def generate_co_annotation_query(project_id, co_annotation_ids, classIDs, relati
 
 @api_view(['GET', 'POST'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def list_annotations(request, project_id=None):
+def list_annotations(request:HttpRequest, project_id=None) -> JsonResponse:
     """List annotations matching filtering criteria that are currently in use.
 
     The result set is the intersection of annotations matching criteria (the
@@ -1358,7 +1316,7 @@ def list_annotations(request, project_id=None):
 
     # Create a set mapping annotation names to its users
     ids = {}
-    annotation_dict = {}
+    annotation_dict = {} # type: Dict
     for annotation, aid, uid, username in annotation_tuples:
         ids[aid] = annotation
         ls = annotation_dict.get(aid)
@@ -1372,7 +1330,7 @@ def list_annotations(request, project_id=None):
     return JsonResponse({'annotations': annotations})
 
 
-def _fast_co_annotations(request, project_id, display_start, display_length):
+def _fast_co_annotations(request:HttpRequest, project_id:Union[int,str], display_start, display_length) -> JsonResponse:
     classIDs = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
     relationIDs = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
     co_annotation_ids = set(get_request_list(request.POST, 'parallel_annotations', [], map_fn=int))
@@ -1441,7 +1399,7 @@ def _fast_co_annotations(request, project_id, display_start, display_length):
 
 
 @requires_user_role([UserRole.Browse])
-def list_annotations_datatable(request, project_id=None):
+def list_annotations_datatable(request:HttpRequest, project_id=None) -> JsonResponse:
     display_start = int(request.POST.get('iDisplayStart', 0))
     display_length = int(request.POST.get('iDisplayLength', -1))
     if display_length < 0:
@@ -1523,7 +1481,7 @@ def list_annotations_datatable(request, project_id=None):
         'iTotalRecords': num_records,
         'iTotalDisplayRecords': num_records,
         'aaData': []
-    }
+    } # type: Dict[str, Any]
 
     for annotation in annotation_query[display_start:display_start + display_length]:
         # Format last used time
@@ -1544,7 +1502,7 @@ def list_annotations_datatable(request, project_id=None):
 
 @api_view(['POST'])
 @requires_user_role([UserRole.Browse])
-def annotations_for_skeletons(request, project_id=None):
+def annotations_for_skeletons(request:HttpRequest, project_id=None) -> JsonResponse:
     """Get annotations and who used them for a set of skeletons.
 
     This method focuses only on annotations linked to skeletons and is likely to
@@ -1583,7 +1541,7 @@ def annotations_for_skeletons(request, project_id=None):
     ''' % (",".join(map(str, skids)), annotated_with_id))
 
     # Group by skeleton ID
-    m = defaultdict(list)
+    m = defaultdict(list) # type: DefaultDict
     a = dict()
     for skid, aid, name, uid in cursor.fetchall():
         m[skid].append({'id': aid, 'uid': uid})
@@ -1597,7 +1555,7 @@ def annotations_for_skeletons(request, project_id=None):
 
 @api_view(['POST'])
 @requires_user_role([UserRole.Browse])
-def annotations_for_entities(request, project_id=None):
+def annotations_for_entities(request:HttpRequest, project_id=None) -> JsonResponse:
     """Query annotations linked to a list of objects.
 
     These objects can for instance be neurons, annotations or stack groups. From
@@ -1642,7 +1600,7 @@ def annotations_for_entities(request, project_id=None):
     ''' % (",".join(map(str, object_ids)), annotated_with_id))
 
     # Group by entity ID
-    m = defaultdict(list)
+    m = defaultdict(list) # type: DefaultDict
     a = dict()
     for eid, aid, name, uid in cursor.fetchall():
         m[eid].append({'id': aid, 'uid': uid})
@@ -1653,7 +1611,7 @@ def annotations_for_entities(request, project_id=None):
         'annotations': a
     }, json_dumps_params={'separators': (',', ':')})
 
-def annotations_for_skeleton(project_id, skeleton_id, relations=None, classes=None):
+def annotations_for_skeleton(project_id:Union[int,str], skeleton_id, relations=None, classes=None) -> Dict:
     """Get a a dictionary mapping annotations on the neuron modeled by the
     passed in skeleton to the respective annotators.
     """

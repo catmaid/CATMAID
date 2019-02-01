@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
+
 from collections import namedtuple, defaultdict
 from itertools import chain, islice
 from functools import partial
 from networkx import Graph, single_source_shortest_path
 
 from django.db import connection
-from django.http import JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 
 from catmaid.control.common import get_request_list
 from catmaid.control.authentication import requires_user_role
@@ -17,7 +19,7 @@ from rest_framework.decorators import api_view
 
 @api_view(['POST'])
 @requires_user_role(UserRole.Browse)
-def list_broken_section_nodes(request, project_id=None):
+def list_broken_section_nodes(request, project_id=None) -> JsonResponse:
     """List nodes that are located in a broken section.
 
     Broken secrions of all stacks linked to the current project are tested if
@@ -44,7 +46,7 @@ def list_broken_section_nodes(request, project_id=None):
 
     return JsonResponse(broken_section_nodes, safe=False)
 
-def check_broken_section(project_id, skeleton_ids=None, cursor=None):
+def check_broken_section(project_id:int, skeleton_ids=None, cursor=None) -> List[Tuple]:
     """Test if there are treenodes in a broken section of any stack linked to
     the given project ID. If there are skeleton IDs passed in, the test will
     only be performed on these skeletons.
@@ -111,7 +113,7 @@ def check_broken_section(project_id, skeleton_ids=None, cursor=None):
     return cursor.fetchall()
 
 @requires_user_role(UserRole.Browse)
-def analyze_skeletons(request, project_id=None):
+def analyze_skeletons(request:HttpRequest, project_id=None) -> JsonResponse:
     project_id = int(project_id)
     skids = [int(v) for k,v in request.POST.items() if k.startswith('skeleton_ids[')]
     s_skids = ",".join(map(str, skids))
@@ -182,13 +184,13 @@ def analyze_skeletons(request, project_id=None):
 
     return JsonResponse(blob)
 
-def _analyze_skeleton(project_id, skeleton_id, adjacents):
+def _analyze_skeleton(project_id:int, skeleton_id:int, adjacents:int) -> List[Union[Tuple[int, Any], Tuple[int, Any, Dict[str, Any]]]]:
     """ Takes a skeleton and returns a list of potentially problematic issues,
     as a list of tuples of two values: issue type and treenode ID.
     adjacents: the number of nodes in the paths starting at a node when checking for duplicated connectors.
     """
-    project_id = int(project_id)
-    skeleton_id = int(skeleton_id)
+    project_id = int(project_id) # Likely an unnecessary conversion as the caller, analyze_skeletons(), does this
+    skeleton_id = int(skeleton_id) # ...
     cursor = connection.cursor()
 
     PRE = 'presynaptic_to'
@@ -239,7 +241,7 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
     Treenode = namedtuple('Treenode', ['id', 'skeleton_id'])
 
     # Map of connector_id vs {pre: {Treenode, ...}, post: {Treenode, ...}}
-    connectors = defaultdict(partial(defaultdict, set))
+    connectors = defaultdict(partial(defaultdict, set)) # type: DefaultDict
 
     # Condense rows to connectors represented by a map with two entries (PRE and POST),
     # each containing as value a set of Treenode:
@@ -250,7 +252,7 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
         if row[4]:
             s[row[4]].add(Treenode(row[5], row[6]))
 
-    issues = []
+    issues = [] # type: List[Union[Tuple[int, Any], Tuple[int, Any, Dict[str, Any]]]]
 
     # Set of IDs of outgoing connectors
     pre_connector_ids = set()
@@ -292,7 +294,7 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
     ''' % skeleton_id)
 
     # Collapse repeated rows into nodes with none or more tags
-    nodes = {}
+    nodes = {} # type: Dict
     parents = set()
     root = None
     for row in cursor.fetchall():

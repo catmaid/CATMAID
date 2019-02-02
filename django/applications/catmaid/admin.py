@@ -297,8 +297,9 @@ class StackMirrorAdmin(GuardedModelAdmin):
     actions = (duplicate_action,)
 
 class DataViewConfigWidget(forms.widgets.Textarea):
-    def render(self, name, value, attrs=None):
-        output = super(DataViewConfigWidget, self).render(name, value, attrs)
+    def render(self, name, value, attrs=None, renderer=None):
+        output = super(DataViewConfigWidget, self).render(name, value, attrs,
+                renderer)
         output += "<p id='data_view_config_help' class='help'></p>"
         return mark_safe(output)
 

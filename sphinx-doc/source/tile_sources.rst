@@ -341,7 +341,7 @@ Tile source types are listed by the enumeration integer ID referenced by
 
    This type supports loading tiles from a
    `JHU/APL Boss <https://github.com/jhuapl-boss/boss>`_ instance, using a
-   manually entered API token for authorization. The API taken entered through
+   manually entered API token for authorization. The API token entered through
    the front-end layer control UI is passed in an ``Authorization`` header
    with all tile requests.
 

@@ -6240,7 +6240,7 @@ var SkeletonAnnotations = {};
           this.tagbox.append(this.recentLabels
               .sort(CATMAID.tools.compareStrings)
               .map(function (label) {
-                  return $("<button>" + label + "</button>").on('pointerdown', function () {
+                  return $("<button>" + label + "</button>").on('click', function () {
                     input.tagEditorAddTag(label);
                     return false;
                   });
@@ -6252,7 +6252,7 @@ var SkeletonAnnotations = {};
           .css('position', 'absolute')
           .appendTo("#" + tracingOverlay.view.id)
 
-          .on('pointerdown', function (event) {
+          .on('mouseup', function (event) {
             if ("" === input.tagEditorGetTags()) {
               SkeletonAnnotations.Tag.updateTags(tracingOverlay);
               SkeletonAnnotations.Tag.removeTagbox();
@@ -6263,7 +6263,7 @@ var SkeletonAnnotations = {};
 
           .keydown(function (event) {
             if ('Enter' === event.key) {
-              event.preventDefault();
+              event.stopPropagation();
               var val = input.val().trim();
               if ("" === val) {
                 SkeletonAnnotations.Tag.updateTags(tracingOverlay);
@@ -6277,7 +6277,7 @@ var SkeletonAnnotations = {};
 
           .keyup(function (event) {
             if ('Escape' === event.key) {
-              event.preventDefault();
+              event.stopPropagation();
               SkeletonAnnotations.Tag.removeTagbox();
             }
           });

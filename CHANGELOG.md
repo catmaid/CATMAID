@@ -190,6 +190,9 @@ Miscellaneous:
 
 - The default connector type is now properly persisted as a setting.
 
+- Neuron search: no duplicate entries are shown anymore, which could result e.g.
+  when sub-annotations where allowed.
+
 
 ## 2018.11.09
 

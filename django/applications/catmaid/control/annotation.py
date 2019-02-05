@@ -286,11 +286,16 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
         query_fmt_params['sort'] = "ORDER BY {sort_col} {sort_dir}".format(
                 sort_col=sort_by, sort_dir=sort_dir.upper())
 
-    # Execute quert and build result data structure
+    # Execute query and build result data structure
     cursor.execute(query.format(**query_fmt_params), params)
 
     entities = []
+    seen_ids = set()
     for ent in cursor.fetchall():
+        # Don't export objects with same ID multiple times
+        if ent[0] in seen_ids:
+            continue;
+
         class_name = allowed_class_idx[ent[5]]
         entity_info = {
             'id': ent[0],
@@ -303,6 +308,7 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
             entity_info['skeleton_ids'] = ent[7]
 
         entities.append(entity_info)
+        seen_ids.add(ent[0])
 
     if num_total_records is None:
         num_total_records = len(entities)

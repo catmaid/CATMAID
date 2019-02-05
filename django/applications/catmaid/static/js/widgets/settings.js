@@ -1706,14 +1706,21 @@
             o[e.name] = e.type;
             return o;
           }, {});
-          var typeSelect = CATMAID.DOM.createSelectSetting(
-              "Default connector type", items,
-              "Select the connector type created by default.",
-              function() {
-                SkeletonAnnotations.newConnectorType = this.value;
-              },
-              SkeletonAnnotations.newConnectorType);
-
+        let typeSelect = wrapSettingsControl(
+            CATMAID.DOM.createSelectSetting(
+                "Default connector type", items,
+                "Select the connector type created by default.",
+                function() {
+                  SkeletonAnnotations.Settings
+                      .set(
+                        'default_connector_type',
+                        this.value,
+                        SETTINGS_SCOPE);
+                },
+                SkeletonAnnotations.Settings.session.default_connector_type),
+            SkeletonAnnotations.Settings,
+            'default_connector_type',
+            SETTINGS_SCOPE);
           $(connectorTypesPlaceholder).replaceWith(typeSelect);
       });
 

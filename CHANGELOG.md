@@ -188,6 +188,8 @@ Miscellaneous:
   Before, merge nodes were represented twice in a time slice that included the
   merge.
 
+- The default connector type is now properly persisted as a setting.
+
 
 ## 2018.11.09
 

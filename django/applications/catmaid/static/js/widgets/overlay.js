@@ -90,6 +90,9 @@ var SkeletonAnnotations = {};
           fast_split_mode: {
             default: {universal: 'none'}
           },
+          default_connector_type: {
+            default: CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR,
+          }
         },
         migrations: {}
       });
@@ -116,7 +119,6 @@ var SkeletonAnnotations = {};
 
   SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1, SELECT: 2, MOVE: 3});
   SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.SKELETON;
-  SkeletonAnnotations.newConnectorType = CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR;
 
   /**
    * Sets the active node, if node is not null. Otherwise, the active node is
@@ -3468,11 +3470,13 @@ var SkeletonAnnotations = {};
         if (SkeletonAnnotations.TYPE_NODE === atn.type) {
           var targetTreenode = this.nodes.get(atn.id);
           var self = this;
-          var newConnectorType = SkeletonAnnotations.newConnectorType;
+          var newConnectorType = SkeletonAnnotations.Settings.session.default_connector_type;
 
           var createConnector = function(linkType, connectorType, msg) {
             if (SkeletonAnnotations.Settings.session.make_last_connector_type_default) {
-              SkeletonAnnotations.newConnectorType = connectorType;
+              if (SkeletonAnnotations.Settings.session.default_connector_type !== connectorType) {
+                SkeletonAnnotations.Settings.set("default_connector_type", connectorType, 'session');
+              }
             }
             if (msg) {
               CATMAID.statusBar.replaceLast(msg);
@@ -3595,7 +3599,7 @@ var SkeletonAnnotations = {};
       } else if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SYNAPSE) {
         // only create single synapses/connectors
         create = this.createSingleConnector(phys_x, phys_y, phys_z, 5,
-            SkeletonAnnotations.newConnectorType);
+            SkeletonAnnotations.Settings.session.default_connector_type);
       }
     }
 

@@ -6256,13 +6256,13 @@ var SkeletonAnnotations = {};
           .css('position', 'absolute')
           .appendTo("#" + tracingOverlay.view.id)
 
-          .on('mouseup', function (event) {
+          .on('pointerdown', function (event) {
             if ("" === input.tagEditorGetTags()) {
               SkeletonAnnotations.Tag.updateTags(tracingOverlay);
               SkeletonAnnotations.Tag.removeTagbox();
               tracingOverlay.updateNodes();
             }
-            event.preventDefault();
+            event.stopPropagation();
           })
 
           .keydown(function (event) {

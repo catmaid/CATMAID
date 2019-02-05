@@ -117,7 +117,7 @@
         if (rule.invert && noOwnInversion) {
           let unfilteredNode = {};
           unfilteredNode[nodeId] = true;
-          nodeCollection = CATMAID.SkeletonFilterStrategy.invert(nodeCollection,
+          nodeCollection = CATMAID.SkeletonFilter.invert(nodeCollection,
               unfilteredNode);
         }
         // Merge all point sets for this rule. How this is done exactly (i.e.
@@ -544,7 +544,7 @@
         // If the results should be inverted for this rule and the rule
         // implementation can't invert by its own, invert naively here.
         if (rule.invert && noOwnInversion) {
-          nodeCollection = CATMAID.SkeletonFilterStrategy.invert(nodeCollection,
+          nodeCollection = CATMAID.SkeletonFilter.invert(nodeCollection,
               inputMap.skeleton.arbor);
         }
         // Merge all point sets for this rule. How this is done exactly (i.e.
@@ -660,6 +660,15 @@
 
       return m;
     }, []);
+  };
+
+  /**
+   * Naive inversion implementation that creates a new node collection based on
+   * the passed-in arbor and the nodes that are not part of the passed-in node
+   * collection.
+   */
+  CATMAID.SkeletonFilter.invert = function(nodeCollection, arbor) {
+    return Object.keys(nodeCollection).reduce(removeFromObject, arbor.nodes());
   };
 
 
@@ -1301,15 +1310,6 @@
         }
       }
     }
-  };
-
-  /**
-   * Naive inversion implementation that creates a new node collection based on
-   * the passed-in arbor and the nodes that are not part of the passed-in node
-   * collection.
-   */
-  CATMAID.SkeletonFilterStrategy.invert = function(nodeCollection, arbor) {
-    return Object.keys(nodeCollection).reduce(removeFromObject, arbor.nodes());
   };
 
   /**

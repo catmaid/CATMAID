@@ -177,6 +177,13 @@ Miscellaneous:
   everything in the target project should be used in cases where a full data
   base is imported, the --update-project-materializations switch can be used.
 
+- CLI exporter:if both required annotations and exclusion annotations are
+  provided, the importer will now only exclude a skeleton if it is not also
+  annotated with a sub-annotation of the required annotations set. This behavior
+  can be disabled and exclusion can be enforced when a skeleton is annotated
+  with the exclusion annotation or one of its sub-annotations. To do so, use the
+  new "--exclusion-is-final" switch.
+
 ### Bug fixes
 
 - The Connectivity Graph Plot draws now individual bars in each sub-plot

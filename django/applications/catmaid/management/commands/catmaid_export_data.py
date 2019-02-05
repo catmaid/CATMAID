@@ -8,6 +8,7 @@ from django.core.management.base import BaseCommand, CommandError
 from catmaid.control.annotation import (get_annotated_entities,
         get_annotation_to_id_map)
 from django.contrib.auth.hashers import make_password
+from catmaid.control.annotation import get_sub_annotation_ids
 from catmaid.control.tracing import check_tracing_setup
 from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
         Relation, Connector, Project, Treenode, TreenodeClassInstance,
@@ -48,6 +49,7 @@ class Exporter():
         self.export_users = options['export_users']
         self.required_annotations = options['required_annotations']
         self.excluded_annotations = options['excluded_annotations']
+        self.exclusion_is_final = options['exclusion_is_final']
         self.original_placeholder_context = options['original_placeholder_context']
         self.target_file = options.get('file', None)
         if self.target_file:
@@ -76,18 +78,20 @@ class Exporter():
 
         exclude_skeleton_id_constraints = set()
         exclude_neuron_id_constraint = set()
+        exclude_annotation_map = set()
+        exclude_annotation_ids = list()
         if self.excluded_annotations:
-            annotation_map = get_annotation_to_id_map(self.project.id,
+            exclude_annotation_map = get_annotation_to_id_map(self.project.id,
                     self.excluded_annotations, relations, classes)
-            annotation_ids = list(map(str, annotation_map.values()))
-            if not annotation_ids:
-                missing_annotations = set(self.excluded_annotations) - set(annotation_map.keys())
+            exclude_annotation_ids = list(map(str, exclude_annotation_map.values()))
+            if not exclude_annotation_ids:
+                missing_annotations = set(self.excluded_annotations) - set(exclude_annotation_map.keys())
                 raise CommandError("Could not find the following annotations: " +
                         ", ".join(missing_annotations))
 
             query_params = {
-                'annotated_with': ",".join(annotation_ids),
-                'sub_annotated_with': ",".join(annotation_ids)
+                'annotated_with': ",".join(exclude_annotation_ids),
+                'sub_annotated_with': ",".join(exclude_annotation_ids)
             }
             neuron_info, num_total_records = get_annotated_entities(self.project.id,
                     query_params, relations, classes, ['neuron'], with_skeletons=True)
@@ -121,12 +125,42 @@ class Exporter():
             skeleton_id_constraints = list(chain.from_iterable([n['skeleton_ids'] for n in neuron_info]))
             neuron_ids = [n['id'] for n in neuron_info]
 
-            # Remove excluded skeletons
+            # Remove excluded skeletons if either a) exclusion_is_final is set
+            # or b) the annotation target is *not* annotated with a required
+            # annotation or one of its sub-annotations.
             if exclude_skeleton_id_constraints:
-                skeleton_id_constraints = [skid for skid in skeleton_id_constraints
-                                           if skid not in exclude_skeleton_id_constraints]
-                neuron_ids = [nid for nid in neuron_ids
-                              if nid not in exclude_neuron_id_constraint]
+                if self.exclusion_is_final:
+                    skeleton_id_constraints = [skid for skid in skeleton_id_constraints
+                                            if skid not in exclude_skeleton_id_constraints]
+                    neuron_ids = [nid for nid in neuron_ids
+                                if nid not in exclude_neuron_id_constraint]
+                else:
+                    # Remove all skeletons that are marked as excluded *and* are
+                    # not annotatead with at least one *other* annotation that
+                    # is part of the required annotation set or its
+                    # sub-annotation hierarchy. To do this, get first all
+                    # sub-annotations of the set of required annotations and
+                    # remove the exclusion annotations. Then check all excluded
+                    # skeleton IDs if they are annotatead with any of the
+                    # those annotations. If not, they are removed from the
+                    # exported set.
+                    keeping_ids = set(map(int, annotation_ids))
+                    annotation_sets_to_expand = set([frozenset(keeping_ids)])
+                    sub_annotation_map = get_sub_annotation_ids(self.project.id,
+                            annotation_sets_to_expand, relations, classes)
+                    sub_annotation_ids = set(chain.from_iterable(sub_annotation_map.values())) - \
+                            set(exclude_annotation_map.values())
+
+                    # Get all skeletons annotated *directly* with one of the sub
+                    # annotations or the expanded annotations themselves.
+                    keep_query_params = {
+                        'annotated_with': ','.join(str(a) for a in sub_annotation_ids),
+                    }
+                    keep_neuron_info, keep_num_total_records = get_annotated_entities(self.project.id,
+                            keep_query_params, relations, classes, ['neuron'], with_skeletons=True)
+                    # Exclude all skeletons that are not in this result set
+                    skeleton_id_constraints = list(chain.from_iterable([n['skeleton_ids'] for n in keep_neuron_info]))
+                    neuron_ids = [n['id'] for n in keep_neuron_info]
 
             entities = ClassInstance.objects.filter(pk__in=neuron_ids)
 
@@ -506,6 +540,10 @@ class Command(BaseCommand):
             action='store_true', help='Should placeholder nodes be exported')
         parser.add_argument('--original-placeholder-context', dest='original_placeholder_context',
             action='store_true', default=False, help='Whether or not exported placeholder nodes refer to their original skeltons and neurons')
+        parser.add_argument('--exclusion-is-final', dest='exclusion_is_final',
+            action='store_true', default=False, help='Whether or not neurons ' +
+            'should be excluded if in addition to an exclusion annotation ' +
+            'they are also annotated with a required (inclusion) annotation.')
 
     def ask_for_project(self, title):
         """ Return a valid project object.

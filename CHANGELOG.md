@@ -171,6 +171,9 @@ Miscellaneous:
 - Connectivity widget: the new "List links' button will open a Connector List
   with all links of the selected neurons.
 
+- Boss databases can now be used as tile source type so that image data is
+  loaded from them. More details: https://docs.theboss.io/docs/image.
+
 - CLI importer: recompute materializations (edges, connectors) explicitly only
   for imported data, which improves performance in typical scenarios (import is
   small compared to existing data). If the old behavior of recomputing

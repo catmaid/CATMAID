@@ -1193,7 +1193,7 @@
                     })
                     .filter(s => s.length > 0);
 
-                if (newValues.length == 0) {
+                if (newValues.length === 0) {
                   CATMAID.warn("Invalid LOD range");
                   return;
                 }

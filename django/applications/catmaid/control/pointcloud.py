@@ -477,7 +477,7 @@ class PointCloudImageDetail(APIView):
         content_type = rows[0][1]
         name = rows[0][2]
 
-        response = HttpResponse(image_data, content_type=content_type)
+        response = HttpResponse(image_data.tobytes(), content_type=content_type)
         response['Content-Disposition'] = 'attachment; filename={}'.format(name)
         return response
 

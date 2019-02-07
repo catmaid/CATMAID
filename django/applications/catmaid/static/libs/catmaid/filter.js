@@ -864,7 +864,7 @@
     },
     // Options: tag, expected
     "subarbor": {
-      name: "Use a sub-arbor starting from a tag",
+      name: "Use sub-arbors starting from a tag",
       prepare: ["arbor", "tags"],
       canInvert: true,
       filter: function(skeletonId, neuron, input, options, invert) {
@@ -872,9 +872,13 @@
         var arbor = skeleton.arbor;
         var tags = skeleton.tags;
         var cuts = tags[options.tag];
-        if (!cuts || (options.expected && cuts.length !== options.expected)) {
-          console.log("CANNOT extract dendrite for " + neuron.name + ", cuts: " + cuts);
-          return {};
+
+        // Optionally, check expected number of tag uses
+        if (options.expected !== undefined) {
+          if (!cuts || (options.expected && cuts.length !== options.expected)) {
+            CATMAID.warn(`Cannot extract sub-arbors for "${neuron.name}", wrong number of tag cuts: ${cuts}`);
+            return {};
+          }
         }
 
         let subarborNodes = cuts.reduce(function(nodes, cut) {

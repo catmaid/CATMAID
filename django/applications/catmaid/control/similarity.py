@@ -23,6 +23,7 @@ from catmaid.models import (NblastConfig, NblastSample, Project, PointSet,
         NblastSimilarity, PointCloud, UserRole)
 from catmaid.control.nat import (compute_scoring_matrix, nblast,
         test_r_environment, setup_r_environment)
+from catmaid.control.pointcloud import list_pointclouds
 
 
 logger = logging.getLogger('__name__')
@@ -515,7 +516,9 @@ def recompute_config(request, project_id, config_id):
     """Recompute the similarity matrix of the passed in NBLAST configuration.
     """
     can_edit_or_fail(request.user, config_id, 'nblast_config')
-    task = compute_nblast_config.delay(config_id, request.user.id)
+    use_cache = get_request_bool(request.GET, 'use_cache', True)
+    task = compute_nblast_config.delay(config_id, request.user.id,
+            use_cache=use_cache)
 
     return JsonResponse({
         'status': 'queued',
@@ -524,7 +527,7 @@ def recompute_config(request, project_id, config_id):
 
 
 @task()
-def compute_nblast_config(config_id, user_id):
+def compute_nblast_config(config_id, user_id, use_cache=True):
     """Recompute the scoring information for a particular configuration,
     including both the matching skeleton set and the random skeleton set.
     """
@@ -578,7 +581,7 @@ def compute_nblast_config(config_id, user_id):
 
 
 def get_all_object_ids(project_id, user_id, object_type, min_nodes=500,
-        min_soma_nodes=20, soma_tags=('soma')):
+        min_soma_nodes=20, soma_tags=('soma'), limit=None):
     """Return all IDs of objects that fit the query parameters.
     """
     cursor = connection.cursor()
@@ -587,6 +590,7 @@ def get_all_object_ids(project_id, user_id, object_type, min_nodes=500,
         extra_where = []
         params = {
             'project_id': project_id,
+            'limit': limit,
         }
 
         if min_nodes:
@@ -600,8 +604,10 @@ def get_all_object_ids(project_id, user_id, object_type, min_nodes=500,
             FROM catmaid_skeleton_summary css
             WHERE project_id = %(project_id)s
             {extra_where}
+            {limit}
         """.format(**{
-            'extra_where': ' AND '.join([''] + extra_where) if extra_where else ''
+            'extra_where': ' AND '.join([''] + extra_where) if extra_where else '',
+            'limit': 'LIMIT %(limit)s' if limit is not None else '',
         }), params)
 
         return [o[0] for o in cursor.fetchall()]
@@ -662,7 +668,8 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                 normalized=similarity.normalized,
                 use_alpha=similarity.use_alpha,
                 remove_target_duplicates=remove_target_duplicates,
-                simplify=simplify, required_branches=required_branches)
+                simplify=simplify, required_branches=required_branches,
+                use_cache=use_cache)
 
         # Update config and samples
         if scoring_info.get('errors'):
@@ -787,6 +794,11 @@ def compare_skeletons(request, project_id):
         type: boolean
         required: false
         defaultValue: 10
+      - name: use_cache
+        description: Whether or not to use cached data when computing similarity scores.
+        type: boolean
+        required: false
+        defaultValue: true
     """
     name = request.POST.get('name', None)
     if not name:
@@ -802,6 +814,7 @@ def compare_skeletons(request, project_id):
 
     simplify = get_request_bool(request.POST, 'simplify', True)
     required_branches = int(request.POST.get('required_branches', '10'))
+    use_cache = get_request_bool(request.POST, 'use_cache', True)
 
     valid_type_ids = ('skeleton', 'pointcloud', 'pointset')
 
@@ -893,7 +906,8 @@ def compare_skeletons(request, project_id):
         similarity.save()
 
     task = compute_nblast.delay(project_id, request.user.id, similarity.id,
-            remove_target_duplicates, simplify, required_branches)
+            remove_target_duplicates, simplify, required_branches,
+            use_cache=use_cache)
 
     return JsonResponse({
         'task_id': task.task_id,
@@ -967,9 +981,10 @@ def recompute_similarity(request, project_id, similarity_id):
     simplify = get_request_bool(request.GET, 'simplify', True)
     required_branches = int(request.GET.get('required_branches', '10'))
     can_edit_or_fail(request.user, similarity_id, 'nblast_similarity')
+    use_cache = get_request_bool(request.GET, 'use_cache', True)
     task = compute_nblast.delay(project_id, request.user.id, similarity_id,
             remove_target_duplicates=True, simplify=simplify,
-            required_branches=required_branches)
+            required_branches=required_branches, use_cache=use_cache)
 
     return JsonResponse({
         'status': 'queued',

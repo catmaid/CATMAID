@@ -130,12 +130,15 @@
    *                              branch level. Default: true.
    * @param requiredBranches {Integer} (optional) The number of branch levels to
    *                              keep when simplifying neurons.
+   * @param useCache {Boolean}    (optional) If the back-end is allowed to use
+   *                              cached data for computing the similarity.
    *
    * @returns {Promise} Resolves once the similarity query is queued.
    */
   Similarity.computeSimilarity = function(projectId, configId, queryIds,
       targetIds, queryType, targetType, name, normalized, useAlpha,
-      queryMeta, targetMeta, removeTargetDuplicates, simplify, requiredBranches) {
+      queryMeta, targetMeta, removeTargetDuplicates, simplify, requiredBranches,
+      useCache) {
     return CATMAID.fetch(projectId + '/similarity/queries/similarity', 'POST', {
       'query_ids': queryIds,
       'target_ids': targetIds,
@@ -150,16 +153,18 @@
       'remove_target_duplicates': removeTargetDuplicates,
       'simplify': simplify,
       'required_branches': requiredBranches,
+      'use_cache': useCache,
     });
   };
 
   /**
    * Queue recomputation of a similarity configuration.
    */
-  Similarity.recomputeSimilarity = function(projectId, similarityId, simplify, requiredBranches) {
+  Similarity.recomputeSimilarity = function(projectId, similarityId, simplify, requiredBranches, useCache) {
     return CATMAID.fetch(projectId + '/similarity/queries/' + similarityId + '/recompute', 'GET', {
       'simplify': simplify,
       'required_branches': requiredBranches,
+      'use_cache': useCache,
     });
   };
 

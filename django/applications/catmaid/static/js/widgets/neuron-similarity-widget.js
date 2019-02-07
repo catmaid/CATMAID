@@ -20,6 +20,7 @@
     this.lastSimilarityQuery = null;
     this.showOnlyMatchesInResult = true;
     this.showPointCloudImages = false;
+    this.useCache = true;
     // Whether or not the results are displayed in a dialog (rather than a
     // window).
     this.resultMode = 'window';
@@ -776,6 +777,15 @@
             simplify = this.checked;
           },
         }, {
+          type: 'checkbox',
+          label: 'Use cache',
+          id: widget.idPrefix + 'use-cache',
+          title: 'Whether or not cached data for (optionally simplified) neurons can be used',
+          value: widget.useCache,
+          onclick: function() {
+            widget.useCache = this.checked;
+          },
+        }, {
           type: 'child',
           element: configSelectWrapper,
         }, {
@@ -1188,7 +1198,7 @@
           let simplify = $('#' + widget.idPrefix + 'simplify-skeletons').prop('checked');
           let requiredBranches = 10;
           CATMAID.Similarity.recomputeSimilarity(project.id, data.id, simplify,
-              requiredBranches)
+              requiredBranches, widget.useCache)
             .then(function() {
               CATMAID.msg('Success', 'NBLAST similarity recomputation queued');
               widget.refresh();

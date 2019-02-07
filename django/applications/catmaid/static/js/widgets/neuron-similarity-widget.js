@@ -697,7 +697,7 @@
             value: 'transformed-skeleton',
           }, {
             title: 'Point clouds',
-            value: 'pointclouds',
+            value: 'pointcloud',
           }],
           onchange: function() {
             queryType = this.value;
@@ -725,7 +725,7 @@
             value: 'transformed-skeleton',
           }, {
             title: 'Point clouds',
-            value: 'pointclouds',
+            value: 'pointcloud',
           }],
           onchange: function() {
             targetType = this.value;

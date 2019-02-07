@@ -248,7 +248,7 @@
           .catch(reject);
       };
       dialog.onCancel = function() {
-        reject(CATMAID.Warning("Canceled by user"));
+        reject(new CATMAID.Warning("Canceled by user"));
       };
 
       dialog.show(500, 'auto', true);

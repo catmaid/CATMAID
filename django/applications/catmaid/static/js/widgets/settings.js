@@ -2070,6 +2070,7 @@
           "HTTP password needed to access the remote instance, if any.", function() {
             newRemoteAuthPass = this.value.trim();
           });
+      newRemoteAuthPassInput.find('input').attr('type', 'password');
       ds.append(newRemoteAuthPassInput);
 
       // Add selected remote instance

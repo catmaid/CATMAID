@@ -6244,7 +6244,7 @@ var SkeletonAnnotations = {};
           this.tagbox.append(this.recentLabels
               .sort(CATMAID.tools.compareStrings)
               .map(function (label) {
-                  return $("<button>" + label + "</button>").on('click', function () {
+                  return $("<button>" + label + "</button>").on('pointerdown', function () {
                     input.tagEditorAddTag(label);
                     return false;
                   });

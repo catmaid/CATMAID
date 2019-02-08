@@ -559,7 +559,7 @@
         let configId = null;
         let queryType = 'skeleton';
         let targetType = 'all-skeletons';
-        let normalizedScores = 'mean';
+        let normalizedScores = 'normalized';
         let useAlpha = false;
         let removeTargetDuplicates = true;
         let simplify = true;

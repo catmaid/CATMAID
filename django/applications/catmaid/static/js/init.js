@@ -1594,7 +1594,7 @@ var project;
    * @param  {number|string} projectID   ID of the project to open. If different
    *                                     than the ID of the currently open
    *                                     project, it will be destroyed.
-   * @param  {number}  stackID           ID of the stack to open.
+   * @param  {number|string} reorientedStackID ID of the stack to open.
    * @param  {boolean} useExistingViewer True to add the stack to the existing,
    *                                     focused stack viewer.
    * @param  {number}  mirrorInde        An optional mirror index, defaults to
@@ -1606,25 +1606,13 @@ var project;
    *                                     errors a resolved promise is returned
    * @return {Promise}                   A promise yielding the stack viewer.
    */
-  CATMAID.openProjectStack = function(projectID, stackID, useExistingViewer,
+  CATMAID.openProjectStack = function(projectID, reorientedStackID, useExistingViewer,
       mirrorIndex, noLayout, handleErrors) {
     if (project && project.id != projectID) {
       project.destroy();
     }
 
-    let reorient = false;
-    if (stackID.endsWith) {
-      if (stackID.endsWith('_xy')) {
-        stackID = stackID.substring(0, stackID.length - 3);
-        reorient = CATMAID.Stack.ORIENTATION_XY;
-      } else if (stackID.endsWith('_xz')) {
-        stackID = stackID.substring(0, stackID.length - 3);
-        reorient = CATMAID.Stack.ORIENTATION_XZ;
-      } else if (stackID.endsWith('_zy')) {
-        stackID = stackID.substring(0, stackID.length - 3);
-        reorient = CATMAID.Stack.ORIENTATION_ZY;
-      }
-    }
+    let {stackID, reorient} = CATMAID.Stack.parseReorientedID(reorientedStackID);
 
     CATMAID.ui.catchEvents("wait");
     var open = CATMAID.fetch(projectID + '/stack/' + stackID + '/info')

@@ -9,6 +9,8 @@
   Stack.ORIENTATION_XZ = 1;
   Stack.ORIENTATION_ZY = 2;
 
+  Stack.ORIENTATIONS = [Stack.ORIENTATION_XY, Stack.ORIENTATION_XZ, Stack.ORIENTATION_ZY];
+
   Stack.ORIENTATION_NAMES = [];
   Stack.ORIENTATION_NAMES[Stack.ORIENTATION_XY] = "XY";
   Stack.ORIENTATION_NAMES[Stack.ORIENTATION_XZ] = "XZ";
@@ -603,6 +605,34 @@
       return self.imageBlockMirrors().length !== 0;
     };
   }
+
+  Stack.prototype.encodedId = function () {
+    return this.id;
+  };
+
+  Stack.parseReorientedID = function (stackID) {
+    let reorient = false;
+    if (stackID.endsWith) {
+      for (let orient of Stack.ORIENTATIONS) {
+        if (stackID.endsWith('_' + Stack.ORIENTATION_NAMES[orient].toLowerCase())) {
+          stackID = stackID.substring(0, stackID.length - 3);
+          reorient = orient;
+        }
+      }
+    }
+
+    return {
+      stackID,
+      reorient
+    };
+  };
+
+  Stack.encodeReorientedID = function (stackID, reorient) {
+    if (reorient in Stack.ORIENTATIONS)
+      return stackID + '_' + Stack.ORIENTATION_NAMES[reorient].toLowerCase();
+
+    return stackID;
+  };
 
   /**
    * Create a stack by fetching from the backend stack info API.

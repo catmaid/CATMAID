@@ -456,7 +456,7 @@
             sgsAdded = true;
           }
 
-          url += "&sid" + i + "=" + sv.primaryStack.id + "&s" + i + "=" + sv.s;
+          url += "&sid" + i + "=" + sv.primaryStack.encodedId() + "&s" + i + "=" + sv.s;
         }
       }
 

@@ -51,6 +51,10 @@
       this.selfToBasePerm = selfToBasePerm;
       this.baseToSelfPerm = baseToSelfPerm;
     }
+
+    encodedId() {
+      return CATMAID.Stack.encodeReorientedID(this.id, this.orientation);
+    }
   };
 
 })(CATMAID);

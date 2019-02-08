@@ -381,6 +381,25 @@
       options: Object.values(CATMAID.StackLayer.INTERPOLATION_MODES).map(mode => [mode, mode]),
     }];
 
+    if (this.stack.isReorientable()) {
+      let otherOrientations = CATMAID.Stack.ORIENTATIONS.filter(o => o !== this.stack.orientation);
+      settings.splice(settings.findIndex(s => s.name === 'stackInfo') + 1, 0,
+          {
+            name: 'openReorientation',
+            displayName: 'Open orientation',
+            type: 'buttons',
+            buttons: otherOrientations.map(o => ({
+              name: CATMAID.Stack.ORIENTATION_NAMES[o],
+              onclick: () => { CATMAID.openProjectStack(
+                project.id,
+                CATMAID.Stack.encodeReorientedID(this.stack.id, o),
+                false,
+                this.mirrorIndex);
+              }
+            }))
+          });
+    }
+
     if (this.tileSource) {
       settings = settings.concat(this.tileSource.getSettings());
     }

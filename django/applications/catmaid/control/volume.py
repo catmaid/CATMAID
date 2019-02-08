@@ -6,6 +6,7 @@ import re
 from xml.etree import ElementTree as ET
 
 from django.conf import settings
+from django.utils.decorators import method_decorator
 
 from catmaid.control.annotation import get_annotated_entities
 from catmaid.control.authentication import requires_user_role, user_can_edit
@@ -20,6 +21,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import renderers
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 
 num = '[-+]?[0-9]*.?[0-9]+'
@@ -447,23 +449,58 @@ def get_volume_details(project_id, volume_id):
     }
 
 
-@api_view(['GET', 'POST', 'DELETE'])
-@requires_user_role([UserRole.Browse])
-def volume_detail(request, project_id, volume_id):
-    """Get detailed information on a spatial volume or set its properties..
+class VolumeDetail(APIView):
 
-    The result will contain the bounding box of the volume's geometry and the
-    actual geometry encoded in X3D format. The response might might therefore be
-    relatively large.
-    """
-    p = get_object_or_404(Project, pk=project_id)
-    if request.method == 'GET':
+    @method_decorator(requires_user_role(UserRole.Browse))
+    def get(self, request, project_id, volume_id):
+        """Get detailed information on a spatial volume or set its properties.
+
+        The result will contain the bounding box of the volume's geometry and the
+        actual geometry encoded in X3D format. The response might might therefore be
+        relatively large.
+        """
+        p = get_object_or_404(Project, pk=project_id)
         volume = get_volume_details(p.id, volume_id)
         return Response(volume)
-    elif request.method == 'POST':
+
+    @method_decorator(requires_user_role(UserRole.Annotate))
+    def post(self, request, project_id, volume_id):
+        """Update the properties of a spatial volume.
+
+        Only the fields that are provided are updated. If no mesh or bounding
+        box parameter is changed, no type has to be provided.
+        ---
+        parameters:
+          - name: type
+            description: Type of volume to edit
+            paramType: form
+            type: string
+            enum: ["box", "trimesh"]
+            required: false
+          - name: title
+            description: Title of volume
+            type: string
+            required: false
+          - name: comment
+            description: A comment on a volume
+            type: string
+            required: false
+        type:
+          'success':
+            type: boolean
+            required: true
+          'volume_id':
+            type: integer
+            required: true
+        """
         return update_volume(request, project_id=project_id, volume_id=volume_id)
-    elif request.method == 'DELETE':
+
+    @method_decorator(requires_user_role(UserRole.Annotate))
+    def delete(self, request, project_id, volume_id):
+        """Delete a particular spatial volume.
+        """
         return remove_volume(request, project_id=project_id, volume_id=volume_id)
+
 
 @requires_user_role([UserRole.Annotate])
 def remove_volume(request, project_id, volume_id):

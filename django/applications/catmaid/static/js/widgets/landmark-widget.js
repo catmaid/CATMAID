@@ -540,7 +540,7 @@
 
   LandmarkWidget.prototype.updateSourceLandmarkGroups = function(api, projectId) {
     var self = this;
-    return CATMAID.Landmarks.listGroups(project.id, true, true, true, true, api)
+    return CATMAID.Landmarks.listGroups(projectId, true, true, true, true, api)
       .then(function(result) {
         self.sourceLandmarkGroups = result;
         self.sourceLandmarkGroupMemberships = result.reduce(addLandmarkGroupMembership, new Map());

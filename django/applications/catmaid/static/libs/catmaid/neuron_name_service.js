@@ -698,9 +698,15 @@
 
               let promiseAnnotations = [];
               for (let [api, apiSkids] of querySkidsByAPI) {
-                let projectId = apiSkids[0].projectId || project.id;
+                // Try to find the first attached project ID for the this API.
+                // We assue it is the same for all skeletons from this API.
+                // TODO: There has to be a better way to do this.
+                let managedSkeleton = managedSkeletons[apiSkids[0]];
+                let projectId = project.id;
+                if (managedSkeleton && managedSkeleton.model && managedSkeleton.model.projectId !== undefined) {
+                  projectId = managedSkeleton.model.projectId;
+                }
                 promiseAnnotations.push(
-                    // TODO: This needs a batter fix
                     CATMAID.fetch({
                       url: projectId + '/skeleton/annotationlist',
                       method: 'POST',

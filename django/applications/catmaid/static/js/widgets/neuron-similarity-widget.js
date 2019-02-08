@@ -748,7 +748,7 @@
           },
         }, {
           type: 'select',
-          label: 'Normailization',
+          label: 'Normalization',
           title: 'Scoring values can be normalized either by the self match-score or the mean with the reverse score.',
           value: normalizedScores,
           entries: [

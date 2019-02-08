@@ -160,7 +160,7 @@ def stack_groups(request, project_id=None, stack_id=None):
         .values_list('stack_group_id', flat=True)
 
     result = {
-        'stack_group_ids': stack_group_ids
+        'stack_group_ids': list(stack_group_ids)
     }
 
     return JsonResponse(result)

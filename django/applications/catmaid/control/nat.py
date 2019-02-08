@@ -761,6 +761,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
     """
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     similarity = None
+    query_object_ids_in_use = None
+    target_object_ids_in_use = None
     errors = []
     try:
         config = NblastConfig.objects.get(project_id=project_id, pk=config_id)
@@ -1194,6 +1196,21 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             # we have to transpose it using the 't()' R function.
             similarity = numpy.asarray(robjects.r['t'](scores)).tolist()
 
+
+        # Collect IDs of query and target objects effectively in use.
+        if query_type == 'skeleton':
+            query_object_ids_in_use = list(map(int, scores.colnames))
+        elif query_type == 'pointcloud':
+            query_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointcloud-')), scores.colnames))
+        elif query_type == 'pointset':
+            query_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointset-')), scores.colnames))
+        if target_type == 'skeleton':
+            target_object_ids_in_use = list(map(int, scores.rownames))
+        elif target_type == 'pointcloud':
+            target_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointcloud-')), scores.rownames))
+        elif target_type == 'pointset':
+            target_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointset-')), scores.rownames))
+
         if not similarity:
             raise ValueError("Could not compute similarity")
 
@@ -1205,5 +1222,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
     return {
         "errors": errors,
-        "similarity": similarity
+        "similarity": similarity,
+        "query_object_ids": query_object_ids_in_use,
+        "target_object_ids": target_object_ids_in_use,
     }

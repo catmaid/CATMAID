@@ -698,9 +698,11 @@
 
               let promiseAnnotations = [];
               for (let [api, apiSkids] of querySkidsByAPI) {
+                let projectId = apiSkids[0].projectId || project.id;
                 promiseAnnotations.push(
+                    // TODO: This needs a batter fix
                     CATMAID.fetch({
-                      url: project.id + '/skeleton/annotationlist',
+                      url: projectId + '/skeleton/annotationlist',
                       method: 'POST',
                       data: {
                         skeleton_ids: apiSkids,

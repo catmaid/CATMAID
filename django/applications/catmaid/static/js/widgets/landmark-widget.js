@@ -938,8 +938,10 @@
         let colorizer = new CATMAID.Colorizer();
         var glWidget = dialog.webglapp;
         var models = skeletonIds.reduce( (o, skid, i) => {
-          o[skid] = new CATMAID.SkeletonModel(skid, undefined,
+          let skeleton = new CATMAID.SkeletonModel(skid, undefined,
               colorizer.pickColor(), api);
+          skeleton.projectId = projectId;
+          o[skid] = skeleton;
           return o;
         }, {} );
 
@@ -2999,7 +3001,7 @@
                     }
                   }
                   let api = remote ? remote : null;
-                  CATMAID.Skeletons.byAnnotation(project.id, [sourceNeuronAnnotation], api)
+                  CATMAID.Skeletons.byAnnotation(sourceProject, [sourceNeuronAnnotation], api)
                     .then(function(skeletonIds) {
                       let skeletonModels = skeletonIds.map(skid =>
                           new CATMAID.SkeletonModel(skid, undefined, undefined, api));

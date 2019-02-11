@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
-
-from rest_framework.serializers import ModelSerializer
+from django.utils import timezone
+from rest_framework.serializers import ModelSerializer, DateTimeField
 from catmaid.models import ClassInstance, Point, Volume
 
 
 class VolumeSerializer(ModelSerializer):
+    # We want to return UTC times by default, not the server timezone
+    creation_time = DateTimeField(default_timezone=timezone.utc)
+    edition_time = DateTimeField(default_timezone=timezone.utc)
 
     class Meta:
         model = Volume
@@ -12,6 +15,10 @@ class VolumeSerializer(ModelSerializer):
                 'creation_time', 'edition_time')
 
 class PointSerializer(ModelSerializer):
+    # We want to return UTC times by default, not the server timezone
+    creation_time = DateTimeField(default_timezone=timezone.utc)
+    edition_time = DateTimeField(default_timezone=timezone.utc)
+
     class Meta:
         model = Point
         read_only_fields = ('id',)
@@ -20,6 +27,10 @@ class PointSerializer(ModelSerializer):
                 'location_z',' radius', 'confidence')
 
 class BasicClassInstanceSerializer(ModelSerializer):
+    # We want to return UTC times by default, not the server timezone
+    creation_time = DateTimeField(default_timezone=timezone.utc)
+    edition_time = DateTimeField(default_timezone=timezone.utc)
+
     class Meta:
         model = ClassInstance
         read_only_fields = ('id',)

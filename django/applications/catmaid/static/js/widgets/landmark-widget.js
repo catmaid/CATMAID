@@ -1180,10 +1180,14 @@
               render: function(data, type, row, meta) {
                 return '<a href="#" data-action="edit-group" data-group-id="' +
                     row.id + '" >Edit</a> <a href="#" data-group-id="' +
-                    row.id + '" data-action="delete">Delete</a>';
+                    row.id + '" data-action="delete" title="Ask for ' +
+                    'confirmation and delete landmark group.">Delete</a>';
               }
             }
           ],
+          createdRow: function(row) {
+            row.setAttribute('title', 'Double-click to edit landmark group');
+          },
         }).on('dblclick', 'tr', function(e) {
           var data = landmarkGroupDataTable.row(this).data();
           if (data) {

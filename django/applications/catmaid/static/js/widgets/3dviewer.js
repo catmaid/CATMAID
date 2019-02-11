@@ -1180,6 +1180,7 @@
     this.landmarkgroup_color = "#ffa500";
     this.landmarkgroup_opacity = 0.2;
     this.landmarkgroup_faces = true;
+    this.landmarkgroup_bb = true;
     this.landmarkgroup_text = true;
     this.landmark_scale = 2000;
     this.pointcloud_color = "#ffa500";
@@ -2532,7 +2533,9 @@
               min.x + (max.x - min.x) * 0.5,
               min.y + (max.y - min.y) * 0.5,
               min.z + (max.z - min.z) * 0.5);
-          meshes.push(new THREE.Mesh(groupGeometry, groupMaterial));
+          let bbMesh = new THREE.Mesh(groupGeometry, groupMaterial);
+          meshes.boundingBoxMeshes = [bbMesh];
+          meshes.push(bbMesh);
 
           // Create landmark particles, optionally with text tag
           let locations = landmarkGroup.locations;
@@ -2662,6 +2665,42 @@
         }
       }
     }
+    this.space.render();
+  };
+
+  /**
+   * Set visibility of the landmark group's bounding box.
+   *
+   * @param {Boolean} visible Whether to to display the bounding box.
+   */
+  WebGLApplication.prototype.setLandmarkGroupBoundingBox = function(landmarkGroupId, visible) {
+    var landmarkGroup = this.loadedLandmarkGroups[landmarkGroupId];
+    if (!landmarkGroup) {
+      CATMAID.warn("Landmark group not loaded");
+      return;
+    }
+
+    if (visible === landmarkGroup.boundingBox) {
+      return;
+    }
+
+    landmarkGroup.boundingBox = visible;
+
+    if (landmarkGroup.boundingBoxMeshes && landmarkGroup.boundingBoxMeshes.length > 0) {
+      this.space.scene.remove.apply(this.space.scene, landmarkGroup.boundingBoxMeshes);
+    }
+
+    if (visible) {
+      var color = this.options.meshes_boundingbox_color;
+      if (!landmarkGroup.boundingBoxMeshes) {
+        landmarkGroup.boundingBoxMeshes = [];
+      }
+      for (var i=0; i<landmarkGroup.boundingBoxMeshes.length; ++i) {
+        let box = landmarkGroup.boundingBoxMeshes[i];
+        this.space.scene.add(box);
+      }
+    }
+
     this.space.render();
   };
 

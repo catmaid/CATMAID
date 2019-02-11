@@ -614,24 +614,32 @@ var WindowMaker = new function()
       };
     };
 
-    var updateLandmarkGroupColor = function(volumeId, rgb, alpha, colorChanged,
+    var updateLandmarkGroupColor = function(landmarkGroupId, rgb, alpha, colorChanged,
         alphaChanged, colorHex) {
-      WA.setLandmarkGroupColor(volumeId,
+      WA.setLandmarkGroupColor(landmarkGroupId,
           colorChanged ? ('#' + colorHex) : null,
           alphaChanged ? alpha : null);
     };
 
-    var updateLandmarkGroupFaces = function(volumeId, e) {
+    var updateLandmarkGroupFaces = function(landmarkGroupId, e) {
       var facesVisible = e.target.checked;
-      WA.setLandmarkGroupStyle(volumeId, "faces", facesVisible);
+      WA.setLandmarkGroupStyle(landmarkGroupId, "faces", facesVisible);
       // Stop propagation or the general landmark group list change handler is
       // called.
       e.stopPropagation();
     };
 
-    var updateLandmarkGroupText = function(volumeId, e) {
+    var updateLandmarkGroupBb = function(landmarkGroupId, e) {
+      var showBb = e.target.checked;
+      WA.setLandmarkGroupBoundingBox(landmarkGroupId, showBb);
+      // Stop propagation or the general volume list change handler is called.
+      e.stopPropagation();
+    };
+
+
+    var updateLandmarkGroupText = function(landmarkGroupId, e) {
       var textVisible = e.target.checked;
-      WA.setLandmarkGroupStyle(volumeId, "text", textVisible);
+      WA.setLandmarkGroupStyle(landmarkGroupId, "text", textVisible);
       // Stop propagation or the general landmark group list change handler is
       // called.
       e.stopPropagation();
@@ -764,6 +772,10 @@ var WindowMaker = new function()
                   "Whether landmark names should be displayed for this landmark group",
                   o.landmarkgroup_text, updateLandmarkGroupText.bind(null, landmarkGroupId));
               namesCb.style.display = 'inline';
+              var bbCb = CATMAID.DOM.appendCheckbox(landmarkGroupControls, "BB",
+                  "Whether or not to show the bounding box of this landmark group",
+                  o.landmarkgroup_bb, updateLandmarkGroupBb.bind(null, landmarkGroupId));
+              bbCb.style.display = 'inline';
             } else {
               var landmarkGroupControls = li.querySelector('span[data-role=landmarkGroup-controls]');
               if (landmarkGroupControls) {

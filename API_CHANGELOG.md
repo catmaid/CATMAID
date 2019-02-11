@@ -11,9 +11,13 @@ None.
 ### Modifications
 
 - `POST|GET /{project_id}/node/list`:
-  Offers a new optional parameter
-  "min_skeleton_length", which can be used to constrain the returned
-  neurons to only those of at least this cable length.
+  Offers a new optional parameter "min_skeleton_length", which can be used to
+  constrain the returned neurons to only those of at least this cable length.
+
+- `POST|GET /{project_id}/pointclouds/`:
+  Offers a new optional parameter "order_by", which accepts the strings 'id' and
+  'name' to define in what order the list of pointclouds should be retuned
+  (default: id).
 
 ### Deprecations
 

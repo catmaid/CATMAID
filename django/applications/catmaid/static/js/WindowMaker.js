@@ -789,10 +789,8 @@ var WindowMaker = new function()
 
     // Update point cloud list
     var initPointCloudList = function() {
-      return CATMAID.Pointcloud.listAll(project.id, true).then(function(json) {
-          var pointClouds = json.sort(function(a, b) {
-            return CATMAID.tools.compareStrings(a.name, b.name);
-          }).map(function(pointCloud) {
+      return CATMAID.Pointcloud.listAll(project.id, true, false, 'name').then(function(json) {
+          var pointClouds = json.map(function(pointCloud) {
             return {
               title: pointCloud.name + ' (' + pointCloud.id + ')',
               value: pointCloud.id

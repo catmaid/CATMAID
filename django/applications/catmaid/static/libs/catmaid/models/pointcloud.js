@@ -14,12 +14,15 @@
    * @param simple      {Boolean} Whether or not only id and name are returned.
    * @param with_images {Boolean} (optional) Whether image meta data should be
    *                              included in the response. Default is false.
+   * @param order_by    {String}  (optional) Which field to order the returned
+   *                              point clouds by (name, id). Default: none.
    * @returns {Promise} Resolves with a list of point clouds.
    */
-  Pointcloud.listAll = function(projectId, simple, with_images) {
+  Pointcloud.listAll = function(projectId, simple, with_images, order_by) {
     return CATMAID.fetch(projectId + '/pointclouds/', 'GET', {
       simple: !!simple,
       with_images: !!with_images,
+      order_by: order_by,
     });
   };
 

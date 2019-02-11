@@ -73,7 +73,7 @@ def serialize_image_data(image, simple=False):
 
 
 def list_pointclouds(project_id, user_id, simple, with_images=False,
-        with_points=True, sample_ratio=1.0, pointcloud_ids=None):
+        with_points=True, sample_ratio=1.0, pointcloud_ids=None, order_by='id'):
     extra_select = []
     extra_join = []
     query_params = {
@@ -106,6 +106,13 @@ def list_pointclouds(project_id, user_id, simple, with_images=False,
         ''')
         query_params['pointcloud_ids'] = pointcloud_ids
 
+    if order_by == 'id':
+        order = 'ORDER BY pc.id'
+    elif order_by == 'name':
+        order = 'ORDER BY pc.name'
+    else:
+        order = ''
+
     # Check permissions. If there are no permission assigned at all,
     # everyone can read a point cloud.
     cursor = connection.cursor()
@@ -129,9 +136,11 @@ def list_pointclouds(project_id, user_id, simple, with_images=False,
             (puop.id IS NULL AND pgop.id IS NULL) OR
             (puop.user_id = %(user_id)s AND ap_u.codename = 'can_read') OR
             (ug.user_id = %(user_id)s AND ap_g.codename ='can_read'))
+        {order}
     """.format(**{
         'extra_select': (', ' + ', '.join(extra_select)) if extra_select else '',
         'extra_join': '\n'.join(extra_join),
+        'order': order,
     }), query_params)
 
     if simple:
@@ -220,6 +229,12 @@ class PointCloudList(APIView):
             type: array
             paramType: path
             required: false
+          - name: order_by
+            description: The field to order the response list by (name, id).
+            type: string
+            paramType: path
+            required: false
+            defaultValue: 'id'
         """
         with_images = get_request_bool(request.query_params, 'with_images', False)
         with_points = get_request_bool(request.query_params, 'with_points', False)
@@ -227,9 +242,10 @@ class PointCloudList(APIView):
         simple = get_request_bool(request.query_params, 'simple', False)
         pointcloud_ids = get_request_list(request.query_params,
                 'pointcloud_ids', None, map_fn=int)
+        order_by = request.query_params.get('order_by', 'id')
 
         pointclouds = list_pointclouds(project_id, request.user.id, simple,
-                with_images, with_points, sample_ratio, pointcloud_ids)
+                with_images, with_points, sample_ratio, pointcloud_ids, order_by)
 
         return JsonResponse(pointclouds, safe=False)
 
@@ -272,6 +288,12 @@ class PointCloudList(APIView):
             type: array
             paramType: path
             required: false
+          - name: order_by
+            description: The field to order the response list by (name, id).
+            type: string
+            paramType: path
+            required: false
+            defaultValue: 'id'
         """
         with_images = get_request_bool(request.POST, 'with_images', False)
         with_points = get_request_bool(request.POST, 'with_points', False)
@@ -279,9 +301,10 @@ class PointCloudList(APIView):
         simple = get_request_bool(request.POST, 'simple', False)
         pointcloud_ids = get_request_list(request.POST,
                 'pointcloud_ids', None, map_fn=int)
+        order_by = request.query_params.get('order_by', 'id')
 
         pointclouds = list_pointclouds(project_id, request.user.id, simple,
-                with_images, with_points, sample_ratio, pointcloud_ids)
+                with_images, with_points, sample_ratio, pointcloud_ids, order_by)
 
         return JsonResponse(pointclouds, safe=False)
 

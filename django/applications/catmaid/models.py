@@ -1022,13 +1022,6 @@ class NblastSimilarity(NonCascadingUserFocusedModel):
         db_table = "nblast_similarity"
 
 
-class NblastFileCache(NonCascadingUserFocusedModel):
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    file_path = models.TextField()
-    last_update = models.DateTimeField(default=timezone.now)
-    object_type = models.TextField()
-    branch_cutoff = models.IntegerField(blank=True, null=True)
-
 class PointCloud(NonCascadingUserFocusedModel):
     """A point cloud. Its points are linked through the point_cloud_point
     relation. A non-cascading user focused model is used, because cascading

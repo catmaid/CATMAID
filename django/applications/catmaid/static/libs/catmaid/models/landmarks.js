@@ -590,11 +590,11 @@
 
       // Landmarks are needed for bounding box computation and visualization.
       transformation.landmarkProvider = {
-        get: function(landmarkGroupId, sourceApi) {
+        get: function(landmarkGroupId, sourceProjectId, sourceApi) {
           if (transformation.landmarkCache && transformation.landmarkCache[landmarkGroupId]) {
             return Promise.resolve(transformation.landmarkCache[landmarkGroupId]);
           } else {
-            return CATMAID.Landmarks.getGroup(transformation.projectId,
+            return CATMAID.Landmarks.getGroup(sourceProjectId,
                 landmarkGroupId, true, true, undefined, sourceApi)
               .then(function(landmarkGroup) {
                 if (!transformation.landmarkCache) {
@@ -609,8 +609,9 @@
 
       // Compute source and target landmark group boundaries
       let prepare = Promise.all([
-          transformation.landmarkProvider.get(transformation.fromGroupId, transformation.fromApi),
-          transformation.landmarkProvider.get(transformation.toGroupId)])
+          transformation.landmarkProvider.get(transformation.fromGroupId,
+              transformation.projectId, transformation.fromApi),
+          transformation.landmarkProvider.get(transformation.toGroupId, project.id)])
         .then(function(landmarkGroups) {
           let fromGroup = landmarkGroups[0];
           let toGroup = landmarkGroups[1];

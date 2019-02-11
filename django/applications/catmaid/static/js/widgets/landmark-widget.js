@@ -3076,7 +3076,7 @@
         // Option to create a mirrored pair of landmark groups based on two
         // volumes.
         let volumeBasedLandmarksHeader = content.appendChild(document.createElement('h1'));
-        volumeBasedLandmarksHeader.appendChild(document.createTextNode('Volume based landmark mapping'));
+        volumeBasedLandmarksHeader.appendChild(document.createTextNode('Create landmarks and mirrored groups from volumes'));
         content.appendChild(volumeBasedLandmarksHeader);
 
         let volumeMap = new Map();

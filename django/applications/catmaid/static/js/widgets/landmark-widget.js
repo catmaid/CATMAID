@@ -1000,6 +1000,9 @@
             onchange: function() {
               // Check if this landmark exists already
               state.newLandmarkName = this.value;
+            },
+            onenter: function() {
+              this.parentNode.nextSibling.click();
             }
           },
           {
@@ -1030,6 +1033,9 @@
             id: `${this.idPrefix}landmarks-new-landmark-group`,
             onchange: function() {
               state.newLandmarkGroupName = this.value;
+            },
+            onenter: function() {
+              this.parentNode.nextSibling.click();
             }
           },
           {

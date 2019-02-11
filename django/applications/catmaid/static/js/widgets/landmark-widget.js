@@ -1099,7 +1099,7 @@
               orderable: true,
               render: function(data, type, row, meta) {
                 if ("display") {
-                  return '<a href="#" data-action="select-group" data-group-id="' +
+                  return '<a href="#" data-action="edit-group-members" data-group-id="' +
                       row.id + '" >' + row.name + '</a>';
                 } else {
                   return row.name;

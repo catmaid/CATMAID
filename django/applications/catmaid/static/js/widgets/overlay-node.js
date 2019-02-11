@@ -1789,8 +1789,7 @@
 
         if (SkeletonAnnotations.TYPE_NODE === node.type) {
           this.on("pointerupoutside", mc_click);
-        } else {
-          // SkeletonAnnotations.TYPE_CONNECTORNODE
+        } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
           this.on("pointerup", connector_mc_click);
           this.on("pointerupoutside", connector_mc_click);
         }

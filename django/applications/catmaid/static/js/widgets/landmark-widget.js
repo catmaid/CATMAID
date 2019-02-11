@@ -996,6 +996,7 @@
             title: 'The name of the new landmark',
             value: '',
             length: 8,
+            id: `${this.idPrefix}landmarks-new-landmark`,
             onchange: function() {
               // Check if this landmark exists already
               state.newLandmarkName = this.value;
@@ -1009,6 +1010,9 @@
                 .then(function(newLandmark) {
                   CATMAID.msg("Success", "Added landmark " + newLandmark.id);
                   target.update();
+                  // Clear input
+                  let input = document.querySelector(`#${self.idPrefix}landmarks-new-landmark`);
+                  if (input) input.value = '';
                 })
                 .catch(CATMAID.handleError);
             }
@@ -1023,6 +1027,7 @@
             title: 'The name of the new landmark group',
             value: '',
             length: 8,
+            id: `${this.idPrefix}landmarks-new-landmark-group`,
             onchange: function() {
               state.newLandmarkGroupName = this.value;
             }
@@ -1035,6 +1040,9 @@
                 .then(function(newGroup) {
                   CATMAID.msg("Success", "Added landmark group " + newGroup.id);
                   target.update();
+                  // Clear input
+                  let input = document.querySelector(`#${self.idPrefix}landmarks-new-landmark-group`);
+                  if (input) input.value = '';
                 })
                 .catch(CATMAID.handleError);
             }

@@ -594,7 +594,7 @@
             resolve(null);
           };
 
-          dialog.show(300, 300);
+          dialog.show(600, 500);
         });
       })
       .then(function(selectedLandmarks) {

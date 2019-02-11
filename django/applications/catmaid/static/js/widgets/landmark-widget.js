@@ -68,7 +68,7 @@
     // Whether to show landmark layers
     this.showLandmarkLayers = true;
     // Whether skeleton colors should be overridden
-    this.overrideColor = true;
+    this.overrideColor = false;
     // Override color and alpha, used if overrideColor is true.
     this._overrideColor = '#3FFFD8';
     this._overrideAlpha = 0.8;
@@ -757,6 +757,12 @@
       "scale": this.nodeScaling,
       "overrideColor": this.overrideColor ? this._overrideColor : false,
       "overrideAlpha": this.overrideColor ? this._overrideAlpha : false,
+      "colorMap": this.overrideColor ? false : this.displayTransformations.reduce((o, dt) => {
+        for (let sm of dt.skeletons) {
+          o.set(sm.id, sm.clone());
+        }
+        return o;
+      }, new Map()),
     };
   };
 
@@ -2957,6 +2963,22 @@
               }
             },
             {
+              title: "Color",
+              type: "hslcolor",
+              class: "dt-center cm-center",
+              render: {
+                "_": function(data, type, row, meta) {
+                  return row.color.getHSL({});
+                },
+                "display": function(data, type, row, meta) {
+                  var color = row.color.getHexString();
+                  return '<button class="action-changecolor" value="#' +
+                      color + '" style="background-color: #' + color + ';color: ' +
+                      CATMAID.tools.getContrastColor(color) + '">color</button>';
+                }
+              }
+            },
+            {
               title: 'Action',
               class: 'cm-center',
               orderable: false,
@@ -2970,6 +2992,20 @@
           let data = existingDTDataTable.row(tr).data();
           widget.removeLandmarkTransformation(data);
           widget.update();
+        })
+        .on("click", "td .action-changecolor", this, function(e) {
+          let tr = $(this).closest('tr');
+          let dt = existingDTDataTable.row(tr).data();
+          CATMAID.ColorPicker.toggle(this, {
+            onColorChange: function(colorRGB, alpha, colorChanged, alphaChanged, colorHex) {
+              let c = '#' + colorHex;
+              for (let sm of dt.skeletons) {
+                sm.color.setStyle(c);
+                sm.opacity = alpha;
+              }
+              widget.updateLandmarkLayers();
+            }
+          });
         });
 
         // Project select

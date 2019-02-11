@@ -46,7 +46,9 @@
     // A color that is used instead of a skeleton color
     overrideColor: false,
     // An extra scaling factor to apply to nodes and edge.
-    scale: 1.0
+    scale: 1.0,
+    // A color map of skeleton IDs vs. skeleton models
+    colorMap: false,
   };
 
   /**
@@ -65,6 +67,11 @@
           this.skeletonDisplayModels.set(node.skeleton_id, new CATMAID.SkeletonModel(
               n.skeleton_id, '', new THREE.Color(this.options.overrideColor)));
         }
+      }
+    } else if (this.options.colorMap) {
+      this.skeletonDisplayModels = this.options.colorMap;
+      if (this.graphics) {
+        this.graphics.overlayGlobals.skeletonDisplayModels = this.skeletonDisplayModels;
       }
     } else {
       // Reset color override models
@@ -88,7 +95,14 @@
     CATMAID.mergeOptions(this.options, options || {}, LandmarkLayer.options,
         setDefaults);
 
-    if (overrideColorsChanged) {
+    if (options.colorMap) {
+      this.initColors(options);
+
+      // Update colors
+      for (let n in this.nodes) {
+        this.nodes[n].updateColors();
+      }
+    } else if (overrideColorsChanged) {
       if (overrideColorsEnabled || overrideColorsDisabled) {
         this.initColors(options);
       } else {

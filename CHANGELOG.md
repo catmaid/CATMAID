@@ -58,6 +58,9 @@ Landmarks:
   allows to specify of which landmark groups the clicked landmark is a member
   of.
 
+- The color of each active display transformation can be established separately
+  in the respective table row.
+
 - It is now possible to load skeletons and landmarks from other CATMAID
   instances. Point matches are done on the basis of matching landmark names. To
   enable the UI for this, check the "Source other projects" checkbox in the

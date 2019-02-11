@@ -774,13 +774,14 @@
    *
    */
   let LandmarkSkeletonTransformation = function(projectId, skeletons,
-      fromGroupId, toGroupId, fromApi = null) {
+      fromGroupId, toGroupId, fromApi = null, color = undefined) {
     this.projectId = projectId;
     this.skeletons = skeletons;
     this.fromGroupId = parseInt(fromGroupId, 10);
     this.toGroupId = parseInt(toGroupId, 10);
     this.id = CATMAID.tools.uuidv4();
     this.fromApi = fromApi;
+    this.color = new THREE.Color(color);
   };
 
   // Provide some basic events

@@ -2461,15 +2461,22 @@
         return;
       }
 
+      // Mark this transformation as added by initializing its cache entry.
+      // Meshes get asynchronously, so this can also prevent a race condition
+      // when two showLandmarkTransform() calls with the same transformation are
+      // performed after another before the promises resolve. A second set of
+      // meshes would be added when not initializing the entry synchronously.
+      this.loadedLandmarkTransforms[landmarkTransformId] = [];
+
       let options = this.options.clone();
       options['shading_method'] = 'none';
       options['color_method'] = 'actor-color';
       for (let i=0, imax=landmarkTransform.skeletons.length; i<imax; ++i) {
         let skeletonModel = landmarkTransform.skeletons[i];
-        // Creat transformed skeleton mesh and add it to scene
+        // Create transformed skeleton mesh and add it to scene
         let initPromise = landmarkTransform.nodeProvider.get(skeletonModel.id)
           .then((function(json) {
-            let meshes = [];
+            let meshes = this.loadedLandmarkTransforms[landmarkTransformId];
 
             // Create virtual skeleton
             let skeleton = new WebGLApplication.prototype.Space.prototype.Skeleton(
@@ -2488,11 +2495,12 @@
               this.space.scene.add(meshes[j]);
             }
 
-            // Store mesh reference
-            this.loadedLandmarkTransforms[landmarkTransformId] = meshes;
             this.space.render();
           }).bind(this))
-          .catch(CATMAID.handleError);
+          .catch(error => {
+            delete this.loadedLandmarkTransforms[landmarkTransformId];
+            CATMAID.handleError(error);
+          });
       }
     } else if (existingLandmarkTransform) {
       // Remove landmarkTransform

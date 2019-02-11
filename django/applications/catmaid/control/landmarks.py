@@ -247,7 +247,7 @@ class LandmarkDetail(APIView):
     def post(self, request, project_id, landmark_id):
         """Update an existing landmark.
 
-        Currently, only the name can be updated.
+        Currently, only the name and group membership can be updated.
         ---
         parameters:
         - name: project_id
@@ -265,19 +265,61 @@ class LandmarkDetail(APIView):
           required: false
           type: string
           paramType: form
+        - name: group_ids
+          description: The groups this landmark is a member of.
+          paramType: path
+          required: false
+          type: array
+          items:
+            type: integer
+        - name: append_memberships
+          description: |
+            Whether the existing memberships should be extended by the
+            passed in memberships. No memberships will be removed.
+          required: false
+          default: false
+          type: boolean
+          paramType: form
         """
         can_edit_or_fail(request.user, landmark_id, 'class_instance')
         name = request.data.get('name')
-        if not name:
-            raise ValueError('Need name for update')
+        if request.data.get('group_ids') == 'none':
+            group_ids = []
+        else:
+            group_ids = get_request_list(request.data, 'group_ids', map_fn=int)
+        append_memberships = get_request_bool(request.data, 'append_memberships', False)
 
         landmark_class = Class.objects.get(project_id=project_id, class_name="landmark")
         landmark = get_object_or_404(ClassInstance, pk=landmark_id,
                 project_id=project_id, class_column=landmark_class)
-        landmark.name = name
-        landmark.save()
 
-        landmark.id = None
+        if name:
+            landmark.name = name
+            landmark.save()
+
+        if group_ids is not None:
+            # Find out which memberships need to be added and which existing
+            # ones need to be removed.
+            current_memberships = set(get_landmark_memberships(project_id,
+                        [landmark.id]).get(landmark.id, []))
+            new_memberships = set(group_ids)
+            to_add = new_memberships - current_memberships
+            to_remove = set() if append_memberships else current_memberships - new_memberships
+
+            part_of = Relation.objects.get(project_id=project_id,
+                    relation_name='part_of')
+
+            if to_remove:
+                ClassInstanceClassInstance.objects.filter(project_id=project_id,
+                        class_instance_a_id=landmark_id,
+                        class_instance_b_id__in=to_remove,
+                        relation=part_of).delete()
+
+            for group_id in to_add:
+                ClassInstanceClassInstance.objects.create(project_id=project_id,
+                            class_instance_a_id=landmark_id,
+                            class_instance_b_id=group_id,
+                            relation=part_of, user=request.user)
 
         serializer = BasicClassInstanceSerializer(landmark)
         return Response(serializer.data)
@@ -818,6 +860,29 @@ def get_landmark_group_members(project_id, landmarkgroup_ids):
     for r in cursor.fetchall():
         member_index[r[1]].append(r[0])
     return member_index
+
+
+def get_landmark_memberships(project_id, landmark_ids):
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT cici.class_instance_a, cici.class_instance_b
+        FROM class_instance_class_instance cici
+        JOIN UNNEST(%(landmark_ids)s::bigint[]) landmark(id)
+        ON cici.class_instance_a = landmark.id
+        WHERE cici.relation_id = (
+            SELECT id from relation
+            WHERE relation_name = 'part_of' AND project_id = %(project_id)s
+        ) AND cici.project_id = %(project_id)s
+        ORDER BY cici.class_instance_a
+    """, {
+        'project_id': project_id,
+        'landmark_ids': landmark_ids,
+    })
+    membership_index = defaultdict(list)
+    for r in cursor.fetchall():
+        membership_index[r[0]].append(r[1])
+    return membership_index
+
 
 def get_landmark_group_locations(project_id, landmarkgroup_ids, with_names=False):
     cursor = connection.cursor()

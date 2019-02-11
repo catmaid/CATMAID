@@ -414,8 +414,8 @@
         '" data-action="select-location" data-index="' + i + '">' + displayIndex + '</a>';
   }
 
-  function wrapInGroupEditLink(e) {
-    return '<a href="#" data-action="edit-group-members">' + e + '</a>';
+  function wrapInGroupEditLink(id, e) {
+    return `<a href="#" data-action="edit-group-memberships" data-landmark-id="${id}">${e || id}</a>`;
   }
 
   /**
@@ -467,9 +467,9 @@
         let linkedLocations = CATMAID.Landmarks.getLinkedGroupLocationIndices(group, landmark);
         let linkedLocationsRepr = linkedLocations.map(locationIndexToString, landmark);
         if (linkedLocationsRepr.length > 0) {
-          return wrapInGroupEditLink(landmark.name) + " (" + linkedLocationsRepr.join("") + ")";
+          return wrapInGroupEditLink(landmark.id, landmark.name) + " (" + linkedLocationsRepr.join("") + ")";
         } else {
-          return wrapInGroupEditLink(landmark.name) + " (-)";
+          return wrapInGroupEditLink(landmark.id, landmark.name) + " (-)";
         }
       } else {
         return wrapInGroupEditLink(landmarkId);
@@ -607,6 +607,66 @@
         }
         return CATMAID.Landmarks.updateGroupMembers(project.id,
             landmarkGroup.id, selectedLandmarks);
+      });
+  };
+
+  /**
+   * Return a promise that will either resolve with a new selection of group
+   * memberships (groups a particular landmark is member of).
+   */
+  LandmarkWidget.prototype.editGroupMemberships = function(landmarkId) {
+    var prepare = this.landmarkGroups ? Promise.resolve(this.landmarkGroups) :
+        this.updateLandmarkGroups();
+    let self = this;
+    return prepare
+      .then(function(landmarkGroups) {
+        return new Promise(function(resolve, reject) {
+          // Show a checkbox select widget
+          let options = landmarkGroups.map(function(lg) {
+            return {
+              title: lg.name,
+              value: lg.id
+            };
+          });
+          let landmark = self.landmarkIndex.get(landmarkId);
+          if (!landmark) {
+            throw new CATMAID.ValueError("Could not find landmark " + landmarkId);
+          }
+          var dialog = new CATMAID.OptionsDialog("Edit group memberships");
+          dialog.appendMessage("Select all landmark groups that landmark " +
+            `"${landmark.name}" (${landmark.id}) should be a member of,` +
+            "regardless of the locations linked to the " +
+            "landmark. This mark landmark groups as expected for this " +
+            "landmark. Locations are linked separately from the Landmarks " +
+            "table (right click on locations).");
+          var memberships = self.landmarkGroupMemberships.get(landmark.id);
+          var memberPanel = CATMAID.DOM.createCheckboxSelectPanel(options,
+              memberships, true);
+          dialog.appendChild(memberPanel);
+          dialog.onOK = function() {
+            var selectedLandmarkInputs = memberPanel.querySelectorAll('input[type=checkbox]');
+            var selectedLandmarkGroups = [];
+            selectedLandmarkInputs.forEach(function(elem) {
+              if (elem.checked) {
+                selectedLandmarkGroups.push(parseInt(elem.value, 10));
+              }
+            });
+            resolve(selectedLandmarkGroups);
+          };
+          dialog.onCancel = function() {
+            resolve(null);
+          };
+
+          dialog.show(600, 500);
+        });
+      })
+      .then(function(selectedLandmarkGroups) {
+        if (selectedLandmarkGroups === null) {
+          // Canceled by user
+          return null;
+        }
+        return CATMAID.Landmarks.updateLandmarkMemberships(project.id,
+            landmarkId, selectedLandmarkGroups);
       });
   };
 
@@ -1161,7 +1221,7 @@
               render: function(data, type, row, meta) {
                 if (type === 'display') {
                   if (data.length === 0) {
-                    return wrapInGroupEditLink("(none)");
+                    return "(none)";
                   } else {
                     var namedLandmarks = data.map(function(landmarkId) {
                       return widget.groupedLandmarkToString(row, landmarkId);
@@ -1234,6 +1294,19 @@
             .then(function(updatedGroup) {
               if (updatedGroup !== null) {
                 CATMAID.msg("Success", "Group updated");
+                widget.update();
+              }
+            })
+            .catch(CATMAID.handleError);
+        }).on('click', 'a[data-action=edit-group-memberships]', function() {
+          let landmarkId = parseInt(this.dataset.landmarkId, 10);
+          if (!CATMAID.tools.isNumber(landmarkId)) return;
+
+          // To edit group memberships an extra dialog will be shown
+          widget.editGroupMemberships(landmarkId)
+            .then(function(updatedLandmark) {
+              if (updatedLandmark !== null) {
+                CATMAID.msg("Success", "Landmark updated");
                 widget.update();
               }
             })

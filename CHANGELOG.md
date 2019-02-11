@@ -52,6 +52,12 @@ Remote CATMAID instances
 
 Landmarks:
 
+- Clicking on the name of a landmark group in the Landmarks tab will now open
+  the group member edit dialog that was previously accessible by clicking any
+  landmark name. Clicking a landmark name will now show a new dialog, which
+  allows to specify of which landmark groups the clicked landmark is a member
+  of.
+
 - It is now possible to load skeletons and landmarks from other CATMAID
   instances. Point matches are done on the basis of matching landmark names. To
   enable the UI for this, check the "Source other projects" checkbox in the

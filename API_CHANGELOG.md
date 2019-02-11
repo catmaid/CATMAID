@@ -19,6 +19,13 @@ None.
   'name' to define in what order the list of pointclouds should be retuned
   (default: id).
 
+- `POST /{project_id}/landmarks/{landmark_id}/`:
+  Offers a new optional parameter "group_ids", an array of integers, which
+  allows to set the landmark group memberships of a specific landmark. The new
+  boolean parameter "append_memberships" allows to only append new group IDs as
+  memberships, without removing any. Otherwise the whole set of memberships is
+  replaced.
+
 ### Deprecations
 
 None.

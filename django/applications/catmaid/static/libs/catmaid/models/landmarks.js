@@ -70,6 +70,18 @@
     },
 
     /**
+     * Update the landmark groups a particular landmark is member of. If
+     * <append> is true, the passed in member IDs will be appended if not
+     * already present.
+     */
+    updateLandmarkMemberships: function(projectId, landmarkId, newGroupIds, append) {
+      return CATMAID.fetch(projectId + '/landmarks/' + landmarkId + '/', 'POST', {
+        group_ids: newGroupIds.length === 0 ? 'none' : newGroupIds,
+        append_members: !!append
+      });
+    },
+
+    /**
      * Delete all locations (including their links) that are shared between a
      * group and a (conceptual) landmark in a project.
      *

@@ -576,7 +576,10 @@
           var dialog = new CATMAID.OptionsDialog("Edit group membership");
           dialog.appendMessage("Select all landmarks that should be part of " +
             "landmark group \"" + landmarkGroup.name + "\" (" +
-            landmarkGroup.id + ").");
+            landmarkGroup.id + "), regardless of the locations linked to the " +
+            "landmark. This marks landmarks as expected for a group." +
+            "Locations are linked separately from the Landmarks table " +
+            "(right click on locations).");
           var memberPanel = CATMAID.DOM.createCheckboxSelectPanel(options,
               landmarkGroup.members, true);
           dialog.appendChild(memberPanel);

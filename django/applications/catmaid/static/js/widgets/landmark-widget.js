@@ -1195,15 +1195,16 @@
             var tr = $(this).closest('tr');
             var data =  $(table).DataTable().row(tr).data();
 
-            var groupId = parseInt(this.dataset.groupId, 10);
-
             // Toggle landmark group selection state
             if (widget.selectedLandmarkGroups.has(data.id)) {
               widget.selectedLandmarkGroups.delete(data.id);
             } else {
               widget.selectedLandmarkGroups.add(data.id);
             }
-            widget.update();
+
+            // Go into edit mode
+            widget.editLandmarkGroup = data.id;
+            widget.setMode('edit');
           }
         }).on('click', 'a[data-action=select-group]', function() {
           var groupId = parseInt(this.dataset.groupId, 10);

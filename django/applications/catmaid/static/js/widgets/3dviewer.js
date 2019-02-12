@@ -2625,7 +2625,7 @@
     } else if (existingLandmarkGroup) {
       // Remove landmarkGroup
       existingLandmarkGroup.forEach(function(v) {
-        this.space.scene.remove(...v);
+        this.space.scene.remove(v);
       }, this);
       delete this.loadedLandmarkGroups[landmarkGroupId];
       this.space.render();

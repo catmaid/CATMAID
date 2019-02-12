@@ -55,6 +55,10 @@ select:focus {
   box-shadow: 0 0 2px #4D90FE;
 }
 
+select.wide-select {
+  min-width: 20em;
+}
+
 h1 {
 	margin: 1.5em 16px 0.5em 20px;
 	font-size: 25px;

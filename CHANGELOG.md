@@ -93,6 +93,11 @@ Landmarks:
   The can be shown in 3D Viewers, superimposed on the Tracing Layer and used in
   NBLAST queries from the Neuron Similarity Widget (see below).
 
+- The new checkbox 'Multiple mappings' displays additional user interface
+  elements to add multiple source and target landmark group mappings for a
+  single display transformation. Point matches are created independently for
+  each pair and only merged for finding the final transformation.
+
 Neuron Similarity:
 
 - It is now possible to use display transformations defined in the Landmark

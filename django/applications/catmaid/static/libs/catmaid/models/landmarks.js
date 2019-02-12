@@ -351,19 +351,22 @@
     /**
      * Return a bounding box for a passed in landmark group.
      */
-    getBoundingBox: function(landmarkGroup) {
+    getBoundingBox: function(...landmarkGroups) {
       // Find bounding box around locations
       let min = { x: Infinity, y: Infinity, z: Infinity };
       let max = { x: -Infinity, y: -Infinity, z: -Infinity };
-      let locations = landmarkGroup.locations;
-      for (var i=0, imax=locations.length; i<imax; ++i) {
-        let loc = locations[i];
-        if (loc.x < min.x) min.x = loc.x;
-        if (loc.y < min.y) min.y = loc.y;
-        if (loc.z < min.z) min.z = loc.z;
-        if (loc.x > max.x) max.x = loc.x;
-        if (loc.y > max.y) max.y = loc.y;
-        if (loc.z > max.z) max.z = loc.z;
+      for (let k=0, kmax=landmarkGroups.length; k<kmax; ++k) {
+        let landmarkGroup = landmarkGroups[k];
+        let locations = landmarkGroup.locations;
+        for (var i=0, imax=locations.length; i<imax; ++i) {
+          let loc = locations[i];
+          if (loc.x < min.x) min.x = loc.x;
+          if (loc.y < min.y) min.y = loc.y;
+          if (loc.z < min.z) min.z = loc.z;
+          if (loc.x > max.x) max.x = loc.x;
+          if (loc.y > max.y) max.y = loc.y;
+          if (loc.z > max.z) max.z = loc.z;
+        }
       }
       return {
         min: min,
@@ -381,18 +384,20 @@
       if (i === undefined) {
         i = 1;
       }
-      let matches = CATMAID.Landmarks.getPointMatches(transformation.fromGroupId,
-          transformation.toGroupId, landmarkGroupIndex, landmarkIndex,
-          sourceLandmarkGroupIndex, sourceLandmarkIndex, byName);
+      let matches = [].concat(...transformation.mappings
+          .map(m => CATMAID.Landmarks.getPointMatches(m[0], m[1],
+              landmarkGroupIndex, landmarkIndex, sourceLandmarkGroupIndex,
+              sourceLandmarkIndex, byName)));
 
       if (!matches || matches.length === 0) {
         throw new CATMAID.ValueError("Found no point matches for " +
             (i+1) + ". transformation");
       }
 
-      let invMatches = CATMAID.Landmarks.getPointMatches(transformation.toGroupId,
-          transformation.fromGroupId, sourceLandmarkGroupIndex,
-          sourceLandmarkIndex, landmarkGroupIndex, landmarkIndex, byName);
+      let invMatches = [].concat(...transformation.mappings
+          .map(m => CATMAID.Landmarks.getPointMatches(m[1], m[0],
+              sourceLandmarkGroupIndex, sourceLandmarkIndex, landmarkGroupIndex,
+              landmarkIndex, byName)));
 
       if (!invMatches || invMatches.length === 0) {
         throw new CATMAID.ValueError("Found no inverse point matches for " +
@@ -621,14 +626,19 @@
 
       // Compute source and target landmark group boundaries
       let prepare = Promise.all([
-          transformation.landmarkProvider.get(transformation.fromGroupId,
-              transformation.projectId, transformation.fromApi),
-          transformation.landmarkProvider.get(transformation.toGroupId, project.id)])
+          // Source group ID
+          Promise.all(transformation.mappings.map(m =>
+              transformation.landmarkProvider.get(m[0],
+                  transformation.projectId, transformation.fromApi))),
+          // Target group ID
+          Promise.all(transformation.mappings.map(m =>
+              transformation.landmarkProvider.get(m[1], project.id)))
+        ])
         .then(function(landmarkGroups) {
-          let fromGroup = landmarkGroups[0];
-          let toGroup = landmarkGroups[1];
-          transformation.sourceAaBb = CATMAID.Landmarks.getBoundingBox(fromGroup);
-          transformation.targetAaBb = CATMAID.Landmarks.getBoundingBox(toGroup);
+          let fromGroups = landmarkGroups[0];
+          let toGroups = landmarkGroups[1];
+          transformation.sourceAaBb = CATMAID.Landmarks.getBoundingBox(...fromGroups);
+          transformation.targetAaBb = CATMAID.Landmarks.getBoundingBox(...toGroups);
         });
 
       // For each node, check if treenode is outside of source group bounding
@@ -691,6 +701,8 @@
         }
       };
 
+      let areDifferentGroups = m => m[0] !== m[1];
+
       transformation.skeletonPromises = new Map();
       transformation.nodeProvider = {
         get: function(skeletonId) {
@@ -720,7 +732,7 @@
             .then(function(response) {
               // If the source group ID is the same as the target group ID,
               // don't transform at all.
-              if (transformation.fromGroupId !== transformation.toGroupId) {
+              if (transformation.mappings.some(areDifferentGroups)) {
                 // Transform points and store in cache
                 // TODO: do this in webworker?
                 response[0].forEach(transformTreenode);
@@ -764,21 +776,33 @@
    *
    * @param {number}   projectId   The source project, where to find <fromGroupId>
    * @param {object[]} skeletons   A list of skeleton models to transform.
-   * @param {number}   fromGroupId The landmark group from which to transform
-   *                               the skeleton, looked for in remote API, if
-   *                               <api> is passed in, otherwise in <projectId>.
-   * @param {number}   toGroupId   The landmark group to transform skeletons to,
+   * @param {int[][]}   mappings   A list of two-element lists, with the first
+   *                               element being a source group ID and the
+   *                               second element being a target group ID.
+   *                               The source landmark group s the group from
+   *                               which to transform the skeleton, looked for
+   *                               in remote API, if <api> is passed in,
+   *                               otherwise in <projectId>. The target landmark
+   *                               group is the group to transform skeletons to,
    *                               expected to be the local <projectId>.
    * @param {API}      fromApi     (Optional) API instance to declare to load
    *                               skeletons from.
    *
    */
   let LandmarkSkeletonTransformation = function(projectId, skeletons,
-      fromGroupId, toGroupId, fromApi = null, color = undefined) {
+      mappings, fromApi = null, color = undefined) {
     this.projectId = projectId;
     this.skeletons = skeletons;
-    this.fromGroupId = parseInt(fromGroupId, 10);
-    this.toGroupId = parseInt(toGroupId, 10);
+    let seenSourceIds = new Set(), seenTargetIds = new Set();
+    this.mappings = mappings.map(m => [parseInt(m[0], 10), parseInt(m[1], 10)])
+        .reduce((o, m) => {
+          if (!seenSourceIds.has(m[0]) && !seenTargetIds.has(m[1])) {
+            seenSourceIds.add(m[0]);
+            seenTargetIds.add(m[1]);
+            o.push(m);
+          }
+          return o;
+        }, []);
     this.id = CATMAID.tools.uuidv4();
     this.fromApi = fromApi;
     this.color = new THREE.Color(color);

@@ -92,6 +92,9 @@
     // Whether to allow the creation of Display Transformations from other
     // projects and other CATMAID instances.
     this.showOtherProjectOptions = false;
+    // Whetehr or not to show options to add more than one source/target group
+    // mapping.
+    this.showMultiMappingOptions = false;
 
     // A list of relations that are allowed between landmark groups
     this.allowedRelationNames = new Set(['mirror_of', 'adjacent_to', 'part_of']);
@@ -866,17 +869,18 @@
    *
    * @param {number} projectId   Source project of the transformation
    * @param {object} skeletons   Object mapping skeleton IDs to skeleton models
-   * @param {number} fromGroupId Landmark group to transform skeletons from
-   * @param {number} toGroupId   Landmark group to transform skeletons to
+   * @param {Object[]} mapping   A list of two-element lists with the first
+   *                             element being a source landmark group ID and
+   *                             the second element a target landmark * gorup ID.
    * @param {API} api (Optional) A remote API to load the source data from. If
    *                             passed in skeletons and from groups are
    *                             expected to be there.
    * @returns new LandmarkSkeletonTransformation instance
    */
   LandmarkWidget.prototype.addDisplayTransformation = function(projectId,
-      skeletons, fromGroupId, toGroupId, api) {
+      skeletons, mapping, api) {
     let lst = new CATMAID.LandmarkSkeletonTransformation(projectId, skeletons,
-        fromGroupId, toGroupId, api);
+        mapping, api);
     this.displayTransformations.push(lst);
 
     // Announce that there is a new display tranformation available
@@ -900,13 +904,15 @@
         for (let i=0; i<groups.length; ++i) {
           let toGroupId = groups[i];
           let skeletons = Object.values(getSkeletonModels());
+          if (!skeletons || skeletons.length === 0 ) {
+            throw new CATMAID.Warning("Could not find source skeletons");
+          }
           let lst = new CATMAID.LandmarkSkeletonTransformation(projectId,
-            skeletons, fromGroupId, toGroupId);
+            skeletons, [[fromGroupId, toGroupId]]);
           self.displayTransformations.push(lst);
         }
         CATMAID.Landmarks.trigger(CATMAID.Landmarks.EVENT_DISPLAY_TRANSFORM_ADDED);
-      })
-      .catch(CATMAID.handleError);
+      });
   };
 
   let boundingBoxToArray = function(bb, mirrorAxis) {
@@ -2740,6 +2746,15 @@
               target.update();
             },
           },
+          {
+            type: 'checkbox',
+            value: target.showMultiMappingOptions,
+            label: 'Multiple mappings',
+            onclick: function() {
+              target.showMultiMappingOptions = this.checked;
+              target.update();
+            },
+          },
         ];
       },
       createContent: function(content, widget) {
@@ -2936,6 +2951,16 @@
           $(newDTForm).append(sourceSelectSetting);
         }
 
+        let srcToStr = function(m) {
+          let g = widget.landmarkGroupIndex.get(m[0]);
+          return `${g.name} (${g.id})`;
+        };
+
+        let targetToStr = function(m) {
+          let g = widget.landmarkGroupIndex.get(m[1]);
+          return `${g.name} (${g.id})`;
+        };
+
         let existingDisplayTransformationsContainer = document.createElement('div');
         existingDisplayTransformationsContainer.classList.add('clear');
         existingDisplayTransformationsContainer.appendChild(document.createElement('h1'))
@@ -2967,30 +2992,30 @@
             },
 
             {
-              data: 'fromGroupId',
+              data: 'mappings',
               class: 'cm-center',
-              title: 'Source landmark group',
+              title: 'Source landmark groups',
               orderable: false,
               render: function(data, type, row, meta) {
                 if (widget.landmarkGroupIndex) {
-                  let group = widget.landmarkGroupIndex.get(data);
-                  if (group) {
-                    return group.name + " (" + data + ")";
+                  let groups = data.map(srcToStr);
+                  if (groups) {
+                    return groups.join(', ');
                   }
                 }
                 return data;
               }
             },
             {
-              data: 'toGroupId',
+              data: 'mappings',
               class: 'cm-center',
               title: 'Target landmark group',
               orderable: false,
               render: function(data, type, row, meta) {
                 if (widget.landmarkGroupIndex) {
-                  let group = widget.landmarkGroupIndex.get(data);
-                  if (group) {
-                    return group.name + " (" + data + ")";
+                  let groups = data.map(targetToStr);
+                  if (groups) {
+                    return groups.join(', ');
                   }
                 }
                 return data;
@@ -3066,6 +3091,7 @@
         };
 
         var fromGroup, toGroup;
+        let activeMappings = [];
 
         var initSourceGroupList = function() {
           return getSourceGroupList()
@@ -3115,6 +3141,75 @@
               };
               $(newDTForm).append(targetGroup);
 
+              // Optionally, multiple mappings can be defined.
+              if (widget.showMultiMappingOptions) {
+                let componentList = $('<select/>').addClass('multiline wide-select').attr('size', '4')[0];
+                let mappingList = CATMAID.DOM.createLabeledControl('Additional mappings', componentList,
+                  "The list of known CATMAID instances that can be used to " +
+                  "e.g. retrieve tracing data.", 'cm-top');
+                $(newDTForm).append(mappingList);
+
+                // Remove selected remote instance
+                var removeButton = $('<button/>').text('Remove mapping').click(function() {
+                  if (componentList.selectedIndex < componentList.length) {
+                    activeMappings.splice(componentList.selectedIndex, 1);
+                    updateComponentList();
+                  }
+                });
+                $(newDTForm).append(CATMAID.DOM.createLabeledControl('', removeButton, "Remove " +
+                    "the mapping selected in the list above."));
+
+                // Add selected mapping
+                var addMappingButton = $('<button/>').text('Add new mapping').click(function() {
+                  if (!fromGroup) {
+                    CATMAID.error("Need source landmark group");
+                    return;
+                  }
+                  let fg = parseInt(fromGroup, 10);
+                  if (!toGroup) {
+                    CATMAID.error("Need target landmark group");
+                    return;
+                  }
+                  let tg = parseInt(toGroup, 10);
+
+                  let src = widget.sourceLandmarkGroupIndex ?
+                      widget.sourceLandmarkGroupIndex : widget.landmarkGroupIndex;
+                  if (!src.has(fg)) {
+                    CATMAID.error("Source landmark group not found");
+                    return;
+                  }
+                  if (!widget.landmarkGroupIndex.has(tg)) {
+                    CATMAID.error("Target landmark group not found");
+                    return;
+                  }
+
+                  activeMappings.push({
+                    fromGroup: src.get(fg),
+                    toGroup: widget.landmarkGroupIndex.get(tg),
+                  });
+
+                  updateComponentList();
+                });
+                $(newDTForm).append(CATMAID.DOM.createLabeledControl('', addMappingButton,
+                    'Add the currently selected source group and target group as mapping.'));
+
+                // Remote instance list update
+                var updateComponentList = function() {
+                  $(componentList).empty();
+                  activeMappings.map(function(o, i) {
+                    // Add each remote list element to the select control
+                    var optionElement = $('<option/>').attr('value', i)
+                        .text(`${o.fromGroup.name} (${o.fromGroup.id}) - ${o.toGroup.name} (${o.toGroup.id})`);
+                    return optionElement[0];
+                  }).forEach(function(o) {
+                    componentList.appendChild(o);
+                  });
+                };
+
+                // Initialize component list
+                updateComponentList();
+              }
+
               // Target relation select
               let targetRelationWrapper = document.createElement('span');
               $(newDTForm).append(targetRelationWrapper);
@@ -3151,10 +3246,25 @@
               let addButton = document.createElement('button');
               addButton.appendChild(document.createTextNode('Add transformation'));
               addButton.onclick = function() {
-                if (!fromGroup) {
+                if (!fromGroup && activeMappings.length === 0) {
                   CATMAID.error("Need source landmark group");
                   return;
                 }
+
+                let mappings;
+                if (!displayTargetRelation) {
+                  if (!toGroup && activeMappings.length === 0) {
+                    CATMAID.error("Need target landmark group");
+                    return;
+                  }
+
+                  // Consolidate into a single mapping array.
+                  mappings = activeMappings.map(e => [e.fromGroup.id, e.toGroup.id]);
+                  if (fromGroup && toGroup) {
+                    mappings.push([parseInt(fromGroup, 10), parseInt(toGroup, 10)]);
+                  }
+                }
+
                 if (widget.showOtherProjectOptions) {
                   if (displayTargetRelation) {
                     CATMAID.warn("Display target relations aren't yet supported for remote sources");
@@ -3174,16 +3284,19 @@
                     .then(function(skeletonIds) {
                       let skeletonModels = skeletonIds.map(skid =>
                           new CATMAID.SkeletonModel(skid, undefined, undefined, api));
+                      if (!skeletonModels || skeletonModels.length === 0) {
+                        throw new CATMAID.Warning("No source skeletons found");
+                      }
                       widget.addDisplayTransformation(sourceProject,
-                          skeletonModels, fromGroup, toGroup, api);
+                          skeletonModels, mappings, api);
                       CATMAID.msg("Success", "Transformation added");
                       widget.updateDisplay();
                       widget.update();
                     })
                     .catch(CATMAID.handleError);
                 } else {
-                  if (!skeletonSource) {
-                    CATMAID.error("Need a skeleton source");
+                  if (mappings.length === 0) {
+                    CATMAID.error("Need at leat one source/target selection.");
                     return;
                   }
                   let source = CATMAID.skeletonListSources.getSource(skeletonSource);
@@ -3197,11 +3310,15 @@
                     widget.addDisplayTransformationRule(getSkeletonModels, fromGroup,
                         displayTargetRelation)
                       .then(function() {
+                        CATMAID.msg("Success", "Transformation rule applied");
+                      })
+                      .catch(error => {
+                        CATMAID.handleError(error);
+                      })
+                      .finally(() => {
                         widget.updateDisplay();
                         widget.update();
-                      })
-                      .catch(CATMAID.handleError);
-                    CATMAID.msg("Success", "Transformation rule applied");
+                      });
                   } else {
                     if (!toGroup) {
                       CATMAID.error("Need target landmark group");
@@ -3209,8 +3326,13 @@
                     }
 
                     let skeletonModels = Object.values(source.getSelectedSkeletonModels());
+                    if (!skeletonModels || skeletonModels.length === 0) {
+                      CATMAID.warn("No source skeletons found");
+                      return;
+                    }
+
                     widget.addDisplayTransformation(sourceProject, skeletonModels,
-                        fromGroup, toGroup, displayTargetRelation);
+                        mappings, displayTargetRelation);
                     CATMAID.msg("Success", "Transformation added");
                     widget.updateDisplay();
                     widget.update();

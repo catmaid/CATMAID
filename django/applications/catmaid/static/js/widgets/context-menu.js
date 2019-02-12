@@ -112,9 +112,11 @@
       var mouse = CATMAID.ui.getMouse(mouseEvent);
       menuX = mouse.x;
       menuY = mouse.y;
-      setTimeout(toggleContextMenu, 10);
+      setTimeout(this._boundToggleContextMenu, 10);
       return true;
     };
+
+    this._boundOnClick = this.onClick.bind(this);
 
     /**
      * Make context menu visible.
@@ -124,6 +126,8 @@
      *                                     recorded last.
      */
     this.show = function(useCurrentLocation) {
+      CATMAID.ui.registerEvent("onpointerup", this._boundOnClick);
+      CATMAID.ui.catchEvents();
       document.body.appendChild(wrapper);
       if (useCurrentLocation) {
         var mouse = CATMAID.UI.getLastMouse();
@@ -150,6 +154,8 @@
      * Hide the currently displayed context menu.
      */
     this.hide = function(selected) {
+      CATMAID.ui.removeEvent("onpointerup", this._boundOnClick);
+      CATMAID.ui.releaseEvents();
       wrapper.style.display = "none";
       menuVisible = false;
       document.body.removeChild(wrapper);
@@ -174,6 +180,8 @@
         this.show(useCorrentLocation);
       }
     };
+
+    this._boundToggleContextMenu = this.toggleContextMenu.bind(this);
   };
 
   /**

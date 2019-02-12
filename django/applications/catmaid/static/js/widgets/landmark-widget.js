@@ -817,6 +817,22 @@
     });
   };
 
+
+  LandmarkWidget.prototype.updateStyle = function() {
+    let target3dViewers = Array.from(this.targeted3dViewerNames.keys()).map(function(m) {
+      return CATMAID.skeletonListSources.getSource(m);
+    });
+
+    for (let i=0; i<this.displayTransformations.length; ++i) {
+      let transformation = this.displayTransformations[i];
+      for (let j=0; j<target3dViewers.length; ++j) {
+        let widget = target3dViewers[j];
+        let selected = this.targeted3dViewerNames.get(widget.getName());
+        widget.setLandmarkTransformStyle(transformation);
+      }
+    }
+  };
+
   /**
    * Create skeleton models for the skeletons to transform
    */
@@ -2971,7 +2987,8 @@
                   return row.color.getHSL({});
                 },
                 "display": function(data, type, row, meta) {
-                  var color = row.color.getHexString();
+                  var color = row.skeletons.length === 0 ? color.getHexString() :
+                      row.skeletons[0].color.getHexString();
                   return '<button class="action-changecolor" value="#' +
                       color + '" style="background-color: #' + color + ';color: ' +
                       CATMAID.tools.getContrastColor(color) + '">color</button>';
@@ -3004,6 +3021,7 @@
                 sm.opacity = alpha;
               }
               widget.updateLandmarkLayers();
+              widget.updateStyle();
             }
           });
         });

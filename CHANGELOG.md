@@ -59,7 +59,8 @@ Landmarks:
   of.
 
 - The color of each active display transformation can be established separately
-  in the respective table row.
+  in the respective table row. Color changes are now also visible in the 3D
+  Viewer.
 
 - It is now possible to load skeletons and landmarks from other CATMAID
   instances. Point matches are done on the basis of matching landmark names. To

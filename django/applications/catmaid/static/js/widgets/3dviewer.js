@@ -2476,7 +2476,7 @@
         // Create transformed skeleton mesh and add it to scene
         let initPromise = landmarkTransform.nodeProvider.get(skeletonModel.id)
           .then((function(json) {
-            let meshes = this.loadedLandmarkTransforms[landmarkTransformId];
+            let transform = this.loadedLandmarkTransforms[landmarkTransformId];
 
             // Create virtual skeleton
             let skeleton = new WebGLApplication.prototype.Space.prototype.Skeleton(
@@ -2489,10 +2489,14 @@
 
             // Instead of displaying the skeleton using show(), we extract its
             // mesh and add it ourselves.
-            meshes.push(skeleton.actor.neurite);
+            let data = {
+              meshes: [skeleton.actor.neurite],
+              skeleton: skeleton,
+            };
+            transform.push(data);
 
-            for (let j=0, jmax=meshes.length; j<jmax; ++j) {
-              this.space.scene.add(meshes[j]);
+            for (let j=0, jmax=data.meshes.length; j<jmax; ++j) {
+              this.space.scene.add(data.meshes[j]);
             }
 
             this.space.render();
@@ -2504,12 +2508,35 @@
       }
     } else if (existingLandmarkTransform) {
       // Remove landmarkTransform
-      existingLandmarkTransform.forEach(function(v) {
-        this.space.scene.remove(v);
-      }, this);
+      existingLandmarkTransform.forEach(entry => {
+        this.space.scene.remove(...entry.meshes);
+      });
       delete this.loadedLandmarkTransforms[landmarkTransformId];
       this.space.render();
     }
+  };
+
+  WebGLApplication.prototype.setLandmarkTransformStyle = function(landmarkTransform) {
+    let landmarkTransformId = landmarkTransform.id;
+    var transform = this.loadedLandmarkTransforms[landmarkTransformId];
+    if (!transform) {
+      return;
+    }
+
+    // Use colorizer with simple source shading (see above)
+    let options = this.options.clone();
+    options['shading_method'] = 'none';
+    options['color_method'] = 'actor-color';
+    var colorizer = CATMAID.makeSkeletonColorizer(options);
+
+    for (let i=0; i<transform.length; ++i) {
+      // Update actor color
+      let data = transform[i];
+      data.skeleton.actorColor.copy(data.skeleton.skeletonmodel.color);
+      data.skeleton.updateSkeletonColor(colorizer);
+    }
+
+    this.space.render();
   };
 
   /**
@@ -2598,7 +2625,7 @@
     } else if (existingLandmarkGroup) {
       // Remove landmarkGroup
       existingLandmarkGroup.forEach(function(v) {
-        this.space.scene.remove(v);
+        this.space.scene.remove(...v);
       }, this);
       delete this.loadedLandmarkGroups[landmarkGroupId];
       this.space.render();

@@ -93,6 +93,9 @@
     // projects and other CATMAID instances.
     this.showOtherProjectOptions = false;
 
+    // A list of relations that are allowed between landmark groups
+    this.allowedRelationNames = new Set(['mirror_of', 'adjacent_to', 'part_of']);
+
     // The current edit mode
     this.mode = 'display';
     this.modes = ['display', 'landmarks', 'edit', 'groups', 'import'];
@@ -2278,9 +2281,11 @@
               o[relationMap[name]] = name;
               return o;
             }, {});
-            let relations = relationNames.map(function(name) {
-              return { title: name, value: relationMap[name] };
-            });
+            let relations = relationNames
+                .filter(name => widget.allowedRelationNames.has(name))
+                .map(function(name) {
+                  return { title: name, value: relationMap[name] };
+                });
             let defaultRelation = relationMap[widget.editLinkRelation];
             // Relation select
             let labeledRelationSelect = CATMAID.DOM.createLabeledControl(
@@ -3110,9 +3115,11 @@
                     o[relationMap[name]] = name;
                     return o;
                   }, {});
-                  let relationOptions = relationNames.map(function(name) {
-                    return { title: name, value: relationMap[name] };
-                  });
+                  let relationOptions = relationNames
+                      .filter(name => widget.allowedRelationNames.has(name))
+                      .map(function(name) {
+                        return { title: name, value: relationMap[name] };
+                      });
                   let targetRelationSelect = CATMAID.DOM.createRadioSelect(
                       'Group link relation', relationOptions, undefined, true);
                   let targetRelationGroup = CATMAID.DOM.createLabeledControl('Target relation',

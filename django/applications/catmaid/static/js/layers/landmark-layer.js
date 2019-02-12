@@ -151,6 +151,10 @@
    * Adjust rendering to current field of view.
    */
   LandmarkLayer.prototype.redraw = function(completionCallback) {
+    // Get current field of view in stack space
+    var stackViewBox = this.stackViewer.createStackViewBox();
+    var projectViewBox = this.stackViewer.primaryStack.createStackToProjectBox(stackViewBox);
+
     // If there are nodes available, find the ones on the current section
     if (this._currentZIndex.size > 0) {
       let zIndex = this._currentZIndex;
@@ -161,112 +165,105 @@
       // section.
       let nodesOnSection = zIndex.get(this.stackViewer.z);
 
-      if (!nodesOnSection || nodesOnSection.size === 0) {
-        return;
-      }
+      if (nodesOnSection && nodesOnSection.size > 0) {
+        this.nodes = {};
+        // Prepare existing Node and ConnectorNode instances for reuse
+        this.graphics.resetCache();
+        var addedNodes = [];
 
-      this.nodes = {};
-      // Prepare existing Node and ConnectorNode instances for reuse
-      this.graphics.resetCache();
-      var addedNodes = [];
-
-      // Add regular nodes
-      for (let a of nodesOnSection) {
-        // Add all nodes along with their parents and children
-        // [id, parent_id, user_id, location_x, location_y, location_z, radius, confidence].
-        var stackZ = primaryStack.projectToUnclampedStackZ(a[5], a[4], a[3]);
-        let newNode = this.graphics.newNode(a[0], null, a[1], a[6],
-            a[3], a[4], a[5], stackZ - currentZ, a[7], a[8],
-            0, a[2]);
-        this.nodes[a[0]] = newNode;
-        addedNodes.push(newNode);
-      }
-
-      // Add virtual nodes and link parent with children
-      for (let b of nodesOnSection) {
-        var n = this.nodes[b[0]];
-        var pn = this.nodes[b[1]]; // parent Node
-
-        // Neither virtual nodes or other parent/child links need to be created if
-        // there is no parent node.
-        if (!pn) {
-          continue;
+        // Add regular nodes
+        for (let a of nodesOnSection) {
+          // Add all nodes along with their parents and children
+          // [id, parent_id, user_id, location_x, location_y, location_z, radius, confidence].
+          var stackZ = primaryStack.projectToUnclampedStackZ(a[5], a[4], a[3]);
+          let newNode = this.graphics.newNode(a[0], null, a[1], a[6],
+              a[3], a[4], a[5], stackZ - currentZ, a[7], a[8],
+              0, a[2]);
+          this.nodes[a[0]] = newNode;
+          addedNodes.push(newNode);
         }
 
-        // Virtual nodes can only exists if both parent and child are not on the
-        // current section and not both above or below.
-        if ((n.zdiff < 0 && pn.zdiff > 0) || (n.zdiff > 0 && pn.zdiff < 0)) {
-          var vn = CATMAID.createVirtualNode(this.graphics, n, pn, this.stackViewer);
-          if (vn) {
-            n.parent = vn;
-            n.parent_id = vn.id;
-            pn.addChildNode(vn);
-            vn.addChildNode(n);
-            this.nodes[vn.id] = vn;
-            addedNodes.push(vn);
+        // Add virtual nodes and link parent with children
+        for (let b of nodesOnSection) {
+          var n = this.nodes[b[0]];
+          var pn = this.nodes[b[1]]; // parent Node
+
+          // Neither virtual nodes or other parent/child links need to be created if
+          // there is no parent node.
+          if (!pn) {
             continue;
           }
+
+          // Virtual nodes can only exists if both parent and child are not on the
+          // current section and not both above or below.
+          if ((n.zdiff < 0 && pn.zdiff > 0) || (n.zdiff > 0 && pn.zdiff < 0)) {
+            var vn = CATMAID.createVirtualNode(this.graphics, n, pn, this.stackViewer);
+            if (vn) {
+              n.parent = vn;
+              n.parent_id = vn.id;
+              pn.addChildNode(vn);
+              vn.addChildNode(n);
+              this.nodes[vn.id] = vn;
+              addedNodes.push(vn);
+              continue;
+            }
+          }
+
+          // If no virtual node was inserted, link parent and child normally.
+          n.parent = pn;
+          // update the parent's children
+          pn.addChildNode(n);
         }
 
-        // If no virtual node was inserted, link parent and child normally.
-        n.parent = pn;
-        // update the parent's children
-        pn.addChildNode(n);
+        // Disable most unused node instances, keeping a small caching buffer.
+        this.graphics.disableBeyond(addedNodes.length, 0);
+
+        this.initColors();
+
+        // Draw node edges and circles, including the ones for virtual nodes.
+        for (var i=0, imax=addedNodes.length; i<imax; ++i) {
+          addedNodes[i].createGraphics();
+        }
+
+        // Update colors
+        for (let n in this.nodes) {
+          this.nodes[n].updateColors();
+        }
+      } else {
+        for (let skeletonId in this.nodes) {
+          this.nodes[skeletonId].disable();
+        }
+        this.nodes = {};
       }
 
-      // Disable most unused node instances, keeping a small caching buffer.
-      this.graphics.disableBeyond(addedNodes.length, 0);
+      var screenScale = CATMAID.TracingOverlay.Settings.session.screen_scaling;
+      // All graphics elements scale automatcally.
+      // If in screen scale mode, where the size of all elements should
+      // stay the same (regardless of zoom level), counter acting this is required.
+      var dynamicScale = screenScale ? (1 / this.stackViewer.scale) : false;
 
-      this.initColors();
+      let userScaleFactor = this.options.scale;
+      this.graphics.scale(
+          CATMAID.TracingOverlay.Settings.session.scale * userScaleFactor,
+          this.stackViewer.primaryStack.minPlanarRes,
+          dynamicScale);
 
-      // Draw node edges and circles, including the ones for virtual nodes.
-      for (var i=0, imax=addedNodes.length; i<imax; ++i) {
-        addedNodes[i].createGraphics();
+      // In case of a zoom level change and screen scaling is selected, update
+      // edge width.
+      if (this.displayTransformations.length > 0 && (userScaleFactor * this.stackViewer.s) !== this.lastScale) {
+        // Remember current zoom level
+        this.lastScale = userScaleFactor * this.stackViewer.s;
+        // Update edge width
+        var edgeWidth = this.graphics.Node.prototype.EDGE_WIDTH || 2;
+        this.graphics.containers.lines.children.forEach(function (line) {
+          line.graphicsData[0].lineWidth = edgeWidth;
+          line.dirty++;
+          line.clearDirty++;
+        });
+        this.graphics.containers.nodes.children.forEach(function (c) {
+          c.scale.set(this.graphics.Node.prototype.stackScaling);
+        }, this);
       }
-
-      // Update colors
-      for (let n in this.nodes) {
-        this.nodes[n].updateColors();
-      }
-    } else {
-      for (let skeletonId in this.nodes) {
-        this.nodes[skeletonId].disable();
-      }
-      this.nodes = {};
-    }
-
-
-    // Get current field of view in stack space
-    var stackViewBox = this.stackViewer.createStackViewBox();
-    var projectViewBox = this.stackViewer.primaryStack.createStackToProjectBox(stackViewBox);
-
-    var screenScale = CATMAID.TracingOverlay.Settings.session.screen_scaling;
-    // All graphics elements scale automatcally.
-    // If in screen scale mode, where the size of all elements should
-    // stay the same (regardless of zoom level), counter acting this is required.
-    var dynamicScale = screenScale ? (1 / this.stackViewer.scale) : false;
-
-    let userScaleFactor = this.options.scale;
-    this.graphics.scale(
-        CATMAID.TracingOverlay.Settings.session.scale * userScaleFactor,
-        this.stackViewer.primaryStack.minPlanarRes,
-        dynamicScale);
-
-    // In case of a zoom level change and screen scaling is selected, update
-    // edge width.
-    if (this.displayTransformations.length > 0 && (userScaleFactor * this.stackViewer.s) !== this.lastScale) {
-      // Remember current zoom level
-      this.lastScale = userScaleFactor * this.stackViewer.s;
-      // Update edge width
-      var edgeWidth = this.graphics.Node.prototype.EDGE_WIDTH || 2;
-      this.graphics.containers.lines.children.forEach(function (line) {
-        line.graphicsData[0].lineWidth = edgeWidth;
-        line.dirty++;
-        line.clearDirty++;
-      });
-      this.graphics.containers.nodes.children.forEach(function (c) {
-        c.scale.set(this.graphics.Node.prototype.stackScaling);
-      }, this);
     }
 
     var planeDims = this.stackViewer.primaryStack.getPlaneDimensions();

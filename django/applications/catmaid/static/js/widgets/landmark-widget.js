@@ -1570,6 +1570,19 @@
           } else {
             widget.selectedLandmarks.delete(skeletonId);
           }
+        }).on('click', 'a[data-action=select-landmark]', function() {
+          let landmarkId = parseInt(this.dataset.id, 10);
+          if (!CATMAID.tools.isNumber(landmarkId)) return;
+
+          // To edit group memberships an extra dialog will be shown
+          widget.editGroupMemberships(landmarkId)
+            .then(function(updatedLandmark) {
+              if (updatedLandmark !== null) {
+                CATMAID.msg("Success", "Landmark updated");
+                widget.update();
+              }
+            })
+            .catch(CATMAID.handleError);
         }).on('mousedown', 'a[data-action=select-location]', function(e) {
           var index = parseInt(this.dataset.index, 10);
           var table = $(this).closest('table');

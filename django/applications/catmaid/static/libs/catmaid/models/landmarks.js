@@ -497,26 +497,26 @@
         let linkedToLocationIdxs = CATMAID.Landmarks.getLinkedGroupLocationIndices(toGroup, toLandmark);
 
         if (linkedFromLocationIdxs.length === 0) {
-          CATMAID.warn("Landmark " + landmarkId +
+          CATMAID.warn("Landmark " + fromLandmarkId +
               " has no linked location in group " + fromGroupId);
           continue;
         }
 
         if (linkedToLocationIdxs.length === 0) {
-          CATMAID.warn("Landmark " + landmarkId +
+          CATMAID.warn("Landmark " + toLandmarkId +
               " has no linked location in group " + toGroupId);
           continue;
         }
 
         if (linkedFromLocationIdxs.length > 1) {
-          CATMAID.warn("Landmark " + landmarkId +
+          CATMAID.warn("Landmark " + fromLandmarkId +
               " is linked through locations in group " +
               fromGroupId + " more than once");
           continue;
         }
 
         if (linkedToLocationIdxs.length > 1) {
-          CATMAID.warn("Landmark " + landmarkId +
+          CATMAID.warn("Landmark " + toLandmarkId +
               " is linked through locations in group " +
               toGroupId + " more than once");
           continue;

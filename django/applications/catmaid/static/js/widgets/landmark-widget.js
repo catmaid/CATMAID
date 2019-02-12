@@ -1365,7 +1365,7 @@
 
           // If left mouse button was used and a location is available, move to
           // it.
-          var loc = Number.isNaN(index) ? null : landmark.locations[index];
+          var loc = Number.isNaN(index) ? null : data.locations[index];
           if (e.which === 1 && loc) {
             project.moveTo(loc.z, loc.y, loc.x)
               .then(function() {

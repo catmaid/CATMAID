@@ -2952,7 +2952,9 @@
         }
 
         let srcToStr = function(m) {
-          let g = widget.landmarkGroupIndex.get(m[0]);
+          // If a dedicated source index is available, use it.
+          let src = widget.sourceLandmarkGroupIndex || widget.landmarkGroupIndex;
+          let g = src.get(m[0]);
           return `${g.name} (${g.id})`;
         };
 

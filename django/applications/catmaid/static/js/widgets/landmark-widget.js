@@ -1578,6 +1578,11 @@
           var data =  datatable.row(tr).data();
           var location = Number.isNaN(index) ? null : data.locations[index];
 
+          // Hide current context menut (if any) and show new context menu
+          if (contextMenu) {
+            contextMenu.hide();
+          }
+
           if (e.which === 1 && location) {
             project.moveTo(location.z, location.y, location.x)
               .then(function() {
@@ -1590,11 +1595,6 @@
               })
               .catch(CATMAID.handleError);
             return;
-          }
-
-          // Hide current context menut (if any) and show new context menu
-          if (contextMenu) {
-            contextMenu.hide();
           }
 
           var items = [

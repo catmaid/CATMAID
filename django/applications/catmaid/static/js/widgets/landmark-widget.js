@@ -1015,7 +1015,7 @@
       })
       .then(arborParsers => {
         let skeletonIds = Array.from(arborParsers.keys());
-        if (!skeletonIds || skeletonIds.length == 0) {
+        if (!skeletonIds || skeletonIds.length === 0) {
           CATMAID.warn(`No neurons found with annotation "${neuronAnnotation}" from remote "${remote.name}"`);
           return;
         }

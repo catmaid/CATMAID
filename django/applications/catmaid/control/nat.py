@@ -865,6 +865,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 query_cache_objects_dps = skeleton_cache.rx(query_object_id_str)
                 non_na_ids = list(filter(lambda x: type(x) == str,
                         list(base.names(query_cache_objects_dps))))
+                cache_typed_query_object_ids = non_na_ids
                 query_cache_objects_dps = rnat.subset_neuronlist(
                         query_cache_objects_dps, robjects.StrVector(non_na_ids))
                 effective_query_object_ids = list(filter(
@@ -873,6 +874,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                         query_object_ids))
                 cache_hits = n_query_objects - len(effective_query_object_ids)
             else:
+                cache_typed_query_object_ids = []
                 effective_query_object_ids = query_object_ids
 
             logger.debug('Fetching {} query skeletons ({} cache hits)'.format(
@@ -900,17 +902,20 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                             '.progress': 'none',
                             'OmitFailures': omit_failures,
                         })
+                non_cache_typed_query_object_ids = list(base.names(query_dps))
             else:
                 query_dps = []
+                non_cache_typed_query_object_ids = []
 
             # If we found cached items before, use them to complete the query
             # objects.
             if use_cache and query_cache_objects_dps:
                 if len(query_dps) > 0:
                     query_dps = robjects.r.c(query_dps, query_cache_objects_dps)
+                    typed_query_object_ids = non_cache_typed_query_object_ids + \
+                            cache_typed_query_object_ids
                 else:
                     query_dps = query_cache_objects_dps
-
         elif query_type == 'pointcloud':
             typed_query_object_ids = list(map(
                     lambda x: "pointcloud-{}".format(x), query_object_ids))
@@ -927,19 +932,24 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                         list(base.names(query_cache_objects_dps))))
                 query_cache_objects_dps = rnat.subset_neuronlist(
                         query_cache_objects_dps, robjects.StrVector(non_na_ids))
+                cache_typed_query_object_ids = list(map(
+                        lambda x: "pointcloud-{}".format(x),
+                        list(base.names(query_cache_objects_dps))))
                 effective_query_object_ids = list(filter(
                         # Only allow neurons that are not part of the cache
                         lambda x: query_cache_objects_dps.rx2(str(x)) == robjects.NULL,
                         query_object_ids))
+                query_cache_objects_dps.names = robjects.StrVector(cache_typed_query_object_ids)
                 cache_hits = n_query_objects - len(effective_query_object_ids)
             else:
+                cache_typed_query_object_ids = []
                 effective_query_object_ids = query_object_ids
 
             logger.debug('Fetching {} query point clouds ({} cache hits)'.format(
                     len(effective_query_object_ids), cache_hits))
             if effective_query_object_ids:
                 pointclouds = []
-                for pcid in query_object_ids:
+                for pcid in effective_query_object_ids:
                     target_pointcloud = PointCloud.objects.prefetch_related('points').get(pk=pcid)
                     points_flat = list(chain.from_iterable(
                             (p.location_x, p.location_y, p.location_z)
@@ -950,7 +960,9 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     pointclouds.append(point_data)
 
                 query_objects = rnat.as_neuronlist(pointclouds)
-                query_objects.names = robjects.StrVector(typed_query_object_ids)
+                non_cache_typed_query_object_ids = list(map(
+                        lambda x: "pointcloud-{}".format(x), effective_query_object_ids))
+                query_objects.names = robjects.StrVector(non_cache_typed_query_object_ids)
 
                 logger.debug('Computing query pointcloud stats')
                 query_dps = rnat.dotprops(query_objects.ro / 1e3, **{
@@ -959,7 +971,9 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                             '.progress': 'none',
                             'OmitFailures': omit_failures,
                         })
+                non_cache_typed_query_object_ids = list(base.names(query_dps))
             else:
+                non_cache_typed_query_object_ids = []
                 query_dps = []
 
             # If we found cached items before, use them to complete the query
@@ -967,6 +981,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             if use_cache and query_cache_objects_dps:
                 if len(query_dps) > 0:
                     query_dps = robjects.r.c(query_dps, query_cache_objects_dps)
+                    typed_query_object_ids = non_cache_typed_query_object_ids + \
+                            cache_typed_query_object_ids
                 else:
                     query_dps = query_cache_objects_dps
 
@@ -997,6 +1013,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                         '.progress': 'none',
                         'OmitFailures': omit_failures,
                     })
+            typed_query_object_ids = list(base.names(query_dps))
         else:
             raise ValueError("Unknown query type: {}".format(query_type))
 
@@ -1018,6 +1035,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     target_cache_objects_dps = skeleton_cache.rx(target_object_id_str)
                     non_na_ids = list(filter(lambda x: type(x) == str,
                             list(base.names(target_cache_objects_dps))))
+                    cache_typed_target_object_ids = non_na_ids
                     target_cache_objects_dps = rnat.subset_neuronlist(
                             target_cache_objects_dps, robjects.StrVector(non_na_ids))
                     effective_target_object_ids = list(filter(
@@ -1026,6 +1044,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                             target_object_ids))
                     cache_hits = n_target_objects - len(effective_target_object_ids)
                 else:
+                    cache_typed_target_object_ids = []
                     effective_target_object_ids = target_object_ids
 
                 logger.debug('Fetching {} target skeletons ({} cache hits)'.format(
@@ -1054,14 +1073,18 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                                 '.progress': 'none',
                                 'OmitFailures': omit_failures,
                             })
+                    non_cache_typed_target_object_ids = list(base.names(target_dps))
                 else:
                     target_dps = []
+                    non_cache_typed_target_object_ids = []
 
                 # If we found cached items before, use them to complete the target
                 # objects.
                 if use_cache and target_cache_objects_dps:
                     if len(target_dps) > 0:
                         target_dps = robjects.r.c(target_dps, target_cache_objects_dps)
+                        typed_target_object_ids = non_cache_typed_target_object_ids + \
+                                cache_typed_target_object_ids
                     else:
                         target_dps = target_cache_objects_dps
             elif target_type == 'pointcloud':
@@ -1071,7 +1094,6 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 cache_hits = 0
                 target_cache_objects_dps = None
                 n_target_objects = len(target_object_ids)
-                numeric_target_object_ids = target_object_ids
                 if use_cache and skeleton_cache:
                     # Find all skeleton IDs that aren't part of the cache
                     # TODO: There must be a simler way to extract non-NA values only
@@ -1081,19 +1103,24 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                             list(base.names(target_cache_objects_dps))))
                     target_cache_objects_dps = rnat.subset_neuronlist(
                             target_cache_objects_dps, robjects.StrVector(non_na_ids))
+                    cache_typed_target_object_ids = list(map(
+                            lambda x: "pointcloud-{}".format(x),
+                            list(base.names(target_cache_objects_dps))))
                     effective_target_object_ids = list(filter(
                             # Only allow neurons that are not part of the cache
                             lambda x: target_cache_objects_dps.rx2(str(x)) == robjects.NULL,
                             target_object_ids))
+                    target_cache_objects_dps.names = robjects.StrVector(cache_typed_target_object_ids)
                     cache_hits = n_target_objects - len(effective_target_object_ids)
                 else:
+                    cache_typed_target_object_ids = []
                     effective_target_object_ids = target_object_ids
 
                 logger.debug('Fetching {} target point clouds ({} cache hits)'.format(
                         len(effective_target_object_ids), cache_hits))
                 if effective_target_object_ids:
                     pointclouds = []
-                    for pcid in numeric_target_object_ids:
+                    for pcid in effective_target_object_ids:
                         target_pointcloud = PointCloud.objects.prefetch_related('points').get(pk=pcid)
                         points_flat = list(chain.from_iterable(
                                 (p.location_x, p.location_y, p.location_z)
@@ -1104,7 +1131,9 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                         pointclouds.append(point_data)
 
                     target_objects = rnat.as_neuronlist(pointclouds)
-                    target_objects.names = robjects.StrVector(typed_target_object_ids)
+                    non_cache_typed_target_object_ids = list(map(
+                            lambda x: "pointcloud-{}".format(x), effective_target_object_ids))
+                    target_objects.names = robjects.StrVector(non_cache_typed_target_object_ids)
 
                     logger.debug('Computing target pointcloud stats')
                     target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
@@ -1113,7 +1142,9 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                                 '.progress': 'none',
                                 'OmitFailures': omit_failures,
                             })
+                    non_cache_typed_target_object_ids = list(base.names(target_dps))
                 else:
+                    non_cache_typed_target_object_ids = []
                     target_dps = []
 
                 # If we found cached items before, use them to complete the target
@@ -1121,8 +1152,11 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 if use_cache and target_cache_objects_dps:
                     if len(target_dps) > 0:
                         target_dps = robjects.r.c(target_dps, target_cache_objects_dps)
+                        typed_target_object_ids = non_cache_typed_target_object_ids + \
+                                cache_typed_target_object_ids
                     else:
                         target_dps = target_cache_objects_dps
+                        typed_target_object_ids = cache_typed_target_object_ids
             elif target_type == 'pointset':
                 typed_target_object_ids = list(map(
                         lambda x: "pointset-{}".format(x), target_object_ids))
@@ -1146,6 +1180,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                             '.progress': 'none',
                             'OmitFailures': omit_failures,
                         })
+                typed_target_object_ids = list(base.names(target_dps))
             else:
                 raise ValueError("Unknown target type: {}".format(target_type))
 
@@ -1175,6 +1210,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
         if normalized == 'mean':
             all_objects = rnat.as_neuronlist(robjects.r.c(query_dps, target_dps))
+            all_objects.names = robjects.StrVector(list(base.names(query_dps)) +
+                    list(base.names(target_dps)))
             all_scores = rnblast.NeuriteBlast(all_objects, all_objects, **nblast_params)
             scores = rnblast.sub_score_mat(typed_query_object_ids,
                     typed_target_object_ids, **{

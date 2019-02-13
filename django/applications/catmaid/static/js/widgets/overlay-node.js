@@ -1874,6 +1874,7 @@
         var node = this.node;
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           e.preventDefault();
+          e.stopPropagation();
           catmaidTracingOverlay.activateNode(node);
           catmaidTracingOverlay.splitSkeleton(node.id);
         }

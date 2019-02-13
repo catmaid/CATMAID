@@ -827,8 +827,12 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         if query_type == target_type and remove_target_duplicates:
             target_object_ids = list(set(target_object_ids) - set(query_object_ids))
 
+        # The query and target objects that need to be loaded
         effective_query_object_ids = query_object_ids
         effective_target_object_ids = target_object_ids
+
+        typed_query_object_ids = query_object_ids
+        typed_target_object_ids = target_object_ids
 
         skeleton_cache = None
         pointcloud_cache = None
@@ -908,6 +912,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     query_dps = query_cache_objects_dps
 
         elif query_type == 'pointcloud':
+            typed_query_object_ids = list(map(
+                    lambda x: "pointcloud-{}".format(x), query_object_ids))
             # Check cache, if enabled
             cache_hits = 0
             query_cache_objects_dps = None
@@ -944,9 +950,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     pointclouds.append(point_data)
 
                 query_objects = rnat.as_neuronlist(pointclouds)
-                effective_query_object_ids = list(map(
-                        lambda x: "pointcloud-{}".format(x), query_object_ids))
-                query_objects.names = robjects.StrVector(effective_query_object_ids)
+                query_objects.names = robjects.StrVector(typed_query_object_ids)
 
                 logger.debug('Computing query pointcloud stats')
                 query_dps = rnat.dotprops(query_objects.ro / 1e3, **{
@@ -967,6 +971,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     query_dps = query_cache_objects_dps
 
         elif query_type == 'pointset':
+            typed_query_object_ids = list(map(
+                    lambda x: "pointset-{}".format(x), query_object_ids))
             # Check cache, if enabled
             if use_cache and pointset_cache:
                 pass
@@ -981,8 +987,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 pointsets.append(point_data)
 
             query_objects = rnat.as_neuronlist(pointsets)
-            effective_query_object_ids = list(map(
-                    lambda x: "pointset-{}".format(x), query_object_ids))
+            effective_query_object_ids = typed_query_object_ids
             query_objects.names = robjects.StrVector(effective_query_object_ids)
 
             logger.debug('Computing query pointset stats')
@@ -1060,6 +1065,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     else:
                         target_dps = target_cache_objects_dps
             elif target_type == 'pointcloud':
+                typed_target_object_ids = list(map(
+                        lambda x: "pointcloud-{}".format(x), target_object_ids))
                 # Check cache, if enabled
                 cache_hits = 0
                 target_cache_objects_dps = None
@@ -1097,9 +1104,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                         pointclouds.append(point_data)
 
                     target_objects = rnat.as_neuronlist(pointclouds)
-                    prefix_target_object_ids = list(map(
-                            lambda x: "pointcloud-{}".format(x), target_object_ids))
-                    target_objects.names = robjects.StrVector(prefix_target_object_ids)
+                    target_objects.names = robjects.StrVector(typed_target_object_ids)
 
                     logger.debug('Computing target pointcloud stats')
                     target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
@@ -1119,6 +1124,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     else:
                         target_dps = target_cache_objects_dps
             elif target_type == 'pointset':
+                typed_target_object_ids = list(map(
+                        lambda x: "pointset-{}".format(x), target_object_ids))
                 logger.debug('Fetching {} target point sets'.format(len(target_object_ids)))
                 pointsets = []
                 for psid in target_object_ids:
@@ -1130,9 +1137,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     pointsets.append(point_data)
 
                 target_objects = rnat.as_neuronlist(pointsets)
-                effective_target_object_ids = list(map(
-                        lambda x: "pointset-{}".format(x), target_object_ids))
-                target_objects.names = robjects.StrVector(effective_target_object_ids)
+                target_objects.names = robjects.StrVector(typed_target_object_ids)
 
                 logger.debug('Computing target pointset stats')
                 target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
@@ -1169,10 +1174,10 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         nblast_params['normalised'] = normalize_initial_score
 
         if normalized == 'mean':
-            all_objects = robjects.r.c(query_dps, target_dps)
+            all_objects = rnat.as_neuronlist(robjects.r.c(query_dps, target_dps))
             all_scores = rnblast.NeuriteBlast(all_objects, all_objects, **nblast_params)
-            scores = rnblast.sub_score_mat(query_object_ids,
-                    target_object_ids, **{
+            scores = rnblast.sub_score_mat(typed_query_object_ids,
+                    typed_target_object_ids, **{
                         'scoremat': all_scores,
                         'normalisation': 'mean',
                     })
@@ -1190,26 +1195,33 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 similarity = [numpy.asarray(scores).tolist()]
             else:
                 similarity = [[s] for s in numpy.asarray(scores).tolist()]
+
+            column_names = typed_query_object_ids
+            row_names = typed_target_object_ids
         else:
             # Scores are returned with query skeletons as columns, but we want them
             # as rows, because it matches our expected queries more. Therefore
             # we have to transpose it using the 't()' R function.
             similarity = numpy.asarray(robjects.r['t'](scores)).tolist()
 
+            column_names = scores.colnames
+            row_names = scores.rownames
 
-        # Collect IDs of query and target objects effectively in use.
+        # Collect IDs of query and target objects effectively in use. Note that
+        # columns and rows are still in R's format (query = columns, target =
+        # rows) and have not yet been transposed.
         if query_type == 'skeleton':
-            query_object_ids_in_use = list(map(int, scores.colnames))
+            query_object_ids_in_use = list(map(int, column_names))
         elif query_type == 'pointcloud':
-            query_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointcloud-')), scores.colnames))
+            query_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointcloud-')), column_names))
         elif query_type == 'pointset':
-            query_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointset-')), scores.colnames))
+            query_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointset-')), column_names))
         if target_type == 'skeleton':
-            target_object_ids_in_use = list(map(int, scores.rownames))
+            target_object_ids_in_use = list(map(int, row_names))
         elif target_type == 'pointcloud':
-            target_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointcloud-')), scores.rownames))
+            target_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointcloud-')), row_names))
         elif target_type == 'pointset':
-            target_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointset-')), scores.rownames))
+            target_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointset-')), row_names))
 
         if not similarity:
             raise ValueError("Could not compute similarity")

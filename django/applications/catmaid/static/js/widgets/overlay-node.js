@@ -1112,6 +1112,7 @@
         });
         c.on('pointerupoutside', function (event) {
           var e = event.data.originalEvent;
+          e.stopPropagation();
           e.preventDefault();
           if (onclickHandler) { onclickHandler(); }
           return true;
@@ -1511,6 +1512,7 @@
        */
       var mc_click = function(event) {
         var e = event.data.originalEvent;
+        e.stopPropagation();
         e.preventDefault();
         var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(this.node.overlayGlobals.skeletonElements);
         if (catmaidTracingOverlay.ensureFocused()) {
@@ -1804,6 +1806,7 @@
 
       var connector_mc_click = function(event) {
         var e = event.data.originalEvent;
+        e.stopPropagation();
         e.preventDefault();
         var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(this.node.overlayGlobals.skeletonElements);
         if (catmaidTracingOverlay.ensureFocused()) {

@@ -2248,7 +2248,7 @@ var WindowMaker = new function()
   };
 
   /**
-   * Return a widget and its key for the passed in window if no wiget is known
+   * Return a widget and its key for the passed in window if no widget is known
    * for the window.
    */
   this.getWidgetKeyForWindow = function(win) {

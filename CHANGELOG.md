@@ -225,6 +225,10 @@ Miscellaneous:
 - Neuron search: no duplicate entries are shown anymore, which could result e.g.
   when sub-annotations where allowed.
 
+- Neuron similarity: when showing result skeletons in 3D, skeletons are now
+  appended to the Selection Table of a 3D Viewer, rather than the 3D Viewer
+  directly.
+
 
 ## 2018.11.09
 

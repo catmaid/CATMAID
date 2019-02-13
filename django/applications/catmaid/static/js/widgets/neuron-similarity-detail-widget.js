@@ -515,7 +515,26 @@
 
   NeuronSimilarityDetailWidget.showAllSimilarityResults = function(similarity,
       matchesOnly, showTopN, pointcloudSample) {
-    let widget3d = WindowMaker.create('3d-viewer').widget;
+    let widget3dInfo = WindowMaker.create('3d-viewer');
+    let widget3d = widget3dInfo.widget;
+    // Try to find the Selection Table that has been opened along with the 3D
+    // Viewer. If it can't be found, the 3D Viewer will be used to add
+    // skeletons.
+    let splitNode = widget3dInfo.window.getParent();
+    let skeletonTarget = widget3d;
+    if (splitNode) {
+      let children = splitNode.getChildren();
+      for (let i=0; i<children.length; ++i) {
+        let win = children[i];
+        if (win === widget3dInfo.window) continue;
+        let widgetInfo = CATMAID.WindowMaker.getWidgetKeyForWindow(win);
+        if (widgetInfo && widgetInfo.widget instanceof CATMAID.SelectionTable) {
+          skeletonTarget = widgetInfo.widget;
+          break;
+        }
+      }
+    }
+
     widget3d.options.shading_method = 'none';
     widget3d.options.color_method = 'none';
     widget3d.options.pointcloud_sample = pointcloudSample || 1.0;
@@ -525,7 +544,7 @@
         o[s] = new CATMAID.SkeletonModel(s);
         return o;
       }, {});
-      widget3d.append(models);
+      skeletonTarget.append(models);
     } else if (similarity.query_type === 'pointcloud') {
       for (let i=0; i<similarity.query_objects.length; ++i) {
         let pointCloudId = similarity.query_objects[i];
@@ -569,7 +588,7 @@
         }
         return o;
       }, {});
-      widget3d.append(models);
+      skeletonTarget.append(models);
     } else if (similarity.target_type === 'pointcloud') {
       let nAddedPointClouds = 0;
       for (let i=0; i<sortedTargetObjects.length; ++i) {

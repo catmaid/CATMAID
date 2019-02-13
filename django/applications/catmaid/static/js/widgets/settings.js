@@ -2099,6 +2099,11 @@
             SETTINGS_SCOPE)
           .then(function() {
             updateComponentList();
+            newRemoteNameInput.find('input').val('');
+            newRemoteNameUrlInput.find('input').val('');
+            newRemoteApiKeyInput.find('input').val('');
+            newRemoteAuthUserInput.find('input').val('');
+            newRemoteAuthPassInput.find('input').val('');
           })
           .catch(CATMAID.handleError);
       });

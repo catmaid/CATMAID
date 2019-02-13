@@ -3051,7 +3051,12 @@
           ]
         }).on('click', 'a[data-action=delete-transformation]', function() {
           let tr = $(this).closest('tr');
-          let data = existingDTDataTable.row(tr).data();
+          let row = existingDTDataTable.row(tr);
+          let data = row.data();
+          if (!confirm("Are you sure you want to delete transformation " +
+              (row.index() + 1) + "?")) {
+            return;
+          }
           widget.removeLandmarkTransformation(data);
           widget.update();
         })

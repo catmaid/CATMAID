@@ -186,6 +186,13 @@ Miscellaneous:
 - Connectivity widget: the new "List links' button will open a Connector List
   with all links of the selected neurons.
 
+- Selection table: the new checkbox "Link visibility" allows to change the
+  behavior of the visibility checkboxes. So far the pre/post/text/meta
+  select-all controls were only affecting the respective visibility options of
+  visible/selected skeletons (default). With unlinked visibility
+  pre/post/text/meta can also be controlled for all neurons, regardless of their
+  visibility. This allows e.g. to only show synapses, but no skeletons.
+
 - Boss databases can now be used as tile source type so that image data is
   loaded from them. More details: https://docs.theboss.io/docs/image.
 

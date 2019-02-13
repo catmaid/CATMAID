@@ -33,6 +33,7 @@
     this.appendWithBatchColor = false;
     this.gui = new this.GUI(this);
     this.orderLocked = false;
+    this.linkVisibilities = true;
 
     // Listen to change events of the active node and skeletons
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
@@ -42,6 +43,10 @@
     CATMAID.Annotations.on(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
         this.handleAnnotationUpdate, this);
   };
+
+  // Skeleton properties that are referenced at various locations.
+  SelectionTable.KnownVisibilities = ['pre', 'post', 'text', 'meta'];
+  SelectionTable.KnownVisibilityFields = ['pre_visible', 'post_visible', 'text_visible', 'meta_visible'];
 
   SelectionTable._lastFocused = null; // Static reference to last focused instance
 
@@ -193,6 +198,21 @@
         lockOrderSettigs.appendChild(document.createTextNode(
               'Lock order'));
         buttons.appendChild(lockOrderSettigs);
+
+        var linkVizSettigsCb = document.createElement('input');
+        linkVizSettigsCb.setAttribute('type', 'checkbox');
+        linkVizSettigsCb.onchange = function() {
+          self.linkVisibilities = this.checked;
+        };
+        var linkVizSettigs = document.createElement('label');
+        linkVizSettigs.setAttribute('title', 'If unchecked, pre/post/text/meta ' +
+            'visibility can also be controlled for all skeletons regardless of ' +
+            'their visibility.');
+        linkVizSettigs.appendChild(linkVizSettigsCb);
+        linkVizSettigsCb.checked = this.linkVisibilities;
+        linkVizSettigs.appendChild(document.createTextNode(
+              'Link visibility'));
+        buttons.appendChild(linkVizSettigs);
       },
       createContent: function(content) {
         var self = this;
@@ -569,13 +589,23 @@
     this.all_visible = !this.all_visible;
     var updated = {};
     // Update table header
-    ['pre', 'post', 'text', 'meta'].forEach(function(suffix, i) {
-      if (2 === i && this.all_visible) return; // don't turn on text
-      $('#selection-table-show-all-' + suffix + this.widgetID).prop('checked', this.all_visible);
-    }, this);
+    if (this.linkVisibilities) {
+      SelectionTable.KnownVisibilities.forEach(function(suffix, i) {
+        if (2 === i && this.all_visible) return; // don't turn on text
+        this.all_items_visible[suffix] = this.all_visible;
+        $('#selection-table-show-all-' + suffix + this.widgetID).prop('checked',
+            this.all_items_visible[suffix]);
+      }, this);
+    }
     // Update models
-    this.filteredSkeletons(false).forEach(function(skeleton) {
+    this.filteredSkeletons().forEach(function(skeleton) {
         skeleton.setVisible(this.all_visible);
+        if (!this.linkVisibilities) {
+          for (let i=0; i<SelectionTable.KnownVisibilities.length; ++i) {
+            skeleton[SelectionTable.KnownVisibilityFields[i]] =
+                this.all_items_visible[SelectionTable.KnownVisibilities[i]];
+          }
+        }
         updated[skeleton.id] = skeleton.clone();
       }, this);
     if (!CATMAID.tools.isEmpty(updated)) {
@@ -591,7 +621,7 @@
   SelectionTable.prototype.toggleAllKeyUI = function(type) {
     var state = !this.all_items_visible[type];
     this.all_items_visible[type] = state;
-    var skeletons = this.filteredSkeletons(true);
+    var skeletons = this.filteredSkeletons(this.linkVisibilities);
     var key = type + '_visible';
     skeletons.forEach(function(skeleton) {
       skeleton[key] = state;
@@ -617,7 +647,7 @@
 
     $('#selection-table-show-all' + this.widgetID).click(this.toggleSelectAllSkeletonsUI.bind(this));
 
-    ['pre', 'post', 'text', 'meta'].forEach(function(suffix) {
+    SelectionTable.KnownVisibilities.forEach(function(suffix) {
       $('#selection-table-show-all-' + suffix + this.widgetID).click(this.toggleAllKeyUI.bind(this, suffix));
     }, this);
 

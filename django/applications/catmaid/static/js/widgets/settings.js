@@ -1997,7 +1997,7 @@
 
       // Remove selected remote instance
       var removeButton = $('<button/>').text('Remove instance reference').click(function() {
-        if (componentList.selectedIndex < componentList.length - 1) {
+        if (componentList.selectedIndex < componentList.length) {
           let newList = CATMAID.Client.Settings[SETTINGS_SCOPE].remote_catmaid_instances;
           newList.splice(componentList.selectedIndex, 1);
           CATMAID.Client.Settings.set(

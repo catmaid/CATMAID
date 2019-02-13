@@ -3151,16 +3151,6 @@
                   "e.g. retrieve tracing data.", 'cm-top');
                 $(newDTForm).append(mappingList);
 
-                // Remove selected remote instance
-                var removeButton = $('<button/>').text('Remove mapping').click(function() {
-                  if (componentList.selectedIndex < componentList.length) {
-                    activeMappings.splice(componentList.selectedIndex, 1);
-                    updateComponentList();
-                  }
-                });
-                $(newDTForm).append(CATMAID.DOM.createLabeledControl('', removeButton, "Remove " +
-                    "the mapping selected in the list above."));
-
                 // Add selected mapping
                 var addMappingButton = $('<button/>').text('Add new mapping').click(function() {
                   if (!fromGroup) {
@@ -3194,6 +3184,16 @@
                 });
                 $(newDTForm).append(CATMAID.DOM.createLabeledControl('', addMappingButton,
                     'Add the currently selected source group and target group as mapping.'));
+
+                // Remove selected remote instance
+                var removeButton = $('<button/>').text('Remove mapping').click(function() {
+                  if (componentList.selectedIndex < componentList.length) {
+                    activeMappings.splice(componentList.selectedIndex, 1);
+                    updateComponentList();
+                  }
+                });
+                $(newDTForm).append(CATMAID.DOM.createLabeledControl('', removeButton, "Remove " +
+                    "the mapping selected in the list above."));
 
                 // Remote instance list update
                 var updateComponentList = function() {

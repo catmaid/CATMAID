@@ -3082,7 +3082,9 @@
             // Fetch projects from remote
             return widget.updateSourceLandmarksAndGroups(api, sourceProject)
               .then(results => {
-                return widget.sourceLandmarkGroups.map(p => {
+                return widget.sourceLandmarkGroups
+                  .sort((a,b) => CATMAID.tools.compareStrings(a.name, b.name))
+                  .map(p => {
                   return {
                     title: p.name,
                     value: p.id,
@@ -3123,12 +3125,14 @@
         widget.updateLandmarksAndGroups()
             .then(function(result) {
               let groups = result[1];
-              groupOptions = groups.map(function(g) {
-                return {
-                  title: g.name,
-                  value: g.id
-                };
-              });
+              groupOptions = groups
+                  .sort((a,b) => CATMAID.tools.compareStrings(a.name, b.name))
+                  .map(function(g) {
+                    return {
+                      title: g.name,
+                      value: g.id
+                    };
+                  });
 
               updateSourceGroupList();
               $(newDTForm).append(sourceGroupWrapper);

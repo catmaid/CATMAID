@@ -97,8 +97,8 @@ well::
   CATMAID_HTTP_AUTH_USER = "<http-auth-user>"
   CATMAID_HTTP_AUTH_PASS = "<http-auth-password>"
 
-This is not ideal and likely to change in the future, but for this is needed.
-For some operations CATMAID has R connect to itself through HTTP.
+This is not ideal and likely to change in the future, but for now this is
+needed.  For some operations CATMAID has R connect to itself through HTTP.
 
 R can execute some functionality in parallel (e.g. computing NBLAST scores). The
 number of parallel processes is set to one by default, but can optionally be

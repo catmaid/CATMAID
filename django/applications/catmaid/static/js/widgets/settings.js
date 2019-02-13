@@ -1998,7 +1998,7 @@
       // Remove selected remote instance
       var removeButton = $('<button/>').text('Remove instance reference').click(function() {
         if (componentList.selectedIndex < componentList.length) {
-          let newList = CATMAID.Client.Settings[SETTINGS_SCOPE].remote_catmaid_instances;
+          let newList = CATMAID.tools.deepCopy(CATMAID.Client.Settings[SETTINGS_SCOPE].remote_catmaid_instances);
           newList.splice(componentList.selectedIndex, 1);
           CATMAID.Client.Settings.set(
               'remote_catmaid_instances',
@@ -2091,7 +2091,7 @@
           http_auth_pass: newRemoteAuthPass,
         };
 
-        let newList = CATMAID.Client.Settings[SETTINGS_SCOPE].remote_catmaid_instances;
+        let newList = CATMAID.tools.deepCopy(CATMAID.Client.Settings[SETTINGS_SCOPE].remote_catmaid_instances);
         newList.push(newRemote);
         CATMAID.Client.Settings.set(
             'remote_catmaid_instances',

@@ -1253,6 +1253,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             query_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointcloud-')), column_names))
         elif query_type == 'pointset':
             query_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointset-')), column_names))
+
         if target_type == 'skeleton':
             target_object_ids_in_use = list(map(int, row_names))
         elif target_type == 'pointcloud':

@@ -679,9 +679,9 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
             similarity.status = 'complete'
             similarity.scoring = scoring_info['similarity']
             if scoring_info['query_object_ids']:
-                similarity.query_object_ids = scoring_info['query_object_ids']
+                similarity.query_objects = scoring_info['query_object_ids']
             if scoring_info['target_object_ids']:
-                similarity.target_object_ids = scoring_info['target_object_ids']
+                similarity.target_objects = scoring_info['target_object_ids']
             similarity.save()
 
         msg_user(user_id, 'similarity-update', {

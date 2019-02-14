@@ -212,7 +212,7 @@
       }
     }
     if (similarity.query_type === 'skeleton') {
-      if (similarity.query_object) {
+      if (similarity.query_objects) {
         similarity.query_objects.reduce(function(o, to) {
           o[to] = new CATMAID.SkeletonModel(to);
           return o;

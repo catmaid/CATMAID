@@ -537,7 +537,6 @@ class PointCloudDetail(APIView):
         """
         with_images = get_request_bool(request.query_params, 'with_images', False)
         with_points = get_request_bool(request.query_params, 'with_points', False)
-        simple = get_request_bool(request.query_params, 'simple', False)
         sample_ratio = float(request.query_params.get('sample_ratio', '1.0'))
         simple = get_request_bool(request.query_params, 'simple', False)
 

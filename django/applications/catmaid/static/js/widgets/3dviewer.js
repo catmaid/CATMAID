@@ -45,6 +45,8 @@
     this.loadedLandmarkTransforms = {};
     // Map loaded point cloud IDs to an array of Three.js meshes
     this.loadedPointClouds = {};
+    // Map loaded point set IDs to an array of Three.js meshes
+    this.loadedPointSets = {};
     // Current set of filtered connectors (if any)
     this.filteredConnectors = null;
 
@@ -2873,6 +2875,52 @@
       }
     }
     this.space.render();
+  };
+
+  /**
+   * Show or hide a stored point set with a given ID.
+   */
+  WebGLApplication.prototype.showPointSet = function(pointSetId, visible, color) {
+    var existingPointSet = this.loadedPointSets[pointSetId];
+    if (visible) {
+      // Bail out if the landmarkGroup in question is already visible
+      if (existingPointSet) {
+        CATMAID.warn("Point set \"" + pointSetId + "\" is already visible.");
+        return;
+      }
+
+      CATMAID.Pointset.get(project.id, pointSetId, true)
+        .then((function(pointSet) {
+          // Create point cloud particles
+          let locations = pointSet.points;
+          let pointSetMaterial = this.options.createPointSetMaterial(color);
+          for (var j=0, jmax=locations.length; j<jmax; ++j) {
+            let loc = locations[j];
+            let particle = new THREE.Sprite(pointSetMaterial);
+            particle.position.set(loc[1], loc[2], loc[3]);
+            particle.scale.x = particle.scale.y = this.options.pointcloud_scale;
+            meshes.push(particle);
+          }
+          return meshes;
+        }).bind(this))
+        .then((function(meshes) {
+          for (let j=0, jmax=meshes.length; j<jmax; ++j) {
+            this.space.scene.add(meshes[j]);
+          }
+
+          // Store mesh reference
+          this.loadedPointSets[pointSetId] = meshes;
+          this.space.render();
+        }).bind(this))
+        .catch(CATMAID.handleError);
+    } else if (existingPointSet) {
+      // Remove landmarkGroup
+      existingPointSet.forEach(function(v) {
+        this.space.scene.remove(v);
+      }, this);
+      delete this.loadedPointSets[pointSetId];
+      this.space.render();
+    }
   };
 
   /** Defines the properties of the 3d space and also its static members like the bounding box and the missing sections. */

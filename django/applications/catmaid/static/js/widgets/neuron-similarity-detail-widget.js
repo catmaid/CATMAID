@@ -18,6 +18,8 @@
     this.similarity = null;
     // A dicrionary of point clouds
     this.pointClouds = new Map();
+    // A dicrionary of point sets
+    this.pointSets = new Map();
     // Whether or not only positive scores (i.e. matches) should be displayed.
     this.onlyPositiveScores = true;
     // Show a top N of result matches
@@ -237,8 +239,8 @@
     let tbody = table.appendChild(document.createElement('tbody'));
 
     NeuronSimilarityDetailWidget.createSimilarityTable(this.similarity,
-        this.onlyPositiveScores, this.showTopN, this.pointClouds, table,
-        this.pointCloudDisplaySample);
+        this.onlyPositiveScores, this.showTopN, this.pointClouds,
+        this.pointSets, table, this.pointCloudDisplaySample);
 
     let invQ = this.similarity.invalid_query_objects;
     let invT = this.similarity.invalid_target_objects;
@@ -255,7 +257,7 @@
   };
 
   NeuronSimilarityDetailWidget.createSimilarityTable = function(similarity,
-      matchesOnly, showTopN, pointClouds, table, pointcloudSample) {
+      matchesOnly, showTopN, pointClouds, pointSets, table, pointcloudSample) {
     if (!table) {
       table = document.createElement('table');
     }
@@ -269,6 +271,11 @@
       getQueryName = function(element) {
         let pc = pointClouds.get(element);
         return pc ? pc.name : (element + ' (not found)');
+      };
+    } else if (similarity.query_type === 'pointset') {
+      getQueryName = function(element) {
+        let ps = pointClouds.get(element);
+        return ps ? ps.name : (element + ' (not found)');
       };
     } else {
       getQueryName = function(element) {
@@ -285,6 +292,11 @@
       getTargetName = function(element) {
         let pc = pointClouds.get(element);
         return pc ? pc.name : (element + ' (not found)');
+      };
+    } else if (similarity.target_type === 'pointset') {
+      getTargetName = function(element) {
+        let ps = pointSets.get(element);
+        return ps ? ps.name : (element + ' (not found)');
       };
     } else {
       getTargetName = function(element) {
@@ -310,48 +322,66 @@
       return [qskid, sortedMatches];
     });
 
-    // Get detailed point cloud information
+    // Get detailed point cloud and point set information
     let referencedPointclouds = [];
+    let referencedPointsets = [];
     if (similarity) {
-      let workingSet;
-      if (similarity.query_type === 'pointcloud') {
-        workingSet = new Set(similarity.query_objects.slice());
-      }
-      if (similarity.target_type === 'pointcloud') {
-        workingSet = dataAboveZero.reduce(function(a, p) {
-          let topNElements = Math.min(showTopN, p[1].length);
-          for (let i=0; i<topNElements; ++i) {
-            let entry = p[1][i];
-            a.add(entry[0]);
-          }
-          return a;
-        }, workingSet ? workingSet : new Set());
-      }
-      if (workingSet) {
-        referencedPointclouds = Array.from(workingSet);
-      }
+      let getReferncedObjectIds = function (type) {
+        let workingset;
+        if (similarity.query_type === type) {
+          workingset = new Set(similarity.query_objects.slice());
+        }
+        if (similarity.target_type === type) {
+          workingset = dataAboveZero.reduce(function(a, p) {
+            let topNElements = Math.min(showTopN, p[1].length);
+            for (let i=0; i<topNElements; ++i) {
+              let entry = p[1][i];
+              a.add(entry[0]);
+            }
+            return a;
+          }, workingset ? workingset : new Set());
+        }
+        return workingset ? Array.from(workingset) : [];
+      };
+
+      referencedPointclouds = getReferncedObjectIds('pointcloud');
+      referencedPointsets = getReferncedObjectIds('pointset');
     }
 
-    // Find unknown point clouds
-    let missingPointClouds = referencedPointclouds.reduce(function(m, pc) {
-      if (!pointClouds.has(pc)) {
-        m.push(pc);
-      }
-      return m;
-    }, []);
+    // Find unknown referenced objects
+    let getMissingReferencedObjects = function (referencedObjects, index) {
+      return referencedObjects.reduce(function(m, o) {
+        if (!index.has(o)) {
+          m.push(o);
+        }
+        return m;
+      }, []);
+    };
 
-    let prepare;
+    let missingPointClouds = getMissingReferencedObjects(referencedPointclouds, pointClouds);
+    let missingPointSets = getMissingReferencedObjects(referencedPointsets, pointSets);
+
+    let preparePromises = [];
     if (missingPointClouds.length > 0) {
-      prepare = CATMAID.Pointcloud.list(project.id, false, true,
+      preparePromises.push(CATMAID.Pointcloud.list(project.id, false, true,
           missingPointClouds)
         .then(function(result) {
           result.forEach(function(e) {
             pointClouds.set(e.id, e);
           });
-        });
-    } else {
-      prepare = Promise.resolve();
+        }));
     }
+    if (missingPointSets.length > 0) {
+      preparePromises.push(CATMAID.Pointset.list(project.id, false,
+          missingPointClouds)
+        .then(function(result) {
+          result.forEach(function(e) {
+            pointClouds.set(e.id, e);
+          });
+        }));
+    }
+
+    let prepare = Promise.all(preparePromises);
 
     let nTargetObjects = similarity.target_objects.length;
     let nTargetObjectsToAdd = showTopN ? Math.min(showTopN, nTargetObjects) : nTargetObjects;

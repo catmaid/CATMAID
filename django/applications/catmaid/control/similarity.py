@@ -76,6 +76,7 @@ def serialize_similarity(similarity):
         'id': similarity.id,
         'user_id': similarity.user_id,
         'creation_time': similarity.creation_time,
+        'edition_time': similarity.edition_time,
         'project_id': similarity.project_id,
         'config_id': similarity.config_id,
         'name': similarity.name,

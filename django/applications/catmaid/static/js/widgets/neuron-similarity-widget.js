@@ -1087,8 +1087,8 @@
               orderable: true,
               class: 'cm-center',
             }, {
-              data: "creation_time",
-              title: "Created on (UTC)",
+              data: "edition_time",
+              title: "Last update (UTC)",
               class: "cm-center",
               searchable: true,
               orderable: true,

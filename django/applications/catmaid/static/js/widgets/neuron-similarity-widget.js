@@ -1081,6 +1081,11 @@
               title: "Status",
               orderable: true,
               class: 'cm-center',
+              render: function(data, type, row, meta) {
+                let status = row.detailed_status && row.detailed_status.length > 0 ?
+                    row.detailed_status : 'No details availale';
+                return `<span title="${status}">${data}</a>`;
+              }
             }, {
               data: "config_id",
               title: "Config",
@@ -1104,6 +1109,14 @@
                   return data;
                 }
               }
+            }, {
+              data: "computation_time",
+              title: "Runtime",
+              orderable: true,
+              class: 'cm-center',
+              render: function(data, type, row, meta) {
+                return data ? (Math.round(data) + 's') : 'N/A';
+              },
             }, {
               data: "use_alpha",
               title: "Alpha",

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
+import time
 
 from celery.task import task
 from itertools import chain
@@ -88,6 +89,10 @@ def serialize_similarity(similarity):
         'target_type': similarity.target_type_id,
         'use_alpha': similarity.use_alpha,
         'normalized': similarity.normalized,
+        'detailed_status': similarity.detailed_status,
+        'computation_time': similarity.computation_time,
+        'invalid_query_objects': similarity.invalid_query_objects,
+        'invalid_target_objects': similarity.invalid_target_objects,
     }
 
 
@@ -622,6 +627,7 @@ def get_all_object_ids(project_id, user_id, object_type, min_nodes=500,
 @task()
 def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
         simplify=True, required_branches=10, use_cache=True):
+    start_time = time.process_time()
     try:
         min_nodes = 500
         min_soma_nodes = 20
@@ -672,6 +678,8 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                 simplify=simplify, required_branches=required_branches,
                 use_cache=use_cache)
 
+        duration = time.process_time() - start_time
+
         # Update config and samples
         if scoring_info.get('errors'):
             raise ValueError("Errors during computation: {}".format(
@@ -680,9 +688,14 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
             similarity.status = 'complete'
             similarity.scoring = scoring_info['similarity']
             if scoring_info['query_object_ids']:
+                invalid_query_objects = set(similarity.query_objects) - set(scoring_info['query_object_ids'])
+                similarity.invalid_query_objects = list(invalid_query_objects)
                 similarity.query_objects = scoring_info['query_object_ids']
             if scoring_info['target_object_ids']:
+                invalid_target_objects = set(similarity.target_objects) - set(scoring_info['target_object_ids'])
+                similarity.invalid_target_objects = list(invalid_target_objects)
                 similarity.target_objects = scoring_info['target_object_ids']
+            similarity.computation_time = duration
             similarity.save()
 
         msg_user(user_id, 'similarity-update', {
@@ -691,11 +704,14 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
         })
 
         return "Computed new NBLAST similarity for config {}".format(config.id)
-    except:
+    except Exception as ex:
+        duration = time.process_time() - start_time
         similarities = NblastSimilarity.objects.filter(pk=similarity_id)
-        if similarities:
+        if len(similarities) > 0:
             similarity = similarities[0]
             similarity.status = 'error'
+            similarity.detailed_status = str(ex)
+            similarity.computation_time = duration
             similarity.save()
 
             msg_user(user_id, 'similarity-update', {

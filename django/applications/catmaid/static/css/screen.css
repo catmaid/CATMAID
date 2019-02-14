@@ -726,6 +726,11 @@ table.neuron_annotations_query_fields {
   margin: 1em 0.1em 1em 0.2em;
 }
 
+.dataTables_wrapper + p.info-text {
+  margin: 3em 0.1em 1em 0.3em;
+  clear: both;
+}
+
 .bordered-list-elem {
   border: 1px;
   border-radius: 4px;

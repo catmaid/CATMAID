@@ -239,6 +239,19 @@
     NeuronSimilarityDetailWidget.createSimilarityTable(this.similarity,
         this.onlyPositiveScores, this.showTopN, this.pointClouds, table,
         this.pointCloudDisplaySample);
+
+    let invQ = this.similarity.invalid_query_objects;
+    let invT = this.similarity.invalid_target_objects;
+    let invalidQObjectsMsg = invQ && invQ.length > 0 ?
+            `Invalid query objects: ${invQ.join(', ')}` : 'Invalid query objects: none';
+    let invalidTObjectsMsg = invT && invT.length > 0 ?
+            `Invalid target objects: ${invT.join(', ')}` : 'Invalid target objects: none';
+
+    let topText = this.content.appendChild(document.createElement('p'));
+    topText.classList.add('info-text');
+    topText.appendChild(document.createTextNode(invalidQObjectsMsg));
+    topText.appendChild(document.createElement('br'));
+    topText.appendChild(document.createTextNode(invalidTObjectsMsg));
   };
 
   NeuronSimilarityDetailWidget.createSimilarityTable = function(similarity,

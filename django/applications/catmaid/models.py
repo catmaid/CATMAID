@@ -1015,8 +1015,12 @@ class NblastSimilarity(NonCascadingUserFocusedModel):
         related_name='target_type_set', on_delete=models.DO_NOTHING)
     query_objects = ArrayField(models.IntegerField())
     target_objects = ArrayField(models.IntegerField())
+    invalid_query_objects = ArrayField(models.IntegerField(), default=None, blank=True, null=True)
+    invalid_target_objects = ArrayField(models.IntegerField(), default=None, blank=True, null=True)
     normalized = models.TextField(default='raw')
     use_alpha = models.BooleanField(default=False)
+    computation_time = models.FloatField(default=0)
+    detailed_status = models.TextField( blank=True, null=True)
 
     class Meta:
         db_table = "nblast_similarity"

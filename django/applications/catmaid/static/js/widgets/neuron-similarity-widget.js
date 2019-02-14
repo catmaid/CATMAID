@@ -1208,6 +1208,10 @@
             }]
         }).on('click', 'a[data-role=recompute-similarity]', function() {
           let data = datatable.row($(this).parents('tr')).data();
+          if (!confirm('Are you sure you want to to recompute NBLAST similarity #' +
+              data.id + '?')) {
+            return;
+          }
           let simplify = $('#' + widget.idPrefix + 'simplify-skeletons').prop('checked');
           let requiredBranches = 10;
           CATMAID.Similarity.recomputeSimilarity(project.id, data.id, simplify,
@@ -1915,6 +1919,10 @@
             }]
         }).on('click', 'a[data-role=recompute-config]', function() {
           let data = datatable.row($(this).parents('tr')).data();
+          if (!confirm('Are you sure you want to to recompute NBLAST similarity matrix #' +
+              data.id + '?')) {
+            return;
+          }
           CATMAID.Similarity.recomputeConfig(project.id, data.id)
             .then(function() {
               CATMAID.msg('Success', 'NBLAST config recomputation queued');

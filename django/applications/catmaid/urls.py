@@ -16,7 +16,7 @@ from catmaid.control import (authentication, user, group, log, message, client,
         classification, notifications, roi, clustering, volume, noop,
         useranalytics, user_evaluation, search, graphexport, transaction,
         graph2, circles, analytics, review, wiringdiagram, object, sampler,
-        similarity, nat, point, landmarks, pointcloud)
+        similarity, nat, point, landmarks, pointcloud, pointset)
 
 from catmaid.views import CatmaidView
 from catmaid.history import record_request_action as record_view
@@ -330,10 +330,17 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/treenodearchive/export$', treenodeexport.export_treenodes),
 ]
 
+# Pointclouds
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/pointclouds/$', pointcloud.PointCloudList.as_view()),
     url(r'^(?P<project_id>\d+)/pointclouds/(?P<pointcloud_id>\d+)/$', pointcloud.PointCloudDetail.as_view()),
     url(r'^(?P<project_id>\d+)/pointclouds/(?P<pointcloud_id>\d+)/images/(?P<image_id>\d+)/$', pointcloud.PointCloudImageDetail.as_view()),
+]
+
+# Pointsets
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/pointsets/$', pointset.PointSetList.as_view()),
+    url(r'^(?P<project_id>\d+)/pointsets/(?P<pointset_id>\d+)/$', pointset.PointSetDetail.as_view()),
 ]
 
 urlpatterns += [

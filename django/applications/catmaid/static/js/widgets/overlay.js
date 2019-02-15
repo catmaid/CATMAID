@@ -5683,6 +5683,7 @@ var SkeletonAnnotations = {};
         })
         .catch(function(error) {
           reset(lastLastDeletedNodeId);
+          CATMAID.handleError(error);
         });
       return del;
     } else {

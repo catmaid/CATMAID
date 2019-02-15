@@ -2452,7 +2452,7 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None, name=None) 
         # Raise an Exception if the user doesn't have permission to
         # edit the existing neuron.
         can_edit_class_instance_or_fail(user, neuron_id, 'neuron')
-
+        neuron_id = neuron_id
     else:
         # A neuron does not exist, therefore we put the new skeleton
         # into a new neuron.

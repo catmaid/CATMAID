@@ -651,10 +651,36 @@ def delete_treenode(request, project_id=None):
             treenode_id=treenode_id).values_list('id', 'relation_id',
             'connector_id', 'confidence'))
 
-    n_sampler_refs = SamplerInterval.objects.filter(start_node=treenode).count() + \
-            SamplerInterval.objects.filter(end_node=treenode).count()
-    if (n_sampler_refs > 0):
+    # Prevent deletion if node is referenced from sampler or sampler domain. The
+    # deletion would fail regardless, but this way we can provide a nicer error
+    # message.
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT
+            EXISTS(
+                SELECT 1 FROM catmaid_samplerinterval
+                WHERE project_id = %(project_id)s AND
+                    (start_node_id = %(treenode_id)s OR end_node_id = %(treenode_id)s)),
+            EXISTS(
+                SELECT 1 FROM catmaid_samplerdomain
+                WHERE project_id = %(project_id)s AND
+                    (start_node_id = %(treenode_id)s)),
+            EXISTS(
+                SELECT 1 FROM catmaid_samplerdomainend
+                WHERE end_node_id = %(treenode_id)s)
+    """, {
+        'project_id': project_id,
+        'treenode_id': treenode_id,
+    })
+    sampler_refs = cursor.fetchone()
+    has_sampler_interval_refs = sampler_refs[0]
+    has_sampler_domain_refs = sampler_refs[1] or sampler_refs[2]
+
+    if has_sampler_interval_refs:
         raise ValueError("Can't delete node, it is used in at least one sampler interval")
+    if has_sampler_domain_refs:
+        raise ValueError("Can't delete node, it is used in at least one sampler domain")
+
 
     response_on_error = ''
     deleted_neuron = False

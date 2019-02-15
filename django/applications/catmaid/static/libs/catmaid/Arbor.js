@@ -35,12 +35,16 @@ Arbor.prototype.clone = function() {
 	return arbor;
 };
 
-/** edges: an array where every consecutive pair of nodes defines an edge from parent
- * to child. Every edge implictly adds its nodes.
+/**
  * Assumes that the newly created edges will somewhere intersect with the existing
  * ones, if any. Otherwise the tree will have multiple disconnected subtrees and
  * not operate according to expectations.
- * Returns this. */
+ *
+ * @param {Number[]]} edges An array where every consecutive pair of nodes
+ *                          defines an edge from parent to child. Every edge
+ *                          implictly adds its nodes.
+ * Returns this.
+ */
 Arbor.prototype.addEdges = function(edges, accessor) {
 	var length = edges.length;
 	if (accessor) {
@@ -60,13 +64,18 @@ Arbor.prototype.addEdges = function(edges, accessor) {
 	return this;
 };
 
-/** path: an array of nodes where every node is the child of its predecessor node.
- * Sets the root node to path[0] if the latter doesn't exist in this.edges (i.e. if
- * it does not have a parent node).
- * Assumes that the newly created edges will somewhere intersect with the existing
- * ones, if any. Otherwise the tree will have multiple disconnected subtrees and
- * not operate according to expectations.
- * Returns this. */
+/**
+ * Sets the root node to path[0] if the latter doesn't exist in this.edges (i.e.
+ * if it does not have a parent node).  Assumes that the newly created edges
+ * will somewhere intersect with the existing ones, if any. Otherwise the tree
+ * will have multiple disconnected subtrees and not operate according to
+ * expectations.
+ *
+ * @param {Number[]} path An array of nodes where every node is the child of its
+ * predecessor node.
+ *
+ * @returns this
+ */
 Arbor.prototype.addPath = function(path) {
 	for (var i=path.length -2; i>-1; --i) {
 		this.edges[path[i+1]] = path[i];
@@ -87,14 +96,18 @@ Arbor.prototype.addPathReversed = function(path) {
 	return this;
 };
 
-/** Compare node using == and not ===, allowing for numbers to be nodes. */
+/**
+ * Compare node using == and not ===, allowing for numbers to be nodes.
+ */
 Arbor.prototype.contains = function(node) {
 	return node == this.root || this.edges.hasOwnProperty(node);
 };
 
-/** Assumes there is only one root: one single node without a parent.
- * Returns the root node, or nothing if the tree has a structural error (like a loop)
- * and no root node could be found. */
+/**
+ * Assumes there is only one root: one single node without a parent.  Returns
+ * the root node, or nothing if the tree has a structural error (like a loop)
+ * and no root node could be found.
+ */
 Arbor.prototype.findRoot = function() {
 	for (var child in this.edges) {
 		if (this.edges.hasOwnProperty(child)) {
@@ -108,8 +121,9 @@ Arbor.prototype.findRoot = function() {
 	return this.root;
 };
 
-/** Assumes new_root belongs to this Arbor.
- *  Returns this. */
+/**
+ * Assumes new_root belongs to this Arbor. Returns this.
+ */
 Arbor.prototype.reroot = function(new_root) {
 	if (new_root == this.root) return this; // == and not === in case nodes are numbers, which get fooled into strings when they are used as keys in a javascript Object
 
@@ -125,8 +139,10 @@ Arbor.prototype.reroot = function(new_root) {
 	return this.addPath(path);
 };
 
-/** Returns an array with all end nodes, in O(3*n) time.
- * Does not include the root node. */
+/**
+ * Returns an array with all end nodes, in O(3*n) time.  Does not include the
+ * root node.
+ */
 Arbor.prototype.findEndNodes = function() {
   var edges = this.edges,
       children = this.childrenArray(),
@@ -144,8 +160,10 @@ Arbor.prototype.findEndNodes = function() {
   return ends;
 };
 
-/** Return an object with parent node as keys and arrays of children as values.
- * End nodes have empty arrays. */
+/**
+ * Return an object with parent node as keys and arrays of children as values.
+ * End nodes have empty arrays.
+ */
 Arbor.prototype.allSuccessors = function() {
   var edges = this.edges,
       children = this.childrenArray();
@@ -170,7 +188,9 @@ Arbor.prototype.allSuccessors = function() {
   return successors;
 };
 
-/** Return a map of node ID vs number of children. */
+/**
+ * Return a map of node ID vs number of children.
+ */
 Arbor.prototype.allSuccessorsCount = function() {
   var edges = this.edges,
       children = this.childrenArray();
@@ -195,9 +215,10 @@ Arbor.prototype.allSuccessorsCount = function() {
   return successors;
 };
 
-/** Finds the next branch node, starting at node (inclusive).
- *  Assumes the node belongs to the arbor.
- *  Returns null when no branches are found. */
+/**
+ * Finds the next branch node, starting at node (inclusive).  Assumes the node
+ * belongs to the arbor.  Returns null when no branches are found.
+ */
 Arbor.prototype.nextBranchNode = function(node) {
   var all_succ = this.allSuccessors(),
       succ  = all_succ[node];
@@ -209,7 +230,11 @@ Arbor.prototype.nextBranchNode = function(node) {
   return null;
 };
 
-/** Return an object with each nodes as keys and arrays of children plus the parent as values, or an empty array for an isolated root node. Runs in O(2n) time.*/
+/**
+ * Return an object with each nodes as keys and arrays of children plus the
+ * parent as values, or an empty array for an isolated root node. Runs in O(2n)
+ * time.
+ */
 Arbor.prototype.allNeighbors = function() {
   var edges = this.edges,
       nodes = this.childrenArray();
@@ -238,10 +263,13 @@ Arbor.prototype.allNeighbors = function() {
   return o;
 };
 
-/** Find branch and end nodes in O(3n) time.
- * Returns {ends: array of end nodes,
+/**
+ * Find branch and end nodes in O(3n) time.
+ *
+ * @returns {ends: array of end nodes,
  *          branches: map of branch node vs count of branches,
- *          n_branches: number of branch nodes} */
+ *          n_branches: number of branch nodes}
+ */
 Arbor.prototype.findBranchAndEndNodes = function() {
   var edges = this.edges,
       children = this.childrenArray(),
@@ -293,19 +321,23 @@ Arbor.prototype.findBranchNodes = function() {
   return branches;
 };
 
-/** Return a map of node vs topological distance from the given root. Rather
- * than a distance, these are the hierarchical orders, where root has order 0,
- * nodes directly downstream of root have order 1, and so on. Invoke with
- * this.root as argument to get the distances to the root of this Arbor. Invoke
- * with any non-end node to get distances to that node for nodes downstream of
- * it. */
+/**
+ * Return a map of node vs topological distance from the given root. Rather than
+ * a distance, these are the hierarchical orders, where root has order 0, nodes
+ * directly downstream of root have order 1, and so on. Invoke with this.root as
+ * argument to get the distances to the root of this Arbor. Invoke with any
+ * non-end node to get distances to that node for nodes downstream of it.
+ */
 Arbor.prototype.nodesOrderFrom = function(root) {
 	return this.nodesDistanceTo(root, function() { return 1; }).distances;
 };
 
-/** Measure distance of every node to root in O(2n), by using the given
- * distanceFn which takes two nodes (child and parent) as arguments and returns a number.
- * Returns an object containing the distances and the maximum distance. */
+/**
+ * Measure distance of every node to root in O(2n), by using the given
+ * distanceFn which takes two nodes (child and parent) as arguments and returns
+ * a number.  Returns an object containing the distances and the maximum
+ * distance.
+ */
 Arbor.prototype.nodesDistanceTo = function(root, distanceFn) {
 	var distances = {},
 	    r = {distances: distances,
@@ -349,12 +381,16 @@ Arbor.prototype.nodesDistanceTo = function(root, distanceFn) {
 	return r;
 };
 
-/** Return an array will all nodes that are not the root. */
+/**
+ * Return an array will all nodes that are not the root.
+ */
 Arbor.prototype.childrenArray = function() {
   return Object.keys(this.edges);
 };
 
-/** Return an Object with node keys and true values, in O(2n) time. */
+/**
+ * Return an Object with node keys and true values, in O(2n) time.
+ */
 Arbor.prototype.nodes = function() {
   var a = this.nodesArray(),
       nodes = {};
@@ -362,22 +398,29 @@ Arbor.prototype.nodes = function() {
 	return nodes;
 };
 
-/** Return an Array of all nodes in O(n) time. */
+/**
+ * Return an Array of all nodes in O(n) time.
+ */
 Arbor.prototype.nodesArray = function() {
 	var nodes = Object.keys(this.edges);
 	if (null !== this.root) nodes.push(this.root);
 	return nodes;
 };
 
-/** Counts number of nodes in O(n) time. */
+/**
+ * Counts number of nodes in O(n) time.
+ */
 Arbor.prototype.countNodes = function() {
 	return this.nodesArray().length;
 };
 
-/** Returns an array of arrays, unsorted, where the longest array contains the linear
- * path between the furthest end node and the root node, and all other arrays are shorter
- * paths always starting at an end node and finishing at a node already included in
- * another path. Runs in O(4*n + m) where n is the number of nodes and m the number of ends. */
+/**
+ * Returns an array of arrays, unsorted, where the longest array contains the
+ * linear path between the furthest end node and the root node, and all other
+ * arrays are shorter paths always starting at an end node and finishing at a
+ * node already included in another path. Runs in O(4*n + m) where n is the
+ * number of nodes and m the number of ends.
+ */
 Arbor.prototype.partition = function() {
   var be = this.findBranchAndEndNodes(),
       ends = be.ends,
@@ -435,7 +478,10 @@ Arbor.prototype.partition = function() {
   return partitions;
 };
 
-/** Like this.partition, but returns the arrays sorted by length from small to large. */
+/**
+ * Like this.partition, but returns the arrays sorted by length from small to
+ * large.
+ */
 Arbor.prototype.partitionSorted = function() {
 	return this.partition().sort(function(a, b) {
 		var da = a.length,
@@ -444,8 +490,10 @@ Arbor.prototype.partitionSorted = function() {
 	});
 };
 
-/** Returns an array of child nodes in O(n) time.
- * See also this.allSuccessors() to get them all in one single shot at O(n) time. */
+/**
+ * Returns an array of child nodes in O(n) time. See also this.allSuccessors()
+ * to get them all in one single shot at O(n) time.
+ */
 Arbor.prototype.successors = function(node) {
   var edges = this.edges,
       children = this.childrenArray(),
@@ -457,8 +505,10 @@ Arbor.prototype.successors = function(node) {
   return a;
 };
 
-/** Returns an array of child nodes plus the parent node in O(n) time.
- * See also this.allNeighbors() to get them all in one single shot at O(2n) time. */
+/**
+ * Returns an array of child nodes plus the parent node in O(n) time. See also
+ * this.allNeighbors() to get them all in one single shot at O(2n) time.
+ */
 Arbor.prototype.neighbors = function(node) {
   var edges = this.edges,
       children = this.childrenArray(),
@@ -471,9 +521,11 @@ Arbor.prototype.neighbors = function(node) {
   return neighbors;
 };
 
-/** Return a new Arbor that has all nodes in the array of nodes to preserve,
+/**
+ * Return a new Arbor that has all nodes in the array of nodes to preserve,
  * rerooted at the node in keepers that has the lowest distance to this arbor's
- * root node. */
+ * root node.
+ */
 Arbor.prototype.spanningTree = function(keepers) {
   var spanning = new Arbor();
   switch (keepers.length) {
@@ -541,12 +593,14 @@ Arbor.prototype.spanningTree = function(keepers) {
   return spanning;
 };
 
-/** Compute betweenness centrality of a tree in O(5n) time.
- * Note that edges are considered non-directional, that is,
- * this is the betweenness centrality of the equivalent undirected graph of the tree.
- * This implementation relies on trees having non-duplicate directed edges and no loops.
- * All edges are considered equal, and endpoints are included.
- * Returns a map of node vs number of paths traveling through the node. */
+/**
+ * Compute betweenness centrality of a tree in O(5n) time. Note that edges are
+ * considered non-directional, that is, this is the betweenness centrality of
+ * the equivalent undirected graph of the tree. This implementation relies on
+ * trees having non-duplicate directed edges and no loops. All edges are
+ * considered equal, and endpoints are included.
+ *
+ * @returns A map of node vs number of paths traveling through the node. */
 Arbor.prototype.betweennessCentrality = function(normalized) {
 	var succ_groups = {},
 			centrality = {},
@@ -610,8 +664,10 @@ Arbor.prototype.betweennessCentrality = function(normalized) {
 	return centrality;
 };
 
-/** Return a new arbor that preserves only the root, branch and end nodes.
- * Runs in O(2*n) time. */
+/**
+ * Return a new arbor that preserves only the root, branch and end nodes.
+ * Runs in O(2*n) time.
+ */
 Arbor.prototype.topologicalCopy = function() {
 	var topo = new Arbor(),
 			successors = this.allSuccessors();
@@ -642,9 +698,11 @@ Arbor.prototype.topologicalCopy = function() {
 	return topo;
 };
 
-/** Return an array of arrays, each subarray containing the nodes of a slab,
- * including the initial node (root or a branch node ) and the ending node
- * (a branch node or an end node). */
+/**
+ * Return an array of arrays, each subarray containing the nodes of a slab,
+ * including the initial node (root or a branch node ) and the ending node (a
+ * branch node or an end node).
+ */
 Arbor.prototype.slabs = function() {
 	var slabs = [];
 
@@ -670,13 +728,16 @@ Arbor.prototype.slabs = function() {
 	return slabs;
 };
 
-/** Compute the centrality of each slab as the average centrality of its starting
+/**
+ * Compute the centrality of each slab as the average centrality of its starting
  * and ending nodes, when computing the centrality of the topologically reduced
- * arbor (an arbor that only preserves root, branch and end nodes relative to the
- * original).
- * Returns an object with nodes as keys and the centrality as value.
- * At the branch nodes, the centrality is set to that of the parent slab;
- * for root, it is always zero. */
+ * arbor (an arbor that only preserves root, branch and end nodes relative to
+ * the original).
+ *
+ * @returns An object with nodes as keys and the centrality as value. At the
+ * branch nodes, the centrality is set to that of the parent slab; for root, it
+ * is always zero.
+ */
 Arbor.prototype.slabCentrality = function(normalized) {
 	var sc = {};
 	// Handle corner case
@@ -691,7 +752,9 @@ Arbor.prototype.slabCentrality = function(normalized) {
 	return sc;
 };
 
-/** Return a new Arbor which is a shallow copy of this Arbor, starting at node. */
+/**
+ * Return a new Arbor which is a shallow copy of this Arbor, starting at node.
+ */
 Arbor.prototype.subArbor = function(new_root) {
 	// Thinking about the way that traverses the arbor the least times
 	// Via allSuccessors: 2 traversals for allSuccessors, and one more to read the subtree
@@ -723,13 +786,18 @@ Arbor.prototype.subArbor = function(new_root) {
 	return sub;
 };
 
-/** Return a map of node vs amount of arbor downstream of the node,
- * where the amountFn is a function that takes two arguments: parent and child.
- * To obtain a map of node vs number of nodes downstream, amountFn is a function
- * that returns the value 1. For cable, amountFn returns the length of the cable
- * between parent and child.
- * If normalize is defined and true, all values are divided by the maximum value,
- * which is the value at the root node. */
+/**
+ * Return a map of node vs amount of arbor downstream of the node, where the
+ *
+ * @param {Function} amountFn Is a function that takes two arguments: parent and
+ *                            child. To obtain a map of node vs number of nodes
+ *                            downstream, amountFn is a function that returns
+ *                            the value 1. For cable, amountFn returns the
+ *                            length of the cable between parent and child.
+ * @param {Boolean} noramlize (Optional) If normalize is defined and true, all values are
+ *                            divided by the maximum value, which is the value
+ *                            at the root node.
+ */
 Arbor.prototype.downstreamAmount = function(amountFn, normalize) {
 	// Iterate partitions from smallest to largest
 	var values = this.partitionSorted().reduce(function(values, partition) {
@@ -816,20 +884,29 @@ Arbor.prototype.strahlerAnalysis = function() {
 };
 
 /**
- * Perform Sholl analysis: returns two arrays, paired by index, of radius length and the corresponding number of cable crossings,
- * sampled every radius_increment.
+ * Perform Sholl analysis: returns two arrays, paired by index, of radius length
+ * and the corresponding number of cable crossings, sampled every
+ * radius_increment.
  *
  * E.g.:
  *
- * {radius:   [0.75, 1.5, 2.25, 3.0],
- *  crossings:[   3,   2,    1,   1]}
+ * {
+ *  radius:   [0.75, 1.5, 2.25, 3.0],
+ *  crossings:[   3,   2,    1,   1]
+ * }
  *
- * A segment of cable defined two nodes that hold a parent-child relationship is considered to be crossing a sampling radius if the distance from the center for one of them is beyond the radius, and below for the other.
+ * A segment of cable defined two nodes that hold a parent-child relationship is
+ * considered to be crossing a sampling radius if the distance from the center
+ * for one of them is beyond the radius, and below for the other.
  *
- * Notice that if parent-child segments are longer than radius-increment in the radial direction, some parent-child segments will be counted more than once, which is correct.
+ * Notice that if parent-child segments are longer than radius-increment in the
+ * radial direction, some parent-child segments will be counted more than once,
+ * which is correct.
  *
- * radius_increment: distance between two consecutive samplings.
- * distanceToCenterFn: determines the distance of a node from the origin of coordinates, in the same units as the radius_increment.
+ * @param {Number}   radius_increment   Distance between two consecutive samplings.
+ * @param {Function} distanceToCenterFn Determines the distance of a node from the
+ *                                      origin of coordinates, in the same units
+ *                                      as the radius_increment.
  */
 Arbor.prototype.sholl = function(radius_increment, distanceToCenterFn) {
     // Create map of radius index to number of crossings.
@@ -873,12 +950,16 @@ Arbor.prototype.sholl = function(radius_increment, distanceToCenterFn) {
  * Bins have a size of radius_increment.
  *
  * Only nodes included in the map of positions will be measured. This enables
- * computing Sholl for e.g. only branch and end nodes, or only for nodes with synapses.
+ * computing Sholl for e.g. only branch and end nodes, or only for nodes with
+ * synapses.
  *
- * center: an object with a distanceTo method, like THREE.Vector3.
- * radius_increment: difference between the radius of a sphere and that of the next sphere.
- * positions: map of node ID vs objects like THREE.Vector3.
- * fnCount: a function to e.g. return 1 when counting, or the length of a segment when measuring cable.
+ * @param {Object} center           An object with a distanceTo method, like
+ *                                  THREE.Vector3.
+ * @param {Number} radius_increment Difference between the radius of a sphere
+ *                                  and that of the next sphere.
+ * @param {Object} positions        Map of node ID vs objects like THREE.Vector3.
+ * @param {Function} fnCount        A function to e.g. return 1 when counting,
+ *                                  or the length of a segment when measuring cable.
  */
 Arbor.prototype.radialDensity = function(center, radius_increment, positions, fnCount) {
     var density = this.nodesArray().reduce(function(bins, node) {
@@ -900,9 +981,13 @@ Arbor.prototype.radialDensity = function(center, radius_increment, positions, fn
     }, {bins: [], counts: []});
 };
 
-/** Return a map of node vs number of paths from any node in the set of inputs to any node in the set of outputs.
- *  outputs: a map of node keys vs number of outputs at the node.
- *  inputs: a map of node keys vs number of inputs at the node. */
+/**
+ * Return a map of node vs number of paths from any node in the set of inputs to
+ * any node in the set of outputs.
+ *
+ * @param {Object} outputs A map of node keys vs number of outputs at the node.
+ * @param {Object} inputs  Aa map of node keys vs number of inputs at the node.
+ */
 Arbor.prototype.flowCentrality = function(outputs, inputs, totalOutputs, totalInputs) {
     if (undefined === totalOutputs) {
       totalOutputs = Object.keys(outputs).reduce(function(sum, node) {
@@ -1004,19 +1089,28 @@ Arbor.prototype.cableLengthBetweenNodes = function(positions, nodeA, nodeB, noRe
   return null;
 };
 
-/** Sum the cable length by smoothing using a Gaussian convolution.
- * For simplicity, considers the root, all branch and end nodes as fixed points,
- * and will only therefore adjust slab nodes.
- * - positions: map of node ID vs objects like THREE.Vector3.
- * - sigma: for tracing neurons, use e.g. 100 nm
- * - initialValue: initial value for the reduce to accumulate on.
- * - slabInitFn: take the accumulator value, the node and its point, return a new accumulator value.
- * - accumulatorFn: given an accumulated value, the last point, the node ID and its new point, return a new value that will be the next value in the next round.
+/**
+ * Sum the cable length by smoothing using a Gaussian convolution. For
+ * simplicity, considers the root, all branch and end nodes as fixed points, and
+ * will only therefore adjust slab nodes.
+ *
+ * @param {Object}   positions     Map of node ID vs objects like THREE.Vector3
+ * @param {Number}   sigma         For tracing neurons, use e.g. 100 nm
+ * @param {Number}   initialValue  Initial value for the reduce to accumulate on
+ * @param {Function} slabInitFn    Take the accumulator value, the node and its
+ *                                 point, return a new accumulator value.
+ * @param {Function} accumulatorFn Given an accumulated value, the last point,
+ *                                 the node ID and its new point, return a new
+ *                                 value that will be the next value in the next
+ *                                 round.
+ * @retruns The accumulated value
  */
 Arbor.prototype.convolveSlabs = function(positions, sigma, initialValue, slabInitFn, accumulatorFn) {
     // Gaussian:  a * Math.exp(-Math.pow(x - b, 2) / (2 * c * c)) + d 
     // where a=1, d=0, x-b is the distance to the point in space, and c is sigma=0.5.
-    // Given that the distance between points is computed as the sqrt of the sum of the squared differences of each dimension, and it is then squared, we can save two ops: one sqrt and one squaring, to great performance gain.
+    // Given that the distance between points is computed as the sqrt of the sum
+    // of the squared differences of each dimension, and it is then squared, we
+    // can save two ops: one sqrt and one squaring, to great performance gain.
     var S = 2 * sigma * sigma,
         slabs = this.slabs(),
         threshold = 0.01,
@@ -1035,7 +1129,9 @@ Arbor.prototype.convolveSlabs = function(positions, sigma, initialValue, slabIni
                 points = [point],
                 k, w, pk;
             // TODO: could memoize the distances to points for reuse
-            // TODO: or use the _gaussianWeights one-pass computation. Need to measure what is faster: to create a bunch of arrays or to muliply multiple times the same values.
+            // TODO: or use the _gaussianWeights one-pass computation. Need to
+            // measure what is faster: to create a bunch of arrays or to muliply
+            // multiple times the same values.
             k = i - 1;
             while (k > -1) {
                 pk = positions[slab[k]];
@@ -1082,9 +1178,11 @@ Arbor.prototype.convolveSlabs = function(positions, sigma, initialValue, slabIni
     return accum;
 };
 
-/** Compute the cable length of the arbor after performing a Gaussian convolution.
- * Does not alter the given positions map. Conceptually equivalent to
- * var cable = arbor.cableLength(arbor.smoothPositions(positions, sigma)); */
+/**
+ * Compute the cable length of the arbor after performing a Gaussian
+ * convolution.  Does not alter the given positions map. Conceptually equivalent
+ * to var cable = arbor.cableLength(arbor.smoothPositions(positions, sigma));
+ */
 Arbor.prototype.smoothCableLength = function(positions, sigma) {
     return this.convolveSlabs(positions, sigma, 0,
             function(sum, id, p) {
@@ -1095,8 +1193,10 @@ Arbor.prototype.smoothCableLength = function(positions, sigma) {
             });
 };
 
-/** Alter the positions map to express the new positions of the nodes
- * after a Gaussian convolution. */
+/**
+ * Alter the positions map to express the new positions of the nodes after a
+ * Gaussian convolution.
+ */
 Arbor.prototype.smoothPositions = function(positions, sigma, accum) {
     return this.convolveSlabs(positions, sigma, accum ? accum : {},
             function(s, id, p) {
@@ -1109,21 +1209,32 @@ Arbor.prototype.smoothPositions = function(positions, sigma, accum) {
             });
 };
 
-/** Resample the arbor to fix the node interdistance to a specific value.
- * The distance of an edge prior to a slab terminating node (branch or end)
- * will most often be within +/- 50% of the specified delta value, given that
- * branch and end nodes are fixed. The root is also fixed.
+/**
+ * Resample the arbor to fix the node interdistance to a specific value.  The
+ * distance of an edge prior to a slab terminating node (branch or end) will
+ * most often be within +/- 50% of the specified delta value, given that branch
+ * and end nodes are fixed. The root is also fixed.
  *
  * The resampling is done using a Gaussian convolution with adjacent nodes,
- * weighing them by distance to relevant node to use as the focus for resampling,
- * which is the first node beyond delta from the last resampled node.
+ * weighing them by distance to relevant node to use as the focus for
+ * resampling, which is the first node beyond delta from the last resampled
+ * node.
  *
- * - positions: map of node ID vs THREE.Vector3, or equivalent object with distanceTo and clone methods.
- * - sigma: value to use for Gaussian convolution to smooth the slabs prior to resampling.
- * - delta: desired new node interdistance.
- * - minNeighbors: minimum number of neighbors to inspect; defaults to zero. Aids in situations of extreme jitter, where otherwise spatially close but not topologically adjancent nodes would not be looked at because the prior node would have a Gaussian weight below 0.01.
+ * @param {Object} positions    Map of node ID vs THREE.Vector3, or equivalent
+ *                              object with distanceTo and clone methods.
+ * @param {Number} sigma        Value to use for Gaussian convolution to smooth
+ *                              the slabs prior to resampling.
+ * @param {Number} delta        Desired new node interdistance.
+ * @param {Number} minNeighbors Minimum number of neighbors to inspect; defaults
+ *                              to zero. Aids in situations of extreme jitter,
+ *                              where otherwise spatially close but not
+ *                              topologically adjancent nodes would not be
+ *                              looked at because the prior node would have a
+ *                              Gaussian weight below 0.01.
  *
- * Returns a new Arbor, with new numeric node IDs that bear no relation to the IDs of this Arbor, and a map of the positions of its nodes.  */
+ * @returns A new Arbor, with new numeric node IDs that bear no relation to the
+ * IDs of this Arbor, and a map of the positions of its nodes.
+ */
 Arbor.prototype.resampleSlabs = function(positions, sigma, delta, minNeighbors) {
     var arbor = new Arbor(),
         new_positions = {},
@@ -1174,7 +1285,9 @@ Arbor.prototype.resampleSlabs = function(positions, sigma, delta, minNeighbors) 
             positions: new_positions};
 };
 
-/** Helper function for resampleSlabs. */
+/**
+ * Helper function for resampleSlabs.
+ */
 Arbor.prototype._resampleSlab = function(slab, positions, S, delta, sqDelta, minNeighbors) {
     var slabP = slab.map(function(node) { return positions[node]; }),
         gw = this._gaussianWeights(slab, slabP, S, minNeighbors),
@@ -1192,10 +1305,13 @@ Arbor.prototype._resampleSlab = function(slab, positions, S, delta, sqDelta, min
 
         if (k === len) break;
 
-        // NOTE: should check which is closer: k or k-1; but when assuming a Gaussian-smoothed arbor, k will be closer in all reasonable situations. Additionally, k (the node past) is the one to drift towards when nodes are too far apart.
+        // NOTE: should check which is closer: k or k-1; but when assuming a
+        // Gaussian-smoothed arbor, k will be closer in all reasonable situations.
+        // Additionally, k (the node past) is the one to drift towards when nodes
+        // are too far apart.
 
-        // Collect all nodes before and after k with a weight under 0.01,
-        // as precomputed in gw: only weights > 0.01 exist
+        // Collect all nodes before and after k with a weight under 0.01, as
+        // precomputed in gw: only weights > 0.01 exist
         var pivot = slab[k],
             points = [k],
             weights = [1],
@@ -1265,25 +1381,25 @@ Arbor.prototype._resampleSlab = function(slab, positions, S, delta, sqDelta, min
     return a;
 };
 
-/** Helper function.
+/**
+ * Helper function.
  *
- * Starting at the first node, compute the Gaussian weight
- * towards forward in the slab until it is smaller than 1%. Then do the
- * same for the second node, etc. Store all weights in an array per node
- * that has as first element '1' (weight with itself is 1), and then
- * continues with weights for the next node, etc. until one node's weight
- * falls below 0.01.
+ * Starting at the first node, compute the Gaussian weight towards forward in
+ * the slab until it is smaller than 1%. Then do the same for the second node,
+ * etc. Store all weights in an array per node that has as first element '1'
+ * (weight with itself is 1), and then continues with weights for the next node,
+ * etc. until one node's weight falls below 0.01.
  *
- * BEWARE that if nodes are extremely jittery, the computation of weights
- * may terminate earlier than would be appropriate. To overcome this,
- * pass a value of e.g. 3 neighbor nodes minimum to look at.
+ * BEWARE that if nodes are extremely jittery, the computation of weights may
+ * terminate earlier than would be appropriate. To overcome this, pass a value
+ * of e.g. 3 neighbor nodes minimum to look at.
  *
  * Gaussian as: a * Math.exp(-Math.pow(x - b, 2) / (2 * c * c)) + d
  * ignoring a and d, given that the weights will then be used for normalizing
  * 
- * slab: array of node IDs
- * slabP: array of corresponding THREE.Vector3
- * S: 2 * Math.pow(sigma, 2)
+ * @param {Number[]} slab  Array of node IDs
+ * @param {Number[]} slabP Array of corresponding THREE.Vector3
+ * @param {NUmber}   S     2 * Math.pow(sigma, 2)
  */
 Arbor.prototype._gaussianWeights = function(slab, slabP, S, minNeighbors) {
     var weights = [];
@@ -1318,8 +1434,12 @@ Arbor.prototype.distanceToUpstreamNodeIn = function(node, positions, stops) {
   return null;
 };
 
-/** Compute the amount of able of all terminal slabs together.
- * Returns both the cable and the number of end nodes (equivalent to the number of terminal segments). */
+/**
+ * Compute the amount of able of all terminal slabs together.
+ *
+ * @returns Both the cable and the number of end nodes (equivalent to the number
+ * of terminal segments).
+ */
 Arbor.prototype.terminalCableLength = function(positions) {
   var be = this.findBranchAndEndNodes(),
       branches = be.branches,
@@ -1351,9 +1471,11 @@ Arbor.prototype.terminalCableLength = function(positions) {
           n_ends: ends.length};
 };
 
-/** Find path from node to an upstream node that is in stops.
- * If no node in stops is upstrem of node, then returns null.
- * Will traverse towards upstream regardless of whether the initial node belongs to stops or not. */
+/**
+ * Find path from node to an upstream node that is in stops. If no node in
+ * stops is upstrem of node, then returns null. Will traverse towards upstream
+ * regardless of whether the initial node belongs to stops or not.
+ */
 Arbor.prototype.pathToUpstreamNodeIn = function(node, stops) {
   var path = [node],
       paren = this.edges[node];
@@ -1366,13 +1488,15 @@ Arbor.prototype.pathToUpstreamNodeIn = function(node, stops) {
   return null;
 };
 
-/** For each branch node, record a measurement for each of its subtrees.
+/**
+ * For each branch node, record a measurement for each of its subtrees.
  *
- *  - initialFn: returns the value to start accumulating on.
- *  - accumFn: can alter its accum parameter.
- *  - mergeFn: merge two accumulated values into a new one; must not alter its parameters.
+ * @param {Function} initialFn Returns the value to start accumulating on
+ * @param {Function} accumFn   Can alter its accum parameter
+ * @param {Function} mergeFn   Merge two accumulated values into a new one; must
+ *                             not alter its parameters.
  *
- *  Returns a map of branch node vs array of measurements, one per subtree.
+ * @returns A map of branch node vs array of measurements, one per subtree.
  */
 Arbor.prototype.subtreesMeasurements = function(initialFn, cummulativeFn, mergeFn) {
   // Iterate partitions from shortest to longest.
@@ -1419,11 +1543,12 @@ Arbor.prototype.subtreesMeasurements = function(initialFn, cummulativeFn, mergeF
 };
 
 /**
- * At each branch node, measure the amount of cable on each of the 2 or more subtrees.
+ * At each branch node, measure the amount of cable on each of the 2 or more
+ * subtrees.
  *
- * positions: map of node vs THREE.Vector3.
+ * @param {Object} positions Map of node vs THREE.Vector3.
  *
- * Returns a map of branch node vs array of values, one for each subtree.
+ * @returns A map of branch node vs array of values, one for each subtree.
  */
 Arbor.prototype.subtreesCable = function(positions) {
   return this.subtreesMeasurements(
@@ -1439,8 +1564,10 @@ Arbor.prototype.subtreesCable = function(positions) {
 };
 
 /**
- * At each branch node, count the number of terminal ends on each of the 2 or more subtrees.
- * Returns a map of branch node vs array of values, one for each subtree.
+ * At each branch node, count the number of terminal ends on each of the 2 or
+ * more subtrees.
+ *
+ * @returns A map of branch node vs array of values, one for each subtree.
  */
 Arbor.prototype.subtreesEndCount = function() {
   return this.subtreesMeasurements(
@@ -1456,9 +1583,13 @@ Arbor.prototype.subtreesEndCount = function() {
 };
 
 /**
- * At each branch node, count the number of associated elements on each of the 2 or more subtrees.
- * load: map of node vs number of associated elements (e.g. input synapses). Nodes with a count of zero do not need to be present.
- * Returns a map of branch node vs array of values, one for each subtree.
+ * At each branch node, count the number of associated elements on each of the 2
+ * or more subtrees.
+ *
+ * @param {Object} load Map of node vs number of associated elements (e.g. input
+ *                      synapses). Nodes with a count of zero do not need to be
+ *                      present.
+ * @eturns A map of branch node vs array of values, one for each subtree.
  */
 Arbor.prototype.subtreesLoad = function(load) {
   return this.subtreesMeasurements(
@@ -1476,14 +1607,19 @@ Arbor.prototype.subtreesLoad = function(load) {
       });
 };
 
-/** Compute the mean and stdDev of the asymmetries of the subtrees at each branch node,
- * assuming binary branches. When branches are trinary or higher, these are considered
- * as nested binary branches, with the smallest subtree as being closest to the soma.
+/**
+ * Compute the mean and stdDev of the asymmetries of the subtrees at each branch
+ * node, assuming binary branches. When branches are trinary or higher, these
+ * are considered as nested binary branches, with the smallest subtree as being
+ * closest to the soma.
  *
- * m: a map of branch node vs an array of numeric measurements of each of its subtrees.
- * asymmetryFn: given two numeric measurements of two subtrees, compute the asymmetry.
- *
- * return: the mean and standard deviation of the asymmetries, and the histogram with 10 bins and the number of branches (the sum of all bin counts).
+ * @param {Object}   m           A map of branch node vs an array of numeric
+ *                               measurements of each of its subtrees.
+ * @param {Function} asymmetryFn Given two numeric measurements of two subtrees,
+ *                               compute the asymmetry.
+ * @returns The mean and standard deviation of the asymmetries, and the
+ * histogram with 10 bins and the number of branches (the sum of all bin
+ * counts).
  */
 Arbor.prototype.asymmetry = function(m, asymmetryFn) {
   var branches = Object.keys(m),
@@ -1537,14 +1673,19 @@ Arbor.prototype.asymmetry = function(m, asymmetryFn) {
 };
 
 
-/** Mean of all "partition asymmetries" at each branch node, as defined by van Pelt et al. 1992.
- * Considers trinary and higher as nested binary branches, with the smallest subtree as being the closest to the soma.
- *
- * Returns the average and standard deviation of the distribution of asymmetries at each branch.
+/**
+ * Mean of all "partition asymmetries" at each branch node, as defined by van
+ * Pelt et al. 1992.  Considers trinary and higher as nested binary branches,
+ * with the smallest subtree as being the closest to the soma.
  *
  * After:
- *  - van Pelt et al. 1992. "Tree asymmetry--a sensitive and practical measure for binary topological trees.
- *  - Uylings and van Pelt. 2002. Measures for quantifying dendritic arborizations.
+ *  - van Pelt et al. 1992. "Tree asymmetry--a sensitive and practical measure
+ *    for binary topological trees.
+ *  - Uylings and van Pelt. 2002. Measures for quantifying dendritic
+ *    arborizations.
+ *
+ * @returns the average and standard deviation of the distribution of
+ * asymmetries at each branch.
  */
 Arbor.prototype.asymmetryIndex = function() {
   return this.asymmetry(
@@ -1555,10 +1696,14 @@ Arbor.prototype.asymmetryIndex = function() {
       });
 };
 
-/** Mean of all asymmetries in the measurement of cable lengths of subtrees at each branch node.
- * Considers trinary and higher as nested binary branches, with the smallest subtree as being the closest to the soma.
- * positions: map of node vs THREE.Vector3.
- * Returns the average and standard deviation of the distribution of asymmetries at each branch.
+/**
+ * Mean of all asymmetries in the measurement of cable lengths of subtrees at
+ * each branch node.  Considers trinary and higher as nested binary branches,
+ * with the smallest subtree as being the closest to the soma.  positions: map
+ * of node vs THREE.Vector3.
+ * 
+ * @returns the average and standard deviation of the distribution of
+ * asymmetries at each branch.
  */
 Arbor.prototype.cableAsymmetryIndex = function(positions) {
   return this.asymmetry(
@@ -1568,11 +1713,13 @@ Arbor.prototype.cableAsymmetryIndex = function(positions) {
       });
 };
 
-/** Mean of all asymmetries in the counts of load (e.g. input synapses) of subtres at each branch node.
- * Considers trinary and higher as nested binary branches, with the smallest subtree as being the closest to the soma.
- * load: map of node vs counts at node. Nodes with a count of zero do not need to be present.
- * Returns the average and standard deviation of the distribution of asymmetries at each branch.
- *
+/**
+ * Mean of all asymmetries in the counts of load (e.g. input synapses) of
+ * subtres at each branch node.  Considers trinary and higher as nested binary
+ * branches, with the smallest subtree as being the closest to the soma.  load:
+ * map of node vs counts at node. Nodes with a count of zero do not need to be
+ * present.  Returns the average and standard deviation of the distribution of
+ * asymmetries at each branch.
  */
 Arbor.prototype.loadAsymmetryIndex = function(load) {
   return this.asymmetry(
@@ -1582,10 +1729,17 @@ Arbor.prototype.loadAsymmetryIndex = function(load) {
       });
 };
 
-// Note: could compute all the asymmetries in one pass, by generalizing the asymmetry function to return the list of asymmetries instead of computing the mean and std. Then, a multipurpose function could do all desired measurements (this would already work with subtreesMeasurements), and the mean and stdDev could be computed for all.
+// Note: could compute all the asymmetries in one pass, by generalizing the
+// asymmetry function to return the list of asymmetries instead of computing the
+// mean and std. Then, a multipurpose function could do all desired measurements
+// (this would already work with subtreesMeasurements), and the mean and stdDev
+// could be computed for all.
 
 
-/** Remove terminal segments when none of their nodes carries a load (e.g. a synapse). */
+/**
+ * Remove terminal segments when none of their nodes carries a load (e.g. a
+ * synapse).
+ */
 Arbor.prototype.pruneBareTerminalSegments = function(load) {
   var be = this.findBranchAndEndNodes(),
       ends = be.ends,
@@ -1601,9 +1755,10 @@ Arbor.prototype.pruneBareTerminalSegments = function(load) {
   }, this.edges);
 };
 
-/** Prune the arbor at all the given nodes, inclusive.
- * nodes: a map of nodes vs not undefined.
- * Returns a map of removed nodes vs true values. */
+/**
+ * Prune the arbor at all the given nodes, inclusive.  nodes: a map of nodes vs
+ * not undefined.  Returns a map of removed nodes vs true values.
+ */
 Arbor.prototype.pruneAt = function(nodes) {
   // Speed-up special case
   if (undefined !== nodes[this.root]) {
@@ -1635,9 +1790,10 @@ Arbor.prototype.pruneAt = function(nodes) {
   return removed;
 };
 
-/** Find the nearest upstream node common to all given nodes.
- * nodes: a map of nodes vs not undefined.
- * Runs in less than O(n).*/
+/**
+ * Find the nearest upstream node common to all given nodes.  nodes: a map of
+ * nodes vs not undefined.  Runs in less than O(n).
+ */
 Arbor.prototype.nearestCommonAncestor = function(nodes) {
   // Corner cases
   if (null === this.root) return null;
@@ -1666,9 +1822,11 @@ Arbor.prototype.nearestCommonAncestor = function(nodes) {
   }
 };
 
-/** Returns an array of Arbor instances.
- * Each Arbor contains a subset of the given array of nodes.
- * If all given nodes are connected will return a single Arbor. */
+/**
+ * Returns an array of Arbor instances.  Each Arbor contains a subset of the
+ * given array of nodes.  If all given nodes are connected will return a single
+ * Arbor.
+ */
 Arbor.prototype.connectedFractions = function(nodes) {
   var members = {},
       arbors = {},
@@ -1708,7 +1866,10 @@ Arbor.prototype.connectedFractions = function(nodes) {
   return Object.keys(arbors).map(function(node) { return arbors[node]; });
 };
 
-/** Return a new Arbor that contains nodes from root all the way to either end nodes or the nodes found in the cuts map. */
+/**
+ * Return a new Arbor that contains nodes from root all the way to either end
+ * nodes or the nodes found in the cuts map.
+ */
 Arbor.prototype.upstreamArbor = function(cuts) {
   var up = new Arbor(),
       successors = this.allSuccessors(),
@@ -1725,8 +1886,10 @@ Arbor.prototype.upstreamArbor = function(cuts) {
   return up;
 };
 
-/** Given a set of nodes to keep, create a new Arbor with only
- * the nodes to keep and the branch points between them. */
+/**
+ * Given a set of nodes to keep, create a new Arbor with only the nodes to keep
+ * and the branch points between them.
+ */
 Arbor.prototype.simplify = function(keepers) {
   // Reroot a copy at the first keeper node
   var copy = this.clone(),
@@ -1787,10 +1950,14 @@ Arbor.prototype.simplify = function(keepers) {
   return simple;
 };
 
-/** Given source nodes and target nodes, find for each source node 
- * the nearest target node.
- * distanceFn: a function that takes two nodes as arguments and returns a number.
- * If targets is empty will return Number.MAX_VALUE for each source. */
+/**
+ * Given source nodes and target nodes, find for each source node the nearest
+ * target node.
+ *
+ * @param {Function} distanceFn A function that takes two nodes as arguments and
+ *                              returns a number. If targets is empty will
+ *                              return Number.MAX_VALUE for each source.
+ */
 Arbor.prototype.minDistancesFromTo = function(sources, targets, distanceFn) {
   var neighbors = this.allNeighbors(),
       distances = {},
@@ -1845,8 +2012,10 @@ Arbor.prototype.minDistancesFromTo = function(sources, targets, distanceFn) {
   return distances;
 };
 
-/** Return a map of nodes within a max distance of the source node.
- * The map has node ID as keys and distance to source as values. */
+/**
+ * Return a map of nodes within a max distance of the source node.  The map has
+ * node ID as keys and distance to source as values.
+ */
 Arbor.prototype.findNodesWithin = function(source, distanceFn, max_distance) {
   var neighbors = this.allNeighbors(),
       within = {},
@@ -1870,11 +2039,13 @@ Arbor.prototype.findNodesWithin = function(source, distanceFn, max_distance) {
   return within;
 };
 
-/** Split the arbor into a list of Arbor instances,
- * by cutting at each node in the cuts map (which contains node keys and truthy values).
- * The cut is done by severing the edge between an node and its parent,
- * so a cut at the root node has no effect, but cuts at end nodes result
- * in single-node Arbor instances (just root, no edges). */
+/**
+ * Split the arbor into a list of Arbor instances, by cutting at each node in
+ * the cuts map (which contains node keys and truthy values).  The cut is done
+ * by severing the edge between an node and its parent, so a cut at the root
+ * node has no effect, but cuts at end nodes result in single-node Arbor
+ * instances (just root, no edges).
+ */
 Arbor.prototype.split = function(cuts) {
   var be = this.findBranchAndEndNodes(),
       ends = be.ends,
@@ -1986,7 +2157,11 @@ Arbor.prototype.split = function(cuts) {
   return fragments;
 };
 
-/** Return an array of treenode IDs corresponding each to the first node of a twig that is not part of the backbone, approximating the roots by using the strahler number. */
+/**
+ * Return an array of treenode IDs corresponding each to the first node of a
+ * twig that is not part of the backbone, approximating the roots by using the
+ * strahler number.
+ */
 Arbor.prototype.approximateTwigRoots = function(strahler_cut) {
   // Approximate by using Strahler number:
   // the twig root will be at the first parent

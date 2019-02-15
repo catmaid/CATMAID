@@ -147,7 +147,7 @@ class GroupAdminForm(forms.ModelForm):
             group.save()
 
         if group.pk:
-            group.user_set = self.cleaned_data['users']
+            group.user_set.set(self.cleaned_data['users'])
             self.save_m2m()
 
         return group

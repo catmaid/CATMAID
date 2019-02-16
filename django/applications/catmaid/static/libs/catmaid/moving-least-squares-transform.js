@@ -31,7 +31,7 @@
       m20, m21, m22 )
     {
       // 'return' can't be alone in a line: returns undefined!
-      return m00 * m11 * m22 + 
+      return m00 * m11 * m22 +
              m10 * m21 * m02 +
              m20 * m01 * m12 -
              m02 * m11 * m20 -
@@ -591,223 +591,355 @@
   };
 
 
+  class Homography {
+    constructor() {
+      this.m00 = 1.0; this.m01 = 0.0; this.m02 = 0.0; this.m03 = 0.0;
+      this.m10 = 0.0; this.m11 = 1.0; this.m12 = 0.0; this.m13 = 0.0;
+      this.m20 = 0.0; this.m21 = 0.0; this.m22 = 1.0; this.m23 = 0.0;
+
+      this.i00 = 1.0; this.i01 = 0.0; this.i02 = 0.0; this.i03 = 0.0;
+      this.i10 = 0.0; this.i11 = 1.0; this.i12 = 0.0; this.i13 = 0.0;
+      this.i20 = 0.0; this.i21 = 0.0; this.i22 = 1.0; this.i23 = 0.0;
+
+      this.isInvertible = true;
+    }
+
+    apply(l) {
+      var transformed = l.slice( 0 ); // clone
+      this.applyInPlace( transformed );
+      return transformed;
+    }
+
+    applyInPlace( l ) {
+      assert( l.length >= 3, "3d affine transformations can be applied to 3d points only." );
+
+      var l0 = l[ 0 ];
+      var l1 = l[ 1 ];
+      l[ 0 ] = l0 * this.m00 + l1 * this.m01 + l[ 2 ] * this.m02 + this.m03;
+      l[ 1 ] = l0 * this.m10 + l1 * this.m11 + l[ 2 ] * this.m12 + this.m13;
+      l[ 2 ] = l0 * this.m20 + l1 * this.m21 + l[ 2 ] * this.m22 + this.m23;
+    }
+
+    applyInversefunction( l ) {
+      var transformed = l.slice( 0 );
+      this.applyInverseInPlace( transformed );
+      return transformed;
+    }
+
+    applyInverseInPlace( l ) {
+      assert( l.length >= 3, "3d affine transformations can be applied to 3d points only." );
+
+      if ( this.isInvertible )
+      {
+        let l0 = l[ 0 ];
+        let l1 = l[ 1 ];
+        l[ 0 ] = l0 * this.i00 + l1 * this.i01 + l[ 2 ] * this.i02 + this.i03;
+        l[ 1 ] = l0 * this.i10 + l1 * this.i11 + l[ 2 ] * this.i12 + this.i13;
+        l[ 2 ] = l0 * this.i20 + l1 * this.i21 + l[ 2 ] * this.i22 + this.i23;
+      }
+      else
+        throw new NoninvertibleModelException( "Model not invertible." );
+    }
+
+    invert() {
+      var det = Matrix3x3.det( this.m00, this.m01, this.m02, this.m10, this.m11, this.m12, this.m20, this.m21, this.m22 );
+      if ( det === 0 )
+      {
+        this.isInvertible = false;
+        return;
+      }
+
+      this.isInvertible = true;
+
+      var idet = 1.0 / det;
+
+      this.i00 = ( this.m11 * this.m22 - this.m12 * this.m21 ) * idet;
+      this.i01 = ( this.m02 * this.m21 - this.m01 * this.m22 ) * idet;
+      this.i02 = ( this.m01 * this.m12 - this.m02 * this.m11 ) * idet;
+      this.i10 = ( this.m12 * this.m20 - this.m10 * this.m22 ) * idet;
+      this.i11 = ( this.m00 * this.m22 - this.m02 * this.m20 ) * idet;
+      this.i12 = ( this.m02 * this.m10 - this.m00 * this.m12 ) * idet;
+      this.i20 = ( this.m10 * this.m21 - this.m11 * this.m20 ) * idet;
+      this.i21 = ( this.m01 * this.m20 - this.m00 * this.m21 ) * idet;
+      this.i22 = ( this.m00 * this.m11 - this.m01 * this.m10 ) * idet;
+
+      this.i03 = -this.i00 * this.m03 - this.i01 * this.m13 - this.i02 * this.m23;
+      this.i13 = -this.i10 * this.m03 - this.i11 * this.m13 - this.i12 * this.m23;
+      this.i23 = -this.i20 * this.m03 - this.i21 * this.m13 - this.i22 * this.m23;
+    }
+  }
+
+
   /**
    * Partial implementation. Not all methods are implemented,
    * only those sufficient to operate a MovingLeastSquaresTransform.
    */
-  var AffineModel3D = function() {
-    this.m00 = 1.0; this.m01 = 0.0; this.m02 = 0.0; this.m03 = 0.0;
-    this.m10 = 0.0; this.m11 = 1.0; this.m12 = 0.0; this.m13 = 0.0;
-    this.m20 = 0.0; this.m21 = 0.0; this.m22 = 1.0; this.m23 = 0.0;
+  class AffineModel3D extends Homography {
+    /**
+     * Closed form weighted least squares solution as described by
+     * \citet{SchaeferAl06}.
+     *
+     * @param matches: collection of PointMatch instances
+     */
+    fit( matches ) {
+      if ( matches.length < AffineModel3D.MIN_NUM_MATCHES )
+        throw new NotEnoughDataPointsException( matches.length + " data points are not enough to estimate a 2d affine model, at least " + this.MIN_NUM_MATCHES + " data points required." );
 
-    this.i00 = 1.0; this.i01 = 0.0; this.i02 = 0.0; this.i03 = 0.0;
-    this.i10 = 0.0; this.i11 = 1.0; this.i12 = 0.0; this.i13 = 0.0;
-    this.i20 = 0.0; this.i21 = 0.0; this.i22 = 1.0; this.i23 = 0.0;
+      var pcx = 0.0, pcy = 0.0, pcz = 0.0;
+      var qcx = 0.0, qcy = 0.0, qcz = 0.0;
 
-    this.isInvertible = true;
+      var ws = 0.0;
 
-    this.MIN_NUM_MATCHES = 4;
-  };
+      for ( let i=0; i<matches.length; ++i )
+      {
+        let m = matches[ i ];
 
-  AffineModel3D.prototype = {};
+        let p = m.getP1().getL(); // array
+        let q = m.getP2().getW(); // array
 
-  /**
-   * @param l: array of double values
-   */
-  AffineModel3D.prototype.apply = function( l )
-  {
-    var transformed = l.slice( 0 ); // clone
-    this.applyInPlace( transformed );
-    return transformed;
-  };
+        let w = m.getWeight();
+        ws += w;
 
-  /**
-   * @param l: array of double values
-   */
-  AffineModel3D.prototype.applyInPlace = function( l )
-  {
-    assert( l.length >= 3, "3d affine transformations can be applied to 3d points only." );
+        pcx += w * p[ 0 ];
+        pcy += w * p[ 1 ];
+        pcz += w * p[ 2 ];
+        qcx += w * q[ 0 ];
+        qcy += w * q[ 1 ];
+        qcz += w * q[ 2 ];
+      }
+      pcx /= ws;
+      pcy /= ws;
+      pcz /= ws;
+      qcx /= ws;
+      qcy /= ws;
+      qcz /= ws;
 
-    var l0 = l[ 0 ];
-    var l1 = l[ 1 ];
-    l[ 0 ] = l0 * this.m00 + l1 * this.m01 + l[ 2 ] * this.m02 + this.m03;
-    l[ 1 ] = l0 * this.m10 + l1 * this.m11 + l[ 2 ] * this.m12 + this.m13;
-    l[ 2 ] = l0 * this.m20 + l1 * this.m21 + l[ 2 ] * this.m22 + this.m23;
-  };
+      var
+        a00, a01, a02,
+             a11, a12,
+                  a22;
+      var
+        b00, b01, b02,
+        b10, b11, b12,
+        b20, b21, b22;
 
-  /**
-   * @param l: array of double values
-   */
-  AffineModel3D.prototype.applyInverse = function( l )
-  {
-    var transformed = l.slice( 0 );
-    this.applyInverseInPlace( transformed );
-    return transformed;
-  };
+      a00 = a01 = a02 = a11 = a12 = a22 = b00 = b01 = b02 = b10 = b11 = b12 = b20 = b21 = b22 = 0;
+      for ( let i=0; i<matches.length; ++i )
+      {
+        let m = matches[ i ];
+        let p = m.getP1().getL(); // array
+        let q = m.getP2().getW(); // array
+        let w = m.getWeight();
 
-  /**
-   * @param l: array of double values
-   */
-  AffineModel3D.prototype.applyInverseInPlace = function( l )
-  {
-    assert( l.length >= 3, "3d affine transformations can be applied to 3d points only." );
+        let px = p[ 0 ] - pcx, py = p[ 1 ] - pcy, pz = p[ 2 ] - pcz;
+        let qx = q[ 0 ] - qcx, qy = q[ 1 ] - qcy, qz = q[ 2 ] - qcz;
+        a00 += w * px * px;
+        a01 += w * px * py;
+        a02 += w * px * pz;
+        a11 += w * py * py;
+        a12 += w * py * pz;
+        a22 += w * pz * pz;
 
-    if ( this.isInvertible )
-    {
-      let l0 = l[ 0 ];
-      let l1 = l[ 1 ];
-      l[ 0 ] = l0 * this.i00 + l1 * this.i01 + l[ 2 ] * this.i02 + this.i03;
-      l[ 1 ] = l0 * this.i10 + l1 * this.i11 + l[ 2 ] * this.i12 + this.i13;
-      l[ 2 ] = l0 * this.i20 + l1 * this.i21 + l[ 2 ] * this.i22 + this.i23;
+        b00 += w * px * qx;
+        b01 += w * px * qy;
+        b02 += w * px * qz;
+        b10 += w * py * qx;
+        b11 += w * py * qy;
+        b12 += w * py * qz;
+        b20 += w * pz * qx;
+        b21 += w * pz * qy;
+        b22 += w * pz * qz;
+      }
+
+      var det =
+        a00 * a11 * a22 +
+        a01 * a12 * a02 +
+        a02 * a01 * a12 -
+        a02 * a11 * a02 -
+        a12 * a12 * a00 -
+        a22 * a01 * a01;
+
+      if ( det === 0 )
+        throw new IllDefinedDataPointsException();
+
+      var idet = 1.0 / det;
+
+      var ai00 = ( a11 * a22 - a12 * a12 ) * idet;
+      var ai01 = ( a02 * a12 - a01 * a22 ) * idet;
+      var ai02 = ( a01 * a12 - a02 * a11 ) * idet;
+      var ai11 = ( a00 * a22 - a02 * a02 ) * idet;
+      var ai12 = ( a02 * a01 - a00 * a12 ) * idet;
+      var ai22 = ( a00 * a11 - a01 * a01 ) * idet;
+
+      this.m00 = ai00 * b00 + ai01 * b10 + ai02 * b20;
+      this.m01 = ai01 * b00 + ai11 * b10 + ai12 * b20;
+      this.m02 = ai02 * b00 + ai12 * b10 + ai22 * b20;
+
+      this.m10 = ai00 * b01 + ai01 * b11 + ai02 * b21;
+      this.m11 = ai01 * b01 + ai11 * b11 + ai12 * b21;
+      this.m12 = ai02 * b01 + ai12 * b11 + ai22 * b21;
+
+      this.m20 = ai00 * b02 + ai01 * b12 + ai02 * b22;
+      this.m21 = ai01 * b02 + ai11 * b12 + ai12 * b22;
+      this.m22 = ai02 * b02 + ai12 * b12 + ai22 * b22;
+
+      this.m03 = qcx - this.m00 * pcx - this.m01 * pcy - this.m02 * pcz;
+      this.m13 = qcy - this.m10 * pcx - this.m11 * pcy - this.m12 * pcz;
+      this.m23 = qcz - this.m20 * pcx - this.m21 * pcy - this.m22 * pcz;
+
+      this.invert();
     }
-    else
-      throw new NoninvertibleModelException( "Model not invertible." );
-  };
+  }
 
-  /**
-   * Closed form weighted least squares solution as described by
-   * \citet{SchaeferAl06}.
-   *
-   * @param matches: collection of PointMatch instances
-   */
-  AffineModel3D.prototype.fit = function( matches )
-  {
-    if ( matches.length < this.MIN_NUM_MATCHES )
-      throw new NotEnoughDataPointsException( matches.length + " data points are not enough to estimate a 2d affine model, at least " + this.MIN_NUM_MATCHES + " data points required." );
-
-    var pcx = 0.0, pcy = 0.0, pcz = 0.0;
-    var qcx = 0.0, qcy = 0.0, qcz = 0.0;
-
-    var ws = 0.0;
-
-    for ( let i=0; i<matches.length; ++i )
-    {
-      let m = matches[ i ];
-
-      let p = m.getP1().getL(); // array
-      let q = m.getP2().getW(); // array
-
-      let w = m.getWeight();
-      ws += w;
-
-      pcx += w * p[ 0 ];
-      pcy += w * p[ 1 ];
-      pcz += w * p[ 2 ];
-      qcx += w * q[ 0 ];
-      qcy += w * q[ 1 ];
-      qcz += w * q[ 2 ];
-    }
-    pcx /= ws;
-    pcy /= ws;
-    pcz /= ws;
-    qcx /= ws;
-    qcy /= ws;
-    qcz /= ws;
-
-    var
-      a00, a01, a02,
-           a11, a12,
-                a22;
-    var
-      b00, b01, b02,
-      b10, b11, b12,
-      b20, b21, b22;
-
-    a00 = a01 = a02 = a11 = a12 = a22 = b00 = b01 = b02 = b10 = b11 = b12 = b20 = b21 = b22 = 0;
-    for ( let i=0; i<matches.length; ++i )
-    {
-      let m = matches[ i ];
-      let p = m.getP1().getL(); // array
-      let q = m.getP2().getW(); // array
-      let w = m.getWeight();
-
-      let px = p[ 0 ] - pcx, py = p[ 1 ] - pcy, pz = p[ 2 ] - pcz;
-      let qx = q[ 0 ] - qcx, qy = q[ 1 ] - qcy, qz = q[ 2 ] - qcz;
-      a00 += w * px * px;
-      a01 += w * px * py;
-      a02 += w * px * pz;
-      a11 += w * py * py;
-      a12 += w * py * pz;
-      a22 += w * pz * pz;
-
-      b00 += w * px * qx;
-      b01 += w * px * qy;
-      b02 += w * px * qz;
-      b10 += w * py * qx;
-      b11 += w * py * qy;
-      b12 += w * py * qz;
-      b20 += w * pz * qx;
-      b21 += w * pz * qy;
-      b22 += w * pz * qz;
-    }
-
-    var det =
-      a00 * a11 * a22 +
-      a01 * a12 * a02 +
-      a02 * a01 * a12 -
-      a02 * a11 * a02 -
-      a12 * a12 * a00 -
-      a22 * a01 * a01;
-
-    if ( det === 0 )
-      throw new IllDefinedDataPointsException();
-
-    var idet = 1.0 / det;
-
-    var ai00 = ( a11 * a22 - a12 * a12 ) * idet;
-    var ai01 = ( a02 * a12 - a01 * a22 ) * idet;
-    var ai02 = ( a01 * a12 - a02 * a11 ) * idet;
-    var ai11 = ( a00 * a22 - a02 * a02 ) * idet;
-    var ai12 = ( a02 * a01 - a00 * a12 ) * idet;
-    var ai22 = ( a00 * a11 - a01 * a01 ) * idet;
-
-    this.m00 = ai00 * b00 + ai01 * b10 + ai02 * b20;
-    this.m01 = ai01 * b00 + ai11 * b10 + ai12 * b20;
-    this.m02 = ai02 * b00 + ai12 * b10 + ai22 * b20;
-
-    this.m10 = ai00 * b01 + ai01 * b11 + ai02 * b21;
-    this.m11 = ai01 * b01 + ai11 * b11 + ai12 * b21;
-    this.m12 = ai02 * b01 + ai12 * b11 + ai22 * b21;
-
-    this.m20 = ai00 * b02 + ai01 * b12 + ai02 * b22;
-    this.m21 = ai01 * b02 + ai11 * b12 + ai12 * b22;
-    this.m22 = ai02 * b02 + ai12 * b12 + ai22 * b22;
-
-    this.m03 = qcx - this.m00 * pcx - this.m01 * pcy - this.m02 * pcz;
-    this.m13 = qcy - this.m10 * pcx - this.m11 * pcy - this.m12 * pcz;
-    this.m23 = qcz - this.m20 * pcx - this.m21 * pcy - this.m22 * pcz;
-
-    this.invert();
-  };
+  AffineModel3D.MIN_NUM_MATCHES = 4;
 
 
-  AffineModel3D.prototype.invert = function()
-  {
-    var det = Matrix3x3.det( this.m00, this.m01, this.m02, this.m10, this.m11, this.m12, this.m20, this.m21, this.m22 );
-    if ( det === 0 )
-    {
-      this.isInvertible = false;
-      return;
+  class SimilarityModel3D extends Homography {
+    fit(matches) {
+      if ( matches.length < SimilarityModel3D.MIN_NUM_MATCHES )
+        throw new NotEnoughDataPointsException( matches.length + " data points are not enough to estimate a 3d similarity model, at least " + MIN_NUM_MATCHES + " data points required." );
+
+      let pcx = 0.0, pcy = 0.0, pcz = 0.0;
+      let qcx = 0.0, qcy = 0.0, qcz = 0.0;
+
+      let ws = 0.0; // sum of weights
+
+      for (let m of matches) {
+        let p = m.getP1().getL();
+        let q = m.getP2().getW();
+        let w = m.getWeight();
+
+        ws += w;
+        pcx += w * p[ 0 ];
+        pcy += w * p[ 1 ];
+        pcz += w * p[ 2 ];
+        qcx += w * q[ 0 ];
+        qcy += w * q[ 1 ];
+        qcz += w * q[ 2 ];
+      }
+      pcx /= ws;
+      pcy /= ws;
+      pcz /= ws;
+      qcx /= ws;
+      qcy /= ws;
+      qcz /= ws;
+
+      let r1 = 0, r2 = 0;
+      for (let m of matches) {
+        let p = m.getP1().getL();
+        let q = m.getP2().getW();
+
+        let x1 = p[ 0 ] - pcx;
+        let y1 = p[ 1 ] - pcy;
+        let z1 = p[ 2 ] - pcz;
+        let x2 = q[ 0 ] - qcx;
+        let y2 = q[ 1 ] - qcy;
+        let z2 = q[ 2 ] - qcz;
+        r1 += x1 * x1 + y1 * y1 + z1 * z1;
+        r2 += x2 * x2 + y2 * y2 + z2 * z2;
+      }
+      const s = Math.sqrt(r2 / r1);
+
+      // calculate N
+      let Sxx, Sxy, Sxz, Syx, Syy, Syz, Szx, Szy, Szz;
+      Sxx = Sxy = Sxz = Syx = Syy = Syz = Szx = Szy = Szz = 0;
+      for (let m of matches) {
+        let p = m.getP1().getL();
+        let q = m.getP2().getW();
+
+        let x1 = (p[ 0 ] - pcx) * s;
+        let y1 = (p[ 1 ] - pcy) * s;
+        let z1 = (p[ 2 ] - pcz) * s;
+        let x2 = q[ 0 ] - qcx;
+        let y2 = q[ 1 ] - qcy;
+        let z2 = q[ 2 ] - qcz;
+        Sxx += x1 * x2;
+        Sxy += x1 * y2;
+        Sxz += x1 * z2;
+        Syx += y1 * x2;
+        Syy += y1 * y2;
+        Syz += y1 * z2;
+        Szx += z1 * x2;
+        Szy += z1 * y2;
+        Szz += z1 * z2;
+      }
+
+      let N = [
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+      ];
+      SimilarityModel3D.computeN( N, Sxx, Sxz, Sxy, Syx, Syy, Syz, Szx, Szy, Szz );
+
+      // calculate eigenvector with maximal eigenvalue
+      let evd = numeric.eig(N);
+
+      const eigenvalues = evd.lambda.x;
+
+      let index = 0;
+      for (let i = 1; i < 4; i++)
+        if (eigenvalues[i] > eigenvalues[index])
+          index = i;
+
+      let q0 = evd.E.x[0][index];
+      let qx = evd.E.x[1][index];
+      let qy = evd.E.x[2][index];
+      let qz = evd.E.x[3][index];
+
+      // compute result
+      this.rotationTranslationPart(
+          s, q0, qx, qy, qz,
+          pcx, pcy, pcz, qcx, qcy, qcz);
+
+      this.invert();
     }
 
-    this.isInvertible = true;
+    rotationTranslationPart( s, q0, qx, qy, qz,
+      pcx, pcy, pcz, qcx, qcy, qcz )
+    {
+      // rotational part
+      this.m00 = s * (q0 * q0 + qx * qx - qy * qy - qz * qz);
+      this.m01 = s * 2 * (qx * qy - q0 * qz);
+      this.m02 = s * 2 * (qx * qz + q0 * qy);
+      this.m10 = s * 2 * (qy * qx + q0 * qz);
+      this.m11 = s * (q0 * q0 - qx * qx + qy * qy - qz * qz);
+      this.m12 = s * 2 * (qy * qz - q0 * qx);
+      this.m20 = s * 2 * (qz * qx - q0 * qy);
+      this.m21 = s * 2 * (qz * qy + q0 * qx);
+      this.m22 = s * (q0 * q0 - qx * qx - qy * qy + qz * qz);
 
-    var idet = 1.0 / det;
+      let resx = 0.0, resy = 0.0, resz = 0.0;
+      resx = pcx * this.m00 + pcy * this.m01 + pcz * this.m02;
+      resy = pcx * this.m10 + pcy * this.m11 + pcz * this.m12;
+      resz = pcx * this.m20 + pcy * this.m21 + pcz * this.m22;
 
-    this.i00 = ( this.m11 * this.m22 - this.m12 * this.m21 ) * idet;
-    this.i01 = ( this.m02 * this.m21 - this.m01 * this.m22 ) * idet;
-    this.i02 = ( this.m01 * this.m12 - this.m02 * this.m11 ) * idet;
-    this.i10 = ( this.m12 * this.m20 - this.m10 * this.m22 ) * idet;
-    this.i11 = ( this.m00 * this.m22 - this.m02 * this.m20 ) * idet;
-    this.i12 = ( this.m02 * this.m10 - this.m00 * this.m12 ) * idet;
-    this.i20 = ( this.m10 * this.m21 - this.m11 * this.m20 ) * idet;
-    this.i21 = ( this.m01 * this.m20 - this.m00 * this.m21 ) * idet;
-    this.i22 = ( this.m00 * this.m11 - this.m01 * this.m10 ) * idet;
+      this.m03 = qcx - resx;
+      this.m13 = qcy - resy;
+      this.m23 = qcz - resz;
+    }
 
-    this.i03 = -this.i00 * this.m03 - this.i01 * this.m13 - this.i02 * this.m23;
-    this.i13 = -this.i10 * this.m03 - this.i11 * this.m13 - this.i12 * this.m23;
-    this.i23 = -this.i20 * this.m03 - this.i21 * this.m13 - this.i22 * this.m23;
-  };
+    static computeN( N, Sxx, Sxz, Sxy, Syx, Syy, Syz, Szx, Szy, Szz ) {
+      N[0][0] = Sxx + Syy + Szz;
+      N[0][1] = Syz - Szy;
+      N[0][2] = Szx - Sxz;
+      N[0][3] = Sxy - Syx;
+      N[1][0] = Syz - Szy;
+      N[1][1] = Sxx - Syy - Szz;
+      N[1][2] = Sxy + Syx;
+      N[1][3] = Szx + Sxz;
+      N[2][0] = Szx - Sxz;
+      N[2][1] = Sxy + Syx;
+      N[2][2] = -Sxx + Syy - Szz;
+      N[2][3] = Syz + Szy;
+      N[3][0] = Sxy - Syx;
+      N[3][1] = Szx + Sxz;
+      N[3][2] = Syz + Szy;
+      N[3][3] = -Sxx - Syy + Szz;
+    }
+  }
+
+  SimilarityModel3D.MIN_NUM_MATCHES = 3;
 
 
   var transform = {};
@@ -817,6 +949,7 @@
   transform.NoninvertibleModelException = NoninvertibleModelException;
   transform.NotEnoughDataPointsException = NotEnoughDataPointsException;
   transform.AffineModel3D = AffineModel3D;
+  transform.SimilarityModel3D = SimilarityModel3D;
 
   CATMAID.transform = transform;
 

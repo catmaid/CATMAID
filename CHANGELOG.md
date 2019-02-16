@@ -229,6 +229,11 @@ Miscellaneous:
   appended to the Selection Table of a 3D Viewer, rather than the 3D Viewer
   directly.
 
+- SWC neuron import: providing a neuron ID for an import works again and will
+  now also set an optionally provided neuron name. Additionally, it is now
+  required that a user importing skeleton data for an existing neuron ID has
+  the rights to edit the skeleton instance as well as all its treenodes.
+
 
 ## 2018.11.09
 

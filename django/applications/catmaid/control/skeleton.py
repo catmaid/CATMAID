@@ -22,6 +22,8 @@ from django.views.decorators.cache import never_cache
 
 from rest_framework.decorators import api_view
 
+from psycopg2.extras import execute_values
+
 from catmaid.models import (Project, UserRole, Class, ClassInstance, Review,
         ClassInstanceClassInstance, Relation, Sampler, Treenode,
         TreenodeConnector, SamplerDomain, SkeletonSummary, SamplerDomainEnd,
@@ -30,7 +32,7 @@ from catmaid.objects import Skeleton, SkeletonGroup, \
         compartmentalize_skeletongroup_by_edgecount, \
         compartmentalize_skeletongroup_by_confidence
 from catmaid.control.authentication import requires_user_role, \
-        can_edit_class_instance_or_fail, can_edit_or_fail
+        can_edit_class_instance_or_fail, can_edit_or_fail, can_edit_all_or_fail
 from catmaid.control.common import (insert_into_log, get_class_to_id_map,
         get_relation_to_id_map, _create_relation, get_request_bool,
         get_request_list, Echo)
@@ -2449,10 +2451,34 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None, name=None) 
             neuron_id = None
 
     if neuron_id is not None:
+        cici = ClassInstanceClassInstance.objects.filter(
+                class_instance_b=neuron_id,
+                relation_id=relation_map['model_of'],
+                class_instance_a__class_column_id=class_map['skeleton'])
+
         # Raise an Exception if the user doesn't have permission to
         # edit the existing neuron.
         can_edit_class_instance_or_fail(user, neuron_id, 'neuron')
+        # Raise an Exception if the user doesn't have permission to
+        # edit the existing skeleton.
+        for skeleton_link in cici:
+            old_skeleton = skeleton_link.class_instance_a
+            can_edit_class_instance_or_fail(user, old_skeleton.id, 'class_instance')
+            # Require users to have edit permission on all treenodes of the
+            # skeleton.
+            treenode_ids = Treenode.objects.filter(skeleton_id=old_skeleton.id,
+                    project_id=project_id).values_list('id', flat=True)
+            can_edit_all_or_fail(user, treenode_ids, 'treenode')
+
+            # Remove existing skeletons
+            skeleton_link.delete()
+            old_skeleton.delete()
+
+        new_neuron = ClassInstance.objects.get(pk=neuron_id)
         neuron_id = neuron_id
+        new_neuron = ClassInstance.objects.get(pk=neuron_id)
+        if name is not None:
+            new_neuron.name = name
     else:
         # A neuron does not exist, therefore we put the new skeleton
         # into a new neuron.
@@ -2466,9 +2492,9 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None, name=None) 
             new_neuron.name = 'neuron'
             new_neuron.save()
             new_neuron.name = 'neuron %d' % new_neuron.id
-        new_neuron.save()
 
-        neuron_id = new_neuron.id
+    new_neuron.save()
+    neuron_id = new_neuron.id
 
     relate_neuron_to_skeleton(neuron_id, new_skeleton.id)
 
@@ -2488,12 +2514,13 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None, name=None) 
         FROM (VALUES (%(project_id)s, 0, %(user_id)s, %(skeleton_id)s))
             AS t (project_id, x, user_id, skeleton_id),
             generate_series(1, %(num_treenodes)s)
-        RETURNING treenode.id;
-        """ % {
-            'project_id': project_id,
-            'user_id': user.id,
-            'skeleton_id': new_skeleton.id,
-            'num_treenodes': arborescence.number_of_nodes()})
+        RETURNING treenode.id
+    """, {
+        'project_id': int(project_id),
+        'user_id': user.id,
+        'skeleton_id': new_skeleton.id,
+        'num_treenodes': arborescence.number_of_nodes()
+    })
     treenode_ids = cursor.fetchall()
     # Flatten IDs
     treenode_ids = list(chain.from_iterable(treenode_ids))
@@ -2505,24 +2532,25 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None, name=None) 
             arborescence.node[nbr]['parent_id'] = arborescence.node[n]['id']
             if not 'radius' in arborescence.node[nbr]:
                 arborescence.node[nbr]['radius'] = -1
-    arborescence.node[root]['parent_id'] = 'NULL::bigint'
+    arborescence.node[root]['parent_id'] = None
     if not 'radius' in arborescence.node[root]:
         arborescence.node[root]['radius'] = -1
     new_location = tuple([arborescence.node[root][k] for k in ('x', 'y', 'z')])
 
-    treenode_values = \
-            '),('.join([','.join(map(str, [d[k] for k in ('id', 'x', 'y', 'z', 'parent_id', 'radius')])) \
-            for n, d in arborescence.nodes_iter(data=True)])
-    cursor.execute("""
+    treenode_values = [d for n, d in arborescence.nodes_iter(data=True)]
+    # Include skeleton ID for index performance.
+    execute_values(cursor, """
         UPDATE treenode SET
             location_x = v.x,
             location_y = v.y,
             location_z = v.z,
             parent_id = v.parent_id,
             radius = v.radius
-        FROM (VALUES (%s)) AS v(id, x, y, z, parent_id, radius)
-        WHERE treenode.id = v.id AND treenode.skeleton_id = %s
-        """ % (treenode_values, new_skeleton.id)) # Include skeleton ID for index performance.
+        FROM (VALUES %s) AS v(id, x, y, z, parent_id, radius)
+        WHERE treenode.id = v.id
+            AND treenode.skeleton_id = {}
+    """.format(new_skeleton.id), treenode_values,
+            "(%(id)s, %(x)s, %(y)s, %(z)s, %(parent_id)s, %(radius)s)")
 
     # Log import.
     insert_into_log(project_id, user.id, 'create_neuron',

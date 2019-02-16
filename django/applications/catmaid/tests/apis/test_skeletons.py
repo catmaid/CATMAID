@@ -95,6 +95,23 @@ class SkeletonsApiTests(CatmaidApiTestCase):
             self.assertEqual(tn.location_z, new_tn.location_z)
             self.assertEqual(max(tn.radius, 0), max(new_tn.radius, 0))
 
+        # Test replacing the imported neuron
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.swc': swc_file2, 'name': 'test2', 'neuron_id': neuron.id})
+
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        # Make sure there is still only one skeleton
+        neuron.refresh_from_db()
+        replaced_skeletons = ClassInstanceClassInstance.objects.filter(
+                class_instance_b_id=neuron.id,
+                relation__relation_name='model_of',
+                class_instance_a__class_column__class_name='skeleton')
+        self.assertEqual(len(replaced_skeletons), 1)
+        self.assertEqual(neuron.name, 'test2')
+
 
     def test_skeleton_contributor_statistics(self):
         self.fake_authentication()

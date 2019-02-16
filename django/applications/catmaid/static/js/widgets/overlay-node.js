@@ -1111,8 +1111,11 @@
           e.preventDefault();
         });
         c.on('pointerupoutside', function (event) {
+          // Stop both the Pixi event and the DOM event from propagation.
+          // Otherwise other Pixi elements can receive this event as well.
+          event.stopPropagation();
+
           var e = event.data.originalEvent;
-          e.stopPropagation();
           e.preventDefault();
           if (onclickHandler) { onclickHandler(); }
           return true;
@@ -1511,8 +1514,11 @@
        * Here 'this' is the node's circle graphics, and node is the Node instance
        */
       var mc_click = function(event) {
+        // Stop both the Pixi event and the DOM event from propagation.
+        // Otherwise other Pixi elements can receive this event as well.
+        event.stopPropagation();
+
         var e = event.data.originalEvent;
-        e.stopPropagation();
         e.preventDefault();
         var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(this.node.overlayGlobals.skeletonElements);
         if (catmaidTracingOverlay.ensureFocused()) {
@@ -1805,8 +1811,11 @@
       };
 
       var connector_mc_click = function(event) {
+        // Stop both the Pixi event and the DOM event from propagation.
+        // Otherwise other Pixi elements can receive this event as well.
+        event.stopPropagation();
+
         var e = event.data.originalEvent;
-        e.stopPropagation();
         e.preventDefault();
         var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(this.node.overlayGlobals.skeletonElements);
         if (catmaidTracingOverlay.ensureFocused()) {
@@ -1869,6 +1878,10 @@
       };
 
       this.edge_mc_click = function (event) {
+        // Stop both the Pixi event and the DOM event from propagation.
+        // Otherwise other Pixi elements can receive this event as well.
+        event.stopPropagation();
+
         var e = event.data.originalEvent;
         var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(this.node.overlayGlobals.skeletonElements);
         if (catmaidTracingOverlay.ensureFocused()) {

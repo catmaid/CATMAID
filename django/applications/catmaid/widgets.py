@@ -139,16 +139,17 @@ class DownsampleFactorsWidget(forms.MultiWidget):
                 attrs, **kwargs)
 
     def decompress(self, value):
-        if value is None or value[0] is None:
+        if value is None:
             return [0, None, None]
-        elif value[0] == catmaid.fields.DownsampleFactorsField.planar_default(len(value[0]) - 1):
-            return [1, len(value[0]) - 1, value[1]]
+        elif value == catmaid.fields.DownsampleFactorsField.planar_default(len(value) - 1):
+            return [1, len(value) - 1, self.array_field.prepare_value(value)]
         else:
-            return [2, len(value[0]) - 1, value[1]]
+            return [2, len(value) - 1, self.array_field.prepare_value(value)]
 
     def get_context(self, name, value, attrs):
         # Django doesn't play well with MultiValueFields/MultiWidgets whose
         # normalization type is a list, so will not try to decompress list
         # values by default.
-        value = self.decompress(value)
+        if catmaid.fields.DownsampleFactorsField.is_value(value):
+            value = self.decompress(value)
         return super(DownsampleFactorsWidget, self).get_context(name, value, attrs)

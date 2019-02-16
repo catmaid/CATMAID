@@ -292,6 +292,10 @@ class DownsampleFactorsField(ArrayField):
     def planar_default(num_zoom_levels):
         return [Integer3D(2**l, 2**l, 1) for l in range(num_zoom_levels + 1)]
 
+    @staticmethod
+    def is_value(value):
+        return isinstance(value, list) and all([isinstance(l, Integer3D) for l in value])
+
 # ------------------------------------------------------------------------
 
 class Integer3DFormField(forms.MultiValueField):
@@ -355,7 +359,8 @@ class DownsampleFactorsFormField(forms.MultiValueField):
                 widget=forms.RadioSelect),
             forms.IntegerField(label='Number of zoom levels'),
             SimpleArrayField(
-                Integer3DFormField(),
+                # Must be disabled for Django to decompress str values during `clean`.
+                Integer3DFormField(disabled=True),
                 label='Factors array',
                 delimiter='|',
                 max_length=kwargs['max_length']),
@@ -363,6 +368,10 @@ class DownsampleFactorsFormField(forms.MultiValueField):
         del kwargs['max_length']
         del kwargs['base_field']
         super(DownsampleFactorsFormField, self).__init__(fields, *args, **kwargs)
+        # Because SimpleArrayField does not strictly adhere to Django conventions,
+        # our widget must have access to its field so that `prepare_value` can
+        # be used to convert the array to a string.
+        self.widget.array_field = self.fields[2]
 
     def compress(self, data_list):
         if data_list:
@@ -375,5 +384,8 @@ class DownsampleFactorsFormField(forms.MultiValueField):
                 return data_list[2]
         return None
 
-    def prepare_value(self, value):
-        return (value, self.fields[2].prepare_value(value))
+    def clean(self, value):
+        if DownsampleFactorsField.is_value(value):
+            value = self.widget.decompress(value)
+
+        return super().clean(value)

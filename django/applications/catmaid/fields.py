@@ -289,8 +289,21 @@ class DownsampleFactorsField(ArrayField):
         return super(DownsampleFactorsField, self).formfield(**defaults)
 
     @staticmethod
-    def planar_default(num_zoom_levels):
-        return [Integer3D(2**l, 2**l, 1) for l in range(num_zoom_levels + 1)]
+    def is_default_scale_pyramid(value):
+        axes = [True, True, True]
+        for l, val in enumerate(value):
+            val = value[l].to_dict()
+            axes = [axes[i] and val[a] == 2**l for i, a in enumerate(('x', 'y', 'z'))]
+            if any(not axes[i] and not val[a] == 1 for i, a in enumerate(('x', 'y', 'z'))):
+                return [False, False, False]
+        return axes
+
+    @staticmethod
+    def default_scale_pyramid(axes, num_zoom_levels):
+        if num_zoom_levels is None:
+            return None
+        base_factors = [2 if d else 1 for d in axes]
+        return [Integer3D(*[d**l for d in base_factors]) for l in range(num_zoom_levels + 1)]
 
     @staticmethod
     def is_value(value):
@@ -357,6 +370,9 @@ class DownsampleFactorsFormField(forms.MultiValueField):
             forms.ChoiceField(
                 choices=DownsampleFactorsWidget.choices,
                 widget=forms.RadioSelect),
+            forms.MultipleChoiceField(
+                choices=DownsampleFactorsWidget.axes_choices,
+                widget=forms.CheckboxSelectMultiple),
             forms.IntegerField(label='Number of zoom levels'),
             SimpleArrayField(
                 # Must be disabled for Django to decompress str values during `clean`.
@@ -371,7 +387,7 @@ class DownsampleFactorsFormField(forms.MultiValueField):
         # Because SimpleArrayField does not strictly adhere to Django conventions,
         # our widget must have access to its field so that `prepare_value` can
         # be used to convert the array to a string.
-        self.widget.array_field = self.fields[2]
+        self.widget.array_field = self.fields[3]
 
     def compress(self, data_list):
         if data_list:
@@ -379,9 +395,10 @@ class DownsampleFactorsFormField(forms.MultiValueField):
             if choice == 0:
                 return None
             elif choice == 1:
-                return DownsampleFactorsField.planar_default(data_list[1])
+                axes = [a[0] in data_list[1] for a in DownsampleFactorsWidget.axes_choices]
+                return DownsampleFactorsField.default_scale_pyramid(axes, data_list[2])
             elif choice == 2:
-                return data_list[2]
+                return data_list[3]
         return None
 
     def clean(self, value):

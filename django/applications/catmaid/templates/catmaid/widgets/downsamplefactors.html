@@ -7,11 +7,12 @@
 				{% include option.template_name with widget=option %}
 			{% endfor %}
 			{% if index == 1 %}
+				{% include widget.subwidgets.2.template_name with widget=widget.subwidgets.2 %}
+				<label for="widget.subwidgets.1.attrs.id">Number of scale levels</label>
 				{% include widget.subwidgets.1.template_name with widget=widget.subwidgets.1 %}
-				<label for="widget.subwidgets.1.attrs.id">Number of zoom levels</label>
 			{% endif %}
 			{% if index == 2 %}
-				{% include widget.subwidgets.2.template_name with widget=widget.subwidgets.2 %}
+				{% include widget.subwidgets.3.template_name with widget=widget.subwidgets.3 %}
 				<label for="widget.subwidgets.2.attrs.id" class="help">
 					Delimit dimension factors by <code>,</code> and scale levels by <code>|</code>.
 					Example: <code>1,1,1|2,2,2|4,4,4</code>

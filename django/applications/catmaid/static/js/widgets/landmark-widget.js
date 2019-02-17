@@ -3252,7 +3252,7 @@
                 .catch(CATMAID.handleError);
 
               let transformModelSelect = CATMAID.DOM.createSelect(undefined,
-                  ['Affine', 'Similarity'], 'Affine');
+                  ['Affine', 'Rigid', 'Similarity'], 'Affine');
               let transformModelSelectLabel = CATMAID.DOM.createLabeledControl(
                   'Transform model', transformModelSelect,
                   'Model used to fit the transformation between landmarks.');
@@ -3260,6 +3260,7 @@
               let selectedTransformModel = function () {
                 return {
                   'Affine': CATMAID.transform.AffineModel3D,
+                  'Rigid': CATMAID.transform.RigidModel3D,
                   'Similarity': CATMAID.transform.SimilarityModel3D
                 }[transformModelSelect.value];
               };

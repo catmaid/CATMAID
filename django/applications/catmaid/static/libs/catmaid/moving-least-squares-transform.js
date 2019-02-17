@@ -942,6 +942,97 @@
   SimilarityModel3D.MIN_NUM_MATCHES = 3;
 
 
+  class RigidModel3D extends SimilarityModel3D {
+    fit(matches) {
+      if ( matches.length < RigidModel3D.MIN_NUM_MATCHES )
+        throw new NotEnoughDataPointsException( matches.length + " data points are not enough to estimate a 3d similarity model, at least " + MIN_NUM_MATCHES + " data points required." );
+
+      let pcx = 0.0, pcy = 0.0, pcz = 0.0;
+      let qcx = 0.0, qcy = 0.0, qcz = 0.0;
+
+      let ws = 0.0; // sum of weights
+
+      for (let m of matches) {
+        let p = m.getP1().getL();
+        let q = m.getP2().getW();
+        let w = m.getWeight();
+
+        ws += w;
+        pcx += w * p[ 0 ];
+        pcy += w * p[ 1 ];
+        pcz += w * p[ 2 ];
+        qcx += w * q[ 0 ];
+        qcy += w * q[ 1 ];
+        qcz += w * q[ 2 ];
+      }
+      pcx /= ws;
+      pcy /= ws;
+      pcz /= ws;
+      qcx /= ws;
+      qcy /= ws;
+      qcz /= ws;
+
+      // calculate N
+      let Sxx, Sxy, Sxz, Syx, Syy, Syz, Szx, Szy, Szz;
+      Sxx = Sxy = Sxz = Syx = Syy = Syz = Szx = Szy = Szz = 0;
+      for (let m of matches) {
+        let p1 = m.getP1().getL();
+        let p2 = m.getP2().getW();
+        let w = m.getWeight();
+
+        let x1 = (p1[ 0 ] - pcx) * w;
+        let y1 = (p1[ 1 ] - pcy) * w;
+        let z1 = (p1[ 2 ] - pcz) * w;
+        let x2 = (p2[ 0 ] - qcx) * w;
+        let y2 = (p2[ 1 ] - qcy) * w;
+        let z2 = (p2[ 2 ] - qcz) * w;
+        Sxx += x1 * x2;
+        Sxy += x1 * y2;
+        Sxz += x1 * z2;
+        Syx += y1 * x2;
+        Syy += y1 * y2;
+        Syz += y1 * z2;
+        Szx += z1 * x2;
+        Szy += z1 * y2;
+        Szz += z1 * z2;
+      }
+
+      let N = [
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+      ];
+
+      SimilarityModel3D.computeN( N, Sxx, Sxz, Sxy, Syx, Syy, Syz, Szx, Szy, Szz );
+
+      // calculate eigenvector with maximal eigenvalue
+      let evd = numeric.eig(N);
+
+      const eigenvalues = evd.lambda.x;
+
+      let index = 0;
+      for (let i = 1; i < 4; i++)
+        if (eigenvalues[i] > eigenvalues[index])
+          index = i;
+
+      let q0 = evd.E.x[0][index];
+      let qx = evd.E.x[1][index];
+      let qy = evd.E.x[2][index];
+      let qz = evd.E.x[3][index];
+
+      // compute result
+      this.rotationTranslationPart(
+          1.0, q0, qx, qy, qz,
+          pcx, pcy, pcz, qcx, qcy, qcz);
+
+      this.invert();
+    }
+  }
+
+  RigidModel3D.MIN_NUM_MATCHES = 3;
+
+
   var transform = {};
   transform.Point = Point;
   transform.PointMatch = PointMatch;
@@ -949,6 +1040,7 @@
   transform.NoninvertibleModelException = NoninvertibleModelException;
   transform.NotEnoughDataPointsException = NotEnoughDataPointsException;
   transform.AffineModel3D = AffineModel3D;
+  transform.RigidModel3D = RigidModel3D;
   transform.SimilarityModel3D = SimilarityModel3D;
 
   CATMAID.transform = transform;

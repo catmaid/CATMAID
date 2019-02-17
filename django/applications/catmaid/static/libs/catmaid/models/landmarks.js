@@ -405,16 +405,17 @@
       }
 
       var mls = new CATMAID.transform.MovingLeastSquaresTransform();
-      var model = new CATMAID.transform.AffineModel3D();
+      var model = new transformation.modelClass();
       mls.setModel(model);
 
       var invMls = new CATMAID.transform.MovingLeastSquaresTransform();
-      var invModel = new CATMAID.transform.AffineModel3D();
+      var invModel = new transformation.modelClass();
       invMls.setModel(invModel);
 
       try {
         mls.setMatches(matches);
       } catch (error) {
+        console.warn(error);
         throw new CATMAID.ValueError("Could not fit model for " +
             (i+1) + ". transformation");
       }
@@ -422,6 +423,7 @@
       try {
         invMls.setMatches(invMatches);
       } catch (error) {
+        console.warn(error);
         throw new CATMAID.ValueError("Could not fit inverse model for " +
             (i+1) + ". transformation");
       }
@@ -790,7 +792,8 @@
    *
    */
   let LandmarkSkeletonTransformation = function(projectId, skeletons,
-      mappings, fromApi = null, color = undefined) {
+      mappings, fromApi = null, color = undefined,
+      modelClass = CATMAID.transform.AffineModel3D) {
     this.projectId = projectId;
     this.skeletons = skeletons;
     let seenSourceIds = new Set(), seenTargetIds = new Set();
@@ -806,6 +809,7 @@
     this.id = CATMAID.tools.uuidv4();
     this.fromApi = fromApi;
     this.color = new THREE.Color(color);
+    this.modelClass = modelClass;
   };
 
   // Provide some basic events

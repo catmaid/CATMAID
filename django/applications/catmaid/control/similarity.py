@@ -878,7 +878,7 @@ def compare_skeletons(request, project_id):
     target_meta = request.POST.get('target_meta')
     if target_meta:
         if not target_type_id == 'pointset':
-            raise ValueError("Did not expect 'query_meta' parameter with {} target type".format(query_type_id))
+            raise ValueError("Did not expect 'target_meta' parameter with {} target type".format(target_type_id))
         target_meta = json.loads(target_meta)
 
     # Other parameters

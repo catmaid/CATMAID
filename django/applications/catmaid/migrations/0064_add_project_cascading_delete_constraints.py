@@ -142,14 +142,6 @@ forward = """
             FOREIGN KEY (project_id) REFERENCES project(id)
             ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
 
-        -- nblast_score_container
-        ALTER TABLE ONLY nblast_score_container
-            DROP CONSTRAINT nblast_score_container_project_id_fkey;
-        ALTER TABLE ONLY nblast_score_container
-            ADD CONSTRAINT nblast_score_container_project_id_fkey
-            FOREIGN KEY (project_id) REFERENCES project(id)
-            ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
-
         -- reviewer_whitelist, update Django's constraintname
         EXECUTE 'ALTER TABLE ONLY reviewer_whitelist ' ||
             'DROP CONSTRAINT ' || get_fk_constraint_name('reviewer_whitelist', 'project_id', 'project');
@@ -322,14 +314,6 @@ backward = """
         DROP CONSTRAINT nblast_sample_project_id_fkey;
     ALTER TABLE ONLY nblast_sample
         ADD CONSTRAINT nblast_sample_project_id_fkey
-        FOREIGN KEY (project_id) REFERENCES project(id)
-        ON DELETE CASCADE;
-
-    -- nblast_score_container
-    ALTER TABLE ONLY nblast_score_container
-        DROP CONSTRAINT nblast_score_container_project_id_fkey;
-    ALTER TABLE ONLY nblast_score_container
-        ADD CONSTRAINT nblast_score_container_project_id_fkey
         FOREIGN KEY (project_id) REFERENCES project(id)
         ON DELETE CASCADE;
 

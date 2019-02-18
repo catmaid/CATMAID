@@ -3161,7 +3161,7 @@
                 $(newDTForm).append(mappingList);
 
                 // Add selected mapping
-                var addMappingButton = $('<button/>').text('Add new mapping').click(function() {
+                let getMapping = function (fromGroup, toGroup) {
                   if (!fromGroup) {
                     CATMAID.error("Need source landmark group");
                     return;
@@ -3184,10 +3184,13 @@
                     return;
                   }
 
-                  activeMappings.push({
+                  return {
                     fromGroup: src.get(fg),
                     toGroup: widget.landmarkGroupIndex.get(tg),
-                  });
+                  };
+                };
+                var addMappingButton = $('<button/>').text('Add new mapping').click(function() {
+                  activeMappings.push(getMapping(fromGroup, toGroup));
 
                   updateComponentList();
                 });
@@ -3203,6 +3206,64 @@
                 });
                 $(newDTForm).append(CATMAID.DOM.createLabeledControl('', removeButton, "Remove " +
                     "the mapping selected in the list above."));
+
+                var matchingGroups, selectedMatchingGroups;
+                // Add multple mappings at once based on name matching
+                var initMatchingGroups = function() {
+                  return getSourceGroupList()
+                    .then(sourceGroups => {
+                      // TODO should allow regex/substitution of names before matching
+                      // TODO assumes names are not duplicated
+                      // TODO quadratic implementation for simplicity.
+                      let sourceGroupNames = new Set(sourceGroups.map(g => g.title));
+                      let targetGroupNames = new Set(groupOptions.map(g => g.title));
+                      let matchingNames = sourceGroupNames.intersection(targetGroupNames);
+                      matchingGroups = [...matchingNames].reduce((m, name) => {
+                        m[name] = {
+                          sourceId: sourceGroups.find(g => g.title === name).value,
+                          targetId: groupOptions.find(g => g.title === name).value
+                        };
+                        return m;
+                      }, {});
+                      let matchingOptions = [...matchingNames].map(name =>
+                          ({title: name, value: name}));
+
+                      let container = document.createElement('span');
+                      let matchingSelect = CATMAID.DOM.createCheckboxSelectPanel(
+                          matchingOptions, undefined, true);
+                      selectedMatchingGroups = new Set();
+                      matchingSelect.onchange = function(e) {
+                        if (e.target.checked) selectedMatchingGroups.add(e.target.value);
+                        else selectedMatchingGroups.delete(e.target.value);
+                      };
+                      container.appendChild(matchingSelect);
+                      let addMatchingButton = document.createElement('button');
+                      addMatchingButton.appendChild(document.createTextNode('Add selected mappings'));
+                      addMatchingButton.onclick = function () {
+                        console.log(selectedMatchingGroups);
+                        let selectedMappings = [...selectedMatchingGroups].map(name =>
+                          getMapping(matchingGroups[name].sourceId, matchingGroups[name].targetId)
+                        );
+                        activeMappings.push(...selectedMappings);
+
+                        updateComponentList();
+                      };
+                      container.appendChild(addMatchingButton);
+
+                      let matchingPanel = CATMAID.DOM.createCustomContentSelect(
+                          'Matching groups', container);
+                      return matchingPanel;
+                    });
+                };
+
+                // Source select
+                let addMatchingWrapper = document.createElement('span');
+                let matchingMapping = CATMAID.DOM.createLabeledAsyncPlaceholder(
+                    '',
+                    initMatchingGroups(),
+                    'Add multiple mappings at once by selecting them from matching group names.');
+                addMatchingWrapper.appendChild(matchingMapping);
+                $(newDTForm).append(addMatchingWrapper);
 
                 // Remote instance list update
                 var updateComponentList = function() {

@@ -1167,7 +1167,6 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     n_points = len(target_pointset.points) / 3
                     point_data = Matrix(robjects.FloatVector(target_pointset.points),
                             nrow=n_points, byrow=True)
-                    dataframe.append(psid)
                     pointsets.append(point_data)
 
                 target_objects = rnat.as_neuronlist(pointsets)

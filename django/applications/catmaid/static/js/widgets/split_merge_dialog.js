@@ -41,7 +41,8 @@
     // Basic dialog setup
     CATMAID.Confirmation3dDialog.call(this, {
       id: "skeleton-split-merge-dialog",
-      title: this.in_merge_mode ? "Merge skeletons" : "Split skeletons"
+      title: this.in_merge_mode ? "Merge skeletons" : "Split skeletons",
+      close: options.close,
     });
   };
 

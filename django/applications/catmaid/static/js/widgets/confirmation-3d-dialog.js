@@ -53,6 +53,8 @@
     if (CATMAID.tools.isFn(options.confirm)) {
       this.confirm = options.confirm;
     }
+
+    this.onClose = options.close;
   };
 
   Confirmation3dDialog.prototype.close = function() {
@@ -260,6 +262,9 @@
       close: function(ev, ui) {
         if (self.webglapp) {
           self.webglapp.destroy();
+        }
+        if (CATMAID.tools.isFn(self.onClose)) {
+          self.onClose(self);
         }
         self.destroy();
       },

@@ -988,7 +988,7 @@
                   .then(function(skeletonIds) {
                     targetIds = skeletonIds;
                     // Transmit skeletons as smaller and more generic point set.
-                    targetMeta = makeTransformedSkeletonPointsets(transformedData);
+                    targetMeta = JSON.stringify(makeTransformedSkeletonPointsets(transformedData));
                     effectiveTargetType = 'pointset';
                   }));
               } else {

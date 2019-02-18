@@ -1373,7 +1373,7 @@ var SkeletonAnnotations = {};
    */
   CATMAID.TracingOverlay.prototype.executeIfSkeletonEditable = function(
       skeleton_id, fn) {
-    CATMAID.Skeletons.getPermissions(project.id, skeleton_id)
+    return CATMAID.Skeletons.getPermissions(project.id, skeleton_id)
       .then(function(permissions) {
         // Check permissions
         if (!permissions.can_edit) {
@@ -2070,11 +2070,11 @@ var SkeletonAnnotations = {};
    * pressed OK in the dialog, canceling will not change the virtual node.
    */
   CATMAID.TracingOverlay.prototype.splitSkeleton = function(nodeId) {
-    if (!this.checkLoadedAndIsNotRoot(nodeId)) return;
+    if (!this.checkLoadedAndIsNotRoot(nodeId)) return Promise.resolve();
     var self = this;
     var node = self.nodes.get(nodeId);
     // Make sure we have permissions to edit the neuron
-    this.executeIfSkeletonEditable(node.skeleton_id, function() {
+    return this.executeIfSkeletonEditable(node.skeleton_id, function() {
       // Make sure we reference the correct node and create a model
       var name = CATMAID.NeuronNameService.getInstance().getName(node.skeleton_id);
       var model = new CATMAID.SkeletonModel(node.skeleton_id, name, new THREE.Color(1, 1, 0));
@@ -2101,32 +2101,39 @@ var SkeletonAnnotations = {};
       let noConfirmation = SkeletonAnnotations.FastSplitMode.isNodeMatched(node);
       if (noConfirmation) {
         // Split without confirmation
-        split(node)
+        return split(node)
           .then(function(splitNodeId) {
             CATMAID.msg('Success', 'Split neuron ' + node.skeleton_id +
                 ' at node ' + splitNodeId);
           })
           .catch(CATMAID.handleError);
       } else {
-        // Show a confirmation dialog before splitting
-        var dialog = new CATMAID.SplitMergeDialog({
-          model1: model,
-          splitNodeId: nodeId,
-          split: function() {
-            // Get upstream and downstream annotation set
-            var upstream_set, downstream_set;
-            if (self.upstream_is_small) {
-              upstream_set = dialog.get_under_annotation_set();
-              downstream_set = dialog.get_over_annotation_set();
-            } else {
-              upstream_set = dialog.get_over_annotation_set();
-              downstream_set = dialog.get_under_annotation_set();
-            }
-            split(node, upstream_set, downstream_set)
-              .catch(CATMAID.handleError);
-          }
+        return new Promise((resolve, reject) => {
+          // Show a confirmation dialog before splitting
+          var dialog = new CATMAID.SplitMergeDialog({
+            model1: model,
+            splitNodeId: nodeId,
+            split: function() {
+              // Get upstream and downstream annotation set
+              var upstream_set, downstream_set;
+              if (self.upstream_is_small) {
+                upstream_set = dialog.get_under_annotation_set();
+                downstream_set = dialog.get_over_annotation_set();
+              } else {
+                upstream_set = dialog.get_over_annotation_set();
+                downstream_set = dialog.get_under_annotation_set();
+              }
+              return split(node, upstream_set, downstream_set)
+                .catch(CATMAID.handleError)
+                .finally(() => resolve());
+            },
+            close: () => resolve(),
+          });
+          dialog.onCancel = () => {
+            resolve();
+          };
+          dialog.show();
         });
-        dialog.show();
       }
     });
   };

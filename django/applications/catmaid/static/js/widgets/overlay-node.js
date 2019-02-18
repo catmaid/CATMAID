@@ -1506,6 +1506,10 @@
       var o = null;
       var dragging = false;
 
+      // Used to tell competing event handlers that another handler is currently
+      // working on handling a previous event.
+      var handlingPrimaryEvent = false;
+
       var is_middle_click = function(e) {
         return 1 === e.button;
       };
@@ -1517,6 +1521,11 @@
         // Stop both the Pixi event and the DOM event from propagation.
         // Otherwise other Pixi elements can receive this event as well.
         event.stopPropagation();
+
+        // Only handle one UI element event at a time.
+        if (handlingPrimaryEvent) {
+          return;
+        }
 
         var e = event.data.originalEvent;
         e.preventDefault();
@@ -1782,6 +1791,11 @@
           return;
         }
 
+        // Only handle one UI element event at a time.
+        if (handlingPrimaryEvent) {
+          return;
+        }
+
         // This is needed to return false from dispatchEvent()
         e.preventDefault();
 
@@ -1815,6 +1829,11 @@
         // Otherwise other Pixi elements can receive this event as well.
         event.stopPropagation();
 
+        // Only handle one UI element event at a time.
+        if (handlingPrimaryEvent) {
+          return;
+        }
+
         var e = event.data.originalEvent;
         e.preventDefault();
         var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(this.node.overlayGlobals.skeletonElements);
@@ -1826,6 +1845,7 @@
         if (catmaidTracingOverlay.ensureFocused()) {
           return;
         }
+
         // return some log information when clicked on the node
         // this usually refers here to the c object
         if (e.shiftKey || e.altKey) {
@@ -1887,12 +1907,24 @@
         if (catmaidTracingOverlay.ensureFocused()) {
           return;
         }
+
         var node = this.node;
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+          // During handling of the event, we want the line to not deal with other
+          // clicks. This will be reset after the event is handled.
+          if (handlingPrimaryEvent) {
+            return;
+          }
+          handlingPrimaryEvent = true;
+
           e.preventDefault();
           e.stopPropagation();
           catmaidTracingOverlay.activateNode(node);
-          catmaidTracingOverlay.splitSkeleton(node.id);
+          catmaidTracingOverlay.splitSkeleton(node.id)
+            .finally(() => {
+              // Unblock click handling
+              handlingPrimaryEvent = false;
+            });
         }
       };
 

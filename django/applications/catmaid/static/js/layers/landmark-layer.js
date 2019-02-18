@@ -13,7 +13,7 @@
     this.stackViewer = stackViewer;
     this.isHideable = true;
 
-    this.nodes = {};
+    this.nodes = new Map();
     this.options = {};
     this.updateOptions(options, true);
     this.opacity = 1.0;
@@ -60,9 +60,8 @@
       if (this.graphics) {
         this.graphics.overlayGlobals.skeletonDisplayModels = this.skeletonDisplayModels;
       }
-      for (let n in this.nodes) {
-        let node = this.nodes[n];
-        let model = this.skeletonDisplayModels.get(n.skeleton_id);
+      for (let node of this.nodes.values()) {
+        let model = this.skeletonDisplayModels.get(node.skeleton_id);
         if (!model) {
           this.skeletonDisplayModels.set(node.skeleton_id, new CATMAID.SkeletonModel(
               n.skeleton_id, '', new THREE.Color(this.options.overrideColor)));
@@ -99,8 +98,8 @@
       this.initColors(options);
 
       // Update colors
-      for (let n in this.nodes) {
-        this.nodes[n].updateColors();
+      for (let node of this.nodes.values()) {
+        node.updateColors();
       }
     } else if (overrideColorsChanged) {
       if (overrideColorsEnabled || overrideColorsDisabled) {
@@ -113,8 +112,8 @@
       }
 
       // Update colors
-      for (let n in this.nodes) {
-        this.nodes[n].updateColors();
+      for (let node of this.nodes.values()) {
+        node.updateColors();
       }
     }
 
@@ -166,7 +165,7 @@
       let nodesOnSection = zIndex.get(this.stackViewer.z);
 
       if (nodesOnSection && nodesOnSection.size > 0) {
-        this.nodes = {};
+        this.nodes = new Map();
         // Prepare existing Node and ConnectorNode instances for reuse
         this.graphics.resetCache();
         var addedNodes = [];
@@ -179,14 +178,14 @@
           let newNode = this.graphics.newNode(a[0], null, a[1], a[6],
               a[3], a[4], a[5], stackZ - currentZ, a[7], a[8],
               0, a[2]);
-          this.nodes[a[0]] = newNode;
+          this.nodes.set(a[0], newNode);
           addedNodes.push(newNode);
         }
 
         // Add virtual nodes and link parent with children
         for (let b of nodesOnSection) {
-          var n = this.nodes[b[0]];
-          var pn = this.nodes[b[1]]; // parent Node
+          var n = this.nodes.get(b[0]);
+          var pn = this.nodes.get(b[1]); // parent Node
 
           // Neither virtual nodes or other parent/child links need to be created if
           // there is no parent node.
@@ -203,7 +202,7 @@
               n.parent_id = vn.id;
               pn.addChildNode(vn);
               vn.addChildNode(n);
-              this.nodes[vn.id] = vn;
+              this.nodes.set(vn.id, vn);
               addedNodes.push(vn);
               continue;
             }
@@ -226,14 +225,14 @@
         }
 
         // Update colors
-        for (let n in this.nodes) {
-          this.nodes[n].updateColors();
+        for (let node of this.nodes.values()) {
+          node.updateColors();
         }
       } else {
-        for (let skeletonId in this.nodes) {
-          this.nodes[skeletonId].disable();
+        for (let node of this.nodes.values()) {
+          node.disable();
         }
-        this.nodes = {};
+        this.nodes = new Map();
       }
 
       var screenScale = CATMAID.TracingOverlay.Settings.session.screen_scaling;
@@ -303,9 +302,9 @@
     // Add an virual node check, if wanted
     var nodeIsValid = SkeletonAnnotations.validNodeTest(respectVirtualNodes);
 
-    for (nodeid in this.nodes) {
+    for (let nodeid of this.nodes.keys()) {
       if (nodeIsValid(this.nodes, nodeid)) {
-        node = this.nodes[nodeid];
+        node = this.nodes.get(nodeid);
         xdiff = x - node.x;
         ydiff = y - node.y;
         zdiff = z - node.z;

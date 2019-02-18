@@ -22,8 +22,6 @@ from django.views.decorators.cache import never_cache
 
 from rest_framework.decorators import api_view
 
-from psycopg2.extras import execute_values
-
 from catmaid.models import (Project, UserRole, Class, ClassInstance, Review,
         ClassInstanceClassInstance, Relation, Sampler, Treenode,
         TreenodeConnector, SamplerDomain, SkeletonSummary, SamplerDomainEnd,
@@ -2537,20 +2535,21 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None, name=None) 
         arborescence.node[root]['radius'] = -1
     new_location = tuple([arborescence.node[root][k] for k in ('x', 'y', 'z')])
 
-    treenode_values = [d for n, d in arborescence.nodes_iter(data=True)]
+    treenode_template = '(' + '),('.join('%s,%s,%s,%s,%s,%s' for n, d in arborescence.nodes_iter(data=True))  + ')'
+    treenode_values = list(chain.from_iterable([d['id'], d['x'], d['y'], d['z'], d['parent_id'], d['radius']] \
+            for n, d in arborescence.nodes_iter(data=True)))
     # Include skeleton ID for index performance.
-    execute_values(cursor, """
+    cursor.execute("""
         UPDATE treenode SET
             location_x = v.x,
             location_y = v.y,
             location_z = v.z,
             parent_id = v.parent_id,
             radius = v.radius
-        FROM (VALUES %s) AS v(id, x, y, z, parent_id, radius)
+        FROM (VALUES {}) AS v(id, x, y, z, parent_id, radius)
         WHERE treenode.id = v.id
-            AND treenode.skeleton_id = {}
-    """.format(new_skeleton.id), treenode_values,
-            "(%(id)s, %(x)s, %(y)s, %(z)s, %(parent_id)s, %(radius)s)")
+            AND treenode.skeleton_id = %s
+    """.format(treenode_template), treenode_values + [new_skeleton.id])
 
     # Log import.
     insert_into_log(project_id, user.id, 'create_neuron',

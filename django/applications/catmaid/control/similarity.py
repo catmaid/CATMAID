@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-import time
 
 from celery.task import task
 from itertools import chain
 from django.db import connection, transaction
 from django.http import JsonResponse
 from django.utils.decorators import method_decorator
+from timeit import default_timer as timer
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -627,7 +627,7 @@ def get_all_object_ids(project_id, user_id, object_type, min_nodes=500,
 @task()
 def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
         simplify=True, required_branches=10, use_cache=True):
-    start_time = time.process_time()
+    start_time = timer()
     try:
         min_nodes = 500
         min_soma_nodes = 20
@@ -678,7 +678,7 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                 simplify=simplify, required_branches=required_branches,
                 use_cache=use_cache)
 
-        duration = time.process_time() - start_time
+        duration = timer() - start_time
 
         # Update config and samples
         if scoring_info.get('errors'):
@@ -705,7 +705,7 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
 
         return "Computed new NBLAST similarity for config {}".format(config.id)
     except Exception as ex:
-        duration = time.process_time() - start_time
+        duration = timer() - start_time
         similarities = NblastSimilarity.objects.filter(pk=similarity_id)
         if len(similarities) > 0:
             similarity = similarities[0]

@@ -1180,7 +1180,7 @@
                   return '<span title="' + length + ' skeleton(s)"><em>Skeletons:</em> ' + text + '</span>';
                 } else if (row.target_type === 'pointcloud') {
                   return '<span title="' + length + ' point cloud(s)"><em>Point clouds:</em> ' + text + '</span>';
-                } else if (row.query_type === 'pointset') {
+                } else if (row.target_type === 'pointset') {
                   return '<span title="' + length + ' transformed skeleton(s)"><em>Transformed skeletons:</em> ' + text + '</span>';
                 } else {
                   return '<span title="' + length + ' unknown object(s)"><em>Unknown type:</em> ' + text + '</span>';

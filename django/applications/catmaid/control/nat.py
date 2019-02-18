@@ -1218,6 +1218,12 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             all_objects.names = robjects.StrVector(list(base.names(query_dps)) +
                     list(base.names(target_dps)))
             all_scores = rnblast.NeuriteBlast(all_objects, all_objects, **nblast_params)
+            if len(all_scores) == 1:
+                all_Scores = Matrix(all_scores, **{
+                    'dimnames': robjects.StrVector(list(
+                        list(base.names(query_dps)),
+                        list(base.names(target_dps)))),
+                })
             scores = rnblast.sub_score_mat(typed_query_object_ids,
                     typed_target_object_ids, **{
                         'scoremat': all_scores,

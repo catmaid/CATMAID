@@ -1156,7 +1156,14 @@
     var wrapper = document.createElement('span');
     wrapper.appendChild(container);
 
+    // Cancel change events of the text input during capturing phase.
     wrapper.addEventListener('change', event => {
+      if (event.target.type === 'text') event.stopPropagation();
+    }, true);
+
+    // Update the title on a non-text input change
+    wrapper.addEventListener('change', event => {
+      if (event.target.type === 'text') return;
       CATMAID.DOM._updateSelectTitle(toggleSelect, content, title,
           event.target.value, titleMode, emptyValue);
     });

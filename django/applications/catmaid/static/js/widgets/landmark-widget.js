@@ -409,7 +409,7 @@
    */
   LandmarkWidget.prototype.selectLandmark = function(landmarkId) {
     if (this.mode === 'landmarks') {
-      
+
     }
   };
 
@@ -692,7 +692,7 @@
     if (this.editLandmarkGroup) {
 
     } else {
-      
+
     }
   };
 
@@ -878,9 +878,9 @@
    * @returns new LandmarkSkeletonTransformation instance
    */
   LandmarkWidget.prototype.addDisplayTransformation = function(projectId,
-      skeletons, mapping, api) {
+      skeletons, mapping, api, modelClass) {
     let lst = new CATMAID.LandmarkSkeletonTransformation(projectId, skeletons,
-        mapping, api);
+        mapping, api, undefined, modelClass);
     this.displayTransformations.push(lst);
 
     // Announce that there is a new display tranformation available
@@ -895,7 +895,7 @@
    * source group. Only links with the passed in relation ID will be respected.
    */
   LandmarkWidget.prototype.addDisplayTransformationRule = function(getSkeletonModels,
-      fromGroupId, relationId) {
+      fromGroupId, relationId, modelClass) {
     // Get all transitively linked target groups from back-end. Add a
     // transformation for each.
     var self = this;
@@ -908,7 +908,7 @@
             throw new CATMAID.Warning("Could not find source skeletons");
           }
           let lst = new CATMAID.LandmarkSkeletonTransformation(projectId,
-            skeletons, [[fromGroupId, toGroupId]]);
+            skeletons, [[fromGroupId, toGroupId]], undefined, undefined, modelClass);
           self.displayTransformations.push(lst);
         }
         CATMAID.Landmarks.trigger(CATMAID.Landmarks.EVENT_DISPLAY_TRANSFORM_ADDED);
@@ -3314,6 +3314,20 @@
                 })
                 .catch(CATMAID.handleError);
 
+              let transformModelSelect = CATMAID.DOM.createSelect(undefined,
+                  ['Affine', 'Rigid', 'Similarity'], 'Affine');
+              let transformModelSelectLabel = CATMAID.DOM.createLabeledControl(
+                  'Transform model', transformModelSelect,
+                  'Model used to fit the transformation between landmarks.');
+              $(newDTForm).append(transformModelSelectLabel);
+              let selectedTransformModel = function () {
+                return {
+                  'Affine': CATMAID.transform.AffineModel3D,
+                  'Rigid': CATMAID.transform.RigidModel3D,
+                  'Similarity': CATMAID.transform.SimilarityModel3D
+                }[transformModelSelect.value];
+              };
+
               // Add button
               let buttonContainer = document.createElement('div');
               buttonContainer.classList.add('clear');
@@ -3362,7 +3376,8 @@
                         throw new CATMAID.Warning("No source skeletons found");
                       }
                       widget.addDisplayTransformation(sourceProject,
-                          skeletonModels, mappings, api);
+                          skeletonModels, mappings, api,
+                          selectedTransformModel());
                       CATMAID.msg("Success", "Transformation added");
                       widget.updateDisplay();
                       widget.update();
@@ -3382,7 +3397,7 @@
                   if (displayTargetRelation) {
                     let getSkeletonModels = source.getSelectedSkeletonModels.bind(source);
                     widget.addDisplayTransformationRule(getSkeletonModels, fromGroup,
-                        displayTargetRelation)
+                        displayTargetRelation, selectedTransformModel())
                       .then(function() {
                         CATMAID.msg("Success", "Transformation rule applied");
                       })
@@ -3406,7 +3421,7 @@
                     }
 
                     widget.addDisplayTransformation(sourceProject, skeletonModels,
-                        mappings, displayTargetRelation);
+                        mappings, displayTargetRelation, selectedTransformModel());
                     CATMAID.msg("Success", "Transformation added");
                     widget.updateDisplay();
                     widget.update();

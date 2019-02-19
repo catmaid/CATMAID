@@ -2861,7 +2861,8 @@
           var initProjectList = function() {
             return getProjectList()
               .then(projects => {
-                let projectSelect = CATMAID.DOM.createRadioSelect('Source project', projects, sourceProject, true);
+                let projectSelect = CATMAID.DOM.createRadioSelect('Source project',
+                    projects, sourceProject, true, 'selected');
                 projectSelect.onchange = function(e) {
                   sourceProject = parseInt(e.target.value, 10);
 
@@ -2879,7 +2880,7 @@
 
           // Remote select
           let remoteSelect = CATMAID.DOM.createRadioSelect('Source instance',
-              remoteOptions, sourceRemote, true);
+              remoteOptions, sourceRemote, true, 'selected', 'Local');
           let remoteSelectSetting = CATMAID.DOM.createLabeledControl("Source remote",
               remoteSelect, "Select the source CATMAID intance that contains " +
               "the source skeletons. The current remote is selected by default.");
@@ -3106,7 +3107,7 @@
           return getSourceGroupList()
             .then(groups => {
               let sourceSelect = CATMAID.DOM.createRadioSelect('Source landmark group',
-                  groups, undefined, true);
+                  groups, undefined, true, 'selected');
               sourceSelect.onchange = function(e) {
                 fromGroup = e.target.value;
               };
@@ -3143,7 +3144,8 @@
               $(newDTForm).append(sourceGroupWrapper);
 
               // Target select
-              let targetSelect = CATMAID.DOM.createRadioSelect('Target landmark groups', groupOptions, undefined, true);
+              let targetSelect = CATMAID.DOM.createRadioSelect('Target landmark groups',
+                  groupOptions, undefined, true, 'selected');
               let targetGroup = CATMAID.DOM.createLabeledControl("Target group",
                 targetSelect, "Select the target landmark group, the space to " +
                 "which input points are transformed.");
@@ -3301,7 +3303,7 @@
                         return { title: name, value: relationMap[name] };
                       });
                   let targetRelationSelect = CATMAID.DOM.createRadioSelect(
-                      'Group link relation', relationOptions, undefined, true);
+                      'Group link relation', relationOptions, undefined, true, 'selected');
                   let targetRelationGroup = CATMAID.DOM.createLabeledControl('Target relation',
                     targetRelationSelect, 'Select a relation that links valid target ' +
                     'landmark groups. This rull will be applied recursively.');
@@ -3465,7 +3467,7 @@
             .then(function(volumes) {
               // Create actual element based on the returned data
               var node = CATMAID.DOM.createRadioSelect('Volumes', volumes,
-                  undefined, true);
+                  undefined, true, 'selected');
               // Add a selection handler
               node.onchange = function(e) {
                 if (e.srcElement.type !== 'radio') {

@@ -1049,12 +1049,19 @@
    * @param options      {Object[]} A list of {title: <>, value: <>} objects.
    * @param selectedKey  {String}   (Optional) the key that should be selected initially
    * @param showFilter   {Bool}     Whether to show a filter input field.
+   * @param titleMode    {String}   (Optional) Whether to only show the passed in
+   *                                title ('title', default), the selected item only
+   *                                ('selected') or both ('title-selected').
+   * @param emptyValue   {String}   (Optional) A value shown if no item is selected,
+   *                                default: "(none)".
    *
    * @returns a wrapper around the select element
    */
-  DOM.createRadioSelect = function(title, options, selectedKey, showFilter) {
+  DOM.createRadioSelect = function(title, options, selectedKey, showFilter,
+      titleMode, emptyValue) {
     var container = DOM.createRadioSelectPanel(title, options, selectedKey, showFilter);
-    return CATMAID.DOM.createCustomContentSelect(title, container);
+    return CATMAID.DOM.createCustomContentSelect(title, container, selectedKey,
+        titleMode, emptyValue);
   };
 
   /**
@@ -1063,12 +1070,18 @@
    *
    * Main idea from: http://stackoverflow.com/questions/17714705
    *
-   * @param title {String}   A title showing as the first element of the select
-   * @param content {Object} Content to be displayed when select is clicked
+   * @param {String} title      A title showing as the first element of the select
+   * @param {Object} content    Content to be displayed when select is clicked
+   * @param {String} titleMode  (Optional) Whether to only show the passed in
+   *                            title ('title', default), the selected item only
+   *                            ('selected') or both ('title-selected').
+   * @param {String} emptyValue (Optional) A value shown if no item is selected,
+   *                            default: "(none)".
    *
    * @returns a wrapper around the select element
    */
-  DOM.createCustomContentSelect = function(title, content) {
+  DOM.createCustomContentSelect = function(title, content, selectedKey,
+      titleMode = 'title', emptyValue = '(none)') {
     // Expandable container
     var container = document.createElement('span');
     container.setAttribute('class', 'customselect');
@@ -1078,6 +1091,8 @@
 
     var toggleSelect = document.createElement('select');
     toggleSelect.options.add(new Option(title));
+    CATMAID.DOM._updateSelectTitle(toggleSelect, content, title, selectedKey,
+        titleMode, emptyValue);
     selectBox.appendChild(toggleSelect);
 
     // Hide the selects drop down menu, which is needed for creating our own
@@ -1141,7 +1156,27 @@
     var wrapper = document.createElement('span');
     wrapper.appendChild(container);
 
+    wrapper.addEventListener('change', event => {
+      CATMAID.DOM._updateSelectTitle(toggleSelect, content, title,
+          event.target.value, titleMode, emptyValue);
+    });
+
     return wrapper;
+  };
+
+  DOM._updateSelectTitle = function(select, content, title, value, titleMode,
+      emptyValue = '(none)') {
+    let text = (value === undefined || value === null || value.length === 0) ? emptyValue :
+        ($(content).find(`input[value=${value}]`).closest('label').text());
+    let newTitle;
+    if (titleMode === 'title') {
+      newTitle = title;
+    } else if (titleMode === 'selected') {
+      newTitle = text;
+    } else if (titleMode === 'title-selected') {
+      newTitle = `${title}: ${text}`;
+    }
+    select.options[0].text = newTitle;
   };
 
   /**

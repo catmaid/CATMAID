@@ -193,18 +193,25 @@
    * Set a new similarity object to be the active similarity object.
    */
   NeuronSimilarityDetailWidget.prototype.setSimilarity = function(similarity) {
-    this.similarity = similarity;
-    let targetModels = CATMAID.Similarity.getReferencedSkeletonModels(similarity);
-    let self = this;
-    CATMAID.NeuronNameService.getInstance().registerAll(this, targetModels)
-      .then(function() {
-        self.refresh();
+    let prepare;
+    if (similarity.status === 'complete' && (!similarity.scoring || similarity.scoring.length === 0)) {
+      prepare = CATMAID.Similarity.getSimilarity(project.id, similarity.id, true);
+    } else {
+      prepare = Promise.resolve(similarity);
+    }
+
+    prepare
+      .then(updatedSimulatiry => {
+        this.similarity = updatedSimulatiry;
+        let targetModels = CATMAID.Similarity.getReferencedSkeletonModels(this.similarity);
+        return CATMAID.NeuronNameService.getInstance().registerAll(this, targetModels);
       })
+      .then(() => this.refresh())
       .catch(CATMAID.handleError);
   };
 
   NeuronSimilarityDetailWidget.prototype.setSimilarityFromId = function(similarityId) {
-    CATMAID.Similarity.getSimilarity(project.id, similarityId)
+    CATMAID.Similarity.getSimilarity(project.id, similarityId, true)
       .then((function(similarity) {
         this.setSimilarity(similarity);
       }).bind(this))

@@ -72,7 +72,7 @@ def serialize_config(config, simple=False):
         }
 
 
-def serialize_similarity(similarity):
+def serialize_similarity(similarity, with_scoring=False):
     return {
         'id': similarity.id,
         'user_id': similarity.user_id,
@@ -82,7 +82,7 @@ def serialize_similarity(similarity):
         'config_id': similarity.config_id,
         'name': similarity.name,
         'status': similarity.status,
-        'scoring': similarity.scoring,
+        'scoring': similarity.scoring if with_scoring else [],
         'query_objects': similarity.query_objects,
         'target_objects': similarity.target_objects,
         'query_type': similarity.query_type_id,
@@ -953,8 +953,15 @@ class SimilarityList(APIView):
             type: integer
             paramType: form
             required: false
+          - name: with_scoring
+            description: Whether or not to include scoring information in response.
+            type: boolean
+            paramType: form
+            required: false
+            defaultValue: false
         """
         config_id = request.query_params.get('config_id', None)
+        with_scoring = get_request_bool(request.query_params, 'with_scoring', False)
 
         params = {
             'project_id': int(project_id)
@@ -963,7 +970,7 @@ class SimilarityList(APIView):
         if config_id:
             params['config_id'] = config_id
 
-        return JsonResponse([serialize_similarity(c) for c in
+        return JsonResponse([serialize_similarity(c, with_scoring) for c in
                 NblastSimilarity.objects.filter(**params)], safe=False)
 
 
@@ -972,9 +979,29 @@ class SimilarityDetail(APIView):
     @method_decorator(requires_user_role(UserRole.Browse))
     def get(self, request, project_id, similarity_id):
         """Get a particular similarity query result.
+        ---
+        parameters:
+          - name: project_id
+            description: Project of the returned similarities
+            type: integer
+            paramType: path
+            required: true
+          - name: similarity_id
+            description: The similarity  to load.
+            type: integer
+            paramType: form
+            required: false
+          - name: with_scoring
+            description: Whether or not to include scoring information in response.
+            type: boolean
+            paramType: form
+            required: false
+            defaultValue: false
         """
         similarity = NblastSimilarity.objects.get(pk=similarity_id, project_id=project_id)
-        return JsonResponse(serialize_similarity(similarity))
+        with_scoring = get_request_bool(request.query_params, 'with_scoring', False)
+        print(similarity.scoring)
+        return JsonResponse(serialize_similarity(similarity, with_scoring))
 
     @method_decorator(requires_user_role(UserRole.Annotate))
     def delete(self, request, project_id, similarity_id):

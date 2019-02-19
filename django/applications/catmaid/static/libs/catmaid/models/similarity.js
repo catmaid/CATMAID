@@ -171,21 +171,26 @@
   /**
    * Get a specific similarity query result.
    */
-  Similarity.getSimilarity = function(projectId, similarityId) {
-    return CATMAID.fetch(projectId + '/similarity/queries/' + similarityId + '/');
+  Similarity.getSimilarity = function(projectId, similarityId, withScoring=false) {
+    return CATMAID.fetch(projectId + '/similarity/queries/' + similarityId + '/', 'GET', {
+      'with_scoring': withScoring,
+    });
   };
 
   /**
    * Get a list of all similarity tasks in this project.
    *
-   * @param projectId {integer} The project to operate in.
-   * @param configId  {integer} (optional) ID of config the similarities are linked to.
+   * @param projectId   {integer} The project to operate in.
+   * @param configId    {integer} (optional) ID of config the similarities are linked to.
+   * @param withScoring {Boolean} (optional) Whether to include scoring
+   *                              information in response, default is false.
    *
    * @returns a promise that resolves in the list of similarities.
    */
-  Similarity.listAllSkeletonSimilarities = function(projectId, configId) {
+  Similarity.listAllSkeletonSimilarities = function(projectId, configId, with_scoring) {
     return CATMAID.fetch(projectId + '/similarity/queries/', 'GET', {
-      configId: configId
+      configId: configId,
+      with_scoring: !!with_scoring,
     });
   };
 

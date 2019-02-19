@@ -1192,9 +1192,8 @@
               orderable: false,
               class: 'cm-center',
               render: function(data, type, row, meta) {
-                if (row.scoring && row.scoring.length > 0) {
-                  let allCells = '[' + row.scoring.map(listToStr).join('\n, ') + ']';
-                  return '<a data-role="show-similarity" href="#" title="' + allCells + '">View</a>';
+                if (row.status === 'complete') {
+                  return '<a data-role="show-similarity" href="#" title="Show results">View</a>';
                 } else {
                   return '-';
                 }

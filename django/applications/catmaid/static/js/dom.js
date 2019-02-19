@@ -1174,7 +1174,7 @@
   DOM._updateSelectTitle = function(select, content, title, value, titleMode,
       emptyValue = '(none)') {
     let text = (value === undefined || value === null || value.length === 0) ? emptyValue :
-        ($(content).find(`input[value=${value}]`).closest('label').text());
+        ($(content).find(`input[value='${value}']`).closest('label').text());
     let newTitle;
     if (titleMode === 'title') {
       newTitle = title;

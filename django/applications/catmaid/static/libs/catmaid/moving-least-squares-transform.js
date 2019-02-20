@@ -1011,9 +1011,9 @@
         let x1 = (p1[ 0 ] - pcx) * w;
         let y1 = (p1[ 1 ] - pcy) * w;
         let z1 = (p1[ 2 ] - pcz) * w;
-        let x2 = (p2[ 0 ] - qcx) * w;
-        let y2 = (p2[ 1 ] - qcy) * w;
-        let z2 = (p2[ 2 ] - qcz) * w;
+        let x2 = (p2[ 0 ] - qcx);
+        let y2 = (p2[ 1 ] - qcy);
+        let z2 = (p2[ 2 ] - qcz);
         Sxx += x1 * x2;
         Sxy += x1 * y2;
         Sxz += x1 * z2;

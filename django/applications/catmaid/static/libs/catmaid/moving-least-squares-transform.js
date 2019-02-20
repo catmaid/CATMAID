@@ -670,6 +670,36 @@
   }
 
 
+  function weightedCentroids(matches) {
+    let pcx = 0.0, pcy = 0.0, pcz = 0.0;
+    let qcx = 0.0, qcy = 0.0, qcz = 0.0;
+
+    let ws = 0.0; // sum of weights
+
+    for (let m of matches) {
+      let p = m.getP1().getL();
+      let q = m.getP2().getW();
+      let w = m.getWeight();
+
+      ws += w;
+      pcx += w * p[ 0 ];
+      pcy += w * p[ 1 ];
+      pcz += w * p[ 2 ];
+      qcx += w * q[ 0 ];
+      qcy += w * q[ 1 ];
+      qcz += w * q[ 2 ];
+    }
+    pcx /= ws;
+    pcy /= ws;
+    pcz /= ws;
+    qcx /= ws;
+    qcy /= ws;
+    qcz /= ws;
+
+    return {pcx, pcy, pcz, qcx, qcy, qcz};
+  }
+
+
   /**
    * Partial implementation. Not all methods are implemented,
    * only those sufficient to operate a MovingLeastSquaresTransform.
@@ -685,34 +715,7 @@
       if ( matches.length < AffineModel3D.MIN_NUM_MATCHES )
         throw new NotEnoughDataPointsException( matches.length + " data points are not enough to estimate a 2d affine model, at least " + this.MIN_NUM_MATCHES + " data points required." );
 
-      var pcx = 0.0, pcy = 0.0, pcz = 0.0;
-      var qcx = 0.0, qcy = 0.0, qcz = 0.0;
-
-      var ws = 0.0;
-
-      for ( let i=0; i<matches.length; ++i )
-      {
-        let m = matches[ i ];
-
-        let p = m.getP1().getL(); // array
-        let q = m.getP2().getW(); // array
-
-        let w = m.getWeight();
-        ws += w;
-
-        pcx += w * p[ 0 ];
-        pcy += w * p[ 1 ];
-        pcz += w * p[ 2 ];
-        qcx += w * q[ 0 ];
-        qcy += w * q[ 1 ];
-        qcz += w * q[ 2 ];
-      }
-      pcx /= ws;
-      pcy /= ws;
-      pcz /= ws;
-      qcx /= ws;
-      qcy /= ws;
-      qcz /= ws;
+      const {pcx, pcy, pcz, qcx, qcy, qcz} = weightedCentroids(matches);
 
       var
         a00, a01, a02,
@@ -799,30 +802,7 @@
       if ( matches.length < SimilarityModel3D.MIN_NUM_MATCHES )
         throw new NotEnoughDataPointsException( matches.length + " data points are not enough to estimate a 3d similarity model, at least " + MIN_NUM_MATCHES + " data points required." );
 
-      let pcx = 0.0, pcy = 0.0, pcz = 0.0;
-      let qcx = 0.0, qcy = 0.0, qcz = 0.0;
-
-      let ws = 0.0; // sum of weights
-
-      for (let m of matches) {
-        let p = m.getP1().getL();
-        let q = m.getP2().getW();
-        let w = m.getWeight();
-
-        ws += w;
-        pcx += w * p[ 0 ];
-        pcy += w * p[ 1 ];
-        pcz += w * p[ 2 ];
-        qcx += w * q[ 0 ];
-        qcy += w * q[ 1 ];
-        qcz += w * q[ 2 ];
-      }
-      pcx /= ws;
-      pcy /= ws;
-      pcz /= ws;
-      qcx /= ws;
-      qcy /= ws;
-      qcz /= ws;
+      const {pcx, pcy, pcz, qcx, qcy, qcz} = weightedCentroids(matches);
 
       let r1 = 0, r2 = 0;
       for (let m of matches) {
@@ -975,30 +955,7 @@
       if ( matches.length < RigidModel3D.MIN_NUM_MATCHES )
         throw new NotEnoughDataPointsException( matches.length + " data points are not enough to estimate a 3d similarity model, at least " + MIN_NUM_MATCHES + " data points required." );
 
-      let pcx = 0.0, pcy = 0.0, pcz = 0.0;
-      let qcx = 0.0, qcy = 0.0, qcz = 0.0;
-
-      let ws = 0.0; // sum of weights
-
-      for (let m of matches) {
-        let p = m.getP1().getL();
-        let q = m.getP2().getW();
-        let w = m.getWeight();
-
-        ws += w;
-        pcx += w * p[ 0 ];
-        pcy += w * p[ 1 ];
-        pcz += w * p[ 2 ];
-        qcx += w * q[ 0 ];
-        qcy += w * q[ 1 ];
-        qcz += w * q[ 2 ];
-      }
-      pcx /= ws;
-      pcy /= ws;
-      pcz /= ws;
-      qcx /= ws;
-      qcy /= ws;
-      qcz /= ws;
+      const {pcx, pcy, pcz, qcx, qcy, qcz} = weightedCentroids(matches);
 
       // calculate N
       let Sxx, Sxy, Sxz, Syx, Syy, Syz, Szx, Szy, Szz;

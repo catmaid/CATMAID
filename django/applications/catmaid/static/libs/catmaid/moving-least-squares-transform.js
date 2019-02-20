@@ -838,7 +838,7 @@
         r1 += x1 * x1 + y1 * y1 + z1 * z1;
         r2 += x2 * x2 + y2 * y2 + z2 * z2;
       }
-      const s = Math.sqrt(r2 / r1);
+      let s = Math.sqrt(r2 / r1);
 
       // calculate N
       let Sxx, Sxy, Sxz, Syx, Syy, Syz, Szx, Szy, Szz;
@@ -864,28 +864,14 @@
         Szz += z1 * z2;
       }
 
-      let N = [
-        [0, 0, 0, 0],
-        [0, 0, 0, 0],
-        [0, 0, 0, 0],
-        [0, 0, 0, 0],
-      ];
-      SimilarityModel3D.computeN( N, Sxx, Sxz, Sxy, Syx, Syy, Syz, Szx, Szy, Szz );
+      const N = SimilarityModel3D.computeN(Sxx, Sxz, Sxy, Syx, Syy, Syz, Szx, Szy, Szz);
 
-      // calculate eigenvector with maximal eigenvalue
-      let evd = numeric.eig(N);
+      const {q0, qx, qy, qz, reflection} = SimilarityModel3D.quaternionImproperRotation(N);
 
-      const eigenvalues = evd.lambda.x;
-
-      let index = 0;
-      for (let i = 1; i < 4; i++)
-        if (eigenvalues[i] > eigenvalues[index])
-          index = i;
-
-      let q0 = evd.E.x[0][index];
-      let qx = evd.E.x[1][index];
-      let qy = evd.E.x[2][index];
-      let qz = evd.E.x[3][index];
+      if (reflection) {
+        // q0 = 0;
+        s *= -1.0;
+      }
 
       // compute result
       this.rotationTranslationPart(
@@ -919,7 +905,14 @@
       this.m23 = qcz - resz;
     }
 
-    static computeN( N, Sxx, Sxz, Sxy, Syx, Syy, Syz, Szx, Szy, Szz ) {
+    static computeN(Sxx, Sxz, Sxy, Syx, Syy, Syz, Szx, Szy, Szz) {
+      let N = [
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+        [0, 0, 0, 0],
+      ];
+
       N[0][0] = Sxx + Syy + Szz;
       N[0][1] = Syz - Szy;
       N[0][2] = Szx - Sxz;
@@ -936,6 +929,41 @@
       N[3][1] = Szx + Sxz;
       N[3][2] = Syz + Szy;
       N[3][3] = -Sxx - Syy + Szz;
+
+      return N;
+    }
+
+    /**
+     * Find a best-fit rotation or reflection given a modified correlation
+     * matrix between two sets of points. This fit is found as a quaternion as
+     * described in:
+     *
+     * Kanatani, K. Analysis of 3-D rotation fitting. IEEE Transactions on
+     * Pattern Analaysis and Machine Intelligence. Vol. 16, no. 5. 1994.
+     *
+     * Unlike the algorithm described there, the eigenvector associated with
+     * the maximal absolute eigenvalue is used. If it is negative, this is a
+     * reflection rather than a proper rotation.
+     *
+     * For further explanation and citations, see:
+     * https://github.com/catmaid/CATMAID/pull/1857
+     */
+    static quaternionImproperRotation(N) {
+      const evd = numeric.eig(N);
+
+      const eigenvalues = evd.lambda.x;
+
+      let index = 0;
+      for (let i = 1; i < 4; i++)
+        if (Math.abs(eigenvalues[i]) > Math.abs(eigenvalues[index]))
+          index = i;
+
+      let q0 = evd.E.x[0][index];
+      let qx = evd.E.x[1][index];
+      let qy = evd.E.x[2][index];
+      let qz = evd.E.x[3][index];
+
+      return {q0, qx, qy, qz, reflection: eigenvalues[index] < 0};
     }
   }
 
@@ -997,33 +1025,19 @@
         Szz += z1 * z2;
       }
 
-      let N = [
-        [0, 0, 0, 0],
-        [0, 0, 0, 0],
-        [0, 0, 0, 0],
-        [0, 0, 0, 0],
-      ];
+      const N = SimilarityModel3D.computeN(Sxx, Sxz, Sxy, Syx, Syy, Syz, Szx, Szy, Szz);
 
-      SimilarityModel3D.computeN( N, Sxx, Sxz, Sxy, Syx, Syy, Syz, Szx, Szy, Szz );
+      const {q0, qx, qy, qz, reflection} = SimilarityModel3D.quaternionImproperRotation(N);
 
-      // calculate eigenvector with maximal eigenvalue
-      let evd = numeric.eig(N);
-
-      const eigenvalues = evd.lambda.x;
-
-      let index = 0;
-      for (let i = 1; i < 4; i++)
-        if (eigenvalues[i] > eigenvalues[index])
-          index = i;
-
-      let q0 = evd.E.x[0][index];
-      let qx = evd.E.x[1][index];
-      let qy = evd.E.x[2][index];
-      let qz = evd.E.x[3][index];
+      let s = 1.0; // Uniform scale is identity for rigid transforms.
+      if (reflection) {
+        // q0 = 0;
+        s *= -1.0;
+      }
 
       // compute result
       this.rotationTranslationPart(
-          1.0, q0, qx, qy, qz,
+          s, q0, qx, qy, qz,
           pcx, pcy, pcz, qcx, qcy, qcz);
 
       this.invert();

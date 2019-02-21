@@ -1552,7 +1552,8 @@
             // connected activated treenode or connectornode
             // to existing treenode or connectornode
             if (atnType === SkeletonAnnotations.TYPE_CONNECTORNODE) {
-              var atnSubType = SkeletonAnnotations.getActiveNodeSubType();
+              let atnSubType = SkeletonAnnotations.getActiveNodeSubType();
+              let connectorNode = catmaidTracingOverlay.nodes.get(atnID);
 
               // If the Alt key is pressed, we want to show a menu for
               // connector type selection.
@@ -1565,11 +1566,19 @@
                 catmaidTracingOverlay.askForConnectorType()
                   .then(function(selection) {
                     if (selection) {
-                      SkeletonAnnotations.atn.subtype = selection.value;
-                      catmaidTracingOverlay.createLink(node.id, atnID, selection.relation)
-                        .catch(CATMAID.handleError);
+                      // Don't allow link combinations that would result in a
+                      // mixed connector type.
+                      if (connectorNode.links && connectorNode.links.length > 0 &&
+                          connectorNode.subtype !== selection.value) {
+                        throw new CATMAID.Warning(`Can't mix connector types ` +
+                            `${connectorNode.subtype} and ${selection.value}`);
+                      }
+                      connectorNode.subtype = selection.value;
+                      catmaidTracingOverlay.createLink(node.id, atnID,
+                          selection.relation);
                     }
-                  });
+                  })
+                  .catch(CATMAID.handleError);
                 return;
               }
 
@@ -1865,11 +1874,19 @@
                 catmaidTracingOverlay.askForConnectorType()
                   .then(function(selection) {
                     if (selection) {
+                      // Don't allow link combinations that would result in a
+                      // mixed connector type.
+                      if (connectornode.links && connectornode.links.length > 0 &&
+                          connectornode.subtype !== selection.value) {
+                        throw new CATMAID.Warning(`Can't mix connector types ` +
+                            `${connectornode.subtype} and ${selection.value}`);
+                      }
                       connectornode.subtype = selection.value;
-                      catmaidTracingOverlay.createLink(atnID, connectornode.id, selection.relation)
-                        .catch(CATMAID.handleError);
+                      return catmaidTracingOverlay.createLink(atnID,
+                          connectornode.id, selection.relation);
                     }
-                  });
+                  })
+                  .catch(CATMAID.handleError);
                 return;
               }
               if (connectornode.subtype === CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR) {

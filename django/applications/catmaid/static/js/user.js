@@ -130,8 +130,10 @@
       fn(User.prototype.users[user_id]);
     } else {
       User.getUsers(function() {
-        // Expect it to be there after the update
-        fn(User.prototype.users[user_id]);
+        // Expect it to be there after the update, but use a safe fallback
+        // option, if user information can't be obtained (e.g. because the
+        // anonymous user doesn't haver permission).
+        fn(User.safe_get(user_id));
       });
     }
   };

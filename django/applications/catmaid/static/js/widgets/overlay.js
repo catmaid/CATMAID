@@ -2837,7 +2837,11 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     }
     if (isAttachment) {
       subtype = CATMAID.Connectors.SUBTYPE_ATTACHMENT_CONNECTOR;
-    } else if (exclusiveRelation !== null) {
+    } else if (exclusiveRelation === null) {
+      // If no exclusive subtype was found, make the connector type whatever
+      // is selected as default connector type.
+      subtype = SkeletonAnnotations.Settings.session.default_connector_type;
+    } else {
       var relation_name = relationMap[exclusiveRelation];
       if (relation_name == "abutting") {
         subtype = CATMAID.Connectors.SUBTYPE_ABUTTING_CONNECTOR;

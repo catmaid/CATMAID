@@ -416,6 +416,20 @@ var WindowMaker = new function()
     connectorRestrictions.appendChild(document.createTextNode('Connector restriction'));
     connectorRestrictions.appendChild(connectorRestrictionsSl);
 
+    let vrLabel = document.createElement('label');
+    let vrCheckbox = document.createElement('input');
+    vrCheckbox.type = 'checkbox';
+    vrCheckbox.onclick = () => WA.webVRSetup(vrButton, vrCheckbox);
+    vrLabel.appendChild(vrCheckbox);
+    vrLabel.appendChild(document.createTextNode('VR'));
+    let vrButton = document.createElement('button');
+    vrButton.textContent = 'Enter';
+    vrButton.disabled = true;
+    let vrGroup = document.createElement('span');
+    vrGroup.setAttribute('style', 'white-space:nowrap');
+    vrGroup.appendChild(vrLabel);
+    vrGroup.appendChild(vrButton);
+
     var viewControls = DOM.appendToTab(tabs['View'],
         [
           ['Center active', WA.look_at_active_node.bind(WA)],
@@ -445,6 +459,7 @@ var WindowMaker = new function()
           [storedViewsSelect],
           ['Save view', storeView],
           ['Fullscreen', WA.fullscreenWebGL.bind(WA)],
+          [vrGroup],
           [connectorRestrictions],
           ['Refresh active skeleton', function() { WA.updateActiveSkeleton(); }],
           ['Orthographic mode', false, function() { WA.updateCameraView(this.checked); }, false],

@@ -278,6 +278,61 @@
     this.space.render();
   };
 
+  WebGLApplication.prototype.webVRSetup = function(button, checkbox) {
+    if (this.vrInterface) {
+      // If an interface already exists, destroy it so that a new one can be
+      // created. This can fix cases like the device or VRManager being in a
+      // bad state.
+      this.vrInterface.stop();
+      this.vrInterface.clearAllEvents();
+      this.vrInterface = undefined;
+      button.textContent = 'Enter';
+      button.disabled = true;
+    }
+
+    if (!checkbox.checked) return;
+
+    // Clear checkbox, since it should only be checked once a device is found.
+    checkbox.checked = false;
+    checkbox.disabled = true;
+
+    if ('getVRDisplays' in navigator) {
+      navigator.getVRDisplays()
+        .then(displays => {
+
+          if (displays.length > 0) {
+            let device = displays[0];
+            this.vrInterface = new CATMAID.WebVRInterface(this.space.view, device);
+
+            this.vrInterface.on(
+                CATMAID.WebVRInterface.EVENT_VR_START,
+                () => {
+                  button.textContent = 'Exit';
+                  button.onclick = this.vrInterface.stop.bind(this.vrInterface);
+                });
+            this.vrInterface.on(
+                CATMAID.WebVRInterface.EVENT_VR_END,
+                () => {
+                  button.textContent = 'Enter';
+                  button.onclick = this.vrInterface.start.bind(this.vrInterface);
+                });
+
+            button.onclick = this.vrInterface.start.bind(this.vrInterface);
+            button.disabled = false;
+            checkbox.checked = true;
+          } else {
+            CATMAID.warn("No VR device found");
+          }
+
+          checkbox.disabled = false;
+        })
+        .catch(() => { checkbox.disabled = false; });
+    } else {
+      CATMAID.warn("WebVR is not supported on your system");
+      checkbox.disabled = false;
+    }
+  };
+
   /**
    * Show a dialog to ask the user for image dimensions, resize the view to the
    * new dimensions,execute the given function and return to the original
@@ -843,7 +898,7 @@
       for (let i=0; i<meshesToReAdd.length; ++i) {
         // Needed, because we reuse the existing mesh here and it seems to be
         // only able to be part of one scene at a time.
-        self.space.scene.add(meshesToReAdd[i]);
+        self.space.scene.project.add(meshesToReAdd[i]);
       }
 
       // Replace created "o" elemnts (object grous) with group elements
@@ -1297,9 +1352,9 @@
 
   WebGLApplication.prototype.Options.prototype.createLandmarkMaterial = function(color, opacity) {
     var material = new THREE.SpriteMaterial({
-		    map: new THREE.CanvasTexture(generateSprite(color, opacity)),
-				blending: THREE.AdditiveBlending
-	    });
+        map: new THREE.CanvasTexture(generateSprite(color, opacity)),
+        blending: THREE.AdditiveBlending
+      });
     return material;
   };
 
@@ -1313,9 +1368,9 @@
 
   WebGLApplication.prototype.Options.prototype.createPointCloudMaterial = function(color, opacity) {
     var material = new THREE.SpriteMaterial({
-		    map: new THREE.CanvasTexture(generateSprite(color, opacity)),
-				blending: THREE.AdditiveBlending
-	    });
+        map: new THREE.CanvasTexture(generateSprite(color, opacity)),
+        blending: THREE.AdditiveBlending
+      });
     return material;
   };
 
@@ -2265,7 +2320,7 @@
 
             var addedMeshes = scene.children.map(function(mesh) {
               mesh.material = material;
-              this.space.scene.add(mesh);
+              this.space.scene.project.add(mesh);
               return mesh;
             }, this);
             var originalGeometries = addedMeshes.map(function(mesh) {
@@ -2293,7 +2348,7 @@
     } else if (existingVolume) {
       // Remove volume
       existingVolume.meshes.forEach(function(v) {
-        this.space.scene.remove(v);
+        this.space.scene.project.remove(v);
       }, this);
       this.loadedVolumes.delete(volumeId);
       this.space.render();
@@ -2379,7 +2434,7 @@
     volume.boundingBox = visible;
 
     if (volume.boundingBoxMeshes && volume.boundingBoxMeshes.length > 0) {
-      this.space.scene.remove.apply(this.space.scene, volume.boundingBoxMeshes);
+      this.space.scene.project.remove.apply(this.space.scene, volume.boundingBoxMeshes);
     }
 
     if (visible) {
@@ -2390,7 +2445,7 @@
       for (var i=0; i<volume.meshes.length; ++i) {
         var box = new THREE.BoxHelper(volume.meshes[i], color);
         volume.boundingBoxMeshes.push(box);
-        this.space.scene.add(box);
+        this.space.scene.project.add(box);
       }
     }
 
@@ -2412,7 +2467,7 @@
     if (subdivisions) {
       volume.meshes.forEach(function(mesh, i) {
         // Remove old representation
-        this.space.scene.remove(mesh);
+        this.space.scene.project.remove(mesh);
         // Reset to original geometry
         var originalGeometry = volume.originalGeometries[i];
 
@@ -2435,16 +2490,16 @@
         mesh.geometry = new THREE.BufferGeometry().fromGeometry(smoothedGeometry);
 
         // Add new representation
-        this.space.scene.add(mesh);
+        this.space.scene.project.add(mesh);
       }, this);
     } else {
       volume.meshes.forEach(function(mesh, i) {
         // Remove old representation
-        this.space.scene.remove(mesh);
+        this.space.scene.project.remove(mesh);
         // Reset to original geometry
         mesh.geometry = volume.originalGeometries[i];
         // Add new representation
-        this.space.scene.add(mesh);
+        this.space.scene.project.add(mesh);
       }, this);
     }
 
@@ -2498,7 +2553,7 @@
             transform.push(data);
 
             for (let j=0, jmax=data.meshes.length; j<jmax; ++j) {
-              this.space.scene.add(data.meshes[j]);
+              this.space.scene.project.add(data.meshes[j]);
             }
 
             this.space.render();
@@ -2511,7 +2566,7 @@
     } else if (existingLandmarkTransform) {
       // Remove landmarkTransform
       existingLandmarkTransform.forEach(entry => {
-        this.space.scene.remove(...entry.meshes);
+        this.space.scene.project.remove(...entry.meshes);
       });
       delete this.loadedLandmarkTransforms[landmarkTransformId];
       this.space.render();
@@ -2616,7 +2671,7 @@
         }).bind(this))
         .then((function(meshes) {
           for (let j=0, jmax=meshes.length; j<jmax; ++j) {
-            this.space.scene.add(meshes[j]);
+            this.space.scene.project.add(meshes[j]);
           }
 
           // Store mesh reference
@@ -2627,7 +2682,7 @@
     } else if (existingLandmarkGroup) {
       // Remove landmarkGroup
       existingLandmarkGroup.forEach(function(v) {
-        this.space.scene.remove(v);
+        this.space.scene.project.remove(v);
       }, this);
       delete this.loadedLandmarkGroups[landmarkGroupId];
       this.space.render();
@@ -2724,7 +2779,7 @@
     landmarkGroup.boundingBox = visible;
 
     if (landmarkGroup.boundingBoxMeshes && landmarkGroup.boundingBoxMeshes.length > 0) {
-      this.space.scene.remove.apply(this.space.scene, landmarkGroup.boundingBoxMeshes);
+      this.space.scene.project.remove.apply(this.space.scene, landmarkGroup.boundingBoxMeshes);
     }
 
     if (visible) {
@@ -2734,7 +2789,7 @@
       }
       for (var i=0; i<landmarkGroup.boundingBoxMeshes.length; ++i) {
         let box = landmarkGroup.boundingBoxMeshes[i];
-        this.space.scene.add(box);
+        this.space.scene.project.add(box);
       }
     }
 
@@ -2787,7 +2842,7 @@
         }).bind(this))
         .then((function(meshes) {
           for (let j=0, jmax=meshes.length; j<jmax; ++j) {
-            this.space.scene.add(meshes[j]);
+            this.space.scene.project.add(meshes[j]);
           }
 
           // Store mesh reference
@@ -2798,7 +2853,7 @@
     } else if (existingPointCloud) {
       // Remove landmarkGroup
       existingPointCloud.forEach(function(v) {
-        this.space.scene.remove(v);
+        this.space.scene.project.remove(v);
       }, this);
       delete this.loadedPointClouds[pointCloudId];
       this.space.render();
@@ -2905,7 +2960,7 @@
         }).bind(this))
         .then((function(meshes) {
           for (let j=0, jmax=meshes.length; j<jmax; ++j) {
-            this.space.scene.add(meshes[j]);
+            this.space.scene.project.add(meshes[j]);
           }
 
           // Store mesh reference
@@ -2916,7 +2971,7 @@
     } else if (existingPointSet) {
       // Remove landmarkGroup
       existingPointSet.forEach(function(v) {
-        this.space.scene.remove(v);
+        this.space.scene.project.remove(v);
       }, this);
       delete this.loadedPointSets[pointSetId];
       this.space.render();
@@ -2957,6 +3012,9 @@
 
     // WebGL space
     this.scene = new THREE.Scene();
+    // Group for all CATMAID project content, to allow separate scaling.
+    this.scene.project = new THREE.Group();
+    this.scene.add(this.scene.project);
     // A render target used for picking objects
     this.pickingTexture = new THREE.WebGLRenderTarget(w, h);
     this.pickingTexture.texture.generateMipmaps = false;
@@ -2969,11 +3027,11 @@
 
     // Content
     this.staticContent = new this.StaticContent(this.dimensions, stack, this.center, options);
-    this.scene.add(this.staticContent.box);
-    this.scene.add(this.staticContent.floor);
+    this.scene.project.add(this.staticContent.box);
+    this.scene.project.add(this.staticContent.floor);
 
     this.content = new this.Content(options);
-    this.scene.add(this.content.active_node.mesh);
+    this.scene.project.add(this.content.active_node.mesh);
 
     // Axes camera and scene
     this.axesCamera = new THREE.PerspectiveCamera(50, this.axesRectWidth / this.axesRectHeight, 1, 1000);
@@ -3004,11 +3062,11 @@
     if (debug) {
       camera = this.view.debugCamera;
       this.cameraHelper = new THREE.CameraHelper(this.view.mainCamera);
-      this.scene.add(this.cameraHelper);
+      this.scene.project.add(this.cameraHelper);
     } else {
       camera = this.view.mainCamera;
       if (this.cameraHelper) {
-        this.scene.remove(this.cameraHelper);
+        this.scene.project.remove(this.cameraHelper);
         this.cameraHelper = undefined;
       }
     }
@@ -3061,15 +3119,15 @@
   };
 
   WebGLApplication.prototype.Space.prototype.add = function(mesh) {
-    this.scene.add(mesh);
+    this.scene.project.add(mesh);
   };
 
   WebGLApplication.prototype.Space.prototype.remove = function(mesh) {
-    this.scene.remove(mesh);
+    this.scene.project.remove(mesh);
   };
 
   WebGLApplication.prototype.Space.prototype.removeAll = function(objects) {
-    this.scene.remove.apply(this.scene, objects);
+    this.scene.project.remove.apply(this.scene, objects);
   };
 
   WebGLApplication.prototype.Space.prototype.render = function() {
@@ -3082,7 +3140,7 @@
 
   WebGLApplication.prototype.Space.prototype.destroy = function() {
     // remove active_node and project-wise meshes
-    this.scene.remove(this.content.active_node.mesh);
+    this.scene.project.remove(this.content.active_node.mesh);
 
     // dispose active_node and meshes
     this.content.dispose();
@@ -3096,9 +3154,9 @@
     this.staticContent.dispose();
 
     // remove meshes
-    if (this.staticContent.box) this.scene.remove(this.staticContent.box);
-    this.scene.remove(this.staticContent.floor);
-    if (this.staticContent.zplane) this.scene.remove(this.staticContent.zplane);
+    if (this.staticContent.box) this.scene.project.remove(this.staticContent.box);
+    this.scene.project.remove(this.staticContent.floor);
+    if (this.staticContent.zplane) this.scene.project.remove(this.staticContent.zplane);
     this.staticContent.missing_sections.forEach(function(m) { this.remove(m); }, this.scene);
 
     this.view.destroy();
@@ -3345,7 +3403,7 @@
       this.zplane.material.dispose();
 
       if (space) {
-        space.scene.remove(this.zplane);
+        space.scene.project.remove(this.zplane);
       }
     }
     if (this.zplaneLayerMeshes) {
@@ -3563,7 +3621,7 @@
     this.floor.material.needsUpdate = true;
 
     if (this.box) {
-      space.scene.remove(this.box);
+      space.scene.project.remove(this.box);
       this.box.geometry.dispose();
       this.box.material.dispose();
       this.box = null;
@@ -3571,7 +3629,7 @@
     if (options.show_box) {
       this.box = this.createBoundingBox(project.focusedStackViewer.primaryStack);
       this.box.visible = options.show_box;
-      space.scene.add(this.box);
+      space.scene.project.add(this.box);
     }
 
     space.axesDisplay.style.display = options.show_axes ? 'block' : 'none';
@@ -3829,7 +3887,7 @@
         color: 0x151349, side: THREE.DoubleSide, opacity: opacity,
         transparent: true});
     this.zplane = new THREE.Mesh(geometry, material);
-    space.scene.add(this.zplane);
+    space.scene.project.add(this.zplane);
 
     if (textureZoomLevel || 0 === textureZoomLevel) {
       this.zplaneLayerMeshes = [];
@@ -5254,7 +5312,7 @@
     });
 
     var ambientLight = new THREE.AmbientLight(0xffffff);
-    this.scene.add(ambientLight);
+    this.scene.project.add(ambientLight);
 
     // Hide volumes if they aren't include in picking
     let originalVolumeVisibility = new Map();
@@ -5521,7 +5579,7 @@
     }
 
     // Reset lighting, assuming no change in position
-    this.scene.remove(ambientLight);
+    this.scene.project.remove(ambientLight);
     this.lights.forEach(function(l, i) {
       l.visible = this[i];
     }, lightVisMap);
@@ -8006,7 +8064,7 @@
     if (!value) return;
     this.options.text_scaling = value;
 
-    this.space.scene.traverse(function(node) {
+    this.space.scene.project.traverse(function(node) {
       if (node instanceof THREE.Mesh) {
         if (node.geometry && node.geometry.type === 'TextGeometry') {
           node.scale.set(value, -value, value);

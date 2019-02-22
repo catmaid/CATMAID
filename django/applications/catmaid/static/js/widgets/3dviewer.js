@@ -550,7 +550,7 @@
 
     dialog.show(400, 460, true);
 
-    var isBackgroundBlack = this.options.show_background;
+    var isBackgroundDark = (new THREE.Color(this.options.background_color)).getHSL().l < 0.5;
 
     function handleOK() {
       /* jshint validthis: true */ // `this` is bound to this WebGLApplication
@@ -582,7 +582,7 @@
       // Text color ins inverse of background.
       // TODO: The SVG export doesn't support black backgrounds currently, and
       // is therefore treated special.
-      var textColor = isBackgroundBlack && panelFormat != 'svg' ? 'white' : 'black';
+      var textColor = isBackgroundDark && panelFormat != 'svg' ? 'white' : 'black';
 
       // Number of skeletons per panel
       var nSkeletonsPerPanel = parseInt(nSkeletonsPerPanelControl.value, 10);
@@ -1202,7 +1202,7 @@
     this.show_axes = false;
     this.show_floor = true;
     this.floor_color = '#535353';
-    this.show_background = true;
+    this.background_color = '#000000';
     this.show_box = true;
     this.show_zplane = false;
     this.zplane_texture = true;
@@ -3556,11 +3556,7 @@
       this.missing_sections.forEach(function(m) { this.add(m); }, space.scene);
     }
 
-    if (options.show_background) {
-      space.view.renderer.setClearColor(0x000000, 1);
-    } else {
-      space.view.renderer.setClearColor(0xffffff, 1);
-    }
+    space.view.renderer.setClearColor(options.background_color, 1);
 
     this.floor.visible = options.show_floor;
     this.floor.material.color.set(options.floor_color);
@@ -5242,7 +5238,7 @@
     o.show_missing_sections = false;
     o.show_active_node = false;
     o.show_floor = false;
-    o.show_background = false;
+    o.background_color = '0xFFFFFF';
     o.show_box = false;
     this.staticContent.adjust(o, this);
     this.content.adjust(o, this, submit);

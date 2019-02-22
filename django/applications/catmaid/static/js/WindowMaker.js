@@ -949,7 +949,21 @@ var WindowMaker = new function()
           ['Active node', o.show_active_node, function() { WA.options.show_active_node = this.checked; WA.adjustContent(); }, false],
           ['Active node on top', o.active_node_on_top, function() { WA.options.active_node_on_top = this.checked; WA.adjustContent(); }, false],
           ['Radius adaptive active node', o.active_node_respects_radius, function() { WA.options.active_node_respects_radius = this.checked; WA.adjustContent(); }, false],
-          ['Black background', o.show_background, adjustFn('show_background'), false],
+          {
+            type: 'color-button',
+            label: 'background',
+            title: 'Adjust the background color',
+            value: o.background_color,
+            color: {
+              initialColor: o.background_color,
+              initialAlpha: 1.0,
+              onColorChange: function(rgb, alpha, colorChanged, alphaChanged, colorHex) {
+                WA.options.background_color = '#' + colorHex;
+                WA.adjustStaticContent();
+              },
+            },
+            length: 10
+          },
           ['Floor', o.show_floor, adjustFn('show_floor'), false],
           {
             type: 'color-button',

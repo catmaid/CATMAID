@@ -72,8 +72,8 @@ def serialize_config(config, simple=False):
         }
 
 
-def serialize_similarity(similarity, with_scoring=False):
-    return {
+def serialize_similarity(similarity, with_scoring=False, with_objects=False):
+    serialized_similarity = {
         'id': similarity.id,
         'user_id': similarity.user_id,
         'creation_time': similarity.creation_time,
@@ -83,17 +83,39 @@ def serialize_similarity(similarity, with_scoring=False):
         'name': similarity.name,
         'status': similarity.status,
         'scoring': similarity.scoring if with_scoring else [],
-        'query_objects': similarity.query_objects,
-        'target_objects': similarity.target_objects,
         'query_type': similarity.query_type_id,
         'target_type': similarity.target_type_id,
         'use_alpha': similarity.use_alpha,
         'normalized': similarity.normalized,
         'detailed_status': similarity.detailed_status,
         'computation_time': similarity.computation_time,
-        'invalid_query_objects': similarity.invalid_query_objects,
-        'invalid_target_objects': similarity.invalid_target_objects,
+        'n_query_objects': len(similarity.query_objects) \
+                if similarity.query_objects else 0,
+        'n_target_objects': len(similarity.target_objects) \
+                if similarity.target_objects else 0,
+        'n_invalid_query_objects': len(similarity.invalid_query_objects) \
+                if similarity.invalid_query_objects else 0,
+        'n_invalid_target_objects': len(similarity.invalid_target_objects) \
+                if similarity.invalid_target_objects else 0,
     }
+
+    if with_objects:
+        serialized_similarity.update({
+            'query_objects': similarity.query_objects,
+            'target_objects': similarity.target_objects,
+            'invalid_query_objects': similarity.invalid_query_objects,
+            'invalid_target_objects': similarity.invalid_target_objects,
+        })
+    else:
+        serialized_similarity.update({
+            'query_objects': [],
+            'target_objects': [],
+            'invalid_query_objects': [],
+            'invalid_target_objects': [],
+        })
+
+
+    return serialized_similarity
 
 
 def serialize_pointcloud(pointcloud, with_locations=False, with_images=False):
@@ -959,9 +981,16 @@ class SimilarityList(APIView):
             paramType: form
             required: false
             defaultValue: false
+          - name: with_objects
+            description: Whether or not to include query and target object IDs.
+            type: boolean
+            paramType: form
+            required: false
+            defaultValue: false
         """
         config_id = request.query_params.get('config_id', None)
         with_scoring = get_request_bool(request.query_params, 'with_scoring', False)
+        with_objects = get_request_bool(request.query_params, 'with_objects', False)
 
         params = {
             'project_id': int(project_id)
@@ -970,7 +999,7 @@ class SimilarityList(APIView):
         if config_id:
             params['config_id'] = config_id
 
-        return JsonResponse([serialize_similarity(c, with_scoring) for c in
+        return JsonResponse([serialize_similarity(c, with_scoring, with_objects) for c in
                 NblastSimilarity.objects.filter(**params)], safe=False)
 
 
@@ -997,11 +1026,18 @@ class SimilarityDetail(APIView):
             paramType: form
             required: false
             defaultValue: false
+          - name: with_objects
+            description: Whether or not to include query and target object IDs.
+            type: boolean
+            paramType: form
+            required: false
+            defaultValue: false
         """
         similarity = NblastSimilarity.objects.get(pk=similarity_id, project_id=project_id)
         with_scoring = get_request_bool(request.query_params, 'with_scoring', False)
-        print(similarity.scoring)
-        return JsonResponse(serialize_similarity(similarity, with_scoring))
+        with_objects = get_request_bool(request.query_params, 'with_objects', False)
+
+        return JsonResponse(serialize_similarity(similarity, with_scoring, with_objects))
 
     @method_decorator(requires_user_role(UserRole.Annotate))
     def delete(self, request, project_id, similarity_id):

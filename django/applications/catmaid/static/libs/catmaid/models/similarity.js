@@ -170,9 +170,17 @@
 
   /**
    * Get a specific similarity query result.
+   *
+   * @param projectId    {Integer} The project to operate in.
+   * @param similarityId {Integer} The similarity object to retrieve.
+   * @param withObjects  {Boolean} (optional) Whether to include query and target
+   *                               object IDs in response, default is false.
+   * @param withScoring  {Boolean} (optional) Whether to include scoring
+   *                               information in response, default is false.
    */
-  Similarity.getSimilarity = function(projectId, similarityId, withScoring=false) {
+  Similarity.getSimilarity = function(projectId, similarityId, withObjects=false, withScoring=false) {
     return CATMAID.fetch(projectId + '/similarity/queries/' + similarityId + '/', 'GET', {
+      'with_objects': withObjects,
       'with_scoring': withScoring,
     });
   };
@@ -182,15 +190,18 @@
    *
    * @param projectId   {integer} The project to operate in.
    * @param configId    {integer} (optional) ID of config the similarities are linked to.
+   * @param withObjects {Boolean} (optional) Whether to include query and target
+   *                              object IDs in response, default is false.
    * @param withScoring {Boolean} (optional) Whether to include scoring
    *                              information in response, default is false.
    *
    * @returns a promise that resolves in the list of similarities.
    */
-  Similarity.listAllSkeletonSimilarities = function(projectId, configId, with_scoring) {
+  Similarity.listAllSkeletonSimilarities = function(projectId, configId, withObjects=false, withScoring=false) {
     return CATMAID.fetch(projectId + '/similarity/queries/', 'GET', {
       configId: configId,
-      with_scoring: !!with_scoring,
+      with_objects: withObjects,
+      with_scoring: withScoring,
     });
   };
 

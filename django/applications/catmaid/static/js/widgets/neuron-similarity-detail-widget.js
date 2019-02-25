@@ -195,7 +195,7 @@
   NeuronSimilarityDetailWidget.prototype.setSimilarity = function(similarity) {
     let prepare;
     if (similarity.status === 'complete' && (!similarity.scoring || similarity.scoring.length === 0)) {
-      prepare = CATMAID.Similarity.getSimilarity(project.id, similarity.id, true);
+      prepare = CATMAID.Similarity.getSimilarity(project.id, similarity.id, true, true);
     } else {
       prepare = Promise.resolve(similarity);
     }

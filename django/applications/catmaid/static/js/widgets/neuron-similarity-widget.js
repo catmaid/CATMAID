@@ -1149,19 +1149,31 @@
               class: 'cm-center',
               render: function(data, type, row, meta) {
                 let qo = row.query_objects;
-                let allBins = qo ? qo.join(', ') : 'all';
-                let text = (qo && qo.length > 4) ?
-                    (qo[0] + ', ' +  qo[1] +  ' … ' + qo[qo.length - 2] + ', ' + qo[qo.length - 1]) :
-                    allBins;
-                let length = qo ? qo.length : 'all';
-                if (row.query_type === 'skeleton') {
-                  return '<span title="' + length + ' skeleton(s)"><em>Skeletons:</em> ' + text + '</span>';
-                } else if (row.query_type === 'pointcloud') {
-                  return '<span title="' + length + ' point cloud(s)"><em>Point clouds:</em> ' + text + '</span>';
-                } else if (row.query_type === 'pointset') {
-                  return '<span title="' + length + ' transformed skeleton(s)"><em>Transformed skeletons:</em> ' + text + '</span>';
+                if (qo && qo.length > 0) {
+                  let allBins = qo ? qo.join(', ') : 'all';
+                  let text = (qo && qo.length > 4) ?
+                      (qo[0] + ', ' +  qo[1] +  ' … ' + qo[qo.length - 2] + ', ' + qo[qo.length - 1]) :
+                      allBins;
+                  let length = qo ? qo.length : 'all';
+                  if (row.query_type === 'skeleton') {
+                    return '<span title="' + length + ' skeleton(s)"><em>Skeletons:</em> ' + text + '</span>';
+                  } else if (row.query_type === 'pointcloud') {
+                    return '<span title="' + length + ' point cloud(s)"><em>Point clouds:</em> ' + text + '</span>';
+                  } else if (row.query_type === 'pointset') {
+                    return '<span title="' + length + ' transformed skeleton(s)"><em>Transformed skeletons:</em> ' + text + '</span>';
+                  } else {
+                    return '<span title="' + length + ' unknown object(s)"><em>Unknown type:</em> ' + text + '</span>';
+                  }
                 } else {
-                  return '<span title="' + length + ' unknown object(s)"><em>Unknown type:</em> ' + text + '</span>';
+                  if (row.query_type === 'skeleton') {
+                    return `<span><em>${row.n_query_objects} skeletons</em></span>`;
+                  } else if (row.query_type === 'pointcloud') {
+                    return `<span><em>${row.n_query_objects} point clouds</em></span>`;
+                  } else if (row.query_type === 'pointset') {
+                    return `<span<em>${row.n_query_objects} transformed skeletons</em></span>`;
+                  } else {
+                    return `<span><em>${row.n_query_objects} unknown objects</em></span>`;
+                  }
                 }
               }
             }, {
@@ -1171,19 +1183,31 @@
               class: 'cm-center',
               render: function(data, type, row, meta) {
                 let to = row.target_objects;
-                let allBins = to ? to.join(', ') : 'all';
-                let text = (to && to.length > 4) ?
-                    (to[0] + ', ' +  to[1] +  ' … ' + to[to.length - 2] + ', ' + to[to.length - 1]) :
-                    allBins;
-                let length = to ? to.length : 'all';
-                if (row.target_type === 'skeleton') {
-                  return '<span title="' + length + ' skeleton(s)"><em>Skeletons:</em> ' + text + '</span>';
-                } else if (row.target_type === 'pointcloud') {
-                  return '<span title="' + length + ' point cloud(s)"><em>Point clouds:</em> ' + text + '</span>';
-                } else if (row.target_type === 'pointset') {
-                  return '<span title="' + length + ' transformed skeleton(s)"><em>Transformed skeletons:</em> ' + text + '</span>';
+                if (to && to.length > 0) {
+                  let allBins = to ? to.join(', ') : 'all';
+                  let text = (to && to.length > 4) ?
+                      (to[0] + ', ' +  to[1] +  ' … ' + to[to.length - 2] + ', ' + to[to.length - 1]) :
+                      allBins;
+                  let length = to ? to.length : 'all';
+                  if (row.target_type === 'skeleton') {
+                    return '<span title="' + length + ' skeleton(s)"><em>Skeletons:</em> ' + text + '</span>';
+                  } else if (row.target_type === 'pointcloud') {
+                    return '<span title="' + length + ' point cloud(s)"><em>Point clouds:</em> ' + text + '</span>';
+                  } else if (row.target_type === 'pointset') {
+                    return '<span title="' + length + ' transformed skeleton(s)"><em>Transformed skeletons:</em> ' + text + '</span>';
+                  } else {
+                    return '<span title="' + length + ' unknown object(s)"><em>Unknown type:</em> ' + text + '</span>';
+                  }
                 } else {
-                  return '<span title="' + length + ' unknown object(s)"><em>Unknown type:</em> ' + text + '</span>';
+                  if (row.target_type === 'skeleton') {
+                    return `<span><em>${row.n_target_objects} skeletons</em></span>`;
+                  } else if (row.target_type === 'pointcloud') {
+                    return `<span><em>${row.n_target_objects} point clouds</em></span>`;
+                  } else if (row.target_type === 'pointset') {
+                    return `<span<em>${row.n_target_objects} transformed skeletons</em></span>`;
+                  } else {
+                    return `<span><em>${row.n_target_objects} unknown objects</em></span>`;
+                  }
                 }
               }
             }, {

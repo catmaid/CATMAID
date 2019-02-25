@@ -246,7 +246,7 @@ def setup_r_environment():
 def compute_scoring_matrix(project_id, user_id, matching_sample,
         random_sample, distbreaks=NblastConfigDefaultDistanceBreaks,
         dotbreaks=NblastConfigDefaultDotBreaks, resample_step=1000,
-        tangent_neighbors=5, omit_failures=True):
+        tangent_neighbors=5, omit_failures=True, resample_by=1e3):
     """Create NBLAST scoring matrix for a set of matching skeleton IDs and a set
     of random skeleton IDs. Matching skeletons are skeletons with a similar
     morphology, e.g. KCy in FAFB.
@@ -334,7 +334,7 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
 
         # Create dotprop instances and resample
         logger.debug('Computing matching skeleton stats')
-        matching_neurons_dps = rnat.dotprops(matching_neurons.ro / 1e3, **{
+        matching_neurons_dps = rnat.dotprops(matching_neurons.ro / resample_by, **{
                     'k': tangent_neighbors,
                     'resample': 1,
                     '.progress': 'none',
@@ -358,7 +358,7 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
             pointset_objects.names = robjects.StrVector(effective_pointset_object_ids)
 
             logger.debug('Computing matching pointset stats')
-            pointset_dps = rnat.dotprops(pointset_objects.ro / 1e3, **{
+            pointset_dps = rnat.dotprops(pointset_objects.ro / resample_by, **{
                         'k': tangent_neighbors,
                         'resample': 1,
                         '.progress': 'none',
@@ -380,7 +380,7 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
                 })
 
         logger.debug('Computing random skeleton stats')
-        nonmatching_neurons_dps = rnat.dotprops(nonmatching_neurons.ro / 1e3, **{
+        nonmatching_neurons_dps = rnat.dotprops(nonmatching_neurons.ro / resample_by, **{
                     'k': tangent_neighbors,
                     'resample': 1,
                     '.progress': 'none',
@@ -628,7 +628,7 @@ def get_catmaid_connection(user_id):
 
 def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         parallel=True, detail=10, omit_failures=True, min_nodes=500,
-        min_soma_nodes=20, soma_tags=('soma')):
+        min_soma_nodes=20, soma_tags=('soma'), resample_by=1e3):
     """Create a new cache file for a particular project object type and
     detail level. All objects of a type in a project are prepared.
     """
@@ -685,7 +685,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
 
         logger.debug('Computing skeleton stats')
         # Note: scaling down to um
-        objects_dps = rnat.dotprops(objects.ro / 1e3, **{
+        objects_dps = rnat.dotprops(objects.ro / resample_by, **{
                     'k': tangent_neighbors,
                     'resample': 1,
                     '.progress': 'none',
@@ -722,25 +722,29 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         objects.names = robjects.StrVector(effective_object_ids)
 
         logger.debug('Computing query pointcloud stats')
-        objects_dps = rnat.dotprops(objects.ro / 1e3, **{
+        objects_dps = rnat.dotprops(objects.ro / resample_by, **{
                     'k': tangent_neighbors,
                     'resample': 1,
                     '.progress': 'none',
                     'OmitFailures': omit_failures,
                 })
         # Save
-        base = importr('base')
         base.saveRDS(objects_dps, **{
             'file': cache_path,
         })
     else:
         raise ValueError('Unsupported object type: {}'. format(object_type))
 
+
+def get_skeleton_dps():
+    pass
+
+
 def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         query_type='skeleton', target_type='skeleton', omit_failures=True,
         normalized='raw', use_alpha=False, remove_target_duplicates=True,
         min_nodes=500, min_soma_nodes=20, simplify=True, required_branches=10,
-        soma_tags=('soma', ), use_cache=True):
+        soma_tags=('soma', ), use_cache=True, resample_by=1e3):
     """Create NBLAST score for forward similarity from query objects to target
     objects. Objects can either be pointclouds or skeletons, which has to be
     reflected in the respective type parameter. This is executing essentially
@@ -896,7 +900,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                                 '.parallel': parallel,
                             })
                 logger.debug('Computing query skeleton stats')
-                query_dps = rnat.dotprops(query_objects.ro / 1e3, **{
+                query_dps = rnat.dotprops(query_objects.ro / resample_by, **{
                             'k': config.tangent_neighbors,
                             'resample': 1,
                             '.progress': 'none',
@@ -965,7 +969,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 query_objects.names = robjects.StrVector(non_cache_typed_query_object_ids)
 
                 logger.debug('Computing query pointcloud stats')
-                query_dps = rnat.dotprops(query_objects.ro / 1e3, **{
+                query_dps = rnat.dotprops(query_objects.ro / resample_by, **{
                             'k': config.tangent_neighbors,
                             'resample': 1,
                             '.progress': 'none',
@@ -1007,7 +1011,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             query_objects.names = robjects.StrVector(effective_query_object_ids)
 
             logger.debug('Computing query pointset stats')
-            query_dps = rnat.dotprops(query_objects.ro / 1e3, **{
+            query_dps = rnat.dotprops(query_objects.ro / resample_by, **{
                         'k': config.tangent_neighbors,
                         'resample': 1,
                         '.progress': 'none',
@@ -1067,7 +1071,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                                 })
 
                     logger.debug('Computing target skeleton stats')
-                    target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
+                    target_dps = rnat.dotprops(target_objects.ro / resample_by, **{
                                 'k': config.tangent_neighbors,
                                 'resample': 1,
                                 '.progress': 'none',
@@ -1136,7 +1140,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     target_objects.names = robjects.StrVector(non_cache_typed_target_object_ids)
 
                     logger.debug('Computing target pointcloud stats')
-                    target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
+                    target_dps = rnat.dotprops(target_objects.ro / resample_by, **{
                                 'k': config.tangent_neighbors,
                                 'resample': 1,
                                 '.progress': 'none',
@@ -1173,7 +1177,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 target_objects.names = robjects.StrVector(typed_target_object_ids)
 
                 logger.debug('Computing target pointset stats')
-                target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
+                target_dps = rnat.dotprops(target_objects.ro / resample_by, **{
                             'k': config.tangent_neighbors,
                             'resample': 1,
                             '.progress': 'none',

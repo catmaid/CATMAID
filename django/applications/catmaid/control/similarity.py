@@ -97,12 +97,20 @@ def serialize_similarity(similarity, with_scoring=False, with_objects=False):
                 if similarity.invalid_query_objects else 0,
         'n_invalid_target_objects': len(similarity.invalid_target_objects) \
                 if similarity.invalid_target_objects else 0,
+        'n_initial_query_objects': len(similarity.initial_query_objects) \
+                if similarity.initial_query_objects else None,
+        'n_initial_target_objects': len(similarity.initial_target_objects) \
+                if similarity.initial_target_objects else None,
+        'reverse': similarity.reverse,
+        'top_n': similarity.top_n,
     }
 
     if with_objects:
         serialized_similarity.update({
             'query_objects': similarity.query_objects,
             'target_objects': similarity.target_objects,
+            'initial_query_objects': similarity.initial_query_objects,
+            'initial_target_objects': similarity.initial_target_objects,
             'invalid_query_objects': similarity.invalid_query_objects,
             'invalid_target_objects': similarity.invalid_target_objects,
         })
@@ -112,6 +120,10 @@ def serialize_similarity(similarity, with_scoring=False, with_objects=False):
             'target_objects': [],
             'invalid_query_objects': [],
             'invalid_target_objects': [],
+            # None as initial object specifies "all" of the respective type.
+            # This information can be maintained for no-object mode.
+            'initial_query_objects': [] if similarity.initial_query_objects else None,
+            'initial_target_objects': [] if similarity.initial_target_objects else None,
         })
 
 
@@ -651,18 +663,20 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
         simplify=True, required_branches=10, use_cache=True):
     start_time = timer()
     try:
+        # TODO This should be configurable.
         min_nodes = 500
         min_soma_nodes = 20
         soma_tags = ('soma',)
 
+        # Store status update and make this change immediately available.
         with transaction.atomic():
             similarity = NblastSimilarity.objects.select_related('config').get(
                     project_id=project_id, pk=similarity_id)
             similarity.status = 'computing'
             similarity.save()
 
-        query_object_ids = similarity.query_objects
-        target_object_ids = similarity.target_objects
+        query_object_ids = similarity.initial_query_objects
+        target_object_ids = similarity.initial_target_objects
 
         # Fill in object IDs, if not yet present
         updated = False
@@ -670,16 +684,14 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
             query_object_ids = get_all_object_ids(project_id, user_id,
                     similarity.query_type_id, min_nodes, min_soma_nodes,
                     soma_tags)
-            similarity.query_objects = query_object_ids
-            updated = True
         if not target_object_ids:
             target_object_ids = get_all_object_ids(project_id, user_id,
                     similarity.target_type_id, min_nodes, min_soma_nodes,
                     soma_tags)
-            similarity.target_objects = target_object_ids
-            updated = True
-        if updated:
-            similarity.save()
+
+        similarity.target_objects = target_object_ids
+        similarity.query_objects = query_object_ids
+        similarity.save()
 
         config = similarity.config
         if not config.status == 'complete':
@@ -698,7 +710,8 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                 use_alpha=similarity.use_alpha,
                 remove_target_duplicates=remove_target_duplicates,
                 simplify=simplify, required_branches=required_branches,
-                use_cache=use_cache)
+                use_cache=use_cache, reverse=similarity.reverse,
+                top_n=similarity.top_n)
 
         duration = timer() - start_time
 
@@ -709,14 +722,25 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
         else:
             similarity.status = 'complete'
             similarity.scoring = scoring_info['similarity']
+            similarity.detailed_status =  ("Computed scoring for {} query " +
+                    "skeletons vs {} target skeletons.").format(
+                            len(similarity.query_objects) if similarity.query_objects is not None else '?',
+                            len(similarity.target_objects) if similarity.target_objects is not None else '?')
+
             if scoring_info['query_object_ids']:
                 invalid_query_objects = set(similarity.query_objects) - set(scoring_info['query_object_ids'])
                 similarity.invalid_query_objects = list(invalid_query_objects)
                 similarity.query_objects = scoring_info['query_object_ids']
+            else:
+                similarity.invalid_query_objects = None
+
             if scoring_info['target_object_ids']:
                 invalid_target_objects = set(similarity.target_objects) - set(scoring_info['target_object_ids'])
                 similarity.invalid_target_objects = list(invalid_target_objects)
                 similarity.target_objects = scoring_info['target_object_ids']
+            else:
+                similarity.invalid_target_objects = None
+
             similarity.computation_time = duration
             similarity.save()
 
@@ -798,6 +822,12 @@ def compare_skeletons(request, project_id):
         paramType: form
         required: false
         defaultValue: false
+      - name: reverse
+        description: If enabled, the target is matched against the query.
+        type: boolean
+        paramType: form
+        required: false
+        defaultValue: false
       - name: query_type_id
         description: Type of query data
         enum: [skeleton, point-cloud]
@@ -834,7 +864,7 @@ def compare_skeletons(request, project_id):
         defaultValue: true
       - name: required_branches
         description: The required branch levels if neurons should be simplified.
-        type: boolean
+        type: int
         required: false
         defaultValue: 10
       - name: use_cache
@@ -842,6 +872,11 @@ def compare_skeletons(request, project_id):
         type: boolean
         required: false
         defaultValue: true
+      - name: top_n
+        description: How many results should be returned sorted by score.
+        type: int
+        required: false
+        defaultValue: 100
     """
     name = request.POST.get('name', None)
     if not name:
@@ -905,7 +940,9 @@ def compare_skeletons(request, project_id):
 
     # Other parameters
     normalized = request.POST.get('normalized', 'mean')
+    reverse = get_request_bool(request.POST, 'reverse', True)
     use_alpha = get_request_bool(request.POST, 'use_alpha', False)
+    top_n = int(request.POST.get('top_n', 100))
     remove_target_duplicates = get_request_bool(request.POST,
             'remove_target_duplicates', True)
 
@@ -943,9 +980,11 @@ def compare_skeletons(request, project_id):
 
         similarity = NblastSimilarity.objects.create(project_id=project_id,
                 user=request.user, name=name, status='queued', config_id=config_id,
-                query_objects=query_ids, target_objects=target_ids,
+                initial_query_objects=query_ids,
+                initial_target_objects=target_ids,
                 query_type_id=query_type_id, target_type_id=target_type_id,
-                normalized=normalized, use_alpha=use_alpha)
+                normalized=normalized, reverse=reverse, use_alpha=use_alpha,
+                top_n=top_n)
         similarity.save()
 
     task = compute_nblast.delay(project_id, request.user.id, similarity.id,

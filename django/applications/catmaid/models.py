@@ -1013,14 +1013,27 @@ class NblastSimilarity(NonCascadingUserFocusedModel):
         related_name='query_type_set', on_delete=models.DO_NOTHING)
     target_type = models.ForeignKey(NblastSkeletonSourceType,
         related_name='target_type_set', on_delete=models.DO_NOTHING)
-    query_objects = ArrayField(models.IntegerField())
-    target_objects = ArrayField(models.IntegerField())
+    # Query and target object references as they were sent from the client. A
+    # value of NULL/None is synonymous with all objects of the respective type.
+    initial_query_objects = ArrayField(models.IntegerField(), default=None, blank=True, null=True)
+    initial_target_objects = ArrayField(models.IntegerField(), default=None, blank=True, null=True)
+    # All query objects that reference into a scoring matrix. Initially not
+    # populated.
+    query_objects = ArrayField(models.IntegerField(), default=None, blank=True, null=True)
+    target_objects = ArrayField(models.IntegerField(), default=None, blank=True, null=True)
+    # Objects that couldn't be used during the computation
     invalid_query_objects = ArrayField(models.IntegerField(), default=None, blank=True, null=True)
     invalid_target_objects = ArrayField(models.IntegerField(), default=None, blank=True, null=True)
+    # The normalization mode
     normalized = models.TextField(default='raw')
     use_alpha = models.BooleanField(default=False)
     computation_time = models.FloatField(default=0)
     detailed_status = models.TextField( blank=True, null=True)
+    # Whether a reverse scoring should be used
+    reverse = models.BooleanField(default=False)
+    # To not neccessarily store large scoring matrixes with a lot of low score
+    # results, only store the the top N results for each query. Disabled using 0.
+    top_n = models.IntegerField(default=100, blank=True, null=True)
 
     class Meta:
         db_table = "nblast_similarity"

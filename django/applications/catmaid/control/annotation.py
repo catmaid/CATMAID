@@ -290,7 +290,7 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
     cursor.execute(query.format(**query_fmt_params), params)
 
     entities = []
-    seen_ids = set()
+    seen_ids = set() # type: Set
     for ent in cursor.fetchall():
         # Don't export objects with same ID multiple times
         if ent[0] in seen_ids:
@@ -1547,7 +1547,7 @@ def annotations_for_skeletons(request:HttpRequest, project_id=None) -> JsonRespo
     ''' % (",".join(map(str, skids)), annotated_with_id))
 
     # Group by skeleton ID
-    m = defaultdict(list) # type: DefaultDict
+    m = defaultdict(list) # type: DefaultDict[Any, List]
     a = dict()
     for skid, aid, name, uid in cursor.fetchall():
         m[skid].append({'id': aid, 'uid': uid})
@@ -1606,7 +1606,7 @@ def annotations_for_entities(request:HttpRequest, project_id=None) -> JsonRespon
     ''' % (",".join(map(str, object_ids)), annotated_with_id))
 
     # Group by entity ID
-    m = defaultdict(list) # type: DefaultDict
+    m = defaultdict(list) # type: DefaultDict[Any, List]
     a = dict()
     for eid, aid, name, uid in cursor.fetchall():
         m[eid].append({'id': aid, 'uid': uid})

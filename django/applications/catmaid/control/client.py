@@ -6,9 +6,12 @@ from django.utils.decorators import method_decorator
 from django.shortcuts import get_object_or_404
 from django.views.decorators.cache import never_cache
 
+from typing import Optional
+
 from guardian.utils import get_anonymous_user
 
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer, ValidationError
 from rest_framework import status
@@ -30,7 +33,7 @@ class ClientDatastoreSerializer(ModelSerializer):
 class ClientDatastoreList(APIView):
     @method_decorator(requires_user_role_for_any_project([UserRole.Browse, UserRole.Annotate]))
     @never_cache
-    def get(self, request, format=None):
+    def get(self, request:Request, format=None) -> Response:
         """List key-value store datastores used by the client.
         ---
         serializer: ClientDatastoreSerializer
@@ -40,7 +43,7 @@ class ClientDatastoreList(APIView):
         return Response(serializer.data)
 
     @method_decorator(requires_user_role_for_any_project([UserRole.Browse, UserRole.Annotate]))
-    def post(self, request, format=None):
+    def post(self, request:Request, format=None) -> Response:
         """Create a key-value store datastore for the client.
 
         The request user must not be anonymous and must have browse, annotate
@@ -71,7 +74,7 @@ class ClientDatastoreList(APIView):
 
 
 class ClientDatastoreDetail(APIView):
-    def delete(self, request, name=None, format=None):
+    def delete(self, request:Request, name=None, format=None) -> Response:
         """Delete a key-value store datastore for the client.
 
         Must be a super user to perform.
@@ -94,7 +97,7 @@ class ClientDataSerializer(ModelSerializer):
 class ClientDataList(APIView):
     @method_decorator(requires_user_role_for_any_project([UserRole.Browse, UserRole.Annotate]))
     @never_cache
-    def get(self, request, name=None, format=None):
+    def get(self, request:Request, name=None, format=None) -> Response:
         """List key-value data in a datastore for the client.
 
         Returns key-values belong to the request user or no user, optionally
@@ -140,7 +143,7 @@ class ClientDataList(APIView):
         return Response(serializer.data)
 
     @method_decorator(requires_user_role_for_any_project([UserRole.Browse, UserRole.Annotate]))
-    def put(self, request, name=None, format=None):
+    def put(self, request:Request, name:Optional[int]=None, format=None) -> Response:
         """Create or replace a key-value data entry for the client.
 
         Each entry is associated with a datastore, an optional project, an
@@ -190,6 +193,11 @@ class ClientDataList(APIView):
           required: true
           type: string
           paramType: form
+        - name: format
+          description: This function parameter is ignored
+          required: false
+          type: Any
+          default: None
         response_serializer: ClientDataSerializer
         """
         if request.user == get_anonymous_user() or not request.user.is_authenticated:

@@ -5,6 +5,7 @@ from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 from django import forms
 from django.conf import settings
 from django.db import connection
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import render_to_response
 
 from formtools.wizard.views import SessionWizardView
@@ -138,10 +139,10 @@ class ImportingWizard(SessionWizardView):
 
         return context
 
-    def get_template_names(self):
+    def get_template_names(self) -> List[str]:
         return [IMPORT_TEMPLATES[self.steps.current]]
 
-    def done(self, form_list, **kwargs):
+    def done(self, form_list, **kwargs) -> HttpResponse:
         """ All previously configured sources will now be used to import data.
         """
         # Load all wanted information from the selected projects
@@ -168,7 +169,7 @@ class ExportingWizard(SessionWizardView):
 
 def copy_annotations(source_pid, target_pid, import_treenodes=True,
         import_connectors=True, import_connectortreenodes=True,
-        import_annotations=True, import_tags=True):
+        import_annotations=True, import_tags=True) -> None:
     """ Copy annotation data (treenodes, connectors, annotations, tags) to
     another (existing) project. The newly created entities will have new IDs
     and are independent from the old ones.

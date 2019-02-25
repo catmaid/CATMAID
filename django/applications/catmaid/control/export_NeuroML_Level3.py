@@ -14,7 +14,7 @@
 import time
 
 from collections import defaultdict
-
+from typing import Any, DefaultDict, Dict, List, Tuple
 
 def exportMutual(neuron_names, all_treenodes, connections, scale=0.001):
     """ Export a group of neuronal arbors and their synapses as NeuroML Level 3 v1.8.1.
@@ -46,7 +46,7 @@ def header():
   length_units="micrometer">
 """ % time.strftime("%c %z")
 
-def segment(t1, t2, p, q, segmentID, parentSegmentID, cableID, is_first):
+def segment(t1, t2, p, q, segmentID, parentSegmentID, cableID, is_first) -> str:
     s = '<segment id="%s" name="s%s"' % (segmentID, segmentID)
     if parentSegmentID:
         s += ' parent="%s"' % parentSegmentID
@@ -89,7 +89,7 @@ def make_segments(slab, cableID, scale, state):
             yield segment(nodes[i-1], nodes[i], points[i-1], points[i], segmentID, id2, cableID, 1 == i)
 
 
-def smooth(treenodes, scale):
+def smooth(treenodes, scale) -> List[Tuple[float, float, float]]:
     """ Apply a three-point average sliding window, keeping first and last points intact.
     Returns a new list of points. """
     points = []
@@ -168,7 +168,7 @@ def make_cables(cableIDs):
 
 def make_arbor(neuron_name, treenodes, scale, state):
     """ treenodes is a sequence of treenodes, where each treenode is a tuple of id, parent_id, location. """
-    successors = defaultdict(list)
+    successors = defaultdict(list) # type: DefaultDict[Any, List]
     for treenode in treenodes:
         if treenode[1]:
             successors[treenode[1]].append(treenode)
@@ -254,7 +254,7 @@ def make_cells(cellIDs, neuron_names):
 
 def bodyMutual(neuron_names, all_treenodes, connections, scale):
     """ Create a cell for each arbor. """
-    synaptic_treenodes = {}
+    synaptic_treenodes = {} # type: Dict
     for m in connections.values():
         for synapses in m.values():
             for pre_treenodeID, post_treenodeID in synapses:
@@ -263,7 +263,7 @@ def bodyMutual(neuron_names, all_treenodes, connections, scale):
 
     state = State(synaptic_treenodes)
 
-    cellIDs = []
+    cellIDs = [] # type: List
     
     # First cells
     sources = [['<cells>\n'],
@@ -296,7 +296,7 @@ def make_inputs(cellIDs, neuron_names, inputs, state):
                        ('</sites>\n',
                         '</target>\n',
                         '</input>\n')]:
-            for line in source:
+            for line in source: # type: ignore
                 yield line
 
 
@@ -305,7 +305,7 @@ def bodySingle(neuron_names, all_treenodes, inputs, scale):
 
     state = State(synaptic_treenodes)
 
-    cellIDs = []
+    cellIDs = [] # type: List
 
     # First cells (only one)
     sources = [['<cells>\n'],

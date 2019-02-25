@@ -6,9 +6,12 @@ from itertools import combinations
 from django import forms
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import render_to_response
 
 from formtools.wizard.views import SessionWizardView
+
+from typing import Any, DefaultDict, Dict, FrozenSet, List, Optional, Set, Tuple, Union
 
 from catmaid.control.classification import get_classification_links_qs, \
         link_existing_classification
@@ -41,16 +44,16 @@ class TagGroupSelectionForm(forms.Form):
 class ConfirmationForm(forms.Form):
     pass
 
-def get_tag_sets(add_supersets=False, prefetch=True):
-    tag_sets=defaultdict(set)
-    tag_supersets=defaultdict(set)
+def get_tag_sets(add_supersets:bool=False, prefetch:bool=True) -> Tuple[List, Any, DefaultDict[Any, Set]]:
+    tag_sets = defaultdict(set) # type: DefaultDict[Any, Set]
+    tag_supersets = defaultdict(set) # type: DefaultDict[Any, Set]
     project_ids = list(Project.objects.all().values_list('id', flat=True))
 
     # Build tag index
     ct = ContentType.objects.get_for_model(Project)
     tag_links = TaggedItem.objects.filter(content_type=ct) \
         .values_list('object_id', 'tag__name')
-    tag_index = defaultdict(set)
+    tag_index = defaultdict(set) # type: DefaultDict[Any, Set]
     for pid, t in tag_links:
         tag_index[pid].add(t)
 
@@ -71,7 +74,7 @@ def get_tag_sets(add_supersets=False, prefetch=True):
 
     return project_ids, tag_sets, tag_supersets
 
-def generate_tag_groups(add_supersets=True, respect_superset_graphs=False):
+def generate_tag_groups(add_supersets:bool=True, respect_superset_graphs:bool=False) -> Dict:
     """ This creates a tag sets dictionary. It ignores projects without any
     tags.
     """
@@ -91,7 +94,7 @@ def generate_tag_groups(add_supersets=True, respect_superset_graphs=False):
     links_qs = links_qs.select_related('class_instance_a__project__id',
         'class_instance_b__id')
     # Execute the query set to build a look up table
-    projects_to_cls_links = {}
+    projects_to_cls_links = {} # type: Dict
     for cici in links_qs:
         cls_links = projects_to_cls_links.get(cici.class_instance_a.project.id)
         if not cls_links:
@@ -105,7 +108,7 @@ def generate_tag_groups(add_supersets=True, respect_superset_graphs=False):
     available_tag_groups = {}
     for tags, projects in tag_sets.items():
         differs = False
-        cg_roots = set()
+        cg_roots = set() # type: Set
         projects_cgroots = {}
         # Collect all classification roots in this tag group
         for pid in projects:
@@ -191,7 +194,7 @@ class ClassificationAdminWizard(SessionWizardView):
 
         return tag_group_list
 
-    def get_form(self, step=None, data=None, files=None):
+    def get_form(self, step:Optional[str]=None, data=None, files=None):
         form = super(ClassificationAdminWizard, self).get_form(step, data, files)
         # Determine step if not given
         if step is None:
@@ -208,14 +211,14 @@ class ClassificationAdminWizard(SessionWizardView):
             form.fields['tag_groups'].initial = [tg[0] for tg in tag_groups_tuples]
         return form
 
-    def get_selected_tag_groups(self):
+    def get_selected_tag_groups(self) -> Dict:
         tag_group_ids = self.get_cleaned_data_for_step('taggroups')['tag_groups']
         selected_tag_groups = {}
         for tid in tag_group_ids:
             selected_tag_groups[tid] = self.available_tag_groups[tid]
         return selected_tag_groups
 
-    def done(self, form_list, **kwargs):
+    def done(self, form_list, **kwargs) -> HttpResponse:
         """ Will add all missing links, stored in the tag groups field.
         """
         tag_groups = self.get_selected_tag_groups()

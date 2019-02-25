@@ -6,12 +6,14 @@ import logging
 
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
+import numpy as np
+
 from django import forms
 from django.db import connection
 from django.db.models import Q
 from django.conf import settings
 from django.forms.widgets import CheckboxSelectMultiple
-from django.http import HttpRequest, JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.views.generic.base import TemplateView
 from django.shortcuts import get_object_or_404, render
 from django.contrib.contenttypes.models import ContentType
@@ -138,11 +140,11 @@ def get_root_classes_count(workspace_pid) -> int:
     """
     return get_class_links_qs(workspace_pid, 'is_a', 'classification_root').count()
 
-def get_root_classes_qs(workspace_pid):
+def get_root_classes_qs(workspace_pid) -> List:
     """ Return a queryset that will get all root classes for the
     given workspace project.
     """
-    return[ c.class_a.id for c in get_class_links_qs(workspace_pid, 'is_a', 'classification_root') ]
+    return [c.class_a.id for c in get_class_links_qs(workspace_pid, 'is_a', 'classification_root')]
 
 def get_classification_links_qs( workspace_pid, project_ids, inverse=False,
         stack_groups=None, class_map=None, relation_map=None, cursor=None):
@@ -220,7 +222,7 @@ class Child:
         self.rel = rel
         self.disabled = disabled
 
-def get_child_links( parent_ci ):
+def get_child_links(parent_ci) -> List:
     """ Returns all links to children of a node with id <parent_id>. The
     result is limited to a maximum ef <max_nodes> nodes.
     """
@@ -247,7 +249,7 @@ def add_class(workspace_pid, class_user, class_name, class_desc):
         description = class_desc)
     return new_class
 
-def add_relation(workspace_pid, rel_user, rel_name, rel_desc, is_reciprocal=False):
+def add_relation(workspace_pid, rel_user, rel_name, rel_desc, is_reciprocal=False) -> Relation:
     new_rel = Relation.objects.create(
         user = rel_user,
         project_id = workspace_pid,
@@ -532,7 +534,7 @@ def get_child_classes(workspace_pid, parent_ci, relation_map=None, cursor=None):
         """.format(class_a_ids_sql), (workspace_pid, relation_map['is_a']))
         all_sub_class_links = cursor.fetchall()
         # Create sub class map
-        sub_class_map = defaultdict(list) # type: DefaultDict
+        sub_class_map = defaultdict(list) # type: DefaultDict[Any, List]
         for row in all_sub_class_links:
             sub_class_map[row[1]].append((row[0], row[2], row[3]))
         # Collect classes to add
@@ -1118,8 +1120,8 @@ def get_graph_tag_indices(graph_ids, workspace_pid=-1) -> Tuple[Dict,Dict]:
 
     # Build project index
     project_ids = set()
-    cg_to_pids = defaultdict(list) # type: DefaultDict[List, Any]
-    pid_to_cgs = defaultdict(list) # type: DefaultDict[List, Any]
+    cg_to_pids = defaultdict(list) # type: DefaultDict[Any, List]
+    pid_to_cgs = defaultdict(list) # type: DefaultDict[Any, List]
     for cgid, cpid in cici_q.values_list('class_instance_b_id',
                                          'class_instance_a_id'):
         pid = cp_to_pid[cpid]
@@ -1136,7 +1138,7 @@ def get_graph_tag_indices(graph_ids, workspace_pid=-1) -> Tuple[Dict,Dict]:
     ct = ContentType.objects.get_for_model(Project)
     tag_links = TaggedItem.objects.filter(content_type=ct) \
             .values_list('object_id', 'tag__name')
-    pid_to_tags = defaultdict(set) # type: DefaultDict[Set, Any]
+    pid_to_tags = defaultdict(set) # type: DefaultDict[Any, Set]
     for pid, t in tag_links:
         pid_to_tags[pid].add(t)
 
@@ -1178,7 +1180,7 @@ def export(request:HttpRequest, workspace_pid=None, exclusion_tags=None) -> Json
 
     return JsonResponse(graph_to_features)
 
-def get_graphs_to_features(workspace_pid=None):
+def get_graphs_to_features(workspace_pid=None) -> DefaultDict[Any, List]:
     """ This view returns a JSON representation of all classifications in this
     given workspace.
     """
@@ -1189,7 +1191,7 @@ def get_graphs_to_features(workspace_pid=None):
     graphs = ClassInstance.objects.filter(class_column__in=ontologies)
 
     # Map graphs to realized features
-    graph_to_features = defaultdict(list) # type: DefaultDict[List, Any]
+    graph_to_features = defaultdict(list) # type: DefaultDict[Any, List]
     for o in ontologies:
         # Get features of the current ontology
         features = get_features(o, workspace_pid, graphs, add_nonleafs=True)
@@ -1202,7 +1204,7 @@ def get_graphs_to_features(workspace_pid=None):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def link_roi_to_classification(request, project_id=None, workspace_pid=None,
-        stack_id=None, ci_id=None):
+        stack_id=None, ci_id=None) -> JsonResponse:
     """ With the help of this method one can link a region of interest
     (ROI) to a class instance in a classification graph. The information
     about the ROI is passed as POST variables.
@@ -1214,10 +1216,10 @@ def link_roi_to_classification(request, project_id=None, workspace_pid=None,
     return link_roi_to_class_instance(request, project_id=project_id,
         relation_id=rel.id, stack_id=stack_id, ci_id=ci_id)
 
-def graph_instanciates_feature(graph, feature):
+def graph_instanciates_feature(graph, feature) -> bool:
     return graph_instanciates_feature_complex(graph, feature)
 
-def graph_instanciates_feature_simple(graph, feature, idx=0):
+def graph_instanciates_feature_simple(graph, feature, idx=0) -> bool:
     """ Traverses a class instance graph, starting from the passed node.
     It recurses into child graphs and tests on every class instance if it
     is linked to an ontology node. If it does, the function returns true.
@@ -1256,7 +1258,7 @@ def graph_instanciates_feature_simple(graph, feature, idx=0):
     # Continue with checking children, if any
     return graph_instanciates_feature_simple(link_q[0].class_instance_a, feature, idx+1)
 
-def graphs_instanciate_features(graphs, features, target=None, cursor=None):
+def graphs_instanciate_features(graphs, features, target:Optional[Union[np.ndarray, List[List[int]]]]=None, cursor=None) -> List[List[int]]:
     """Test which graphs instantiate which feature of the passed in feature
     set. If provided, the information is written to the target array, which is
     expected to be of proper size. Without a target, a new 2D array of
@@ -1366,8 +1368,8 @@ def graphs_instanciate_features(graphs, features, target=None, cursor=None):
 
     return target
 
-def graph_instanciates_feature_complex(graph, feature):
-    """ Creates one complex query that thest if the feature is matched as a
+def graph_instanciates_feature_complex(graph, feature) -> bool:
+    """ Creates one complex query that tests if the feature is matched as a
     whole.
     """
     # Build Q objects for to query whole feature instantiation at once. Start
@@ -1399,13 +1401,13 @@ def graph_instanciates_feature_complex(graph, feature):
         raise Exception('Found more than one ({}) ontology node links of '
             'one class instance.'.format(num_links))
 
-def graphs_instanciate_feature(graphlist, feature):
+def graphs_instanciate_feature(graphlist, feature) -> bool:
     """ A delegate method to be able to use different implementations in a
     simple manner. Benchmarks show that the complex query is faster.
     """
     return graphs_instanciate_feature_complex(graphlist, feature)
 
-def graphs_instanciate_feature_simple(graphs, feature):
+def graphs_instanciate_feature_simple(graphs, feature) -> bool:
     """ Creates a simple query for each graph to test whether it instantiates
     a given feature.
     """
@@ -1496,7 +1498,7 @@ class ClassificationSearchWizard(SessionWizardView):
 
         return form
 
-    def done(self, form_list, **kwargs):
+    def done(self, form_list, **kwargs) -> HttpResponse:
         """ All matching classifications are fetched and organized in a
         result data view.
         """
@@ -1505,7 +1507,7 @@ class ClassificationSearchWizard(SessionWizardView):
         selected_feature_ids = cleaned_data[0].get('features')
         # Get selected features and build feature dict to map ontologies to
         # features.
-        ontologies_to_features = defaultdict(list) # type: DefaultDict[List, Any]
+        ontologies_to_features = defaultdict(list) # type: DefaultDict[Any, List]
         print("Starting clustering with n feature IDs:", len(selected_feature_ids))
         for f_id in selected_feature_ids:
             f = self.features[int(f_id)]
@@ -1569,8 +1571,8 @@ class ClassificationSearchWizard(SessionWizardView):
 
         # Build project index
         project_ids = set()
-        cg_to_pids = defaultdict(list) # type: DefaultDict[List, Any]
-        pid_to_cgs = defaultdict(list) # type: DefaultDict[List, Any]
+        cg_to_pids = defaultdict(list) # type: DefaultDict[Any, List]
+        pid_to_cgs = defaultdict(list) # type: DefaultDict[Any, List]
         for cgid, cpid in cici_q.values_list('class_instance_b_id',
                                             'class_instance_a_id'):
             pid = cp_to_pid[cpid]
@@ -1582,14 +1584,14 @@ class ClassificationSearchWizard(SessionWizardView):
         ct = ContentType.objects.get_for_model(Project)
         tag_links = TaggedItem.objects.filter(content_type=ct) \
             .values_list('object_id', 'tag__name')
-        tag_index = defaultdict(set) # type: DefaultDict[Set, Any]
+        tag_index = defaultdict(set) # type: DefaultDict[Any, Set]
         for pid, t in tag_links:
             if pid in project_ids:
                 tag_index[t].add(pid)
 
         # To actually open a result, the stacks are required as well. So we
         # need to build a stack index.
-        pid_to_sids = defaultdict(list) # type: DefaultDict[List, Any]
+        pid_to_sids = defaultdict(list) # type: DefaultDict[Any, List]
         for pid, sid in ProjectStack.objects.order_by('id') \
                 .values_list('project_id', 'stack_id'):
             pid_to_sids[pid].append(sid)

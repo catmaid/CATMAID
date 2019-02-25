@@ -5,6 +5,8 @@ import math
 import networkx as nx
 import re
 
+from typing import Any, DefaultDict, Dict, List, Union
+
 from collections import defaultdict
 
 from django.db import connection
@@ -86,7 +88,7 @@ def create_treenode(request, project_id=None):
             'confidence': 0,
             'useneuron': -1,
             'parent_id': -1}
-    string_values = {}
+    string_values = {} # type: Dict
     for p in float_values.keys():
         params[p] = float(request.POST.get(p, float_values[p]))
     for p in int_values.keys():
@@ -135,7 +137,7 @@ def insert_treenode(request, project_id=None):
     node.
     """
     # Use creation time, if part of parameter set
-    params = {}
+    params = {} # type: Dict[str, float]
     float_values = {
         'x': 0,
         'y': 0,
@@ -212,9 +214,9 @@ def insert_treenode(request, project_id=None):
     # Update parent of child to new treenode, do this in raw SQL to also get the
     # updated edition time Update also takeover children
     cursor = connection.cursor()
-    params = [new_treenode.treenode_id, child.id]
+    paramlist = [new_treenode.treenode_id, child.id]
     if takeover_child_ids:
-        params.extend(takeover_child_ids)
+        paramlist.extend(takeover_child_ids)
         child_template = ",".join(("%s",) * (len(takeover_child_ids) + 1))
     else:
         child_template = "%s"
@@ -223,9 +225,9 @@ def insert_treenode(request, project_id=None):
         UPDATE treenode SET parent_id = %s
          WHERE id IN ({})
      RETURNING id, edition_time
-    """.format(child_template), params)
+    """.format(child_template), paramlist)
     result = cursor.fetchall()
-    if not result or (len(params) - 1) != len(result):
+    if not result or (len(paramlist) - 1) != len(result):
         raise ValueError("Couldn't update parent of inserted node's child: " + child.id)
     child_edition_times = [[k,v] for k,v in result]
 
@@ -382,7 +384,7 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
 
                         # Increment substitution values based on existing neurons.
                         for n in matching_neurons:
-                            for i, (count, g) in enumerate(zip(counts, name_pattern.search(n.name).groups())):
+                            for i, (count, g) in enumerate(zip(counts, name_pattern.search(n.name).groups())): # type: ignore
                                 if count == int(g):
                                     counts[i] = count + 1
 
@@ -558,7 +560,7 @@ def update_radius(request, project_id=None, treenode_id=None):
 
     if 1 == option:
         # Update radius from treenode_id to next branch or end node (included)
-        children = defaultdict(list)
+        children = defaultdict(list) # type: DefaultDict[Any, List]
         for row in cursor.fetchall():
             children[row[1]].append(row[0])
 
@@ -687,7 +689,7 @@ def delete_treenode(request, project_id=None):
     cursor = connection.cursor()
     try:
         if not parent_id:
-            children = []
+            children = [] # type: List
             # This treenode is root.
             response_on_error = 'Could not retrieve children for ' \
                 'treenode #%s' % treenode_id

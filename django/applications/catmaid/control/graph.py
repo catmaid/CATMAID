@@ -6,15 +6,17 @@ import sys
 
 import networkx as nx
 from networkx.algorithms import weakly_connected_component_subgraphs
+
 from collections import defaultdict
-from itertools import chain
 from functools import partial
+from itertools import chain
+from math import sqrt
 from numpy import subtract
 from numpy.linalg import norm
-from math import sqrt
+from typing import Any, DefaultDict, Dict, List, Optional, Tuple, Union
 
 from django.db import connection
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 
 from catmaid.models import Relation, UserRole
 from catmaid.control.authentication import requires_user_role
@@ -26,8 +28,8 @@ from catmaid.control.tree_util import simplify, find_root, reroot, partition, \
 from catmaid.control.synapseclustering import  tree_max_density
 
 
-def split_by_confidence_and_add_edges(confidence_threshold, digraphs, rows):
-    """ dipgrahs is a dictionary of skeleton IDs as keys and DiGraph instances as values,
+def split_by_confidence_and_add_edges(confidence_threshold, digraphs, rows) -> Dict:
+    """ dipgraphs is a dictionary of skeleton IDs as keys and DiGraph instances as values,
     where the DiGraph does not have any edges yet.
     WARNING: side effect on contents of digraph: will add the edges
     """
@@ -57,20 +59,22 @@ def split_by_confidence_and_add_edges(confidence_threshold, digraphs, rows):
 
     return arbors
 
-def split_by_synapse_domain(bandwidth, locations, arbors, treenode_connector, minis):
+def split_by_synapse_domain(bandwidth, locations, arbors, treenode_connector, minis) -> Tuple[Dict, Any]:
     """ locations: dictionary of treenode ID vs tuple with x,y,z
         arbors: dictionary of skeleton ID vs list of DiGraph (that were, or not, split by confidence)
         treenode_connectors: dictionary of treenode ID vs list of tuples of connector_id, string of 'presynaptic_to' or 'postsynaptic_to'
     """
-    arbors2 = {} # Some arbors will be split further
+    arbors2 = {} # type: Dict
+                 # Some arbors will be split further
     for skeleton_id, graphs in arbors.items():
-        subdomains = []
+        subdomains = [] # type: List
         arbors2[skeleton_id] = subdomains
         for graph in graphs:
             treenode_ids = []
             connector_ids =[]
             relation_ids = []
-            for treenode_id in filter(treenode_connector.has_key, graph.nodes_iter()):
+            for treenode_id in filter(treenode_connector.has_key, graph.nodes_iter()): # type: Tuple
+                                                                                       # this is from networkx and returns an iterator over tuples
                 for c in treenode_connector.get(treenode_id):
                     connector_id, relation = c
                     treenode_ids.append(treenode_id)
@@ -120,7 +124,7 @@ def split_by_synapse_domain(bandwidth, locations, arbors, treenode_connector, mi
 
 def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
         expand, compute_risk, cable_spread, path_confluence,
-        pre_rel='presynaptic_to', post_rel='postsynaptic_to'):
+        pre_rel='presynaptic_to', post_rel='postsynaptic_to') -> nx.DiGraph:
     """ Assumes all skeleton_ids belong to project_id. """
     skeletons_string = ",".join(str(int(x)) for x in skeleton_ids)
     cursor = connection.cursor()
@@ -134,7 +138,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
     ''' % skeletons_string)
     rows = tuple(cursor.fetchall())
     # Each skeleton is represented with a DiGraph
-    arbors = defaultdict(nx.DiGraph)
+    arbors = defaultdict(nx.DiGraph) # type: Union[DefaultDict[Any, nx.DiGraph], Dict[Any, nx.DiGraph]]
 
     # Get reviewers for the requested skeletons
     reviews = get_treenodes_to_reviews(skeleton_ids=skeleton_ids)
@@ -154,19 +158,20 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
     WHERE skeleton_id IN (%s)
       AND (relation_id = %s OR relation_id = %s)
     ''' % (skeletons_string, relations[pre_rel], relations[post_rel]))
-    connectors = defaultdict(partial(defaultdict, list))
-    skeleton_synapses = defaultdict(partial(defaultdict, list))
+    connectors = defaultdict(partial(defaultdict, list)) # type: DefaultDict
+    skeleton_synapses = defaultdict(partial(defaultdict, list)) # type: DefaultDict
     for row in cursor.fetchall():
         connectors[row[0]][row[1]].append((row[2], row[3]))
         skeleton_synapses[row[3]][row[1]].append(row[2])
 
     # Cluster by synapses
-    minis = defaultdict(list) # skeleton_id vs list of minified graphs
+    minis = defaultdict(list) # type: DefaultDict[Any, List]
+                              # skeleton_id vs list of minified graphs
     locations = None
     whole_arbors = arbors
     if expand and bandwidth > 0:
         locations = {row[0]: (row[4], row[5], row[6]) for row in rows}
-        treenode_connector = defaultdict(list)
+        treenode_connector = defaultdict(list) # type: DefaultDict[Any, List]
         for connector_id, pp in connectors.items():
             for treenode_id in chain.from_iterable(pp[relations[pre_rel]]):
                 treenode_connector[treenode_id].append((connector_id, pre_rel))
@@ -315,7 +320,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def skeleton_graph(request, project_id=None):
+def skeleton_graph(request:HttpRequest, project_id=None) -> JsonResponse:
     project_id = int(project_id)
     skeleton_ids = set(int(v) for k,v in request.POST.items() if k.startswith('skeleton_list['))
     confidence_threshold = int(request.POST.get('confidence_threshold', 0))
@@ -329,6 +334,7 @@ def skeleton_graph(request, project_id=None):
     if not by_link_type:
         link_types = ['synaptic-connector']
 
+    result = {} # type: ignore
     for link_type in link_types:
         pair = KNOWN_LINK_PAIRS.get(link_type)
         if not pair:
@@ -341,8 +347,8 @@ def skeleton_graph(request, project_id=None):
                 confidence_threshold, bandwidth, expand, compute_risk,
                 cable_spread, path_confluence, source_rel, target_rel)
         package = {'nodes': [{'data': props} for props in circuit.node.values()],
-                   'edges': []}
-        edges = package['edges']
+                   'edges': []} # type: Dict
+        edges = package['edges'] # type: List
         for g1, g2, props in circuit.edges_iter(data=True):
             id1 = circuit.node[g1]['id']
             id2 = circuit.node[g2]['id']
@@ -358,8 +364,6 @@ def skeleton_graph(request, project_id=None):
             edges.append({'data': data})
 
         if by_link_type:
-            if not result:
-                result = {}
             result[link_type] = package
         else:
             result = package
@@ -375,7 +379,7 @@ class Counts():
         self.nPossibleIOPaths = 0
         self.synapse_centrality = 0
 
-def _node_centrality_by_synapse_db(skeleton_id):
+def _node_centrality_by_synapse_db(skeleton_id:Union[int,str]) -> Dict:
     """ Compute the synapse centrality of every node in a tree.
     Return the dictionary of node ID keys and Count values.
     This function is meant for TESTING. """
@@ -384,9 +388,10 @@ def _node_centrality_by_synapse_db(skeleton_id):
     SELECT t.id, t.parent_id, r.relation_name
     FROM treenode t LEFT OUTER JOIN (treenode_connector tc INNER JOIN relation r ON tc.relation_id = r.id) ON t.skeleton_id = tc.skeleton_id
     WHERE t.skeleton_id = %s
-    ''' % skeleton_id)
+    ''', (skeleton_id))
 
-    nodes = {} # node ID vs Counts
+    nodes = {} # type: Dict
+               # node ID vs Counts
     tree = nx.DiGraph()
     root = None
     totalInputs = 0
@@ -413,7 +418,7 @@ def _node_centrality_by_synapse_db(skeleton_id):
 
     return nodes
 
-def _node_centrality_by_synapse(tree, nodes, totalOutputs, totalInputs):
+def _node_centrality_by_synapse(tree, nodes:Dict, totalOutputs:int, totalInputs:int) -> None:
     """ tree: a DiGraph
         nodes: a dictionary of treenode ID vs Counts instance
         totalOutputs: the total number of output synapses of the tree

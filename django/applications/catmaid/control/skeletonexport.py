@@ -169,7 +169,7 @@ def get_swc_string(project_id, skeleton_id, treenodes_qs:QuerySet, linearize_ids
 
     if linearize_ids:
         # Find successors for each node
-        successors = defaultdict(list)  # type: DefaultDict
+        successors = defaultdict(list)  # type: DefaultDict[Any, List]
         root = None
         for tn in all_rows:
             node, parent = tn[0], tn[6]
@@ -627,7 +627,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
         # Otherwise returns an empty list of nodes
 
     connectors = ()  # type: Tuple
-    tags = defaultdict(list)  # type: DefaultDict
+    tags = defaultdict(list)  # type: DefaultDict[Any, List]
     reviews = []
 
     if with_connectors or with_tags or with_annotations:
@@ -841,7 +841,7 @@ def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,
 
     nodes = ()  # type: Tuple
     connectors = []
-    tags = defaultdict(list)  # type: DefaultDict
+    tags = defaultdict(list)  # type: DefaultDict[Any, List]
 
     if 0 != with_nodes:
         if with_time:
@@ -948,7 +948,7 @@ def compact_arbor(request:HttpRequest, project_id=None, skeleton_id=None, with_n
 
 def _treenode_time_bins(skeleton_id=None):
     """ Return a map of time bins (minutes) vs. list of nodes. """
-    minutes = defaultdict(list)  # type: DefaultDict
+    minutes = defaultdict(list)  # type: DefaultDict[Any, List]
     epoch = datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
 
     for row in Treenode.objects.filter(skeleton_id=int(skeleton_id)).values_list('id', 'creation_time'):
@@ -1019,7 +1019,7 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
     # array of properties: id, parent_id, user_id, x, y, z, radius, confidence
     nodes = tuple(cursor.fetchall())
 
-    tags = defaultdict(list)  # type: DefaultDict
+    tags = defaultdict(list)  # type: DefaultDict[Any, List]
                               # node ID vs list of tags
     connectors = []
 
@@ -1155,7 +1155,7 @@ def _measure_skeletons(skeleton_ids):
             self.n_pre = 0
             self.n_post = 0
 
-    skeletons = defaultdict(dict)  # type: DefaultDict
+    skeletons = defaultdict(dict)  # type: DefaultDict[Any, Dict]
                                    # skeleton ID vs (node ID vs Node)
     for row in cursor.fetchall():
         skeleton = skeletons.get(row[2])
@@ -1291,9 +1291,9 @@ def _skeleton_neuroml_cell(skeleton_id, preID, postID):
     WHERE tc.skeleton_id = %s
       AND (tc.relation_id = %s OR tc.relation_id = %s)
     ''' % (skeleton_id, preID, postID))
-    pre = defaultdict(list)  # type: DefaultDict
+    pre = defaultdict(list)  # type: DefaultDict[Any, List]
                              # treenode ID vs list of connector ID
-    post = defaultdict(list)  # type: DefaultDict
+    post = defaultdict(list)  # type: DefaultDict[Any, List]
                               # incomplete type
     for row in cursor.fetchall():
         if row[2] == preID:
@@ -1412,7 +1412,7 @@ def export_neuroml_level3_v181(request:HttpRequest, project_id=None) -> HttpResp
         ''' % (skeleton_strings, postsynaptic_to, presynaptic_to, constraint))
 
         # Dictionary of skeleton ID vs list of treenode IDs at which the neuron receives inputs
-        inputs = defaultdict(list)  # type: DefaultDict
+        inputs = defaultdict(list)  # type: DefaultDict[Any, List]
         for row in cursor.fetchall():
             inputs[row[0]].append(row[1])
 
@@ -1693,7 +1693,7 @@ def skeleton_connectors_by_partner(request:HttpRequest, project_id) -> JsonRespo
 def export_skeleton_reviews(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonResponse:
     """ Return a map of treenode ID vs list of reviewer IDs,
     without including any unreviewed treenode. """
-    m = defaultdict(list)  # type: DefaultDict
+    m = defaultdict(list)  # type: DefaultDict[Any, List]
     for row in Review.objects.filter(skeleton_id=int(skeleton_id)).values_list('treenode_id', 'reviewer_id', 'review_time').iterator():
         m[row[0]].append(row[1:3])
 

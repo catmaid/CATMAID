@@ -5,9 +5,11 @@ import re
 
 from collections import defaultdict
 
+from typing import Any, DefaultDict, Dict, List, Set
+
 from django.conf import settings
 from django.db.models import Count
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.template import loader
 from django.contrib.contenttypes.models import ContentType
@@ -35,8 +37,9 @@ class ExProject:
             return getattr(self,attr)
         return getattr(self.project, attr)
 
-def add_catalogue_info(user, projects):
+def add_catalogue_info(user, projects) -> List:
     """ Adds the is_catalogueable property to all projects passed.
+        XXX Does not use its user parameter
     """
     # Find all the projects that are catalogueable:
     catalogueable_projects = set(x.project.id for x in \
@@ -49,7 +52,7 @@ def add_catalogue_info(user, projects):
 
     return result
 
-def get_data_view_type_comment( request ):
+def get_data_view_type_comment(request:HttpRequest) -> JsonResponse:
     """ Return the comment of a specific data view type.
     """
     requested_id = request.GET["data_view_type_id"]
@@ -64,8 +67,8 @@ def get_data_view_type_comment( request ):
     result = { 'comment':text }
     return JsonResponse(result)
 
-def dataview_to_dict( dataview ):
-    """ Creates a dicitonary of the dataviews' properties.
+def dataview_to_dict(dataview) -> Dict:
+    """ Creates a dictionary of the dataviews' properties.
     """
     return {
         'id': dataview.id,
@@ -75,15 +78,15 @@ def dataview_to_dict( dataview ):
         'note': dataview.comment
     }
 
-def get_data_view_type( request, data_view_id ):
+def get_data_view_type(request:HttpRequest, data_view_id) -> JsonResponse:
     """ Returns the type of a particular data view.
     """
     dv = get_object_or_404(DataView, pk=data_view_id)
     code_type = dv.data_view_type.code_type
 
-    return JsonResponse({ 'type': code_type })
+    return JsonResponse({'type': code_type})
 
-def get_available_data_views( request ):
+def get_available_data_views(request:HttpRequest) -> JsonResponse:
     """ Returns a list of all available data views.
     """
     all_views = DataView.objects.order_by("position")
@@ -91,7 +94,7 @@ def get_available_data_views( request ):
 
     return JsonResponse(makeJSON_legacy_list(dataviews), safe=False)
 
-def get_default_properties( request ):
+def get_default_properties(request:HttpRequest) -> JsonResponse:
     """ Return the properies of the default data view. If no data view is
     configured as default, the one with the lowest ID will be returned.
     """
@@ -107,7 +110,7 @@ def get_default_properties( request ):
 
     return JsonResponse(result)
 
-def get_detail(request, data_view_id):
+def get_detail(request:HttpRequest, data_view_id) -> JsonResponse:
     """Get details on a particular data view.
     """
     default = DataView.objects.get(id=data_view_id)
@@ -115,15 +118,15 @@ def get_detail(request, data_view_id):
 
     return JsonResponse(default)
 
-def get_default_data_view( request ):
+def get_default_data_view(request:HttpRequest) -> HttpResponse:
     """ Return the data view that is marked as the default. If there
     is more than one view marked as default, the first one is returned.
     """
     default = DataView.objects.filter(is_default=True)[0]
 
-    return get_data_view( request, default.id )
+    return get_data_view(request, default.id)
 
-def natural_sort(l, field):
+def natural_sort(l:List, field) -> List:
     """ Natural sorting of a list wrt. to its 'title' attribute.
     Based on: http://stackoverflow.com/questions/4836710
     """
@@ -131,7 +134,7 @@ def natural_sort(l, field):
     alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', getattr(key, field)) ]
     return sorted(l, key = alphanum_key)
 
-def get_data_view( request, data_view_id ):
+def get_data_view(request:HttpRequest, data_view_id) -> HttpResponse:
     """ Returns a rendered template for the given view.
     """
     # Load the template
@@ -162,10 +165,10 @@ def get_data_view( request, data_view_id ):
         projects = projects.prefetch_related('stacks')
 
     # Build a stack index
-    stack_index = defaultdict(list)
-    stacks_of = defaultdict(list)
-    stack_set_of = defaultdict(set)
-    projects_of_stack = defaultdict(set)
+    stack_index = defaultdict(list) # type: DefaultDict[Any, List]
+    stacks_of = defaultdict(list) # type: DefaultDict[Any, List]
+    stack_set_of = defaultdict(set) # type: DefaultDict[Any, Set]
+    projects_of_stack = defaultdict(set) # type: DefaultDict[Any, Set]
 
     if show_stacks or show_stackgroups:
         for p in projects:
@@ -181,18 +184,18 @@ def get_data_view( request, data_view_id ):
 
     # Build a stack group index, if stack groups should be made available
     stackgroup_index = {}
-    stackgroups_of = defaultdict(list)
+    stackgroups_of = defaultdict(list) # type: DefaultDict[Any, List]
     if show_stackgroups:
         stackgroup_links = StackStackGroup.objects.all().prefetch_related('stack', 'stack_group')
-        stackgroup_members = defaultdict(set)
+        stackgroup_members = defaultdict(set) # type: DefaultDict[Any, Set]
         for sgl in stackgroup_links:
             stackgroup_index[sgl.stack_group_id] = sgl.stack_group
             stackgroup_members[sgl.stack_group_id].add(sgl.stack.id)
         for sg, members in stackgroup_members.items():
             # Only accept stack groups of which all member stacks are linked to
             # the same project.
-            member_project_ids = set()
-            project_member_ids = defaultdict(set)
+            member_project_ids = set() # type: Set
+            project_member_ids = defaultdict(set) # type: DefaultDict[Any, Set]
             for m in members:
                 project_ids = projects_of_stack.get(m, [])
                 member_project_ids.update(project_ids)
@@ -222,7 +225,7 @@ def get_data_view( request, data_view_id ):
     ct = ContentType.objects.get_for_model(Project)
     tag_links = TaggedItem.objects.filter(content_type=ct) \
         .values_list('object_id', 'tag__name')
-    tag_index = defaultdict(set)
+    tag_index = defaultdict(set) # type: DefaultDict[Any, Set]
     for pid, t in tag_links:
         if pid in project_ids:
             tag_index[t].add(pid)
@@ -241,4 +244,4 @@ def get_data_view( request, data_view_id ):
         'STATIC_URL': settings.STATIC_URL,
     }
 
-    return HttpResponse( template.render( context ) )
+    return HttpResponse(template.render(context))

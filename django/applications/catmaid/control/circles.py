@@ -40,7 +40,7 @@ def _relations(cursor, project_id:Union[int,str]) -> Dict:
     cursor.execute("SELECT relation_name, id FROM relation WHERE project_id = %s AND (relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to')" % int(project_id))
     return dict(cursor.fetchall())
 
-def _clean_mins(request:HttpRequest, cursor, project_id:Union[int,str]):
+def _clean_mins(request:HttpRequest, cursor, project_id:Union[int,str]) -> Tuple[Dict, Any]:
     min_pre = int(request.POST.get('min_pre',  -1)) # type: Union[int, float]
     min_post = int(request.POST.get('min_post', -1)) # type: Union[int, float]
 

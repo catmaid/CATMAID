@@ -9,6 +9,7 @@ from itertools import count
 from functools import partial
 from numpy import subtract
 from numpy.linalg import norm
+from typing import Any, DefaultDict, Dict, List, Optional, Tuple, Union
 
 from django.db import connection
 from django.http import JsonResponse
@@ -53,7 +54,7 @@ def basic_graph(project_id, skeleton_ids, relations=None,
            'source_rel': source_rel_id,
            'target_rel': target_rel_id})
 
-    edges = defaultdict(partial(defaultdict, make_new_synapse_count_array))
+    edges = defaultdict(partial(defaultdict, make_new_synapse_count_array)) # type: DefaultDict
     for row in cursor.fetchall():
         edges[row[0]][row[1]][row[2] - 1] += 1
 
@@ -109,7 +110,7 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold,
       AND (relation_id = %s OR relation_id = %s)
     ''' % (int(project_id), skids, source_rel_id, target_rel_id))
 
-    stc = defaultdict(list)
+    stc = defaultdict(list) # type: DefaultDict[Any, List]
     for row in cursor.fetchall():
         stc[row[0]].append(row[1:]) # skeleton_id vs (treenode_id, connector_id, relation_id, confidence)
 
@@ -123,19 +124,20 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold,
     ''' % (project_id, skids))
 
     # Dictionary of connector_id vs relation_id vs list of sub-skeleton ID
-    connectors = defaultdict(partial(defaultdict, list))
+    connectors = defaultdict(partial(defaultdict, list)) # type: DefaultDict
 
     # All nodes of the graph
-    nodeIDs = []
+    nodeIDs = [] # type: List
 
     # Read out into memory only one skeleton at a time
     current_skid = None
-    tree = None
+    tree = None # type: Optional[nx.DiGraph]
     for row in cursor.fetchall():
         if row[0] == current_skid:
             # Build the tree, breaking it at the low-confidence edges
             if row[2] and row[3] >= confidence_threshold:
-                    tree.add_edge(row[2], row[1])
+                    tree.add_edge(row[2], row[1]) # type: ignore
+                                                  # mypy cannot prove this will be a DiGraph by here
             continue
 
         if tree:
@@ -151,7 +153,8 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold,
         nodeIDs.extend(split_by_confidence(current_skid, tree, stc[current_skid], connectors))
 
     # Create the edges of the graph from the connectors, which was populated as a side effect of 'split_by_confidence'
-    edges = defaultdict(partial(defaultdict, make_new_synapse_count_array)) # pre vs post vs count
+    edges = defaultdict(partial(defaultdict, make_new_synapse_count_array)) # type: DefaultDict
+                                                                            # pre vs post vs count
     for c in connectors.values():
         for pre in c[source_rel_id]:
             for post in c[target_rel_id]:
@@ -194,15 +197,15 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
     ''' % (int(project_id), ",".join(str(int(skid)) for skid in skeleton_ids),
            source_rel_id, target_rel_id))
 
-    stc = defaultdict(list)
+    stc = defaultdict(list) # type: DefaultDict[Any, List]
     for row in cursor.fetchall():
         stc[row[0]].append(row[1:]) # skeleton_id vs (treenode_id, connector_id, relation_id)
 
     # Dictionary of connector_id vs relation_id vs list of sub-skeleton ID
-    connectors = defaultdict(partial(defaultdict, list))
+    connectors = defaultdict(partial(defaultdict, list)) # type: DefaultDict
 
     # All nodes of the graph (with or without edges. Includes those representing synapse domains)
-    nodeIDs = []
+    nodeIDs = [] # type: List
 
     not_to_expand = skeleton_ids - expand
 
@@ -218,12 +221,13 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
 
         # Read out into memory only one skeleton at a time
         current_skid = None
-        tree = None
+        tree = None # type: Optional[nx.DiGraph]
         for row in cursor.fetchall():
             if row[0] == current_skid:
                 # Build the tree, breaking it at the low-confidence edges
                 if row[2] and row[3] >= confidence_threshold:
-                        tree.add_edge(row[2], row[1])
+                        tree.add_edge(row[2], row[1]) # type: ignore
+                                                      # mypy cannot prove this will be a nx.DiGraph by here
                 continue
 
             if tree:
@@ -256,21 +260,23 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
     ''' % (project_id, ",".join(str(int(skid)) for skid in expand)))
 
     # list of edges among synapse domains
-    intraedges = []
+    intraedges = [] # type: List
 
     # list of branch nodes, merely structural
-    branch_nodeIDs = []
+    branch_nodeIDs = [] # type: List
 
     # reset
     current_skid = None
     tree = None
-    locations = None
+    locations = None # type: Optional[Dict]
     for row in cursor.fetchall():
         if row[0] == current_skid:
             # Build the tree, breaking it at the low-confidence edges
-            locations[row[1]] = row[4:]
+            locations[row[1]] = row[4:] # type: ignore
+                                        # mypy cannot prove this will have a value by here
             if row[2] and row[3] >= confidence_threshold:
-                    tree.add_edge(row[2], row[1])
+                    tree.add_edge(row[2], row[1]) # type: ignore
+                                                  # mypy cannot prove this will have a value by here
             continue
 
         if tree:
@@ -293,7 +299,8 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
 
 
     # Create the edges of the graph
-    edges = defaultdict(partial(defaultdict, make_new_synapse_count_array)) # pre vs post vs count
+    edges = defaultdict(partial(defaultdict, make_new_synapse_count_array)) # type: DefaultDict
+                                                                            # pre vs post vs count
     for c in connectors.values():
         for pre in c[source_rel_id]:
             for post in c[target_rel_id]:
@@ -319,10 +326,11 @@ def populate_connectors(chunkIDs, chunks, cs, connectors):
                 break
 
 
-def subgraphs(digraph, skeleton_id):
+def subgraphs(digraph, skeleton_id) -> Tuple[List, Tuple]:
     chunks = list(weakly_connected_component_subgraphs(digraph))
     if 1 == len(chunks):
-        chunkIDs = (str(skeleton_id),)
+        chunkIDs = (str(skeleton_id),) # type: Tuple
+                                       # Note: Here we're loosening the implicit type
     else:
         chunkIDs = tuple('%s_%s' % (skeleton_id, (i+1)) for i in range(len(chunks)))
     return chunks, chunkIDs
@@ -348,12 +356,15 @@ def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, in
             chunk[parent][child]['weight'] = norm(subtract(locations[child], locations[parent]))
 
         # Check if need to expand at all
-        blob = tuple(c for c in cs if c[0] in chunk)
-        if 0 == len(blob):
+        blob = tuple(c for c in cs if c[0] in chunk) # type: Optional[Tuple]
+                                                     # the two different uses of blob in this context
+                                                     # (other being in for node in mini.nodes_iter() below )
+                                                     # makes typing difficult and may be a maintenance concern
+        if 0 == len(blob): # type: ignore
             nodes.append(chunkID)
             continue
 
-        treenode_ids, connector_ids, relation_ids, confidences = list(zip(*blob))
+        treenode_ids, connector_ids, relation_ids, confidences = list(zip(*blob)) # type: ignore
 
         if 0 == len(connector_ids):
             nodes.append(chunkID)
@@ -387,7 +398,7 @@ def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, in
         #   (rather than having to sift through all in cs)
         mini_nodes = {}
         for node in mini.nodes_iter():
-            blob = anchors.get(node, None)
+            blob = anchors.get(node)
             if blob:
                 index, domain = blob
                 domainID = '%s_%s' % (chunkID, index)
@@ -421,7 +432,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
     cursor = connection.cursor()
     relation_map = get_relation_to_id_map(project_id, cursor=cursor)
 
-    result = None
+    result = None # type: Optional[Dict]
     for link_type in link_types:
         pair = KNOWN_LINK_PAIRS.get(link_type)
         if not pair:
@@ -462,7 +473,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
             '''.format(skeleton_id_template), query_params)
 
             query_skeleton_ids = set(skeleton_ids)
-            overall_counts = defaultdict(partial(defaultdict, make_new_synapse_count_array))
+            overall_counts = defaultdict(partial(defaultdict, make_new_synapse_count_array)) # type: DefaultDict
             # Iterate through each pre/post connection
             for skid1, skid2, rel1, rel2, conf in cursor.fetchall():
                 # Increment number of links to/from skid1 with relation rel1.

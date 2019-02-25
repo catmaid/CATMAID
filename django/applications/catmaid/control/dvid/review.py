@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 
 from guardian.utils import get_anonymous_user
 

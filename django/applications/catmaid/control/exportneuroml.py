@@ -8,6 +8,7 @@
 import logging
 
 from collections import defaultdict
+from typing import Any, DefaultDict, Dict, List
 
 try:
     from neuroml import Cell, Segment, SegmentParent, Morphology, \
@@ -15,6 +16,7 @@ try:
 except ImportError:
     logging.getLogger(__name__).warning("NeuroML module could not be loaded.")
 
+# Because of the conditional imports, full type annotation of this file is not possible
 
 def neuroml_single_cell(skeleton_id, nodes, pre, post):
     """ Encapsulate a single skeleton into a NeuroML Cell instance.
@@ -28,7 +30,8 @@ def neuroml_single_cell(skeleton_id, nodes, pre, post):
     """
 
     # Collect the children of every node
-    successors = defaultdict(list) # parent node ID vs list of children node IDs
+    successors = defaultdict(list) # type: DefaultDict[Any, List]
+                                   # parent node ID vs list of children node IDs
     rootID = None
     for nodeID, props in nodes.items():
         parentID = props[0]
@@ -38,7 +41,7 @@ def neuroml_single_cell(skeleton_id, nodes, pre, post):
         successors[parentID].append(nodeID) 
 
     # Cache of Point3DWithDiam
-    points = {}
+    points = {} # type: Dict
 
     def asPoint(nodeID):
         """ Return the node as a Point3DWithDiam, in micrometers. """
@@ -58,7 +61,7 @@ def neuroml_single_cell(skeleton_id, nodes, pre, post):
     # Starting from the root node, iterate towards the end nodes, adding a segment
     # for each parent-child pair.
 
-    segments = []
+    segments = [] # type: List
     segment_id = 1
     todo = [rootID]
 

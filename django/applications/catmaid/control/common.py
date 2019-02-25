@@ -37,7 +37,7 @@ class parsedict(dict):
     """
     pass
 
-def get_request_bool(request_dict:Dict, name:Optional[str], default:Optional[bool]=None) -> Union[bool, None]:
+def get_request_bool(request_dict:Dict, name:Optional[str], default:Optional[bool]=None) -> Optional[bool]:
     """Extract a boolean value for the passed in parameter name in the passed
     in dictionary. The boolean paramter is expected to be a string and True is
     returned if it matches the string "true" (case-insensitive), False otherwise.
@@ -48,7 +48,7 @@ def get_request_bool(request_dict:Dict, name:Optional[str], default:Optional[boo
     value = request_dict.get(name)
     return default if value is None else value.lower() == 'true'
 
-def get_request_list(request_dict, name, default=None, map_fn=identity):
+def get_request_list(request_dict:Dict, name, default=None, map_fn=identity) -> Optional[List]:
     """Look for a list in a request dictionary where individual items are named
     with or without an index. Traditionally, the CATMAID web front-end sends
     the list a = [1,2,3] encoded as fields a[0]=1, a[1]=2 and a[2]=3. Using
@@ -73,7 +73,7 @@ def get_request_list(request_dict, name, default=None, map_fn=identity):
                 k.append(v)
         return k
 
-    def add_items(items, name):
+    def add_items(items, name) -> List[List]:
         d = parsedict()
         max_index = -1
         testname = name + '['
@@ -106,7 +106,7 @@ def get_request_list(request_dict, name, default=None, map_fn=identity):
         return items
 
     if hasattr(request_dict, 'getlist'):
-        items = [map_fn(v) for v in request_dict.getlist(name, [])]
+        items = [map_fn(v) for v in request_dict.getlist(name, [])] # type: ignore
         if items:
             return items
 
@@ -248,7 +248,7 @@ def get_form_and_neurons(request:HttpRequest, project_id:Union[int,str], kwargs)
     neuron_id_to_cell_body_location = dict(
         (x.class_instance_a.id, x.class_instance_b.name) for x in cici_qs)
 
-    neuron_id_to_driver_lines = defaultdict(list) # type: DefaultDict
+    neuron_id_to_driver_lines = defaultdict(list) # type: DefaultDict[Any, List]
 
     for cici in ClassInstanceClassInstance.objects.filter(
         project__id=project_id,

@@ -407,7 +407,7 @@ def contributor_statistics(request:HttpRequest, project_id=None, skeleton_id=Non
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def contributor_statistics_multiple(request:HttpRequest, project_id=None, skeleton_ids=None) -> JsonResponse:
-    contributors = defaultdict(int) # type: DefaultDict
+    contributors = defaultdict(int) # type: DefaultDict[Any, int]
     n_nodes = 0
     # Count the total number of 20-second intervals with at least one treenode in them
     n_time_bins = 0
@@ -457,7 +457,7 @@ def contributor_statistics_multiple(request:HttpRequest, project_id=None, skelet
 
     rev = None
     last_skeleton_id = None
-    review_contributors = defaultdict(int) # type: DefaultDict
+    review_contributors = defaultdict(int) # type: DefaultDict[Any, int]
                                            # reviewer_id vs count of nodes reviewed
 
     for row in Review.objects.filter(skeleton_id__in=skeleton_ids).order_by('skeleton').values_list('reviewer', 'treenode', 'review_time', 'skeleton_id').iterator():
@@ -1259,7 +1259,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2,
     class Partner:
         def __init__(self):
             self.num_nodes = 0
-            self.skids = defaultdict(newSynapseCounts) # type: DefaultDict
+            self.skids = defaultdict(newSynapseCounts) # type: DefaultDict[Any, List[int]]
                                                        # skid vs synapse count
             if with_nodes:
                 self.links = [] # type: List
@@ -1267,7 +1267,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2,
     # Dictionary of partner skeleton ID vs Partner
     def newPartner():
         return Partner()
-    partners = defaultdict(newPartner) # type: DefaultDict
+    partners = defaultdict(newPartner) # type: DefaultDict[Any, Partner]
 
     # Obtain the synapses made by all skeleton_ids considering the desired
     # direction of the synapse, as specified by relation_id_1 and relation_id_2:
@@ -1652,7 +1652,7 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids,
     # object with the fields 'count' and 'locations' is returned instead of a
     # single count.
     if with_locations:
-      outgoing = defaultdict(dict) # type: DefaultDict
+      outgoing = defaultdict(dict) # type: DefaultDict[Any, Dict]
       for r in cursor.fetchall():
           source, target = r[0], r[1]
           mapping = outgoing[source]
@@ -2108,7 +2108,7 @@ def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleto
     if not n_samplers:
         return None
 
-    sampler_index = defaultdict(list) # type: DefaultDict
+    sampler_index = defaultdict(list) # type: DefaultDict[Any, List]
     for s in samplers:
         sampler_index[s.skeleton_id].append(s)
 

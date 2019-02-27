@@ -250,6 +250,13 @@ Miscellaneous:
   required that a user importing skeleton data for an existing neuron ID has
   the rights to edit the skeleton instance as well as all its treenodes.
 
+- Docker: the docker-compose setup now uses Postgis 2.5 internally and therefore
+  allows upgrades from Postgres versions < 10 with Postgis 2.4.
+
+- Docker: stale Postgres PID files will now be removed during a database upgrade
+  in a docker-compose setup. PID files without actually running database
+  processes prevented some updates before.
+
 
 ## 2018.11.09
 

@@ -141,7 +141,7 @@
   Similarity.computeSimilarity = function(projectId, configId, queryIds,
       targetIds, queryType, targetType, name, normalized, reverse, useAlpha,
       queryMeta, targetMeta, removeTargetDuplicates, simplify, requiredBranches,
-      useCache, topN = 100) {
+      useCache, topN = 0) {
     return CATMAID.fetch(projectId + '/similarity/queries/similarity', 'POST', {
       'query_ids': queryIds,
       'target_ids': targetIds,

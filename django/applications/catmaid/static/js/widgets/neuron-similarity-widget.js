@@ -565,7 +565,7 @@
         let useAlpha = false;
         let removeTargetDuplicates = true;
         let simplify = true;
-        let topN = 100;
+        let topN = 0;
 
         widget.updateDisplayTransformationCache();
 

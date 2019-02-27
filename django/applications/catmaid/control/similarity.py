@@ -873,10 +873,12 @@ def compare_skeletons(request, project_id):
         required: false
         defaultValue: true
       - name: top_n
-        description: How many results should be returned sorted by score.
+        description: |
+            How many results should be returned sorted by score. A
+            value of zero dsiables this cutoff.
         type: int
         required: false
-        defaultValue: 100
+        defaultValue: 0
     """
     name = request.POST.get('name', None)
     if not name:
@@ -942,7 +944,7 @@ def compare_skeletons(request, project_id):
     normalized = request.POST.get('normalized', 'mean')
     reverse = get_request_bool(request.POST, 'reverse', True)
     use_alpha = get_request_bool(request.POST, 'use_alpha', False)
-    top_n = int(request.POST.get('top_n', 100))
+    top_n = int(request.POST.get('top_n', 0))
     remove_target_duplicates = get_request_bool(request.POST,
             'remove_target_duplicates', True)
 

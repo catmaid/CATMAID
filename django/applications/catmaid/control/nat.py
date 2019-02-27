@@ -747,7 +747,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         query_type='skeleton', target_type='skeleton', omit_failures=True,
         normalized='raw', use_alpha=False, remove_target_duplicates=True,
         min_nodes=500, min_soma_nodes=20, simplify=True, required_branches=10,
-        soma_tags=('soma', ), use_cache=True, reverse=False, top_n=100,
+        soma_tags=('soma', ), use_cache=True, reverse=False, top_n=0,
         resample_by=1e3):
     """Create NBLAST score for forward similarity from query objects to target
     objects. Objects can either be pointclouds or skeletons, which has to be

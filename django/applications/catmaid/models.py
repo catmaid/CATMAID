@@ -1033,7 +1033,7 @@ class NblastSimilarity(NonCascadingUserFocusedModel):
     reverse = models.BooleanField(default=False)
     # To not neccessarily store large scoring matrixes with a lot of low score
     # results, only store the the top N results for each query. Disabled using 0.
-    top_n = models.IntegerField(default=100, blank=True, null=True)
+    top_n = models.IntegerField(default=0, blank=True, null=True)
 
     class Meta:
         db_table = "nblast_similarity"

@@ -16,7 +16,7 @@ forward = """
     ADD COLUMN reverse bool;
 
     ALTER TABLE nblast_similarity
-    ADD COLUMN top_n integer DEFAULT 100;
+    ADD COLUMN top_n integer DEFAULT 0;
 
     ALTER TABLE nblast_similarity__history
     ADD COLUMN top_n integer;
@@ -95,7 +95,7 @@ class Migration(migrations.Migration):
             migrations.AddField(
                 model_name='nblastsimilarity',
                 name='top_n',
-                field=models.IntegerField(blank=True, default=100, null=True),
+                field=models.IntegerField(blank=True, default=0, null=True),
             ),
             migrations.AddField(
                 model_name='nblastsimilarity',

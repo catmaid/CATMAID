@@ -21,6 +21,7 @@
     this.showOnlyMatchesInResult = true;
     this.showPointCloudImages = false;
     this.useCache = true;
+    this.requiredBranches = 10;
     // Whether or not the results are displayed in a dialog (rather than a
     // window).
     this.resultMode = 'window';
@@ -560,9 +561,11 @@
         let queryType = 'skeleton';
         let targetType = 'all-skeletons';
         let normalizedScores = 'mean';
+        let reverse = false;
         let useAlpha = false;
         let removeTargetDuplicates = true;
         let simplify = true;
+        let topN = 0;
 
         widget.updateDisplayTransformationCache();
 
@@ -758,6 +761,25 @@
           ],
           onchange: function() {
             normalizedScores = this.value;
+          },
+        }, {
+          type: 'numeric',
+          label: 'Top N',
+          title: 'Compute only the top n results for each query. Disable using a value of zero.',
+          length: 4,
+          min: 0,
+          step: 10,
+          value: topN,
+          onchange: function() {
+            topN = parseInt(this.value, 10);
+          },
+        }, {
+          type: 'checkbox',
+          label: 'Reverse',
+          title: 'If enabled, the target is matched against the query',
+          value: reverse,
+          onclick: function() {
+            reverse = this.checked;
           },
         }, {
           type: 'checkbox',
@@ -1004,8 +1026,9 @@
                 .then(function() {
                   return CATMAID.Similarity.computeSimilarity(project.id, configId,
                       queryIds, targetIds, effectiveQueryType, effectiveTargetType,
-                      newQueryName, normalizedScores, useAlpha, queryMeta, targetMeta,
-                      removeTargetDuplicates, simplify);
+                      newQueryName, normalizedScores, reverse, useAlpha,
+                      queryMeta, targetMeta, removeTargetDuplicates, simplify,
+                      widget.requiredBranches, widget.useCache, topN);
                 })
                 .then(function(response) {
                   widget.lastSimilarityQuery = response;
@@ -1143,37 +1166,47 @@
                 return 'Unknown: ' + data;
               }
             }, {
+              data: "reverse",
+              title: "Reverse",
+              class: "cm-center",
+              searchable: true,
+              orderable: true,
+              render: function(data, type, row, meta) {
+                return data ? "Yes" : "No";
+              },
+            }, {
+              data: "top_n",
+              title: "Top N",
+              class: "cm-center",
+              searchable: true,
+              orderable: true,
+              render: function(data, type, row, meta) {
+                return data ? data : "-";
+              },
+            }, {
               data: "query_objects",
               title: "Query objects",
               orderable: false,
               class: 'cm-center',
               render: function(data, type, row, meta) {
-                let qo = row.query_objects;
-                if (qo && qo.length > 0) {
-                  let allBins = qo ? qo.join(', ') : 'all';
-                  let text = (qo && qo.length > 4) ?
+                let typeLabel = CATMAID.Similarity.objectTypeToString(row.query_type);
+                let capTypeLabel = CATMAID.tools.capitalize(typeLabel);
+
+                let qo = row.initial_query_objects;
+                if (qo) {
+                  if (qo.length === 0) {
+                    return `<span title="${row.n_query_objects} were used"><em>${row.n_initial_query_objects} ${typeLabel}s</em></span>`;
+                  }
+
+                  let allBins = qo.join(', ');
+                  let text = qo.length > 4 ?
                       (qo[0] + ', ' +  qo[1] +  ' … ' + qo[qo.length - 2] + ', ' + qo[qo.length - 1]) :
                       allBins;
-                  let length = qo ? qo.length : 'all';
-                  if (row.query_type === 'skeleton') {
-                    return '<span title="' + length + ' skeleton(s)"><em>Skeletons:</em> ' + text + '</span>';
-                  } else if (row.query_type === 'pointcloud') {
-                    return '<span title="' + length + ' point cloud(s)"><em>Point clouds:</em> ' + text + '</span>';
-                  } else if (row.query_type === 'pointset') {
-                    return '<span title="' + length + ' transformed skeleton(s)"><em>Transformed skeletons:</em> ' + text + '</span>';
-                  } else {
-                    return '<span title="' + length + ' unknown object(s)"><em>Unknown type:</em> ' + text + '</span>';
-                  }
+                  let length = qo.length;
+
+                  return `<span title="${qo.length}" ${typeLabel}}(s)"><em>${capTypeLabel}s:</em> ${text}</span>`;
                 } else {
-                  if (row.query_type === 'skeleton') {
-                    return `<span><em>${row.n_query_objects} skeletons</em></span>`;
-                  } else if (row.query_type === 'pointcloud') {
-                    return `<span><em>${row.n_query_objects} point clouds</em></span>`;
-                  } else if (row.query_type === 'pointset') {
-                    return `<span<em>${row.n_query_objects} transformed skeletons</em></span>`;
-                  } else {
-                    return `<span><em>${row.n_query_objects} unknown objects</em></span>`;
-                  }
+                  return `<span title="${row.n_query_objects} were used"><em>all ${typeLabel}s</em></span>`;
                 }
               }
             }, {
@@ -1182,32 +1215,24 @@
               orderable: false,
               class: 'cm-center',
               render: function(data, type, row, meta) {
-                let to = row.target_objects;
-                if (to && to.length > 0) {
-                  let allBins = to ? to.join(', ') : 'all';
-                  let text = (to && to.length > 4) ?
+                let typeLabel = CATMAID.Similarity.objectTypeToString(row.target_type);
+                let capTypeLabel = CATMAID.tools.capitalize(typeLabel);
+
+                let to = row.initial_target_objects;
+                if (to) {
+                  if (to.length === 0) {
+                    return `<span title="${row.n_target_objects} were used"><em>${row.n_initial_target_objects} ${typeLabel}s</em></span>`;
+                  }
+
+                  let allBins = to.join(', ');
+                  let text = to.length > 4 ?
                       (to[0] + ', ' +  to[1] +  ' … ' + to[to.length - 2] + ', ' + to[to.length - 1]) :
                       allBins;
-                  let length = to ? to.length : 'all';
-                  if (row.target_type === 'skeleton') {
-                    return '<span title="' + length + ' skeleton(s)"><em>Skeletons:</em> ' + text + '</span>';
-                  } else if (row.target_type === 'pointcloud') {
-                    return '<span title="' + length + ' point cloud(s)"><em>Point clouds:</em> ' + text + '</span>';
-                  } else if (row.target_type === 'pointset') {
-                    return '<span title="' + length + ' transformed skeleton(s)"><em>Transformed skeletons:</em> ' + text + '</span>';
-                  } else {
-                    return '<span title="' + length + ' unknown object(s)"><em>Unknown type:</em> ' + text + '</span>';
-                  }
+                  let length = to.length;
+
+                  return `<span title="${to.length}" ${typeLabel}}(s)"><em>${capTypeLabel}s:</em> ${text}</span>`;
                 } else {
-                  if (row.target_type === 'skeleton') {
-                    return `<span><em>${row.n_target_objects} skeletons</em></span>`;
-                  } else if (row.target_type === 'pointcloud') {
-                    return `<span><em>${row.n_target_objects} point clouds</em></span>`;
-                  } else if (row.target_type === 'pointset') {
-                    return `<span<em>${row.n_target_objects} transformed skeletons</em></span>`;
-                  } else {
-                    return `<span><em>${row.n_target_objects} unknown objects</em></span>`;
-                  }
+                  return `<span title="${row.n_target_objects} were used"><em>all ${typeLabel}s</em></span>`;
                 }
               }
             }, {
@@ -1236,9 +1261,8 @@
             return;
           }
           let simplify = $('#' + widget.idPrefix + 'simplify-skeletons').prop('checked');
-          let requiredBranches = 10;
           CATMAID.Similarity.recomputeSimilarity(project.id, data.id, simplify,
-              requiredBranches, widget.useCache)
+              widget.requiredBranches, widget.useCache)
             .then(function() {
               CATMAID.msg('Success', 'NBLAST similarity recomputation queued');
               widget.refresh();

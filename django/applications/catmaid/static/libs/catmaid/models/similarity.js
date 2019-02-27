@@ -114,6 +114,9 @@
    *                              self-match ('normalized') or replaced with
    *                              their normalized mean with the normalized
    *                              reverse score ('mean'). Default is 'mean'.
+   * @param reverse    {Boolean}  (optional) Whether to score the similarity of
+   *                              query and target object using the reverse
+   *                              score (qury against target).  Default: false.
    * @param useAlpha   {Boolean}  (optional) Whether to consider local directions in the
    *                              similarity calulation. Default: false.
    * @param queryMeta  {Object}   (optional) Data that represents query objects in more detail.
@@ -136,9 +139,9 @@
    * @returns {Promise} Resolves once the similarity query is queued.
    */
   Similarity.computeSimilarity = function(projectId, configId, queryIds,
-      targetIds, queryType, targetType, name, normalized, useAlpha,
+      targetIds, queryType, targetType, name, normalized, reverse, useAlpha,
       queryMeta, targetMeta, removeTargetDuplicates, simplify, requiredBranches,
-      useCache) {
+      useCache, topN = 0) {
     return CATMAID.fetch(projectId + '/similarity/queries/similarity', 'POST', {
       'query_ids': queryIds,
       'target_ids': targetIds,
@@ -149,11 +152,13 @@
       'target_meta': targetMeta,
       'name': name,
       'normalized': normalized,
+      'reverse': reverse,
       'use_alpha': useAlpha,
       'remove_target_duplicates': removeTargetDuplicates,
       'simplify': simplify,
       'required_branches': requiredBranches,
       'use_cache': useCache,
+      'top_n': topN,
     });
   };
 
@@ -241,6 +246,13 @@
   Similarity.defaultDistanceBreaks = [0, 0.75, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 7,
       8, 9, 10, 12, 14, 16, 20, 25, 30, 40, 500];
   Similarity.defaultDotBreaks = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
+
+  Similarity.objectTypeToString = function(objectType) {
+    if (objectType === 'skeleton') { return 'skeleton'; }
+    else if (objectType === 'pointcloud') { return 'point cloud'; }
+    else if (objectType === 'pointset') { return 'transformed skeleton'; }
+    return 'unknown object';
+  };
 
 
   // Events

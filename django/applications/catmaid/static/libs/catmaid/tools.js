@@ -891,4 +891,11 @@ CATMAID.tools = CATMAID.tools || {};
     return value ? value.id : undefined;
   };
 
+  /**
+   * Captialize the first letter of a string.
+   */
+  tools.capitalize = function(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+  };
+
 })(CATMAID.tools);

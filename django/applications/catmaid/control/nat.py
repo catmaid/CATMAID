@@ -36,6 +36,13 @@ except ImportError:
     logger.warning('CATMAID was unable to load the Rpy2 library, which is an '
             'optional dependency. Nblast support is therefore disabled.')
 
+try:
+    import pandas as pd
+except ImportError:
+    rnat_enaled = False
+    logger.warning('CATMAID was unable to load the Pandas lirary, which is an '
+            'optional dependency. Nblast support is therefore disabled.')
+
 
 # The path were server side exported files get stored in
 output_path = os.path.join(settings.MEDIA_ROOT,
@@ -246,7 +253,7 @@ def setup_r_environment():
 def compute_scoring_matrix(project_id, user_id, matching_sample,
         random_sample, distbreaks=NblastConfigDefaultDistanceBreaks,
         dotbreaks=NblastConfigDefaultDotBreaks, resample_step=1000,
-        tangent_neighbors=5, omit_failures=True):
+        tangent_neighbors=5, omit_failures=True, resample_by=1e3):
     """Create NBLAST scoring matrix for a set of matching skeleton IDs and a set
     of random skeleton IDs. Matching skeletons are skeletons with a similar
     morphology, e.g. KCy in FAFB.
@@ -334,7 +341,7 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
 
         # Create dotprop instances and resample
         logger.debug('Computing matching skeleton stats')
-        matching_neurons_dps = rnat.dotprops(matching_neurons.ro / 1e3, **{
+        matching_neurons_dps = rnat.dotprops(matching_neurons.ro / resample_by, **{
                     'k': tangent_neighbors,
                     'resample': 1,
                     '.progress': 'none',
@@ -358,7 +365,7 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
             pointset_objects.names = robjects.StrVector(effective_pointset_object_ids)
 
             logger.debug('Computing matching pointset stats')
-            pointset_dps = rnat.dotprops(pointset_objects.ro / 1e3, **{
+            pointset_dps = rnat.dotprops(pointset_objects.ro / resample_by, **{
                         'k': tangent_neighbors,
                         'resample': 1,
                         '.progress': 'none',
@@ -380,7 +387,7 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
                 })
 
         logger.debug('Computing random skeleton stats')
-        nonmatching_neurons_dps = rnat.dotprops(nonmatching_neurons.ro / 1e3, **{
+        nonmatching_neurons_dps = rnat.dotprops(nonmatching_neurons.ro / resample_by, **{
                     'k': tangent_neighbors,
                     'resample': 1,
                     '.progress': 'none',
@@ -628,7 +635,7 @@ def get_catmaid_connection(user_id):
 
 def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         parallel=True, detail=10, omit_failures=True, min_nodes=500,
-        min_soma_nodes=20, soma_tags=('soma')):
+        min_soma_nodes=20, soma_tags=('soma'), resample_by=1e3):
     """Create a new cache file for a particular project object type and
     detail level. All objects of a type in a project are prepared.
     """
@@ -648,6 +655,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
     user = get_system_user()
     conn = get_catmaid_connection(user.id)
 
+    base = importr('base')
     rcatmaid = importr('catmaid')
     relmr = importr('elmr')
     rnat = importr('nat')
@@ -685,7 +693,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
 
         logger.debug('Computing skeleton stats')
         # Note: scaling down to um
-        objects_dps = rnat.dotprops(objects.ro / 1e3, **{
+        objects_dps = rnat.dotprops(objects.ro / resample_by, **{
                     'k': tangent_neighbors,
                     'resample': 1,
                     '.progress': 'none',
@@ -694,7 +702,6 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
 
         # Save cache to disk
         logger.debug('Storing skeleton cache')
-        base = importr('base')
         base.saveRDS(objects_dps, **{
             'file': cache_path,
         })
@@ -722,25 +729,26 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         objects.names = robjects.StrVector(effective_object_ids)
 
         logger.debug('Computing query pointcloud stats')
-        objects_dps = rnat.dotprops(objects.ro / 1e3, **{
+        objects_dps = rnat.dotprops(objects.ro / resample_by, **{
                     'k': tangent_neighbors,
                     'resample': 1,
                     '.progress': 'none',
                     'OmitFailures': omit_failures,
                 })
         # Save
-        base = importr('base')
         base.saveRDS(objects_dps, **{
             'file': cache_path,
         })
     else:
         raise ValueError('Unsupported object type: {}'. format(object_type))
 
+
 def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         query_type='skeleton', target_type='skeleton', omit_failures=True,
         normalized='raw', use_alpha=False, remove_target_duplicates=True,
         min_nodes=500, min_soma_nodes=20, simplify=True, required_branches=10,
-        soma_tags=('soma', ), use_cache=True):
+        soma_tags=('soma', ), use_cache=True, reverse=False, top_n=0,
+        resample_by=1e3):
     """Create NBLAST score for forward similarity from query objects to target
     objects. Objects can either be pointclouds or skeletons, which has to be
     reflected in the respective type parameter. This is executing essentially
@@ -896,7 +904,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                                 '.parallel': parallel,
                             })
                 logger.debug('Computing query skeleton stats')
-                query_dps = rnat.dotprops(query_objects.ro / 1e3, **{
+                query_dps = rnat.dotprops(query_objects.ro / resample_by, **{
                             'k': config.tangent_neighbors,
                             'resample': 1,
                             '.progress': 'none',
@@ -965,7 +973,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 query_objects.names = robjects.StrVector(non_cache_typed_query_object_ids)
 
                 logger.debug('Computing query pointcloud stats')
-                query_dps = rnat.dotprops(query_objects.ro / 1e3, **{
+                query_dps = rnat.dotprops(query_objects.ro / resample_by, **{
                             'k': config.tangent_neighbors,
                             'resample': 1,
                             '.progress': 'none',
@@ -1007,7 +1015,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             query_objects.names = robjects.StrVector(effective_query_object_ids)
 
             logger.debug('Computing query pointset stats')
-            query_dps = rnat.dotprops(query_objects.ro / 1e3, **{
+            query_dps = rnat.dotprops(query_objects.ro / resample_by, **{
                         'k': config.tangent_neighbors,
                         'resample': 1,
                         '.progress': 'none',
@@ -1067,7 +1075,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                                 })
 
                     logger.debug('Computing target skeleton stats')
-                    target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
+                    target_dps = rnat.dotprops(target_objects.ro / resample_by, **{
                                 'k': config.tangent_neighbors,
                                 'resample': 1,
                                 '.progress': 'none',
@@ -1080,7 +1088,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
                 # If we found cached items before, use them to complete the target
                 # objects.
-                if use_cache and target_cache_objects_dps:
+                if use_cache and non_cache_typed_target_object_ids:
                     if len(target_dps) > 0:
                         target_dps = robjects.r.c(target_dps, target_cache_objects_dps)
                         typed_target_object_ids = non_cache_typed_target_object_ids + \
@@ -1136,7 +1144,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     target_objects.names = robjects.StrVector(non_cache_typed_target_object_ids)
 
                     logger.debug('Computing target pointcloud stats')
-                    target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
+                    target_dps = rnat.dotprops(target_objects.ro / resample_by, **{
                                 'k': config.tangent_neighbors,
                                 'resample': 1,
                                 '.progress': 'none',
@@ -1173,7 +1181,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 target_objects.names = robjects.StrVector(typed_target_object_ids)
 
                 logger.debug('Computing target pointset stats')
-                target_dps = rnat.dotprops(target_objects.ro / 1e3, **{
+                target_dps = rnat.dotprops(target_objects.ro / resample_by, **{
                             'k': config.tangent_neighbors,
                             'resample': 1,
                             '.progress': 'none',
@@ -1201,79 +1209,161 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         smat.do_slot_assign('distbreaks', rdistbreaks)
         smat.do_slot_assign('dotprodbreaks', rdotbreaks)
 
-        logger.debug('Computing score (alpha: {a}, noramlized: {n})'.format(**{
+        logger.debug('Computing score (alpha: {a}, noramlized: {n}, reverse: {r}, top N: {tn})'.format(**{
             'a': 'Yes' if use_alpha else 'No',
-            'n': 'No' if normalized == 'raw' else 'Yes',
+            'n': 'No' if normalized == 'raw' else 'Yes ({})'.format(normalized),
+            'r': 'Yes' if reverse else 'No',
+            'tn': top_n if top_n else '-',
         }))
 
         # Use defaults also used in nat.nblast.
-        normalize_initial_score = normalized == 'normalized'
         nblast_params['smat'] = smat
         nblast_params['NNDistFun'] = rnblast.lodsby2dhist
         nblast_params['UseAlpha'] = use_alpha
-        nblast_params['normalised'] = normalize_initial_score
+        nblast_params['normalised'] = normalized != 'raw'
 
-        if normalized == 'mean':
-            all_objects = rnat.as_neuronlist(robjects.r.c(query_dps, target_dps))
-            all_objects.names = robjects.StrVector(list(base.names(query_dps)) +
-                    list(base.names(target_dps)))
-            all_scores = rnblast.NeuriteBlast(all_objects, all_objects, **nblast_params)
-            if len(all_scores) == 1:
-                all_Scores = Matrix(all_scores, **{
-                    'dimnames': robjects.StrVector(list(
-                        list(base.names(query_dps)),
-                        list(base.names(target_dps)))),
-                })
-            scores = rnblast.sub_score_mat(typed_query_object_ids,
-                    typed_target_object_ids, **{
-                        'scoremat': all_scores,
-                        'normalisation': 'mean',
-                    })
+        # Will store the result scores
+        similarity = None
+
+        if not reverse:
+            a, b = query_dps, target_dps
+            a_ids, b_ids = typed_query_object_ids, typed_target_object_ids
         else:
-            scores = rnblast.NeuriteBlast(query_dps, target_dps, **nblast_params)
+            a, b = target_dps, query_dps
+            a_ids, b_ids = typed_target_object_ids, typed_query_object_ids
 
-        # NBLAST by default will simplify the result in cases where there is
-        # only a one to one correspondence. Fix this to our expectation to have
-        # lists for both rows and columns.
-        if type(scores) == robjects.vectors.FloatVector:
-            # In case of a single query object, the result should be a single
-            # result vector for the query object. If there are multiple query
-            # objects, there should be one result list per query object.
-            if len(query_object_ids) == 1:
-                similarity = [numpy.asarray(scores).tolist()]
-            else:
-                similarity = [[s] for s in numpy.asarray(scores).tolist()]
+        # Only select a subset if there are more items than the limit in either
+        # of the dimensions.
+        if top_n and len(b_ids) > top_n:
+            logger.debug('top n {}'.format(top_n))
+            # Compute forward scores, either unnormalized or normalized so that a
+            # self-match is 1.
+            scores = as_matrix(rnblast.NeuriteBlast(a, b, **nblast_params), a, b)
 
-            column_names = typed_query_object_ids
-            row_names = typed_target_object_ids
-        else:
+            # For each query object, compute the reverse score for the top N
+            # forward scores.
+            target_scores = None
+            for n, query_object_dps in enumerate(query_dps):
+                query_name = query_dps.names[n]
+                logger.debug('Query object {}/{}: {}'.format(n+1, len(query_dps), query_name))
+                query_object_dps = rnat.subset_neuronlist(query_dps, robjects.StrVector([query_name]))
+
+                # Have to convert to dataframe to sort them -> using
+                # 'robjects.r("sort")' looses the names for some reason
+                scores_df = pd.DataFrame([[scores.rownames[i],
+                    # Extracted matrix values are a single element array.
+                    scores.rx(scores.rownames[i], query_name)[0]] \
+                        for i in range(len(scores))], columns=['name', 'score'])
+
+                # We are interested only in the top N names
+                scores_df.sort_values('score', ascending=False, inplace=True)
+
+                eff_top_n = min(top_n, len(scores_df))
+                top_n_names_names = scores_df.name.tolist()[:top_n]
+
+                # Index the sorted forward scores by name and remove name column.
+                scores_df.set_index('name', inplace=True, drop=True)
+
+                # For mean normalization, the regular forward score is averaged
+                # with the reverse score.
+                if normalized == 'mean':
+                    # Compute reverse scores for top N forward matches of
+                    # current query object.
+                    reverse_query_dps = b.rx(robjects.StrVector(top_n_names_names))
+                    reverse_scores = as_matrix(rnblast.NeuriteBlast(reverse_query_dps,
+                            query_object_dps, **nblast_params),
+                            reverse_query_dps, query_object_dps, transposed=True)
+
+                    # Get top N mean scores for input query as a row of the
+                    # target table format (scores for single query object form a
+                    # row).  We can't sort these results, because they are
+                    # merged with other query object results.
+                    result_row = pd.DataFrame([
+                            # Mean score: (forward score + reverse score) / 2
+                            [(scores_df.loc[reverse_scores.rownames[i]].score + reverse_scores[i]) / 2 \
+                                    for i in range(len(reverse_scores))]
+                        ],
+                        index=[query_name],
+                        columns=list(reverse_scores.rownames))
+                else:
+                    # Get top N forward scores for input query as a row of the
+                    # target table format (scores for single query object form a
+                    # row).
+                    result_row = pd.DataFrame([
+                            # Forward score:
+                            [scores_df.loc[name].score for name in top_n_names_names]
+                        ],
+                        index=[query_name],
+                        columns=list(top_n_names_names))
+
+                # Collect top N scores for each query object and store them
+                # in new pandas table that contains the target columns of
+                # both the existing query objects and the new one. Existing
+                # columns are set to NaN.
+                if target_scores is None:
+                    target_scores = result_row
+                else:
+                    target_scores = target_scores.concat(result_row)
+
+            scores = target_scores
+
             # Scores are returned with query skeletons as columns, but we want them
             # as rows, because it matches our expected queries more. Therefore
-            # we have to transpose it using the 't()' R function.
-            similarity = numpy.asarray(robjects.r['t'](scores)).tolist()
+            # we have to transpose it using the 't()' R function. This isn't
+            # needed for reverse queries.
+            similarity = target_scores.to_numpy().tolist()
 
-            column_names = scores.colnames
-            row_names = scores.rownames
+            column_names = list(target_scores.columns.values)
+            row_names = list(target_scores.index.values)
 
-        # Collect IDs of query and target objects effectively in use. Note that
-        # columns and rows are still in R's format (query = columns, target =
-        # rows) and have not yet been transposed.
-        if query_type == 'skeleton':
-            query_object_ids_in_use = list(map(int, column_names))
-        elif query_type == 'pointcloud':
-            query_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointcloud-')), column_names))
-        elif query_type == 'pointset':
-            query_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointset-')), column_names))
+        else:
+            if normalized == 'mean':
+                # Compute forward scores, either unnormalized or normalized so that a
+                # self-match is 1.
+                aa = rnblast.NeuriteBlast(a, b, **nblast_params)
+                bb = rnblast.NeuriteBlast(b, a, **nblast_params)
 
-        if target_type == 'skeleton':
-            target_object_ids_in_use = list(map(int, row_names))
-        elif target_type == 'pointcloud':
-            target_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointcloud-')), row_names))
-        elif target_type == 'pointset':
-            target_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointset-')), row_names))
+                forward_scores = as_matrix(aa, a, b)
+                reverse_scores = as_matrix(bb, b, a)
 
+                # Compute mean
+                scores = (forward_scores.ro + reverse_scores.transpose()).ro / 2.0
+            else:
+                # Compute forward scores, either unnormalized or normalized so that a
+                # self-match is 1.
+                scores = as_matrix(rnblast.NeuriteBlast(a, b, **nblast_params), a, b)
+
+            # Scores are returned with query skeletons as columns, but we want them
+            # as rows, because it matches our expected queries more. Therefore
+            # we have to transpose it using the 't()' R function. This isn't
+            # needed for reverse queries.
+            if not reverse:
+                row_first_scores = robjects.r['t'](scores)
+                row_names, column_names = scores.colnames, scores.rownames
+            else:
+                row_first_scores = scores
+                row_names, column_names = scores.rownames, scores.colnames
+
+            similarity = numpy.asarray(row_first_scores).tolist()
+
+        # We expect a result at this point
         if not similarity:
             raise ValueError("Could not compute similarity")
+
+        # Collect IDs of query and target objects effectively in use.
+        if query_type == 'skeleton':
+            query_object_ids_in_use = list(map(int, row_names))
+        elif query_type == 'pointcloud':
+            query_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointcloud-')), row_names))
+        elif query_type == 'pointset':
+            query_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointset-')), row_names))
+
+        if target_type == 'skeleton':
+            target_object_ids_in_use = list(map(int, column_names))
+        elif target_type == 'pointcloud':
+            target_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointcloud-')), column_names))
+        elif target_type == 'pointset':
+            target_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointset-')), column_names))
 
         logger.debug('NBLAST computation done')
 
@@ -1287,3 +1377,30 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         "query_object_ids": query_object_ids_in_use,
         "target_object_ids": target_object_ids_in_use,
     }
+
+def as_matrix(scores, a, b, transposed=False):
+    score_type = type(scores)
+
+    if score_type == robjects.vectors.Matrix:
+        return scores
+
+    base = importr('base')
+
+    if transposed:
+        a, b = b, a
+
+    if len(scores) == 1:
+        return robjects.r.matrix(scores, **{
+            'dimnames': robjects.r('list')(base.names(a), base.names(b)),
+        })
+
+    if score_type == robjects.vectors.FloatVector:
+        return robjects.r.matrix(scores, **{
+            # We expect <a> to be the column vector and <b> to be the row vector.
+            'ncol': len(base.names(a)),
+            'nrow': len(base.names(b)),
+            # The first dimnames element are rows, the second are columns.
+            'dimnames': robjects.r('list')(base.names(b), base.names(a)),
+        })
+
+    raise ValueError("Can't convert to matrix, unknown type: {}".format(score_type))

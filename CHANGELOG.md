@@ -100,6 +100,22 @@ Landmarks:
 
 Neuron Similarity:
 
+- The computation of the default "mean" normalized similarity scores is now
+  considerably faster.
+
+- The new "Top N" option allows to store only the Top N best matches in the result
+  set. For "mean" normalization, it will also only compute the mean score for
+  the top N forward hits (mean is the average between forward and backward
+  score). A value of zero disables this cutoff (default). This cutoff can be
+  used speed up computation for very large sets of neurons or large point
+  clouds.
+
+- The new "Reverse" option allows to rank similar objects by there reverse
+  score. That means that the stored score for a particular object pair is target
+  versus query rather than query versus target. NBLAST ues the query neuron as
+  reference, and thereforoe the reverse option can make a difference as long as
+  no "mean" scoring is used.
+
 - It is now possible to use display transformations defined in the Landmark
   Widget that reference another CATMAID server as their data source. They can be
   used both as source and target for NBLAST comparisons. This makes it

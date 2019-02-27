@@ -225,6 +225,10 @@ Miscellaneous:
   with the exclusion annotation or one of its sub-annotations. To do so, use the
   new "--exclusion-is-final" switch.
 
+- Docker: HTTP basic authentication can be configured by using the environment
+  variables HTTP_AUTH_ENABLED, HTTP_AUTH_USER and HTTP_AUTH_PASS in the web
+  container of the `docker-compose.yml` file (an example is given).
+
 ### Bug fixes
 
 - The Connectivity Graph Plot draws now individual bars in each sub-plot

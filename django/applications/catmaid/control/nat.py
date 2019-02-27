@@ -1238,14 +1238,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             logger.debug('top n {}'.format(top_n))
             # Compute forward scores, either unnormalized or normalized so that a
             # self-match is 1.
-            scores = rnblast.NeuriteBlast(a, b, **nblast_params)
-
-            # Normalize to matrix representation.
-            if type(scores) == robjects.vectors.FloatVector or \
-                    len(scores) == 1:
-                scores = Matrix(scores, **{
-                    'dimnames': robjects.r('list')(base.names(a), base.names(b)),
-                })
+            scores = as_matrix(rnblast.NeuriteBlast(a, b, **nblast_params), a, b)
 
             # For each query object, compute the reverse score for the top N
             # forward scores.
@@ -1257,8 +1250,6 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
                 # Have to convert to dataframe to sort them -> using
                 # 'robjects.r("sort")' looses the names for some reason
-                # TODO Maybe it is possible to use numpy? If so, we don't need
-                # pandas as dependency.
                 scores_df = pd.DataFrame([[scores.rownames[i],
                     # Extracted matrix values are a single element array.
                     scores.rx(scores.rownames[i], query_name)[0]] \
@@ -1279,16 +1270,9 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     # Compute reverse scores for top N forward matches of
                     # current query object.
                     reverse_query_dps = b.rx(robjects.StrVector(top_n_names_names))
-                    reverse_scores = rnblast.NeuriteBlast(reverse_query_dps,
-                            query_object_dps, **nblast_params)
-
-                    # Normalize to matrix representation.
-                    # TODO Verify
-                    if type(reverse_scores) == robjects.vectors.FloatVector or \
-                            len(reverse_scores) == 1:
-                        reverse_scores = Matrix(reverse_scores, **{
-                            'dimnames': robjects.r('list')(base.names(reverse_query_dps), query_name),
-                        })
+                    reverse_scores = as_matrix(rnblast.NeuriteBlast(reverse_query_dps,
+                            query_object_dps, **nblast_params),
+                            reverse_query_dps, query_object_dps, transposed=True)
 
                     # Get top N mean scores for input query as a row of the
                     # target table format (scores for single query object form a
@@ -1334,57 +1318,33 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
         else:
             if normalized == 'mean':
-                logger.debug('Mean regular {} {}'.format(len(a.names), len(b.names)))
-                all_objects = rnat.as_neuronlist(robjects.r.c(a, b))
-                all_objects.names = robjects.StrVector(list(base.names(a)) +
-                        list(base.names(b)))
-                # For normalization we need the raw values, a shallow copy is enough
-                # to override.
-                all_nblast_params = nblast_params.copy()
-                all_nblast_params['normalised'] = False
-                # TODO Add optional cache for all-by-all matrix
-                all_scores = rnblast.NeuriteBlast(all_objects, all_objects, **all_nblast_params)
-                # Normalize to matrix representation.
-                if len(all_scores) == 1:
-                    all_scores = Matrix(all_scores, **{
-                        'dimnames': robjects.r('list')(base.names(all_objects), base.names(all_objects)),
-                    })
-                # TODO Test if it is faster to do our own mean computation like we
-                # do for the Top N mode.
-                scores = rnblast.sub_score_mat(a_ids, b_ids, **{
-                            'scoremat': all_scores,
-                            'normalisation': 'mean',
-                        })
+                # Compute forward scores, either unnormalized or normalized so that a
+                # self-match is 1.
+                aa = rnblast.NeuriteBlast(a, b, **nblast_params)
+                bb = rnblast.NeuriteBlast(b, a, **nblast_params)
+
+                forward_scores = as_matrix(aa, a, b)
+                reverse_scores = as_matrix(bb, b, a)
+
+                # Compute mean
+                scores = (forward_scores.ro + reverse_scores.transpose()).ro / 2.0
             else:
                 # Compute forward scores, either unnormalized or normalized so that a
                 # self-match is 1.
-                scores = rnblast.NeuriteBlast(a, b, **nblast_params)
+                scores = as_matrix(rnblast.NeuriteBlast(a, b, **nblast_params), a, b)
 
-            # NBLAST by default will simplify the result in cases where there is
-            # only a N to one correspondence (i.e. only one target). Fix this to our
-            # expectation to have lists for both rows and columns.
-            if type(scores) == robjects.vectors.FloatVector:
-                # In case of a single query object, the result should be a single
-                # result vector for the query object. If there are multiple query
-                # objects, there should be one result list per query object.
-                # TODO: effect of reverse?
-                if len(query_object_ids) == 1:
-                    similarity = [numpy.asarray(scores).tolist()]
-                else:
-                    similarity = [[s] for s in numpy.asarray(scores).tolist()]
-
-                row_names = typed_query_object_ids
-                column_names = typed_target_object_ids
+            # Scores are returned with query skeletons as columns, but we want them
+            # as rows, because it matches our expected queries more. Therefore
+            # we have to transpose it using the 't()' R function. This isn't
+            # needed for reverse queries.
+            if not reverse:
+                row_first_scores = robjects.r['t'](scores)
+                row_names, column_names = scores.colnames, scores.rownames
             else:
-                # Scores are returned with query skeletons as columns, but we want them
-                # as rows, because it matches our expected queries more. Therefore
-                # we have to transpose it using the 't()' R function. This isn't
-                # needed for reverse queries.
-                transposed_scores = scores if reverse else robjects.r['t'](scores)
-                similarity = numpy.asarray(transposed_scores).tolist()
+                row_first_scores = scores
+                row_names, column_names = scores.rownames, scores.colnames
 
-                row_names = scores.colnames
-                column_names = scores.rownames
+            similarity = numpy.asarray(row_first_scores).tolist()
 
         # We expect a result at this point
         if not similarity:
@@ -1417,3 +1377,30 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         "query_object_ids": query_object_ids_in_use,
         "target_object_ids": target_object_ids_in_use,
     }
+
+def as_matrix(scores, a, b, transposed=False):
+    score_type = type(scores)
+
+    if score_type == robjects.vectors.Matrix:
+        return scores
+
+    base = importr('base')
+
+    if transposed:
+        a, b = b, a
+
+    if len(scores) == 1:
+        return robjects.r.matrix(scores, **{
+            'dimnames': robjects.r('list')(base.names(a), base.names(b)),
+        })
+
+    if score_type == robjects.vectors.FloatVector:
+        return robjects.r.matrix(scores, **{
+            # We expect <a> to be the column vector and <b> to be the row vector.
+            'ncol': len(base.names(a)),
+            'nrow': len(base.names(b)),
+            # The first dimnames element are rows, the second are columns.
+            'dimnames': robjects.r('list')(base.names(b), base.names(a)),
+        })
+
+    raise ValueError("Can't convert to matrix, unknown type: {}".format(score_type))

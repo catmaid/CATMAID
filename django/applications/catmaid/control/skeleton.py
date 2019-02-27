@@ -2330,9 +2330,40 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
     parameters:
       - name: neuron_id
         description: >
-            If specified, the imported skeleton will model this existing neuron.
+            If specified a request for a particular neuron ID is expressed. If
+            force = true, this request is enforced and the existing neuron ID
+            (and all its skeletons) is replaced (as long as they are in the
+            target project). If force = false (default), the neuron ID is only
+            used if available and a new one is generated otherwise.
         paramType: form
         type: integer
+      - name: skeleton_id
+        description: >
+            If specified a request for a particular skeleton ID is expressed. If
+            force = true, this request is enforced and the existing skeleton ID
+            (and all its neurons) is replaced (as long as they are in the target
+            project). If force = false (default), the skeleton ID is only used
+            if available and a new one is generated otherwise.
+        paramType: form
+        type: integer
+      - name: force
+        description: >
+            If neuron_id or skeleton_id are passed in, existing neuron/skeleton
+            instances in this project are replaced. All their respectively
+            linked skeletons and neurons will be removed.
+        type: boolean
+        required: false
+        defaultValue: false
+        paramType: form
+      - name: auto_id
+        description: >
+            If a passed in neuron ID or skeleton ID is already in use, a new ID
+            will be selected automatically (default). If auto_id is set to false,
+            an error is raised in this situation.
+        type: boolean
+        required: false
+        defaultValue: true
+        paramType: form
       - name: name
         description: >
             If specified, the name of a new neuron will be set to this.
@@ -2358,10 +2389,15 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
                 An object whose properties are node IDs in the import file and
                 whose values are IDs of the created nodes.
     """
-
+    project_id = int(project_id)
     neuron_id = request.POST.get('neuron_id', None)
     if neuron_id is not None:
         neuron_id = int(neuron_id)
+    skeleton_id = request.POST.get('skeleton_id', None)
+    if skeleton_id is not None:
+        skeleton_id = int(skeleton_id)
+    force = get_request_bool(request.POST, 'force', False)
+    auto_id = get_request_bool(request.POST, 'auto_id', True)
     name = request.POST.get('name', None)
 
     if len(request.FILES) == 1:
@@ -2373,14 +2409,16 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
             extension = filename.split('.')[-1].strip().lower()
             if extension == 'swc':
                 swc_string = '\n'.join([line.decode('utf-8') for line in uploadedfile])
-                return import_skeleton_swc(request.user, project_id, swc_string, neuron_id, name)
+                return import_skeleton_swc(request.user, project_id, swc_string,
+                        neuron_id, skeleton_id, name, force, auto_id)
             else:
                 return HttpResponse('File type "{}" not understood. Known file types: swc'.format(extension), status=415)
 
     return HttpResponseBadRequest('No file received.')
 
 
-def import_skeleton_swc(user, project_id, swc_string, neuron_id=None, name=None) -> JsonResponse:
+def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
+        skeleton_id=None, name=None, force=False, auto_id=True) -> JsonResponse:
     """Import a neuron modeled by a skeleton in SWC format.
     """
 
@@ -2405,7 +2443,8 @@ def import_skeleton_swc(user, project_id, swc_string, neuron_id=None, name=None)
     if not nx.is_directed_acyclic_graph(g):
         raise ValueError('SWC skeleton is malformed: it contains a cycle.')
 
-    import_info = _import_skeleton(user, project_id, g, neuron_id, name)
+    import_info = _import_skeleton(user, project_id, g, neuron_id, skeleton_id,
+            name, force, auto_id)
     node_id_map = {n: d['id'] for n, d in import_info['graph'].nodes_iter(data=True)}
 
     return JsonResponse({
@@ -2415,7 +2454,8 @@ def import_skeleton_swc(user, project_id, swc_string, neuron_id=None, name=None)
         })
 
 
-def _import_skeleton(user, project_id, arborescence, neuron_id=None, name=None) -> dict:
+def _import_skeleton(user, project_id, arborescence, neuron_id=None,
+        skeleton_id=None, name=None, force=False, auto_id=True) -> dict:
     """Create a skeleton from a networkx directed tree.
 
     Associate the skeleton to the specified neuron, or a new one if none is
@@ -2427,7 +2467,108 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None, name=None) 
     relation_map = get_relation_to_id_map(project_id)
     class_map = get_class_to_id_map(project_id)
 
-    new_skeleton = ClassInstance()
+    new_neuron = None
+    if neuron_id is not None:
+        # Check that the neuron to use exists
+        try:
+            existing_neuron = ClassInstance.objects.select_related('class_column').get(pk=neuron_id)
+            if force:
+                if existing_neuron.project_id != project_id:
+                    raise ValueError("Target neuron exists, but is part of other project")
+
+                if existing_neuron.class_column.class_name != 'neuron':
+                    raise ValueError("Existing object with ID {} is not a neuron, but marked as {}".format(
+                            existing_neuron.id, existing_neuron.class_column.class_name))
+
+                # Remove all data linked to this neuron, including skeletons
+                cici = ClassInstanceClassInstance.objects.filter(
+                        class_instance_b=neuron_id,
+                        relation_id=relation_map['model_of'],
+                        class_instance_a__class_column_id=class_map['skeleton'])
+
+                # Raise an Exception if the user doesn't have permission to
+                # edit the existing neuron.
+                can_edit_class_instance_or_fail(user, neuron_id, 'neuron')
+                # Raise an Exception if the user doesn't have permission to
+                # edit the existing skeleton.
+                for skeleton_link in cici:
+                    old_skeleton = skeleton_link.class_instance_a
+                    can_edit_class_instance_or_fail(user, old_skeleton.id, 'class_instance')
+                    # Require users to have edit permission on all treenodes of the
+                    # skeleton.
+                    treenode_ids = Treenode.objects.filter(skeleton_id=old_skeleton.id,
+                            project_id=project_id).values_list('id', flat=True)
+                    can_edit_all_or_fail(user, treenode_ids, 'treenode')
+
+                    # Remove existing skeletons
+                    skeleton_link.delete()
+                    old_skeleton.delete()
+
+                new_neuron = existing_neuron
+            elif auto_id:
+                # The neuron ID exists already, and with force=False no data
+                # will be replaced.
+                neuron_id = None
+            else:
+                raise ValueError("The passed in neuron ID is already in use and "
+                        "neither of the parameters force or auto_id are set to true.")
+        except ClassInstance.DoesNotExist:
+            # The neuron ID is okay to use
+            pass
+
+    new_skeleton = None
+    if skeleton_id is not None:
+        # Check that the skeleton to use exists
+        try:
+            existing_skeleton = ClassInstance.objects.get(pk=skeleton_id)
+            if force:
+                if existing_skeleton.project_id != project_id:
+                    raise ValueError("Target skeleton exists, but is part of other project")
+
+                if existing_skeleton.class_column.class_name != 'skeleton':
+                    raise ValueError("Existing object with ID {} is not a skeleton, but marked as {}".format(
+                            existing_skeleton.id, existing_skeleton.class_column.class_name))
+
+                # Remove all data linked to this neuron, including skeletons
+                cici = ClassInstanceClassInstance.objects.filter(
+                        class_instance_a=skeleton_id,
+                        relation_id=relation_map['model_of'],
+                        class_instance_b__class_column_id=class_map['neuron'])
+
+                # Raise an Exception if the user doesn't have permission to
+                # edit the existing skeleton.
+                can_edit_class_instance_or_fail(user, skeleton_id, 'skeleton')
+                # Require users to have edit permission on all treenodes of the
+                # skeleton.
+                treenode_ids = Treenode.objects.filter(skeleton_id=skeleton_id,
+                        project_id=project_id).values_list('id', flat=True)
+                can_edit_all_or_fail(user, treenode_ids, 'treenode')
+                # Raise an Exception if the user doesn't have permission to
+                # edit the existing skeleton.
+                for link in cici:
+                    old_neuron = link.class_instance_b
+                    can_edit_class_instance_or_fail(user, old_neuron.id, 'class_instance')
+
+                    # Remove existing skeletons
+                    link.delete()
+                    old_neuron.delete()
+
+                new_skeleton = existing_skeleton
+            elif auto_id:
+                # The skeleton ID exists already, and with force=False no data
+                # will be replaced.
+                skeleton_id = None
+            else:
+                raise ValueError("The passed in skeleton ID is already in use and "
+                        "neither of the parameters force or auto_id are set to true.")
+        except ClassInstance.DoesNotExist:
+            # The skeleton ID is okay to use
+            pass
+
+    if not new_skeleton:
+        new_skeleton = ClassInstance()
+        new_skeleton.id = skeleton_id
+
     new_skeleton.user = user
     new_skeleton.project_id = project_id
     new_skeleton.class_column_id = class_map['skeleton']
@@ -2437,62 +2578,33 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None, name=None) 
         new_skeleton.name = 'skeleton'
         new_skeleton.save()
         new_skeleton.name = 'skeleton %d' % new_skeleton.id
+
     new_skeleton.save()
+    skeleton_id = new_skeleton.id
 
     def relate_neuron_to_skeleton(neuron, skeleton):
         return _create_relation(user, project_id,
                 relation_map['model_of'], skeleton, neuron)
 
-    if neuron_id is not None:
-        # Check that the neuron to use exists
-        if 0 == ClassInstance.objects.filter(pk=neuron_id).count():
-            neuron_id = None
-
-    if neuron_id is not None:
-        cici = ClassInstanceClassInstance.objects.filter(
-                class_instance_b=neuron_id,
-                relation_id=relation_map['model_of'],
-                class_instance_a__class_column_id=class_map['skeleton'])
-
-        # Raise an Exception if the user doesn't have permission to
-        # edit the existing neuron.
-        can_edit_class_instance_or_fail(user, neuron_id, 'neuron')
-        # Raise an Exception if the user doesn't have permission to
-        # edit the existing skeleton.
-        for skeleton_link in cici:
-            old_skeleton = skeleton_link.class_instance_a
-            can_edit_class_instance_or_fail(user, old_skeleton.id, 'class_instance')
-            # Require users to have edit permission on all treenodes of the
-            # skeleton.
-            treenode_ids = Treenode.objects.filter(skeleton_id=old_skeleton.id,
-                    project_id=project_id).values_list('id', flat=True)
-            can_edit_all_or_fail(user, treenode_ids, 'treenode')
-
-            # Remove existing skeletons
-            skeleton_link.delete()
-            old_skeleton.delete()
-
-        new_neuron = ClassInstance.objects.get(pk=neuron_id)
-        neuron_id = neuron_id
-        new_neuron = ClassInstance.objects.get(pk=neuron_id)
-        if name is not None:
-            new_neuron.name = name
-    else:
-        # A neuron does not exist, therefore we put the new skeleton
-        # into a new neuron.
+    if not new_neuron:
         new_neuron = ClassInstance()
-        new_neuron.user = user
-        new_neuron.project_id = project_id
-        new_neuron.class_column_id = class_map['neuron']
-        if name is not None:
-            new_neuron.name = name
-        else:
-            new_neuron.name = 'neuron'
-            new_neuron.save()
-            new_neuron.name = 'neuron %d' % new_neuron.id
+        new_neuron.id = neuron_id
+
+    new_neuron.user = user
+    new_neuron.project_id = project_id
+    new_neuron.class_column_id = class_map['neuron']
+    if name is not None:
+        new_neuron.name = name
+    else:
+        new_neuron.name = 'neuron'
+        new_neuron.save()
+        new_neuron.name = 'neuron %d' % new_neuron.id
 
     new_neuron.save()
     neuron_id = new_neuron.id
+
+    has_new_neuron_id = new_neuron.id == neuron_id
+    has_new_skeleton_id = new_skeleton.id == skeleton_id
 
     relate_neuron_to_skeleton(neuron_id, new_skeleton.id)
 
@@ -2556,7 +2668,22 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None, name=None) 
                     new_location, 'Create neuron %d and skeleton '
                     '%d via import' % (new_neuron.id, new_skeleton.id))
 
-    return {'neuron_id': neuron_id, 'skeleton_id': new_skeleton.id, 'graph': arborescence}
+    if neuron_id or skeleton_id:
+        # Reset ID sequence if IDs have been passed in.
+        cursor.execute("""
+            SELECT setval('concept_id_seq', coalesce(max("id"), 1), max("id") IS NOT null)
+            FROM concept;
+            SELECT setval('location_id_seq', coalesce(max("id"), 1), max("id") IS NOT null)
+            FROM location;
+        """)
+
+    return {
+        'neuron_id': neuron_id,
+        'skeleton_id': new_skeleton.id,
+        'graph': arborescence,
+        'has_new_neuron_id': has_new_neuron_id,
+        'has_new_skeleton_id': has_new_skeleton_id,
+    }
 
 
 @requires_user_role(UserRole.Annotate)

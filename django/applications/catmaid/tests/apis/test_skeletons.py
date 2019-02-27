@@ -95,10 +95,58 @@ class SkeletonsApiTests(CatmaidApiTestCase):
             self.assertEqual(tn.location_z, new_tn.location_z)
             self.assertEqual(max(tn.radius, 0), max(new_tn.radius, 0))
 
-        # Test replacing the imported neuron
+
+        # Remember current edit time for later
+        last_neuron_id = neuron.id
+        last_skeleton_id = skeleton.id
+        last_neuron_edit_time = neuron.edition_time
+        last_skeleton_edit_time = skeleton.edition_time
+
+
+        # Test replacing the imported neuron without forcing an update and
+        # auto_id disabled.
         swc_file2 = StringIO(orig_swc_string)
         response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.swc': swc_file2, 'name': 'test2', 'neuron_id': neuron.id})
+                {'file.swc': swc_file2, 'name': 'test2', 'neuron_id':
+                    neuron.id, 'auto_id': False})
+
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = {
+                "error": "The passed in neuron ID is already in use and neither of the parameters force or auto_id are set to true."}
+        for k,v in expected_result.items():
+            self.assertTrue(k in parsed_response)
+            self.assertEqual(parsed_response[k], v)
+
+
+        # Test replacing the imported neuron without forcing an update and
+        # auto_id enabled (default).
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.swc': swc_file2, 'name': 'test2', 'neuron_id':
+                    neuron.id})
+
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        # Make sure there is still only one skeleton
+        neuron.refresh_from_db()
+        linked_skeletons = ClassInstanceClassInstance.objects.filter(
+                class_instance_b_id=neuron.id,
+                relation__relation_name='model_of',
+                class_instance_a__class_column__class_name='skeleton')
+        self.assertEqual(len(linked_skeletons), 1)
+        self.assertEqual(neuron.name, 'test')
+        self.assertEqual(neuron.id, last_neuron_id)
+        self.assertEqual(neuron.edition_time, last_neuron_edit_time)
+        self.assertNotEqual(neuron.id, parsed_response['neuron_id'])
+
+
+        # Test replacing the imported neuron with forcing an update
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.swc': swc_file2, 'name': 'test2', 'neuron_id': neuron.id,
+                    'force': True})
 
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
@@ -110,7 +158,78 @@ class SkeletonsApiTests(CatmaidApiTestCase):
                 relation__relation_name='model_of',
                 class_instance_a__class_column__class_name='skeleton')
         self.assertEqual(len(replaced_skeletons), 1)
+        self.assertEqual(neuron.id, parsed_response['neuron_id'])
         self.assertEqual(neuron.name, 'test2')
+        self.assertEqual(neuron.id, last_neuron_id)
+        self.assertNotEqual(neuron.edition_time, last_neuron_edit_time)
+
+
+        # Make sure we work with most recent skeleton data
+        skeleton = ClassInstance.objects.get(pk=parsed_response['skeleton_id'])
+
+        # Test replacing the imported skeleton without forcing an update and
+        # auto_id disabled.
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.swc': swc_file2, 'name': 'test2', 'skeleton_id':
+                    skeleton.id, 'auto_id': False})
+
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = {
+                "error": "The passed in skeleton ID is already in use and neither of the parameters force or auto_id are set to true."}
+        for k,v in expected_result.items():
+            self.assertTrue(k in parsed_response)
+            self.assertEqual(parsed_response[k], v)
+
+
+        # Test replacing the imported skeleton without forcing an update and
+        # auto_id enabled (default).
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.swc': swc_file2, 'name': 'test3', 'skeleton_id':
+                    skeleton.id})
+
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        last_skeleton_id = skeleton.id
+        neuron = ClassInstance.objects.get(pk=parsed_response['neuron_id'])
+        skeleton = ClassInstance.objects.get(pk=parsed_response['skeleton_id'])
+
+
+        # Make sure there is still only one skeleton
+        linked_neurons = ClassInstanceClassInstance.objects.filter(
+                class_instance_a_id=skeleton.id,
+                relation__relation_name='model_of',
+                class_instance_b__class_column__class_name='neuron')
+        self.assertEqual(len(linked_neurons), 1)
+        self.assertEqual(neuron.name, 'test3')
+        self.assertEqual(skeleton.name, 'test3')
+        self.assertNotEqual(neuron.id, last_neuron_id)
+        self.assertNotEqual(last_skeleton_id, skeleton.id) 
+
+
+        # Test replacing the imported neuron with forcing an update
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.swc': swc_file2, 'name': 'test2', 'skeleton_id': skeleton.id,
+                    'force': True})
+
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        last_skeleton_edit_time = skeleton.edition_time
+        # Make sure there is still only one skeleton
+        skeleton.refresh_from_db()
+
+        replaced_neurons = ClassInstanceClassInstance.objects.filter(
+                class_instance_a_id=skeleton.id,
+                relation__relation_name='model_of',
+                class_instance_b__class_column__class_name='neuron')
+        self.assertEqual(len(replaced_neurons), 1)
+        self.assertEqual(skeleton.id, parsed_response['skeleton_id'])
+        self.assertEqual(skeleton.name, 'test2')
+        self.assertNotEqual(skeleton.edition_time, last_skeleton_edit_time)
 
 
     def test_skeleton_contributor_statistics(self):

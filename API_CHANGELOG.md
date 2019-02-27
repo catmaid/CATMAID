@@ -26,6 +26,15 @@ None.
   memberships, without removing any. Otherwise the whole set of memberships is
   replaced.
 
+- `POST /{project_id}/skeletons/import`:
+  The new parameter `skeleton_id` makes it possible to request a particular
+  skeleton ID during import, just like it is done for neurons using `neuron_id`.
+  If a skeleton or neuron with this ID exists already, a new object is created
+  and the existing one is not touched. If an error should be raised instead, set
+  the `auto_id` parameter to `false`. If instead the passed in IDs should
+  replace existing data, the `force` parameter can be set to `true`. Both
+  options apply to both neurons and skeletons.
+
 ### Deprecations
 
 None.

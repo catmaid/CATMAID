@@ -5,7 +5,7 @@ import logging
 from celery.task import task
 from itertools import chain
 from django.db import connection, transaction
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.utils.decorators import method_decorator
 from timeit import default_timer as timer
 
@@ -1037,11 +1037,71 @@ class SimilarityList(APIView):
             'project_id': int(project_id)
         }
 
-        if config_id:
+        if config_id is not None:
             params['config_id'] = config_id
 
-        return JsonResponse([serialize_similarity(c, with_scoring, with_objects) for c in
-                NblastSimilarity.objects.filter(**params)], safe=False)
+        if with_scoring:
+            return JsonResponse([serialize_similarity(c, with_scoring, with_objects) for c in
+                    NblastSimilarity.objects.filter(**params)], safe=False)
+        else:
+            constraints = ['project_id = %(project_id)s']
+            if config_id is not None:
+                constraints.append('config_id = %(config_id)s')
+
+            if with_objects:
+                object_lists = """
+                            query_objects,
+                            target_objects,
+                            invalid_query_objects,
+                            invalid_target_objects,
+                            initial_query_objects,
+                            initial_target_objects,
+                """
+            else:
+                object_lists = """
+                            '{}'::bigint[] AS query_objects,
+                            '{}'::bigint[] AS target_objects,
+                            '{}'::bigint[] AS invalid_query_objects,
+                            '{}'::bigint[] AS invalid_target_objects,
+                            CASE WHEN initial_query_objects IS NULL THEN NULL ELSE '{}'::bigint[] END AS initial_query_objects,
+                            CASE WHEN initial_target_objects IS NULL THEN NULL ELSE '{}'::bigint[] END AS initial_target_objects
+                """
+
+            scoring = "'{}'::real[] AS scoring"
+
+            cursor = connection.cursor()
+            cursor.execute("""
+                SELECT json_agg(row_to_json(wrapped))::text
+                FROM (
+                    SELECT id, user_id, creation_time, edition_time, project_id,
+                        config_id, name, status, use_alpha, normalized, detailed_status,
+                        computation_time, reverse, top_n,
+                        query_type_id AS query_type,
+                        target_type_id AS target_type,
+                        -- No scoreing is included, but return an empty list instead.
+                        {scoring},
+                        -- Initial objects can be NULL to refer to all
+                        -- objects of a type. If this is the case, the returned
+                        -- length should be NULL too, therefore skip COALESCE.
+                        CASE WHEN initial_query_objects IS NULL THEN NULL ELSE array_length(initial_query_objects, 1) END AS n_initial_query_objects,
+                        CASE WHEN initial_target_objects IS NULL THEN NULL ELSE array_length(initial_target_objects, 1) END AS n_initial_target_objects,
+                        -- For other lengths, we want to return 0 if there are no values.
+                        COALESCE(array_length(query_objects, 1), 0) AS n_query_objects,
+                        COALESCE(array_length(target_objects, 1), 0) AS n_target_objects,
+                        COALESCE(array_length(invalid_query_objects, 1), 0) AS n_invalid_query_objects,
+                        COALESCE(array_length(invalid_target_objects, 1), 0) AS n_invalid_target_objects,
+                        -- Array fields
+                        {object_lists}
+                    FROM nblast_similarity
+                    WHERE {constraints}
+                ) wrapped
+            """.format(**{
+                'scoring': scoring,
+                'object_lists': object_lists,
+                'constraints': ' AND '.join(constraints),
+            }), params)
+
+            return HttpResponse(cursor.fetchone()[0], content_type='application/json')
 
 
 class SimilarityDetail(APIView):

@@ -722,14 +722,8 @@ def delete_treenode(request, project_id=None):
         # variable. This is done to communicate the current user to the trigger
         # that updates the skeleton summary table.
         response_on_error = 'Could not delete treenode.'
-        cursor.execute("""
-            SET LOCAL catmaid.user_id=%(user_id)s;
-            DELETE FROM treenode
-            WHERE project_id=%(project_id)s AND id=%(treenode_id)s
-        """, {
+        cursor.execute("SET LOCAL catmaid.user_id=%(user_id)s", {
             'user_id': request.user.id,
-            'project_id': project_id,
-            'treenode_id': treenode_id,
         })
         Treenode.objects.filter(project_id=project_id, pk=treenode_id).delete()
         return JsonResponse({

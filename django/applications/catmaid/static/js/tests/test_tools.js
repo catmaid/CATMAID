@@ -167,6 +167,10 @@ QUnit.test('Utilities test', function( assert ) {
         new Date(Date.UTC(2017, 10, 6, 3, 58, 32, 835595 / 1000)), 'Test date is parsed correctly');
     assert.deepEqual(CATMAID.tools.isoStringToDate('2017-11-06T03:58:32Z'),
         new Date(Date.UTC(2017, 10, 6, 3, 58, 32)), 'Test date is parsed correctly');
+    assert.deepEqual(CATMAID.tools.isoStringToDate('2017-11-06T03:58:32.835595+00:00'),
+        new Date(Date.UTC(2017, 10, 6, 3, 58, 32, 835595 / 1000)), 'Test date is parsed correctly');
+    assert.deepEqual(CATMAID.tools.isoStringToDate('2017-11-06T03:58:32-00:00'),
+        new Date(Date.UTC(2017, 10, 6, 3, 58, 32)), 'Test date is parsed correctly');
   })();
 
   // Test Color construction util

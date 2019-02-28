@@ -460,29 +460,17 @@ CATMAID.tools = CATMAID.tools || {};
    * assumed.
    */
   tools.isoStringToDate = (function() {
-    var isoRegEx = /^(\d{4})-0?(\d+)-0?(\d+)[T ]0?(\d+):0?(\d+):0?(\d+)(\.\d+)?Z$/;
+    var isoRegEx = /^(\d{4})-0?(\d+)-0?(\d+)[T ]0?(\d+):0?(\d+):0?(\d+)(\.\d+)?(Z|([\+-]00:00))$/;
     return function(isoDate) {
       var match = isoDate.match(isoRegEx);
       if (match) {
-        if (match[7] === undefined) {
-          return new Date(Date.UTC(parseInt(match[1], 10), parseInt(match[2], 10) - 1,
-              parseInt(match[3], 10), parseInt(match[4], 10),
-              parseInt(match[5], 10), parseInt(match[6], 10)));
-        } else {
-          var secFraction = match[7].substring(1);
-          var denominator;
-          if (secFraction.length === 6) {
-            denominator = 1000;
-          } else if (secFraction.length === 3) {
-            denominator = 1;
-          } else {
-            throw new CATMAID.ValueError("Can't parse seconds fraction of date");
-          }
-          return new Date(Date.UTC(parseInt(match[1], 10), parseInt(match[2], 10) - 1,
-              parseInt(match[3], 10), parseInt(match[4], 10),
-              parseInt(match[5], 10), parseInt(match[6], 10),
-              parseInt(secFraction, 10) / denominator));
+        let ms = 0;
+        if (match[7] !== undefined) {
+          ms = Math.min(999, Math.round(Number("0" + match[7]) * 1000));
         }
+        return new Date(Date.UTC(parseInt(match[1], 10), parseInt(match[2], 10) - 1,
+            parseInt(match[3], 10), parseInt(match[4], 10),
+            parseInt(match[5], 10), parseInt(match[6], 10), ms));
       } else {
         // Unable to parse date
         return null;

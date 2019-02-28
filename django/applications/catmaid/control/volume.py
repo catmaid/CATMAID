@@ -879,8 +879,9 @@ def get_primary_volumes_by_name(project_id):
 def find_volumes(project_id, annotation=None,
         transitive_annotation=True, simple=False):
     """Find volumes in the passed in project, optionally require a particular
-    annotation. If <transitive_annotation> is True, volumes that are
-    transitively annotated by the passed in annotation are considered too.
+    annotation or list of annotations. If <transitive_annotation> is True,
+    volumes that are transitively annotated by the passed in annotation are
+    considered too.
     """
     extra_select = []
     extra_joins = []
@@ -888,11 +889,14 @@ def find_volumes(project_id, annotation=None,
     extra_params = {}
 
     if annotation:
+        annotations = annotation if type(annotation) in (list, tuple, set) else [annotation]
         query_params = {
-            'annotated_with': annotation,
-            'sub_annotated_with': annotation,
             'annotation_reference': 'name',
         }
+        for n,a in enumerate(annotations):
+            query_params['annotated_with[{}]'.format(n)] = a
+            if transitive_annotation:
+                query_params['sub_annotated_with[{}]'.format(n)] = a
         query_result, _ = get_annotated_entities(project_id, query_params,
                 allowed_classes=['volume'], with_annotations=False,
                 with_skeletons=False)

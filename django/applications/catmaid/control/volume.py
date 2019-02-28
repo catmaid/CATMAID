@@ -921,9 +921,9 @@ def find_volumes(project_id, annotation=None,
         """)
 
     if not simple:
-        extra_select.extend(['Box3D(v.geometry)', 'v.project_id', 'v.name',
-                'v.comment', 'v.user_id', 'v.editor_id', 'v.creation_time',
-                'v.edition_time'])
+        extra_select.extend(['v.project_id', 'v.name', 'v.comment',
+                'v.user_id', 'v.editor_id', 'v.creation_time',
+                'v.edition_time','Box3D(v.geometry)'])
 
     params = {
         'project_id': project_id,
@@ -969,7 +969,6 @@ def find_volumes(project_id, annotation=None,
                     'min': {'x': bbox[0], 'y': bbox[1], 'z': bbox[2]},
                     'max': {'x': bbox[3], 'y': bbox[4], 'z': bbox[5]}
                 },
-                'mesh': volume[9]
             })
 
     return volume_details

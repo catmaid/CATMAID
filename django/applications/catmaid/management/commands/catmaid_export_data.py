@@ -13,6 +13,7 @@ from catmaid.control.tracing import check_tracing_setup
 from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
         Relation, Connector, Project, Treenode, TreenodeClassInstance,
         TreenodeConnector, User, ReducedInfoUser, ExportUser)
+from catmaid.util import str2bool
 
 
 import logging
@@ -510,26 +511,21 @@ class Command(BaseCommand):
             help='The ID of the source project')
         parser.add_argument('--file', default=None,
             help='Output file name, "{}" will be replaced with project ID')
-        parser.add_argument('--treenodes', dest='export_treenodes', default=True,
-            action='store_true', help='Export treenodes from source')
-        parser.add_argument('--notreenodes', dest='export_treenodes',
-            action='store_false', help='Don\'t export treenodes from source')
-        parser.add_argument('--connectors', dest='export_connectors', default=True,
-            action='store_true', help='Export connectors from source')
-        parser.add_argument('--noconnectors', dest='export_connectors',
-            action='store_false', help='Don\'t export connectors from source')
-        parser.add_argument('--annotations', dest='export_annotations', default=True,
-            action='store_true', help='Export annotations from source')
-        parser.add_argument('--noannotations', dest='export_annotations',
-            action='store_false', help='Don\'t export annotations from source')
-        parser.add_argument('--tags', dest='export_tags', default=True,
-            action='store_true', help='Export tags from source')
-        parser.add_argument('--notags', dest='export_tags',
-            action='store_false', help='Don\'t export tags from source')
-        parser.add_argument('--users', dest='export_users', default=False,
-            action='store_true', help='Export users from source')
-        parser.add_argument('--nousers', dest='export_users',
-            action='store_false', help='Don\'t export users from source')
+        parser.add_argument('--treenodes', dest='export_treenodes',
+                type=str2bool, nargs='?', const=True, default=True,
+                help='Export treenodes from source')
+        parser.add_argument('--connectors', dest='export_connectors',
+                type=str2bool, nargs='?', const=True, default=True,
+                help='Export connectors from source')
+        parser.add_argument('--annotations', dest='export_annotations',
+                type=str2bool, nargs='?', const=True, default=True,
+                help='Export annotations from source')
+        parser.add_argument('--tags', dest='export_tags',
+                type=str2bool, nargs='?', const=True, default=True,
+                help='Export tags from source')
+        parser.add_argument('--users', dest='export_users',
+                type=str2bool, nargs='?', const=True, default=False,
+                help='Export users from source')
         parser.add_argument('--required-annotation', dest='required_annotations',
             action='append', help='Name a required annotation for exported ' +
             'skeletons. Meta-annotations can be used as well.')

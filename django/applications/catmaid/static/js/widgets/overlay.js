@@ -1608,6 +1608,8 @@ var SkeletonAnnotations = {};
    * argument can be set to true.
    */
   CATMAID.TracingOverlay.prototype.selectNode = function(id, strict) {
+    console.log('Selecting node ' + id);
+    console.trace();
     // For the sake of robustness, try parsing the passed in ID as Number. If this
     // yields a valid number, it is used to find the nodes. This is done because
     // the nodes map is typed.
@@ -1699,6 +1701,8 @@ var SkeletonAnnotations = {};
    * handle virtual nodes.
    */
   CATMAID.TracingOverlay.prototype.activateNode = function(node) {
+    console.log('Activating node ' + (node ? node.id : node));
+    console.trace();
     var atn = SkeletonAnnotations.atn,
         last_skeleton_id = atn.skeleton_id;
     if (node) {

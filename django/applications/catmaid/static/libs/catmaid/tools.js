@@ -466,7 +466,7 @@ CATMAID.tools = CATMAID.tools || {};
       if (match) {
         let ms = 0;
         if (match[7] !== undefined) {
-          ms = Math.min(999, Math.round(Number("0" + match[7]) * 1000));
+          ms = Math.min(999, Math.floor(Number("0" + match[7]) * 1000));
         }
         return new Date(Date.UTC(parseInt(match[1], 10), parseInt(match[2], 10) - 1,
             parseInt(match[3], 10), parseInt(match[4], 10),

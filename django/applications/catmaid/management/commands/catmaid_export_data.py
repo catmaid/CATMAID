@@ -10,6 +10,7 @@ from catmaid.control.annotation import (get_annotated_entities,
 from django.contrib.auth.hashers import make_password
 from catmaid.control.annotation import get_sub_annotation_ids
 from catmaid.control.tracing import check_tracing_setup
+from catmaid.control.volume import find_volumes
 from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
         Relation, Connector, Project, Treenode, TreenodeClassInstance,
         TreenodeConnector, User, ReducedInfoUser, ExportUser)
@@ -48,8 +49,10 @@ class Exporter():
         self.export_annotations = options['export_annotations']
         self.export_tags = options['export_tags']
         self.export_users = options['export_users']
+        self.export_volumes = options['export_volumes']
         self.required_annotations = options['required_annotations']
         self.excluded_annotations = options['excluded_annotations']
+        self.volume_annotations = options['volume_annotations']
         self.exclusion_is_final = options['exclusion_is_final']
         self.original_placeholder_context = options['original_placeholder_context']
         self.target_file = options.get('file', None)
@@ -481,6 +484,13 @@ class Exporter():
                     ", ".join([u.username for u in reduced_users])))
             self.to_serialize.append(reduced_users)
 
+        # Volumes
+        if self.export_volumes:
+            volumes = find_volumes(self.project.id, self.volume_annotations,
+                    True, False)
+            logger("Exporting {} volumes: {}".format(
+                    len(volumes), ', '.join(v.name for v in volumes)))
+            self.to_serialize.extend(volumes)
 
     def export(self):
         """ Writes all objects matching
@@ -526,12 +536,19 @@ class Command(BaseCommand):
         parser.add_argument('--users', dest='export_users',
                 type=str2bool, nargs='?', const=True, default=False,
                 help='Export users from source')
+        parser.add_argument('--volumes', dest='export_volumes',
+                type=str2bool, nargs='?', const=True, default=False,
+                help='Export volumes from source. More constraints can be ' +
+                'provided using the --volume-annotation argument.')
         parser.add_argument('--required-annotation', dest='required_annotations',
             action='append', help='Name a required annotation for exported ' +
             'skeletons. Meta-annotations can be used as well.')
         parser.add_argument('--excluded-annotation', dest='excluded_annotations',
             action='append', help='Name an annotation that is used to exclude ' +
             'skeletons from the export. Meta-annotations can be used as well.')
+        parser.add_argument('--volume-annotation', dest='volume_annotations',
+            action='append', help='Name a required annotation for exported ' +
+            'volumes. Meta-annotations can be used as well.')
         parser.add_argument('--connector-placeholders', dest='connector_placeholders',
             action='store_true', help='Should placeholder nodes be exported')
         parser.add_argument('--original-placeholder-context', dest='original_placeholder_context',

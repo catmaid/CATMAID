@@ -13,7 +13,7 @@ from catmaid.control.tracing import check_tracing_setup
 from catmaid.control.volume import find_volumes
 from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
         Relation, Connector, Project, Treenode, TreenodeClassInstance,
-        TreenodeConnector, User, ReducedInfoUser, ExportUser)
+        TreenodeConnector, User, ReducedInfoUser, ExportUser, Volume)
 from catmaid.util import str2bool
 
 
@@ -487,10 +487,16 @@ class Exporter():
         # Volumes
         if self.export_volumes:
             volumes = find_volumes(self.project.id, self.volume_annotations,
-                    True, False)
-            logger("Exporting {} volumes: {}".format(
-                    len(volumes), ', '.join(v.name for v in volumes)))
-            self.to_serialize.extend(volumes)
+                    True, True)
+            volume_ids =[v['id'] for v in volumes]
+            if volume_ids:
+                volumes = Volume.objects.filter(pk__in=volume_ids,
+                        project_id=self.project.id)
+                logger.info("Exporting {} volumes: {}".format(
+                        len(volumes), ', '.join(v.name for v in volumes)))
+                self.to_serialize.append(volumes)
+            else:
+                logger.info("No volumes found to export")
 
     def export(self):
         """ Writes all objects matching
@@ -509,6 +515,7 @@ class Exporter():
             if self.show_traceback:
                 raise
             raise CommandError("Unable to serialize database: %s" % e)
+
 
 class Command(BaseCommand):
     """ Call e.g. like

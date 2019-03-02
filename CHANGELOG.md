@@ -174,6 +174,19 @@ System check widget:
   most of them a rule of thumb suggestion on how a value should behave is
   provided as well.
 
+CLI Exporter:
+
+- If both required annotations and exclusion annotations are provided, the
+  importer will now only exclude a skeleton if it is not also annotated with a
+  sub-annotation of the required annotations set. This behavior can be disabled
+  and exclusion can be enforced when a skeleton is annotated with the exclusion
+  annotation or one of its sub-annotations. To do so, use the new
+  "--exclusion-is-final" switch.
+
+- Volumes can now be exported by using the `--volumes` switch. By default all
+  volumes of the exported project will be included. This can be further
+  constrained by using `--volume-annotation <annotation-name>` arguments.
+
 Miscellaneous:
 
 - Add a new Tracing Tool icon button to compute the distance between two nodes
@@ -217,13 +230,6 @@ Miscellaneous:
   small compared to existing data). If the old behavior of recomputing
   everything in the target project should be used in cases where a full data
   base is imported, the --update-project-materializations switch can be used.
-
-- CLI exporter:if both required annotations and exclusion annotations are
-  provided, the importer will now only exclude a skeleton if it is not also
-  annotated with a sub-annotation of the required annotations set. This behavior
-  can be disabled and exclusion can be enforced when a skeleton is annotated
-  with the exclusion annotation or one of its sub-annotations. To do so, use the
-  new "--exclusion-is-final" switch.
 
 - Docker: HTTP basic authentication can be configured by using the environment
   variables HTTP_AUTH_ENABLED, HTTP_AUTH_USER and HTTP_AUTH_PASS in the web

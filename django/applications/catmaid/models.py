@@ -32,7 +32,8 @@ from taggit.managers import TaggableManager
 from rest_framework.authtoken.models import Token
 from random import random
 
-from .fields import Double3DField, Integer3DField, RGBAField, DownsampleFactorsField
+from .fields import (Double3DField, Integer3DField, RGBAField,
+        DownsampleFactorsField, SerializableGeometryField)
 
 
 CELL_BODY_CHOICES = (
@@ -676,8 +677,9 @@ class Volume(UserFocusedModel):
                                related_name='editor', db_column='editor_id')
     name = models.CharField(max_length=255)
     comment = models.TextField(blank=True, null=True)
-    # GeoDjango-specific: a geometry field with PostGIS-specific 3 dimensions.
-    geometry = spatial_models.GeometryField(dim=3, srid=0)
+    # A custom geometry field allows us to serialize the geometry data in a
+    # simple text-based form.
+    geometry = SerializableGeometryField()
 
 
 class VolumeClassInstance(UserFocusedModel):

@@ -406,3 +406,20 @@ class DownsampleFactorsFormField(forms.MultiValueField):
             value = self.widget.decompress(value)
 
         return super().clean(value)
+
+
+class SerializableGeometryField(models.Field):
+
+    description = "A simple PostGIS TIN Geometry field that can be serialized."
+
+    def db_type(self, connection):
+        return 'geometry(TinZ)'
+
+    def select_format(self, compiler, sql, params):
+        """This geometry field will keep a simple string representation of the
+        geometry. PostGIS' ST_AsText() method is used for this. While we
+        technically don't need the ST_AsText() representation it makes it much
+        easier to change coordinates of a volume in Django this way and makes
+        exported volumes human readable.
+        """
+        return 'ST_AsText(%s)' % sql, params

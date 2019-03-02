@@ -15,6 +15,7 @@ from catmaid.control.edge import rebuild_edge_tables, rebuild_edges_selectively
 from catmaid.models import (Class, ClassClass, ClassInstance,
         ClassInstanceClassInstance, Project, Relation, User, Treenode,
         Connector, Concept, SkeletonSummary)
+from catmaid.util import str2bool
 
 import logging
 logger = logging.getLogger(__name__)
@@ -633,22 +634,18 @@ class Command(BaseCommand):
             help='The ID of the target project')
         parser.add_argument('--user', dest='user', default=None,
             help='The ID of the owner of all created objects')
-        parser.add_argument('--treenodes', dest='import_treenodes', default=True,
-            action='store_true', help='Import treenodes from source')
-        parser.add_argument('--notreenodes', dest='import_treenodes',
-            action='store_false', help='Don\'t import treenodes from source')
-        parser.add_argument('--connectors', dest='import_connectors', default=True,
-            action='store_true', help='Import connectors from source')
-        parser.add_argument('--noconnectors', dest='import_connectors',
-            action='store_false', help='Don\'t import connectors from source')
-        parser.add_argument('--annotations', dest='import_annotations', default=True,
-            action='store_true', help='Import annotations from source')
-        parser.add_argument('--noannotations', dest='import_annotations',
-            action='store_false', help='Don\'t import annotations from source')
-        parser.add_argument('--tags', dest='import_tags', default=True,
-            action='store_true', help='Import tags from source')
-        parser.add_argument('--notags', dest='import_tags',
-            action='store_false', help='Don\'t import tags from source')
+        parser.add_argument('--treenodes', dest='import_treenodes',
+            type=str2bool, nargs='?', const=True, default=True,
+            help='Import treenodes from source')
+        parser.add_argument('--connectors', dest='import_connectors',
+            type=str2bool, nargs='?', const=True, default=True,
+            help='Import connectors from source')
+        parser.add_argument('--annotations', dest='import_annotations',
+            type=str2bool, nargs='?', const=True, default=True,
+            help='Import annotations from source')
+        parser.add_argument('--tags', dest='import_tags',
+            type=str2bool, nargs='?', const=True, default=True,
+            help='Import tags from source')
         parser.add_argument('--map-users', dest='map_users', default=True,
                 const=True, type=lambda x: (str(x).lower() == 'true'), nargs='?',
                 help='Use existing user if username matches')

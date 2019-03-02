@@ -187,6 +187,32 @@ CLI Exporter:
   volumes of the exported project will be included. This can be further
   constrained by using `--volume-annotation <annotation-name>` arguments.
 
+- The way she exported objects are specified through the command line interface
+  changed. Instead of writing e.g. `--notreenodes` to not import treenodes from
+  a source, `--treenodes false` has to be used now. This is the case for
+  treenodes, connectors, tags and annotations. The defaults (when the argument
+  is not provided) stay the same. To explicitly disable the export of a type
+  `false`, `no`, `f`, `n` and `0` can be provided as argument, e.g. `-treenodes
+  false` or `--users n`. For a positive parameter use `true`, `yes`, `t`, and
+  `1`.
+
+CLI importer:
+
+- Precompute materializations (edges, connectors) explicitly only for imported
+  data, which improves performance in typical scenarios (import is small
+  compared to existing data). If the old behavior of recomputing everything in
+  the target project should be used in cases where a full data base is imported,
+  the --update-project-materializations switch can be used.
+
+- The way she imported objects are specified through the command line interface
+  changed. Instead of writing e.g. `--notreenodes` to not import treenodes from
+  a source, `--treenodes false` has to be used now. This is the case for
+  treenodes, connectors, tags and annotations. The defaults (when the argument
+  is not provided) stay the same. To explicitly disable the import of a type
+  `false`, `no`, `f`, `n` and `0` can be provided as argument, e.g. `-treenodes
+  false` or `--users n`. For a positive parameter use `true`, `yes`, `t`, and
+  `1`.
+
 Miscellaneous:
 
 - Add a new Tracing Tool icon button to compute the distance between two nodes
@@ -224,12 +250,6 @@ Miscellaneous:
 
 - Boss databases can now be used as tile source type so that image data is
   loaded from them. More details: https://docs.theboss.io/docs/image.
-
-- CLI importer: recompute materializations (edges, connectors) explicitly only
-  for imported data, which improves performance in typical scenarios (import is
-  small compared to existing data). If the old behavior of recomputing
-  everything in the target project should be used in cases where a full data
-  base is imported, the --update-project-materializations switch can be used.
 
 - Docker: HTTP basic authentication can be configured by using the environment
   variables HTTP_AUTH_ENABLED, HTTP_AUTH_USER and HTTP_AUTH_PASS in the web

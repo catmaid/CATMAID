@@ -213,6 +213,9 @@ CLI importer:
   false` or `--users n`. For a positive parameter use `true`, `yes`, `t`, and
   `1`.
 
+- It is now possible to import volumes from CATMAID export files and other
+  projects..
+
 Miscellaneous:
 
 - Add a new Tracing Tool icon button to compute the distance between two nodes

@@ -169,7 +169,7 @@ class ExportingWizard(SessionWizardView):
 
 def copy_annotations(source_pid, target_pid, import_treenodes=True,
         import_connectors=True, import_connectortreenodes=True,
-        import_annotations=True, import_tags=True) -> None:
+        import_annotations=True, import_tags=True, import_volumes=True) -> None:
     """ Copy annotation data (treenodes, connectors, annotations, tags) to
     another (existing) project. The newly created entities will have new IDs
     and are independent from the old ones.
@@ -178,6 +178,8 @@ def copy_annotations(source_pid, target_pid, import_treenodes=True,
     import_connectors: if ture, all connectors from the source will be imported
     import_connectortreenodes: if true, all connectors and treenodes that are
                                linked are imported, along with the links themself
+    import_volumes: if true, all volumes in the source will be copied to the
+                    target project.
     """
     # Use raw SQL to duplicate the rows, because there is no
     # need to transfer the data to Django and back to Postgres
@@ -311,3 +313,17 @@ def copy_annotations(source_pid, target_pid, import_treenodes=True,
         # TreenodeClassInstance
         # ConnectorClassInstance
         pass
+
+    if import_volumes:
+        # Copy connectors from source to target
+        cursor.execute('''
+            INSERT INTO catmaid_volume (project_id, user_id, creation_time,
+                edition_time, editor_id, name, comment, geometry)
+            SELECT %(target_pid)s, user_id, creation_time, now(),
+                edition_time, editor_id, name, comment, geometry
+            FROM catmaid_volume v
+            WHERE v.project_id=%(source_pid)s
+            ''', {
+                'target_pid': target_pid,
+                'source_pid': source_pid,
+            })

@@ -646,6 +646,9 @@ class Command(BaseCommand):
         parser.add_argument('--tags', dest='import_tags',
             type=str2bool, nargs='?', const=True, default=True,
             help='Import tags from source')
+        parser.add_argument('--volumes', dest='import_volumes',
+            type=str2bool, nargs='?', const=True, default=True,
+            help='Import volumes from source')
         parser.add_argument('--map-users', dest='map_users', default=True,
                 const=True, type=lambda x: (str(x).lower() == 'true'), nargs='?',
                 help='Use existing user if username matches')
@@ -693,7 +696,7 @@ class Command(BaseCommand):
         will_import = []
         wont_import = []
         for t in ('treenodes', 'connectors', 'annotations', 'tags'):
-            if options['import_' + t]:
+            if options.get('import_' + t):
                 will_import.append(t)
             else:
                 wont_import.append(t)

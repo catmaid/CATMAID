@@ -1,0 +1,40 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static common %}
+
+{% block extrahead %}
+    {{ block.super }}
+    {{ media }}
+    <script type="text/javascript" src="{% static 'admin/js/cancel.js' %}"></script>
+{% endblock %}
+
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} delete-confirmation{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url "admin:index" %}catmaid/project/">Home</a> &rsaquo; {{ title }}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if not user.is_superuser %}
+    <p>{% blocktrans with escaped_object=object %}Deleting entire projects
+    requires superuser permissions. Your account doesn't have those.{% endblocktrans %}</p>
+{% else %}
+    <p>{% blocktrans with escaped_object=object %}Are you sure you want to
+    delete all {{ len(project_ids) }} project(s)? All of the data linked to them
+    will be deleted.{% endblocktrans %}</p>
+    <form method="post">{% csrf_token %}
+    {% for project in projects %}
+    <input type="hidden" name="ids" value="{{ project.id }}">
+    {% endfor %}
+    <div>
+    <input type="hidden" name="post" value="yes">
+    {% if is_popup %}<input type="hidden" name="{{ is_popup_var }}" value="1">{% endif %}
+    {% if to_field %}<input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}">{% endif %}
+    <input type="submit" value="{% trans "Yes, I'm sure" %}">
+    <a href="{% url "admin:index" %}catmaid/project/" class="button cancel-link">{% trans "No, take me back" %}</a>
+    </div>
+    </form>
+{% endif %}
+{% endblock %}

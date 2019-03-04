@@ -139,6 +139,22 @@ def check_user_role(user, project, roles) -> bool:
 
     return has_role
 
+
+def requires_superuser():
+    """
+    This decorator will raise an error if the logged in user is no superuser.
+    """
+
+    def decorated_with_requires_superuser(f):
+        def inner_decorator(request, *args, **kwargs):
+            if not request.user.is_superuser:
+                raise PermissionError("Superuser permissions are required for this action")
+            return f(request, *args, **kwargs)
+
+        return wraps(f)(inner_decorator)
+
+    return decorated_with_requires_superuser
+
 def requires_user_role(roles):
     """
     This decorator will return a JSON error response unless the user is logged in

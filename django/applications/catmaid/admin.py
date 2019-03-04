@@ -4,7 +4,7 @@ import json
 import yaml
 
 from django import forms
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import fields as db_fields, ForeignKey
 from django.core.exceptions import ValidationError
 from django.contrib import admin, messages
@@ -13,6 +13,7 @@ from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.contrib.auth.models import User, Group
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
+from django.urls import reverse
 from guardian.admin import GuardedModelAdmin
 from catmaid.models import (Project, DataView, Stack, InterpolatableSection,
         ProjectStack, UserProfile, BrokenSlice, StackClassInstance, Relation,
@@ -22,7 +23,7 @@ from catmaid.control.importer import importer_admin_view
 from catmaid.control.classificationadmin import classification_admin_view
 from catmaid.control.annotationadmin import ImportingWizard
 from catmaid.control.project import (delete_projects_and_stack_data,
-        export_project_data)
+        delete_projects, export_project_data)
 from catmaid.views import (UseranalyticsView, UserProficiencyView,
         GroupMembershipHelper)
 from catmaid.views.dvid import DVIDImportWizard
@@ -98,6 +99,17 @@ def delete_projects_plus_stack_data(modeladmin, request, queryset):
     stacks and broken sections."""
     delete_projects_and_stack_data(queryset)
 delete_projects_plus_stack_data.short_description = "Delete selected incl. linked stack data"
+
+
+def delete_projects_and_data(modeladmin, request, queryset):
+    """An action that expects a list of projects as queryset that will be
+    deleted along with all data that reference it (e.g. treenodes, volumes,
+    ontologies). A confirmation page will be shown.
+    """
+    project_ids = list(map(str, queryset.values_list('id', flat=True)))
+    return HttpResponseRedirect(reverse("catmaid:delete-projects-with-data") +
+            "?ids={}".format(",".join(project_ids)))
+delete_projects_and_data.short_description = "Delete selected"
 
 
 class BrokenSliceModelForm(forms.ModelForm):
@@ -255,8 +267,17 @@ class ProjectAdmin(GuardedModelAdmin):
     search_fields = ['title','comment']
     inlines = [ProjectStackInline]
     save_as = True
-    actions = (duplicate_action, delete_projects_plus_stack_data,
-            export_project_json_action, export_project_yaml_action)
+    actions = (delete_projects_and_data, delete_projects_plus_stack_data,
+            duplicate_action, export_project_json_action,
+            export_project_yaml_action)
+
+    def get_actions(self, request):
+        """Disable default delete action.
+        """
+        actions = super().get_actions(request)
+        if 'delete_selected' in actions:
+            del actions['delete_selected']
+        return actions
 
 
 class PointCloudAdmin(GuardedModelAdmin):

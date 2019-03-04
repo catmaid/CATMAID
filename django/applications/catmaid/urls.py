@@ -19,6 +19,7 @@ from catmaid.control import (authentication, user, group, log, message, client,
         similarity, nat, point, landmarks, pointcloud, pointset)
 
 from catmaid.views import CatmaidView
+from catmaid.views.admin import ProjectDeletion
 from catmaid.history import record_request_action as record_view
 
 
@@ -36,6 +37,12 @@ app_name = 'catmaid'
 urlpatterns = [
     url(r'^$', ensure_csrf_cookie(CatmaidView.as_view(template_name='catmaid/index.html')), name="home"),
     url(r'^version$', common.get_catmaid_version)
+]
+
+# Additional administration views
+urlpatterns += [
+    url(r'^admin/catmaid/project/delete-with-data$', ProjectDeletion.as_view(),
+        name="delete-projects-with-data"),
 ]
 
 # Authentication and permissions

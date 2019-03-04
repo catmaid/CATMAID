@@ -460,6 +460,19 @@ def delete_projects_and_stack_data(projects):
         p.delete()
 
 
+def delete_projects(project_ids):
+    """Deletes all passed in projects and all data that refer to it. This is a
+    potentially dengerous operation.
+    """
+    cursor = connection.cursor()
+    cursor.execute("""
+        DELETE FROM project
+        WHERE id = ANY(%(project_ids)s::integer[])
+    """, {
+        'project_ids': project_ids,
+    })
+
+
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
 def interpolatable_sections(request, project_id):

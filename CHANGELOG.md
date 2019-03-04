@@ -258,6 +258,10 @@ Miscellaneous:
   variables HTTP_AUTH_ENABLED, HTTP_AUTH_USER and HTTP_AUTH_PASS in the web
   container of the `docker-compose.yml` file (an example is given).
 
+- Admin: projects can now be deleted along with the data that reference them
+  (e.g. treenodes, ontologies, volumes). To do so select the projects to delete
+  in the admin project list and select "Delete selected" from action drop down.
+
 ### Bug fixes
 
 - The Connectivity Graph Plot draws now individual bars in each sub-plot

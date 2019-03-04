@@ -13,6 +13,8 @@ Publications using CATMAID
 2018
 ~~~~
 
+* Jan M. Ache, Jason Polsky, Shada Alghailani, Ruchi Parekh, Patrick Breads, Martin Y. Peek, Davi D. Bock, Catherine R. von Reyn, Gwyneth M. Card. `Neural Basis for Looming Size and Velocity Encoding in the Drosophila Giant Fiber Escape Pathway <https://www.cell.com/current-biology/fulltext/S0960-9822(19)30138-1>`_, Cell Current Biology, 2018.
+
 * Luis A. Bezares-Calderón, Jürgen Berger, Sanja Jasek, Csaba Verasztó, Sara Mendes, Martin Gühmann, Rodrigo Almeda, Réza Shahidi, Gáspár Jékely. `Neural circuitry of a polycystin-mediated hydrodynamic startle response for predator avoidance <https://elifesciences.org/articles/36262>`_, eLife, 2018.
 
 * Johannes Felsenberg, Pedro F. Jacob, Thomas Walker, Oliver Barnstedt, Amelia J. Edmondson-Stait, Markus W. Pleijzier, Nils Otto, Philipp Schlegel, Nadiya Sharifi, Emmanuel Perisse, Carlas S. Smith, J. Scott Lauritzen, Marta Costa, Gregory S.X.E. Jefferis, Davi D. Bock, Scott Waddell `Integration of Parallel Opposing Memories Underlies Memory Extinction <https://www.cell.com/cell/fulltext/S0092-8674(18)31037-7>`_, Cell, 2018

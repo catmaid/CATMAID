@@ -798,7 +798,7 @@
 
 
   class SimilarityModel3D extends Homography {
-    fit(matches) {
+    fit(matches, proper=false) {
       if ( matches.length < SimilarityModel3D.MIN_NUM_MATCHES )
         throw new NotEnoughDataPointsException( matches.length + " data points are not enough to estimate a 3d similarity model, at least " + MIN_NUM_MATCHES + " data points required." );
 
@@ -846,7 +846,7 @@
 
       const N = SimilarityModel3D.computeN(Sxx, Sxz, Sxy, Syx, Syy, Syz, Szx, Szy, Szz);
 
-      const {q0, qx, qy, qz, reflection} = SimilarityModel3D.quaternionImproperRotation(N);
+      const {q0, qx, qy, qz, reflection} = SimilarityModel3D.quaternionRotation(N, proper);
 
       if (reflection) {
         // q0 = 0;
@@ -925,18 +925,27 @@
      * the maximal absolute eigenvalue is used. If it is negative, this is a
      * reflection rather than a proper rotation.
      *
+     * If the `proper` argument is truthy, the maximal eigenvalue is used as in
+     * the paper, yielding a rotation.
+     *
      * For further explanation and citations, see:
      * https://github.com/catmaid/CATMAID/pull/1857
      */
-    static quaternionImproperRotation(N) {
+    static quaternionRotation(N, proper=false) {
       const evd = numeric.eig(N);
 
       const eigenvalues = evd.lambda.x;
 
       let index = 0;
-      for (let i = 1; i < 4; i++)
-        if (Math.abs(eigenvalues[i]) > Math.abs(eigenvalues[index]))
-          index = i;
+      for (let i = 1; i < 4; i++) {
+        if (proper) {
+          if (eigenvalues[i] > eigenvalues[index])
+            index = i;
+        } else {
+          if (Math.abs(eigenvalues[i]) > Math.abs(eigenvalues[index]))
+            index = i;
+        }
+      }
 
       let q0 = evd.E.x[0][index];
       let qx = evd.E.x[1][index];
@@ -951,7 +960,7 @@
 
 
   class RigidModel3D extends SimilarityModel3D {
-    fit(matches) {
+    fit(matches, proper=false) {
       if ( matches.length < RigidModel3D.MIN_NUM_MATCHES )
         throw new NotEnoughDataPointsException( matches.length + " data points are not enough to estimate a 3d similarity model, at least " + MIN_NUM_MATCHES + " data points required." );
 
@@ -984,7 +993,7 @@
 
       const N = SimilarityModel3D.computeN(Sxx, Sxz, Sxy, Syx, Syy, Syz, Szx, Szy, Szz);
 
-      const {q0, qx, qy, qz, reflection} = SimilarityModel3D.quaternionImproperRotation(N);
+      const {q0, qx, qy, qz, reflection} = SimilarityModel3D.quaternionRotation(N, proper);
 
       let s = 1.0; // Uniform scale is identity for rigid transforms.
       if (reflection) {

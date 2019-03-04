@@ -416,6 +416,20 @@ var WindowMaker = new function()
     connectorRestrictions.appendChild(document.createTextNode('Connector restriction'));
     connectorRestrictions.appendChild(connectorRestrictionsSl);
 
+    let vrLabel = document.createElement('label');
+    let vrCheckbox = document.createElement('input');
+    vrCheckbox.type = 'checkbox';
+    vrCheckbox.onclick = () => WA.webVRSetup(vrButton, vrCheckbox);
+    vrLabel.appendChild(vrCheckbox);
+    vrLabel.appendChild(document.createTextNode('VR'));
+    let vrButton = document.createElement('button');
+    vrButton.textContent = 'Enter';
+    vrButton.disabled = true;
+    let vrGroup = document.createElement('span');
+    vrGroup.setAttribute('style', 'white-space:nowrap');
+    vrGroup.appendChild(vrLabel);
+    vrGroup.appendChild(vrButton);
+
     var viewControls = DOM.appendToTab(tabs['View'],
         [
           ['Center active', WA.look_at_active_node.bind(WA)],
@@ -445,6 +459,7 @@ var WindowMaker = new function()
           [storedViewsSelect],
           ['Save view', storeView],
           ['Fullscreen', WA.fullscreenWebGL.bind(WA)],
+          [vrGroup],
           [connectorRestrictions],
           ['Refresh active skeleton', function() { WA.updateActiveSkeleton(); }],
           ['Orthographic mode', false, function() { WA.updateCameraView(this.checked); }, false],
@@ -949,7 +964,21 @@ var WindowMaker = new function()
           ['Active node', o.show_active_node, function() { WA.options.show_active_node = this.checked; WA.adjustContent(); }, false],
           ['Active node on top', o.active_node_on_top, function() { WA.options.active_node_on_top = this.checked; WA.adjustContent(); }, false],
           ['Radius adaptive active node', o.active_node_respects_radius, function() { WA.options.active_node_respects_radius = this.checked; WA.adjustContent(); }, false],
-          ['Black background', o.show_background, adjustFn('show_background'), false],
+          {
+            type: 'color-button',
+            label: 'background',
+            title: 'Adjust the background color',
+            value: o.background_color,
+            color: {
+              initialColor: o.background_color,
+              initialAlpha: 1.0,
+              onColorChange: function(rgb, alpha, colorChanged, alphaChanged, colorHex) {
+                WA.options.background_color = '#' + colorHex;
+                WA.adjustStaticContent();
+              },
+            },
+            length: 10
+          },
           ['Floor', o.show_floor, adjustFn('show_floor'), false],
           {
             type: 'color-button',

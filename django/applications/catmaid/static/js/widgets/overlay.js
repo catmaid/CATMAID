@@ -274,6 +274,9 @@ var SkeletonAnnotations = {};
    * @return {Promise}               Promise succeeding after move.
    */
   SkeletonAnnotations.staticMoveTo = function(z, y, x) {
+    if (!CATMAID.tools.isNumber(z)) return Promise.reject(new CATMAID.ValueError('Z needs to be a number'));
+    if (!CATMAID.tools.isNumber(y)) return Promise.reject(new CATMAID.ValueError('Y needs to be a number'));
+    if (!CATMAID.tools.isNumber(z)) return Promise.reject(new CATMAID.ValueError('X needs to be a number'));
     var instances = CATMAID.TracingOverlay.prototype._instances;
     var movePromises = [];
     for (var stackViewerId in instances) {
@@ -361,6 +364,9 @@ var SkeletonAnnotations = {};
    */
   SkeletonAnnotations.staticMoveToAndSelectClosestNode = function(z, y, x,
       skeletonId, respectVirtualNodes) {
+    if (!CATMAID.tools.isNumber(z)) return Promise.reject(new CATMAID.ValueError('Z needs to be a number'));
+    if (!CATMAID.tools.isNumber(y)) return Promise.reject(new CATMAID.ValueError('Y needs to be a number'));
+    if (!CATMAID.tools.isNumber(z)) return Promise.reject(new CATMAID.ValueError('X needs to be a number'));
     var instances = CATMAID.TracingOverlay.prototype._instances;
     var locations = [];
     for (var stackViewerId in instances) {

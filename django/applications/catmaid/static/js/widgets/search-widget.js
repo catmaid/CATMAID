@@ -47,42 +47,51 @@
     $('#search-results', this.content).append($('<i/>').text(message));
   };
 
+  SearchWidget.createActionLinkHTML = function(searchResult) {
+    let className = searchResult.class_name;
+    let actions = [];
+    if (className === 'neuron' || className === 'skeleton') {
+      actions.push(`<a href="#" data-action="select-nearest">Go to nearest node</a>`);
+      if( searchResult.class_name === 'skeleton' ) {
+        actions.push(`<a href="#" data-action="add-to-selection">Add to Selection Table</a>`);
+      }
+    } else if (className === 'label') {
+      // Create a link that will then query, when clicked, for the list of nodes
+      // that point to the label, and show a list [1], [2], [3] ... clickable,
+      // or better, insert a table below this row with x,y,z,parent skeleton, parent neuron.
+      let treenodes = searchResult.nodes;
+      if (treenodes) {
+        actions.push('<em>Treenodes:</em>');
+        for (let i=0; i<treenodes.length; ++i) {
+          let n = treenodes[i];
+          actions.push(`<a href="#" data-action="select-node" data-id="${n.id}" data-x="${n.x}" data-y="${n.y}" data-z="${n.z}">${i + 1}</a>`);
+        }
+      }
 
-  let addNodeEntry = function(node, i) {
-    let attributes = {
-      'data-action': 'select-node',
-      'data-id': '' + node.id,
-      'data-x': node.x,
-      'data-y': node.y,
-      'data-z': node.z,
-      'href': '#'
-    };
-    let oneBasedIndex = i + 1;
-    this.append($('<a/>').attr(attributes)
-      .text("[" + oneBasedIndex + "]")).append("&nbsp;");
-    if (oneBasedIndex % 20 === 0) {
-      this.append('<br />');
+      let connectors = searchResult.connectors;
+      if (connectors) {
+        if (treenodes) {
+          actions.push('<br />');
+        }
+        actions.push('<em>Connectors:</em> ');
+        for (let i=0; i<connectors.length; ++i) {
+          let n = connectors[i];
+          actions.push(`<a href="#" data-action="select-node" data-id="${n.id}" data-x="${n.x}" data-y="${n.y}" data-z="${n.z}">${i + 1}</a>`);
+        }
+      }
+
+      if (!treenodes && !connectors) {
+        // no nodes, option to remove the label
+        actions.push(`<a href="#" data-action="remove-label">Remove unused label</a>`);
+      }
+    } else if (className == 'annotation') {
+      actions.push(`<a href="#" data-action="search-annotation">List annotated objects</a>`);
+    } else if (className === 'treenode' || className === 'connector') {
+      let n = searchResult;
+      actions.push(`<a href="#" data-action="select-node" data-id="${n.id}" data-x="${n.x}" data-y="${n.y}" data-z="${n.z}">Go to node</a>`);
     }
-  };
 
-  let selectNode = function(e) {
-    var z = parseFloat(this.dataset.z);
-    var y = parseFloat(this.dataset.y);
-    var x = parseFloat(this.dataset.x);
-    var id = parseInt(this.dataset.id);
-    SkeletonAnnotations.staticMoveTo(z, y, x)
-      .then(function() {
-        return SkeletonAnnotations.staticSelectNode(id);
-      })
-      .catch(CATMAID.handleError);
-  };
-
-  let searchAnnotation = function() {
-    let annotation = this.dataset.annotation;
-    let annotationId = parseInt(this.dataset.annotationId, 10);
-    var navigator = new CATMAID.NeuronNavigator();
-    WindowMaker.create('neuron-navigator', navigator);
-    navigator.set_annotation_node(annotation, annotationId);
+    return actions;
   };
 
   SearchWidget.prototype.search = function() {
@@ -105,122 +114,106 @@
         var table = $('<table/>');
         $('#search-results').append(table);
         var tbody = $('<tbody/>');
-        tbody.append('<tr><th></th><th>ID</th><th>Name</th><th>Type</th><th>Action</th><th></th></tr>');
-        table.append(tbody);
-        var action = function(type) {
-          return function() {
-              CATMAID.TracingTool.goToNearestInNeuronOrSkeleton(type, parseInt($(this).attr('id')));
-              return false;
-          };
-        };
-        var actionaddstage = function(type) {
-          return function() {
-            var selection = CATMAID.SelectionTable.getLastFocused();
-            selection.addSkeletons([parseInt($(this).attr('id'))]);
-            return false;
-          };
-        };
-        var removelabel = function(id) {
-          return function() {
-            CATMAID.fetch(project.id + '/label/remove', "POST", {
-              label_id: id
-            })
-            .then(function(json) {
-              CATMAID.msg('Success', 'Label removed');
+
+        let datatable = $(table).DataTable({
+          dom: "lfrtip",
+          autoWidth: false,
+          paging: true,
+          lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+          order: [],
+          data: data,
+          language: {
+            search: 'Filter',
+          },
+          columns: [
+            {
+              data: "#",
+              title: "",
+              orderable: true,
+              width: '3em',
+              class: 'cm-center',
+              render: function(data, type, row, meta) {
+                return meta.row + 1;
+              }
+            },
+            {
+              data: "id",
+              title: "Id",
+              orderable: true,
+              width: '10em',
+              class: 'cm-center',
+              render: function(data, type, row, meta) {
+                return row.id;
+              }
+            },
+            {
+              title: "Name",
+              orderable: true,
+              width: '50%',
+              render: function(data, type, row, meta) {
+                return row.name || '(none)';
+              }
+            },
+            {
+              data: 'class_name',
+              title: "Type",
+              orderable: true,
+              width: '10em',
+              class: 'cm-center',
+            },
+            {
+              title: "Action",
+              orderable: false,
+              render: function(data, type, row, meta) {
+                return SearchWidget.createActionLinkHTML(row).join(' ');
+              }
+            },
+          ],
+        })
+        .on('click', 'a[data-action=select-node]', function() {
+          let z = parseFloat(this.dataset.z);
+          let y = parseFloat(this.dataset.y);
+          let x = parseFloat(this.dataset.x);
+          let id = parseInt(this.dataset.id);
+          SkeletonAnnotations.staticMoveTo(z, y, x)
+            .then(function() {
+              return SkeletonAnnotations.staticSelectNode(id);
             })
             .catch(CATMAID.handleError);
-          };
-        };
-        for (var i = 0; i < data.length; ++i) {
-          var row = $('<tr/>');
-          row.append($('<td/>').text(i+1));
-          row.append($('<td/>').text(data[i].id));
-          row.append($('<td/>').text(data[i].name || '(none)'));
-          row.append($('<td/>').text(data[i].class_name));
-          let className = data[i].class_name;
-          if (className === 'neuron' || className === 'skeleton') {
-            var tdd = $('<td/>');
-            var actionLink = $('<a/>');
-            actionLink.attr({'id': ''+data[i].id});
-            actionLink.attr({'href': '#'});
-            actionLink.click(action(data[i].class_name));
-            actionLink.text("Go to nearest node");
-            tdd.append(actionLink);
-            if( data[i].class_name === 'skeleton' ) {
-              actionLink = $('<a/>');
-              actionLink.attr({'id': ''+data[i].id});
-              actionLink.attr({'href': '#'});
-              actionLink.click(actionaddstage(data[i].class_name));
-              actionLink.text(" Add to selection table");
-              tdd.append(actionLink);
-            }
-            row.append(tdd);
-          } else if (className === 'label') {
-            var td = $('<td/>');
-            // Create a link that will then query, when clicked, for the list of nodes
-            // that point to the label, and show a list [1], [2], [3] ... clickable,
-            // or better, insert a table below this row with x,y,z,parent skeleton, parent neuron.
-            let treenodes = data[i].hasOwnProperty('nodes');
-            if (treenodes) {
-              td.append('<em>Treenodes:</em> ');
-              data[i].nodes.forEach(addNodeEntry, td);
-            }
-
-            let connectors = data[i].hasOwnProperty('connectors');
-            if (connectors) {
-              if (treenodes) {
-                td.append('<br />');
-              }
-              td.append('<em>Connectors:</em> ');
-              data[i].connectors.forEach(addNodeEntry, td);
-            }
-
-            if (!treenodes && !connectors) {
-              // no nodes, option to remove the label
-              actionLink = $('<a/>');
-              actionLink.attr({'id': ''+data[i].id});
-              actionLink.attr({'href': '#'});
-              actionLink.click(removelabel(data[i].id));
-              actionLink.text("Remove label");
-              td.append(actionLink);
-            }
-
-            row.append(td);
-          } else if (className == 'annotation') {
-            var td = $('<td/>');
-            let link = $('<a />')
-              .attr({
-                'href': '#',
-                'data-annotation': data[i].name,
-                'data-annotation-id': data[i].id,
-                'data-action': 'search-annotation'
-              })
-              .text('List targets');
-            td.append(link);
-            row.append(td);
-          } else if (className === 'treenode' || className === 'connector') {
-            let td = $('<td />')
-              .append($('<a />')
-                .attr({
-                  'href': '#',
-                  'data-action': 'select-node',
-                  'data-id': '' + data[i].id,
-                  'data-x': data[i].x,
-                  'data-y': data[i].y,
-                  'data-z': data[i].z
-                })
-                .text('Go to node'));
-            row.append(td);
-          } else {
-            row.append($('<td/>').text('IMPLEMENT ME'));
-          }
-          row.append($('<td/>').text(i+1));
-          tbody.append(row);
-        }
-
-        tbody
-          .on('click', 'a[data-action=select-node]', selectNode)
-          .on('click', 'a[data-action=search-annotation]', searchAnnotation);
+        })
+        .on('click', 'a[data-action=search-annotation]', function() {
+          let table = $(this).closest('table');
+          let tr = $(this).closest('tr');
+          let data =  $(table).DataTable().row(tr).data();
+          let navigator = new CATMAID.NeuronNavigator();
+          WindowMaker.create('neuron-navigator', navigator);
+          navigator.set_annotation_node(data.name, data.id);
+        })
+        .on('click', 'a[data-action=remove-label]', function() {
+          let table = $(this).closest('table');
+          let tr = $(this).closest('tr');
+          let data =  $(table).DataTable().row(tr).data();
+          CATMAID.fetch(project.id + '/label/remove', "POST", {
+            label_id: data.id,
+          })
+          .then(function(json) {
+            CATMAID.msg('Success', 'Label removed');
+          })
+          .catch(CATMAID.handleError);
+        })
+        .on('click', 'a[data-action=select-nearest]', function() {
+          let table = $(this).closest('table');
+          let tr = $(this).closest('tr');
+          let data =  $(table).DataTable().row(tr).data();
+          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton(data.class_name, data.id);
+        })
+        .on('click', 'a[data-action=add-to-selection]', function() {
+          let table = $(this).closest('table');
+          let tr = $(this).closest('tr');
+          let data =  $(table).DataTable().row(tr).data();
+          let selection = CATMAID.SelectionTable.getLastFocused();
+          selection.addSkeletons([data.id]);
+        });
     });
   };
 

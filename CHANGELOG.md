@@ -251,6 +251,9 @@ Miscellaneous:
   pre/post/text/meta can also be controlled for all neurons, regardless of their
   visibility. This allows e.g. to only show synapses, but no skeletons.
 
+- General search widget: a more flexible table is now used for display, which
+  allows sorting, filtering and pagination.
+
 - Boss databases can now be used as tile source type so that image data is
   loaded from them. More details: https://docs.theboss.io/docs/image.
 

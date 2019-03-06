@@ -263,6 +263,15 @@
           return this.registerAll(client, models, callback);
         },
 
+        registerAllFromList: function(client, skeletonIds)
+        {
+          let models = skeletonIds.reduce((o, skid) => {
+            o[skid] = new CATMAID.SkeletonModel(skid);
+            return o;
+          }, {});
+          return this.registerAll(client, models);
+        },
+
         /**
          * Makes all given skeletons known to the naming service and registers the
          * given client as linked to these skeletons.

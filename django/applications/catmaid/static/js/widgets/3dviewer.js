@@ -3127,7 +3127,7 @@
   };
 
   WebGLApplication.prototype.Space.prototype.removeAll = function(objects) {
-    this.scene.project.remove.apply(this.scene, objects);
+    this.scene.project.remove.apply(this.scene.project, objects);
   };
 
   WebGLApplication.prototype.Space.prototype.render = function() {

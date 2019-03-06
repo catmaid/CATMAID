@@ -1569,21 +1569,31 @@ def connectivity_matrix_csv(request:HttpRequest, project_id) -> StreamingHttpRes
         items:
           type: integer
         paramType: form
+      - name: names
+        description: |
+            An optional mapping of skeleton IDs versus names.
+            Represented as a list of two-element lists. Each inner list
+            follows the form [<skeleton-id>, <name>].
+        required: false
+        type: array
+        items:
+            type: string
     """
     # sanitize arguments
     project_id = int(project_id)
     rows = tuple(get_request_list(request.POST, 'rows', [], map_fn=int))
     cols = tuple(get_request_list(request.POST, 'columns', [], map_fn=int))
+    names = dict(map(lambda x: [int(x[0]), x[1]], get_request_list(request.POST, 'names', [])))
 
     matrix = get_connectivity_matrix(project_id, rows, cols)
 
     csv_data = []
-    header = [''] + list(cols)
+    header = [''] + list(map(lambda x: names.get(x, x), cols))
     csv_data.append(header)
 
     for n, skid_a in enumerate(rows):
         # Add row header skeleton ID
-        row = [skid_a]
+        row = [names.get(skid_a, skid_a)]
         csv_data.append(row)
         # Add connectivity information
         for m, skid_b in enumerate(cols):

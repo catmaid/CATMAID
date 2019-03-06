@@ -35,6 +35,13 @@ None.
   replace existing data, the `force` parameter can be set to `true`. Both
   options apply to both neurons and skeletons.
 
+- `POST /{project_id}/skeletons/connectivity/csv`:
+  The new optional parameter `names` makes it possible to pass in a mapping of
+  skeleton IDs to names used in the CSV export as column and row headers. If
+  this parameter is not provided, the plain skeleton IDs will be used as it was
+  done before. If it is provided, it has to be a list of two-element lists, each
+  of the form [<skeleton-id>, <name>], which provides the mapping.
+
 ### Deprecations
 
 None.

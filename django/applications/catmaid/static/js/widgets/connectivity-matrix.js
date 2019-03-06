@@ -1461,13 +1461,19 @@
    * the selected source.
    */
   ConnectivityMatrixWidget.prototype.exportCsvNoDisplay = function(skeletonIds) {
-    CATMAID.fetch(project.id + '/skeletons/connectivity_matrix/csv', 'POST', {
-        rows: skeletonIds,
-        columns: skeletonIds,
-      }, true)
+    let nns = CATMAID.NeuronNameService.getInstance();
+    nns.registerAllFromList(this, skeletonIds)
+      .then(function() {
+        let names = skeletonIds.map((skid) => [skid, nns.getName(skid)]);
+        return CATMAID.fetch(project.id + '/skeletons/connectivity_matrix/csv', 'POST', {
+            rows: skeletonIds,
+            columns: skeletonIds,
+            names: names,
+          }, true);
+      })
       .then(function(response) {
         CATMAID.msg("Success", "Auto-connectivity matrix of " + skeletonIds.length +
-            "skeletons finished");
+            " skeletons finished");
         saveAs(new Blob([response], {type: 'text/csv'}), 'catmaid-connectivity-matrix.csv');
       })
       .catch(CATMAID.handleError);

@@ -794,7 +794,18 @@ var project;
 
     // Handle error to reset cursor, but also return it to communicate it to
     // caller.
-    login.catch(CATMAID.handleError)
+    login.catch(error => {
+        if (error instanceof CATMAID.InactiveLoginError) {
+          // If an inactive account is a member of inactivity groups, display
+          // information on them. Otherwise show only a warning.
+          if (error.meta && error.meta.inactivity_groups && error.meta.inactivity_groups.length > 0) {
+            let dialog = new CATMAID.InactiveLoginDialog(error.meta.inactivity_groups);
+            dialog.show();
+            return;
+          }
+        }
+        return CATMAID.handleError(error);
+      })
       .then((function() {
         CATMAID.ui.releaseEvents();
         this.refreshBackChannel();

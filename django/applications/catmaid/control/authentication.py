@@ -37,6 +37,18 @@ class PermissionError(Exception):
     pass
 
 
+class InvalidLoginError(Exception):
+    """Indicates an unsuccessful login."""
+    pass
+
+
+class InactiveLoginError(Exception):
+    """Indicates some sort of configuration error"""
+    def __init__(self, message, meta=None):
+        super().__init__(message)
+        self.meta = meta
+
+
 def access_check(user) -> bool:
     """ Returns true if users are logged in or if they have the general
     can_browse permission assigned (i.e. not with respect to a certain object).
@@ -57,24 +69,32 @@ def login_user(request:HttpRequest) -> JsonResponse:
         # Try to log the user into the system.
         username = request.POST.get('name', 0)
         password = request.POST.get('pwd', 0)
+
+        # Try to authenticate user with credentials. A user object is only
+        # returned if the user could be authenticated (i.e. correct password and
+        # active user).
         user = authenticate(username=username, password=password)
 
         if user is not None:
-            if user.is_active:
-                # Redirect to a success page.
-                request.session['user_id'] = user.id
-                login(request, user)
-                # Add some context information
-                profile_context['id'] = request.session.session_key
-                return user_context_response(user, profile_context)
-            else:
-                # Return a 'disabled account' error message
-                profile_context['error'] = ' Disabled account'
-                return user_context_response(request.user, profile_context)
+            # Redirect to a success page.
+            request.session['user_id'] = user.id
+            login(request, user)
+            # Add some context information
+            profile_context['id'] = request.session.session_key
+            return user_context_response(user, profile_context)
         else:
-            # Return an 'invalid login' error message.
-            profile_context['error'] = ' Invalid login'
-            return user_context_response(request.user, profile_context)
+            try:
+                user = User.objects.get(username=username)
+                if not user.is_active:
+                    # If a user is not active an error is raised and inactivity
+                    # group information appended, if available.
+                    raise InactiveLoginError("Account is inavtive", {
+                        'inactivity_groups': get_exceeded_inactivity_periods(user.id),
+                    })
+                raise InvalidLoginError()
+            except User.DoesNotExist:
+                raise InvalidLoginError()
+
     else:   # request.method == 'GET'
         # Check if the user is logged in.
         if request.user.is_authenticated:
@@ -497,3 +517,98 @@ class ObtainAuthToken(auth_views.ObtainAuthToken):
     """
     def get_serializer_class(self):
         return AuthTokenSerializer
+
+
+def exceeds_group_inactivity_period(user_id):
+    """Returns whether a user is inactive and their last login is past a maximum
+    inactivity period.
+    """
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT 1
+        FROM catmaid_group_inactivity_period cdg
+        JOIN auth_user_groups aug
+            ON aug.group_id = cdg.group_id
+        JOIN auth_user au
+            ON au.id = aug.user_id
+        WHERE cdg.max_inactivity < (now() - au.last_login)
+            AND aug.user_id = %(user_id)s
+    """, {
+        'user_id': user_id
+    })
+
+    return len(cursor.fetchall()) > 0
+
+
+def get_exceeded_inactivity_periods(user_id):
+    """Return all inactivity groups of which a user is member and where they
+    exceed the maximum inactivity period. For those groups, a list of contact
+    users is included as well (if any).
+    """
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT g.id, g.max_inactivity, g.message, c.user_ids, c.user_logins,
+            c.user_names
+        FROM (
+            SELECT cgi.id, cgi.max_inactivity, cgi.message
+            FROM catmaid_group_inactivity_period cgi
+            JOIN auth_user_groups aug
+                ON aug.group_id = cgi.group_id
+            JOIN auth_user au
+                ON au.id = aug.user_id
+            WHERE cgi.max_inactivity < (now() - au.last_login)
+                AND aug.user_id = %(user_id)s
+            ORDER BY cgi.max_inactivity ASC
+        ) g
+        JOIN LATERAL (
+            SELECT array_agg(igc.user_id) AS user_ids,
+                array_agg(u.username) AS user_logins,
+                array_agg(u.first_name || ' ' || u.last_name) AS user_names
+            FROM catmaid_group_inactivity_period_contact igc
+            JOIN auth_user u
+                ON u.id = igc.user_id
+            WHERE igc.inactivity_period_id = g.id
+        ) c
+        ON TRUE
+    """, {
+        'user_id': user_id
+    })
+
+    return [{
+        'id': row[0],
+        'max_inactivity': row[1].total_seconds(),
+        'message': row[2],
+        'contacts': [{
+            'id': row[3][n],
+            'username': row[4][n],
+            'full_name': row[5][n],
+        } for n in range(len(row[3]))]
+    } for row in cursor.fetchall()]
+
+
+def deativate_inactive_users():
+    """Mark all those users as inactive that didn't log in within a specified
+    time range. Which users this are is defined by their group memberships. If a
+    user is member of a group that is also marked as "deactivation group"
+    (dedicated relation) and hasn't logged in since the associated time range,
+    the user account is set to inactive.
+    """
+    cursor = connection.cursor()
+    cursor.execute("""
+        WITH inactive_users AS (
+            SELECT au.id
+            FROM catmaid_group_inactivity_period cdg
+            JOIN auth_user_groups aug
+                ON aug.group_id = cdg.group_id
+            JOIN auth_user au
+                ON au.id = aug.user_id
+            WHERE cdg.max_inactivity < (now() - au.last_login)
+        )
+        UPDATE auth_user au
+        SET is_active = FALSE
+        FROM inactive_users iu
+        WHERE au.id =  iu.id
+        RETURNING au.id;
+    """)
+
+    return [row[0] for row in cursor.fetchall()]

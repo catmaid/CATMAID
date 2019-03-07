@@ -18,7 +18,7 @@ from guardian.admin import GuardedModelAdmin
 from catmaid.models import (Project, DataView, Stack, InterpolatableSection,
         ProjectStack, UserProfile, BrokenSlice, StackClassInstance, Relation,
         ClassInstance, Class, StackGroup, StackStackGroup, StackMirror,
-        PointCloud)
+        PointCloud, GroupInactivityPeriod, GroupInactivityPeriodContact)
 from catmaid.control.importer import importer_admin_view
 from catmaid.control.classificationadmin import classification_admin_view
 from catmaid.control.annotationadmin import ImportingWizard
@@ -392,8 +392,20 @@ class ProfileInline(admin.StackedInline):
         return super(ProfileInline, self).get_formset(request, obj, **kwargs)
 
 
+class GroupInactivityPeriodContactUserInline(admin.StackedInline):
+    model = GroupInactivityPeriodContact
+    fk_name = 'user'
+    max_num = 1
+
+
+class GroupInactivityPeriodContactGroupInline(admin.StackedInline):
+    model = GroupInactivityPeriodContact
+    fk_name = 'inactivity_period'
+    max_num = 1
+
+
 class CustomUserAdmin(UserAdmin):
-    inlines = [ProfileInline]
+    inlines = [ProfileInline, GroupInactivityPeriodContactUserInline]
     list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff')
     filter_horizontal = ('groups', 'user_permissions')
 
@@ -414,6 +426,14 @@ class UserSetInline(admin.TabularInline):
 class CustomGroupAdmin(GroupAdmin):
     form = GroupAdminForm
     list_filter = ('name',)
+
+
+class GroupInactivityPeriodAdmin(admin.ModelAdmin):
+    model = GroupInactivityPeriod
+    list_display = ('group', 'max_inactivity', 'message', 'comment')
+    list_filter = ('group', 'max_inactivity', 'message', 'comment')
+    inlines = [GroupInactivityPeriodContactGroupInline]
+
 
 def color(self):
     try:
@@ -441,6 +461,7 @@ admin.site.register(PointCloud, PointCloudAdmin)
 # Replace the user admin view with custom view
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Group, CustomGroupAdmin)
+admin.site.register(GroupInactivityPeriod, GroupInactivityPeriodAdmin)
 # Register additional views
 admin.site.register_view('annotationimporter', 'Import annotations and tracing data',
                          view=ImportingWizard.as_view())

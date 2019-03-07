@@ -216,6 +216,19 @@ CLI importer:
 - It is now possible to import volumes from CATMAID export files and other
   projects..
 
+Administration:
+
+- Projects can now be deleted along with the data that reference them (e.g.
+  treenodes, ontologies, volumes). To do so select the projects to delete in the
+  admin project list and select "Delete selected" from action drop down.
+
+- Users can now be set to an inactive state after a specified amount of time.
+  This time is configured for a user group and it applies to users if they are
+  members of such a group. A message can optionally be displayed as well as
+  users to contact that could potentially help. This is configurable as "Group
+  inactivity period" in the admin view. Users to contact for support, can be
+  either configured there or from individual user views.
+
 Miscellaneous:
 
 - Add a new Tracing Tool icon button to compute the distance between two nodes
@@ -260,10 +273,6 @@ Miscellaneous:
 - Docker: HTTP basic authentication can be configured by using the environment
   variables HTTP_AUTH_ENABLED, HTTP_AUTH_USER and HTTP_AUTH_PASS in the web
   container of the `docker-compose.yml` file (an example is given).
-
-- Admin: projects can now be deleted along with the data that reference them
-  (e.g. treenodes, ontologies, volumes). To do so select the projects to delete
-  in the admin project list and select "Delete selected" from action drop down.
 
 ### Bug fixes
 

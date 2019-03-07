@@ -42,6 +42,29 @@ browse projects" setting has to be assigned. With this, the anonymous user acts
 just like a regular user and can be assigned project specific ``can-browse`` and
 ``can-annotate`` permissions.
 
+Inactive users
+**************
+
+Users who are marked as inactive won't be able to log into CATMAID. Once
+reactivated, these user accounts are fully functional agian. By default,
+users have to be marked inactive manually. It is howevere also possible to
+automatically deactivate user accounts after a specified time. If `Celery
+and Celery Beat<celery>`_ are set up, a periodic task will check every night if
+user accounts need deactivation.
+
+Which user accounts get deactivated is configured based on which user groups
+they are in. Group Inactivity Periods are objects that associate a user group
+with a maximum inactivity time as well as an optional message and (internal)
+comment. During activity check, the last login of a user is looked up and
+comparead against the specificied maximum inactivity time. If the last login
+exceeds this interval, the user account is made inactive. These Group Inactivity
+Periods can be managed in the respective admin view.
+
+For each Group Inactivity Period contact, users can be specified, who are
+displayed to users whoe have been inactivated due to this mechanism try to
+login. A message displayed to them explains the situation and how long the
+inactivity period is they violated.
+
 Editing data of other users
 ***************************
 

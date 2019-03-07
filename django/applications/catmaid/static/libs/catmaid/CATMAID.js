@@ -357,6 +357,10 @@ var requestQueue = new CATMAID.RequestQueue();
       return new CATMAID.LocationLookupError(error.error, error.detail);
     } else if ('PermissionError' === error.type) {
       return new CATMAID.PermissionError(error.error, error.detail);
+    } else if ('InvalidLoginError' === error.type) {
+      return new CATMAID.InvalidLoginError(error.error, error.detail);
+    } else if ('InactiveLoginError' === error.type) {
+      return new CATMAID.InactiveLoginError(error.error, error.detail, error.meta);
     } else {
       return new CATMAID.Error("Unsuccessful request: " + error.error,
           error.detail, error.type);

@@ -95,7 +95,8 @@ class AjaxExceptionMiddleware(object):
         response = {
             'error': str(exception),
             'detail': format_exc(),
-            'type': type(exception).__name__
+            'type': type(exception).__name__,
+            'meta': getattr(exception, 'meta', None),
         }
         if settings.DEBUG:
             import sys, traceback

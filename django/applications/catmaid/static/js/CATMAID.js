@@ -306,6 +306,10 @@
       } else if (error instanceof CATMAID.NoWebGLAvailableError) {
         CATMAID.error("WebGL is required, but not available. Please check " +
             "your browser settings or graphics card driver", error.message);
+      } else if (error instanceof CATMAID.InvalidLoginError) {
+        CATMAID.warn("Invalid login");
+      } else if (error instanceof CATMAID.InactiveLoginError) {
+        CATMAID.warn("Account is disabled");
       } else {
         CATMAID.error(error.message, error.detail);
       }

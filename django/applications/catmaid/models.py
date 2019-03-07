@@ -25,6 +25,7 @@ from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
+from datetime import timedelta
 from guardian.models import (UserObjectPermissionBase,
         GroupObjectPermissionBase)
 from guardian.shortcuts import get_objects_for_user
@@ -1596,6 +1597,41 @@ class ExportUser(models.Model):
     class Meta:
         managed = False
         abstract = True
+
+
+class GroupInactivityPeriod(models.Model):
+    """
+    Link groups to time ranges. If users are member of this groups they are
+    supposed to be active within the respective time range. If users fail to do
+    so, they are set to inactive. An optional reason can be specified as well as
+    a set of contact users.
+    """
+    # The database will perform cascading deletes
+    group = models.ForeignKey(Group, on_delete=models.DO_NOTHING,
+            help_text='This inactivity period applies to users of this group.')
+    max_inactivity = models.DurationField(default=timedelta(days=365),
+            help_text='The time after which a user of the linked groups should be marked inactive.')
+    message = models.TextField(blank=True, null=True,
+            help_text='An optional message that is shown instead of the default text in the front-end.')
+    comment = models.TextField(blank=True, null=True,
+            help_text='An optional internal comment. It is displayed nowhere.')
+
+    class Meta:
+        db_table = 'catmaid_group_inactivity_period'
+
+
+class GroupInactivityPeriodContact(models.Model):
+    """A contact person for a particular deactivation group.
+    """
+    # The database will perform cascading deletes
+    inactivity_period = models.ForeignKey(GroupInactivityPeriod, on_delete=models.DO_NOTHING,
+            help_text='The inactivity period the linked user should act as contact person for.')
+    # The database will perform cascading deletes
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING,
+            help_text='The cantact person for the linked inactivity group.')
+
+    class Meta:
+        db_table = 'catmaid_group_inactivity_period_contact'
 
 
 class ChangeRequest(UserFocusedModel):

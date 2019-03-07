@@ -34,6 +34,8 @@ class HistoryTableTests(TransactionTestCase):
         # CATMAID tables
         'broken_slice',
         'cardinality_restriction',
+        'catmaid_group_inactivity_period',
+        'catmaid_group_inactivity_period_contact',
         'catmaid_sampler',
         'catmaid_samplerconnector',
         'catmaid_samplerconnectorstate',
@@ -120,6 +122,8 @@ class HistoryTableTests(TransactionTestCase):
         # History tables of versioned CATMAID tables
         'broken_slice__history',
         'cardinality_restriction__history',
+        'catmaid_group_inactivity_period__history',
+        'catmaid_group_inactivity_period_contact__history',
         'catmaid_userprofile__history',
         'catmaid_volume__history',
         'catmaid_sampler__history',
@@ -205,6 +209,8 @@ class HistoryTableTests(TransactionTestCase):
 
         # Time tables
         'broken_slice__tracking',
+        'catmaid_group_inactivity_period__tracking',
+        'catmaid_group_inactivity_period_contact__tracking',
         'catmaid_sampler__tracking',
         'catmaid_samplerdomain__tracking',
         'catmaid_samplerdomainend__tracking',

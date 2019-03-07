@@ -1371,7 +1371,7 @@ def skeleton_info_raw(request:HttpRequest, project_id=None) -> JsonResponse:
     that are common between the source skeleton set.
     ---
     parameters:
-        - name: source_skeleton_ids[]
+        - name: source_skeleton_ids
           description: IDs of the skeletons whose partners to find
           required: true
           type: array
@@ -1393,7 +1393,7 @@ def skeleton_info_raw(request:HttpRequest, project_id=None) -> JsonResponse:
           type: voolean
           paramType: form
           default: false
-        - name: link_types,
+        - name: link_types
           description:  |
             A list of allowed link types: incoming, outgoing, abutting,
             gapjunction, tightjunction, desmosome, attachment, close_object.
@@ -1481,14 +1481,14 @@ def skeleton_info_raw(request:HttpRequest, project_id=None) -> JsonResponse:
     """
     # sanitize arguments
     project_id = int(project_id)
-    skeletons = tuple(int(v) for k,v in request.POST.items() if k.startswith('source_skeleton_ids['))
+    skeleton_ids = get_request_list(request.POST, 'source_skeleton_ids', map_fn=int)
     op = str(request.POST.get('boolean_op')) # values: AND, OR
     op = {'AND': 'AND', 'OR': 'OR'}[op] # sanitize
     with_nodes = get_request_bool(request.POST, 'with_nodes', False)
     allowed_link_types = get_request_list(request.POST, 'link_types',
             ['incoming', 'outgoing'])
 
-    skeleton_info = _skeleton_info_raw(project_id, skeletons, op, with_nodes,
+    skeleton_info = _skeleton_info_raw(project_id, skeleton_ids, op, with_nodes,
             allowed_link_types)
 
     return JsonResponse(skeleton_info)

@@ -42,6 +42,11 @@ None.
   done before. If it is provided, it has to be a list of two-element lists, each
   of the form [<skeleton-id>, <name>], which provides the mapping.
 
+- `POST /{project_id}/skeletons/connectivity`:
+  The `source_skeleton_ids` parameter can now also be specified in regular form
+  format (multiple arguments with the exact same name), rather than only the
+  square braces style.
+
 ### Deprecations
 
 None.

@@ -5296,7 +5296,7 @@
     o.show_missing_sections = false;
     o.show_active_node = false;
     o.show_floor = false;
-    o.background_color = '0xFFFFFF';
+    o.background_color = '#FFFFFF';
     o.show_box = false;
     this.staticContent.adjust(o, this);
     this.content.adjust(o, this, submit);

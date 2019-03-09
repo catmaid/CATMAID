@@ -5,7 +5,8 @@ from catmaid.control.nat import export_skeleton_as_nrrd_async
 from catmaid.control.treenodeexport import process_export_job
 from catmaid.control.roi import create_roi_image
 from catmaid.control.node import update_node_query_cache as do_update_node_query_cache
-from catmaid.control.authentication import deactivate_inactive_users
+from catmaid.control.authentication import deactivate_inactive_users as \
+    deactivate_inactive_users_impl
 from celery import shared_task
 
 
@@ -51,5 +52,5 @@ def deactivate_inactive_users():
     (dedicated relation) and hasn't logged in since the associated time range,
     the user account is set to inactive.
     """
-    inactive_users = deactivate_inactive_users()
+    inactive_users = deactivate_inactive_users_impl()
     return "Deactivated inactive users ({} in total)".format(len(inactive_users))

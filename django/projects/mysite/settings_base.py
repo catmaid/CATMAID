@@ -280,7 +280,7 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'catmaid.tasks.update_project_statistics_from_scratch',
         'schedule': crontab(hour=23, minute=45)
     },
-    'daily-inactivity-user-marking': {
+    'daily-inactive-user-update': {
         'task': 'catmaid.tasks.deactivate_inactive_users',
         'schedule': crontab(hour=00, minute=00)
     },

@@ -588,7 +588,7 @@ def get_exceeded_inactivity_periods(user_id):
     } for row in cursor.fetchall()]
 
 
-def deativate_inactive_users():
+def deactivate_inactive_users():
     """Mark all those users as inactive that didn't log in within a specified
     time range. Which users this are is defined by their group memberships. If a
     user is member of a group that is also marked as "deactivation group"

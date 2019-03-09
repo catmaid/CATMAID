@@ -98,7 +98,7 @@ migrations that are not present in the selected CATMAID version.
 To backup the complete database (here named "catmaid"), except tables that can
 be restored automatically (to save space)::
 
-    pg_dump --clean -T treenode_edge -U <CATMAID-USER> catmaid -f catmaid_dump.sql
+    pg_dump --clean -U <CATMAID-USER> catmaid -f catmaid_dump.sql
 
 To restore the dumped database into a database named "catmaid" (which would have
 to be created as described in the basic install instructions)::
@@ -112,11 +112,61 @@ thing. Those don't ask for a password, but require a
 ``.pgpass`` file (see `PostgreSQL documentation
 <http://www.postgresql.org/docs/current/static/libpq-pgpass.html>`_).
 
-If ``-T treenode_edge`` in the first command above is omitted, all tables
-are exported and no additional steps are required. If it was used, though, the
-following command has to be executed additionally, to complete the import::
+Excluding materialized views from backup
+----------------------------------------
+
+Some tables in CATMAID contain data that is procomputed from other tables. These
+"materialized views" can be omitted from backups and recreated after a backup
+restore. This reduces the size of backups, but increases the time to reload
+backups.
+
+If e.g. ``-T treenode_edge`` is used with ``pg_dump``, the ``treenode_edge``
+table is not part of the backup. Without any ``-T`` option, all tables are
+exported and no additional steps are required after a restore.
+
+The following tables can be ommitted from a backup (``-T`` option with
+``pg_dump``), because they can be recreated after a backup is restored:
+``treenode_edge``, ``treenode_connector_edge``, ``connector_geom``,
+``catmaid_stats_summary``, ``node_query_cache``, ``catmaid_skeleton_summary``.
+
+If one or more of these tables isn't part of a backup, it is required to backup
+the schema separately by using ``pg_dump --schema-only``. When restoring, the
+schema has to be restored first, because the tables not included in the backup
+need to be created regardless. This command is followed by a ``pg_restore
+--data-only --disable-triggers`` of the data dump.
+
+If the ``-T`` option was used, the following command has to be executed
+additionally to complete the import::
 
     manage.py catmaid_rebuild_edge_table
+
+The script ``scripts/database/backup-min-database.sh`` can be used to export
+all databases without including the tables mention above. To restore such a
+backup, four steps are needed. Assuming the database name is ``catmaid``
+(otherwise change the ``-d catmaid`` parameters), they are:
+
+1. Import the schema, which includes all tables. Make sure the relevant
+   database user exists already, or use the "globals" export file. The target
+   database name is part of the filename and matches the original database::
+
+   $ sudo zcat catmaid.schema.gz.dump | sudo -u postgres psql -p 5432
+
+2. Import the data into the new database::
+
+   $ sudo -u postgres pg_restore -p 5432 -d catmaid --data-only --disable-triggers \
+          -S postgres --jobs=4 /path/to/backups/catmaid.all.gz.dump
+
+3. Analyze database, for faster restoration of materialzied views::
+
+   $ sudo -u postgres psql -p 5432 -d catmaid -c "\timing on" -c "ANALYZE;"
+
+4. Recreate all materializations::
+
+   $ manage.py catmaid_rebuild_all_materializations
+
+
+Automatic periodic backups
+--------------------------
 
 A cron job can be used to automate the backup process. Since this will be run as
 the ``root`` user, no password will be needed. The root user's crontab file can
@@ -128,7 +178,7 @@ The actual crontab file is not meant to be edited directly, but only through the
 ``crontab`` tool. To run the above backup command every night at 3am, the
 following line would have to be added::
 
-  0 3 * * * sudo -u postgres pg_dump --clean -T treenode_edge catmaid -f "/opt/backup/psql/catmaid_$(date +\%Y\%m\%d\%H\%M).sql"
+  0 3 * * * sudo -u postgres pg_dump --clean catmaid -f "/opt/backup/psql/catmaid_$(date +\%Y\%m\%d\%H\%M).sql"
 
 This creates a new file in the folder ``/opt/backup/psql`` at 3am every
 night. It will fail if the folder isn't available or writable. The file name
@@ -143,23 +193,6 @@ and the actual ``pg_dump`` call is executed as `postgres` user with the help of
 ``sudo``, no database password is required. If your actual backup command gets
 more complicated than this, it is recommended to create a script file and call
 this from cron.
-
-.. note::
-
-   The following tables can be ommitted from a backup (``-T`` option with
-   ``pg_dump``), because they can be recreated after a backup is restored:
-   ``treenode_edge``, ``treenode_connector_edge``, ``connector_geom``,
-   ``catmaid_stats_summary``, ``node_query_cache``, ``catmaid_skeleton_summary``.
-
-   If one or more of these tables isn't part of a backup, it is required to
-   backup the schema separately by using ``pg_dump --schema-only``. When
-   restoring, the schema has to be restored first, followed by a ``pg_restore --data-only
-   --disable-triggers`` of the data dump. Ultimately, the ommitted tables need
-   to be restored, e.g. using ``manage.py catmaid_rebuild_all_materializations``.
-
-   The script ``scripts/database/backup-min-database.py`` can be used to export
-   all databases exluding the tables mention above.
-
 
 Modifying the database directly
 -------------------------------

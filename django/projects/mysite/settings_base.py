@@ -79,7 +79,7 @@ INSTALLED_APPS = (
     'taggit',
     'adminplus',
     'guardian',
-    'catmaid.apps.CATMAIDConfig',
+    'catmaid',
     'pgcompat',
     'performancetests',
     'pipeline',

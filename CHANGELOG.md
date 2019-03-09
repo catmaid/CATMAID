@@ -276,6 +276,10 @@ Miscellaneous:
 
 ### Bug fixes
 
+- A race condition has been fixed that could in rare cases lead to inconsistent
+  skeleton IDs in a skeleton that is merge into different skeletons by different
+  requests.
+
 - The Connectivity Graph Plot draws now individual bars in each sub-plot
   side-by-side and uses the same neuron names as other widgets (from CATMAID's
   neuron name service).

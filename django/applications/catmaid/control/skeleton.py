@@ -1976,15 +1976,43 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         if from_skid == to_skid:
             raise Exception('Cannot join treenodes of the same skeleton, this would introduce a loop.')
 
-        # If samplers reference this skeleton, make sure they are updated as well
-        sampler_info = _update_samplers_in_merge(project_id, user.id, from_skid, to_skid,
-                from_treenode.id, to_treenode.id, sampler_handling, "delete-samplers")
-
         # Make sure the user has permissions to edit both neurons
         can_edit_class_instance_or_fail(
                 user, from_neuron['neuronid'], 'neuron')
         can_edit_class_instance_or_fail(
                 user, to_neuron['neuronid'], 'neuron')
+
+        # If samplers reference this skeleton, make sure they are updated as well
+        sampler_info = _update_samplers_in_merge(project_id, user.id, from_skid, to_skid,
+                from_treenode.id, to_treenode.id, sampler_handling, "delete-samplers")
+
+        cursor = connection.cursor()
+
+        # We are going to change the skeleton ID of the "to" neuron, therefore
+        # all its nodes need to be locked to prevent modification from other
+        # transactions. To prevent a skeleton ID change of the "from" skeleton
+        # (which survives the merge), it is enough to lock the merge target
+        # node. The NOWAIT option results in an error if no lock can be
+        # obtained.
+        cursor.execute('''
+            SELECT 1 FROM treenode_connector tc
+            WHERE tc.skeleton_id = %(consumed_skeleton_id)s
+            ORDER BY tc.id
+            FOR NO KEY UPDATE OF tc NOWAIT;
+
+            SELECT 1 FROM treenode t
+            WHERE t.skeleton_id = %(consumed_skeleton_id)s
+            ORDER BY t.id
+            FOR NO KEY UPDATE OF t NOWAIT;
+
+            SELECT 1 FROM treenode t
+            WHERE t.id = %(target_node_id)s
+            ORDER BY t.id
+            FOR NO KEY UPDATE OF t NOWAIT;
+        ''', {
+            'consumed_skeleton_id': to_skid,
+            'target_node_id': from_treenode_id,
+        })
 
         # Check if annotations are valid, if there is a particular selection
         if annotation_map is None:
@@ -2036,7 +2064,6 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         response_on_error = 'Could not update Treenode table with new skeleton id for joined treenodes.'
 
         Treenode.objects.filter(skeleton=to_skid).update(skeleton=from_skid)
-        cursor = connection.cursor()
         cursor.execute("""
             -- Set transaction user ID to update skeleton summary more precicely in trigger function.
             SET LOCAL catmaid.user_id=%(user_id)s;

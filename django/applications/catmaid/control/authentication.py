@@ -548,7 +548,7 @@ def get_exceeded_inactivity_periods(user_id):
     cursor = connection.cursor()
     cursor.execute("""
         SELECT g.id, g.max_inactivity, g.message, c.user_ids, c.user_logins,
-            c.user_names
+            c.user_names, c.user_emails
         FROM (
             SELECT cgi.id, cgi.max_inactivity, cgi.message
             FROM catmaid_group_inactivity_period cgi
@@ -563,7 +563,8 @@ def get_exceeded_inactivity_periods(user_id):
         JOIN LATERAL (
             SELECT array_agg(igc.user_id) AS user_ids,
                 array_agg(u.username) AS user_logins,
-                array_agg(u.first_name || ' ' || u.last_name) AS user_names
+                array_agg(u.first_name || ' ' || u.last_name) AS user_names,
+                array_agg(u.email) as user_emails
             FROM catmaid_group_inactivity_period_contact igc
             JOIN auth_user u
                 ON u.id = igc.user_id
@@ -582,6 +583,7 @@ def get_exceeded_inactivity_periods(user_id):
             'id': row[3][n],
             'username': row[4][n],
             'full_name': row[5][n],
+            'email': row[6][n],
         } for n in range(len(row[3]))]
     } for row in cursor.fetchall()]
 

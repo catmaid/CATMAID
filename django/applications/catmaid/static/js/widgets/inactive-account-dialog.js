@@ -20,7 +20,7 @@
         this.dialog.appendMessage(generalMsg);
 
         if (ig.contacts && ig.contacts.length > 0) {
-          let userList = ig.contacts.map(user => `${user.full_name} (${user.username})`).join(', ');
+          let userList = ig.contacts.map(user => `${user.full_name} (${user.email || user.username})`).join(', ');
           let contactMsg = 'Please contact any of the following members of ' +
               `the CATMAID administration team for assistance: ${userList}`;
           this.dialog.appendMessage(contactMsg);

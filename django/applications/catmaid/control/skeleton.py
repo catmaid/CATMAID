@@ -2081,7 +2081,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
             skeleton=to_skid).update(skeleton=from_skid)
 
         # Update reviews from 'losing' neuron to now belong to the new neuron
-        response_on_error = 'Couldn not update reviews with new skeleton IDs for joined treenodes.'
+        response_on_error = 'Could not update reviews with new skeleton IDs for joined treenodes.'
         Review.objects.filter(skeleton_id=to_skid).update(skeleton=from_skid)
 
         # Remove skeleton of to_id (deletes cicic part_of to neuron by cascade,

@@ -10,10 +10,15 @@ Publications using CATMAID
 `````````````````````````````````````
 *The following publications used CATMAID for neural circuit reconstruction or other tasks. Please get in touch with us if your publication is missing.*
 
-2018
+2019
 ~~~~
 
-* Jan M. Ache, Jason Polsky, Shada Alghailani, Ruchi Parekh, Patrick Breads, Martin Y. Peek, Davi D. Bock, Catherine R. von Reyn, Gwyneth M. Card. `Neural Basis for Looming Size and Velocity Encoding in the Drosophila Giant Fiber Escape Pathway <https://www.cell.com/current-biology/fulltext/S0960-9822(19)30138-1>`_, Cell Current Biology, 2018.
+* Jan M. Ache, Jason Polsky, Shada Alghailani, Ruchi Parekh, Patrick Breads, Martin Y. Peek, Davi D. Bock, Catherine R. von Reyn, Gwyneth M. Card. `Neural Basis for Looming Size and Velocity Encoding in the Drosophila Giant Fiber Escape Pathway <https://www.cell.com/current-biology/fulltext/S0960-9822(19)30138-1>`_, Cell Current Biology, 2019.
+
+* Tihana Jovanic, Michael Winding, Albert Cardona, James W. Truman, Marc Gershow, Marta Zlatic. `Neural Substrates of Drosophila Larval Anemotaxis <https://www.cell.com/current-biology/pdf/S0960-9822(19)30011-9.pdf>`_, Cell Current Biology, 2019.
+
+2018
+~~~~
 
 * Luis A. Bezares-Calderón, Jürgen Berger, Sanja Jasek, Csaba Verasztó, Sara Mendes, Martin Gühmann, Rodrigo Almeda, Réza Shahidi, Gáspár Jékely. `Neural circuitry of a polycystin-mediated hydrodynamic startle response for predator avoidance <https://elifesciences.org/articles/36262>`_, eLife, 2018.
 

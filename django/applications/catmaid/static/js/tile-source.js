@@ -568,9 +568,7 @@
       let sliceDims = this.baseURL.substring(this.baseURL.lastIndexOf('/') + 1);
       this.sliceDims = sliceDims.split('_').map(d => parseInt(d, 10));
       this.reciprocalSliceDims = Array.from(Array(this.sliceDims.length).keys())
-            .sort((a, b) => this.sliceDims[a] < this.sliceDims[b] ?
-                -1 :
-                (this.sliceDims[b] < this.sliceDims[a]) | 0);
+          .sort((a, b) => this.sliceDims[a] - this.sliceDims[b]);
       let n5DirIndex = this.datasetURL.lastIndexOf('.n5');
       this.rootURL = n5DirIndex === -1 ?
           (new URL(this.datasetURL)).origin :

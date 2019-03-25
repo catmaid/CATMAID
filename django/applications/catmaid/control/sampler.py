@@ -401,13 +401,17 @@ def delete_sampler(request, project_id, sampler_id):
     can_edit_or_fail(request.user, sampler_id, "catmaid_sampler")
     sampler = Sampler.objects.get(id=sampler_id)
 
-    n_deleted_nodes = 0
-    delete_created_nodes = get_request_bool(request.POST, 'delete_created_nodes', True)
-    if delete_created_nodes and sampler.create_interval_boundaries:
-        labeled_as_relation = Relation.objects.get(project=project_id, relation_name='labeled_as')
-        label_class = Class.objects.get(project=project_id, class_name='label')
+    labeled_as_relation = Relation.objects.get(project=project_id, relation_name='labeled_as')
+    label_class = Class.objects.get(project=project_id, class_name='label')
+    try:
         label_class_instance = ClassInstance.objects.get(project=project_id,
                 class_column=label_class, name=SAMPLER_CREATED_CLASS)
+    except ClassInstance.DoesNotExist:
+        label_class_instance = None
+
+    n_deleted_nodes = 0
+    delete_created_nodes = get_request_bool(request.POST, 'delete_created_nodes', True)
+    if label_class_instance and delete_created_nodes and sampler.create_interval_boundaries:
         # If the sampler was parameterized to created interval boundary nodes,
         # these nodes can now be removed if they are still collinear with their
         # child and parent node and have not been touched. These nodes are all

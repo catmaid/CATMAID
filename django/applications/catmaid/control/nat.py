@@ -1197,7 +1197,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         if len(target_dps) == 0:
             raise ValueError("No valid target objects found")
 
-       # Restore R matrix for use with nat.nblast.
+        # Restore R matrix for use with nat.nblast.
         cells = list(chain.from_iterable(config.scoring))
         dist_bins = len(config.distance_breaks) - 1
         smat = Matrix(robjects.FloatVector(cells), nrow=dist_bins, byrow=True)

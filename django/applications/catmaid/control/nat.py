@@ -1389,11 +1389,6 @@ def as_matrix(scores, a, b, transposed=False):
     if transposed:
         a, b = b, a
 
-    if len(scores) == 1:
-        return robjects.r.matrix(scores, **{
-            'dimnames': robjects.r('list')(base.names(a), base.names(b)),
-        })
-
     if score_type == robjects.vectors.FloatVector:
         return robjects.r.matrix(scores, **{
             # We expect <a> to be the column vector and <b> to be the row vector.

@@ -361,7 +361,7 @@
     if (show || recreate) {
       // Create new panel
       panel = document.createElement('div');
-      panel.setAttribute('class', 'window-settings');
+      panel.classList.add('windowpanel', 'window-settings');
 
       var aliasInput = document.createElement('input');
       aliasInput.value = currentAlias;
@@ -468,7 +468,7 @@
       if (show || recreate) {
         // Create new panel
         panel = CATMAID.skeletonListSources.createSourceControls(source, options);
-        panel.setAttribute('class', 'sourcepanel');
+        panel.classList.add('windowpanel', 'sourcepanel');
         // Add as first element after caption and event catcher
         var eventCatcher = frame.querySelector('.eventCatcher');
         if (eventCatcher) {
@@ -534,7 +534,7 @@
         }
         // Create new panel
         panel = document.createElement('div');
-        panel.setAttribute('class', 'dropdown-panel');
+        panel.classList.add('windowpanel', 'dropdown-panel');
 
         // Add tab panel, with first tab listing current rules and second allows
         // to add new rules.

@@ -142,29 +142,33 @@ var WindowMaker = new function()
 
   /**
    * Get content height of a window and take into account a potential button
-   * panel. If a button panel ID or element is provided, its height is
-   * substracted from the window content height.
+   * panel. If a button panel class is provided, the height of all visible
+   * elements of this class will be substracted from the window content height.
    */
-  var getWindowContentHeight = function(win, buttonPanel) {
-    var height = win.getContentHeight();
-    if (buttonPanel !== undefined) {
-      var $bar = typeof(buttonPanel) === "string" ? $('#' + buttonPanel) : $(buttonPanel);
-      var domElement = $bar[0];
-      if (domElement) {
-        height = height - ($bar.is(':visible') ? domElement.getBoundingClientRect().height : 0);
+  var getWindowContentHeight = function(win, panelSelector = '.windowpanel') {
+    let height = win.getContentHeight();
+    if (panelSelector) {
+      let panels = win.getFrame().querySelectorAll(panelSelector);
+      let totalPanelHeight = 0;
+      for (let panel of panels) {
+        if ($(panel).is(':visible')) {
+          totalPanelHeight += panel.getBoundingClientRect().height;
+        }
       }
+      // Update content height
+      height = height - totalPanelHeight;
     }
     return height;
   };
 
-  var addListener = function(win, container, button_bar, destroy, resize, focus) {
+  var addListener = function(win, container, destroy, resize, focus) {
     win.addListener(
       function(callingWindow, signal) {
 
         // Keep track of scroll bar pixel position and ratio to total container
         // height to maintain scoll bar location on resize. From:
         // http://jsfiddle.net/JamesKyle/RmNap/
-        var contentHeight = getWindowContentHeight(win, button_bar);
+        var contentHeight = getWindowContentHeight(win);
         var $container = $(container);
         var scrollPosition = $container.scrollTop();
         var scrollRatio = scrollPosition / contentHeight;
@@ -193,7 +197,7 @@ var WindowMaker = new function()
             }
             break;
           case CMWWindow.RESIZE:
-            contentHeight = getWindowContentHeight(win, button_bar);
+            contentHeight = getWindowContentHeight(win);
             container.style.height = contentHeight + "px";
             container.style.width = ( win.getAvailableWidth() + "px" );
 
@@ -307,7 +311,7 @@ var WindowMaker = new function()
       if (config.controlsID) {
         controls.setAttribute("id", config.controlsID);
       }
-      controls.setAttribute("class", "buttonpanel");
+      controls.classList.add('windowpanel', 'buttonpanel');
       config.createControls.call(instance, controls);
       container.appendChild(controls);
       DOM.addButtonDisplayToggle(win);
@@ -330,7 +334,7 @@ var WindowMaker = new function()
     var destroy = wrapSaveState(instance, instance.destroy);
     var resize = instance.resize ? instance.resize.bind(instance) : undefined;
     var focus = instance.focus ? instance.focus.bind(instance) : undefined;
-    addListener(win, content, controls, destroy, resize, focus);
+    addListener(win, content, destroy, resize, focus);
     addLogic(win);
 
     if (CATMAID.tools.isFn(config.init)) {
@@ -366,7 +370,7 @@ var WindowMaker = new function()
 
     var bar = document.createElement( "div" );
     bar.id = "3d_viewer_buttons";
-    bar.setAttribute('class', 'buttonpanel');
+    bar.classList.add('windowpanel', 'buttonpanel');
     DOM.addFilterControlsToggle(win, 'Filter: ' +
         WA.getName(), {
           rules: WA.filterRules,
@@ -1790,7 +1794,7 @@ var WindowMaker = new function()
 
     var buttons = document.createElement('div');
     buttons.setAttribute('id', 'connectivity_graph_plot_buttons' + GP.widgetID);
-    buttons.setAttribute('class', 'buttonpanel');
+    buttons.classList.add('windowpanel', 'buttonpanel');
     DOM.addButtonDisplayToggle(win);
     addWindowConfigButton(win, GP);
 
@@ -1812,8 +1816,7 @@ var WindowMaker = new function()
     plot.style.backgroundColor = "#FFFFFF";
     container.appendChild(plot);
 
-    addListener(win, container, 'connectivity_graph_plot_buttons' + GP.widgetID,
-            GP.destroy.bind(GP), GP.resize.bind(GP));
+    addListener(win, container, GP.destroy.bind(GP), GP.resize.bind(GP));
 
     addLogic(win);
 
@@ -1836,7 +1839,7 @@ var WindowMaker = new function()
     content.appendChild(container);
 
     // Wire it up.
-    addListener(win, container, undefined, OS.destroy.bind(OS));
+    addListener(win, container, OS.destroy.bind(OS));
     addLogic(win);
 
     // Let the ontology search initialize the interface within the created
@@ -2000,7 +2003,7 @@ var WindowMaker = new function()
     content.appendChild(container);
 
     // Wire it up.
-    addListener(win, container, undefined, NN.destroy.bind(NN));
+    addListener(win, container, NN.destroy.bind(NN));
     addLogic(win);
 
     // Let the navigator initialize the interface within

@@ -2779,7 +2779,7 @@
     landmarkGroup.boundingBox = visible;
 
     if (landmarkGroup.boundingBoxMeshes && landmarkGroup.boundingBoxMeshes.length > 0) {
-      this.space.scene.project.remove.apply(this.space.scene, landmarkGroup.boundingBoxMeshes);
+      this.space.scene.project.remove.apply(this.space.scene.project, landmarkGroup.boundingBoxMeshes);
     }
 
     if (visible) {

@@ -917,7 +917,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
             # If we found cached items before, use them to complete the query
             # objects.
-            if use_cache and query_cache_objects_dps:
+            if use_cache and cache_typed_query_object_ids:
                 if len(query_dps) > 0:
                     query_dps = robjects.r.c(query_dps, query_cache_objects_dps)
                     typed_query_object_ids = non_cache_typed_query_object_ids + \
@@ -986,7 +986,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
             # If we found cached items before, use them to complete the query
             # objects.
-            if use_cache and query_cache_objects_dps:
+            if use_cache and cache_typed_query_object_ids:
                 if len(query_dps) > 0:
                     query_dps = robjects.r.c(query_dps, query_cache_objects_dps)
                     typed_query_object_ids = non_cache_typed_query_object_ids + \
@@ -1088,7 +1088,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
                 # If we found cached items before, use them to complete the target
                 # objects.
-                if use_cache and non_cache_typed_target_object_ids:
+                if use_cache and cache_typed_target_object_ids:
                     if len(target_dps) > 0:
                         target_dps = robjects.r.c(target_dps, target_cache_objects_dps)
                         typed_target_object_ids = non_cache_typed_target_object_ids + \
@@ -1157,7 +1157,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
                 # If we found cached items before, use them to complete the target
                 # objects.
-                if use_cache and target_cache_objects_dps:
+                if use_cache and cache_typed_target_object_ids:
                     if len(target_dps) > 0:
                         target_dps = robjects.r.c(target_dps, target_cache_objects_dps)
                         typed_target_object_ids = non_cache_typed_target_object_ids + \

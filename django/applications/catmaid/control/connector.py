@@ -1027,7 +1027,7 @@ def connector_detail(request:HttpRequest, project_id, connector_id:Union[str,int
 def get_connectors_in_bb_postgis3d(params) -> List:
     """Return a list of connector node IDs in a bounding box.
     """
-    limit = params.get('limit', 0)
+    limit = int(params.get('limit', 0))
     with_locations = params.get('with_locations', False)
     with_links = params.get('with_links', False)
     skeleton_ids = params.get('skeleton_ids', False)
@@ -1069,7 +1069,7 @@ def get_connectors_in_bb_postgis3d(params) -> List:
         {limit_clause}
     """.format(**{
         'distinct': 'DISTINCT' if not with_links else '',
-        'limit_clause': 'LIMIT'.format(params['limit']) \
+        'limit_clause': 'LIMIT {}'.format(limit) \
                 if limit > 0 else '',
         'location_select': ', c.location_x, c.location_y, c.location_z' \
                 if with_locations else '',

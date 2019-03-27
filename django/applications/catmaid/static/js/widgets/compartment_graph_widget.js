@@ -280,6 +280,10 @@
         damping: 0.5
       }
     };
+
+    // Handle neuron deletion and merge events
+    CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_CHANGED, this.handleSkeletonChanged, this);
+    CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_DELETED, this.handleSkeletonDeletion, this);
   };
 
   GroupGraph.prototype = Object.create(CATMAID.SkeletonSource.prototype);
@@ -538,6 +542,8 @@
     this.unregisterInstance();
     this.unregisterSource();
     CATMAID.NeuronNameService.getInstance().unregister(this);
+    CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_CHANGED, this.handleSkeletonChanged, this);
+    CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_DELETED, this.handleSkeletonDeletion, this);
   };
 
   GroupGraph.prototype.nextGroupID = function() {
@@ -1701,14 +1707,14 @@
 
     var groups = this.groups;
     var subgraphs = this.subgraphs;
+    let needsUpdate= false;
 
     // Inspect each node, remove node if all its skeletons are to be removed
     this.cy.nodes().each(function(i, node) {
       var models = node.data('skeletons'),
-          sks = models.filter(function(model) {
-            return !skids[model.id];
-          });
-      if (0 === sks.length) {
+          removedModels = models.filter(m => skids[m.id]);
+      if (removedModels.length === models.length) {
+        // No models are left for this node, therefore remove node.
         node.remove();
         if (models.length > 1) {
           // Remove the corresponding group
@@ -1717,8 +1723,23 @@
           // Remove the subgraph if node is split, no effect otherwise.
           delete subgraphs[models[0].id];
         }
+      } else if (removedModels.length > 0 &&
+          removedModels.length < models.length) {
+        // At least one model remains in this node after removing the passed in
+        // skeletons. Remove the deleted models from this node.
+        let group = groups[node.id()];
+        for (let removedModel of removedModels) {
+          delete group.models[removedModel.id];
+        }
+        let keptModels = models.filter(m => !skids[m.id]);
+        node.data('skeletons', keptModels);
+        needsUpdate = true;
       }
     });
+
+    if (needsUpdate) {
+      this.update();
+    }
   };
 
   GroupGraph.prototype.append = function(models) {
@@ -4365,6 +4386,20 @@
       }
     });
     this.cy.endBatch();
+  };
+
+  GroupGraph.prototype.handleSkeletonChanged = function(changedSkeletonId) {
+    if (this.hasSkeleton(changedSkeletonId)) {
+      let models = {};
+      models[changedSkeletonId] = this.getSkeletonModel(changedSkeletonId);
+      this.append(models);
+    }
+  };
+
+  GroupGraph.prototype.handleSkeletonDeletion = function(deletedSkeletonId) {
+    if (this.hasSkeleton(deletedSkeletonId)) {
+      this.removeSkeletons([deletedSkeletonId]);
+    }
   };
 
   // Register widget

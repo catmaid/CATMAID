@@ -3341,7 +3341,8 @@
     var groups = this.groups;
     var count = 0;
     this.cy.nodes().each(function(i, node) {
-      if (node.selected() && node.data('skeletons').length > 1) {
+      let group = groups[node.id()];
+      if (node.selected() && group) {
         delete groups[node.id()];
         count += 1;
       }

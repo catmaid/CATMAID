@@ -301,6 +301,8 @@ Miscellaneous:
 - Connecitivity widget: the auto-connectivity CSV will now use formatted neuron
   names as column and row headers.
 
+- Graph widget: ungrouping of one-element groups is now allowed.
+
 - SWC neuron import: providing a neuron ID for an import works again and will
   now also set an optionally provided neuron name. Additionally, it is now
   required that a user importing skeleton data for an existing neuron ID has

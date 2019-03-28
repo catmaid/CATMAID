@@ -3962,8 +3962,7 @@ var SkeletonAnnotations = {};
 
       // Allow multiple parallel requests within one submit() entry, collect
       // them in array <requests>.
-      let work = self.submit().promise()
-        .then(function() {
+      let work = self.submit.then(() => {
           let requests = [];
           let extraUpdate = dedicatedActiveSkeletonUpdate &&
               (treenodeIDs.length > 0 || connectorIDs.length > 0);
@@ -4132,12 +4131,12 @@ var SkeletonAnnotations = {};
               delete SkeletonAnnotations.init_active_skeleton_id;
             }
 
-            self.redraw(false, undefined, renderingQueued);
-            if (typeof callback !== "undefined") {
-              callback();
-            }
+            self.redraw(false, callback, renderingQueued);
           });
         });
+
+      // Return a proper promise to the caller (i.e. no submitter instance).
+      return work.promise();
     });
   };
 

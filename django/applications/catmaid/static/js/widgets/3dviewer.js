@@ -1353,7 +1353,9 @@
   WebGLApplication.prototype.Options.prototype.createLandmarkMaterial = function(color, opacity) {
     var material = new THREE.SpriteMaterial({
         map: new THREE.CanvasTexture(generateSprite(color, opacity)),
-        blending: THREE.AdditiveBlending
+        blending: THREE.AdditiveBlending,
+        alphaTest: 0.5,
+        depthWrite: false,
       });
     return material;
   };

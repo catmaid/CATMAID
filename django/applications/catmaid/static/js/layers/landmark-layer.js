@@ -64,7 +64,7 @@
         let model = this.skeletonDisplayModels.get(node.skeleton_id);
         if (!model) {
           this.skeletonDisplayModels.set(node.skeleton_id, new CATMAID.SkeletonModel(
-              n.skeleton_id, '', new THREE.Color(this.options.overrideColor)));
+              node.skeleton_id, '', new THREE.Color(this.options.overrideColor)));
         }
       }
     } else if (this.options.colorMap) {

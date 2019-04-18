@@ -841,7 +841,7 @@
             })
           .selector("edge")
             .css({
-              "content": "data(label)",
+              "content": "data(weight)",
               "width": "data(width)", //mapData(weight, 0, 100, 10, 50)",
               "target-arrow-shape": "data(arrow)",
               "target-arrow-color": "data(color)",

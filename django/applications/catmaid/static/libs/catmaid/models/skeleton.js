@@ -408,7 +408,32 @@
           }, []);
           return skeletonIds;
         });
-      },
+    },
+
+    /**
+     * Get the skeleton change history for all skeletons in a project,
+     * optionally constrained by user, and after as well as before dates.
+     * Skeletons are modified by splits and merges.
+     */
+    skeletonHistory: function(projectId, skeletonIds = null, userId = null,
+        changesAfter = null, changesBefore = null, api = null) {
+
+      if ([skeletonIds, userId].every(e => e === null)) {
+        throw new CATMAID.ValueError("Please provide either a set of skeleton IDs or a user ID");
+      }
+      return CATMAID.fetch({
+        url: projectId + '/skeletons/change-history',
+        method: 'GET',
+        data: {
+          initial_user_id: userId,
+          changes_after: changesAfter,
+          changes_before: changesBefore,
+          skeleton_ids: skeletonIds ?
+            skeletonIds.split(',').map(s => parseInt(s.trim(), 10)) : [],
+        },
+        api: api,
+      });
+    },
 
   };
 

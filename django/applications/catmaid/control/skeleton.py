@@ -3385,3 +3385,163 @@ def skeletons_in_bounding_box(request:HttpRequest, project_id) -> JsonResponse:
 
     skeleton_ids = get_skeletons_in_bb(params)
     return JsonResponse(skeleton_ids, safe=False)
+
+
+@api_view(['GET'])
+@requires_user_role([UserRole.Browse])
+def change_history(request:HttpRequest, project_id=None) -> JsonResponse:
+    """Return the history of all skeletons ID changes in project over time.
+    Optionally, this can be constrained by a user ID and a time window.
+    ---
+    parameters:
+        - name: project_id
+          description: Project to operate in
+          required: true
+          type: integer
+          paramType: path
+        - name: initial_user_id
+          description: User who caused the first change in all returned skeleton.
+          required: false
+          type: integer
+          paramType: form
+        - name: changes_after
+          description: |
+            Date of format YYYY-MM-DDTHH:mm:ss, only the date part is required.
+            Limits returns history to skeleton changes after this date.
+          required: false
+          type: string
+          paramType: form
+        - name: changes_before
+          description: |
+            Date of format YYYY-MM-DDTHH:mm:ss, only the date part is required.
+            Limits returns history to skeleton changes before this date.
+          required: false
+          type: string
+          paramType: form
+        - name: skeleton_ids
+          description: Skeleton IDs of the initial set of treenodes.
+          required: false
+          type: array
+          paramType: form
+    type:
+        - type: array
+          items:
+          type: string
+          description: |
+            array of arrays, each representing a unique skeleton path in
+            historic order, newest last.
+          required: true
+    """
+    initial_user_id = request.GET.get('initial_user_id')
+    changes_after = request.GET.get('changes_after')
+    changes_before = request.GET.get('changes_before')
+    skeleton_ids = get_request_list(request.GET, 'skeleton_ids', map_fn=int)
+
+    init_constraints = ['project_id = %(project_id)s']
+    constraints = ['project_id = %(project_id)s']
+
+    if initial_user_id is not None:
+        init_constraints.append("cti.user_id = %(initial_user_id)s")
+
+    if changes_after:
+        init_constraints.append("edition_time > %(changes_after)s")
+        constraints.append("execution_time > %(changes_after)s")
+
+    if changes_before:
+        init_constraints.append("execution_time > %(changes_before)s")
+        constraints.append("execution_time > %(changes_before)s")
+
+    if skeleton_ids:
+        init_constraints.append('skeleton_id = ANY(ARRAY[%(skeleton_ids)s])')
+
+    if not init_constraints:
+        raise ValueError("Please provide at least one constraint")
+
+    # 1. Get all relevant initial transactions
+    # 2. Find treenode IDs modified by those transactions
+    # 3. Get all history and live table entries for those treenodes, ordered by
+    #    transaction execution time, oldest last. History entries come first, live
+    #    entries are last.
+    # 4. Collect all referenced skeleton IDs from ordered treenodes. This results in
+    #    a skeleton ID path for each treenode. To reduce this to distinct paths, a
+    #    textual representation is done for each (id:id:id…) and only distinct values
+    #    are selected. This should allow then to get fragment skeleton ID changes
+    #    through merges and splits.
+    cursor = connection.cursor()
+    cursor.execute("""
+        WITH skeleton_class AS (
+                SELECT id as class_id
+                FROM class
+                WHERE project_id = %(project_id)s
+                    AND class_name = 'skeleton'
+        ),
+        changed_treenodes AS (
+                SELECT t.id, t.skeleton_id, MIN(txid) as txid, MIN(edition_time) as edition_time
+                FROM (
+                        /* Deleted skeletons from history */
+                        select th.id as id, th.skeleton_id as skeleton_id, MIN(th.txid) as txid, MIN(th.edition_time) as edition_time from treenode__history th
+                        /* where th.exec_transaction_id = txs.transaction_id */
+                        {init_constraints}
+                        group by th.id, th.skeleton_id
+                        union all
+                        /* Current skeletons */
+                        select t.id as id, t.skeleton_id as skeleton_id, MIN(t.txid) as txid, MIN(t.edition_time) as edition_time from treenode t
+                        /* where t.txid = txs.transaction_id */
+                        {init_constraints}
+                        GROUP BY t.id, t.skeleton_id
+                ) t
+                GROUP BY id, t.skeleton_id
+        ),
+        all_changed_skeletons AS (
+                SELECT ct.id, ct.skeleton_id, -1 as pos, ct.edition_time, ct.txid
+                FROM changed_treenodes ct
+                UNION
+                SELECT th.id as treenode_id, th.skeleton_id, 0 as pos, th.edition_time, th.txid as txid
+                FROM changed_treenodes ct
+                JOIN treenode__history th
+                        ON th.id = ct.id
+                WHERE th.txid > ct.txid
+                UNION
+                SELECT t.id, t.skeleton_id, 1 as pos, t.edition_time, t.txid
+                FROM changed_treenodes ct
+                JOIN treenode t
+                        ON t.id = ct.id
+                WHERE t.txid > ct.txid
+        ),
+        agg_skeletons AS (
+                SELECT string_agg(skeleton_id::text, ':' ORDER BY pos ASC, txid ASC) as key,
+                    array_agg(skeleton_id ORDER BY pos ASC, txid ASC) AS skeleton_ids,
+                    array_agg(txid ORDER BY pos ASC, txid ASC) AS txids,
+                    max(pos) as present
+                    /*array_agg(edition_time ORDER BY pos ASC, txid ASC) AS times*/
+                FROM all_changed_skeletons
+                GROUP BY id
+        )
+        /*
+        ,agg_treenodes AS (
+                SELECT key, skeleton_ids[1]::text || '-' || skeleton_ids[array_length(skeleton_ids, 1)]::text as begin_end, count(*) as c, skeleton_ids, max(present) as present
+                FROM agg_skeletons
+                GROUP BY key, skeleton_ids
+                ORDER BY key
+        )
+        */
+        SELECT skeleton_ids, count(*), max(present) FROM agg_skeletons
+        GROUP BY key, skeleton_ids
+        ORDER BY skeleton_ids[0], count(*) DESC;
+        /*
+        SELECT begin_end, SUM(c), max(present) from agg_treenodes
+        GROUP BY begin_end, skeleton_ids[1], skeleton_ids[array_length(skeleton_ids, 1)]
+        ORDER by skeleton_ids[1], sum(c) desc;
+        */
+    """.format(**{
+        'init_constraints': ('WHERE ' if init_constraints else '') + ' AND '.join(init_constraints),
+        'constraints': ('WHERE ' if constraints else '') + ' AND '.join(constraints),
+    }), {
+        'project_id': project_id,
+        'initial_user_id': initial_user_id,
+        'changes_after': changes_after,
+        'changes_before': changes_before,
+        'skeleton_ids': skeleton_ids,
+    })
+
+    return JsonResponse(cursor.fetchall(), safe=False)

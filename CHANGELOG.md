@@ -136,6 +136,28 @@ Neuron Similarity:
   confirmation dialog presents the computed grouping before actually creating a
   similarity matrix.
 
+Skeleton history widget:
+
+- A basic view of the change of a set of skeleton IDs over time based on all
+  nodes that are part of a given skeleton ID or that have been in the past.
+
+- Skeleton history can also be used with past skeleton IDs to see into what
+  skeleton they changed (if any).
+
+- All past and present treenodes with a passed in skeleton ID are tracked
+  through the complete history and their path of skeleton ID changes is
+  recorded along with the number of treenodes following a given skeleton path.
+
+- The widget shows a graph from origin skeletons to the final skeleton IDs in
+  every available path, summing the treenode counts for each contributing path.
+
+- Existing skeletons are colored in yellow, past skeletons are colored in cyan.
+  Selected skeletons are colored green.
+
+- Ctrl+Click on skeleton will select it and go to the closest location in it.
+  Shift+Click allows selecting multiple skeletons. All selected skeletons are
+  available through the Skeleton Source interface.
+
 Administration:
 
 - A grid based node query cache can now be used to speed up tracing data

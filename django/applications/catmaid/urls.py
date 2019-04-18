@@ -304,6 +304,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/skeleton/annotationlist$', skeleton.annotation_list),
     url(r'^(?P<project_id>\d+)/skeletons/within-spatial-distance$', skeleton.within_spatial_distance),
     url(r'^(?P<project_id>\d+)/skeletons/node-labels$', skeleton.skeletons_by_node_labels),
+    url(r'^(?P<project_id>\d+)/skeletons/change-history$', skeleton.change_history),
     url(r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', skeleton.adjacency_matrix),
     url(r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', skeleton.skeletonlist_subgraph),
     url(r'^(?P<project_id>\d+)/skeletongroup/all_shared_connectors', skeleton.all_shared_connectors),

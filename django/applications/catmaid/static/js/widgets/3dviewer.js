@@ -6810,22 +6810,6 @@
           });
         });
         done();
-      } else if ('global-polyadicity' === options.connector_color) {
-        var skids = skeletons.map(function(skeleton) { return skeleton.id; });
-        if (skids.length > 1) $.blockUI();
-
-        CATMAID.fetch(project.id + "/skeleton/partners-by-connector", "POST",
-            {connectors: skids})
-          .then(function(json) {
-            skeletons.forEach(function(skeleton) {
-              skeleton.completeUpdateConnectorColor(options, json[skeleton.id]);
-            });
-            done();
-          })
-          .catch(CATMAID.handleError)
-          .then(function() {
-            $.unblockUI();
-          });
       }
     });
   };

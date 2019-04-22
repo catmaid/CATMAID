@@ -596,7 +596,6 @@ var WindowMaker = new function()
      ['Synapse clusters', 'synapse-clustering'],
      ['Max. flow cut: axon (green) and dendrite (blue)', 'axon-and-dendrite'],
      ['Same as skeleton', 'skeleton'],
-     ['Polyadicity', 'global-polyadicity'],
      ['Custom', 'custom']
     ].forEach(function(e, i) {
        var selected = o.connector_color === e[1];

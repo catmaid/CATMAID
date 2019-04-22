@@ -1322,6 +1322,14 @@
     this.allowed_sampler_domain_ids = [];
     this.allowed_sampler_interval_ids = [];
     this.sampler_domain_shading_other_weight = 0;
+    this.polyadicity_colors = {
+        0: 'white',
+        1: 'red',
+        2: 'green',
+        3: 'cyan',
+        4: 'blue',
+        5: 'purple'
+    };
   };
 
   WebGLApplication.prototype.Options.prototype = {};
@@ -2976,9 +2984,66 @@
         this.space.scene.project.remove(v);
       }, this);
       delete this.loadedPointSets[pointSetId];
-      this.space.render();
+      this.space.updateConnectorColors(this.options, updatedSkeletons);
     }
   };
+
+  WebGLApplication.prototype.editConnectorPolyadicityColors = function() {
+    let dialog = new CATMAID.OptionsDialog("Edit polyadicity colors", {
+      'Close': (e) => {},
+    });
+
+    dialog.appendMessage('The list below maps polyadicity values (i.e. number of connected partners per synapse) to colors. This list can be adjusted using the controls below.');
+
+    let select = dialog.appendChoice('Polyadicity', 'polyadicity',
+        Object.keys(this.options.polyadicity_colors).map(k => `${k}: ${this.options.polyadicity_colors[k]}`),
+        Object.keys(this.options.polyadicity_colors));
+
+    select.classList.add('multiline');
+    select.setAttribute('size', '4');
+
+    let removeSelected = document.createElement('button');
+    removeSelected.appendChild(document.createTextNode('Remove selected'));
+    removeSelected.onclick = (e) => {
+      let selected = select.value;
+      delete this.options.polyadicity_colors[selected];
+      select.remove(select.selectedIndex);
+      this.refreshConnnectorColors();
+    };
+    dialog.appendChild(removeSelected);
+
+    let newIndexField = dialog.appendNumericField('Polyadicity', 'new-polyadicity-value', 0);
+    let newColorField = dialog.appendField('Color', 'new-polyadicity-color', '');
+
+    let addNewEntry = document.createElement('button');
+    addNewEntry.appendChild(document.createTextNode('Add new entry'));
+    addNewEntry.onclick = (e) => {
+      let newIndex = parseInt(newIndexField.value, 10);
+      let newColor = newColorField.value.trim();
+      if (Number.isNaN(newIndex)) {
+        CATMAID.warn("Index must be a polyadicity number");
+        return;
+      }
+      if (newColor === 0) {
+        CATMAID.warn("Color must be a valid color name, hex string or style");
+        return;
+      }
+      if (this.options.polyadicity_colors[newIndex]) {
+        CATMAID.warn("There is already an entry for polyadicity " + newIndex);
+        return;
+      }
+      this.options.polyadicity_colors[newIndex] = newColor;
+      let newOpt = document.createElement('option');
+      newOpt.value = newIndex;
+      newOpt.text = `${newIndex}: ${newColor}`;
+      select.add(newOpt);
+      this.refreshConnnectorColors();
+    };
+    dialog.appendChild(addNewEntry);
+
+    dialog.show(500, "auto", true);
+  };
+
 
   /** Defines the properties of the 3d space and also its static members like the bounding box and the missing sections. */
   WebGLApplication.prototype.Space = function( w, h, container, stack,
@@ -6660,6 +6725,11 @@
     if (select) {
       this.options.connector_color = select.value;
     }
+    this.refreshConnnectorColors();
+  };
+
+
+  WebGLApplication.prototype.refreshConnnectorColors = function() {
     var skeletons = Object.keys(this.space.content.skeletons).map(function(skid) {
       return this.space.content.skeletons[skid];
     }, this);
@@ -6810,6 +6880,22 @@
           });
         });
         done();
+      } else if ('global-polyadicity' === options.connector_color) {
+        var skids = skeletons.map(function(skeleton) { return skeleton.id; });
+        if (skids.length > 1) $.blockUI();
+
+        CATMAID.fetch(project.id + "/skeletons/connector-polyadicity", "POST",
+            {skeleton_ids: skids})
+          .then(function(json) {
+            skeletons.forEach(function(skeleton) {
+              skeleton.completeUpdateConnectorColor(options, json[skeleton.id]);
+            });
+            done();
+          })
+          .catch(CATMAID.handleError)
+          .then(function() {
+            $.unblockUI();
+          });
       }
     });
   };
@@ -6931,6 +7017,57 @@
 
       this.synapticTypes.forEach(function(type) {
         this._colorConnectorsBy(type, fnConnectorValue, fnMakeColor);
+      }, this);
+    } else if ('global-polyadicity' === options.connector_color) {
+      var range = function(ratio) {
+        return 0.66 + 0.34 * ratio; // 0.66 (blue) to 1 (red)
+      };
+
+      // Iterate over all supported synapse types
+      this.CTYPES.slice(1).forEach(function(type) {
+        if (!json) return;
+        let polyadicities = json[type];
+        if (!polyadicities) return;
+
+        let max = Object.keys(polyadicities).reduce(function(m, connectorId) {
+              return Math.max(m, polyadicities[connectorId]);
+            }, 0);
+        let maxColorIndex = Object.keys(options.polyadicity_colors).reduce((m, idx) => {
+          let iidx = parseInt(idx, 10);
+          return iidx > m ? iidx : m;
+        }, 0);
+        let minColorIndex = Object.keys(options.polyadicity_colors).reduce((m, idx) => {
+          let iidx = parseInt(idx, 10);
+          return iidx < m ? iidx : m;
+        }, maxColorIndex);
+
+        var fnConnectorValue = function(nodeId, connectorId) {
+          var value = polyadicities[connectorId];
+          if (!value) value = 0; // connector without partner skeleton
+          return value;
+        };
+
+        var fnMakeColorFromRange = function(value) {
+          return new THREE.Color().setHSL(1 === max ? range(0) : range((value -1) / (max -1)), 1, 0.5);
+        };
+
+        var fnMakeColor = function(value) {
+          if (value <= minColorIndex) {
+            return new THREE.Color(options.polyadicity_colors[minColorIndex]);
+          }
+          if (value >= maxColorIndex) {
+            return new THREE.Color(options.polyadicity_colors[maxColorIndex]);
+          }
+          let lastMatch;
+          while (!lastMatch) {
+            lastMatch = options.polyadicity_colors[value];
+            value -= 1;
+          }
+          return new THREE.Color(lastMatch);
+        };
+
+        this._colorConnectorsBy(type, fnConnectorValue, fnMakeColor);
+
       }, this);
     }
   };

@@ -1748,6 +1748,88 @@ HAVING count(*) %s 1
 
     return JsonResponse(tuple(row[0] for row in cursor.fetchall()), safe=False)
 
+
+@requires_user_role(UserRole.Browse)
+def connector_polyadicity(request:HttpRequest, project_id=None) -> JsonResponse:
+    """Return a mapping of skeleton IDs to result objects, one per skeleton. The
+    result object maps connector IDs to relations, which in turn map to
+    connector nodes this skeleton is linked to with the respective relation.
+    Each connector in turn is assigned a single number, representing the number
+    of partner nodes for this connector.
+    """
+    skeleton_ids = get_request_list(request.POST, 'skeleton_ids', [], map_fn=int)
+    if not skeleton_ids:
+        raise Exception("Need at least one reference skeleton ID!")
+    connector_ids = get_request_list(request.POST, 'connector_ids', [],
+            map_fn=int)
+    self_relation_name = request.POST.get("self_relation_name")
+    partner_relation_name = request.POST.get("partner_relation_name")
+
+    extra_conditions = []
+    if self_relation_name:
+        extra_conditions.append('''
+            tc1.relation_id = (
+                SELECT id
+                FROM relation
+                WHERE project_id = %(project_id)s
+                    AND relation_name = '%(self_relation_name)s
+            )
+        ''')
+    if partner_relation_name:
+        extra_conditions.append('''
+            tc2.relation_id = (
+                SELECT id
+                FROM relation
+                WHERE project_id = %(project_id)s
+                    AND relation_name = '%(partner_relation_name)s
+            )
+        ''')
+
+    if connector_ids:
+        extra_conditions.append('''
+            tc1.connector_id = ANY(%(connector_ids)s::bigint[])
+        ''')
+
+    cursor = connection.cursor()
+    cursor.execute('''
+        SELECT skeleton_id, relation_name, connector_id, polyadicity
+        FROM (
+            SELECT tc1.skeleton_id, tc1.relation_id, tc1.connector_id,
+                COUNT(*) AS polyadicity
+            FROM treenode_connector tc1
+            JOIN treenode_connector tc2
+                ON tc2.connector_id = tc1.connector_id
+            JOIN UNNEST(%(skeleton_ids)s) skeleton(id)
+                ON skeleton.id = tc1.skeleton_id
+            WHERE tc1.project_id = %(project_id)s
+              AND tc1.id != tc2.id
+              {extra_conditions}
+            GROUP BY tc1.skeleton_id, tc1.relation_id, tc1.connector_id
+        ) sub
+        JOIN relation r
+            ON r.id = relation_id
+    '''.format(**{
+        'extra_conditions': ('AND' + ' AND '.join(extra_conditions)) \
+                if extra_conditions else ''
+    }), {
+        'project_id': project_id,
+        'skeleton_ids': skeleton_ids,
+        'self_relation_name': self_relation_name,
+        'partner_relation_name': partner_relation_name,
+        'connector_ids': connector_ids,
+    })
+
+    # Skeleton IDs vs. pre relation names vs. connector IDs vs. polyadicity.
+    skeleton_map = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+
+    for row in cursor.fetchall():
+        relation_map = skeleton_map[row[0]]
+        connector_map = relation_map[row[1]]
+        connector_map[row[2]] = row[3]
+
+    return JsonResponse(skeleton_map)
+
+
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
 def neuroglancer_skeleton(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonResponse:

@@ -596,6 +596,7 @@ var WindowMaker = new function()
      ['Synapse clusters', 'synapse-clustering'],
      ['Max. flow cut: axon (green) and dendrite (blue)', 'axon-and-dendrite'],
      ['Same as skeleton', 'skeleton'],
+     ['Polyadicity', 'global-polyadicity'],
      ['Custom', 'custom']
     ].forEach(function(e, i) {
        var selected = o.connector_color === e[1];
@@ -1383,6 +1384,14 @@ var WindowMaker = new function()
                   WA.updateConnectorColors();
                 }
               }
+            },
+          },
+          {
+            type: 'button',
+            label: 'Polyadicity colors',
+            title: 'Define colors for different polyadicity levels for synapses.',
+            onclick: () => {
+              WA.editConnectorPolyadicityColors();
             },
           },
         ]);

@@ -252,6 +252,12 @@ Miscellaneous:
 
 - Basic support for touch screens (e.g. phones and tablets) is now implemented.
 
+- 3D viewer: new synapse coloring mode, polyadicity. The number of partner nodes
+  for each connector is color coded (for synaptic connectors, this is the number
+  of postsynapses). The colors and ranges can be configured through the
+  "Polyadicity colors" button in the "Shading parameters" tab. This is basically
+  a configurable version of an absolute "N with partner" coloring.
+
 - Context aware help: by clicking the new question mark icon in the upper right
   corner, a context aware help dialog can be displayed on top of all other
   CATMAID tools. It provides some general guidance for the intended workflow

@@ -232,7 +232,8 @@ Administration:
 Graph widget:
 
 - GraphML files can now be imported, positions and colors are respected. This is
-  useful if layouting is done in e.g. Gephi.
+  useful if layouting is done in e.g. Gephi and coloring should be done in
+  CATMAID. The help page explains a possible workflow for this.
 
 Miscellaneous:
 

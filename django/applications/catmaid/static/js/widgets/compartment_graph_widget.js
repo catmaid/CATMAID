@@ -3852,6 +3852,29 @@
         }).bind(this));
   };
 
+  GroupGraph.prototype.loadFromGraphML = function(xmlData) {
+    let preferUnitId = true, preferName = true, invertY = true;
+
+    let dialog = new CATMAID.OptionsDialog('Import GraphML');
+    dialog.appendMessage('Please check the import options.');
+    var preferUnitIdControl = dialog.appendCheckbox('Prefer "unit_id" field for ID',
+        'prefer-unit-id', preferUnitId,
+        'If imported nodes have a "unit_id" field, prefer it over the regular "id" field.');
+    var preferNameControl = dialog.appendCheckbox('Prefer "unit_id" field for name',
+        'prefer-name', preferName,
+        'If imported nodes have a "name" field, prefer it over the regular "label" field.');
+    var invertYControl = dialog.appendCheckbox('Invert Y coorindates',
+        'invert-y', preferName,
+        'Mirror all Y coordinates to switch between left-handed and right-handed coordinates.');
+
+    dialog.onOK = () => {
+      this.loadFromGraphMLData(xmlData, preferUnitIdControl.checked,
+        preferNameControl.checked, invertYControl.checked);
+    };
+
+    dialog.show(500, 'auto', true);
+  };
+
   /**
    * Import graph data from an XML string following the GraphML schema.
    *
@@ -3887,7 +3910,8 @@
    ``* </graph>
    * </graphml>
    */
-  GroupGraph.prototype.loadFromGraphML = function(xmlData) {
+  GroupGraph.prototype.loadFromGraphMLData = function(xmlData, preferUnitId = true,
+      preferName = true, invertY = true) {
     let xml = $.parseXML(xmlData);
     let nodeData = Array.from(xml.querySelectorAll('node'));
     let edgeData = Array.from(xml.querySelectorAll('edge'));
@@ -3897,10 +3921,16 @@
     }
 
     let nodes = nodeData.map(n => {
+      // Prefer "unit_id" field that we export for explicit ID reference.
+      let unitId = parseInt(n.querySelector('data[key=unit_id]').childNodes[0].data, 10);
+      let importId = (!Number.isNaN(unitId) && preferUnitId) ? unitId : n.id;
+      // Prefer "name" field that we export over label field.
+      let name = n.querySelector('data[key=name]').childNodes[0].data;
+      let label = n.querySelector('data[key=label]').childNodes[0].data;
+      let importName = (name && preferName) ? name : label;
       return {
-        // TODO IDs don't seem to be numeric typically and duplicate the label
-        'id': n.id,
-        'label': n.querySelector('data[key=label]').childNodes[0].data,
+        'id': importId,
+        'label': importName,
         'x': Number(n.querySelector('data[key=x]').childNodes[0].data),
         'y': Number(n.querySelector('data[key=y]').childNodes[0].data),
         'r': Number(n.querySelector('data[key=r]').childNodes[0].data),
@@ -3915,16 +3945,17 @@
       return o;
     }, {});
 
+    let yFactor = invertY ? -1 : 1;
     let positions = nodes.reduce((o, n) => {
       o[n.id] = {
         x: n.x,
-        y: n.y,
+        y: yFactor * n.y,
       };
       return o;
     }, {});
 
     this.clear();
-    this.append(models, positions);
+    this.load(models, positions);
   };
 
   GroupGraph.prototype.filterEdges = function(countThreshold, confidenceThreshold) {

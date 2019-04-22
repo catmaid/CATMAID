@@ -1660,6 +1660,10 @@ def skeleton_connectors_by_partner(request:HttpRequest, project_id) -> JsonRespo
     """ Return a dict of requested skeleton vs relation vs partner skeleton vs list of connectors.
     Connectors lacking a skeleton partner will of course not be included. """
     skeleton_ids = set(int(v) for k,v in request.POST.items() if k.startswith('skids['))
+
+    if not skeleton_ids:
+        return JsonResponse({})
+
     cursor = connection.cursor()
 
     relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)

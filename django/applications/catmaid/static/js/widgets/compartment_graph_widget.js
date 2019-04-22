@@ -2068,19 +2068,20 @@
     }
   };
 
-  GroupGraph.prototype.writeGML = function() {
+  GroupGraph.prototype.writeGML = function(linearizeIds) {
     var ids = {};
     var items = ['Creator "CATMAID"\nVersion 1.0\ngraph ['];
 
     this.cy.nodes(function(i, node) {
       if (node.hidden()) return;
       var props = node.data(); // props.id, props.color, props.skeletons, props.node_count, props.label,
-      ids[props.id] = i;
+      let exportId = linearizeIds ? i : props.id;
+      ids[props.id] = exportId;
       var p = node.position(); // pos.x, pos.y
       // node name with escaped \ and "
       var name = props.label.replace(/\\/g, '\\\\').replace(/\"/g, '\\"');
       items.push(["node [",
-                  "id " + i,
+                  "id " + exportId,
                   ["graphics [",
                    "x " + p.x,
                    "y " + p.y,
@@ -2122,8 +2123,19 @@
       return;
     }
 
-    var blob = new Blob([this.writeGML()], {type: "text/plain"});
-    saveAs(blob, "graph.gml");
+    // Ask for user input
+    let dialog = new CATMAID.OptionsDialog('Export GML');
+    dialog.appendMessage('Please check the export options.');
+    var linearizeIds = dialog.appendCheckbox('Linearize IDs',
+        'linearize-ids', true,
+        "Replace original skeleton IDs with incremental IDs starting from zero. Some tools require this.");
+
+    dialog.onOK = () => {
+      var blob = new Blob([this.writeGML(linearizeIds.checked)], {type: "text/plain"});
+      saveAs(blob, "graph.gml");
+    };
+
+    dialog.show(500, 'auto', true);
   };
 
   GroupGraph.prototype._getGrowParameters = function() {

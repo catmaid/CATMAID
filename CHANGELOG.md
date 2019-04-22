@@ -229,6 +229,11 @@ Administration:
   inactivity period" in the admin view. Users to contact for support, can be
   either configured there or from individual user views.
 
+Graph widget:
+
+- GraphML files can now be imported, positions and colors are respected. This is
+  useful if layouting is done in e.g. Gephi.
+
 Miscellaneous:
 
 - Add a new Tracing Tool icon button to compute the distance between two nodes

@@ -322,7 +322,7 @@
 
         tabs['Export'].appendChild(CATMAID.DOM.createFileButton(
               'gg-file-dialog-' + GG.widgetID, false, function(evt) {
-                GG.loadFromJSON(evt.target.files);
+                GG.loadFromFile(evt.target.files);
               }));
 
         var layout = CATMAID.DOM.appendSelect(tabs['Nodes'], null, null, GG.layoutStrings);
@@ -1416,7 +1416,7 @@
 
   /** There is a model for every skeleton ID included in json.
    *  But there could be models for which there isn't a skeleton_id in json: these are disconnected nodes. */
-  GroupGraph.prototype.updateGraph = function(json, models, morphology) {
+  GroupGraph.prototype.updateGraph = function(json, models, morphology, pos = null) {
 
     var subgraph_skids = Object.keys(this.subgraphs);
     if (subgraph_skids.length > 0 && !morphology) {
@@ -1432,7 +1432,7 @@
           function(skid) { return {}; },
           function(skid, json) { morphologies[skid] = json; },
           (function(skid) { delete this.subgraphs[skid]; }).bind(this), // failed loading
-          (function() { this.updateGraph(json, models, morphologies); }).bind(this));
+          (function() { this.updateGraph(json, models, morphologies, positions); }).bind(this));
       return;
     }
 
@@ -1498,7 +1498,7 @@
     elements.edges = [];
 
     // Store positions of current nodes and their selected state
-    var positions = {},
+    var positions = pos || {},
         selected = {},
         hidden = {},
         locked = {},
@@ -1953,15 +1953,15 @@
     this.load(models);
   };
 
-  GroupGraph.prototype.load = function(models) {
+  GroupGraph.prototype.load = function(models, positions = null) {
     // Register with name service before we attempt to load the graph
     CATMAID.NeuronNameService.getInstance().registerAll(this, models, (function() {
-      this._load(models);
+      this._load(models, positions);
     }).bind(this));
   };
 
   /** Fetch data from the database and remake the graph. */
-  GroupGraph.prototype._load = function(models) {
+  GroupGraph.prototype._load = function(models, positions = null) {
     var skeleton_ids = Object.keys(models);
     if (0 === skeleton_ids.length) return CATMAID.info("Nothing to load!");
 
@@ -1984,7 +1984,7 @@
               alert(json.error);
               return;
             }
-            this.updateGraph(json, models);
+            this.updateGraph(json, models, undefined, positions);
         }).bind(this),
         "graph_widget_request");
   };
@@ -3767,70 +3767,164 @@
     saveAs(new Blob([JSON.stringify(this.copyContent())], {type: 'text/plain'}), filename);
   };
 
-  GroupGraph.prototype.loadFromJSON = function(files) {
+  GroupGraph.prototype.loadFromFile = function(files) {
     try {
-      if (0 === files.length) return alert("Choose at least one file!");
-      if (files.length > 1) return alert("Choose only one file!");
-      var name = files[0].name;
-      if (name.lastIndexOf('.json') !== name.length - 5) return alert("File extension must be '.json'");
+      if (0 === files.length) throw new CATMAID.Error("Choose at least one file!");
+      if (files.length > 1) throw new CATMAID.Error("Choose only one file!");
+
+      let file = files[0];
+      let nameComponents = file.name.split('.');
+      if (nameComponents.length === 1) {
+        throw new CATMAID.ValueError("A file extension is needed");
+      }
+      let extension = nameComponents[nameComponents.length - 1];
+      let supportedExtensions = ['json', 'graphml'];
+      if (supportedExtensions.indexOf(extension) === -1) {
+        throw new CATMAID.ValueError("Unsupported file type: " + extension);
+      }
+
       var reader = new FileReader();
-      reader.onload = (function(e) {
+      reader.onload = (e) => {
         try {
-          var json = JSON.parse(e.target.result);
-          var skids = {};
-          var asModel = function(ob) {
-            skids[ob.id] = true;
-            var color = CATMAID.tools.getColor(ob.color);
-            return $.extend(new CATMAID.SkeletonModel(ob.id, ob.baseName, color), ob, {color: color});
-          };
-          // Replace JSON of models with proper SkeletonModel instances
-          json.elements.nodes.forEach(function(node) {
-            node.data.skeletons = node.data.skeletons.map(asModel);
-          });
-          // Replace group colors with proper THREE.Color instances
-          // and group models with proper SkeletonModel instances
-          Object.keys(json.groups).forEach(function(gid) {
-            var g = json.groups[gid];
-            g.color = CATMAID.tools.getColor(g.color);
-            Object.keys(g.models).forEach(function(skid) {
-              g.models[skid] = asModel(g.models[skid]);
-            });
-          });
-          // Add label color information if it is missing
-          if (!json.properties.edge_text_color) {
-            json.properties.edge_text_color = json.properties.edge_color;
+          let data = e.target.result;
+          if (extension === 'json') {
+            this.loadFromJSON(data);
+          } else if (extension === 'graphml') {
+            this.loadFromGraphML(data);
           }
-          json.elements.edges.forEach(function(edge) {
-            if (!edge.data.label_color) {
-              edge.data.label_color = edge.data.color;
-            }
-          });
-          this.clear();
-          this.setContent(json);
-          // Find out which ones exist
-          requestQueue.register(CATMAID.makeURL(project.id + '/skeleton/neuronnames'), "POST",
-              {skids: Object.keys(skids)},
-              (function(status, text) {
-                if (200 !== status) return;
-                var json = JSON.parse(text);
-                if (json.error) return alert(json.error);
-                var missing = Object.keys(skids).filter(function(skid) {
-                  return undefined === json[skid];
-                });
-                if (missing.length > 0) {
-                  this.removeSkeletons(missing);
-                  CATMAID.warn("Did NOT load " + missing.length + " missing skeleton" + (1 === missing.length ? "" : "s"));
-                }
-                this.update(); // removes missing ones (but doesn't) and regenerate the data for subgraph nodes
-              }).bind(this));
         } catch (error) {
           CATMAID.error("Failed to parse file", error);
         }
-      }).bind(this);
-      reader.readAsText(files[0]);
+      };
+      reader.readAsText(file);
     } catch (e) {
-      alert("Oops: " + e);
+      CATMAID.handleError(e);
     }
+  };
+
+  GroupGraph.prototype.loadFromJSON = function(jsonData) {
+    var json = JSON.parse(jsonData);
+    var skids = {};
+    var asModel = function(ob) {
+      skids[ob.id] = true;
+      var color = CATMAID.tools.getColor(ob.color);
+      return $.extend(new CATMAID.SkeletonModel(ob.id, ob.baseName, color), ob, {color: color});
+    };
+    // Replace JSON of models with proper SkeletonModel instances
+    json.elements.nodes.forEach(function(node) {
+      node.data.skeletons = node.data.skeletons.map(asModel);
+    });
+    // Replace group colors with proper THREE.Color instances
+    // and group models with proper SkeletonModel instances
+    Object.keys(json.groups).forEach(function(gid) {
+      var g = json.groups[gid];
+      g.color = CATMAID.tools.getColor(g.color);
+      Object.keys(g.models).forEach(function(skid) {
+        g.models[skid] = asModel(g.models[skid]);
+      });
+    });
+    // Add label color information if it is missing
+    if (!json.properties.edge_text_color) {
+      json.properties.edge_text_color = json.properties.edge_color;
+    }
+    json.elements.edges.forEach(function(edge) {
+      if (!edge.data.label_color) {
+        edge.data.label_color = edge.data.color;
+      }
+    });
+    this.clear();
+    this.setContent(json);
+    // Find out which ones exist
+    requestQueue.register(CATMAID.makeURL(project.id + '/skeleton/neuronnames'), "POST",
+        {skids: Object.keys(skids)},
+        (function(status, text) {
+          if (200 !== status) return;
+          var json = JSON.parse(text);
+          if (json.error) return alert(json.error);
+          var missing = Object.keys(skids).filter(function(skid) {
+            return undefined === json[skid];
+          });
+          if (missing.length > 0) {
+            this.removeSkeletons(missing);
+            CATMAID.warn("Did NOT load " + missing.length + " missing skeleton" + (1 === missing.length ? "" : "s"));
+          }
+          this.update(); // removes missing ones (but doesn't) and regenerate the data for subgraph nodes
+        }).bind(this));
+  };
+
+  /**
+   * Import graph data from an XML string following the GraphML schema.
+   *
+   * This is a simple example fo such a format:
+   *
+   * <?xml version="1.0" encoding="UTF-8"?><graphml xmlns="http://graphml.graphdrawing.org/xmlns">
+   * <graph edgedefault="undirected">
+   * <node id="MNhead_l">
+   * <data key="label">MNhead_l</data>
+   * <data key="eigencentrality">0.002632824571430125</data>
+   * <data key="modularity_class">0</data>
+   * <data key="size">10.0</data>
+   * <data key="r">192</data>
+   * <data key="g">192</data>
+   * <data key="b">192</data>
+   * <data key="x">-246.87581</data>
+   * <data key="y">304.34338</data>
+   * </node>
+   * <node id="MUSlong_headvl_3">
+   * <data key="label">MUSlong_headvl_3</data>
+   * <data key="eigencentrality">0.05049855646879798</data>
+   * <data key="modularity_class">0</data>
+   * <data key="size">10.0</data>
+   * <data key="r">192</data>
+   * <data key="g">192</data>
+   * <data key="b">192</data>
+   * <data key="x">-269.6634</data>
+   * <data key="y">312.24014</data>
+   * </node>
+   * <edge id="2494" source="INdecuss_l 1800116" target="meso 1818273">
+   * <data key="weight">2.0</data>
+   * </edge>
+   ``* </graph>
+   * </graphml>
+   */
+  GroupGraph.prototype.loadFromGraphML = function(xmlData) {
+    let xml = $.parseXML(xmlData);
+    let nodeData = Array.from(xml.querySelectorAll('node'));
+    let edgeData = Array.from(xml.querySelectorAll('edge'));
+
+    if (!nodeData || nodeData.length === 0) {
+      throw new CATMAID.ValueError("Could not find any nodes");
+    }
+
+    let nodes = nodeData.map(n => {
+      return {
+        // TODO IDs don't seem to be numeric typically and duplicate the label
+        'id': n.id,
+        'label': n.querySelector('data[key=label]').childNodes[0].data,
+        'x': Number(n.querySelector('data[key=x]').childNodes[0].data),
+        'y': Number(n.querySelector('data[key=y]').childNodes[0].data),
+        'r': Number(n.querySelector('data[key=r]').childNodes[0].data),
+        'g': Number(n.querySelector('data[key=g]').childNodes[0].data),
+        'b': Number(n.querySelector('data[key=b]').childNodes[0].data),
+      };
+    });
+
+    let models = nodes.reduce((o, n) => {
+      o[n.id] =new CATMAID.SkeletonModel(n.id, '',
+          new THREE.Color(n.r/255, n.g/255, n.b/255));
+      return o;
+    }, {});
+
+    let positions = nodes.reduce((o, n) => {
+      o[n.id] = {
+        x: n.x,
+        y: n.y,
+      };
+      return o;
+    }, {});
+
+    this.clear();
+    this.append(models, positions);
   };
 
   GroupGraph.prototype.filterEdges = function(countThreshold, confidenceThreshold) {

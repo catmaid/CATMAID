@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import json
-from django.http import HttpResponse, JsonResponse
+from typing import Union
 
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from guardian.utils import get_anonymous_user
 
 
-def reviewer_whitelist(request, project_id=None):
+def reviewer_whitelist(request:HttpRequest, project_id=None) -> Union[HttpResponse, JsonResponse]: # ignores its second (optional) parameter
     """This is currently only a stub.
     """
     # Ignore anonymous user

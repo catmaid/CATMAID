@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import json
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 
 from guardian.utils import get_anonymous_user
 
 
-def reviewer_whitelist(request, project_id=None):
+def reviewer_whitelist(request:HttpRequest, project_id=None) -> JsonResponse:
     """This is currently only a stub.
     """
     # Ignore anonymous user

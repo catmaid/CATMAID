@@ -1197,7 +1197,7 @@ def get_graphs_to_features(workspace_pid=None) -> DefaultDict[Any, List]:
         features = get_features(o, workspace_pid, graphs, add_nonleafs=True)
         for g in graphs:
             for f in features:
-                if graph_instanciates_feature(g, f):
+                if graph_instantiates_feature(g, f):
                     graph_to_features[g].append(f)
 
     return graph_to_features
@@ -1216,10 +1216,10 @@ def link_roi_to_classification(request, project_id=None, workspace_pid=None,
     return link_roi_to_class_instance(request, project_id=project_id,
         relation_id=rel.id, stack_id=stack_id, ci_id=ci_id)
 
-def graph_instanciates_feature(graph, feature) -> bool:
-    return graph_instanciates_feature_complex(graph, feature)
+def graph_instantiates_feature(graph, feature) -> bool:
+    return graph_instantiates_feature_complex(graph, feature)
 
-def graph_instanciates_feature_simple(graph, feature, idx=0) -> bool:
+def graph_instantiates_feature_simple(graph, feature, idx=0) -> bool:
     """ Traverses a class instance graph, starting from the passed node.
     It recurses into child graphs and tests on every class instance if it
     is linked to an ontology node. If it does, the function returns true.
@@ -1256,9 +1256,9 @@ def graph_instanciates_feature_simple(graph, feature, idx=0) -> bool:
                 ", ".join([str(l.id) for l in link_q ]))
 
     # Continue with checking children, if any
-    return graph_instanciates_feature_simple(link_q[0].class_instance_a, feature, idx+1)
+    return graph_instantiates_feature_simple(link_q[0].class_instance_a, feature, idx+1)
 
-def graphs_instanciate_features(graphs, features, target:Optional[Union[np.ndarray, List[List[int]]]]=None, cursor=None) -> List[List[int]]:
+def graphs_instantiate_features(graphs, features, target:Optional[Union[np.ndarray, List[List[int]]]]=None, cursor=None) -> List[List[int]]:
     """Test which graphs instantiate which feature of the passed in feature
     set. If provided, the information is written to the target array, which is
     expected to be of proper size. Without a target, a new 2D array of
@@ -1368,7 +1368,7 @@ def graphs_instanciate_features(graphs, features, target:Optional[Union[np.ndarr
 
     return target
 
-def graph_instanciates_feature_complex(graph, feature) -> bool:
+def graph_instantiates_feature_complex(graph, feature) -> bool:
     """ Creates one complex query that tests if the feature is matched as a
     whole.
     """
@@ -1401,24 +1401,24 @@ def graph_instanciates_feature_complex(graph, feature) -> bool:
         raise Exception('Found more than one ({}) ontology node links of '
             'one class instance.'.format(num_links))
 
-def graphs_instanciate_feature(graphlist, feature) -> bool:
+def graphs_instantiate_feature(graphlist, feature) -> bool:
     """ A delegate method to be able to use different implementations in a
     simple manner. Benchmarks show that the complex query is faster.
     """
-    return graphs_instanciate_feature_complex(graphlist, feature)
+    return graphs_instantiate_feature_complex(graphlist, feature)
 
-def graphs_instanciate_feature_simple(graphs, feature) -> bool:
+def graphs_instantiate_feature_simple(graphs, feature) -> bool:
     """ Creates a simple query for each graph to test whether it instantiates
     a given feature.
     """
     for g in graphs:
         # Improvement: graphs could be sorted according to how many
         # class instances they have.
-        if graph_instanciates_feature(g, feature):
+        if graph_instantiates_feature(g, feature):
             return True
     return False
 
-def graphs_instanciate_feature_complex(graphlist, feature) -> bool:
+def graphs_instantiate_feature_complex(graphlist, feature) -> bool:
     """ Creates one complex query that tests if the feature is matched as a
     whole.
     """
@@ -1531,7 +1531,7 @@ class ClassificationSearchWizard(SessionWizardView):
                 # All features of one ontology must match
                 for f in ontologies_to_features[o]:
                     print("Check if graph {} instantiates feature {}".format(g.id, f))
-                    if graph_instanciates_feature(g, f):
+                    if graph_instantiates_feature(g, f):
                         continue
                     else:
                         matches = False

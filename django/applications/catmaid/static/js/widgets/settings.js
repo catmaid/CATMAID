@@ -2011,7 +2011,7 @@
         }
       });
       ds.append(CATMAID.DOM.createLabeledControl('', removeButton, "Remove " +
-          "the remote intance reference selected in the list above."));
+          "the remote instance reference selected in the list above."));
 
       // Remote instance list update
       var updateComponentList = function() {

@@ -2,8 +2,9 @@
 
 import json
 import numpy as np
+from typing import Any, Dict, List
 
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 from django.db import connection
 from django.shortcuts import get_object_or_404
 
@@ -71,12 +72,12 @@ class FeatureLink:
                 self.class_a, self.relation.id, self.relation, self.class_b.id,
                 self.class_b, self.super_class.id, self.super_class)
 
-def get_known_ontology_roots(request):
+def get_known_ontology_roots(request:HttpRequest) -> JsonResponse:
     """ Returns an array of all known root class names.
     """
     return JsonResponse({"knownroots": root_classes})
 
-def get_existing_roots(request, project_id):
+def get_existing_roots(request:HttpRequest, project_id) -> JsonResponse:
     """Get all existing classification root nodes for a project.
     """
     links = get_class_links_qs(project_id, 'is_a', 'classification_root')
@@ -89,7 +90,7 @@ def get_existing_roots(request, project_id):
         } for l in links]
     })
 
-def get_children( parent_id, max_nodes = 5000 ):
+def get_children(parent_id, max_nodes = 5000):
     """ Returns all children of a node with id <parent_id>. The result
     is limited to a maximum ef <max_nodes> nodes.
     """
@@ -120,21 +121,21 @@ def get_children( parent_id, max_nodes = 5000 ):
     return child_nodes
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def get_available_relations(request, project_id=None):
+def get_available_relations(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Returns a simple list of all relations available available
     for the given project."""
     relation_map = get_relation_to_id_map(project_id)
     return JsonResponse(relation_map)
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def get_available_classes(request, project_id=None):
+def get_available_classes(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Returns a simple list of all classes available available
     for the given project."""
     class_map = get_class_to_id_map(project_id)
     return JsonResponse(class_map)
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def list_available_relations(request, project_id=None):
+def list_available_relations(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Returns an object of all relations available available
     for the given project, prepared to work with a jsTree."""
     parent_id = int(request.GET.get('parentid', 0))
@@ -147,7 +148,7 @@ def list_available_relations(request, project_id=None):
             'id': 'relations',
             'text': 'Relations',
             'type': 'root'
-        }
+        } # type: Dict[str, Any]
         # Test if there are relations present and mark the root
         # as leaf if there are none.
         if relations.count() > 0:
@@ -164,7 +165,7 @@ def list_available_relations(request, project_id=None):
     } for r in relations), safe=False)
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def list_available_classes(request, project_id=None):
+def list_available_classes(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Returns an object of all classes available available
     for the given project, prepared to work with a jsTree."""
     parent_id = int(request.GET.get('parentid', 0))
@@ -181,7 +182,7 @@ def list_available_classes(request, project_id=None):
             'id': 'classes',
             'text': 'Classes',
             'type': 'root'
-        }
+        } # type: Dict[str, Any]
         # Test if there are classes present and mark the root
         # as leaf if there are none.
         if classes.count() > 0:
@@ -199,7 +200,7 @@ def list_available_classes(request, project_id=None):
             } for c in classes), safe=False)
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def list_ontology(request, project_id=None):
+def list_ontology(request:HttpRequest, project_id=None) -> JsonResponse:
     root_class = request.GET.get('rootclass', None)
     parent_id = int(request.GET.get('parentid', 0))
     expand_request = request.GET.get('expandtarget', None)
@@ -308,7 +309,7 @@ def list_ontology(request, project_id=None):
             cc_q = ClassClass.objects.filter(
                 project=project_id, class_b_id=parent_id)
             # Combine same relations into one
-            relations = {}
+            relations = {} # type: Dict
             for cc in cc_q:
                 if cc.relation not in relations:
                     relations[ cc.relation ] = []
@@ -329,11 +330,11 @@ def list_ontology(request, project_id=None):
     except Exception as e:
         raise Exception(response_on_error + ': ' + str(e))
 
-def get_restrictions( cc_link ):
+def get_restrictions(cc_link) -> Dict[str, Dict[str, Any]]:
     """ Returns a map with <restrition_type> as key and a list
     of data structures, desribing each restriction type.
     """
-    restrictions = {}
+    restrictions = {} # type: Dict
     # Add cardinality restrictions
     cardinality_restrictions_q = CardinalityRestriction.objects.filter(
         restricted_link=cc_link)
@@ -346,7 +347,7 @@ def get_restrictions( cc_link ):
     return restrictions
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def add_relation_to_ontology(request, project_id=None):
+def add_relation_to_ontology(request:HttpRequest, project_id=None) -> JsonResponse:
     name = request.POST.get('relname', None)
     uri = request.POST.get('uri', '')
     description = request.POST.get('description', None)
@@ -377,7 +378,7 @@ def add_relation_to_ontology(request, project_id=None):
 
     return JsonResponse({'relation_id': r.id})
 
-def get_number_of_inverse_links( obj ):
+def get_number_of_inverse_links(obj) -> int:
     """ Returns the number of links that other model objects
     have to the passed object. It seems to be alright to do it like this:
     http://mail.python.org/pipermail//centraloh/2012-December/001492.html
@@ -395,7 +396,7 @@ def get_number_of_inverse_links( obj ):
     return count
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def rename_class(request, project_id=None):
+def rename_class(request:HttpRequest, project_id=None) -> JsonResponse:
     # Get class
     class_id = request.POST.get('classid', None)
     if not class_id:
@@ -425,7 +426,7 @@ def rename_class(request, project_id=None):
     return JsonResponse({'renamed_class': class_id})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def rename_relation(request, project_id=None):
+def rename_relation(request:HttpRequest, project_id=None) -> JsonResponse:
     # Get relation
     rel_id = request.POST.get('relid', None)
     if not rel_id:
@@ -455,7 +456,7 @@ def rename_relation(request, project_id=None):
     return JsonResponse({'renamed_relation': rel_id})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def remove_relation_from_ontology(request, project_id=None):
+def remove_relation_from_ontology(request:HttpRequest, project_id=None) -> JsonResponse:
     relid = int(request.POST.get('relid', -1))
     force = bool(int(request.POST.get('force', 0)))
     relation = get_object_or_404(Relation, id=relid)
@@ -470,9 +471,9 @@ def remove_relation_from_ontology(request, project_id=None):
     return JsonResponse({'deleted_relation': relid})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def remove_all_relations_from_ontology(request, project_id=None):
+def remove_all_relations_from_ontology(request:HttpRequest, project_id=None) -> JsonResponse:
     force = bool(int(request.POST.get('force', 0)))
-    deleted_ids = []
+    deleted_ids = [] # type: List
     not_deleted_ids = []
 
     if force:
@@ -496,7 +497,7 @@ def remove_all_relations_from_ontology(request, project_id=None):
     })
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def add_class_to_ontology(request, project_id=None):
+def add_class_to_ontology(request:HttpRequest, project_id=None) -> JsonResponse:
     name = request.POST.get('classname', None)
     description = request.POST.get('description', None)
     silent = get_request_bool(request.POST, 'silent', False)
@@ -526,7 +527,7 @@ def add_class_to_ontology(request, project_id=None):
     return JsonResponse({'class_id': c.id})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def remove_class_from_ontology(request, project_id=None):
+def remove_class_from_ontology(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Removes a class from the ontology of a particular project.
     The root classes will be excluded from this and can't be removed
     with this method
@@ -549,13 +550,13 @@ def remove_class_from_ontology(request, project_id=None):
     return JsonResponse({'deleted_class': classid})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def remove_all_classes_from_ontology(request, project_id=None):
+def remove_all_classes_from_ontology(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Removes all classes from the ontology of a particular project.
     The root classes will be excluded from this and can't be removed
     with this method
     """
     force = bool(int(request.POST.get('force', 0)))
-    deleted_ids = []
+    deleted_ids = [] # type: List
     not_deleted_ids = []
     exclude_list = root_classes if guard_root_classes else []
 
@@ -580,7 +581,7 @@ def remove_all_classes_from_ontology(request, project_id=None):
     })
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def add_link_to_ontology(request, project_id=None):
+def add_link_to_ontology(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Creates a new class-class link.
     """
     classaid = int(request.POST.get('classaid', -1))
@@ -601,7 +602,7 @@ def add_link_to_ontology(request, project_id=None):
     return JsonResponse({'class_class_id': cc.id})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def remove_link_from_ontology(request, project_id=None):
+def remove_link_from_ontology(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Removes one class-class link for a given project. Which link
     gets removed is determined by the ID passed in the POST data.
     """
@@ -611,7 +612,7 @@ def remove_link_from_ontology(request, project_id=None):
     return JsonResponse({'deleted_link': ccid})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def remove_selected_links_from_ontology(request, project_id=None):
+def remove_selected_links_from_ontology(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Removes all class-class links for a given project
     that have a particular class_b and a particular relation.
     """
@@ -631,7 +632,7 @@ def remove_selected_links_from_ontology(request, project_id=None):
     return JsonResponse({'deleted_links': removed_links})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def remove_all_links_from_ontology(request, project_id=None):
+def remove_all_links_from_ontology(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Removes all class-class links for a given project.
     """
     cc_q = ClassClass.objects.filter(user=request.user,
@@ -645,7 +646,7 @@ def remove_all_links_from_ontology(request, project_id=None):
     return JsonResponse({'deleted_links': removed_links})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def add_restriction(request, project_id=None):
+def add_restriction(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Add a constraint to a class. A constraint is just represented as
     another class which is linked to the class to be constrained with a
     'constrains' relation.
@@ -684,7 +685,7 @@ def add_restriction(request, project_id=None):
     return JsonResponse({'new_restriction': new_restriction.id})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def remove_restriction(request, project_id=None):
+def remove_restriction(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Removes a particular restriction.
     """
     rid = int(request.POST.get('restrictionid', -1))
@@ -697,7 +698,7 @@ def remove_restriction(request, project_id=None):
     return JsonResponse({'removed_restriction': rid})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def get_restriction_types(request, project_id=None, restriction=None):
+def get_restriction_types(request:HttpRequest, project_id=None, restriction=None) -> JsonResponse:
     """ Get a list of type IDs and names for a particular restriction.
     """
     if restriction == "cardinality":
@@ -706,7 +707,7 @@ def get_restriction_types(request, project_id=None, restriction=None):
     else:
         raise Exception("Unsupported restriction type encountered: " + restriction)
 
-def get_class_links_qs( project_id, rel_name, class_name, class_is_b=True ):
+def get_class_links_qs(project_id, rel_name, class_name, class_is_b=True):
     """ Returns a list of all classes, that have a certain relationship
     to a particular class in a project's semantic space.
     """
@@ -724,11 +725,12 @@ def get_class_links_qs( project_id, rel_name, class_name, class_is_b=True ):
             relation__in=relation, class_a__in=other_class)
     return cici_q
 
-def get_by_graphs_instantiated_features(graphs, features):
+def get_by_graphs_instantiated_features(graphs, features) -> List:
     # Needs to be imported locally to avoid circular dependencies
-    from catmaid.control.classification import graphs_instanciate_features
+    # TODO Fix this issue somehow
+    from catmaid.control.classification import graphs_instantiate_features
     matrix = np.zeros((len(graphs),len(features)), dtype=np.int)
-    graphs_instanciate_features(graphs, features, matrix)
+    graphs_instantiate_features(graphs, features, matrix)
     # Find features that are instantiated
     used_features = set()
     for ng,g in enumerate(graphs):
@@ -738,11 +740,11 @@ def get_by_graphs_instantiated_features(graphs, features):
 
     return list(used_features)
 
-def get_features( ontology, workspace_pid, graphs, add_nonleafs=False, only_used_features=False ):
+def get_features(ontology, workspace_pid, graphs, add_nonleafs=False, only_used_features=False) -> List:
     """ Return a list of Feature instances which represent paths
     to leafs of the ontology.
     """
-    feature_lists = get_feature_paths( ontology, workspace_pid, add_nonleafs )
+    feature_lists = get_feature_paths(ontology, workspace_pid, add_nonleafs)
     features = [Feature(fl) for fl in feature_lists]
     if only_used_features and features:
         used_features = get_by_graphs_instantiated_features(graphs, features)
@@ -750,13 +752,13 @@ def get_features( ontology, workspace_pid, graphs, add_nonleafs=False, only_used
     else:
         return features
 
-def get_feature_paths( ontology, workspace_pid, add_nonleafs=False, depth=0, max_depth=100 ):
+def get_feature_paths(ontology, workspace_pid, add_nonleafs=False, depth=0, max_depth=100) -> List:
     """ Returns all root-leaf paths of the passed ontology. It respects
     is_a relationships.
     """
     return get_feature_paths_remote(ontology, workspace_pid, add_nonleafs, depth, max_depth)
 
-def get_feature_paths_remote( ontology, workspace_pid, add_nonleafs=False, depth=0, max_depth=100 ):
+def get_feature_paths_remote(ontology, workspace_pid, add_nonleafs=False, depth=0, max_depth=100) -> List:
     """ Returns all root-leaf paths of the passed ontology. It respects
     is_a relationships. It uses an implementation stored remotely in the
     database server. It needs three database queries in total.
@@ -807,7 +809,7 @@ def get_feature_paths_remote( ontology, workspace_pid, add_nonleafs=False, depth
 
     return features
 
-def get_feature_paths_simple( ontology, add_nonleafs=False, depth=0, max_depth=100 ):
+def get_feature_paths_simple(ontology, add_nonleafs=False, depth=0, max_depth=100) -> List:
     """ Returns all root-leaf paths of the passed ontology. It respects
     is_a relationships.
     """

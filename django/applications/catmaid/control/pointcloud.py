@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
-import logging
+
+from typing import Any, Dict, List, Union
+from io import StringIO, BytesIO
 import json
+import logging
+from PIL import Image
 
 from django.conf import settings
 from django.db import connection
-from django.http import JsonResponse, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.decorators import method_decorator
 
 from guardian.shortcuts import get_perms, get_users_with_perms, assign_perm
-from io import StringIO, BytesIO
 
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
@@ -18,16 +21,13 @@ from catmaid.control.authentication import (requires_user_role,
 from catmaid.control.common import (insert_into_log, get_class_to_id_map,
         get_relation_to_id_map, _create_relation, get_request_bool,
         get_request_list)
-from catmaid.models import (Point, PointCloud, PointCloudPoint, ImageData,
+from catmaid.models import (Group, Point, PointCloud, PointCloudPoint, ImageData,
         PointCloudImageData, UserRole)
-
-from PIL import Image
-
 
 logger = logging.getLogger('__name__')
 
 
-def serialize_pointcloud(pointcloud, simple=False):
+def serialize_pointcloud(pointcloud, simple=False) -> Dict[str, Any]:
     if simple:
         return {
             'id': pointcloud.id,
@@ -45,7 +45,7 @@ def serialize_pointcloud(pointcloud, simple=False):
         }
 
 
-def serialize_point(point, compact=False):
+def serialize_point(point, compact=False) -> Union[Dict[str, Any], List]:
     if compact:
         return [point.id, point.location_x, point.location_y, point.location_z]
     else:
@@ -57,7 +57,7 @@ def serialize_point(point, compact=False):
         }
 
 
-def serialize_image_data(image, simple=False):
+def serialize_image_data(image, simple=False) -> Dict[str, Any]:
     if simple:
         return {
             'id': image.id,
@@ -73,7 +73,7 @@ def serialize_image_data(image, simple=False):
 
 
 def list_pointclouds(project_id, user_id, simple, with_images=False,
-        with_points=True, sample_ratio=1.0, pointcloud_ids=None, order_by='id'):
+        with_points=True, sample_ratio=1.0, pointcloud_ids=None, order_by='id') -> List[Dict[str, Any]]:
     extra_select = []
     extra_join = []
     query_params = {
@@ -192,7 +192,7 @@ def list_pointclouds(project_id, user_id, simple, with_images=False,
 class PointCloudList(APIView):
 
     @method_decorator(requires_user_role(UserRole.Browse))
-    def get(self, request, project_id):
+    def get(self, request:HttpRequest, project_id) -> JsonResponse:
         """List all available point clouds or optionally a sub set.
         ---
         parameters:
@@ -251,7 +251,7 @@ class PointCloudList(APIView):
 
 
     @method_decorator(requires_user_role(UserRole.Browse))
-    def post(self, request, project_id):
+    def post(self, request:HttpRequest, project_id) -> JsonResponse:
         """List all available point clouds or optionally a sub set.
         ---
         parameters:
@@ -310,7 +310,7 @@ class PointCloudList(APIView):
 
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def put(self, request, project_id):
+    def put(self, request:HttpRequest, project_id) -> JsonResponse:
         """Create a new pointcloud by providing.
         ---
         parameters:
@@ -447,7 +447,7 @@ class PointCloudList(APIView):
 class PointCloudImageDetail(APIView):
 
     @method_decorator(requires_user_role(UserRole.Browse))
-    def get(self, request, project_id, pointcloud_id, image_id):
+    def get(self, request:HttpRequest, project_id, pointcloud_id, image_id) -> HttpResponse:
         """Return a point cloud.
         parameters:
           - name: project_id
@@ -508,7 +508,7 @@ class PointCloudImageDetail(APIView):
 class PointCloudDetail(APIView):
 
     @method_decorator(requires_user_role(UserRole.Browse))
-    def get(self, request, project_id, pointcloud_id):
+    def get(self, request:HttpRequest, project_id, pointcloud_id) -> JsonResponse:
         """Return a point cloud.
         parameters:
           - name: project_id
@@ -584,7 +584,7 @@ class PointCloudDetail(APIView):
         return JsonResponse(pointcloud_data)
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def delete(self, request, project_id, pointcloud_id):
+    def delete(self, request:HttpRequest, project_id, pointcloud_id) -> JsonResponse:
         """Delete a point cloud.
         """
         can_edit_or_fail(request.user, pointcloud_id, 'pointcloud')

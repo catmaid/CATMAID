@@ -1,18 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import json
-
-try:
-    # Python 2
-    from urllib2 import build_opener, Request, HTTPError, URLError
-except ImportError:
-    # Python 3
-    from urllib.request import Request, build_opener
-    from urllib.error import HTTPError, URLError
-
-from django.http import JsonResponse
-
 from collections import defaultdict
+from django.http import JsonResponse
+import json
+from typing import Any, DefaultDict, Dict, List
+from urllib.request import Request, build_opener
+from urllib.error import HTTPError, URLError
 
 from catmaid.models import Stack
 
@@ -22,7 +15,7 @@ SUPPORTED_INSTANCE_TYPES = ('imagetile', 'imageblk')
 
 class DVIDClient:
 
-    def __init__(self, url):
+    def __init__(self, url) -> None:
         self.url = url.rstrip('/')
         self.info = get_server_info(url)
 
@@ -54,7 +47,7 @@ class DVIDClient:
                              "instance %s" % instance_id)
         return self.get_instance(repo_id, source_id)
 
-    def get_instance_type_map(self):
+    def get_instance_type_map(self) -> Dict[str, List[Dict[str, Any]]]:
         """Return a dictionary of data instances available in a DVID dictionary
         data structure, organized by type.
 
@@ -62,11 +55,11 @@ class DVIDClient:
         info URL. Returned is a mapping from data instance type to instance names.
         """
         instance_key = 'DataInstances'
-        instances = defaultdict(list)
+        instances = defaultdict(list) # type: DefaultDict[str, List]
 
         for repo_id in self.info:
             repo = self.info[repo_id]
-            # Ignore repos that don't have data intance defined
+            # Ignore repos that don't have data instance defined
             if instance_key not in repo:
                 continue
 
@@ -85,7 +78,7 @@ class DVIDClient:
 
         return dict(instances)
 
-    def get_instance_properties(self, repo_id, instance_id):
+    def get_instance_properties(self, repo_id, instance_id) -> Dict[str, Any]:
         """Create an instance of a Stack model based on a data instance in a
         DVID repository available from the given DVID URL.
 
@@ -146,7 +139,7 @@ class DVIDClient:
         }
 
 
-def get_server_info(url):
+def get_server_info(url:str):
     """Return the parsed JSON result of a DVID server's info endpoint.
     """
     try:

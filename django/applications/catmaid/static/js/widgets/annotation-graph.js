@@ -6,7 +6,7 @@
   "use strict";
 
   /**
-   * A simple graph visualization of CATMAID's instanciated ontology space
+   * A simple graph visualization of CATMAID's instantiated ontology space
    * (class instances).
    */
   var AnnotationGraph = function() {

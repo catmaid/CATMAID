@@ -2,8 +2,9 @@
 from django.db import connection
 from collections import defaultdict
 from itertools import chain
+from typing import Any, DefaultDict, List, Set
 
-def find_empty_neurons():
+def find_empty_neurons() -> Set:
     """ Returns a set of empty neurons. Also prints the total
     number of neurons and the total number of neurons for which
     at least one skeleton is a model_of.
@@ -47,7 +48,7 @@ def find_empty_neurons():
     return empty_neuron_ids
 
 
-def neuron_treenode_counts(neuron_ids):
+def neuron_treenode_counts(neuron_ids) -> DefaultDict[Any, List]:
     """ Given a collection of neuron IDs, check whether a skeleton exists for each,
     and return a map of number of nodes per skeleton as key, and as value a list
     of neuron IDs that have skeletons with that many nodes. Keep in mind that a
@@ -71,7 +72,7 @@ def neuron_treenode_counts(neuron_ids):
     skeleton_neuron = {row[0]: row[1] for row in cursor.fetchall()}
 
     # Collect a map of treenode counts vs list of neurons with a skeleton that has that many treenodes
-    counts = defaultdict(list)
+    counts = defaultdict(list) # type: DefaultDict[Any, List]
     neurons_with_treenodes = set()
     if skeleton_neuron:
         cursor.execute("""

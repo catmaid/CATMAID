@@ -2,7 +2,7 @@
 
 import logging
 
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 
 from catmaid.control.stack import get_stack_info_response
 from catmaid.control.janelia_render.models import JaneliaRenderProjectStacks
@@ -10,7 +10,7 @@ from catmaid.control.janelia_render.models import JaneliaRenderProjectStacks
 logger = logging.getLogger(__name__)
 
 
-def stack_info(request, project_id=None, stack_id=None):
+def stack_info(request:HttpRequest, project_id=None, stack_id=None) -> JsonResponse:
     """ Returns a dictionary with relevant information for stacks.
     Depending on the tile_source_type, get information from database
     or from tile server directly
@@ -32,7 +32,7 @@ def stack_info(request, project_id=None, stack_id=None):
     })
 
 
-def stacks(request, project_id=None):
+def stacks(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Returns a response containing the JSON object with menu information
     about the project's stacks.
     """

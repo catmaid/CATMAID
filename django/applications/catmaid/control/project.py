@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import json
+from typing import Any, Dict, List, Optional, Tuple
 import yaml
 
 from guardian.shortcuts import get_objects_for_user
 
 from django.db import connection
-from django.http import JsonResponse, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 
 from catmaid.models import (BrokenSlice, Class, ClientDatastore,
@@ -46,7 +47,7 @@ needed_datastores = {
 
 
 def validate_project_setup(project_id, user_id, fix=False,
-        class_model=None, rel_model=None, datastore_model=None):
+        class_model=None, rel_model=None, datastore_model=None) -> Tuple[List, List, List]:
     """Will check if needed classes and relations exist for every project. If
     <fix> is truthy, missing objects will be added.
     """
@@ -87,7 +88,7 @@ def validate_project_setup(project_id, user_id, fix=False,
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def list_project_tags(request, project_id=None):
+def list_project_tags(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Return the tags associated with the project.
     """
     p = get_object_or_404(Project, pk=project_id)
@@ -100,7 +101,7 @@ def list_project_tags(request, project_id=None):
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def update_project_tags(request, project_id=None, tags=None):
+def update_project_tags(request:HttpRequest, project_id=None, tags=None) -> JsonResponse:
     """ Updates the given project with the supplied tags. All
     existing tags will be replaced.
     """
@@ -127,7 +128,7 @@ def get_project_qs_for_user(user):
                                  accept_global_perms=False)
 
 @api_view(['GET'])
-def projects(request):
+def projects(request:HttpRequest) -> JsonResponse:
     """ List projects visible to the requesting user.
     ---
     models:
@@ -207,7 +208,7 @@ def projects(request):
         INNER JOIN stack s
         ON ps.stack_id = s.id
     """.format(project_template), user_project_ids)
-    project_stack_mapping = dict()
+    project_stack_mapping = dict() # type: Dict
     for row in cursor.fetchall():
         stacks = project_stack_mapping.get(row[0])
         if not stacks:
@@ -220,7 +221,7 @@ def projects(request):
         })
 
     # Get all stack groups for this project
-    project_stack_groups = {}
+    project_stack_groups = {} # type: Dict
     cursor.execute("""
         SELECT DISTINCT ps.project_id, sg.id, sg.title, sg.comment
         FROM stack_group sg
@@ -242,8 +243,8 @@ def projects(request):
             'comment': row[3],
         })
 
-    result = []
-    empty_tuple = tuple()
+    result = [] # type: List
+    empty_tuple = tuple() # type: Tuple
     for p in projects:
         stacks = project_stack_mapping.get(p.id, empty_tuple)
         stackgroups = project_stack_groups.get(p.id, empty_tuple)
@@ -261,7 +262,7 @@ def projects(request):
     })
 
 @api_view(['GET'])
-def export_projects(request):
+def export_projects(request:HttpRequest) -> JsonResponse:
     """Detailed list of projects visible to the requesting user.
 """
     # Get all projects that are visisble for the current user
@@ -280,7 +281,7 @@ def export_projects(request):
             'indent': 4
         })
 
-def export_project_data(projects):
+def export_project_data(projects) -> List:
     """Detailed list of projects visible to the requesting user.
     """
     if 0 == len(projects):
@@ -304,7 +305,7 @@ def export_project_data(projects):
 
     # Build a stack mirror index that maps all stack mirrors to their respective
     # stacks.
-    stack_mirror_index = {}
+    stack_mirror_index = {} # type: Dict
     for row in cursor.fetchall():
         stack_id = row[1]
         mirrors = stack_mirror_index.get(stack_id)
@@ -336,7 +337,7 @@ def export_project_data(projects):
             ON ps.stack_id = s.id
     """.format(project_template), user_project_ids)
     visible_stacks = dict()
-    project_stack_mapping = dict()
+    project_stack_mapping = dict() # type: Dict
 
     for row in cursor.fetchall():
         stacks = project_stack_mapping.get(row[0])
@@ -359,13 +360,13 @@ def export_project_data(projects):
             'broken_sections': row[12],
             'translation': row[13],
             'orientation': row[14]
-        }
+        } # type: Optional[Dict[str, Any]]
 
         stacks.append(stack)
         visible_stacks[row[1]] = stack
 
     # Add stack group information to stacks
-    project_stack_groups = {}
+    project_stack_groups = {} # type: Dict
     cursor.execute("""
         SELECT sg.id, ps.project_id, sg.title, sg.comment,
                array_agg(ssg.stack_id), array_agg(sgr.name)
@@ -392,14 +393,14 @@ def export_project_data(projects):
         })
         # Add to stacks
         for stack_id, relation_name in zip(row[4], row[5]):
-            stack = visible_stacks.get(stack_id)
-            if not stack:
+            visible_stack = visible_stacks.get(stack_id)
+            if not visible_stack:
                 # Only add visible stacks
                 continue
-            stack_groups = stack.get('stackgroups')
+            stack_groups = visible_stack.get('stackgroups')
             if not stack_groups:
                 stack_groups = []
-                stack['stackgroups'] = stack_groups
+                visible_stack['stackgroups'] = stack_groups
             stack_groups.append({
                 'id': row[0],
                 'title': row[2],
@@ -407,7 +408,7 @@ def export_project_data(projects):
             })
 
     result = []
-    empty_tuple = tuple()
+    empty_tuple = tuple() # type: Tuple
     for p in projects:
         stacks = project_stack_mapping.get(p.id, empty_tuple)
         result.append({
@@ -420,7 +421,7 @@ def export_project_data(projects):
 
     return result
 
-def delete_projects_and_stack_data(projects):
+def delete_projects_and_stack_data(projects) -> None:
     """Expects a list of projects (can be a queryset) to be deleted. All stacks
     linked with a project_stack relation to those projects will be deleted as
     well along with stack groups that exclusivelt use the stacks and broken
@@ -460,9 +461,9 @@ def delete_projects_and_stack_data(projects):
         p.delete()
 
 
-def delete_projects(project_ids):
+def delete_projects(project_ids) -> None:
     """Deletes all passed in projects and all data that refer to it. This is a
-    potentially dengerous operation.
+    potentially dangerous operation.
     """
     cursor = connection.cursor()
     cursor.execute("""
@@ -475,7 +476,7 @@ def delete_projects(project_ids):
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
-def interpolatable_sections(request, project_id):
+def interpolatable_sections(request:HttpRequest, project_id) -> JsonResponse:
     """Get all section locations for all orientations.
     ---
     type:
@@ -495,7 +496,7 @@ def interpolatable_sections(request, project_id):
             type: float
         required: true
     """
-    coords = [[], [], []]
+    coords = [[], [], []] # type: List[List]
     for l in InterpolatableSection.objects.filter(
             project_id=project_id).values_list('orientation', 'location_coordinate'):
         coords[l[0]].append(l[1])

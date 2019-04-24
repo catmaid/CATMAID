@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 
+from datetime import datetime
+from itertools import chain
 import logging
+import numpy
 import os
 import re
 import subprocess
-import numpy
-
-from datetime import datetime
-from itertools import chain
+from typing import Any, Dict, List
 
 from django.db import connection
 from django.conf import settings
-from django.http import JsonResponse, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 
 from catmaid.apps import get_system_user
 from catmaid.control.common import get_request_bool, urljoin
@@ -60,7 +60,7 @@ class CleanUpHTTPResponse(HttpResponse):
         super(CleanUpHTTPResponse, self).__init__(*args, **kwargs)
         #self['Content-Disposition'] = 'attachment; filename="{}"'.format(file_name)
 
-    def close(self):
+    def close(self) -> None:
         """Make sure all file handles are closed and the input file is removed.
         """
         super(CleanUpHTTPResponse, self).close()
@@ -71,7 +71,7 @@ class CleanUpHTTPResponse(HttpResponse):
 
 
 @requires_user_role(UserRole.Browse)
-def export_nrrd(request, project_id, skeleton_id):
+def export_nrrd(request:HttpRequest, project_id, skeleton_id) -> HttpResponse:
     """Export a skeleton as NRRD file using the NAT R package. To make this
     work, R has to be intalled on the server. Within R the NAT package has to be
     installed and the easiest way to do this is by running the following R code:
@@ -112,7 +112,7 @@ def export_nrrd(request, project_id, skeleton_id):
 
 @task()
 def export_skeleton_as_nrrd_async(skeleton_id, source_ref, target_ref, user_id,
-                                  mirror=True, create_message=True):
+                                  mirror=True, create_message=True) -> str:
 
     result = export_skeleton_as_nrrd(skeleton_id, source_ref, target_ref,
                                      user_id, mirror)
@@ -134,7 +134,7 @@ def export_skeleton_as_nrrd_async(skeleton_id, source_ref, target_ref, user_id,
 
     return "Errors: {}".format('\n'.join(result['errors'])) if result['errors'] else result['nrrd_path']
 
-def export_skeleton_as_nrrd(skeleton_id, source_ref, target_ref, user_id, mirror=True):
+def export_skeleton_as_nrrd(skeleton_id, source_ref, target_ref, user_id, mirror=True) -> Dict:
     """ Export the skeleton with the passed in ID as NRRD file using R. For
     this to work R has to be installed.
 
@@ -211,7 +211,7 @@ def export_skeleton_as_nrrd(skeleton_id, source_ref, target_ref, user_id, mirror
     }
 
 
-def test_r_environment():
+def test_r_environment() -> JsonResponse:
     """Test if all required R packages are installed to use the NBLAST API.
     """
     setup_is_ok = False
@@ -240,7 +240,7 @@ def test_r_environment():
     })
 
 
-def setup_r_environment():
+def setup_r_environment() -> None:
     """Install all R dependencies that are needed for NBLAST."""
     robjects.r("""
         if(!require("devtools")) install.packages("devtools")
@@ -253,7 +253,7 @@ def setup_r_environment():
 def compute_scoring_matrix(project_id, user_id, matching_sample,
         random_sample, distbreaks=NblastConfigDefaultDistanceBreaks,
         dotbreaks=NblastConfigDefaultDotBreaks, resample_step=1000,
-        tangent_neighbors=5, omit_failures=True, resample_by=1e3):
+        tangent_neighbors=5, omit_failures=True, resample_by=1e3) -> Dict[str, Any]:
     """Create NBLAST scoring matrix for a set of matching skeleton IDs and a set
     of random skeleton IDs. Matching skeletons are skeletons with a similar
     morphology, e.g. KCy in FAFB.
@@ -417,8 +417,8 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
             target_names = []
             for pair in pairs:
                 elem_a, elem_b = pair
-                elem_a_type, elem_a_key = elem_a
-                elem_b_type, elem_b_key = elem_b
+                elem_a_type, elem_a_key = elem_a # type: ignore
+                elem_b_type, elem_b_key = elem_b # type: ignore
 
                 if elem_a_type == 1:
                     query_name = 'pointset-{}'.format(elem_a_key)
@@ -495,14 +495,14 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
 
 
 def compute_all_by_all_skeleton_similarity(project_id, user_id,
-        nblast_config_id, skeleton_ids=None, jobs=1):
+        nblast_config_id, skeleton_ids=None, jobs=1) -> Dict[str, Any]:
     """Compute complete all-to-all similarity matrix for the passed in nblast
     configuration.
     """
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     similarity = None
     errors = []
-    warnings = []
+    warnings = [] # type: List
 
     # If no skeletons are given, use all available with a certain minimum size.
     cursor = connection.cursor()
@@ -563,7 +563,7 @@ def compute_all_by_all_skeleton_similarity(project_id, user_id,
         pipe = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE)
         stdout, stderr = pipe.communicate(input=r_script)
 
-        if not os.path.exists(nrrd_path):
+        if not os.path.exists(nrrd_path): # FIXME: nrrd_path is not defined in this context, probably bad cut'n'paste
             raise ValueError("No output file created")
 
     except (IOError, OSError, ValueError) as e:
@@ -578,7 +578,7 @@ def compute_all_by_all_skeleton_similarity(project_id, user_id,
     }
 
 
-def get_cache_file_name(project_id, object_type, simplification=10):
+def get_cache_file_name(project_id, object_type, simplification=10) -> str:
     if object_type == 'skeleton':
         extra = "-simple-{}".format(simplification)
     elif object_type == 'pointcloud':
@@ -635,7 +635,7 @@ def get_catmaid_connection(user_id):
 
 def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         parallel=True, detail=10, omit_failures=True, min_nodes=500,
-        min_soma_nodes=20, soma_tags=('soma'), resample_by=1e3):
+        min_soma_nodes=20, soma_tags=('soma'), resample_by=1e3) -> None:
     """Create a new cache file for a particular project object type and
     detail level. All objects of a type in a project are prepared.
     """
@@ -748,7 +748,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         normalized='raw', use_alpha=False, remove_target_duplicates=True,
         min_nodes=500, min_soma_nodes=20, simplify=True, required_branches=10,
         soma_tags=('soma', ), use_cache=True, reverse=False, top_n=0,
-        resample_by=1e3):
+        resample_by=1e3) -> Dict[str, Any]:
     """Create NBLAST score for forward similarity from query objects to target
     objects. Objects can either be pointclouds or skeletons, which has to be
     reflected in the respective type parameter. This is executing essentially
@@ -767,6 +767,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
     target_dp = dotprops(target, resample=1, k=5)
     neurons.similarity = nblast_allbyall.neuronlist(neurons.dps, smat, FALSE, 'raw')
     """
+    # TODO: Break up this function
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     similarity = None
     query_object_ids_in_use = None
@@ -864,7 +865,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         if query_type == 'skeleton':
             # Check cache, if enabled
             cache_hits = 0
-            query_cache_objects_dps = None
+            query_cache_objects_dps = None # type: Any
             n_query_objects = len(query_object_ids)
             if use_cache and skeleton_cache:
                 # Find all skeleton IDs that aren't part of the cache
@@ -935,7 +936,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 # Find all skeleton IDs that aren't part of the cache
                 # TODO: There must be a simler way to extract non-NA values only
                 query_object_id_str = robjects.StrVector(list(map(str, query_object_ids)))
-                query_cache_objects_dps = pointcloud_cache.rx(query_object_id_str)
+                query_cache_objects_dps = pointcloud_cache.rx(query_object_id_str) # type: ignore # not provable that cache will be initialised
                 non_na_ids = list(filter(lambda x: type(x) == str,
                         list(base.names(query_cache_objects_dps))))
                 query_cache_objects_dps = rnat.subset_neuronlist(
@@ -1034,7 +1035,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             if target_type == 'skeleton':
                 # Check cache, if enabled
                 cache_hits = 0
-                target_cache_objects_dps = None
+                target_cache_objects_dps = None # type: Any
                 n_target_objects = len(target_object_ids)
                 if use_cache and skeleton_cache:
                     # Find all skeleton IDs that aren't part of the cache
@@ -1106,7 +1107,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     # Find all skeleton IDs that aren't part of the cache
                     # TODO: There must be a simler way to extract non-NA values only
                     target_object_id_str = robjects.StrVector(list(map(str, target_object_ids)))
-                    target_cache_objects_dps = pointcloud_cache.rx(target_object_id_str)
+                    target_cache_objects_dps = pointcloud_cache.rx(target_object_id_str) # type: ignore
                     non_na_ids = list(filter(lambda x: type(x) == str,
                             list(base.names(target_cache_objects_dps))))
                     target_cache_objects_dps = rnat.subset_neuronlist(
@@ -1311,10 +1312,10 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             # as rows, because it matches our expected queries more. Therefore
             # we have to transpose it using the 't()' R function. This isn't
             # needed for reverse queries.
-            similarity = target_scores.to_numpy().tolist()
+            similarity = target_scores.to_numpy().tolist() # type: ignore # mypy cannot prove this won't still be None
 
-            column_names = list(target_scores.columns.values)
-            row_names = list(target_scores.index.values)
+            column_names = list(target_scores.columns.values) # type: ignore # same as above
+            row_names = list(target_scores.index.values) # type: ignore # same as above
 
         else:
             if normalized == 'mean':

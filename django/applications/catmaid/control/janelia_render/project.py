@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 from catmaid.control.janelia_render.models import JaneliaRenderProjectStacks
 
-def projects(request):
+def projects(request:HttpRequest) -> JsonResponse:
     """ Returns a list of project objects that are visible for the requesting
     user and that have at least one stack linked to it.
     """

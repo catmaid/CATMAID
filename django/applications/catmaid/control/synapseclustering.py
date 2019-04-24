@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
+from collections import namedtuple
 import logging
+import networkx as nx
 import numpy as np
 from numpy import array, float32
 from numpy.linalg import norm
-import networkx as nx
-from collections import namedtuple
+from typing import DefaultDict, Dict, NamedTuple
 
 logger = logging.getLogger(__name__)
 
@@ -37,14 +38,14 @@ def tree_max_density(Gwud, synNodes, connector_ids, relations, h_list):
 
     D, id2index = distanceMatrix( Gwud, synNodes )
 
-    SynapseGroup = namedtuple("SynapseGroup", ['node_ids', 'connector_ids', 'relations', 'local_max'])
-    synapseGroups = {}
+    SynapseGroup = namedtuple("SynapseGroup", ['node_ids', 'connector_ids', 'relations', 'local_max']) # type: NamedTuple
+    synapseGroups = {} # type: Dict
 
     for h in h_list:
         expDh = np.exp(-1 * np.multiply(D, D) / (h * h) )
 
-        targLoc = {}            # targLocs hosts the final destination nodes of the hill climbing
-        densityField = {}            # densityField stores the height of the hill to be climbed
+        targLoc = {} # type: Dict           # targLocs hosts the final destination nodes of the hill climbing
+        densityField = {} # type: Dict           # densityField stores the height of the hill to be climbed
         for startNode in synNodes:
             if startNode not in targLoc:
                 currNode = startNode
@@ -98,7 +99,7 @@ def tree_max_density(Gwud, synNodes, connector_ids, relations, h_list):
 def distanceMatrix( G, synNodes ):
     """ Given a nx graph, produce an all to all distance dict via scipy sparse matrix black magic.
      Also, you get in 'id2index' the the mapping from a node id to the index in matrix scaledDistance. """
-    dmat = {}
+    dmat = {} # type: Dict
     nodeList = tuple(G.nodes())
     synNodes = set(synNodes)
     synIndices = tuple(i for i,node in enumerate(nodeList) if node in synNodes)
@@ -108,7 +109,7 @@ def distanceMatrix( G, synNodes ):
 
     return dmat, {node: i for i,node in enumerate(nodeList)}
 
-def countTargets( skeleton_id ):
+def countTargets(skeleton_id, pid):
     nTargets = {}
     synNodes, connector_ids, relations = synapseNodesFromSkeletonID( skeleton_id )
     PRE = Relation.objects.get(project=pid, relation_name='presynaptic_to').value_list('id')[0]
@@ -154,14 +155,15 @@ def synapseNodesFromSkeletonID(sid):
         synapse_relations.append(tc.relation_id)
     return synapse_nodes, connector_ids, synapse_relations
 
-def segregationIndex( synapseGroups, skeleton_id, weightOutputs=True ):
+def segregationIndex(synapseGroups, skeleton_id, pid, weightOutputs=True):
+    # XXX Possibly unused
     nout = np.zeros(len(synapseGroups))
     ngrp = np.zeros(len(synapseGroups))
 
     PRE = Relation.objects.get(project=pid, relation_name='presynaptic_to').value_list('id')[0]
 
     if weightOutputs:
-        nTargets = countTargets( skeleton_id )
+        nTargets = countTargets(skeleton_id, pid)
         for group in synapseGroups.values():
             for i, synDirection in enumerate(group.relations):
                 if synDirection == PRE:

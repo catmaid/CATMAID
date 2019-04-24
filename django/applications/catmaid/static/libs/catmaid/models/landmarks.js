@@ -387,7 +387,7 @@
       let matches = [].concat(...transformation.mappings
           .map(m => CATMAID.Landmarks.getPointMatches(m[0], m[1],
               landmarkGroupIndex, landmarkIndex, sourceLandmarkGroupIndex,
-              sourceLandmarkIndex, byName)));
+              sourceLandmarkIndex, byName, transformation.useReverseMatches)));
 
       if (!matches || matches.length === 0) {
         throw new CATMAID.ValueError("Found no point matches for " +
@@ -416,7 +416,8 @@
      * match, i.e. two locations annotated with the same landmark
      */
     getPointMatches: function(fromGroupId, toGroupId, landmarkGroupIndex,
-        landmarkIndex, sourceLandmarkGroupIndex, sourceLandmarkIndex, byName, addInverse = true) {
+        landmarkIndex, sourceLandmarkGroupIndex, sourceLandmarkIndex, byName,
+        useReverseMatches) {
       if (!landmarkGroupIndex) {
         throw new CATMAID.ValueError('No source landmark group information found');
       }
@@ -508,7 +509,7 @@
         var p2 = new CATMAID.transform.Point([tLoc.x, tLoc.y, tLoc.z]);
         matches.push(new CATMAID.transform.PointMatch(p1, p2, 1.0));
 
-        if (addInverse) {
+        if (useReverseMatches) {
           matches.push(new CATMAID.transform.PointMatch(p2, p1, 1.0));
         }
       }
@@ -720,11 +721,14 @@
    *                               expected to be the local <projectId>.
    * @param {API}      fromApi     (Optional) API instance to declare to load
    *                               skeletons from.
+   * @param {Boolean}  useReverseMatches Add point matches also in their reverse
+   *                                     relationship, which can be useful for
+   *                                     mirroring operations.
    *
    */
   let LandmarkSkeletonTransformation = function(projectId, skeletons,
       mappings, fromApi = null, color = undefined,
-      modelClass = CATMAID.transform.AffineModel3D) {
+      modelClass = CATMAID.transform.AffineModel3D, useReverseMatches = false) {
     this.projectId = projectId;
     this.skeletons = skeletons;
     let seenSourceIds = new Set(), seenTargetIds = new Set();
@@ -741,6 +745,7 @@
     this.fromApi = fromApi;
     this.color = new THREE.Color(color);
     this.modelClass = modelClass;
+    this.useReverseMatches = useReverseMatches;
   };
 
   // Provide some basic events

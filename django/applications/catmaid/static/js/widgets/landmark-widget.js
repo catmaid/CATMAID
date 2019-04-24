@@ -63,6 +63,8 @@
     // All currently available 3D Viewers and whether they are a render target
     // for landmark transformations.
     this.targeted3dViewerNames = new Map();
+    // Whether reverse point matches should be added to group transformations
+    this.useReversePointMatches = true;
     // Whether to show landmark layers
     this.showLandmarkLayers = true;
     // Whether skeleton colors should be overridden
@@ -851,7 +853,8 @@
       let transformation = this.displayTransformations[i];
       let providerAdded = CATMAID.Landmarks.addProvidersToTransformation(
           transformation, this.landmarkGroupIndex, this.landmarkIndex, i,
-          this.sourceLandmarkGroupIndex, this.sourceLandmarkIndex, true);
+          this.sourceLandmarkGroupIndex, this.sourceLandmarkIndex, true,
+          this.useReversePointMatches);
       if (providerAdded) {
         for (let j=0; j<target3dViewers.length; ++j) {
           let widget = target3dViewers[j];
@@ -878,7 +881,7 @@
   LandmarkWidget.prototype.addDisplayTransformation = function(projectId,
       skeletons, mapping, api, modelClass) {
     let lst = new CATMAID.LandmarkSkeletonTransformation(projectId, skeletons,
-        mapping, api, undefined, modelClass);
+        mapping, api, undefined, modelClass, this.useReversePointMatches);
     this.displayTransformations.push(lst);
 
     // Announce that there is a new display tranformation available
@@ -906,7 +909,8 @@
             throw new CATMAID.Warning("Could not find source skeletons");
           }
           let lst = new CATMAID.LandmarkSkeletonTransformation(projectId,
-            skeletons, [[fromGroupId, toGroupId]], undefined, undefined, modelClass);
+            skeletons, [[fromGroupId, toGroupId]], undefined, undefined,
+            modelClass, self.useReversePointMatches);
           self.displayTransformations.push(lst);
         }
         CATMAID.Landmarks.trigger(CATMAID.Landmarks.EVENT_DISPLAY_TRANSFORM_ADDED);
@@ -2693,6 +2697,18 @@
           },
           {
             type: 'checkbox',
+            value: target.useReversePointMatches,
+            label: 'Use reverse point matches',
+            title: 'This will add all point maches between two landmark ' +
+                'groups also as their reverse match, which is mainly useful ' +
+                'for mirroring operations.',
+            onclick: function() {
+              target.useReversePointMatches = this.checked;
+              target.updateDisplay();
+            }
+          },
+          {
+            type: 'checkbox',
             value: target.showLandmarkLayers,
             label: 'Show landmark layers',
             onclick: function() {
@@ -3804,6 +3820,7 @@
           importAllowNonEmptyGroups: widget.importAllowNonEmptyGroups,
           importCreateNonExistingGroups: widget.importCreateNonExistingGroups,
           importReuseExistingLandmarks: widget.importReuseExistingLandmarks,
+          useReversePointMatches: widget.useReversePointMatches,
           showLandmarkLayers: widget.showLandmarkLayers,
           overrideColor: widget.overrideColor,
           overrideColorHex: widget._overrideColor,
@@ -3815,6 +3832,7 @@
         CATMAID.tools.copyIfDefined(state, widget, 'importReuseExistingLandmarks');
         CATMAID.tools.copyIfDefined(state, widget, 'importCreateNonExistingGroups');
         CATMAID.tools.copyIfDefined(state, widget, 'importReuseExistingLandmarks');
+        CATMAID.tools.copyIfDefined(state, widget, 'useReversePointMatches');
         CATMAID.tools.copyIfDefined(state, widget, 'showLandmarkLayers');
         CATMAID.tools.copyIfDefined(state, widget, 'overrideColor');
         CATMAID.tools.copyIfDefined(state, widget, 'overrideColorHex');

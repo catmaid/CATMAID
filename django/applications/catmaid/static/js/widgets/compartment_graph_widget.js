@@ -314,6 +314,7 @@
              ['Refresh', GG.update.bind(GG)],
              [document.createTextNode(' - ')],
              ['Group equally named', GG.groupEquallyNamed.bind(GG)],
+             ['Group equally colored', GG.groupEquallyColored.bind(GG)],
              [document.createTextNode(' - ')],
              ['Properties', GG.graph_properties.bind(GG)],
              ['Clone', GG.cloneWidget.bind(GG)],
@@ -4081,6 +4082,85 @@
          this.update();
        }
     }, this);
+  };
+
+  GroupGraph.prototype.groupEquallyColored = function() {
+    let seen = new Map();
+
+    this.cy.nodes().each(function(i, node) {
+        var name = node.data("color");
+        var list = seen.get(name);
+        if (undefined === list) {
+            seen.set(name, [node]);
+        } else {
+            list.push(node);
+        }
+    });
+
+    let groupNames = new Map();
+    let createGroups = () => {
+      seen.forEach((list, key) => {
+        if (list.length > 1) {
+          var position = null;
+          var color = null;
+          var models = list.reduce(function(o, node) {
+            var p = node.position();
+            if (!position) {
+              position = {x: p.x, y: p.y};
+              color = new THREE.Color(node.data("color"));
+            } else {
+              position.x += p.x;
+              position.y += p.y;
+              color.add(new THREE.Color(node.data("color")));
+            }
+            node.data("skeletons").forEach(function(model) {
+               o[model.id] = model;
+            });
+            return o;
+          }, {});
+
+          position.x /= list.length;
+          position.y /= list.length;
+
+          var gid = this.nextGroupID();
+          let name = groupNames.get(key);
+          this.groups[gid] = new CATMAID.GroupGraph.prototype.Group(gid, models, name, color, false, position);
+
+          this.update();
+        }
+      });
+    };
+
+    // Ask user for group names
+    let groupsToName = Array.from(seen.keys()).filter(color => seen.get(color).length > 1);
+    let askForNextGroupName = function() {
+      let color = groupsToName.shift();
+      if (!color) {
+        createGroups();
+        return;
+      }
+      let dialog = new CATMAID.OptionsDialog(`Group name for color ${color}`, {
+        'Next': () => {
+          let groupName = nameField.value;
+          groupNames.set(color, groupName);
+          askForNextGroupName();
+        },
+      });
+      let msg = dialog.appendMessage("Please enter a name for the group with color ");
+      let colorPane = document.createElement('span');
+      colorPane.style.height = '1em';
+      colorPane.style.width = '5em';
+      colorPane.style.background = color;
+      colorPane.style.display = 'inline-block';
+      colorPane.style.border = '1px solid black';
+      colorPane.style.verticalAlign = 'middle';
+      msg.appendChild(colorPane);
+
+      var nameField = dialog.appendField('Name', 'color-name', '', true);
+
+      dialog.show(400, 'auto', true);
+    };
+    askForNextGroupName();
   };
 
   GroupGraph.prototype.setLinkTypeVisibility = function(linkType, visible) {

@@ -235,6 +235,10 @@ Graph widget:
   useful if layouting is done in e.g. Gephi and coloring should be done in
   CATMAID. The help page explains a possible workflow for this.
 
+- The button "Group equally colored" in the "Main" tab will group all skeletons
+  with the same color into a single group. The user is asked for group names for
+  each color.
+
 Miscellaneous:
 
 - Add a new Tracing Tool icon button to compute the distance between two nodes

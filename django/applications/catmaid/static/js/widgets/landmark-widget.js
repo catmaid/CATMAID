@@ -3432,11 +3432,6 @@
                         widget.update();
                       });
                   } else {
-                    if (!toGroup) {
-                      CATMAID.error("Need target landmark group");
-                      return;
-                    }
-
                     let skeletonModels = Object.values(source.getSelectedSkeletonModels());
                     if (!skeletonModels || skeletonModels.length === 0) {
                       CATMAID.warn("No source skeletons found");

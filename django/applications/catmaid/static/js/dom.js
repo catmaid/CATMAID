@@ -859,6 +859,7 @@
       var checkbox = document.createElement('input');
       checkbox.setAttribute('type', 'checkbox');
       checkbox.setAttribute('value', o.value);
+      checkbox.setAttribute('data-role', 'option');
       entry.appendChild(checkbox);
       entry.appendChild(document.createTextNode(o.title));
       var selected = selectedSet.has(o.value);

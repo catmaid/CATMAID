@@ -3228,6 +3228,41 @@
                         else selectedMatchingGroups.delete(e.target.value);
                       };
                       container.appendChild(matchingSelect);
+
+                      container.appendChild(document.createElement('hr'));
+
+                      let selectPatternInput = document.createElement('input');
+                      selectPatternInput.setAttribute('type', 'text');
+                      selectPatternInput.setAttribute('placeholder', 'Use / for RegEx');
+                      selectPatternInput.onclick = function(e) {
+                        e.cancelBubble = true;
+                        if (e.stopPropagation) e.stopPropagation();
+                      };
+                      container.appendChild(selectPatternInput);
+
+                      let selectPatternButton = document.createElement('button');
+                      selectPatternButton.appendChild(document.createTextNode('Select pattern'));
+                      selectPatternButton.onclick = function (e) {
+                        e.cancelBubble = true;
+                        if (e.stopPropagation) e.stopPropagation();
+
+                        let pattern = selectPatternInput.value;
+                        let forceUnselected = pattern.length === 0;
+
+                        selectedMatchingGroups.clear();
+
+                        let regEx = pattern[0] === '/' ? new RegExp(pattern.substr(1)) : null;
+                        container.querySelectorAll('input[type=checkbox][data-role=option]').forEach(ie => {
+                          ie.checked = forceUnselected ? false :
+                              (regEx ? regEx.test(ie.value) : ie.value.indexOf(pattern) !== -1);
+                          if (ie.checked) selectedMatchingGroups.add(ie.value);
+                          else selectedMatchingGroups.delete(ie.value);
+                        });
+                      };
+                      container.appendChild(selectPatternButton);
+
+                      container.appendChild(document.createElement('hr'));
+
                       let addMatchingButton = document.createElement('button');
                       addMatchingButton.appendChild(document.createTextNode('Add selected mappings'));
                       addMatchingButton.onclick = function () {

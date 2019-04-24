@@ -3231,7 +3231,6 @@
                       let addMatchingButton = document.createElement('button');
                       addMatchingButton.appendChild(document.createTextNode('Add selected mappings'));
                       addMatchingButton.onclick = function () {
-                        console.log(selectedMatchingGroups);
                         let selectedMappings = [...selectedMatchingGroups].map(name =>
                           getMapping(matchingGroups[name].sourceId, matchingGroups[name].targetId)
                         );

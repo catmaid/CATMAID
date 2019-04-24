@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from django.conf import settings
-from catmaid.control.dvid import get_server_info
+from typing import List
 
+from catmaid.control.dvid import get_server_info
 
 class DVIDDimension:
     def __init__(self, x, y, z):
@@ -75,13 +76,13 @@ class DVIDStack:
             int(max_point[2]) - int(min_point[2]))
 
         # Broken slices
-        self.broken_slices = []
+        self.broken_slices = [] # type: List
 
         self.downsample_factors = []
         self.attribution = ''
         self.canary_location = DVIDDimension(0, 0, 0)
         self.placeholder_color = DVIDColor(0, 0, 0, 0)
-        self.tags = []
+        self.tags = [] # type: List
 
 class DVIDProjectStacks:
     def __init__(self):
@@ -93,11 +94,11 @@ class DVIDProjectStacks:
         # Default to no translation
         self.translation = DVIDDimension(0, 0, 0)
 
-    def get_stack(self, project_id, stack_id):
+    def get_stack(self, project_id, stack_id) -> DVIDStack:
         stack_data = self.data[project_id]['DataInstances'][stack_id]
         source_id = stack_data['Extended']['Source']
         source_data = self.data[project_id]['DataInstances'][source_id]
         return DVIDStack(project_id, stack_id, stack_data, source_data)
 
-    def get_project(self, project_id):
+    def get_project(self, project_id) -> DVIDProject:
         return DVIDProject(project_id)

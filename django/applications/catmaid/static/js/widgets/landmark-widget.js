@@ -2887,7 +2887,7 @@
           let remoteSelect = CATMAID.DOM.createRadioSelect('Source instance',
               remoteOptions, sourceRemote, true, 'selected', 'Local');
           let remoteSelectSetting = CATMAID.DOM.createLabeledControl("Source remote",
-              remoteSelect, "Select the source CATMAID intance that contains " +
+              remoteSelect, "Select the source CATMAID instance that contains " +
               "the source skeletons. The current remote is selected by default.");
           remoteSelect.onchange = function(e) {
             sourceRemote = e.target.value;

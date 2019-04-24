@@ -2,14 +2,9 @@
 
 import json
 import logging
-
-try:
-    # Python 2
-    from urllib2 import urlopen, Request, HTTPError, URLError
-except ImportError:
-    # Python 3
-    from urllib.request import Request, urlopen
-    from urllib.error import HTTPError, URLError
+from typing import List
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 
 from django.conf import settings
 
@@ -131,7 +126,7 @@ class JaneliaRenderStack:
         self.dimension = JaneliaRenderDimension(width, height, depth)
 
         # Broken slices
-        self.broken_slices = []
+        self.broken_slices = [] # type: List
         last = -1
         for i in z_values:
             for j in range(last + 1, i):
@@ -142,7 +137,7 @@ class JaneliaRenderStack:
         self.attribution = ''
         self.canary_location = JaneliaRenderDimension(0, 0, 0)
         self.placeholder_color = JaneliaRenderColor(0, 0, 0, 0)
-        self.tags = []
+        self.tags = [] # type: List
 
 
 class JaneliaRenderProjectStacks:

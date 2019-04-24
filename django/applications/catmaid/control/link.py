@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import json
+from typing import Dict
 
 from django.db import connection
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
 
 from catmaid import state
@@ -131,11 +132,11 @@ UNDIRECTED_BINARY_LINK_TYPES =[p['relation'] for p in LINK_TYPES
             if p['isreciprocal'] and p.get('cardinality', None) == 2]
 
 
-LINKS_BY_RELATION = {l['relation']:l for l in LINK_TYPES}
+LINKS_BY_RELATION = {l['relation']:l for l in LINK_TYPES} # type: Dict
 
 
 @requires_user_role(UserRole.Annotate)
-def create_link(request, project_id=None):
+def create_link(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Create a link between a connector and a treenode
 
     Currently the following link types (relations) are supported:
@@ -229,7 +230,7 @@ def create_link(request, project_id=None):
 
 
 @requires_user_role(UserRole.Annotate)
-def delete_link(request, project_id=None):
+def delete_link(request:HttpRequest, project_id=None) -> JsonResponse:
     connector_id = int(request.POST.get('connector_id', 0))
     treenode_id = int(request.POST.get('treenode_id', 0))
 
@@ -264,7 +265,7 @@ def delete_link(request, project_id=None):
 
 def create_connector_link(project_id, user_id, treenode_id, skeleton_id,
         links, cursor=None):
-    """Create new connector links for the passded in treenode. What relation and
+    """Create new connector links for the passed in treenode. What relation and
     confidence is used to which connector is specified in the "links"
     paremteter. A list of three-element lists, following the following format:
     [<connector-id>, <relation-id>, <confidence>]
@@ -293,12 +294,12 @@ def create_connector_link(project_id, user_id, treenode_id, skeleton_id,
     return cursor.fetchall()
 
 def create_treenode_links(project_id, user_id, connector_id, links, cursor=None):
-    """Create new connector links for the passded in treenode. What relation and
+    """Create new connector links for the passed in treenode. What relation and
     confidence is used to which connector is specified in the "links"
     paremteter. A list of three-element lists, following the following format:
     [<treenode-id>, <relation-id>, <confidence>]
     """
-    def make_row(l):
+    def make_row(l) -> Tuple:
         # Passed in links are expected to follow this format:
         # [<connector-id>, <relation-id>, <confidence>]
         if 3 != len(l):

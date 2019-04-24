@@ -23,7 +23,7 @@ from formtools.wizard.views import SessionWizardView
 
 from catmaid.models import Class
 from catmaid.control.classification import (ClassInstanceProxy,
-    get_root_classes_qs, graphs_instanciate_features)
+    get_root_classes_qs, graphs_instantiate_features)
 from catmaid.control.ontology import get_features
 
 
@@ -101,7 +101,7 @@ class ClusteringWizard(SessionWizardView):
             graphs = gcd('classifications')['classification_graphs']
             add_nonleafs = True
             # Featurs are abstract concepts (classes) and graphs will be
-            # checked which classes they have instanciated.
+            # checked which classes they have instantiated.
             raw_features = [] # type: List
             for o in ontologies:
                 raw_features = raw_features + get_features( o, self.workspace_pid,
@@ -173,7 +173,7 @@ class ClusteringWizard(SessionWizardView):
         # Create binary matrix
         logger.debug("Clustering: Creating binary matrix")
         bin_matrix = create_binary_matrix(graphs, features) # type: np.ndarray
-                                                            # maintenance concern: this wrapper for graphs_instanciate_features
+                                                            # maintenance concern: this wrapper for graphs_instantiate_features
                                                             # is required for the later bin_matrix.tolist() to be valid
         # Calculate the distance matrix
         logger.debug("Clustering: creating distsance matrix")
@@ -216,5 +216,5 @@ def setup_clustering(request, workspace_pid=None):
 def create_binary_matrix(graphs, features) -> np.ndarray:
     """ Creates a binary matrix for the graphs passed."""
     matrix = np.zeros((len(graphs),len(features)), dtype=np.int) # type: np.ndarray
-    return graphs_instanciate_features(graphs, features, matrix)
+    return graphs_instantiate_features(graphs, features, matrix)
 

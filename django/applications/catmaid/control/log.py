@@ -2,8 +2,9 @@
 
 import json
 import logging
+from typing import Any, Dict, Optional
 
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 from django.contrib.auth.decorators import user_passes_test
 
 from catmaid.models import UserRole, Log, ReviewerWhitelist
@@ -12,7 +13,7 @@ from catmaid.control.authentication import requires_user_role
 from catmaid.control.user import access_check
 
 @user_passes_test(access_check)
-def log_frontent_event(request, level='info'):
+def log_frontent_event(request:HttpRequest, level='info') -> JsonResponse:
     """ Logs events from the front end if a user is signed in or was assigned
     browse permissions.
     """
@@ -24,10 +25,10 @@ def log_frontent_event(request, level='info'):
         logger = logging.getLogger('catmaid.frontend')
         entry = "User: %s (%s) %s" % (
             request.user.username, request.user.id, msg)
-        result = log(logger, level, entry)
+        log(logger, level, entry)
         status = "success"
         status_msg = "Successfully created log entry"
-    except Exception as se:
+    except Exception as e:
         status = "error"
         status_msg = str(e)
 
@@ -36,7 +37,7 @@ def log_frontent_event(request, level='info'):
         'message': status_msg
     })
 
-def log(logger, level, msg):
+def log(logger, level:str, msg:str) -> None:
     # Cancel silently if handler is not present
     if not logger.handlers:
         return
@@ -51,9 +52,10 @@ def log(logger, level, msg):
         raise ValueError("Unknown level: " + level)
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def list_logs(request, project_id=None):
+def list_logs(request:HttpRequest, project_id=None) -> JsonResponse:
     if 'user_id' in request.POST:
-        user_id = int(request.POST.get('user_id', -1))  # We can see logs for different users
+        user_id = int(request.POST.get('user_id', -1)) # type: Optional[int]
+                                                       # We can see logs for different users
     else:
         user_id = None
     whitelist = get_request_bool(request.POST, 'whitelist', False)
@@ -69,7 +71,7 @@ def list_logs(request, project_id=None):
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))
         sorting_directions = [request.POST.get('sSortDir_%d' % d, 'DESC') for d in range(column_count)]
-        sorting_directions = map(lambda d: '-' if d.upper() == 'DESC' else '', sorting_directions)
+        sorting_directions = list(map(lambda d: '-' if d.upper() == 'DESC' else '', sorting_directions))
 
         fields = ['user', 'operation_type', 'creation_time', 'x', 'y', 'z', 'freetext']
         sorting_index = [int(request.POST.get('iSortCol_%d' % d)) for d in range(column_count)]
@@ -97,7 +99,7 @@ def list_logs(request, project_id=None):
 
     result = list(log_query[display_start:display_start + display_length])
 
-    response = {'iTotalRecords': len(result), 'iTotalDisplayRecords': len(result), 'aaData': []}
+    response = {'iTotalRecords': len(result), 'iTotalDisplayRecords': len(result), 'aaData': []} # type: Dict[str, Any]
     for log in result:
         response['aaData'] += [[
             log.username,

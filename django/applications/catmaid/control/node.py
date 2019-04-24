@@ -1,21 +1,23 @@
 # -*- coding: utf-8 -*-
 
+from abc import ABCMeta
+from aggdraw import Draw, Pen, Brush, Font
+from collections import defaultdict
 import copy
 import json
 import math
 import msgpack
-import ujson
+from PIL import Image, ImageDraw
 import psycopg2.extras
 import progressbar
 import struct
-
-from collections import defaultdict
-from abc import ABCMeta
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
+import ujson
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.conf import settings
 from django.db import connection
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 
@@ -29,8 +31,6 @@ from catmaid.control.authentication import requires_user_role, \
 from catmaid.control.common import (get_relation_to_id_map, get_request_bool,
         get_request_list)
 
-from PIL import Image, ImageDraw
-from aggdraw import Draw, Pen, Brush, Font
 
 
 ORIENTATIONS = {
@@ -52,10 +52,10 @@ class BasicNodeProvider(object):
         self.max_height = kwargs.get('max_height')
         self.max_depth = kwargs.get('max_depth')
 
-    def prepare_db_statements(connection=None):
+    def prepare_db_statements(self, connection:Any):
         pass
 
-    def matches(self, params):
+    def matches(self, params) -> bool:
         matches = True
         if not self.enabled:
             return False
@@ -81,7 +81,7 @@ class BasicNodeProvider(object):
         return matches
 
     def get_tuples(self, params, project_id, explicit_treenode_ids,
-                explicit_connector_ids, include_labels, with_relation_map):
+                explicit_connector_ids, include_labels, with_relation_map) -> Tuple[Any, Optional[str]]:
         return _node_list_tuples_query(params, project_id,
                 self, explicit_treenode_ids, explicit_connector_ids,
                 include_labels, with_relation_map), 'json'
@@ -117,7 +117,7 @@ class CachedJsonNodeNodeProvder(CachedNodeProvider):
     """
 
     def get_tuples(self, params, project_id, explicit_treenode_ids,
-            explicit_connector_ids, include_labels, with_relation_map):
+            explicit_connector_ids, include_labels, with_relation_map) -> Tuple[Any, Optional[str]]:
         cursor = connection.cursor()
         # For JSONB type cache, use ujson to decode, this is roughly 2x faster
         psycopg2.extras.register_default_jsonb(loads=ujson.loads)
@@ -156,7 +156,7 @@ class CachedJsonTextNodeProvder(CachedNodeProvider):
     """
 
     def get_tuples(self, params, project_id, explicit_treenode_ids,
-                explicit_connector_ids, include_labels, with_relation_map):
+                explicit_connector_ids, include_labels, with_relation_map) -> Tuple[Any, Optional[str]]:
         cursor = connection.cursor()
         cursor.execute("""
             SELECT json_text_data FROM node_query_cache
@@ -196,7 +196,7 @@ class CachedMsgpackNodeProvder(CachedNodeProvider):
     """
 
     def get_tuples(self, params, project_id, explicit_treenode_ids,
-                explicit_connector_ids, include_labels, with_relation_map):
+                explicit_connector_ids, include_labels, with_relation_map) -> Tuple[Any, Optional[str]]:
         cursor = connection.cursor()
         cursor.execute("""
             SELECT msgpack_data FROM node_query_cache
@@ -233,7 +233,7 @@ class CachedMsgpackNodeProvder(CachedNodeProvider):
             return None, None
 
 
-def get_pack_array_header(n):
+def get_pack_array_header(n) -> bytes:
     """Return binary header for msgpack conform array header. This is is size
     dependent. See:
     https://github.com/msgpack/msgpack-python/blob/8b6ce53cce40e528af7cce89f358f7dde1a09289/msgpack/fallback.py#L907
@@ -253,7 +253,7 @@ class GridCachedNodeProvider(CachedNodeProvider):
 
     data_type = 'json'
 
-    def update_tuples(self, target, decoded_extra_tuples, encoded_extra_tuples=None):
+    def update_tuples(self, target, decoded_extra_tuples, encoded_extra_tuples=None) -> bytes:
         if self.data_type == 'json':
             if len(target) == 5:
                 target.append([])
@@ -274,7 +274,7 @@ class GridCachedNodeProvider(CachedNodeProvider):
                 # If cached response doesn't contain any extra nodes, add a
                 # new field
                 return target[0:-1] + ', ' + target_json + ']'
-            elif tuples[-2] == ']':
+            elif target[-2] == ']':
                 return target[0:-2] + ', ' + target_json[1:] + ']'
             else:
                 raise ValueError("Unexpected cached JSON text tuple format")
@@ -309,7 +309,7 @@ class GridCachedNodeProvider(CachedNodeProvider):
             raise ValueError("Unexpected cached JSON tuple format")
 
     def get_tuples(self, params, project_id, explicit_treenode_ids,
-            explicit_connector_ids, include_labels, with_relation_map):
+            explicit_connector_ids, include_labels, with_relation_map) -> Tuple[Any, Optional[str]]:
         # Find a fitting grid index, return empty result if there is none.
         cursor = connection.cursor()
         params['volume'] = (params['right'] - params['left']) * \
@@ -442,7 +442,7 @@ class GridCachedJsonTextNodeProvider(GridCachedNodeProvider):
 class GridCachedMsgpackNodeProvider(GridCachedNodeProvider):
     data_type = 'msgpack'
 
-    def get_tuples(self, *args, **kwargs):
+    def get_tuples(self, *args, **kwargs) -> Tuple[Any, Optional[str]]:
         tuples, dt = super().get_tuples(*args, **kwargs)
         if tuples:
             return bytes(tuples), dt
@@ -452,10 +452,10 @@ class GridCachedMsgpackNodeProvider(GridCachedNodeProvider):
 class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
 
     CONNECTOR_STATEMENT_NAME = 'get_connectors_postgis'
-    connector_query = None
+    connector_query = None # type: Optional[str]
 
     TREENODE_STATEMENT_NAME = 'get_treenodes_postgis'
-    treenode_query = None
+    treenode_query = None # type: Optional[str]
 
     # Allows implementation to handle limit settings on its own
     managed_limit = True
@@ -513,7 +513,7 @@ class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
         if connection and not settings.PREPARED_STATEMENTS:
             self.prepare_db_statements(connection)
 
-    def prepare_db_statements(self, connection):
+    def prepare_db_statements(self, connection) -> None:
         """Create prepared statements on a given connection. This is mainly useful
         for long lived connections.
         """
@@ -661,7 +661,7 @@ class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
 
         return treenode_ids, treenodes
 
-    def get_connector_data(self, cursor, params, missing_connector_ids=None):
+    def get_connector_data(self, cursor, params, missing_connector_ids=None) -> List:
         """Selects all connectors that are in or have links that intersect the
         bounding box, or that are in missing_connector_ids.
         """
@@ -1275,10 +1275,10 @@ class ExtraNodesOnlyNodeProvider(BasicNodeProvider):
     """
 
     def get_tuples(self, params, project_id, explicit_treenode_ids,
-            explicit_connector_ids, include_labels, with_relation_map):
+            explicit_connector_ids, include_labels, with_relation_map) -> Tuple[Any, str]:
 
         # No regular tracing data lookup needs to be done.
-        tuples = []
+        tuples = [] # type: List
         # If there are exta nodes required, query them explicitely using a
         # regular Postgis 2D query. Inject the result into cached data.
         if explicit_treenode_ids or explicit_connector_ids:
@@ -1319,10 +1319,10 @@ CACHE_NODE_PROVIDER_DATA_TYPES = {
 
 
 def get_configured_node_providers(provider_entries, connection=None,
-        enabled_only=False):
+        enabled_only=False) -> List:
     node_providers = []
     for entry in provider_entries:
-        options = {}
+        options = {} # type: Dict
         # An entry is allowed to be a two-tuple (name, options) to provide
         # options to the constructor call. Otherwise a simple name string is
         # expected.
@@ -1343,7 +1343,7 @@ def get_configured_node_providers(provider_entries, connection=None,
     return node_providers
 
 
-def update_node_query_cache(node_providers=None, log=print, force=False):
+def update_node_query_cache(node_providers=None, log=print, force=False) -> None:
     if not node_providers:
         node_providers = settings.NODE_PROVIDERS
 
@@ -1445,7 +1445,7 @@ def get_tracing_bounding_box(project_id, cursor=None, bb_limits=None):
     return row
 
 
-def get_lod_buckets(result_tuple, lod_levels, lod_bucket_size, lod_strategy):
+def get_lod_buckets(result_tuple, lod_levels, lod_bucket_size, lod_strategy) -> List[List]:
     nodes = result_tuple[0]
     connectors = result_tuple[1]
     n_nodes_to_add = len(nodes)
@@ -1453,7 +1453,7 @@ def get_lod_buckets(result_tuple, lod_levels, lod_bucket_size, lod_strategy):
 
     # Split data into LOD buckets, assume filtering and sorting has been
     # done in the node provider.
-    result_buckets = [[]] * lod_levels
+    result_buckets = [[]] * lod_levels # type: List[List]
     half_bucket_size = int(lod_bucket_size / 2)
     connector_slice_end = 0
     node_slice_end = 0
@@ -1514,7 +1514,7 @@ def get_lod_buckets(result_tuple, lod_levels, lod_bucket_size, lod_strategy):
 def update_cache(project_id, data_type, orientations, steps, node_limit=None,
         n_largest_skeletons_limit=None, n_last_edited_skeletons_limit=None,
         hidden_last_editor_id=None, lod_levels=1, lod_bucket_size=500,
-        lod_strategy='quadratic', delete=False, bb_limits=None, log=print):
+        lod_strategy='quadratic', delete=False, bb_limits=None, log=print) -> None:
     if data_type not in ('json', 'json_text', 'msgpack'):
         raise ValueError('Type must be one of: json, json_text, msgpack')
     if len(steps) != len(orientations):
@@ -1579,7 +1579,7 @@ def update_cache(project_id, data_type, orientations, steps, node_limit=None,
                 'field of view in each section'). format(n_last_edited_skeletons_limit))
 
     if hidden_last_editor_id:
-        param['hidden_last_editor_id'] = int(hidden_last_editor_id)
+        params['hidden_last_editor_id'] = int(hidden_last_editor_id)
         log((' -> Only nodes not edited last by user {} will be allowed'.format(
                 hidden_last_editor_id)))
 
@@ -1652,7 +1652,7 @@ def update_grid_cache(project_id, data_type, orientations,
         n_last_edited_skeletons_limit=None, hidden_last_editor_id=None,
         delete=False, bb_limits=None, log=print, progress=True,
         allow_empty=False, lod_levels=1, lod_bucket_size=500,
-        lod_strategy='quadratic'):
+        lod_strategy='quadratic') -> None:
     if data_type not in ('json', 'json_text', 'msgpack'):
         raise ValueError('Type must be one of: json, json_text, msgpack')
     if project_id is None:
@@ -1721,7 +1721,7 @@ def update_grid_cache(project_id, data_type, orientations,
                 'field of view in each section'). format(n_last_edited_skeletons_limit))
 
     if hidden_last_editor_id:
-        param['hidden_last_editor_id'] = int(hidden_last_editor_id)
+        params['hidden_last_editor_id'] = int(hidden_last_editor_id)
         log((' -> Only nodes not edited last by user {} will be allowed'.format(
                 hidden_last_editor_id)))
 
@@ -1840,7 +1840,7 @@ def update_grid_cache(project_id, data_type, orientations,
 def update_grid_cell(project_id, grid_id, w_i, h_i, d_i, cell_width,
         cell_height, cell_depth, provider, params, allow_empty, lod_levels,
         lod_bucket_size, lod_strategy, update_json_cache,
-        update_json_text_cache, update_msgpack_cache, cursor):
+        update_json_text_cache, update_msgpack_cache, cursor) -> bool:
     params['left'] = w_i * cell_width
     params['right'] = (w_i + 1) * cell_width
     params['top'] = h_i * cell_height
@@ -1908,14 +1908,14 @@ def update_grid_cell(project_id, grid_id, w_i, h_i, d_i, cell_width,
     return True
 
 
-def prepare_db_statements(connection):
+def prepare_db_statements(connection) -> None:
     node_providers = get_configured_node_providers(settings.NODE_PROVIDERS, connection)
     for node_provider in node_providers:
         node_provider.prepare_db_statements(connection)
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def node_list_tuples(request, project_id=None, provider=None):
+def node_list_tuples(request:HttpRequest, project_id=None, provider=None) -> HttpResponse:
     '''Retrieve all nodes intersecting a bounding box
 
     The intersection bounding box is defined in terms of its minimum and
@@ -2067,7 +2067,7 @@ def node_list_tuples(request, project_id=None, provider=None):
     else:
         raise ValueError("Unsupported HTTP method: " + request.method)
 
-    params = {}
+    params = {} # type: Dict[str, Optional[Union[int, float]]]
 
     treenode_ids = get_request_list(data, 'treenode_ids', tuple(), int)
     connector_ids = get_request_list(data, 'connector_ids', tuple(), int)
@@ -2095,9 +2095,9 @@ def node_list_tuples(request, project_id=None, provider=None):
     # The orientation parameter is used to override the dominant depth
     # dimension. This dimension is used do some queries.
     orientation = data.get('orientation')
-    width = params['width'] = params.get('right') - params.get('left')
-    height = params['height'] = params.get('bottom') - params.get('top')
-    depth = params['depth'] = params.get('z2') - params.get('z1')
+    width = params['width'] = params.get('right') - params.get('left') # type: ignore
+    height = params['height'] = params.get('bottom') - params.get('top') # type: ignore
+    depth = params['depth'] = params.get('z2') - params.get('z1') # type: ignore
     if not orientation:
         if depth < width:
             if depth < height:
@@ -2127,7 +2127,7 @@ def node_list_tuples(request, project_id=None, provider=None):
 
 def _node_list_tuples_query(params, project_id, node_provider,
         explicit_treenode_ids=tuple(), explicit_connector_ids=tuple(),
-        include_labels=False, with_relation_map='used'):
+        include_labels=False, with_relation_map='used') -> List:
     """The returned JSON data is sensitive to indices in the array, so care
     must be taken never to alter the order of the variables in the SQL
     statements without modifying the accesses to said data both in this
@@ -2154,14 +2154,14 @@ def _node_list_tuples_query(params, project_id, node_provider,
 
         connectors = []
         # A set of unique connector IDs
-        connector_ids = set()
+        connector_ids = set() # type: Set
 
         # Collect links to connectors for each treenode. Each entry maps a
         # relation ID to a an object containing the relation name, and an object
         # mapping connector IDs to confidences.
-        links = defaultdict(list)
+        links = defaultdict(list) # type: DefaultDict[Any, List]
         used_relations = set()
-        seen_links = set()
+        seen_links = set() # type: Set
 
         for row in crows:
             # Collect treeenode IDs related to connectors but not yet in treenode_ids
@@ -2195,7 +2195,7 @@ def _node_list_tuples_query(params, project_id, node_provider,
                 params, missing_treenode_ids)
         n_retrieved_nodes = len(treenode_ids)
 
-        labels = defaultdict(list)
+        labels = defaultdict(list) # type: DefaultDict[Any, List]
         if include_labels:
             # Avoid dict lookups in loop
             top, left, z1 = params['top'], params['left'], params['z1']
@@ -2257,7 +2257,7 @@ def _node_list_tuples_query(params, project_id, node_provider,
 def node_list_tuples_query(params, project_id, node_provider,
         explicit_treenode_ids=tuple(), explicit_connector_ids=tuple(),
         include_labels=False, target_format='json', target_options=None,
-        with_relation_map=True):
+        with_relation_map=True) -> HttpResponse:
 
     result_tuple, data_type = node_provider.get_tuples(params, project_id,
         explicit_treenode_ids, explicit_connector_ids, include_labels,
@@ -2268,7 +2268,7 @@ def node_list_tuples_query(params, project_id, node_provider,
 def compile_node_list_result(project_id, node_providers, params,
         explicit_treenode_ids=tuple(), explicit_connector_ids=tuple(),
         include_labels=False, target_format='json', target_options=None,
-        with_relation_map=True):
+        with_relation_map=True) -> HttpResponse:
     """Create a valid HTTP response for the provided node query. If
     override_provider is not passed in, the list of node_providers will be
     iterated until a result is found.
@@ -2289,7 +2289,7 @@ def compile_node_list_result(project_id, node_providers, params,
 
     return create_node_response(result_tuple, params, target_format, target_options, data_type)
 
-def create_node_response(result, params, target_format, target_options, data_type):
+def create_node_response(result, params, target_format, target_options, data_type) -> HttpResponse:
     if target_format == 'json':
         if data_type == 'json':
             data = ujson.dumps(result)
@@ -2339,7 +2339,7 @@ def create_node_response(result, params, target_format, target_options, data_typ
         raise ValueError("Unknown target format: {}".format(target_format))
 
 def render_nodes_xy(node_data, params, width, height, view_min_x=0, view_min_y=0,
-        xscale=1.0, yscale=1.0):
+        xscale=1.0, yscale=1.0) -> Image:
     """Render the passed in node data to an image.
     """
     import random
@@ -2423,7 +2423,7 @@ def render_nodes_xy(node_data, params, width, height, view_min_x=0, view_min_y=0
 
 
 @requires_user_role(UserRole.Annotate)
-def update_location_reviewer(request, project_id=None, node_id=None):
+def update_location_reviewer(request:HttpRequest, project_id=None, node_id=None) -> JsonResponse:
     """ Updates the reviewer id and review time of a node """
     try:
         # Try to get the review object. If this fails we create a new one. Doing
@@ -2445,7 +2445,7 @@ def update_location_reviewer(request, project_id=None, node_id=None):
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def most_recent_treenode(request, project_id=None):
+def most_recent_treenode(request:HttpRequest, project_id=None) -> JsonResponse:
     skeleton_id = int(request.POST.get('skeleton_id', -1))
 
     try:
@@ -2518,7 +2518,7 @@ def _update_location(table, nodes, now, user, cursor):
 
 
 @requires_user_role(UserRole.Annotate)
-def node_update(request, project_id=None):
+def node_update(request:HttpRequest, project_id=None) -> JsonResponse:
     treenodes = get_request_list(request.POST, "t") or []
     connectors = get_request_list(request.POST, "c") or []
 
@@ -2542,7 +2542,7 @@ def node_update(request, project_id=None):
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def node_nearest(request, project_id=None):
+def node_nearest(request:HttpRequest, project_id=None) -> JsonResponse:
     params = {}
     param_float_defaults = {
         'x': 0,
@@ -2644,13 +2644,13 @@ def _fetch_locations(project_id, location_ids):
     return cursor.fetchall()
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def get_location(request, project_id=None):
+def get_location(request:HttpRequest, project_id=None) -> JsonResponse:
     tnid = int(request.POST['tnid'])
     return JsonResponse(_fetch_location(project_id, tnid), safe=False)
 
 @api_view(['POST'])
 @requires_user_role([UserRole.Browse])
-def get_locations(request, project_id=None):
+def get_locations(request:HttpRequest, project_id=None) -> JsonResponse:
     """Get locations for a particular set of nodes in a project.
 
     A list of lists is returned. Each inner list represents one location and
@@ -2704,7 +2704,7 @@ def get_locations(request, project_id=None):
 
 
 @requires_user_role([UserRole.Browse])
-def user_info(request, project_id=None):
+def user_info(request:HttpRequest, project_id=None) -> JsonResponse:
     """Return information on a treenode or connector. This function is called
     pretty often (with every node activation) and should therefore be as fast
     as possible.
@@ -2743,7 +2743,7 @@ def user_info(request, project_id=None):
 
 @api_view(['POST'])
 @requires_user_role([UserRole.Browse])
-def find_labels(request, project_id=None):
+def find_labels(request:HttpRequest, project_id=None) -> JsonResponse:
     """List nodes with labels matching a query, ordered by distance.
 
     Find nodes with labels (front-end node tags) matching a regular

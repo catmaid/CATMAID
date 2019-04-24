@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import json
 
 from collections import defaultdict
+import json
+from typing import Any, DefaultDict, List, Optional, Union
 
 from django.db import connection
-from django.http import Http404, JsonResponse
+from django.http import HttpRequest, Http404, JsonResponse
 from django.shortcuts import get_object_or_404
 
 from rest_framework.decorators import api_view
@@ -28,7 +29,7 @@ single skeleton. This is only used to generate warnings, not enforced.
 """
 
 
-def get_link_model(node_type):
+def get_link_model(node_type:str) -> Union[ConnectorClassInstance, TreenodeClassInstance]:
     """ Return the model class that represents the a label link for nodes of
     the given node type.
     """
@@ -40,7 +41,7 @@ def get_link_model(node_type):
         raise Exception('Unknown node type: "%s"', node_type)
 
 @requires_user_role(UserRole.Annotate)
-def label_remove(request, project_id=None):
+def label_remove(request:HttpRequest, project_id=None) -> JsonResponse:
     label_id = int(request.POST['label_id'])
     if request.user.is_superuser:
         try:
@@ -64,7 +65,7 @@ def label_remove(request, project_id=None):
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
-def labels_all(request, project_id=None):
+def labels_all(request:HttpRequest, project_id=None) -> JsonResponse:
     """List all labels (front-end node *tags*) in use.
 
     ---
@@ -85,7 +86,7 @@ def labels_all(request, project_id=None):
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
-def labels_all_detail(request, project_id=None):
+def labels_all_detail(request:HttpRequest, project_id=None) -> JsonResponse:
     """List all labels (front-end node *tags*) in use alongside their IDs.
     ---
     parameters:
@@ -108,7 +109,7 @@ def labels_all_detail(request, project_id=None):
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
-def get_label_stats(request, project_id=None):
+def get_label_stats(request:HttpRequest, project_id=None) -> JsonResponse:
     """Get usage statistics of node labels.
 
     ---
@@ -144,7 +145,7 @@ def get_label_stats(request, project_id=None):
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
-def labels_for_node(request, project_id=None, node_type=None, node_id=None):
+def labels_for_node(request:HttpRequest, project_id=None, node_type:Optional[str]=None, node_id=None) -> JsonResponse:
     """List all labels (front-end node *tags*) attached to a particular node.
 
     ---
@@ -183,12 +184,12 @@ def labels_for_node(request, project_id=None, node_type=None, node_id=None):
     return JsonResponse([l.class_instance.name for l in qs], safe=False)
 
 @requires_user_role(UserRole.Browse)
-def labels_for_nodes(request, project_id=None):
+def labels_for_nodes(request:HttpRequest, project_id=None) -> JsonResponse:
     # Two POST variables, which are each an array of integers stringed together
     # with commas as separators
     treenode_ids = request.POST.get('treenode_ids', '').strip()
     connector_ids = request.POST.get('connector_ids', '').strip()
-    result = defaultdict(list)
+    result = defaultdict(list) # type: DefaultDict[Any, List]
     cursor = connection.cursor()
 
     if treenode_ids:
@@ -222,13 +223,13 @@ def labels_for_nodes(request, project_id=None):
     return JsonResponse(result)
 
 @requires_user_role(UserRole.Annotate)
-def label_update(request, project_id=None, location_id=None, ntype=None):
+def label_update(request:HttpRequest, project_id, location_id, ntype:str) -> JsonResponse:
     """ location_id is the ID of a treenode or connector.
         ntype is either 'treenode' or 'connector'. """
     labeled_as_relation = Relation.objects.get(project=project_id, relation_name='labeled_as')
     p = get_object_or_404(Project, pk=project_id)
 
-    # TODO will FAIL when a tag contains a coma by itself
+    # TODO will FAIL when a tag contains a comma by itself
     new_tags = request.POST['tags'].split(',')
     delete_existing_labels = get_request_bool(request.POST, 'delete_existing', True)
 
@@ -385,7 +386,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
     return JsonResponse(response)
 
 
-def label_exists(label_id, node_type):
+def label_exists(label_id, node_type) -> bool:
     # This checks to see if the exact instance of the tag being applied to a node/connector still exists.
     # If the tag was removed and added again then this will return False.
     table = get_link_model(node_type)
@@ -396,7 +397,7 @@ def label_exists(label_id, node_type):
         return False
 
 @requires_user_role(UserRole.Annotate)
-def remove_label_link(request, project_id, ntype, location_id):
+def remove_label_link(request:HttpRequest, project_id, ntype:str, location_id) -> JsonResponse:
     label = request.POST.get('tag', None)
     if not label:
         raise ValueError("No label parameter given")
@@ -424,7 +425,7 @@ def remove_label_link(request, project_id, ntype, location_id):
             'error': 'Could not remove label'
         })
 
-def remove_label(label_id, node_type):
+def remove_label(label_id, node_type:str) -> bool:
     # This removes an exact instance of a tag being applied to a node/connector, it does not look up the tag by name.
     # If the tag was removed and added again then this will do nothing and the tag will remain.
     table = get_link_model(node_type)

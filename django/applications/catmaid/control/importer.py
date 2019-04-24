@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import glob
-import os.path
-import json
-import yaml
-import urllib
-import requests
-
 from collections import OrderedDict, defaultdict
+import glob
+import json
+import os.path
+import requests
+from typing import Any, List, DefaultDict, Dict, Tuple
+import urllib
+import yaml
+
 
 from django import forms
 from django.db import connection
@@ -17,6 +18,7 @@ from django.contrib.auth.models import User, Group, Permission
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render_to_response
 from django.utils.translation import ugettext as _
 
@@ -27,7 +29,7 @@ from guardian.shortcuts import get_perms_for_model, assign_perm
 
 from catmaid.models import (BrokenSlice, Class, Relation, ClassClass,
         ClassInstance, Project, ClassInstanceClassInstance, Stack, StackGroup,
-        StackStackGroup, ProjectStack, StackClassInstance, StackGroupRelation,
+        StackStackGroup, ProjectStack, StackClassInstance, StackGroupClassInstance, StackGroupRelation,
         StackMirror, TILE_SOURCE_TYPES)
 from catmaid.fields import Double3D
 from catmaid.control.common import urljoin, is_valid_host
@@ -153,7 +155,7 @@ class PreStack(object):
         if not Double3D.tuple_pattern.match(self.project_translation):
             raise ValueError("Couldn't read translation value")
         # Collect stack group information
-        self.stackgroups = []
+        self.stackgroups = [] # type: List
         if 'stackgroups' in info_object:
             for stackgroup in info_object['stackgroups']:
                 self.stackgroups.append(PreStackGroup(stackgroup))
@@ -166,7 +168,7 @@ class PreStack(object):
         # Don't be considered known by default
         self.already_known = already_known
 
-    def equals(self, stack):
+    def equals(self, stack) -> bool:
         """Two PreStack objects are equal if their title matches and they have
         equal sets of image bases of their PreMirror instances.
         """
@@ -194,7 +196,7 @@ class PreProject:
         # Read out data
         self.title = p['title']
 
-        self.stacks = []
+        self.stacks = [] # type: List
         self.has_been_imported = False
         for s in p.get('stacks', []):
             self.stacks.append(PreStack(s, project_url, data_folder))
@@ -209,21 +211,21 @@ class PreProject:
         self.classification = p.get('classification', [])
 
         # Collect stack group information, if available
-        self.stackgroups = []
+        self.stackgroups = [] # type: List
         for sg in p.get('stackgroups', []):
             self.stackgroups.append(PreStackGroup(sg))
 
-    def set_known_pid(self, pid):
+    def set_known_pid(self, pid) -> None:
         self.already_known = pid != None
         self.already_known_pid = pid
 
-    def imports_stack(self, stack):
+    def imports_stack(self, stack) -> bool:
         for s in self.stacks:
             if s.equals(stack):
                 return True
         return False
 
-    def merge_with(self, other):
+    def merge_with(self, other) -> None:
         """Copy properties from other project
         """
         if self.has_been_imported:
@@ -239,7 +241,7 @@ class PreProject:
         self.classification.extend(other.classification)
         self.stackgroups.extend(other.stackgroups)
 
-def check_http_accessibility(image_base, file_extension, auth=None):
+def check_http_accessibility(image_base:str, file_extension:str, auth=None) -> bool:
     """ Returns true if data below this image base can be accessed through HTTP.
     """
     slice_zero_url = urljoin(image_base, "0")
@@ -250,12 +252,12 @@ def check_http_accessibility(image_base, file_extension, auth=None):
         return False
     return response.status_code == 200
 
-def find_project_folders(image_base, path, filter_term, depth=1):
+def find_project_folders(image_base, path, filter_term) -> Tuple[List, Dict[str, Any], List]:
     """ Finds projects in a folder structure by testing for the presence of an
     info/project YAML file.
     """
     index = []
-    projects = {}
+    projects = {} # type: Dict
     not_readable = []
     for current_file in glob.glob( os.path.join(path, filter_term) ):
         if os.path.isdir(current_file):
@@ -287,17 +289,13 @@ def find_project_folders(image_base, path, filter_term, depth=1):
                         index.append((key, short_name))
                 except Exception as e:
                     not_readable.append( (info_file, e) )
-            elif depth > 1:
-                # Recurse in subdir if requested
-                index = index + find_files( current_file, depth - 1)
     return (index, projects, not_readable)
 
 
-def get_projects_from_raw_data(data, filter_term, headers=None, auth=None,
-        base_url=None, merge_same=True):
+def get_projects_from_raw_data(data, filter_term, base_url=None) -> Tuple[List, Dict, List]: # FIXME: filter_term is unused
     index = []
     projects = {}
-    not_readable = []
+    not_readable = [] # type: List
 
     for p in data:
         project = PreProject(p, base_url, None)
@@ -310,7 +308,7 @@ def get_projects_from_raw_data(data, filter_term, headers=None, auth=None,
 
 
 def get_projects_from_url(url, filter_term, headers=None, auth=None,
-        base_url=None, merge_same=True):
+        base_url=None, merge_same=True) -> Tuple[List, Dict, List]: # FIXME: filter_term is unused.
     if not url:
         raise ValueError("No URL provided")
     if auth and len(auth) != 2:
@@ -322,7 +320,7 @@ def get_projects_from_url(url, filter_term, headers=None, auth=None,
 
     index = []
     projects = {}
-    not_readable = []
+    not_readable = [] # type: List
 
     # Ask remote server for data
     r = requests.get(url, headers=headers, auth=auth)
@@ -338,7 +336,7 @@ def get_projects_from_url(url, filter_term, headers=None, auth=None,
             projects[key] = project
             index.append((key, short_name))
     elif 'yaml' in content_type:
-        content = yaml.load_all(r.content)
+        content = yaml.load_all(r.content.decode('utf-8'))
         for p in content:
             project = PreProject(p, base_url, None)
             short_name = project.title
@@ -361,10 +359,10 @@ class ProjectSelector(object):
 
     def __init__(self, projects, project_index, known_project_filter,
             known_project_strategy, cursor=None):
-        self.ignored_projects = []
-        self.merged_projects = []
-        self.replacing_projects = []
-        self.new_projects = []
+        self.ignored_projects = [] # type: List
+        self.merged_projects = [] # type: List
+        self.replacing_projects = [] # type: List
+        self.new_projects = [] # type: List
 
         self.known_project_filter = known_project_filter
         self.known_project_strategy = known_project_strategy
@@ -416,7 +414,7 @@ class ProjectSelector(object):
                   GROUP BY project_id
                   ORDER BY project_id
                 """)
-                stack_map = defaultdict(list)
+                stack_map = defaultdict(list) # type: DefaultDict[Any, List]
                 for row in cursor.fetchall():
                   stack_map[tuple(sorted(row[1]))].append(row[0])
 
@@ -428,11 +426,11 @@ class ProjectSelector(object):
                     # title matches
                     all_stacks_known = all(s.already_known for s in p.stacks)
                     if all_stacks_known:
-                        known_stack_image_bases = []
+                        known_stack_image_bases = [] # type: List
                         for s in p.stacks:
                             known_stack_image_bases.extend(sm.image_base for sm in s.mirrors)
-                        known_stack_image_bases = tuple(sorted(known_stack_image_bases))
-                        known_projects = stack_map[known_stack_image_bases]
+                        known_stack_image_bases_tuple = tuple(sorted(known_stack_image_bases))
+                        known_projects = stack_map[known_stack_image_bases_tuple]
                         if known_projects:
                           # First one wins
                           p.set_known_pid(known_projects[0])
@@ -442,7 +440,7 @@ class ProjectSelector(object):
             p = projects[key]
             self.add_project(key, p)
 
-    def add_project(self, key, project):
+    def add_project(self, key, project) -> None:
         project.action = self.known_project_strategy
         if not project.already_known:
             self.new_projects.append((key, project))
@@ -458,7 +456,7 @@ class ProjectSelector(object):
             self.replacing_projects.append((key, project))
 
 class ImportingWizard(SessionWizardView):
-    def get_template_names(self):
+    def get_template_names(self) -> List:
         return [TEMPLATES[self.steps.current]]
 
     def get_form(self, step=None, data=None, files=None):
@@ -511,7 +509,7 @@ class ImportingWizard(SessionWizardView):
                         complete_catmaid_host, filter_term, headers, auth)
             elif source == 'json-spec':
                 project_index, projects, not_readable = get_projects_from_raw_data(
-                        json.loads(json_spec), filter_term, base_url=base_url, auth=auth)
+                        json.loads(json_spec), filter_term, base_url=base_url)
             else:
                 # Get all folders that match the selected criteria
                 data_dir = os.path.join(settings.CATMAID_IMPORT_PATH, path)
@@ -554,7 +552,7 @@ class ImportingWizard(SessionWizardView):
             # Get all classification graphs linked to those projects and add
             # them to a form for being selected.
             workspace = settings.ONTOLOGY_DUMMY_PROJECT_ID
-            croots = {}
+            croots = {} # type: Dict
             for p in projects:
                 links_qs = get_classification_links_qs(workspace, p.id)
                 linked_croots = set([cici.class_instance_b for cici in links_qs])
@@ -569,7 +567,7 @@ class ImportingWizard(SessionWizardView):
             # Remember graphs and projects
             form.cls_tags = tags
             form.cls_graph_map = croots
-            self.id_to_cls_graph = {}
+            self.id_to_cls_graph = {} # type: Dict
             # Create data structure for form field and id mapping
             cgraphs = []
             for cr in croots:
@@ -670,7 +668,7 @@ class ImportingWizard(SessionWizardView):
 
         return context
 
-    def done(self, form_list, **kwargs):
+    def done(self, form_list, **kwargs) -> HttpResponse:
         """ Will add the selected projects.
         """
         # Find selected projects
@@ -690,7 +688,7 @@ class ImportingWizard(SessionWizardView):
         # Classifications
         link_cls_graphs = self.get_cleaned_data_for_step(
             'projectselection')['link_classifications']
-        cls_graph_ids = []
+        cls_graph_ids = [] # type: List
         if link_cls_graphs:
             cls_graph_ids = self.get_cleaned_data_for_step(
                 'classification')['classification_graph_suggestions']
@@ -733,7 +731,7 @@ def show_classification_suggestions(wizard):
         or {'link_classifications': False}
     return cleaned_data['link_classifications']
 
-def importer_finish(request):
+def importer_finish(request:HttpRequest) -> HttpResponse:
     return render_to_response('catmaid/import/done.html', {})
 
 def get_element_permission_tuples(element, cls):
@@ -904,7 +902,7 @@ def create_classification_linking_form():
     workspace_pid = settings.ONTOLOGY_DUMMY_PROJECT_ID
     root_links = get_classification_links_qs( workspace_pid, [], True )
     # Make sure we use no classification graph more than once
-    known_roots = []
+    known_roots = [] # type: List
     root_ids = []
     for link in root_links:
         if link.class_instance_b.id not in known_roots:
@@ -1092,9 +1090,9 @@ def import_projects( user, pre_projects, tags, permissions,
     cursor = connection.cursor()
     for pp in pre_projects:
         project = None
-        currently_linked_stacks = []
-        currently_linked_stack_ids = []
-        links = {}
+        currently_linked_stacks = [] # type: List
+        currently_linked_stack_ids = [] # type: List
+        links = {} # type: Dict
         all_stacks_known = all(s.already_known for s in pp.stacks)
         try:
             if pp.already_known:
@@ -1157,11 +1155,11 @@ def import_projects( user, pre_projects, tags, permissions,
             # Create stacks and add them to project
             stacks = []
             updated_stacks = []
-            stack_groups = {}
+            stack_groups = {} # type: Dict
             translations = {}
             orientations = {}
             stack_classification = {}
-            stackgroup_classification = {}
+            stackgroup_classification = {} # type: Dict
             for s in pp.stacks:
 
                 # Test if stack is alrady known. This can change with every
@@ -1260,7 +1258,7 @@ def import_projects( user, pre_projects, tags, permissions,
                               mirror.save()
                       else:
                           raise ValueError("Invalid action for known mirror: " +
-                              known_stack_action)
+                             str(known_stack_action))
                     else:
                         # Default to mirror creation
                         if not known_mirrors:

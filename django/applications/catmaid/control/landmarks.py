@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
+from collections import defaultdict
 import json
 import math
+from typing import Any, DefaultDict, Dict, List, Set, Tuple
 
 from django.db import connection
 from django.shortcuts import get_object_or_404
@@ -15,16 +17,15 @@ from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
         Relation, Point, PointClassInstance, UserRole)
 from catmaid.serializers import BasicClassInstanceSerializer
 
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from collections import defaultdict
 
 
 class LandmarkList(APIView):
 
     @method_decorator(requires_user_role(UserRole.Browse))
-    def get(self, request, project_id):
+    def get(self, request:Request, project_id) -> Response:
         """List available landmarks, optionally only the ones in a set of landmark
         groups.
         ---
@@ -70,7 +71,7 @@ class LandmarkList(APIView):
             """.format(landmark_template),
                 landmark_ids + [project_id, project_id])
 
-            point_index = defaultdict(list)
+            point_index = defaultdict(list) # type: DefaultDict[Any, List]
             for point in cursor.fetchall():
                 point_index[point[0]].append({
                     'id': point[1],
@@ -86,7 +87,7 @@ class LandmarkList(APIView):
         return Response(serialized_landmarks)
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def put(self, request, project_id):
+    def put(self, request:Request, project_id) -> Response:
         """Add a new landmark. Expect at least the name as parameter.
         ---
         parameters:
@@ -118,7 +119,7 @@ class LandmarkList(APIView):
         return Response(serializer.data)
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def delete(self, request, project_id):
+    def delete(self, request:Request, project_id) -> Response:
         """Delete a list of landmarks including the linked locations, if they
         are not used by other landmarks.
         ---
@@ -148,7 +149,7 @@ class LandmarkList(APIView):
         annotated_with_relation = Relation.objects.get(project_id=project_id,
                 relation_name='annotated_with')
 
-        point_ids = set()
+        point_ids = set() # type: Set
         if not keep_points:
             point_landmark_links = PointClassInstance.objects.filter(project_id=project_id,
                     class_instance_id__in=landmark_ids, relation=annotated_with_relation)
@@ -179,7 +180,7 @@ class LandmarkList(APIView):
 class LandmarkDetail(APIView):
 
     @method_decorator(requires_user_role(UserRole.Browse))
-    def get(self, request, project_id, landmark_id):
+    def get(self, request:Request, project_id, landmark_id) -> Response:
         """Get details on one particular landmark.
 
         If locations are returned alongside the landmarks, they are all points
@@ -244,7 +245,7 @@ class LandmarkDetail(APIView):
         return Response(serialized_landmark)
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def post(self, request, project_id, landmark_id):
+    def post(self, request:Request, project_id, landmark_id) -> Response:
         """Update an existing landmark.
 
         Currently, only the name and group membership can be updated.
@@ -325,7 +326,7 @@ class LandmarkDetail(APIView):
         return Response(serializer.data)
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def delete(self, request, project_id, landmark_id):
+    def delete(self, request:Request, project_id, landmark_id) -> Response:
         """Delete one particular landmark.
         ---
         parameters:
@@ -355,7 +356,7 @@ class LandmarkDetail(APIView):
 class LandmarkGroupList(APIView):
 
     @method_decorator(requires_user_role(UserRole.Browse))
-    def get(self, request, project_id):
+    def get(self, request:Request, project_id) -> Response:
         """List available landmark groups.
         ---
         parameters:
@@ -437,7 +438,7 @@ class LandmarkGroupList(APIView):
         return Response(data)
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def put(self, request, project_id):
+    def put(self, request:Request, project_id) -> Response:
         """Add a new landmarkgroup. Expect at least the name as parameter.
         ---
         parameters:
@@ -471,7 +472,7 @@ class LandmarkGroupList(APIView):
 class LandmarkGroupDetail(APIView):
 
     @method_decorator(requires_user_role(UserRole.Browse))
-    def get(self, request, project_id, landmarkgroup_id):
+    def get(self, request:Request, project_id, landmarkgroup_id) -> Response:
         """Get details on one particular landmarkgroup group, including its
         members.
         ---
@@ -532,7 +533,7 @@ class LandmarkGroupDetail(APIView):
         return Response(data)
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def post(self, request, project_id, landmarkgroup_id):
+    def post(self, request:Request, project_id, landmarkgroup_id) -> Response:
         """Update an existing landmark group.
 
         Currently, only the name and group members can be updated. Edit
@@ -579,7 +580,7 @@ class LandmarkGroupDetail(APIView):
             raise ValueError("Need landmark group ID")
         name = request.data.get('name')
         if request.data.get('members') == 'none':
-            members = []
+            members = [] # type: List
         else:
             members = get_request_list(request.data, 'members', map_fn=int)
 
@@ -628,7 +629,7 @@ class LandmarkGroupDetail(APIView):
         return Response(serializer.data)
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def delete(self, request, project_id, landmarkgroup_id):
+    def delete(self, request:Request, project_id, landmarkgroup_id) -> Response:
         """Delete one particular landmark group.
         ---
         parameters:
@@ -658,7 +659,7 @@ class LandmarkGroupDetail(APIView):
 class LandmarkGroupImport(APIView):
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def post(self, request, project_id):
+    def post(self, request:Request, project_id) -> Response:
         """Import and link landmarks, landmark groups and locations.
 
         The passed in <data> parameter is a list of two-element lists, each
@@ -757,7 +758,7 @@ class LandmarkGroupImport(APIView):
         imported_groups = []
 
         # Keep track of which landmarks have been seen and were accepted.
-        seen_landmarks = set()
+        seen_landmarks = set() # type: Set
 
         for n, (group_name, linked_landmarks) in enumerate(data):
             # Test if group exists already and raise error if they do and are
@@ -780,7 +781,7 @@ class LandmarkGroupImport(APIView):
                 raise ValueError("Group \"{}\" does not exist. Please create " \
                         "it or enable automatic creation/".format(group_name))
 
-            imported_landmarks = []
+            imported_landmarks = [] # type: List
             imported_group = {
                     'id': existing_group_id,
                     'name': group_name,
@@ -841,7 +842,7 @@ class LandmarkGroupImport(APIView):
         return Response(imported_groups)
 
 
-def get_landmark_group_members(project_id, landmarkgroup_ids):
+def get_landmark_group_members(project_id, landmarkgroup_ids) -> DefaultDict[Any, List]:
     cursor = connection.cursor()
     landmarkgroups_template = ','.join(['(%s)' for _ in landmarkgroup_ids])
     cursor.execute("""
@@ -856,11 +857,10 @@ def get_landmark_group_members(project_id, landmarkgroup_ids):
         ORDER BY cici.class_instance_a
     """.format(landmarkgroups_template),
         landmarkgroup_ids + [project_id, project_id])
-    member_index = defaultdict(list)
+    member_index = defaultdict(list) # type: DefaultDict[Any, List]
     for r in cursor.fetchall():
         member_index[r[1]].append(r[0])
     return member_index
-
 
 def get_landmark_memberships(project_id, landmark_ids):
     cursor = connection.cursor()
@@ -883,8 +883,7 @@ def get_landmark_memberships(project_id, landmark_ids):
         membership_index[r[0]].append(r[1])
     return membership_index
 
-
-def get_landmark_group_locations(project_id, landmarkgroup_ids, with_names=False):
+def get_landmark_group_locations(project_id, landmarkgroup_ids, with_names:bool=False) -> DefaultDict[Any, List]:
     cursor = connection.cursor()
     if with_names:
         cursor.execute("""
@@ -928,7 +927,7 @@ def get_landmark_group_locations(project_id, landmarkgroup_ids, with_names=False
             'landmarkgroup_ids': landmarkgroup_ids,
             'project_id': project_id
         })
-        location_index = defaultdict(list)
+        location_index = defaultdict(list) # type: DefaultDict[Any, List]
         for r in cursor.fetchall():
             location_index[r[1]].append({
                 'id': r[0],
@@ -966,7 +965,7 @@ def get_landmark_group_locations(project_id, landmarkgroup_ids, with_names=False
             })
         return location_index
 
-def make_landmark_relation_index(project_id, landmarkgroup_ids):
+def make_landmark_relation_index(project_id, landmarkgroup_ids) -> Tuple[DefaultDict[Any, List], Dict]:
     cursor = connection.cursor()
     cursor.execute("""
         SELECT cici.id, lg.id, cici.relation_id, r.relation_name,
@@ -994,8 +993,8 @@ def make_landmark_relation_index(project_id, landmarkgroup_ids):
         'landmarkgroup_ids': landmarkgroup_ids,
         'project_id': project_id,
     })
-    relation_index = defaultdict(list)
-    relation_map = dict()
+    relation_index = defaultdict(list) # type: DefaultDict[Any, List]
+    relation_map = dict() # type: Dict
     for r in cursor.fetchall():
         if r[2] not in relation_map:
             relation_map[r[2]] = r[3]
@@ -1011,7 +1010,7 @@ def make_landmark_relation_index(project_id, landmarkgroup_ids):
 class LandmarkLocationList(APIView):
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def put(self, request, project_id, landmark_id):
+    def put(self, request:Request, project_id, landmark_id) -> Response:
         """Add a new location or use an existing one and link it to a landmark.
 
         Either (x,y,z) or location_id have to be provided.
@@ -1074,7 +1073,7 @@ class LandmarkLocationList(APIView):
 class LandmarkGroupLocationList(APIView):
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def put(self, request, project_id, landmarkgroup_id, location_id):
+    def put(self, request:Request, project_id, landmarkgroup_id, location_id) -> Response:
         """Link a location to a landmark group.
         ---
         parameters:
@@ -1112,7 +1111,7 @@ class LandmarkGroupLocationList(APIView):
         })
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def delete(self, request, project_id, landmarkgroup_id, location_id):
+    def delete(self, request:Request, project_id, landmarkgroup_id, location_id) -> Response:
         """Remove the link between a location and a landmark group.
         ---
         parameters:
@@ -1156,7 +1155,7 @@ class LandmarkGroupLocationList(APIView):
 class LandmarkLocationDetail(APIView):
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def delete(self, request, project_id, landmark_id, location_id):
+    def delete(self, request:Request, project_id, landmark_id, location_id) -> Response:
         """Delete the link between a location and a landmark. If the last link
         to a location is deleted, the location is removed as well.
         ---
@@ -1179,9 +1178,10 @@ class LandmarkLocationDetail(APIView):
         """
         can_edit_or_fail(request.user, landmark_id, 'class_instance')
         landmark = ClassInstance.objects.get(project_id=project_id, pk=int(landmark_id))
+        location_point = int(location_id)
 
         pci = PointClassInstance.objects.get(project_id=project_id,
-                class_instance=landmark, point_id=int(location_id),
+                class_instance=landmark, point_id=location_point,
                 relation=Relation.objects.get(project_id=project_id,
                     relation_name='annotated_with'))
         can_edit_or_fail(request.user, pci.id, 'point_class_instance')
@@ -1189,11 +1189,11 @@ class LandmarkLocationDetail(APIView):
         pci.delete()
 
         deleted_point = False
-        remaining_pci = PointClassInstance.objects.filter(point_id=int(location_id))
+        remaining_pci = PointClassInstance.objects.filter(point_id=location_point)
         if remaining_pci.count() == 0:
             try:
-                can_edit_or_fail(request.user, point.id, 'point')
-                Point.objects.get(pk=int(location_id)).delete()
+                can_edit_or_fail(request.user, location_point, 'point')
+                Point.objects.get(pk=location__point).delete()
                 deleted_point = True
             except:
                 pass
@@ -1209,7 +1209,7 @@ class LandmarkLocationDetail(APIView):
 class LandmarkAndGroupkLocationDetail(APIView):
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def delete(self, request, project_id, landmark_id, group_id):
+    def delete(self, request:Request, project_id, landmark_id, group_id) -> Response:
         """Delete the link between a location and a landmark and a group and a
         location, if and only if both exist. If the last link to a location is
         deleted, the location is removed as well.
@@ -1307,7 +1307,7 @@ class LandmarkAndGroupkLocationDetail(APIView):
 class LandmarkGroupLinks(APIView):
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def put(self, request, project_id):
+    def put(self, request:Request, project_id) -> Response:
         """Link a location group to another landmark group. If the passed in
         groups already are in relation to each other using the passed in
         relation, no new link is created. Instead, the existing link will be
@@ -1363,7 +1363,7 @@ class LandmarkGroupLinks(APIView):
 class LandmarkGroupLinkDetail(APIView):
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def delete(self, request, project_id, link_id):
+    def delete(self, request:Request, project_id, link_id) -> Response:
         """Delete the link between two landmark groups. Won't delete links that
         don't connect to landmark groups.
         ---
@@ -1426,7 +1426,7 @@ class LandmarkGroupLinkDetail(APIView):
 class LandmarkGroupLinkage(APIView):
 
     @method_decorator(requires_user_role(UserRole.Browse))
-    def get(self, request, project_id, landmarkgroup_id):
+    def get(self, request:Request, project_id, landmarkgroup_id) -> Response:
         """Get a list of landmark groups that are transitively linked to the
         input group with the passed in relation.
         ---
@@ -1558,15 +1558,13 @@ class LandmarkGroupLinkage(APIView):
 
             group_ids = [r[0] for r in cursor.fetchall()]
 
-
-
         return Response(group_ids)
 
 
 class LandmarkGroupMaterializer(APIView):
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def post(self, request, project_id):
+    def post(self, request:Request, project_id) -> Response:
         """Create all passed in landmarks along with a set of groups in one go.
 
         The format for the passed in landmarks is expected to be [name, x1, y1,
@@ -1647,8 +1645,8 @@ class LandmarkGroupMaterializer(APIView):
         if not created:
             raise ValueError('A landmark group with name "' + group_b_name + '" exists already')
 
-        landmark_map = dict()
-        link_map = dict()
+        landmark_map = dict() # type: Dict
+        link_map = dict() # type: Dict
 
         n_created_landmarks = 0
         for landmark_name, x1, y1, z1, x2, y2, z2 in landmarks:

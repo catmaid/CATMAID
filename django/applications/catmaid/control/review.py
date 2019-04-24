@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import json
-
 from collections import defaultdict
+import json
+from typing import Any, DefaultDict, Dict, List
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import connection
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 
 from guardian.utils import get_anonymous_user
 
@@ -15,7 +15,7 @@ from catmaid.control.authentication import requires_user_role
 
 
 def get_treenodes_to_reviews(treenode_ids=None, skeleton_ids=None,
-                             umap=lambda r: r):
+                             umap=lambda r: r) -> DefaultDict[Any, List]:
     """ Returns a dictionary that contains all reviewed nodes of the
     passed <treenode_ids> and/or <skeleton_ids> lists as keys. The
     reviewer user IDs are kept in a list as values. A function can be
@@ -32,14 +32,14 @@ def get_treenodes_to_reviews(treenode_ids=None, skeleton_ids=None,
     # Only request treenode ID and reviewer ID
     reviews = reviews.values_list('treenode_id', 'reviewer_id')
     # Build dictionary
-    treenode_to_reviews = defaultdict(list)
+    treenode_to_reviews = defaultdict(list) # type: DefaultDict[Any, List]
     for tid, rid in reviews:
         treenode_to_reviews[tid].append(umap(rid))
 
     return treenode_to_reviews
 
 def get_treenodes_to_reviews_with_time(treenode_ids=None, skeleton_ids=None,
-                             umap=lambda r: r):
+                             umap=lambda r: r) -> DefaultDict[Any, List]:
     """ Returns a dictionary that contains all reviewed nodes of the
     passed <treenode_ids> and/or <skeleton_ids> lists as keys. The
     reviewer user IDs are kept in a list as values. A function can be
@@ -55,14 +55,14 @@ def get_treenodes_to_reviews_with_time(treenode_ids=None, skeleton_ids=None,
     # Only request treenode ID and reviewer ID
     reviews = reviews.values_list('treenode_id', 'reviewer_id', 'review_time')
     # Build dictionary
-    treenode_to_reviews = defaultdict(list)
+    treenode_to_reviews = defaultdict(list) # type: DefaultDict[Any, List]
     for tid, rid, rtime in reviews:
         treenode_to_reviews[tid].append( (umap(rid),rtime) )
 
     return treenode_to_reviews
 
-def get_review_count(skeleton_ids):
-    """ Returns a dictionary that maps skelton IDs to dictonaries that map
+def get_review_count(skeleton_ids) -> DefaultDict:
+    """ Returns a dictionary that maps skeleton IDs to dictonaries that map
     user_ids to a review count for this particular skeleton.
     """
     # Count nodes that have been reviewed by each user in each partner skeleton
@@ -74,14 +74,14 @@ def get_review_count(skeleton_ids):
     GROUP BY reviewer_id, skeleton_id
     ''' % ",".join(map(str, skeleton_ids)))
     # Build dictionary
-    reviews = defaultdict(lambda: defaultdict(int))
+    reviews = defaultdict(lambda: defaultdict(int)) # type: DefaultDict
     for row in cursor.fetchall():
         reviews[row[0]][row[1]] = row[2]
 
     return reviews
 
 def get_review_status(skeleton_ids, project_id=None, whitelist_id=False,
-        user_ids=None, excluding_user_ids=None):
+        user_ids=None, excluding_user_ids=None) -> Dict:
     """ Returns a dictionary that maps skeleton IDs to their review
     status as an array of total nodes and number of reviewed nodes
     (integers). If <whitelist_id> is not false, reviews are filtered
@@ -171,7 +171,7 @@ def get_review_status(skeleton_ids, project_id=None, whitelist_id=False,
     return skeletons
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def reviewer_whitelist(request, project_id=None):
+def reviewer_whitelist(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Allows users to retrieve (GET) or update (POST) the set of users whose
     reviews they trust for a given project.
     """

@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
+
+from itertools import chain
 import json
 import logging
+from timeit import default_timer as timer
+from typing import Any, Dict, List
 
 from celery.task import task
-from itertools import chain
 from django.db import connection, transaction
-from django.http import JsonResponse, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.decorators import method_decorator
-from timeit import default_timer as timer
 
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
@@ -30,7 +33,7 @@ from catmaid.control.pointcloud import list_pointclouds
 logger = logging.getLogger('__name__')
 
 
-def serialize_sample(sample):
+def serialize_sample(sample) -> Dict[str, Any]:
     return {
         'id': sample.id,
         'user_id': sample.user_id,
@@ -46,7 +49,7 @@ def serialize_sample(sample):
     }
 
 
-def serialize_config(config, simple=False):
+def serialize_config(config, simple=False) -> Dict[str, Any]:
     if simple:
         return {
             'id': config.id,
@@ -72,7 +75,7 @@ def serialize_config(config, simple=False):
         }
 
 
-def serialize_similarity(similarity, with_scoring=False, with_objects=False):
+def serialize_similarity(similarity, with_scoring=False, with_objects=False) -> Dict[str, Any]:
     serialized_similarity = {
         'id': similarity.id,
         'user_id': similarity.user_id,
@@ -130,16 +133,16 @@ def serialize_similarity(similarity, with_scoring=False, with_objects=False):
     return serialized_similarity
 
 
-def serialize_pointcloud(pointcloud, with_locations=False, with_images=False):
+def serialize_pointcloud(pointcloud, with_locations=False, with_images=False) -> Dict[str, Any]:
     data = {
-        'id': similarity.id,
-        'user_id': similarity.user_id,
-        'creation_time': similarity.creation_time,
-        'project_id': similarity.project_id,
-        'config_id': similarity.config_id,
-        'name': similarity.name,
-        'description': similarity.description,
-        'source_path': similarity.source_path,
+        'id': pointcloud.id,
+        'user_id': pointcloud.user_id,
+        'creation_time': pointcloud.creation_time,
+        'project_id': pointcloud.project_id,
+        'config_id': pointcloud.config_id,
+        'name': pointcloud.name,
+        'description': pointcloud.description,
+        'source_path': pointcloud.source_path,
     }
 
     if with_locations:
@@ -147,21 +150,21 @@ def serialize_pointcloud(pointcloud, with_locations=False, with_images=False):
         # coordinates are expected to be in project space coordinates.
         data['locations'] = pointcloud.locations
 
-    if with_images:
+    if with_images: # FIXME: spatial_models is not defined for this mode
         data['z_proj_original_image'] = spatial_models.RasterField()
         data['z_proj_pointcloud_image'] = spatial_models.RasterField()
 
     return data
 
 
-def install_dependencies():
+def install_dependencies() -> None:
     """Install all R rependencies.
     """
     setup_r_environment()
 
 
 @requires_user_role(UserRole.Browse)
-def test_setup(request, project_id):
+def test_setup(request, project_id) -> JsonResponse:
     """Test if all required R packages are installed to use the NBLAST API.
     """
     return test_r_environment()
@@ -170,14 +173,14 @@ def test_setup(request, project_id):
 class ConfigurationDetail(APIView):
 
     @method_decorator(requires_user_role(UserRole.Browse))
-    def get(self, request, project_id, config_id):
-        """Delete a NBLAST configuration.
+    def get(self, request:HttpRequest, project_id, config_id) -> JsonResponse:
+        """Requests a NBLAST configuration.
         """
         config = NblastConfig.objects.get(pk=config_id, project_id=project_id)
         return JsonResponse(serialize_config(config))
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def delete(self, request, project_id, config_id):
+    def delete(self, request:HttpRequest, project_id, config_id) -> JsonResponse:
         """Delete a NBLAST configuration.
         """
         can_edit_or_fail(request.user, config_id, 'nblast_config')
@@ -198,7 +201,7 @@ class ConfigurationDetail(APIView):
 class ConfigurationList(APIView):
 
     @method_decorator(requires_user_role(UserRole.Browse))
-    def get(self, request, project_id):
+    def get(self, request:HttpRequest, project_id) -> JsonResponse:
         """List all available NBLAST configurations.
         ---
         parameters:
@@ -219,7 +222,7 @@ class ConfigurationList(APIView):
                 NblastConfig.objects.filter(project_id=project_id)], safe=False)
 
     @method_decorator(requires_user_role(UserRole.QueueComputeTask))
-    def put(self, request, project_id):
+    def put(self, request:Request, project_id) -> Response:
         """Create a new similarity/NBLAST configuration either by providing
         parameters to have the back-end queue a job or by providing the complete
         matrix data.
@@ -371,7 +374,7 @@ class ConfigurationList(APIView):
                 raise ValueError("Need matching_skeleton_ids or matching_pointset_ids")
             if not random_skeleton_ids:
                 raise ValueError("Need random_skeleton_ids")
-            config = self.add_delayed(matching_skeleton_ids,
+            config = self.add_delayed(project_id, user_id, name, matching_skeleton_ids,
                     matching_pointset_ids, random_skeleton_ids, distance_breaks,
                     dot_breaks, tangent_neighbors=tangent_neighbors,
                     matching_subset=matching_subset)
@@ -388,7 +391,7 @@ class ConfigurationList(APIView):
                 raise PermissionError("User " + str(request.user.id) +
                         " doesn't have permission to queue computation tasks.")
 
-            config = self.compute_random_and_add_delayed( project_id, user_id, name,
+            config = self.compute_random_and_add_delayed(project_id, user_id, name,
                     matching_skeleton_ids, matching_pointset_ids,
                     distance_breaks, dot_breaks, None, None, n_random_skeletons,
                     min_length, min_nodes, tangent_neighbors, matching_subset)
@@ -403,8 +406,8 @@ class ConfigurationList(APIView):
         """Add a scoring matrix based on the passed in array of arrays and
         dimensions.
         """
-        histogram = []
-        probably = []
+        histogram = [] # type: List
+        probability = [] # type: List
 
         if match_sample_id:
             match_sample = NblastSample.objects.get(id=match_sample_id)
@@ -427,7 +430,7 @@ class ConfigurationList(APIView):
         scoring = data
 
         return NblastConfig.objects.create(project_id=project_id,
-            user=user, name=name, status='complete',
+            user=user, name=name, status='complete', # FIXME: user is not defined
             distance_breaks=distance_breaks, dot_breaks=dot_breaks,
             match_sample=match_sample, random_sample=random_sample,
             scoring=None, tangent_neighbors=tangent_neighbors)
@@ -439,8 +442,8 @@ class ConfigurationList(APIView):
             random_sample_id=None, tangent_neighbors=20, matching_subset=None):
         """Create and queue a new Celery task to create the scoring matrix.
         """
-        histogram = []
-        probably = []
+        histogram = [] # type: List
+        probability = [] # type: List
 
         if match_sample_id:
             match_sample = NblastSample.objects.get(id=match_sample_id)
@@ -460,7 +463,7 @@ class ConfigurationList(APIView):
                     probability=probability)
 
         config = NblastConfig.objects.create(project_id=project_id,
-            user=user, name=name, status='queued',
+            user=user, name=name, status='queued', # FIXME: user is not defined
             distance_breaks=distance_breaks, dot_breaks=dot_breaks,
             match_sample=match_sample, random_sample=random_sample,
             scoring=None, tangent_neighbors=tangent_neighbors)
@@ -479,8 +482,8 @@ class ConfigurationList(APIView):
         """Select a random set of neurons, optionally of a minimum length and
         queue a job to compute the scoring matrix.
         """
-        histogram = []
-        probability = []
+        histogram = [] # type: List
+        probability = [] # type: List
 
         with transaction.atomic():
             if match_sample_id:
@@ -552,7 +555,7 @@ class ConfigurationList(APIView):
 
 
 @requires_user_role(UserRole.QueueComputeTask)
-def recompute_config(request, project_id, config_id):
+def recompute_config(request:HttpRequest, project_id, config_id) -> JsonResponse:
     """Recompute the similarity matrix of the passed in NBLAST configuration.
     """
     can_edit_or_fail(request.user, config_id, 'nblast_config')
@@ -567,7 +570,7 @@ def recompute_config(request, project_id, config_id):
 
 
 @task()
-def compute_nblast_config(config_id, user_id, use_cache=True):
+def compute_nblast_config(config_id, user_id, use_cache=True) -> str:
     """Recompute the scoring information for a particular configuration,
     including both the matching skeleton set and the random skeleton set.
     """
@@ -660,7 +663,7 @@ def get_all_object_ids(project_id, user_id, object_type, min_nodes=500,
 
 @task()
 def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
-        simplify=True, required_branches=10, use_cache=True):
+        simplify=True, required_branches=10, use_cache=True) -> str:
     start_time = timer()
     try:
         # TODO This should be configurable.
@@ -773,7 +776,7 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
 
 @api_view(['POST'])
 @requires_user_role(UserRole.Browse)
-def compare_skeletons(request, project_id):
+def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
     """Compare two sets of objects (skeletons or point clouds) and return an
     NBLAST scoring based on an existing NBLAST configuration.
     ---
@@ -1002,7 +1005,7 @@ def compare_skeletons(request, project_id):
 class SimilarityList(APIView):
 
     @method_decorator(requires_user_role(UserRole.Browse))
-    def get(self, request, project_id):
+    def get(self, request:HttpRequest, project_id) -> HttpResponse:
         """List all available NBLAST similarity tasks.
         ---
         parameters:
@@ -1107,7 +1110,7 @@ class SimilarityList(APIView):
 class SimilarityDetail(APIView):
 
     @method_decorator(requires_user_role(UserRole.Browse))
-    def get(self, request, project_id, similarity_id):
+    def get(self, request:HttpRequest, project_id, similarity_id) -> JsonResponse:
         """Get a particular similarity query result.
         ---
         parameters:
@@ -1141,7 +1144,7 @@ class SimilarityDetail(APIView):
         return JsonResponse(serialize_similarity(similarity, with_scoring, with_objects))
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def delete(self, request, project_id, similarity_id):
+    def delete(self, request:HttpRequest, project_id, similarity_id) -> JsonResponse:
         """Delete a NBLAST similarity task.
         """
         can_edit_or_fail(request.user, similarity_id, 'nblast_similarity')
@@ -1160,7 +1163,7 @@ class SimilarityDetail(APIView):
 
 
 @requires_user_role(UserRole.QueueComputeTask)
-def recompute_similarity(request, project_id, similarity_id):
+def recompute_similarity(request:HttpRequest, project_id, similarity_id) -> JsonResponse:
     """Recompute the similarity matrix of the passed in NBLAST configuration.
     """
     simplify = get_request_bool(request.GET, 'simplify', True)

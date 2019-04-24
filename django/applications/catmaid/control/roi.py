@@ -2,11 +2,13 @@
 
 import json
 import os.path
+from typing import Tuple
 
 from django.conf import settings
-from django.http import JsonResponse
-from django.shortcuts import redirect
+from django.contrib.auth.models import User
 from django.core.cache import cache
+from django.http import HttpRequest, HttpResponseRedirect, JsonResponse
+from django.shortcuts import redirect
 
 from catmaid.control import cropping
 from catmaid.control.authentication import requires_user_role
@@ -30,7 +32,7 @@ logger = get_task_logger(__name__)
 LOCK_EXPIRE = 60 * 2
 
 @requires_user_role([UserRole.Browse])
-def get_roi_info(request, project_id=None, roi_id=None):
+def get_roi_info(request:HttpRequest, project_id=None, roi_id=None) -> JsonResponse:
     """ Returns a JSON string filled with information about
     the region of interest with ID <roi_id>.
     """
@@ -49,7 +51,7 @@ def get_roi_info(request, project_id=None, roi_id=None):
     return JsonResponse(info)
 
 def _add_roi(project_id, stack_id, user_id, x_min, x_max, y_min, y_max, z,
-             zoom_level, rotation_cw):
+             zoom_level, rotation_cw) -> RegionOfInterest:
     """ Add a new ROI database object and return it.
     """
 
@@ -78,12 +80,13 @@ def _add_roi(project_id, stack_id, user_id, x_min, x_max, y_min, y_max, z,
     # Create cropped image, if wanted
     if settings.ROI_AUTO_CREATE_IMAGE:
         file_name, file_path = create_roi_path(roi.id)
-        create_roi_image(request.user, project_id, roi.id, file_path)
+        user = User.objects.get(pk=user_id)
+        create_roi_image(user, project_id, roi.id, file_path)
 
     return roi
 
 @requires_user_role(UserRole.Annotate)
-def add_roi(request, project_id=None):
+def add_roi(request:HttpRequest, project_id=None) -> JsonResponse:
     # Try to get all needed POST parameters
     x_min = float(request.POST['x_min'])
     x_max = float(request.POST['x_max'])
@@ -103,8 +106,8 @@ def add_roi(request, project_id=None):
     return JsonResponse(status)
 
 @requires_user_role(UserRole.Annotate)
-def link_roi_to_class_instance(request, project_id=None, relation_id=None,
-        stack_id=None, ci_id=None):
+def link_roi_to_class_instance(request:HttpRequest, project_id=None, relation_id=None,
+        stack_id=None, ci_id=None) -> JsonResponse:
     """ With the help of this method one can link a region of interest
     (ROI) to a class instance. The information about the ROI is passed
     as POST variables.
@@ -142,7 +145,7 @@ def link_roi_to_class_instance(request, project_id=None, relation_id=None,
     return JsonResponse(status)
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def remove_roi_link(request, project_id=None, roi_id=None):
+def remove_roi_link(request:HttpRequest, project_id=None, roi_id=None) -> JsonResponse:
     """ Removes the ROI link with the ID <roi_id>. If there are no more
     links to the actual ROI after the removal, the ROI gets removed as well.
     """
@@ -174,12 +177,12 @@ def remove_roi_link(request, project_id=None, roi_id=None):
 
     return JsonResponse(status)
 
-def create_lock_name(roi_id):
+def create_lock_name(roi_id) -> str:
     """ Creates a name for the image creation lock.
     """
     return "%s-lock-%s" % ('catmaid.create_roi_image', roi_id)
 
-def create_roi_image(user, project_id, roi_id, file_path):
+def create_roi_image(user, project_id, roi_id, file_path) -> bool:
     """ Tries to acquire a lock for a creating the cropped image
     of a certain ROI. If able to do this, launches the celery task
     which removes the lock when done.
@@ -195,7 +198,7 @@ def create_roi_image(user, project_id, roi_id, file_path):
         return True
 
 @task(name='catmaid.create_roi_image')
-def create_roi_image_task(user, project_id, roi_id, file_path):
+def create_roi_image_task(user, project_id, roi_id, file_path) -> str:
     lock_id = create_lock_name(roi_id)
     # memcache delete is very slow, but we have to use it to take
     # advantage of using add() for atomic locking
@@ -220,7 +223,7 @@ def create_roi_image_task(user, project_id, roi_id, file_path):
         # Create the pgmagick images
         cropped_stacks = cropping.extract_substack( job )
         if len(cropped_stacks) == 0:
-            raise StandardError("Couldn't create ROI image")
+            raise Exception("Couldn't create ROI image")
         # There is only one image here
         img = cropped_stacks[0]
         img.write(str(file_path))
@@ -229,7 +232,7 @@ def create_roi_image_task(user, project_id, roi_id, file_path):
 
     return "Created image of ROI %s" % roi_id
 
-def create_roi_path(roi_id):
+def create_roi_path(roi_id) -> Tuple[str, str]:
     """ Creates a tuple (file name, file path) for the given ROI ID.
     """
     file_name = file_prefix + str(roi_id) + "." + file_extension
@@ -238,7 +241,7 @@ def create_roi_path(roi_id):
     return (file_name, file_path)
 
 @requires_user_role([UserRole.Browse])
-def get_roi_image(request, project_id=None, roi_id=None):
+def get_roi_image(request, project_id=None, roi_id=None) -> HttpResponseRedirect:
     """ Returns the URL to the cropped image, described by the ROI.  These
     images are cached, and won't get removed automatically. If the image is
     already present its URL is used and returned. For performance reasons it

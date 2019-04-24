@@ -110,7 +110,7 @@
     this.initialized = true;
   };
 
-  // Store views in the prototype to make them available for all intances.
+  // Store views in the prototype to make them available for all instances.
   WebGLApplication.prototype.availableViews = {};
 
   WebGLApplication.prototype.getName = function() {

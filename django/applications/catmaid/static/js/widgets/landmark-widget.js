@@ -3092,9 +3092,11 @@
         var fromGroup, toGroup;
         let activeMappings = [];
 
+        let sourceGroupCache;
         var initSourceGroupList = function() {
           return getSourceGroupList()
             .then(groups => {
+              sourceGroupCache = groups;
               let sourceSelect = CATMAID.DOM.createRadioSelect('Source landmark group',
                   groups, undefined, true, 'selected');
               sourceSelect.onchange = function(e) {
@@ -3289,6 +3291,105 @@
                     'Add multiple mappings at once by selecting them from matching group names.');
                 addMatchingWrapper.appendChild(matchingMapping);
                 $(newDTForm).append(addMatchingWrapper);
+
+
+                // Pattern match selection
+                var filterAddMatchingInputA = $('<input/>')
+                    .attr('type', 'text')
+                    .attr('placeholder', 'S Filter - use / for RegEx');
+                var patternAddMatchingInputA = $('<input/>')
+                    .attr('type', 'text')
+                    .attr('placeholder', 'S Pattern - use / for RegEx');
+                var matchingInputA = $('<span />')
+                    .add(filterAddMatchingInputA)
+                    .add(patternAddMatchingInputA);
+                $(newDTForm).append(CATMAID.DOM.createLabeledControl('', matchingInputA));
+                var filterAddMatchingInputB = $('<input/>')
+                    .attr('type', 'text')
+                    .attr('placeholder', 'T Filter - use / for RegEx');
+                var patternAddMatchingInputB = $('<input/>')
+                    .attr('type', 'text')
+                    .attr('placeholder', 'T Pattern B - use / for RegEx');
+                var matchingInputB = $('<span />')
+                    .add(filterAddMatchingInputB)
+                    .add(patternAddMatchingInputB);
+                $(newDTForm).append(CATMAID.DOM.createLabeledControl('', matchingInputB));
+
+                var addMatchingPattern = $('<button/>').text('Add pattern mapping').click(function() {
+                  let rawFilterS = filterAddMatchingInputA.val();
+                  let rawFilterT = filterAddMatchingInputB.val();
+                  let filterS = rawFilterS[0] === '/' ? new RegExp(rawFilterS.substr(1)) : null;
+                  let filterT = rawFilterT[0] === '/' ? new RegExp(rawFilterT.substr(1)) : null;
+
+                  let patternA = patternAddMatchingInputA.val();
+                  let patternB = patternAddMatchingInputB.val();
+                  let searchA = patternA[0] === '/' ? new RegExp(patternA.substr(1)) : patternA;
+                  let searchB = patternB[0] === '/' ? new RegExp(patternB.substr(1)) : patternB;
+
+                  if (!sourceGroupCache) {
+                    CATMAID.warn('Source groups unavailable');
+                    return;
+                  }
+
+                  let sourceBaseMap = new Map();
+                  let sourceIgnore = new Set();
+                  for (let sourceGroup of sourceGroupCache) {
+                    if (filterS) {
+                      if (!filterS.test(sourceGroup.title)) continue;
+                    } else {
+                      if (sourceGroup.title.indexOf(rawFilterS) === -1) continue;
+                    }
+
+                    let baseName = sourceGroup.title.replace(searchA, '');
+                    if (sourceIgnore.has(baseName)) {
+                      continue;
+                    }
+                    if (sourceBaseMap.has(baseName)) {
+                      CATMAID.warn(`Found base name "${baseName}" more than once in source groups`);
+                      sourceBaseMap.delete(baseName);
+                      sourceIgnore.add(baseName);
+                    }
+                    sourceBaseMap.set(baseName, sourceGroup);
+                  }
+
+                  let targetBaseMap = new Map();
+                  let targetIgnore = new Set();
+                  for (let targetGroup of groupOptions) {
+                    if (filterT) {
+                      if (!filterT.test(targetGroup.title)) continue;
+                    } else {
+                      if (targetGroup.title.indexOf(rawFilterT) === -1) continue;
+                    }
+
+                    let baseName = targetGroup.title.replace(searchB, '');
+                    if (targetIgnore.has(baseName)) {
+                      continue;
+                    }
+                    if (targetBaseMap.has(baseName)) {
+                      CATMAID.warn(`Found base name "${baseName}" more than once in target groups`);
+                      targetBaseMap.delete(baseName);
+                      targetIgnore.add(baseName);
+                    }
+                    targetBaseMap.set(baseName, targetGroup);
+                  }
+
+                  for (let [sourceBaseName, sourceGroup] of sourceBaseMap) {
+                    let targetGroup = targetBaseMap.get(sourceBaseName);
+                    if (targetGroup && targetGroup.title !== sourceGroup.title) {
+                      let mapping = getMapping(sourceGroup.value, targetGroup.value);
+                      activeMappings.push(mapping);
+                    }
+                  }
+
+                  updateComponentList();
+                });
+                $(newDTForm).append(CATMAID.DOM.createLabeledControl('', addMatchingPattern,
+                    'Selected groups (allowed by filter) from source (S) and target (T) ' +
+                    'are matched by name on two conditions: 1. their full name doesn\'t ' +
+                    'match and 2. their name with the pattern above removed do match. ' +
+                    'E.g. use /A as S-Filter and /left$ as S-Pattern plus /A as T-Filter ' +
+                    'and /right$ as T-Pattern to match all groups starting with source ' +
+                    'groups ending on "left" and target groups ending on "right".'));
 
                 // Remote instance list update
                 var updateComponentList = function() {

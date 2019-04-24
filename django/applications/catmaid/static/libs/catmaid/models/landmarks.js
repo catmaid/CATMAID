@@ -394,23 +394,9 @@
             (i+1) + ". transformation");
       }
 
-      let invMatches = [].concat(...transformation.mappings
-          .map(m => CATMAID.Landmarks.getPointMatches(m[1], m[0],
-              sourceLandmarkGroupIndex, sourceLandmarkIndex, landmarkGroupIndex,
-              landmarkIndex, byName)));
-
-      if (!invMatches || invMatches.length === 0) {
-        throw new CATMAID.ValueError("Found no inverse point matches for " +
-            (i+1) + ". transformation");
-      }
-
       var mls = new CATMAID.transform.MovingLeastSquaresTransform();
       var model = new transformation.modelClass();
       mls.setModel(model);
-
-      var invMls = new CATMAID.transform.MovingLeastSquaresTransform();
-      var invModel = new transformation.modelClass();
-      invMls.setModel(invModel);
 
       try {
         mls.setMatches(matches);
@@ -420,17 +406,8 @@
             (i+1) + ". transformation");
       }
 
-      try {
-        invMls.setMatches(invMatches);
-      } catch (error) {
-        console.warn(error);
-        throw new CATMAID.ValueError("Could not fit inverse model for " +
-            (i+1) + ". transformation");
-      }
-
       return {
         transform: mls,
-        invTransform: invMls
       };
     },
 
@@ -439,7 +416,7 @@
      * match, i.e. two locations annotated with the same landmark
      */
     getPointMatches: function(fromGroupId, toGroupId, landmarkGroupIndex,
-        landmarkIndex, sourceLandmarkGroupIndex, sourceLandmarkIndex, byName) {
+        landmarkIndex, sourceLandmarkGroupIndex, sourceLandmarkIndex, byName, addInverse = true) {
       if (!landmarkGroupIndex) {
         throw new CATMAID.ValueError('No source landmark group information found');
       }
@@ -529,8 +506,11 @@
 
         var p1 = new CATMAID.transform.Point([fLoc.x, fLoc.y, fLoc.z]);
         var p2 = new CATMAID.transform.Point([tLoc.x, tLoc.y, tLoc.z]);
-
         matches.push(new CATMAID.transform.PointMatch(p1, p2, 1.0));
+
+        if (addInverse) {
+          matches.push(new CATMAID.transform.PointMatch(p2, p1, 1.0));
+        }
       }
 
       return matches;
@@ -643,64 +623,15 @@
           transformation.targetAaBb = CATMAID.Landmarks.getBoundingBox(...toGroups);
         });
 
-      // For each node, check if treenode is outside of source group bounding
-      // box. If so, do both a transformation from source to target group and
-      // average with respect to distance to bounding box.
-      let noInterpolation = !this.interpolateBetweenGroups;
       let treenodeLocation = [0, 0, 0];
       let transformTreenode = function(treenodeRow) {
-        // If in boundig box, just apply forward transform. If in target
-        // bounding box, use inverse transform. If in-between, use weighted
-        // location based on distance.
-        let fromDistanceSq = distanceSq(transformation.sourceAaBb, treenodeRow[3],
-            treenodeRow[4], treenodeRow[5]);
-        // If the node is in the source bounding box, use regular source ->
-        // target transformation.
-        if (fromDistanceSq === 0 || noInterpolation) {
-          treenodeLocation[0] = treenodeRow[3];
-          treenodeLocation[1] = treenodeRow[4];
-          treenodeLocation[2] = treenodeRow[5];
-          mls.transform.applyInPlace(treenodeLocation);
-          treenodeRow[3] = treenodeLocation[0];
-          treenodeRow[4] = treenodeLocation[1];
-          treenodeRow[5] = treenodeLocation[2];
-        } else {
-          let toDistanceSq = distanceSq(transformation.targetAaBb, treenodeRow[3],
-              treenodeRow[4], treenodeRow[5]);
-          // If the node is in the target bounding box, use exclusively the
-          // inverse transformation target -> source. Otherwise weight the
-          // distances.
-          if (toDistanceSq === 0) {
-            treenodeLocation[0] = treenodeRow[3];
-            treenodeLocation[1] = treenodeRow[4];
-            treenodeLocation[2] = treenodeRow[5];
-            mls.invTransform.applyInPlace(treenodeLocation);
-            treenodeRow[3] = treenodeLocation[0];
-            treenodeRow[4] = treenodeLocation[1];
-            treenodeRow[5] = treenodeLocation[2];
-          } else {
-            let fromToRatio = toDistanceSq / (fromDistanceSq + toDistanceSq);
-            let toFromRatio = 1.0 - fromToRatio;
-
-            // Add source part
-            let x = treenodeLocation[0] = treenodeRow[3];
-            let y = treenodeLocation[1] = treenodeRow[4];
-            let z = treenodeLocation[2] = treenodeRow[5];
-            mls.transform.applyInPlace(treenodeLocation);
-            treenodeRow[3] = fromToRatio * treenodeLocation[0];
-            treenodeRow[4] = fromToRatio * treenodeLocation[1];
-            treenodeRow[5] = fromToRatio * treenodeLocation[2];
-
-            // Add target part
-            treenodeLocation[0] = x;
-            treenodeLocation[1] = y;
-            treenodeLocation[2] = z;
-            mls.invTransform.applyInPlace(treenodeLocation);
-            treenodeRow[3] += toFromRatio * treenodeLocation[0];
-            treenodeRow[4] += toFromRatio * treenodeLocation[1];
-            treenodeRow[5] += toFromRatio * treenodeLocation[2];
-          }
-        }
+        treenodeLocation[0] = treenodeRow[3];
+        treenodeLocation[1] = treenodeRow[4];
+        treenodeLocation[2] = treenodeRow[5];
+        mls.transform.applyInPlace(treenodeLocation);
+        treenodeRow[3] = treenodeLocation[0];
+        treenodeRow[4] = treenodeLocation[1];
+        treenodeRow[5] = treenodeLocation[2];
       };
 
       let areDifferentGroups = m => m[0] !== m[1];

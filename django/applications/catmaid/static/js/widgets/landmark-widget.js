@@ -63,8 +63,6 @@
     // All currently available 3D Viewers and whether they are a render target
     // for landmark transformations.
     this.targeted3dViewerNames = new Map();
-    // Whether to automatically interpolate between group transformations
-    this.interpolateBetweenGroups = true;
     // Whether to show landmark layers
     this.showLandmarkLayers = true;
     // Whether skeleton colors should be overridden
@@ -2695,15 +2693,6 @@
           },
           {
             type: 'checkbox',
-            value: target.interpolateBetweenGroups,
-            label: 'Interpolate between groups',
-            onclick: function() {
-              target.interpolateBetweenGroups = this.checked;
-              target.updateDisplay();
-            }
-          },
-          {
-            type: 'checkbox',
             value: target.showLandmarkLayers,
             label: 'Show landmark layers',
             onclick: function() {
@@ -3685,7 +3674,6 @@
           importAllowNonEmptyGroups: widget.importAllowNonEmptyGroups,
           importCreateNonExistingGroups: widget.importCreateNonExistingGroups,
           importReuseExistingLandmarks: widget.importReuseExistingLandmarks,
-          interpolateBetweenGroups: widget.interpolateBetweenGroups,
           showLandmarkLayers: widget.showLandmarkLayers,
           overrideColor: widget.overrideColor,
           overrideColorHex: widget._overrideColor,
@@ -3697,7 +3685,6 @@
         CATMAID.tools.copyIfDefined(state, widget, 'importReuseExistingLandmarks');
         CATMAID.tools.copyIfDefined(state, widget, 'importCreateNonExistingGroups');
         CATMAID.tools.copyIfDefined(state, widget, 'importReuseExistingLandmarks');
-        CATMAID.tools.copyIfDefined(state, widget, 'interpolateBetweenGroups');
         CATMAID.tools.copyIfDefined(state, widget, 'showLandmarkLayers');
         CATMAID.tools.copyIfDefined(state, widget, 'overrideColor');
         CATMAID.tools.copyIfDefined(state, widget, 'overrideColorHex');

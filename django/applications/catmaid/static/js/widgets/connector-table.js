@@ -346,7 +346,18 @@
     var header = this.connectorTable.columns().header().map(function(h) {
       return $(h).text();
     });
-    var connectorRows = this.connectorTable.rows({"order": "current"}).data();
+    let nCols = header.length;
+    let connectorRows = this.connectorTable.cells({"order": "current"})
+        .render('display')
+        .toArray()
+        .reduce((o, c, i) => {
+          if (i % nCols === 0) {
+            o.push([c]);
+          } else {
+            o[o.length - 1].push(c);
+          }
+          return o;
+        }, []);
     var csv = header.join(',') + '\n' + connectorRows.map(function(row) {
       return row.join(',');
     }).join('\n');

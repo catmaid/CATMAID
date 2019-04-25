@@ -82,23 +82,31 @@ def get_request_list(request_dict:Dict, name, default=None, map_fn=identity) -> 
             if k.startswith(testname):
                 # name[0][0] -> 0][0
                 index_part = k[namelen:len(k)-1]
-                indices = index_part.split('][')
-                target = d
-                # Fill in all but last index
-                for i in indices[:-1]:
-                    key = int(i)
-                    new_target = target.get(key)
-                    if (key > max_index):
-                        max_index = key
-                    if not new_target:
-                        new_target = parsedict()
-                        target[key] = new_target
-                    target = new_target
+                # If there is no index part, the key format is "name[]=a,b,c"
+                # for each entry.
+                if len(index_part) == 0:
+                    for single_value in v.split(','):
+                        max_index += 1
+                        d[max_index] = map_fn(single_value)
+                else:
+                    indices = index_part.split('][')
+                    target = d
+                    # Fill in all but last index
+                    for i in indices[:-1]:
+                        key = int(i)
+                        new_target = target.get(key)
+                        if (key > max_index):
+                            max_index = key
+                        if not new_target:
+                            new_target = parsedict()
+                            target[key] = new_target
+                        target = new_target
 
-                last_index = int(indices[-1])
-                if (last_index > max_index):
-                    max_index = last_index
-                target[last_index] = map_fn(v)
+                    last_index = int(indices[-1])
+                    target[last_index] = map_fn(v)
+
+                    if (last_index > max_index):
+                        max_index = last_index
         return flatten(d, max_index + 1)
 
     items = add_items(request_dict.items(), name)

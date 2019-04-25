@@ -34,6 +34,11 @@ class InternalApiTestsNoDB(TestCase):
         self.assertEqual(get_request_list(q4, 'a'), [['1', '2', '3']])
         self.assertEqual(get_request_list(q4, 'a', map_fn=int), [[1, 2, 3]])
 
+        # Test list with single list [1,2,3]
+        q5 = QueryDict('a[]=1,2,3')
+        self.assertEqual(get_request_list(q5, 'a'), ['1', '2', '3'])
+        self.assertEqual(get_request_list(q5, 'a', map_fn=int), [1, 2, 3])
+
 
     def test_request_bool_parsing(self):
         q1 = QueryDict('a=true&b=True&c=TRUE')

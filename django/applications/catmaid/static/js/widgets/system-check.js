@@ -317,7 +317,7 @@
     },
     'checkpoints_req': {
       name: 'Requested checkpoins',
-      comment: 'Number of times checkpoints have been requeste. Should be < timed checkpoints.',
+      comment: 'Number of times checkpoints have been requested. Should be < timed checkpoints.',
     },
     'checkpoints_timed': {
       name: 'Timed checkpoins',

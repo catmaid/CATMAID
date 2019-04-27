@@ -137,6 +137,7 @@ div.LayerControl {
 
 div.LayerControl .setting {
   float: none;
+  display: flex;
 }
 
 div.LayerControl ol {
@@ -185,13 +186,14 @@ div.LayerControl .layerClose {
 
 .layerControl .setting {
   float: none;
-  margin: 0.5em 0;
+  margin: 0.2em 0;
 }
 
 div.LayerControl .hSliderView {
   float: none;
   display: inline-block;
   vertical-align: middle;
+  flex:  1;
 }
 
 li.layerControl ol {

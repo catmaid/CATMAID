@@ -237,7 +237,7 @@
               if ('checkbox' === setting.type) {
                 label.prepend(input);
               } else {
-                label.append(input);
+                settingElement.append(input);
               }
 
             } else if ('select' === setting.type) {
@@ -252,7 +252,7 @@
               });
               select.val(setting.value);
               select.addClass('layerSetting');
-              label.append(select);
+              settingElement.append(select);
             } else if ('buttons' === setting.type) {
               var controls = $('<span />')
                 .addClass('layerSetting');
@@ -263,7 +263,7 @@
                   .append(b.name);
                 this.append(button);
               }, controls);
-              label.append(controls);
+              settingElement.append(controls);
             }
             layerSettings.append(settingElement);
           }
@@ -305,8 +305,7 @@
           stackViewer.redraw();
         });
 
-        blendLabel.append(blendSelect);
-        container.append($('<div class="setting"/>').append(blendLabel));
+        container.append($('<div class="setting"/>').append(blendLabel).append(blendSelect));
       }
 
       // Filters
@@ -337,7 +336,7 @@
         });
 
         filterLabel.append(filterSelect).append(filterAdd);
-        container.append($('<div class="setting"/>').append(filterLabel));
+        container.append($('<div class="setting"/>').append(filterLabel).append(filterSelect).append(filterAdd));
 
         var filters = layer.getFilters();
         filters.forEach(function (filter) {

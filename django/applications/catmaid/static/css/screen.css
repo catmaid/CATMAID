@@ -1437,6 +1437,12 @@ div.selection-table.windowContent {
 .setting input,
 .setting select {
   margin-left: 0;
+  flex: 1;
+  max-width: 50%;
+}
+
+.setting label, .setting span {
+  flex: 1;
 }
 
 .blockMsg img {

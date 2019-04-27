@@ -82,6 +82,15 @@
       }
     });
 
+    Object.defineProperty(this, 'minSkeletonNodes', {
+      get: function() {
+        return this.tracingOverlay.minSkeletonNodes;
+      },
+      set: function(value) {
+        this.tracingOverlay.minSkeletonNodes = value;
+      }
+    });
+
     Object.defineProperty(this, 'nodeProviderOverride', {
       get: function() {
         return this.tracingOverlay.nodeProviderOverride;
@@ -287,6 +296,14 @@
       value: this.minSkeletonLength,
       help: 'Limit the displayed skeletons to the ones of skeletons of at least this length in nm.'
     }, {
+      name: 'minSkeletonNodes',
+      displayName: 'Min skeleton nodes',
+      type: 'number',
+      step: 50,
+      min: 0,
+      value: this.minSkeletonNodes,
+      help: 'Limit the displayed skeletons to the ones of skeletons of at least this many nodes.'
+    }, {
       name: 'nodeProviderOverride',
       displayName: 'Node provider',
       type: 'select',
@@ -316,6 +333,9 @@
       this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('minSkeletonLength' === name) {
       this.minSkeletonLength = value;
+      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
+    } else if ('minSkeletonNodes' === name) {
+      this.minSkeletonNodes = value;
       this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('nodeProviderOverride' === name) {
       this.nodeProviderOverride = value;

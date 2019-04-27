@@ -284,6 +284,12 @@ Miscellaneous:
   "Polyadicity colors" button in the "Shading parameters" tab. This is basically
   a configurable version of an absolute "N with partner" coloring.
 
+- Tracing layer: a minimum number of nodes can now be configured to only show
+  skeletons of at certain minimum size (just like the existing minimum cable
+  length constraint). This is configurable through the layer configuration,
+  accessible by clicking the blue/white box in the lower left corner of stack
+  viewers.
+
 - Context aware help: by clicking the new question mark icon in the upper right
   corner, a context aware help dialog can be displayed on top of all other
   CATMAID tools. It provides some general guidance for the intended workflow

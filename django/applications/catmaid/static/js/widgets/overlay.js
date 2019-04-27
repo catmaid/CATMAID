@@ -749,6 +749,8 @@ var SkeletonAnnotations = {};
     this.hiddenLastEditorId = CATMAID.TracingOverlay.Settings.session.hidden_last_editor_id;
     /** Optionally, show only skeletons of a minimum length. */
     this.minSkeletonLength = CATMAID.TracingOverlay.Settings.session.min_skeleton_length;
+    /** Optionally, show only skeletons of a minimum number of nodes. */
+    this.minSkeletonNodes = CATMAID.TracingOverlay.Settings.session.min_skeleton_nodes;
     /** Optional node provider override **/
     this.nodeProviderOverride = 'none';
     /** An optional margin in pixels that is subtracted from the left and right of
@@ -1120,6 +1122,9 @@ var SkeletonAnnotations = {};
               default: 'none',
             },
             min_skeleton_length: {
+              default: 0,
+            },
+            min_skeleton_nodes: {
               default: 0,
             },
             tracing_window_width: {
@@ -3950,6 +3955,10 @@ var SkeletonAnnotations = {};
 
       if (self.minSkeletonLength && self.minSkeletonLength > 0) {
         params['min_skeleton_length'] = self.minSkeletonLength;
+      }
+
+      if (self.minSkeletonNodes && self.minSkeletonNodes > 0) {
+        params['min_skeleton_nodes'] = self.minSkeletonNodes;
       }
 
       if (self.nodeProviderOverride && self.nodeProviderOverride !== 'none') {

@@ -18,6 +18,7 @@
 
       // Add input fields
       this.widgetField = this.dialog.appendField('Widget', 'widget-name', '', true);
+      this.widgetField.setAttribute('autocomplete', 'widget-name');
       // Align input fields better
       $(this.dialog.dialog).find('label').css('width', '5em');
       $(this.dialog.dialog).find('label').css('display', 'inline-block');

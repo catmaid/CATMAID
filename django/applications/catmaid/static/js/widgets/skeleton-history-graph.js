@@ -32,7 +32,7 @@
   SkeletonHistoryGraph.prototype.constructor = SkeletonHistoryGraph;
 
   SkeletonHistoryGraph.prototype.getName = function() {
-    return "Skeleton history graph " + this.widgetID;
+    return "Skeleton change history" + this.widgetID;
   };
 
   SkeletonHistoryGraph.prototype.destroy = function() {
@@ -160,22 +160,28 @@
       helpText: [
         '<h1>Overview</h1>',
         '<p>The Skeleton History Widget shows a graph visualization of ',
-        'skeleton ID changes of sets of treenodes over time. These can ',
+        'skeleton ID changes of sets of nodes over time. These can ',
         'happen as results of skeleton splits and merges.</p>',
-        '<p>History can be fewed for past and present skeletons. For each ',
-        'node that has been part of a set of query skeletons the history ',
-        'of all its skeleton ID changes after it became part of the ',
-        'input skeleton is tracked. The can haappen optionally in a defined ',
-        'date range or based on an editing user.</p>',
-        '<p>Colors: yellow - existing neuron, cyan: past neuron, green: ',
-        'selected neuron</p>',
+        '<p>History can be viewed for past and present skeletons. To load ',
+        'the history for one or more skeletons, copy their skeleton IDs ',
+        'into the <em>(Past) Skeleton IDs</em> field, separated by commas. ',
+        'Every node that has ever been part of any of these skeletons ',
+        'is tracked from the moment on they became part of them.</p>',
+        '<p>For each node that has been part of any of the query skeletons, the ',
+        'history of all its skeleton ID changes is collected, from the ',
+        'moment it became part of a query skeleton to its most recent ',
+        'appearence. Optionally, this query can be constrained by date ',
+        'range and editing user.</p>',
+        '<p><em>Colors:</em> yellow - existing skeleton, gray: past skeleton, ',
+        'cyan: query skeleton, green: selected skeleton</p>',
         '<h1>Interaction</h1>',
         '<p>Skeletons/nodes can be selected by clicking on them. Multiple ',
-        'skeletons can be selected using the Shift key. Selected skeletons ',
+        'skeletons can be selected using the <kbd>Shift</kbd> key. Selected skeletons ',
         'are colored green and are made available through the widget\'s ',
         'skeleton source API.</p>',
-        '<p>Clicking on a skeleton node with the Ctrl key pressed down, the ',
-        'skeleton will be selected (if it exists).</p>'
+        '<p>Clicking on a skeleton node with the <kbd>Ctrl</kbd> key pressed down ',
+        'will select the closest node of this skeleton (if it exists) ',
+        'and centers the view on it.</p>.'
       ].join('\n')
     };
   };
@@ -581,9 +587,9 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
-    name: 'Skeleton History',
+    name: 'Skeleton Change History',
     description: 'Show split and merge history of skeletons',
-    key: 'skeleton-history',
+    key: 'skeleton-change-history',
     creator: SkeletonHistoryGraph
   });
 

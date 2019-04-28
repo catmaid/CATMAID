@@ -2276,6 +2276,76 @@
       dsTracingWarnings.append(skeletonLengthWarning);
     };
 
+    var addPublicationSettings = function(container) {
+      var ds = CATMAID.DOM.addSettingsContainer(container, "Publication");
+      var defaultPublicationAnnotationsChange = function() {
+          let publicationAnnotations = this.value.split(',').map(v => v.trim()) || [];
+          CATMAID.PublicationWidget.Settings
+              .set(
+                'publication_annotations',
+                publicationAnnotations,
+                SETTINGS_SCOPE);
+        };
+      var defaultPublicationAnnotations = CATMAID.PublicationWidget.Settings[SETTINGS_SCOPE].publication_annotations;
+      defaultPublicationAnnotations = defaultPublicationAnnotations.length > 0 ?
+          defaultPublicationAnnotations.join(', ') : '';
+      var defaultPublicationAnnotationsInput = CATMAID.DOM.createInputSetting(
+              "Publication annotations",
+              defaultPublicationAnnotations,
+              'A set of meta-annotations that will mark other annotations as publications.',
+              defaultPublicationAnnotationsChange);
+      ds.append(wrapSettingsControl(
+          defaultPublicationAnnotationsInput,
+          CATMAID.PublicationWidget.Settings,
+          'publication_annotations',
+          SETTINGS_SCOPE));
+
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              'Export annotations by default',
+              CATMAID.PublicationWidget.Settings[SETTINGS_SCOPE].export_annotations_by_default,
+              "Whether annotations should be exported by default, if publications aren't marked explicitly. Only annotations that are meta-annotated with 'exportable' are going to be exported by default.",
+              function() {
+                CATMAID.PublicationWidget.Settings[SETTINGS_SCOPE].export_annotations_by_default = this.checked;
+              }),
+          CATMAID.PublicationWidget.Settings,
+          'export_annotations_by_default',
+          SETTINGS_SCOPE));
+
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              'Export tags by default',
+              CATMAID.PublicationWidget.Settings[SETTINGS_SCOPE].export_tags_by_default,
+              "Whether tags should be exported by default, if publications aren't marked explicitly.",
+              function() {
+                CATMAID.PublicationWidget.Settings[SETTINGS_SCOPE].export_annotations_by_default = this.checked;
+              }),
+          CATMAID.PublicationWidget.Settings,
+          'export_annotations_by_default',
+          SETTINGS_SCOPE));
+
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createSelectSetting(
+              "Default connector export mode",
+              {'No connectors': CATMAID.Publication.ConnectorAnnotations.ConnectorsNo,
+               'Only intra-set links (1)': CATMAID.Publication.ConnectorAnnotations.ConnectorsOnlyIntra,
+               'All links + new placeholders (2)': CATMAID.Publication.ConnectorAnnotations.ConnectorsNewPlaceholders,
+               'All links + original placeholders (3)': CATMAID.Publication.ConnectorAnnotations.ConnectorsOriginalPlaceholders,
+              },
+              "The default connector import mode, if not specified for a publication.",
+              function() {
+                CATMAID.PublicationWidget.Settings
+                    .set(
+                      'export_connector_default_mode',
+                      this.value,
+                      SETTINGS_SCOPE);
+              },
+              CATMAID.PublicationWidget.Settings[SETTINGS_SCOPE].export_connector_default_mode),
+          CATMAID.PublicationWidget.Settings,
+          'export_annotations_by_default',
+          SETTINGS_SCOPE));
+    };
+
     var addRemoteSettings = function(container) {
       var ds = CATMAID.DOM.addSettingsContainer(container, "Remote servers and data providers");
 
@@ -2576,6 +2646,9 @@
       addStackLayerSettings(space);
       addGridSettings(space);
       addTracingSettings(space);
+      if (CATMAID.hasPermission(project.id, 'can_administer')) {
+        addPublicationSettings(space);
+      }
       addRemoteSettings(space);
 
       // Add collapsing support to all settings containers

@@ -1675,6 +1675,13 @@
   };
 
   /**
+   * Add tab controls to a target (e.g. a widget).
+   */
+  DOM.appendTabControls = function(target, modeSelection, modes, tabSuffix,
+      modeContext, updateFn) {
+  };
+
+  /**
    * Append a new button to another element.
    */
   DOM.appendButton = function(div, label, title, onclickFn, attr, disabled, id) {

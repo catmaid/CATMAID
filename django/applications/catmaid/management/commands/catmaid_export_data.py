@@ -121,6 +121,10 @@ class Exporter():
         self.connector_mode = options['connector_mode']
         self.export_annotations = options['export_annotations']
         self.export_tags = options['export_tags']
+        self.per_skeleton_treenodes = options['per_skeleton_treenodes']
+        self.per_skeleton_connectors = options['per_skeleton_connectors']
+        self.per_skeleton_annotations = options['per_skeleton_annotations']
+
         self.export_users = options['export_users']
         self.export_volumes = options['export_volumes']
         # If in use, annotations annotated with this meta annotation are
@@ -547,7 +551,20 @@ class Exporter():
                 annotated_with = relations['annotated_with']
                 all_annotations:Set = set()
                 all_annotation_links:Set = set()
-                working_set = [e for e in entities]
+
+                if self.per_skeleton_annotations:
+                    query_params = {
+                            'annotated_with': "export: no-annotations",
+                        'sub_annotated_with': "export: no-annotations",
+                    }
+                    neuron_info, num_total_records = get_annotated_entities(self.project.id,
+                            query_params, relations, classes, ['neuron'], with_skeletons=True)
+                    neuron_ids_without_annotations = set(chain.from_iterable(
+                            [n['id'] for n in neuron_info]))
+                    working_set = [e for e in entities \
+                            if e.id not in neuron_ids_without_annotations]
+                else:
+                    working_set = [e for e in entities]
 
                 # Optionally, allow only annotations that are themselves
                 # annotated with a required annotation. These annotations are

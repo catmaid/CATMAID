@@ -568,11 +568,14 @@
      * Get a list of skeleton IDs based on their annotation, optionally from a
      * remote server.
      */
-    byAnnotation: function(projectId, annotationNames, includeSubAnnotations, api) {
+    byAnnotation: function(projectId, annotationNames, includeSubAnnotations, api, raw = false,
+        withSkeletons = undefined, withAnnotations = undefined, annotationReference = 'name') {
       let params = {
         'annotated_with': annotationNames,
         'sub_annotated_with': includeSubAnnotations ? annotationNames : undefined,
-        'annotation_reference': 'name',
+        'annotation_reference': annotationReference,
+        'with_skeletons': withSkeletons,
+        'with_annotations': withAnnotations,
         'types': ['neuron'],
       };
       return CATMAID.fetch({
@@ -581,6 +584,7 @@
           data: params,
           api: api,
         }).then(result => {
+          if (raw) return result;
           let skeletonIds = result.entities.reduce((l, e) => {
             Array.prototype.push.apply(l, e.skeleton_ids);
             return l;

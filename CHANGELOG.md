@@ -46,6 +46,14 @@
 
 ### Features and enhancements
 
+Publication widget
+
+- This new widget makes management of publication related annotations easier. It
+  lists all annotations that annotated with one of the publication annotations
+  defined in the Settings Widget in the Publication setction. Each of them
+  represents a publication for the widget. The export options for each one of
+  them can now be configured through the table.
+
 Neuron renaming:
 
 - There is now a new neuron renaming dialog, which allows a search/replace

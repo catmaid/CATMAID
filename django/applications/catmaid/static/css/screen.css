@@ -1847,3 +1847,13 @@ button.files-loaded {
 .medium-filter {
   width: 12em;
 }
+
+.publication-widget i.reset-to-inherit {
+  color: grey;
+  cursor: pointer;
+  vertical-align: super
+}
+
+.publication-widget i.reset-to-inherit.highlight {
+  color: orange;
+}

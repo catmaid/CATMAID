@@ -58,6 +58,33 @@
       });
     },
 
+    byAnnotation: function(projectId, annotationNames, includeSubAnnotations,
+        withAnnotations = false, api = undefined, raw = false, with_timestamps = false,
+        annotationReference = 'name') {
+      let params = {
+        'annotated_with': annotationNames,
+        'sub_annotated_with': includeSubAnnotations ? annotationNames : undefined,
+        'annotation_reference': annotationReference,
+        'types': ['annotation'],
+        'with_annotations': withAnnotations,
+        'with_timestamps': with_timestamps,
+        'ignore_nonexisting': true,
+      };
+      return CATMAID.fetch({
+          url: projectId + '/annotations/query-targets',
+          method: 'POST',
+          data: params,
+          api: api,
+        }).then(result => {
+          if (raw) return result;
+          let skeletonIds = result.entities.reduce((l, e) => {
+            Array.prototype.push.apply(l, e.skeleton_ids);
+            return l;
+          }, []);
+          return skeletonIds;
+        });
+    },
+
     /**
      * Get a set of all annotations linked to either the passed in entity IDs or
      * the neurons that the passed in skeleton IDs model.

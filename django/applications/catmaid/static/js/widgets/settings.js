@@ -1585,6 +1585,8 @@
             break;
         }
 
+        groupSetting.invert = $('#visibility-group-' + groupID + '-invert').prop('checked');
+
         var settingsCopy = CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].visibility_groups;
         settingsCopy = $.extend([], settingsCopy);
         settingsCopy[groupID] = groupSetting;
@@ -1692,6 +1694,16 @@
               .addClass('help')
               .append(group.description));
         groupRadioControl.prepend($('<h4/>').append(group.name));
+
+        let invertOption = CATMAID.DOM.createCheckboxSetting(
+              "Invert above condition",
+              scopedSettings.hasOwnProperty('invert') ? scopedSettings.invert : false,
+              "If enabled, the above condition is inverted.",
+              (() => function() {
+                updateVisibilityGroup(group.id);
+              })());
+        invertOption.find('input').attr('id', 'visibility-group-' + group.id + '-invert');
+        groupRadioControl.append(invertOption);
 
         dsVisibilityGroupsRadioWrapper.append(groupRadioControl);
       });

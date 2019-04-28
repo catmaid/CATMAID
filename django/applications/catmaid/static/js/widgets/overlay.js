@@ -6409,6 +6409,7 @@ var SkeletonAnnotations = {};
         skeletonIDs: new Set(),
         matchAll: false,
         visible: groupName === 'OVERRIDE',
+        invert: false,
         callback: (function (metaAnnotationName, skeletonIDs) {
           this.groups[groupID].skeletonIDs = skeletonIDs;
         }).bind(this),
@@ -6436,7 +6437,9 @@ var SkeletonAnnotations = {};
      *                              keyed by 'metaAnnotationName' to a string
      *                              name of the meta-annotation to match. May be
      *                              keyed by 'creatorID' to the numeric ID of the
-     *                              creation user to match.
+     *                              creation user to match. May be keyed by
+     *                              'invert' to a boolean to indicate if the
+     *                              filter rule should inverted.
      */
     this.setGroup = function (groupID, groupSetting) {
       var group = this.groups[groupID];
@@ -6457,6 +6460,7 @@ var SkeletonAnnotations = {};
       } else if (groupSetting.hasOwnProperty('universal')) {
         group.matchAll = groupSetting.universal === 'all';
       }
+      group.invert = groupSetting.hasOwnProperty('invert') ? groupSetting.invert : false;
     };
 
     /**
@@ -6473,9 +6477,13 @@ var SkeletonAnnotations = {};
     this.isNodeInGroup = function (groupID, node) {
       var group = this.groups[groupID];
 
-      if (group.matchAll) return true;
-      else if (group.creatorID) return node.user_id === group.creatorID;
-      else return group.skeletonIDs.has(node.skeleton_id);
+      let result;
+      if (group.matchAll) result = true;
+      else if (group.creatorID) result = node.user_id === group.creatorID;
+      else result = group.skeletonIDs.has(node.skeleton_id);
+
+      if (group.invert) return !result;
+      else return result;
     };
 
     /**

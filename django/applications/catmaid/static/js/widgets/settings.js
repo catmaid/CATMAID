@@ -1281,6 +1281,129 @@
       addSkeletonLengthColoringSettings(ds, wrapSettingsControl, getScope);
 
 
+      // Leyer configuration options include defaults for settings usually
+      // available in the layer configuration panel.
+      var dsTracingLayerDefaults = CATMAID.DOM.addSettingsContainer(ds,
+          "Tracing layer skeleton filters", true);
+
+      dsTracingLayerDefaults.append(wrapSettingsControl(
+          CATMAID.DOM.createInputSetting(
+              "Limit to N largest skeletons",
+              CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].n_largest_skeletons_limit,
+              "Only show the N largest skeletons in the field of view.",
+              function() {
+                let value = parseInt(this.value, 10);
+                if (Number.isNaN(value)) {
+                  CATMAID.warn("Invalid N largest skeleton limit");
+                  return;
+                }
+                CATMAID.TracingOverlay.Settings
+                    .set(
+                      'n_largest_skeletons_limit',
+                      value,
+                      SETTINGS_SCOPE);
+              }),
+          CATMAID.TracingOverlay.Settings,
+          'n_largest_skeletons_limit',
+          SETTINGS_SCOPE));
+
+      dsTracingLayerDefaults.append(wrapSettingsControl(
+          CATMAID.DOM.createInputSetting(
+              "Limit to N last edited skeletons",
+              CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].n_last_edited_skeletons_limit,
+              "Only show the N last edited skeletons in the field of view.",
+              function() {
+                let value = parseInt(this.value, 10);
+                if (Number.isNaN(value)) {
+                  CATMAID.warn("Invalid N last edited skeleton limit");
+                  return;
+                }
+                CATMAID.TracingOverlay.Settings
+                    .set(
+                      'n_last_edited_skeletons_limit',
+                      value,
+                      SETTINGS_SCOPE);
+              }),
+          CATMAID.TracingOverlay.Settings,
+          'n_last_edited_skeletons_limit',
+          SETTINGS_SCOPE));
+
+      // Get all available users
+      var editorUsers = CATMAID.User.all();
+      var editors = Object.keys(editorUsers).map(function (userId) { return editorUsers[userId]; });
+      // Add reviewer options to select box
+      var hideLastEditorSelect = $('<select/>').on('change', function() {
+        let newValue;
+        if (this.value === undefined || this.value === 'none') {
+          newValue = 'none';
+        } else {
+          newValue = parseInt(this.value, 10);
+          if (Number.isNaN(newValue)) {
+            CATMAID.warn("Bad user ID: " + newValue);
+            return;
+          }
+        }
+        CATMAID.TracingOverlay.Settings
+            .set(
+              'hidden_last_editor_id',
+              newValue,
+              SETTINGS_SCOPE);
+      });
+      let hiddenLastEdtior = CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].hidden_last_editor_id;
+      let noneSelected = hiddenLastEdtior === 'none';
+      hideLastEditorSelect.append(new Option('(none)', 'none', noneSelected, noneSelected));
+      editors.sort(CATMAID.User.displayNameCompare).forEach(function (user) {
+        let selected = hiddenLastEdtior == user.id;
+        this.append(new Option(user.getDisplayName(), user.id, selected, selected));
+      }, hideLastEditorSelect);
+
+      dsTracingLayerDefaults.append(
+          CATMAID.DOM.createLabeledControl('Hide data last edited by', hideLastEditorSelect)
+            .append($('<div class="help" />').append('Only show skeletons not edited last by this user.')));
+
+      dsTracingLayerDefaults.append(wrapSettingsControl(
+          CATMAID.DOM.createInputSetting(
+              "Min skeleton length (nm)",
+              CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].min_skeleton_length,
+              "Only show skeletons with at least this length in the field of view.",
+              function() {
+                let value = parseInt(this.value, 10);
+                if (Number.isNaN(value)) {
+                  CATMAID.warn("Invalid min. skeleton length");
+                  return;
+                }
+                CATMAID.TracingOverlay.Settings
+                    .set(
+                      'min_skeleton_length',
+                      value,
+                      SETTINGS_SCOPE);
+              }),
+          CATMAID.TracingOverlay.Settings,
+          'min_skeleton_length',
+          SETTINGS_SCOPE));
+
+      dsTracingLayerDefaults.append(wrapSettingsControl(
+          CATMAID.DOM.createInputSetting(
+              "Min skeleton nodes",
+              CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].min_skeleton_nodes,
+              "Only show skeletons with at least this many nodes in the field of view.",
+              function() {
+                let value = parseInt(this.value, 10);
+                if (Number.isNaN(value)) {
+                  CATMAID.warn("Invalid min. number of nodes");
+                  return;
+                }
+                CATMAID.TracingOverlay.Settings
+                    .set(
+                      'min_skeleton_nodes',
+                      value,
+                      SETTINGS_SCOPE);
+              }),
+          CATMAID.TracingOverlay.Settings,
+          'min_skeleton_nodes',
+          SETTINGS_SCOPE));
+
+
       var dsSkeletonProjection = CATMAID.DOM.addSettingsContainer(ds,
           "Skeleton projection layer", true);
 

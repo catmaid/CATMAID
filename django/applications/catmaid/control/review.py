@@ -151,18 +151,18 @@ def get_review_status(skeleton_ids, project_id=None, whitelist_id=False,
         query_params['excluding_user_ids'] = list(excluding_user_ids)
         extra_conditions = "WHERE NOT (r.reviewer_id = ANY (%(excluding_user_ids)s::int[]))"
 
+    # Using count(distinct treenode_id) is slightly faster than a nested
+    # grouping by skeleton_id, treenode_id, because one HashAggregate node can
+    # be avoided.
     cursor.execute('''
-    SELECT skeleton_id, count(*)
-    FROM (SELECT skeleton_id, treenode_id
-          FROM review r
-          {}
-          JOIN (
-              SELECT * FROM UNNEST(%(skeleton_ids)s::bigint[])
-          ) query_skeleton(id)
-            ON r.skeleton_id = query_skeleton.id
-          GROUP BY skeleton_id, treenode_id
-          {}
-    ) AS sub
+    SELECT skeleton_id, count(DISTINCT treenode_id)
+    FROM review r
+    {}
+    JOIN (
+        SELECT * FROM UNNEST(%(skeleton_ids)s::bigint[])
+    ) query_skeleton(id)
+      ON r.skeleton_id = query_skeleton.id
+    {}
     GROUP BY skeleton_id
     '''.format('\n'.join(query_joins), extra_conditions), query_params)
     for row in cursor.fetchall():

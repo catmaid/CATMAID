@@ -313,7 +313,8 @@
           ['postgis2dmultijoin', '2D index multi-join'],
           ['postgis3d', '3D index'],
           ['postgis3dblurry', '3D index blurry'],
-          ['postgis3dmultijoin', '3D index multi-join']],
+          ['postgis3dmultijoin', '3D index multi-join'],
+          ['postgis3dspgist', '3D index unbalanced']],
       help: 'Override the back-end selected node provider',
     }];
   };

@@ -31,6 +31,7 @@ try:
     from rpy2.robjects.packages import importr
     from rpy2.rinterface import RRuntimeError
     import rpy2.robjects as robjects
+    import rpy2.rlike.container as rlc
 except ImportError:
     rnat_enaled = False
     logger.warning('CATMAID was unable to load the Rpy2 library, which is an '
@@ -249,6 +250,7 @@ def setup_r_environment() -> None:
         devtools::install_github(c("jefferis/nat", "jefferislab/nat.nblast",
                 "jefferis/rcatmaid", "jefferis/elmr"))
         install.packages("doMC")
+        install.packages(c("curl", "httr"))
     """)
 
 
@@ -334,12 +336,9 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
         # nb also convert from nm to um, resample to 1µm spacing and use k=5
         # nearest neighbours of each point to define tangent vector
         logger.debug('Fetching {} matching skeletons'.format(len(matching_skeleton_ids)))
-        matching_neurons = rcatmaid.read_neurons_catmaid(
-                robjects.IntVector(matching_skeleton_ids), **{
-                    'conn': conn,
-                    '.progress': 'none',
-                    'OmitFailures': omit_failures,
-                })
+        matching_neurons = dotprops_for_skeletons(project_id,
+                matching_skeleton_ids, omit_failures)
+
 
         # Create dotprop instances and resample
         logger.debug('Computing matching skeleton stats')
@@ -381,12 +380,8 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
         # it into a list that can be understood by R.
 
         logger.debug('Fetching {} random skeletons'.format(len(random_skeleton_ids)))
-        nonmatching_neurons = rcatmaid.read_neurons_catmaid(
-                robjects.IntVector(random_skeleton_ids), **{
-                    'conn': conn,
-                    '.progress': 'none',
-                    'OmitFailures': omit_failures,
-                })
+        nonmatching_neurons = dotprops_for_skeletons(project_id,
+                random_skeleton_ids, omit_failures)
 
         logger.debug('Computing random skeleton stats')
         nonmatching_neurons_dps = rnat.dotprops(nonmatching_neurons.ro / nm_to_um, **{
@@ -647,9 +642,9 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
     cache_file = get_cache_file_name(project_id, object_type, detail)
     cache_dir = os.path.join(settings.MEDIA_ROOT, settings.MEDIA_CACHE_SUBDIRECTORY)
     cache_path = os.path.join(cache_dir, cache_file)
-    if not os.path.exists(cache_dir):
+    if not os.path.exists(cache_dir) or not os.access(cache_dir, os.W_OK):
         raise ValueError("Can't access cache directory: {}".format(cache_dir))
-    if not os.access(cache_path, os.W_OK):
+    if os.path.exists(cache_path) and not os.access(cache_path, os.W_OK):
         raise ValueError("Can't access cache file for writing: {}".format(cache_path))
 
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -677,12 +672,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
             return
 
         logger.debug('Fetching {} skeletons'.format(len(object_ids)))
-        objects = rcatmaid.read_neurons_catmaid(
-                robjects.IntVector(object_ids), **{
-                    'conn': conn,
-                    '.progress': 'none',
-                    'OmitFailures': omit_failures,
-                })
+        objects = dotprops_for_skeletons(project_id, object_ids, omit_failures)
 
         # Simplify
         if detail > 0:
@@ -703,7 +693,8 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
                 })
 
         # Save cache to disk
-        logger.debug('Storing skeleton cache')
+        logger.debug('Storing skeleton cache with {} entries: {}'.format(
+                len(objects_dps), cache_path))
         base.saveRDS(objects_dps, **{
             'file': cache_path,
         })
@@ -891,12 +882,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             logger.debug('Fetching {} query skeletons ({} cache hits)'.format(
                     len(effective_query_object_ids), cache_hits))
             if effective_query_object_ids:
-                query_objects = rcatmaid.read_neurons_catmaid(
-                        robjects.IntVector(effective_query_object_ids), **{
-                            'conn': conn,
-                            '.progress': 'none',
-                            'OmitFailures': omit_failures,
-                        })
+                query_objects = dotprops_for_skeletons(project_id,
+                        effective_query_object_ids, omit_failures)
 
                 if simplify:
                     logger.debug("Simplifying query neurons, removing parts below branch level {}".format(required_branches))
@@ -1061,12 +1048,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 logger.debug('Fetching {} target skeletons ({} cache hits)'.format(
                         len(effective_target_object_ids), cache_hits))
                 if effective_target_object_ids:
-                    target_objects = rcatmaid.read_neurons_catmaid(
-                            robjects.IntVector(effective_target_object_ids), **{
-                                'conn': conn,
-                                '.progress': 'none',
-                                'OmitFailures': omit_failures,
-                            })
+                    target_objects = dotprops_for_skeletons(project_id,
+                            effective_target_object_ids, omit_failures)
 
                     if simplify:
                         logger.debug("Simplifying target neurons, removing parts below branch level {}".format(required_branches))
@@ -1402,3 +1385,184 @@ def as_matrix(scores, a, b, transposed=False):
         })
 
     raise ValueError("Can't convert to matrix, unknown type: {}".format(score_type))
+
+
+def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False):
+    read_neurons_local = robjects.r('''
+        somapos.catmaidneuron <- function(x, swc=x$d, tags=x$tags, skid=NULL, ...) {
+          # Find soma position, based on plausible tags
+          soma_tags<-grep("(cell body|soma)", ignore.case = T, names(tags), value = T)
+          # soma is the preferred tag - use this for preference if it exists
+          if(any(soma_tags=="soma")) soma_tags="soma"
+          soma_id=unlist(unique(tags[soma_tags]))
+          soma_id_in_neuron=intersect(soma_id, swc$PointNo)
+
+          soma_d=swc[match(soma_id_in_neuron,swc$PointNo),,drop=FALSE]
+          if(length(soma_id_in_neuron)>1) {
+            if(sum(soma_d$Parent<0) == 1 ) {
+              # just one end point is tagged as soma, so go with that
+              soma_d[soma_d$Parent<0,, drop=FALSE]
+            } else {
+              warning("Ambiguous points tagged as soma in neuron: ",skid,". Using first")
+              soma_d[1,, drop=FALSE]
+            }
+          } else soma_d
+        }
+
+        list2df<-function(x, cols, use.col.names=F, return_empty_df=FALSE, ...) {
+          if(!length(x)) {
+            return(if(return_empty_df){
+              as.data.frame(structure(replicate(length(cols), logical(0)), .Names=cols))
+            } else NULL)
+          }
+          l=list()
+          for(i in seq_along(cols)) {
+            colidx=if(use.col.names) cols[i] else i
+            raw_col = sapply(x, "[[", colidx)
+            if(is.list(raw_col)) {
+              raw_col[sapply(raw_col, is.null)]=NA
+              raw_col=unlist(raw_col)
+            }
+            l[[cols[i]]]=raw_col
+          }
+          as.data.frame(l, ...)
+        }
+
+        catmaid_get_compact_skeleton_local<-function(skid, pid=1L, conn=NULL, connectors = TRUE, tags = TRUE, raw=FALSE, ...) {
+          path=file.path("", pid, skid, ifelse(connectors, 1L, 0L), ifelse(tags, 1L, 0L), "compact-skeleton")
+          skel=catmaid_fetch(path, conn=conn, ...)
+          if(is.character(skel[[1]]) && isTRUE(skel[[1]]=="Exception"))
+            stop("No valid neuron returned for skid: ",skid)
+          names(skel)=c("nodes", "connectors", "tags")
+
+          if(raw) return(skel)
+          # else process the skeleton
+          if(length(skel$nodes))
+            skel$nodes=list2df(skel$nodes,
+                             cols=c("id", "parent_id", "user_id", "x","y", "z", "radius", "confidence"))
+
+          if(length(skel$connectors))
+            skel$connectors=list2df(skel$connectors,
+                                    cols=c("treenode_id", "connector_id", "prepost", "x", "y", "z"))
+          # change tags from list of lists to list of vectors
+          skel$tags=sapply(skel$tags, function(x) sort(unlist(x)), simplify = FALSE)
+          skel
+        }
+
+        read.neuron.catmaid_local<-function(skid, sk_data, pid=1L, conn=NULL, ...) {
+          #res=catmaid_get_compact_skeleton_local(pid=pid, skid=skid, conn=conn, ...)
+          res=sk_data[[toString(skid)]]
+          nodes = res$nodes
+          tags = res$tags
+          if(!length(res$nodes)) stop("no valid nodes for skid:", skid)
+          swc=with(nodes,
+                   data.frame(PointNo=id, Label=0, X=x, Y=y, Z=z, W=radius*2, Parent=parent_id)
+          )
+          swc$Parent[is.na(swc$Parent)]=-1L
+          sp=somapos.catmaidneuron(swc=swc, tags=tags)
+          soma_id_in_neuron = if(nrow(sp)==0) NULL else sp$PointNo
+          n=nat::as.neuron(swc, origin=soma_id_in_neuron, skid=skid)
+
+          # add all fields from input list except for nodes themselves
+          n[names(res[-1])]=res[-1]
+          # we expect connectors field to be null when there are no connectors
+          if(length(n$connectors)<1) n$connectors=NULL
+          class(n)=c('catmaidneuron', 'neuron')
+          n
+        }
+
+        read.neurons.catmaid_local<-function(skids, sk_data, pid=1L, conn=NULL, OmitFailures=NA, df=NULL,
+                                       fetch.annotations=FALSE, ...) {
+          # Assume <skids> is list of integers
+          if(is.null(df)) {
+            names(skids)=as.character(skids)
+            df=data.frame(pid=pid, skid=skids,
+                          # We don't need full names, otherwise use:
+                          # name=catmaid_get_neuronnames(skids, pid, conn=conn),
+                          name=names(skids),
+                          stringsAsFactors = F)
+            rownames(df)=names(skids)
+          } else {
+            names(skids)=rownames(df)
+          }
+          fakenl=nat::as.neuronlist(as.list(skids), df=df)
+          nl <- nat::nlapply(fakenl, read.neuron.catmaid_local, sk_data=sk_data, pid=pid, conn=conn, OmitFailures=OmitFailures, ...)
+          nl
+        }
+    ''')
+
+    from catmaid.control.skeletonexport import _compact_skeleton
+
+    cs_r = {}
+    for skeleton_id in skeleton_ids:
+        try:
+            cs = _compact_skeleton(project_id, skeleton_id, with_connectors=True, with_tags=True)
+        except:
+            if not omit_failures:
+                raise
+
+        raw_nodes = cs[0]
+        raw_connectors = cs[1]
+        raw_tags = cs[2]
+
+        # Nodes in Rpy2 format
+        node_cols = [
+                ('id', robjects.IntVector, robjects.NA_Integer),
+                ('parent_id', robjects.IntVector, robjects.NA_Integer),
+                ('user_id', robjects.IntVector, robjects.NA_Integer),
+                ('x', robjects.FloatVector, robjects.NA_Real),
+                ('y', robjects.FloatVector, robjects.NA_Real),
+                ('z', robjects.FloatVector, robjects.NA_Real),
+                ('radius', robjects.FloatVector, robjects.NA_Real),
+                ('confidence', robjects.IntVector, robjects.NA_Integer)
+        ]
+        nodes = [(k,[]) for k,_,_ in node_cols]
+        for rn in raw_nodes:
+                for n, kv in enumerate(node_cols):
+                        val = rn[n]
+                        if val is None:
+                                val = kv[2]
+                        nodes[n][1].append(val)
+        r_nodes = [(kv[0], node_cols[n][1](kv[1]))
+                for n, kv in enumerate(nodes)]
+
+        # Connectors in Rpy2 format
+        connector_cols = [
+                ('treenode_id', robjects.IntVector, robjects.NA_Integer),
+                ('connector_id', robjects.IntVector, robjects.NA_Integer),
+                ('prepost', robjects.IntVector, robjects.NA_Integer),
+                ('x', robjects.FloatVector, robjects.NA_Real),
+                ('y', robjects.FloatVector, robjects.NA_Real),
+                ('z', robjects.FloatVector, robjects.NA_Real)
+        ]
+        connectors = [(k,[]) for k,_,_ in connector_cols]
+        for rn in raw_connectors:
+                for n, kv in enumerate(connector_cols):
+                        val = rn[n]
+                        if val is None:
+                                val = kv[2]
+                        connectors[n][1].append(val)
+        r_connectors = [(kv[0], connector_cols[n][1](kv[1]))
+                for n, kv in enumerate(connectors)]
+
+        # Tags in Rpy2 format
+        r_tags = {}
+        for tag, node_ids in raw_tags.items():
+               r_tags[tag] = robjects.IntVector(node_ids)
+
+        # Construct output similar to rcatmaid's request response parsing function.
+        cs_r[str(skeleton_id)] = robjects.ListVector({
+                'nodes': robjects.DataFrame(rlc.OrdDict(r_nodes)),
+                'connectors': robjects.DataFrame(rlc.OrdDict(r_connectors)),
+                'tags': robjects.ListVector(r_tags),
+        })
+
+    objects = read_neurons_local(
+            robjects.IntVector(skeleton_ids),
+            robjects.ListVector(cs_r), **{
+                '.progress': 'none',
+                'OmitFailures': omit_failures
+            })
+    print("Converted {}/{} neurons".format(len(objects), len(skeleton_ids)))
+
+    return objects

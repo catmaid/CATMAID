@@ -271,6 +271,18 @@
           CATMAID.Client.Settings,
           'binary_data_transfer',
           SETTINGS_SCOPE));
+
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              'Save exported files (images, CSVs, etc.) in streaming mode',
+              CATMAID.Client.Settings[SETTINGS_SCOPE].use_file_export_streams,
+              'Using streams allows the export of larger files, but the export/save dialog behaves slightly different. Make sure "Ask where to save each file before downloading" is enabled in the browser settings.',
+              function() {
+                CATMAID.Client.Settings[SETTINGS_SCOPE].use_file_export_streams = this.checked;
+              }),
+          CATMAID.Client.Settings,
+          'use_file_export_streams',
+          SETTINGS_SCOPE));
     };
 
     /**

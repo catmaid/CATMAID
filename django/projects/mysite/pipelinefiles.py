@@ -18,7 +18,7 @@ dictionary. JavaScript files go into the 'catmaid' entry of the ``JAVASCRIPT``
 dictonary at the end of this file.
 """
 
-from collections import OrderedDict
+from collections import Iterable, OrderedDict
 from importlib import import_module
 
 import six
@@ -113,6 +113,8 @@ libraries_js = OrderedDict([
                     'springy.js', 'cytoscape-springy.js']),
     ('jsnetworkx', ['*.js']),
     ('filesaver', ['*.js']),
+    ('screw-filereader', ['*.js']),
+    ('streamsaver', ['*.js']),
     ('whammy', ['whammy.js']),
     ('blazy', ['blazy.min.js']),
     ('geometry', ['geometry.js', 'intersects.js']), # order matters
@@ -134,16 +136,20 @@ for k, v in six.iteritems(libraries_js):
 # Some libraries expect their own JavaScript files to be available under a
 # particular name. Therefore, we can't use pipeline with them and include them
 # separately. Entries follow the same pattern as above: key - path.
-non_pipeline_js = {}
+non_pipeline_js = {
+        'streamsaver-worker-1': ['libs/streamsaver/worker/mitm.html', 'js/libs/streamsaver/mitm.html'],
+        'streamsaver-worker-2': ['libs/streamsaver/worker/ping.html', 'js/libs/streamsaver/ping.html'],
+        'streamsaver-worker-3': ['libs/streamsaver/worker/ping.js', 'js/libs/streamsaver/ping.js'],
+        'streamsaver-worker-4': ['libs/streamsaver/worker/sw.js', 'js/libs/streamsaver/sw.js'],
+}
 
 # Even non-pipeline files have to be made known to pipeline, because it takes
 # care of collecting them into the STATIC_ROOT directory.
 for k, v in six.iteritems(non_pipeline_js):
     JAVASCRIPT[k] = {
-        'source_filenames': (v,),
-        'output_filename': v
+        'source_filenames': [v[0] if isinstance(v, Iterable) else v],
+        'output_filename': v[1] if isinstance(v, Iterable) else v
     }
-
 
 # Regular CATMAID front-end files
 JAVASCRIPT['catmaid'] = {

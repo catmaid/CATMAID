@@ -191,6 +191,9 @@ var project;
         context_help_visibility: {
           default: false
         },
+        use_file_export_streams: {
+          default: false
+        },
         // Expect objects with the fields: id, name, url, api_key,
         // http_auth_user, http_auth_pass.
         remote_catmaid_instances: {

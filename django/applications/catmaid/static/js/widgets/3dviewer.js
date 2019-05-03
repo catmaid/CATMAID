@@ -409,7 +409,7 @@
         var imageData = this.space.view.getImageData();
         var blob = CATMAID.tools.dataURItoBlob(imageData);
         CATMAID.info("The exported PNG will have a transparent background");
-        saveAs(blob, fileName);
+        CATMAID.FileExporter.saveAs(blob, fileName);
       } catch(e) {
         CATMAID.error("Could not export current 3D view, there was an error: " + e,
             e.stack);
@@ -497,8 +497,7 @@
         CATMAID.svgutil.addStyles(xml, styles);
 
         var data = new XMLSerializer().serializeToString(xml);
-        var blob = new Blob([data], {type: 'text/svg'});
-        saveAs(blob, fileName);
+        CATMAID.FileExporter.saveAs(data, fileName, 'text/svg');
       });
 
       queue(false, function() {
@@ -720,8 +719,7 @@
           CATMAID.svgutil.addStyles(xml, styles);
 
           var data = new XMLSerializer().serializeToString(xml);
-          var blob = new Blob([data], {type: 'text/svg'});
-          saveAs(blob, "catmaid-neuron-catalog.svg");
+          CATMAID.FileExporter.saveAs(data, "catmaid-neuron-catalog.svg", 'text/svg');
         } catch (e) {
           CATMAID.error("Could not export neuron catalog. There was an error.", e);
         }
@@ -749,7 +747,7 @@
         rows.push(skid + "," + tnid + "," + edges[tnid]  + "," + v.x + "," + v.y + "," + v.z + "," + r);
       });
     });
-    saveAs(new Blob([rows.join('\n')], {type : 'text/csv'}), "skeleton_coordinates.csv");
+    CATMAID.FileExporter.saveAs(rows.join('\n'), "skeleton_coordinates.csv", 'text/csv');
   };
 
   WebGLApplication.prototype.exportNames = function() {
@@ -761,7 +759,7 @@
       if (!sk.visible) return;
       rows.push(skid + ', "' + getName(skid) + '"');
     });
-    saveAs(new Blob([rows.join('\n')], {type: 'text/csv'}), "skeleton_names.csv");
+    CATMAID.FileExporter.saveAs(rows.join('\n'), "skeleton_names.csv", 'text/csv');
   };
 
   /**
@@ -926,11 +924,11 @@
           zip.file(filename + ".mtl", materialData);
         }
         var content = zip.generate({type: "blob"});
-        saveAs(content, filename + ".zip");
+        CATMAID.FileExporter.saveAs(content, filename + '.zip');
       } else {
-        saveAs(new Blob([data], {type: 'text/obj'}), filename + ".obj");
+        CATMAID.FileExporter.saveAs(data, filename + '.obj', 'text/obj');
         if (exportColor) {
-          saveAs(new Blob([materialData], {type: 'text/mtl'}), filename + ".mtl");
+          CATMAID.FileExporter.saveAs(materialData, filename + '.mtl', 'text/mtl');
         }
       }
     };
@@ -1018,7 +1016,8 @@
         }
       });
     });
-    saveAs(new Blob([rows.join('\n')], {type : 'text/csv'}), "connectors.csv");
+
+    CATMAID.FileExporter.saveAs(rows.join('\n'), "connectors.csv", 'text/csv');
   };
 
   WebGLApplication.prototype.exportSynapsesAsCSV = function() {
@@ -1045,7 +1044,7 @@
         },
         function(skid) { CATMAID.msg("Error", "Failed to load synapses for: " + skid); },
         (function() {
-          saveAs(new Blob([rows.join('\n')], {type : 'text/csv'}), "synapses.csv");
+          CATMAID.FileExporter.saveAs(rows.join('\n'), "synapses.csv", 'text/csv');
 
           var nns = CATMAID.NeuronNameService.getInstance(),
               dummy = new THREE.Color(1, 1, 1);
@@ -1056,7 +1055,7 @@
                 var names = Object.keys(unique).map(function(skid) {
                   return [skid, '"' +  nns.getName(skid) +'"'];
                 });
-                saveAs(new Blob([names.join('\n')], {type: 'text/csv'}), "neuron_name_vs_skeleton_id.csv");
+                CATMAID.FileExporter.saveAs(names.join('\n'), "neuron_name_vs_skeleton_id.csv", 'text/csv');
               });
         }).bind(this));
   };
@@ -4185,7 +4184,7 @@
         var img = CATMAID.tools.createImageFromGlContext(renderer.getContext(),
             this.zplaneRenderTarget.width, this.zplaneRenderTarget.height);
         var blob = CATMAID.tools.dataURItoBlob(img.src);
-        saveAs(blob, "catmaid-zplanemap.png");
+        CATMAID.FileExporter.saveAs(blob, "catmaid-zplanemap.png");
       }
 
       // Wait for images with update
@@ -5501,7 +5500,7 @@
       var img = CATMAID.tools.createImageFromGlContext(gl,
           this.pickingTexture.width, this.pickingTexture.height);
       var blob = CATMAID.tools.dataURItoBlob(img.src);
-      saveAs(blob, "pickingmap.png");
+      CATMAID.FileExporter.saveAs(blob, "pickingmap.png");
     }
 
     // Find world location of clicked fragment
@@ -5587,7 +5586,7 @@
         var img = CATMAID.tools.createImageFromGlContext(gl,
             this.pickingTexture.width, this.pickingTexture.height);
         var blob = CATMAID.tools.dataURItoBlob(img.src);
-        saveAs(blob, "pos-tex-" + c + ".png");
+        CATMAID.FileExporter.saveAs(blob, "pos-tex-" + c + ".png");
       }
 
       // Map RGBA value to decoded float
@@ -8824,7 +8823,7 @@
             } else {
               // Export movie
               var output = Whammy.fromImageArray(frames, framerate);
-              saveAs(output, "catmaid_3d_view.webm");
+              CATMAID.FileExporter.saveAs(output, "catmaid_3d_view.webm");
 
               // Reset visibility and unblock UI
               this.space.setSkeletonVisibility(visMap);
@@ -9080,7 +9079,7 @@
       var csv = rows.map(function(row) {
         return row[0] + ', "' + row[1] + '", ' + row[2];
       }).join('\n');
-      saveAs(new Blob([csv], {type: "text/csv"}), "counts.csv");
+      CATMAID.FileExporter.saveAs(csv, "counts.csv", "text/csv");
 
       if (1 === rows.length) {
         CATMAID.msg("CSV contains:", csv);

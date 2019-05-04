@@ -731,7 +731,8 @@
   WebGLApplication.prototype.exportSkeletonsAsCSV = function() {
     var sks = this.space.content.skeletons,
         getName = CATMAID.NeuronNameService.getInstance().getName,
-        rows = ["skeleton_id, treenode_id, parent_treenode_id, x, y, z, r"];
+        header = "skeleton_id, treenode_id, parent_treenode_id, x, y, z, r\n",
+        exporter = CATMAID.FileExporter.saveAs(header, "skeleton_coordinates.csv", 'text/csv');
     Object.keys(sks).forEach(function(skid) {
       var sk = sks[skid];
       if (!sk.visible) return;
@@ -744,22 +745,23 @@
         var v = vs[tnid];
         var mesh = sk.radiusVolumes[tnid];
         var r = mesh ? mesh.scale.x : 0; // See createNodeSphere and createCylinder
-        rows.push(skid + "," + tnid + "," + edges[tnid]  + "," + v.x + "," + v.y + "," + v.z + "," + r);
+        exporter.write(`${skid}, ${tnid}, ${edges[tnid]}, ${v.x}, ${v.y}, ${v.z}, ${r}\n`);
       });
     });
-    CATMAID.FileExporter.saveAs(rows.join('\n'), "skeleton_coordinates.csv", 'text/csv');
+    exporter.save();
   };
 
   WebGLApplication.prototype.exportNames = function() {
     var sks = this.space.content.skeletons,
         getName = CATMAID.NeuronNameService.getInstance().getName,
-        rows = ['"skeleton_id", "neuron_name"'];
+        exporter = CATMAID.FileExporter.export('"skeleton_id", "neuron_name"\n',
+            "skeleton_names.csv", 'text/csv');
     Object.keys(sks).forEach(function(skid) {
       var sk = sks[skid];
       if (!sk.visible) return;
-      rows.push(skid + ', "' + getName(skid) + '"');
+      exporter.write(`${skid}, "${getName(skid)}"\n`);
     });
-    CATMAID.FileExporter.saveAs(rows.join('\n'), "skeleton_names.csv", 'text/csv');
+    exporter.save();
   };
 
   /**
@@ -1021,7 +1023,8 @@
   };
 
   WebGLApplication.prototype.exportSynapsesAsCSV = function() {
-    var rows = [["pre_skeleton_id", "pre_treenode_id", "post_skeleton_id", "post_treenode_id"].join(',')];
+    var header = "pre_skeleton_id, pre_treenode_id, post_skeleton_id, post_treenode_id\n";
+    let exporter = CATMAID.FileExporter(header, 'synapses.csv', 'text/csv');
     var unique = {};
     fetchSkeletons(
         this.getSelectedSkeletons(),
@@ -1034,17 +1037,17 @@
           json[1].forEach(function(row) {
             if (0 === row[6]) {
               // skid  is pre
-              rows.push([skid, row[0], row[5], row[4]].join(','));
+              exporter.write(`${skid}, ${row[0]}, ${row[5]}, ${row[4]}\n`);
             } else {
               // skid is post
-              rows.push([row[5], row[4], skid, row[0]].join(','));
+              exporter.write(`${row[5]}, ${row[4]}, ${skid}, ${row[0]}\n`);
             }
             unique[row[5]] = true;
           });
         },
         function(skid) { CATMAID.msg("Error", "Failed to load synapses for: " + skid); },
         (function() {
-          CATMAID.FileExporter.saveAs(rows.join('\n'), "synapses.csv", 'text/csv');
+          exporter.save();
 
           var nns = CATMAID.NeuronNameService.getInstance(),
               dummy = new THREE.Color(1, 1, 1);
@@ -1052,10 +1055,12 @@
               this,
               Object.keys(unique).reduce(function(o, skid) { o[skid] = new CATMAID.SkeletonModel(skid, "", dummy); return o; }, {}),
               function() {
-                var names = Object.keys(unique).map(function(skid) {
-                  return [skid, '"' +  nns.getName(skid) +'"'];
+                let nameExporter = CATMAID.FileExporter.saveAs('"Skeleton ID", "Neuron name"\n',
+                    "neuron_name_vs_skeleton_id.csv", 'text/csv');
+                var names = Object.keys(unique).forEach(function(skid) {
+                  nameExporter.write(`${skid}, ${nns.getName(skid)}\n`);
                 });
-                CATMAID.FileExporter.saveAs(names.join('\n'), "neuron_name_vs_skeleton_id.csv", 'text/csv');
+                nameExporter.save();
               });
         }).bind(this));
   };
@@ -9042,6 +9047,8 @@
       }
 
       var rows = [];
+      var exporter = CATMAID.FileExporter('"Skeleton ID", "Name", "Count"\n',
+          'catmaid-object-count.csv', 'text/csv');
 
       skids.forEach(function(skid) {
         var counter = counterFn(skid); // will be null when nothing to count
@@ -9072,18 +9079,10 @@
           }
         }
 
-        rows.push([skid, CATMAID.NeuronNameService.getInstance().getName(skid), count]);
+        exporter.write(`${skid}, ${CATMAID.NeuronNameService.getInstance().getName(skid)}, ${count}\n`);
       }, this);
 
-
-      var csv = rows.map(function(row) {
-        return row[0] + ', "' + row[1] + '", ' + row[2];
-      }).join('\n');
-      CATMAID.FileExporter.saveAs(csv, "counts.csv", "text/csv");
-
-      if (1 === rows.length) {
-        CATMAID.msg("CSV contains:", csv);
-      }
+      exporter.save();
 
     }).bind(this);
 

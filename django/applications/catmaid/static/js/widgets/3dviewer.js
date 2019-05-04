@@ -1006,18 +1006,18 @@
    * other than pre- or postsynaptic_to. */
   WebGLApplication.prototype.exportConnectorsAsCSV = function() {
     var sks = this.space.content.skeletons,
-        rows = ["connector_id, skeleton_id, treenode_id, relation_id"];
+        header = "connector_id, skeleton_id, treenode_id, relation_id\n";
+    let exporter = CATMAID.FileExporter.export(header, "connectors.csv", 'text/csv');
     Object.keys(sks).forEach(function(skid) {
       var sk = sks[skid];
       sk.synapticTypes.forEach(function(type) {
         var vs = (sk.connectoractor ? sk.connectorgeometry : sk.geometry)[type].vertices;
         for (var i=0; i<vs.length; i+=2) {
-          rows.push([vs[i].node_id, skid, vs[i].treenode_id, type].join(','));
+          exporter.write([vs[i].node_id, skid, vs[i].treenode_id, type].join(',') + '\n');
         }
       });
     });
-
-    CATMAID.FileExporter.saveAs(rows.join('\n'), "connectors.csv", 'text/csv');
+    exporter.save();
   };
 
   WebGLApplication.prototype.exportSynapsesAsCSV = function() {

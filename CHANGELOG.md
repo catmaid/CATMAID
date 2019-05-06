@@ -292,6 +292,9 @@ Miscellaneous:
   "Polyadicity colors" button in the "Shading parameters" tab. This is basically
   a configurable version of an absolute "N with partner" coloring.
 
+- 3D viewer: animations can now be exported as stream directly to a file, which
+  allows for much larger exports (32GB maximum at the moment).
+
 - Context aware help: by clicking the new question mark icon in the upper right
   corner, a context aware help dialog can be displayed on top of all other
   CATMAID tools. It provides some general guidance for the intended workflow

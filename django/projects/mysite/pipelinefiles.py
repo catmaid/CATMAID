@@ -115,7 +115,7 @@ libraries_js = OrderedDict([
     ('filesaver', ['*.js']),
     ('screw-filereader', ['*.js']),
     ('streamsaver', ['*.js']),
-    ('whammy', ['whammy.js']),
+    ('webm-writer.js', ['*.js']),
     ('blazy', ['blazy.min.js']),
     ('geometry', ['geometry.js', 'intersects.js']), # order matters
     ('catmaid', ['namespace.js', 'error.js', 'events.js', 'request.js',

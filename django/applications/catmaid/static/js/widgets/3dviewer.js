@@ -8809,10 +8809,66 @@
             options['stop'] = this.createVisibibilityResetHandler(visMap);
           }
 
+          // Set up export without any existing information. An encoder is not
+          // used, because we want to write binary data directly.
+          let exporter = CATMAID.FileExporter.export(null, "catmaid_3d_view.webm",
+              'video/webm', 'auto', null);
+
+          // This mimiks a FileWriter that WebMWriter is able to handle and
+          // redirects it to the exporter.
+          let miniFileWriter = {
+            pos: () => 0,
+            write: (data) => {
+              exporter.write(data);
+              miniFileWriter.pos += data.size;
+              if (CATMAID.tools.isFn(miniFileWriter.onwriteend)) {
+                miniFileWriter.onwriteend();
+              }
+            },
+            onwriteend: null,
+            // Ignore seek requests, we work with a stream.
+            seek: () => {},
+            // A hack to to get the WebmWriter to give us binary data rather
+            // than a blob that we would then have to convert again.
+            acceptsBinary: true,
+          };
+
+          let webmWriter = new WebMWriter({
+            fileWriter: miniFileWriter,
+            frameRate: framerate,
+          });
+
+          let exportWasCanceled = false;
+          let cleanup = () => {
+              // Reset visibility and unblock UI
+              this.space.setSkeletonVisibility(visMap);
+
+              if (options.restoreView || exportWasCanceled) {
+                // Reset camera view
+                this.space.view.setView(originalCameraView.target,
+                    originalCameraView.position, originalCameraView.up,
+                    originalCameraView.zoom, originalCameraView.orthographic);
+                this.space.render();
+              }
+
+              if (reload) {
+                this.reloadSkeletons(this.getSelectedSkeletons());
+              }
+              $.unblockUI();
+          };
+
           // Indicate progress
           var counter = $('#counting-rendered-frames');
-          var onStep = function(i, nframes) {
+          var onStep = function(i, nframes, frameCanvas) {
             counter.text((i + 1) + " / " + nframes);
+            try {
+              webmWriter.addFrame(frameCanvas);
+            } catch (e) {
+              cancelationRequested = true;
+              exportWasCanceled = true;
+              CATMAID.handleError(e);
+              cleanup();
+            }
           };
 
           // Cancel, if askes for
@@ -8822,30 +8878,17 @@
 
           // Save result to file
           var reload = historyField.checked;
-          var onDone = (function(frames, canceled) {
+          var onDone = (function(canceled) {
             if (canceled) {
+              exportWasCanceled = true;
               CATMAID.warn("Animation export canceled");
+              cleanup();
             } else {
               // Export movie
-              var output = Whammy.fromImageArray(frames, framerate);
-              CATMAID.FileExporter.saveAs(output, "catmaid_3d_view.webm");
-
-              // Reset visibility and unblock UI
-              this.space.setSkeletonVisibility(visMap);
+              webmWriter.complete()
+                .then(() => exporter.save())
+                .finally(() => cleanup());
             }
-
-            if (options.restoreView || canceled) {
-              // Reset camera view
-              this.space.view.setView(originalCameraView.target,
-                  originalCameraView.position, originalCameraView.up,
-                  originalCameraView.zoom, originalCameraView.orthographic);
-              this.space.render();
-            }
-
-            if (reload) {
-              this.reloadSkeletons(this.getSelectedSkeletons());
-            }
-            $.unblockUI();
           }).bind(this);
 
           // Get frame images
@@ -8895,32 +8938,29 @@
     onStep = onStep || function() {};
     nframes = nframes || 100;
     startTime = startTime || 0;
-    var frames = new Array(nframes);
 
     // Render each frame in own timeout to be able to update UI between frames.
-    setTimeout(renderFrame.bind(this, animation, startTime, 0, nframes, frames,
+    setTimeout(renderFrame.bind(this, animation, startTime, 0, nframes,
           width, height, onDone, onStep, shouldCancel), 5);
 
-    function renderFrame(animation, startTime, i, nframes, frames, w, h, onDone,
+    function renderFrame(animation, startTime, i, nframes, w, h, onDone,
         onStep, shouldCancel) {
       if (shouldCancel && shouldCancel()) {
-        onDone(frames, true);
+        onDone(true);
         return;
       }
       /* jshint validthis: true */ // `this` is bound to this WebGLApplication
       animation.update(startTime + i);
       // Make sure we still render with the correct size and redraw
       this.resizeView(w, h);
-      // Add image to output array and callback
-      frames[i] = this.space.view.getImageData('image/webp');
-
-      onStep(i, nframes);
+      // Add canvas to output array and callback
+      onStep(i, nframes, this.space.view.renderer.domElement);
 
       // Render next frame if there are more frames
       var nextFrame = i + 1;
       if (nextFrame < nframes) {
         setTimeout(renderFrame.bind(this, animation, startTime, nextFrame,
-              nframes, frames, w, h, onDone, onStep, shouldCancel), 5);
+              nframes, w, h, onDone, onStep, shouldCancel), 5);
       } else {
         // Restore original view, if not disabled
         if (options.restoreView) {
@@ -8931,7 +8971,7 @@
           this.resizeView(originalWidth, originalHeight);
         }
 
-        onDone(frames);
+        onDone();
       }
     }
   };

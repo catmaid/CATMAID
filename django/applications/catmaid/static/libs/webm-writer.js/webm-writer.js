@@ -317,7 +317,8 @@ function BlobBuffer(fileWriter) {
                     fileWriter.onwriteend = resolve;
                     
                     fileWriter.seek(newEntry.offset);
-                    fileWriter.write(new Blob([newEntry.data]));
+                    fileWriter.acceptsBinary ? fileWriter.write(newEntry.data) :
+                        fileWriter.write(new Blob([newEntry.data]));
                 });
             } else if (!isAppend) {
                 // We might be modifying a write that was already buffered in memory.

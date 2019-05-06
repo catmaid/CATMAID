@@ -31,7 +31,11 @@
 
       // Make sure we store data as array if it isn't already a Blob.
       if (!(this.data instanceof Blob) && !(this.data instanceof Array)) {
-        this.data = [this.data];
+        if (this.data) {
+          this.data = [this.data];
+        } else {
+          this.data = [];
+        }
       }
     }
 

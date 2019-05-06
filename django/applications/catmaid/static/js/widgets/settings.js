@@ -274,7 +274,7 @@
 
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createCheckboxSetting(
-              'Save exported files (images, CSVs, etc.) in streaming mode',
+              'Save exported files in streaming mode (e.g. videos, CSVs, images)',
               CATMAID.Client.Settings[SETTINGS_SCOPE].use_file_export_streams,
               'Using streams allows the export of larger files, but the export/save dialog behaves slightly different. Make sure "Ask where to save each file before downloading" is enabled in the browser settings.',
               function() {

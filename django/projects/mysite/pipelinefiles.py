@@ -136,19 +136,32 @@ for k, v in six.iteritems(libraries_js):
 # Some libraries expect their own JavaScript files to be available under a
 # particular name. Therefore, we can't use pipeline with them and include them
 # separately. Entries follow the same pattern as above: key - path.
-non_pipeline_js = {
-        'streamsaver-worker-1': ['libs/streamsaver/worker/mitm.html', 'js/libs/streamsaver/mitm.html'],
-        'streamsaver-worker-2': ['libs/streamsaver/worker/ping.html', 'js/libs/streamsaver/ping.html'],
-        'streamsaver-worker-3': ['libs/streamsaver/worker/ping.js', 'js/libs/streamsaver/ping.js'],
-        'streamsaver-worker-4': ['libs/streamsaver/worker/sw.js', 'js/libs/streamsaver/sw.js'],
-}
+non_pipeline_js = {}
 
 # Even non-pipeline files have to be made known to pipeline, because it takes
 # care of collecting them into the STATIC_ROOT directory.
 for k, v in six.iteritems(non_pipeline_js):
     JAVASCRIPT[k] = {
-        'source_filenames': [v[0] if isinstance(v, Iterable) else v],
-        'output_filename': v[1] if isinstance(v, Iterable) else v
+        'source_filenames': [v],
+        'output_filename': v
+    }
+
+
+# Like non_pipeline_js, these files aren't compressed. They are however only
+# copied to the output directory and are not supposed to be imported/loaded by
+# the front-end.
+copy_only_files = {
+        'streamsaver-worker-1': 'libs/streamsaver/worker/mitm.html',
+        'streamsaver-worker-2': 'libs/streamsaver/worker/ping.html',
+        'streamsaver-worker-3': 'libs/streamsaver/worker/ping.js',
+        'streamsaver-worker-4': 'libs/streamsaver/worker/sw.js',
+}
+
+# Let pipeline know about copy-only files.
+for k, v in six.iteritems(copy_only_files):
+    JAVASCRIPT[k] = {
+        'source_filenames': [v],
+        'output_filename': v
     }
 
 # Regular CATMAID front-end files

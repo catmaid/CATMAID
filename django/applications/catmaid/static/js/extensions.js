@@ -183,7 +183,7 @@ jQuery.expr[":"].icontainsnot = jQuery.expr.createPseudo(function(arg) {
 
   // We don't want to load these WebWorkers from the StreamSaver.js repo on
   // GitHub and provide our own copy of these files.
-  streamSaver.mitm = CATMAID.tools.urlJoin(window.origin, CATMAID.makeStaticURL('js/libs/streamsaver/mitm.html'));
-  streamSaver.ping = CATMAID.tools.urlJoin(window.origin, CATMAID.makeStaticURL('js/libs/streamsaver/ping.html'));
+  streamSaver.mitm = CATMAID.tools.urlJoin(window.origin, CATMAID.makeStaticURL('libs/streamsaver/worker/mitm.html'));
+  streamSaver.ping = CATMAID.tools.urlJoin(window.origin, CATMAID.makeStaticURL('libs/streamsaver/worker/ping.html'));
 
 })(CATMAID);

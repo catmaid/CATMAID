@@ -314,8 +314,11 @@ PIPELINE = {
 # and a list of pipeline identifiers for all others.
 NON_COMPRESSED_FILE_IDS = list(pipelinefiles.non_pipeline_js)
 NON_COMPRESSED_FILES = list(pipelinefiles.non_pipeline_js.values())
+COPY_ONLY_FILE_IDS = set(pipelinefiles.copy_only_files)
 STYLESHEET_IDS = list(pipelinefiles.STYLESHEETS)
-COMPRESSED_FILE_IDS = [key for key in pipelinefiles.JAVASCRIPT if key not in NON_COMPRESSED_FILE_IDS]
+COMPRESSED_FILE_IDS = [key for key in pipelinefiles.JAVASCRIPT \
+        if key not in NON_COMPRESSED_FILE_IDS \
+        and key not in COPY_ONLY_FILE_IDS]
 
 INSTALLED_EXTENSIONS = tuple(pipelinefiles.installed_extensions)
 

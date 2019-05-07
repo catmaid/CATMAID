@@ -458,7 +458,7 @@ var
      */
     function renderAsWebP(canvas, quality) {
         var
-            frame = canvas.toDataURL('image/webp', {quality: quality});
+            frame = canvas.toDataURL('image/webp', quality);
         
         return decodeBase64WebPDataURL(frame);
     }
@@ -1016,7 +1016,7 @@ var
             }
 
             var
-                webP = renderAsWebP(canvas, {quality: options.quality});
+                webP = renderAsWebP(canvas, options.quality);
             
             if (!webP) {
                 throw "Couldn't decode WebP frame, does the browser support WebP?";

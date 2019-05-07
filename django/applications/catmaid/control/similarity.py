@@ -1074,30 +1074,33 @@ class SimilarityList(APIView):
 
             cursor = connection.cursor()
             cursor.execute("""
-                SELECT json_agg(row_to_json(wrapped))::text
+                SELECT COALESCE(sub.data, '[]'::json)::text
                 FROM (
-                    SELECT id, user_id, creation_time, edition_time, project_id,
-                        config_id, name, status, use_alpha, normalized, detailed_status,
-                        computation_time, reverse, top_n,
-                        query_type_id AS query_type,
-                        target_type_id AS target_type,
-                        -- No scoreing is included, but return an empty list instead.
-                        {scoring},
-                        -- Initial objects can be NULL to refer to all
-                        -- objects of a type. If this is the case, the returned
-                        -- length should be NULL too, therefore skip COALESCE.
-                        CASE WHEN initial_query_objects IS NULL THEN NULL ELSE array_length(initial_query_objects, 1) END AS n_initial_query_objects,
-                        CASE WHEN initial_target_objects IS NULL THEN NULL ELSE array_length(initial_target_objects, 1) END AS n_initial_target_objects,
-                        -- For other lengths, we want to return 0 if there are no values.
-                        COALESCE(array_length(query_objects, 1), 0) AS n_query_objects,
-                        COALESCE(array_length(target_objects, 1), 0) AS n_target_objects,
-                        COALESCE(array_length(invalid_query_objects, 1), 0) AS n_invalid_query_objects,
-                        COALESCE(array_length(invalid_target_objects, 1), 0) AS n_invalid_target_objects,
-                        -- Array fields
-                        {object_lists}
-                    FROM nblast_similarity
-                    WHERE {constraints}
-                ) wrapped
+                    SELECT json_agg(row_to_json(wrapped)) AS data
+                    FROM (
+                        SELECT id, user_id, creation_time, edition_time, project_id,
+                            config_id, name, status, use_alpha, normalized, detailed_status,
+                            computation_time, reverse, top_n,
+                            query_type_id AS query_type,
+                            target_type_id AS target_type,
+                            -- No scoreing is included, but return an empty list instead.
+                            {scoring},
+                            -- Initial objects can be NULL to refer to all
+                            -- objects of a type. If this is the case, the returned
+                            -- length should be NULL too, therefore skip COALESCE.
+                            CASE WHEN initial_query_objects IS NULL THEN NULL ELSE array_length(initial_query_objects, 1) END AS n_initial_query_objects,
+                            CASE WHEN initial_target_objects IS NULL THEN NULL ELSE array_length(initial_target_objects, 1) END AS n_initial_target_objects,
+                            -- For other lengths, we want to return 0 if there are no values.
+                            COALESCE(array_length(query_objects, 1), 0) AS n_query_objects,
+                            COALESCE(array_length(target_objects, 1), 0) AS n_target_objects,
+                            COALESCE(array_length(invalid_query_objects, 1), 0) AS n_invalid_query_objects,
+                            COALESCE(array_length(invalid_target_objects, 1), 0) AS n_invalid_target_objects,
+                            -- Array fields
+                            {object_lists}
+                        FROM nblast_similarity
+                        WHERE {constraints}
+                    ) wrapped
+                ) sub
             """.format(**{
                 'scoring': scoring,
                 'object_lists': object_lists,

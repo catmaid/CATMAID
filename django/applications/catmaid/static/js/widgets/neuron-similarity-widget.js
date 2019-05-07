@@ -1619,7 +1619,7 @@
             // If transformed skeletons are used to create the similarity
             // matrix, send them as pointset type.
             let matchingPointSetIds, matchingMeta;
-            if (matchingTransformation) {
+            if (matchingTransformation !== 'none') {
               let selectedTransformationIndex = matchTransformedSourceSelect.value;
               if (!/\d+/.test(selectedTransformationIndex)) {
                 CATMAID.warn("No transformed matching skeletons selected");

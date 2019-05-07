@@ -114,7 +114,7 @@ libraries_js = OrderedDict([
     ('jsnetworkx', ['*.js']),
     ('filesaver', ['*.js']),
     ('screw-filereader', ['*.js']),
-    ('streamsaver', ['*.js']),
+    ('streamsaver', ['StreamSaver.js', 'polyfill.min.js']),
     ('webm-writer.js', ['*.js']),
     ('blazy', ['blazy.min.js']),
     ('geometry', ['geometry.js', 'intersects.js']), # order matters

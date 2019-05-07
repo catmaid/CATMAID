@@ -462,18 +462,33 @@ var
         
         return decodeBase64WebPDataURL(frame);
     }
-    
+
     function extractKeyframeFromWebP(webP) {
-        // Assume that Chrome will generate a Simple Lossy WebP which has this header:
-        var
-            keyframeStartIndex = webP.indexOf('WEBPVP8 ');
+        // Assume that Chrome will generate a Simple Lossy WebP which has this
+        // header. Regular "VP8 " frames should only have a single one of these
+        // tokens and a VP8X frame, will also have a single one, but after the
+        // VP8X token, which is why lastIndexOf() is used.
+        var key = 'VP8 ';
+        var keyframeStartIndex = webP.lastIndexOf(key);
         
         if (keyframeStartIndex == -1) {
-            throw "Failed to identify beginning of keyframe in WebP image";
+            // VP8X isn't really supported yet. Useful information:
+            // https://github.com/webmproject/libwebp/blob/master/src/enc/syntax_enc.c
+            // https://github.com/webmproject/libwebp/blob/master/src/dec/webp_dec.c
+            key = 'WEBPVP8X';
+            keyframeStartIndex = webP.indexOf(key);
+
+            if (keyframeStartIndex == -1) {
+                throw "Failed to identify beginning of keyframe in WebP image";
+            }
+
+            // Including VPN8X there are 18 bytes in total. Sinc 4 are alrady
+            // inclouded for VPN8X in the key variable, only 14 need to be added.
+            keyframeStartIndex += key.length + 14;
+        } else {
+            // Skip the header and the 4 bytes that encode the length of the VP8 chunk
+            keyframeStartIndex += key.length + 4;
         }
-        
-        // Skip the header and the 4 bytes that encode the length of the VP8 chunk
-        keyframeStartIndex += 'WEBPVP8 '.length + 4;
         
         return webP.substring(keyframeStartIndex);
     }

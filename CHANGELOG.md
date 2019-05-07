@@ -286,6 +286,11 @@ Miscellaneous:
 
 - Basic support for touch screens (e.g. phones and tablets) is now implemented.
 
+- CATMAID can now export files (e.g. CSVs, videos, etc.) of much larger size
+  than before, if "Save exported files in streaming mode" is enabled in the
+  Settings Widget. To make this work, the browser settings (chrome://settings)
+  "Ask where to save each file before downloading" has to be enabled.
+
 - 3D viewer: new synapse coloring mode, polyadicity. The number of partner nodes
   for each connector is color coded (for synaptic connectors, this is the number
   of postsynapses). The colors and ranges can be configured through the

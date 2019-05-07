@@ -24,6 +24,7 @@ django/applications/catmaid/static/libs/raphael/**
 django/applications/catmaid/static/libs/sylvester/**
 django/applications/catmaid/static/libs/three.js/**
 django/applications/catmaid/static/libs/threex/**
-django/applications/catmaid/static/libs/whammy/**
+django/applications/catmaid/static/libs/screw-filereader/**
+django/applications/catmaid/static/libs/streamsaver/**
 **/static/apps/**
 **/static/tests/libs/**

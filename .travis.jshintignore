@@ -26,5 +26,6 @@ django/applications/catmaid/static/libs/three.js/**
 django/applications/catmaid/static/libs/threex/**
 django/applications/catmaid/static/libs/screw-filereader/**
 django/applications/catmaid/static/libs/streamsaver/**
+django/applications/catmaid/static/libs/webm-writer.js/**
 **/static/apps/**
 **/static/tests/libs/**

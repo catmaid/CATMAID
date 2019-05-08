@@ -367,6 +367,8 @@ Miscellaneous:
 - Settings widget: default values for tracing layer skeleton limits can now be
   configured under Tracing Overlay > Tracing layer skeleton filters.
 
+- The numpad delete key is now recognized as regular delete (if numlock is off).
+
 - SWC neuron import: providing a neuron ID for an import works again and will
   now also set an optionally provided neuron name. Additionally, it is now
   required that a user importing skeleton data for an existing neuron ID has

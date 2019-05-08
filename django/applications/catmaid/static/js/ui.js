@@ -88,6 +88,7 @@
       // new event object is created. The data we need is copied over.
       var fakeEvent = {};
       fakeEvent.key = e.key;
+      fakeEvent.code = e.code;
       fakeEvent.shiftKey = e.shiftKey;
       fakeEvent.altKey = e.altKey;
       fakeEvent.ctrlKey = e.ctrlKey;
@@ -723,7 +724,14 @@
   };
 
   CATMAID.UI.normalizeKeyComponents = function(components) {
-    var keyValue;
+    var keyValue = components.key;
+
+    // Special case: numpad delete will produce a single character string with
+    // UTF-16 code 0 (without numlock enabled). Make this a regular delete.
+    if (components.code === 'NumpadDecimal' && components.key === '\0') {
+      keyValue = 'Delete';
+    }
+
     if (components.shiftKey || components.altKey) {
       var keyCombo = CATMAID.UI.toKeyCombo({
         key: components.key,
@@ -734,7 +742,7 @@
     }
 
     return {
-      key: keyValue ? keyValue : components.key,
+      key: keyValue,
       altKey: components.altKey,
       ctrlKey: components.ctrlKey,
       metaKey: components.metaKey,

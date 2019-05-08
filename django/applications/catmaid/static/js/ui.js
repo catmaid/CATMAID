@@ -739,6 +739,9 @@
         altKey: components.altKey
       });
       keyValue = CATMAID.UI.keyValueMap.get(keyCombo);
+      if (!keyValue) {
+        keyValue = components.key;
+      }
     }
 
     return {

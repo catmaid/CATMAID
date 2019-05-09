@@ -95,10 +95,14 @@ in the backup name, might therefore be a good idea. A mismatch might
 cause some trouble when a database backup is used that includes
 migrations that are not present in the selected CATMAID version.
 
-To backup the complete database (here named "catmaid"), except tables that can
-be restored automatically (to save space)::
+To backup the complete database (here named "catmaid") except for tables that
+can be materialized from existing data (to save space)::
 
-    pg_dump --clean -U <CATMAID-USER> catmaid -f catmaid_dump.sql
+    pg_dump -Fc --clean -U <CATMAID-USER> catmaid -f catmaid_dump.sql
+
+This produce a file named ``catmaid_dump.sql`` that can be used to restore a
+full CATMAID instance. The file is in Postgres specific format to improve
+loading speed and restoration options.
 
 To restore the dumped database into a database named "catmaid" (which would have
 to be created as described in the basic install instructions)::

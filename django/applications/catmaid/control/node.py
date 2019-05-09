@@ -982,6 +982,64 @@ class Postgis3dBlurryNodeProvider(PostgisNodeProvider):
     '''
 
 
+class Postgis3dSpGistNodeProvider(Postgis3dNodeProvider):
+    """Like Postgis3dNodeProvider, but doing different joins for the extra set
+    of nodes and the main query.
+    """
+
+    TREENODE_STATEMENT_NAME = PostgisNodeProvider.TREENODE_STATEMENT_NAME + '_3d'
+    treenode_query = '''
+          WITH extra_nodes AS (
+              SELECT UNNEST({sanitized_treenode_ids}::bigint[]) AS id
+          )
+          SELECT
+              t1.id,
+              t1.parent_id,
+              t1.location_x,
+              t1.location_y,
+              t1.location_z,
+              t1.confidence,
+              t1.radius,
+              t1.skeleton_id,
+              EXTRACT(EPOCH FROM t1.edition_time),
+              t1.user_id
+          FROM (
+            SELECT DISTINCT ON (id) UNNEST(ARRAY[t2.id, t2.parent_id]) AS id
+            FROM treenode_edge te
+            JOIN treenode t2
+                ON t2.id = te.id
+            -- The &/& is the SP-GiST supported 3D overlaps operator. We check
+            -- for bounding box overlap of the FOV (the line's bounding box) and
+            -- each edge.
+            WHERE te.edge &/& ST_MakeLine(ARRAY[
+                ST_MakePoint({left}, {bottom}, {z2}),
+                ST_MakePoint({right}, {top}, {z1})] ::geometry[])
+            AND te.project_id = {project_id}
+          ) bb_treenode
+          JOIN treenode t1
+            ON t1.id = bb_treenode.id
+          WHERE NOT EXISTS(SELECT 1 FROM extra_nodes en where en.id=t1.id)
+
+          UNION ALL
+
+          SELECT
+              t1.id,
+              t1.parent_id,
+              t1.location_x,
+              t1.location_y,
+              t1.location_z,
+              t1.confidence,
+              t1.radius,
+              t1.skeleton_id,
+              EXTRACT(EPOCH FROM t1.edition_time),
+              t1.user_id
+          FROM extra_nodes en
+          JOIN treenode t1
+          ON en.id = t1.id
+          WHERE t1.project_id = {project_id}
+    '''
+
+
 class Postgis2dNodeProvider(PostgisNodeProvider):
     """
     Fetch treenodes with the help of two PostGIS filters: First, select all
@@ -1309,6 +1367,7 @@ AVAILABLE_NODE_PROVIDERS = {
     'postgis3d': Postgis3dNodeProvider,
     'postgis3dblurry': Postgis3dBlurryNodeProvider,
     'postgis3dmultijoin': Postgis3dMultiJoinNodeProvider,
+    'postgis3dspgist': Postgis3dSpGistNodeProvider,
     'postgis2d': Postgis2dNodeProvider,
     'postgis2dblurry': Postgis2dBlurryNodeProvider,
     'postgis2dmultijoin': Postgis2dMultiJoinNodeProvider,

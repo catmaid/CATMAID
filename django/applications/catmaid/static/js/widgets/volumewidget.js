@@ -895,7 +895,7 @@
             "No": CATMAID.noop
           });
           confirmDialog.appendMessage("Are you sure you want to delete volume "
-              + volume.id + " (" + volume.name + ")?");
+              + volume.id + " (" + volume.title + ")?");
           confirmDialog.show(500,'auto');
 
           // Prevent event from bubbling up.

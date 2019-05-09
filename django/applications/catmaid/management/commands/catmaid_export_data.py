@@ -343,10 +343,10 @@ class Exporter():
         if skeleton_id_constraints:
             if connector_ids:
                 # Add addition placeholder treenodes
-                connector_tids = set(TreenodeConnector.objects \
+                connector_links = list(TreenodeConnector.objects \
                     .filter(project=self.project, connector__in=connector_ids) \
-                    .exclude(skeleton_id__in=skeleton_id_constraints) \
-                    .values_list('treenode', flat=True))
+                    .exclude(skeleton_id__in=skeleton_id_constraints))
+                connector_tids = set(c.treenode_id for c in connector_links)
                 extra_tids = connector_tids - exported_tids
                 if self.original_placeholder_context:
                     logger.info("Exporting %s placeholder nodes" % len(extra_tids))
@@ -440,19 +440,25 @@ class Exporter():
 
                 # Add additional skeletons and neuron-skeleton links
                 if self.original_placeholder_context:
+                    # Original skeletons
                     extra_skids = set(Treenode.objects.filter(id__in=extra_tids,
                             project=self.project).values_list('skeleton_id', flat=True))
                     self.to_serialize.append(ClassInstance.objects.filter(id__in=extra_skids))
 
+                    # Original skeleton model-of neuron links
                     extra_links = ClassInstanceClassInstance.objects \
                             .filter(project=self.project,
                                     class_instance_a__in=extra_skids,
                                     relation=relations['model_of'])
                     self.to_serialize.append(extra_links)
 
+                    # Original neurons
                     extra_nids = extra_links.values_list('class_instance_b', flat=True)
                     self.to_serialize.append(ClassInstance.objects.filter(
                         project=self.project, id__in=extra_nids))
+
+                    # Connector links
+                    self.to_serialize.append(connector_links)
 
         # Export users, either completely or in a reduced form
         seen_user_ids = set()

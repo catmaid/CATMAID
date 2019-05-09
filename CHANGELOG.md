@@ -374,6 +374,9 @@ Miscellaneous:
   required that a user importing skeleton data for an existing neuron ID has
   the rights to edit the skeleton instance as well as all its treenodes.
 
+- Exporter: connector links are now exported properly if the parameter
+  --original-placeholder-context is used.
+
 - Docker: the docker-compose setup now uses Postgis 2.5 internally and therefore
   allows upgrades from Postgres versions < 10 with Postgis 2.4.
 

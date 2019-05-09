@@ -526,10 +526,15 @@ def remove_volume(request, project_id, volume_id):
             USING v
             WHERE volume_id = v.id
             RETURNING class_instance_id
+        ), ci AS (
+            DELETE FROM class_instance
+            USING vci
+            WHERE id = vci.class_instance_id
+            RETURNING id
         )
-        DELETE FROM class_instance
-        USING vci
-        WHERE id = vci.class_instance_id;
+        DELETE FROM class_instance_class_instance
+        USING ci
+        WHERE class_instance_a = ci.id OR class_instance_b = ci.id
     """, (volume_id,))
 
     return Response({

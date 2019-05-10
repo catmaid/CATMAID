@@ -480,7 +480,7 @@ def extract_substack_no_rotation(job) -> List:
 
             # Write out the image parts and make sure the maximum allowed file
             # size isn't exceeded.
-            cropped_slice = None
+            cropped_slice = Image(Geometry(bb.width, bb.height), ColorRGB(0, 0, 0))
             for ip in image_parts:
                 # Get (correctly cropped) image
                 image = ip.get_image()
@@ -494,17 +494,6 @@ def extract_substack_no_rotation(job) -> List:
                                      "file size: %0.2f > %s Bytes" % \
                                      (estimated_total_size,
                                       settings.GENERATED_FILES_MAXIMUM_SIZE))
-
-                # It is unfortunately not possible to create proper composite
-                # images based on a canvas image newly created like this:
-                # cropped_slice = Image( Geometry(bb.width, bb.height), Color("black"))
-                # Therefore, this workaround is used.
-                if not cropped_slice:
-                    cropped_slice = Image(image)
-                    cropped_slice.backgroundColor(ColorRGB(0,0,0))
-                    cropped_slice.erase()
-                    # The '!' makes sure the aspect ration is ignored
-                    cropped_slice.scale(Geometry(bb.width, bb.height))
                 # Draw the image onto result image
                 cropped_slice.composite( image, ip.x_dst, ip.y_dst, co.OverCompositeOp )
                 # Delete tile image - it's not needed anymore

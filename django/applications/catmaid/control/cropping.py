@@ -346,6 +346,22 @@ def extract_substack(job) -> List:
 
     return cropped_stack
 
+
+class BB:
+    """A simple bounding box for cropping purposes.
+    """
+    px_x_min = 0
+    px_x_max = 0
+    px_y_min = 0
+    px_y_max = 0
+    px_z_min = 0
+    px_z_max = 0
+    px_x_offset = 0
+    px_y_offset = 0
+    width = 0
+    height = 0
+
+
 def extract_substack_no_rotation(job) -> List:
     """ Extracts a sub-stack as specified in the passed job without respecting
     rotation requests. A list of pgmagick images is returned -- one for each
@@ -388,17 +404,6 @@ def extract_substack_no_rotation(job) -> List:
         px_x_offset = abs(px_x_min_nobound) if px_x_min_nobound < 0 else 0
         px_y_offset = abs(px_y_min_nobound) if px_y_min_nobound < 0 else 0
         # Create a dictionary entry with a simple object
-        class BB:
-            px_x_min = 0
-            px_x_max = 0
-            px_y_min = 0
-            px_y_max = 0
-            px_z_min = 0
-            px_z_max = 0
-            px_x_offset = 0
-            px_y_offset = 0
-            width = 0
-            height = 0
         bb = BB()
         bb.px_x_min = px_x_min
         bb.px_x_max = px_x_max

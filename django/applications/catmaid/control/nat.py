@@ -4,6 +4,7 @@ from datetime import datetime
 from itertools import chain
 import logging
 import numpy
+import gc
 import os
 import re
 import subprocess
@@ -678,11 +679,15 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         # Simplify
         if detail > 0:
             logger.debug('Simplifying skeletons')
-            objects = robjects.r.nlapply(objects, relmr.simplify_neuron, **{
+            simplified_objects = robjects.r.nlapply(objects, relmr.simplify_neuron, **{
                 'n': detail,
                 'OmitFailures': omit_failures,
                 '.parallel': parallel,
             })
+            # Make sure unneeded R objects are deleted
+            del(objects)
+            gc.collect()
+            objects = simplified_objects
 
         logger.debug('Computing skeleton stats')
         # Note: scaling down to um
@@ -1389,7 +1394,7 @@ def as_matrix(scores, a, b, transposed=False):
 
 
 def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False):
-    read_neurons_local = robjects.r('''
+    read_neuron_local = robjects.r('''
         somapos.catmaidneuron <- function(x, swc=x$d, tags=x$tags, skid=NULL, ...) {
           # Find soma position, based on plausible tags
           soma_tags<-grep("(cell body|soma)", ignore.case = T, names(tags), value = T)
@@ -1450,8 +1455,27 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False):
           skel
         }
 
-        read.neuron.catmaid_local<-function(skid, sk_data, pid=1L, conn=NULL, ...) {
-          #res=catmaid_get_compact_skeleton_local(pid=pid, skid=skid, conn=conn, ...)
+        #read.neurons.catmaid_local<-function(skids, sk_data, pid=1L, OmitFailures=NA, df=NULL,
+        #                               fetch.annotations=FALSE, ...) {
+        #  # Assume <skids> is list of integers
+        #  if(is.null(df)) {
+        #    names(skids)=as.character(skids)
+        #   df=data.frame(pid=pid, skid=skids,
+        #                 # We don't need full names, otherwise use:
+        #                 # name=catmaid_get_neuronnames(skids, pid),
+        #                 name=names(skids),
+        #                 stringsAsFactors = F)
+        #   rownames(df)=names(skids)
+        # } else {
+        #   names(skids)=rownames(df)
+        # }
+        # fakenl=nat::as.neuronlist(as.list(skids), df=df)
+        # nl <- nat::nlapply(fakenl, read.neuron.catmaid_local, sk_data=sk_data, pid=pid, OmitFailures=OmitFailures, ...)
+        # nl
+        #}
+
+        read.neuron.catmaid_local<-function(skid, sk_data, pid=1L, ...) {
+          #res=catmaid_get_compact_skeleton_local(pid=pid, skid=skid, ...)
           res=sk_data[[toString(skid)]]
           nodes = res$nodes
           tags = res$tags
@@ -1471,8 +1495,15 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False):
           class(n)=c('catmaidneuron', 'neuron')
           n
         }
+    ''')
 
-        read.neurons.catmaid_local<-function(skids, sk_data, pid=1L, conn=NULL, OmitFailures=NA, df=NULL,
+    concat_neurons_local = robjects.r('''
+        get.neuron.catmaid_local<-function(skid, sk_data, pid=1L, ...) {
+          n=sk_data[[toString(skid)]]
+          n
+        }
+
+        concat.neurons.catmaid_local<-function(skids, sk_data, pid=1L, OmitFailures=NA, df=NULL,
                                        fetch.annotations=FALSE, ...) {
           # Assume <skids> is list of integers
           if(is.null(df)) {
@@ -1487,7 +1518,7 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False):
             names(skids)=rownames(df)
           }
           fakenl=nat::as.neuronlist(as.list(skids), df=df)
-          nl <- nat::nlapply(fakenl, read.neuron.catmaid_local, sk_data=sk_data, pid=pid, conn=conn, OmitFailures=OmitFailures, ...)
+          nl <- nat::nlapply(fakenl, get.neuron.catmaid_local, sk_data=sk_data, pid=pid, OmitFailures=OmitFailures, ...)
           nl
         }
     ''')
@@ -1552,18 +1583,34 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False):
                r_tags[tag] = robjects.IntVector(node_ids)
 
         # Construct output similar to rcatmaid's request response parsing function.
-        cs_r[str(skeleton_id)] = robjects.ListVector({
+        skeleton_data = robjects.ListVector({
                 'nodes': robjects.DataFrame(rlc.OrdDict(r_nodes)),
                 'connectors': robjects.DataFrame(rlc.OrdDict(r_connectors)),
                 'tags': robjects.ListVector(r_tags),
         })
 
-    objects = read_neurons_local(
+        skeleton_envelope = {}
+        skeleton_envelope[str(skeleton_id)] = skeleton_data
+        cs_r[str(skeleton_id)] = read_neuron_local(str(skeleton_id),
+                robjects.ListVector(skeleton_envelope), project_id)
+
+        # Make sure all temporary R values are garbage collected. With many
+        # skeletons, this can otherwise become a memory problem quickly (the
+        # Python GC doesn't now about the R memory).
+        del([node_cols, nodes, r_nodes, connector_cols, connectors,
+            r_connectors, skeleton_data, cs_t])
+
+        # Explicitly garbage collect after each skeleton is loaded.
+        gc.collect()
+
+    objects = concat_neurons_local(
             robjects.IntVector(skeleton_ids),
             robjects.ListVector(cs_r), **{
                 '.progress': 'none',
                 'OmitFailures': omit_failures
             })
     print("Converted {}/{} neurons".format(len(objects), len(skeleton_ids)))
+
+    gc.collect()
 
     return objects

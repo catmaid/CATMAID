@@ -31,6 +31,7 @@ try:
     from rpy2.robjects.packages import importr
     from rpy2.rinterface import RRuntimeError
     import rpy2.robjects as robjects
+    import rpy2.rinterface as rinterface
     import rpy2.rlike.container as rlc
 except ImportError:
     rnat_enaled = False
@@ -1507,14 +1508,14 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False):
 
         # Nodes in Rpy2 format
         node_cols = [
-                ('id', robjects.IntVector, robjects.NA_Integer),
-                ('parent_id', robjects.IntVector, robjects.NA_Integer),
-                ('user_id', robjects.IntVector, robjects.NA_Integer),
-                ('x', robjects.FloatVector, robjects.NA_Real),
-                ('y', robjects.FloatVector, robjects.NA_Real),
-                ('z', robjects.FloatVector, robjects.NA_Real),
-                ('radius', robjects.FloatVector, robjects.NA_Real),
-                ('confidence', robjects.IntVector, robjects.NA_Integer)
+                ('id', rinterface.IntSexpVector, robjects.NA_Integer),
+                ('parent_id', rinterface.IntSexpVector, robjects.NA_Integer),
+                ('user_id', rinterface.IntSexpVector, robjects.NA_Integer),
+                ('x', rinterface.FloatSexpVector, robjects.NA_Real),
+                ('y', rinterface.FloatSexpVector, robjects.NA_Real),
+                ('z', rinterface.FloatSexpVector, robjects.NA_Real),
+                ('radius', rinterface.FloatSexpVector, robjects.NA_Real),
+                ('confidence', rinterface.IntSexpVector, robjects.NA_Integer)
         ]
         nodes = [(k,[]) for k,_,_ in node_cols]
         for rn in raw_nodes:
@@ -1528,12 +1529,12 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False):
 
         # Connectors in Rpy2 format
         connector_cols = [
-                ('treenode_id', robjects.IntVector, robjects.NA_Integer),
-                ('connector_id', robjects.IntVector, robjects.NA_Integer),
-                ('prepost', robjects.IntVector, robjects.NA_Integer),
-                ('x', robjects.FloatVector, robjects.NA_Real),
-                ('y', robjects.FloatVector, robjects.NA_Real),
-                ('z', robjects.FloatVector, robjects.NA_Real)
+                ('treenode_id', rinterface.IntSexpVector, robjects.NA_Integer),
+                ('connector_id', rinterface.IntSexpVector, robjects.NA_Integer),
+                ('prepost', rinterface.IntSexpVector, robjects.NA_Integer),
+                ('x', rinterface.FloatSexpVector, robjects.NA_Real),
+                ('y', rinterface.FloatSexpVector, robjects.NA_Real),
+                ('z', rinterface.FloatSexpVector, robjects.NA_Real)
         ]
         connectors = [(k,[]) for k,_,_ in connector_cols]
         for rn in raw_connectors:

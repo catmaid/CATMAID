@@ -49,7 +49,7 @@ except ImportError:
 output_path = os.path.join(settings.MEDIA_ROOT,
     settings.MEDIA_EXPORT_SUBDIRECTORY)
 # NAT works mostly in um space and CATMAID in nm.
-nm_to_um = 1e3
+nm_to_um = 1e-3
 
 
 class CleanUpHTTPResponse(HttpResponse):
@@ -342,9 +342,9 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
 
         # Create dotprop instances and resample
         logger.debug('Computing matching skeleton stats')
-        matching_neurons_dps = rnat.dotprops(matching_neurons.ro / nm_to_um, **{
+        matching_neurons_dps = rnat.dotprops(matching_neurons.ro * nm_to_um, **{
                     'k': tangent_neighbors,
-                    'resample': resample_by / nm_to_um,
+                    'resample': resample_by * nm_to_um,
                     '.progress': 'none',
                     'OmitFailures': omit_failures,
                 })
@@ -366,9 +366,9 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
             pointset_objects.names = robjects.StrVector(effective_pointset_object_ids)
 
             logger.debug('Computing matching pointset stats')
-            pointset_dps = rnat.dotprops(pointset_objects.ro / nm_to_um, **{
+            pointset_dps = rnat.dotprops(pointset_objects.ro * nm_to_um, **{
                         'k': tangent_neighbors,
-                        'resample': resample_by / nm_to_um,
+                        'resample': resample_by * nm_to_um,
                         '.progress': 'none',
                         'OmitFailures': omit_failures,
                     })
@@ -384,9 +384,9 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
                 random_skeleton_ids, omit_failures)
 
         logger.debug('Computing random skeleton stats')
-        nonmatching_neurons_dps = rnat.dotprops(nonmatching_neurons.ro / nm_to_um, **{
+        nonmatching_neurons_dps = rnat.dotprops(nonmatching_neurons.ro * nm_to_um, **{
                     'k': tangent_neighbors,
-                    'resample': resample_by / nm_to_um,
+                    'resample': resample_by * nm_to_um,
                     '.progress': 'none',
                     'OmitFailures': omit_failures,
                 })
@@ -685,9 +685,9 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
 
         logger.debug('Computing skeleton stats')
         # Note: scaling down to um
-        objects_dps = rnat.dotprops(objects.ro / nm_to_um, **{
+        objects_dps = rnat.dotprops(objects.ro * nm_to_um, **{
                     'k': tangent_neighbors,
-                    'resample': resample_by / nm_to_um,
+                    'resample': resample_by * nm_to_um,
                     '.progress': 'none',
                     'OmitFailures': omit_failures,
                 })
@@ -722,9 +722,9 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         objects.names = robjects.StrVector(effective_object_ids)
 
         logger.debug('Computing query pointcloud stats')
-        objects_dps = rnat.dotprops(objects.ro / nm_to_um, **{
+        objects_dps = rnat.dotprops(objects.ro * nm_to_um, **{
                     'k': tangent_neighbors,
-                    'resample': resample_by / nm_to_um,
+                    'resample': resample_by * nm_to_um,
                     '.progress': 'none',
                     'OmitFailures': omit_failures,
                 })
@@ -894,9 +894,9 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                                 '.parallel': parallel,
                             })
                 logger.debug('Computing query skeleton stats')
-                query_dps = rnat.dotprops(query_objects.ro / nm_to_um, **{
+                query_dps = rnat.dotprops(query_objects.ro * nm_to_um, **{
                             'k': config.tangent_neighbors,
-                            'resample': resample_by / nm_to_um,
+                            'resample': resample_by * nm_to_um,
                             '.progress': 'none',
                             'OmitFailures': omit_failures,
                         })
@@ -963,9 +963,9 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 query_objects.names = robjects.StrVector(non_cache_typed_query_object_ids)
 
                 logger.debug('Computing query pointcloud stats')
-                query_dps = rnat.dotprops(query_objects.ro / nm_to_um, **{
+                query_dps = rnat.dotprops(query_objects.ro * nm_to_um, **{
                             'k': config.tangent_neighbors,
-                            'resample': resample_by / nm_to_um,
+                            'resample': resample_by * nm_to_um,
                             '.progress': 'none',
                             'OmitFailures': omit_failures,
                         })
@@ -1005,9 +1005,9 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             query_objects.names = robjects.StrVector(effective_query_object_ids)
 
             logger.debug('Computing query pointset stats')
-            query_dps = rnat.dotprops(query_objects.ro / nm_to_um, **{
+            query_dps = rnat.dotprops(query_objects.ro * nm_to_um, **{
                         'k': config.tangent_neighbors,
-                        'resample': resample_by / nm_to_um,
+                        'resample': resample_by * nm_to_um,
                         '.progress': 'none',
                         'OmitFailures': omit_failures,
                     })
@@ -1061,9 +1061,9 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                                 })
 
                     logger.debug('Computing target skeleton stats')
-                    target_dps = rnat.dotprops(target_objects.ro / nm_to_um, **{
+                    target_dps = rnat.dotprops(target_objects.ro * nm_to_um, **{
                                 'k': config.tangent_neighbors,
-                                'resample': resample_by / nm_to_um,
+                                'resample': resample_by * nm_to_um,
                                 '.progress': 'none',
                                 'OmitFailures': omit_failures,
                             })
@@ -1130,9 +1130,9 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     target_objects.names = robjects.StrVector(non_cache_typed_target_object_ids)
 
                     logger.debug('Computing target pointcloud stats')
-                    target_dps = rnat.dotprops(target_objects.ro / nm_to_um, **{
+                    target_dps = rnat.dotprops(target_objects.ro * nm_to_um, **{
                                 'k': config.tangent_neighbors,
-                                'resample': resample_by / nm_to_um,
+                                'resample': resample_by * nm_to_um,
                                 '.progress': 'none',
                                 'OmitFailures': omit_failures,
                             })
@@ -1167,9 +1167,9 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 target_objects.names = robjects.StrVector(typed_target_object_ids)
 
                 logger.debug('Computing target pointset stats')
-                target_dps = rnat.dotprops(target_objects.ro / nm_to_um, **{
+                target_dps = rnat.dotprops(target_objects.ro * nm_to_um, **{
                             'k': config.tangent_neighbors,
-                            'resample': resample_by / nm_to_um,
+                            'resample': resample_by * nm_to_um,
                             '.progress': 'none',
                             'OmitFailures': omit_failures,
                         })

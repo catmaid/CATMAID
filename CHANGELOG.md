@@ -11,6 +11,8 @@
 
 - Python 3.7 is now supported.
 
+- The next CATMAID version will require Postgres 11 and Python 3.6.
+
 - Should migration 0057 fail due a permission error, the Postgres extension
   "pg_trgm" has to be installed manually into the CATMAID database using a
   Postgres superuser: CREATE EXTENSION pg_trgm;

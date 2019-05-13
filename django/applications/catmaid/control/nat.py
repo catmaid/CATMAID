@@ -23,10 +23,11 @@ from catmaid.models import (Message, User, UserRole, NblastConfig,
         PointCloud, PointSet)
 
 from celery.task import task
+from celery.utils.log import get_task_logger
 
 from rest_framework.authtoken.models import Token
 
-logger = logging.getLogger(__name__)
+logger = get_task_logger(__name__)
 rnat_enaled = True
 
 try:

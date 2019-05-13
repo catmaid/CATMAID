@@ -7,6 +7,7 @@ from timeit import default_timer as timer
 from typing import Any, Dict, List
 
 from celery.task import task
+from celery.utils.log import get_task_logger
 from django.db import connection, transaction
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.decorators import method_decorator
@@ -30,7 +31,7 @@ from catmaid.control.nat import (compute_scoring_matrix, nblast,
 from catmaid.control.pointcloud import list_pointclouds
 
 
-logger = logging.getLogger('__name__')
+logger = get_task_logger(__name__)
 
 
 def serialize_sample(sample) -> Dict[str, Any]:

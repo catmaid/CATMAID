@@ -29,5 +29,6 @@ pytz==2018.4
 PyYAML==4.2b4
 requests==2.20.0
 scipy==1.0.0
+Sphinx==1.5.5
 sqlparse==0.2.4
 ujson==1.35

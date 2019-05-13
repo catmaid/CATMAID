@@ -7,6 +7,7 @@ import numpy
 import gc
 import os
 import re
+import progressbar
 import subprocess
 from typing import Any, Dict, List
 
@@ -636,7 +637,7 @@ def get_catmaid_connection(user_id):
 def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         parallel=True, detail=10, omit_failures=True, min_nodes=500,
         min_soma_nodes=20, soma_tags=('soma'), resample_by=1e3,
-        use_http=False) -> None:
+        use_http=False, progress=False) -> None:
     """Create a new cache file for a particular project object type and
     detail level. All objects of a type in a project are prepared.
     """
@@ -678,7 +679,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
 
         logger.debug('Fetching {} skeletons'.format(len(object_ids)))
         objects = dotprops_for_skeletons(project_id, object_ids, omit_failures,
-                conn=conn)
+                progress=progress, conn=conn)
 
         # Simplify
         if detail > 0:
@@ -698,7 +699,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         objects_dps = rnat.dotprops(objects.ro * nm_to_um, **{
                     'k': tangent_neighbors,
                     'resample': resample_by * nm_to_um,
-                    '.progress': 'none',
+                    '.progress': 'text' if progress else 'none',
                     'OmitFailures': omit_failures,
                 })
 
@@ -1386,7 +1387,7 @@ def as_matrix(scores, a, b, transposed=False):
 
 
 def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False,
-        conn=None):
+        conn=None, progress=False):
     """Get the R dotprops data structure for a set of skeleton IDs.
     If <conn> is true, those skeletons will be requested thought HTTP.
     """
@@ -1394,7 +1395,7 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False,
     if conn:
         return rcatmaid.read_neurons_catmaid(robjects.IntVector(skeleton_ids), **{
             'conn': conn,
-            '.progress': True if progress else 'none',
+            '.progress': 'text' if progress else 'none',
             'OmitFailures': omit_failures,
         })
 
@@ -1529,13 +1530,19 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False,
 
     from catmaid.control.skeletonexport import _compact_skeleton
 
+    if progress:
+        bar = progressbar.ProgressBar(max_value=len(skeleton_ids), redirect_stdout=True).start()
+
     cs_r = {}
-    for skeleton_id in skeleton_ids:
+    for ni, skeleton_id in enumerate(skeleton_ids):
         try:
             cs = _compact_skeleton(project_id, skeleton_id, with_connectors=True, with_tags=True)
         except:
             if not omit_failures:
                 raise
+
+        if progress:
+            bar.update(ni + 1)
 
         raw_nodes = cs[0]
         raw_connectors = cs[1]
@@ -1607,10 +1614,13 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False,
         # Explicitly garbage collect after each skeleton is loaded.
         gc.collect()
 
+    if progress:
+        bar.finish()
+
     objects = concat_neurons_local(
             robjects.IntVector(skeleton_ids),
             robjects.ListVector(cs_r), **{
-                '.progress': 'none',
+                '.progress': 'text' if progress else 'none',
                 'OmitFailures': omit_failures
             })
     print("Converted {}/{} neurons".format(len(objects), len(skeleton_ids)))

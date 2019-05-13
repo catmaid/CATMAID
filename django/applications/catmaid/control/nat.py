@@ -259,7 +259,8 @@ def setup_r_environment() -> None:
 def compute_scoring_matrix(project_id, user_id, matching_sample,
         random_sample, distbreaks=NblastConfigDefaultDistanceBreaks,
         dotbreaks=NblastConfigDefaultDotBreaks, resample_step=1000,
-        tangent_neighbors=5, omit_failures=True, resample_by=1e3) -> Dict[str, Any]:
+        tangent_neighbors=5, omit_failures=True, resample_by=1e3,
+        use_http=False) -> Dict[str, Any]:
     """Create NBLAST scoring matrix for a set of matching skeleton IDs and a set
     of random skeleton IDs. Matching skeletons are skeletons with a similar
     morphology, e.g. KCy in FAFB.
@@ -327,7 +328,7 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
         rnblast = importr('nat.nblast')
         Matrix = robjects.r.matrix
 
-        conn = get_catmaid_connection(user_id)
+        conn = get_catmaid_connection(user_id) if use_http else None
 
         if settings.MAX_PARALLEL_ASYNC_WORKERS > 1:
             #' # Parallelise NBLASTing across 4 cores using doMC package
@@ -339,7 +340,7 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
         # nearest neighbours of each point to define tangent vector
         logger.debug('Fetching {} matching skeletons'.format(len(matching_skeleton_ids)))
         matching_neurons = dotprops_for_skeletons(project_id,
-                matching_skeleton_ids, omit_failures)
+                matching_skeleton_ids, omit_failures, conn=conn)
 
 
         # Create dotprop instances and resample
@@ -383,7 +384,7 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
 
         logger.debug('Fetching {} random skeletons'.format(len(random_skeleton_ids)))
         nonmatching_neurons = dotprops_for_skeletons(project_id,
-                random_skeleton_ids, omit_failures)
+                random_skeleton_ids, omit_failures, conn=conn)
 
         logger.debug('Computing random skeleton stats')
         nonmatching_neurons_dps = rnat.dotprops(nonmatching_neurons.ro * nm_to_um, **{
@@ -634,7 +635,8 @@ def get_catmaid_connection(user_id):
 
 def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         parallel=True, detail=10, omit_failures=True, min_nodes=500,
-        min_soma_nodes=20, soma_tags=('soma'), resample_by=1e3) -> None:
+        min_soma_nodes=20, soma_tags=('soma'), resample_by=1e3,
+        use_http=False) -> None:
     """Create a new cache file for a particular project object type and
     detail level. All objects of a type in a project are prepared.
     """
@@ -652,7 +654,6 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
     user = get_system_user()
-    conn = get_catmaid_connection(user.id)
 
     base = importr('base')
     rcatmaid = importr('catmaid')
@@ -673,8 +674,11 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
             logger.info("No skeletons found to populate cache from")
             return
 
+        conn = get_catmaid_connection(user.id) if use_http else None
+
         logger.debug('Fetching {} skeletons'.format(len(object_ids)))
-        objects = dotprops_for_skeletons(project_id, object_ids, omit_failures)
+        objects = dotprops_for_skeletons(project_id, object_ids, omit_failures,
+                conn=conn)
 
         # Simplify
         if detail > 0:
@@ -747,7 +751,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         normalized='raw', use_alpha=False, remove_target_duplicates=True,
         min_nodes=500, min_soma_nodes=20, simplify=True, required_branches=10,
         soma_tags=('soma', ), use_cache=True, reverse=False, top_n=0,
-        resample_by=1e3) -> Dict[str, Any]:
+        resample_by=1e3, use_http=False) -> Dict[str, Any]:
     """Create NBLAST score for forward similarity from query objects to target
     objects. Objects can either be pointclouds or skeletons, which has to be
     reflected in the respective type parameter. This is executing essentially
@@ -774,16 +778,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
     errors = []
     try:
         config = NblastConfig.objects.get(project_id=project_id, pk=config_id)
-        token, _ = Token.objects.get_or_create(user_id=config.user_id)
-
-        server_params = {
-            'server': settings.CATMAID_FULL_URL,
-            'token': token.key
-        }
-
-        if hasattr(settings, 'CATMAID_HTTP_AUTH_USER') and settings.CATMAID_HTTP_AUTH_USER:
-            server_params['authname'] = settings.CATMAID_HTTP_AUTH_USER
-            server_params['authpassword'] = settings.CATMAID_HTTP_AUTH_PASS
+        conn = get_catmaid_connection(config.user_id) if use_http else None
 
         base = importr('base')
         rnat = importr('nat')
@@ -799,10 +794,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             logger.debug('Disabling remove_target_duplicates option due to all-by-all computation')
             remove_target_duplicates = False
 
-        conn = rcatmaid.catmaid_login(**server_params)
         nblast_params = {}
-
-        config = NblastConfig.objects.get(project_id=project_id, pk=config_id)
 
         parallel = False
         if settings.MAX_PARALLEL_ASYNC_WORKERS > 1:
@@ -889,7 +881,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     len(effective_query_object_ids), cache_hits))
             if effective_query_object_ids:
                 query_objects = dotprops_for_skeletons(project_id,
-                        effective_query_object_ids, omit_failures)
+                        effective_query_object_ids, omit_failures, conn=conn)
 
                 if simplify:
                     logger.debug("Simplifying query neurons, removing parts below branch level {}".format(required_branches))
@@ -1055,7 +1047,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                         len(effective_target_object_ids), cache_hits))
                 if effective_target_object_ids:
                     target_objects = dotprops_for_skeletons(project_id,
-                            effective_target_object_ids, omit_failures)
+                            effective_target_object_ids, omit_failures, conn=conn)
 
                     if simplify:
                         logger.debug("Simplifying target neurons, removing parts below branch level {}".format(required_branches))
@@ -1393,7 +1385,19 @@ def as_matrix(scores, a, b, transposed=False):
     raise ValueError("Can't convert to matrix, unknown type: {}".format(score_type))
 
 
-def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False):
+def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False,
+        conn=None):
+    """Get the R dotprops data structure for a set of skeleton IDs.
+    If <conn> is true, those skeletons will be requested thought HTTP.
+    """
+
+    if conn:
+        return rcatmaid.read_neurons_catmaid(robjects.IntVector(skeleton_ids), **{
+            'conn': conn,
+            '.progress': True if progress else 'none',
+            'OmitFailures': omit_failures,
+        })
+
     read_neuron_local = robjects.r('''
         somapos.catmaidneuron <- function(x, swc=x$d, tags=x$tags, skid=NULL, ...) {
           # Find soma position, based on plausible tags
@@ -1434,9 +1438,9 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False):
           as.data.frame(l, ...)
         }
 
-        catmaid_get_compact_skeleton_local<-function(skid, pid=1L, conn=NULL, connectors = TRUE, tags = TRUE, raw=FALSE, ...) {
+        catmaid_get_compact_skeleton_local<-function(skid, pid=1L, connectors = TRUE, tags = TRUE, raw=FALSE, ...) {
           path=file.path("", pid, skid, ifelse(connectors, 1L, 0L), ifelse(tags, 1L, 0L), "compact-skeleton")
-          skel=catmaid_fetch(path, conn=conn, ...)
+          skel=catmaid_fetch(path, ...)
           if(is.character(skel[[1]]) && isTRUE(skel[[1]]=="Exception"))
             stop("No valid neuron returned for skid: ",skid)
           names(skel)=c("nodes", "connectors", "tags")
@@ -1510,7 +1514,7 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False):
             names(skids)=as.character(skids)
             df=data.frame(pid=pid, skid=skids,
                           # We don't need full names, otherwise use:
-                          # name=catmaid_get_neuronnames(skids, pid, conn=conn),
+                          # name=catmaid_get_neuronnames(skids, pid),
                           name=names(skids),
                           stringsAsFactors = F)
             rownames(df)=names(skids)

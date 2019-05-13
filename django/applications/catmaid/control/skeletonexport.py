@@ -507,7 +507,7 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
 def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
         with_tags=True, with_history=False, with_merge_history=True,
         with_reviews=False, with_annotations=False, with_user_info=False,
-        ordered=False):
+        ordered=False, scale=None):
     """Get a compact treenode representation of a skeleton, optionally with the
     history of individual nodes and connector, reviews and annotationss. Note
     this function is performance critical! Returns, in JSON:
@@ -533,21 +533,24 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
     if not with_history:
         cursor.execute('''
             SELECT id, parent_id, user_id,
-                location_x, location_y, location_z,
-                radius, confidence
+                location_x{scale}, location_y{scale}, location_z{scale},
+                radius{scale}, confidence
             FROM treenode
             WHERE skeleton_id = %(skeleton_id)s
             {order}
         '''.format(**{
             'order': 'ORDER BY id' if ordered else '',
+            'scale': '*%(scale)s' if scale else '',
         }), {
             'skeleton_id': skeleton_id,
+            'scale': scale,
         })
 
         nodes = tuple(cursor.fetchall())
     else:
         params = {
-            'skeleton_id': skeleton_id
+            'skeleton_id': skeleton_id,
+            'scale': scale,
         }
         # Get present and historic nodes. If a historic validity range is empty
         # (e.g. due to a change in the same transaction), the edition time is
@@ -558,10 +561,10 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
                 treenode.id,
                 treenode.parent_id,
                 treenode.user_id,
-                treenode.location_x,
-                treenode.location_y,
-                treenode.location_z,
-                treenode.radius,
+                treenode.location_x{scale},
+                treenode.location_y{scale},
+                treenode.location_z{scale},
+                treenode.radius{scale},
                 treenode.confidence,
                 treenode.edition_time,
                 treenode.creation_time,
@@ -573,30 +576,32 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
                 treenode__history.id,
                 treenode__history.parent_id,
                 treenode__history.user_id,
-                treenode__history.location_x,
-                treenode__history.location_y,
-                treenode__history.location_z,
-                treenode__history.radius,
+                treenode__history.location_x{scale},
+                treenode__history.location_y{scale},
+                treenode__history.location_z{scale},
+                treenode__history.radius{scale},
                 treenode__history.confidence,
                 COALESCE(lower(treenode__history.sys_period), treenode__history.edition_time),
                 COALESCE(upper(treenode__history.sys_period), treenode__history.edition_time),
                 2 as ordering
             FROM treenode__history
             WHERE treenode__history.skeleton_id = %(skeleton_id)s
-        '''
+        '''.format(**{
+            'scale': '*%(scale)s' if scale else '',
+        })
 
         if with_merge_history:
             query =  '''
-                {}
+                {query}
                 UNION ALL
                 SELECT
                     th.id,
                     th.parent_id,
                     th.user_id,
-                    th.location_x,
-                    th.location_y,
-                    th.location_z,
-                    th.radius,
+                    th.location_x{scale},
+                    th.location_y{scale},
+                    th.location_z{scale},
+                    th.radius{scale},
                     th.confidence,
                     COALESCE(lower(th.sys_period), th.edition_time),
                     COALESCE(upper(th.sys_period), th.edition_time),
@@ -606,7 +611,10 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
                     ON th.id = t.id
                     AND t.skeleton_id = %(skeleton_id)s
                     AND th.skeleton_id <> t.skeleton_id
-            '''.format(query)
+            '''.format(**{
+                'query': query,
+                'scale': '*%(scale)s' if scale else '',
+            })
 
         query = """
             {query}
@@ -645,14 +653,25 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
             user_select = ', tc.user_id' if with_user_info else ''
             cursor.execute('''
                 SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
-                    c.location_x, c.location_y, c.location_z
+                    c.location_x{scale}, c.location_y{scale}, c.location_z{scale}
                     {user_select}
                 FROM treenode_connector tc,
                     connector c
-                WHERE tc.skeleton_id = %s
+                WHERE tc.skeleton_id = %(skeleton_id)s
                 AND tc.connector_id = c.id
-                AND (tc.relation_id = %s OR tc.relation_id = %s OR tc.relation_id = %s)
-            '''.format(user_select=user_select), (skeleton_id, pre, post, gj))
+                AND (tc.relation_id = %(pre_id)s
+                OR tc.relation_id = %(post_id)s
+                OR tc.relation_id = %(gj_id)s)
+            '''.format(**{
+                'user_select': user_select,
+                'scale': '*%(scale)s' if scale else '',
+            }), {
+                'skeleton_id': skeleton_id,
+                'pre_id': pre,
+                'post_id': post,
+                'gj_id': gj,
+                'scale': scale,
+            })
 
             if with_user_info:
                 connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5], row[6]) for row in cursor.fetchall())
@@ -663,7 +682,8 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
                 'skeleton_id': skeleton_id,
                 'pre': pre,
                 'post': post,
-                'gj': gj
+                'gj': gj,
+                'scale': scale,
             }
             user_select = ', links.user_id' if with_user_info else ''
 
@@ -673,7 +693,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
             # this is what actually happened.
             query = '''
                 SELECT links.treenode_id, links.connector_id, links.relation_id,
-                        c.location_x, c.location_y, c.location_z,
+                        c.location_x{scale}, c.location_y{scale}, c.location_z{scale},
                         links.valid_from, links.valid_to
                         {user_select}
                 FROM (
@@ -718,6 +738,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
                 'extra_query': extra_query,
                 'user_select': user_select,
                 'order': 'ORDER BY 1, ordering' if ordered else 'ORDER BY ordering',
+                'scale': '*%(scale)s' if scale else '',
             }), params)
 
             if with_user_info:

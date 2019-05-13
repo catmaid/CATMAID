@@ -342,12 +342,12 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
         # nearest neighbours of each point to define tangent vector
         logger.debug('Fetching {} matching skeletons'.format(len(matching_skeleton_ids)))
         matching_neurons = dotprops_for_skeletons(project_id,
-                matching_skeleton_ids, omit_failures, conn=conn)
+                matching_skeleton_ids, omit_failures, scale=nm_to_um, conn=conn)
 
 
         # Create dotprop instances and resample
         logger.debug('Computing matching skeleton stats')
-        matching_neurons_dps = rnat.dotprops(matching_neurons.ro * nm_to_um, **{
+        matching_neurons_dps = rnat.dotprops(matching_neurons, **{
                     'k': tangent_neighbors,
                     'resample': resample_by * nm_to_um,
                     '.progress': 'none',
@@ -386,10 +386,10 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
 
         logger.debug('Fetching {} random skeletons'.format(len(random_skeleton_ids)))
         nonmatching_neurons = dotprops_for_skeletons(project_id,
-                random_skeleton_ids, omit_failures, conn=conn)
+                random_skeleton_ids, omit_failures, scale=nm_to_um, conn=conn)
 
         logger.debug('Computing random skeleton stats')
-        nonmatching_neurons_dps = rnat.dotprops(nonmatching_neurons.ro * nm_to_um, **{
+        nonmatching_neurons_dps = rnat.dotprops(nonmatching_neurons, **{
                     'k': tangent_neighbors,
                     'resample': resample_by * nm_to_um,
                     '.progress': 'none',
@@ -679,8 +679,9 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         conn = get_catmaid_connection(user.id) if use_http else None
 
         logger.debug('Fetching {} skeletons'.format(len(object_ids)))
+        # Note: scaling down to um
         objects = dotprops_for_skeletons(project_id, object_ids, omit_failures,
-                progress=progress, conn=conn)
+                progress=progress, scale=nm_to_um, conn=conn)
 
         # Simplify
         if detail > 0:
@@ -696,13 +697,15 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
             objects = simplified_objects
 
         logger.debug('Computing skeleton stats')
-        # Note: scaling down to um
-        objects_dps = rnat.dotprops(objects.ro * nm_to_um, **{
+        print('Computing skeleton stats')
+        objects_dps = rnat.dotprops(objects, **{
                     'k': tangent_neighbors,
                     'resample': resample_by * nm_to_um,
                     '.progress': 'text' if progress else 'none',
                     'OmitFailures': omit_failures,
                 })
+
+        del(objects)
 
         # Save cache to disk
         logger.debug('Storing skeleton cache with {} entries: {}'.format(
@@ -883,7 +886,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     len(effective_query_object_ids), cache_hits))
             if effective_query_object_ids:
                 query_objects = dotprops_for_skeletons(project_id,
-                        effective_query_object_ids, omit_failures, conn=conn)
+                        effective_query_object_ids, omit_failures,
+                        scale=nm_to_um, conn=conn)
 
                 if simplify:
                     logger.debug("Simplifying query neurons, removing parts below branch level {}".format(required_branches))
@@ -894,7 +898,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                                 '.parallel': parallel,
                             })
                 logger.debug('Computing query skeleton stats')
-                query_dps = rnat.dotprops(query_objects.ro * nm_to_um, **{
+                query_dps = rnat.dotprops(query_objects, **{
                             'k': config.tangent_neighbors,
                             'resample': resample_by * nm_to_um,
                             '.progress': 'none',
@@ -1049,7 +1053,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                         len(effective_target_object_ids), cache_hits))
                 if effective_target_object_ids:
                     target_objects = dotprops_for_skeletons(project_id,
-                            effective_target_object_ids, omit_failures, conn=conn)
+                            effective_target_object_ids, omit_failures,
+                            scale=nm_to_um, conn=conn)
 
                     if simplify:
                         logger.debug("Simplifying target neurons, removing parts below branch level {}".format(required_branches))
@@ -1061,7 +1066,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                                 })
 
                     logger.debug('Computing target skeleton stats')
-                    target_dps = rnat.dotprops(target_objects.ro * nm_to_um, **{
+                    target_dps = rnat.dotprops(target_objects, **{
                                 'k': config.tangent_neighbors,
                                 'resample': resample_by * nm_to_um,
                                 '.progress': 'none',
@@ -1388,17 +1393,19 @@ def as_matrix(scores, a, b, transposed=False):
 
 
 def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False,
-        conn=None, progress=False):
+        scale=None, conn=None, progress=False):
     """Get the R dotprops data structure for a set of skeleton IDs.
     If <conn> is true, those skeletons will be requested thought HTTP.
     """
 
     if conn:
-        return rcatmaid.read_neurons_catmaid(robjects.IntVector(skeleton_ids), **{
+        objects = rcatmaid.read_neurons_catmaid(robjects.IntVector(skeleton_ids), **{
             'conn': conn,
             '.progress': 'text' if progress else 'none',
             'OmitFailures': omit_failures,
         })
+
+        return objects * scale if scale else objects
 
     read_neuron_local = robjects.r('''
         somapos.catmaidneuron <- function(x, swc=x$d, tags=x$tags, skid=NULL, ...) {

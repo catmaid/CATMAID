@@ -1544,10 +1544,14 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False,
     cs_r = {}
     for ni, skeleton_id in enumerate(skeleton_ids):
         try:
-            cs = _compact_skeleton(project_id, skeleton_id, with_connectors=True, with_tags=True)
-        except:
+            cs = _compact_skeleton(project_id, skeleton_id,
+                    with_connectors=True, with_tags=True, scale=scale)
+        except Exception as e:
             if not omit_failures:
                 raise
+            logger.error('Error loading skeleton {}'.format(skeleton_id))
+            logger.error(e)
+            continue
 
         if progress:
             bar.update(ni + 1)

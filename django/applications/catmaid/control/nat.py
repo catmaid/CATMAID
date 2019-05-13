@@ -1549,6 +1549,12 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False,
         raw_connectors = cs[1]
         raw_tags = cs[2]
 
+        # Require at least two nodes
+        if len(raw_nodes) < 2:
+            if omit_failures:
+                continue
+            raise ValueError("Skeleton {} has less than two nodes".format(skeleton_id))
+
         # Nodes in Rpy2 format
         node_cols = [
                 ('id', rinterface.IntSexpVector, robjects.NA_Integer),

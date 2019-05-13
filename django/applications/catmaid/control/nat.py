@@ -361,14 +361,14 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
             for psid in matching_sample.sample_pointsets:
                 target_pointset = PointSet.objects.get(pk=psid)
                 n_points = len(target_pointset.points) / 3
-                point_data = Matrix(robjects.FloatVector(target_pointset.points),
+                point_data = Matrix(rinterface.FloatSexpVector(target_pointset.points),
                         nrow=n_points, byrow=True)
                 pointsets.append(point_data)
 
             pointset_objects = rnat.as_neuronlist(pointsets)
             effective_pointset_object_ids = list(map(
                     lambda x: "pointset-{}".format(x), matching_sample.sample_pointsets))
-            pointset_objects.names = robjects.StrVector(effective_pointset_object_ids)
+            pointset_objects.names = rinterface.StrSexpVector(effective_pointset_object_ids)
 
             logger.debug('Computing matching pointset stats')
             pointset_dps = rnat.dotprops(pointset_objects.ro * nm_to_um, **{
@@ -441,8 +441,8 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
 
             logger.debug('Found {} subset pairs'.format(len(query_names)))
             match_subset = robjects.DataFrame({
-                'query': robjects.StrVector(query_names),
-                'target': robjects.StrVector(target_names),
+                'query': rinterface.StrSexpVector(query_names),
+                'target': rinterface.StrSexpVector(target_names),
             })
 
         logger.debug('Computing matching tangent information')
@@ -455,8 +455,8 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
         rand_dd = rnblast.calc_dists_dotprods(nonmatching_neurons_dps,
                 subset=robjects.NULL, ignoreSelf=True)
 
-        rdistbreaks = robjects.FloatVector(distbreaks)
-        rdotbreaks = robjects.FloatVector(dotbreaks)
+        rdistbreaks = rinterface.FloatSexpVector(distbreaks)
+        rdotbreaks = rinterface.FloatSexpVector(dotbreaks)
 
         logger.debug('Computing matching skeleton probability distribution')
         match_hist = rnblast.calc_prob_mat(match_dd, distbreaks=rdistbreaks,
@@ -727,14 +727,14 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
                     (p.location_x, p.location_y, p.location_z)
                     for p in target_pointcloud.points.all()))
             n_points = len(points_flat) / 3
-            point_data = Matrix(robjects.FloatVector(points_flat),
+            point_data = Matrix(rinterface.FloatSexpVector(points_flat),
                     nrow=n_points, byrow=True)
             pointclouds.append(point_data)
 
         objects = rnat.as_neuronlist(pointclouds)
         effective_object_ids = list(map(
                 lambda x: "{}".format(x), object_ids))
-        objects.names = robjects.StrVector(effective_object_ids)
+        objects.names = rinterface.StrSexpVector(effective_object_ids)
 
         logger.debug('Computing query pointcloud stats')
         objects_dps = rnat.dotprops(objects.ro * nm_to_um, **{
@@ -866,13 +866,13 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             if use_cache and skeleton_cache:
                 # Find all skeleton IDs that aren't part of the cache
                 # TODO: There must be a simler way to extract non-NA values only
-                query_object_id_str = robjects.StrVector(list(map(str, query_object_ids)))
+                query_object_id_str = rinterface.StrSexpVector(list(map(str, query_object_ids)))
                 query_cache_objects_dps = skeleton_cache.rx(query_object_id_str)
                 non_na_ids = list(filter(lambda x: type(x) == str,
                         list(base.names(query_cache_objects_dps))))
                 cache_typed_query_object_ids = non_na_ids
                 query_cache_objects_dps = rnat.subset_neuronlist(
-                        query_cache_objects_dps, robjects.StrVector(non_na_ids))
+                        query_cache_objects_dps, rinterface.StrSexpVector(non_na_ids))
                 effective_query_object_ids = list(filter(
                         # Only allow neurons that are not part of the cache
                         lambda x: query_cache_objects_dps.rx2(str(x)) == robjects.NULL,
@@ -928,12 +928,12 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             if use_cache and pointset_cache:
                 # Find all skeleton IDs that aren't part of the cache
                 # TODO: There must be a simler way to extract non-NA values only
-                query_object_id_str = robjects.StrVector(list(map(str, query_object_ids)))
+                query_object_id_str = rinterface.StrSexpVector(list(map(str, query_object_ids)))
                 query_cache_objects_dps = pointcloud_cache.rx(query_object_id_str) # type: ignore # not provable that cache will be initialised
                 non_na_ids = list(filter(lambda x: type(x) == str,
                         list(base.names(query_cache_objects_dps))))
                 query_cache_objects_dps = rnat.subset_neuronlist(
-                        query_cache_objects_dps, robjects.StrVector(non_na_ids))
+                        query_cache_objects_dps, rinterface.StrSexpVector(non_na_ids))
                 cache_typed_query_object_ids = list(map(
                         lambda x: "pointcloud-{}".format(x),
                         list(base.names(query_cache_objects_dps))))
@@ -941,7 +941,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                         # Only allow neurons that are not part of the cache
                         lambda x: query_cache_objects_dps.rx2(str(x)) == robjects.NULL,
                         query_object_ids))
-                query_cache_objects_dps.names = robjects.StrVector(cache_typed_query_object_ids)
+                query_cache_objects_dps.names = rinterface.StrSexpVector(cache_typed_query_object_ids)
                 cache_hits = n_query_objects - len(effective_query_object_ids)
             else:
                 cache_typed_query_object_ids = []
@@ -957,14 +957,14 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                             (p.location_x, p.location_y, p.location_z)
                             for p in target_pointcloud.points.all()))
                     n_points = len(points_flat) / 3
-                    point_data = Matrix(robjects.FloatVector(points_flat),
+                    point_data = Matrix(rinterface.FloatSexpVector(points_flat),
                             nrow=n_points, byrow=True)
                     pointclouds.append(point_data)
 
                 query_objects = rnat.as_neuronlist(pointclouds)
                 non_cache_typed_query_object_ids = list(map(
                         lambda x: "pointcloud-{}".format(x), effective_query_object_ids))
-                query_objects.names = robjects.StrVector(non_cache_typed_query_object_ids)
+                query_objects.names = rinterface.StrSexpVector(non_cache_typed_query_object_ids)
 
                 logger.debug('Computing query pointcloud stats')
                 query_dps = rnat.dotprops(query_objects.ro * nm_to_um, **{
@@ -1000,13 +1000,13 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             for psid in query_object_ids:
                 target_pointset = PointSet.objects.get(pk=psid)
                 n_points = len(target_pointset.points) / 3
-                point_data = Matrix(robjects.FloatVector(target_pointset.points),
+                point_data = Matrix(rinterface.FloatSexpVector(target_pointset.points),
                         nrow=n_points, byrow=True)
                 pointsets.append(point_data)
 
             query_objects = rnat.as_neuronlist(pointsets)
             effective_query_object_ids = typed_query_object_ids
-            query_objects.names = robjects.StrVector(effective_query_object_ids)
+            query_objects.names = rinterface.StrSexpVector(effective_query_object_ids)
 
             logger.debug('Computing query pointset stats')
             query_dps = rnat.dotprops(query_objects.ro * nm_to_um, **{
@@ -1033,13 +1033,13 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 if use_cache and skeleton_cache:
                     # Find all skeleton IDs that aren't part of the cache
                     # TODO: There must be a simler way to extract non-NA values only
-                    target_object_id_str = robjects.StrVector(list(map(str, target_object_ids)))
+                    target_object_id_str = rinterface.StrSexpVector(list(map(str, target_object_ids)))
                     target_cache_objects_dps = skeleton_cache.rx(target_object_id_str)
                     non_na_ids = list(filter(lambda x: type(x) == str,
                             list(base.names(target_cache_objects_dps))))
                     cache_typed_target_object_ids = non_na_ids
                     target_cache_objects_dps = rnat.subset_neuronlist(
-                            target_cache_objects_dps, robjects.StrVector(non_na_ids))
+                            target_cache_objects_dps, rinterface.StrSexpVector(non_na_ids))
                     effective_target_object_ids = list(filter(
                             # Only allow neurons that are not part of the cache
                             lambda x: target_cache_objects_dps.rx2(str(x)) == robjects.NULL,
@@ -1096,12 +1096,12 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 if use_cache and skeleton_cache:
                     # Find all skeleton IDs that aren't part of the cache
                     # TODO: There must be a simler way to extract non-NA values only
-                    target_object_id_str = robjects.StrVector(list(map(str, target_object_ids)))
+                    target_object_id_str = rinterface.StrSexpVector(list(map(str, target_object_ids)))
                     target_cache_objects_dps = pointcloud_cache.rx(target_object_id_str) # type: ignore
                     non_na_ids = list(filter(lambda x: type(x) == str,
                             list(base.names(target_cache_objects_dps))))
                     target_cache_objects_dps = rnat.subset_neuronlist(
-                            target_cache_objects_dps, robjects.StrVector(non_na_ids))
+                            target_cache_objects_dps, rinterface.StrSexpVector(non_na_ids))
                     cache_typed_target_object_ids = list(map(
                             lambda x: "pointcloud-{}".format(x),
                             list(base.names(target_cache_objects_dps))))
@@ -1109,7 +1109,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                             # Only allow neurons that are not part of the cache
                             lambda x: target_cache_objects_dps.rx2(str(x)) == robjects.NULL,
                             target_object_ids))
-                    target_cache_objects_dps.names = robjects.StrVector(cache_typed_target_object_ids)
+                    target_cache_objects_dps.names = rinterface.StrSexpVector(cache_typed_target_object_ids)
                     cache_hits = n_target_objects - len(effective_target_object_ids)
                 else:
                     cache_typed_target_object_ids = []
@@ -1125,14 +1125,14 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                                 (p.location_x, p.location_y, p.location_z)
                                 for p in target_pointcloud.points.all()))
                         n_points = len(points_flat) / 3
-                        point_data = Matrix(robjects.FloatVector(points_flat),
+                        point_data = Matrix(rinterface.FloatSexpVector(points_flat),
                                 nrow=n_points, byrow=True)
                         pointclouds.append(point_data)
 
                     target_objects = rnat.as_neuronlist(pointclouds)
                     non_cache_typed_target_object_ids = list(map(
                             lambda x: "pointcloud-{}".format(x), effective_target_object_ids))
-                    target_objects.names = robjects.StrVector(non_cache_typed_target_object_ids)
+                    target_objects.names = rinterface.StrSexpVector(non_cache_typed_target_object_ids)
 
                     logger.debug('Computing target pointcloud stats')
                     target_dps = rnat.dotprops(target_objects.ro * nm_to_um, **{
@@ -1164,12 +1164,12 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 for psid in target_object_ids:
                     target_pointset = PointSet.objects.get(pk=psid)
                     n_points = len(target_pointset.points) / 3
-                    point_data = Matrix(robjects.FloatVector(target_pointset.points),
+                    point_data = Matrix(rinterface.FloatSexpVector(target_pointset.points),
                             nrow=n_points, byrow=True)
                     pointsets.append(point_data)
 
                 target_objects = rnat.as_neuronlist(pointsets)
-                target_objects.names = robjects.StrVector(typed_target_object_ids)
+                target_objects.names = rinterface.StrSexpVector(typed_target_object_ids)
 
                 logger.debug('Computing target pointset stats')
                 target_dps = rnat.dotprops(target_objects.ro * nm_to_um, **{
@@ -1191,12 +1191,12 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         # Restore R matrix for use with nat.nblast.
         cells = list(chain.from_iterable(config.scoring))
         dist_bins = len(config.distance_breaks) - 1
-        smat = Matrix(robjects.FloatVector(cells), nrow=dist_bins, byrow=True)
+        smat = Matrix(rinterface.FloatSexpVector(cells), nrow=dist_bins, byrow=True)
 
         # Set relevant attributes on similarity matrix. The nat.nblast code
         # expects this.
-        rdistbreaks = robjects.FloatVector(config.distance_breaks)
-        rdotbreaks = robjects.FloatVector(config.dot_breaks)
+        rdistbreaks = rinterface.FloatSexpVector(config.distance_breaks)
+        rdotbreaks = rinterface.FloatSexpVector(config.dot_breaks)
         smat.do_slot_assign('distbreaks', rdistbreaks)
         smat.do_slot_assign('dotprodbreaks', rdotbreaks)
 
@@ -1237,7 +1237,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             for n, query_object_dps in enumerate(query_dps):
                 query_name = query_dps.names[n]
                 logger.debug('Query object {}/{}: {}'.format(n+1, len(query_dps), query_name))
-                query_object_dps = rnat.subset_neuronlist(query_dps, robjects.StrVector([query_name]))
+                query_object_dps = rnat.subset_neuronlist(query_dps,
+                        rinterface.StrSexpVector([query_name]))
 
                 # Have to convert to dataframe to sort them -> using
                 # 'robjects.r("sort")' looses the names for some reason
@@ -1260,7 +1261,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 if normalized == 'mean':
                     # Compute reverse scores for top N forward matches of
                     # current query object.
-                    reverse_query_dps = b.rx(robjects.StrVector(top_n_names_names))
+                    reverse_query_dps = b.rx(rinterface.StrSexpVector(top_n_names_names))
                     reverse_scores = as_matrix(rnblast.NeuriteBlast(reverse_query_dps,
                             query_object_dps, **nblast_params),
                             reverse_query_dps, query_object_dps, transposed=True)
@@ -1380,7 +1381,7 @@ def as_matrix(scores, a, b, transposed=False):
     if transposed:
         a, b = b, a
 
-    if score_type == robjects.vectors.FloatVector:
+    if score_type == robjects.vectors.FloatSexpVector:
         return robjects.r.matrix(scores, **{
             # We expect <a> to be the column vector and <b> to be the row vector.
             'ncol': len(base.names(a)),
@@ -1399,7 +1400,7 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False,
     """
 
     if conn:
-        objects = rcatmaid.read_neurons_catmaid(robjects.IntVector(skeleton_ids), **{
+        objects = rcatmaid.read_neurons_catmaid(rinterface.IntSexpVector(skeleton_ids), **{
             'conn': conn,
             '.progress': 'text' if progress else 'none',
             'OmitFailures': omit_failures,
@@ -1609,7 +1610,7 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False,
         # Tags in Rpy2 format
         r_tags = {}
         for tag, node_ids in raw_tags.items():
-               r_tags[tag] = robjects.IntVector(node_ids)
+               r_tags[tag] = rinterface.IntSexpVector(node_ids)
 
         # Construct output similar to rcatmaid's request response parsing function.
         skeleton_data = robjects.ListVector({
@@ -1636,7 +1637,7 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False,
         bar.finish()
 
     objects = concat_neurons_local(
-            robjects.IntVector(skeleton_ids),
+            rinterface.IntSexpVector(skeleton_ids),
             robjects.ListVector(cs_r), **{
                 '.progress': 'text' if progress else 'none',
                 'OmitFailures': omit_failures

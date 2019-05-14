@@ -6,3 +6,7 @@ img.logo {
   opacity: 0.6;
   margin: 0.2em;
 }
+
+.toctree-wrapper a.reference {
+  border: none;
+}

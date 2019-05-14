@@ -583,10 +583,19 @@
     }
 
     static loadN5() {
-      // This is done inside a Function/eval so that Firefox does not fail
-      // to parse this whole file because of the dynamic import.
-      return (new Function("return import('../libs/n5-wasm/n5_wasm.ch.js')"))()
-          .then(n5wasm => n5wasm.booted.then(() => n5wasm));
+      // Store a static promise for loading the N5 wasm module to prevent
+      // reloading for multiple stacks and to prevent strange wasm panics when
+      // loading multiple times.
+      if (!this.promiseN5wasm) {
+        // This is done inside a Function/eval so that Firefox does not fail
+        // to parse this whole file because of the dynamic import.
+        this.promiseN5wasm = (new Function("return import('../libs/n5-wasm/n5_wasm.js')"))()
+            .then(n5wasm => n5wasm
+                .default(CATMAID.makeStaticURL('libs/n5-wasm/n5_wasm_bg.wasm'))
+                .then(() => n5wasm));
+      }
+
+      return this.promiseN5wasm;
     }
 
     getTileURL(project, stack, slicePixelPosition, col, row, zoomLevel) {

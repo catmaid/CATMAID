@@ -664,7 +664,7 @@ def get_all_object_ids(project_id, user_id, object_type, min_nodes=500,
 
 @task()
 def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
-        simplify=True, required_branches=10, use_cache=True) -> str:
+        simplify=True, required_branches=10, use_cache=True, use_http=False) -> str:
     start_time = timer()
     try:
         # TODO This should be configurable.
@@ -715,7 +715,7 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                 remove_target_duplicates=remove_target_duplicates,
                 simplify=simplify, required_branches=required_branches,
                 use_cache=use_cache, reverse=similarity.reverse,
-                top_n=similarity.top_n)
+                top_n=similarity.top_n, use_http=use_http)
 
         duration = timer() - start_time
 

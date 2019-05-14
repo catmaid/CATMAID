@@ -15,6 +15,12 @@ from django.db.backends import signals as db_signals
 from django.contrib import auth
 from django.contrib.auth.management.commands import createsuperuser
 
+try:
+    import rpy2.rinterface as rinterface
+    r_available = True
+except ImportError:
+    r_available = False
+
 
 logger = logging.getLogger(__name__)
 
@@ -169,6 +175,10 @@ class CATMAIDConfig(AppConfig):
 
         # Enable or disable spatial update notifications
         register(check_spatial_update_setup)
+
+        # Init R interface, which is used by some parts of CATMAID
+        if r_available:
+            rinterface.initr()
 
     # A list of settings that are expected to be available.
     required_setting_fields = {

@@ -1,5 +1,5 @@
 docutils==0.13.1
 Markdown==2.6.9
 Pygments==2.2.0
-Sphinx==1.5.5
+Sphinx==1.8.5
 sphinxcontrib-images==0.7.0

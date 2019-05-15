@@ -30,6 +30,15 @@
 
 ### Features and enhancements
 
+Tracing tool:
+
+- Add a new Tracing Tool icon button to compute the distance between two nodes
+  on a skeleton. Respects virtual nodes.
+
+- The globally nearest node can now be selected and brought into view using
+  Alt + G, as opposed to selecting the nearest node in the current section
+  using the G key without modifier.
+
 Measurement table:
 
 - Node filters are now supported. Like in other widgets, the respective panel
@@ -264,9 +273,6 @@ Graph widget:
   each color.
 
 Miscellaneous:
-
-- Add a new Tracing Tool icon button to compute the distance between two nodes
-  on a skeleton. Respects virtual nodes.
 
 - Tracing layer: a minimum skeleton length can now be specified in the layer
   options, causing the Tracing Layer to show only nodes of skeletons of at least

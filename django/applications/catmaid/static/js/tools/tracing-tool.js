@@ -67,7 +67,7 @@
      *                               to the cursor position.
      * @returns The ID of the cloesest node or null if no node was found.
      */
-    var getClosestNode = function(maxDistancePx) {
+    this.getClosestNode = function(maxDistancePx) {
       maxDistancePx = CATMAID.tools.getDefined(maxDistancePx, 100.0);
       // Give all layers a chance to activate a node
       var selectedNode = null;
@@ -81,7 +81,7 @@
         // Read layers from top to bottom
         var l = layers.get(layerOrder[i]);
         if (CATMAID.tools.isFn(l.getClosestNode)) {
-          var candidateNode = l.getClosestNode(x, y, z, r);
+          var candidateNode = l.getClosestNode(coords.x, coords.y, coords.z, r);
           if (candidateNode && (!selectedNode || candidateNode.distsq < selectedNode.distsq)) {
             selectedNode = candidateNode;
           }
@@ -1074,14 +1074,14 @@
     }));
 
     this.addAction(new CATMAID.Action({
-      helpText: "Select the nearest node to the mouse cursor",
-      keyShortcuts: { "G": [ "g" ] },
+      helpText: "Select the nearest node to the mouse cursor in the current section (<kbd>Alt</kbd>: globally)",
+      keyShortcuts: { "G": [ "g", "Alt + g" ] },
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
-        if (!(e.ctrlKey || e.metaKey || e.shiftKey)) {
+        if (!(e.ctrlKey || e.metaKey || e.shiftKey || e.altKey)) {
           // Only allow nodes that are screen space 50px or closer
-          var selectedNode = getClosestNode(100.0);
+          var selectedNode = self.getClosestNode(100.0);
           if (selectedNode) {
             // If this layer has a node close by, activate it
             var z = activeTracingLayer.stackViewer.primaryStack.projectToStackZ(
@@ -1094,6 +1094,20 @@
                 .catch(CATMAID.handleError);
             }
           }
+          return true;
+        } else if (e.altKey) {
+          let p = self.prototype.lastPointerCoordsP;
+          CATMAID.Nodes.nearestNode(project.id, p.x, p.y, p.z)
+            .then(function(data) {
+              var nodeIDToSelect = data.treenode_id;
+              return SkeletonAnnotations.staticMoveTo(data.z, data.y, data.x)
+                  .then(function () {
+                    return SkeletonAnnotations.staticSelectNode(nodeIDToSelect);
+                  });
+            })
+            .catch(function () {
+              CATMAID.warn('Selecing the globally closed node failed');
+            });
           return true;
         } else {
           return false;
@@ -1404,7 +1418,7 @@
         if (e.shiftKey) {
           skid = SkeletonAnnotations.getActiveSkeletonId();
         } else {
-          var match = getClosestNode(100.0);
+          var match = self.getClosestNode(100.0);
           if (match) {
             skid = match.node.skeleton_id;
           }

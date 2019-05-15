@@ -73,11 +73,8 @@
       var selectedNode = null;
       var layers = activeStackViewer.getLayers();
       var layerOrder = activeStackViewer.getLayerOrder();
-      // TODO: Don't use internal objects of the tracing overlay, i.e. find
-      // a better way to get the current mouse position.
-      var x = activeTracingLayer.tracingOverlay.coords.lastX;
-      var y = activeTracingLayer.tracingOverlay.coords.lastY;
-      var z = activeTracingLayer.tracingOverlay.stackViewer.z;
+
+      let coords = self.prototype.lastPointerCoordsS;
       // Only allow nodes that are screen space 50px or closer
       var r = maxDistancePx / activeStackViewer.scale;
       for (var i = layerOrder.length - 1; i >= 0; --i) {

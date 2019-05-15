@@ -186,6 +186,28 @@
       return true;
     };
 
+    this.lastPointerCoordsP = {'x': 0, 'y': 0, 'z': 0};
+    this.lastPointerCoordsS = {'x': 0, 'y': 0, 'z': 0};
+    this._mousePosStatusUpdate = function(e) {
+      let m = CATMAID.ui.getMouse(e, self.mouseCatcher, true);
+      CATMAID.statusBar.printCoords('ui');
+
+      let stackViewer = self.stackViewer;
+      let _m = CATMAID.ui.getMouse(e, self.stackViewer.getView(), true);
+      if (_m) {
+        let sCoords = self.lastPointerCoordsS;
+        let pCoords = self.lastPointerCoordsP;
+        let screenPosition = stackViewer.screenPosition();
+        sCoords.x = screenPosition.left + _m.offsetX / stackViewer.scale / stackViewer.primaryStack.anisotropy(0).x;
+        sCoords.y = screenPosition.top  + _m.offsetY / stackViewer.scale / stackViewer.primaryStack.anisotropy(0).y;
+        sCoords.z = stackViewer.z;
+        stackViewer.primaryStack.stackToProject(sCoords, pCoords);
+        // This function is called often, so the least memory consuming way
+        // should be used to create the status bar update.
+        CATMAID.statusBar.printCoords(`S: [${sCoords.x.toFixed(1)}, ${sCoords.y.toFixed(1)}, ${sCoords.z.toFixed(1)}] px, P: [${pCoords.x.toFixed(1)}, ${pCoords.y.toFixed(1)}, ${pCoords.z.toFixed(1)}] nm`);
+      }
+    };
+
     //--------------------------------------------------------------------------
     /**
      * Slider commands for changing the slice come in too frequently, thus the
@@ -589,6 +611,9 @@
 
       self.mouseCatcher.addEventListener('pointerdown', this._onpointerdown);
       self.mouseCatcher.addEventListener( "wheel", onmousewheel, false );
+      self.mouseCatcher.addEventListener('pointerdown', this._mousePosStatusUpdate);
+      self.mouseCatcher.addEventListener('pointermove', this._mousePosStatusUpdate);
+      self.mouseCatcher.addEventListener('pointerup', this._mousePosStatusUpdate);
 
       self.stackViewer.getView().appendChild( self.mouseCatcher );
 
@@ -635,6 +660,10 @@
     {
       if ( self.stackViewer && self.mouseCatcher.parentNode == self.stackViewer.getView() )
         self.stackViewer.getView().removeChild( self.mouseCatcher );
+
+      self.mouseCatcher.removeEventListener('pointerdown', this._mousePosStatusUpdate);
+      self.mouseCatcher.removeEventListener('pointermove', this._mousePosStatusUpdate);
+      self.mouseCatcher.removeEventListener('pointerup', this._mousePosStatusUpdate);
     };
 
     /**

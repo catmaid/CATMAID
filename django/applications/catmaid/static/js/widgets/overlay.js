@@ -1464,30 +1464,16 @@ var SkeletonAnnotations = {};
    * @coords parameter and updates the status bar with the stack and project
    * coordinates of the pointer.
    */
-  CATMAID.TracingOverlay.prototype.setLocationFromEvent = (function() {
-    let pCoords = {'x': 0, 'y': 0, 'z': 0};
-    let sCoords = {'x': 0, 'y': 0, 'z': 0};
-
-    return function(e) {
-      let stackViewer = this.stackViewer;
-      let coords = this.coords;
-      let m = CATMAID.ui.getMouse(e, this.stackViewer.getView(), true);
-      if (m) {
-        let screenPosition = stackViewer.screenPosition();
-        coords.lastX = screenPosition.left + m.offsetX / stackViewer.scale / stackViewer.primaryStack.anisotropy(0).x;
-        coords.lastY = screenPosition.top  + m.offsetY / stackViewer.scale / stackViewer.primaryStack.anisotropy(0).y;
-        sCoords.x = coords.lastX;
-        sCoords.y = coords.lastY;
-        sCoords.z = stackViewer.z;
-        stackViewer.primaryStack.stackToProject(sCoords, pCoords);
-        // This function is called often, so the least memory consuming way should
-        // be used to create the status bar update.
-        CATMAID.statusBar.printCoords('S: ['+ coords.lastX.toFixed(1) + ", " +
-            coords.lastY.toFixed(1) + ", " + stackViewer.z.toFixed(1) +'] px, P: [' +
-            pCoords.x.toFixed(1) + ', ' + pCoords.y.toFixed(1) + ', ' + pCoords.z.toFixed(1) + '] nm');
-      }
-    };
-  })();
+  CATMAID.TracingOverlay.prototype.setLocationFromEvent = function(e) {
+    let stackViewer = this.stackViewer;
+    let coords = this.coords;
+    let m = CATMAID.ui.getMouse(e, this.stackViewer.getView(), true);
+    if (m) {
+      let screenPosition = stackViewer.screenPosition();
+      coords.lastX = screenPosition.left + m.offsetX / stackViewer.scale / stackViewer.primaryStack.anisotropy(0).x;
+      coords.lastY = screenPosition.top  + m.offsetY / stackViewer.scale / stackViewer.primaryStack.anisotropy(0).y;
+    }
+  };
 
   /**
    * Update the internal location.

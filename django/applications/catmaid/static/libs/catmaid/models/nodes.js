@@ -398,6 +398,29 @@
       return CATMAID.fetch(url, 'DELETE');
     },
 
+    /**
+     * Get the closest treenode relative to the passed in location
+     *
+     * @param {number} projectId  The project to operate in.
+     * @param {number} x          X coordinate of query location.
+     * @param {number} y          Y coordinate of query location.
+     * @param {number} z          Z coordinate of query location.
+     * @param {number} targetId   (optional) ID of skeleton or neuron the result
+     *                            node should be part of.
+     * @param {string} targetType (optional) If <targetId> is provided,
+     *                            specifies if it is a 'neuron' or 'skeleton'.
+     * @returns Promise resolving in closest treenode.
+     */
+    nearestNode: function(projectId, x, y, z, targetId, targetType) {
+      let params = {
+        x: x,
+        y: y,
+        z: z,
+      };
+      params[`${targetType}_id`] = targetId;
+      return CATMAID.fetch(projectId + "/nodes/nearest", "GET", params);
+    },
+
   };
 
   function announceNodeUpdate(node) {

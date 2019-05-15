@@ -1804,25 +1804,19 @@
    */
   TracingTool.goToNearestInNeuronOrSkeleton = function(type, objectID) {
     var projectCoordinates = project.focusedStackViewer.projectCoordinates();
-    var parameters = {
-      x: projectCoordinates.x,
-      y: projectCoordinates.y,
-      z: projectCoordinates.z
-    };
-    parameters[type + '_id'] = objectID;
-    return CATMAID.fetch(project.id + "/node/nearest", "POST", parameters)
-        .then(function (data) {
-          var nodeIDToSelect = data.treenode_id;
-          // var skeletonIDToSelect = data.skeleton_id; // Unused, but available.
-          return SkeletonAnnotations.staticMoveTo(data.z, data.y, data.x)
-              .then(function () {
-                return SkeletonAnnotations.staticSelectNode(nodeIDToSelect);
-              });
-        })
-        .catch(function () {
-          CATMAID.warn('Going to ' + type + ' ' + objectID + ' failed. ' +
-                       'The ' + type + ' may no longer exist.');
-        });
+    return CATMAID.Nodes.nearestNode(project.id, projectCoordinates.x,
+        projectCoordinates.y, projectCoordinates.z, objectID, type)
+      .then(function (data) {
+        var nodeIDToSelect = data.treenode_id;
+        return SkeletonAnnotations.staticMoveTo(data.z, data.y, data.x)
+            .then(function () {
+              return SkeletonAnnotations.staticSelectNode(nodeIDToSelect);
+            });
+      })
+      .catch(function () {
+        CATMAID.warn('Going to ' + type + ' ' + objectID + ' failed. ' +
+                     'The ' + type + ' may no longer exist.');
+      });
   };
 
   /**

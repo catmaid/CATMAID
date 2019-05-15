@@ -330,6 +330,8 @@ Miscellaneous:
   variables HTTP_AUTH_ENABLED, HTTP_AUTH_USER and HTTP_AUTH_PASS in the web
   container of the `docker-compose.yml` file (an example is given).
 
+- Performance: selecting the closest node in a skeleton should now be faster.
+
 ### Bug fixes
 
 - A race condition has been fixed that could in rare cases lead to inconsistent

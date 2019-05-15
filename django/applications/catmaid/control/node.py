@@ -2613,79 +2613,127 @@ def node_update(request:HttpRequest, project_id=None) -> JsonResponse:
     })
 
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
+@api_view(['GET'])
+@requires_user_role(UserRole.Browse)
 def node_nearest(request:HttpRequest, project_id=None) -> JsonResponse:
-    params = {}
-    param_float_defaults = {
-        'x': 0,
-        'y': 0,
-        'z': 0}
-    param_int_defaults = {
-        'skeleton_id': -1,
-        'neuron_id': -1}
-    for p in param_float_defaults.keys():
-        params[p] = float(request.POST.get(p, param_float_defaults[p]))
-    for p in param_int_defaults.keys():
-        params[p] = int(request.POST.get(p, param_int_defaults[p]))
-    relation_map = get_relation_to_id_map(project_id)
+    """Find the closest node in a skeleton relative to a passed in location.
 
-    if params['skeleton_id'] < 0 and params['neuron_id'] < 0:
-        raise Exception('You must specify either a skeleton or a neuron')
+    If a skeleton ID or neuron id is passed in as well, the nearest node in the
+    respective skeleton is returned.
+    ---
+    parameters:
+        - name: project_id
+          description: The project to operate in.
+          required: true
+          paramType: path
+        - name: x
+          description: X coordinate of query location.
+          required: true
+          type: number
+          format: double
+          paramType: form
+        - name: y
+          description: X coordinate of query location.
+          required: true
+          type: number
+          format: double
+          paramType: form
+        - name: z
+          description: Z coordinate of query location.
+          required: true
+          type: number
+          format: double
+          paramType: form
+        - name: skeleton_id
+          description: Result treenode has to be in this skeleton.
+          required: false
+          type: number
+          paramType: form
+        - name: neuron_id
+          description: |
+            Alternative to skeleton_id. Result treenode has to be in
+            this neuron
+          required: false
+          type: number
+          paramType: form
+    """
 
-    for rel in ['part_of', 'model_of']:
-        if rel not in relation_map:
-            raise Exception('Could not find required relation %s for project %s.' % (rel, project_id))
+    x = float(request.GET.get('x', 0))
+    y = float(request.GET.get('y', 0))
+    z = float(request.GET.get('z', 0))
 
-    skeletons = []
-    if params['skeleton_id'] > 0:
-        skeletons.append(params['skeleton_id'])
+    skeleton_id = request.GET.get('skeleton_id')
+    if skeleton_id is not None:
+        skeleton_id = int(skeleton_id)
 
-    response_on_error = ''
-    try:
-        if params['neuron_id'] > 0:  # Add skeletons related to specified neuron
-            # Assumes that a cici 'model_of' relationship always involves a
-            # skeleton as ci_a and a neuron as ci_b.
-            response_on_error = 'Finding the skeletons failed.'
-            neuron_skeletons = ClassInstanceClassInstance.objects.filter(
-                class_instance_b=params['neuron_id'],
-                relation=relation_map['model_of'])
-            for neur_skel_relation in neuron_skeletons:
-                skeletons.append(neur_skel_relation.class_instance_a_id)
+    neuron_id = request.GET.get('neuron_id')
+    if neuron_id is not None:
+        neuron_id = int(neuron_id)
 
-        # Get all treenodes connected to skeletons
-        response_on_error = 'Finding the treenodes failed.'
-        treenodes = Treenode.objects.filter(project=project_id, skeleton__in=skeletons)
+    if None not in (skeleton_id, neuron_id):
+        raise ValueError("Only skeleton_id or neuron_id can be provided, not both")
 
-        def getNearestTreenode(x, y, z, treenodes):
-            minDistance = -1
-            nearestTreenode = None
-            for tn in treenodes:
-                xdiff = x - tn.location_x
-                ydiff = y - tn.location_y
-                zdiff = z - tn.location_z
-                distanceSquared = xdiff ** 2 + ydiff ** 2 + zdiff ** 2
-                if distanceSquared < minDistance or minDistance < 0:
-                    nearestTreenode = tn
-                    minDistance = distanceSquared
-            return nearestTreenode
+    # Get skeleton ID, if neuron is provided
+    if neuron_id:
+        skeleton_id = ClassInstance.objects.get(
+            cici_via_a__relation__relation_name='model_of',
+            cici_via_a__class_instance_b_id=neuron_id).id
 
-        nearestTreenode = getNearestTreenode(
-            params['x'],
-            params['y'],
-            params['z'],
-            treenodes)
-        if nearestTreenode is None:
-            raise Exception('No treenodes were found for skeletons in %s' % skeletons)
+    cursor = connection.cursor()
 
-        return JsonResponse({
-            'treenode_id': nearestTreenode.id,
-            'x': int(nearestTreenode.location_x),
-            'y': int(nearestTreenode.location_y),
-            'z': int(nearestTreenode.location_z),
-            'skeleton_id': nearestTreenode.skeleton_id})
+    skeleton_filter = None
+    if skeleton_id:
+        skeleton_filter = """
+            JOIN (
+                SELECT id
+                FROM treenode t
+                WHERE skeleton_id = %(skeleton_id)s
+            ) skeleton_node(id)
+            ON skeleton_node.id = te.id
+        """
 
-    except Exception as e:
-        raise Exception(response_on_error + ':' + str(e))
+    # Find the globally closest treenode among the 100 closest edges. This
+    # is done that way so that an index can be used. We just assume that the
+    # closest node is among the closest edge bounding box centroids (<<->>
+    # operator).
+    cursor.execute("""
+        SELECT treenode.id, skeleton_id, location_x, location_y, location_z
+        FROM treenode
+        JOIN (
+            SELECT te.id, te.edge
+            FROM treenode_edge te
+            {skeleton_filter}
+            WHERE project_id = %(project_id)s
+            ORDER BY edge <<->> ST_MakePoint(%(x)s,%(y)s,%(z)s)
+            LIMIT 100
+        ) closest_node(id, edge)
+        ON closest_node.id = treenode.id
+        ORDER BY ST_StartPoint(edge) <<->> ST_MakePoint(%(x)s,%(y)s,%(z)s)
+        LIMIT 1
+    """.format(**{
+        'skeleton_filter': skeleton_filter or '',
+    }), {
+        'project_id': project_id,
+        'skeleton_id': skeleton_id,
+        'x': x,
+        'y': y,
+        'z': z,
+    })
+
+    nearest_treenode = cursor.fetchone()
+
+    if nearest_treenode is None:
+        if skeleton_id:
+            raise Exception('No treenodes were found for skeleton {}'.format(skeleton_id))
+        raise Exception('No treenodes were found')
+
+    return JsonResponse({
+        'treenode_id': nearest_treenode[0],
+        'skeleton_id': nearest_treenode[1],
+        'x': nearest_treenode[2],
+        'y': nearest_treenode[3],
+        'z': nearest_treenode[4],
+    })
 
 
 def _fetch_location(project_id, location_id):

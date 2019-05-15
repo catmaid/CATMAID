@@ -6,7 +6,10 @@ included in this changelog.
 
 ### Additions
 
-None.
+- `GET /{project_id}/nodes/nearest`:
+  Replaces `GET /{project_id}/node/nearest`. The parameters are the same, but
+  the API allows now to look globally for the nearest node in the project, if no
+  skeleton ID or neuron ID is provided.
 
 ### Modifications
 
@@ -53,7 +56,8 @@ None.
 
 ### Removals
 
-None.
+- `POST /{project_id}/node/nearest`:
+  Replaced with `GET /{project_id}/nodes/nearest` (note the plural of nodes).
 
 
 ## 2018.11.09

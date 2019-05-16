@@ -361,7 +361,7 @@
 
     let buttons = $('<div />');
     if (CATMAID.tools.isFn(cancel)) {
-      buttons.append($('<button>Cancel</button>')
+      buttons.append($('<button>Back</button>')
         .on('click', function(e) {
           cancel();
         }));

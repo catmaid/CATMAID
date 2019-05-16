@@ -400,6 +400,10 @@ Miscellaneous:
   in a docker-compose setup. PID files without actually running database
   processes prevented some updates before.
 
+- Initial setup: create_configuration.py now also prints the media files
+  directory as part of the webserver example configuration. This is the folder
+  where e.g. some exported files are made available.
+
 
 ## 2018.11.09
 

@@ -91,6 +91,10 @@ server {{
     location /{subdir}/static/ {{
         alias {cmpath}/django/static/;
     }}
+    `
+    location /{subdir}/files/ {{
+        alias {writable_path}/;
+    }}
 
     # Route all CATMAID Django WSGI requests to the Gevent WSGI server
     location /{subdir}/ {{
@@ -104,7 +108,11 @@ server {{
         proxy_set_header X-Forwarded-Proto $scheme;
     }}
 }}
-""".format(cmpath=abs_catmaid_path, subdir=catmaid_subdirectory)
+""".format(**{
+    'cmpath': abs_catmaid_path,
+    'subdir': catmaid_subdirectory,
+    'writable_path': catmaid_writable_path,
+})
 
 # Remove any double slashes from this configuration too:
 nginx_out = re.sub('(?<!(http:))//', '/', nginx_out)
@@ -123,7 +131,19 @@ Alias /{subdir}/static {cmpath}/django/static/
     Order deny,allow
     Allow from all
 </Directory>
-""".format(cmpath = abs_catmaid_path, subdir = catmaid_subdirectory)
+
+Alias /{subdir}/files {writable_path}/
+<Directory {writable_path}/>
+    Options FollowSymLinks
+    AllowOverride AuthConfig Limit FileInfo
+    Order deny,allow
+    Allow from all
+</Directory>
+""".format(**{
+    'cmpath': abs_catmaid_path,
+    'subdir': catmaid_subdirectory,
+    'writable_path': catmaid_writable_path,
+})
 
 # Remove any double slashes from this configuration too:
 apache_out = re.sub('//', '/', apache_out)

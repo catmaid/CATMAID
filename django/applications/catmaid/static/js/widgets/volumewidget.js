@@ -326,7 +326,7 @@
       $('select', typeSelect).on('change', function() {
         $("div.volume-properties", $target).remove();
         self.newVolumeType = this.value;
-        self.editVolume(null, target);
+        self.editVolume(null, target, cancel);
       });
     }
 
@@ -383,7 +383,7 @@
                   volume.save()
                     .then(function(result) {
                       // Reinitialize volume editing
-                      self.editVolume(null, target);
+                      self.editVolume(volume, target, cancel);
                     }).catch(CATMAID.handleError)
                     .then(function() {
                       $.unblockUI();
@@ -1829,13 +1829,15 @@
 
           let baseOnUpdate = handlers[0];
           handlers[0] = function(field, newValue, oldValue) {
-            boxTool.cropBox.top = volume.minY;
-            boxTool.cropBox.bottom = volume.maxY;
-            boxTool.cropBox.left = volume.minX;
-            boxTool.cropBox.right = volume.maxX;
-            boxTool.cropBox.z1 = volume.minZ;
-            boxTool.cropBox.z2 = volume.maxZ;
-            boxTool.updateCropBox();
+            if (boxTool.cropBox) {
+              boxTool.cropBox.top = volume.minY;
+              boxTool.cropBox.bottom = volume.maxY;
+              boxTool.cropBox.left = volume.minX;
+              boxTool.cropBox.right = volume.maxX;
+              boxTool.cropBox.z1 = volume.minZ;
+              boxTool.cropBox.z2 = volume.maxZ;
+              boxTool.updateCropBox();
+            }
             baseOnUpdate(field, newValue, oldValue);
           };
           let baseOnClose = handlers[1];

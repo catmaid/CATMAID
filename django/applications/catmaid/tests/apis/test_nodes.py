@@ -50,7 +50,7 @@ class NodesApiTests(CatmaidApiTestCase):
     def test_node_nearest_for_skeleton(self):
         self.fake_authentication()
         response = self.client.get(
-                '/%d/node/nearest' % self.test_project_id,
+                '/%d/nodes/nearest' % self.test_project_id,
                 {
                     'x': 5115,
                     'y': 3835,
@@ -71,7 +71,7 @@ class NodesApiTests(CatmaidApiTestCase):
     def test_node_nearest_for_neuron(self):
         self.fake_authentication()
         response = self.client.get(
-                '/%d/node/nearest' % self.test_project_id,
+                '/%d/nodes/nearest' % self.test_project_id,
                 {
                     'x': 5115,
                     'y': 3835,

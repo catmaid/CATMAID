@@ -2516,17 +2516,56 @@ def update_location_reviewer(request:HttpRequest, project_id=None, node_id=None)
     })
 
 
+@api_view(['GET'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def most_recent_treenode(request:HttpRequest, project_id=None) -> JsonResponse:
-    skeleton_id = int(request.POST.get('skeleton_id', -1))
+    """Retrieve the last edited node.
+
+    Without any further parameters, this will retrieve the node last edited on
+    any skeleton by any user. This can be further constrained by skeleton and
+    user.
+    ---
+    parameters:
+        - name: project_id
+          description: The project to operate in.
+          required: true
+          type: number
+          format: integer
+          paramType: path
+        - name: skeleton_id
+          description: |
+            (optional) Skeleton for which to retrieve last edited node.
+          required: false
+          type: number
+          format: integer
+          paramType: form
+        - name: user_id
+          description: |
+            (optional) User of which to retrieve last edited node.
+          required: false
+          type: number
+          format: integer
+          paramType: form
+    """
+    skeleton_id = request.GET.get('skeleton_id')
+    if skeleton_id is not None:
+        skeleton_id = int(skeleton_id)
+    user_id = request.GET.get('user_id')
+    if user_id is not None:
+        user_id = int(user_id)
 
     try:
+        params = {
+            'project': project_id
+        }
+        if user_id is not None:
+            params['editor'] = user_id
+        if skeleton_id is not None:
+            params['skeleton_id'] = skeleton_id
         # Select the most recently edited node
-        tn = Treenode.objects.filter(project=project_id, editor=request.user)
-        if not skeleton_id == -1:
-            tn = tn.filter(skeleton=skeleton_id)
-        tn = tn.extra(select={'most_recent': 'greatest(treenode.creation_time, treenode.edition_time)'})\
-             .extra(order_by=['-most_recent', '-treenode.id'])[0] # [0] generates a LIMIT 1
+        tn = Treenode.objects.filter(**params) \
+                .extra(select={'most_recent': 'greatest(treenode.creation_time, treenode.edition_time)'}) \
+                .extra(order_by=['-most_recent', '-treenode.id'])[0] # [0] generates a LIMIT 1
     except IndexError:
         # No treenode edited by the user exists in this skeleton.
         return JsonResponse({})

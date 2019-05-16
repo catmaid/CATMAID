@@ -421,6 +421,16 @@
       return CATMAID.fetch(projectId + "/nodes/nearest", "GET", params);
     },
 
+    /**
+     * Get the most recently edited treenode.
+     */
+    mostRecentlyEditedNode: function(projectId, skeletonId, userId) {
+      return CATMAID.fetch(project.id + '/nodes/most-recent', 'GET', {
+        'skeleton_id': skeletonId,
+        'user_id': userId,
+      });
+    },
+
   };
 
   function announceNodeUpdate(node) {

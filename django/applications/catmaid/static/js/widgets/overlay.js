@@ -5084,25 +5084,19 @@ var SkeletonAnnotations = {};
    * Move to the node that was edited last and select it. This will always be a
    * real node.
    */
-  CATMAID.TracingOverlay.prototype.goToLastEditedNode = function(skeletonID) {
-    var params;
-    if (typeof skeletonID !== 'undefined') {
-      if (this.isIDNull(skeletonID)) return;
-      params = {skeleton_id: skeletonID};
+  CATMAID.TracingOverlay.prototype.goToLastEditedNode = function(skeletonID, userId) {
+    if (typeof skeletonID !== 'undefined' && this.isIDNull(skeletonID)) {
+      return Promise.resolve();
     }
     var self = this;
-    this.submit(
-      CATMAID.makeURL(project.id + '/nodes/most-recent'),
-      'POST',
-      params,
-      function (json) {
+    return this.submit.promise()
+      .then(() => CATMAID.Nodes.mostRecentlyEditedNode(project.id, skeletonID, userId))
+      .then(json => {
         if (json.id) {
           self.moveTo(json.z, json.y, json.x,
             function() { self.selectNode(json.id).catch(CATMAID.handleError); });
-        } else {
-          CATMAID.msg('Information',
-              'You are not the most recent editor of any nodes in this skeleton.');
         }
+        return json;
       });
   };
 

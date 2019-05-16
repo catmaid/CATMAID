@@ -11,6 +11,11 @@ included in this changelog.
   the API allows now to look globally for the nearest node in the project, if no
   skeleton ID or neuron ID is provided.
 
+- `GET /{project_id}/nodes/most-recent`:
+  Replaces `POST /{project_id}/node/nearest`. A skeleton_id parameter can still
+  be provided, but now also a user_id parameter is available to further
+  constrain.
+
 ### Modifications
 
 - `POST|GET /{project_id}/node/list`:
@@ -58,6 +63,9 @@ None.
 
 - `POST /{project_id}/node/nearest`:
   Replaced with `GET /{project_id}/nodes/nearest` (note the plural of nodes).
+
+- `POST /{project_id}/node/most-recent`:
+  Replaced with `GET /{project_id}/nodes/most-recent`.
 
 
 ## 2018.11.09

@@ -39,6 +39,10 @@ Tracing tool:
   Alt + G, as opposed to selecting the nearest node in the current section
   using the G key without modifier.
 
+- Using the H shortcut now without an active skeleton, the most recently edited
+  node of the current user (Alt: anyone) in the last active skeleton will be
+  selected. Using Shift will look in all skeletons.
+
 Measurement table:
 
 - Node filters are now supported. Like in other widgets, the respective panel

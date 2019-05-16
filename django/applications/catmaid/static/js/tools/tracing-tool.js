@@ -21,6 +21,9 @@
     this.autoCacheUpdateIntervalLength = 60*60*1000;
     this.autoCacheUpdateInterval = null;
     this.refreshAutoCacheUpdate();
+    // Keep a reference to the current and last selected skeleton.
+    this.lastSkeletonId = null;
+    this.currentSkeletonId = null;
 
     /**
      * Return the stack viewer referenced by the active node, or otherwise (if
@@ -491,9 +494,14 @@
      * the top bar is updated.
      */
     function handleActiveNodeChange(node, skeletonChanged) {
+      self.lastSkeletonId = self.currentSkeletonId;
+      self.currentSkeletonId = null;
       if (node && node.id) {
-        if (skeletonChanged && SkeletonAnnotations.TYPE_NODE === node.type) {
-          setActiveElemenTopBarText(node.skeleton_id);
+        if (SkeletonAnnotations.TYPE_NODE === node.type) {
+          if (skeletonChanged) {
+            setActiveElemenTopBarText(node.skeleton_id);
+          }
+          self.currentSkeletonId = node.skeleton_id;
         } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
           if (CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR === node.subtype) {
             // Retrieve presynaptic skeleton
@@ -520,6 +528,7 @@
         clearTopbars();
       }
     }
+
 
     this.prototype.changeSlice = function(val, step) {
       val = activeStackViewer.toValidZ(val, step < 0 ? -1 : 1);
@@ -827,13 +836,49 @@
     }));
 
     this.addAction(new CATMAID.Action({
-      helpText: "Go to last node edited by you in this skeleton (<kbd>Shift</kbd>: in any skeleton)",
-      keyShortcuts: { "H": [ "h", "Shift + h" ] },
+      helpText: "Go to last node edited by you in active skeleton (no active skeleton: in last active skeleton, <kbd>Shift</kbd>: in any skeleton, <kbd>Alt</kbd>: by anyone)",
+      keyShortcuts: { "H": [ "h", "Shift + h", "Alt + h", "Alt + Shift + h" ] },
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
+        let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+        let referenceSkeletonId = activeSkeletonId ? activeSkeletonId : self.lastSkeletonId;
         activeTracingLayer.tracingOverlay.goToLastEditedNode(
-          e.shiftKey ? undefined : SkeletonAnnotations.getActiveSkeletonId());
+            e.shiftKey ? undefined : referenceSkeletonId,
+            e.altKey ? undefined : CATMAID.session.user)
+          .then(result => {
+            let user = e.altKey ? 'anyone' : 'you';
+            if (result && result.id) {
+              if (e.shiftKey) {
+                CATMAID.msg(`Selected node last edited by ${user} in any skeleton`, 'Node selection successful');
+              } else {
+                if (activeSkeletonId) {
+                  CATMAID.msg(`Selected node last edited by ${user} in the active skeleton`, 'Node selection successful');
+                } else if (referenceSkeletonId) {
+                  CATMAID.msg(`Selected node last edited by ${user} in last active skeleton`);
+                } else {
+                  CATMAID.warn(`Neither is nor was a skeleton active to look for node last edited by ${user}. Alterantively, use the Shift key for last edit globally.`);
+                }
+              }
+            } else {
+              if (e.shiftKey) {
+                if (e.altKey) {
+                  CATMAID.warn('Could not find any last edited node in any skeleton');
+                } else {
+                  CATMAID.warn('Could not find any node last edited by you in any skeleton');
+                }
+              } else {
+                if (activeSkeletonId) {
+                  CATMAID.warn(`Could not find any node in the active skeleton last edited by ${user}`);
+                } else if (referenceSkeletonId) {
+                  CATMAID.warn(`Could not find any node in the last active skeleton edited by ${user}`);
+                } else {
+                  CATMAID.warn(`Neither is nor was a skeleton active to look for node last edited by ${user}. Alterantively, use the Shift key for last edit globally.`);
+                }
+              }
+            }
+          })
+          .catch(CATMAID.handleError);
         return true;
       }
     }));

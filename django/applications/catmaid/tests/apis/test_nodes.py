@@ -17,7 +17,7 @@ class NodesApiTests(CatmaidApiTestCase):
         # Test without skeleton filter.
         most_recent_node_id = 2465
 
-        response = self.client.post(
+        response = self.client.get(
                 '/%d/nodes/most-recent' % self.test_project_id)
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
@@ -33,7 +33,7 @@ class NodesApiTests(CatmaidApiTestCase):
         most_recent_node_id = 2423
         skeleton_id = 2411
 
-        response = self.client.post(
+        response = self.client.get(
                 '/%d/nodes/most-recent' % self.test_project_id,
                 {'skeleton_id': skeleton_id})
         self.assertEqual(response.status_code, 200)

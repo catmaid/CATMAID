@@ -275,7 +275,7 @@ def find_project_folders(image_base, path, filter_term) -> Tuple[List, Dict[str,
                         url_dir = url_dir.replace("\\", "/")
                     project_url = urljoin(image_base, url_dir)
                     # Expect a YAML file
-                    yaml_data = yaml.load_all(open(info_file))
+                    yaml_data = yaml.load_all(open(info_file), Loader=yaml.FullLoader)
                     for project_yaml_data in yaml_data:
                         project = PreProject(project_yaml_data, project_url,
                                 short_name)
@@ -336,7 +336,7 @@ def get_projects_from_url(url, filter_term, headers=None, auth=None,
             projects[key] = project
             index.append((key, short_name))
     elif 'yaml' in content_type:
-        content = yaml.load_all(r.content.decode('utf-8'))
+        content = yaml.load_all(r.content.decode('utf-8'), Loader=yaml.FullLoader)
         for p in content:
             project = PreProject(p, base_url, None)
             short_name = project.title

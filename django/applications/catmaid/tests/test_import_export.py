@@ -363,7 +363,7 @@ class ImportExportTests(TestCase):
         # Export imported YAML data
         response = self.client.get('/projects/export')
         self.assertEqual(response.status_code, 200)
-        result_yaml = yaml.load(response.content.decode('utf-8'))
+        result_yaml = yaml.load(response.content.decode('utf-8'), Loader=yaml.FullLoader)
         test_result(result_yaml)
 
         # Export imported JSON data

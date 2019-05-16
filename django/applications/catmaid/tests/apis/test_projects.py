@@ -105,7 +105,7 @@ class ProjectsApiTests(CatmaidApiTestCase):
 
         response = self.client.get('/projects/export')
         self.assertEqual(response.status_code, 200)
-        result = yaml.load(response.content.decode('utf-8'))
+        result = yaml.load(response.content.decode('utf-8'), Loader=yaml.FullLoader)
 
         # Expect a returned list with four projects
         self.assertEqual(len(result), 4)

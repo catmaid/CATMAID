@@ -390,6 +390,9 @@ Miscellaneous:
 
 - Volume widget: volumes/meshes with annotation can now be removed properly.
 
+- Volume widget: editing a volume by double clicking its table entry works
+  again.
+
 - Exporter: connector links are now exported properly if the parameter
   --original-placeholder-context is used.
 

@@ -129,6 +129,23 @@
     };
   };
 
+  VolumeManagerWidget.prototype.initMode = function(modeKey) {
+    let content = document.querySelector(`div#${this.idPrefix}-content-${modeKey}`);
+    if (!content) {
+      throw new CATMAID.ValueError(`Could not find content element for mode "${modeKey}"`);
+    }
+    let mode = VolumeManagerWidget.Modes[modeKey];
+    if (!mode) {
+      throw new CATMAID.ValueError(`Could not find mode with key "${modeKey}"`);
+    }
+    // Empty target
+    while (content.lastChild) {
+      content.removeChild(content.lastChild);
+    }
+    // Init
+    mode.createContent(content, this);
+  };
+
   /**
    * Remove all displayed volumes.
    */
@@ -259,7 +276,7 @@
    * Request volume details, show edit controls and display a bounding box
    * overlay. If no volume ID is given, a new volume is assumed.
    */
-  VolumeManagerWidget.prototype.editVolume = function(volume, target) {
+  VolumeManagerWidget.prototype.editVolume = function(volume, target, cancel) {
     var self = this;
     var createNewVolume = !volume;
 
@@ -341,8 +358,15 @@
       }
     };
     $addContent.append($('<div class="clear" />'));
-    $addContent.append($('<div />')
-        .append($('<button>Reset</Cancel>')
+
+    let buttons = $('<div />');
+    if (CATMAID.tools.isFn(cancel)) {
+      buttons.append($('<button>Cancel</button>')
+        .on('click', function(e) {
+          cancel();
+        }));
+    }
+    buttons.append($('<button>Reset</button>')
           .on('click', function(e) {
             onClose(false, function() {
               // Reinitialize volume editing
@@ -375,7 +399,8 @@
               }
             }
             setTimeout(save, 100);
-          })));
+          }));
+    $addContent.append(buttons);
 
     $(target).append($addContent);
 
@@ -1013,7 +1038,11 @@
           var tr = $(this).closest("tr");
           var volume = widget.datatable.row(tr).data();
           widget.loadVolume(volume.id)
-            .then(widget.editVolume.bind(widget))
+            .then(v => {
+              widget.editVolume(v, container, () => {
+                widget.initMode('list');
+              });
+            })
             .catch(CATMAID.handleError);
         });
       },
@@ -1386,7 +1415,11 @@
           var tr = $(this).closest("tr");
           var volume = widget.innervationsDatatable.row(tr).data();
           widget.loadVolume(volume.id)
-            .then(widget.editVolume.bind(widget))
+            .then(v => {
+              return widget.editVolume(v, container, () => {
+                widget.initMode('innervations');
+              });
+            })
             .catch(CATMAID.handleError);
         });
       },

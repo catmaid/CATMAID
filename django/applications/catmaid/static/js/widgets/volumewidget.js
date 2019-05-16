@@ -889,10 +889,12 @@
               data: null,
               orderable: false,
               width: '15%',
-              defaultContent: '<ul class="resultTags"><li><a href="#" data-action="remove">Remove</a></li> ' +
+              defaultContent: '<ul class="resultTags">' +
                   '<li><a href="#" data-action="list-skeletons">List skeletons</a></li> ' +
-                  '<li><a href="#" data-action="list-connectors">List connectors</a></li>' +
-                  '<li><a href="#" data-action="export-STL">Export STL</a></ul></ul>'
+                  '<li><a href="#" data-action="list-connectors">List connectors</a></li> ' +
+                  '<li><a href="#" data-action="export-STL">Export STL</a></li> ' +
+                  '<li><a href="#" data-action="edit-volume">Edit</a></li> ' +
+                  '<li><a href="#" data-action="remove">Remove</a></li></ul>',
             }
           ],
         })
@@ -901,6 +903,22 @@
           var tr = $(this).closest('tr');
           var data =  $(table).DataTable().row(tr).data();
           data.selected = this.checked;
+        });
+
+        // Edit volume if 'edit' was clicked
+        $(table).on('click', 'a[data-action="edit-volume"]', function() {
+          var tr = $(this).closest("tr");
+          var volume = widget.datatable.row(tr).data();
+          widget.loadVolume(volume.id)
+            .then(v => {
+              widget.editVolume(v, container, () => {
+                widget.initMode('list');
+              });
+            })
+            .catch(CATMAID.handleError);
+
+          // Prevent event from bubbling up.
+          return false;
         });
 
         // Remove volume if 'remove' was clicked

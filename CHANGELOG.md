@@ -27,6 +27,13 @@
   coordinates anymore by default. If you need them, set the respective stack's
   `metadata` field to `{"clamp": false}`.
 
+- To write to CATMAID through its API using an API token, users need to have
+  now dedicated "API write" permission, called "Can annotate project using
+  API token" in the admin UI. To restore the previous behavior (regular annotate
+  permission allows API write access) the settings.py variable
+  `REQUIRE_EXTRA_TOKEN_PERMISSIONS` can be set to `False`. This is done as a
+  safety measure to prevent accidental changes through automation.
+
 
 ### Features and enhancements
 

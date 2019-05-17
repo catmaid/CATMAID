@@ -10,7 +10,8 @@ from itertools import groupby
 
 from guardian.core import ObjectPermissionChecker
 from guardian.models import UserObjectPermission, GroupObjectPermission
-from guardian.shortcuts import get_perms_for_model
+from guardian.shortcuts import (get_perms_for_model, get_user_perms,
+        get_group_perms)
 from guardian.utils import get_anonymous_user
 
 from django import forms
@@ -175,6 +176,14 @@ def requires_superuser():
 
     return decorated_with_requires_superuser
 
+
+def contains_read_roles(roles):
+    """
+    Returns False if the list of roles contains a "Browse" role, True otherwise.
+    """
+    return UserRole.Browse in roles
+
+
 def requires_user_role(roles):
     """
     This decorator will return a JSON error response unless the user is logged in
@@ -187,6 +196,16 @@ def requires_user_role(roles):
             u = request.user
 
             has_role = check_user_role(u, p, roles)
+            is_token_authenticated = getattr(request, '_is_token_authenticated', False)
+
+            # If a request is authenticated through an API token permissions are
+            # required, endpoints that require write/annotate permissions also
+            # need to have the TokenAnnotate permission. This is enforced also
+            # for admin accounts.
+            if is_token_authenticated and not contains_read_roles(roles) and \
+                    settings.REQUIRE_EXTRA_TOKEN_PERMISSIONS:
+                has_role = 'can_annotate_with_token' in get_user_perms(u, p) or \
+                        'can_annotate_with_token' in get_group_perms(u, p)
 
             if has_role:
                 # The user can execute the function.

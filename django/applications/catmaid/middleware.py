@@ -59,6 +59,7 @@ class CsrfBypassTokenAuthenticationMiddleware(object):
                 request.user = token_auth[0]
                 request.auth = token_auth[1]
                 request._dont_enforce_csrf_checks = True
+                request._is_token_authenticated = True
         except:
             pass
 

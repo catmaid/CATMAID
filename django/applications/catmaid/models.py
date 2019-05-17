@@ -50,6 +50,12 @@ class UserRole(object):
     Import = 'Import'
     QueueComputeTask = 'QueueComputeTask'
 
+    # The AnnotateWithToken user role allows users to do write (annotate)
+    # requests when using token authentication and not the regular front-end.
+    # This can be disabled using REQUIRE_EXTRA_TOKEN_PERMISSIONS = False in
+    # settings.py.
+    AnnotateWithToken = 'AnnotateWithToken'
+
 class Project(models.Model):
     title = models.TextField()
     comment = models.TextField(blank=True, null=True)
@@ -66,6 +72,7 @@ class Project(models.Model):
             ("can_browse", "Can browse projects"),
             ("can_import", "Can import into projects"),
             ("can_queue_compute_task", "Can queue resource-intensive tasks"),
+            ("can_annotate_with_token", "Can annotate project using API token"),
         )
 
     def __str__(self):

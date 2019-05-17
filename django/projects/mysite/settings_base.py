@@ -159,6 +159,13 @@ AUTHENTICATION_BACKENDS = (
     'rest_framework.authentication.TokenAuthentication',
 )
 
+# If a request is authenticated through an API token permissions are
+# required, endpoints that require write/annotate permissions also
+# need to have the TokenAnnotate permission. This is enforced also
+# for admin accounts.
+REQUIRE_EXTRA_TOKEN_PERMISSIONS = True
+
+
 # Project ID of a dummy project that will keep all ontologies and
 # classifications that are shared between multiple projects (and are
 # thereby project independent).

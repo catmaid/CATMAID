@@ -55,6 +55,14 @@ overridden in ``settings.py``. Below is an explanation of all available settings
      If a requests exceeds this limit, error code 400 is returned.
 
 .. glossary::
+   ``REQUIRE_EXTRA_TOKEN_PERMISSIONS``
+     To write to CATMAID through its API using an API token, users need to have
+     a dedicated "API write" permission, called "Can annotate project using API
+     token" in the admin UI. To allow users with regular annotate permission to
+     write to the backend using the API, this variable can be set to `False`.
+     The default value is `True`.
+
+.. glossary::
    ``SPATIAL_UPDATE_NOTIFICATIONS``
       If enabled, each spatial update (e.g placing, updating or deleting
       treenodes, connectors, connector links) will trigger a PostgreSQL event

@@ -1381,7 +1381,8 @@ def as_matrix(scores, a, b, transposed=False):
     if transposed:
         a, b = b, a
 
-    if score_type == robjects.vectors.FloatSexpVector:
+    if score_type in (rinterface.FloatSexpVector,
+            robjects.vectors.FloatVector):
         return robjects.r.matrix(scores, **{
             # We expect <a> to be the column vector and <b> to be the row vector.
             'ncol': len(base.names(a)),

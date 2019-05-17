@@ -1627,8 +1627,7 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False,
         # Make sure all temporary R values are garbage collected. With many
         # skeletons, this can otherwise become a memory problem quickly (the
         # Python GC doesn't now about the R memory).
-        del([r_nodes, r_connectors, r_tags, skeleton_data, skeleton_envelope,
-            skeleton_envelope_r])
+        del([r_nodes, r_connectors, r_tags, skeleton_data])
 
         # Explicitly garbage collect after each skeleton is loaded.
         gc.collect()

@@ -34,6 +34,9 @@
   `REQUIRE_EXTRA_TOKEN_PERMISSIONS` can be set to `False`. This is done as a
   safety measure to prevent accidental changes through automation.
 
+- If R based NBLAST is used, make sure to execute to update all dependencies:
+  `manage.py catmaid_setup_nblast_environment`.
+
 
 ### Features and enhancements
 

@@ -94,7 +94,7 @@ libraries_js = OrderedDict([
     ('numeric', ['numeric-1.2.6.js']),
     ('numjs', ['numjs.min.js']),
     ('three.js', ['three.js', 'controls/TrackballControls.js',
-                 'camera/CombinedCamera.js', 'Detector.js',
+                 'camera/CombinedCamera.js', 'WebGL.js',
                  'lines/LineSegmentsGeometry.js', 'lines/LineGeometry.js',
                  'lines/LineSegments2.js', 'lines/Line2.js',
                  'lines/LineMaterial.js', 'loaders/VRMLLoader.js',

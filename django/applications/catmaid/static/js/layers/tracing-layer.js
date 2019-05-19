@@ -12,7 +12,7 @@
    * @param {Object=}     options     Options passed to the tracing overlay.
    */
   function TracingLayer(stackViewer, options) {
-    if (!Detector.webgl) {
+    if (!WEBGL.isWebGLAvailable()) {
       throw new CATMAID.NoWebGLAvailableError("WebGL is required by the tracing layer, but not available");
     }
 

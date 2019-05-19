@@ -252,6 +252,8 @@ THREE.SVGRenderer = function () {
 				_vector3.setFromMatrixPosition( object.matrixWorld );
 				_vector3.applyMatrix4( _viewProjectionMatrix );
 
+				if ( _vector3.z < - 1 || _vector3.z > 1 ) return;
+
 				var x = _vector3.x * _svgWidthHalf;
 				var y = - _vector3.y * _svgHeightHalf;
 
@@ -409,7 +411,7 @@ THREE.SVGRenderer = function () {
 
 			_color.copy( material.color );
 
-			if ( material.vertexColors === THREE.FaceColors ) {
+			if ( material.vertexColors === THREE.FaceColors || material.vertexColors === THREE.VertexColors ) {
 
 				_color.multiply( element.color );
 
@@ -419,7 +421,7 @@ THREE.SVGRenderer = function () {
 
 			_diffuseColor.copy( material.color );
 
-			if ( material.vertexColors === THREE.FaceColors ) {
+			if ( material.vertexColors === THREE.FaceColors || material.vertexColors === THREE.VertexColors ) {
 
 				_diffuseColor.multiply( element.color );
 

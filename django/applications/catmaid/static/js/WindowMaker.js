@@ -353,7 +353,7 @@ var WindowMaker = new function()
   /** Creates and returns a new 3d webgl window */
   var create3dWebGLWindow = function(options)
   {
-    if ( !Detector.webgl ) {
+    if ( !WEBGL.isWebGLAvailable() ) {
       throw new CATMAID.NoWebGLAvailableError("The 3D Viewer requires WebGL, but it is not available");
     }
 

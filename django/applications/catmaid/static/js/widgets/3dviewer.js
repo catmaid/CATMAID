@@ -4150,7 +4150,7 @@
     if (this.zplane && this.zplaneLayerMeshes) {
       // Make sure we have a render target
       if (!this.zplaneRenderTarget) {
-        var size = renderer.getSize();
+        var size = renderer.getSize(new THREE.Vector2());
         this.zplaneRenderTarget = new THREE.WebGLRenderTarget(size.width, size.height, {
             minFilter: THREE.NearestFilter,
             magFilter: THREE.NearestFilter
@@ -4180,7 +4180,9 @@
         this.zplane.material = material;
       }
       // Render all zplane layers
-      renderer.render(this.zplaneScene, camera, this.zplaneRenderTarget, true);
+      renderer.setRenderTarget(this.zplaneRenderTarget);
+      renderer.clear();
+      renderer.render(this.zplaneScene, camera);
       renderer.setRenderTarget(null);
 
       // If wanted, the z pane map can be exported

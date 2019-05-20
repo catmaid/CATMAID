@@ -658,9 +658,8 @@
   SVGUtil.addStyles = function(xml, styles)
   {
     // Create style tag with same namesapce as input XML.
-    var styleTag = xml.createElement('style');
+    var styleTag = xml.createElementNS(xml.firstChild.namespaceURI, 'style');
     styleTag.setAttribute('type', 'text/css');
-    styleTag.setAttribute('xmlns', xml.firstChild.namespaceURI);
 
     // Prepend CSS embedded in CDATA section.
     styleTag.appendChild(xml.createCDATASection(styles));

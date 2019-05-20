@@ -1024,7 +1024,7 @@
 
   WebGLApplication.prototype.exportSynapsesAsCSV = function() {
     var header = "pre_skeleton_id, pre_treenode_id, post_skeleton_id, post_treenode_id\n";
-    let exporter = CATMAID.FileExporter(header, 'synapses.csv', 'text/csv');
+    let exporter = CATMAID.FileExporter.export(header, 'synapses.csv', 'text/csv');
     var unique = {};
     fetchSkeletons(
         this.getSelectedSkeletons(),
@@ -9089,7 +9089,7 @@
       }
 
       var rows = [];
-      var exporter = CATMAID.FileExporter('"Skeleton ID", "Name", "Count"\n',
+      var exporter = CATMAID.FileExporter.export('"Skeleton ID", "Name", "Count"\n',
           'catmaid-object-count.csv', 'text/csv');
 
       skids.forEach(function(skid) {

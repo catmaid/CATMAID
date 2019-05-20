@@ -3510,11 +3510,14 @@
     function makeMaterial(defaultOptions, sourceObj, sourceField) {
       var properties;
       if (copyProperties && sourceObj) {
-        properties = {};
         var sourceMaterial = sourceObj[sourceField];
-        properties['color'] = sourceMaterial.color;
-        properties['opacity'] = sourceMaterial.opacity;
-        properties['transparent'] = sourceMaterial.transparent;
+        properties = {
+          color: sourceMaterial.color,
+          opacity: sourceMaterial.opacity,
+          transparent: sourceMaterial.transparent,
+          depthWrite: sourceMaterial.depthWrite,
+          side: sourceMaterial.side,
+        };
       } else {
         properties = defaultOptions;
       }
@@ -3526,10 +3529,10 @@
                         todo:      makeMaterial({color: 0xff0000, opacity:0.6, transparent: true}, this.labelColors, 'todo'),
                         custom:    makeMaterial({color: options.custom_tag_spheres_color, opacity: options.custom_tag_spheres_opacity,
                                                  transparent: true}, this.labelColors, 'custom')};
-    this.synapticColors = [makeMaterial({color: 0xff0000, opacity:1.0, transparent:false}, this.synapticColors, 0),
-                           makeMaterial({color: 0x00f6ff, opacity:1.0, transparent:false}, this.synapticColors, 1),
-                           makeMaterial({color: 0x9f25c2, opacity:1.0, transparent:false}, this.synapticColors, 2)];
-    this.synapticColors.default = makeMaterial({color: 0xff9100, opacity:0.6, transparent:false});
+    this.synapticColors = [makeMaterial({color: 0xff0000, opacity:1.0, transparent:false, depthWrite: true, side: THREE.DoubleSide}, this.synapticColors, 0),
+                           makeMaterial({color: 0x00f6ff, opacity:1.0, transparent:false, depthWrite: true, side: THREE.DoubleSide}, this.synapticColors, 1),
+                           makeMaterial({color: 0x9f25c2, opacity:1.0, transparent:false, depthWrite: true, side: THREE.DoubleSide}, this.synapticColors, 2)];
+    this.synapticColors.default = makeMaterial({color: 0xff9100, opacity:0.6, transparent:false, depthWrite: true, side: THREE.DoubleSide});
   };
 
   WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createBoundingBox = function(stack) {
@@ -6641,7 +6644,10 @@
     }
     if (this.connectorSphereCollection) {
       var bufferGeometry = this.connectorSphereCollection.geometry;
-      var newMaterial = bufferGeometry.createMaterial(shading);
+      var newMaterial = bufferGeometry.createMaterial(shading, undefined, {
+        depthWrite: this.connectorSphereCollection.material.depthWrite,
+        side: this.connectorSphereCollection.material.side,
+      });
       this.connectorSphereCollection.material = newMaterial;
       this.connectorSphereCollection.material.needsUpdate = true;
     }
@@ -7232,7 +7238,10 @@
           partnerSpheres[o[3].node_id] = bufferObject;
         });
 
-        var sphereMaterial = geometry.createMaterial(materialType);
+        var sphereMaterial = geometry.createMaterial(materialType, undefined, {
+          depthWrite: true,
+          side: THREE.DoubleSide,
+        });
 
         var sphereMesh = new THREE.Mesh(geometry, sphereMaterial);
         this.connectorSelection[type] = {
@@ -7336,7 +7345,10 @@
       this.synapticSpheres[nodeId] = bufferObject;
     }).bind(this));
 
-    var material = geometry.createMaterial(shading);
+    var material = geometry.createMaterial(shading, undefined, {
+      depthWrite: true,
+      side: THREE.DoubleSide,
+    });
 
     this.connectorSphereCollection = new THREE.Mesh(geometry, material);
     if (!preventSceneUpdate) {

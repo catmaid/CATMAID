@@ -386,6 +386,9 @@ Miscellaneous:
 
 - Graph widget: merging of grouped skeletons is now handled properly.
 
+- 3D viewer: the depth test for connector partner spheres is now performed
+  correctly and spheres should be rendered in the correct Z order.
+
 - Connector table: the section and tag columns are now part of the CSV export.
 
 - Settings widget: default values for tracing layer skeleton limits can now be

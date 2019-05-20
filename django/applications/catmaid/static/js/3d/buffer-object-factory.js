@@ -493,7 +493,7 @@
    *                                  line property initialization.
    */
   MultiObjectInstancedBufferGeometry.prototype.createMaterial = function(
-      type, templateMaterial) {
+      type, templateMaterial, extraOptions = {}) {
     type = type || 'lambert';
     var material;
     if ('lambert' === type) {
@@ -502,10 +502,11 @@
       material = new CATMAID.ShaderMeshBasicMaterial(templateMaterial);
     }
 
-    // Needed for buffer geometry shader modifications
-    material.transparent = true;
-    material.depthTest = true;
-    material.depthWrite = false;
+    // The defaults are needed for buffer geometry shader modifications
+    material.transparent = extraOptions.transparent || true;
+    material.depthTest = extraOptions.depthTest || true;
+    material.depthWrite = extraOptions.depthWrite || false;
+    material.side = extraOptions.side || THREE.FrontSide;
 
     // Install snippets
     // Warning: morphing doesn't work with current THREE.js version, because

@@ -402,6 +402,10 @@ Miscellaneous:
 
 - 3D viewer: mouse controls now work correctly in fullscreen mode.
 
+- 3D viewer: the suggested width and height of the animation export are now by
+  default a factor of two. This is required by the WebM encoder. Off values are
+  reduce by one.
+
 - Connector table: the section and tag columns are now part of the CSV export.
 
 - Settings widget: default values for tracing layer skeleton limits can now be

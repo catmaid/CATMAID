@@ -1621,6 +1621,11 @@ a[data-role=url-to-clipboard] i {
   margin: 0 0.5em 0 0.5em;
 }
 
+a[data-role=url-to-clipboard] i:hover {
+  color: #ff8e43;
+  margin: 0 0.5em 0 0.5em;
+}
+
 .row-head {
   font-weight: bold;
   text-align: right;

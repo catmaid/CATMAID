@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import json
-import time
-import pytz
-import os
 from datetime import timedelta, datetime
 from dateutil import parser as dateparser
+import json
+import os
+import pytz
+import time
+from typing import Dict
 
 from django.conf import settings
 from django.http import JsonResponse
@@ -446,7 +447,7 @@ def stats_user_history(request, project_id=None):
         tmp_date = start_date + timedelta(days=i)
         days.append(tmp_date.strftime("%Y%m%d"))
         daysformatted.append(tmp_date.strftime("%a %d, %h %Y"))
-    stats_table = {}
+    stats_table = {} # type: Dict
     for userid in all_users:
         if userid == -1:
             continue

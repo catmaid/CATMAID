@@ -1397,10 +1397,11 @@ def as_matrix(scores, a, b, transposed=False):
 def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False,
         scale=None, conn=None, progress=False):
     """Get the R dotprops data structure for a set of skeleton IDs.
-    If <conn> is true, those skeletons will be requested thought HTTP.
+    If <conn> is true, those skeletons will be requested through HTTP.
     """
 
     if conn:
+        rcatmaid = importr('catmaid')
         objects = rcatmaid.read_neurons_catmaid(rinterface.IntSexpVector(skeleton_ids), **{
             'conn': conn,
             '.progress': 'text' if progress else 'none',
@@ -1579,7 +1580,7 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False,
                 ('radius', rinterface.FloatSexpVector, robjects.NA_Real),
                 ('confidence', rinterface.IntSexpVector, robjects.NA_Integer)
         ]
-        nodes = [(k,[]) for k,_,_ in node_cols]
+        nodes = [(k,[]) for k,_,_ in node_cols] # type: List
         for rn in raw_nodes:
                 for n, kv in enumerate(node_cols):
                         val = rn[n]
@@ -1598,7 +1599,7 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False,
                 ('y', rinterface.FloatSexpVector, robjects.NA_Real),
                 ('z', rinterface.FloatSexpVector, robjects.NA_Real)
         ]
-        connectors = [(k,[]) for k,_,_ in connector_cols]
+        connectors = [(k,[]) for k,_,_ in connector_cols] # type: List
         for rn in raw_connectors:
                 for n, kv in enumerate(connector_cols):
                         val = rn[n]
@@ -1628,7 +1629,7 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False,
         # Make sure all temporary R values are garbage collected. With many
         # skeletons, this can otherwise become a memory problem quickly (the
         # Python GC doesn't now about the R memory).
-        del([r_nodes, r_connectors, r_tags, skeleton_data])
+        del r_nodes, r_connectors, r_tags, skeleton_data
 
         # Explicitly garbage collect after each skeleton is loaded.
         gc.collect()

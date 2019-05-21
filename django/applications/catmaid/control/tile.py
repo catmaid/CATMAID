@@ -12,7 +12,7 @@ from catmaid.models import UserRole, TILE_SOURCE_TYPES
 from catmaid.control.common import ConfigurationError
 from catmaid.control.authentication import requires_user_role
 
-from io import StringIO
+from io import BytesIO
 
 
 logger = logging.getLogger(__name__)
@@ -103,7 +103,7 @@ def put_tile(request, project_id=None, stack_id=None):
 
     with closing(h5py.File(fpath, 'a')) as hfile:
         hdfpath = '/labels/scale/' + str(int(scale)) + '/data'
-        image_from_canvas = np.asarray( Image.open( StringIO(base64.decodestring(image)) ) )
+        image_from_canvas = np.asarray( Image.open( BytesIO(base64.decodestring(image)) ) )
         hfile[hdfpath][y:y+height,x:x+width,z] = image_from_canvas[:,:,0]
 
     return HttpResponse("Image pushed to HDF5.", content_type="plain/text")

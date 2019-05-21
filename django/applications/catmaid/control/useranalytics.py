@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import logging
-import numpy as np
 from datetime import timedelta, datetime
 from dateutil import parser as dateparser
-import pytz
 import io
+import logging
+import numpy as np
+import pytz
+from typing import Tuple
 
 from django.db import connection
 from django.http import HttpResponse
@@ -147,7 +148,7 @@ def eventTimes(user_id, project_id, start_date, end_date, all_writes=True):
 
     if all_writes:
         if project_id:
-            params = (start_date, end_date, user_id, project_id)
+            params = (start_date, end_date, user_id, project_id) # type: Tuple[str, ...]
             project_filter = "AND project_id = %s"
         else:
             params = (start_date, end_date, user_id)

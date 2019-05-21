@@ -165,7 +165,7 @@ def setup_tracing(project_id, user=None):
         if data_type == str:
             defaults['description'] = needed_relations[r]
         else:
-            defaults.update(needed_relations[r])
+            defaults.update(needed_relations[r]) # type: ignore
 
         Relation.objects.get_or_create(
             relation_name=r,

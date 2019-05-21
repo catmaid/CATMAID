@@ -8735,12 +8735,12 @@
         'animation-export-backforth', false);
     var nframesField = dialog.appendField("# Frames: ",
         "animation-export-nframes", '100');
+    var framerateField = dialog.appendField("Frame rate: ",
+        "animation-export-frame-rate", '25');
     var frameWidthField = dialog.appendField("Frame width (px): ",
         "animation-export-frame-width", this.space.canvasWidth);
     var frameHeightField = dialog.appendField("Frame height (px): ",
         "animation-export-frame-height", this.space.canvasHeight);
-    var framerateField = dialog.appendField("Frame rate: ",
-        "animation-export-frame-rate", '25');
     var restoreViewField = dialog.appendCheckbox('Restore view',
         'animation-export-restore-view', true);
     var camera = this.space.view.camera;

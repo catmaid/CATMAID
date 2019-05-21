@@ -286,6 +286,23 @@ Graph widget:
   with the same color into a single group. The user is asked for group names for
   each color.
 
+3D viewer:
+
+- A new synapse coloring mode has been added: polyadicity. The number of partner
+  nodes for each connector is color coded (for synaptic connectors, this is the
+  number of postsynapses). The colors and ranges can be configured through the
+  "Polyadicity colors" button in the "Shading parameters" tab. This is basically
+  a configurable version of an absolute "N with partner" coloring.
+
+- History animations can now be exported in full length without requiring to
+  guess the number of frames for the export. The animation export dialog will
+  show an additional checkbox ("Complete history") if a history animation should
+  be exported.  If complete history is enabled, CATMAID will export the complete
+  history of the exported skeletons.
+
+- Animations can now be exported as stream directly to a file, which allows for
+  much larger exports (32GB maximum at the moment).
+
 Miscellaneous:
 
 - Tracing layer: a minimum skeleton length can now be specified in the layer
@@ -312,15 +329,6 @@ Miscellaneous:
   than before, if "Save exported files in streaming mode" is enabled in the
   Settings Widget. To make this work, the browser settings (chrome://settings)
   "Ask where to save each file before downloading" has to be enabled.
-
-- 3D viewer: new synapse coloring mode, polyadicity. The number of partner nodes
-  for each connector is color coded (for synaptic connectors, this is the number
-  of postsynapses). The colors and ranges can be configured through the
-  "Polyadicity colors" button in the "Shading parameters" tab. This is basically
-  a configurable version of an absolute "N with partner" coloring.
-
-- 3D viewer: animations can now be exported as stream directly to a file, which
-  allows for much larger exports (32GB maximum at the moment).
 
 - Context aware help: by clicking the new question mark icon in the upper right
   corner, a context aware help dialog can be displayed on top of all other

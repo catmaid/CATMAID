@@ -8538,6 +8538,12 @@
         var visOpts = this.options.animation_stepwise_visibility_options;
 
         var widget = this;
+        let isDone = false;
+        if (params.completeHistory) {
+          params['isDone'] = function() {
+            return isDone;
+          };
+        }
         options['notify'] = function(currentDate, startDate, endDate) {
           CATMAID.tools.callIfFn(params.notify, currentDate, startDate, endDate);
 
@@ -8547,6 +8553,11 @@
             update = update.then(widget.refreshRestrictedConnectors.bind(widget));
           }
           update.then(widget.render.bind(widget));
+
+          // Stop if complete history is rendered
+          if (params.completeHistory && currentDate > endDate) {
+            isDone = true;
+          }
         };
         // Create a stop handler that resets visibility to the state we found before
         // the animation.
@@ -8560,6 +8571,7 @@
         options['tickLength'] = this.options.animation_hours_per_tick;
         options['emptyBoutLength'] = this.options.animation_history_empy_bout_length;
         options["skeletonOptions"] = this.options;
+        options['completeHistory'] = params.completeHistory;
 
         var models = this.getSelectedSkeletonModels();
         var skeletonIds = this.getSelectedSkeletons();
@@ -8733,9 +8745,11 @@
         "animation-export-rotation-time", '5');
     var backforthField = dialog.appendCheckbox('Back and forth',
         'animation-export-backforth', false);
+    var completeHistoryCheckbox = dialog.appendCheckbox('Complete history',
+        'animation-complete-history', true);
     var nframesField = dialog.appendField("# Frames: ",
         "animation-export-nframes", '100');
-    var framerateField = dialog.appendField("Frame rate: ",
+    var framerateField = dialog.appendField("Frames per second: ",
         "animation-export-frame-rate", '25');
     var frameWidthField = dialog.appendField("Frame width (px): ",
         "animation-export-frame-width", this.space.canvasWidth);
@@ -8748,17 +8762,25 @@
     var rotationAxis = this.options.animation_axis;
 
     nframesField.parentNode.style.display = 'none';
+    nframesField.disabled = true;
+    completeHistoryCheckbox.parentNode.style.display = 'none';
+    completeHistoryCheckbox.onchange = function() {
+      nframesField.disabled = this.checked;
+    };
+
     historyField.onchange = function() {
       if (this.checked) {
         rotationsField.parentNode.style.display = 'none';
         rotationtimeField.parentNode.style.display = 'none';
         backforthField.parentNode.style.display = 'none';
         nframesField.parentNode.style.display = 'block';
+        completeHistoryCheckbox.parentNode.style.display = 'block';
       } else {
         rotationsField.parentNode.style.display = 'block';
         rotationtimeField.parentNode.style.display = 'block';
         backforthField.parentNode.style.display = 'block';
         nframesField.parentNode.style.display = 'none';
+        completeHistoryCheckbox.parentNode.style.display = 'none';
       }
     };
 
@@ -8810,13 +8832,14 @@
           var framerate = parseInt(framerateField.value);
 
           // Collect options
-          var nframes;
+          let nframes;
           var options = {
             camera: camera,
             target: target,
           };
           if (historyField.checked) {
             nframes = parseInt(nframesField.value);
+            options.completeHistory = completeHistoryCheckbox.checked;
           } else {
             var rotations = parseInt(rotationsField.value);
             var rotationtime = parseFloat(rotationtimeField.value);
@@ -8925,7 +8948,14 @@
           // Get frame images
           var prepare;
           if (historyField.checked) {
-            prepare = this.createAnimation('history', options);
+            prepare = this.createAnimation('history', options)
+              .then(animation => {
+                if (options.completeHistory) {
+                  // Update frame number of frames to render.
+                  nframes = Infinity;
+                }
+                return animation;
+              });
           } else {
             prepare = Promise.resolve(CATMAID.AnimationFactory.createAnimation(options));
           }
@@ -8975,6 +9005,9 @@
     nframes = nframes || 100;
     startTime = startTime || 0;
 
+    // An optional terminal function
+    let isDone = CATMAID.tools.isFn(options.isDone) ? options.isDone : () => false;
+
     // Render each frame in own timeout to be able to update UI between frames.
     setTimeout(renderFrame.bind(this, animation, startTime, 0, nframes,
           width, height, onDone, onStep, shouldCancel), 5);
@@ -8994,7 +9027,7 @@
 
       // Render next frame if there are more frames
       var nextFrame = i + 1;
-      if (nextFrame < nframes) {
+      if (nextFrame < nframes && (!isDone())) {
         setTimeout(renderFrame.bind(this, animation, startTime, nextFrame,
               nframes, w, h, onDone, onStep, shouldCancel), 5);
       } else {

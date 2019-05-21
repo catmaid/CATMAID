@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 
 import json
-import django.contrib.auth.views as django_auth_views
+from typing import Any, Dict
 
 from guardian.utils import get_anonymous_user
 
 from django.http import JsonResponse
 from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth import views as auth_views
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib.auth.models import User
-from django.contrib.auth import views as auth_views
+import django.contrib.auth.views as django_auth_views
 
 from catmaid.control.authentication import access_check
 from catmaid.control.common import get_request_bool
@@ -126,7 +127,7 @@ def user_list_datatable(request):
         'iTotalRecords': num_records,
         'iTotalDisplayRecords': num_records,
         'aaData': []
-    }
+    } # type: Dict[str, Any]
 
     for user in result:
         response['aaData'] += [[
@@ -149,13 +150,6 @@ def update_user_profile(request):
     if request.user == get_anonymous_user() or not request.user.is_authenticated:
         return JsonResponse({'success': "The user profile of the " +
                 "anonymous user won't be updated"})
-
-    for var in []:
-        request_var = request.POST.get(var['name'], None)
-        if request_var:
-            request_var = var['parse'](request_var)
-            # Set new user profile values
-            setattr(request.user.userprofile, var['name'], request_var)
 
     # Save user profile
     request.user.userprofile.save()

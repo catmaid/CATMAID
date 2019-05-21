@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
-from typing import Dict
+from typing import Dict, Tuple
 
 from django.db import connection
 from django.http import HttpRequest, JsonResponse

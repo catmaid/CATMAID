@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+
 import logging
+from typing import List
 
 from django.db import connection
 from django.http import JsonResponse
@@ -37,7 +39,7 @@ def serialize_pointset(pointset, simple=False):
 
 def list_pointsets(project_id, user_id, simple, with_points=True,
         pointset_ids=None, order_by='id'):
-    extra_select = []
+    extra_select = [] # type: List
     extra_join = []
     query_params = {
         'project_id': project_id,

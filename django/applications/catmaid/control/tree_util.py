@@ -2,11 +2,13 @@
 
 # A 'tree' is a networkx.DiGraph with a single root node (a node without parents)
 
-from operator import itemgetter
-from networkx import Graph, DiGraph
 from collections import defaultdict
-from math import sqrt
 from itertools import islice
+from math import sqrt
+from networkx import Graph, DiGraph
+from operator import itemgetter
+from typing import Any, DefaultDict, List, Optional, Set, Tuple
+
 from catmaid.models import Treenode
 
 
@@ -23,7 +25,7 @@ def edge_count_to_root(tree, root_node=None):
     distances = {}
     count = 1
     current_level = [root_node if root_node else find_root(tree)]
-    next_level = []
+    next_level = [] # type: List
     while current_level:
         # Consume all elements in current_level
         while current_level:
@@ -89,7 +91,7 @@ def simplify(tree, keepers):
     reroot(tree, root)
     # For every keeper node, traverse towards the parent until
     # finding one that is in the minified graph, or is a branch node
-    children = defaultdict(int)
+    children = defaultdict(int) # type: DefaultDict[Any, int]
     seen_branch_nodes = set(keepers) # a copy
     paths = []
     # For all keeper nodes except the root
@@ -129,7 +131,7 @@ def partition(tree, root_node=None):
     one that finishes at the root.
     Each sequence runs from an end node to either the root or a branch node. """
     distances = edge_count_to_root(tree, root_node=root_node) # distance in number of edges from root
-    seen = set()
+    seen = set() # type: Set
     # Iterate end nodes sorted from highest to lowest distance to root
     endNodeIDs = (nID for nID in tree.nodes() if 0 == len(tree.successors(nID)))
     for nodeID in sorted(endNodeIDs, key=distances.get, reverse=True):
@@ -199,7 +201,7 @@ def lazy_load_trees(skeleton_ids, node_properties):
     in the django model of the Treenode table that is not the treenode id, parent_id
     or skeleton_id. """
 
-    values_list = ('id', 'parent_id', 'skeleton_id')
+    values_list = ('id', 'parent_id', 'skeleton_id') # type: Tuple[str, ...]
     props = tuple(set(node_properties) - set(values_list))
     values_list += props
 
@@ -207,7 +209,7 @@ def lazy_load_trees(skeleton_ids, node_properties):
             .order_by('skeleton') \
             .values_list(*values_list)
     skid = None
-    tree = None
+    tree = None # type: Optional[DiGraph]
     for t in ts:
         if t[2] != skid:
             if tree:
@@ -217,11 +219,11 @@ def lazy_load_trees(skeleton_ids, node_properties):
             tree = DiGraph()
 
         fields = {k: v for k,v in zip(props, islice(t, 3, 3 + len(props)))}
-        tree.add_node(t[0], fields)
+        tree.add_node(t[0], fields) # type: ignore # mypy cannot prove tree will have a value by this point
 
         if t[1]:
             # From child to parent
-            tree.add_edge(t[0], t[1])
+            tree.add_edge(t[0], t[1]) # type: ignore # mypy cannot prove tree will have a value by this point
 
     if tree:
         yield (skid, tree)

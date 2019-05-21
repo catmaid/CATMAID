@@ -1,7 +1,7 @@
-import json
-
 from collections import defaultdict
 from itertools import chain
+import json
+from typing import Any, DefaultDict, Dict, List
 
 from django.db import connection
 from django.http import JsonResponse
@@ -143,7 +143,7 @@ def list_samplers(request, project_id):
     if skeleton_ids:
         samplers = samplers.filter(skeleton_id__in=skeleton_ids)
 
-    domains = defaultdict(list)
+    domains = defaultdict(list) # type: DefaultDict[Any, List]
     if with_domains:
         domain_query = SamplerDomain.objects.filter(sampler__in=samplers) \
                 .prefetch_related('samplerdomainend_set')
@@ -920,7 +920,7 @@ def add_multiple_sampler_domains(request, project_id, sampler_id):
        required: true
     """
     sampler_id = int(sampler_id)
-    domains = get_request_list(request.POST, 'domains', map_fn)
+    domains = get_request_list(request.POST, 'domains', map_fn=json.loads)
 
     result_domains = []
     for domain in domains:
@@ -946,11 +946,13 @@ def add_multiple_sampler_domains(request, project_id, sampler_id):
 
         d = SamplerDomain.objects.create(
             sampler_id=sampler_id,
-            start_node=start_node,
-            domain_type=domain_type,
+            start_node=start_node_id,
+            domain_type=domain_type_id,
             parent_interval_id=parent_interval_id,
             user=request.user,
             project_id=project_id)
+
+        domain_ends = d.samplerdomainend_set.all()
 
         result_domains.append({
             "id": d.id,
@@ -963,66 +965,10 @@ def add_multiple_sampler_domains(request, project_id, sampler_id):
             "ends": [{
                 "id": e.id,
                 "node_id": e.end_node_id
-            } for e in domain_ends]
+            } for e in domain_ends] # FIXME: domain_ends is not defined in this function
         })
 
     return JsonResponse(result_domains, safe=False)
-
-
-@api_view(['GET'])
-@requires_user_role([UserRole.Browse])
-def list_domain_intervals(request, project_id, domain_id):
-    """Get a collection of available sampler domains intervals.
-    ---
-    parameters:
-     - name: domain_id
-       description: Domain to list intervals for
-       type: integer
-       paramType: form
-       required: true
-    models:
-      interval_entity:
-        id: interval_entity
-        description: A result domain interval.
-        properties:
-          id:
-            type: integer
-            description: Id of interval
-          creation_time:
-            type: string
-            description: The point in time the interval was created
-            required: true
-          edition_time:
-            type: string
-            description: The last point in time the interval was edited.
-            required: true
-          state_id:
-            type: integer
-            description: ID of interval state
-            required: true
-          user_id:
-            type: integer
-            description: User ID of interval creator.
-            required: true
-    type:
-      intervals:
-        type: array
-        items:
-          $ref: interval_entity
-        description: Matching intervals
-        required: true
-    """
-    domain_id = int(domain_id)
-    intervals = SamplerInterval.objects.filter(domain_id=domain_id)
-
-    return JsonResponse([{
-       'id': i.id,
-       'creation_time': float(i.creation_time.strftime('%s')),
-       'edition_time': float(i.edition_time.strftime('%s')),
-       'state_id': i.interval_state_id,
-       'user_id': i.user_id,
-    } for i in intervals], safe=False)
-
 
 @api_view(['GET'])
 @requires_user_role([UserRole.Browse])
@@ -1230,7 +1176,7 @@ def add_all_intervals(request, project_id, domain_id):
             if i[0] not in added_node_index]
     # Iterate over root intervals and create child nodes until another existing
     # node is found.
-    new_nodes = dict()
+    new_nodes = dict() # type: Dict
     for root_interval in existing_parent_intervals:
         current_interval = root_interval
         while current_interval:

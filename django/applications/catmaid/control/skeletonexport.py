@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 
 import array
+from collections import defaultdict, deque
+from datetime import datetime
+from functools import partial
 import json
 import logging
+from math import sqrt
 import msgpack
 import networkx as nx
+from psycopg2.extras import DateTimeTZRange
 import pytz
 import struct
-
-from functools import partial
-from collections import defaultdict, deque
-from math import sqrt
-from datetime import datetime
-
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
 from django.core.serializers.json import DjangoJSONEncoder
@@ -30,9 +29,6 @@ from catmaid.control.common import (get_relation_to_id_map, get_request_bool,
         get_request_list)
 from catmaid.control.review import get_treenodes_to_reviews, \
         get_treenodes_to_reviews_with_time
-
-from psycopg2.extras import DateTimeTZRange
-
 from catmaid.control.tree_util import edge_count_to_root, partition
 
 
@@ -1841,7 +1837,7 @@ def connector_polyadicity(request:HttpRequest, project_id=None) -> JsonResponse:
     })
 
     # Skeleton IDs vs. pre relation names vs. connector IDs vs. polyadicity.
-    skeleton_map = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+    skeleton_map = defaultdict(lambda: defaultdict(lambda: defaultdict(int))) # type: DefaultDict
 
     for row in cursor.fetchall():
         relation_map = skeleton_map[row[0]]

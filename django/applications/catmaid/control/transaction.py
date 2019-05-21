@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from typing import Dict
 from django.db import connection
 
 from catmaid.control.authentication import requires_user_role
@@ -208,7 +209,7 @@ class LocationRef(object):
     def __init__(self, d, key): self.d, self.key = d, key
     def get(self): return self.d[self.key].get()
 
-location_queries = {}
+location_queries = {} # type: Dict
 location_queries.update({
     # For annotations, select the root of the annotated neuron
     'annotations.add': LocationQuery("""

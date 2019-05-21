@@ -285,7 +285,7 @@ class LandmarkDetail(APIView):
         can_edit_or_fail(request.user, landmark_id, 'class_instance')
         name = request.data.get('name')
         if request.data.get('group_ids') == 'none':
-            group_ids = []
+            group_ids = [] # type: List
         else:
             group_ids = get_request_list(request.data, 'group_ids', map_fn=int)
         append_memberships = get_request_bool(request.data, 'append_memberships', False)
@@ -878,7 +878,7 @@ def get_landmark_memberships(project_id, landmark_ids):
         'project_id': project_id,
         'landmark_ids': landmark_ids,
     })
-    membership_index = defaultdict(list)
+    membership_index = defaultdict(list) # type: DefaultDict[Any, List]
     for r in cursor.fetchall():
         membership_index[r[0]].append(r[1])
     return membership_index
@@ -1193,7 +1193,7 @@ class LandmarkLocationDetail(APIView):
         if remaining_pci.count() == 0:
             try:
                 can_edit_or_fail(request.user, location_point, 'point')
-                Point.objects.get(pk=location__point).delete()
+                Point.objects.get(pk=location_point).delete()
                 deleted_point = True
             except:
                 pass

@@ -3,9 +3,13 @@
 import json
 import os
 import re
+from typing import List
 from xml.etree import ElementTree as ET
 
 from django.conf import settings
+from django.db import connection
+from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest
+from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 
 from catmaid.control.annotation import get_annotated_entities
@@ -14,18 +18,13 @@ from catmaid.control.common import get_request_list
 from catmaid.models import UserRole, Project, Volume
 from catmaid.serializers import VolumeSerializer
 
-from django.db import connection
-from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest
-from django.shortcuts import get_object_or_404
-
 from rest_framework import renderers
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-
-num = '[-+]?[0-9]*.?[0-9]+'
-bbox_re = r'BOX3D\(({0})\s+({0})\s+({0}),\s*({0})\s+({0})\s+({0})\)'.format(num)
+_num = '[-+]?[0-9]*.?[0-9]+'
+_bbox_re = r'BOX3D\(({0})\s+({0})\s+({0}),\s*({0})\s+({0})\s+({0})\)'.format(_num)
 
 def get_req_coordinate(request_dict, c):
     """Get a coordinate from a request dictionary or error.
@@ -302,7 +301,7 @@ def _stl_ascii_to_indexed_triangles(stl_str):
         raise InvalidSTLError("Malformed solid header/ footer")
     start = 1 if stl_items[1] == "facet" else 2
     stop = -1 if stl_items[-2] == "endfacet" else -2
-    vertices = []
+    vertices = [] # type: List
     triangles = []
     for facet in _chunk(stl_items[start:stop], 21):
         if any([
@@ -427,7 +426,7 @@ def get_volume_details(project_id, volume_id):
         raise ValueError("Could not find volume " + volume_id)
 
     # Parse bounding box into dictionary, coming in format "BOX3D(0 0 0,1 1 1)"
-    bbox_matches = re.search(bbox_re, volume[8])
+    bbox_matches = re.search(_bbox_re, volume[8])
     if not bbox_matches or len(bbox_matches.groups()) != 6:
         raise ValueError("Couldn't create bounding box for geometry")
     bbox = list(map(float, bbox_matches.groups()))
@@ -957,7 +956,7 @@ def find_volumes(project_id, annotation=None,
             })
         else:
             # Parse bounding box into dictionary, coming in format "BOX3D(0 0 0,1 1 1)"
-            bbox_matches = re.search(bbox_re, volume[8])
+            bbox_matches = re.search(_bbox_re, volume[8])
             if not bbox_matches or len(bbox_matches.groups()) != 6:
                 raise ValueError("Couldn't create bounding box for geometry")
             bbox = list(map(float, bbox_matches.groups()))
@@ -1035,7 +1034,6 @@ def _get_skeleton_innervations(project_id, skeleton_ids, volume_annotation,
         min_nodes=None, min_cable=None):
     # Build an intersection query for each volume bounding box with the passed
     # in set of skeletons.
-    query_parts = []
     query_params = {
         'project_id': project_id,
         'volume_ids': [v['id'] for v in

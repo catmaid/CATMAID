@@ -8,6 +8,7 @@ from typing import Any, Dict, List
 
 from celery.task import task
 from celery.utils.log import get_task_logger
+from django.contrib.gis.db import models as spatial_models
 from django.db import connection, transaction
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.decorators import method_decorator
@@ -151,7 +152,7 @@ def serialize_pointcloud(pointcloud, with_locations=False, with_images=False) ->
         # coordinates are expected to be in project space coordinates.
         data['locations'] = pointcloud.locations
 
-    if with_images: # FIXME: spatial_models is not defined for this mode
+    if with_images:
         data['z_proj_original_image'] = spatial_models.RasterField()
         data['z_proj_pointcloud_image'] = spatial_models.RasterField()
 

@@ -3,6 +3,7 @@
 import json
 import networkx as nx
 from networkx.readwrite import json_graph
+from typing import Dict
 
 from django.http import JsonResponse
 from django.db.models import Count
@@ -14,8 +15,8 @@ from catmaid.control.authentication import requires_user_role
 def get_wiring_diagram(project_id=None, lower_treenode_number_limit=0):
 
     # result dictionary: {connectorid: presyn_skeletonid}
-    tmp={}
-    result={}
+    tmp={} # type: Dict
+    result={} # type: Dict
     # get the presynaptic connections
     qs = TreenodeConnector.objects.filter(
         project=project_id,
@@ -56,7 +57,7 @@ def get_wiring_diagram(project_id=None, lower_treenode_number_limit=0):
             # connector with only postsynaptic connections
             pass
 
-    nodes_tmp={}
+    nodes_tmp={} # type: Dict
     edges=[]
 
     for k,v in result.items():

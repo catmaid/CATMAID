@@ -8933,7 +8933,12 @@
           prepare.then((function(animation) {
               this.getAnimationFrames(animation, nframes, undefined,
                   width, height, onDone, onStep, shouldCancel, options);
-            }).bind(this));
+            }).bind(this))
+            .catch(error => {
+              exportWasCanceled = true;
+              cleanup();
+              CATMAID.warn(error);
+            });
         } catch (e) {
           // Unblock UI and re-throw exception
           this.space.setSkeletonVisibility(visMap);

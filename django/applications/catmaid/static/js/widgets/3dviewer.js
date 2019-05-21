@@ -8742,7 +8742,7 @@
     var rotationsField = dialog.appendField("# Rotations: ",
         "animation-export-num-rotations", '1');
     var rotationtimeField = dialog.appendField("Rotation time (s): ",
-        "animation-export-rotation-time", '5');
+        "animation-export-rotation-time", '15');
     var backforthField = dialog.appendCheckbox('Back and forth',
         'animation-export-backforth', false);
     var completeHistoryCheckbox = dialog.appendCheckbox('Complete history',

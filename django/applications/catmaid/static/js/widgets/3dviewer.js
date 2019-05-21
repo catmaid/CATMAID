@@ -274,6 +274,9 @@
       THREEx.FullScreen.request(document.getElementById('viewer-3d-webgl-canvas' + this.widgetID));
       var w = window.innerWidth, h = window.innerHeight;
       this.resizeView( w, h );
+      // Explicitly resize controls, because the internal resize handler of the
+      // oribit controls isn't aware of full screen mode.
+      this.space.resizeControls(0, 0, w, h);
     }
     this.space.render();
   };
@@ -3162,6 +3165,19 @@
       if (skeleton.line_material.resolution) {
         skeleton.line_material.resolution.set(canvasWidth, canvasHeight);
       }
+    }
+  };
+
+  /**
+   * Allow explicit control over the display area that is mapped to the
+   * orbit controls.
+   */
+  WebGLApplication.prototype.Space.prototype.resizeControls = function(left, top, width, height) {
+    if (this.view.controls) {
+      this.view.controls.screen.left = left;
+      this.view.controls.screen.top = top;
+      this.view.controls.screen.width = width;
+      this.view.controls.screen.height = height;
     }
   };
 

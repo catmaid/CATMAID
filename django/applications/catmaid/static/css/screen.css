@@ -24,6 +24,7 @@ button {
   line-height: 13px;
 }
 
+input:not([type]),
 input[type=text],
 input[type=search],
 input[type=number],

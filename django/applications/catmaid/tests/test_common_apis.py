@@ -305,6 +305,7 @@ class ViewPageTests(TestCase):
             {'can_administer': [],
              'add_project': [],
              'can_annotate': [3],
+             'can_annotate_with_token': [],
              'change_project': [],
              'can_browse': [3],
              'can_import': [],

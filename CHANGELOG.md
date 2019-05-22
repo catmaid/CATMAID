@@ -306,6 +306,8 @@ Graph widget:
 - Animations can now be exported as stream directly to a file, which allows for
   much larger exports (32GB maximum at the moment).
 
+- Fractional rotations are now allowed in the animation export.
+
 - The default time per rotatio in the animation export is set to 15 seconds now,
   slowing down the default by a factor of 3, which makes it easier to look at.
 

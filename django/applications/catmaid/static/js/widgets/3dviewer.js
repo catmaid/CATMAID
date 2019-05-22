@@ -8988,7 +8988,7 @@
             nframes = parseInt(nframesField.value);
             options.completeHistory = completeHistoryCheckbox.checked;
           } else {
-            var rotations = parseInt(rotationsField.value);
+            var rotations = parseFloat(rotationsField.value);
             var rotationtime = parseFloat(rotationtimeField.value);
             nframes = Math.ceil(rotations * rotationtime * framerate);
             options.type = 'rotation';

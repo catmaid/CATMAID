@@ -2299,3 +2299,40 @@ Arbor.prototype.interpolatePositions = function(positions, interpolatableX,
 
   return interpolatedNodes;
 };
+
+/**
+ * Will find terminal branches whose end node is tagged with "not a branch" and
+ * remove them from the arbor, providing a callback function for every removed
+ * node.  tags: a map of tag name vs array of nodes with that tag, as retrieved by
+ * compact-arbor or compact-skeleton.
+ */
+Arbor.prototype.collapseArtifactualBranches = function(tags, callback) {
+  var notabranch = tags['not a branch'];
+  if (undefined === notabranch) return;
+  var be = this.findBranchAndEndNodes(),
+      ends = be.ends,
+      branches = be.branches,
+      edges = this.edges,
+      tagged = {};
+  for (var i=0; i<notabranch.length; ++i) {
+      tagged[notabranch[i]] = true;
+  }
+  callback = callback || CATMAID.noop;
+  for (var i=0; i<ends.length; ++i) {
+      var node = ends[i];
+      if (tagged[node]) {
+          let removedNodes = [];
+          while (node && !branches[node]) {
+              removedNodes.push(node);
+              // Continue to parent
+              var paren = edges[node];
+              delete edges[node];
+              node = paren;
+          }
+          // node is now the branch node, or null for a neuron without branches
+          if (!node) node = this.root;
+
+          callback(node, removedNodes);
+      }
+  }
+};

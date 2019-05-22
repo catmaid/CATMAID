@@ -1293,6 +1293,7 @@
     this.smooth_skeletons_sigma = 200; // nm
     this.resample_skeletons = false;
     this.resampling_delta = 3000; // nm
+    this.collapse_artifactual_branches = false;
     this.triangulated_lines = true;
     this.skeleton_line_width = 3;
     this.skeleton_node_scaling = 1.0;
@@ -7617,6 +7618,10 @@
       return ob;
     }, {});
 
+    if (options.collapse_artifactual_branches) {
+      [nodes, connectors] = collapseArtifactualBranches(nodes, connectors, tags);
+    }
+
     // Store for creation when requested
     // TODO could request them from the server when necessary
     this.tags = tags;
@@ -7940,6 +7945,56 @@
       this.actor['neurite'].computeLineDistances();
       this.actor['neurite'].scale.set(1, 1, 1);
     }
+  };
+
+  var collapseArtifactualBranches = function(nodes, connectors, tags) {
+    var arbor = new CATMAID.ArborParser().makeArbor(nodes).arbor;
+
+    let connectorMap = connectors.reduce((o, c) => {
+      let partnerTreenodeId = c[0];
+      let entries = o[partnerTreenodeId];
+      if (!entries) {
+        entries = [];
+        o[partnerTreenodeId] = entries;
+      }
+      entries.push(c);
+      return o;
+    }, {});
+
+    let removedNodes = {};
+    let movedConnectors = {};
+
+    let addNodeId = nodeId => removedNodes[nodeId] = true;
+    let addConnectors = function(nodeId) {
+      // Assume <this> is branch node Id
+      let connectors = connectorMap[nodeId];
+      if (connectors) {
+        for (let c of connectors) {
+          // c[1] is the connecctor ID
+          movedConnectors[c[1]] = this;
+        }
+      }
+    };
+    arbor.collapseArtifactualBranches(tags, (branchNodeId, removedNodeIds) => {
+      removedNodeIds.forEach(addNodeId);
+      // Find all connectors with that reference these nodes
+      removedNodeIds.forEach(addConnectors, branchNodeId);
+    });
+
+    nodes = nodes.filter(n => !removedNodes[n[0]]);
+    connectors = connectors.map(c => {
+      let newPartnerNodeId = movedConnectors[c[1]];
+      if (newPartnerNodeId !== undefined) {
+        let newC = c.slice();
+        // Set new partner node
+        newC[0] = newPartnerNodeId;
+        return newC;
+      } else {
+        return c;
+      }
+    });
+
+    return [nodes, connectors];
   };
 
   /**

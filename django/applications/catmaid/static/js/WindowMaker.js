@@ -1293,6 +1293,16 @@ var WindowMaker = new function()
             },
             title: 'If checked, nodes are filtered according to the filter rules (filter icon in top bar)'
           },
+          {
+            type: 'checkbox',
+            label: 'Collapse "not a branch"',
+            value: o.collapse_artifactual_branches,
+            onclick: function() {
+              WA.options.collapse_artifactual_branches = this.checked;
+              WA.updateSkeletons();
+            },
+            title: 'If enabled, collapses artifactual branches that are marked with the tag "not a branch".'
+          },
         ]);
 
     DOM.appendToTab(tabs['Shading parameters'],

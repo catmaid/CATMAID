@@ -294,6 +294,9 @@ Graph widget:
   "Polyadicity colors" button in the "Shading parameters" tab. This is basically
   a configurable version of an absolute "N with partner" coloring.
 
+- Branches with leaf nodes tagged "not a branch" can now be collapsed using the
+  'Collapse "not a branch"' checkbox in the Skeleton Filters tab.
+
 - History animations can now be exported in full length without requiring to
   guess the number of frames for the export. The animation export dialog will
   show an additional checkbox ("Complete history") if a history animation should

@@ -309,6 +309,10 @@ Graph widget:
 - The default time per rotatio in the animation export is set to 15 seconds now,
   slowing down the default by a factor of 3, which makes it easier to look at.
 
+- Animation exports can now include animated Z planes (e.g. EM data).
+  Configurable are the change frequency and the change step in terms of
+  sections.
+
 Miscellaneous:
 
 - Tracing layer: a minimum skeleton length can now be specified in the layer

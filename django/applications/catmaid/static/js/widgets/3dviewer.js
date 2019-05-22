@@ -4040,23 +4040,23 @@
     this.__notify();
   };
 
-  var setDepth = function(target, stack, source, offset) {
-    offset = offset === undefined ? 0 : offset;
+  var setDepth = function(target, stack, source, stackOffset = 0, projectOffset = 0) {
     switch (stack.orientation) {
       case CATMAID.Stack.ORIENTATION_XY:
-        target.z = stack.stackToProjectZ(source.z, source.y, source.x) + offset;
+        target.z = stack.stackToProjectZ(source.z + stackOffset, source.y, source.x) + projectOffset;
         break;
       case CATMAID.Stack.ORIENTATION_XZ:
-        target.y = stack.stackToProjectY(source.z, source.y, source.x) + offset;
+        target.y = stack.stackToProjectY(source.z + stackOffset, source.y, source.x) + projectOffset;
         break;
       case CATMAID.Stack.ORIENTATION_ZY:
-        target.x = stack.stackToProjectX(source.z, source.y, source.x) + offset;
+        target.x = stack.stackToProjectX(source.z + stackOffset, source.y, source.x) + projectOffset;
         break;
     }
     return target;
   };
 
-  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.updateZPlanePosition = function(space, stackViewer) {
+  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.updateZPlanePosition = function(
+      space, stackViewer, stackDepthOffset = 0, projectDepthOffset = 0) {
     var self = this;
     var zplane = this.zplane;
     if (!zplane) {
@@ -4066,7 +4066,7 @@
 
     // Find reference stack position, add set location of current layer.
     var pos = new THREE.Vector3(0, 0, 0);
-    setDepth(pos, stackViewer.primaryStack, stackViewer);
+    setDepth(pos, stackViewer.primaryStack, stackViewer, stackDepthOffset, projectDepthOffset);
     zplane.position.copy(pos);
 
     if (!this.zplaneLayerMeshes) {
@@ -4083,83 +4083,88 @@
         self.zplaneTileCounter += materials.length;
       }
     }
-    var notify = function() {
-      self.zplaneTileCounter--;
-      if (0 === self.zplaneTileCounter) {
-        zplane.material.uniforms['zplane'].needsUpdate = true;
-        space.render();
-      }
-    };
-    var handleError = function(error) {
-      this.__material.visible = false;
-      this.__material.map.needsUpdate = false;
-      this.__material.needsUpdate = true;
-      self.zplaneTileCounter--;
-      self.zplaneTileLoadErrors.push(error);
-      if (self.zplaneTileCounter === 0) {
-        //CATMAID.warn('Couldn\'t load ' + loadErrors.length + ' tile(s)');
-        space.render();
-      }
-    };
 
-    for (var i=0; i<this.zplaneLayers.length; ++i) {
-      var layer = this.zplaneLayers[i];
-      var stack = layer.stack;
-
-      // Find reference stack position, add set location of current layer.
-      var pos = new THREE.Vector3(0, 0, 0);
-      setDepth(pos, stack, stackViewer);
-      layer.mesh.position.copy(pos);
-
-      // Also update tile textures, if enabled
-      if (layer.hasImages) {
-        // Create materials and textures
-        var tileSource = layer.tileSource;
-        var zoomLevel = layer.zoomLevel;
-        var layerStack = layer.stack;
-        var nCols = getNZoomedParts(layerStack.dimension.x, zoomLevel,
-            tileSource.tileWidth);
-        var materials = layer.materials;
-        for (var m=0; m<materials.length; ++m) {
-          var material = materials[m];
-          var texture = material.map;
-          var image;
-          if (texture) {
-            image = texture.image;
-            // Make sure texture and material are not marked for updated before
-            // images are loaded.
-            texture.needsUpdate = false;
-            material.needsUpdate = false;
-          } else {
-            image = new Image();
-            image.crossOrigin = true;
-            texture = new THREE.Texture(image);
-            image.onload = loadTile;
-            image.onerror = handleError;
-            material.map = texture;
-          }
-          // Add some state information to image element to avoid creating a
-          // closure for a new function.
-          image.__material = material;
-          image.__notify = notify;
-
-          // Layers further up, will replace pixels from layers further down,
-          // they are (currently) not combined.
-          material.blending = THREE.CustomBlending;
-          material.blendEquation = THREE.AddEquation;
-          material.blendSrc = THREE.SrcAlphaFactor;
-          material.blendDst = THREE.OneMinusSrcAlphaFactor;
-          material.depthTest = false;
-
-          var slicePixelPosition = [stackViewer.z];
-          var col = m % nCols;
-          var row = (m - col) / nCols;
-          image.src = tileSource.getTileURL(project.id, layerStack,
-              slicePixelPosition, col, row, zoomLevel);
+    return new Promise((resolve, reject) => {
+      var notify = function() {
+        self.zplaneTileCounter--;
+        if (0 === self.zplaneTileCounter) {
+          zplane.material.uniforms['zplane'].needsUpdate = true;
+          space.render();
+          resolve();
         }
-        layer.mesh.material.needsUpdate = true;
+      };
+      var handleError = function(error) {
+        this.__material.visible = false;
+        this.__material.map.needsUpdate = false;
+        this.__material.needsUpdate = true;
+        self.zplaneTileCounter--;
+        self.zplaneTileLoadErrors.push(error);
+        if (self.zplaneTileCounter === 0) {
+          //CATMAID.warn('Couldn\'t load ' + loadErrors.length + ' tile(s)');
+          space.render();
+          resolve();
+        }
+      };
+
+      for (var i=0; i<this.zplaneLayers.length; ++i) {
+        var layer = this.zplaneLayers[i];
+        var stack = layer.stack;
+
+        // Find reference stack position, add set location of current layer.
+        var pos = new THREE.Vector3(0, 0, 0);
+        setDepth(pos, stack, stackViewer, stackDepthOffset, projectDepthOffset);
+        layer.mesh.position.copy(pos);
+
+        // Also update tile textures, if enabled
+        if (layer.hasImages) {
+          // Create materials and textures
+          var tileSource = layer.tileSource;
+          var zoomLevel = layer.zoomLevel;
+          var layerStack = layer.stack;
+          var nCols = getNZoomedParts(layerStack.dimension.x, zoomLevel,
+              tileSource.tileWidth);
+          var materials = layer.materials;
+          for (var m=0; m<materials.length; ++m) {
+            var material = materials[m];
+            var texture = material.map;
+            var image;
+            if (texture) {
+              image = texture.image;
+              // Make sure texture and material are not marked for updated before
+              // images are loaded.
+              texture.needsUpdate = false;
+              material.needsUpdate = false;
+            } else {
+              image = new Image();
+              image.crossOrigin = true;
+              texture = new THREE.Texture(image);
+              image.onload = loadTile;
+              image.onerror = handleError;
+              material.map = texture;
+            }
+            // Add some state information to image element to avoid creating a
+            // closure for a new function.
+            image.__material = material;
+            image.__notify = notify;
+
+            // Layers further up, will replace pixels from layers further down,
+            // they are (currently) not combined.
+            material.blending = THREE.CustomBlending;
+            material.blendEquation = THREE.AddEquation;
+            material.blendSrc = THREE.SrcAlphaFactor;
+            material.blendDst = THREE.OneMinusSrcAlphaFactor;
+            material.depthTest = false;
+
+            var slicePixelPosition = [stackViewer.z + stackDepthOffset];
+            var col = m % nCols;
+            var row = (m - col) / nCols;
+            image.src = tileSource.getTileURL(project.id, layerStack,
+                slicePixelPosition, col, row, zoomLevel);
+          }
+          layer.mesh.material.needsUpdate = true;
+        }
       }
-    }
+    });
   };
 
   WebGLApplication.prototype.Space.prototype.StaticContent.prototype.beforeRender = function(scene, renderer, camera) {
@@ -8557,6 +8562,9 @@
         backandforth: this.options.animation_back_forth,
       };
 
+      let notifyListeners = [];
+      let stopListeners = [];
+
       // Add a notification handler for stepwise visibility, if enabled and at least
       // one skeleton is loaded.
       var visType = this.options.animation_stepwise_visibility_type;
@@ -8564,12 +8572,25 @@
         // Get current visibility map and create notify handler
         var visMap = this.space.getVisibilityMap();
         var visOpts = this.options.animation_stepwise_visibility_options;
-        options['notify'] = this.createStepwiseVisibilityHandler(visMap,
-            visType, visOpts);
+        notifyListeners.push(this.createStepwiseVisibilityHandler(visMap,
+            visType, visOpts));
         // Create a stop handler that resets visibility to the state we found before
         // the animation.
-        options['stop'] = this.createVisibibilityResetHandler(visMap);
+        stopListeners.push(this.createVisibibilityResetHandler(visMap));
       }
+
+      options['notify'] = () => {
+        for (let l of notifyListeners) {
+          l.apply(window, arguments);
+        }
+      };
+
+      options['stop'] = () => {
+        for (let l of stopListeners) {
+          l.apply(window, arguments);
+        }
+      };
+
 
       var animation = CATMAID.AnimationFactory.createAnimation(options);
       return Promise.resolve(animation);
@@ -8757,7 +8778,13 @@
       return function() {};
     } else if (CATMAID.tools.isFn(visibility)) {
       var visibleSkeletons = [];
-      return function (r) {
+      let lastRotationSeen;
+      return function (r, tr) {
+        // Only act on new rotation counts.
+        if (r === lastRotationSeen) {
+          return;
+        }
+        lastRotationSeen = r;
         visibility(options, skeletonIds, visibleSkeletons, r);
         widget.space.setSkeletonVisibility(visMap, visibleSkeletons);
       };
@@ -8776,6 +8803,27 @@
       this.space.setSkeletonVisibility(visMap);
       this.space.render();
     }).bind(this);
+  };
+
+  WebGLApplication.prototype.createZPlaneChangeHandler = function(frameChangeRate, changeStep) {
+    // Show Z plane
+    this.options.show_zplane = true;
+    this.adjustStaticContent();
+
+    let steps = 0;
+    return (rotation, frame) => {
+      steps = Math.floor(frame / frameChangeRate);
+      let offset = steps * changeStep;
+      return this.space.staticContent.updateZPlanePosition(this.space, project.focusedStackViewer, offset);
+    };
+  };
+
+  WebGLApplication.prototype.createZPlaneResetHandler = function(visible, zLocation) {
+    return () => {
+      this.space.staticContent.updateZPlanePosition(this.space, project.focusedStackViewer);
+      this.options.show_zplane = visible;
+      this.adjustStaticContent();
+    };
   };
 
   /**
@@ -8811,6 +8859,18 @@
     var frameHeightField = dialog.appendField("Frame height (px): ",
         "animation-export-frame-height", this.space.canvasHeight % 2 === 0 ?
         this.space.canvasHeight : (this.space.canvasHeight - 1));
+    var zSectionField = dialog.appendCheckbox('Animate Z plane',
+        'animation-export-restore-view', this.options.show_zplane);
+    var zSectionChangeRate = dialog.appendField("Z plane changes per sec: ",
+        "animation-export-z-change-rate", '2');
+    var zSectionStep = dialog.appendField("Z plane Change step (n): ",
+        "animation-export-z-step", '1');
+
+    if (!this.options.show_zplane) {
+      zSectionChangeRate.parentNode.style.display = 'none';
+      zSectionStep.parentNode.style.display = 'none';
+    }
+
     var restoreViewField = dialog.appendCheckbox('Restore view',
         'animation-export-restore-view', true);
     var camera = this.space.view.camera;
@@ -8824,20 +8884,20 @@
       nframesField.disabled = this.checked;
     };
 
+    zSectionField.onchange = function() {
+      let newDisplayVal = this.checked ? 'block' : 'none';
+      zSectionChangeRate.parentNode.style.display = newDisplayVal;
+      zSectionStep.parentNode.style.display = newDisplayVal;
+    };
+
     historyField.onchange = function() {
-      if (this.checked) {
-        rotationsField.parentNode.style.display = 'none';
-        rotationtimeField.parentNode.style.display = 'none';
-        backforthField.parentNode.style.display = 'none';
-        nframesField.parentNode.style.display = 'block';
-        completeHistoryCheckbox.parentNode.style.display = 'block';
-      } else {
-        rotationsField.parentNode.style.display = 'block';
-        rotationtimeField.parentNode.style.display = 'block';
-        backforthField.parentNode.style.display = 'block';
-        nframesField.parentNode.style.display = 'none';
-        completeHistoryCheckbox.parentNode.style.display = 'none';
-      }
+      let rotationVisibility = this.checked ? 'none' : 'block';
+      let historyVisibility = this.checked ? 'block' : 'none';
+      rotationsField.parentNode.style.display = rotationVisibility;
+      rotationtimeField.parentNode.style.display = rotationVisibility;
+      backforthField.parentNode.style.display = rotationVisibility;
+      nframesField.parentNode.style.display = historyVisibility;
+      completeHistoryCheckbox.parentNode.style.display = historyVisibility;
     };
 
     var docURL = CATMAID.makeDocURL('user_faq.html#faq-3dviewer-webm');
@@ -8907,17 +8967,38 @@
             options.restoreView = restoreViewField.checked;
           }
 
+          let notifyListeners = [];
+          let stopListeners = [];
+
           // Add a notification handler for stepwise visibility, if enabled and at least
           // one skeleton is loaded.
           if ('all' !== this.options.animation_stepwise_visibility_type) {
             var visType = this.options.animation_stepwise_visibility_type;
             var visOpts = this.options.animation_stepwise_visibility_options;
-            options['notify'] = this.createStepwiseVisibilityHandler(visMap,
-                visType, visOpts);
+            notifyListeners.push(this.createStepwiseVisibilityHandler(visMap,
+                visType, visOpts));
             // Create a stop handler that resets visibility to the state we found before
             // the animation.
-            options['stop'] = this.createVisibibilityResetHandler(visMap);
+            stopListeners.push(this.createVisibibilityResetHandler(visMap));
           }
+
+          if (zSectionField.checked) {
+            notifyListeners.push(this.createZPlaneChangeHandler(
+                Number(zSectionChangeRate.value) * framerate, Number(zSectionStep.value)));
+            // Create a stop handler that resets visibility to the state we found before
+            // the animation.
+            stopListeners.push(this.createZPlaneResetHandler());
+          }
+
+          options['notify'] = function() {
+            return Promise.all(notifyListeners.map(l => l(...arguments)));
+          };
+
+          options['stop'] = function() {
+            for (let l of stopListeners) {
+              l.apply(window, arguments);
+            }
+          };
 
           // Set up export without any existing information. An encoder is not
           // used, because we want to write binary data directly.
@@ -8950,6 +9031,7 @@
 
           let exportWasCanceled = false;
           let cleanup = () => {
+              options.stop();
               // Reset visibility and unblock UI
               this.space.setSkeletonVisibility(visMap);
 
@@ -9075,7 +9157,10 @@
         return;
       }
       /* jshint validthis: true */ // `this` is bound to this WebGLApplication
-      animation.update(startTime + i);
+      let promiseUpdate = animation.update(startTime + i);
+      if (!promiseUpdate) {
+        promiseUpdate = Promise.resolve();
+      }
       // Make sure we still render with the correct size and redraw
       this.resizeView(w, h);
       // Add canvas to output array and callback
@@ -9084,8 +9169,10 @@
       // Render next frame if there are more frames
       var nextFrame = i + 1;
       if (nextFrame < nframes && (!isDone())) {
-        setTimeout(renderFrame.bind(this, animation, startTime, nextFrame,
-              nframes, w, h, onDone, onStep, shouldCancel), 5);
+        promiseUpdate.then(() => {
+          setTimeout(renderFrame.bind(this, animation, startTime, nextFrame,
+                nframes, w, h, onDone, onStep, shouldCancel), 5);
+        });
       } else {
         // Restore original view, if not disabled
         if (options.restoreView) {

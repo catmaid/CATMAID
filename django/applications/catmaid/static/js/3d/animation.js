@@ -149,10 +149,11 @@
       var currentRotation = Math.floor(rad / (2 * Math.PI));
       if (currentRotation !== numRotations) {
         numRotations = currentRotation;
-        // Call notification function, if any
-        if (notify) {
-          notify(currentRotation);
-        }
+      }
+      // Call notification function, if any
+      let promiseNotify;
+      if (notify) {
+        promiseNotify = notify(currentRotation, t);
       }
 
       // In back and forth mode, movement direction is reversed once a full circle
@@ -172,6 +173,8 @@
       workingUp.copy(originalUp);
       workingUp.applyMatrix4(m);
       camera.up.copy(workingUp);
+
+      return promiseNotify;
     };
   };
 

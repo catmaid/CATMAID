@@ -313,6 +313,9 @@ Graph widget:
   Configurable are the change frequency and the change step in terms of
   sections.
 
+- The rotation time for animations can now specified in seconds rather than
+  angular distance.
+
 Miscellaneous:
 
 - Tracing layer: a minimum skeleton length can now be specified in the layer

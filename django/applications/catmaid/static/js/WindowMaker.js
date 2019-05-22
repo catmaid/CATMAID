@@ -1435,9 +1435,19 @@ var WindowMaker = new function()
           }],
           ['Stop', WA.stopAnimation.bind(WA)],
           [axisOptionsLabel],
-          ['Rotation speed', o.animation_rotation_speed, '', function() {
-            WA.options.animation_rotation_speed = parseFloat(this.value);
-           }, 5],
+          {
+            type: 'numeric',
+            label: 'Rotation time (sec)',
+            value: o.animation_rotation_time,
+            length: 4,
+            min: 0,
+            onchange: function() {
+              let value = Number(this.value);
+              if (!Number.isNaN(value)) {
+                WA.options.animation_rotation_time = value;
+              }
+            },
+          },
           {
             type: 'select',
             label: 'Neuron visibility:',

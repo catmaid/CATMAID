@@ -1304,8 +1304,9 @@
     this.distance_to_active_node = 5000; // nm
     this.min_synapse_free_cable = 5000; // nm
     this.lock_view = false;
+    this.animation_fps = 25;
     this.animation_rotation_axis = "up";
-    this.animation_rotation_speed = 0.01;
+    this.animation_rotation_time = 15;
     this.animation_back_forth = false;
     this.animation_stepwise_visibility_type = 'all';
     this.animation_stepwise_visibility_options = null;
@@ -8432,21 +8433,42 @@
   /**
    * Render loop for the given animation.
    */
-  WebGLApplication.prototype.renderAnimation = function(animation, t, singleFrame, options)
-  {
-    // Make sure we know this animation
-    this.animation = animation;
-    this.animationTime = t;
-    // Quere next frame for next time point
-    if (!singleFrame) {
-      this.animationRequestId = window.requestAnimationFrame(
-          this.renderAnimation.bind(this, animation, t + 1, false));
-    }
+  WebGLApplication.prototype.renderAnimation = (function() {
+    let delta, now, then = Date.now();
+    return function(animation, t, singleFrame, options) {
+      let interval = 1000 / this.options.animation_fps;
 
-    // Update animation and then render
-    animation.update(t, options);
-    this.space.render();
-  };
+      // Make sure we know this animation
+      this.animation = animation;
+      this.animationTime = t;
+      // Quere next frame for next time point
+      if (singleFrame) {
+        // Update animation and then render
+        animation.update(t, options)
+          .then(() => this.space.render())
+          .catch(CATMAID.handleError);
+      } else {
+        now = Date.now();
+        delta = now - then;
+
+        if (delta > interval) {
+          then = now - (delta % interval);
+
+          // Update animation and then render
+          animation.update(t, options)
+            .then(() => {
+              this.space.render();
+              this.animationRequestId = window.requestAnimationFrame(
+                  this.renderAnimation.bind(this, animation, t + 1, false, options));
+            })
+            .catch(CATMAID.handleError);
+        } else {
+          this.animationRequestId = window.requestAnimationFrame(
+              this.renderAnimation.bind(this, animation, t, false, options));
+        }
+      }
+    };
+  })();
 
   /**
    * Start the given animation.
@@ -8558,7 +8580,7 @@
         axis: this.options.animation_axis,
         camera: this.space.view.camera,
         target: this.space.view.controls.target,
-        speed: this.options.animation_rotation_speed,
+        speed: 2 * Math.PI / (this.options.animation_rotation_time * this.options.animation_fps),
         backandforth: this.options.animation_back_forth,
       };
 

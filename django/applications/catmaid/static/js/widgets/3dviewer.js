@@ -1070,7 +1070,6 @@
 
   /** Return a list of skeleton IDs that have nodes within radius of the active node. */
   WebGLApplication.prototype.spatialSelect = function() {
-    if (!this.options.show_active_node) return alert("Enable active node!");
     var active_skid = SkeletonAnnotations.getActiveSkeletonId(),
         skeletons = this.space.content.skeletons;
     if (!active_skid) return alert("No active skeleton!");

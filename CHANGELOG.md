@@ -409,6 +409,8 @@ Miscellaneous:
   default a factor of two. This is required by the WebM encoder. Off values are
   reduce by one.
 
+- 3D viewer: spatial select works now also without the active node highlighted.
+
 - Connector table: the section and tag columns are now part of the CSV export.
 
 - Settings widget: default values for tracing layer skeleton limits can now be

@@ -150,6 +150,10 @@
 
     var onpointerdown = function( e )
     {
+      if (!project.canMove()) {
+        return;
+      }
+
       self.mouseCatcher.style.cursor = 'move';
 
       // We need to call the global UI handler explicitly, because we use

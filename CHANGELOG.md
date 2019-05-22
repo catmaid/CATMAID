@@ -411,6 +411,9 @@ Miscellaneous:
 
 - 3D viewer: spatial select works now also without the active node highlighted.
 
+- 3D viewer: no error is shown any more when attempting to move while in radius
+  edit mode.
+
 - Connector table: the section and tag columns are now part of the CSV export.
 
 - Settings widget: default values for tracing layer skeleton limits can now be

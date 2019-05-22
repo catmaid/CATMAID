@@ -4447,7 +4447,7 @@
   };
 
   WebGLApplication.prototype.Space.prototype.View.prototype.createControls = function() {
-    var controls = new THREE.TrackballControls( this.camera, this.renderer.domElement );
+    var controls = new THREE.TrackballControls( this.camera, this.space.container );
     controls.rotateSpeed = 1.0;
     controls.zoomSpeed = 3.2;
     controls.panSpeed = 1.5;

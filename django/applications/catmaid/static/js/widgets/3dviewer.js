@@ -8877,7 +8877,7 @@
     var rotationtimeField = dialog.appendField("Rotation time (s): ",
         "animation-export-rotation-time", '15');
     var backforthField = dialog.appendCheckbox('Back and forth',
-        'animation-export-backforth', false);
+        'animation-export-backforth', this.options.animation_back_forth);
     var completeHistoryCheckbox = dialog.appendCheckbox('Complete history',
         'animation-complete-history', true);
     var nframesField = dialog.appendField("# Frames: ",

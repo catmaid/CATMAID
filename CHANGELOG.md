@@ -309,9 +309,9 @@ Graph widget:
 - The default time per rotatio in the animation export is set to 15 seconds now,
   slowing down the default by a factor of 3, which makes it easier to look at.
 
-- Animation exports can now include animated Z planes (e.g. EM data).
-  Configurable are the change frequency and the change step in terms of
-  sections.
+- Stack Z slices can now be animated. Configurable are the change frequency and
+  the change step in terms of sections. This is available for animation exports
+  as well.
 
 - The rotation time for animations can now specified in seconds rather than
   angular distance.

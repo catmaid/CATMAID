@@ -1512,7 +1512,64 @@ var WindowMaker = new function()
           },
           ['Back and forth', o.animation_back_forth, function() {
             WA.options.animation_back_forth = this.checked;
-          }, false]
+          }, false],
+          {
+            type: 'checkbox',
+            label: 'Animate stack Z plane',
+            value: o.animation_animate_z_plane,
+            onclick: function() {
+              WA.options.animation_animate_z_plane = this.checked;
+              let changeFreqField = document.getElementById(
+                  '3dviewer-animation-zplane-change-frequency-' + WA.widgetID);
+              let changeStepField = document.getElementById(
+                  '3dviewer-animation-zplane-change-step-' + WA.widgetID);
+              if (changeFreqField) {
+                if (this.checked) {
+                  changeFreqField.removeAttribute('disabled');
+                } else {
+                  changeFreqField.setAttribute('disabled', 'disabled');
+                }
+              }
+              if (changeStepField) {
+                if (this.checked) {
+                  changeStepField.removeAttribute('disabled');
+                } else {
+                  changeStepField.setAttribute('disabled', 'disabled');
+                }
+              }
+            },
+            title: 'If checked, the Z plane will be animated using the change frequency and step parameters.',
+          },
+          {
+            type: 'numeric',
+            label: 'Z plane changes/sec',
+            id: '3dviewer-animation-zplane-change-frequency-' + WA.widgetID,
+            value: o.animation_zplane_changes_per_sec,
+            length: 3,
+            min: 0,
+            disabled: !o.animation_animate_z_plane,
+            onchange: function() {
+              let value = Number(this.value);
+              if (!Number.isNaN(value)) {
+                o.animation_zplane_changes_per_sec = value;
+              }
+            },
+          },
+          {
+            type: 'numeric',
+            label: 'Z plane change step',
+            id: '3dviewer-animation-zplane-change-step-' + WA.widgetID,
+            value: o.animation_zplane_change_step,
+            length: 3,
+            disabled: !o.animation_animate_z_plane,
+            onchange: function() {
+              let value = Math.floor(Number(this.value));
+              if (!Number.isNaN(value)) {
+                o.animation_zplane_changes_per_sec = value;
+              }
+              this.value = value;
+            },
+          },
         ]);
 
     var historyTimeDisplay = document.createElement('span');

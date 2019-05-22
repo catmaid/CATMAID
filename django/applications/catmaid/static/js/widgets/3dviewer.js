@@ -1308,6 +1308,9 @@
     this.animation_rotation_axis = "up";
     this.animation_rotation_time = 15;
     this.animation_back_forth = false;
+    this.animation_animate_z_plane = false;
+    this.animation_zplane_changes_per_sec = 10;
+    this.animation_zplane_change_step = 2;
     this.animation_stepwise_visibility_type = 'all';
     this.animation_stepwise_visibility_options = null;
     this.animation_hours_per_tick = 4;
@@ -8601,10 +8604,17 @@
         stopListeners.push(this.createVisibibilityResetHandler(visMap));
       }
 
-      options['notify'] = () => {
-        for (let l of notifyListeners) {
-          l.apply(window, arguments);
-        }
+      if (this.options.animation_animate_z_plane) {
+        notifyListeners.push(this.createZPlaneChangeHandler(
+            this.options.animation_fps / Number(this.options.animation_zplane_changes_per_sec),
+            Number(this.options.animation_zplane_change_step)));
+        // Create a stop handler that resets visibility to the state we found before
+        // the animation.
+        stopListeners.push(this.createZPlaneResetHandler());
+      }
+
+      options['notify'] = function() {
+        return Promise.all(notifyListeners.map(l => l(...arguments)));
       };
 
       options['stop'] = () => {
@@ -8612,7 +8622,6 @@
           l.apply(window, arguments);
         }
       };
-
 
       var animation = CATMAID.AnimationFactory.createAnimation(options);
       return Promise.resolve(animation);
@@ -8881,12 +8890,12 @@
     var frameHeightField = dialog.appendField("Frame height (px): ",
         "animation-export-frame-height", this.space.canvasHeight % 2 === 0 ?
         this.space.canvasHeight : (this.space.canvasHeight - 1));
-    var zSectionField = dialog.appendCheckbox('Animate Z plane',
+    var zSectionField = dialog.appendCheckbox('Animate stack Z plane',
         'animation-export-restore-view', this.options.show_zplane);
     var zSectionChangeRate = dialog.appendField("Z plane changes per sec: ",
-        "animation-export-z-change-rate", '2');
+        "animation-export-z-change-rate", this.options.animation_zplane_changes_per_sec);
     var zSectionStep = dialog.appendField("Z plane Change step (n): ",
-        "animation-export-z-step", '1');
+        "animation-export-z-step", this.options.animation_zplane_change_step);
 
     if (!this.options.show_zplane) {
       zSectionChangeRate.parentNode.style.display = 'none';

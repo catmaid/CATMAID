@@ -1565,7 +1565,7 @@ var WindowMaker = new function()
             onchange: function() {
               let value = Math.floor(Number(this.value));
               if (!Number.isNaN(value)) {
-                o.animation_zplane_changes_per_sec = value;
+                o.animation_zplane_change_step = value;
               }
               this.value = value;
             },

@@ -342,7 +342,7 @@
      */
     this.moveTo = function(zp, yp, xp, sp, completionCallback) {
       if (!this.canMove()) {
-        return Promise.resolve("A location change is not possible at this moment");
+        return Promise.reject(new CATMAID.Warning("A location change is not possible at this moment"));
       }
 
       self.coordinates.x = xp;
@@ -373,7 +373,7 @@
      */
     this.moveToProject = function(zp, yp, xp, res, completionCallback) {
       if (!this.canMove()) {
-        return Promise.reject("A location change is not possible at this moment");
+        return Promise.reject(new CATMAID.Warning("A location change is not possible at this moment"));
       }
 
       self.coordinates.x = xp;

@@ -120,12 +120,13 @@
       CATMAID.ui.onpointermove( e );
 
       self.stackViewer.moveToPixel(
-        self.stackViewer.z,
-        self.stackViewer.y - CATMAID.ui.diffY / self.stackViewer.scale
-                              / self.stackViewer.primaryStack.anisotropy(0).y,
-        self.stackViewer.x - CATMAID.ui.diffX / self.stackViewer.scale
-                              / self.stackViewer.primaryStack.anisotropy(0).x,
-        self.stackViewer.s );
+          self.stackViewer.z,
+          self.stackViewer.y - CATMAID.ui.diffY / self.stackViewer.scale
+                                / self.stackViewer.primaryStack.anisotropy(0).y,
+          self.stackViewer.x - CATMAID.ui.diffX / self.stackViewer.scale
+                                / self.stackViewer.primaryStack.anisotropy(0).x,
+          self.stackViewer.s )
+        .catch(CATMAID.handleError);
 
       return true;
     };

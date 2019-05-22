@@ -9015,7 +9015,7 @@
 
           if (zSectionField.checked) {
             notifyListeners.push(this.createZPlaneChangeHandler(
-                Number(zSectionChangeRate.value) * framerate, Number(zSectionStep.value)));
+                framerate / Number(zSectionChangeRate.value), Number(zSectionStep.value)));
             // Create a stop handler that resets visibility to the state we found before
             // the animation.
             stopListeners.push(this.createZPlaneResetHandler());

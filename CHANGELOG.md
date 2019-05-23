@@ -726,6 +726,8 @@ Miscellaneous:
   the N most recently edited skeletons. This settings adds to the skeletons
   selected by the N largest skeletons filter.
 
+- Many tables should now allow for larger CSV exports.
+
 - WebGL layers are now preferred by default.
 
 - Project statistics: a top ten of the largest neurons is now displayed.

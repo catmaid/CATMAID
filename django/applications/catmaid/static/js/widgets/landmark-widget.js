@@ -2977,6 +2977,7 @@
             document.createElement('table'));
         let existingDTDataTable = $(existingDTTable).DataTable({
           data: widget.displayTransformations,
+          autoWidth: false,
           order: [],
           columns: [
             {

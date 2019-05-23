@@ -2733,7 +2733,9 @@
     }
     for (var i=0; i<existingMeshes.length; ++i) {
       var material = existingMeshes[i].material;
-      if (color !== null) {
+
+      // Text materials don't have colors at the moment.
+      if (material.color !== undefined && color !== null) {
         material.color.set(color);
         material.needsUpdate = true;
       }

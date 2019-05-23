@@ -362,9 +362,8 @@
       return row.join(',');
     }).join('\n');
     var blob = new Blob([csv], {type: 'text/plain'});
-    var skeletonIds = this.skeletonSource.getSelectedSkeletons().join('-');
-    saveAs(blob, "catmaid-connectors-" + relation + "-skeleton-" +
-        skeletonIds + ".csv");
+    var skeletonIds = this.skeletonSource.getSelectedSkeletons();
+    saveAs(blob, `catmaid-connectors-${relation}-${skeletonIds.length}-skeletons.csv`);
   };
 
   /**

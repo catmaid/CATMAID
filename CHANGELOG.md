@@ -728,6 +728,10 @@ Miscellaneous:
 
 - Many tables should now allow for larger CSV exports.
 
+- Connector table: the exported CSV file has now a more reasonable name and
+  doesn't include all skeleton IDs anymore (this became impractical with larger
+  sets).
+
 - WebGL layers are now preferred by default.
 
 - Project statistics: a top ten of the largest neurons is now displayed.

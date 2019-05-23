@@ -1508,7 +1508,7 @@ div.selection-table.windowContent {
   margin: 0 0 0 0 ;
 }
 
-.customselect ul label {
+.customselect ul > label {
   display: list-item;
 }
 

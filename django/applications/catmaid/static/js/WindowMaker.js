@@ -694,12 +694,9 @@ var WindowMaker = new function()
       e.stopPropagation();
     };
 
-    var updateVolumeSubiv = function(volumeId, e) {
-      var smooth = e.target.checked;
-      var subdiv = smooth ? 3 : 0;
+    var updateVolumeSubiv = function(volumeId, smooth, subdivisions) {
+      var subdiv = smooth ? (subdivisions === undefined ? 3 : subdivisions) : 0;
       WA.setVolumeSubdivisions(volumeId, subdiv);
-      // Stop propagation or the general volume list change handler is called.
-      e.stopPropagation();
     };
 
     var updateVolumeBb = function(volumeId, e) {
@@ -731,10 +728,25 @@ var WindowMaker = new function()
             faces, updateVolumeFaces.bind(null, volumeId));
         facesCb.style.display = 'inline';
 
+        // Make sure a change signal is not propagated, otherwise the menu
+        // closes.
+        var subdivInput = CATMAID.DOM.createNumericField(undefined, ' ',
+            "The number of subdivisions to use.", '3', undefined,
+            (e) => {
+              updateVolumeSubiv(volumeId, subdivCb.querySelector('input').checked, e.target.value);
+              e.stopPropagation();
+            },
+            3, undefined, !!subdiv, 1, 0, undefined, undefined);
+
         var subdivCb = CATMAID.DOM.appendCheckbox(volumeControls, "Subdivide",
             "Whether meshes should be smoothed by subdivision",
-            !!subdiv, updateVolumeSubiv.bind(null, volumeId));
+            !!subdiv, (e) => {
+              updateVolumeSubiv(volumeId, e.target.checked, parseInt(subdivInput.querySelector('input').value));
+              // Stop propagation or the general volume list change handler is called.
+              e.stopPropagation();
+            });
         subdivCb.style.display = 'inline';
+        volumeControls.appendChild(subdivInput);
 
         var bbCb = CATMAID.DOM.appendCheckbox(volumeControls, "BB",
             "Whether or not to show the bounding box of this mesh",

@@ -2559,7 +2559,7 @@
             // Create virtual skeleton
             let skeleton = new WebGLApplication.prototype.Space.prototype.Skeleton(
                 this.space, skeletonModel);
-            skeleton.loadJson(skeletonModel, json, options, false, undefined, true);
+            skeleton.loadJson(skeletonModel, json, options, false, undefined, false);
 
             // Use colorizer with simple source shading (see above)
             var colorizer = CATMAID.makeSkeletonColorizer(options);
@@ -2567,8 +2567,9 @@
 
             // Instead of displaying the skeleton using show(), we extract its
             // mesh and add it ourselves.
+            let radiusVolumes = Object.values(skeleton.radiusVolumes);
             let data = {
-              meshes: [skeleton.actor.neurite],
+              meshes: [skeleton.actor.neurite].concat(radiusVolumes),
               skeleton: skeleton,
             };
             transform.push(data);

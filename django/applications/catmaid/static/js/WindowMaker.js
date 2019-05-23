@@ -1114,7 +1114,7 @@ var WindowMaker = new function()
                  Math.max(0, this.value);
              WA.adjustStaticContent();
             }},
-          {type: 'numeric', label: 'Z plane opacity', value: o.zplane_opacity, length: 2,
+          {type: 'numeric', label: 'Z plane opacity', value: o.zplane_opacity, length: 4,
             title: 'The opacity of displayed Z planes', onchange: function(e) {
               var value = parseFloat(this.value);
               if (value) {

@@ -1115,7 +1115,7 @@ var WindowMaker = new function()
              WA.adjustStaticContent();
             }},
           {type: 'numeric', label: 'Z plane opacity', value: o.zplane_opacity, length: 4,
-            title: 'The opacity of displayed Z planes', onchange: function(e) {
+            min: 0, max: 1, step: 0.1, title: 'The opacity of displayed Z planes', onchange: function(e) {
               var value = parseFloat(this.value);
               if (value) {
                 WA.options.zplane_opacity = value;

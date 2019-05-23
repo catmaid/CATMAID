@@ -1614,7 +1614,7 @@ def connectivity_matrix_csv(request:HttpRequest, project_id) -> StreamingHttpRes
 
 
 def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids,
-        with_locations=False) -> defaultdict:
+        with_locations=False) -> DefaultDict[Any, Dict]:
     """
     Return a sparse connectivity matrix representation for the given skeleton
     IDS. The returned dictionary has a key for each row skeleton having
@@ -1902,7 +1902,7 @@ def join_skeleton(request:HttpRequest, project_id=None) -> JsonResponse:
         raise Exception(response_on_error + ':' + str(e))
 
 
-def make_annotation_map(annotation_vs_user_id, neuron_id, cursor=None) -> dict:
+def make_annotation_map(annotation_vs_user_id, neuron_id, cursor=None) -> Dict:
     """ Create a mapping of annotation IDs to dictionaries with 'user_id',
     'edition_time' and 'creation_time' fields.
     """
@@ -1935,7 +1935,7 @@ def make_annotation_map(annotation_vs_user_id, neuron_id, cursor=None) -> dict:
 
 
 def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
-        annotation_map, sampler_handling=None) -> dict:
+        annotation_map, sampler_handling=None) -> Dict[str, Any]:
     """ Take the IDs of two nodes, each belonging to a different skeleton, and
     make to_treenode be a child of from_treenode, and join the nodes of the
     skeleton of to_treenode into the skeleton of from_treenode, and delete the
@@ -2131,7 +2131,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
 
 def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleton_id,
         win_treenode_id, lose_treenode_id, win_sampler_handling,
-        lose_sampler_handling):
+        lose_sampler_handling) -> Optional[Dict[str, Any]]:
     """Update the sampler configuration for the passed in skeletons under the
     assumption that this is part of a merge operation.
     """
@@ -2492,7 +2492,7 @@ def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
 
 
 def _import_skeleton(user, project_id, arborescence, neuron_id=None,
-        skeleton_id=None, name=None, force=False, auto_id=True) -> dict:
+        skeleton_id=None, name=None, force=False, auto_id=True) -> Dict[str, Any]:
     """Create a skeleton from a networkx directed tree.
 
     Associate the skeleton to the specified neuron, or a new one if none is
@@ -2753,7 +2753,7 @@ def annotation_list(request:HttpRequest, project_id=None) -> JsonResponse:
 
 
 def get_annotation_info(project_id, skeleton_ids, annotations, metaannotations,
-                        neuronnames) -> dict:
+                        neuronnames) -> Dict[str, Any]:
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
 
@@ -2920,7 +2920,7 @@ def list_skeletons(request:HttpRequest, project_id) -> JsonResponse:
 
 
 def _list_skeletons(project_id, created_by=None, reviewed_by=None, from_date=None,
-          to_date=None, nodecount_gt=0):
+          to_date=None, nodecount_gt=0) -> List:
     """ Returns a list of skeleton IDs of which nodes exist that fulfill the
     given constraints (if any). It can be constrained who created nodes in this
     skeleton during a given period of time. Having nodes that are reviewed by
@@ -3158,7 +3158,7 @@ def skeletons_by_node_labels(request:HttpRequest, project_id=None) -> JsonRespon
     return JsonResponse(cursor.fetchall(), safe=False)
 
 
-def get_skeletons_in_bb(params):
+def get_skeletons_in_bb(params) -> List:
     cursor = connection.cursor()
     extra_joins = []
     extra_where = []

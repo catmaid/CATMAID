@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import sys
 import numpy as np
 import progressbar
+import sys
+from typing import Dict
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection
@@ -198,7 +199,7 @@ class Command(BaseCommand):
                         ) triangle(volume_id, triangle_id, points)
                         WHERE array_length(points, 1) = 4;
             """)
-            volumes = {}
+            volumes = {} # type: Dict
             for tri in cursor.fetchall():
                 entry = volumes.get(tri[0])
                 if not entry:

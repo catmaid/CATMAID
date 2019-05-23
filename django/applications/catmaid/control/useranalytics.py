@@ -6,10 +6,10 @@ import io
 import logging
 import numpy as np
 import pytz
-from typing import Tuple
+from typing import Any, Dict, List, Tuple
 
 from django.db import connection
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.views.decorators.cache import never_cache
@@ -66,7 +66,7 @@ class Bout(object):
 
 @never_cache
 @requires_user_role(UserRole.Browse)
-def plot_useranalytics(request, project_id):
+def plot_useranalytics(request:HttpRequest, project_id) -> HttpResponse:
     """ Creates an SVG image containing different plots for analzing the
     performance of individual users over time.
     """
@@ -115,7 +115,7 @@ def plot_useranalytics(request, project_id):
     plt.savefig(buf, format='svg')
     return HttpResponse(buf.getvalue(), content_type='image/svg+xml')
 
-def eventTimes(user_id, project_id, start_date, end_date, all_writes=True):
+def eventTimes(user_id, project_id, start_date, end_date, all_writes=True) -> Dict[str, Any]:
     """ Returns a tuple containing a list of tree node edition times, connector
     edition times and tree node review times within the date range specified
     where the editor/reviewer is the given user.
@@ -169,7 +169,7 @@ def eventTimes(user_id, project_id, start_date, end_date, all_writes=True):
 
     return events
 
-def eventsPerInterval(times, start_date, end_date, interval='day'):
+def eventsPerInterval(times, start_date, end_date, interval='day') -> Tuple[np.ndarray, List]:
     """ Creates a histogram of how many events fall into all intervals between
     <start_data> and <end_date>. The interval type can be day, hour and
     halfhour. Returned is a tuple containing two elemens: the histogram and a
@@ -200,7 +200,7 @@ def eventsPerInterval(times, start_date, end_date, interval='day'):
 
     return timebins, timeaxis
 
-def activeTimes( alltimes, gapThresh ):
+def activeTimes(alltimes, gapThresh):
     """ Goes through the sorted array of time differences between all events
     stored in <alltimes>. If two events are closer together than <gapThresh>
     minutes, they are counted as events within one bout. A tuple containing a
@@ -221,7 +221,7 @@ def activeTimes( alltimes, gapThresh ):
             # Increment current bout's event counter and continue with the
             # next element as long as the time difference to the next
             # element is below our threshold.
-            bout.addEvent(e)
+            bout.addEvent(e) # type: ignore # mypy cannot prove bout will not be None
             continue
         else:
             # Return current bout (not available in first iteration) and create
@@ -273,7 +273,7 @@ def singleDayEvents( alltimes, start_hour, end_hour ):
                 activity[a.hour-start_hour] += 1
     return np.true_divide(activity,(alltimes[-1] - alltimes[0]).days), timeaxis
 
-def singleDayActiveness( activebouts, increment, start_hour, end_hour ):
+def singleDayActiveness(activebouts, increment, start_hour, end_hour) -> Tuple[Any, Any]:
     """ Returns a ... for all bouts between <start_hour> and <end_hour> of the
     day.
     """
@@ -338,7 +338,7 @@ def singleDayActiveness( activebouts, increment, start_hour, end_hour ):
     # Return a tuple containing a list durations and a list of timepoints
     return durations, timeaxis
 
-def splitBout(bout,increment):
+def splitBout(bout,increment) -> List[Bout]:
     """ Splits one bout in periods of <increment> minutes.
     """
     if np.mod(60, increment) > 0:
@@ -510,7 +510,7 @@ def eventsPerIntervalPerDayPlot(ax,times,start_date,end_date,interval=60):
 
     timeaxis = [i for i in range(24 * 60 / interval )]
     timelabels = []
-    for i in range(24 * 60 / 30):
+    for i in range(int(24 * 60 / 30)):
         if np.mod(i,2)==0:
             timelabels.append( str(i/2) + ':00' )
         else:

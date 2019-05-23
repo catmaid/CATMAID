@@ -6,7 +6,7 @@ import logging
 import numpy as np
 import base64
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 
 from catmaid.models import UserRole, TILE_SOURCE_TYPES
 from catmaid.control.common import ConfigurationError
@@ -35,7 +35,7 @@ except ImportError:
 
 
 @requires_user_role([UserRole.Browse])
-def get_tile(request, project_id=None, stack_id=None):
+def get_tile(request:HttpRequest, project_id=None, stack_id=None) -> HttpResponse:
 
     if not tile_loading_enabled:
         raise ConfigurationError("HDF5 tile loading is currently disabled")
@@ -83,7 +83,7 @@ def get_tile(request, project_id=None, stack_id=None):
     return response
 
 @requires_user_role([UserRole.Annotate])
-def put_tile(request, project_id=None, stack_id=None):
+def put_tile(request:HttpRequest, project_id=None, stack_id=None) -> HttpResponse:
     """ Store labels to HDF5 """
 
     if not tile_loading_enabled:
@@ -111,13 +111,18 @@ def put_tile(request, project_id=None, stack_id=None):
 
 class TileSource(object):
 
-    def get_canaray_url(self, mirror):
-        """Get the canarary URL for this mirror.
+    def get_canary_url(self, mirror) -> str:
+        """Get the canary URL for this mirror.
         """
         loc = mirror.stack.canary_location
         col = int(loc.x / mirror.tile_width)
         row = int(loc.y / mirror.tile_height)
         return self.get_tile_url(mirror, (col, row, loc.z))
+
+    def get_tile_url(self, mirror, tile_coords, zoom_level=0) -> str:
+        if True:
+            raise Exception("Internal error: get_tile_url() should not be called from the parent TileSource class")
+        return '' # For signature matching
 
 
 class DefaultTileSource(TileSource):
@@ -127,7 +132,7 @@ class DefaultTileSource(TileSource):
 
     description = "File-based image stack"
 
-    def get_tile_url(self, mirror, tile_coords, zoom_level=0):
+    def get_tile_url(self, mirror, tile_coords, zoom_level=0) -> str:
         path = mirror.image_base
         n_coords = len(tile_coords)
         for c in range( 2, n_coords ):
@@ -146,7 +151,7 @@ class BackslashTileSource(TileSource):
 
     description = "File-based image stack with zoom level directories"
 
-    def get_tile_url(self, mirror, tile_coords, zoom_level=0):
+    def get_tile_url(self, mirror, tile_coords, zoom_level=0) -> str:
         path = mirror.image_base
         n_coords = len(tile_coords)
         for c in range( 2, n_coords ):
@@ -165,7 +170,7 @@ class LargeDataTileSource(TileSource):
 
     description = "Directory-based image stack"
 
-    def get_tile_url(self, mirror, tile_coords, zoom_level=0):
+    def get_tile_url(self, mirror, tile_coords, zoom_level=0) -> str:
         path = "%s%s/" % (mirror.image_base, zoom_level)
         n_coords = len(tile_coords)
         for c in range( 2, n_coords ):

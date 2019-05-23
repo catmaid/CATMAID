@@ -432,7 +432,7 @@ class ConfigurationList(APIView):
         scoring = data
 
         return NblastConfig.objects.create(project_id=project_id,
-            user=user, name=name, status='complete', # FIXME: user is not defined
+            user=user_id, name=name, status='complete',
             distance_breaks=distance_breaks, dot_breaks=dot_breaks,
             match_sample=match_sample, random_sample=random_sample,
             scoring=None, tangent_neighbors=tangent_neighbors)
@@ -465,7 +465,7 @@ class ConfigurationList(APIView):
                     probability=probability)
 
         config = NblastConfig.objects.create(project_id=project_id,
-            user=user, name=name, status='queued', # FIXME: user is not defined
+            user=user_id, name=name, status='queued',
             distance_breaks=distance_breaks, dot_breaks=dot_breaks,
             match_sample=match_sample, random_sample=random_sample,
             scoring=None, tangent_neighbors=tangent_neighbors)
@@ -626,7 +626,7 @@ def compute_nblast_config(config_id, user_id, use_cache=True) -> str:
 
 
 def get_all_object_ids(project_id, user_id, object_type, min_nodes=500,
-        min_soma_nodes=20, soma_tags=('soma'), limit=None):
+        min_soma_nodes=20, soma_tags=('soma'), limit=None) -> List:
     """Return all IDs of objects that fit the query parameters.
     """
     cursor = connection.cursor()

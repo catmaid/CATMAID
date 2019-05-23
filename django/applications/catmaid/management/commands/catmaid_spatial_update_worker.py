@@ -1,10 +1,11 @@
+from collections import defaultdict
 import json
 import logging
 import select
 import signal
 import time
+from typing import Dict, List, Set
 
-from collections import defaultdict
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -41,7 +42,7 @@ class GridWorker():
 
         # Find a grid cache for each provider and make sure each cache is only
         # referenced onece
-        self.grid_caches = []
+        self.grid_caches = [] # type: List
         for provider in enabled_grid_cache_providers:
             # If a particular cache is referenced explicitly, use it if it is
             # enabled.
@@ -64,13 +65,13 @@ class GridWorker():
         indices with each grid, update existing grids and create missing ones.
         """
         # Batch of grids to update during one run
-        grid_coords_to_update = {}
+        grid_coords_to_update = {} # type: Dict
         for update in updates:
             self.updatesReceived += 1
             self.get_intersected_grid_cell_ids(update,
                     cursor, create=True, grid_coords_to_update=grid_coords_to_update)
 
-        dirty_rows = set()
+        dirty_rows = set() # type: Set
         for grid_id, coords in grid_coords_to_update.items():
             for c in coords:
                 self.cellsMarkedDirty += 1
@@ -169,7 +170,7 @@ class GridWorker():
 class Command(BaseCommand):
     help = ""
     # The queue to process. Subclass and set this.
-    queue = []
+    queue = [] # type: List
     notify_channel = "catmaid.spatial-update"
 
     def add_arguments(self, parser):
@@ -188,7 +189,7 @@ class Command(BaseCommand):
         self.delay = options['delay']
         self.grid_cache_update = options['grid_cache']
 
-        self.workers = []
+        self.workers = [] # type: List
 
         if options['grid_cache']:
             self.workers.append(GridWorker())
@@ -205,7 +206,6 @@ class Command(BaseCommand):
             signal.signal(signal.SIGTERM, self.handle_shutdown)
 
             while True:
-                #self.run_available_tasks()
                 self.wait_and_queue()
         except InterruptedError:
             # got shutdown signal
@@ -217,31 +217,6 @@ class Command(BaseCommand):
             self._shutdown = True
         else:
             raise InterruptedError
-
-    def run_available_tasks(self):
-        """
-        Runs tasks continuously until there are no more available.
-        """
-        # Prevents tasks that failed from blocking others.
-        failed_tasks = set()
-        while True:
-            job = None
-            self._in_task = True
-            try:
-                job = self.queue.run_once(exclude_ids=failed_tasks)
-            except Exception as e:
-                logger.exception('Error in %r: %r.', e.job, e, extra={
-                    'data': {
-                        'job': e.job.to_json(),
-                    },
-                })
-                failed_tasks.add(e.job.id)
-            self._in_task = False
-            if self._shutdown:
-                raise InterruptedError
-            if not job:
-                break
-
 
     def listen(self):
         with connection.cursor() as cur:

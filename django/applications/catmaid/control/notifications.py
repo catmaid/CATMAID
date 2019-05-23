@@ -2,14 +2,14 @@
 
 import json
 
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 
 from catmaid.models import UserRole, ChangeRequest
 from catmaid.control.authentication import requires_user_role 
 
 
 @requires_user_role(UserRole.Browse)
-def list_notifications(request, project_id = None):
+def list_notifications(request:HttpRequest, project_id = None) -> JsonResponse:
     """ Get a JSON representation of notifications for the requesting user.
     This method does not write any data and retrieves only information linked
     to the requesting user. It therefore needs only 'can_browse' permissions.
@@ -51,7 +51,7 @@ def list_notifications(request, project_id = None):
 
 
 @requires_user_role(UserRole.Annotate)
-def approve_change_request(request, project_id = None):
+def approve_change_request(request:HttpRequest, project_id = None) -> JsonResponse:
     change_request_id = int(request.POST.get('id', -1))
 
     if change_request_id == -1:
@@ -66,7 +66,7 @@ def approve_change_request(request, project_id = None):
 
 
 @requires_user_role(UserRole.Annotate)
-def reject_change_request(request, project_id = None):
+def reject_change_request(request:HttpRequest, project_id = None) -> JsonResponse:
     change_request_id = int(request.POST.get('id', -1))
 
     if change_request_id == -1:

@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 
 from collections import defaultdict, namedtuple
-from functools import partial
 from datetime import datetime, timedelta
+from functools import partial
 import json
 from networkx import connected_components
 import pytz
-from typing import Any, DefaultDict, Dict, List
+from typing import Any, DefaultDict, Dict, List, Optional, Tuple
 
 from django.db.models import Count
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 
 from catmaid.models import Treenode, Log, Relation, TreenodeConnector, \
         UserRole, Review
@@ -18,7 +18,7 @@ from catmaid.control.authentication import requires_user_role
 from catmaid.control.tree_util import lazy_load_trees
 
 
-def _find_nearest(tree, nodes, loc1):
+def _find_nearest(tree, nodes, loc1) -> Tuple[Any, float]:
     """ Returns a tuple of the closest node and the square of the distance. """
     min_sqdist = float('inf')
     for node in nodes:
@@ -30,12 +30,12 @@ def _find_nearest(tree, nodes, loc1):
             min_sqdist = dsq
             closest = node
 
-    return node, min_sqdist
+    return closest, min_sqdist
 
 def _parse_location(loc):
     return map(float, loc[1:-1].split(','))
 
-def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations):
+def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations) -> List:
     """ Evaluate each epoch:
     1. Detect merges done by the reviewer: one of the two nodes is edited by the reviewer within the review epoch (but not both: could be a reroot then), with a corresponding join_skeleton entry in the log table. Perhaps the latter is enough, if the x,y,z of the log corresponds to that of the node (plus/minus a tiny bit, may have moved).
     2. Detect additions by the reviewer (a kind of merge), where the reviewer's node is newer than the other node, and it was created within the review epoch. These nodes would have been created and reviewed by the reviewer within the review epoch.
@@ -211,7 +211,7 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations):
 
     return epoch_ops
 
-def _split_into_epochs(skeleton_id, tree, reviews, max_gap):
+def _split_into_epochs(skeleton_id, tree, reviews, max_gap) -> List:
     """ Split the arbor into one or more review epochs.
     An epoch is defined as a continuous range of time containing gaps
     of up to max_gap (e.g. 3 days) and fully reviewed by the same reviewer.
@@ -255,14 +255,14 @@ def _split_into_epochs(skeleton_id, tree, reviews, max_gap):
     return epochs
 
 
-def _evaluate_arbor(user_id, skeleton_id, tree, reviews, relations, max_gap):
+def _evaluate_arbor(user_id, skeleton_id, tree, reviews, relations, max_gap) -> List:
     """ Split the arbor into review epochs and then evaluate each independently. """
     epochs = _split_into_epochs(skeleton_id, tree, reviews, max_gap)
     epoch_ops = _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations)
     return epoch_ops
 
 
-def _evaluate(project_id, user_id, start_date, end_date, max_gap, min_nodes):
+def _evaluate(project_id, user_id, start_date, end_date, max_gap, min_nodes) -> Optional[List[Dict]]:
 
     # Obtain neurons that are fully reviewed at the moment
     # and to which the user contributed nodes within the date range.
@@ -366,7 +366,7 @@ def _parse_date(s):
 
 # TODO a better fit would be an admin or staff user
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def evaluate_user(request, project_id=None):
+def evaluate_user(request:HttpRequest, project_id=None) -> JsonResponse:
     user_id = int(request.POST.get('user_id'))
     # Dates as strings e.g. "2012-10-07"
     start_date = _parse_date(request.POST.get('start_date'))

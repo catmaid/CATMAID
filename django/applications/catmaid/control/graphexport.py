@@ -2,7 +2,7 @@
 
 import json
 
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 from django.shortcuts import get_object_or_404
 
 from catmaid.models import UserRole, Project
@@ -17,7 +17,7 @@ except ImportError:
     pass
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def export_jsongraph(request, project_id):
+def export_jsongraph(request:HttpRequest, project_id) -> JsonResponse:
     p = get_object_or_404(Project, pk=project_id)
     skeletonlist = request.POST.getlist('skeleton_list[]')
     confidence_threshold = int(request.POST.get('confidence_threshold', 0))

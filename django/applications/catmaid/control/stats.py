@@ -6,16 +6,17 @@ import json
 import os
 import pytz
 import time
-from typing import Dict
+from typing import Any, Dict
 
 from django.conf import settings
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 from django.db.models.aggregates import Count
 from django.db import connection, transaction
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 
 from rest_framework.decorators import api_view
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -27,7 +28,7 @@ from catmaid.models import ClassInstance, Connector, Treenode, User, UserRole, \
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
-def stats_cable_length(request, project_id=None):
+def stats_cable_length(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Get the largest skeletons based on cable length.
     ---
     parameters:
@@ -60,7 +61,7 @@ def stats_cable_length(request, project_id=None):
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
-def stats_nodecount(request, project_id=None):
+def stats_nodecount(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Get the total number of created nodes per user.
     ---
     parameters:
@@ -207,7 +208,7 @@ def stats_nodecount(request, project_id=None):
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
-def stats_editor(request, project_id=None):
+def stats_editor(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Get the total number of edited nodes per user.
     """
     cursor = connection.cursor()
@@ -223,7 +224,7 @@ def stats_editor(request, project_id=None):
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def stats_summary(request, project_id=None):
+def stats_summary(request:HttpRequest, project_id=None) -> JsonResponse:
     startdate = datetime.today()
     result = {
         'treenodes_created': Treenode.objects.filter(
@@ -254,7 +255,7 @@ def stats_summary(request, project_id=None):
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def stats_history(request, project_id=None):
+def stats_history(request:HttpRequest, project_id=None) -> JsonResponse:
     # Get the start and end dates for the query, defaulting to the last 30
     # days.
     start_date = request.GET.get('start_date', timezone.now() - timedelta(30))
@@ -285,7 +286,7 @@ def stats_history(request, project_id=None):
 
     return JsonResponse(stats, safe=False)
 
-def stats_user_activity(request, project_id=None):
+def stats_user_activity(request:HttpRequest, project_id=None) -> JsonResponse:
     username = request.GET.get('username', None)
     all_users = User.objects.filter().values('username', 'id')
     map_name_to_userid = {}
@@ -320,7 +321,7 @@ def stats_user_activity(request, project_id=None):
          'presynaptic': prelinks, 'postsynaptic': postlinks})
 
 @api_view(['GET'])
-def stats_user_history(request, project_id=None):
+def stats_user_history(request:HttpRequest, project_id=None) -> JsonResponse:
     """Get per user contribution statistics
 
     A date range can be provided to limit the scope of the returned statiscis.
@@ -741,7 +742,7 @@ def select_review_stats(cursor, project_id, start_date_utc, end_date_utc,
     return cursor.fetchall()
 
 @transaction.atomic
-def populate_stats_summary(project_id, delete=False, incremental=True):
+def populate_stats_summary(project_id, delete:bool=False, incremental:bool=True) -> None:
     """Create statistics summary tables from scratch until yesterday.
     """
     cursor = connection.cursor()
@@ -756,7 +757,7 @@ def populate_stats_summary(project_id, delete=False, incremental=True):
     populate_nodecount_stats_summary(project_id, incremental, cursor)
     populate_import_nodecount_stats_summary(project_id, incremental, cursor)
 
-def populate_review_stats_summary(project_id, incremental=True, cursor=None):
+def populate_review_stats_summary(project_id, incremental:bool=True, cursor=None) -> None:
     """Add review summary information to the summary table. Create hourly
     aggregates in UTC time. These aggregates can still be moved in other
     timezones with good enough precision for our purpose. By default, this
@@ -794,7 +795,7 @@ def populate_review_stats_summary(project_id, incremental=True, cursor=None):
         SET n_reviewed_nodes = EXCLUDED.n_reviewed_nodes;
     """, dict(project_id=project_id, incremental=incremental))
 
-def populate_connector_stats_summary(project_id, incremental=True, cursor=None):
+def populate_connector_stats_summary(project_id, incremental:bool=True, cursor=None) -> None:
     """Add connector summary information to the summary table. Create hourly
     aggregates in UTC time. These aggregates can still be moved in other
     timezones with good enough precision for our purpose. By default, this
@@ -840,7 +841,7 @@ def populate_connector_stats_summary(project_id, incremental=True, cursor=None):
         """, dict(project_id=project_id, pre_id=pre_id, post_id=post_id,
                   incremental=incremental))
 
-def populate_cable_stats_summary(project_id, incremental=True, cursor=None):
+def populate_cable_stats_summary(project_id, incremental:bool=True, cursor=None) -> None:
     """Add cable length summary data to the statistics summary table. By
     default, this happens in an incremental manner, but can optionally be fone
     for all data from scratch (overriding existing statistics).
@@ -893,8 +894,8 @@ def populate_cable_stats_summary(project_id, incremental=True, cursor=None):
         SET cable_length = EXCLUDED.cable_length;
     """, dict(project_id=project_id, incremental=incremental))
 
-def populate_nodecount_stats_summary(project_id, incremental=True,
-                                     cursor=None):
+def populate_nodecount_stats_summary(project_id, incremental:bool=True,
+                                     cursor=None) -> None:
     """Add node count summary data to the statistics summary table. By default,
     this happens in an incremental manner, but can optionally be fone for all
     data from scratch (overriding existing statistics).
@@ -932,8 +933,8 @@ def populate_nodecount_stats_summary(project_id, incremental=True,
         SET n_treenodes = EXCLUDED.n_treenodes;
     """, dict(project_id=project_id, incremental=incremental))
 
-def populate_import_nodecount_stats_summary(project_id, incremental=True,
-                                            cursor=None):
+def populate_import_nodecount_stats_summary(project_id, incremental:bool=True,
+                                            cursor=None) -> None:
     """Add import node count summary data to the statistics summary table. By
     default, this happens in an incremental manner, but can optionally be fone
     for all data from scratch (overriding existing statistics).
@@ -984,7 +985,7 @@ def populate_import_nodecount_stats_summary(project_id, incremental=True,
 class ServerStats(APIView):
 
     @method_decorator(requires_user_role(UserRole.Admin))
-    def get(self, request, project_id):
+    def get(self, request:Request, project_id) -> Response:
         """Return an object that represents the state of various server and
         database objects.
         """
@@ -996,16 +997,16 @@ class ServerStats(APIView):
         })
 
 
-    def get_current_timestamp(self):
+    def get_current_timestamp(self) -> str:
         return datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
 
 
-    def get_server_stats(self):
+    def get_server_stats(self) -> Dict[str, Any]:
         return {
             'load_avg': os.getloadavg(),
         }
 
-    def get_database_stats(self):
+    def get_database_stats(self) -> Dict[str, Any]:
         cursor = connection.cursor()
         cursor.execute("select current_database()")
         db_name = cursor.fetchone()[0]

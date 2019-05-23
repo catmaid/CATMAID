@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import json
-import yaml
-
 from ast import literal_eval
+import json
+from typing import List
+import yaml
 
 from guardian.shortcuts import assign_perm
 from guardian.utils import get_anonymous_user
@@ -110,7 +110,7 @@ class ProjectsApiTests(CatmaidApiTestCase):
         # Expect a returned list with four projects
         self.assertEqual(len(result), 4)
 
-        seen_projects = []
+        seen_projects = [] # type: List
         for exported_project in result:
             data = exported_project['project']
             pid = data['id']
@@ -127,8 +127,8 @@ class ProjectsApiTests(CatmaidApiTestCase):
             stackgroup_links = StackStackGroup.objects.filter(stack__in=stacks)
             valid_stackgroup_ids = [sgl.stack_group_id for sgl in stackgroup_links]
 
-            seen_stacks = []
-            seen_stackgroups = []
+            seen_stacks = [] # type: List
+            seen_stackgroups = [] # type: List
             for s in data.get('stacks', []):
                 stack_id = s['id']
                 self.assertIn(stack_id, valid_stack_ids)

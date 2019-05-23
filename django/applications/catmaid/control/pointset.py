@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from typing import List
+from typing import Any, Dict, List
 
 from django.db import connection
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 from django.utils.decorators import method_decorator
 
 from rest_framework.views import APIView
@@ -19,7 +19,7 @@ from catmaid.models import PointSet, UserRole
 logger = logging.getLogger('__name__')
 
 
-def serialize_pointset(pointset, simple=False):
+def serialize_pointset(pointset, simple=False) -> Dict[str, Any]:
     if simple:
         return {
             'id': pointset.id,
@@ -38,7 +38,7 @@ def serialize_pointset(pointset, simple=False):
 
 
 def list_pointsets(project_id, user_id, simple, with_points=True,
-        pointset_ids=None, order_by='id'):
+        pointset_ids=None, order_by='id') -> List[Dict[str, Any]]:
     extra_select = [] # type: List
     extra_join = []
     query_params = {
@@ -102,7 +102,7 @@ def list_pointsets(project_id, user_id, simple, with_points=True,
 class PointSetList(APIView):
 
     @method_decorator(requires_user_role(UserRole.Browse))
-    def get(self, request, project_id):
+    def get(self, request:HttpRequest, project_id) -> JsonResponse:
         """List all available point sets or optionally a sub set.
         ---
         parameters:
@@ -148,7 +148,7 @@ class PointSetList(APIView):
 
 
     @method_decorator(requires_user_role(UserRole.Browse))
-    def post(self, request, project_id):
+    def post(self, request:HttpRequest, project_id) -> JsonResponse:
         """List all available point sets or optionally a sub set.
         ---
         parameters:
@@ -196,7 +196,7 @@ class PointSetList(APIView):
 class PointSetDetail(APIView):
 
     @method_decorator(requires_user_role(UserRole.Browse))
-    def get(self, request, project_id, pointset_id):
+    def get(self, request:HttpRequest, project_id, pointset_id) -> JsonResponse:
         """Return a point set.
         parameters:
           - name: project_id

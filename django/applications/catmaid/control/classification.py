@@ -3,10 +3,9 @@
 from collections import defaultdict
 import json
 import logging
-
+import numpy as np
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
-import numpy as np
 
 from django import forms
 from django.db import connection
@@ -146,7 +145,7 @@ def get_root_classes_qs(workspace_pid) -> List:
     """
     return [c.class_a.id for c in get_class_links_qs(workspace_pid, 'is_a', 'classification_root')]
 
-def get_classification_links_qs( workspace_pid, project_ids, inverse=False,
+def get_classification_links_qs(workspace_pid, project_ids, inverse=False,
         stack_groups=None, class_map=None, relation_map=None, cursor=None):
     """ Returns a list of CICI links that link a classification graph with a
     project or a list/set of projects (project_ids can be int, list and set).

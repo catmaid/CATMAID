@@ -252,7 +252,7 @@ def check_http_accessibility(image_base:str, file_extension:str, auth=None) -> b
         return False
     return response.status_code == 200
 
-def find_project_folders(image_base, path, filter_term) -> Tuple[List, Dict[str, Any], List]:
+def find_project_folders(image_base:str, path:str, filter_term) -> Tuple[List, Dict[str, Any], List]:
     """ Finds projects in a folder structure by testing for the presence of an
     info/project YAML file.
     """
@@ -734,7 +734,7 @@ def show_classification_suggestions(wizard):
 def importer_finish(request:HttpRequest) -> HttpResponse:
     return render_to_response('catmaid/import/done.html', {})
 
-def get_element_permission_tuples(element, cls):
+def get_element_permission_tuples(element, cls) -> List[Tuple[str,str]]:
     """Get all available users mapped to all available project permissions.
     """
     ctype = ContentType.objects.get_for_model(cls)
@@ -750,8 +750,8 @@ def get_element_permission_tuples(element, cls):
 
     return tuples
 
-def get_permissions_from_selection(cls, selection):
-    permission_list = []
+def get_permissions_from_selection(cls, selection) -> List[Tuple]:
+    permission_list = [] # type: List[Tuple]
     for perm in selection:
         elem_id = perm[:perm.index('_')]
         elem = cls.objects.filter(id=elem_id)[0]
@@ -977,7 +977,7 @@ def ensure_classes(project, classes, user):
                 })
 
 
-def ensure_class_instances(project, classification_paths, user, stack=None, stackgroup=None):
+def ensure_class_instances(project, classification_paths, user, stack=None, stackgroup=None) -> None:
     """ Make sure the given project has all referenced class instances (by name)
     available. The names list is expected to be a classification root reference.
     Note: This currently expects each class to be instantiated only once in each
@@ -1076,11 +1076,12 @@ def ensure_class_instances(project, classification_paths, user, stack=None, stac
     else:
         raise ValueError("Unknown classification syntax, expected list: " + t)
 
-def import_projects( user, pre_projects, tags, permissions,
+def import_projects(user, pre_projects, tags, permissions,
         default_tile_width, default_tile_height, default_tile_source_type,
-        cls_graph_ids_to_link, remove_unref_stack_data):
+        cls_graph_ids_to_link, remove_unref_stack_data) -> Tuple[List, List]:
     """ Creates real CATMAID ojects out of the PreProject objects
-    and imports them into CATMAID.
+    and imports them into CATMAID. Returns one list of imported objects and another of
+    non-imported objects.
     """
     remove_unimported_linked_stacks = False
     known_stack_action = None

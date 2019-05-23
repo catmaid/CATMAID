@@ -185,7 +185,7 @@ def json_error_response(message:str) -> JsonResponse:
     return JsonResponse({'error': message})
 
 
-def order_neurons(neurons, order_by=None):
+def order_neurons(neurons:List, order_by=None):
     column, reverse = 'name', False
     if order_by and (order_by in SORT_ORDERS_DICT):
         column, reverse, _ = SORT_ORDERS_DICT[order_by]

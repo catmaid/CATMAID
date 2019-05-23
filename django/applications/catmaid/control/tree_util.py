@@ -7,7 +7,7 @@ from itertools import islice
 from math import sqrt
 from networkx import Graph, DiGraph
 from operator import itemgetter
-from typing import Any, DefaultDict, List, Optional, Set, Tuple
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple
 
 from catmaid.models import Treenode
 
@@ -20,7 +20,7 @@ def find_root(tree):
         if not next(tree.predecessors_iter(node), None):
             return node
 
-def edge_count_to_root(tree, root_node=None):
+def edge_count_to_root(tree, root_node=None) -> Dict:
     """ Return a map of nodeID vs number of edges from the first node that lacks predecessors (aka the root). If root_id is None, it will be searched for."""
     distances = {}
     count = 1
@@ -37,7 +37,7 @@ def edge_count_to_root(tree, root_node=None):
         count += 1
     return distances
 
-def find_common_ancestor(tree, nodes, ds=None, root_node=None):
+def find_common_ancestor(tree, nodes, ds=None, root_node=None) -> Tuple[Any, Any]:
     """ Return the node in tree that is the nearest common ancestor to all nodes.
     Assumes that nodes contains at least 1 node.
     Assumes that all nodes are present in tree.
@@ -75,7 +75,7 @@ def reroot(tree, new_root):
         parent = next(tree.predecessors_iter(parent), None)
     tree.add_path(path)
 
-def simplify(tree, keepers):
+def simplify(tree, keepers) -> Graph:
     """ Given a tree and a set of nodes to keep, create a new tree
     where only the nodes to keep and the branch points between them are preserved.
     WARNING: will reroot the tree at the first of the keepers.
@@ -148,7 +148,7 @@ def partition(tree, root_node=None):
             yield sequence
 
 
-def spanning_tree(tree, preserve):
+def spanning_tree(tree, preserve) -> DiGraph:
     """ Return a new DiGraph with the spanning tree including the desired nodes.
     preserve: the set of nodes that delimit the spanning tree. """
     spanning = DiGraph()
@@ -188,7 +188,7 @@ def spanning_tree(tree, preserve):
 
     return spanning
 
-def cable_length(tree, locations):
+def cable_length(tree, locations) -> float:
     """ locations: a dictionary of nodeID vs iterable of node position (1d, 2d, 3d, ...)
     Returns the total cable length. """
     return sum(sqrt(sum(pow(loc2 - loc1, 2) for loc1, loc2 in zip(locations[a], locations[b]))) for a,b in tree.edges_iter())

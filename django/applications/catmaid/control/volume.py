@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
+from itertools import chain
 import json
 import os
 import re
-from typing import List
+from typing import Callable, List
 from xml.etree import ElementTree as ET
 
 from django.conf import settings
@@ -26,7 +27,7 @@ from rest_framework.views import APIView
 _num = '[-+]?[0-9]*.?[0-9]+'
 _bbox_re = r'BOX3D\(({0})\s+({0})\s+({0}),\s*({0})\s+({0})\s+({0})\)'.format(_num)
 
-def get_req_coordinate(request_dict, c):
+def get_req_coordinate(request_dict, c) -> float:
     """Get a coordinate from a request dictionary or error.
     """
     v = request_dict.get(c, None)
@@ -47,7 +48,7 @@ def get_volume_instance(project_id, user_id, options):
     validate_vtype(vtype)
 
     init = volume_type.get(vtype)
-    return init(project_id, user_id, options)
+    return init(project_id, user_id, options) # type: ignore # theoretically could return None
 
 class PostGISVolume(object):
     """Volumes are supposed to create Volume model compatible data in the volume
@@ -338,7 +339,7 @@ def validate_vtype(vtype):
                 "following options: " + ", ".join(volume_type.keys()))
     if vtype not in volume_type.keys():
         raise ValueError("Type has to be one of the following: " +
-                volume_type.keys().join(", "))
+                ", ".join(volume_type.keys()))
     return vtype
 
 @api_view(['GET', 'POST'])
@@ -772,7 +773,7 @@ def export_volume(request, project_id, volume_id, extension):
             ', '.join(media_types), extension, ', '.join(acceptable[extension])), status=415)
     else:
         return HttpResponse('File type "{}" not understood. Known file types: {}'.format(
-            extension, ', '.join(acceptable.values())), status=415)
+            extension, ', '.join(chain.from_iterable(acceptable.values()))), status=415)
 
 
 @api_view(['GET'])

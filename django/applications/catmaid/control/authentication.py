@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import json
-import re
-
-from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
-
 from functools import wraps
 from itertools import groupby
+import json
+import re
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
+
 
 from guardian.core import ObjectPermissionChecker
 from guardian.models import UserObjectPermission, GroupObjectPermission
@@ -177,7 +176,7 @@ def requires_superuser():
     return decorated_with_requires_superuser
 
 
-def contains_read_roles(roles):
+def contains_read_roles(roles) -> bool:
     """
     Returns False if the list of roles contains a "Browse" role, True otherwise.
     """
@@ -259,7 +258,7 @@ def requires_user_role_for_any_project(roles):
     return decorated_with_requires_user_role_for_any_project
 
 
-def get_objects_and_perms_for_user(user, codenames, klass, use_groups=True, any_perm=False) -> Dict:
+def get_objects_and_perms_for_user(user, codenames, klass, use_groups:bool=True, any_perm:bool=False) -> Dict:
     """ Similar to what guardian's get_objects_for_user method does,
     this method return a dictionary of object IDs (!) of model klass
     objects with the permissions the user has on them associated.
@@ -538,7 +537,7 @@ class ObtainAuthToken(auth_views.ObtainAuthToken):
         return AuthTokenSerializer
 
 
-def exceeds_group_inactivity_period(user_id):
+def exceeds_group_inactivity_period(user_id) -> bool:
     """Returns whether a user is inactive and their last login is past a maximum
     inactivity period.
     """
@@ -559,7 +558,7 @@ def exceeds_group_inactivity_period(user_id):
     return len(cursor.fetchall()) > 0
 
 
-def get_exceeded_inactivity_periods(user_id):
+def get_exceeded_inactivity_periods(user_id) -> List[Dict[str, Any]]:
     """Return all inactivity groups of which a user is member and where they
     exceed the maximum inactivity period. For those groups, a list of contact
     users is included as well (if any).
@@ -607,7 +606,7 @@ def get_exceeded_inactivity_periods(user_id):
     } for row in cursor.fetchall()]
 
 
-def deactivate_inactive_users():
+def deactivate_inactive_users() -> List:
     """Mark all those users as inactive that didn't log in within a specified
     time range. Which users this are is defined by their group memberships. If a
     user is member of a group that is also marked as "deactivation group"

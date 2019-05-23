@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
-import os.path
+
 import json
 import logging
+import os.path
+from typing import Any, Dict
 
 from django.conf import settings
 from django.http import HttpRequest, JsonResponse
@@ -13,7 +15,7 @@ from .authentication import requires_user_role
 
 logger = logging.getLogger(__name__)
 
-def get_stack_info(project_id=None, stack_id=None):
+def get_stack_info(project_id=None, stack_id=None) -> Dict[str, Any]:
     """ Returns a dictionary with relevant information for stacks.
     Depending on the tile_source_type, get information from database
     or from tile server directly
@@ -37,7 +39,7 @@ def get_stack_info(project_id=None, stack_id=None):
 
     return get_stack_info_response(p, s, ps, mirror_data, broken_slices)
 
-def get_stack_info_response(p, s, ps, mirror_data, broken_slices):
+def get_stack_info_response(p, s, ps, mirror_data, broken_slices) -> Dict[str, Any]:
 
     mirrors = []
     for ele in mirror_data:
@@ -154,7 +156,7 @@ def stacks(request:HttpRequest, project_id=None) -> JsonResponse:
     })
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def stack_groups(request, project_id=None, stack_id=None):
+def stack_groups(request:HttpRequest, project_id=None, stack_id=None) -> JsonResponse:
     stack_group_ids = StackStackGroup.objects \
         .filter(stack=stack_id) \
         .values_list('stack_group_id', flat=True)

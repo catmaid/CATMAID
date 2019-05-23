@@ -3,7 +3,7 @@ import logging
 
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.decorators import user_passes_test
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 from django.utils.decorators import method_decorator
 
 from rest_framework.views import APIView
@@ -16,7 +16,7 @@ logger = logging.getLogger('__name__')
 
 class GroupList(APIView):
 
-    def get(self, request):
+    def get(self, request:HttpRequest) -> JsonResponse:
         """List all available point clouds.
         ---
         parameters:

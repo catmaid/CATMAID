@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 
+from collections import defaultdict
 import json
 import re
-
-from collections import defaultdict
-
 from typing import Any, DefaultDict, Dict, List, Set
 
 from django.conf import settings

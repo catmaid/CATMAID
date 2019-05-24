@@ -43,6 +43,7 @@
       var self = this;
       var datatable = $(this.widgetNameTable).DataTable({
         dom: 't<ip>',
+        autoWidth: false,
         order: [],
         data: this.availableWidgets,
         language: {
@@ -106,9 +107,9 @@
         // If there is no valid widget with this key, take the first entry from
         // the table.
         if (!widgetIndex[widgetName]) {
-          var firstRow = datatable.row(0, {order: 'applied', search: 'applied'});
-          if (firstRow.length > 0) {
-            widgetName = firstRow.data().key;
+          var visibleRows = datatable.rows({order: 'applied', search: 'applied'}).data();
+          if (visibleRows.length > 0) {
+            widgetName = visibleRows[0].key;
           } else {
             CATMAID.warn("No valid widget selected");
             return;

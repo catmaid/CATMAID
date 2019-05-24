@@ -1575,6 +1575,7 @@
         autoWidth: false,
         columnDefs: [
           {
+            width: '5em',
             // Checkbox column
             targets: [0],
             className: 'input-container',
@@ -1615,6 +1616,7 @@
           },
           {
             // Review column
+            class: 'cm-center',
             targets: [-2],
             render: function(data, type, row, meta) {
               return type === "display" ? (data + "%") : data;

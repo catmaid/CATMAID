@@ -53,6 +53,11 @@ Tracing tool:
   node of the current user (Alt: anyone) in the last active skeleton will be
   selected. Using Shift will look in all skeletons.
 
+- Using Shift + Alt + Click with a connector selected, will will now create a
+  presynaptic node. This is consistent with the already existing Shift + Alt +
+  Click behavior with a treenode selected, which creates a presynaptic
+  connector.
+
 Measurement table:
 
 - Node filters are now supported. Like in other widgets, the respective panel

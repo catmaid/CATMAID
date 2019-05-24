@@ -3533,10 +3533,17 @@ var SkeletonAnnotations = {};
           }
         } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
           if (CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR === atn.subtype) {
-            // create new treenode (and skeleton) postsynaptic to activated connector
-            CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " postsynaptic to active connector");
-            create = this.createPostsynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5,
-                postCreateFn);
+            if (postLink) {
+              // create new treenode (and skeleton) presynaptic to activated connector
+              CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " presynaptic to active connector");
+              create = this.createPresynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5,
+                  postCreateFn);
+            } else {
+              // create new treenode (and skeleton) postsynaptic to activated connector
+              CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " postsynaptic to active connector");
+              create = this.createPostsynapticTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5,
+                  postCreateFn);
+            }
           } else if (CATMAID.Connectors.SUBTYPE_ABUTTING_CONNECTOR === atn.subtype) {
             // create new treenode (and skeleton) abutting to activated connector
             CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " abutting to active connector");

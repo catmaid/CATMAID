@@ -180,7 +180,7 @@
 
     }).bind(this);
 
-    od.show(300, 400, true);
+    od.show(400, 400, true);
   };
 
   AnalyzeArbor.prototype.destroy = function() {

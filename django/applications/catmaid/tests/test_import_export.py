@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
+from ast import literal_eval
 import json
+from typing import List
 import yaml
 
-from ast import literal_eval
 from guardian.shortcuts import assign_perm
 
 from django.http import HttpResponse
@@ -114,13 +115,13 @@ class ImportExportTests(TestCase):
             importer.PreProject(p2_config, project_url, data_folder),
         ]
 
-        tags = []
-        permissions = []
+        tags = [] # type: List
+        permissions = [] # type: List
         default_tile_width = 256
         default_tile_height = 512
         default_tile_source_type = 5
         default_position = 0
-        cls_graph_ids_to_link = []
+        cls_graph_ids_to_link = [] # type: List
         remove_unref_stack_data = False
 
         imported, not_imported = importer.import_projects(self.user,
@@ -302,12 +303,12 @@ class ImportExportTests(TestCase):
         ]
         config = [p1_config, p2_config]
 
-        tags = []
-        permissions = []
+        tags = [] # type: List
+        permissions = [] # type: List
         default_tile_width = 256
         default_tile_height = 512
         default_tile_source_type = 1
-        cls_graph_ids_to_link = []
+        cls_graph_ids_to_link = [] # type: List
         remove_unref_stack_data = False
 
         # Make sure there are no existing projects or stacks

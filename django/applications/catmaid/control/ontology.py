@@ -67,7 +67,7 @@ class FeatureLink:
     def __str__(self):
         return self.__unicode__()
 
-    def __unicode__(self):
+    def __unicode__(self) -> str:
         return "[CA {}: {} R {}: {} CB {}: SC {}: {}]".format(self.class_a.id,
                 self.class_a, self.relation.id, self.relation, self.class_b.id,
                 self.class_b, self.super_class.id, self.super_class)
@@ -90,7 +90,7 @@ def get_existing_roots(request:HttpRequest, project_id) -> JsonResponse:
         } for l in links]
     })
 
-def get_children(parent_id, max_nodes = 5000):
+def get_children(parent_id, max_nodes:int = 5000):
     """ Returns all children of a node with id <parent_id>. The result
     is limited to a maximum ef <max_nodes> nodes.
     """

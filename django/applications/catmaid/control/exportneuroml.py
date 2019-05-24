@@ -18,7 +18,7 @@ except ImportError:
 
 # Because of the conditional imports, full type annotation of this file is not possible
 
-def neuroml_single_cell(skeleton_id, nodes, pre, post):
+def neuroml_single_cell(skeleton_id, nodes, pre, post) -> Cell:
     """ Encapsulate a single skeleton into a NeuroML Cell instance.
         
         skeleton_id: the ID of the skeleton to which all nodes belong.
@@ -118,6 +118,6 @@ def neuroml_network(cells, response):
                    + ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' \
                    + ' xsi:schemaLocation="http://www.w3.org/2001/XMLSchema"'
 
-    doc.export( response, 0, name_="neuroml", namespacedef_=namespacedef)
+    doc.export(response, 0, name_="neuroml", namespacedef_=namespacedef)
 
     return response

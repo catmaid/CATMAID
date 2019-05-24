@@ -162,7 +162,7 @@ def to_x_index(x, stack, zoom_level, enforce_bounds=True) -> int:
     zero_zoom = x / stack.resolution.x
     if enforce_bounds:
         zero_zoom = min(max(zero_zoom, 0.0), stack.dimension.x - 1.0)
-    return int( zero_zoom / (2**zoom_level) + 0.5 )
+    return int(zero_zoom / (2**zoom_level) + 0.5)
 
 def to_y_index(y, stack, zoom_level, enforce_bounds=True) -> int:
     """ Converts a real world position to a y pixel position.
@@ -180,7 +180,7 @@ def to_z_index(z, stack, zoom_level, enforce_bounds=True) -> int:
     section = z / stack.resolution.z + 0.5
     if enforce_bounds:
         section = min(max(section, 0.0), stack.dimension.z - 1.0)
-    return int( section )
+    return int(section)
 
 def addMetaData(path:str, job, result) -> None:
     """ Use this method to add meta data to the image. Due to a bug in
@@ -525,7 +525,7 @@ def rotate2d(degrees, point, origin) -> Tuple[float, float]:
     newx += origin[0]
     newyorz += origin[1]
 
-    return newx,newyorz
+    return newx, newyorz
 
 @task()
 def process_crop_job(job, create_message=True) -> str:
@@ -627,7 +627,7 @@ def sanity_check(job) -> List[str]:
     return errors
 
 @login_required
-def crop(request, project_id=None):
+def crop(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Crops out the specified region of the stack. The region is expected to
     be given in terms of real world units (e.g. nm).
     """
@@ -660,7 +660,7 @@ def crop(request, project_id=None):
             # If mirror is reachable use it right away
             tile_source = get_tile_source(sm.tile_source_type)
             try:
-                req = requests.head(tile_source.get_canaray_url(sm),
+                req = requests.head(tile_source.get_canary_url(sm),
                         allow_redirects=True, verify=verify_ssl)
                 reachable = req.status_code == 200
             except Exception as e:
@@ -688,13 +688,13 @@ def crop(request, project_id=None):
         err_response = json_error_response( err_message )
         return err_response
 
-    result = start_asynch_process( job )
+    result = start_asynch_process(job)
     return result
 
-def cleanup(max_age=1209600) -> None:
+def cleanup(max_age:int=1209600) -> None:
     """ Cleans up the temporarily space of the cropped stacks.
     Such a stack is deleted if it is older than max_age, which
-    is specified in seconds and  defaults to two weeks (1209600).
+    is specified in seconds and defaults to two weeks (1209600).
     """
     search_pattern = os.path.join(crop_output_path, file_prefix + "*." + file_extension)
     now = time()
@@ -702,9 +702,9 @@ def cleanup(max_age=1209600) -> None:
     for item in glob.glob( search_pattern ):
         file_ctime = os.path.getctime( item )
         if (now - file_ctime) > max_age:
-            files_to_remove.append( item )
+            files_to_remove.append(item)
     for item in files_to_remove:
-            os.remove( item )
+            os.remove(item)
 
 @login_required
 def download_crop(request:HttpRequest, file_path=None) -> HttpResponse:

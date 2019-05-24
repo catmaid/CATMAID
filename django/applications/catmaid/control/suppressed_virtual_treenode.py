@@ -5,6 +5,7 @@ from django.utils.decorators import method_decorator
 from django.shortcuts import get_object_or_404
 from django.views.decorators.cache import never_cache
 
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer, ValidationError
 from rest_framework import status
@@ -24,7 +25,7 @@ class SuppressedVirtualTreenodeSerializer(ModelSerializer):
 class SuppressedVirtualTreenodeList(APIView):
     @method_decorator(requires_user_role([UserRole.Browse, UserRole.Annotate]))
     @never_cache
-    def get(self, request, project_id=None, treenode_id=None, format=None):
+    def get(self, request:Request, project_id=None, treenode_id=None, format=None) -> Response:
         """List suppressed virtual nodes along the edge to this node.
         ---
         serializer: SuppressedVirtualTreenodeSerializer
@@ -34,7 +35,7 @@ class SuppressedVirtualTreenodeList(APIView):
         return Response(serializer.data)
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def post(self, request, project_id=None, treenode_id=None, format=None):
+    def post(self, request:Request, project_id=None, treenode_id=None, format=None) -> Response:
         """Suppress a virtual treenode along the edge to this node.
 
         Suppress a virtual treenode along the edge between this treenode
@@ -90,7 +91,7 @@ class SuppressedVirtualTreenodeDetail(APIView):
             raise Http404
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def delete(self, request, project_id=None, treenode_id=None, suppressed_id=None, format=None):
+    def delete(self, request:Request, project_id=None, treenode_id=None, suppressed_id=None, format=None) -> Response:
         """Unsuppress a virtual treenode.
         """
         suppressed = self.get_object(project_id, treenode_id, suppressed_id)

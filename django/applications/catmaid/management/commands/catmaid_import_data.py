@@ -1,23 +1,24 @@
 # -*- coding: utf-8 -*-
 
-import inspect
-import catmaid.models
-import progressbar
-
 from collections import defaultdict
-from django.apps import apps
-from django.core import serializers
-from django.core.management.base import BaseCommand, CommandError
-from django.db import connection, transaction
+import inspect
+import logging
+import progressbar
+from typing import Any, DefaultDict, Dict, List, Set
+
 from catmaid.apps import get_system_user
 from catmaid.control.annotationadmin import copy_annotations
 from catmaid.control.edge import rebuild_edge_tables, rebuild_edges_selectively
+import catmaid.models
 from catmaid.models import (Class, ClassClass, ClassInstance,
         ClassInstanceClassInstance, Project, Relation, User, Treenode,
         Connector, Concept, SkeletonSummary)
 from catmaid.util import str2bool
+from django.apps import apps
+from django.core import serializers
+from django.core.management.base import BaseCommand, CommandError
+from django.db import connection, transaction
 
-import logging
 logger = logging.getLogger(__name__)
 
 
@@ -189,7 +190,7 @@ class FileImporter:
         logger.info("Building foreign key update index")
         # Build index for foreign key fields in models. For each type, map
         # each foreign key name to a model class.
-        fk_index = defaultdict(dict)
+        fk_index = defaultdict(dict) # type: DefaultDict[Any, Dict]
         for c in target_classes:
             class_index = fk_index[c]
             foreign_key_fields = [
@@ -205,7 +206,7 @@ class FileImporter:
                 class_index[field.attname] = field.related_model
 
         logger.info("Updating foreign keys to imported objects with new IDs")
-        all_classes = dict()
+        all_classes = dict() # type: Dict
         all_classes.update(existing_classes)
         updated_fk_ids = 0
         unchanged_fk_ids = 0
@@ -335,11 +336,11 @@ class FileImporter:
         """)
 
         # Get all existing users so that we can map them basedon their username.
-        mapped_user_ids = set()
-        mapped_user_target_ids = set()
+        mapped_user_ids = set() # type: Set
+        mapped_user_target_ids = set() # type: Set
 
         # Map data types to lists of object of the respective type
-        import_data = defaultdict(list)
+        import_data = defaultdict(list) # type: DefaultDict[Any, List]
         n_objects = 0
 
         # Read the file and sort by type
@@ -355,7 +356,7 @@ class FileImporter:
         if n_objects == 0:
             raise CommandError("Nothing to import, no importable data found")
 
-        created_users = dict()
+        created_users = dict() # type: Dict
         if import_data.get(User):
             import_users = dict((u.object.id, u) for u in import_data.get(User))
             logger.info("Found {} referenceable users in import data".format(len(import_users)))
@@ -392,8 +393,8 @@ class FileImporter:
         n_moved = 0
         append_only = not self.preserve_ids
         need_separate_import = []
-        objects_to_save = defaultdict(list)
-        import_objects_by_type_and_id = defaultdict(dict)
+        objects_to_save = defaultdict(list) # type: DefaultDict[Any, List]
+        import_objects_by_type_and_id = defaultdict(dict) # type: DefaultDict[Any, Dict]
         for object_type, import_objects in import_data.items():
             # Allow user reference updates in CATMAID objects
             if object_type not in user_updatable_classes:
@@ -574,7 +575,7 @@ class FileImporter:
         else:
             logger.info("Finding imported skeleton IDs and connector IDs")
 
-            connector_ids = []
+            connector_ids = [] # type: List
             connectors = objects_to_save.get(Connector)
             if connectors:
                 connector_ids.extend(i.object.id for i in connectors)
@@ -732,7 +733,7 @@ class Command(BaseCommand):
         if options['user']:
             override_user = User.objects.get(pk=options['user'])
             logger.info("All imported objects will be owned by user \"{}\"".format(
-                    overrude_user.username))
+                    override_user.username))
         else:
             if options['map_users']:
                 logger.info("Users referenced in import will be mapped to "

@@ -503,7 +503,7 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
 def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
         with_tags=True, with_history=False, with_merge_history=True,
         with_reviews=False, with_annotations=False, with_user_info=False,
-        ordered=False, scale=None):
+        ordered=False, scale=None) -> Tuple[Tuple, Tuple, DefaultDict[Any, List], List, List]:
     """Get a compact treenode representation of a skeleton, optionally with the
     history of individual nodes and connector, reviews and annotationss. Note
     this function is performance critical! Returns, in JSON:
@@ -820,11 +820,11 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
 
         annotations = list(cursor.fetchall())
 
-    return [nodes, connectors, tags, reviews, annotations]
+    return nodes, connectors, tags, reviews, annotations
 
 
 def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,
-        with_connectors=None, with_tags=None, with_time=None, ordered=False):
+        with_connectors=None, with_tags=None, with_time=None, ordered=False) -> Tuple[Tuple, List, DefaultDict[Any, List]]:
     """
     Performance-critical function. Do not edit unless to improve performance.
     Returns, in JSON, [[nodes], [connections], {nodeID: [tags]}],
@@ -963,7 +963,7 @@ def compact_arbor(request:HttpRequest, project_id=None, skeleton_id=None, with_n
             })
 
 
-def _treenode_time_bins(skeleton_id=None):
+def _treenode_time_bins(skeleton_id=None) -> DefaultDict[Any, List]:
     """ Return a map of time bins (minutes) vs. list of nodes. """
     minutes = defaultdict(list)  # type: DefaultDict[Any, List]
     epoch = datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
@@ -996,7 +996,7 @@ def compact_arbor_with_minutes(request:HttpRequest, project_id=None, skeleton_id
 
 
 # DEPRECATED. Will be removed.
-def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=0, all_field=False):
+def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=0, all_field=False) -> Tuple[Any, Tuple, DefaultDict[Any, List], List, Any]:
     """ with_connectors: when False, connectors are not returned
         lean: when not zero, both connectors and tags are returned as empty arrays. """
     skeleton_id = int(skeleton_id) # sanitize
@@ -1132,7 +1132,7 @@ def skeleton_with_metadata(request:HttpRequest, project_id=None, skeleton_id=Non
             'default': default
         })
 
-def _measure_skeletons(skeleton_ids):
+def _measure_skeletons(skeleton_ids) -> DefaultDict[Any, Dict]:
     if not skeleton_ids:
         raise Exception("Must provide the ID of at least one skeleton.")
 

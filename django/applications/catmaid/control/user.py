@@ -5,7 +5,7 @@ from typing import Any, Dict
 
 from guardian.utils import get_anonymous_user
 
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.mixins import UserPassesTestMixin
@@ -23,8 +23,8 @@ def not_anonymous(user):
     return user.is_authenticated and user != get_anonymous_user()
 
 @user_passes_test(access_check)
-def user_list(request):
-    """List registered users in this CATMAID instance. Requires to be logged in.
+def user_list(request:HttpRequest) -> JsonResponse:
+    """List registered users in this CATMAID instance. Must be logged in.
     An administrator can export users including their encrpyted password. This
     is meant to import users into other CATMAID instances.
     ---
@@ -63,7 +63,7 @@ def user_list(request):
     return JsonResponse(result, safe=False)
 
 @user_passes_test(access_check)
-def user_list_datatable(request):
+def user_list_datatable(request:HttpRequest) -> JsonResponse:
     display_start = int(request.POST.get('iDisplayStart', 0))
     display_length = int(request.POST.get('iDisplayLength', -1))
     if display_length < 0:
@@ -140,7 +140,7 @@ def user_list_datatable(request):
     return JsonResponse(response)
 
 @user_passes_test(access_check)
-def update_user_profile(request):
+def update_user_profile(request:HttpRequest) -> JsonResponse:
     """ Allows users to update some of their user settings.
 
     If the request is done by the anonymous user, nothing is updated, but

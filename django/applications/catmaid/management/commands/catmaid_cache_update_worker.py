@@ -1,10 +1,11 @@
+from collections import defaultdict
 import json
 import logging
 import select
 import signal
 import time
+from typing import Dict, List, Set
 
-from collections import defaultdict
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -40,7 +41,6 @@ class GridWorker():
         cursor = connection.cursor()
 
         # Batch of grids to update during one run
-        grid_coords_to_update = {}
         updated_cells = 0
         for update in updates:
             g = grid_map[update['grid_id']]
@@ -55,7 +55,7 @@ class GridWorker():
             if g.n_last_edited_skeletons_limit:
                 params['n_last_edited_skeletons_limit'] = int(g.n_last_edited_skeletons_limit)
             if g.hidden_last_editor_id:
-                param['hidden_last_editor_id'] = int(g.hidden_last_editor_id)
+                params['hidden_last_editor_id'] = int(g.hidden_last_editor_id)
 
             added = update_grid_cell(g.project_id, g.id, w_i, h_i, d_i,
                     g.cell_width, g.cell_height, g.cell_depth, provider,
@@ -77,7 +77,7 @@ class GridWorker():
 class Command(BaseCommand):
     help = ""
     # The queue to process. Subclass and set this.
-    queue = []
+    queue = [] # type: List
     notify_channel = "catmaid.dirty-cache"
 
     def add_arguments(self, parser):
@@ -96,7 +96,7 @@ class Command(BaseCommand):
         self.delay = options['delay']
         self.grid_cache_update = options['grid_cache']
 
-        self.workers = []
+        self.workers = [] # type: List
 
         if options['grid_cache']:
             self.workers.append(GridWorker())
@@ -113,7 +113,6 @@ class Command(BaseCommand):
             signal.signal(signal.SIGTERM, self.handle_shutdown)
 
             while True:
-                #self.run_available_tasks()
                 self.wait_and_queue()
         except InterruptedError:
             # got shutdown signal
@@ -125,31 +124,6 @@ class Command(BaseCommand):
             self._shutdown = True
         else:
             raise InterruptedError
-
-    def run_available_tasks(self):
-        """
-        Runs tasks continuously until there are no more available.
-        """
-        # Prevents tasks that failed from blocking others.
-        failed_tasks = set()
-        while True:
-            job = None
-            self._in_task = True
-            try:
-                job = self.queue.run_once(exclude_ids=failed_tasks)
-            except Exception as e:
-                logger.exception('Error in %r: %r.', e.job, e, extra={
-                    'data': {
-                        'job': e.job.to_json(),
-                    },
-                })
-                failed_tasks.add(e.job.id)
-            self._in_task = False
-            if self._shutdown:
-                raise InterruptedError
-            if not job:
-                break
-
 
     def listen(self):
         with connection.cursor() as cur:

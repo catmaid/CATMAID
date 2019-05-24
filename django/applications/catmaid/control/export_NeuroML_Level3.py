@@ -32,7 +32,7 @@ def exportSingle(neuron_names, all_treenodes, inputs, scale=0.001):
         for line in source:
             yield line
 
-def header():
+def header() -> str:
     return """<?xml version="1.0" encoding="UTF-8"?>
 <!-- Exported from CATMAID (http://catmaid.org) on %s -->
 <neuroml xmlns="http://morphml.org/neuroml/schema"
@@ -240,7 +240,7 @@ def make_connections(connections, state):
         for line in make_connection(connection, state):
             yield line
 
-def neuron_name(skeleton_id, neuron_names):
+def neuron_name(skeleton_id, neuron_names) -> str:
     """ Generate a valid name for a neuron: must start with [a-zZ-a]
     and not contain any double quotes or line breaks or spaces. """
     name = neuron_names[skeleton_id].replace('"', "'").replace('\n', ' ')

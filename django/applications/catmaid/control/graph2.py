@@ -25,11 +25,11 @@ from catmaid.control.tree_util import simplify
 from catmaid.control.synapseclustering import tree_max_density
 
 
-def make_new_synapse_count_array():
+def make_new_synapse_count_array() -> List[int]:
     return [0, 0, 0, 0, 0]
 
 def basic_graph(project_id, skeleton_ids, relations=None,
-        source_link="presynaptic_to", target_link="postsynaptic_to"):
+        source_link:str="presynaptic_to", target_link:str="postsynaptic_to") -> Dict[str, Tuple]:
 
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
@@ -89,7 +89,7 @@ def basic_graph(project_id, skeleton_ids, relations=None,
 
 
 def confidence_split_graph(project_id, skeleton_ids, confidence_threshold,
-        relations=None, source_rel="presynaptic_to", target_rel="postsynaptic_to"):
+        relations=None, source_rel:str="presynaptic_to", target_rel:str="postsynaptic_to") -> Dict[str, Any]:
     """ Assumes 0 < confidence_threshold <= 5. """
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
@@ -170,7 +170,7 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold,
 
 def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
         expand, relations=None, source_link="presynaptic_to",
-        target_link="postsynaptic_to"):
+        target_link="postsynaptic_to") -> Dict[str, Any]:
     """ Assumes bandwidth > 0 and some skeleton_id in expand. """
     cursor = connection.cursor()
     skeleton_ids = set(skeleton_ids)
@@ -316,7 +316,7 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
     }
 
 
-def populate_connectors(chunkIDs, chunks, cs, connectors):
+def populate_connectors(chunkIDs, chunks, cs, connectors) -> None:
     # Build up edges via the connectors
     for c in cs:
         # c is (treenode_id, connector_id, relation_id, confidence)
@@ -336,14 +336,14 @@ def subgraphs(digraph, skeleton_id) -> Tuple[List, Tuple]:
     return chunks, chunkIDs
 
 
-def split_by_confidence(skeleton_id, digraph, cs, connectors):
+def split_by_confidence(skeleton_id, digraph, cs, connectors) -> Tuple:
     """ Split by confidence threshold. Populates connectors (side effect). """
     chunks, chunkIDs = subgraphs(digraph, skeleton_id)
     populate_connectors(chunkIDs, chunks, cs, connectors)
     return chunkIDs
 
 
-def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, intraedges):
+def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, intraedges) -> Tuple[List, List]:
     """ Split by confidence and synapse domain. Populates connectors and intraedges (side effects). """
     nodes = []
     branch_nodes = []
@@ -419,7 +419,7 @@ def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, in
 
 def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
         expand, compute_risk, cable_spread, path_confluence,
-        with_overall_counts=False, relation_map=None, link_types=None):
+        with_overall_counts=False, relation_map=None, link_types=None) -> Optional[Dict]:
 
     by_link_type = bool(link_types)
     if not by_link_type:
@@ -444,7 +444,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
         if 0 == bandwidth:
             if 0 == confidence_threshold:
                 graph = basic_graph(project_id, skeleton_ids, relation_map,
-                        source_rel, target_rel)
+                        source_rel, target_rel) # type: Dict[str, Any]
             else:
                 graph = confidence_split_graph(project_id, skeleton_ids,
                         confidence_threshold, relation_map, source_rel, target_rel)

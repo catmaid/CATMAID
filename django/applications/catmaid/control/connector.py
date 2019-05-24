@@ -493,7 +493,7 @@ def list_connector_links(request:HttpRequest, project_id=None) -> JsonResponse:
         "tags": tags
     }, safe=False)
 
-def _connector_skeletons(connector_ids, project_id):
+def _connector_skeletons(connector_ids, project_id) -> Dict:
     """Return a dictionary of connector ID as keys and a dictionary as value
     containing two entries: 'presynaptic_to' with a skeleton ID or None,
     and 'postsynaptic_to' with a list of skeleton IDs (maybe empty).

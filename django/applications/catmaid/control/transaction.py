@@ -7,6 +7,7 @@ from catmaid.control.authentication import requires_user_role
 from catmaid.models import UserRole
 
 from rest_framework.decorators import api_view
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 
@@ -16,7 +17,7 @@ class LocationLookupError(Exception):
 
 @api_view(["GET"])
 @requires_user_role([UserRole.Browse])
-def transaction_collection(request, project_id):
+def transaction_collection(request:Request, project_id) -> Response:
     """Get a collection of all available transactions in the passed in project.
     ---
     parameters:
@@ -104,7 +105,7 @@ def transaction_collection(request, project_id):
 
 @api_view(["GET"])
 @requires_user_role([UserRole.Browse])
-def get_location(request, project_id):
+def get_location(request:Request, project_id) -> Response:
     """Try to associate a location in the passed in project for a particular
     transaction.
     ---

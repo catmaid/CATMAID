@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 
+from io import StringIO
 import json
-import re
 import platform
+import re
+from typing import Any, Dict, List
+from unittest import skipIf
 
 from django.shortcuts import get_object_or_404
 from guardian.shortcuts import assign_perm
@@ -12,9 +15,6 @@ from catmaid.models import Log, Review, Treenode, TreenodeConnector
 from catmaid.models import ReviewerWhitelist
 
 from .common import CatmaidApiTestCase
-
-from unittest import skipIf
-from io import StringIO
 
 # Some skeleton back-end functionality is not available if PyPy is used. This
 # variable is used to skip the respective tests (which otherwise would fail).
@@ -670,7 +670,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         skeleton_ids = [235, 361, 373, 2364, 2388, 2411]
         params = {
             'with_locations': True
-        }
+        } # type: Dict[str, Any]
         for i, k in enumerate(skeleton_ids):
             params['rows[%d]' % i] = k
             params['columns[%d]' % i] = k
@@ -748,13 +748,13 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         # Query skeletons of user 2
         response = self.client.get(url, {'created_by': 2})
         parsed_response = json.loads(response.content.decode('utf-8'))
-        expected_result = [2364]
+        expected_result = [2364] # type: ignore # mypy doesn't like this variable reuse with different types
         self.assertEqual(expected_result, parsed_response)
 
         # Query skeletons of user 2 on a date where no neuron was created
         response = self.client.get(url, {'created_by': 2, 'to': '19990505'})
         parsed_response = json.loads(response.content.decode('utf-8'))
-        expected_result = []
+        expected_result = [] # type: ignore
         self.assertEqual(expected_result, parsed_response)
 
         # Query skeletons of user 3 on a date where neurons where created
@@ -900,7 +900,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 'newroot': 2394,
-                'skeleton_id': 2388}
+                'skeleton_id': 2388} # type: Dict[str, Any]
         self.assertEqual(expected_result, parsed_response)
 
         response = self.client.post(
@@ -965,7 +965,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
-        expected_result = {}
+        expected_result = {} # type: Dict[str, Any]
         self.assertEqual(expected_result, parsed_response)
 
         review_time = "2014-03-17T18:14:34.851Z"

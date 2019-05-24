@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 
 from catmaid.models import (UserRole, ClassInstance, ConnectorClassInstance,
         Treenode, Connector, TreenodeClassInstance)
@@ -9,7 +9,7 @@ from catmaid.control.common import get_relation_to_id_map
 
 
 @requires_user_role(UserRole.Browse)
-def search(request, project_id=None):
+def search(request:HttpRequest, project_id=None) -> JsonResponse:
     search_string = request.GET.get('substring', "")
 
     ids = set()

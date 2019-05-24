@@ -1,17 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import json
+import networkx as nx
+from networkx.readwrite import json_graph
 
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 
 from catmaid.models import UserRole, ClassInstanceClassInstance
 from catmaid.control.authentication import requires_user_role
-
-try:
-    import networkx as nx
-    from networkx.readwrite import json_graph
-except ImportError:
-    pass
 
 def get_annotation_graph(project_id=None):
     qs = ClassInstanceClassInstance.objects.filter(
@@ -36,7 +32,7 @@ def get_annotation_graph(project_id=None):
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def convert_annotations_to_networkx(request, project_id=None):
+def convert_annotations_to_networkx(request:HttpRequest, project_id=None) -> JsonResponse:
     g = get_annotation_graph( project_id )
     data = json_graph.node_link_data(g)
     json_return = json.dumps(data, sort_keys=True, indent=4)

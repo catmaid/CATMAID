@@ -1328,8 +1328,8 @@
     // The neuron table columns consist of three base columns and two threshold
     // columns for each partner set.
     var neuronTableColumns = [
-        {orderable: false},
-        {orderable: false},
+        {orderable: false, width: '6em'},
+        {orderable: false, width: '8em'},
         null
     ];
     thresholdSummary.forEach(function(ts) {
@@ -1340,6 +1340,7 @@
     // consistent fashion.
     neuronTable.DataTable({
       dom: "t",
+      autoWidth: false,
       paging: false,
       serverSide: false,
       order: this.currentOrder,

@@ -858,6 +858,7 @@ table.neuron_annotations_query_fields {
 }
 
 .connectivity_widget .header {
+  width: calc(100% - 2em);
   margin: 1em 0 1em 1em;
   clear: left;
 }

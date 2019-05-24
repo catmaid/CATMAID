@@ -442,6 +442,8 @@ Miscellaneous:
 - Volume widget: editing a volume by double clicking its table entry works
   again.
 
+- The Notification Table can be opened again without errors.
+
 - Exporter: connector links are now exported properly if the parameter
   --original-placeholder-context is used.
 

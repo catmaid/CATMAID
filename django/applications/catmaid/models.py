@@ -1672,8 +1672,9 @@ class ChangeRequest(UserFocusedModel):
             # Run the request's validation code snippet to determine whether it is still valid.
             # The action is required to set a value for the is_valid variable.
             try:
-                exec(self.validate_action)
-                if 'is_valid' not in dir():
+                _locals = {}
+                exec(self.validate_action, globals(), _locals)
+                if 'is_valid' not in _locals:
                     raise Exception('validation action did not define is_valid')
                 if not is_valid: # type: ignore
                     # Cache the result so we don't have to do the exec next time.

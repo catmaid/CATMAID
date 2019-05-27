@@ -6506,7 +6506,6 @@ var SkeletonAnnotations = {};
 
   })();
 
-  // TODO: this results in annotations being updated multiple times.
   CATMAID.Init.on(CATMAID.Init.EVENT_PROJECT_CHANGED, function () {
     CATMAID.annotations.update()
       .then(() => {

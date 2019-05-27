@@ -318,9 +318,6 @@
 
       setupSubTools();
 
-      // Update annotation cache for the current project
-      CATMAID.annotations.update();
-
       // Get or create the tracing layer for this stack viewer
       var layer = prepareStackViewer(parentStackViewer);
 

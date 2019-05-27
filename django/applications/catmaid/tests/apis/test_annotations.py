@@ -2,6 +2,8 @@
 
 import json
 
+from datetime import datetime
+
 from catmaid.control.annotation import _annotate_entities
 from catmaid.control.annotation import create_annotation_query
 
@@ -129,6 +131,18 @@ class AnnotationsApiTests(CatmaidApiTestCase):
                          len(expected_response))
         for a in parsed_response['annotations']:
             self.assertTrue(a in expected_response)
+
+
+    def test_simple_annotation_list_cache(self):
+        self.fake_authentication()
+
+        # Test cache use
+        response = self.client.get('/%d/annotations/' % (self.test_project_id,),
+                {
+                    'simple': True,
+                    'if_modified_since': datetime.now().isoformat(),
+                })
+        self.assertEqual(response.status_code, 304)
 
 
     def test_annotations_query_targets(self):

@@ -371,6 +371,10 @@ Miscellaneous:
 - General search widget: a more flexible table is now used for display, which
   allows sorting, filtering and pagination.
 
+- Updating the copy of client side annotations will only request new data if
+  there are actually new annotations. This makes loading of e.g. the Neuron
+  Search widget faster.
+
 - Boss databases can now be used as tile source type so that image data is
   loaded from them. More details: https://docs.theboss.io/docs/image.
 

@@ -309,12 +309,14 @@ var requestQueue = new CATMAID.RequestQueue();
   /**
    * Check if the passed in response information seems valid and without errors.
    */
-  CATMAID.validateResponse = function(status, text, xml, responseType) {
+  CATMAID.validateResponse = function(status, text, xml, responseType,
+      additionalStatusCodes) {
     var isTextResponse = !responseType || responseType === '' || responseType === 'text';
     if (status >= 200 && status <= 204 &&
         (!isTextResponse || typeof text === 'string' || text instanceof String)) {
       return text;
-
+    } else if (additionalStatusCodes && additionalStatusCodes.indexOf(status) > -1) {
+      return text;
     } else if (status === 502) { // Bad Gateway
       var error = new CATMAID.NetworkAccessError("CATMAID server unreachable",
           "Please wait or try to reload");
@@ -333,8 +335,8 @@ var requestQueue = new CATMAID.RequestQueue();
    *
    * @returns {Object} parsed resonse text
    */
-  CATMAID.validateJsonResponse = function(status, text, xml) {
-    var response = CATMAID.validateResponse(status, text, xml);
+  CATMAID.validateJsonResponse = function(status, text, xml, additionalStatusCodes) {
+    var response = CATMAID.validateResponse(status, text, xml, undefined, additionalStatusCodes);
     // `text` may be empty for no content responses.
     var json = text.length ? JSON.parse(text) : {};
     if (json.error) {
@@ -388,9 +390,12 @@ var requestQueue = new CATMAID.RequestQueue();
    *                          default headers and the queue's extraHeaders.
    * @param {API}     api     (Optional) An API that should be contacted instead
    *                          of the current environment.
+   *
+   * @param {int[]}   supportedStatus (optional) A list of HTTP status code,
+   *                                  that are allowed besied the default.
    */
   CATMAID.fetch = function(relativeURL, method, data, raw, id, replace,
-      responseType, headers, parallel, details, api) {
+      responseType, headers, parallel, details, api, supportedStatus) {
     // Alternatively, accept a single argument that provides all parameters as
     // fields.
     let absoluteURL;
@@ -408,6 +413,7 @@ var requestQueue = new CATMAID.RequestQueue();
       parallel = options.parallel;
       details = options.details;
       api = options.api;
+      supportedStatus = options.supportedStatus;
     }
 
     // If an API instance is provided, relative URLs are replaced with an
@@ -438,7 +444,8 @@ var requestQueue = new CATMAID.RequestQueue();
         // case, we have to call reject() explicitly.
         try {
           if (raw) {
-            var response = CATMAID.validateResponse(status, text, xml, responseType);
+            var response = CATMAID.validateResponse(status, text, xml,
+                responseType, supportedStatus);
             if (details) {
               resolve({
                 data: text,
@@ -448,11 +455,13 @@ var requestQueue = new CATMAID.RequestQueue();
               resolve(text);
             }
           } else {
-            var json = CATMAID.validateJsonResponse(status, text, xml);
+            var json = CATMAID.validateJsonResponse(status, text, xml,
+                supportedStatus);
             if (details) {
               resolve({
                 data: json,
                 dataSize: dataSize,
+                status: status,
               });
             } else {
               resolve(json);

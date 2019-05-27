@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 import re
+import dateutil.parser
 
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
@@ -1236,6 +1237,12 @@ def list_annotations(request:HttpRequest, project_id=None) -> JsonResponse:
         type: array
         items:
             type: string
+      - name: if_modified_since
+        description: |
+            Works only if <simple> is True. Return 304 response if there is no
+            newer content with respect to the passed in UTC date in ISO format.
+        paramType: form
+        type: string
     models:
       annotation_user_list_element:
         id: annotation_user_list_element
@@ -1280,10 +1287,30 @@ def list_annotations(request:HttpRequest, project_id=None) -> JsonResponse:
         simple = get_request_bool(request.GET, 'simple', False)
         classes = get_class_to_id_map(project_id, ('annotation',), cursor)
         relations = get_relation_to_id_map(project_id, ('annotated_with',), cursor)
+        if_modified_since = request.GET.get('if_modified_since')
 
         # In case a simple representation should be returned, return a simple
         # list of name - ID mappings.
         if simple:
+            # If there is no newer annotation data since the passed-in date, retunr
+            # a 304 response.
+            if if_modified_since:
+                if_modified_since = dateutil.parser.parse(if_modified_since)
+                cursor.execute("""
+                    SELECT EXISTS(
+                        SELECT 1 FROM class_instance
+                        WHERE edition_time > %(date)s
+                        AND class_id = %(annotation_class_id)s
+                    )
+                """, {
+                    'date': if_modified_since,
+                    'annotation_class_id': classes['annotation'],
+                })
+
+                new_data_exists = cursor.fetchone()[0]
+                if not new_data_exists:
+                    return HttpResponse(status=304)
+
             cursor.execute("""
                 SELECT row_to_json(wrapped)::text
                 FROM (

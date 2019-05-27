@@ -44,22 +44,23 @@
     return Object.keys(this.annotation_names);
   };
 
-  AnnotationCache.prototype.update = function(callback) {
+  /**
+   * Update the annotation cache.
+   */
+  AnnotationCache.prototype.update = function() {
     return CATMAID.fetch(project.id + '/annotations/', 'GET', {
       simple: true,
     })
-      .then((function(json) {
+      .then(json => {
         // Empty cache
         this.annotation_ids = {};
         this.annotation_names = {};
         // Populate cache
-        json.annotations.forEach(function (a) {
+        json.annotations.forEach(a => {
          this.annotation_ids[a.name] = a.id;
          this.annotation_names[a.id] = a.name;
-        }, this);
-        // Call back, if requested
-        CATMAID.tools.callIfFn(callback);
-      }).bind(this));
+        });
+      });
   };
 
   /**

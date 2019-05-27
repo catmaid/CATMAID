@@ -6508,18 +6508,20 @@ var SkeletonAnnotations = {};
 
   // TODO: this results in annotations being updated multiple times.
   CATMAID.Init.on(CATMAID.Init.EVENT_PROJECT_CHANGED, function () {
-    CATMAID.annotations.update(function () {
-      SkeletonAnnotations.VisibilityGroups.refresh();
-      CATMAID.TracingOverlay.Settings.session.visibility_groups.forEach(function (group, i) {
-        SkeletonAnnotations.VisibilityGroups.setGroup(i, group);
-      });
-      SkeletonAnnotations.FastMergeMode.refresh();
-      SkeletonAnnotations.FastMergeMode.setFilters(
-          SkeletonAnnotations.Settings.session.fast_merge_mode);
-      SkeletonAnnotations.FastSplitMode.refresh();
-      SkeletonAnnotations.FastSplitMode.setFilters(
-          SkeletonAnnotations.Settings.session.fast_split_mode);
-    });
+    CATMAID.annotations.update()
+      .then(() => {
+        SkeletonAnnotations.VisibilityGroups.refresh();
+        CATMAID.TracingOverlay.Settings.session.visibility_groups.forEach(function (group, i) {
+          SkeletonAnnotations.VisibilityGroups.setGroup(i, group);
+        });
+        SkeletonAnnotations.FastMergeMode.refresh();
+        SkeletonAnnotations.FastMergeMode.setFilters(
+            SkeletonAnnotations.Settings.session.fast_merge_mode);
+        SkeletonAnnotations.FastSplitMode.refresh();
+        SkeletonAnnotations.FastSplitMode.setFilters(
+            SkeletonAnnotations.Settings.session.fast_split_mode);
+    })
+    .catch(CATMAID.handleError);
   });
 
 

@@ -591,13 +591,15 @@
         };
 
         // Update all annotations before, showing the dialog
-        CATMAID.annotations.update(function() {
-          dialog.show(300, 'auto');
-          // Add auto complete to input field
-          $(field).autocomplete({
-            source: CATMAID.annotations.getAllNames()
-          });
-        });
+        CATMAID.annotations.update()
+          .then(() => {
+            dialog.show(300, 'auto');
+            // Add auto complete to input field
+            $(field).autocomplete({
+              source: CATMAID.annotations.getAllNames()
+            });
+          })
+          .catch(CATMAID.handleError);
       } else {
         labelingOption = undefined;
       }

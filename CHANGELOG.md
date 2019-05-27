@@ -436,6 +436,9 @@ Miscellaneous:
 
 - Connector table: the section and tag columns are now part of the CSV export.
 
+- Tracing tool: unneeded node updates are removed from initial tracing layer
+  loading.
+
 - Settings widget: default values for tracing layer skeleton limits can now be
   configured under Tracing Overlay > Tracing layer skeleton filters.
 

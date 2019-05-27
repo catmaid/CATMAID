@@ -290,7 +290,7 @@
 
     function prepareAndUpdateStackViewer(stackViewer) {
       let layer = prepareStackViewer(stackViewer);
-      layer.tracingOverlay.updateNodes(layer.forceRedraw.bind(layer));
+      layer.forceRedraw();
     }
 
     /**

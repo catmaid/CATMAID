@@ -288,6 +288,11 @@
       return layer;
     }
 
+    function prepareAndUpdateStackViewer(stackViewer) {
+      let layer = prepareStackViewer(stackViewer);
+      layer.tracingOverlay.updateNodes(layer.forceRedraw.bind(layer));
+    }
+
     /**
      * Remove the neuron name display and the tacing layer from a stack view.
      */
@@ -343,7 +348,6 @@
       if (activeTracingLayer !== layer || activeStackViewer !== parentStackViewer) {
         SkeletonAnnotations.setTracingMode(SkeletonAnnotations.currentmode);
         this.handleChangedInteractionMode(SkeletonAnnotations.currentmode);
-        layer.tracingOverlay.updateNodes();
       }
 
       activeStackViewer = parentStackViewer;
@@ -401,7 +405,7 @@
      * handlers, toggle off tool activity signals (like buttons)
      */
     this.destroy = function() {
-      project.off(CATMAID.Project.EVENT_STACKVIEW_ADDED, prepareStackViewer, this);
+      project.off(CATMAID.Project.EVENT_STACKVIEW_ADDED, prepareAndUpdateStackViewer, this);
       project.off(CATMAID.Project.EVENT_STACKVIEW_CLOSED, closeStackViewer, this);
       SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
           handleActiveNodeChange, this);
@@ -1656,14 +1660,13 @@
           // Initialize a tracing layer in all available stack viewers, but let
           // register() take care of bindings.
           project.getStackViewers().forEach(function(s) {
-            var layer = prepareStackViewer(s);
-            layer.tracingOverlay.updateNodes(layer.forceRedraw.bind(layer));
+            var layer = prepareAndUpdateStackViewer(s);
           }, this);
         });
     };
 
     // Listen to creation and removal of new stack views in current project.
-    project.on(CATMAID.Project.EVENT_STACKVIEW_ADDED, prepareStackViewer, this);
+    project.on(CATMAID.Project.EVENT_STACKVIEW_ADDED, prepareAndUpdateStackViewer, this);
     project.on(CATMAID.Project.EVENT_STACKVIEW_CLOSED, closeStackViewer, this);
 
     // Listen to active node change events

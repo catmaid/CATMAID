@@ -1658,7 +1658,6 @@
           project.getStackViewers().forEach(function(s) {
             var layer = prepareStackViewer(s);
             layer.tracingOverlay.updateNodes(layer.forceRedraw.bind(layer));
-            // s.getView().appendChild(layer.tracingOverlay.view);
           }, this);
         });
     };

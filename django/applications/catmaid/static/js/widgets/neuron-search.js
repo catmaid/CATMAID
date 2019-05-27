@@ -197,8 +197,9 @@
       init: function() {
         var self = this;
 
-        // Update annotation cache and add autocompletion to annotation input field
-        CATMAID.annotations.update()
+        // Update annotation cache in parallel and add autocompletion to
+        // annotation input field.
+        CATMAID.annotations.update(true)
           .then(() => this.handleAnnotationUpdate());
 
         $('#neuron_annotations_add_annotation' + this.widgetID)[0].onclick =

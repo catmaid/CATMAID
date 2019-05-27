@@ -1703,7 +1703,7 @@
    */
   TracingTool.prototype.refreshCaches = function() {
     return Promise.all([
-      CATMAID.annotations.update(),
+      CATMAID.annotations.update(true),
       CATMAID.NeuronNameService.getInstance().refresh(),
       SkeletonAnnotations.VisibilityGroups.refresh(),
       SkeletonAnnotations.FastMergeMode.refresh()

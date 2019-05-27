@@ -47,10 +47,14 @@
   /**
    * Update the annotation cache.
    */
-  AnnotationCache.prototype.update = function() {
-    return CATMAID.fetch(project.id + '/annotations/', 'GET', {
-      simple: true,
-    })
+  AnnotationCache.prototype.update = function(parallel) {
+    return CATMAID.fetch({
+        url: project.id + '/annotations/',
+        data: {
+          simple: true,
+        },
+        parallel: parallel,
+      })
       .then(json => {
         // Empty cache
         this.annotation_ids = {};

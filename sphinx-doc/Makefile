@@ -42,6 +42,12 @@ apidoc:
 	@echo "Requires local CATMAID server on port 8000"
 	`npm bin`/bootprint openapi http://localhost:8000/apis/v2/swagger.json source/_static/api
 
+widgetdoc:
+	@echo
+	@echo "Collecting HTML widget documentation."
+	`rm -f -r source/_static/widgets`
+	`cp -r ../django/applications/catmaid/static/html/doc/widgets source/_static/widgets`
+
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo

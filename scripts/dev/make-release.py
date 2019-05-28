@@ -201,6 +201,12 @@ class CatmaidRelease(object):
         self.git.add(os.path.join(self.project_root, 'sphinx-doc/source/_static/api'))
         log("done")
 
+        log("Updating widget documentation...", False)
+        update_widget_doc = sh.make.bake(_cwd=os.path.join(self.project_root, 'sphinx-doc'))
+        update_widget_doc('widgetdoc')
+        self.git.add(os.path.join(self.project_root, 'sphinx-doc/source/_static/widgets'))
+        log("done")
+
 
     def update_version(self):
         def contentfilter(doc_data):

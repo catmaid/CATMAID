@@ -4,9 +4,10 @@ Developer Documentation
 .. toctree::
    :maxdepth: 1
 
-   data_view_types
    contributing
    tile_sources
+   creating_widgets
+   data_view_types
    deep_link_urls
    dbmigration
    djangounittest

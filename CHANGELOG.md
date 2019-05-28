@@ -37,6 +37,10 @@
 - If R based NBLAST is used, make sure to execute to update all dependencies:
   `manage.py catmaid_setup_nblast_environment`.
 
+- The main documentation on catmaid.org has now a place for widget specific
+  documentation as well. Only a few widgets have been updated yet, but more will
+  follow.
+
 
 ### Features and enhancements
 

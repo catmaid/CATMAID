@@ -288,8 +288,12 @@ var WindowMaker = new function()
     container.style.backgroundColor = "#ffffff";
 
     // Add a button to open help documentation if it is provided by the widget.
-    if (config.helpText) {
-      DOM.addHelpButton(win, 'Help: ' + instance.getName(), config.helpText);
+    if (config.helpText || config.helpPath) {
+      let exteHelpContentUrl;
+      if (config.helpPath) {
+        exteHelpContentUrl = CATMAID.makeStaticURL(`html/doc/widgets/${config.helpPath}`);
+      }
+      DOM.addHelpButton(win, 'Help: ' + instance.getName(), config.helpText, exteHelpContentUrl);
     }
 
     // Widgets can announce they have filtering support
@@ -2162,6 +2166,7 @@ var WindowMaker = new function()
     var container = createContainer(undefined, true);
     content.appendChild(container);
     content.style.backgroundColor = "#ffffff";
+    content.classList.add('html-window');
 
     addListener(win, container);
     addLogic(win);

@@ -1,0 +1,25 @@
+<html>
+<body>
+  <h3>Visualize connecticity networks</h3>
+  <h4>How to...</h4><p><em>Hide edges/links:</em>
+  Select an edge and use the <em>Hide</em> button in the
+  <em>Selection</em> tab.</p>
+  <h4>Export Graphs for layouting in other tools</h4>
+  <p>For some graphs, layouting is easier done in other tools, e.g.
+  Gephi. Since the coloring is likely easier to do in CATMAID, a
+  re-import is useful as well. This workflow can be done in CATMAID
+  like the following:<p>
+  <ol><li>Export a graph as GML, the default export options (linearize
+  IDs) are fine.</li>
+  <li>Open GML file in Gephi and do layout.</li>
+  <li>Export graph in Gephi as GraphML file: File > Export > Graph
+  file. Choose "GraphML" as file type in file dialog.</li>
+  <li>In CATMAID, click "Open…" in the Graph Widget\'s main tab and
+  select the exported GraphML (ends on .graphml).</li>
+  <li>The default options in the import dialog should work for
+  Gephi. Preferring the unit_id and name fields assumes a previous
+  CATMAID export of the graph.</li></ol>
+  <p>This should open the Graph with Gephi\'s layout</p>
+</body>
+</html>
+

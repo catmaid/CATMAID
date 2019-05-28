@@ -325,20 +325,56 @@
    * @param {CMWWindow} win          Window to which the button with be added.
    * @param {string}    title        Title of the help window that will open.
    * @param {string}    helpTextHtml HTML source of the help text.
+   * @param {string}    externalLink (optional) Link with content to embed in
+   *                                 this help page.
    */
-  DOM.addHelpButton = function (win, title, helpTextHtml) {
+  DOM.addHelpButton = function (win, title, helpTextHtml, externalLink) {
     var helpTextFeedback =
         '<p class="ui-state-highlight ui-widget">' +
         'Is this documentation incomplete or incorrect? Help out by ' +
         '<a target="_blank" href="' +
         CATMAID.makeDocURL('contributing.html#in-client-documentation') +
         '">letting us know or contributing a fix.</a></p>';
+    let html = '';
+    if (helpTextHtml) {
+      html += helpTextHtml;
+    }
+    if (externalLink) {
+      html += `<iframe src="${externalLink}"></iframe>`;
+    } else {
+      html += helpTextFeedback;
+    }
     DOM.addCaptionButton(win,
         'fa fa-question',
         'Show help documentation for this widget',
         function () {
-          WindowMaker.create('html', {title: title,
-                                      html: helpTextHtml + helpTextFeedback});
+          let creationResult = WindowMaker.create('html', {
+            title: title,
+            html: html,
+          });
+
+          // Inject CSS reference to style external link
+          if (externalLink) {
+            let content = creationResult.window.getFrame();
+            content.classList.add('help-window');
+            let externalContent = content.querySelector('iframe');
+            if (externalContent) {
+              let cssLinks = ['css/screen.css', 'css/keyboard-shortcuts.css'].map(n => {
+                let cssLink = document.createElement('link');
+                cssLink.href = CATMAID.makeStaticURL(n);
+                cssLink.rel = 'stylesheet';
+                cssLink.type = 'text/css';
+                return cssLink;
+              });
+              externalContent.addEventListener('load', (e) => {
+                e.target.contentDocument.body.classList.add('catmaid');
+                cssLinks.forEach(cl => e.target.contentDocument.body.appendChild(cl));
+                let feedbackContainer = e.target.contentDocument.createElement('div');
+                feedbackContainer.innerHTML = helpTextFeedback;
+                e.target.contentDocument.body.appendChild(feedbackContainer);
+              });
+            }
+          }
         });
   };
 

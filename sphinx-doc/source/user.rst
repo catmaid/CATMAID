@@ -8,6 +8,7 @@ User Documentation
    screenshots
    tools
    tracing_neurons
+   widgets
    api
    api-doc
    volumes

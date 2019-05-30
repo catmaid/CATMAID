@@ -183,9 +183,9 @@ class ProjectStack(models.Model):
 
 class Concept(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     creation_time = models.DateTimeField(default=timezone.now)
     edition_time = models.DateTimeField(default=timezone.now)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
 
     class Meta:
         db_table = "concept"
@@ -211,9 +211,9 @@ def create_concept_sub_table(table_name):
 class Class(models.Model):
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     creation_time = models.DateTimeField(default=timezone.now)
     edition_time = models.DateTimeField(default=timezone.now)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     # Now new columns:
     class_name = models.CharField(max_length=255)
     description = models.TextField()
@@ -233,9 +233,9 @@ class ConnectivityDirection(object):
 class ClassInstance(models.Model):
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     creation_time = models.DateTimeField(default=timezone.now)
     edition_time = models.DateTimeField(default=timezone.now)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     # Now new columns:
     class_column = models.ForeignKey(Class, on_delete=models.CASCADE,
                                      db_column="class_id") # underscore since class is a keyword
@@ -326,9 +326,9 @@ class ClassInstance(models.Model):
 class Relation(models.Model):
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     creation_time = models.DateTimeField(default=timezone.now)
     edition_time = models.DateTimeField(default=timezone.now)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     # Now new columns:
     relation_name = models.CharField(max_length=255)
     uri = models.TextField()
@@ -342,9 +342,9 @@ class Relation(models.Model):
 class RelationInstance(models.Model):
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     creation_time = models.DateTimeField(default=timezone.now)
     edition_time = models.DateTimeField(default=timezone.now)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     # Now new columns:
     relation = models.ForeignKey(Relation, on_delete=models.CASCADE)
 
@@ -355,9 +355,9 @@ class RelationInstance(models.Model):
 class ClassInstanceClassInstance(models.Model):
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     creation_time = models.DateTimeField(default=timezone.now)
     edition_time = models.DateTimeField(default=timezone.now)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     relation = models.ForeignKey(Relation, on_delete=models.CASCADE)
     # Now new columns:
     class_instance_a = models.ForeignKey(ClassInstance,
@@ -407,9 +407,9 @@ class InterpolatableSection(models.Model):
 class ClassClass(models.Model):
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     creation_time = models.DateTimeField(default=timezone.now)
     edition_time = models.DateTimeField(default=timezone.now)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     relation = models.ForeignKey(Relation, on_delete=models.CASCADE)
     # Now new columns:
     class_a = models.ForeignKey(Class, related_name='classes_a',
@@ -735,9 +735,9 @@ class RegionOfInterestClassInstance(UserFocusedModel):
 class Restriction(models.Model):
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     creation_time = models.DateTimeField(default=timezone.now)
     edition_time = models.DateTimeField(default=timezone.now)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     # Now new columns:
     enabled = models.BooleanField(default=True)
     restricted_link = models.ForeignKey(ClassClass, on_delete=models.CASCADE)
@@ -760,9 +760,9 @@ class CardinalityRestriction(models.Model):
     """
     # Repeat the columns inherited from 'restriction'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     creation_time = models.DateTimeField(default=timezone.now)
     edition_time = models.DateTimeField(default=timezone.now)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     enabled = models.BooleanField(default=True)
     restricted_link = models.ForeignKey(ClassClass, on_delete=models.CASCADE)
     # Now new columns:
@@ -876,9 +876,9 @@ class CardinalityRestriction(models.Model):
 class StackClassInstance(models.Model):
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     creation_time = models.DateTimeField(default=timezone.now)
     edition_time = models.DateTimeField(default=timezone.now)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     relation = models.ForeignKey(Relation, on_delete=models.CASCADE)
     # Now new columns:
     stack = models.ForeignKey(Stack, on_delete=models.CASCADE)
@@ -924,9 +924,9 @@ class StackStackGroup(models.Model):
 class StackGroupClassInstance(models.Model):
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     creation_time = models.DateTimeField(default=timezone.now)
     edition_time = models.DateTimeField(default=timezone.now)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     relation = models.ForeignKey(Relation, on_delete=models.CASCADE)
     # Now new columns:
     stack_group = models.ForeignKey(StackGroup, on_delete=models.CASCADE)
@@ -1332,15 +1332,15 @@ class SkeletonSummary(models.Model):
     class Meta:
         db_table = "catmaid_skeleton_summary"
 
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     skeleton = models.OneToOneField(ClassInstance, on_delete=models.CASCADE,
             db_index=True, primary_key=True)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
     last_summary_update = models.DateTimeField(default=timezone.now)
     original_creation_time = models.DateTimeField(default=timezone.now)
     last_edition_time = models.DateTimeField(default=timezone.now)
-    last_editor = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     num_nodes = models.IntegerField(null=False, default=0)
     cable_length = models.FloatField(null=False, default=0)
+    last_editor = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     num_imported_nodes = models.IntegerField(null=False, default=0)
 
     def __str__(self) -> str:

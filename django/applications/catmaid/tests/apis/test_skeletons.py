@@ -483,6 +483,35 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
 
 
+    def test_import_skeleton_with_64_bit_ids(self):
+        self.fake_authentication()
+        assign_perm('can_import', self.test_user, self.test_project)
+
+        orig_skeleton_id = 235
+        response = self.client.get('/%d/skeleton/%d/swc' % (self.test_project_id, orig_skeleton_id))
+        self.assertEqual(response.status_code, 200)
+        orig_swc_string = response.content.decode('utf-8')
+
+        # Test importing a neuron with an ID larger than 32 bit
+        large_skeleton_id = 2**32 + 1
+        large_neuron_id = 2**50
+        swc_file = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {
+                    'file.swc': swc_file,
+                    'name': 'test2',
+                    'skeleton_id': large_skeleton_id,
+                    'neuron_id': large_neuron_id,
+                    'auto_id': False
+                })
+
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        self.assertTrue('error' not in parsed_response)
+        self.assertEqual(parsed_response['skeleton_id'], large_skeleton_id)
+        self.assertEqual(parsed_response['neuron_id'], large_neuron_id)
+
+
     def test_skeleton_contributor_statistics(self):
         self.fake_authentication()
 
@@ -1232,7 +1261,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.get(url)
         self.assertStatus(response)
         expected_result = {
-                '253': [[3, review_time], [2, review_time]],
+                '253': [[2, review_time], [3, review_time]],
                 '263': [[3, review_time]]}
         self.assertJSONEqual(response.content.decode('utf-8'), expected_result)
 

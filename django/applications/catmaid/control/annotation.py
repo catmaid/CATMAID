@@ -682,7 +682,7 @@ def _update_neuron_annotations(project_id:Union[int,str], neuron_id,
             cursor.execute('''
                 UPDATE class_instance_class_instance
                 SET class_instance_a = %s, user_id = missing.u_id
-                FROM UNNEST(%s::integer[], %s::integer[]) AS missing(cici_id, u_id)
+                FROM UNNEST(%s::bigint[], %s::integer[]) AS missing(cici_id, u_id)
                 WHERE id = missing.cici_id;
                 ''', (neuron_id, cici_ids, u_ids))
 
@@ -710,12 +710,12 @@ def _update_neuron_annotations(project_id:Union[int,str], neuron_id,
     cursor.execute("""
         UPDATE class_instance_class_instance
         SET creation_time = to_update.creation_time
-        FROM UNNEST(%s::integer[], %s::timestamptz[])
+        FROM UNNEST(%s::bigint[], %s::timestamptz[])
             AS to_update(cici_id, creation_time)
         WHERE id = to_update.cici_id;
         UPDATE class_instance_class_instance
         SET edition_Time = to_update.edition_time
-        FROM UNNEST(%s::integer[], %s::timestamptz[])
+        FROM UNNEST(%s::bigint[], %s::timestamptz[])
             AS to_update(cici_id, edition_time)
         WHERE id = to_update.cici_id;
     """, (to_update_ids,

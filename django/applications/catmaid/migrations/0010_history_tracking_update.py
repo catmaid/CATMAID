@@ -2243,6 +2243,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('catmaid', '0009_ensure_required_project_classes'),
+        ('admin', '0003_logentry_add_action_flag_choices'),
     ]
 
     operations = [

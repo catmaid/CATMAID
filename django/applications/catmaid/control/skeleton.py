@@ -1039,7 +1039,7 @@ def connectivity_counts(request:HttpRequest, project_id=None) -> JsonResponse:
     cursor.execute("""
         SELECT tc.skeleton_id, tc.relation_id, COUNT(tc)
         FROM treenode_connector tc
-        JOIN UNNEST(%(skeleton_ids)s::int[]) skeleton(id)
+        JOIN UNNEST(%(skeleton_ids)s::bigint[]) skeleton(id)
             ON skeleton.id = tc.skeleton_id
         {extra_select}
         WHERE tc.project_id = %(project_id)s
@@ -1575,7 +1575,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2,
         t1.treenode_id, t2.treenode_id
     FROM treenode_connector t1,
          treenode_connector t2
-    WHERE t1.skeleton_id = ANY(%s::integer[])
+    WHERE t1.skeleton_id = ANY(%s::bigint[])
       AND t1.relation_id = %s
       AND t1.connector_id = t2.connector_id
       AND t1.id != t2.id
@@ -1610,7 +1610,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2,
     cursor.execute('''
     SELECT skeleton_id, num_nodes
     FROM catmaid_skeleton_summary
-    WHERE skeleton_id = ANY(%s::integer[])
+    WHERE skeleton_id = ANY(%s::bigint[])
     GROUP BY skeleton_id
     ''', (partner_skids,))
     for row in cursor.fetchall():
@@ -1620,7 +1620,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2,
     cursor.execute('''
     SELECT DISTINCT reviewer_id
     FROM review
-    WHERE skeleton_id = ANY(%s::integer[])
+    WHERE skeleton_id = ANY(%s::bigint[])
     ''', (partner_skids,))
     reviewers = [row[0] for row in cursor]
 
@@ -1943,8 +1943,8 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids,
         FROM treenode_connector t1,
              treenode_connector t2
             {extra_join}
-        WHERE t1.skeleton_id = ANY(%(row_skeleton_ids)s::integer[])
-          AND t2.skeleton_id = ANY(%(col_skeleton_ids)s::integer[])
+        WHERE t1.skeleton_id = ANY(%(row_skeleton_ids)s::bigint[])
+          AND t2.skeleton_id = ANY(%(col_skeleton_ids)s::bigint[])
           AND t1.connector_id = t2.connector_id
           AND t1.relation_id = %(pre_rel_id)s
           AND t2.relation_id = %(post_rel_id)s
@@ -3657,7 +3657,7 @@ def skeletons_by_node_labels(request:HttpRequest, project_id=None) -> JsonRespon
             ON t.id = tci.treenode_id
           JOIN class_instance ci
             ON tci.class_instance_id = ci.id
-          JOIN UNNEST(%(label_ids)s::int[]) label(id)
+          JOIN UNNEST(%(label_ids)s::bigint[]) label(id)
             ON label.id = ci.id
           WHERE ci.project_id = %(project_id)s
             AND tci.relation_id = %(labeled_as)s
@@ -3701,7 +3701,7 @@ def get_skeletons_in_bb(params) -> List:
 
     if skeleton_ids:
         extra_joins.append("""
-            JOIN UNNEST(%(skeleton_ids)s::int[]) query_skeleton(id)
+            JOIN UNNEST(%(skeleton_ids)s::bigint[]) query_skeleton(id)
                 ON query_skeleton.id = skeleton.id
         """)
 

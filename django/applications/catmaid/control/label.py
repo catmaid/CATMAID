@@ -380,7 +380,7 @@ def label_update(request:HttpRequest, project_id, location_id, ntype:str) -> Jso
                   class_instance ci,
                   treenode_class_instance tci,
                   treenode tn,
-                  unnest(%s::text[], %s::integer[]) AS ll (name, max)
+                  unnest(%s::text[], %s::bigint[]) AS ll (name, max)
                 WHERE ci.name = ll.name
                   AND ci.project_id = %s
                   AND ci.class_id = %s

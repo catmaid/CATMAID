@@ -5,7 +5,7 @@ from django.db import migrations, models
 forward_history = """
     SELECT disable_history_tracking_for_table('catmaid_sampler'::regclass,
             get_history_table_name('catmaid_sampler'::regclass));
-
+    SELECT drop_history_view_for_table('catmaid_sampler'::regclass);
 
     -- Update table columns, add leaf_segment_handling column
     ALTER TABLE catmaid_sampler
@@ -25,6 +25,7 @@ forward_history = """
     SET merge_limit = 0;
 
 
+    SELECT create_history_view_for_table('catmaid_sampler'::regclass);
     SELECT enable_history_tracking_for_table('catmaid_sampler'::regclass,
             get_history_table_name('catmaid_sampler'::regclass), FALSE);
 """
@@ -32,12 +33,14 @@ forward_history = """
 backward_history = """
     SELECT disable_history_tracking_for_table('catmaid_sampler'::regclass,
             get_history_table_name('catmaid_sampler'::regclass));
+    SELECT drop_history_view_for_table('catmaid_sampler'::regclass);
 
     ALTER TABLE catmaid_sampler
     DROP COLUMN merge_limit;
     ALTER TABLE catmaid_sampler__history
     DROP COLUMN merge_limit;
 
+    SELECT create_history_view_for_table('catmaid_sampler'::regclass);
     SELECT enable_history_tracking_for_table('catmaid_sampler'::regclass,
             get_history_table_name('catmaid_sampler'::regclass), FALSE);
 """

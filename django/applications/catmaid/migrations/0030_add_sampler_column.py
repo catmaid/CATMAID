@@ -7,6 +7,7 @@ from django.db import migrations, models
 forward_history = """
     SELECT disable_history_tracking_for_table('catmaid_sampler'::regclass,
             get_history_table_name('catmaid_sampler'::regclass));
+    SELECT drop_history_view_for_table('catmaid_sampler'::regclass);
 
     -- Update table columns, add inverval boundary column,
     -- add interval_error column
@@ -32,6 +33,7 @@ forward_history = """
         interval_error = 0.0;
 
 
+    SELECT create_history_view_for_table('catmaid_sampler'::regclass);
     SELECT enable_history_tracking_for_table('catmaid_sampler'::regclass,
             get_history_table_name('catmaid_sampler'::regclass), FALSE);
 """
@@ -39,6 +41,7 @@ forward_history = """
 backward_history = """
     SELECT disable_history_tracking_for_table('catmaid_sampler'::regclass,
             get_history_table_name('catmaid_sampler'::regclass));
+    SELECT drop_history_view_for_table('catmaid_sampler'::regclass);
 
     ALTER TABLE catmaid_sampler
     DROP COLUMN create_interval_boundaries;
@@ -50,6 +53,7 @@ backward_history = """
     ALTER TABLE catmaid_sampler__history
     DROP COLUMN interval_error;
 
+    SELECT create_history_view_for_table('catmaid_sampler'::regclass);
     SELECT enable_history_tracking_for_table('catmaid_sampler'::regclass,
             get_history_table_name('catmaid_sampler'::regclass), FALSE);
 """

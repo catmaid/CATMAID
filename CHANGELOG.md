@@ -11,7 +11,7 @@
 
 - Python 3.7 is now supported.
 
-- The next CATMAID version will require Postgres 11 and Python 3.6.
+- Heads-up: The next CATMAID version will require Postgres 11 and Python 3.6.
 
 - Should migration 0057 fail due a permission error, the Postgres extension
   "pg_trgm" has to be installed manually into the CATMAID database using a
@@ -170,121 +170,6 @@ Neuron Similarity:
   confirmation dialog presents the computed grouping before actually creating a
   similarity matrix.
 
-Skeleton history widget:
-
-- A basic view of the change of a set of skeleton IDs over time based on all
-  nodes that are part of a given skeleton ID or that have been in the past.
-
-- Skeleton history can also be used with past skeleton IDs to see into what
-  skeleton they changed (if any).
-
-- All past and present treenodes with a passed in skeleton ID are tracked
-  through the complete history and their path of skeleton ID changes is
-  recorded along with the number of treenodes following a given skeleton path.
-
-- The widget shows a graph from origin skeletons to the final skeleton IDs in
-  every available path, summing the treenode counts for each contributing path.
-
-- Existing skeletons are colored in yellow, past skeletons are colored in cyan.
-  Selected skeletons are colored green.
-
-- Ctrl+Click on skeleton will select it and go to the closest location in it.
-  Shift+Click allows selecting multiple skeletons. All selected skeletons are
-  available through the Skeleton Source interface.
-
-Administration:
-
-- A grid based node query cache can now be used to speed up tracing data
-  retrieval by precomputing intersection results. This can be useful for larger
-  field of views in big data set. It supports multiple levels of detail per grid
-  cell and can therefore provide a somewhat uniform sampling when limiting the
-  number of displayed nodes. The sorting of this LOD configuration can be
-  controlled so that e.g. only the top N largest skeletons will be shown per
-  cell with growing LOD. The documentation has more details. This cache can be
-  kept up updated using two extra worker processes that listen to database
-  changes, implemented as management commands `catmaid_spatial_update_worker`
-  and `catmaid_cache_update_worker`.
-
-- The database can now emit notifications on tracing data changes using the
-  "catmaid.spatial-update" channel and when grid cache cells get marked dirty
-  on the "catmaid.dirty-cacche" channel. These can be subscribed to using
-  Postgres' LISTEN command. To enable emitting these events and let cache update
-  workers work, set `SPATIAL_UPDATE_NOTIFICATIONS = True` in `settings.py`. This
-  is disabled by default, because sending events for spatial cache updates can
-  add slightly more time to spatial queries, which will mainly be relevant for
-  importing and merging large skeleotons.
-
-Node and skeleton filters:
-
-- Filter rules support now an "invert" option during creation, which allows to
-  create filters that include everything but whatever is matched by a particular
-  filter strategy. This can be useful e.g. during neuron review to only look at
-  segments that have been created by people other than oneself or connectivity
-  everywhere excluding a particular compartment.
-
-System check widget:
-
-- A subset of important database statistics are now displayed if a user has the
-  "can_administer" permission in a project. These statistics include e.g. cache
-  hit ratio, temporary files, requested checkpoints and replication lag. For
-  most of them a rule of thumb suggestion on how a value should behave is
-  provided as well.
-
-CLI Exporter:
-
-- If both required annotations and exclusion annotations are provided, the
-  importer will now only exclude a skeleton if it is not also annotated with a
-  sub-annotation of the required annotations set. This behavior can be disabled
-  and exclusion can be enforced when a skeleton is annotated with the exclusion
-  annotation or one of its sub-annotations. To do so, use the new
-  "--exclusion-is-final" switch.
-
-- Volumes can now be exported by using the `--volumes` switch. By default all
-  volumes of the exported project will be included. This can be further
-  constrained by using `--volume-annotation <annotation-name>` arguments.
-
-- The way she exported objects are specified through the command line interface
-  changed. Instead of writing e.g. `--notreenodes` to not import treenodes from
-  a source, `--treenodes false` has to be used now. This is the case for
-  treenodes, connectors, tags and annotations. The defaults (when the argument
-  is not provided) stay the same. To explicitly disable the export of a type
-  `false`, `no`, `f`, `n` and `0` can be provided as argument, e.g. `-treenodes
-  false` or `--users n`. For a positive parameter use `true`, `yes`, `t`, and
-  `1`.
-
-CLI importer:
-
-- Precompute materializations (edges, connectors) explicitly only for imported
-  data, which improves performance in typical scenarios (import is small
-  compared to existing data). If the old behavior of recomputing everything in
-  the target project should be used in cases where a full data base is imported,
-  the --update-project-materializations switch can be used.
-
-- The way she imported objects are specified through the command line interface
-  changed. Instead of writing e.g. `--notreenodes` to not import treenodes from
-  a source, `--treenodes false` has to be used now. This is the case for
-  treenodes, connectors, tags and annotations. The defaults (when the argument
-  is not provided) stay the same. To explicitly disable the import of a type
-  `false`, `no`, `f`, `n` and `0` can be provided as argument, e.g. `-treenodes
-  false` or `--users n`. For a positive parameter use `true`, `yes`, `t`, and
-  `1`.
-
-- It is now possible to import volumes from CATMAID export files and other
-  projects..
-
-Administration:
-
-- Projects can now be deleted along with the data that reference them (e.g.
-  treenodes, ontologies, volumes). To do so select the projects to delete in the
-  admin project list and select "Delete selected" from action drop down.
-
-- Users can now be set to an inactive state after a specified amount of time.
-  This time is configured for a user group and it applies to users if they are
-  members of such a group. A message can optionally be displayed as well as
-  users to contact that could potentially help. This is configurable as "Group
-  inactivity period" in the admin view. Users to contact for support, can be
-  either configured there or from individual user views.
-
 Graph widget:
 
 - GraphML files can now be imported, positions and colors are respected. This is
@@ -326,6 +211,119 @@ Graph widget:
 
 - The rotation time for animations can now specified in seconds rather than
   angular distance.
+
+Skeleton history widget:
+
+- A basic view of the change of a set of skeleton IDs over time based on all
+  nodes that are part of a given skeleton ID or that have been in the past.
+
+- Skeleton history can also be used with past skeleton IDs to see into what
+  skeleton they changed (if any).
+
+- All past and present treenodes with a passed in skeleton ID are tracked
+  through the complete history and their path of skeleton ID changes is
+  recorded along with the number of treenodes following a given skeleton path.
+
+- The widget shows a graph from origin skeletons to the final skeleton IDs in
+  every available path, summing the treenode counts for each contributing path.
+
+- Existing skeletons are colored in yellow, past skeletons are colored in cyan.
+  Selected skeletons are colored green.
+
+- Ctrl+Click on skeleton will select it and go to the closest location in it.
+  Shift+Click allows selecting multiple skeletons. All selected skeletons are
+  available through the Skeleton Source interface.
+
+Node and skeleton filters:
+
+- Filter rules support now an "invert" option during creation, which allows to
+  create filters that include everything but whatever is matched by a particular
+  filter strategy. This can be useful e.g. during neuron review to only look at
+  segments that have been created by people other than oneself or connectivity
+  everywhere excluding a particular compartment.
+
+System check widget:
+
+- A subset of important database statistics are now displayed if a user has the
+  "can_administer" permission in a project. These statistics include e.g. cache
+  hit ratio, temporary files, requested checkpoints and replication lag. For
+  most of them a rule of thumb suggestion on how a value should behave is
+  provided as well.
+
+Administration:
+
+- A grid based node query cache can now be used to speed up tracing data
+  retrieval by precomputing intersection results. This can be useful for larger
+  field of views in big data set. It supports multiple levels of detail per grid
+  cell and can therefore provide a somewhat uniform sampling when limiting the
+  number of displayed nodes. The sorting of this LOD configuration can be
+  controlled so that e.g. only the top N largest skeletons will be shown per
+  cell with growing LOD. The documentation has more details. This cache can be
+  kept up updated using two extra worker processes that listen to database
+  changes, implemented as management commands `catmaid_spatial_update_worker`
+  and `catmaid_cache_update_worker`.
+
+- The database can now emit notifications on tracing data changes using the
+  "catmaid.spatial-update" channel and when grid cache cells get marked dirty
+  on the "catmaid.dirty-cacche" channel. These can be subscribed to using
+  Postgres' LISTEN command. To enable emitting these events and let cache update
+  workers work, set `SPATIAL_UPDATE_NOTIFICATIONS = True` in `settings.py`. This
+  is disabled by default, because sending events for spatial cache updates can
+  add slightly more time to spatial queries, which will mainly be relevant for
+  importing and merging large skeleotons.
+
+- Projects can now be deleted along with the data that reference them (e.g.
+  treenodes, ontologies, volumes). To do so select the projects to delete in the
+  admin project list and select "Delete selected" from action drop down.
+
+- Users can now be set to an inactive state after a specified amount of time.
+  This time is configured for a user group and it applies to users if they are
+  members of such a group. A message can optionally be displayed as well as
+  users to contact that could potentially help. This is configurable as "Group
+  inactivity period" in the admin view. Users to contact for support, can be
+  either configured there or from individual user views.
+
+CLI Exporter:
+
+- If both required annotations and exclusion annotations are provided, the
+  importer will now only exclude a skeleton if it is not also annotated with a
+  sub-annotation of the required annotations set. This behavior can be disabled
+  and exclusion can be enforced when a skeleton is annotated with the exclusion
+  annotation or one of its sub-annotations. To do so, use the new
+  "--exclusion-is-final" switch.
+
+- Volumes can now be exported by using the `--volumes` switch. By default all
+  volumes of the exported project will be included. This can be further
+  constrained by using `--volume-annotation <annotation-name>` arguments.
+
+- The way she exported objects are specified through the command line interface
+  changed. Instead of writing e.g. `--notreenodes` to not import treenodes from
+  a source, `--treenodes false` has to be used now. This is the case for
+  treenodes, connectors, tags and annotations. The defaults (when the argument
+  is not provided) stay the same. To explicitly disable the export of a type
+  `false`, `no`, `f`, `n` and `0` can be provided as argument, e.g. `-treenodes
+  false` or `--users n`. For a positive parameter use `true`, `yes`, `t`, and
+  `1`.
+
+CLI Importer:
+
+- Precompute materializations (edges, connectors) explicitly only for imported
+  data, which improves performance in typical scenarios (import is small
+  compared to existing data). If the old behavior of recomputing everything in
+  the target project should be used in cases where a full data base is imported,
+  the --update-project-materializations switch can be used.
+
+- The way she imported objects are specified through the command line interface
+  changed. Instead of writing e.g. `--notreenodes` to not import treenodes from
+  a source, `--treenodes false` has to be used now. This is the case for
+  treenodes, connectors, tags and annotations. The defaults (when the argument
+  is not provided) stay the same. To explicitly disable the import of a type
+  `false`, `no`, `f`, `n` and `0` can be provided as argument, e.g. `-treenodes
+  false` or `--users n`. For a positive parameter use `true`, `yes`, `t`, and
+  `1`.
+
+- It is now possible to import volumes from CATMAID export files and other
+  projects..
 
 Miscellaneous:
 

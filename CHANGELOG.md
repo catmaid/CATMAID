@@ -373,6 +373,9 @@ Miscellaneous:
 - General search widget: a more flexible table is now used for display, which
   allows sorting, filtering and pagination.
 
+- The right end of the status bar contains now a button to toggle the visibility
+  of the top toolbars.
+
 - Updating the copy of client side annotations will only request new data if
   there are actually new annotations. This makes loading of e.g. the Neuron
   Search widget faster.

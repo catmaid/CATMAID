@@ -16,6 +16,30 @@
     var view = document.createElement("div");
     view.className = "console";
 
+    let toolbarsHidden = false;
+    let maxSpace = document.createElement('div');
+    maxSpace.id = "toggle-max-space";
+    let maxSpaceText = maxSpace.appendChild(document.createElement('i'));
+    maxSpaceText.classList.add('fa', 'fa-eye-slash');
+    maxSpaceText.setAttribute('title', 'Toggle visibility of top toolbars');
+    view.appendChild(maxSpace);
+    maxSpaceText.onclick = () => {
+      let toolbar = document.getElementById('toolbar_container');
+      if (!toolbar) {
+        CATMAID.warn("Could not find toolbar!");
+        return;
+      }
+      toolbarsHidden = !toolbarsHidden;
+      if (toolbarsHidden) {
+        maxSpaceText.classList.replace('fa-eye-slash', 'fa-eye');
+        toolbar.style.display = 'none';
+      } else {
+        maxSpaceText.classList.replace('fa-eye', 'fa-eye-slash');
+        toolbar.style.display = 'block';
+      }
+      window.onresize();
+    };
+
     var coords = document.createElement("div");
     coords.id = "coordinates";
     var coordsText = document.createTextNode("");

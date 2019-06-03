@@ -4617,7 +4617,7 @@
   // Register widget
   CATMAID.registerWidget({
     name: "Graph Widget",
-    description: "",
+    description: "Display and analyze neurons as nodes in a directed graph",
     key: "graph-widget",
     creator: GroupGraph,
     state: {

@@ -1792,6 +1792,9 @@ CATMAID extensions:
 
 - More details can be found in the docs.
 
+- CATMAID-autoproofreader extensions has been added to the list of
+  known extensions.
+
 
 3D viewer:
 

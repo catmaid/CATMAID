@@ -82,7 +82,7 @@ Examples
 --------
 
 - `CATMAID-synapsesuggestor <https://github.com/clbarnes/CATMAID-synapsesuggestor>`_
-- `CATNAUD-autoproofreader <https://github.com/pattonw/CATMAID-autoproofreader>'_
+- `CATMAID-autoproofreader <https://github.com/pattonw/CATMAID-autoproofreader>'_
 
 Community Standards
 -------------------

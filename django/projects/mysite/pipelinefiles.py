@@ -26,6 +26,7 @@ import six
 # python module names of CATMAID extensions which could potentially be installed
 KNOWN_EXTENSIONS = (
     'synapsesuggestor',
+    'autoproofreader',
 )
 
 

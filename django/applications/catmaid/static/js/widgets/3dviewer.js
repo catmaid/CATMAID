@@ -4216,7 +4216,6 @@
       renderer.setRenderTarget(this.zplaneRenderTarget);
       renderer.clear();
       renderer.render(this.zplaneScene, camera);
-      renderer.setRenderTarget(null);
 
       // If wanted, the z pane map can be exported
       var saveZplaneImage = false;
@@ -4435,6 +4434,7 @@
       renderer = new THREE.WebGLRenderer({
         antialias: true,
         logarithmicDepthBuffer: this.logDepthBuffer,
+        checkShaderErrors: true,
       });
       // Set pixel ratio, needed for HiDPI displays, if enabled
       if (this.space.options.use_native_resolution) {
@@ -5496,9 +5496,12 @@
     // Render scene to picking texture
     var gl = this.view.renderer.getContext();
 
-    // Find clickd skeleton color
+    // Find clicked skeleton color
     var pixelBuffer = new Uint8Array(4);
-    this.view.renderer.render(this.scene, camera, this.pickingTexture);
+
+    this.view.renderer.setRenderTarget(this.pickingTexture);
+    this.view.renderer.render(this.scene, camera);
+
     gl.readPixels(x, this.pickingTexture.height - y, 1, 1, gl.RGBA,
         gl.UNSIGNED_BYTE, pixelBuffer);
     var colorId = (pixelBuffer[0] << 16) | (pixelBuffer[1] << 8) | (pixelBuffer[2]);
@@ -5530,10 +5533,6 @@
           }
           ++retry;
         }
-
-        if (0 === colorId) {
-          return;
-        }
     }
 
     // If wanted, the picking map can be exported
@@ -5544,95 +5543,100 @@
       CATMAID.FileExporter.saveAs(blob, "pickingmap.png");
     }
 
-    // Find world location of clicked fragment
-    var originalOverrideMaterial = this.scene.overrideMaterial;
-    var originalShaders = new Map();
-    let skeletons = this.content.skeletons;
-    if (o.triangulated_lines) {
-      for (let skeletonId in skeletons) {
-        let skeleton = skeletons[skeletonId];
-        originalShaders.set(skeleton.id, {
-          vertexShader: skeleton.line_material.vertexShader,
-          fragmentShader: skeleton.line_material.fragmentShader,
-          skeleton: skeleton
-        });
-      }
-    }
-
-    // Get clicked fragment position
-    var position = ["x", "y", "z"].map(function(c) {
-
-      // In the case of buffer geometries (which are used by triangulated
-      // lines), we can't use a generic override material, because the rending
-      // really depends on the shader implementation.
-      var postMaterial;
+    // If no color ID has been found so far, we didn't hit anything.
+    if (0 !== colorId) {
+      // Find world location of clicked fragment
+      var originalOverrideMaterial = this.scene.overrideMaterial;
+      var originalShaders = new Map();
+      let skeletons = this.content.skeletons;
       if (o.triangulated_lines) {
-        // Iterate over all skeletons and slighly adjust shader programs to
-        // render 3D location information. An override material doesn't work,
-        // because buffer geometries are in use (which store vertices as part
-        // of the material.
-        for (let skeletonData of originalShaders.values()) {
-          let newVertexShader = skeletonData.vertexShader;
-          newVertexShader = CATMAID.insertSnippetIntoShader(newVertexShader,
-              CATMAID.PickingLineMaterial.INSERTION_LOCATIONS['vertexDeclarations'],
-              'varying vec4 worldPosition;\n');
-          newVertexShader = CATMAID.insertSnippetIntoShader(newVertexShader,
-              CATMAID.PickingLineMaterial.INSERTION_LOCATIONS['vertexEnd'],
-              'worldPosition = modelMatrix * vec4(instanceStart, 1.0);\n');
+        for (let skeletonId in skeletons) {
+          let skeleton = skeletons[skeletonId];
+          originalShaders.set(skeleton.id, {
+            vertexShader: skeleton.line_material.vertexShader,
+            fragmentShader: skeleton.line_material.fragmentShader,
+            skeleton: skeleton
+          });
+        }
+      }
 
-          let newFragmentShader = skeletonData.fragmentShader;
-          newFragmentShader = CATMAID.insertSnippetIntoShader(newFragmentShader,
-              CATMAID.PickingLineMaterial.INSERTION_LOCATIONS['fragmentDeclarations'],
-              [
-                'varying vec4 worldPosition;',
-                CATMAID.ShaderLib.encodeFloat,
-                '\n'
-              ].join('\n'));
-          newFragmentShader = CATMAID.insertSnippetIntoShader(newFragmentShader,
-              CATMAID.PickingLineMaterial.INSERTION_LOCATIONS['fragmentEnd'],
-              'gl_FragColor = encode_float(worldPosition.' + c + ');\n');
+      // Get clicked fragment position
+      var position = ["x", "y", "z"].map(function(c) {
 
-          //postMaterial.addUniforms({
-          //  cameraNear: { value: camera.near },
-          //  cameraFar:  { value: camera.far },
-          //});
-          let skeleton = skeletonData.skeleton;
-          skeleton.line_material.vertexShader = newVertexShader;
-          skeleton.line_material.fragmentShader = newFragmentShader;
-          skeleton.line_material.needsUpdate = true;
+        // In the case of buffer geometries (which are used by triangulated
+        // lines), we can't use a generic override material, because the rending
+        // really depends on the shader implementation.
+        var postMaterial;
+        if (o.triangulated_lines) {
+          // Iterate over all skeletons and slighly adjust shader programs to
+          // render 3D location information. An override material doesn't work,
+          // because buffer geometries are in use (which store vertices as part
+          // of the material.
+          for (let skeletonData of originalShaders.values()) {
+            let newVertexShader = skeletonData.vertexShader;
+            newVertexShader = CATMAID.insertSnippetIntoShader(newVertexShader,
+                CATMAID.PickingLineMaterial.INSERTION_LOCATIONS['vertexDeclarations'],
+                'varying vec4 worldPosition;\n');
+            newVertexShader = CATMAID.insertSnippetIntoShader(newVertexShader,
+                CATMAID.PickingLineMaterial.INSERTION_LOCATIONS['vertexEnd'],
+                'worldPosition = modelMatrix * vec4(instanceStart, 1.0);\n');
+
+            let newFragmentShader = skeletonData.fragmentShader;
+            newFragmentShader = CATMAID.insertSnippetIntoShader(newFragmentShader,
+                CATMAID.PickingLineMaterial.INSERTION_LOCATIONS['fragmentDeclarations'],
+                [
+                  'varying vec4 worldPosition;',
+                  CATMAID.ShaderLib.encodeFloat,
+                  '\n'
+                ].join('\n'));
+            newFragmentShader = CATMAID.insertSnippetIntoShader(newFragmentShader,
+                CATMAID.PickingLineMaterial.INSERTION_LOCATIONS['fragmentEnd'],
+                'gl_FragColor = encode_float(worldPosition.' + c + ');\n');
+
+            //postMaterial.addUniforms({
+            //  cameraNear: { value: camera.near },
+            //  cameraFar:  { value: camera.far },
+            //});
+            let skeleton = skeletonData.skeleton;
+            skeleton.line_material.vertexShader = newVertexShader;
+            skeleton.line_material.fragmentShader = newFragmentShader;
+            skeleton.line_material.needsUpdate = true;
+          }
+
+          this.view.renderer.setRenderTarget(this.pickingTexture);
+          this.view.renderer.render(this.scene, camera);
+        } else {
+          postMaterial = new CATMAID.SimplePickingMaterial({
+            cameraNear: camera.near,
+            cameraFar:  camera.far,
+            direction: c,
+            // TODO: Has no effect on windows systems, due to ANGLE limitations,
+            // see: https://threejs.org/docs/api/materials/ShaderMaterial.html
+            linewidth: o.skeleton_line_width,
+          });
+
+          // Override material with custom shaders
+          this.scene.overrideMaterial = postMaterial;
+
+          this.view.renderer.setRenderTarget(this.pickingTexture);
+          this.view.renderer.render(this.scene, camera);
         }
 
-        this.view.renderer.render(this.scene, camera, this.pickingTexture);
-      } else {
-        postMaterial = new CATMAID.SimplePickingMaterial({
-          cameraNear: camera.near,
-          cameraFar:  camera.far,
-          direction: c,
-          // TODO: Has no effect on windows systems, due to ANGLE limitations,
-          // see: https://threejs.org/docs/api/materials/ShaderMaterial.html
-          linewidth: o.skeleton_line_width,
-        });
+        // Read pixel under cursor
+        gl.readPixels(x + offsetX, this.pickingTexture.height - y + offsetY,
+            1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixelBuffer);
 
-        // Override material with custom shaders
-        this.scene.overrideMaterial = postMaterial;
+        if (savePosTexture) {
+          var img = CATMAID.tools.createImageFromGlContext(gl,
+              this.pickingTexture.width, this.pickingTexture.height);
+          var blob = CATMAID.tools.dataURItoBlob(img.src);
+          CATMAID.FileExporter.saveAs(blob, "pos-tex-" + c + ".png");
+        }
 
-        this.view.renderer.render(this.scene, camera, this.pickingTexture);
-      }
-
-      // Read pixel under cursor
-      gl.readPixels(x + offsetX, this.pickingTexture.height - y + offsetY,
-          1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixelBuffer);
-
-      if (savePosTexture) {
-        var img = CATMAID.tools.createImageFromGlContext(gl,
-            this.pickingTexture.width, this.pickingTexture.height);
-        var blob = CATMAID.tools.dataURItoBlob(img.src);
-        CATMAID.FileExporter.saveAs(blob, "pos-tex-" + c + ".png");
-      }
-
-      // Map RGBA value to decoded float
-      return decodeFloat(pixelBuffer);
-    }, this);
+        // Map RGBA value to decoded float
+        return decodeFloat(pixelBuffer);
+      }, this);
+    }
 
     if (o.triangulated_lines) {
       // Reset overwritten shaders
@@ -5700,6 +5704,11 @@
     this.staticContent.connectorLineColors.postsynaptic_to.visible =
       originalConnectorPostVisibility;
 
+    // If no color ID was found, no element was hit.
+    if (colorId === 0) {
+      return null;
+    }
+
     // Handle results
     var id = idMap[colorId];
     var skeleton = skeletonIdMap[colorId];
@@ -5711,6 +5720,10 @@
                !Number.isNaN(position[2])) {
       id = 'skeleton';
     }
+
+    // Re-render scene to apply reset environment.
+    this.view.renderer.setRenderTarget(null);
+    this.view.renderer.render(this.scene, camera);
 
     if (!id) {
       return null;

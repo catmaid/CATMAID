@@ -320,43 +320,40 @@
   };
 
   TracingLayer.prototype.setLayerSetting = function(name, value) {
+    let update = true;
     if ('transferFormat' === name) {
       this.transferFormat = value;
-      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('nLargestSkeletonsLimit' === name) {
       this.nLargestSkeletonsLimit = value;
-      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('nLastEditedSkeletonLimit' === name) {
       this.nLastEditedSkeletonLimit = value;
-      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('hiddenLastEditorId' === name) {
       this.hiddenLastEditorId = value;
-      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('minSkeletonLength' === name) {
       this.minSkeletonLength = value;
-      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('minSkeletonNodes' === name) {
       this.minSkeletonNodes = value;
-      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('nodeProviderOverride' === name) {
       this.nodeProviderOverride = value;
-      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('tracingWindowWidth' === name) {
       this.tracingWindowWidth = parseInt(value, 10);
       this.tracingOverlay.updateTracingWindow();
-      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('tracingWindowHeight' === name) {
       this.tracingWindowHeight = parseInt(value, 10);
       this.tracingOverlay.updateTracingWindow();
-      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('applyTracingWindow' === name) {
       this.applyTracingWindow = value;
       this.tracingOverlay.updateTracingWindow();
-      this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     } else if ('updateWhilePanning' === name) {
       this.updateWhilePanning = value;
+      update = false;
     } else if ('levelOfDetail' === name) {
       this.levelOfDetail = value;
+    } else {
+      update = false;
+    }
+
+    if (update) {
       this.tracingOverlay.updateNodes(this.tracingOverlay.redraw.bind(this.tracingOverlay, true));
     }
   };

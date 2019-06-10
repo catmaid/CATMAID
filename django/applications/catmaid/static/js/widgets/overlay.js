@@ -769,6 +769,7 @@ var SkeletonAnnotations = {};
     /** The level of detail (highter = more detail, "max" or 0 = everything).
      * This is only supported if a cache based node provider is used. */
     this.levelOfDetail = 'max';
+    this.levelOfDetailMode = CATMAID.TracingOverlay.Settings.session.lod_mode;
     /** A cached copy of the a map from IDs to relation names, set on firt load. **/
     this.relationMap = null;
     /** An optional color source **/
@@ -3625,10 +3626,9 @@ var SkeletonAnnotations = {};
    * Obtain the effective level of detail value.
    */
   CATMAID.TracingOverlay.prototype.getEffectiveLOD = function() {
-    let lodMode = CATMAID.TracingOverlay.Settings.session.lod_mode;
-    if (lodMode === 'absolute') {
+    if (this.levelOfDetailMode === 'absolute') {
       return this.levelOfDetail;
-    } else if (lodMode === 'adaptive') {
+    } else if (this.levelOfDetailMode === 'adaptive') {
       let zoomRange = CATMAID.TracingOverlay.Settings.session.adaptive_lod_scale_range;
 
       // Determine percentage of current zoom level within zoom level bounds.
@@ -3642,7 +3642,7 @@ var SkeletonAnnotations = {};
       // 0% means lowest LOD and 100% is the highest LOD. If we are zoomed out
       // further, the LOD will be smaller.
       return 1.0 -  (zoomPercent - zoomRange[0]) / (zoomRange[1] - zoomRange[0]);
-    } else if (lodMode === 'mapping') {
+    } else if (this.levelOfDetailMode === 'mapping') {
       let mapping = CATMAID.TracingOverlay.Settings.session.lod_mapping;
       if (!mapping || mapping.length === 0) {
         return 1;
@@ -3674,7 +3674,7 @@ var SkeletonAnnotations = {};
         return 1.0;
       }
     } else {
-      throw new CATMAID.ValueError("Unknown LOD mode: " + lodMode);
+      throw new CATMAID.ValueError("Unknown LOD mode: " + this.levelOfDetailMode);
     }
   };
 
@@ -3897,8 +3897,7 @@ var SkeletonAnnotations = {};
 
       // Get level of detail information, which some back-end node providers
       // (namely caching ones) can use to return only a subset of the data.
-      let lodMode = CATMAID.TracingOverlay.Settings.session.lod_mode;
-      let percentLOD = lodMode !== 'absolute';
+      let percentLOD = self.levelOfDetailMode !== 'absolute';
       let effectiveLOD = self.getEffectiveLOD();
 
       // As long as stack space Z coordinates are always clamped to the last

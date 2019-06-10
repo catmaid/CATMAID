@@ -144,6 +144,15 @@
         this.tracingOverlay.levelOfDetail = value;
       }
     });
+
+    Object.defineProperty(this, 'levelOfDetailMode', {
+      get: function() {
+        return this.tracingOverlay.levelOfDetailMode;
+      },
+      set: function(value) {
+        this.tracingOverlay.levelOfDetailMode = value;
+      }
+    });
   }
 
   TracingLayer.prototype = Object.create(CATMAID.PixiLayer.prototype);
@@ -222,6 +231,17 @@
       type: 'checkbox',
       value: this.updateWhilePanning,
       help: 'Whether or not to update the visible tracing data while panning the view.'
+    }, {
+      name: 'levelOfDetailMode',
+      displayName: 'Level of detail mode',
+      type: 'select',
+      value: this.levelOfDetailMode,
+      options: [
+        ['absolute', 'Absolute'],
+        ['adaptive', 'Zoom adaptive'],
+        ['mapping', 'Zoom mapping']
+      ],
+      help: 'Level-of-detail can be used with certain node caches (grid cache). In "absolute" mode, the LOD number below will be used to collect data buckets of the respective cache. In "Zoom adaptive" mode the LOD number is the inverse of the current zoom level relative to the number of zoom levels. The "Zoom mapping" option allows to map zoom levels explicitly to LOD levels.'
     }, {
       name: 'levelOfDetail',
       displayName: 'Level of detail',
@@ -349,6 +369,8 @@
       update = false;
     } else if ('levelOfDetail' === name) {
       this.levelOfDetail = value;
+    } else if ('levelOfDetailMode' === name) {
+      this.levelOfDetailMode = value;
     } else {
       update = false;
     }

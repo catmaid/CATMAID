@@ -2878,6 +2878,7 @@
                   //sourceGroup.style.display = currentProjectMode;
 
                   updateSourceGroupList();
+                  updateMatchingGroupList();
                 };
                 return projectSelect;
               });
@@ -3309,11 +3310,18 @@
 
                 // Source select
                 let addMatchingWrapper = document.createElement('span');
-                let matchingMapping = CATMAID.DOM.createLabeledAsyncPlaceholder(
-                    '',
-                    initMatchingGroups(),
-                    'Add multiple mappings at once by selecting them from matching group names.');
-                addMatchingWrapper.appendChild(matchingMapping);
+                let updateMatchingGroupList = function() {
+                  while (addMatchingWrapper.lastChild) {
+                    addMatchingWrapper.removeChild(addMatchingWrapper.lastChild);
+                  }
+                  let matchingMapping = CATMAID.DOM.createLabeledAsyncPlaceholder(
+                      '',
+                      initMatchingGroups(),
+                      'Add multiple mappings at once by selecting them from matching group names.');
+                  addMatchingWrapper.appendChild(matchingMapping);
+                };
+
+                updateMatchingGroupList();
                 $(newDTForm).append(addMatchingWrapper);
 
 

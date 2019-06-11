@@ -1138,6 +1138,58 @@ var WindowMaker = new function()
                 WA.adjustStaticContent();
               }
             }},
+          {
+            type: 'checkbox',
+            label: 'Replace background color',
+            value: o.zplane_replace_background,
+            onclick: function() {
+              WA.options.zplane_replace_background = this.checked;
+              WA.adjustStaticContent();
+              $(`#3d-viewier-zplane-min-bg-val-${WA.widgetID}`).prop('disabled', this.checked ? '' : 'disabled');
+              $(`#3d-viewier-zplane-max-bg-val-${WA.widgetID}`).prop('disabled', this.checked ? '' : 'disabled');
+              $(`#3d-viewier-zplane-new-bg-color-${WA.widgetID}`).prop('disabled', this.checked ? '' : 'disabled');
+            },
+            title: 'If enabled, the background color of displayed data will be replaced by a selectable color.'
+          },
+          {
+            id: `3d-viewier-zplane-min-bg-val-${WA.widgetID}`,
+            type: 'numeric', label: 'Min BG val', value: o.zplane_min_bg_val, length: 4,
+            disabled: !o.zplane_replace_background,
+            min: 0, max: 1, step: 0.1, title: 'Minimum value of background filter', onchange: function(e) {
+              var value = parseFloat(this.value);
+              if (value) {
+                WA.options.zplane_min_bg_val = value;
+                WA.adjustStaticContent();
+              }
+            }},
+          {
+            id: `3d-viewier-zplane-max-bg-val-${WA.widgetID}`,
+            type: 'numeric', label: 'Max BG val', value: o.zplane_max_bg_val, length: 4,
+            disabled: !o.zplane_replace_background,
+            min: 0, max: 1, step: 0.1, title: 'Maximum value of background filter', onchange: function(e) {
+              var value = parseFloat(this.value);
+              if (value) {
+                WA.options.zplane_max_bg_val = value;
+                WA.adjustStaticContent();
+              }
+            }},
+          {
+            id: `3d-viewier-zplane-new-bg-color-${WA.widgetID}`,
+            type: 'color-button',
+            label: 'New background',
+            title: 'The new background color replacing the old one',
+            value: o.zplane_replacement_bg_color,
+            disabled: !o.zplane_replace_background,
+            color: {
+              initialColor: o.zplane_replacement_bg_color,
+              initialAlpha: 1.0,
+              onColorChange: function(rgb, alpha, colorChanged, alphaChanged, colorHex) {
+                WA.options.zplane_replacement_bg_color = '#' + colorHex;
+                WA.adjustStaticContent();
+              },
+            },
+            length: 10
+          },
           {type: 'checkbox', label: 'Data size check', value: o.zplane_size_check,
            onclick: adjustFn('zplane_size_check'), title: 'Whether to require user ' +
               'confirmation to load more than 100 MB of image data for the Z plane.'},

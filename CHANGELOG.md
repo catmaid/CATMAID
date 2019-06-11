@@ -209,6 +209,10 @@ Graph widget:
   the change step in terms of sections. This is available for animation exports
   as well.
 
+- Stack Z slices can now be thresholded to replace a background color with
+  another color. If enabled and the sum of all channels is in a configurable
+  range [a,b] it will be replaced with another color.
+
 - The rotation time for animations can now specified in seconds rather than
   angular distance.
 

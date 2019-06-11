@@ -1272,6 +1272,10 @@
     this.zplane_zoomlevel = "max";
     this.zplane_size_check = true;
     this.zplane_opacity = 0.8;
+    this.zplane_replace_background = false;
+    this.zplane_min_bg_val = 0.0;
+    this.zplane_max_bg_val = 0.0;
+    this.zplane_replacement_bg_color = '#FFFFFF';
     this.show_ortho_scale_bar = true;
     this.custom_tag_spheres_regex = '';
     this.custom_tag_spheres_color = '#aa70ff';
@@ -3762,7 +3766,7 @@
         this.lastZPlaneOptions = zplaneOptions;
         this.createZPlane(space, project.focusedStackViewer,
             options.zplane_texture ? options.zplane_zoomlevel : null,
-            options.zplane_opacity);
+            options.zplane_opacity, options);
       }
     } else {
       this.lastZPlaneOptions = null;
@@ -3977,7 +3981,7 @@
    *                                   opacity of the z plane.
    */
   WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createZPlane =
-      function(space, stackViewer, textureZoomLevel, opacity) {
+      function(space, stackViewer, textureZoomLevel, opacity, options) {
     this.disposeZplane(space);
 
     // Create geometry for plane based on primary stack
@@ -4176,7 +4180,8 @@
     });
   };
 
-  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.beforeRender = function(scene, renderer, camera) {
+  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.beforeRender =
+      function(scene, renderer, camera, options) {
     // If z sections are displayed and show tile layer images, then the current
     // view has to be rendered first and provided as a texture for the main
     // scene z section.
@@ -4193,21 +4198,33 @@
           displayScale: { value: renderer.getPixelRatio() },
           zplane: { value: this.zplaneRenderTarget.texture },
           width: { value: size.width },
-          height: { value: size.height }
+          height: { value: size.height },
+          newColor: { value: new THREE.Color(options.zplane_replacement_bg_color) },
+          minVal: { value: options.zplane_min_bg_val },
+          maxVal: { value: options.zplane_max_bg_val },
         });
         material.insertSnippet('fragmentDeclarations', [
           'uniform float displayScale;',
           'uniform float width;',
           'uniform float height;',
           'uniform sampler2D zplane;',
+          'uniform vec3 newColor;',
+          'uniform float minVal;',
+          'uniform float maxVal;',
           ''
         ].join('\n'));
-        material.insertSnippet('fragmentColor', [
+        let fragmentShaderParts = [
           'float texWidth = width * displayScale;',
           'float texHeight = height * displayScale;',
           'vec2 texCoord = vec2((gl_FragCoord.x - 0.5) / texWidth, (gl_FragCoord.y - 0.5) / texHeight);',
           'vec4 diffuseColor = texture2D(zplane, texCoord);'
-        ].join('\n'));
+        ];
+        if (options.zplane_replace_background) {
+          fragmentShaderParts.push(
+              'if (diffuseColor.r + diffuseColor.g + diffuseColor.b >= minVal && diffuseColor.r + diffuseColor.g + diffuseColor.b <= maxVal) { diffuseColor = vec4(newColor.rgb, diffuseColor.a); }');
+        }
+        material.insertSnippet('fragmentColor', fragmentShaderParts.join('\n'));
+
         material.side = THREE.DoubleSide;
         material.transparent = true;
         this.zplane.material = material;
@@ -4487,7 +4504,8 @@
       }
     }
     if (this.renderer) {
-      CATMAID.tools.callIfFn(beforeRender, this.scene, this.renderer, this.camera);
+      CATMAID.tools.callIfFn(beforeRender, this.scene, this.renderer,
+          this.camera, this.space.options);
       this.renderer.clear();
       this.renderer.render(this.space.scene, this.camera);
     }

@@ -3200,7 +3200,10 @@
                   };
                 };
                 var addMappingButton = $('<button/>').text('Add new mapping').click(function() {
-                  activeMappings.push(getMapping(fromGroup, toGroup));
+                  let mapping = getMapping(fromGroup, toGroup);
+                  if (mapping) {
+                    activeMappings.push(mapping);
+                  }
 
                   updateComponentList();
                 });
@@ -3287,8 +3290,12 @@
                       addMatchingButton.onclick = function () {
                         let selectedMappings = [...selectedMatchingGroups].map(name =>
                           getMapping(matchingGroups[name].sourceId, matchingGroups[name].targetId)
-                        );
-                        activeMappings.push(...selectedMappings);
+                        ).filter(m => !!m);
+                        if (selectedMappings.length > 0) {
+                          activeMappings.push(...selectedMappings);
+                        } else {
+                          CATMAID.warn("No valid mappings found");
+                        }
 
                         updateComponentList();
                       };
@@ -3394,7 +3401,9 @@
                     let targetGroup = targetBaseMap.get(sourceBaseName);
                     if (targetGroup && targetGroup.title !== sourceGroup.title) {
                       let mapping = getMapping(sourceGroup.value, targetGroup.value);
-                      activeMappings.push(mapping);
+                      if (mapping) {
+                        activeMappings.push(mapping);
+                      }
                     }
                   }
 

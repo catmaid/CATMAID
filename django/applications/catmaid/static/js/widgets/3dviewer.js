@@ -4216,6 +4216,7 @@
       renderer.setRenderTarget(this.zplaneRenderTarget);
       renderer.clear();
       renderer.render(this.zplaneScene, camera);
+      renderer.setRenderTarget(null);
 
       // If wanted, the z pane map can be exported
       var saveZplaneImage = false;
@@ -5501,6 +5502,7 @@
 
     this.view.renderer.setRenderTarget(this.pickingTexture);
     this.view.renderer.render(this.scene, camera);
+    this.view.renderer.setRenderTarget(null);
 
     gl.readPixels(x, this.pickingTexture.height - y, 1, 1, gl.RGBA,
         gl.UNSIGNED_BYTE, pixelBuffer);
@@ -5605,6 +5607,7 @@
 
           this.view.renderer.setRenderTarget(this.pickingTexture);
           this.view.renderer.render(this.scene, camera);
+          this.view.renderer.setRenderTarget(null);
         } else {
           postMaterial = new CATMAID.SimplePickingMaterial({
             cameraNear: camera.near,
@@ -5620,6 +5623,7 @@
 
           this.view.renderer.setRenderTarget(this.pickingTexture);
           this.view.renderer.render(this.scene, camera);
+          this.view.renderer.setRenderTarget(null);
         }
 
         // Read pixel under cursor

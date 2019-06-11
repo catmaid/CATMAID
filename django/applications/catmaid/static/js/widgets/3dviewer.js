@@ -4127,6 +4127,7 @@
         var pos = new THREE.Vector3(0, 0, 0);
         setDepth(pos, stack, stackViewer, stackDepthOffset, projectDepthOffset);
         layer.mesh.position.copy(pos);
+        let currentStackZ = stack.projectToStackZ(pos.z, pos.y, pos.x);
 
         // Also update tile textures, if enabled
         if (layer.hasImages) {
@@ -4168,7 +4169,7 @@
             material.blendDst = THREE.OneMinusSrcAlphaFactor;
             material.depthTest = false;
 
-            var slicePixelPosition = [stackViewer.z + stackDepthOffset];
+            var slicePixelPosition = [currentStackZ];
             var col = m % nCols;
             var row = (m - col) / nCols;
             image.src = tileSource.getTileURL(project.id, layerStack,

@@ -4233,7 +4233,6 @@
       renderer.setRenderTarget(this.zplaneRenderTarget);
       renderer.clear();
       renderer.render(this.zplaneScene, camera);
-      renderer.setRenderTarget(null);
 
       // If wanted, the z pane map can be exported
       var saveZplaneImage = false;
@@ -4246,6 +4245,9 @@
 
       // Wait for images with update
       this.zplane.material.needsUpdate = false;
+
+      // Reset render target
+      renderer.setRenderTarget(null);
     }
   };
 
@@ -5518,9 +5520,9 @@
     // Find clicked skeleton color
     var pixelBuffer = new Uint8Array(4);
 
+    //this.view.renderer.setRenderTarget(null);
     this.view.renderer.setRenderTarget(this.pickingTexture);
     this.view.renderer.render(this.scene, camera);
-    this.view.renderer.setRenderTarget(null);
 
     gl.readPixels(x, this.pickingTexture.height - y, 1, 1, gl.RGBA,
         gl.UNSIGNED_BYTE, pixelBuffer);
@@ -5623,9 +5625,8 @@
             skeleton.line_material.needsUpdate = true;
           }
 
-          this.view.renderer.setRenderTarget(this.pickingTexture);
+          // The render target is still this.pickingTexture
           this.view.renderer.render(this.scene, camera);
-          this.view.renderer.setRenderTarget(null);
         } else {
           postMaterial = new CATMAID.SimplePickingMaterial({
             cameraNear: camera.near,
@@ -5639,9 +5640,8 @@
           // Override material with custom shaders
           this.scene.overrideMaterial = postMaterial;
 
-          this.view.renderer.setRenderTarget(this.pickingTexture);
+          // The render target is still this.pickingTexture
           this.view.renderer.render(this.scene, camera);
-          this.view.renderer.setRenderTarget(null);
         }
 
         // Read pixel under cursor

@@ -463,6 +463,10 @@ Miscellaneous:
 - Volume widget: editing a volume by double clicking its table entry works
   again.
 
+- Neuron dendrogram: correctly reload skeleton if it changes as a result of a
+  split or merge. If a dendrogram node is selected, the respective skeleton will
+  be reloaded after a split, even if its ID changed.
+
 - The Notification Table can be opened again without errors.
 
 - Exporter: connector links are now exported properly if the parameter

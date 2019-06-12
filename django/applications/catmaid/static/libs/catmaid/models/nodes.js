@@ -22,6 +22,16 @@
 
   CATMAID.Treenode = Treenode;
 
+
+  var Treenodes = {
+    info: function(projectId, treenodeId) {
+      return CATMAID.fetch(`${projectId}/treenodes/${treenodeId}/info`);
+    },
+  };
+
+  CATMAID.Treenodes = Treenodes;
+
+
   /**
    * This namespace provides functions to work with annotations on neurons. All
    * of them return promises.

@@ -489,9 +489,11 @@
         // Reload the skeleton and disable auto update during this time to not end
         // in an infinite loop by accident (if the nodes cannot be retrieved).
         this.autoUpdate = false;
-        this.loadSkeleton(this.currentSkeletonId);
-        this.selectNode(node_id, skeleton_id);
-        this.autoUpdate = true;
+        this.loadSkeleton(this.currentSkeletonId)
+          .then(() => {
+            this.selectNode(node_id, skeleton_id);
+            this.autoUpdate = true;
+          });
       } else {
         CATMAID.msg("Error", "The requested node (" + node_id + ") was not " +
             "found in the internal skeleton representation. Try updating it.");
@@ -556,7 +558,16 @@
   NeuronDendrogram.prototype.handleSkeletonChange = function(skeletonID)
   {
     if (skeletonID === this.currentSkeletonId) {
-      this.loadSkeleton(skeletonID);
+      if (this.selectedNodeId) {
+        // Make sure we have the correct skeleton loaded
+        CATMAID.Treenodes.info(project.id, this.selectedNodeId)
+          .then(result => {
+            this.loadSkeleton(result.skeleton_id);
+          })
+          .catch(CATMAID.handleError);
+      } else {
+        this.loadSkeleton(skeletonID);
+      }
     }
   };
 
@@ -594,7 +605,7 @@
     this.updating = true;
 
     // Retrieve skeleton data
-    CATMAID.fetch(project.id + '/skeletons/' + skid + '/compact-detail', 'GET', {
+    return CATMAID.fetch(project.id + '/skeletons/' + skid + '/compact-detail', 'GET', {
         with_connectors: true,
         with_tags: true
       })

@@ -2878,7 +2878,9 @@
                   //sourceGroup.style.display = currentProjectMode;
 
                   updateSourceGroupList();
-                  updateMatchingGroupList();
+                  if (updateMatchingGroupList) {
+                    updateMatchingGroupList();
+                  }
                 };
                 return projectSelect;
               });
@@ -2897,6 +2899,9 @@
             // displayed project options.
             updateProjectList();
             updateSourceGroupList();
+            if (updateMatchingGroupList) {
+              updateMatchingGroupList();
+            }
           };
           $(newDTForm).append(remoteSelectSetting);
 
@@ -3136,6 +3141,9 @@
           sourceGroupWrapper.appendChild(sourceGroupSetting);
         };
 
+        // This is populated depending on the configuration mode.
+        var updateMatchingGroupList = null;
+
         // Add additonal settings that need updated groups
         widget.updateLandmarksAndGroups()
             .then(function(result) {
@@ -3310,7 +3318,7 @@
 
                 // Source select
                 let addMatchingWrapper = document.createElement('span');
-                let updateMatchingGroupList = function() {
+                updateMatchingGroupList = function() {
                   while (addMatchingWrapper.lastChild) {
                     addMatchingWrapper.removeChild(addMatchingWrapper.lastChild);
                   }

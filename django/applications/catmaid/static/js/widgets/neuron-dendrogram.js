@@ -582,7 +582,12 @@
       return;
     }
 
-    this.loadSkeleton(skid);
+    this.loadSkeleton(skid)
+      .then(() => {
+        let activeTreenodeId = SkeletonAnnotations.getActiveNodeId();
+        return this.selectNode(activeTreenodeId, skid);
+      })
+      .catch(CATMAID.handleError);
   };
 
   NeuronDendrogram.prototype.reset = function()

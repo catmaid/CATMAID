@@ -377,6 +377,9 @@ Miscellaneous:
 - General search widget: a more flexible table is now used for display, which
   allows sorting, filtering and pagination.
 
+- Neuron dendrogram: select currently active node by default when loading the
+  dendrogram for the active skeleton.
+
 - The right end of the status bar contains now a button to toggle the visibility
   of the top toolbars.
 

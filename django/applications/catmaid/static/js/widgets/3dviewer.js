@@ -4075,7 +4075,6 @@
     if (!zplane) {
       return;
     }
-    var stack = stackViewer.stack;
 
     // Find reference stack position, add set location of current layer.
     var pos = new THREE.Vector3(0, 0, 0);

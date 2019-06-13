@@ -5832,7 +5832,7 @@
         raycaster.ray.origin.copy(camera.position);
         //raycaster.ray.origin.set(0, 0, 0).unproject(camera);
         return function(x,y) {
-          raycaster.ray.direction.set(x, y, 0.5).unproject(camera).sub(camera.position).normalize();
+          raycaster.ray.direction.set(x, y, -1).unproject(camera).sub(camera.position).normalize();
         };
       } else {
         raycaster.ray.direction.set(0, 0, -1).transformDirection(camera.matrixWorld);

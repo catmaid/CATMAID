@@ -4,7 +4,7 @@ from django.db import connection
 from django.test import TestCase
 from django.test.client import Client
 from guardian.shortcuts import assign_perm
-from catmaid.models import Project, User
+from catmaid.models import Project, User, TreenodeConnector
 from catmaid.control import node, skeleton, treenode
 from catmaid.tests.common import CatmaidTestCase
 
@@ -154,3 +154,70 @@ class PostGISTests(CatmaidTestCase):
         self.assertEqual(1, len(to_edges_after))
         self.assertEqual(from_edges_before[0], from_edges_after[0])
         self.assertNotEqual(to_edges_before[0], to_edges_after[0])
+
+    def test_trigger_on_edit_treenode_connector_upadte_edge(self):
+        """Test if modifying a treenode/connector link will correctly update
+        the respective edge table (treenode_connector_edge).
+        """
+        self.fake_authentication()
+        treenode_connector_id = 360
+
+        # Make sure the current edge entry is what we expect
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT bool_and(x)
+            FROM (
+                SELECT UNNEST(ARRAY[
+                    ABS(t.location_x - ST_X(ST_StartPoint(tce.edge))) < 0.000001,
+                    ABS(t.location_y - ST_Y(ST_StartPoint(tce.edge))) < 0.000001,
+                    ABS(t.location_z - ST_Z(ST_StartPoint(tce.edge))) < 0.000001,
+                    ABS(c.location_x - ST_X(ST_EndPoint(tce.edge))) < 0.000001,
+                    ABS(c.location_y - ST_Y(ST_EndPoint(tce.edge))) < 0.000001,
+                    ABS(c.location_z - ST_Z(ST_EndPoint(tce.edge))) < 0.000001]::boolean[]) AS x
+                FROM treenode_connector_edge tce
+                JOIN treenode_connector tc
+                    ON tc.id = tce.id
+                JOIN treenode t
+                    ON t.id = tc.treenode_id
+                JOIN connector c
+                    ON c.id = tc.connector_id
+                WHERE tce.id = %(tce_id)s
+            ) sub
+        """, {
+            'tce_id': treenode_connector_id,
+        })
+        self.assertTrue(cursor.fetchone()[0])
+
+        # Update treenode of link and expect edge to be updated too
+        new_treenode = treenode._create_treenode(
+            self.test_project_id, self.user, self.user, 0, 0, 0, -1, 0, -1, -1)
+        print(new_treenode)
+
+        treenode_connector = TreenodeConnector.objects.get(id=treenode_connector_id)
+        treenode_connector.treenode_id = new_treenode.treenode_id
+        treenode_connector.skeleton_id = new_treenode.skeleton_id
+        treenode_connector.save();
+
+        cursor.execute("""
+            SELECT bool_and(x)
+            FROM (
+                SELECT UNNEST(ARRAY[
+                    ABS(t.location_x - ST_X(ST_StartPoint(tce.edge))) < 0.000001,
+                    ABS(t.location_y - ST_Y(ST_StartPoint(tce.edge))) < 0.000001,
+                    ABS(t.location_z - ST_Z(ST_StartPoint(tce.edge))) < 0.000001,
+                    ABS(c.location_x - ST_X(ST_EndPoint(tce.edge))) < 0.000001,
+                    ABS(c.location_y - ST_Y(ST_EndPoint(tce.edge))) < 0.000001,
+                    ABS(c.location_z - ST_Z(ST_EndPoint(tce.edge))) < 0.000001]::boolean[]) AS x
+                FROM treenode_connector_edge tce
+                JOIN treenode_connector tc
+                    ON tc.id = tce.id
+                JOIN treenode t
+                    ON t.id = tc.treenode_id
+                JOIN connector c
+                    ON c.id = tc.connector_id
+                WHERE tce.id = %(tce_id)s
+            ) sub
+        """, {
+            'tce_id': treenode_connector_id,
+        })
+        self.assertTrue(cursor.fetchone()[0])

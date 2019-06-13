@@ -1635,7 +1635,7 @@
       var result = self.prototype.getMouseHelp();
       result += '<ul>';
       result += '<li><strong>Click on a node:</strong> make that node active</li>';
-      result += '<li><strong>Click in space:</strong> create a new node. Ccreate presynaptic node with active connector.</li>';
+      result += '<li><strong>Click in space:</strong> create a new node. Create presynaptic node with active connector.</li>';
       result += '<li><strong><kbd>Ctrl</kbd>+click in space:</strong> deselect the active node</li>';
       result += '<li><strong><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+click on a node:</strong> delete that node</li>';
       result += '<li><strong><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+click on an edge:</strong> split skeleton at this location</li>';

@@ -191,7 +191,6 @@ class PostGISTests(CatmaidTestCase):
         # Update treenode of link and expect edge to be updated too
         new_treenode = treenode._create_treenode(
             self.test_project_id, self.user, self.user, 0, 0, 0, -1, 0, -1, -1)
-        print(new_treenode)
 
         treenode_connector = TreenodeConnector.objects.get(id=treenode_connector_id)
         treenode_connector.treenode_id = new_treenode.treenode_id

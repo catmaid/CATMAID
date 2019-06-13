@@ -16,6 +16,7 @@
 
     // Keep track of selected point clouds
     this.pointCloudSelection = {};
+    this.pointClouds = {};
 
     this.lastSimilarityQuery = null;
     this.showOnlyMatchesInResult = true;
@@ -435,6 +436,7 @@
         result.forEach(pc => {
           if (!widget.pointCloudSelection.hasOwnProperty(pc.id)) {
             widget.pointCloudSelection[pc.id] = true;
+            widget.pointClouds[pc.id] = pc;
           }
         });
 
@@ -510,7 +512,7 @@
     this.updateDisplayTransformSelect(transformedTargetSourceSelect, true);
 
     let configMatchSourceSelect = document.getElementById(this.idPrefix +
-        'config-match-source');
+        'config-match-transformed-source');
     if (!configMatchSourceSelect) throw new CATMAID.ValueError("Config match source element not found");
     this.updateDisplayTransformSelect(configMatchSourceSelect, false, true);
   };
@@ -524,7 +526,7 @@
     ]);
   }
 
-  function getGroupConfirmation(groups) {
+  function getGroupConfirmation(widget, groups) {
     return new Promise((resolve, reject) => {
 
       if (!groups || groups.size === 0) {
@@ -562,7 +564,13 @@
       let getType = function(type) {
         if (type === 0) return 'S';
         if (type === 1) return 'TS';
-        if (Type === 2) return 'PC';
+        if (type === 2) return 'PC';
+        return '?';
+      };
+
+      let getName = function(type, id) {
+        if (type === 0 || type === 1) return nns.getName(id);
+        if (type === 2) return widget.pointClouds[id].name;
         return '?';
       };
 
@@ -587,7 +595,7 @@
           data: 'members',
           title: 'Group members',
           render: function(data, type, row, meta) {
-            return data.map(e => `${nns.getName(e[1])} (${getType(e[0])})`).join(', ');
+            return data.map(e => `${getName(e[0], e[1])} (${getType(e[0])})`).join(', ');
           },
         }]
       });
@@ -1381,6 +1389,7 @@
         let minNodesRandomNeurons = 50;
         let matchingSource = null;
         let matchingTransformation = null;
+        let matchingPointclouds = false;
         let randomSource = null;
         let similarityMode = 'all';
         let similarityModeRegex = '';
@@ -1393,7 +1402,7 @@
         let matchSelect = document.createElement('label');
         matchSelect.appendChild(document.createTextNode('Similar skeletons'));
         let matchSourceSelect = CATMAID.skeletonListSources.createUnboundSelect(widget.getName() + ' Match source');
-        matchSourceSelect.setAttribute('id', widget.idPrefix + '-config-match-source');
+        matchSourceSelect.setAttribute('id', widget.idPrefix + 'config-match-source');
         matchSelect.appendChild(matchSourceSelect);
         matchingSource = matchSourceSelect.value;
         matchSourceSelect.onchange = function(e) {
@@ -1403,7 +1412,7 @@
         let matchTransformedSelect = document.createElement('label');
         matchTransformedSelect.appendChild(document.createTextNode('Sim. transformed skeletons'));
         let matchTransformedSourceSelect = document.createElement('select');
-        matchTransformedSourceSelect.setAttribute('id', widget.idPrefix + 'config-match-source');
+        matchTransformedSourceSelect.setAttribute('id', widget.idPrefix + 'config-match-transformed-source');
         widget.updateDisplayTransformSelect(matchTransformedSourceSelect, false, true);
         matchTransformedSelect.appendChild(matchTransformedSourceSelect);
         matchingTransformation = matchTransformedSourceSelect.value;
@@ -1554,6 +1563,14 @@
           type: 'child',
           element: matchTransformedSelect,
         }, {
+          type: 'checkbox',
+          label: 'Sim. point clouds',
+          id: widget.idPrefix + '-config-match-point-clouds',
+          value: matchingPointclouds,
+          onclick: function() {
+            matchingPointclouds = this.checked;
+          }
+        }, {
           id: widget.idPrefix + '-similarity-mode',
           type: 'select',
           label: 'Similarity mode',
@@ -1562,7 +1579,7 @@
               'the suffixes _left and _right in their name',
           value: similarityMode,
           entries: [{
-            title: 'All skeletons',
+            title: 'All objects',
             value: 'all'
           }, {
             title: 'Sub-groups with same suffix',
@@ -1571,7 +1588,7 @@
             title: 'Pairs with suffixes _left and _right',
             value: 'lr_suffix'
           }, {
-            title: 'Skeletons with same name',
+            title: 'Objects with same name',
             value: 'same_name',
           }, {
             title: 'Custom RegEx',
@@ -1697,22 +1714,37 @@
                   }));
             }
 
+            // If pointclouds are used to create the similarity matrix, them
+            // them as pointclouds type.
+            let matchingPointcloudIds;
+            if (matchingPointclouds) {
+              matchingPointcloudIds = widget.getSelectedPointClouds();
+            }
+
             let prepare = Promise.all(loadingPromises)
               .then(() => {
                 // Create explicit matching pairs if a similarity mode other than
                 // 'all' is selected.
                 if (similarityMode && similarityMode !== 'all') {
+                  let nameService = new Map([
+                      // type, getName()
+                      [0, (id) => nns.getName(id)],
+                      [1, (id) => nns.getName(id)],
+                      [2, (id) => widget.pointClouds[id].name]]);
                   let matchingSources = new Map([
+                      // type, ids
                       [0, matchingSkeletonIds],
-                      [1, matchingPointSetIds]]);
+                      [1, matchingPointSetIds],
+                      [2, matchingPointcloudIds]]);
                   let groups = new Map();
 
                   if (similarityMode === 'same_suffix') {
                     // Find all pairs of objects that end with the same suffix, e.g.
                     // "_a" and "_b".
                     for (let [srcId, src] of matchingSources) {
+                      if (!src) continue;
                       for (let id of src) {
-                        let name = nns.getName(id);
+                        let name = nameService.get(srcId)(id);
                         let lastSeperator = name.lastIndexOf('_');
                         // If no seperator is found, the element will be part of an
                         // group.with no name.
@@ -1730,8 +1762,9 @@
                     // Find all pairs of objects that share the same name before a
                     // _left and a _right suffix.
                     for (let [srcId, src] of matchingSources) {
+                      if (!src) continue;
                       for (let id of src) {
-                        let name = nns.getName(id);
+                        let name = nameService.get(srcId)(id);
                         let lastSeperator = name.indexOf('_');
                         if (lastSeperator === -1) continue;
 
@@ -1752,8 +1785,9 @@
                   } else if (similarityMode === 'same_name') {
                     // Find all pairs of objects that share the same name
                     for (let [srcId, src] of matchingSources) {
+                      if (!src) continue;
                       for (let id of src) {
-                        let groupName = nns.getName(id);
+                        let groupName = nameService.get(srcId)(id);
                         let group = groups.get(groupName);
                         if (!group) {
                           group = [];
@@ -1768,10 +1802,11 @@
                     // group for easier access.
                     let regex = new RegExp(`(.*)(${similarityModeRegex})`);
                     // Find all pairs of objects that share the same name in
-                    // front of a patter described by a custom regex.
+                    // front of a pattern. described by a custom regex.
                     for (let [srcId, src] of matchingSources) {
+                      if (!src) continue;
                       for (let id of src) {
-                        let name = nns.getName(id);
+                        let name = nameService.get(srcId)(id);
                         if (!regex.test(name)) {
                           // Ignore everything not matching
                           continue;
@@ -1783,7 +1818,9 @@
                           group = [];
                           groups.set(groupName, group);
                         }
-                        // Format: [type, id] with type = 0 for skeletons
+                        // Format: [type, id] with type = 0 for skeletons, type
+                        // = 1 for point sets (transformed skeletons) and type =
+                        // 2 for point clouds.
                         group.push([srcId, id]);
                       }
                     }
@@ -1791,7 +1828,7 @@
                     throw new CATMAID.ValueError("Unknown similarity mode: " + similarityMode);
                   }
 
-                  return getGroupConfirmation(groups)
+                  return getGroupConfirmation(widget, groups)
                     .then(() => {
                       matchingSubset = Array.from(groups.keys()).map(k => groups.get(k));
                     });
@@ -1812,10 +1849,10 @@
 
             prepare
               .then(() => CATMAID.Similarity.addConfig(project.id, newIndexName,
-                matchingSkeletonIds, matchingPointSetIds, randomSkeletonIds,
-                numRandomNeurons, lengthRandomNeurons, minNodesRandomNeurons,
-                newDistBreaks, newDotBreaks, newTangentNeighbors, matchingMeta,
-                matchingSubset))
+                  matchingSkeletonIds, matchingPointSetIds, matchingPointcloudIds,
+                  randomSkeletonIds, numRandomNeurons, lengthRandomNeurons,
+                  minNodesRandomNeurons, newDistBreaks, newDotBreaks,
+                  newTangentNeighbors, matchingMeta, matchingSubset))
               .then(function() {
                 return widget.refresh();
               })

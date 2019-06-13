@@ -51,12 +51,13 @@
    * computed asynchronously.
    */
   Similarity.addConfig = function(projectId, name, matchingSkeletonIds,
-      matchingPointSetIds, randomSkeletonIds, numRandomNeurons,
-      lengthRandomNeurons, minNodesRandomNeurons, distanceBreaks, dotBreaks,
-      tangentNeighbors, matchingMeta, matchingSubset) {
+      matchingPointSetIds, matchingPointcloudIds, randomSkeletonIds,
+      numRandomNeurons, lengthRandomNeurons, minNodesRandomNeurons,
+      distanceBreaks, dotBreaks, tangentNeighbors, matchingMeta, matchingSubset) {
     if ((!matchingSkeletonIds || matchingSkeletonIds.length === 0) &&
-        (!matchingPointSetIds || matchingPointSetIds.length === 0)) {
-      return Promise.reject(new CATMAID.Warning("No matching set skeleton IDs found"));
+        (!matchingPointSetIds || matchingPointSetIds.length === 0) &&
+        (!matchingPointcloudIds || matchingPointcloudIds.length === 0)) {
+      return Promise.reject(new CATMAID.Warning("No matching skeletons, transformed skeletons or point clouds found"));
     }
     if (!randomSkeletonIds) {
       return Promise.reject(new CATMAID.Warning("No random set skeleton IDs found"));
@@ -69,6 +70,7 @@
       name: name,
       matching_skeleton_ids: matchingSkeletonIds,
       matching_pointset_ids: matchingPointSetIds,
+      matching_pointcloud_ids: matchingPointcloudIds,
       matching_subset: matchingSubset ? JSON.stringify(matchingSubset) : undefined,
       matching_meta: matchingMeta,
       random_skeleton_ids: transmittedRandomSkeletonIds,

@@ -266,6 +266,16 @@ class ConfigurationList(APIView):
             required: false
             defaultValue: []
             paramType: form
+          - name: matching_pointset_ids
+            description: A list of matching pointset IDs if <source> is not "data".
+            required: false
+            defaultValue: []
+            paramType: form
+          - name: matching_pointcloud_ids
+            description: A list of matching pointcloud IDs if <source> is not "data".
+            required: false
+            defaultValue: []
+            paramType: form
           - name: random_skeleton_ids
             description: A list of random skeleton IDs if <source> is not "request".
             required: false
@@ -302,6 +312,8 @@ class ConfigurationList(APIView):
                 'matching_skeleton_ids', map_fn=int)
         matching_pointset_ids = get_request_list(request.data,
                 'matching_pointset_ids', map_fn=int)
+        matching_pointcloud_ids = get_request_list(request.data,
+                'matching_pointcloud_ids', map_fn=int)
         random_skeleton_ids = get_request_list(request.data,
                 'random_skeleton_ids', map_fn=int)
         matching_meta = request.POST.get('matching_meta')
@@ -347,8 +359,9 @@ class ConfigurationList(APIView):
 
                 # Update matching_subset with actual ID of point set. The subset
                 # is a list of lists that represent the subsets. Each subset
-                # element is a list of two elements [type, id]. For point sets
-                # the ID 1.
+                # element is a list of two elements [type, id]. For skeletons
+                # the ID is 0, for point sets the ID is 1 and for point clouds
+                # the ID is 2.
                 if matching_subset:
                     for subset in matching_subset:
                         for element in subset:
@@ -395,8 +408,9 @@ class ConfigurationList(APIView):
 
             config = self.compute_random_and_add_delayed(project_id, user_id, name,
                     matching_skeleton_ids, matching_pointset_ids,
-                    distance_breaks, dot_breaks, None, None, n_random_skeletons,
-                    min_length, min_nodes, tangent_neighbors, matching_subset)
+                    matching_pointcloud_ids, distance_breaks, dot_breaks, None,
+                    None, n_random_skeletons, min_length, min_nodes,
+                    tangent_neighbors, matching_subset)
             return Response(serialize_config(config))
         else:
             raise ValueError("Unknown source: " + source)
@@ -477,7 +491,7 @@ class ConfigurationList(APIView):
 
     def compute_random_and_add_delayed(self, project_id, user_id, name,
             matching_skeleton_ids, matching_pointset_ids,
-            distance_breaks=NblastConfigDefaultDistanceBreaks,
+            matching_pointcloud_ids, distance_breaks=NblastConfigDefaultDistanceBreaks,
             dot_breaks=NblastConfigDefaultDotBreaks, match_sample_id=None,
             random_sample_id=None, n_random_skeletons=5000, min_length=0,
             min_nodes=100, tangent_neighbors=20, matching_subset=None):
@@ -513,6 +527,7 @@ class ConfigurationList(APIView):
                         user_id=user_id, name="Matching sample",
                         sample_neurons=filtered_matching_skeleton_ids,
                         sample_pointsets=matching_pointset_ids,
+                        sample_pointclouds=matching_pointcloud_ids,
                         histogram=histogram, probability=probability,
                         subset=matching_subset)
 

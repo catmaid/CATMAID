@@ -381,6 +381,36 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
             # Append pointsets to list of matching dotprops
             matching_neurons_dps = robjects.r.c(matching_neurons_dps, pointset_dps)
 
+        # Get matching point clouds. They are combined with matching neurons
+        # into one cloud.
+        if matching_sample.sample_pointclouds:
+            pointclouds = []
+            for pcid in matching_sample.sample_pointclouds:
+                target_pointcloud = PointCloud.objects.prefetch_related('points').get(pk=pcid)
+                points_flat = list(chain.from_iterable(
+                        (p.location_x, p.location_y, p.location_z)
+                        for p in target_pointcloud.points.all()))
+                n_points = len(points_flat) / 3
+                point_data = Matrix(rinterface.FloatSexpVector(points_flat),
+                        nrow=n_points, byrow=True)
+                pointclouds.append(point_data)
+
+            pointcloud_objects = rnat.as_neuronlist(pointclouds)
+            effective_pointcloud_object_ids = list(map(
+                    lambda x: "pointcloud-{}".format(x), matching_sample.sample_pointclouds))
+            pointcloud_objects.names = rinterface.StrSexpVector(effective_pointcloud_object_ids)
+
+            logger.debug('Computing matching pointcloud stats')
+            pointcloud_dps = rnat.dotprops(pointcloud_objects.ro * nm_to_um, **{
+                        'k': tangent_neighbors,
+                        'resample': resample_by * nm_to_um,
+                        '.progress': 'none',
+                        'OmitFailures': omit_failures,
+                    })
+
+            # Append pointclouds to list of matching dotprops
+            matching_neurons_dps = robjects.r.c(matching_neurons_dps, pointcloud_dps)
+
         # If there is subset of pairs given for the matching dorprops, convert
         # it into a list that can be understood by R.
 

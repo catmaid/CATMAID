@@ -1756,8 +1756,9 @@ Arbor.prototype.pruneBareTerminalSegments = function(load) {
 };
 
 /**
- * Prune the arbor at all the given nodes, inclusive.  nodes: a map of nodes vs
- * not undefined.  Returns a map of removed nodes vs true values.
+ * Prune the arbor at all the given nodes, inclusive.
+ * nodes: a map of nodes vs not undefined.
+ * Returns a map of removed nodes vs true values.
  */
 Arbor.prototype.pruneAt = function(nodes) {
   // Speed-up special case
@@ -1767,26 +1768,20 @@ Arbor.prototype.pruneAt = function(nodes) {
     this.edges = {};
     return removed;
   }
-
-  var removed = {},
-      partitions = this.partitionSorted();
-
-  for (var k=0; k<partitions.length; ++k) {
-    var partition = partitions[k],
-        cut = -1;
-    // Find node nearest to root to cut, if any
-    for (var i=0; i<partition.length; ++i) {
-      if (undefined !== nodes[partition[i]]) cut = i;
-    }
-    if (-1 !== cut) {
-      for (var i=0; i<=cut; ++i) {
-        var node = partition[i];
-        removed[node] = true;
-        delete this.edges[node];
-      }
+  
+  var up = this.upstreamArbor(nodes),
+      cuts = Object.keys(nodes),
+      removed = {},
+      arr = this.nodesArray();
+  for (int i=0; i<cuts.length; ++i) {
+    delete up.nodes[cuts[i]];
+  }
+  for (int i=0; i<arr.length; ++i) {
+    if (!up.contains(arr[i])) {
+      removed[arr[i]] = true;
     }
   }
-
+  this.nodes = up.nodes;
   return removed;
 };
 

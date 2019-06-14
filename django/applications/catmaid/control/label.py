@@ -6,7 +6,7 @@ import json
 from typing import Any, DefaultDict, List, Optional, Union
 
 from django.db import connection
-from django.http import HttpRequest, Http404, JsonResponse
+from django.http import HttpRequest, Http404, JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 
 from rest_framework.decorators import api_view
@@ -80,9 +80,21 @@ def labels_all(request:HttpRequest, project_id=None) -> JsonResponse:
       description: Labels used in this project
       required: true
     """
-    labels = list(ClassInstance.objects.filter(class_column__class_name='label',
-        project=project_id).values_list('name', flat=True))
-    return JsonResponse(labels, safe=False)
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT COALESCE(json_agg(name ORDER BY name), '[]'::json)::text
+        FROM class_instance
+        WHERE project_id = %(project_id)s
+        AND class_id = (
+            SELECT id
+            FROM class
+            WHERE class_name = 'label'
+            AND project_id = %(project_id)s
+        )
+    """, {
+        'project_id': project_id,
+    })
+    return HttpResponse(cursor.fetchone()[0], content_type='text/json')
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)

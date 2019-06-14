@@ -1483,7 +1483,11 @@
 
         var removePeekingSkeleton = function () {
           viewersWithoutSkel.forEach(function (viewer) {
-            viewer.removeSkeletons([skid]);
+            try {
+              viewer.removeSkeletons([skid]);
+            } catch (error) {
+              console.log("Could not remove peeking skeleton", error);
+            }
             viewer.render();
           });
           self.peekingSkeleton = false;

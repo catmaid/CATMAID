@@ -1773,10 +1773,10 @@ Arbor.prototype.pruneAt = function(nodes) {
       cuts = Object.keys(nodes),
       removed = {},
       arr = this.nodesArray();
-  for (int i=0; i<cuts.length; ++i) {
+  for (let i=0; i<cuts.length; ++i) {
     delete up.nodes[cuts[i]];
   }
-  for (int i=0; i<arr.length; ++i) {
+  for (let i=0; i<arr.length; ++i) {
     if (!up.contains(arr[i])) {
       removed[arr[i]] = true;
     }

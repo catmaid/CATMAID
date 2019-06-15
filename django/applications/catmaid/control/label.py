@@ -112,12 +112,21 @@ def labels_all_detail(request:HttpRequest, project_id=None) -> JsonResponse:
       description: Labels used in this project
       required: true
     """
-    labels = ClassInstance.objects.filter(class_column__class_name='label',
-        project=project_id).values_list('id', 'name')
-    return JsonResponse([{
-        'id': l[0],
-        'name': l[1],
-    } for l in labels], safe=False)
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT COALESCE(json_agg(json_build_object('id', id, 'name', name) ORDER BY name), '[]'::json)::text
+        FROM class_instance
+        WHERE project_id = %(project_id)s
+        AND class_id = (
+            SELECT id
+            FROM class
+            WHERE class_name = 'label'
+            AND project_id = %(project_id)s
+        )
+    """, {
+        'project_id': project_id,
+    })
+    return HttpResponse(cursor.fetchone()[0], content_type='text/json')
 
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)

@@ -572,6 +572,12 @@ class FileImporter:
                 DELETE FROM catmaid_skeleton_summary;
                 SELECT refresh_skeleton_summary_table();
             """)
+
+            logger.info('Recreating skeleton summary table')
+            cursor.execute("""
+                TRUNCATE catmaid_skeleton_summary;
+                SELECT refresh_skeleton_summary_table();
+            """)
         else:
             logger.info("Finding imported skeleton IDs and connector IDs")
 
@@ -610,6 +616,14 @@ class FileImporter:
             else:
                 logger.info("No materialization to update: no skeleton IDs or " \
                         "connector IDs found in imported data")
+
+            # Skeleton summary
+            # TODO: do this selectively for the imported data
+            logger.info('Recreating skeleton summary table')
+            cursor.execute("""
+                TRUNCATE catmaid_skeleton_summary;
+                SELECT refresh_skeleton_summary_table();
+            """)
 
 
 class InternalImporter:

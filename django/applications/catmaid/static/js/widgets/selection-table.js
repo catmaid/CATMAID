@@ -1813,8 +1813,8 @@
               {skids: skeletonIds})
             .then(function(json) {
               // Check if there are skeletons missing
-              var foundSkeletons = skeletonIds.filter(function(skid) {
-                return undefined !== json[skid];
+              var foundSkeletons = skeletons.filter(function(s) {
+                return undefined !== json[s.skeleton_id];
               });
               var missing = skeletonIds.length - foundSkeletons.length;
               if (missing> 0) {
@@ -1823,7 +1823,7 @@
               }
 
               // Create models for valid skeletons
-              var models = validSkeletons.reduce(function(m, s) {
+              var models = foundSkeletons.reduce(function(m, s) {
                 var color = s.color ? s.color : self.batchColor;
                 var name = json[s.skeleton_id];
                 var model = new CATMAID.SkeletonModel(s.skeleton_id, name,
@@ -1834,7 +1834,7 @@
               }, {});
 
               // Load models, respecting their order
-              self._append(models, skeletonIds);
+              self._append(models, foundSkeletons.map(s => s.skeleton_id));
           });
       };
       reader.readAsText(files[0]);

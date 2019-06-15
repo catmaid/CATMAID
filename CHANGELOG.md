@@ -451,6 +451,8 @@ Miscellaneous:
 - Tracing tool: unneeded node updates are removed from initial tracing layer
   loading.
 
+- Selection table: don't try to load missing skeletons from JSON file.
+
 - Settings widget: default values for tracing layer skeleton limits can now be
   configured under Tracing Overlay > Tracing layer skeleton filters.
 

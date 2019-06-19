@@ -657,7 +657,7 @@
               url: transformation.projectId + '/skeletons/' + skeletonId + '/compact-detail',
               method: 'GET',
               data: {
-                  with_tags: false,
+                  with_tags: true,
                   with_connectors: false,
                   with_history: false
               },

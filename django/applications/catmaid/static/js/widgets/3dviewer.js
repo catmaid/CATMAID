@@ -2574,8 +2574,9 @@
             // Instead of displaying the skeleton using show(), we extract its
             // mesh and add it ourselves.
             let radiusVolumes = Object.values(skeleton.radiusVolumes);
+            let tagSpheres = [skeleton.specialTagSphereCollection];
             let data = {
-              meshes: [skeleton.actor.neurite].concat(radiusVolumes),
+              meshes: [skeleton.actor.neurite].concat(radiusVolumes).concat(tagSpheres),
               skeleton: skeleton,
             };
             transform.push(data);

@@ -326,6 +326,13 @@ CLI Importer:
   false` or `--users n`. For a positive parameter use `true`, `yes`, `t`, and
   `1`.
 
+- Imported usernames can now be mapped to existing usernames and mapped
+  selectively by using one or more parameters of the form
+  --username-mapping="import-username=target-username". The example would map
+  all references to the user import-username in the imported data to the
+  existing user target-username. The mapping is performed even with --map-users
+  off.
+
 - It is now possible to import volumes from CATMAID export files and other
   projects..
 

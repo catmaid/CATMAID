@@ -82,14 +82,15 @@ class FileImporter:
 
         self.format = 'json'
 
-    def map_or_create_users(self, obj, import_users, mapped_user_ids,
-            mapped_user_target_ids, created_users):
+    def map_or_create_users(self, obj, import_users, replacement_users,
+            mapped_user_ids, mapped_user_target_ids, created_users):
         """Update user information of a CATMAID model object. The parameters
         <mapped_users>, <mapped_user_target_ids> and <created_users> are output
         parameters and are expected to have the types set, set and dict.
         """
         map_users = self.options['map_users']
         map_user_ids = self.options['map_user_ids']
+
         # Try to look at every user reference field in CATMAID.
         for ref in ('user', 'reviewer', 'editor'):
             id_ref = ref + "_id"
@@ -102,22 +103,25 @@ class FileImporter:
                 existing_user_same_id = self.user_id_map.get(obj_user_ref_id)
 
                 # If user data is imported, <imported_user> will be available
-                # and using matching to existing users is done by name. If
+                # and matching with existing users is done by user name. If
                 # there is no user data for this user in the imported data,
                 # mapping can optionally be done by ID or new users are
-                # created.
+                # created. If explicit mappings are asked for, they will
+                # override all others switches.
                 if import_user:
                     import_user = import_user.object
-                    obj_username = import_user.username
+                    replacement_name = replacement_users.get(import_user.username)
+                    obj_username = replacement_name or import_user.username
                     existing_user_id = self.user_map.get(obj_username)
 
                     # Map users if usernames match
                     if existing_user_id is not None:
                         # If a user with this username exists already, update
                         # the user reference the existing user if --map-users is
-                        # set. If no existing user is available, use imported user,
-                        # if available. Otherwise complain.
-                        if map_users:
+                        # set or a replacement is explicitly asked for. If no
+                        # existing user is available, use imported user, if
+                        # available. Otherwise complain.
+                        if map_users or replacement_name:
                             setattr(obj, id_ref, existing_user_id)
                             mapped_user_ids.add(obj_user_ref_id)
                             mapped_user_target_ids.add(existing_user_id)
@@ -335,7 +339,7 @@ class FileImporter:
             DROP TRIGGER on_delete_treenode_update_summary_and_edges ON treenode;
         """)
 
-        # Get all existing users so that we can map them basedon their username.
+        # Get all existing users so that we can map them based on their username.
         mapped_user_ids = set() # type: Set
         mapped_user_target_ids = set() # type: Set
 
@@ -363,6 +367,11 @@ class FileImporter:
         else:
             import_users = dict()
             logger.info("Found no referenceable users in import data")
+
+        username_mapping = {}
+        for m in self.options['username_mapping'] or []:
+            username_mapping[m[0]] = m[1]
+            logger.info('Mapping import user "{}" to target user "{}"'.format(m[0], m[1]))
 
         # Get CATMAID model classes, which are the ones we want to allow
         # optional modification of user, project and ID fields.
@@ -460,8 +469,8 @@ class FileImporter:
                 self.override_fields(obj)
 
                 # Map users based on username, optionally create unmapped users.
-                self.map_or_create_users(obj, import_users, mapped_user_ids,
-                            mapped_user_target_ids, created_users)
+                self.map_or_create_users(obj, import_users, username_mapping,
+                        mapped_user_ids, mapped_user_target_ids, created_users)
 
                 # Remove pre-defined ID and keep track of updated IDs in
                 # append-only mode (default).
@@ -639,6 +648,16 @@ class InternalImporter:
                 o['import_treenodes'], o['import_connectors'],
                 o['import_annotations'], o['import_tags'])
 
+
+def str2tuple(s):
+    """Convert a string of the form a=b into a tuple (a,b).
+    """
+    parts = s.split('=')
+    if len(parts) != 2:
+        raise argparse.ArgumentTypeError("Argument \"%s\" is not of form import-username=target-username" % (s))
+    return (parts[0].strip(), parts[1].strip())
+
+
 class Command(BaseCommand):
     help = "Import new or existing data into an existing CATMAID project"
 
@@ -670,6 +689,9 @@ class Command(BaseCommand):
         parser.add_argument('--map-user-ids', dest='map_user_ids', default=False,
                 const=True, type=lambda x: (str(x).lower() == 'true'), nargs='?',
                 help='Use existing user if user ID matches as a last option before new users would be created')
+        parser.add_argument('--username-mapping',  dest='username_mapping', default=[],
+                type=str2tuple, action='append',
+                help='Map an import username to a target instance username. Maps referenced users regardless of --map-users.')
         parser.add_argument('--create-unknown-users', dest='create_unknown_users', default=True,
             action='store_true', help='Create new inactive users for unmapped or unknown users referenced in inport data.')
         parser.add_argument('--preserve-ids', dest='preserve_ids', default=False,

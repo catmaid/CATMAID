@@ -1821,7 +1821,7 @@
     var self = this;
 
     var table = $('#' + partnerSet.id + '_connectivity_table' + this.widgetID);
-    var data = table.DataTable().rows({order: 'current'}).data();
+    var data = table.DataTable().rows({order: 'current', search: 'applied'}).data();
 
     // Create table header manually
     var nns = CATMAID.NeuronNameService.getInstance();

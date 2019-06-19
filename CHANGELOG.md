@@ -436,6 +436,9 @@ Miscellaneous:
 - Connecitivity widget: the auto-connectivity CSV will now use formatted neuron
   names as column and row headers.
 
+- Connectivity widget: the 'Export CSV' button will now respect name and
+  annotation filters.
+
 - Graph widget: ungrouping of one-element groups is now allowed.
 
 - Graph widget: merging of grouped skeletons is now handled properly.

@@ -940,13 +940,11 @@ def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
     config = NblastConfig.objects.get(project_id=project_id, pk=config_id)
 
     if not config.status == 'complete':
-        raise ValueError("NBLAST config #" + config.id +
-            "isn't marked as complete")
+        raise ValueError("NBLAST config #{} isn't marked as complete".format(config.id))
 
     # Make sure we have a scoring matrix
     if not config.scoring:
-        raise ValueError("NBLAST config #" + config.id +
-            " doesn't have a computed scoring.")
+        raise ValueError("NBLAST config #{}  doesn't have a computed scoring.".format(config.id))
 
     # Load potential query or target meta data
     query_meta = request.POST.get('query_meta')

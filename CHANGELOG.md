@@ -170,6 +170,9 @@ Neuron Similarity:
   confirmation dialog presents the computed grouping before actually creating a
   similarity matrix.
 
+- Similarity query results can now be used as skeleton source in other widgets,
+  if the target type of the query are skeletons.
+
 Graph widget:
 
 - GraphML files can now be imported, positions and colors are respected. This is

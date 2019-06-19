@@ -28,6 +28,14 @@
     // a 3D Viewer.
     this.pointCloudDisplaySample = 1.0;
 
+    // A skeleton source for the displayed result skeletons
+    this.sourceSkeletonSource = new CATMAID.BasicSkeletonSource(this.getName() + " Query", {
+      owner: this,
+    });
+    this.targetSkeletonSource = new CATMAID.BasicSkeletonSource(this.getName() + " Target", {
+      owner: this,
+    });
+
     // We expect the content DOM element to be available after initialization.
     this.content = null;
 
@@ -45,6 +53,8 @@
   NeuronSimilarityDetailWidget.prototype.destroy = function() {
     this.unregisterInstance();
     CATMAID.NeuronNameService.getInstance().unregister(this);
+    this.sourceSkeletonSource.destroy();
+    this.targetSkeletonSource.destroy();
   };
 
   NeuronSimilarityDetailWidget.prototype.getWidgetConfiguration = function() {
@@ -218,7 +228,30 @@
       .catch(CATMAID.handleError);
   };
 
+  NeuronSimilarityDetailWidget.prototype.getObjectNameAccessMethod = function(type) {
+    if (type === 'skeleton') {
+      return element => {
+        return CATMAID.NeuronNameService.getInstance().getName(element);
+      };
+    } else if (type === 'pointcloud') {
+      return element => {
+        let pc = this.pointClouds.get(element);
+        return pc ? pc.name : (element + ' (not found)');
+      };
+    } else if (type === 'pointset') {
+      return element => {
+        let ps = this.pointSets.get(element);
+        return ps ? ps.name : (element + ' (not found)');
+      };
+    }
+    return element => element;
+  };
+
   NeuronSimilarityDetailWidget.prototype.refresh = function() {
+    // Empty skeleton sources
+    this.sourceSkeletonSource.clear();
+    this.targetSkeletonSource.clear();
+
     // Clear content
     while (this.content.lastChild) {
       this.content.removeChild(this.content.lastChild);
@@ -231,6 +264,9 @@
       this.content.dataset.msg = 'Please select a similarity query result';
       return;
     }
+
+    let getQueryName = this.getObjectNameAccessMethod(this.similarity.query_type);
+    let getTargetName = this.getObjectNameAccessMethod(this.similarity.target_type);
 
     let table = this.content.appendChild(document.createElement('table'));
     table.classList.add('result-table');
@@ -245,9 +281,20 @@
     theadTh3.appendChild(document.createTextNode('Action'));
     let tbody = table.appendChild(document.createElement('tbody'));
 
+    let nTargetObjects = this.similarity.target_objects.length;
+    let nTargetObjectsToAdd = this.showTopN ? Math.min(this.showTopN, nTargetObjects) : nTargetObjects;
+    let lut = new THREE.Lut("greenred", 10);
+    // Set the LUT range to the number of displayed objects. If there is only
+    // one, make sure, the LUT range is [0,1], because it won't provide colors
+    // otherwise.
+    lut.setMax(Math.max(1, nTargetObjectsToAdd - 1));
+
+    let dataAboveZero = NeuronSimilarityDetailWidget.getSortedAndFilteredData(
+        this.similarity, this.onlyPositiveScores, getTargetName);
     NeuronSimilarityDetailWidget.createSimilarityTable(this.similarity,
-        this.onlyPositiveScores, this.showTopN, this.pointClouds,
-        this.pointSets, table, this.pointCloudDisplaySample);
+        getQueryName, getTargetName, this.onlyPositiveScores, this.showTopN,
+        this.pointClouds, this.pointSets, table, this.pointCloudDisplaySample,
+        dataAboveZero, lut);
 
     let invQ = this.similarity.invalid_query_objects;
     let invT = this.similarity.invalid_target_objects;
@@ -261,56 +308,30 @@
     topText.appendChild(document.createTextNode(invalidQObjectsMsg));
     topText.appendChild(document.createElement('br'));
     topText.appendChild(document.createTextNode(invalidTObjectsMsg));
+
+    // Update skeleton sources
+    if (this.similarity.query_type === 'skeleton' && this.similarity.query_objects.length > 0) {
+      this.sourceSkeletonSource.append(this.similarity.query_objects.reduce((o, skeletonId) => {
+        o[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
+        return o;
+      }, {}));
+    }
+    if (this.similarity.target_type === 'skeleton' && this.similarity.target_objects.length > 0) {
+      this.targetSkeletonSource.append(dataAboveZero.reduce((o, row) => {
+        let matches = row[1];
+        let topNElements = Math.min(this.showTopN, matches.length);
+        for (let i=0; i<topNElements; ++i) {
+          let skeletonId = matches[i][0];
+          let color = lut.getColor(i);
+          o[skeletonId] = new CATMAID.SkeletonModel(skeletonId, undefined, color);
+        }
+        return o;
+      }, {}));
+    }
   };
 
-  NeuronSimilarityDetailWidget.createSimilarityTable = function(similarity,
-      matchesOnly, showTopN, pointClouds, pointSets, table, pointcloudSample) {
-    if (!table) {
-      table = document.createElement('table');
-    }
-
-    let getQueryName;
-    if (similarity.query_type === 'skeleton') {
-      getQueryName = function(element) {
-        return CATMAID.NeuronNameService.getInstance().getName(element);
-      };
-    } else if (similarity.query_type === 'pointcloud') {
-      getQueryName = function(element) {
-        let pc = pointClouds.get(element);
-        return pc ? pc.name : (element + ' (not found)');
-      };
-    } else if (similarity.query_type === 'pointset') {
-      getQueryName = function(element) {
-        let ps = pointClouds.get(element);
-        return ps ? ps.name : (element + ' (not found)');
-      };
-    } else {
-      getQueryName = function(element) {
-        return element;
-      };
-    }
-
-    let getTargetName;
-    if (similarity.target_type === 'skeleton') {
-      getTargetName = function(element) {
-        return CATMAID.NeuronNameService.getInstance().getName(element);
-      };
-    } else if (similarity.target_type === 'pointcloud') {
-      getTargetName = function(element) {
-        let pc = pointClouds.get(element);
-        return pc ? pc.name : (element + ' (not found)');
-      };
-    } else if (similarity.target_type === 'pointset') {
-      getTargetName = function(element) {
-        let ps = pointSets.get(element);
-        return ps ? ps.name : (element + ' (not found)');
-      };
-    } else {
-      getTargetName = function(element) {
-        return element;
-      };
-    }
-
+  NeuronSimilarityDetailWidget.getSortedAndFilteredData = function(similarity,
+      matchesOnly, getTargetName) {
     let collectEntries = function(target, element, i) {
       if (!matchesOnly || element >= 0) {
         target.push([similarity.target_objects[i], getTargetName(similarity.target_objects[i]), element]);
@@ -324,10 +345,18 @@
       return 0;
     };
 
-    let dataAboveZero = similarity.query_objects.map(function(qskid, i) {
+    return similarity.query_objects.map(function(qskid, i) {
       let sortedMatches = similarity.scoring[i].reduce(collectEntries, []).sort(compareEntriesDesc);
       return [qskid, sortedMatches];
     });
+  };
+
+  NeuronSimilarityDetailWidget.createSimilarityTable = function(similarity,
+      getQueryName, getTargetName, matchesOnly, showTopN, pointClouds,
+      pointSets, table, pointcloudSample, dataAboveZero, lut) {
+    if (!table) {
+      table = document.createElement('table');
+    }
 
     // Get detailed point cloud and point set information
     let referencedPointclouds = [];
@@ -389,14 +418,6 @@
     }
 
     let prepare = Promise.all(preparePromises);
-
-    let nTargetObjects = similarity.target_objects.length;
-    let nTargetObjectsToAdd = showTopN ? Math.min(showTopN, nTargetObjects) : nTargetObjects;
-    let lut = new THREE.Lut("greenred", 10);
-    // Set the LUT range to the number of displayed objects. If there is only
-    // one, make sure, the LUT range is [0,1], because it won't provide colors
-    // otherwise.
-    lut.setMax(Math.max(1, nTargetObjectsToAdd - 1));
 
     $(table).DataTable({
       dom: 'lfrtip',

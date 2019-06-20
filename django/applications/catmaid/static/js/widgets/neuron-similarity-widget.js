@@ -391,7 +391,7 @@
         });
       }
 
-      // Optionally, resampl point cloud
+      // Optionally, resample point cloud
       if (sampleSize) {
         // Create a 3D grid with the respective sample size and find one point
         // in each cell.
@@ -1058,7 +1058,7 @@
                 let selectedTransformation =
                     widget.displayTransformationCache[selectedTransformationIndex];
 
-                // Map orignal skeleton IDs to their transformations
+                // Map original skeleton IDs to their transformations
                 let transformedData = {};
                 loadingPromises.push(widget.getSelectedSkeletonTransformations(
                     selectedTransformation, landmarkGroupIndex, landmarkIndex,
@@ -1790,7 +1790,7 @@
                       for (let id of src) {
                         let name = nameService.get(srcId)(id);
                         let lastSeperator = name.lastIndexOf('_');
-                        // If no seperator is found, the element will be part of an
+                        // If no separator is found, the element will be part of an
                         // group.with no name.
                         let groupName = lastSeperator === -1 ? '' : name.substr(lastSeperator + 1);
                         let group = groups.get(groupName);
@@ -2711,7 +2711,7 @@
             widget.pointCloudSelection[pointcloudId] = !widget.pointCloudSelection[pointcloudId];
           }
         }).on('draw', function() {
-          // Update image colum, if visible
+          // Update image column, if visible
           if (widget.showPointCloudImages) {
             // Get image information on currently displayed point clouds
             let table = $(this).closest('table');
@@ -2955,7 +2955,7 @@
           multiple: false,
           onclick: function(e, clickedButton) {
             // Try loading point CSV file
-            if (e.target.files.length == 0) {
+            if (e.target.files.length === 0) {
               CATMAID.warn("No files found in folder");
               return;
             }

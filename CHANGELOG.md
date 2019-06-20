@@ -62,6 +62,85 @@ Tracing tool:
   Click behavior with a treenode selected, which creates a presynaptic
   connector.
 
+Graph widget:
+
+- GraphML files can now be imported, positions and colors are respected. This is
+  useful if layouting is done in e.g. Gephi and coloring should be done in
+  CATMAID. The help page explains a possible workflow for this.
+
+- The button "Group equally colored" in the "Main" tab will group all skeletons
+  with the same color into a single group. The user is asked for group names for
+  each color.
+
+3D viewer:
+
+- A new synapse coloring mode has been added: polyadicity. The number of partner
+  nodes for each connector is color coded (for synaptic connectors, this is the
+  number of postsynapses). The colors and ranges can be configured through the
+  "Polyadicity colors" button in the "Shading parameters" tab. This is basically
+  a configurable version of an absolute "N with partner" coloring.
+
+- Branches with leaf nodes tagged "not a branch" can now be collapsed using the
+  'Collapse "not a branch"' checkbox in the Skeleton Filters tab.
+
+- The visibility of radius information can now be controlled using the "Show
+  radius" checkbox in the "Views settings" tab.
+
+- History animations can now be exported in full length without requiring to
+  guess the number of frames for the export. The animation export dialog will
+  show an additional checkbox ("Complete history") if a history animation should
+  be exported.  If complete history is enabled, CATMAID will export the complete
+  history of the exported skeletons.
+
+- Animations can now be exported as stream directly to a file, which allows for
+  much larger exports (32GB maximum at the moment).
+
+- Fractional rotations are now allowed in the animation export.
+
+- The default time per rotation in the animation export is set to 15 seconds now,
+  slowing down the default by a factor of 3, which makes it easier to look at.
+
+- Stack Z slices can now be animated. Configurable are the change frequency and
+  the change step in terms of sections. This is available for animation exports
+  as well.
+
+- Stack Z slices can now be thresholded to replace a background color with
+  another color. If enabled and the sum of all channels is in a configurable
+  range [a,b] it will be replaced with another color.
+
+- The rotation time for animations can now specified in seconds rather than
+  angular distance.
+
+Skeleton history widget:
+
+- A basic view of the change of a set of skeleton IDs over time based on all
+  nodes that are part of a given skeleton ID or that have been in the past.
+
+- Skeleton history can also be used with past skeleton IDs to see into what
+  skeleton they changed (if any).
+
+- All past and present treenodes with a passed in skeleton ID are tracked
+  through the complete history and their path of skeleton ID changes is
+  recorded along with the number of treenodes following a given skeleton path.
+
+- The widget shows a graph from origin skeletons to the final skeleton IDs in
+  every available path, summing the treenode counts for each contributing path.
+
+- Existing skeletons are colored in yellow, past skeletons are colored in cyan.
+  Selected skeletons are colored green.
+
+- Ctrl+Click on skeleton will select it and go to the closest location in it.
+  Shift+Click allows selecting multiple skeletons. All selected skeletons are
+  available through the Skeleton Source interface.
+
+Node and skeleton filters:
+
+- Filter rules support now an "invert" option during creation, which allows to
+  create filters that include everything but whatever is matched by a particular
+  filter strategy. This can be useful e.g. during neuron review to only look at
+  segments that have been created by people other than oneself or connectivity
+  everywhere excluding a particular compartment.
+
 Measurement table:
 
 - Node filters are now supported. Like in other widgets, the respective panel
@@ -183,85 +262,6 @@ Neuron Similarity:
 
 - Similarity query results can now be used as skeleton source in other widgets,
   if the target type of the query are skeletons.
-
-Graph widget:
-
-- GraphML files can now be imported, positions and colors are respected. This is
-  useful if layouting is done in e.g. Gephi and coloring should be done in
-  CATMAID. The help page explains a possible workflow for this.
-
-- The button "Group equally colored" in the "Main" tab will group all skeletons
-  with the same color into a single group. The user is asked for group names for
-  each color.
-
-3D viewer:
-
-- A new synapse coloring mode has been added: polyadicity. The number of partner
-  nodes for each connector is color coded (for synaptic connectors, this is the
-  number of postsynapses). The colors and ranges can be configured through the
-  "Polyadicity colors" button in the "Shading parameters" tab. This is basically
-  a configurable version of an absolute "N with partner" coloring.
-
-- Branches with leaf nodes tagged "not a branch" can now be collapsed using the
-  'Collapse "not a branch"' checkbox in the Skeleton Filters tab.
-
-- The visibility of radius information can now be controlled using the "Show
-  radius" checkbox in the "Views settings" tab.
-
-- History animations can now be exported in full length without requiring to
-  guess the number of frames for the export. The animation export dialog will
-  show an additional checkbox ("Complete history") if a history animation should
-  be exported.  If complete history is enabled, CATMAID will export the complete
-  history of the exported skeletons.
-
-- Animations can now be exported as stream directly to a file, which allows for
-  much larger exports (32GB maximum at the moment).
-
-- Fractional rotations are now allowed in the animation export.
-
-- The default time per rotation in the animation export is set to 15 seconds now,
-  slowing down the default by a factor of 3, which makes it easier to look at.
-
-- Stack Z slices can now be animated. Configurable are the change frequency and
-  the change step in terms of sections. This is available for animation exports
-  as well.
-
-- Stack Z slices can now be thresholded to replace a background color with
-  another color. If enabled and the sum of all channels is in a configurable
-  range [a,b] it will be replaced with another color.
-
-- The rotation time for animations can now specified in seconds rather than
-  angular distance.
-
-Skeleton history widget:
-
-- A basic view of the change of a set of skeleton IDs over time based on all
-  nodes that are part of a given skeleton ID or that have been in the past.
-
-- Skeleton history can also be used with past skeleton IDs to see into what
-  skeleton they changed (if any).
-
-- All past and present treenodes with a passed in skeleton ID are tracked
-  through the complete history and their path of skeleton ID changes is
-  recorded along with the number of treenodes following a given skeleton path.
-
-- The widget shows a graph from origin skeletons to the final skeleton IDs in
-  every available path, summing the treenode counts for each contributing path.
-
-- Existing skeletons are colored in yellow, past skeletons are colored in cyan.
-  Selected skeletons are colored green.
-
-- Ctrl+Click on skeleton will select it and go to the closest location in it.
-  Shift+Click allows selecting multiple skeletons. All selected skeletons are
-  available through the Skeleton Source interface.
-
-Node and skeleton filters:
-
-- Filter rules support now an "invert" option during creation, which allows to
-  create filters that include everything but whatever is matched by a particular
-  filter strategy. This can be useful e.g. during neuron review to only look at
-  segments that have been created by people other than oneself or connectivity
-  everywhere excluding a particular compartment.
 
 System check widget:
 

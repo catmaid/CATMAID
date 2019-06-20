@@ -91,6 +91,21 @@
       });
   };
 
+  Similarity.addConfigFromScoring = function(projectId, name, distanceBreaks,
+      dotBreaks, scoring) {
+    let params = {
+      name: name,
+      distance_breaks: distanceBreaks,
+      dot_breaks: dotBreaks,
+      scoring: scoring,
+    };
+    return CATMAID.fetch(project.id + '/similarity/configs/', 'PUT', params)
+      .then(function(result) {
+        CATMAID.Similarity.trigger(CATMAID.Similarity.EVENT_CONFIG_ADDED, result);
+        return result;
+      });
+  };
+
   /**
    * Queue recomputation of a similarity configuration.
    */

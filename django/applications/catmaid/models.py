@@ -988,9 +988,9 @@ class NblastConfig(NonCascadingUserFocusedModel):
     dot_breaks = ArrayField(models.FloatField(
             default=NblastConfigDefaultDistanceBreaks))
     match_sample = models.ForeignKey(NblastSample, on_delete=models.DO_NOTHING,
-            related_name='match_config_set')
+            related_name='match_config_set', null=True, blank=True)
     random_sample = models.ForeignKey(NblastSample, on_delete=models.DO_NOTHING,
-            related_name='random_config_set')
+            related_name='random_config_set', null=True, blank=True)
     scoring = ArrayField(ArrayField(models.FloatField()))
     resample_step = models.FloatField(default=1000)
     tangent_neighbors = models.IntegerField(default=5)

@@ -170,6 +170,12 @@ Neuron Similarity:
   confirmation dialog presents the computed grouping before actually creating a
   similarity matrix.
 
+- Similarity matrices can now be imported from CSV files, optionally including
+  the distance binning and dot binning as header row and column. As part of the
+  import, the distance binning can be scaled to adjust for differences in
+  datasets. This is available through the "Create from CSV file" button in the
+  Configurations tab.
+
 - Similarity query results can now be used as skeleton source in other widgets,
   if the target type of the query are skeletons.
 

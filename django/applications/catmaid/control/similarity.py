@@ -69,8 +69,8 @@ def serialize_config(config, simple=False) -> Dict[str, Any]:
             'status': config.status,
             'distance_breaks': config.distance_breaks,
             'dot_breaks': config.dot_breaks,
-            'match_sample': serialize_sample(config.match_sample),
-            'random_sample': serialize_sample(config.random_sample),
+            'match_sample': serialize_sample(config.match_sample) if config.match_sample else None,
+            'random_sample': serialize_sample(config.random_sample) if config.random_sample else None,
             'scoring': config.scoring,
             'resample_step': config.resample_step,
             'tangent_neighbors': config.tangent_neighbors,
@@ -291,14 +291,32 @@ class ConfigurationList(APIView):
             required: false
             defaultValue: None
             paramType: form
+          - name: scoring
+            description: |
+                If passed in a new similarity matrix will be created based on
+                this explict scoring. It is assumed to be a simple list which is
+                organized in rows following each other sequentially. Requires
+                distance binning and dot binning information.
+            required: false
         """
         name = request.data.get('name')
         if not name:
             raise ValueError("Need name")
 
-        source = request.data.get('source', 'backend-random')
+        # Cancel if user isn't allowed to queue computation tasks
+        p = Project.objects.get(pk=project_id)
+
         distance_breaks = get_request_list(request.data, 'distance_breaks', map_fn=float)
         dot_breaks = get_request_list(request.data, 'dot_breaks', map_fn=float)
+
+        scoring = get_request_list(request.data, 'scoring', map_fn=float)
+        if not scoring:
+            has_role = check_user_role(request.user, p, UserRole.QueueComputeTask)
+            if not has_role:
+                raise PermissionError("User " + str(request.user.id) +
+                        " doesn't have permission to queue computation tasks.")
+
+        source = request.data.get('source', 'backend-random')
         tangent_neighbors = int(request.data.get('tangent_neighbors', '20'))
         matching_sample_id = int(request.data.get('matching_sample_id')) \
                 if 'matching_sample_id' in request.data else None
@@ -332,15 +350,8 @@ class ConfigurationList(APIView):
                 for element in subset:
                     if type(element) != list or len(element) != 2:
                         raise ValueError("Expeceted subset elements to be lists with two elements")
-                    if type(element[0]) != int or type(element[1]) != int:
-                            raise ValueError("Expected subset selements to consist of ints")
-
-        # Cancel if user isn't allowed to queue computation tasks
-        p = Project.objects.get(pk=project_id)
-        has_role = check_user_role(request.user, p, UserRole.QueueComputeTask)
-        if not has_role:
-            raise PermissionError("User " + str(request.user.id) +
-                    " doesn't have permission to queue computation tasks.")
+                    if type(element[0]) not in (int, list) or type(element[1]) != int:
+                            raise ValueError("Expected subset selements to consist of ints or lists of ints")
 
         # Load and store point sets, if there are any.
         if matching_pointset_ids and matching_meta:
@@ -379,10 +390,9 @@ class ConfigurationList(APIView):
 
         # Make sure bins and breaks match
 
-        if source == 'data':
-            data = request.data['data']
-            config = self.add_from_raw_data(data, distance_breaks, dot_breaks,
-                    matching_sample_id, random_sample_id)
+        if scoring:
+            config = self.add_from_raw_data(project_id, request.user.id, name,
+                    scoring, distance_breaks, dot_breaks)
             return Response(serialize_config(config))
         elif source == 'request':
             if not matching_skeleton_ids and not matching_pointset_ids:
@@ -415,41 +425,18 @@ class ConfigurationList(APIView):
         else:
             raise ValueError("Unknown source: " + source)
 
-    def add_from_raw_data(self, project_id, user_id, name, data,
+
+    def add_from_raw_data(self, project_id, user_id, name, scoring,
             distance_breaks=NblastConfigDefaultDistanceBreaks,
-            dot_breaks=NblastConfigDefaultDotBreaks, match_sample_id=None,
-            random_sample_id=None, tangent_neighbors=20):
+            dot_breaks=NblastConfigDefaultDotBreaks):
         """Add a scoring matrix based on the passed in array of arrays and
         dimensions.
         """
-        histogram = [] # type: List
-        probability = [] # type: List
-
-        if match_sample_id:
-            match_sample = NblastSample.objects.get(id=match_sample_id)
-        else:
-            match_sample = NblastSample.objects.create(project_id=project_id,
-                    user_id=user_id, name="Empty matching sample",
-                    sample_neurons=[], histogram=histogram,
-                    probability=probability)
-
-        if random_sample_id:
-            random_sample = NblastSample.objects.get(id=random_sample_id)
-        else:
-            random_sample = NblastSample.objects.create(project_id=project_id,
-                    user_id=user_id, name="Empty random sample",
-                    sample_neurons=[], histogram=histogram,
-                    probability=probability)
-
-        # Test whether the passed in scoring data actually matches binning
-        # information.
-        scoring = data
-
         return NblastConfig.objects.create(project_id=project_id,
-            user=user_id, name=name, status='complete',
+            user_id=user_id, name=name, status='complete',
             distance_breaks=distance_breaks, dot_breaks=dot_breaks,
-            match_sample=match_sample, random_sample=random_sample,
-            scoring=None, tangent_neighbors=tangent_neighbors)
+            match_sample=None, random_sample=None, scoring=scoring)
+
 
     def add_delayed(self, project_id, user_id, name, matching_skeleton_ids,
             matching_pointset_ids, random_skeleton_ids,

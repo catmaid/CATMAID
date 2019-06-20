@@ -1777,7 +1777,7 @@
           });
         };
 
-        dialog.show('500', 'auto');
+        dialog.show('800', 'auto');
       })
       .catch(CATMAID.handleError);
   };

@@ -1283,6 +1283,7 @@
     this.neuron_material = 'lambert';
     this.connector_filter = false;
     this.show_connector_links = true;
+    this.show_radius = true;
     this.shading_method = 'none';
     this.color_method = 'none';
     this.tag_regex = '';
@@ -6799,6 +6800,16 @@
     this.space.updateConnectorColors(this.options, skeletons, this.space.render.bind(this.space));
   };
 
+  WebGLApplication.prototype.setRadiusVisibility = function(visible) {
+    let changed = this.options.show_radius !== visible;
+    if (changed) {
+      this.options.show_radius = visible;
+      Object.values(this.space.content.skeletons).forEach(skeleton => {
+        skeleton.setRadiusVisibility(visible);
+      });
+      this.render();
+    }
+  };
 
   WebGLApplication.prototype.updateConnectorColors = function(select) {
     if (select) {
@@ -7348,6 +7359,54 @@
   };
 
   /**
+   * Remove all radius meshes and optionally recreate them.
+   */
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setRadiusVisibility = function(visible) {
+    // Remove all non-root radius cylinders
+    let nodesToUpdate = this.nodeMetaData.filter(d => d.parent_id !== undefined && d.parent_id !== null);
+    let nonRootRadiusMeshes = nodesToUpdate.map(d => {
+      let mesh = this.radiusVolumes[d.node_id];
+      delete this.radiusVolumes[d.node_id];
+      return mesh;
+    });
+    this.space.removeAll(nonRootRadiusMeshes);
+
+    // Build index to find parent nodes
+    let nodeIndex = this.nodeMetaData.reduce((o, d) => {
+      o[d.node_id] = d;
+      return o;
+    }, {});
+
+    let v1 = new THREE.Vector3();
+    let v2 = new THREE.Vector3();
+
+    if (visible) {
+      let material = this.getMeshMaterial(this.space.options);
+
+      for (let i=0, max=nodesToUpdate.length; i<max; ++i) {
+        let node = nodesToUpdate[i];
+        if (node.radius === undefined || node.radius === 0) {
+          continue;
+        }
+        let parentNode = nodeIndex[node.parent_id];
+        if (!parentNode) {
+          throw CATMAID.ValueError("Could not find parent of node " + node.node_id);
+        }
+
+        v1.set(node.x, node.y, node.z);
+
+        // Create new radius representation
+        if (parentNode.radius !== undefined && parentNode.radius > 0) {
+          v2.set(parentNode.x, parentNode.y, parentNode.z);
+          this.createCylinder(v1, v2, node.node_id, node.radius, material);
+        } else {
+          this.createNodeSphere(v1, node.node_id, node.radius, material);
+        }
+      }
+    }
+  };
+
+  /**
    * Place a colored sphere at each node. Used for highlighting special tags like
    * 'uncertain end' and 'todo'. Implemented with buffer geometries to gain
    * better performance.
@@ -7431,7 +7490,7 @@
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeSphere =
-      function(v, nodeId, radius, material, preventSceneUpdate) {
+      function(v, nodeId, radius, material, preventSceneUpdate=false) {
     if (this.radiusVolumes.hasOwnProperty(nodeId)) {
       // There already is a sphere or cylinder at the node
       return;
@@ -7449,7 +7508,7 @@
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createCylinder =
-      function(v1, v2, nodeId, radius, material, preventSceneUpdate) {
+      function(v1, v2, nodeId, radius, material, preventSceneUpdate=false) {
     if (this.radiusVolumes.hasOwnProperty(nodeId)) {
       // There already is a sphere or cylinder at the node
       return;
@@ -7473,6 +7532,14 @@
     if (!preventSceneUpdate) {
       this.space.add(mesh);
     }
+  };
+
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getMeshMaterial = function(options) {
+    var Material = CATMAID.getSkeletonMaterialType(options['neuron_material']);
+    var material = new Material( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false } );
+    material.opacity = this.skeletonmodel.opacity;
+    material.transparent = material.opacity !== 1;
+    return material;
   };
 
   /**
@@ -7679,10 +7746,7 @@
     var vs = {};
 
     // Reused for all meshes
-    var Material = CATMAID.getSkeletonMaterialType(options['neuron_material']);
-    var material = new Material( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false } );
-    material.opacity = this.skeletonmodel.opacity;
-    material.transparent = material.opacity !== 1;
+    let material = this.getMeshMaterial(options);
 
     // Collect all labels first, before creating its geometry
     var partner_nodes = [];
@@ -7737,6 +7801,10 @@
             'y': node[4],
             'z': node[5],
           };
+          // Add radius information if available
+          if (node[6] > 0) {
+            metaChild.radius = node[6];
+          }
           idToMetaData.set(node[0], metaChild);
         }
         let metaParent = idToMetaData.get(node[1]);
@@ -7749,23 +7817,29 @@
             'y': p[4],
             'z': p[5],
           };
+          // Add radius information if available
+          if (p[6] > 0) {
+            metaParent.radius = p[6];
+          }
           idToMetaData.set(p[0], metaParent);
         }
         nodeMetaData.push(metaChild, metaParent);
 
         var nodeID = node[0];
-        if (node[6] > 0 && p[6] > 0) {
-          // Create cylinder using the node's radius only (not the parent) so
-          // that the geometry can be reused
-          this.createCylinder(v1, v2, node[0], node[6], material, preventSceneUpdate);
-          // Create skeleton line as well
-          this.createEdge(v1, v2, edgeGeometry);
-        } else {
-          // Create line
-          this.createEdge(v1, v2, edgeGeometry);
-          // Create sphere
-          if (node[6] > 0) {
-            this.createNodeSphere(v1, node[0], node[6], material, preventSceneUpdate);
+        if (options.show_radius) {
+          if (node[6] > 0 && p[6] > 0) {
+            // Create cylinder using the node's radius only (not the parent) so
+            // that the geometry can be reused
+            this.createCylinder(v1, v2, node[0], node[6], material, preventSceneUpdate);
+            // Create skeleton line as well
+            this.createEdge(v1, v2, edgeGeometry);
+          } else {
+            // Create line
+            this.createEdge(v1, v2, edgeGeometry);
+            // Create sphere
+            if (node[6] > 0) {
+              this.createNodeSphere(v1, node[0], node[6], material, preventSceneUpdate);
+            }
           }
         }
       } else {
@@ -7808,6 +7882,9 @@
         'y': node[4],
         'z': node[5],
       };
+      if (node[6] > 0) {
+        metaData.radius = node[6];
+      }
       edgeGeometry.vertices.push(vs[node[0]]);
       nodeMetaData.push(metaData, metaData);
     }

@@ -2745,15 +2745,16 @@ def annotation_list(request:HttpRequest, project_id=None) -> JsonResponse:
     annotations = bool(int(request.POST.get("annotations", 0)))
     metaannotations = bool(int(request.POST.get("metaannotations", 0)))
     neuronnames = bool(int(request.POST.get("neuronnames", 0)))
+    ignore_invalid = get_request_bool(request.POST, "ignore_invalid", False)
 
     response = get_annotation_info(project_id, skeleton_ids, annotations,
-                                   metaannotations, neuronnames)
+                                   metaannotations, neuronnames, ignore_invalid)
 
     return JsonResponse(response)
 
 
 def get_annotation_info(project_id, skeleton_ids, annotations, metaannotations,
-                        neuronnames) -> Dict[str, Any]:
+                        neuronnames, ignore_invalid=False) -> Dict[str, Any]:
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
 

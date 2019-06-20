@@ -200,6 +200,9 @@ Graph widget:
 - Branches with leaf nodes tagged "not a branch" can now be collapsed using the
   'Collapse "not a branch"' checkbox in the Skeleton Filters tab.
 
+- The visibility of radius information can now be controlled using the "Show
+  radius" checkbox in the "Viws settings" tab.
+
 - History animations can now be exported in full length without requiring to
   guess the number of frames for the export. The animation export dialog will
   show an additional checkbox ("Complete history") if a history animation should

@@ -1082,6 +1082,15 @@ var WindowMaker = new function()
           },
           {
             type: 'checkbox',
+            label: 'Show radius',
+            value: o.show_radius,
+            onclick: function() {
+              WA.setRadiusVisibility(this.checked);
+            },
+            title: 'If checked, the node radii will be rendered as cylinders.'
+          },
+          {
+            type: 'checkbox',
             label: 'Ortho scale bar',
             value: o.show_ortho_scale_bar,
             onclick: function() {

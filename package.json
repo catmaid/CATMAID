@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "bootprint": "^1.0.2",
-    "bootprint-openapi": "^1.1.0"
+    "bootprint-openapi": "^1.1.1"
   },
   "scripts": {
     "lint:js": "jshint --config=.travis.jshintrc --exclude-path=.travis.jshintignore django/applications",

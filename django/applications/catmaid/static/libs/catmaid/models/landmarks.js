@@ -579,13 +579,15 @@
       }, {});
 
       let mls;
-      try {
-        mls = CATMAID.Landmarks.getMlsTransform(transformation,
-          landmarkGroupIndex, landmarkIndex, i, sourceLandmarkGroupIndex,
-          sourceLandmarkIndex, byName);
-      } catch (error) {
-        CATMAID.warn(error ? error.message : "Unknown error");
-        return false;
+      if (transformation.mappings.length > 0) {
+        try {
+          mls = CATMAID.Landmarks.getMlsTransform(transformation,
+            landmarkGroupIndex, landmarkIndex, i, sourceLandmarkGroupIndex,
+            sourceLandmarkIndex, byName);
+        } catch (error) {
+          CATMAID.warn(error ? error.message : "Unknown error");
+          return false;
+        }
       }
 
       // Landmarks are needed for bounding box computation and visualization.
@@ -732,7 +734,7 @@
     this.projectId = projectId;
     this.skeletons = skeletons;
     let seenSourceIds = new Set(), seenTargetIds = new Set();
-    this.mappings = mappings.map(m => [parseInt(m[0], 10), parseInt(m[1], 10)])
+    this.mappings = mappings ? mappings.map(m => [parseInt(m[0], 10), parseInt(m[1], 10)])
         .reduce((o, m) => {
           if (!seenSourceIds.has(m[0]) && !seenTargetIds.has(m[1])) {
             seenSourceIds.add(m[0]);
@@ -740,7 +742,7 @@
             o.push(m);
           }
           return o;
-        }, []);
+        }, []) : [];
     this.id = CATMAID.tools.uuidv4();
     this.fromApi = fromApi;
     this.color = new THREE.Color(color);

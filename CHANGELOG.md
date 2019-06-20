@@ -132,6 +132,11 @@ Landmarks:
   single display transformation. Point matches are created independently for
   each pair and only merged for finding the final transformation.
 
+- Using a transformation is now optional (but enabled by default). To disable
+  landmark transformations, uncheck the "Apply transformation" checkbox. This
+  allows e.g. to display skeletons from remote CATMAID instances without
+  modification.
+
 Neuron Similarity:
 
 - The computation of the default "mean" normalized similarity scores is now

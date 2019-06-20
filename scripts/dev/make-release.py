@@ -125,7 +125,7 @@ class CatmaidRelease(object):
             header_end = header_start + len(release_title)
             next_section_start = changelog_data.find("#", header_end)
             if -1 == next_section_start:
-                raise ValueError("Couldn't find beginning of nexst section after title")
+                raise ValueError("Couldn't find beginning of next section after title")
             contributor_start = changelog_data.find(self.changelog_contributor_label,
                     header_end, next_section_start)
 

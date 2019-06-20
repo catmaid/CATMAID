@@ -23,6 +23,7 @@ import re
 import readline
 import sh
 import sys
+import traceback
 
 from datetime import date
 from six.moves import input
@@ -196,8 +197,13 @@ class CatmaidRelease(object):
         self.update_file("sphinx-doc/source/conf.py", contentfilter)
 
         log("Updating API documentation...", False)
-        update_api_doc = sh.make.bake(_cwd=os.path.join(self.project_root, 'sphinx-doc'))
-        update_api_doc('apidoc')
+        try:
+            update_api_doc = sh.make.bake(_cwd=os.path.join(self.project_root, 'sphinx-doc'))
+            update_api_doc('apidoc')
+        except sh.ErrorReturnCode_2:
+            log('Creating the API documentation returned error code 2 (warning):')
+            traceback.print_exc(file=sys.stdout)
+
         self.git.add(os.path.join(self.project_root, 'sphinx-doc/source/_static/api'))
         log("done")
 

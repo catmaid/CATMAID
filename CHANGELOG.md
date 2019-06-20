@@ -151,7 +151,7 @@ Neuron Similarity:
 
 - The new "Reverse" option allows to rank similar objects by there reverse
   score. That means that the stored score for a particular object pair is target
-  versus query rather than query versus target. NBLAST ues the query neuron as
+  versus query rather than query versus target. NBLAST uses the query neuron as
   reference, and thereforoe the reverse option can make a difference as long as
   no "mean" scoring is used.
 
@@ -206,7 +206,7 @@ Graph widget:
   'Collapse "not a branch"' checkbox in the Skeleton Filters tab.
 
 - The visibility of radius information can now be controlled using the "Show
-  radius" checkbox in the "Viws settings" tab.
+  radius" checkbox in the "Views settings" tab.
 
 - History animations can now be exported in full length without requiring to
   guess the number of frames for the export. The animation export dialog will
@@ -219,7 +219,7 @@ Graph widget:
 
 - Fractional rotations are now allowed in the animation export.
 
-- The default time per rotatio in the animation export is set to 15 seconds now,
+- The default time per rotation in the animation export is set to 15 seconds now,
   slowing down the default by a factor of 3, which makes it easier to look at.
 
 - Stack Z slices can now be animated. Configurable are the change frequency and
@@ -447,7 +447,7 @@ Miscellaneous:
   appended to the Selection Table of a 3D Viewer, rather than the 3D Viewer
   directly.
 
-- Connecitivity widget: the auto-connectivity CSV will now use formatted neuron
+- Connectivity widget: the auto-connectivity CSV will now use formatted neuron
   names as column and row headers.
 
 - Connectivity widget: the 'Export CSV' button will now respect name and

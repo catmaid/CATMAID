@@ -278,6 +278,22 @@ System check widget:
   most of them a rule of thumb suggestion on how a value should behave is
   provided as well.
 
+Extension: CATMAID-autoproofreader:
+
+- This extension is written by Will Patton and has to be installed separately,
+  because it requires additional setup steps for segmentation data handling.
+  Details can be found here: https://github.com/pattonw/CATMAID-autoproofreader.
+
+- This tool suggests locations in a skeleton reconstructions where branches
+  might be missing or wrongly connected. Users can step through these
+  suggestions to fix potential problems. After reviewing a node it can be marked
+  as reviewed for future reference.
+
+- In the CATMAID front-end the autoproofreader provides a widget that relies on
+  a compute server to handle the computations involved with automatically
+  proofreading a neuron reconstruction. Proofreading jobs are performed
+  asyncronously and might take a few minutes to complete.
+
 Administration:
 
 - A grid based node query cache can now be used to speed up tracing data

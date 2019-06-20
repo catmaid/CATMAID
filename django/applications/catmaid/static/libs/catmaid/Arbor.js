@@ -1774,14 +1774,14 @@ Arbor.prototype.pruneAt = function(nodes) {
       removed = {},
       arr = this.nodesArray();
   for (let i=0; i<cuts.length; ++i) {
-    delete up.nodes[cuts[i]];
+    delete up.edges[cuts[i]];
   }
   for (let i=0; i<arr.length; ++i) {
     if (!up.contains(arr[i])) {
       removed[arr[i]] = true;
     }
   }
-  this.nodes = up.nodes;
+  this.edges = up.edges;
   return removed;
 };
 

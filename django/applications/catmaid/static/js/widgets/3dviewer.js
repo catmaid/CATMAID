@@ -7825,17 +7825,15 @@
         }
         nodeMetaData.push(metaChild, metaParent);
 
-        var nodeID = node[0];
+        // Create skeleton line
+        this.createEdge(v1, v2, edgeGeometry);
+        // Optionally, create radius representation
         if (options.show_radius) {
           if (node[6] > 0 && p[6] > 0) {
             // Create cylinder using the node's radius only (not the parent) so
             // that the geometry can be reused
             this.createCylinder(v1, v2, node[0], node[6], material, preventSceneUpdate);
-            // Create skeleton line as well
-            this.createEdge(v1, v2, edgeGeometry);
           } else {
-            // Create line
-            this.createEdge(v1, v2, edgeGeometry);
             // Create sphere
             if (node[6] > 0) {
               this.createNodeSphere(v1, node[0], node[6], material, preventSceneUpdate);

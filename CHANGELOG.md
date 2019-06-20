@@ -111,6 +111,13 @@ Graph widget:
 - The rotation time for animations can now specified in seconds rather than
   angular distance.
 
+- The background color is now fully adjustable through the "backgorund" button
+  in the "View settings" tab.
+
+- Basic support for Virtual Reality is now available on Windows platforms using
+  a Mixed Reality / SteamVR.3D setup and Firefox >= v65. To enable, check the
+  VR checkbox in the "View" tab and click the "Enter" button right next to it.
+
 Skeleton history widget:
 
 - A basic view of the change of a set of skeleton IDs over time based on all

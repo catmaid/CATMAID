@@ -853,8 +853,7 @@
       let transformation = this.displayTransformations[i];
       let providerAdded = CATMAID.Landmarks.addProvidersToTransformation(
           transformation, this.landmarkGroupIndex, this.landmarkIndex, i,
-          this.sourceLandmarkGroupIndex, this.sourceLandmarkIndex, true,
-          this.useReversePointMatches);
+          this.sourceLandmarkGroupIndex, this.sourceLandmarkIndex, true);
       if (providerAdded) {
         for (let j=0; j<target3dViewers.length; ++j) {
           let widget = target3dViewers[j];

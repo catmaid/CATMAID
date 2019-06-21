@@ -1,6 +1,10 @@
 ## Under development
 
 
+### Notes
+
+- Python 3.5 is not supported anymore. Use Python 3.6 or 3.7.
+
 
 ### Features and enhancements
 

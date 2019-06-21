@@ -67,8 +67,12 @@ Screenshots and videos
 
    CATMAID's Selector tool: Mirrored mouse cursor in all open stacks
 
+   Some tile sources in CATMAID support dynamic settings
 
 .. figure:: _static/screenshots/catmaid-tile-source-settings.jpg
    :alt: Tile source settings for a dynamic tile server in CATMAID
 
-   Some tile sources in CATMAID support dynamic settings
+.. figure:: _static/screenshots/catmaid-nblast-landmarks-pointcloud-kc.png
+    :alt: Landmark transformations and NBLAST
+
+    Landmark based transformation of neurons on the right side of the Drosophila larva brain to its left side and NBLAST matching for identification.

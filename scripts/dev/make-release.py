@@ -132,9 +132,11 @@ class CatmaidRelease(object):
             new_contributor_list = -1 == contributor_start
             if new_contributor_list:
                 log("Getting contributors from Git history since HEAD of master (couldn't find it in CHANGELOG.md)")
-                contributor_list = self.git("--no-pager", "log", "--format='%aN'", "master..").stdout.decode('utf-8')
-                contributor_list = [n.strip("\'") for n in set(contributor_list.strip('\n').split('\n'))]
-                contributor_list = ", ".join(contributor_list)
+                contributor_list_data = self.git("--no-pager", "log", "--format='%aN'", "master..").stdout.decode('utf-8')
+                contributors = [n.strip("\'") for n in set(contributor_list_data.strip('\n').split('\n'))]
+                # For the sake of simplicity, sort contributors by last name
+                contributors.sort(key=lambda x: x.split(' ')[-1])
+                contributor_list = ", ".join(contributors)
             else:
                 contributor_label_end = contributor_start + len(self.changelog_contributor_label)
                 contributor_end = changelog_data.find('\n', contributor_start)

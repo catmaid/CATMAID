@@ -1392,6 +1392,8 @@ CACHE_NODE_PROVIDER_DATA_TYPES = {
 def get_configured_node_providers(provider_entries, connection=None,
         enabled_only=False) -> List:
     node_providers = []
+    if type(provider_entries) == str:
+        provider_entries = [provider_entries]
     for entry in provider_entries:
         options = {} # type: Dict
         # An entry is allowed to be a two-tuple (name, options) to provide

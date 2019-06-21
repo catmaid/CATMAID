@@ -1,5 +1,4 @@
 dist: xenial
-sudo: required
 notifications:
   email: false
 language: python

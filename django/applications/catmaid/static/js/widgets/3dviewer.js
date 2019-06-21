@@ -737,7 +737,7 @@
     var sks = this.space.content.skeletons,
         getName = CATMAID.NeuronNameService.getInstance().getName,
         header = "skeleton_id, treenode_id, parent_treenode_id, x, y, z, r\n",
-        exporter = CATMAID.FileExporter.saveAs(header, "skeleton_coordinates.csv", 'text/csv');
+        exporter = CATMAID.FileExporter.export(header, "skeleton_coordinates.csv", 'text/csv');
     Object.keys(sks).forEach(function(skid) {
       var sk = sks[skid];
       if (!sk.visible) return;

@@ -3,13 +3,45 @@ and other administration related changes are listed in order.
 
 ## Under development
 
+- A virtualenv update is required.
+
 - All \*.pyc files in the folders `django/applications/catmaid/migrations/`,
   `django/applications/performancetests/migrations/` and
   `django/applications/pgcompat/migrations/` need to be deleted.
 
+- Python 3.7 is now supported.
+
+- Heads-up: The next CATMAID version will require Postgres 11, PostGIS 2.5 and
+  Python 3.6 or 3.7.
+
 - Should migration 0057 fail due a permission error, the Postgres extension
   "pg_trgm" has to be installed manually into the CATMAID database using a
-  Postgres superuser: CREATE EXTENSION pg_trgm;
+  Postgres superuser:
+  `sudo -u postgres psql -d <catmaid-db> -c 'CREATE EXTENSION pg_trgm;'`
+
+- CATMAID's version information changes back to a plain `git describe` format.
+  This results overall in a simpler setup and makes live easier for some
+  third-party front-ends, because the commit counter is included again. The
+  version display is now the same `git describe` format for both regular setups
+  and Docker containers.
+
+- Tile loading is clamped to (0,0) again, i.e. there are no negative tile
+  coordinates anymore by default. If you need them, set the respective stack's
+  `metadata` field to `{"clamp": false}`.
+
+- To write to CATMAID through its API using an API token, users need to have
+  now dedicated "API write" permission, called "Can annotate project using
+  API token" in the admin UI. To restore the previous behavior (regular annotate
+  permission allows API write access) the settings.py variable
+  `REQUIRE_EXTRA_TOKEN_PERMISSIONS` can be set to `False`. This is done as a
+  safety measure to prevent accidental changes through automation.
+
+- If R based NBLAST is used, make sure to execute to update all dependencies:
+  `manage.py catmaid_setup_nblast_environment`.
+
+- The main documentation on catmaid.org has now a place for widget specific
+  documentation as well. Only a few widgets have been updated yet, but more will
+  follow.
 
 ## 2018.11.09
 

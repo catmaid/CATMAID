@@ -150,7 +150,7 @@ Now the data of the primary server has to be copied over using
 ``pg_basebackup``. This has to be done as the ``postgres`` user::
 
   sudo -u postgres pg_basebackup -h my.primary.db.xyz -p 7432 \
-      -D /var/lib/postgresql/11/main/ -P -U replication_user --wal-method=stream
+      -P --checkpoint=fast -U replication_user  -D /var/lib/postgresql/11/main/
 
 Assuming ``/var/lib/postgresql/11/main/`` is our data directory and
 ``my.primry.db.xyz`` is the primary database server, listening on port ``7432``,
@@ -160,15 +160,17 @@ your database size, because all the data from the primary server is copied over.
 
 Of course the replica shouldn't write on its own to the database, instead it
 should follow the primary. This is done by creating a file named
-``recovery.conf`` alongside ``postgresql.conf`` with the following content::
+``recovery.conf`` in the Postgres data directory
+(``/var/lib/postgresql/11/main/`` in this example)  with the following content::
 
   standby_mode          = 'on'
   primary_conninfo      = 'host=my.primary.db.xyz port=7432 user=replication_user password=<password>'
   trigger_file = '/tmp/MasterNow'
   #restore_command = 'cp /opt/postgresql_wal/%f "%p"
 
-This configuration makes Postgres start as a standby (read-only) server. It
-will automatically contact the primary server to stay up-to-date. If the file
+This file needs to be owned by the ``postgres`` user and the ``postgres`` group.
+This configuration makes Postgres start as a standby (read-only) server. It will
+automatically contact the primary server to stay up-to-date. If the file
 ``/tmp/MasterNow`` exists, Postgres will stop replication and become a primary.
 If ``archive_command`` was used on the primary, the ``restore_command`` has to
 be uncommented and configured.
@@ -176,7 +178,7 @@ be uncommented and configured.
 Now the replica can be started. A line similar to the following should show up
 in the log::
 
-  started streaming WAL from primary at 0/5000000 on timeline 1
+  started streaming WAL from primary at FD6/EB000000 on timeline 1
 
 On the primary server, replicas should be visible in a query like this::
 

@@ -14,6 +14,7 @@ Administrator Documentation
    websockets
    tracing-caches
    history_tables
+   replication
    docker
    userprofiles
    additional_backends

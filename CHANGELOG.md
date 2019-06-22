@@ -6,7 +6,8 @@
 - Python 3.5 is not supported anymore. Use Python 3.6 or 3.7.
 
 - Postgres 11 and PostGIS 2.5 is required. If both needs to be updated, update
-  PostGIS first and run `ALTER EXTENSION postgis UPDATE;` in every database.
+  PostGIS first and run `ALTER EXTENSION postgis UPDATE;` in every database. For
+  docker-compose setups this database update is performed automatically.
 
 
 ### Features and enhancements

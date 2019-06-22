@@ -15,7 +15,7 @@ djangorestframework==3.9.4
 jsonfield==2.0.2
 kombu==4.5.0
 matplotlib==2.2.3
-mock==1.0.1
+mock==3.0.5
 msgpack==0.6.1; platform_python_implementation != 'PyPy'
 msgpack_python==0.5.6
 networkx==1.11

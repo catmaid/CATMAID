@@ -2833,7 +2833,7 @@ var SkeletonAnnotations = {};
           // Ignore invalid entries.
           continue;
         }
-        // Exta treenodes
+        // Extra treenodes
         if (d[0] && d[0].length > 0) {
           Array.prototype.push.apply(jsonNodes, d[0]);
         }

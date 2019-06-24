@@ -28,7 +28,7 @@ from catmaid.views import (UseranalyticsView, UserProficiencyView,
         GroupMembershipHelper)
 from catmaid.views.dvid import DVIDImportWizard
 from catmaid.views.userimporter import UserImportWizard
-
+from catmaid.views.dataexporter import CatmaidDataExportWizard
 
 def add_related_field_wrapper(form, col_name, rel=None):
     """Wrap a field on a form so that a little plus sign appears right next to
@@ -482,3 +482,5 @@ admin.site.register_view('dvidimporter', 'Import DVID stacks',
                          view=DVIDImportWizard.as_view())
 admin.site.register_view('userimporter', 'Import users',
                          view=UserImportWizard.as_view())
+admin.site.register_view('catmaiddataexporter', 'CATMAID data export',
+                         view=CatmaidDataExportWizard.as_view())

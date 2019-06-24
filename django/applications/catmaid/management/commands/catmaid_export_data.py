@@ -56,6 +56,10 @@ class Exporter():
         self.volume_annotations = options['volume_annotations']
         self.exclusion_is_final = options['exclusion_is_final']
         self.original_placeholder_context = options['original_placeholder_context']
+        if 'run_noninteractive' in options:
+            self.run_noninteractive = options['run_noninteractive']
+        else:
+            self.run_noninteractive = False
         self.target_file = options.get('file', None)
         if self.target_file:
             self.target_file = self.target_file.format(project.id)
@@ -193,9 +197,10 @@ class Exporter():
             raise CommandError("No matching neurons found")
 
         print("Will export %s neurons" % entities.count())
-        start_export = ask_to_continue()
-        if not start_export:
-            raise CommandError("Canceled by user")
+        if not self.run_noninteractive:
+            start_export = ask_to_continue()
+            if not start_export:
+                raise CommandError("Canceled by user")
 
         # Export classes and relations
         self.to_serialize.append(Class.objects.filter(project=self.project))

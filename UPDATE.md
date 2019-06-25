@@ -1,6 +1,14 @@
 Some CATMAID versions require manual changes to an existing setup. Below these
 and other administration related changes are listed in order.
 
+## Under development
+
+- Python 3.5 is not supported anymore. Use Python 3.6 or 3.7.
+
+- Postgres 11 and PostGIS 2.5 is required. If both needs to be updated, update
+  PostGIS first and run `ALTER EXTENSION postgis UPDATE;` in every database. For
+  docker-compose setups this database update is performed automatically.
+
 ## 2019.06.20
 
 - A virtualenv update is required.

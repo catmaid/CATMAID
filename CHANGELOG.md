@@ -22,6 +22,15 @@
 
 - CLI Exporter: if users should be exported, also export users of volumes.
 
+- CLI Importer: only update treenode edges and skeleton summary if treenodes
+  were actually imported (rather than e.g. only volumes).
+
+- CLI Importer: add --auto-name-unknown-users option, to automatically generate
+  names for users that are not available from an import, but referenced in it
+  (by ID).
+
+- CLI Importer: creating unknown users manually works now as expected.
+
 
 ## 2019.06.20
 

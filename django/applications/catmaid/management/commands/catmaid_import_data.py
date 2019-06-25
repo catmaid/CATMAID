@@ -76,11 +76,16 @@ class FileImporter:
         self.options = options
         self.user = user
         self.create_unknown_users = options['create_unknown_users']
+        self.auto_name_unknown_users = options['auto_name_unknown_users']
+        self.next_auto_name_id = 1
         self.user_map = dict(User.objects.all().values_list('username', 'id'))
         self.user_id_map = dict((v,k) for k,v in self.user_map.items())
         self.preserve_ids = options['preserve_ids']
 
         self.format = 'json'
+
+        # Map user IDs to newly created users
+        self.created_unknown_users = dict()
 
     def map_or_create_users(self, obj, import_users, replacement_users,
             mapped_user_ids, mapped_user_target_ids, created_users):
@@ -90,9 +95,6 @@ class FileImporter:
         """
         map_users = self.options['map_users']
         map_user_ids = self.options['map_user_ids']
-
-        # Map user IDs to newly created users
-        created_unknown_users = dict()
 
         # Try to look at every user reference field in CATMAID.
         for ref in ('user', 'reviewer', 'editor'):
@@ -163,26 +165,37 @@ class FileImporter:
                     mapped_user_ids.add(obj_user_ref_id)
                     mapped_user_target_ids.add(obj_user_ref_id)
                 elif self.create_unknown_users:
-                    user = created_unknown_users.get(obj_user_ref_id)
+                    user = self.created_unknown_users.get(obj_user_ref_id)
                     if not user:
-                        logger.info("Creating new inactive user for imported " +
-                                "user ID {}. No name information was ".format(obj_user_ref_id) +
-                                "available, please enter a new username.")
+                        if self.auto_name_unknown_users:
+                            logger.info("Creating new inactive user for imported " +
+                                    "user ID {}. No name information was ".format(obj_user_ref_id) +
+                                    "available and CATMAID will generate a name.")
+                        else:
+                            logger.info("Creating new inactive user for imported " +
+                                    "user ID {}. No name information was ".format(obj_user_ref_id) +
+                                    "available, please enter a new username.")
                         while True:
-                            new_username = input("New username: ").strip()
-                            if not new_username:
-                                logger.info("Please enter a valid username")
-                            elif self.user_map.get(new_username):
-                                logger.info("The username '{}' ".format(new_username) +
-                                        "exists already, choose a different one")
+                            if self.auto_name_unknown_users:
+                                new_username = "User {}".format(self.next_auto_name_id)
+                                self.next_auto_name_id += 1
+                                if not self.user_map.get(new_username):
+                                    break
                             else:
-                                break
+                                new_username = input("New username: ").strip()
+                                if not new_username:
+                                    logger.info("Please enter a valid username")
+                                elif self.user_map.get(new_username):
+                                    logger.info("The username '{}' ".format(new_username) +
+                                            "exists already, choose a different one")
+                                else:
+                                    break
 
                         user = User.objects.create(username=new_username)
                         user.is_active = False
                         user.save()
                         created_users[new_username] = user
-                        created_unknown_users[obj_user_ref_id] = user
+                        self.created_unknown_users[obj_user_ref_id] = user
                     setattr(obj, ref, user)
                 else:
                     raise ValueError("Could not find referenced user " +
@@ -576,21 +589,30 @@ class FileImporter:
             FOR EACH STATEMENT EXECUTE PROCEDURE on_delete_treenode_update_summary_and_edges();
         """)
 
+        n_imported_treenodes = len(import_objects_by_type_and_id.get(Treenode, []))
+        n_imported_connectors = len(import_objects_by_type_and_id.get(Connector, []))
+
         if self.options.get('update_project_materializations'):
-            logger.info("Updating edge tables for project {}".format(self.target.id))
-            rebuild_edge_tables(project_ids=[self.target.id], log=lambda msg: logger.info(msg))
+            if n_imported_connectors or n_imported_connectors:
+                logger.info("Updating edge tables for project {}".format(self.target.id))
+                rebuild_edge_tables(project_ids=[self.target.id], log=lambda msg: logger.info(msg))
+            else:
+                logger.info("No edge table update needed")
 
-            logger.info("Updated skeleton summary tables")
-            cursor.execute("""
-                DELETE FROM catmaid_skeleton_summary;
-                SELECT refresh_skeleton_summary_table();
-            """)
+            if n_imported_treenodes:
+                logger.info("Updated skeleton summary tables")
+                cursor.execute("""
+                    DELETE FROM catmaid_skeleton_summary;
+                    SELECT refresh_skeleton_summary_table();
+                """)
 
-            logger.info('Recreating skeleton summary table')
-            cursor.execute("""
-                TRUNCATE catmaid_skeleton_summary;
-                SELECT refresh_skeleton_summary_table();
-            """)
+                logger.info('Recreating skeleton summary table')
+                cursor.execute("""
+                    TRUNCATE catmaid_skeleton_summary;
+                    SELECT refresh_skeleton_summary_table();
+                """)
+            else:
+                logger.info("No skeleton summary update needed")
         else:
             logger.info("Finding imported skeleton IDs and connector IDs")
 
@@ -631,12 +653,15 @@ class FileImporter:
                         "connector IDs found in imported data")
 
             # Skeleton summary
-            # TODO: do this selectively for the imported data
-            logger.info('Recreating skeleton summary table')
-            cursor.execute("""
-                TRUNCATE catmaid_skeleton_summary;
-                SELECT refresh_skeleton_summary_table();
-            """)
+            if skeleton_ids:
+                # TODO: do this selectively for the imported data
+                logger.info('Recreating skeleton summary table')
+                cursor.execute("""
+                    TRUNCATE catmaid_skeleton_summary;
+                    SELECT refresh_skeleton_summary_table();
+                """)
+            else:
+                logger.info('No skeleton summary table updated needed')
 
 
 class InternalImporter:
@@ -698,6 +723,8 @@ class Command(BaseCommand):
                 help='Map an import username to a target instance username. Maps referenced users regardless of --map-users. The expected format is "import-user=existing-user".')
         parser.add_argument('--create-unknown-users', dest='create_unknown_users', default=True,
             action='store_true', help='Create new inactive users for unmapped or unknown users referenced in inport data.')
+        parser.add_argument('--auto-name-unknown-users', dest='auto_name_unknown_users', default=False,
+            action='store_true', help='If enabled, newly created unknown users will be named "User <n>" where <n> is an increasing number. Requires --create-unknown-users')
         parser.add_argument('--preserve-ids', dest='preserve_ids', default=False,
                 action='store_true', help='Use IDs provided in import data. Warning: this can cause changes in existing data.')
         parser.add_argument('--no-analyze', dest='analyze_db', default=True,

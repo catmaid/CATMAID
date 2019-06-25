@@ -533,7 +533,7 @@ def delete_sampler(request:HttpRequest, project_id, sampler_id) -> JsonResponse:
 
             if nodes_to_remove:
                 query_parts = []
-                remove_params = []
+                remove_params = [] # type: List
                 if parent_update:
                     update_nodes_template = ",".join("(%s, %s)" for _ in parent_update)
                     update_nodes_flattened = list(chain.from_iterable(parent_update))

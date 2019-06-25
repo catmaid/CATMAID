@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import json
 import decimal
+import json
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from django.db import connection
 from functools import reduce
@@ -13,7 +14,7 @@ class StateMatchingError(Exception):
         super(StateMatchingError, self).__init__(message)
         self.unmatched_state = state
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "{}: {}".format(self.args[0],
             str(self.unmatched_state) or "(no details found)")
 
@@ -72,10 +73,10 @@ class StateCheck:
         self.sql = sql
         self.params = params if type(params) in (list, tuple) else (params,)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "SQL: {} Parameters: {}".format(self.sql, self.params)
 
-def make_all_children_query(child_ids, node_id):
+def make_all_children_query(child_ids, node_id) -> StateCheck:
     if child_ids:
         table_sql, table_args = list_to_table(child_ids, 1)
         args = table_args
@@ -86,7 +87,7 @@ def make_all_children_query(child_ids, node_id):
     else:
         return StateCheck(SQL.all_children % ("", "%s", ""), [node_id])
 
-def make_all_links_query(link_ids, node_id, is_connector=False):
+def make_all_links_query(link_ids, node_id, is_connector=False) -> StateCheck:
     template = SQL.all_links_c if is_connector else SQL.all_links
     if link_ids:
         table_sql, table_args = list_to_table(link_ids, 1)
@@ -98,19 +99,20 @@ def make_all_links_query(link_ids, node_id, is_connector=False):
     else:
         return StateCheck(template % ("", "%s", ""), [node_id])
 
-def list_to_table(l, n=1):
-    args = None
+def list_to_table(l, n=1) -> Tuple[str, Any]:
     if n == 1:
-        args = [(e,) for e in l]
+        args = [(e,) for e in l] # type: List[Tuple]
     elif n == 2:
         args = [(e[0], e[1]) for e in l]
-    if not args:
+    else:
+        raise ValueError("Invalid n parameter for list_to_table")
+    if not args: # empty l or invalid n
         raise ValueError("Could't parse list argument in state check")
 
     records_list_template = ','.join(['%s'] * len(args))
     return ("(VALUES {0})".format(records_list_template), args)
 
-def has_only_truthy_values(element, n=2):
+def has_only_truthy_values(element, n=2) -> bool:
     return n == len(element) and all(element)
 
 def parse_state(state):
@@ -163,14 +165,14 @@ def parse_state(state):
 
 def collect_state_checks(node_id, state, cursor, node=False,
         parent_edittime=False, is_parent=False, children=False,
-        links=False, c_links=False, multinode=False):
+        links=False, c_links=False, multinode=False) -> List[StateCheck]:
     """Collect state checks for a single node, but don't execute them.
 
     If <children> is a list of node IDs, only these nodes will be checked if
     they are valid children. If <children> is the boolean True, a state check is
     added that tests if the state provided children represent *all* children.
     """
-    state_checks = []
+    state_checks = [] # type: List
 
     if node:
         if 'edition_time' not in state:
@@ -247,7 +249,7 @@ def collect_state_checks(node_id, state, cursor, node=False,
 
 def validate_state(node_ids, state, node=False, is_parent=False,
         parent_edittime=False, children=False, links=False, c_links=False,
-        multinode=False, neighborhood=False, lock=True, cursor=None):
+        multinode=False, neighborhood=False, lock=True, cursor=None) -> None:
     """Validate a local state relative to a given node. What tests are performed
     depends on the mode flags set.
 
@@ -311,13 +313,13 @@ def validate_state(node_ids, state, node=False, is_parent=False,
         cursor = cursor or connection.cursor()
         lock_nodes(node_ids, cursor)
 
-def lock_node(node_id, cursor):
+def lock_node(node_id, cursor) -> None:
     cursor.execute("""
         SELECT id FROM treenode WHERE id=%s FOR UPDATE
     """, (node_id,))
     result = cursor.fetchall()
 
-def lock_nodes(node_ids, cursor):
+def lock_nodes(node_ids, cursor) -> None:
     if node_ids:
         node_template = ",".join(("%s",) * len(node_ids))
         cursor.execute("""
@@ -326,27 +328,27 @@ def lock_nodes(node_ids, cursor):
     else:
         raise ValueError("No nodes to lock")
 
-def is_disabled(state):
+def is_disabled(state) -> bool:
     return state and type(state) == dict and state.get('nocheck') is True
 
 def make_nocheck_state(parsed=False):
     """Get a state representation that causes skipping of actual state checks.
 
     If "parsed" is True, a parsed representation will be returned, otherwise a
-    regular JSON reporesentation is used."""
-    state = {'nocheck': True}
+    regular JSON representation is used."""
+    state = {'nocheck': True} # type: Union[str, Dict]
     if not parsed:
         state = json.dumps(state)
     return state
 
-def check_state(state, state_checks, cursor):
+def check_state(state, state_checks, cursor) -> None:
     """Raise an error if state checks can't be passed."""
     # Skip actual tests if state checking is disabled in state
     if is_disabled(state):
         return
 
     sql_checks = [sc.sql for sc in state_checks]
-    args = []
+    args = [] # type: List
     for sc in state_checks:
         args.extend(p for p in sc.params)
 

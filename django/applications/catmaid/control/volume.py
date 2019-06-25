@@ -4,12 +4,12 @@ from itertools import chain
 import json
 import os
 import re
-from typing import Callable, List
+from typing import Any, Callable, Dict, List, Tuple, Union
 from xml.etree import ElementTree as ET
 
 from django.conf import settings
 from django.db import connection
-from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest
+from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 
@@ -21,6 +21,7 @@ from catmaid.serializers import VolumeSerializer
 
 from rest_framework import renderers
 from rest_framework.decorators import api_view, renderer_classes
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -35,7 +36,7 @@ def get_req_coordinate(request_dict, c) -> float:
         raise ValueError("Coordinate parameter %s missing." % c)
     return float(v)
 
-def require_option(obj, field):
+def require_option(obj, field) -> Any:
     """Raise an exception if a field is missing
     """
     if field in obj:
@@ -163,7 +164,7 @@ class TriangleMeshVolume(PostGISVolume):
         return TriangleMeshVolume.fromLists(self.mesh) if self.mesh else None
 
     @classmethod
-    def fromLists(cls, mesh):
+    def fromLists(cls, mesh) -> str:
         """Expect mesh to be a list of two lists: [[points], [triangles]]. The
         list of points contains lists of three numbers, each one representing a
         vertex in the mesh. The array of triangles also contains three element
@@ -193,7 +194,7 @@ class BoxVolume(PostGISVolume):
         self.max_y = get_req_coordinate(options, "max_y")
         self.max_z = get_req_coordinate(options, "max_z")
 
-    def get_geometry(self):
+    def get_geometry(self) -> str:
         return """ST_GeomFromEWKT('TIN (
             (({0}, {2}, {1}, {0})),
             (({1}, {2}, {3}, {1})),
@@ -221,7 +222,7 @@ class BoxVolume(PostGISVolume):
             for i in range(8)
         ])
 
-    def get_params(self):
+    def get_params(self) -> Dict[str, Any]:
         return {
             "lx": self.min_x,
             "ly": self.min_y,
@@ -269,7 +270,7 @@ def _x3d_to_points(x3d, fn=None):
         yield item
 
 
-def _x3d_to_stl_ascii(x3d):
+def _x3d_to_stl_ascii(x3d) -> str:
     solid_fmt = """
 solid
 {}
@@ -296,7 +297,7 @@ class InvalidSTLError(ValueError):
     pass
 
 
-def _stl_ascii_to_indexed_triangles(stl_str):
+def _stl_ascii_to_indexed_triangles(stl_str) -> Tuple[List, List]:
     stl_items = stl_str.strip().split()
     if stl_items[0] != "solid" or "endsolid" not in stl_items[-2:]:
         raise InvalidSTLError("Malformed solid header/ footer")
@@ -331,7 +332,7 @@ volume_type = {
     "trimesh": TriangleMeshVolume
 }
 
-def validate_vtype(vtype):
+def validate_vtype(vtype) -> str:
     """Validate the given type or error.
     """
     if not vtype:
@@ -344,7 +345,7 @@ def validate_vtype(vtype):
 
 @api_view(['GET', 'POST'])
 @requires_user_role([UserRole.Browse])
-def volume_collection(request, project_id):
+def volume_collection(request:HttpRequest, project_id) -> JsonResponse:
     """Get a collection of all available volumes.
     ---
     parameters:
@@ -413,7 +414,7 @@ def volume_collection(request, project_id):
         'data': cursor.fetchall()
     })
 
-def get_volume_details(project_id, volume_id):
+def get_volume_details(project_id, volume_id) -> Dict[str, Any]:
     cursor = connection.cursor()
     cursor.execute("""
         SELECT id, project_id, name, comment, user_id, editor_id,
@@ -452,7 +453,7 @@ def get_volume_details(project_id, volume_id):
 class VolumeDetail(APIView):
 
     @method_decorator(requires_user_role(UserRole.Browse))
-    def get(self, request, project_id, volume_id):
+    def get(self, request:Request, project_id, volume_id) -> Response:
         """Get detailed information on a spatial volume or set its properties.
 
         The result will contain the bounding box of the volume's geometry and the
@@ -464,7 +465,7 @@ class VolumeDetail(APIView):
         return Response(volume)
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def post(self, request, project_id, volume_id):
+    def post(self, request:Request, project_id, volume_id) -> Response:
         """Update the properties of a spatial volume.
 
         Only the fields that are provided are updated. If no mesh or bounding
@@ -496,14 +497,14 @@ class VolumeDetail(APIView):
         return update_volume(request, project_id=project_id, volume_id=volume_id)
 
     @method_decorator(requires_user_role(UserRole.Annotate))
-    def delete(self, request, project_id, volume_id):
+    def delete(self, request:Request, project_id, volume_id) -> Response:
         """Delete a particular spatial volume.
         """
         return remove_volume(request, project_id=project_id, volume_id=volume_id)
 
 
 @requires_user_role([UserRole.Annotate])
-def remove_volume(request, project_id, volume_id):
+def remove_volume(request:Request, project_id, volume_id) -> Response:
     """Remove a particular volume, if the user has permission to it.
     """
     cursor = connection.cursor()
@@ -543,7 +544,7 @@ def remove_volume(request, project_id, volume_id):
     })
 
 @requires_user_role([UserRole.Annotate])
-def update_volume(request, project_id, volume_id):
+def update_volume(request:Request, project_id, volume_id) -> Response:
     """Update properties of an existing volume
 
     Only the fields that are provided are updated. If no mesh or bounding box
@@ -597,7 +598,7 @@ def update_volume(request, project_id, volume_id):
 
 @api_view(['POST'])
 @requires_user_role([UserRole.Annotate])
-def add_volume(request, project_id):
+def add_volume(request:Request, project_id) -> Response:
     """Create a new volume
 
     The ID of the newly created volume is returned. Currently, box volumes and
@@ -684,7 +685,7 @@ def add_volume(request, project_id):
 
 @api_view(['POST'])
 @requires_user_role([UserRole.Import])
-def import_volumes(request, project_id):
+def import_volumes(request, project_id) -> Union[HttpResponse, JsonResponse]:
     """Import triangle mesh volumes from an uploaded files.
 
     Currently only STL representation is supported.
@@ -746,7 +747,7 @@ class AnyRenderer(renderers.BaseRenderer):
 @api_view(['GET'])
 @renderer_classes((AnyRenderer,))
 @requires_user_role([UserRole.Browse])
-def export_volume(request, project_id, volume_id, extension):
+def export_volume(request, project_id, volume_id, extension) -> HttpResponse:
     """Export volume as a triangle mesh file.
 
     The extension of the endpoint and `ACCEPT` header media type are both used
@@ -778,7 +779,7 @@ def export_volume(request, project_id, volume_id, extension):
 
 @api_view(['GET'])
 @requires_user_role([UserRole.Browse])
-def intersects(request, project_id, volume_id):
+def intersects(request, project_id, volume_id) -> JsonResponse:
     """Test if a point intersects with the bounding box of a given volume.
     ---
     parameters:
@@ -829,7 +830,7 @@ def intersects(request, project_id, volume_id):
 
 @api_view(['POST'])
 @requires_user_role([UserRole.Browse])
-def get_volume_entities(request, project_id):
+def get_volume_entities(request, project_id) -> JsonResponse:
     """Retrieve a mapping of volume IDs to entity (class instance) IDs.
     ---
     parameters:
@@ -882,7 +883,7 @@ def get_primary_volumes_by_name(project_id):
 
 
 def find_volumes(project_id, annotation=None,
-        transitive_annotation=True, simple=False):
+        transitive_annotation=True, simple=False) -> List[Dict[str, Any]]:
     """Find volumes in the passed in project, optionally require a particular
     annotation or list of annotations. If <transitive_annotation> is True,
     volumes that are transitively annotated by the passed in annotation are
@@ -982,7 +983,7 @@ def find_volumes(project_id, annotation=None,
 
 @api_view(['GET', 'POST'])
 @requires_user_role(UserRole.Browse)
-def get_skeleton_innervations(request, project_id):
+def get_skeleton_innervations(request, project_id) -> JsonResponse:
     """Test environment only contains two skeletons - based on that, sql query
     always returns list of all SKIDs but all data (about both skeletons) is
     contained in the first SKID in the list - if this changes, write an else
@@ -1032,7 +1033,7 @@ def get_skeleton_innervations(request, project_id):
 
 
 def _get_skeleton_innervations(project_id, skeleton_ids, volume_annotation,
-        min_nodes=None, min_cable=None):
+        min_nodes=None, min_cable=None) -> List[Dict[str, Any]]:
     # Build an intersection query for each volume bounding box with the passed
     # in set of skeletons.
     query_params = {

@@ -6,7 +6,7 @@ from functools import partial
 import json
 from networkx import connected_components
 import pytz
-from typing import Any, DefaultDict, Dict, List, Optional, Tuple
+from typing import Any, DefaultDict, Dict, Iterable, List, Optional, Tuple
 
 from django.db.models import Count
 from django.http import HttpRequest, JsonResponse
@@ -32,7 +32,7 @@ def _find_nearest(tree, nodes, loc1) -> Tuple[Any, float]:
 
     return closest, min_sqdist
 
-def _parse_location(loc):
+def _parse_location(loc) -> Iterable[float]:
     return map(float, loc[1:-1].split(','))
 
 def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations) -> List:
@@ -113,7 +113,7 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations) -> List:
                         newer_synapses_count[s.relation_id][user_id] += 1
 
 
-        def in_range(date):
+        def in_range(date) -> bool:
             return start_date <= date <= end_date
 
         # Total number of synapses related to nodes reviewed within the epoch

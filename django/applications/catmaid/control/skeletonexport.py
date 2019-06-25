@@ -1132,7 +1132,7 @@ def skeleton_with_metadata(request:HttpRequest, project_id=None, skeleton_id=Non
             'default': default
         })
 
-def _measure_skeletons(skeleton_ids) -> DefaultDict[Any, Dict]:
+def _measure_skeletons(skeleton_ids) -> Dict[Any, Any]:
     if not skeleton_ids:
         raise Exception("Must provide the ID of at least one skeleton.")
 
@@ -1164,21 +1164,22 @@ def _measure_skeletons(skeleton_ids) -> DefaultDict[Any, Dict]:
     class Skeleton():
         def __init__(self):
             self.nodes = {}  # type: Dict[Any, Node]
-            self.raw_cable = 0
-            self.smooth_cable = 0
-            self.principal_branch_cable = 0
+            self.raw_cable = 0.0
+            self.smooth_cable = 0.0
+            self.principal_branch_cable = 0.0
             self.n_ends = 0
             self.n_branch = 0
             self.n_pre = 0
             self.n_post = 0
 
-    skeletons = defaultdict(dict)  # type: DefaultDict[Any, Dict]
-                                   # skeleton ID vs (node ID vs Node)
+    skeletons = {} # type: Dict[Any, Skeleton]
+                   # skeleton ID vs (node ID vs Node)
     for row in cursor.fetchall():
-        skeleton = skeletons.get(row[2])
-        if not skeleton:
+        if row[2] not in skeletons:
             skeleton = Skeleton()
             skeletons[row[2]] = skeleton
+        else:
+            skeleton = skeletons[row[2]]
         skeleton.nodes[row[0]] = Node(row[1], row[3], row[4], row[5])
 
     for skeleton in skeletons.values():
@@ -1288,7 +1289,7 @@ def measure_skeletons(request:HttpRequest, project_id=None) -> JsonResponse:
     skeleton_ids = tuple(int(v) for k,v in request.POST.items() if k.startswith('skeleton_ids['))
     def asRow(skid, sk):
         return (skid, int(sk.raw_cable), int(sk.smooth_cable), sk.n_pre, sk.n_post, len(sk.nodes), sk.n_branch, sk.n_ends, sk.principal_branch_cable)
-    return JsonResponse([asRow(skid, sk) for skid, sk in _measure_skeletons(skeleton_ids).iteritems()], safe=False)
+    return JsonResponse([asRow(skid, sk) for skid, sk in _measure_skeletons(skeleton_ids).items()], safe=False)
 
 
 def _skeleton_neuroml_cell(skeleton_id, preID, postID):

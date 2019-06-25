@@ -9,14 +9,14 @@ from django.db.transaction import TransactionManagementError
 transaction_label_pattern = re.compile('^\w+\.\w+$')
 
 
-def fail_on_wrong_format_label(label):
+def fail_on_wrong_format_label(label) -> None:
     """Check the passed in label if it matches the expected format and raise an
     error if not."""
     if not transaction_label_pattern.match(label):
         raise ValueError('Label "{}" doesn\'t follow convention '
                          '"<resources>.<action>"'.format(label))
 
-def add_log_entry(user_id, label, project_id=None):
+def add_log_entry(user_id, label, project_id=None) -> None:
     """Give a label to the current transaction and time, executed by a
     particular user. This information is recorded only once per transaction,
     and subsequent calls will be ignored silently. Labels are expected to
@@ -86,7 +86,7 @@ def record_action(user_id, label, project_id=None):
     return decorator
 
 
-def enable_history_tracking(ignore_missing_fn=False):
+def enable_history_tracking(ignore_missing_fn=False) -> bool:
     """Enable history tracking globally.
     """
     cursor = connection.cursor()
@@ -103,7 +103,7 @@ def enable_history_tracking(ignore_missing_fn=False):
     return True
 
 
-def disable_history_tracking(ignore_missing_fn=False):
+def disable_history_tracking(ignore_missing_fn=False) -> bool:
     """Disable history tracking globally.
     """
     cursor = connection.cursor()

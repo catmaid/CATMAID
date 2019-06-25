@@ -7,7 +7,7 @@ import math
 # Respected precision
 epsilon = 0.001
 
-def same(a, b, eps=epsilon):
+def same(a, b, eps=epsilon) -> bool:
     return abs(a - b) < eps
 
 class Point3D:
@@ -20,7 +20,7 @@ class Point3D:
     def __str__(self):
         return "({}, {}, {})".format(self.x, self.y, self.z)
 
-def is_collinear(a, b, c, between=False, eps=epsilon):
+def is_collinear(a, b, c, between=False, eps=epsilon) -> bool:
     """Return true if all three points are collinear, i.e. on one line. If
     between is True, c has to be additionally between a and b.
     """
@@ -71,7 +71,7 @@ def is_collinear(a, b, c, between=False, eps=epsilon):
     else:
         return True
 
-def str2bool(v):
+def str2bool(v) -> bool:
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
         return True
     elif v.lower() in ('no', 'false', 'f', 'n', '0'):

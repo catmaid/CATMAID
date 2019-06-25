@@ -234,7 +234,7 @@ def activeTimes(alltimes, gapThresh):
     if bout:
         yield bout
 
-def activeTimesPerDay(active_bouts):
+def activeTimesPerDay(active_bouts) -> Tuple[Any, List]:
     """ Creates a tuple containing the active time in hours for every day
     between the first event of the first bout and the last event of the last
     bout as well as a list with the date for every day.
@@ -263,7 +263,7 @@ def activeTimesPerDay(active_bouts):
     # day in hours and the list of days.
     return np.divide(net_active_time, 3600), timeaxis
 
-def singleDayEvents( alltimes, start_hour, end_hour ):
+def singleDayEvents(alltimes, start_hour, end_hour) -> Tuple[Any, List]:
     alltimes.sort()
     timeaxis = [n for n in np.add(start_hour,range(end_hour-start_hour+1))]
     activity = np.zeros(end_hour-start_hour+1)
@@ -271,7 +271,7 @@ def singleDayEvents( alltimes, start_hour, end_hour ):
         if a.hour >= start_hour:
             if a.hour < end_hour:
                 activity[a.hour-start_hour] += 1
-    return np.true_divide(activity,(alltimes[-1] - alltimes[0]).days), timeaxis
+    return np.true_divide(activity, (alltimes[-1] - alltimes[0]).days), timeaxis
 
 def singleDayActiveness(activebouts, increment, start_hour, end_hour) -> Tuple[Any, Any]:
     """ Returns a ... for all bouts between <start_hour> and <end_hour> of the
@@ -356,7 +356,7 @@ def splitBout(bout,increment) -> List[Bout]:
         currtime = nexttime
     return boutListOut
 
-def generateErrorImage(msg):
+def generateErrorImage(msg) -> matplotlib.figure.Figure:
     """ Creates an empty image (based on image nr. 1) and adds a message to it.
     """
     fig = plt.figure(1, figsize=(6,6))
@@ -364,7 +364,7 @@ def generateErrorImage(msg):
     fig.suptitle(msg)
     return fig
 
-def generateReport(user_id, project_id, activeTimeThresh, start_date, end_date, all_writes=True):
+def generateReport(user_id, project_id, activeTimeThresh, start_date, end_date, all_writes=True) -> matplotlib.figure.Figure:
     """ nts: node times
         cts: connector times
         rts: review times """
@@ -426,7 +426,7 @@ def generateReport(user_id, project_id, activeTimeThresh, start_date, end_date, 
 
     # Bottom left plot: net active time per day
     ax2 = plt.subplot2grid((2,2), (1,0))
-    ax2.bar( at_timeaxis, netActiveTime, color='k', align='edge')
+    ax2.bar(at_timeaxis, netActiveTime, color='k', align='edge')
     ax2.set_xlim((start_date,end_date))
     ax2.set_ylabel('Hours')
     yl = ax2.get_yticklabels()
@@ -443,7 +443,7 @@ def generateReport(user_id, project_id, activeTimeThresh, start_date, end_date, 
 
     # Right column plot: bouts over days
     ax4 = plt.subplot2grid((2,2), (0,1), rowspan=2)
-    ax4 = dailyActivePlotFigure( activeBouts, ax4, start_date, end_date )
+    ax4 = dailyActivePlotFigure(activeBouts, ax4, start_date, end_date)
 
     yl = ax4.get_yticklabels()
     plt.setp(yl, fontsize=10)
@@ -459,14 +459,14 @@ def generateReport(user_id, project_id, activeTimeThresh, start_date, end_date, 
 
     return fig
 
-def dailyActivePlotFigure( activebouts, ax, start_date, end_date ):
+def dailyActivePlotFigure(activebouts, ax:matplotlib.axes.Axes, start_date, end_date) -> matplotlib.axes.Axes:
     """ Draws a plot of all bouts during each day between <start_date> and
     <end_date> to the plot given by <ax>.
     """
     # Y axis: Draw a line for each two hours in a day and set ticks accordingly
     for i in range(2, 24, 2):
         ax.axhline(i, color='#AAAAAA', linestyle = ':')
-    ax.axhspan(8,18,facecolor='#999999',alpha=0.25)
+    ax.axhspan(8, 18, facecolor='#999999', alpha=0.25)
     ax.set_yticks(range(0, 25, 2))
 
     # X axis: Ticks and labels for every day
@@ -478,7 +478,7 @@ def dailyActivePlotFigure( activebouts, ax, start_date, end_date ):
         # TODO: Draw midnight spanning bouts, too.
         if bout.start.day == bout.end.day:
             isodate = bout.start.isocalendar()
-            ax.bar( bout.start.replace(hour=0,minute=0,second=0,microsecond=0),
+            ax.bar( bout.start.replace(hour=0, minute=0, second=0, microsecond=0),
                     np.true_divide((bout.end-bout.start).total_seconds(), 3600),
                     bottom=bout.start.hour + bout.start.minute/60.0 + bout.start.second/3600.0,
                     alpha=0.5, color='#0000AA', align='edge', edgecolor="k")
@@ -490,7 +490,7 @@ def dailyActivePlotFigure( activebouts, ax, start_date, end_date ):
 
     return ax
 
-def eventsPerIntervalPerDayPlot(ax,times,start_date,end_date,interval=60):
+def eventsPerIntervalPerDayPlot(ax, times, start_date, end_date, interval=60) -> matplotlib.axes.Axes:
     if np.mod(24 * 60, interval) > 0:
         raise ValueError('Interval in minutes must divide the day evenly')
 
@@ -527,24 +527,24 @@ def eventsPerIntervalPerDayPlot(ax,times,start_date,end_date,interval=60):
         if np.sum(dat)==0:
             ignoredDays += 1
         else:
-           tmp, = ax.plot( timeaxis, dat, marker='s', linestyle='-.',alpha=0.5, color=cm(ind) )
+           tmp, = ax.plot(timeaxis, dat, marker='s', linestyle='-.',alpha=0.5, color=cm(ind))
            dats.append(tmp)
            meandat += dat
         ind += 1
 
     meandat = np.divide(meandat, daycount-ignoredDays)
-    tmp,  = ax.plot( timeaxis, meandat, color='k', linewidth=4, linestyle='-')
+    tmp, = ax.plot( timeaxis, meandat, color='k', linewidth=4, linestyle='-')
     dats.append(tmp)
     daylabels.append('Mean')
 
-    ax.set_xticks( timeaxis )
-    ax.set_xticklabels( timelabels )
+    ax.set_xticks(timeaxis)
+    ax.set_xticklabels(timelabels)
     xl = ax.get_xticklabels()
     plt.setp(xl, rotation=30, fontsize=10)
     yl = ax.get_yticklabels()
     plt.setp(yl, fontsize=10)
     ax.set_ylabel('Events',fontsize=10)
-    ax.set_xlim( 8 * 60 / interval, 19 * 60 / interval )
+    ax.set_xlim(8 * 60 / interval, 19 * 60 / interval)
     ax.legend(dats,daylabels,loc=2,frameon=False)
 
     return ax

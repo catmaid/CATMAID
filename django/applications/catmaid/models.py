@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 
-from builtins import str
-
-from datetime import datetime
+import colorsys
+from datetime import datetime, timedelta
 import logging
-import sys
+from random import random
 import re
+import sys
 import urllib
 import urllib.parse
-import colorsys
 
-from typing import Dict, Tuple
+from typing import Any, Dict, Tuple
 
 from django import forms
 from django.conf import settings
@@ -25,13 +24,11 @@ from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
-from datetime import timedelta
 from guardian.models import (UserObjectPermissionBase,
         GroupObjectPermissionBase)
 from guardian.shortcuts import get_objects_for_user
 from taggit.managers import TaggableManager
 from rest_framework.authtoken.models import Token
-from random import random
 
 from .fields import (Double3DField, Integer3DField, RGBAField,
         DownsampleFactorsField, SerializableGeometryField)
@@ -78,7 +75,7 @@ class Project(models.Model):
     def __str__(self):
         return self.title
 
-def on_project_save(sender, instance, created, raw, **kwargs):
+def on_project_save(sender, instance, created, raw, **kwargs) -> None:
     """ Make sure all required classes and relations are set up for all
     projects but the ontology dummy projects. Don't do this when fixtures are in
     use (i.e. during testing), because project validation is managed there
@@ -139,7 +136,7 @@ class Stack(models.Model):
         return self.title
 
     @property
-    def num_zoom_levels(self):
+    def num_zoom_levels(self) -> int:
         """Number of zoom levels, or -1 if determined automatically."""
         return -1 if self.downsample_factors is None else len(self.downsample_factors) - 1
 
@@ -166,7 +163,7 @@ class StackMirror(models.Model):
         db_table = "stack_mirror"
         ordering = ('position',)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.stack.title + " (" + self.title + ")"
 
 
@@ -179,7 +176,7 @@ class ProjectStack(models.Model):
     class Meta:
         db_table = "project_stack"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.project.title + " -- " + self.stack.title
 
 
@@ -381,7 +378,7 @@ class BrokenSlice(models.Model):
     class Meta:
         db_table = "broken_slice"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Broken section {} in stack {}".format(self.index, self.stack)
 
 
@@ -401,7 +398,7 @@ class InterpolatableSection(models.Model):
     class Meta:
         db_table = "interpolatable_section"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Interpoaltable location {} in orientation {}".format(
                 self.location_coordinate, self.orientation)
 
@@ -771,7 +768,7 @@ class CardinalityRestriction(models.Model):
         db_table = "cardinality_restriction"
 
     @staticmethod
-    def get_supported_types():
+    def get_supported_types() -> Dict[int, str]:
         return {
             0: "Exactly n instances of any sub-type",
             1: "Maximum of n instances of any sub-type",
@@ -792,7 +789,7 @@ class CardinalityRestriction(models.Model):
                 relation=self.restricted_link.relation,
                 class_instance_a__class_column=class_id).count()
 
-    def would_violate(self, ci, class_id):
+    def would_violate(self, ci, class_id) -> bool:
         """ Test if it would violate this restriction if a new instance
         of <class_id> is linked to <ci> with the guarded link. Note: This will
         return *false as well* if adding a new class instance would bring
@@ -825,7 +822,7 @@ class CardinalityRestriction(models.Model):
         else:
             raise Exception("Unsupported cardinality type.")
 
-    def is_violated(self, ci):
+    def is_violated(self, ci) -> bool:
         """ Test if a restriction is currently violated.
         """
         def get_subclass_links_qs():
@@ -850,6 +847,7 @@ class CardinalityRestriction(models.Model):
                 num_linked_ci = self.get_num_class_instances(ci, link.class_a_id)
                 if num_linked_ci != self.value:
                     return True
+            return False
         elif self.cardinality_type == 4:
             # Max n for each sub type
             subclass_links_q = get_subclass_links_qs() # type: ignore
@@ -857,6 +855,7 @@ class CardinalityRestriction(models.Model):
                 num_linked_ci = self.get_num_class_instances(ci, link.class_a_id)
                 if num_linked_ci > self.value:
                     return True
+            return False
         elif self.cardinality_type == 5:
             # Min n for each sub type
             subclass_links_q = get_subclass_links_qs() # type: ignore
@@ -890,7 +889,7 @@ class StackGroupRelation(models.Model):
     class Meta:
         db_table = 'stack_group_relation'
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -902,7 +901,7 @@ class StackGroup(models.Model):
     class Meta:
         db_table = 'stack_group'
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.title
 
 
@@ -1063,7 +1062,7 @@ class PointCloud(NonCascadingUserFocusedModel):
     # length divisible by three is enforced by the database.
     points = models.ManyToManyField("Point", through='PointCloudPoint')
 
-    def num_permissions(self):
+    def num_permissions(self) -> int:
         n_user_perms = PointCloudUserObjectPermission.objects.filter(content_object=self).count()
         n_group_perms = PointCloudGroupObjectPermission.objects.filter(content_object=self).count()
         return n_user_perms + n_group_perms
@@ -1075,7 +1074,7 @@ class PointCloud(NonCascadingUserFocusedModel):
             ("can_update", "Can update point cloud"),
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -1151,7 +1150,7 @@ class NeuronSearch(forms.Form):
         choices=((('a', 'Any'),)+CELL_BODY_CHOICES))
     order_by = forms.ChoiceField(choices=SORT_ORDERS_CHOICES)
 
-    def minimal_search_path(self):
+    def minimal_search_path(self) -> str:
         result = ""
         parameters = [('search', '/find/', ''),
                       ('order_by', '/sorted/', 'name'),
@@ -1179,7 +1178,7 @@ class DataViewType(models.Model):
     class Meta:
         db_table = "data_view_type"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.title
 
 
@@ -1199,7 +1198,7 @@ class DataView(models.Model):
             ("can_browse_dataviews", "Can browse data views")
         )
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         """ Does a post-save action: Make sure (only) one data view
         is the default.
         """
@@ -1234,7 +1233,7 @@ class SamplerState(models.Model):
     name = models.TextField()
     description = models.TextField()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -1248,7 +1247,7 @@ class Sampler(UserFocusedModel):
     leaf_segment_handling = models.TextField(default="ignore")
     merge_limit = models.FloatField(default=0)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Sampler for {}".format(self.skeleton_id)
 
 
@@ -1256,7 +1255,7 @@ class SamplerIntervalState(models.Model):
     name = models.TextField()
     description = models.TextField()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -1271,7 +1270,7 @@ class SamplerInterval(UserFocusedModel):
     end_node = models.ForeignKey(Treenode, on_delete=models.DO_NOTHING,
             related_name="sampler_interval_end_node_set")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "({}, {})".format(self.start_node_id, self.end_node_id)
 
 
@@ -1279,7 +1278,7 @@ class SamplerConnectorState(models.Model):
     name = models.TextField()
     description = models.TextField()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -1288,7 +1287,7 @@ class SamplerConnector(UserFocusedModel):
     connector = models.ForeignKey('Connector', db_index=True, on_delete=models.CASCADE)
     connector_state = models.ForeignKey(SamplerConnectorState, db_index=True, on_delete=models.CASCADE)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "({}, {})".format(self.start_node_id, self.end_node_id)
 
 
@@ -1296,7 +1295,7 @@ class SamplerDomainType(models.Model):
     name = models.TextField()
     description = models.TextField()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -1306,7 +1305,7 @@ class SamplerDomain(UserFocusedModel):
     domain_type = models.ForeignKey(SamplerDomainType, db_index=True, on_delete=models.CASCADE)
     parent_interval = models.ForeignKey(SamplerInterval, null=True, db_index=True, on_delete=models.CASCADE)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Start: {}".format(self.start_node_id)
 
 
@@ -1314,7 +1313,7 @@ class SamplerDomainEnd(models.Model):
     domain = models.ForeignKey(SamplerDomain, on_delete=models.CASCADE, db_index=True)
     end_node = models.ForeignKey(Treenode, on_delete=models.CASCADE)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "End: {}".format(self.end_node_id)
 
 class SkeletonSummary(models.Model):
@@ -1338,7 +1337,7 @@ class SkeletonSummary(models.Model):
     num_nodes = models.IntegerField(null=False, default=0)
     cable_length = models.FloatField(null=False, default=0)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Skeleton {} summary ({} nodes, {} nm)".format(
                 self.skeleton_id, self.num_nodes, self.cable_length)
 
@@ -1359,7 +1358,7 @@ class StatsSummary(models.Model):
     n_imported_connectors = models.IntegerField(null=False, default=0)
     cable_length = models.FloatField(null=False, default=0)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "Stats summary for {} on {}".format(
                     self.user, self.date)
 
@@ -1430,22 +1429,22 @@ class DirtyNodeGridCacheCell(models.Model):
         db_table = "dirty_node_grid_cache_cell"
         unique_together = (('grid', 'x_index', 'y_index', 'z_index'),)
 
-initial_colors = ((1, 0, 0, 1),
-                  (0, 1, 0, 1),
-                  (0, 0, 1, 1),
-                  (1, 0, 1, 1),
-                  (0, 1, 1, 1),
-                  (1, 1, 0, 1),
-                  (1, 1, 1, 1),
-                  (1, 0.5, 0, 1),
-                  (1, 0, 0.5, 1),
-                  (0.5, 1, 0, 1),
-                  (0, 1, 0.5, 1),
-                  (0.5, 0, 1, 1),
-                  (0, 0.5, 1, 1))
+initial_colors = ((1.0, 0.0, 0.0, 1.0),
+                  (0.0, 1.0, 0.0, 1.0),
+                  (0.0, 0.0, 1.0, 1.0),
+                  (1.0, 0.0, 1.0, 1.0),
+                  (0.0, 1.0, 1.0, 1.0),
+                  (1.0, 1.0, 0.0, 1.0),
+                  (1.0, 1.0, 1.0, 1.0),
+                  (1.0, 0.5, 0.0, 1.0),
+                  (1.0, 0.0, 0.5, 1.0),
+                  (0.5, 1.0, 0.0, 1.0),
+                  (0.0, 1.0, 0.5, 1.0),
+                  (0.5, 0.0, 1.0, 1.0),
+                  (0.0, 0.5, 1.0, 1.0))
 
 
-def distinct_user_color():
+def distinct_user_color() -> Tuple[float, ...]:
     """ Returns a color for a new user. If there are less users registered than
     entries in the initial_colors list, the next free color is used. Otherwise,
     a random color is generated.
@@ -1453,7 +1452,7 @@ def distinct_user_color():
     nr_users = User.objects.exclude(id__exact=-1).count()
 
     if nr_users < len(initial_colors):
-        distinct_color = initial_colors[nr_users] # type: Tuple
+        distinct_color = initial_colors[nr_users] # type: Tuple[float, ...] 
     else:
         distinct_color = colorsys.hsv_to_rgb(random(), random(), 1.0) + (1,)
 
@@ -1474,13 +1473,13 @@ class UserProfile(models.Model):
     show_roi_tool = models.BooleanField(default=False)
     color = RGBAField(default=distinct_user_color)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.user.username
 
     # Fix a problem with duplicate keys when new users are added.
     # From <http://stackoverflow.com/questions/6117373/django-userprofile-m2m-field-in-admin-error>
-    def save(self, *args, **kwargs):
-        if not self.pk:
+    def save(self, *args, **kwargs) -> None:
+        if not self.pk: # type: ignore
             try:
                 p = UserProfile.objects.get(user=self.user)
                 self.pk = p.pk
@@ -1489,7 +1488,7 @@ class UserProfile(models.Model):
 
         super(UserProfile, self).save(*args, **kwargs)
 
-    def as_dict(self):
+    def as_dict(self) -> Dict[str, Any]:
         """ Return a dictionary containing a user's profile information.
         """
         pdict = {}
@@ -1503,7 +1502,7 @@ class UserProfile(models.Model):
         pdict['show_roi_tool'] = self.show_roi_tool
         return pdict
 
-def create_user_profile(sender, instance, created, **kwargs):
+def create_user_profile(sender, instance, created, **kwargs) -> None:
     """ Create the UserProfile when a new User is saved.
     """
     if created:
@@ -1524,7 +1523,7 @@ def create_user_profile(sender, instance, created, **kwargs):
 # Connect the User model's post save signal to profile creation
 post_save.connect(create_user_profile, sender=User)
 
-def add_user_to_default_groups(sender, instance, created, **kwargs):
+def add_user_to_default_groups(sender, instance, created, **kwargs) -> None:
     if created:
         if settings.NEW_USER_DEFAULT_GROUPS:
             for group in settings.NEW_USER_DEFAULT_GROUPS:
@@ -1665,14 +1664,14 @@ class ChangeRequest(UserFocusedModel):
 
     # TODO: get the project from the treenode/connector so it doesn't have to specified when creating a request
 
-    def is_valid(self):
+    def is_valid(self) -> bool:
         """ Returns a boolean value indicating whether the change request is still valid."""
 
         if self.status == ChangeRequest.OPEN:
             # Run the request's validation code snippet to determine whether it is still valid.
             # The action is required to set a value for the is_valid variable.
             try:
-                _locals = {}
+                _locals = {} # type: Dict
                 exec(self.validate_action, globals(), _locals)
                 if 'is_valid' not in _locals:
                     raise Exception('validation action did not define is_valid')
@@ -1688,11 +1687,11 @@ class ChangeRequest(UserFocusedModel):
 
         return is_valid
 
-    def status_name(self):
+    def status_name(self) -> 'str':
         self.is_valid() # Make sure invalid state is current
         return ['Open', 'Approved', 'Rejected', 'Invalid'][self.status]
 
-    def approve(self, *args, **kwargs):
+    def approve(self, *args, **kwargs) -> None:
         if not self.is_valid():
             raise Exception('Failed to approve change request: the change is no longer possible.')
 
@@ -1709,7 +1708,7 @@ class ChangeRequest(UserFocusedModel):
         except Exception as e:
             raise Exception('Failed to approve change request: %s' % str(e))
 
-    def reject(self, *args, **kwargs):
+    def reject(self, *args, **kwargs) -> None:
         if not self.is_valid():
             raise Exception('Failed to reject change request: the change is no longer possible.')
 
@@ -1729,14 +1728,14 @@ class ChangeRequest(UserFocusedModel):
 
 
 @receiver(pre_save, sender=ChangeRequest)
-def validate_change_request(sender, **kwargs):
+def validate_change_request(sender, **kwargs) -> None:
     # Make sure the validate action defines is_valid.
     cr = kwargs['instance']
     if re.search('is_valid\s=', cr.validate_action) is None:
         raise Exception('The validate action of a ChangeRequest must assign a value to the is_valid variable.')
 
 
-def send_email_to_change_request_recipient(sender, instance, created, **kwargs):
+def send_email_to_change_request_recipient(sender, instance, created, **kwargs) -> None:
     """ Send the recipient of a change request a message and an e-mail when the request is created."""
 
     if created:
@@ -1747,7 +1746,7 @@ def send_email_to_change_request_recipient(sender, instance, created, **kwargs):
 post_save.connect(send_email_to_change_request_recipient, sender=ChangeRequest)
 
 
-def notify_user(user, title, message):
+def notify_user(user, title, message) -> None:
     """ Send a user a message and an e-mail."""
 
     # Create the message

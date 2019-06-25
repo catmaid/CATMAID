@@ -461,6 +461,20 @@ class Exporter():
                     # Connector links
                     self.to_serialize.append(connector_links)
 
+        # Volumes
+        if self.export_volumes:
+            volumes = find_volumes(self.project.id, self.volume_annotations,
+                    True, True)
+            volume_ids =[v['id'] for v in volumes]
+            if volume_ids:
+                volumes = Volume.objects.filter(pk__in=volume_ids,
+                        project_id=self.project.id)
+                logger.info("Exporting {} volumes: {}".format(
+                        len(volumes), ', '.join(v.name for v in volumes)))
+                self.to_serialize.append(volumes)
+            else:
+                logger.info("No volumes found to export")
+
         # Export users, either completely or in a reduced form
         seen_user_ids = set()
         # Find users involved in exported data
@@ -490,20 +504,6 @@ class Exporter():
             logger.info("Exporting {} users in reduced form with random passwords: {}".format(len(reduced_users),
                     ", ".join([u.username for u in reduced_users])))
             self.to_serialize.append(reduced_users)
-
-        # Volumes
-        if self.export_volumes:
-            volumes = find_volumes(self.project.id, self.volume_annotations,
-                    True, True)
-            volume_ids =[v['id'] for v in volumes]
-            if volume_ids:
-                volumes = Volume.objects.filter(pk__in=volume_ids,
-                        project_id=self.project.id)
-                logger.info("Exporting {} volumes: {}".format(
-                        len(volumes), ', '.join(v.name for v in volumes)))
-                self.to_serialize.append(volumes)
-            else:
-                logger.info("No volumes found to export")
 
     def export(self):
         """ Writes all objects matching

@@ -91,6 +91,9 @@ class FileImporter:
         map_users = self.options['map_users']
         map_user_ids = self.options['map_user_ids']
 
+        # Map user IDs to newly created users
+        created_unknown_users = dict()
+
         # Try to look at every user reference field in CATMAID.
         for ref in ('user', 'reviewer', 'editor'):
             id_ref = ref + "_id"
@@ -142,7 +145,7 @@ class FileImporter:
                         else:
                             import_user.is_active = False
                         created_users[obj_username] = import_user
-                        obj.user = import_user
+                        setattr(obj, ref, import_user)
                     elif self.create_unknown_users:
                         user = created_users.get(obj_username)
                         if not user:
@@ -151,7 +154,7 @@ class FileImporter:
                             user.is_active = False
                             user.save()
                             created_users[obj_username] = user
-                        obj.user = user
+                        setattr(obj, ref, user)
                     else:
                         raise CommandError("User \"{}\" is not ".format(obj_username) +
                                 "found in existing data or import data. Please use " +
@@ -160,7 +163,7 @@ class FileImporter:
                     mapped_user_ids.add(obj_user_ref_id)
                     mapped_user_target_ids.add(obj_user_ref_id)
                 elif self.create_unknown_users:
-                    user = created_users.get(obj_user_ref_id)
+                    user = created_unknown_users.get(obj_user_ref_id)
                     if not user:
                         logger.info("Creating new inactive user for imported " +
                                 "user ID {}. No name information was ".format(obj_user_ref_id) +
@@ -178,8 +181,9 @@ class FileImporter:
                         user = User.objects.create(username=new_username)
                         user.is_active = False
                         user.save()
-                        created_users[obj_user_ref_id] = user
-                    obj.user = user
+                        created_users[new_username] = user
+                        created_unknown_users[obj_user_ref_id] = user
+                    setattr(obj, ref, user)
                 else:
                     raise ValueError("Could not find referenced user " +
                             "\"{}\" in imported. Try using --map-users or ".format(obj_user_ref_id))

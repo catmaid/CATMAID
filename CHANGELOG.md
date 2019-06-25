@@ -18,6 +18,11 @@
 
 
 
+## Maintenance updates
+
+- CLI Exporter: if users should be exported, also export users of volumes.
+
+
 ## 2019.06.20
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Pat Gunn, William Patton, Tom Kazimiers

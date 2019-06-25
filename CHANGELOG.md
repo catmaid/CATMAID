@@ -2,6 +2,8 @@
 
 - CLI Exporter: if users should be exported, also export users of volumes.
 
+- CLI Importer: only update treenode edges and skeleton summary if treenodes
+  were actually imported (rather than e.g. only volumes).
 
 ## 2019.06.20
 

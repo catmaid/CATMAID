@@ -576,21 +576,30 @@ class FileImporter:
             FOR EACH STATEMENT EXECUTE PROCEDURE on_delete_treenode_update_summary_and_edges();
         """)
 
+        n_imported_treenodes = len(import_objects_by_type_and_id.get(Treenode, []))
+        n_imported_connectors = len(import_objects_by_type_and_id.get(Connector, []))
+
         if self.options.get('update_project_materializations'):
-            logger.info("Updating edge tables for project {}".format(self.target.id))
-            rebuild_edge_tables(project_ids=[self.target.id], log=lambda msg: logger.info(msg))
+            if n_imported_connectors or n_imported_connectors:
+                logger.info("Updating edge tables for project {}".format(self.target.id))
+                rebuild_edge_tables(project_ids=[self.target.id], log=lambda msg: logger.info(msg))
+            else:
+                logger.info("No edge table update needed")
 
-            logger.info("Updated skeleton summary tables")
-            cursor.execute("""
-                DELETE FROM catmaid_skeleton_summary;
-                SELECT refresh_skeleton_summary_table();
-            """)
+            if n_imported_treenodes:
+                logger.info("Updated skeleton summary tables")
+                cursor.execute("""
+                    DELETE FROM catmaid_skeleton_summary;
+                    SELECT refresh_skeleton_summary_table();
+                """)
 
-            logger.info('Recreating skeleton summary table')
-            cursor.execute("""
-                TRUNCATE catmaid_skeleton_summary;
-                SELECT refresh_skeleton_summary_table();
-            """)
+                logger.info('Recreating skeleton summary table')
+                cursor.execute("""
+                    TRUNCATE catmaid_skeleton_summary;
+                    SELECT refresh_skeleton_summary_table();
+                """)
+            else:
+                logger.info("No skeleton summary update needed")
         else:
             logger.info("Finding imported skeleton IDs and connector IDs")
 
@@ -631,12 +640,15 @@ class FileImporter:
                         "connector IDs found in imported data")
 
             # Skeleton summary
-            # TODO: do this selectively for the imported data
-            logger.info('Recreating skeleton summary table')
-            cursor.execute("""
-                TRUNCATE catmaid_skeleton_summary;
-                SELECT refresh_skeleton_summary_table();
-            """)
+            if skeleton_ids:
+                # TODO: do this selectively for the imported data
+                logger.info('Recreating skeleton summary table')
+                cursor.execute("""
+                    TRUNCATE catmaid_skeleton_summary;
+                    SELECT refresh_skeleton_summary_table();
+                """)
+            else:
+                logger.info('No skeleton summary table updated needed')
 
 
 class InternalImporter:

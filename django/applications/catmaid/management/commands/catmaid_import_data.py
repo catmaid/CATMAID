@@ -142,7 +142,7 @@ class FileImporter:
                         else:
                             import_user.is_active = False
                         created_users[obj_username] = import_user
-                        obj.user = import_user
+                        setattr(obj, ref, import_user)
                     elif self.create_unknown_users:
                         user = created_users.get(obj_username)
                         if not user:
@@ -151,7 +151,7 @@ class FileImporter:
                             user.is_active = False
                             user.save()
                             created_users[obj_username] = user
-                        obj.user = user
+                        setattr(obj, ref, user)
                     else:
                         raise CommandError("User \"{}\" is not ".format(obj_username) +
                                 "found in existing data or import data. Please use " +
@@ -179,7 +179,7 @@ class FileImporter:
                         user.is_active = False
                         user.save()
                         created_users[obj_user_ref_id] = user
-                    obj.user = user
+                    setattr(obj, ref, user)
                 else:
                     raise ValueError("Could not find referenced user " +
                             "\"{}\" in imported. Try using --map-users or ".format(obj_user_ref_id))

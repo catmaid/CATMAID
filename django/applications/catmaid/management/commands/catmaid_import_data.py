@@ -82,6 +82,9 @@ class FileImporter:
 
         self.format = 'json'
 
+        # Map user IDs to newly created users
+        self.created_unknown_users = dict()
+
     def map_or_create_users(self, obj, import_users, replacement_users,
             mapped_user_ids, mapped_user_target_ids, created_users):
         """Update user information of a CATMAID model object. The parameters
@@ -90,9 +93,6 @@ class FileImporter:
         """
         map_users = self.options['map_users']
         map_user_ids = self.options['map_user_ids']
-
-        # Map user IDs to newly created users
-        created_unknown_users = dict()
 
         # Try to look at every user reference field in CATMAID.
         for ref in ('user', 'reviewer', 'editor'):
@@ -163,7 +163,7 @@ class FileImporter:
                     mapped_user_ids.add(obj_user_ref_id)
                     mapped_user_target_ids.add(obj_user_ref_id)
                 elif self.create_unknown_users:
-                    user = created_unknown_users.get(obj_user_ref_id)
+                    user = self.created_unknown_users.get(obj_user_ref_id)
                     if not user:
                         logger.info("Creating new inactive user for imported " +
                                 "user ID {}. No name information was ".format(obj_user_ref_id) +
@@ -182,7 +182,7 @@ class FileImporter:
                         user.is_active = False
                         user.save()
                         created_users[new_username] = user
-                        created_unknown_users[obj_user_ref_id] = user
+                        self.created_unknown_users[obj_user_ref_id] = user
                     setattr(obj, ref, user)
                 else:
                     raise ValueError("Could not find referenced user " +

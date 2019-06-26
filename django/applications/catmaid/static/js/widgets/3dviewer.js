@@ -609,7 +609,9 @@
 
     dialog.show(400, 460, true);
 
-    var isBackgroundDark = (new THREE.Color(this.options.background_color)).getHSL().l < 0.5;
+
+    let backgroundColor = new THREE.Color(this.options.background_color);
+    let isBackgroundDark = backgroundColor.getHSL({}).l < 0.5;
 
     function handleOK() {
       /* jshint validthis: true */ // `this` is bound to this WebGLApplication

@@ -654,12 +654,12 @@ class FileImporter:
 
             # Skeleton summary
             if skeleton_ids:
-                # TODO: do this selectively for the imported data
-                logger.info('Recreating skeleton summary table')
+                logger.info('Recreating skeleton summary table entries for imported skeletons')
                 cursor.execute("""
-                    TRUNCATE catmaid_skeleton_summary;
-                    SELECT refresh_skeleton_summary_table();
-                """)
+                    SELECT refresh_skeleton_summary_table_selectively(%(skeleton_ids)s);
+                """, {
+                    'skeleton_ids': skeleton_ids,
+                })
             else:
                 logger.info('No skeleton summary table updated needed')
 

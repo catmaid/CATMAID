@@ -12,7 +12,10 @@
 
 ### Features and enhancements
 
+CLI importer:
 
+- Performance improvement: only the skeleton summary entries of the imported
+  skeletons are now createde.
 
 ### Bug fixes
 

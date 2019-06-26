@@ -609,7 +609,9 @@
 
     dialog.show(400, 460, true);
 
-    var isBackgroundDark = (new THREE.Color(this.options.background_color)).getHSL().l < 0.5;
+
+    let backgroundColor = new THREE.Color(this.options.background_color);
+    let isBackgroundDark = backgroundColor.getHSL({}).l < 0.5;
 
     function handleOK() {
       /* jshint validthis: true */ // `this` is bound to this WebGLApplication
@@ -4946,8 +4948,7 @@
       self.space.setSkeletonVisibility(visibilityMap);
 
       // Create result svg
-      var svg = document.createElement('svg');
-      svg.setAttribute('xmlns', namespace);
+      var svg = document.createElementNS(namespace, 'svg');
       svg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
       svg.setAttribute('width', 2 * margin + numColumns * (imageWidth + 2 * padding));
       svg.setAttribute('height', 2 * margin + numRows * (imageHeight + 2 * padding));

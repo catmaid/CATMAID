@@ -2533,13 +2533,15 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
                     can_edit_class_instance_or_fail(user, old_skeleton.id, 'class_instance')
                     # Require users to have edit permission on all treenodes of the
                     # skeleton.
-                    treenode_ids = Treenode.objects.filter(skeleton_id=old_skeleton.id,
-                            project_id=project_id).values_list('id', flat=True)
+                    treenodes = Treenode.objects.filter(skeleton_id=old_skeleton.id,
+                            project_id=project_id)
+                    treenode_ids = treenodes.values_list('id', flat=True)
                     can_edit_all_or_fail(user, treenode_ids, 'treenode')
 
                     # Remove existing skeletons
                     skeleton_link.delete()
                     old_skeleton.delete()
+                    treenodes.delete()
 
                 new_neuron = existing_neuron
             elif auto_id:
@@ -2577,11 +2579,12 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
                 can_edit_class_instance_or_fail(user, skeleton_id, 'skeleton')
                 # Require users to have edit permission on all treenodes of the
                 # skeleton.
-                treenode_ids = Treenode.objects.filter(skeleton_id=skeleton_id,
-                        project_id=project_id).values_list('id', flat=True)
-                can_edit_all_or_fail(user, treenode_ids, 'treenode')
+                treenodes = Treenode.objects.filter(skeleton_id=skeleton_id,
+                        project_id=project_id)
+                treenode_ids = treenodes.values_list('id', flat=True)
                 # Raise an Exception if the user doesn't have permission to
-                # edit the existing skeleton.
+                # edit the existing treenodes.
+                can_edit_all_or_fail(user, treenode_ids, 'treenode')
                 for link in cici:
                     old_neuron = link.class_instance_b
                     can_edit_class_instance_or_fail(user, old_neuron.id, 'class_instance')
@@ -2589,6 +2592,7 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
                     # Remove existing skeletons
                     link.delete()
                     old_neuron.delete()
+                    treenodes.delete()
 
                 new_skeleton = existing_skeleton
             elif auto_id:

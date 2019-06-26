@@ -10,9 +10,8 @@ from unittest import skipIf
 from django.shortcuts import get_object_or_404
 from guardian.shortcuts import assign_perm
 
-from catmaid.models import ClassInstance, ClassInstanceClassInstance
-from catmaid.models import Log, Review, Treenode, TreenodeConnector
-from catmaid.models import ReviewerWhitelist
+from catmaid.models import (ClassInstance, ClassInstanceClassInstance, Log,
+        Review, Treenode, TreenodeConnector, ReviewerWhitelist, Treenode)
 
 from .common import CatmaidApiTestCase
 
@@ -61,6 +60,8 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.get('/%d/skeleton/%d/swc' % (self.test_project_id, orig_skeleton_id))
         self.assertEqual(response.status_code, 200)
         orig_swc_string = response.content.decode('utf-8')
+
+        n_orig_skeleton_nodes = Treenode.objects.filter(skeleton_id=orig_skeleton_id).count()
 
         # Try inserting without permission and expect fail
         response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
@@ -141,6 +142,11 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.assertEqual(neuron.edition_time, last_neuron_edit_time)
         self.assertNotEqual(neuron.id, parsed_response['neuron_id'])
 
+        # Make sure there are as many nodes as expected for the imported
+        # skeleton.
+        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
+        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
+
 
         # Test replacing the imported neuron with forcing an update
         swc_file2 = StringIO(orig_swc_string)
@@ -162,6 +168,11 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.assertEqual(neuron.name, 'test2')
         self.assertEqual(neuron.id, last_neuron_id)
         self.assertNotEqual(neuron.edition_time, last_neuron_edit_time)
+
+        # Make sure there are as many nodes as expected for the imported
+        # skeleton.
+        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
+        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
 
 
         # Make sure we work with most recent skeleton data
@@ -208,6 +219,10 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.assertNotEqual(neuron.id, last_neuron_id)
         self.assertNotEqual(last_skeleton_id, skeleton.id) 
 
+        # Make sure there are as many nodes as expected for the imported
+        # skeleton.
+        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
+        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
 
         # Test replacing the imported neuron with forcing an update
         swc_file2 = StringIO(orig_swc_string)
@@ -219,6 +234,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         last_skeleton_edit_time = skeleton.edition_time
+
         # Make sure there is still only one skeleton
         skeleton.refresh_from_db()
 
@@ -230,6 +246,11 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.assertEqual(skeleton.id, parsed_response['skeleton_id'])
         self.assertEqual(skeleton.name, 'test2')
         self.assertNotEqual(skeleton.edition_time, last_skeleton_edit_time)
+
+        # Make sure there are as many nodes as expected for the imported
+        # skeleton.
+        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
+        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
 
 
     def test_skeleton_contributor_statistics(self):

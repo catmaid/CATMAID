@@ -34,6 +34,9 @@ CLI importer:
 
 - CLI Importer: creating unknown users manually works now as expected.
 
+- SWC skeleton import: if `force = true`, treenodes of a replaced skeleton are
+  now correctly removed on a successful import.
+
 
 ## 2019.06.20
 

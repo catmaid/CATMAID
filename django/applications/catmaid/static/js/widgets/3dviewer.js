@@ -4948,8 +4948,7 @@
       self.space.setSkeletonVisibility(visibilityMap);
 
       // Create result svg
-      var svg = document.createElement('svg');
-      svg.setAttribute('xmlns', namespace);
+      var svg = document.createElementNS(namespace, 'svg');
       svg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
       svg.setAttribute('width', 2 * margin + numColumns * (imageWidth + 2 * padding));
       svg.setAttribute('height', 2 * margin + numRows * (imageHeight + 2 * padding));

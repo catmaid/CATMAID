@@ -131,10 +131,12 @@ class FileImporter:
                             mapped_user_ids.add(obj_user_ref_id)
                             mapped_user_target_ids.add(existing_user_id)
                         elif import_user:
-                            raise CommandError("Referenced user \"{}\"".format(obj_username) +
+                            raise CommandError("Referenced user \"{}\" ".format(obj_username) +
                                     "exists both in database and in import data. If the " +
                                     "existing user should be used, please use the " +
-                                    "--map-users option")
+                                    "--map-users option to map all users or "
+                                    "--username-mapping=\"import-user=target-user\" " +
+                                    "for individual users")
                         else:
                             raise CommandError("Referenced user \"{}\"".format(obj_username) +
                                     "exists in database, but not in import data. If the " +

@@ -12,6 +12,11 @@
 
 ### Features and enhancements
 
+Node filters:
+
+- Binary split: a new toggle labeled "inclusive" allows to decide whether to
+  include the split not in an upstream sub-arbor (default: true).
+
 CLI importer:
 
 - Performance improvement: only the skeleton summary entries of the imported

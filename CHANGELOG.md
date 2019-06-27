@@ -42,6 +42,10 @@ CLI importer:
 - SWC skeleton import: if `force = true`, treenodes of a replaced skeleton are
   now correctly removed on a successful import.
 
+- Node filters: the application of node filters with rules applied in an
+  intersected fashion is fixed now and the filtered result of all skeletons is
+  shown.
+
 
 ## 2019.06.20
 

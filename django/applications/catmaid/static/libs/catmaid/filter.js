@@ -462,29 +462,6 @@
     }
   }
 
-  /**
-   * Merge another set of filter target IDs (skeleton IDs or connector IDs) into
-   * the set represented by the context ("this") in either UNION or INTERSECTION
-   * mode.
-   */
-  function mergeFilterTargetIdSet(other, mergeMode) {
-    if (CATMAID.UNION === mergeMode) {
-      for (var filterTargetId of other) {
-        /* jshint validthis: true */
-        this.add(filterTargetId);
-      }
-    } else if (CATMAID.INTERSECTION === mergeMode) {
-      /* jshint validthis: true */
-      for (var filterTargetId of this) {
-        if (!other.has(filterTargetId)) {
-          this.delete(filterTargetId);
-        }
-      }
-    } else {
-      throw new CATMAID.ValueError("Unknown merge mode: " + mergeMode);
-    }
-  }
-
   function executeFilterRules(rules, skeletonIndex, inputMap, mapResultNode) {
     // Collect nodes in an object to allow fast hash based key existence
     // checks. Also collect the location of the node. Whether OR or AND is
@@ -500,63 +477,63 @@
         return true;
       };
     }
-    var mergeNodeCollection = (mergeNodeCollections).bind(nodeCollection);
 
-    var mergeSkeletonCollection = (mergeFilterTargetIdSet).bind(skeletonCollection);
+    // Apply rules and get back a set of valid nodes for each skeleton
+    Object.keys(skeletonIndex).forEach(function(skid) {
+      let neuron = skeletonIndex[skid];
+      let skeletonNodeCollection = {};
+      let mergeSkeletonNodeCollection = (mergeNodeCollections).bind(skeletonNodeCollection);
+      // Get final set of points by going through all rules and apply them
+      // either to all skeletons or a selected sub-set. Results of individual
+      // rules are OR-combined.
+      for (let i=0; i<rules.length; ++i) {
+        let rule = rules[i];
 
-    // Get final set of points by going through all rules and apply them
-    // either to all skeletons or a selected sub-set. Results of individual
-    // rules are OR-combined.
-    rules.forEach(function(rule, i) {
-      // Pick source skeleton(s). If a rule requests to be only applied for
-      // a particular skeleton, this working set will be limited to this
-      // skeleton only.
-      var sourceSkeletons;
-      if (rule.validOnlyForSkid) {
-        let skid = rule.validOnlyForSkid;
-        sourceSkeletons = {};
-        sourceSkeletons[skid] = skeletons[skid];
-      } else {
-        sourceSkeletons = skeletonIndex;
-      }
+        // Continue with next rule if the current one is only valid for other
+        // skeletons.
+        if (rule.validOnlyForSkid) {
+          if (rule.validOnlyForSkid == skid) {
+            continue;
+          }
+        }
 
-      // Ignore the merge mode for the first rule, because it can't be merge
-      // with anything.
-      var mergeMode = i === 0 ? CATMAID.UNION : rule.mergeMode;
+        // If the rule can't invert by itself, try naive inversion implementation,
+        // which requires an arbor. Therefore, check if arbor is available.
+        let noOwnInversion = !rule.strategy.canInvert;
+        if (rule.invert && noOwnInversion &&
+            (!inputMap.skeleton || !inputMap.skeleton.arbor)) {
+          CATMAID.warn(`Can't invert rule "${rule.name}", because it doesn't require arbor and arbor isn't available.`);
+          continue;
+        }
 
-      var allowedSkeletons = new Set();
+        // Ignore the merge mode for the first rule, because it can't be merge
+        // with anything.
+        var mergeMode = i === 0 ? CATMAID.UNION : rule.mergeMode;
 
-      // If the rule can't invert by itself, try naive inversion implementation,
-      // which requires an arbor. Therefore, check if arbor is available.
-      let noOwnInversion = !rule.strategy.canInvert;
-      if (rule.invert && noOwnInversion &&
-          (!inputMap.skeleton || !inputMap.skeleton.arbor)) {
-        CATMAID.warn(`Can't invert rule "${rule.name}", because it doesn't require arbor and arbor isn't available.`);
-        return;
-      }
-
-      // Apply rules and get back a set of valid nodes for each skeleton
-      Object.keys(sourceSkeletons).forEach(function(skid) {
         // Get valid point list from this skeleton with the current filter
-        var neuron = skeletonIndex[skid];
-        var nodeCollection = rule.strategy.filter(skid, neuron,
+        var filteredNodeCollection = rule.strategy.filter(skid, neuron,
             inputMap, rule.options, rule.invert);
         // If the results should be inverted for this rule and the rule
         // implementation can't invert by its own, invert naively here.
         if (rule.invert && noOwnInversion) {
-          nodeCollection = CATMAID.SkeletonFilter.invert(nodeCollection,
+          filteredNodeCollection = CATMAID.SkeletonFilter.invert(filteredNodeCollection,
               inputMap.skeleton.arbor);
         }
+
         // Merge all point sets for this rule. How this is done exactly (i.e.
         // OR or AND) is configured separately.
-        if (nodeCollection && !CATMAID.tools.isEmpty(nodeCollection)) {
-          mergeNodeCollection(skid, nodeCollection, mergeMode, mapResultNode, stats);
-          // Remember this skeleton as potentially valid
-          allowedSkeletons.add(parseInt(skid, 10));
-        }
-      });
+        filteredNodeCollection = filteredNodeCollection || {};
+        mergeSkeletonNodeCollection(skid, filteredNodeCollection, mergeMode,
+            mapResultNode, stats);
+      }
 
-      mergeSkeletonCollection(allowedSkeletons, mergeMode);
+      // Merge all skeleton collections
+      Object.keys(skeletonNodeCollection).forEach(n => {
+        nodeCollection[n] = true;
+      });
+      if (!CATMAID.tools.isEmpty(skeletonNodeCollection)) {
+        skeletonCollection.add(Number(skid));
+      }
     });
 
     return {

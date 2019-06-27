@@ -1121,7 +1121,7 @@
           var nodeId = nodes[i];
           var vertex = positions[nodeId];
           if (intersector.contains(vertex)) {
-            includedNodes[nodeId] = nodes[nodeId];
+            includedNodes[nodeId] = true;
           }
         }
 

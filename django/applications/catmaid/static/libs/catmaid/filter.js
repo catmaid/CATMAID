@@ -993,6 +993,7 @@
         } else if ("upstream" === options.region) {
           var dend = arbor.clone();
           arbor.subArbor(cuts[0]).nodesArray().forEach(function(node) {
+            if (cuts[0] == node && options.inclusive) return;
             delete dend.edges[node];
           });
           resultNodes = dend.nodes();
@@ -1386,6 +1387,7 @@
     'binary-split': function(container, options) {
       // Default options
       options.region = "downstream";
+      options.inclusive = true;
 
       var $tag = CATMAID.DOM.createInputSetting("Tag", "",
           "Cut skeleton at tagged node", function() {
@@ -1397,9 +1399,15 @@
           function() {
             options.region = this.value;
           }, options.region);
+      let $inclusive = CATMAID.DOM.createCheckboxSetting("Inclusive",
+          options.inclusive, "If checked, the split node will also " +
+          "be considered valid for upstream cuts", function(e) {
+            options.inclusive = this.checked;
+          });
 
       $(container).append($tag);
       $(container).append($region);
+      $(container).append($inclusive);
     },
     'synaptic': function(container, options) {
       // Defaults

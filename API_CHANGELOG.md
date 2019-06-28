@@ -6,7 +6,10 @@ included in this changelog.
 
 ### Additions
 
-None.
+- GET `/{project_id}/stats/cable-length`:
+  Accepts now an optional 'name_pattern' argument that allows case insensitive
+  pattern matching in the respective neuron name. If a '/' prefix is used, the
+  pattern is interpreted as a regular expression.
 
 ### Modifications
 

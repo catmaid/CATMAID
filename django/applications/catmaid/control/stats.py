@@ -38,20 +38,54 @@ def stats_cable_length(request:HttpRequest, project_id=None) -> JsonResponse:
       required: false
       type: integer
       paramType: form
+    - name: name_pattern
+      description |
+        Optional name pattern that returned neuron names have to match. Start
+        with '/' for a regular expression.
+      required: false
+      type: string
+      paramType: form
     """
     cursor = connection.cursor()
     n_skeletons = int(request.GET.get('n_skeletons', '0'))
+    name_pattern = request.GET.get('name_pattern', '')
+
+    name_match_join = ''
+    name_match_where = ''
+    model_of_rel = ''
+
+    if name_pattern:
+        relations = get_relation_to_id_map(project_id, ['model_of'],  cursor=cursor)
+        model_of_rel = relations['model_of']
+        name_match_join = '''
+            JOIN class_instance_class_instance cici
+                ON cici.class_instance_a = skeleton_id
+            JOIN class_instance ci
+                ON ci.id = cici.class_instance_b
+        '''
+        if name_pattern[0] == '/':
+            name_pattern = name_pattern[1:]
+            name_match_where = 'AND ci.name ~ %(name_pattern)s AND cici.relation_id = %(model_of)s'
+        else:
+            name_pattern = '%{}%'.format(name_pattern)
+            name_match_where = 'AND ci.name ~~* %(name_pattern)s AND cici.relation_id = %(model_of)s'
 
     cursor.execute("""
         SELECT skeleton_id, cable_length
-        FROM catmaid_skeleton_summary
-        WHERE project_id = %(project_id)s
+        FROM catmaid_skeleton_summary css
+        {name_match_join}
+        WHERE css.project_id = %(project_id)s
+        {name_match_where}
         ORDER BY cable_length DESC
         {limit}
     """.format(**{
         'limit': 'LIMIT {}'.format(n_skeletons) if n_skeletons else '',
+        'name_match_join': name_match_join,
+        'name_match_where': name_match_where,
     }), {
         'project_id': project_id,
+        'name_pattern': name_pattern,
+        'model_of': model_of_rel,
     })
 
     result = list(cursor.fetchall())

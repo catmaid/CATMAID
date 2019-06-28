@@ -22,13 +22,13 @@ CLI importer:
 - Performance improvement: only the skeleton summary entries of the imported
   skeletons are now created.
 
-Miscellaneous:
+Project statistics:
 
-- Project statistics widget: requests to the back-end our now performed in
-  parallel, resulting in faster loading times.
+- Requests to the back-end our now performed in parallel, resulting in faster
+  loading times.
 
-- Project statistics widget: it is now possible to configure how many largest
-  neurons should be displayed.
+- It is now possible to configure how many largest neurons should be displayed
+  as well as an optional name pattern.
 
 ### Bug fixes
 

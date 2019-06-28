@@ -24,6 +24,9 @@
     // How many largest neurons should be displayed
     this.displayTopN = 10;
 
+    // An optional text pattern that the largest neurons need to have
+    this.topNNameFilter = '';
+
     var update_stats_fields = function(data) {
       $("#skeletons_created").text(data.skeletons_created);
       $("#treenodes_created").text(data.treenodes_created);
@@ -581,6 +584,7 @@
           url: project.id + '/stats/cable-length',
           data: {
             'n_skeletons': this.displayTopN,
+            'name_pattern': this.topNNameFilter,
           },
           parallel: true,
         })
@@ -614,6 +618,17 @@
             step: 1,
             onchange: (e) => {
               self.displayTopN = parseInt(e.target.value, 10);
+              self.refreshLargestNeurons();
+            },
+          });
+          CATMAID.DOM.appendElement(target, {
+            type: 'text',
+            label: 'Name filter',
+            title: 'Only retrieve skeletons that match this name pattern.',
+            placeholder: 'Use / for RegEx',
+            value: self.topNNameFilter,
+            onchange: (e) => {
+              self.topNNameFilter = e.target.value;
               self.refreshLargestNeurons();
             },
           });

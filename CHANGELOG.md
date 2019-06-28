@@ -20,7 +20,12 @@ Node filters:
 CLI importer:
 
 - Performance improvement: only the skeleton summary entries of the imported
-  skeletons are now createde.
+  skeletons are now created.
+
+Miscellaneous:
+
+- Project statistics widget: requests to the back-end our now performed in
+  parallel, resulting in faster loading times.
 
 ### Bug fixes
 

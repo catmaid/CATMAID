@@ -558,8 +558,12 @@
     };
 
     this.refreshNodecount = function() {
-      return CATMAID.fetch(project.id + '/stats/nodecount', 'GET', {
-          with_imports: this.includeImports
+      return CATMAID.fetch({
+          url: project.id + '/stats/nodecount',
+          data: {
+            with_imports: this.includeImports,
+          },
+          parallel: true,
         })
         .then(function(response) {
           // The respose maps user IDs to number of nodes
@@ -570,8 +574,12 @@
 
     this.refreshLargestNeurons = function() {
       let self = this;
-      return CATMAID.fetch(project.id + '/stats/cable-length', 'GET', {
-          'n_skeletons': 10,
+      return CATMAID.fetch({
+          url: project.id + '/stats/cable-length',
+          data: {
+            'n_skeletons': 10,
+          },
+          parallel: true,
         })
         .then(function(result) {
           let models = result.reduce(function(o, si) {
@@ -615,10 +623,14 @@
     this.refresh_history = function() {
       // disable the refresh button until finished
       $(".stats-history-setting").prop('disabled', true);
-      CATMAID.fetch(project.id + '/stats/user-history', "GET", {
-          "pid": project.id,
-          "start_date": $("#stats-history-start-date").val(),
-          "end_date": $("#stats-history-end-date").val(),
+      CATMAID.fetch({
+          url: project.id + '/stats/user-history',
+          data: {
+            "pid": project.id,
+            "start_date": $("#stats-history-start-date").val(),
+            "end_date": $("#stats-history-end-date").val(),
+          },
+          parallel: true,
         })
         .then(function(jso) {
           $(".stats-history-setting").prop('disabled', false);

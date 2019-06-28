@@ -21,6 +21,9 @@
     // Whether import activity should be included in the displayed statistics.
     this.includeImports = false;
 
+    // How many largest neurons should be displayed
+    this.displayTopN = 10;
+
     var update_stats_fields = function(data) {
       $("#skeletons_created").text(data.skeletons_created);
       $("#treenodes_created").text(data.treenodes_created);
@@ -577,7 +580,7 @@
       return CATMAID.fetch({
           url: project.id + '/stats/cable-length',
           data: {
-            'n_skeletons': 10,
+            'n_skeletons': this.displayTopN,
           },
           parallel: true,
         })
@@ -601,6 +604,20 @@
           while (target.lastChild) {
             target.removeChild(target.lastChild);
           }
+          // Add numeric field to change number of displayed elements
+          CATMAID.DOM.appendElement(target, {
+            type: 'numeric',
+            label: 'Top N',
+            title: 'The number of largest neurons to be displayed.',
+            value: self.displayTopN,
+            min: 1,
+            step: 1,
+            onchange: (e) => {
+              self.displayTopN = parseInt(e.target.value, 10);
+              self.refreshLargestNeurons();
+            },
+          });
+
           // Add top ten
           let NNS = CATMAID.NeuronNameService.getInstance();
           let ul = target.appendChild(document.createElement('ul'));

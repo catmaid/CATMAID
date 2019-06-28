@@ -27,6 +27,9 @@ Miscellaneous:
 - Project statistics widget: requests to the back-end our now performed in
   parallel, resulting in faster loading times.
 
+- Project statistics widget: it is now possible to configure how many largest
+  neurons should be displayed.
+
 ### Bug fixes
 
 

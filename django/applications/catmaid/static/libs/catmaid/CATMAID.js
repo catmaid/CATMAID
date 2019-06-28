@@ -421,14 +421,19 @@ var requestQueue = new CATMAID.RequestQueue();
     // API keys and HTTP authentication are added.
     let url;
     if (api) {
+      if (!headers) headers = {};
       if (api.apiKey && api.apiKey.length > 0) {
-        if (!headers) headers = {};
         headers['X-Authorization'] = 'Token ' + api.apiKey;
         headers['X-Requested-With'] = undefined;
       }
       // The URL will only be changed if no absolute URL is already provided,
       // i.e. a relative URL is expected.
       url = absoluteURL ? absoluteURL : CATMAID.tools.urlJoin(api.url, relativeURL);
+
+      // Apply Basic HTTP authentication headers, should they be present.
+      if (api.httpAuthUser || apt.httpAuthPass) {
+        headers['Authorization'] = 'Basic ' + btoa(`${api.httpAuthUser}:${api.httpAuthPass}`);
+      }
     } else {
       url = absoluteURL ? absoluteURL : CATMAID.makeURL(relativeURL);
     }

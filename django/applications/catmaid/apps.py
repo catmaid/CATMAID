@@ -25,6 +25,15 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+def is_read_only():
+    """To test if this is a database replica and hence not writable we check if
+    there are any wal_receivers.
+    """
+    cursor = connection.cursor()
+    cursor.execute("select pg_is_in_recovery()")
+    return cursor.fetchone()[0]
+
+
 def get_system_user(user_model=None):
     """Return a User instance of a superuser. This is either the superuser
     having the ID configured in SYSTEM_USER_ID or the superuser with the lowest
@@ -114,6 +123,12 @@ def check_history_setup(app_configs, **kwargs):
 
 def check_spatial_update_setup(app_configs, **kwargs):
     messages = []
+
+    if is_read_only():
+        messages.append(Warning('Read only mode: spatial update notification '
+            'setup not checked', hint='This is okay for database replicas'))
+        return messages
+
     # Enable or disable history tracking, depending on the configuration.
     # Ignore silently, if the database wasn't migrated yet.
     if getattr(settings, 'SPATIAL_UPDATE_NOTIFICATIONS', False):

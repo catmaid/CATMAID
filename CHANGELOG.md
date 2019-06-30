@@ -54,6 +54,9 @@ Project statistics:
   intersected fashion is fixed now and the filtered result of all skeletons is
   shown.
 
+- Spatial update notifications: only try to update the database configuration if
+  the database isn't running as a database replica.
+
 
 ## 2019.06.20
 

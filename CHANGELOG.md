@@ -30,6 +30,13 @@ Project statistics:
 - It is now possible to configure how many largest neurons should be displayed
   as well as an optional name pattern.
 
+Tracing overlay:
+
+- The remote mirror CATMAID instance configuration is now taken from the central
+  configuration, which can be edited in the "Other CATMAID instances" section in
+  the Settings Widget. The "Read-only mirror index" settings is kept but refers
+  to list elements in the central configuration list.
+
 ### Bug fixes
 
 

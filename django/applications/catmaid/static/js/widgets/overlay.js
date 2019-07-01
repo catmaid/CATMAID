@@ -1137,9 +1137,6 @@ var SkeletonAnnotations = {};
             apply_tracing_window: {
               default: false
             },
-            read_only_mirrors: {
-              default: []
-            },
             read_only_mirror_index: {
               default: -1
             },
@@ -3802,16 +3799,11 @@ var SkeletonAnnotations = {};
       // If there is a read-only mirror defined, get all nodes from there and
       // do an extra query for the active node from the regular back-end.
       let mirrorIndex = CATMAID.TracingOverlay.Settings.session.read_only_mirror_index;
+      let api;
       if (mirrorIndex > -1) {
-        let mirrorServer = CATMAID.TracingOverlay.Settings.session.read_only_mirrors[mirrorIndex - 1];
-        if (mirrorServer) {
+        api = CATMAID.Client.Settings.session.remote_catmaid_instances[mirrorIndex - 1];
+        if (api) {
           dedicatedActiveSkeletonUpdate = true;
-          url = CATMAID.tools.urlJoin(mirrorServer.url, project.id + '/node/list');
-          if (mirrorServer.auth && mirrorServer.auth.trim().length > 0) {
-            headers = {
-              'X-Authorization': mirrorServer.auth,
-            };
-          }
         }
       }
 
@@ -4001,6 +3993,7 @@ var SkeletonAnnotations = {};
                 headers: headers,
                 details: true,
                 parallel: extraUpdate,
+                api: api,
               }).then(function(r) {
                 // Parse response
                 let response = parseNodeResponse(r.data, transferFormat);

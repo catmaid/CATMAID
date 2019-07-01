@@ -1053,57 +1053,6 @@
         SETTINGS_SCOPE
       ));
 
-      var tracingReadOnlyMirrorInput = CATMAID.DOM.createInputSetting(
-          "Read-only CATMAID mirrors",
-          CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].read_only_mirrors.map(function(m) {
-            return m.url + '|' + m.auth;
-          }).join(', '),
-          "A list of read-only CATMAID mirror servers and API keys that can be " +
-          "used to query tracing data from. This can be enabled using the read " +
-          "only mirror index below. Individual entries are separated by commas " +
-          "and have The form \"url|apikey. The API key (including \"|\" is " +
-          "optional. URLs need to include the protocol, " +
-          "e.g.: https://example.com/catmaid/, https://example2.com/catmaid2/|apikey2",
-          function() {
-            let error = false;
-            let mirrors = this.value.split(',')
-              .map(function(m) { return m.trim(); })
-              .filter(function(m) { return m.length > 0; })
-              .map(function(m) {
-                let parts = m.split('|');
-                if (parts) {
-                  return {
-                    url: parts[0],
-                    auth: parts[1],
-                  };
-                } else {
-                  error = true;
-                  return {
-                    url: null,
-                    auth: null,
-                  };
-                }
-              });
-            if (error) {
-              CATMAID.statusBar.replaceLast('Invalid read-only mirror definition');
-            } else {
-              CATMAID.TracingOverlay.Settings
-                  .set(
-                    'read_only_mirrors',
-                    mirrors,
-                    SETTINGS_SCOPE);
-            }
-          });
-      $('input', tracingReadOnlyMirrorInput)
-        .css('width', '30em')
-        .css('font-family', 'monospace');
-
-      ds.append(wrapSettingsControl(
-          tracingReadOnlyMirrorInput,
-          CATMAID.TracingOverlay.Settings,
-          'read_only_mirrors',
-          SETTINGS_SCOPE));
-
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createNumericInputSetting(
               "Read-only mirror index",

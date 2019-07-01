@@ -431,7 +431,7 @@ var requestQueue = new CATMAID.RequestQueue();
       url = absoluteURL ? absoluteURL : CATMAID.tools.urlJoin(api.url, relativeURL);
 
       // Apply Basic HTTP authentication headers, should they be present.
-      if (api.httpAuthUser || apt.httpAuthPass) {
+      if (api.httpAuthUser || api.httpAuthPass) {
         headers['Authorization'] = 'Basic ' + btoa(`${api.httpAuthUser}:${api.httpAuthPass}`);
       }
     } else {

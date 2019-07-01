@@ -3804,6 +3804,7 @@ var SkeletonAnnotations = {};
         api = CATMAID.Client.Settings.session.remote_catmaid_instances[mirrorIndex - 1];
         if (api) {
           dedicatedActiveSkeletonUpdate = true;
+          url = CATMAID.tools.urlJoin(api.url, project.id + '/node/list');
         }
       }
 

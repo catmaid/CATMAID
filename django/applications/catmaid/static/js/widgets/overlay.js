@@ -4023,8 +4023,6 @@ var SkeletonAnnotations = {};
           // Before updating the internal node representation, update the active
           // node, if this is required.
           if (extraUpdate) {
-            // TODO: To authenticate with the mirror server, an API token needs to
-            // be specified.
             let extraParams = CATMAID.tools.deepCopy(params);
             extraParams['src'] = 'extra_nodes_only';
             extraParams['treenode_ids'] = treenodeIDs;

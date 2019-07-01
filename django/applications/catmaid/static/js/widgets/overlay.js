@@ -4039,7 +4039,7 @@ var SkeletonAnnotations = {};
             // To not query all nodes in the field of view, update the parameter
             // object
             requests.push(CATMAID.fetch({
-                relativeURL: mainUrl,
+                absoluteURL: mainUrl,
                 method: 'GET',
                 data: extraParams,
                 blockUI: false,

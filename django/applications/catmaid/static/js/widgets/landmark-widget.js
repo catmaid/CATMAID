@@ -3877,7 +3877,7 @@
         };
       },
       setState: function(widget, state) {
-        CATMAID.tools.copyIfDefined(state, widget, 'importReuseExistingLandmarks');
+        CATMAID.tools.copyIfDefined(state, widget, 'importAllowNonEmptyGroups');
         CATMAID.tools.copyIfDefined(state, widget, 'importCreateNonExistingGroups');
         CATMAID.tools.copyIfDefined(state, widget, 'importReuseExistingLandmarks');
         CATMAID.tools.copyIfDefined(state, widget, 'useReversePointMatches');

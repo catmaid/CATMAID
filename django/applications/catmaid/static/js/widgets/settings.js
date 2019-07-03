@@ -1058,7 +1058,7 @@
               "Read-only mirror index",
               CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].read_only_mirror_index,
               1,
-              "Selects a mirror by index from the above mirror list, starting with 1. Empty values, -1 or 0 will disable this.",
+              "Selects a mirror by index from the list of other CATMAID instances at the bottom of the Settings Widget, starting with 1. Empty values, -1 or 0 will disable this.",
               function() {
                 var newIndex = parseInt(this.value, 10);
                 if (!newIndex || Number.isNaN(newIndex)) {
@@ -2135,14 +2135,14 @@
       let newRemoteAuthPass = '';
 
       let newRemoteNameInput = CATMAID.DOM.createInputSetting(
-          "New instance name", newRemoteName, "The name under which the new " +
+          "Instance name", newRemoteName, "The name under which the new " +
           "remote CATMAID instance will be accessible.", function() {
             newRemoteName = this.value.trim();
           });
       ds.append(newRemoteNameInput);
 
       let newRemoteNameUrlInput = CATMAID.DOM.createInputSetting(
-          "New instance URL", newRemoteName, "The main URL under which the new " +
+          "Instance URL", newRemoteName, "The main URL under which the new " +
           "remote CATMAID instance can be reached, e.g. https://example.com/catmaid/",
           function() {
             newRemoteUrl = this.value.trim();
@@ -2150,7 +2150,7 @@
       ds.append(newRemoteNameUrlInput);
 
       let newRemoteApiKeyInput = CATMAID.DOM.createInputSetting(
-          "New instance API key", newRemoteApiKey, "The API key to use with the " +
+          "User API token", newRemoteApiKey, "The API key/token to use with the " +
           "new remote instance.", function() {
             newRemoteApiKey = this.value.trim();
           });

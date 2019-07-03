@@ -1124,7 +1124,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 target_cache_objects_dps = None
                 n_target_objects = len(target_object_ids)
                 if use_cache and skeleton_cache:
-                    # Find all skeleton IDs that aren't part of the cache
+                    # Find all point cloud IDs that aren't part of the cache
                     # TODO: There must be a simler way to extract non-NA values only
                     target_object_id_str = rinterface.StrSexpVector(list(map(str, target_object_ids)))
                     target_cache_objects_dps = pointcloud_cache.rx(target_object_id_str) # type: ignore

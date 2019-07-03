@@ -1205,7 +1205,8 @@
                   let volumes = volumeData.data.map(function(volume) {
                     return new CATMAID.Volume(CATMAID.tools.buildObject(volumeData.columns, volume));
                   });
-                  lut.setMax(volumes.length - 1);
+                  // We want at least one entry in the LUT
+                  lut.setMax(Math.max(1, volumes.length - 1));
                   callback({
                     draw: data.draw,
                     data: volumes

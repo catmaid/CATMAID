@@ -1798,3 +1798,23 @@ def notify_user(user, title, message) -> None:
         user.email_user('[CATMAID] ' + title, message)
     except Exception as e:
         logging.getLogger(__name__).error('Failed to send e-mail (%s)', str(e))
+
+
+class ConnectorGeom(models.Model):
+    """Cascading delets are handled in the database.
+    """
+    project = models.ForeignKey(Project, on_delete=models.DO_NOTHING)
+    geom = spatial_models.GeometryField(srid=0)
+
+    class Meta:
+        db_table = "connector_geom"
+
+
+class TreenodeConnectorEdge(models.Model):
+    """Cascading delets are handled in the database.
+    """
+    project = models.ForeignKey(Project, on_delete=models.DO_NOTHING)
+    edge = spatial_models.GeometryField(srid=0)
+
+    class Meta:
+        db_table = "treenode_connector_edge"

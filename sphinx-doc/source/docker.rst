@@ -1,7 +1,7 @@
 .. _docker:
 
-Trying CATMAID with Docker
-==========================
+Docker
+======
 
 With the help of Docker and Docker-compose it is possible to run CATMAID without
 much manual setup involved. With Docker alone, CATMAID will be available as demo

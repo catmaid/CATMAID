@@ -183,3 +183,25 @@ needs then to be rebuilt and run::
 After a successful upgrade, the ``DB_UPDATE`` variable should be set to
 ``false`` again, to not accidentally upgrade the data files without ensuring a
 back-up has been made.
+
+Notes on shared memory in Docker
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Due to the low default allowed shared memory in Docker containers (64MB), bigger
+instances might run into an error similar to this::
+
+  Traceback (most recent call last):
+  […]
+  psycopg2.OperationalError: could not resize shared memory segment
+  "/PostgreSQL.909036009" to 70019784 bytes: No space left on device
+
+To fix this, the allowed shared memory (which is what Postgres makes heavy use
+of) can be increased. When running ``docker`` directly, add the ``--shm-size=2g``
+option. If ``docker-compose`` is in use, add ``shm_size: '2gb'`` to the build
+context::
+
+  build:
+    context:
+       shm_size: '2gb'
+
+For more available shared memory, increase the example of ``2gb``.

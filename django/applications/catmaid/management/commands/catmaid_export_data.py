@@ -54,6 +54,7 @@ class Exporter():
         self.required_annotations = options['required_annotations']
         self.excluded_annotations = options['excluded_annotations']
         self.volume_annotations = options['volume_annotations']
+        self.annotation_annotations = options['annotation_annotations']
         self.exclusion_is_final = options['exclusion_is_final']
         self.original_placeholder_context = options['original_placeholder_context']
         self.target_file = options.get('file', None)
@@ -238,6 +239,22 @@ class Exporter():
                 all_annotations = set() # type: Set
                 all_annotation_links = set() # type: Set
                 working_set = [e for e in entities]
+
+                # Optionally, allow only annotations that are themselves
+                # annotated with a required annotation. These annotations are
+                # OR-combined.
+                if self.annotation_annotations:
+                    annotation_annotation_ids = ClassInstance.objects.filter(
+                            project_id=self.project.id,
+                            class_column=classes['annotation'],
+                            name__in=self.annotation_annotations).values_list('id', flat=True)
+                    allowed_annotation_dict = get_sub_annotation_ids(self.project.id,
+                            [frozenset(annotation_annotation_ids)], relations, classes)
+                    allowed_annotations = set(allowed_annotation_dict.keys()).union(
+                            set(chain.from_iterable(allowed_annotation_dict.values())))
+                else:
+                    allowed_annotations = dict()
+
                 while working_set:
                     annotation_links = ClassInstanceClassInstance.objects.filter(
                             project_id=self.project.id, relation=annotated_with,
@@ -248,14 +265,26 @@ class Exporter():
                     # Reset working set to add next entries
                     working_set = []
 
-                    for al in annotation_links:
-                        if al not in all_annotation_links:
-                            all_annotation_links.add(al)
+                    if self.annotation_annotations:
+                        for al in annotation_links:
+                            if al not in all_annotation_links and \
+                                   al.class_instance_a_id in allowed_annotations:
+                                all_annotation_links.add(al)
 
-                    for a in annotations:
-                        if a not in all_annotations:
-                            all_annotations.add(a)
-                            working_set.append(a)
+                        for a in annotations:
+                            if a not in all_annotations and \
+                                   a.id in allowed_annotations:
+                                all_annotations.add(a)
+                                working_set.append(a)
+                    else:
+                        for al in annotation_links:
+                            if al not in all_annotation_links:
+                                all_annotation_links.add(al)
+
+                        for a in annotations:
+                            if a not in all_annotations:
+                                all_annotations.add(a)
+                                working_set.append(a)
 
                 if all_annotations:
                     self.to_serialize.append(all_annotations)
@@ -265,6 +294,10 @@ class Exporter():
                 logger.info("Exporting {} annotations and {} annotation links: {}".format(
                         len(all_annotations), len(all_annotation_links),
                         ", ".join([a.name for a in all_annotations])))
+                if self.annotation_annotations:
+                    logger.info("Only annotations in hierarchy of the following "
+                            "annotations are exported: {}".format(
+                            ', '.join(self.annotation_annotations)))
 
             # Export tags
             if self.export_tags and 'labeled_as' in relations:
@@ -563,6 +596,10 @@ class Command(BaseCommand):
         parser.add_argument('--volume-annotation', dest='volume_annotations',
             action='append', help='Name a required annotation for exported ' +
             'volumes. Meta-annotations can be used as well.')
+        parser.add_argument('--annotation-annotation', dest='annotation_annotations',
+            action='append', help='Name a required annotation for exported ' +
+            'annotations. Meta-annotations can be used as well, will export ' +
+            'whole hierarchies.')
         parser.add_argument('--connector-placeholders', dest='connector_placeholders',
             action='store_true', help='Should placeholder nodes be exported')
         parser.add_argument('--original-placeholder-context', dest='original_placeholder_context',

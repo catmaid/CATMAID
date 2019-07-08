@@ -22,6 +22,15 @@ CLI importer:
 - Performance improvement: only the skeleton summary entries of the imported
   skeletons are now created.
 
+CLI exporter:
+
+- The new --annotation-annotation option allows to specify a meta-annotation
+  that all exported annotations need to share transitively. If for instance all
+  all top-level annotations that should be exported are annotated with
+  "exportable" and "--annotation-annotation exportable" is used, only
+  annotations from those annotation hierarchies marked as "exportable" will be
+  exported. Without this option, all annotations are exported.
+
 Project statistics:
 
 - Requests to the back-end our now performed in parallel, resulting in faster

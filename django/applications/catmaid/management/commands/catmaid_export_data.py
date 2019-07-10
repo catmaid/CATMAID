@@ -268,7 +268,8 @@ class Exporter():
                     if self.annotation_annotations:
                         for al in annotation_links:
                             if al not in all_annotation_links and \
-                                   al.class_instance_a_id in allowed_annotations:
+                                   al.class_instance_a_id in allowed_annotations and \
+                                   al.class_instance_b_id in allowed_annotations:
                                 all_annotation_links.add(al)
 
                         for a in annotations:

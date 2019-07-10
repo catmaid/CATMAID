@@ -1389,6 +1389,14 @@ CACHE_NODE_PROVIDER_DATA_TYPES = {
 }
 
 
+def get_node_provider_configs():
+    """Get a list of specified node provider configurationss."""
+    configs = settings.NODE_PROVIDERS
+    if type(configs) == str:
+        configs = [configs]
+    return configs
+
+
 def get_configured_node_providers(provider_entries, connection=None,
         enabled_only=False) -> List:
     node_providers = []
@@ -1418,7 +1426,7 @@ def get_configured_node_providers(provider_entries, connection=None,
 
 def update_node_query_cache(node_providers=None, log=print, force=False) -> None:
     if not node_providers:
-        node_providers = settings.NODE_PROVIDERS
+        node_providers = get_node_provider_configs()
 
     for np in node_providers:
         log("Checking node provder {}".format(np))
@@ -1982,7 +1990,7 @@ def update_grid_cell(project_id, grid_id, w_i, h_i, d_i, cell_width,
 
 
 def prepare_db_statements(connection) -> None:
-    node_providers = get_configured_node_providers(settings.NODE_PROVIDERS, connection)
+    node_providers = get_configured_node_providers(get_node_provider_configs(), connection)
     for node_provider in node_providers:
         node_provider.prepare_db_statements(connection)
 
@@ -2192,7 +2200,7 @@ def node_list_tuples(request:HttpRequest, project_id=None, provider=None) -> Htt
     if override_provider:
         node_providers = get_configured_node_providers([override_provider])
     else:
-        node_providers = get_configured_node_providers(settings.NODE_PROVIDERS)
+        node_providers = get_configured_node_providers(get_node_provider_configs())
 
     return compile_node_list_result(project_id, node_providers, params,
         treenode_ids, connector_ids, include_labels, target_format,

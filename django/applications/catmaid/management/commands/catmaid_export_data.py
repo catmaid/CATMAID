@@ -279,6 +279,13 @@ class Exporter():
                                    a.id in allowed_annotations:
                                 all_annotations.add(a)
                                 working_set.append(a)
+
+                        # Make sure the export is consistent by checking that
+                        # all annotations refernced by links will be included in
+                        # the export.
+                        for  al in all_annotation_links:
+                            if al.class_instance_b not in all_annotations:
+                                all_annotations.add(al.class_instance_b)
                     else:
                         for al in annotation_links:
                             if al not in all_annotation_links:

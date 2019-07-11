@@ -722,7 +722,7 @@ class Command(BaseCommand):
                 help='Use existing user if user ID matches as a last option before new users would be created')
         parser.add_argument('--username-mapping',  dest='username_mapping', default=[],
                 type=str2tuple, action='append',
-                help='Map an import username to a target instance username. Maps referenced users regardless of --map-users. The expected format is "import-user=existing-user".')
+                help='Map an import username to a target instance username. Maps referenced users regardless of --map-users. The expected format is "import-user=existing-user", e.g. --username-mapping="AnonymousUser=AnonymousUser".')
         parser.add_argument('--create-unknown-users', dest='create_unknown_users', default=True,
             action='store_true', help='Create new inactive users for unmapped or unknown users referenced in inport data.')
         parser.add_argument('--auto-name-unknown-users', dest='auto_name_unknown_users', default=False,

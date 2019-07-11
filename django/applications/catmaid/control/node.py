@@ -2731,28 +2731,43 @@ def node_nearest(request:HttpRequest, project_id=None) -> JsonResponse:
     cursor = connection.cursor()
 
     skeleton_filter = None
+    # Separate access methods are needed to convice the Postgres planner to not
+    # to distance tests to all treenodes if only a skeleton is looked at.
     if skeleton_id:
         skeleton_filter = """
-            JOIN (
-                SELECT id
-                FROM treenode t
-                WHERE skeleton_id = %(skeleton_id)s
-            ) skeleton_node(id)
-            ON skeleton_node.id = te.id
+            WITH skeleton_edge AS (
+                SELECT te.id, te.edge
+                FROM treenode_edge te
+
+                JOIN (
+                    SELECT id
+                    FROM treenode t
+                    WHERE skeleton_id = %(skeleton_id)s
+                ) skeleton_node(id)
+                ON skeleton_node.id = te.id
+
+                WHERE project_id = %(project_id)s
+            )
+            SELECT id, edge
+            FROM skeleton_edge
+        """
+    else:
+        skeleton_filter = """
+            SELECT id, edge
+            FROM treenode_edge
+            WHERE project_id = %(project_id)s
         """
 
     # Find the globally closest treenode among the 100 closest edges. This
     # is done that way so that an index can be used. We just assume that the
     # closest node is among the closest edge bounding box centroids (<<->>
-    # operator).
+    # operator). Use a CTE to enforce better estimates and guarantee a low
+    # number of distance tests.
     cursor.execute("""
         SELECT treenode.id, skeleton_id, location_x, location_y, location_z
         FROM treenode
         JOIN (
-            SELECT te.id, te.edge
-            FROM treenode_edge te
             {skeleton_filter}
-            WHERE project_id = %(project_id)s
             ORDER BY edge <<->> ST_MakePoint(%(x)s,%(y)s,%(z)s)
             LIMIT 100
         ) closest_node(id, edge)

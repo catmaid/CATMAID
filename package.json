@@ -1,5 +1,7 @@
 {
   "devDependencies": {
+    "bootprint": "^1.0.2",
+    "bootprint-openapi": "^1.1.1",
     "csslint": "1.0.5",
     "jsdoc": "3.5.5",
     "jshint": "2.9.5",
@@ -9,15 +11,12 @@
     "karma-sinon": "1.0.5",
     "minimatch": "3.0.4",
     "mkdirp": "0.5.1",
+    "npm-run-all": "^4.1.5",
     "optimist": "0.6.1",
     "qunit": "2.6.1",
-    "sinon": "5.0.7",
-    "npm-run-all": "^4.1.5"
+    "sinon": "5.0.7"
   },
-  "dependencies": {
-    "bootprint": "^1.0.2",
-    "bootprint-openapi": "^1.1.1"
-  },
+  "dependencies": {},
   "scripts": {
     "lint:js": "jshint --config=.travis.jshintrc --exclude-path=.travis.jshintignore django/applications",
     "lint:css": "csslint django/applications/catmaid/static/css",

@@ -648,19 +648,19 @@ def neuronnames(request:HttpRequest, project_id=None) -> JsonResponse:
 
 @api_view(['GET', 'POST'])
 @requires_user_role(UserRole.Browse)
-def cable_lengths(request:HttpRequest, project_id=None) -> JsonResponse:
+def cable_lengths(request:HttpRequest, project_id=None) -> HttpResponse:
     """Get the cable length of a set of skeletons.
 
     Returns a mapping from skeleton ID to cable length.
     ---
     parameters:
       - name: project_id
-        description: Project of landmark
+        description: Project to operate in
         type: integer
         paramType: path
         required: true
       - name: skeleton_ids[]
-        description: IDs of the skeletons whose partners to find
+        description: IDs of the skeletons to query cable-length for
         required: true
         type: array
         items:
@@ -679,10 +679,20 @@ def cable_lengths(request:HttpRequest, project_id=None) -> JsonResponse:
     if not skeleton_ids:
         raise ValueError('Need at least one skeleton ID')
 
-    cable_lengths = dict(SkeletonSummary.objects.filter(project_id=project_id,
-            skeleton_id__in=skeleton_ids).values_list('skeleton_id',
-                'cable_length'))
-    return JsonResponse(cable_lengths)
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT COALESCE(json_object_agg(css.skeleton_id, css.cable_length), '{}'::json)::text
+        FROM catmaid_skeleton_summary css
+        JOIN UNNEST(%(query_skeleton_ids)s::bigint[]) query_skeleton(id)
+            ON query_skeleton.id = css.skeleton_id
+        WHERE project_id = %(project_id)s
+    """, {
+        'query_skeleton_ids': skeleton_ids,
+        'project_id': project_id,
+    })
+
+    return HttpResponse(cursor.fetchone()[0], content_type='application/json')
+
 
 @api_view(['GET', 'POST'])
 @requires_user_role(UserRole.Browse)

@@ -11,6 +11,10 @@ included in this changelog.
   pattern matching in the respective neuron name. If a '/' prefix is used, the
   pattern is interpreted as a regular expression.
 
+- GET|POST `/{project_id}/skeletons/validity`:
+  Obtain a list of valid or invalid skeletons in a set pf passed in skeleton
+  IDs.
+
 ### Modifications
 
 None.

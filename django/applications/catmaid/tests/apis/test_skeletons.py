@@ -1245,3 +1245,52 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         expected_result = [[351, [1, 235]], [2342, [373]]]
         self.assert_skeletons_by_node_labels([2342, 351], expected_result)
 
+
+    def test_skeleton_validity_list(self):
+        self.fake_authentication()
+
+        # Query all valid skeletons with a GET request
+        url = '/%d/skeletons/validity' % self.test_project_id
+        response = self.client.get(url, {
+            'skeleton_ids': [2388, 235, 373, 2411, 1, 361, 2364, 2451, 9999, -1],
+        })
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = frozenset([2388, 235, 373, 2411, 1, 361, 2364, 2451])
+        self.assertEqual(expected_result, frozenset(parsed_response))
+        # Also check response length to be sure there were no duplicates.
+        self.assertEqual(len(expected_result), len(parsed_response))
+
+        # Query all valid skeletons with a POST request
+        url = '/%d/skeletons/validity' % self.test_project_id
+        response = self.client.post(url, {
+            'skeleton_ids': [2388, 235, 373, 2411, 1, 361, 2364, 2451, 9999, -1],
+        })
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = frozenset([2388, 235, 373, 2411, 1, 361, 2364, 2451])
+        self.assertEqual(expected_result, frozenset(parsed_response))
+        # Also check response length to be sure there were no duplicates.
+        self.assertEqual(len(expected_result), len(parsed_response))
+
+        # Query all invalid skeletons with a GET request
+        url = '/%d/skeletons/validity' % self.test_project_id
+        response = self.client.get(url, {
+            'skeleton_ids': [2388, 235, 373, 2411, 1, 361, 2364, 2451, 9999, -1],
+            'return_invalid': True,
+        })
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = frozenset([9999, -1])
+        self.assertEqual(expected_result, frozenset(parsed_response))
+        # Also check response length to be sure there were no duplicates.
+        self.assertEqual(len(expected_result), len(parsed_response))
+
+        # Query all invalid skeletons with a POST request
+        url = '/%d/skeletons/validity' % self.test_project_id
+        response = self.client.post(url, {
+            'skeleton_ids': [2388, 235, 373, 2411, 1, 361, 2364, 2451, 9999, -1],
+            'return_invalid': True,
+        })
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = frozenset([9999, -1])
+        self.assertEqual(expected_result, frozenset(parsed_response))
+        # Also check response length to be sure there were no duplicates.
+        self.assertEqual(len(expected_result), len(parsed_response))

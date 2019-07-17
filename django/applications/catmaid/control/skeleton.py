@@ -696,6 +696,76 @@ def cable_lengths(request:HttpRequest, project_id=None) -> HttpResponse:
 
 @api_view(['GET', 'POST'])
 @requires_user_role(UserRole.Browse)
+def validity(request:HttpRequest, project_id=None) -> HttpResponse:
+    """Find out if passed skeleton IDs are valid (and represent present
+    skeletons).
+
+    Returns all passed in skeletons that are valid.
+    ---
+    parameters:
+      - name: project_id
+        description: Project of landmark
+        type: integer
+        paramType: path
+        required: true
+      - name: skeleton_ids[]
+        description: IDs of the skeletons whose partners to find
+        required: true
+        type: array
+        items:
+          type: integer
+        paramType: form
+      - name: return_invalid
+        description: Whether or not to return invalid skeleton IDs rather than valid ones.
+        required: false
+        type: bool
+        default: false
+    """
+
+    if request.method == 'GET':
+        data = request.GET
+    elif request.method == 'POST':
+        data = request.POST
+    else:
+        raise ValueError("Invalid HTTP method: " + request.method)
+
+    skeleton_ids = get_request_list(data, 'skeleton_ids', map_fn=int)
+    if not skeleton_ids:
+        raise ValueError('Need at least one skeleton ID')
+
+    return_invalid = get_request_bool(data, 'return_invalid', False)
+
+    cursor = connection.cursor()
+
+    if return_invalid:
+        cursor.execute("""
+            SELECT COALESCE(json_agg(query_skeleton.id), '[]'::json)::text
+            FROM UNNEST(%(query_skeleton_ids)s::bigint[]) query_skeleton(id)
+            LEFT JOIN catmaid_skeleton_summary css
+                ON css.skeleton_id = query_skeleton.id
+                AND css.project_id = %(project_id)s
+            WHERE css.skeleton_id IS NULL
+        """, {
+            'query_skeleton_ids': skeleton_ids,
+            'project_id': project_id,
+        })
+    else:
+        cursor.execute("""
+            SELECT COALESCE(json_agg(query_skeleton.id), '[]'::json)::text
+            FROM UNNEST(%(query_skeleton_ids)s::bigint[]) query_skeleton(id)
+            JOIN catmaid_skeleton_summary css
+                ON css.skeleton_id = query_skeleton.id
+            WHERE project_id = %(project_id)s
+        """, {
+            'query_skeleton_ids': skeleton_ids,
+            'project_id': project_id,
+        })
+
+    return HttpResponse(cursor.fetchone()[0], content_type='application/json')
+
+
+@api_view(['GET', 'POST'])
+@requires_user_role(UserRole.Browse)
 def connectivity_counts(request:HttpRequest, project_id=None) -> JsonResponse:
     """Get the number of synapses per type for r a set of skeletons.
 

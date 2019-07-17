@@ -648,19 +648,19 @@ def neuronnames(request:HttpRequest, project_id=None) -> JsonResponse:
 
 @api_view(['GET', 'POST'])
 @requires_user_role(UserRole.Browse)
-def cable_lengths(request:HttpRequest, project_id=None) -> JsonResponse:
+def cable_lengths(request:HttpRequest, project_id=None) -> HttpResponse:
     """Get the cable length of a set of skeletons.
 
     Returns a mapping from skeleton ID to cable length.
     ---
     parameters:
       - name: project_id
-        description: Project of landmark
+        description: Project to operate in
         type: integer
         paramType: path
         required: true
       - name: skeleton_ids[]
-        description: IDs of the skeletons whose partners to find
+        description: IDs of the skeletons to query cable-length for
         required: true
         type: array
         items:

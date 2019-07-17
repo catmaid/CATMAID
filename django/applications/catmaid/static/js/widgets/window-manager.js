@@ -1042,14 +1042,15 @@ CMWWindow.prototype.getContentHeight = function () {
 };
 
 /**
- * Remove this window from tree.  If this was the sole child of root,
- * remove the root frame from document as well.
+ * Remove this window from tree. Optionally, if this was the sole child of root,
+ * remove the root frame from document as well, unless <keep_root> is set to
+ * true.
  *
  * Call all listeners with a CLOSE event.
  *
  * @param e
  */
-CMWWindow.prototype.close = function (e) {
+CMWWindow.prototype.close = function (e, keep_root = false) {
   if (e) e.stopPropagation();
   else if (typeof event != "undefined" && event) event.cancelBubble = true;
 
@@ -1057,15 +1058,18 @@ CMWWindow.prototype.close = function (e) {
 
   if (root == this.parent) {
     var rootFrame = root.getFrame();
+
     // Remove all child views from root
     while (rootFrame.firstChild) {
       rootFrame.removeChild(rootFrame.firstChild);
     }
 
-    // Remove root frame from DOM
-    if (rootFrame.parentNode)
-      rootFrame.parentNode.removeChild(rootFrame);
-    root.close();
+    // Remove root frame from DOM, if not disabled
+    if (!keep_root) {
+      if (rootFrame.parentNode)
+        rootFrame.parentNode.removeChild(rootFrame);
+      root.close();
+    }
   } else {
     var sibling = this.parent.getSiblingOf(this);
     var siblingFrame = sibling.getFrame();

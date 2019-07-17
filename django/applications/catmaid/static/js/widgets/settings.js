@@ -250,6 +250,19 @@
 
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createCheckboxSetting(
+              "Project closes with last stack viewer",
+              CATMAID.Client.Settings[SETTINGS_SCOPE].last_stack_viewer_closes_project,
+              'If the last stack viewer is closed, the project will be closed as well. This ' +
+              'causes the destruction of all open widgets.',
+              function() {
+                CATMAID.Client.Settings[SETTINGS_SCOPE].last_stack_viewer_closes_project = this.checked;
+              }),
+          CATMAID.Client.Settings,
+          'last_stack_viewer_closes_project',
+          SETTINGS_SCOPE));
+
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
               'Transfer data in binary mode when possible',
               CATMAID.Client.Settings[SETTINGS_SCOPE].binary_data_transfer,
               'Using a binary transfer mode can speed up data loading slightly',

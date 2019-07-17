@@ -140,10 +140,13 @@
           this.trigger(Project.EVENT_STACKVIEW_CLOSED, removedViews[0]);
           Project.trigger(Project.EVENT_STACKVIEW_CLOSED, removedViews[0]);
 
-          if ( stackViewers.length === 0 )
-            self.destroy();
-          else
+          if ( stackViewers.length === 0 ) {
+            if (CATMAID.Client.Settings.session.last_stack_viewer_closes_project) {
+              self.destroy();
+            }
+          } else {
             stackViewers[ ( i + 1 ) % stackViewers.length ].getWindow().focus();
+          }
         }
       }
       CATMAID.ui.onresize();

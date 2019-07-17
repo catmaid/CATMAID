@@ -199,6 +199,9 @@ var project;
         remote_catmaid_instances: {
           default: []
         },
+        last_stack_viewer_closes_project: {
+          default: true
+        },
       }
     });
 

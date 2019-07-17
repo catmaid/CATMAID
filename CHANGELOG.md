@@ -46,6 +46,12 @@ Tracing overlay:
   the Settings Widget. The "Read-only mirror index" settings is kept but refers
   to list elements in the central configuration list.
 
+Miscellaneous:
+
+- Projects can now be kept open if all last stack-viewers are closed. To not
+  automatically close the open project with the last stack-viewer, uncheck the
+  "Project closes with last stack viewer" option in the Settings Widget.
+
 ### Bug fixes
 
 

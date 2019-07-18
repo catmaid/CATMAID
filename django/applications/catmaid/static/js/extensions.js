@@ -215,8 +215,8 @@ jQuery.expr[":"].icontainsnot = jQuery.expr.createPseudo(function(arg) {
    *
    * https://github.com/pixijs/pixi.js/blob/v4.x/src/core/utils/index.js
    */
-  PIXI.utils.isWebGLSupported = function() {
-    const contextOptions = { stencil: true, failIfMajorPerformanceCaveat: false };
+  PIXI.utils.isWebGLSupported = function(failIfMajorPerformanceCaveat = false) {
+    const contextOptions = { stencil: true, failIfMajorPerformanceCaveat: failIfMajorPerformanceCaveat };
 
     try
     {

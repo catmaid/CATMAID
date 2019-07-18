@@ -21,6 +21,10 @@
 - Spatial update notifications: only try to update the database configuration if
   the database isn't running as a database replica.
 
+- Potential WebGL performance problems are now detected when stacks and stack
+  groups are loaded. If problems are expected by the browser, a warning is
+  shown.
+
 
 ## 2019.06.20
 

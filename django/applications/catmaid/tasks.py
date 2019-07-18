@@ -11,7 +11,7 @@ from celery import shared_task
 
 
 @shared_task
-def cleanup_cropped_stacks():
+def cleanup_cropped_stacks() -> str:
     """Define a periodic task that runs every day at midnight. It removes all
     cropped stacks that are older than 24 hours.
     """
@@ -21,7 +21,7 @@ def cleanup_cropped_stacks():
 
 
 @shared_task
-def update_project_statistics():
+def update_project_statistics() -> str:
     """Call management command to update all project statistics
     """
     call_command('catmaid_populate_summary_tables')
@@ -29,7 +29,7 @@ def update_project_statistics():
 
 
 @shared_task
-def update_project_statistics_from_scratch():
+def update_project_statistics_from_scratch() -> str:
     """Call management command to update all project statistics
     """
     call_command('catmaid_populate_summary_tables', clean=True)
@@ -37,7 +37,7 @@ def update_project_statistics_from_scratch():
 
 
 @shared_task
-def update_node_query_cache():
+def update_node_query_cache() -> str:
     """Update the query cache of changed sections for node providers defined in
     the NODE_PROVIDERS settings variable.
     """
@@ -45,7 +45,7 @@ def update_node_query_cache():
     return "Updating node query cache"
 
 @shared_task
-def deactivate_inactive_users():
+def deactivate_inactive_users() -> str:
     """Mark all those users as inactive that didn't log in within a specified
     time range. Which users this are is defined by their group memberships. If a
     user is member of a group that is also marked as "deactivation group"

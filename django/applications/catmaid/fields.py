@@ -4,6 +4,7 @@ import psycopg2
 from psycopg2.extensions import register_adapter, adapt, AsIs
 from psycopg2.extras import CompositeCaster, register_composite
 import re
+from typing import Any, Dict
 
 from django import forms
 from django.contrib.postgres.fields import ArrayField
@@ -118,7 +119,7 @@ class Integer3D(object):
     def __str__(self):
         return "(%d, %d, %d)" % (self.x, self.y, self.z)
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         return {'x': self.x, 'y': self.y, 'z': self.z}
 
 class Integer3DField(CompositeField):

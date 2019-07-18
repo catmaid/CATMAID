@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+from typing import Dict, List
 import yaml
 
 from django import forms
@@ -12,7 +13,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.contrib.auth.models import User, Group
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy
 from django.urls import reverse
 from guardian.admin import GuardedModelAdmin
 from catmaid.models import (Project, DataView, Stack, InterpolatableSection,
@@ -30,7 +31,7 @@ from catmaid.views.dvid import DVIDImportWizard
 from catmaid.views.userimporter import UserImportWizard
 
 
-def add_related_field_wrapper(form, col_name, rel=None):
+def add_related_field_wrapper(form, col_name, rel=None) -> None:
     """Wrap a field on a form so that a little plus sign appears right next to
     it. If clicked a new instance can be added. Expects the form to have the
     admin site instance available in the admin_site field."""
@@ -38,11 +39,11 @@ def add_related_field_wrapper(form, col_name, rel=None):
         rel_model = form.Meta.model
         rel = rel_model._meta.get_field(col_name).remote_field
 
-    form.fields[col_name].widget =  admin.widgets.RelatedFieldWidgetWrapper(
+    form.fields[col_name].widget = admin.widgets.RelatedFieldWidgetWrapper(
         form.fields[col_name].widget, rel, form.admin_site, can_add_related=True)
 
 
-def duplicate_action(modeladmin, request, queryset):
+def duplicate_action(modeladmin, request, queryset) -> None:
     """
     An action that can be added to individual model admin forms to duplicate
     selected entries. Currently, it only duplicates each object without any
@@ -51,10 +52,10 @@ def duplicate_action(modeladmin, request, queryset):
     for object in queryset:
         object.id = None
         object.save()
-duplicate_action.short_description = "Duplicate selected without relations"
+duplicate_action.short_description = "Duplicate selected without relations" # type: ignore # https://github.com/python/mypy/issues/2087
 
 
-def export_project_json_action(modeladmin, requet, queryset):
+def export_project_json_action(modeladmin, request, queryset) -> HttpResponse:
     """An action that will export projects into a JSON file.
     """
     if len(queryset) == 0:
@@ -70,10 +71,10 @@ def export_project_json_action(modeladmin, requet, queryset):
 
     return response
 
-export_project_json_action.short_description = "Export projects as JSON file"
+export_project_json_action.short_description = "Export projects as JSON file" # type: ignore # https://github.com/python/mypy/issues/2087
 
 
-def export_project_yaml_action(modeladmin, requet, queryset):
+def export_project_yaml_action(modeladmin, request, queryset) -> HttpResponse:
     """An action that will export projects into a YAML file.
     """
     if len(queryset) == 0:
@@ -89,19 +90,19 @@ def export_project_yaml_action(modeladmin, requet, queryset):
 
     return response
 
-export_project_yaml_action.short_description = "Export projects as YAML file"
+export_project_yaml_action.short_description = "Export projects as YAML file" # type: ignore # https://github.com/python/mypy/issues/2087
 
 
-def delete_projects_plus_stack_data(modeladmin, request, queryset):
+def delete_projects_plus_stack_data(modeladmin, request, queryset) -> None:
     """An action that expects a list of projects as queryset that will be
     deleted. All stacks linked with a project_stack relation to those projects
     will be deleted as well along with stack groups that exclusivelt use the
     stacks and broken sections."""
     delete_projects_and_stack_data(queryset)
-delete_projects_plus_stack_data.short_description = "Delete selected incl. linked stack data"
+delete_projects_plus_stack_data.short_description = "Delete selected incl. linked stack data" # type: ignore # https://github.com/python/mypy/issues/2087
 
 
-def delete_projects_and_data(modeladmin, request, queryset):
+def delete_projects_and_data(modeladmin, request, queryset) -> HttpResponseRedirect:
     """An action that expects a list of projects as queryset that will be
     deleted along with all data that reference it (e.g. treenodes, volumes,
     ontologies). A confirmation page will be shown.
@@ -109,7 +110,7 @@ def delete_projects_and_data(modeladmin, request, queryset):
     project_ids = list(map(str, queryset.values_list('id', flat=True)))
     return HttpResponseRedirect(reverse("catmaid:delete-projects-with-data") +
             "?ids={}".format(",".join(project_ids)))
-delete_projects_and_data.short_description = "Delete selected"
+delete_projects_and_data.short_description = "Delete selected" # type: ignore # https://github.com/python/mypy/issues/2087
 
 
 class BrokenSliceModelForm(forms.ModelForm):
@@ -137,7 +138,7 @@ class GroupAdminForm(forms.ModelForm):
         queryset=User.objects.all(),
         required=False,
         widget=FilteredSelectMultiple(
-            verbose_name=_('Users'),
+            verbose_name=ugettext_lazy('Users'),
             is_stacked=False
         )
     )
@@ -180,7 +181,7 @@ class BrokenSliceAdmin(GuardedModelAdmin):
             fieldsets[0][1]['fields'].remove('last_index')
         return fieldsets
 
-    def save_model(self, request, obj, form, change):
+    def save_model(self, request, obj, form, change) -> None:
         """ After calling the super method, additinal broken slice records are
         created if a "last index was specified.
         """
@@ -318,7 +319,7 @@ class StackMirrorAdmin(GuardedModelAdmin):
     actions = (duplicate_action,)
 
 class DataViewConfigWidget(forms.widgets.Textarea):
-    def render(self, name, value, attrs=None, renderer=None):
+    def render(self, name, value, attrs=None, renderer=None) -> str:
         output = super(DataViewConfigWidget, self).render(name, value, attrs,
                 renderer)
         output += "<p id='data_view_config_help' class='help'></p>"
@@ -444,7 +445,7 @@ def color(self):
     except Exception as e:
         return mark_safe('<div>%s</div>' % str(e))
 
-color.allow_tags = True
+color.allow_tags = True # type: ignore # https://github.com/python/mypy/issues/2087
 User.color = color
 
 # Add model admin views

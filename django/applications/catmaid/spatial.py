@@ -1,6 +1,6 @@
 from django.db import connection
 
-def enable_spatial_update_events(ignore_missing_fn=False):
+def enable_spatial_update_events(ignore_missing_fn:bool=False) -> bool:
     """Enable history tracking globally.
     """
     cursor = connection.cursor()
@@ -17,7 +17,7 @@ def enable_spatial_update_events(ignore_missing_fn=False):
     return True
 
 
-def disable_spatial_update_events(ignore_missing_fn=False):
+def disable_spatial_update_events(ignore_missing_fn:bool=False) -> bool:
     """Disable history tracking globally.
     """
     cursor = connection.cursor()

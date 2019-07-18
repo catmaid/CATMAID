@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
+from collections import defaultdict
 import numpy as np
 import networkx as nx
-
-from collections import defaultdict
+from typing import Any, Dict, DefaultDict, List, Set
 
 from catmaid.models import (ClassInstance, ClassInstanceClassInstance, Relation,
         Review, Treenode, TreenodeConnector, TreenodeClassInstance )
@@ -97,7 +97,7 @@ class Skeleton(object):
         ).select_related('connector')
 
         relations = dict((r.relation_name, r.id) for r in Relation.objects.filter(project=self.project_id))
-        results = {}
+        results = {} # type: Dict
 
         for tc in qs_tc:
             if not tc.connector_id in results:
@@ -119,7 +119,7 @@ class Skeleton(object):
         relations = dict((r.relation_name, r.id) for r in Relation.objects.filter(project=self.project_id))
         presynaptic_connectors = [k for k,v in self.connected_connectors.items() if len(v['presynaptic_to']) != 0]
         qs_tc = TreenodeConnector.objects.filter( project=self.project_id, connector__in=presynaptic_connectors, relation=relations['postsynaptic_to'] )
-        res = {}
+        res = {} # type: Dict
         for ele in qs_tc:
             if not ele.skeleton_id in res:
                 res[ele.skeleton_id] = 0
@@ -131,7 +131,7 @@ class Skeleton(object):
         relations = dict((r.relation_name, r.id) for r in Relation.objects.filter(project=self.project_id))
         postsynaptic_connectors = [k for k,v in self.connected_connectors.items() if len(v['postsynaptic_to']) != 0]
         qs_tc = TreenodeConnector.objects.filter( project=self.project_id, connector__in=postsynaptic_connectors, relation=relations['presynaptic_to'] )
-        res = {}
+        res = {} # type: Dict
         for ele in qs_tc:
             if not ele.skeleton_id in res:
                 res[ele.skeleton_id] = 0
@@ -143,7 +143,7 @@ class Skeleton(object):
         treenode_qs = Treenode.objects.filter(
             skeleton_id=self.skeleton_id)
         # retrieve all reviews
-        tid_to_reviews = defaultdict(list)
+        tid_to_reviews = defaultdict(list) # type: DefaultDict[Any, List]
         for r in Review.objects.filter(skeleton_id=self.skeleton_id):
             tid_to_reviews[r.id].append(r)
         # build the networkx graph from it
@@ -227,7 +227,7 @@ class SkeletonGroup(object):
         """ A set of skeleton ids """
         self.skeleton_id_list = list(set(skeleton_id_list))
         self.project_id = project_id
-        self.skeletons = {}
+        self.skeletons = {} # type: Dict
         for skeleton_id in skeleton_id_list:
             if not skeleton_id in self.skeletons:
                 self.skeletons[skeleton_id] = Skeleton(skeleton_id, self.project_id)
@@ -246,7 +246,7 @@ class SkeletonGroup(object):
                 'cable_length': str( self.skeletons[skeleton_id].cable_length() )
             })
 
-        connectors = {}
+        connectors = {} # type: Dict
         for skeleton_id, skeleton in self.skeletons.items():
             for connector_id, v in skeleton.connected_connectors.items():
                 if not connector_id in connectors:
@@ -283,7 +283,7 @@ class SkeletonGroup(object):
     def all_shared_connectors(self):
         """ Returns a set of connector ids that connect skeletons in the group
         """
-        resulting_connectors=set()
+        resulting_connectors = set() # type: Set
         for u,v,d in self.graph.edges_iter(data=True):
             resulting_connectors.update(d['connector_ids'])
         return resulting_connectors
@@ -295,7 +295,7 @@ def confidence_filtering( skeleton, confidence_threshold ):
 
 def edgecount_filtering( skeleton, edgecount ):
     graph = skeleton.graph
-    keep = set()
+    keep = set() # type: Set
 
     # init edge count (and compute distance) on the edges
     for ID_from, ID_to in graph.edges(data=False):
@@ -385,7 +385,7 @@ def compartmentalize_skeletongroup( skeleton_id_list, project_id, **kwargs ):
                     'node_count': subg.number_of_nodes(),
                 })
 
-    connectors = {}
+    connectors = {} # type: Dict
     for skeleton_id, skeleton in skelgroup.skeletons.items():
         for connector_id, v in skeleton.connected_connectors.items():
             if not connector_id in connectors:

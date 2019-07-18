@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from typing import List, Tuple, Union
+
 from django import forms
 from django.forms.widgets import Widget
 
@@ -39,7 +41,7 @@ class Integer3DWidget(LabeledMultiWidget):
         super(Integer3DWidget, self).__init__(('X', 'Y', 'Z'), widgets, attrs,
                 **kwargs)
 
-    def decompress(self, value):
+    def decompress(self, value) -> List:
         from catmaid.fields import Integer3D
         if value:
             if isinstance(value, str):
@@ -67,7 +69,7 @@ class Double3DWidget(LabeledMultiWidget):
         super(Double3DWidget, self).__init__(('X', 'Y', 'Z'), widgets, attrs,
                 **kwargs)
 
-    def decompress(self, value):
+    def decompress(self, value) -> List:
         from catmaid.fields import Double3D
         if value:
             if isinstance(value, str):
@@ -98,7 +100,7 @@ class RGBAWidget(LabeledMultiWidget):
         super(RGBAWidget, self).__init__(('R', 'G', 'B', 'A', ''), widgets,
                 attrs, **kwargs)
 
-    def decompress(self, value):
+    def decompress(self, value) -> Union[List, Tuple]:
         from catmaid.fields import RGBA
         if value:
             if isinstance(value, tuple) or isinstance(value, list):
@@ -141,7 +143,7 @@ class DownsampleFactorsWidget(forms.MultiWidget):
         super(DownsampleFactorsWidget, self).__init__(widgets,
                 attrs, **kwargs)
 
-    def decompress(self, value):
+    def decompress(self, value) -> List:
         if value is None:
             return [0, ['X', 'Y'], None, None]
 

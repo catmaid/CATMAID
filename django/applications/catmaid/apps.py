@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+from typing import List
 
 from catmaid import history, spatial
 
@@ -57,7 +58,7 @@ def get_system_user(user_model=None):
         return users[0]
 
 
-def check_old_version(sender, **kwargs):
+def check_old_version(sender, **kwargs) -> None:
     """Make sure this migration system starts with all South migrations applied,
     in case there are already existing tables."""
     # Only validate after catmaid was migrated
@@ -104,7 +105,7 @@ def check_old_version(sender, **kwargs):
                 "regular update steps call 'manage.py migrate --fake catmaid "
                 "0001_initial'.")
 
-def check_history_setup(app_configs, **kwargs):
+def check_history_setup(app_configs, **kwargs) -> List[str]:
     messages = []
     # Enable or disable history tracking, depending on the configuration.
     # Ignore silently, if the database wasn't migrated yet.
@@ -121,7 +122,7 @@ def check_history_setup(app_configs, **kwargs):
             hint="Migrate CATMAID"))
     return messages
 
-def check_spatial_update_setup(app_configs, **kwargs):
+def check_spatial_update_setup(app_configs, **kwargs) -> List[str]:
     messages = []
 
     if is_read_only():
@@ -144,7 +145,7 @@ def check_spatial_update_setup(app_configs, **kwargs):
             hint="Migrate CATMAID"))
     return messages
 
-def validate_environment(sender, **kwargs):
+def validate_environment(sender, **kwargs) -> None:
     """Make sure CATMAID is set up correctly."""
     # Only validate after catmaid was migrated
     if type(sender) != CATMAIDConfig:
@@ -153,7 +154,7 @@ def validate_environment(sender, **kwargs):
     sender.validate_projects()
     sender.init_classification()
 
-def prepare_db_statements(sender, connection, **kwargs):
+def prepare_db_statements(sender, connection, **kwargs) -> None:
     """Prepare database statements for node queries.
     """
     from catmaid.control import node
@@ -163,7 +164,7 @@ class CATMAIDConfig(AppConfig):
     name = 'catmaid'
     verbose_name = "CATMAID"
 
-    def ready(self):
+    def ready(self) -> None:
         """Perform initialization for back-end"""
         logger.info("CATMAID version {}".format(settings.VERSION))
 
@@ -225,7 +226,7 @@ class CATMAIDConfig(AppConfig):
         "STATIC_EXTENSION_ROOT": str,
     }
 
-    def validate_configuration(self):
+    def validate_configuration(self) -> None:
         """Make sure CATMAID is configured properly and raise an error if not.
         """
         # Make sure all expected settings are available.
@@ -254,7 +255,7 @@ class CATMAIDConfig(AppConfig):
             settings.SWAGGER_SETTINGS['api_path'] = settings.CATMAID_URL
 
 
-    def check_superuser(self):
+    def check_superuser(self) -> None:
         """Make sure there is at least one superuser available and, if configured,
         SYSTEM_USER_ID points to a superuser. Expects database to be set up.
         """
@@ -293,7 +294,7 @@ class CATMAIDConfig(AppConfig):
             # not needed during initialization.
             logger.warn(str(e))
 
-    def init_classification(self):
+    def init_classification(self) -> None:
         """ Creates a dummy project to store classification graphs in.
         """
         Project = self.get_model("Project")
@@ -305,7 +306,7 @@ class CATMAIDConfig(AppConfig):
                 title="Classification dummy project")
 
 
-    def validate_projects(self):
+    def validate_projects(self) -> None:
         """Make sure all projects have the relations and classes available they
         expect."""
         from catmaid.control.project import validate_project_setup

@@ -200,7 +200,10 @@ var project;
           default: []
         },
         last_stack_viewer_closes_project: {
-          default: true
+          default: true,
+        },
+        warn_on_potential_gl_issues: {
+          default: true,
         },
       }
     });
@@ -1508,6 +1511,32 @@ var project;
     this._contextHelp.innerHTML = content.join('');
   };
 
+  /**
+   * Warns the user with a dialog about potential WebGL performance issues.
+   */
+  Client.warnOnPotentialGlPerformanceProblems = function () {
+    let glSupported = PIXI.utils.isWebGLSupported(false);
+    let glSupportedStrict = PIXI.utils.isWebGLSupported(true);
+
+    if (CATMAID.Client.Settings.session.warn_on_potential_gl_issues &&
+        glSupported && !glSupportedStrict) {
+      let handler = (e) => {
+        if (e.target.id !== 'no-gl-perf-warn') return;
+        CATMAID.Client.Settings.session.warn_on_potential_gl_issues = !e.target.checked;
+      };
+      document.addEventListener('change', handler);
+      let duration = 5000;
+      CATMAID.warn("Potential graphics performance problem: due to the graphics hardware or graphics driver installed, rendering speed might be reduced. Potential fix in case of Nvidia hardware and Linux: make sure official Nvidia drivers are in use.<br /><label><input id='no-gl-perf-warn' type='checkbox' style='position:relative; top:0.25em;' />Don't show again</label>", {
+        duration: duration,
+      });
+      // Remove the handler after three times the duration to allow users to
+      // click on it. There are certainly more robust ways to do this, but for
+      // this corner case, a simpler approach like this feels justified.
+      setTimeout(() => {
+        document.removeEventListener('change', handler);
+      }, 3 * duration);
+    }
+  };
 
   // Export Client
   CATMAID.Client = Client;
@@ -1537,6 +1566,7 @@ var project;
         }
 
         CATMAID.throwOnInsufficientWebGlContexts(json.stacks.length);
+        CATMAID.Client.warnOnPotentialGlPerformanceProblems();
 
         var loadedStackViewers = [];
 
@@ -1740,6 +1770,7 @@ var project;
   {
     if (!stackViewer) {
       CATMAID.throwOnInsufficientWebGlContexts(1);
+      CATMAID.Client.warnOnPotentialGlPerformanceProblems();
     }
     // If the stack's project is not the opened project, replace it.
     if (!(project && project.id == e.pid)) {

@@ -312,6 +312,14 @@
         // destroy the tracing overlay.
         stackViewer.removeLayer(layerName);
       }
+
+      if (activeTracingLayer.stackViewer === stackViewer) {
+        activeTracingLayer = null;
+      }
+
+      if (activeStackViewer === stackViewer) {
+        activeStackViewer = null;
+      }
     }
 
     /**

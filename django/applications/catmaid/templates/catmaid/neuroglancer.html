@@ -6,11 +6,6 @@
   <head>
     <meta charset="UTF-8">
     <title>neuroglancer</title>
-    {% for f in STYLESHEET_IDS %}
-        {% if 'neuroglancer' in f %}
-            {% stylesheet f %}
-        {% endif %}
-    {% endfor %}
   </head>
   <body>
     <div id="neuroglancer-container"></div>

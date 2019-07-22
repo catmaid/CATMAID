@@ -74,16 +74,6 @@ STYLESHEETS['catmaid'] = {
             'media': 'screen,projection',
         }
     }
-STYLESHEETS['neuroglancer'] = {
-        'source_filenames': (
-            'libs/neuroglancer/styles.css',
-        ),
-        'output_filename': 'css/neuroglancer.css',
-        'extra_context': {
-            'media': 'screen,projection',
-        }
-    }
-
 
 libraries_js = OrderedDict([
     ('modernizr', ['*.js']),
@@ -148,6 +138,9 @@ for k, v in six.iteritems(libraries_js):
 # separately. Entries follow the same pattern as above: key - path.
 non_pipeline_js = {
     'neuroglancer-worker': 'libs/neuroglancer/chunk_worker.bundle.js',
+    'neuroglancer-draco': 'libs/neuroglancer/draco.bundle.js',
+    'neuroglancer-tfjs-library': 'libs/neuroglancer/tfjs-library.bundle.js',
+    'neuroglancer-async-computation': 'libs/neuroglancer/async_computation.bundle.js',
     'neuroglancer-main': 'libs/neuroglancer/main.bundle.js',
 }
 

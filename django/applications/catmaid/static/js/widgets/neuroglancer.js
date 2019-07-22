@@ -80,10 +80,14 @@
   };
 
   NeuroglancerWidget.prototype.getNeuroglancerURL = function () {
-    return CATMAID.makeURL("neuroglancer#" + this.getNeuroglancerHash());
+    var url = CATMAID.makeURL("neuroglancer#" + this.getNeuroglancerHash());
+    console.log(url);
+    return url;
+    //return "https://neuroglancer-demo.appspot.com/fafb.html#" + this.getNeuroglancerHash();
   };
 
   NeuroglancerWidget.prototype.getNeuroglancerHash = function () {
+    /*
     var sv = project.getStackViewers()[0];
     var stack = sv.primaryStack;
     var ngStackURL = (new URL(window.location).origin) + CATMAID.makeURL([
@@ -100,12 +104,31 @@
     var voxCoords = stackCoord.join('_');
     var voxSize = [stack.resolution.x, stack.resolution.y, stack.resolution.z].join('_');
     var zoomFactor = Math.pow(2, sv.s) * stack.resolution.x;
-    return "!{'layers':{'" + stack.title + "':{'type':'image'_'source':'catmaid://" +
+    */
+    var sv = project.getStackViewers()[0];
+    var stack = sv.primaryStack;
+    var projCoord = sv.projectCoordinates();
+    var stackCoord = [
+      stack.projectToStackX(projCoord.z, projCoord.y, projCoord.x),
+      stack.projectToStackY(projCoord.z, projCoord.y, projCoord.x),
+      stack.projectToStackZ(projCoord.z, projCoord.y, projCoord.x),
+    ];
+    var voxCoords = stackCoord.join(',');
+    var voxSize = [stack.resolution.x, stack.resolution.y, stack.resolution.z].join(',');
+    var zoomFactor = Math.pow(2, sv.s) * stack.resolution.x;
+    console.log(voxCoords, voxSize, zoomFactor);
+    //https://neuroglancer-demo.appspot.com/fafb.html#
+    var url = '!{"layers":[{"source":"precomputed://gs://neuroglancer-fafb-data/fafb_v14/fafb_v14_orig_sharded","type":"image","name":"fafb_v14","visible":false},{"source":"precomputed://gs://neuroglancer-fafb-data/fafb_v14/fafb_v14_clahe_sharded","type":"image","name":"fafb_v14_clahe"},{"source":"precomputed://gs://fafb-ffn1-20190521/segmentation","type":"segmentation","skeletonRendering":{"mode2d":"lines_and_points","mode3d":"lines"},"name":"ffn1-20190521"},{"source":"precomputed://gs://fafb-ffn1-20190521/segmentation","type":"segmentation","skeletons":"precomputed://gs://fafb-ffn1-20190521/segmentation/skeletons_32nm","segments":["1562970225"],"skeletonRendering":{"mode2d":"lines_and_points","mode3d":"lines"},"name":"ffn1-20190521-skeletons","visible":false}],"navigation":{"pose":{"position":{"voxelSize":[' +  
+      voxSize + '],"voxelCoordinates":[' +
+      voxCoords + ']}},"zoomFactor":' + zoomFactor + '},"perspectiveOrientation":[0.732374906539917,0.13518624007701874,0.024904685094952583,0.6668818593025208],"perspectiveZoom":638.6927810905479,"showSlices":false,"selectedLayer":{"layer":"ffn1-20190521","visible":true},"layout":"xy"}';
+    console.log(url);
+    return url;
+    /*return "!{'layers':{'" + stack.title + "':{'type':'image'_'source':'catmaid://" +
               ngStackURL + "'}}"
         + "_'navigation':{'pose':{'position':{"
           + "'voxelSize':[" + voxSize + "]_"
           + "'voxelCoordinates':[" + voxCoords + "]_"
-          + "'zoomFactor':" + zoomFactor + "}}}}";
+          + "'zoomFactor':" + zoomFactor + "}}}}";*/
   }
 
   NeuroglancerWidget.prototype.refresh = function() {

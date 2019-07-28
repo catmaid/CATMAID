@@ -26,6 +26,7 @@
     this.annotationGroupingPattern = '/(.*)_([lr])';
     this.minGroupInstances = 2;
     this.maxGroupInstances = 2;
+    this.extraGroups = new Map();
 
     // Some parts of the widget need to update when skeleton sources are added
     // or removed.
@@ -290,7 +291,68 @@
         });
 
         // Add groups/subgroups manually through a custom drop down
-        //controls.push(CATMAID.DOM
+        let newGroupingSection = document.createElement('span');
+        newGroupingSection.classList.add('section-header');
+        newGroupingSection.appendChild(document.createTextNode('New group'));
+        controls.push({
+          type: 'child',
+          element: newGroupingSection,
+        });
+
+        let newGroupName = '';
+        controls.push({
+          type: 'text',
+          label: 'Group name',
+          title: 'The name of the new group',
+          onchange: (e) => newGroupName = e.target.value,
+        });
+
+        let newSubGroupName = '';
+        controls.push({
+          type: 'text',
+          label: 'Subgroups',
+          title: 'The name of each subgroup, along with its annotation. ' +
+            'Each entry is comma separated from other and of the form ' +
+            '"subgroup|annotation", e.g. "l|Brain&SEZ sensory left, r|Brain&SEZ sensory right".',
+          onchange: (e) => newSubGroupName = e.target.value,
+        });
+
+        controls.push({
+          type: 'button',
+          label: 'Add',
+          onclick: (e) => {
+            if (!newGroupName || !newGroupName.length) {
+              CATMAID.warn('Need valid group name');
+              return;
+            }
+            if (!newSubGroupName || !newSubGroupName.length) {
+              CATMAID.warn('Need valid sub-group name(s)');
+              return;
+            }
+            let subGroupEntries = newSubGroupName.split(',').map(e => e.trim());
+            if (!subGroupEntries || !subGroupEntries.length) {
+              CATMAID.warn('Need valid sub-group name(s)');
+              return;
+            }
+            let subGroups = new Map(subGroupEntries.map(sge => {
+              let parts = sge.split('|');
+              if (!parts || parts.length !== 2) {
+                CATMAID.warn('Could not parse extra sub-group entry: ' + sge);
+                return null;
+              }
+              let annotationId = CATMAID.annotations.getID(parts[1]);
+              if (annotationId === undefined || annotationId === null) {
+                CATMAID.warn('Could not find ID for annotation: ' + parts[1]);
+                return null;
+              }
+              return [parts[0], annotationId];
+            }).filter(sge => sge !== null));
+            // Add extra groups
+            target.extraGroups.set(newGroupName, subGroups);
+            CATMAID.msg('Success', 'Added new extra group: ' + newGroupName);
+            target.update();
+          },
+        });
 
         // Global parameters:
         // Max open ends (0.03)
@@ -325,6 +387,7 @@
                     o.push([
                       k,
                       Array.from(groups.get(k).keys()),
+                      Array.from(groups.get(k).values()).map(id => CATMAID.annotations.getName(id)),
                     ]);
                     return o;
                   }, []),
@@ -340,7 +403,65 @@
             render: function(data, type, row, meta) {
               return data.join(', ');
             },
+          }, {
+            name: 'Sub-group annotations',
+            render: function(data, type, row, meta) {
+              return data.join(', ');
+            },
           }],
+        });
+
+        // Show table with extra groups
+        let extraGroupHeader = content.appendChild(document.createElement('h1'));
+        extraGroupHeader.style.clear = 'both';
+        extraGroupHeader.appendChild(document.createTextNode('Extra groups'));
+        let extraGroupTable = content.appendChild(document.createElement('table'));
+        extraGroupTable.appendChild(document.createElement('thead'));
+        extraGroupTable.appendChild(document.createElement('tbody'));
+
+        let extraGroupDataTable = $(extraGroupTable).DataTable({
+          dom: "lfrtip",
+          lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+          paging: true,
+          order: [[0, 0]],
+          ajax: (data, callback, settings) => {
+            callback({
+              'draw': data.draw,
+              'data': Array.from(widget.extraGroups.keys()).reduce((o,k) => {
+                o.push([
+                  k,
+                  Array.from(widget.extraGroups.get(k).keys()),
+                  Array.from(widget.extraGroups.get(k).values()).map(id => CATMAID.annotations.getName(id)),
+                ]);
+                return o;
+              }, []),
+            });
+          },
+          columns: [{
+            name: 'Group',
+            width: '25%',
+          }, {
+            name: 'Sub-groups',
+            render: function(data, type, row, meta) {
+              return data.join(', ');
+            },
+          }, {
+            name: 'Sub-group annotations',
+            render: function(data, type, row, meta) {
+              return data.join(', ');
+            },
+          }, {
+            name: 'Action',
+            render: function(data, type, row, meta) {
+              return '<a href="#" data-role="delete-extra-group">Delete</a>';
+            },
+          }],
+        }).on('click', 'a[data-role=delete-extra-group]', (e) => {
+          var table = $(e.target).closest('table');
+          var tr = $(e.target).closest('tr');
+          var data =  $(table).DataTable().row(tr).data();
+          widget.extraGroups.delete(data[0]);
+          widget.update();
         });
       }
     },

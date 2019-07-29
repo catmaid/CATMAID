@@ -67,7 +67,7 @@ class GridWorker():
                 updated_cells += 1
 
                 # TODO: delete in batches
-                DirtyNodeGridCacheCell.objects.get(grid_id=g.id, x_index=w_i,
+                DirtyNodeGridCacheCell.objects.filter(grid_id=g.id, x_index=w_i,
                         y_index=h_i, z_index=d_i).delete()
 
         logger.debug('Updated {} grid cell(s) in {} grid cache(s)'.format(

@@ -36,6 +36,8 @@
 
     this._tileRequest = {};
     this._updatePixiInterpolationMode();
+
+    this.flipY = false;
   }
 
   PixiTileLayer.prototype = Object.create(CATMAID.TileLayer.prototype);
@@ -130,6 +132,14 @@
   /** @inheritdoc */
   PixiTileLayer.prototype.redraw = function (completionCallback, blocking) {
     var scaledStackPosition = this.stackViewer.scaledPositionInStack(this.stack);
+
+    if (this.flipY) {
+      // Move the uppper right corner Y coordinate back to the view center,
+      // mirror it and move the coordinate back to the upper right corner.
+      scaledStackPosition.yc = -1 * (scaledStackPosition.yc + this.stackViewer.viewHeight / 2) +
+          this.stack.dimension.y * this.stackViewer.scale - this.stackViewer.viewHeight / 2;
+    }
+
     var tileInfo = this.tilesForLocation(
         scaledStackPosition.xc,
         scaledStackPosition.yc,
@@ -187,6 +197,10 @@
     this.batchContainer.position.y = top;
     this.batchContainer.scale.x = tileInfo.mag * tileInfo.anisotropy.x;
     this.batchContainer.scale.y = tileInfo.mag * tileInfo.anisotropy.y;
+    if (this.flipY) {
+      this.batchContainer.scale.y *= -1;
+      this.batchContainer.position.y = -top + this.stackViewer.viewHeight;
+    }
     var toLoad = [];
     var loading = false;
     var y = 0;

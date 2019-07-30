@@ -284,6 +284,22 @@
         }
       }
 
+      // Flip Y
+      if (layer.hasOwnProperty('flipY')) {
+        var flipYCheckbox = $('<input type="checkbox" />');
+        var flipYLabel = $('<label/>')
+            .append(flipYCheckbox)
+            .append('Flip Y');
+        flipYCheckbox.prop('checked', layer.flipY);
+        flipYCheckbox.change(function () {
+          var key = $(this).parents('.layerControl').data('key');
+          stackViewer.getLayer(key).flipY = this.checked;
+          stackViewer.redraw();
+        });
+
+        container.append($('<div class="setting"/>').append(flipYLabel));
+      }
+
       // Blend mode
       if (layer.getAvailableBlendModes) {
         var blendModes = layer.getAvailableBlendModes();

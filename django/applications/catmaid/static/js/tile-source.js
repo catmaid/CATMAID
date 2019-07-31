@@ -610,6 +610,7 @@
       let datasetPath = this.datasetPath(zoomLevel);
       return this.reader
           .dataset_exists(datasetPath)
+          .catch(() => false)
           .then(exists => {
             if (exists) {
               return this.reader.get_dataset_attributes(datasetPath)

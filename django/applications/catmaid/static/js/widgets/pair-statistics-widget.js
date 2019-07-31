@@ -114,62 +114,6 @@
     if (!this.controls) {
       return;
     }
-
-    // Remove all references to now inavailable sources
-    for (let targetName of this.targeted3dViewerNames.keys()) {
-      let source = CATMAID.skeletonListSources.getSource(targetName);
-      if (!source) {
-        this.targeted3dViewerNames.delete(targetName);
-      }
-    }
-
-    let targetSelectContainer = this.controls.querySelector('span[data-role=display-target]');
-    if (targetSelectContainer) {
-      this.updateTargetSelect(targetSelectContainer);
-    }
-  };
-
-  /**
-   * Create a new checkbox target select in the passed in container.
-   */
-  PairStatisticsWidget.prototype.updateTargetSelect = function(targetSelectContainer) {
-    // Clear current content
-    while (targetSelectContainer.firstChild) {
-      targetSelectContainer.removeChild(targetSelectContainer.firstChild);
-    }
-    // Get a list of current skeleton sources and create a checkbox select for
-    // the available 3D Viewers.
-    var availableSources = PairStatisticsWidget.getAvailable3dViewers()
-        .sort()
-        .map(function(name) {
-          return {
-            title: name,
-            value: name
-          };
-        });
-    // Add unknown 3D Viewers as visible by default
-    for (let i=0; i<availableSources.length; ++i) {
-      let name = availableSources[i].value;
-      if (!this.targeted3dViewerNames.has(name)) {
-        this.targeted3dViewerNames.set(name, true);
-      }
-    }
-    // Add HTML controls
-    var select = CATMAID.DOM.createCheckboxSelect("Target 3D viewers",
-        availableSources, this.targeted3dViewerNames.keys(), true);
-    if (availableSources.length === 0) {
-      var element = select.querySelector('select');
-      element.setAttribute('disabled', '');
-    }
-
-    var self = this;
-    select.onchange = function(e) {
-      let selected = e.target.checked;
-      let sourceName = e.target.value;
-      self.targeted3dViewerNames.set(sourceName, selected);
-      self.updateDisplay();
-    };
-    targetSelectContainer.appendChild(select);
   };
 
   PairStatisticsWidget.prototype.updateEnvironment = function() {

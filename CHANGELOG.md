@@ -27,6 +27,9 @@
 
 - Synapse plot: fix read-out of settings input fields.
 
+- Connectivity matrix: don't raise an error in "fraction" display mode on a
+  widget refresh (e.g. caused by a neuron name update).
+
 
 ## 2019.06.20
 

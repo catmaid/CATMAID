@@ -814,6 +814,10 @@
    */
   ConnectivityMatrixWidget.prototype.addConnectivityMatrixTable = function(
       matrix, content, synThreshold, rotateColumns) {
+    // Don't try to create a table if there are no neurons added.
+    if (this.matrix.getNumberOfRows() === 0 || this.matrix.getNumberOfColumns() === 0) {
+      return;
+    }
     // Create table representation for connectivity matrix
     var table = document.createElement('table');
     table.setAttribute('class', 'partner_table');

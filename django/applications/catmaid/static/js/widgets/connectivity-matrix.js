@@ -285,12 +285,15 @@
         var relativeDisplayCb = document.createElement('input');
         relativeDisplayCb.setAttribute('type', 'checkbox');
         relativeDisplayCb.checked = this.relativeDisplay;
-        relativeDisplayCb.onclick = (function(e) {
+        relativeDisplayCb.onclick = e => {
           this.relativeDisplay = e.target.checked;
+          if (this.matrix.getNumberOfRows() === 0 || this.matrix.getNumberOfColumns() === 0) {
+            return;
+          }
           var prepare = this.connectivityData ? Promise.resolve() :
             this.updateConnectivityCounts();
           prepare.then(this.refresh.bind(this));
-        }).bind(this);
+        };
         var relativeDisplay = document.createElement('label');
         relativeDisplay.appendChild(relativeDisplayCb);
         relativeDisplay.appendChild(document.createTextNode('Fractions'));

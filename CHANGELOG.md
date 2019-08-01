@@ -30,6 +30,9 @@
 - Connectivity matrix: don't raise an error in "fraction" display mode on a
   widget refresh (e.g. caused by a neuron name update).
 
+- Connectivity matrix: don't show error when enabling "fractions" display
+  without neurons being loaded.
+
 
 ## 2019.06.20
 

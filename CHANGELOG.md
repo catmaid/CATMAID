@@ -25,6 +25,8 @@
   groups are loaded. If problems are expected by the browser, a warning is
   shown.
 
+- Synapse plot: fix read-out of settings input fields.
+
 
 ## 2019.06.20
 

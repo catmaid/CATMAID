@@ -104,9 +104,10 @@
                                      undefined,
                                      undefined,
                                      10);
-        tag.onchange = this.onchangeAxonInitialSegmentTag.bind(this, tag);
+        let tagInput = tag.querySelector('input');
+        tag.onchange = this.onchangeAxonInitialSegmentTag.bind(this, tagInput);
 
-        ais_choice.onchange = this.onchangeChoiceAxonInitialSegment.bind(this, ais_choice, tag);
+        ais_choice.onchange = this.onchangeChoiceAxonInitialSegment.bind(this, ais_choice, tagInput);
 
         var jitter = CATMAID.DOM.createNumericField("synapse_plot_jitter" + this.widgetID,
                                        undefined,

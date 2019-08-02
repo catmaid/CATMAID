@@ -137,4 +137,10 @@
     }
   };
 
+  /**
+   * This error type represents a situation in which a request has been replaced
+   * with a new version
+   */
+  CATMAID.ReplacedRequestError = class ReplacedRequestError extends CATMAID.Error {};
+
 })(CATMAID);

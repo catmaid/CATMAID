@@ -363,6 +363,8 @@ var requestQueue = new CATMAID.RequestQueue();
       return new CATMAID.InvalidLoginError(error.error, error.detail);
     } else if ('InactiveLoginError' === error.type) {
       return new CATMAID.InactiveLoginError(error.error, error.detail, error.meta);
+    } else if ('ReplacedRequestError' === error.type) {
+      return new CATMAID.ReplacedRequestError(error.error, error.detail);
     } else {
       return new CATMAID.Error("Unsuccessful request: " + error.error,
           error.detail, error.type);

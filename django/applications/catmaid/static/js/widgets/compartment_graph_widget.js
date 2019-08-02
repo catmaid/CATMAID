@@ -1965,24 +1965,22 @@
     var with_overall_counts = edgeLabelStrategy.requires &&
         edgeLabelStrategy.requires.has('originIndex');
 
-    requestQueue.replace(CATMAID.makeURL(project.id + "/skeletons/confidence-compartment-subgraph"),
-        "POST",
-        {
-          skeleton_ids: skeleton_ids,
-          with_overall_counts: with_overall_counts,
-          link_types: Array.from(this.selectedLinkTypes)
+    CATMAID.fetch({
+        url: project.id + "/skeletons/confidence-compartment-subgraph",
+        method: "POST",
+        data: {
+            skeleton_ids: skeleton_ids,
+            with_overall_counts: with_overall_counts,
+            link_types: Array.from(this.selectedLinkTypes)
         },
-        (function (status, text) {
-            if (200 !== status) return;
-            var json = JSON.parse(text);
-            if (json.error) {
-              if ('REPLACED' === json.error) return;
-              alert(json.error);
-              return;
-            }
-            this.updateGraph(json, models, undefined, positions);
-        }).bind(this),
-        "graph_widget_request");
+        replace: true,
+        id: 'graph_widget_request',
+      })
+      .then(json => this.updateGraph(json, models, undefined, positions))
+      .catch(error => {
+        if (error instanceof CATMAID.ReplacedRequestError) return;
+        CATMAID.handleError(error);
+      });
   };
 
   GroupGraph.prototype.highlight = function(skeleton_id) {

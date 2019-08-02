@@ -33,6 +33,11 @@
 - Connectivity matrix: don't show error when enabling "fractions" display
   without neurons being loaded.
 
+- Connectivity widget: fix error caused by quickly refreshing the table
+  successively.
+
+- Graph widget: fix error caused by quickly refreshing the graph successively.
+
 
 ## 2019.06.20
 

@@ -285,12 +285,15 @@
         var relativeDisplayCb = document.createElement('input');
         relativeDisplayCb.setAttribute('type', 'checkbox');
         relativeDisplayCb.checked = this.relativeDisplay;
-        relativeDisplayCb.onclick = (function(e) {
+        relativeDisplayCb.onclick = e => {
           this.relativeDisplay = e.target.checked;
+          if (this.matrix.getNumberOfRows() === 0 || this.matrix.getNumberOfColumns() === 0) {
+            return;
+          }
           var prepare = this.connectivityData ? Promise.resolve() :
             this.updateConnectivityCounts();
           prepare.then(this.refresh.bind(this));
-        }).bind(this);
+        };
         var relativeDisplay = document.createElement('label');
         relativeDisplay.appendChild(relativeDisplayCb);
         relativeDisplay.appendChild(document.createTextNode('Fractions'));
@@ -814,6 +817,10 @@
    */
   ConnectivityMatrixWidget.prototype.addConnectivityMatrixTable = function(
       matrix, content, synThreshold, rotateColumns) {
+    // Don't try to create a table if there are no neurons added.
+    if (this.matrix.getNumberOfRows() === 0 || this.matrix.getNumberOfColumns() === 0) {
+      return;
+    }
     // Create table representation for connectivity matrix
     var table = document.createElement('table');
     table.setAttribute('class', 'partner_table');

@@ -670,7 +670,8 @@
       .catch(CATMAID.handleError);
     })
     .catch(function(error) {
-      if (error !== 'REPLACED') {
+      // Ignore replaced requests.
+      if (!(error instanceof CATMAID.ReplacedRequestError)) {
         partnerSetIds.forEach(function(psId) {
           var type = partnerSetTypes[psId];
           self.addPartnerSet(new PartnerSet(psId, type.name, type.rel,

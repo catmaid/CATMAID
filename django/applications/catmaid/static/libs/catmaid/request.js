@@ -195,9 +195,12 @@
           if ( queue[ i ].id == id )
           {
             removedRequest = queue.splice( i, 1 );
-            CATMAID.statusBar.replaceLast( "replacing request ", + r );
             // Send a distinguishable error reponse with the callback:
-            removedRequest[0].callback(200, JSON.stringify({'error': 'REPLACED'}), null);
+            removedRequest[0].callback(200, JSON.stringify({
+              'error': 'The request was replaced',
+              'detail': r,
+              'type': 'ReplacedRequestError',
+            }), null);
           }
         }
         this.register( r, m, d, c, id, responseType, headers );

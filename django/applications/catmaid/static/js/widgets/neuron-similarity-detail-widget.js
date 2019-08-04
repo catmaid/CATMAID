@@ -412,7 +412,7 @@
           missingPointClouds)
         .then(function(result) {
           result.forEach(function(e) {
-            pointClouds.set(e.id, e);
+            pointSets.set(e.id, e);
           });
         }));
     }

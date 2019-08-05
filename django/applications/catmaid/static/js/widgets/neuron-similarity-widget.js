@@ -4033,18 +4033,41 @@
     return this.concat(line);
   }
 
-  NeuronSimilarityWidget.exportNblastCSV = function(similarity, config) {
+  NeuronSimilarityWidget.exportNblastCSV = function(similarity, config, with_ids = true,
+      with_names = false, id_map_fn = undefined, name_map_fn = undefined) {
     // Create a CSV that includes the query skeletons as first column and the
     // target skeletons as first row/header.
     let today = new Date();
     let filename = 'catmaid-nblast-scores-' + today.getFullYear() +
         '-' + (today.getMonth() + 1) + '-' + today.getDate() + '.csv';
-    let header = ['""'].concat(similarity.target_objects.map(function(s) {
-      return `"${s}"`;
-    })).join(',');
-    let data = [header];
+    let data = [];
+    let emptyBufferLength = (with_ids ? 1 : 0) + (with_names ? 1 : 0);
+    let buffer = new Array(emptyBufferLength).map(v => '""');
+    id_map_fn = id_map_fn ? id_map_fn : v => v;
+    if (with_names && !name_map_fn) {
+      throw new CATMAID.ValueError('Need name mapping functon if names should be exported');
+    }
+    if (with_ids) {
+      let header = buffer.concat(similarity.target_objects.map(function(s) {
+        return `"${id_map_fn(s, similarity.target_type)}"`;
+      })).join(',');
+      data.push(header);
+    }
+    if (with_names) {
+      let header = buffer.concat(similarity.target_objects.map(function(s) {
+        return `"${name_map_fn(s, similarity.target_type)}"`;
+      })).join(',');
+      data.push(header);
+    }
     similarity.query_objects.forEach(function(s, i) {
-      let line = [`"${s}"`].concat(similarity.scoring[i]);
+      let line = [];
+      if (with_ids) {
+        line.push(`"${id_map_fn(s, similarity.query_type)}"`);
+      }
+      if (with_names) {
+        line.push(`"${name_map_fn(s, similarity.query_type)}"`);
+      }
+      line = line.concat(similarity.scoring[i]);
       data.push(line.join(','));
     });
     saveAs(new Blob([data.join('\n')], {type: 'text/plain'}), filename);

@@ -27,6 +27,13 @@
     // A percentage that is used to sample result point clouds when displayed in
     // a 3D Viewer.
     this.pointCloudDisplaySample = 1.0;
+    // If enabled, the CSV export will export no point set IDs, but tries to
+    // parse the name to findi the original ID of transformed skeletons.
+    this.csvReplaceTransformedSkeletonId = true;
+    // Whether or not to export query and target object IDs.
+    this.exportObjectIds = true;
+    // Whether or not to export query and target object names.
+    this.exportObjectNames = true;
 
     // A skeleton source for the displayed result skeletons
     this.sourceSkeletonSource = new CATMAID.BasicSkeletonSource(this.getName() + " Query", {
@@ -173,6 +180,26 @@
         });
 
         CATMAID.DOM.appendElement(controls, {
+          type: 'checkbox',
+          label: 'Export obj. IDs',
+          title: 'Whether or not to export object IDs in a CSV export.',
+          value: self.exportObjectIds,
+          onclick: function() {
+            self.exportObjectIds = this.checked;
+          }
+        });
+
+        CATMAID.DOM.appendElement(controls, {
+          type: 'checkbox',
+          label: 'Export obj. names',
+          title: 'Whether or not to export object names in a CSV export.',
+          value: self.exportObjectNames,
+          onclick: function() {
+            self.exportObjectNames = this.checked;
+          }
+        });
+
+        CATMAID.DOM.appendElement(controls, {
           type: 'button',
           label: 'Download scores as CSV',
           onclick: function() {
@@ -182,7 +209,33 @@
             }
             CATMAID.Similarity.getConfig(project.id, self.similarity.config_id)
               .then(function(config) {
-                CATMAID.NeuronSimilarityWidget.exportNblastCSV(self.similarity, config);
+                let nns = CATMAID.NeuronNameService.getInstance();
+                CATMAID.NeuronSimilarityWidget.exportNblastCSV(self.similarity,
+                    config, self.exportObjectIds, self.exportObjectNames,
+                    (obj_id, obj_type) => {
+                      if (obj_type === 'pointset' && self.pointSets.has(obj_id) &&
+                          self.csvReplaceTransformedSkeletonId) {
+                        // Point sets are mainly used for transformed skeletons.
+                        // In this case it is more useful to parse the name and
+                        // find th original skeleton ID.
+                        let pointsetName =  self.pointSets.get(obj_id).name;
+                        if (pointsetName.startsWith('Transformed skeleton')) {
+                          let originalId = Number(pointsetName.replace(/Transformed skeleton /, ''));
+                          return Number.isNaN(originalId) ? obj_id : originalId;
+                        }
+                      }
+                      return obj_id;
+                    },
+                    (obj_id, obj_type) => {
+                      if (obj_type === 'skeleton') {
+                        return nns.getName(obj_id, '(unknown)');
+                      } else if (obj_type === 'pointcloud' && self.pointClouds.has(obj_id)) {
+                        return self.pointClouds.get(obj_id).name;
+                      } else if (obj_type === 'pointset' && self.pointSets.has(obj_id)) {
+                        return self.pointSets.get(obj_id).name;
+                      }
+                      return '(unknown)';
+                    });
                 CATMAID.msg("Success", "CSV exported");
               })
               .catch(CATMAID.handleError);

@@ -737,15 +737,14 @@
 
         /**
          * Returns the name for the given skeleton ID, if available. Otherwise, return
-         * null.
+         * null or an optional default value.
          */
-        getName: function(skid)
+        getName: function(skid, defaultValue = null)
         {
           if (skid in managedSkeletons) {
             return managedSkeletons[skid].name;
-          } else {
-            return null;
           }
+          return defaultValue;
         },
 
         /**

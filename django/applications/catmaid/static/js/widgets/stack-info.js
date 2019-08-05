@@ -96,7 +96,7 @@
           + '</td>';
         sProps.appendChild(dim);
         var res = document.createElement('tr');
-        res.innerHTML = '<th>Resolution (px/nm)</th><td>'
+        res.innerHTML = '<th>Resolution (nm/px)</th><td>'
           + stack.resolution.x + ', '
           + stack.resolution.y + ', '
           + stack.resolution.z

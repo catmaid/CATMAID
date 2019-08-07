@@ -239,7 +239,18 @@ def find_labels(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonR
     """
     tnid = int(request.POST['treenode_id'])
     label_regex = str(request.POST['label_regex'])
+
+    return JsonResponse(_find_labels(project_id, skeleton_id, label_regex, tnid))
+
+def _find_labels(project_id, skeleton_id, label_regex, tnid=None):
     cursor = connection.cursor()
+
+    if tnid is None:
+        cursor.execute("""
+            SELECT id FROM treenode
+            WHERE skeleton_id = %(skeleton_id)s AND parent_id IS NULL
+        """)
+        tnid = cursor.fetchone()[0]
 
     cursor.execute("SELECT id FROM relation WHERE project_id=%s AND relation_name='labeled_as'" % int(project_id))
     labeled_as = cursor.fetchone()[0]

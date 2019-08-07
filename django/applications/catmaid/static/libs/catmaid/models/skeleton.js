@@ -569,6 +569,43 @@
         parallel: true,
       });
     },
+
+    /**
+     * Get completeness information of a set of skeleton IDs.
+     *
+     * @param projectId       {integer}   The project to work in.
+     * @param skeletonIds     {integer[]} The skeletons to get completeness info on.
+     * @param openEndsPercent {float}     (optional) The percentage of the
+     *                                    allowed number of open ends a skeleton
+     *                                    has to have to be considered complete.
+     *                                    The default is 0.03 (3%).
+     * @param minNodes        {integer}   (optional) The minimum number of nodes
+     *                                    a skeleton has to have to be
+     *                                    considered complete. The default is 500.
+     * @param minNodes        {integer}   (optional) The minimum number of nodes
+     *                                    a skeleton has to have to be
+     *                                    considered complete. The deault is 0.
+     * @param ignoreFragments {bollean}   (optonal) Whether fragments should be
+     *                                    ignored, i.e. can't be complete. The
+     *                                    default is True.
+     * @return A Promise resolving into completeness information.
+     */
+    completeness: function(projectId, skeletonIds, openEndsPercent = 0.03,
+        minNodes = 500, minCable = 0, ignoreFragments = true) {
+      return CATMAID.fetch({
+        url: project.id + '/skeletons/completeness',
+        method:'POST',
+        data: {
+          skeleton_ids: skeletonIds,
+          open_ends_percent: openEndsPercent,
+          min_nodes: minNodes,
+          min_cable: minCable,
+          ignore_fragments: ignoreFragments,
+        },
+        parallel: true,
+      });
+    },
+
   };
 
   // Provide some basic events

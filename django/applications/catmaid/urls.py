@@ -17,7 +17,7 @@ from catmaid.control import (authentication, user, group, log, message, client,
         classification, notifications, roi, clustering, volume, noop,
         useranalytics, user_evaluation, search, graphexport, transaction,
         graph2, circles, analytics, review, wiringdiagram, object, sampler,
-        similarity, nat, point, landmarks, pointcloud, pointset)
+        similarity, skeletonpairs, nat, point, landmarks, pointcloud, pointset)
 
 from catmaid.views import CatmaidView
 from catmaid.views.admin import ProjectDeletion
@@ -276,6 +276,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/skeletons/$', skeleton.list_skeletons),
     url(r'^(?P<project_id>\d+)/skeletons/cable-length$', skeleton.cable_lengths),
     url(r'^(?P<project_id>\d+)/skeletons/connectivity-counts$', skeleton.connectivity_counts),
+    url(r'^(?P<project_id>\d+)/skeletons/completeness$', skeleton.completeness),
     url(r'^(?P<project_id>\d+)/skeletons/validity$', skeleton.validity),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/node_count$', skeleton.node_count),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuronname$', skeleton.neuronname),

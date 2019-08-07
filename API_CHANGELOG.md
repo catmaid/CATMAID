@@ -31,6 +31,9 @@ included in this changelog.
   false by default. If set to true, the returned annotations will include their
   creation_time and edition_time.
 
+- GET|POST `/{project_id}/skeletons/completeness`:
+  Obtain compleness information on a list of skeletons.
+
 ### Modifications
 
 - `POST|GET /{project_id}/node/list`:

@@ -109,16 +109,16 @@ def open_leaves(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonR
         $ref: open_leaf_node
       required: true
     """
-    tnid = int(request.POST['treenode_id'])
+    treenode_id = int(request.POST['treenode_id'])
+    nearest, _ = _open_leaves(project_id, skeleton_id, treenode_id)
+    return JsonResponse(nearest, safe=False)
+
+
+def _open_leaves(project_id, skeleton_id, tnid=None):
     cursor = connection.cursor()
 
-    cursor.execute("""
-        SELECT id
-        FROM relation
-        WHERE project_id = %s
-        AND relation_name='labeled_as'
-        """, (int(project_id),))
-    labeled_as = cursor.fetchone()[0]
+    relations = get_relation_to_id_map(project_id, ['labeled_as'])
+    labeled_as = relations['labeled_as']
 
     # Select all nodes and their tags
     cursor.execute('''
@@ -130,13 +130,19 @@ def open_leaves(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonR
     # Some entries repeated, when a node has more than one tag
     # Create a graph with edges from parent to child, and accumulate parents
     tree = nx.DiGraph()
+    n_nodes = 0
     for row in cursor.fetchall():
+        n_nodes += 1
         node_id = row[0]
         if row[1]:
             # It is ok to add edges that already exist: DiGraph doesn't keep duplicates
             tree.add_edge(row[1], node_id)
         else:
             tree.add_node(node_id)
+
+            # Default to root node
+            if not tnid:
+                tnid = node_id
 
     if tnid not in tree:
         raise Exception("Could not find %s in skeleton %s" % (tnid, int(skeleton_id)))
@@ -180,7 +186,7 @@ def open_leaves(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonR
             d = distances[node_id]
             nearest.append([node_id, (row[1], row[2], row[3]), d, row[4]])
 
-    return JsonResponse(nearest, safe=False)
+    return nearest, n_nodes
 
 
 @api_view(['POST'])

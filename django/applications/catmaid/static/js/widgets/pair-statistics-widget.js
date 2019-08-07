@@ -26,6 +26,8 @@
     this.annotationGroupingPattern = '/(.*)_([lr])';
     this.minGroupInstances = 2;
     this.maxGroupInstances = 2;
+    // Whether or not to do completeness tests for skeletons.
+    this.useOnlyCompleteSkeletons = true;
 
     // Annotation groups
     this.groups = new Map();
@@ -186,7 +188,7 @@
     
   };
 
-  PairStatisticsWidget.extractSubGroupSets = function(source, target) {
+  PairStatisticsWidget.extractSubGroupSets = function(source, target = new Map()) {
     return Array.from(source.keys()).reduce((t,g) => {
               let subgroups = source.get(g);
               for (let [sg, aid] of subgroups.entries()) {
@@ -623,14 +625,21 @@
         return controls;
       },
       createContent: function(content, widget) {
-        let currentGroupsHeader = content.appendChild(document.createElement('h1'));
-        currentGroupsHeader.style.clear = 'both';
-        currentGroupsHeader.appendChild(document.createTextNode('Active groups'));
+        let currentGroupContainer = CATMAID.DOM.addResultContainer(content,
+            "Active groups", true, true, true)[0];
 
         // Map subgroup identifier to sets of annotations
-        let subGroupMap = new Map();
-        PairStatisticsWidget.extractSubGroupSets(widget.groups, subGroupMap);
-        PairStatisticsWidget.extractSubGroupSets(widget.extraGroups, subGroupMap);
+        let mainAnnotationMap = PairStatisticsWidget.extractSubGroupSets(widget.groups);
+        let extraAnnotationMap = PairStatisticsWidget.extractSubGroupSets(widget.extraGroups);
+        let subGroupMap = new Map([...mainAnnotationMap]);
+        for (let [k,v] of extraAnnotationMap.entries()) {
+          let set = subGroupMap.get(k);
+          if (!set) {
+            set = new Set();
+            subGroupMap.set(k, set);
+          }
+          set.addAll(v);
+        }
 
         let annotationIdSet = new Set();
         for (let [sg, annotations] of subGroupMap.entries()) {
@@ -638,7 +647,7 @@
         }
         let annotationIds = Array.from(annotationIdSet);
 
-        let subGroupList = content.appendChild(document.createElement('p'));
+        let subGroupList = currentGroupContainer.appendChild(document.createElement('p'));
         if (subGroupMap.size === 0) {
           subGroupList.appendChild(document.createTextNode('Could not find any sub-groups'));
         } else {
@@ -662,6 +671,10 @@
             let annotationMap = results[0].entities.reduce((t, e) => {
               for (let i=0; i<e.annotations.length; ++i) {
                 let annotation = e.annotations[i];
+                if (!annotationIdSet.has(annotation.id)) {
+                  continue;
+                }
+
                 if (!t.has(annotation.id)) {
                   t.set(annotation.id, new Set());
                 }
@@ -673,9 +686,77 @@
               return t;
             }, new Map());
 
+            let extraAnnotationIds = Array.from(extraAnnotationMap.values()).reduce((o,e) => {
+               o.addAll(e);
+               return o;
+            }, new Set());
+
+            let mainSkeletonIds = new Set();
+            let extraSkeletonIds = new Set();
+            for (let [annotationId, skids] of annotationMap.entries()) {
+              if (extraAnnotationIds.has(annotationId)) {
+                extraSkeletonIds.addAll(skids);
+              } else {
+                mainSkeletonIds.addAll(skids);
+              }
+            }
+
+            // Get completeness for both main group and extra group, using their
+            // respective configurations.
+            let completenessPromises = [];
+            if (mainSkeletonIds.size > 0) {
+              completenessPromises.push(CATMAID.Skeletons.completeness(
+                  project.id, Array.from(mainSkeletonIds),
+                  widget.mainMaxOpenEnds, widget.mainMinNodes,
+                  widget.mainMinCable, widget.mainIgnoreFragments,
+                  true));
+            }
+            if (extraSkeletonIds.size > 0) {
+              completenessPromises.push(CATMAID.Skeletons.completeness(
+                  project.id, Array.from(extraSkeletonIds),
+                  widget.extraMaxOpenEnds, widget.extraMinNodes,
+                  widget.extraMinCable, widget.extraIgnoreFragments));
+            }
+
+            return Promise.all(completenessPromises)
+              .then(completenessResults => {
+                let completionStatus = new Map();
+                for (let r of completenessResults) {
+                  for (let skeletonResult of r) {
+                    completionStatus.set(skeletonResult[0], {
+                      complete: skeletonResult[1],
+                    });
+                  }
+                }
+                return {
+                  annotationMap: annotationMap,
+                  completionStatus: completionStatus,
+                };
+              });
+          })
+          .then(meta => {
+            let annotationMap = meta.annotationMap;
+
+            // Remove incomple skeletons from annotation map.
+            let incompleSkeletons = 0;
+            if (widget.useOnlyCompleteSkeletons) {
+              for (let [k,v] of annotationMap.entries()) {
+                for (let skeletonId of v) {
+                  let status = meta.completionStatus.get(skeletonId);
+                  if (!status || !status.complete) {
+                    v.delete(skeletonId);
+                    ++incompleSkeletons;
+                  }
+                }
+              }
+            }
+
+            if (incompleSkeletons) {
+              CATMAID.warn(`Ignored ${incompleSkeletons} incomple skeletons`);
+            }
+
             widget.clearGroupSources();
 
-            let skeletonIds = results[0];
             if (subGroupMap.size > 0) {
               let lut = new THREE.Lut("rainbow", annotationIds.length);
               lut.setMin(0);
@@ -717,6 +798,9 @@
             }
 
             // List matching ID pair information
+          })
+          .then(() => {
+            // Request completeness info
           })
           .catch(CATMAID.handleError);
 

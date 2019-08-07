@@ -21,9 +21,21 @@
   };
 
   /**
+   * Helper function to create a collapsible result container.
+   */
+  DOM.addResultContainer = function(parent, name, closed = false,
+      head = false, bind = false) {
+    let content = DOM.addSettingsContainer(parent, name, closed, head, bind);
+    let container = content.closest('.settings-container');
+    container.addClass('result-container');
+    return content;
+  };
+
+  /**
    * Helper function to create a collapsible settings container.
    */
-  DOM.addSettingsContainer = function(parent, name, closed)
+  DOM.addSettingsContainer = function(parent, name, closed = false,
+      head = false, bind = false)
   {
     var content = $('<div/>').addClass('content');
     if (closed) {
@@ -35,10 +47,29 @@
         .addClass('title')
         .append($('<span/>')
           .addClass(closed ? 'extend-box-closed' : 'extend-box-open'))
-        .append(name))
+        .append(head ? $(`<h1>${name}</h1>`) : name))
       .append(content);
 
     $(parent).append(sc);
+
+    if (bind) {
+      $('p.title', sc).click(e => {
+        content.animate({
+            height: "toggle",
+            opacity: "toggle"
+          },
+          {
+            complete: function() {
+              // change open/close indicator box
+              var open_elements = $(".extend-box-open", content);
+              if (open_elements.length > 0) {
+                open_elements.attr('class', 'extend-box-closed');
+              } else {
+                $(".extend-box-closed", content).attr('class', 'extend-box-open');
+              }
+          }});
+      });
+    }
 
     return content;
   };

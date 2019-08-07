@@ -51,9 +51,9 @@ containers. The database container stores the database outside of the container
 so it is kept over restarts. To run this setup, first install install
 Docker-compose::
 
-  sudo sh -c "curl -L https://github.com/docker/compose/releases/download/1.15.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose"
+  sudo sh -c "curl -L https://github.com/docker/compose/releases/download/1.24.1/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose"
   sudo chmod +x /usr/local/bin/docker-compose
-  sudo sh -c "curl -L https://raw.githubusercontent.com/docker/compose/1.8.0/contrib/completion/bash/docker-compose > /etc/bash_completion.d/docker-compose"
+  sudo sh -c "curl -L https://raw.githubusercontent.com/docker/compose/1.24.1/contrib/completion/bash/docker-compose > /etc/bash_completion.d/docker-compose"
 
 Next clone the ``catmaid-compose`` repo to a convenient location. Note that by
 default the database will be stored in this location, too::

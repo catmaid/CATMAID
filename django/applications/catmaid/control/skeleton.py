@@ -3370,7 +3370,7 @@ def skeletons_in_bounding_box(request:HttpRequest, project_id) -> JsonResponse:
     elif request.method == 'POST':
         data = request.POST
     else:
-        raise ValueError("Unsupported HTTP method: " + data.method)
+        raise ValueError("Unsupported HTTP method: " + request.method)
 
     params = {
         'project_id': project_id,

@@ -99,6 +99,18 @@ available in the target project. The only exception to this are neuron and
 skeleton objects, which are technically semantic objects, but are expected to
 not be shared or reused.
 
+Bulk loading large data sets
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Importing data using the ``catmaid_import_data`` management command works well
+for thousands of neurons and connectors. It becomes however very slow and memory
+intensive to load millions or billions of neurons. On this scale, loading data
+direcrly into the database is the best strategy. It requires extra care, because
+most safe-guards the API and management commands provides will be bypassed.
+
+Details on the import process are collected on the :ref:`Bulk loading <bulk_loading>`
+page.
+
 Importing project and stack information
 ---------------------------------------
 

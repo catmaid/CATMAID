@@ -261,3 +261,42 @@ class ClientDataList(APIView):
             data.save()
             serializer = ClientDataSerializer(data)
             return Response(serializer.data)
+
+def set_instance_settings(settings, force=False):
+    """Set instance settings if they are not yet set. If <force> is True, the
+    values will be set regardless. The <settings> parameter is expected to be a
+    list of dictionaries where each has a key and a value field. The key is the
+    settings familiy, e.g. "neuron-name-service" and the value is the respective
+    settings data.
+    """
+    if type(settings) != dict:
+        raise ValueError("Settings needs to be a dictionry")
+
+    data_store = ClientDatastore.objects.get(name='settings')
+    client_data_map = dict((cd.key,cd) for cd in ClientData.objects.filter(datastore=data_store,
+            project=None, user=None))
+
+    to_save = []
+    for key, value in settings.items():
+        if key in client_data_map:
+            client_data = client_data_map.get(key)
+            settings_context = client_data.value
+            to_save.append(client_data)
+        else:
+            settings_context = {"entries": {}, "version": 0}
+            client_data = ClientData(datastore=data_store,
+                    project=None, user=None, key=key, value=settings_context)
+            to_save.append(client_data)
+
+        for context_setting_key, context_setting_value in value.items():
+            if context_setting_key in settings_context["entries"]:
+                if not force:
+                    continue
+                context_setting = settings_context.get("entries").get(context_setting_key)
+                context_setting["value"] = context_setting_value
+            else:
+                context_setting = {"value": context_setting_value, "overridable": True}
+                settings_context["entries"][context_setting_key] = context_setting
+
+    for o in to_save:
+        o.save()

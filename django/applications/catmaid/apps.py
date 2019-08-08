@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import logging
+import logging, json
 
 from catmaid import history, spatial
 
@@ -144,6 +144,33 @@ def check_spatial_update_setup(app_configs, **kwargs):
             hint="Migrate CATMAID"))
     return messages
 
+def check_client_settings(app_configs, **kwargs):
+    """Reset the default client settings for a catmaid instance.
+    """
+    from catmaid.control import client
+    messages = []
+
+    instance_settings = getattr(settings, 'CLIENT_SETTINGS', None)
+    if not instance_settings:
+        return messages
+
+    force_client_settings = getattr(settings, 'FORCE_CLIENT_SETTINGS', None)
+    if force_client_settings:
+        logger.info("Force setting instance client settings")
+
+    try:
+        if type(instance_settings) == str:
+            instance_settings = json.loads(instance_settings)
+        client.set_instance_settings(instance_settings, force_client_settings)
+    except json.JSONDecodeError:
+        messages.append(Warning(
+                "Could not parse CLIENT_SETTINGS as JSON: " + instance_settings))
+    except Exception as e:
+        messages.append(Warning(
+            "Could not reset client instance settings: " + str(e)))
+
+    return messages;
+
 def validate_environment(sender, **kwargs):
     """Make sure CATMAID is set up correctly."""
     # Only validate after catmaid was migrated
@@ -190,6 +217,9 @@ class CATMAIDConfig(AppConfig):
 
         # Enable or disable spatial update notifications
         register(check_spatial_update_setup)
+
+        # Make sure the expected default client instance settings are set.
+        register(check_client_settings)
 
         # Init R interface, which is used by some parts of CATMAID
         if r_available:

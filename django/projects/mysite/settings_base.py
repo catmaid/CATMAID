@@ -443,3 +443,13 @@ DEFAULT_CACHE_GRID_CELL_DEPTH = 40
 # spatial data (e.g. inserts, updates and deletions of treenodes, connectors and
 # connector links).
 SPATIAL_UPDATE_NOTIFICATIONS = False
+
+# On statup, the default client instance settings can be populated based on a
+# JSON string, representing a list of objects with a "key" field and a "value"
+# field. These settings will only be applied if they exist already.
+INSTANCE_CLIENT_SETTINGS = None
+
+# Whether or not the set up instance client settings in INSTANCE_CLIENT_SETTINGS
+# should be reset every time CATMAID starts. Otherwise, they will only be
+# applied if they don't exist already.
+FORCE_CLIENT_SETTINGS = False

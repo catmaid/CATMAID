@@ -24,6 +24,8 @@ CM_NODE_LIMIT=${CM_NODE_LIMIT:-10000}
 CM_NODE_PROVIDERS=${CM_NODE_PROVIDERS:-"['postgis2d']"}
 CM_SUBDIRECTORY=${CM_SUBDIRECTORY:-""}
 CM_CSRF_TRUSTED_ORIGINS=${CM_CSRF_TRUSTED_ORIGINS:-""}
+CM_FORCE_CLIENT_SETTINGS=${CM_FORCE_CLIENT_SETTINGS:-false}
+CM_CLIENT_SETTINGS=${CM_CLIENT_SETTINGS:-''}
 TIMEZONE=`readlink /etc/localtime | sed "s/.*\/\(.*\)$/\1/"`
 PG_VERSION='10'
 
@@ -108,6 +110,19 @@ init_catmaid () {
   sed -i "/^\(NODE_PROVIDERS = \).*/d" mysite/settings.py
   echo "Setting NODE_PROVIDERS = ${CM_NODE_PROVIDERS}"
   echo "NODE_PROVIDERS = ${CM_NODE_PROVIDERS}" >> mysite/settings.py
+
+  # Set initially client-setting
+  sed -i "/^\(CLIENT_SETTINGS = \).*/d" mysite/settings.py
+  echo "Setting CLIENT_SETTINGS = ${CM_CLIENT_SETTINGS}"
+  echo "CLIENT_SETTINGS = ${CM_CLIENT_SETTINGS}" >> mysite/settings.py
+  sed -i "/^\(FORCE_CLIENT_SETTINGS = \).*/d" mysite/settings.py
+  if [ "$CM_FORCE_CLIENT_SETTINGS" = true ]; then
+    echo "Setting FORCE_CLIENT_SETTINGS = True"
+    echo "FORCE_CLIENT_SETTINGS = True" >> mysite/settings.py
+  else
+    echo "Setting FORCE_CLIENT_SETTINGS = False"
+    echo "FORCE_CLIENT_SETTINGS = False" >> mysite/settings.py
+  fi
 
   # Create database and databsae user if not yet present. This should only
   # happen if the database is not run in a separete container.

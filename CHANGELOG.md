@@ -38,6 +38,8 @@
 
 - Graph widget: fix error caused by quickly refreshing the graph successively.
 
+- Settings: add CLIENT_SETTINGS and FORCE_CLIENT_SETTINGS options so that
+  an initial instance-wide client configuration can be specified.
 
 ## 2019.06.20
 

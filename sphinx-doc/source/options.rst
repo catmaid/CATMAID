@@ -68,3 +68,21 @@ overridden in ``settings.py``. Below is an explanation of all available settings
       treenodes, connectors, connector links) will trigger a PostgreSQL event
       named "catmaid.spatial-update". This allows cache update workers to update
       caches quickly after a change. Disabled by default.
+
+.. glossary::
+    ``CLIENT_SETTINGS``
+      Can be a JSON string or dictionary that keeps default values for the whole
+      instance for the client settings. Keys of the dictionary are the
+      client-settings values, e.g. "neuron-name-service". The values are the
+      settings values in the format the front-end expects. For instance, to show
+      by default all annotations that are labeled with "neuron name" as textual
+      representation of neurons, this line could be used::
+      
+      CLIENT_SETTINGS = '{"neuron-name-service": {"component_list": [{"id": "skeletonid", "name": "Skeleton ID"}, {"id": "neuronname", "name": "Neuron name"}, {"id": "all-meta", "name": "All annotations annotated with \\\"neuron name\\\"", "option": "neuron name"}]}}'
+
+      By default, no settings are set and this value is None.
+
+.. glossary::
+    ``FORCE_CLIENT_SETTING``
+      By default, existing client settings won't be replaced if they exist
+      already. To force a replace, set this variable to True.

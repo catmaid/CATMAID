@@ -55,7 +55,7 @@ Nginx configuration on the primary server, after the respective streaming module
 was loaded::
 
   # Enable TCP streaming
-  load_module modules/ngx_stream_module.so
+  load_module modules/ngx_stream_module.so;
 
   stream {
     upstream postgres_db {

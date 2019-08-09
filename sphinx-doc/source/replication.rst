@@ -65,7 +65,7 @@ was loaded::
     server {
       # Forward this port to the internal Postgres database. This is
       # used for the replication user.
-      listen 7432
+      listen 7432;
       proxy_pass postgres_db;
     }
   }

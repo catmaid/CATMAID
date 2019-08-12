@@ -11,10 +11,28 @@ also some good general advise available from the `Postgres documentation
 <https://www.postgresql.org/docs/11/populate.html>`_.
 
 To prepare the database to load a lot of data, some settings can be tweaked
-temporarily::
+temporarily. Especially the memory related settings below depend a lot on the
+available RAM and can be scaled down for smaller environments::
 
+  -- More maintenance memory helps CREATE INDEX
+  maintenance_work_mem = 32GB
+  -- Disable streaming replication and WAL archiving. This helps CREATE INDEX
+  -- and COPY FROM.
+  wal_level = minimal
+  archive_mode = off
+  max_wal_senders = 0
   -- Depending on the number of CPUs. This helps with creating B-Tree indices.
   max_parallel_maintenance_workers = 8
+  -- Flushing data to disk doesn't need to be asured during import
+  fsync = off
+  -- Don't force WAL writes to disk every commit.
+  synchronous_commit = off
+  -- There is no need to guard against partial page writes
+  full_page_writes = off
+  -- Increase the maximum WAL size and checkpoint timeout to reduce checkpoint
+  -- frequency.
+  max_wal_size = 20GB
+  checkpoint_timeout = 2h
 
 Having all this said, the following SQL code provides a wrapper to disable
 triggers, and indices for central tables. It also resets the relevant ID
@@ -100,6 +118,8 @@ sequences in use::
   FROM indexed_table it
   WHERE indrelid = it.rel;
 
+  -- Update statistics
+  ANALYZE;
 
   -- Reindex tables. For large tables it is faster to create indices manually in
   -- parallel.

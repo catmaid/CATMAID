@@ -55,6 +55,8 @@ Miscellaneous:
 - Neuron similarity detail widget: make CSV export of object IDs and names
   configurable.
 
+- Retrieving review information is now faster for bigger skeletons.
+
 ### Bug fixes
 
 

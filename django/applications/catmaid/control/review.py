@@ -125,7 +125,7 @@ def get_review_status(skeleton_ids, project_id=None, whitelist_id=False,
     }
 
     query_joins = []
-    extra_conditions = ''
+    extra_conditions = []
     # Optionally, add a filter
     if whitelist_id:
         query_params['whitelist_id'] = whitelist_id
@@ -149,22 +149,29 @@ def get_review_status(skeleton_ids, project_id=None, whitelist_id=False,
         # Count number of nodes reviewed by all users excluding the
         # specified ones, per skeleton.
         query_params['excluding_user_ids'] = list(excluding_user_ids)
-        extra_conditions = "WHERE NOT (r.reviewer_id = ANY (%(excluding_user_ids)s::int[]))"
+        extra_conditions.append("NOT (r.reviewer_id = ANY (%(excluding_user_ids)s::int[]))")
 
     # Using count(distinct treenode_id) is slightly faster than a nested
     # grouping by skeleton_id, treenode_id, because one HashAggregate node can
     # be avoided.
     cursor.execute('''
-    SELECT skeleton_id, count(DISTINCT treenode_id)
-    FROM review r
-    {}
-    JOIN (
+    SELECT query_skeleton.id, review_info.n_nodes
+    FROM (
         SELECT * FROM UNNEST(%(skeleton_ids)s::bigint[])
     ) query_skeleton(id)
-      ON r.skeleton_id = query_skeleton.id
-    {}
-    GROUP BY skeleton_id
-    '''.format('\n'.join(query_joins), extra_conditions), query_params)
+    JOIN LATERAL (
+        SELECT COUNT(DISTINCT treenode_id)
+        FROM review r
+        {extra_joins}
+        WHERE skeleton_id = query_skeleton.id
+        {extra_conditions}
+    ) review_info(n_nodes)
+        ON n_nodes > 0
+    '''.format(**{
+        'extra_joins': '\n'.join(query_joins),
+        # The extra empty list element is added to get the initial AND term from the list join.
+        'extra_conditions': ' AND '.join([''] + extra_conditions) if extra_conditions else '',
+    }), query_params)
     for row in cursor.fetchall():
         skeletons[row[0]][1] = row[1]
 

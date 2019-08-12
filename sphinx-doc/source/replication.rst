@@ -187,16 +187,16 @@ On the primary server, replicas should be visible in a query like this::
 Configure CATMAID
 ^^^^^^^^^^^^^^^^^
 
-To load all neuron reconstruction data from a replica instead of the primary,
-open the *Settings Widget* and find the *Read-only CATMAID mirrors* setting
-in the *Tracing Overlay* section. This field contains a list of read-only
-CATMAID mirror servers and API keys that can be used to query tracing data from.
-This can be enabled using the *Read-only mirror index* below. Individual entries
-are separated by commas and have The form ``url|apikey``. The API key (including
-"|" is optional. URLs need to include the protocol, e.g.::
+To load all neuron reconstruction data from a replica instead of the primary
+server, the replica has to be set up as a fully working read-only CATMAID
+instance. Being read-only doesn't need to be configured separately, because the
+replica database doesn't allow writes anyway.
 
-  https://example.com/catmaid/, https://example2.com/catmaid2/|apikey
-
-The *Read-only mirror index* setting below, selects a mirror by index from the
-above mirror list, starting with 1. Empty values, -1 or 0 will disable the use
-of a database replica.
+With this done, the main CATMAID instance can now be configured to use the
+replica server for read-only data. To do so, two different aspects have to be
+configured in the *Settings Widget*. First, the remote CATMAID server has to be
+added as "Other CATMAID instance". Once this is done, the *Read-only mirror
+index* setting in the *Tracing Overlay* section can be set to the 1-based index
+of the entry in the list of other CATMAID instances. With this, the tracing
+layer will use the respective remote server to load tracing data except for the
+active node. Empty values, -1 or 0 will disable the use of a database replica.

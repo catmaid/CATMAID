@@ -41,6 +41,8 @@
 - Settings: add CLIENT_SETTINGS and FORCE_CLIENT_SETTINGS options so that
   an initial instance-wide client configuration can be specified.
 
+- Neuron navigator: fix name display after rename of neuron.
+
 ## 2019.06.20
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Pat Gunn, William Patton, Tom Kazimiers

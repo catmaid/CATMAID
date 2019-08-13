@@ -2084,16 +2084,17 @@
     NeuronNavigator.disable_on_missing_permissions(rename_button);
     container.append(rename_button);
 
-    rename_button.onclick = (function() {
+    rename_button.onclick = () => {
       var new_name = prompt("Rename", this.neuron_name);
       if (!new_name) return;
       CATMAID.commands.execute(new CATMAID.RenameNeuronCommand(
             project.id, this.neuron_id, new_name))
-        .then((function(neuronId, newName) {
-          $('div.nodeneuronname', container).html('Name: ' + newName);
-          this.neuron_name = newName;
-        }).bind(this));
-    }).bind(this);
+        .then(result => {
+          $('div.nodeneuronname', container).html('Name: ' + new_name);
+          this.neuron_name = new_name;
+        })
+        .catch(CATMAID.handleError);
+    };
 
     var analyze_button = document.createElement('input');
     analyze_button.setAttribute('type', 'button');

@@ -775,7 +775,7 @@
           .load()
           .then(function () {
             nnsAsyncContainer.append(wrapSettingsControl(
-                CATMAID.DOM.createInputSetting(
+                CATMAID.DOM.createTextAreaSetting(
                     "Formatted neuron name",
                     nameServiceInstance.getFormatString(),
                     "Format the neuron label using label components from list above. " +
@@ -784,15 +784,20 @@
                     "from the top. Optionally, append \"{<em>delimiter</em>}\" to specify " +
                     "how component values should be separated, defaulting to \"{, }\".",
                     function () {
+                      // Remove all new lines
+                      var data = this.value.replace(/\n/g, '');
                       CATMAID.NeuronNameService.Settings
                         .set(
                           'format_string',
-                          $(this).val(),
+                          data,
                           SETTINGS_SCOPE)
                         .then(function () {
                           CATMAID.NeuronNameService.getInstance().loadConfigurationFromSettings();
                         });
-                    }),
+                    },
+                    1,
+                    50,
+                    true),
                 CATMAID.NeuronNameService.Settings,
                 'format_string',
                 SETTINGS_SCOPE,

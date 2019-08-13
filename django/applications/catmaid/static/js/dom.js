@@ -135,7 +135,7 @@
   /**
    * Helper function to create a textarea input field with label.
    */
-  DOM.createTextAreaSetting = function(name, val, helptext, handler, rows, cols) {
+  DOM.createTextAreaSetting = function(name, val, helptext, handler, rows, cols, blurOnEnter = false) {
     rows = CATMAID.tools.getDefined(rows, 4);
     cols = CATMAID.tools.getDefined(cols, 50);
     var input = $('<textarea/>')
@@ -144,6 +144,16 @@
       .addClass("ui-corner-all").val(val);
     if (handler) {
       input.change(handler);
+    }
+    if (blurOnEnter) {
+      input.on('keypress', (e) => {
+        if (e.which === 13) {
+          e.preventDefault();
+          e.stopPropagation();
+          input.trigger('change');
+          return false;
+        }
+      });
     }
     return CATMAID.DOM.createLabeledControl(name, input, helptext, 'top');
   };

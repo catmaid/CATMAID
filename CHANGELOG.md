@@ -104,6 +104,11 @@ Miscellaneous:
 - Settings: add CLIENT_SETTINGS and FORCE_CLIENT_SETTINGS options so that
   an initial instance-wide client configuration can be specified.
 
+- Neuron navigator: fix name display after rename of neuron.
+
+- Neuron search: the tab key focus order within one widget is now maintained if
+  multiple search windows are open.
+
 ## 2019.06.20
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Pat Gunn, William Patton, Tom Kazimiers

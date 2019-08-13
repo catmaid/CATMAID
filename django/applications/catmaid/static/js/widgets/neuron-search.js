@@ -68,7 +68,7 @@
         // actual this.widgetID which will be replaced afterwards.
         var queryFields_html =
           '<label style="float: right" class="checkbox-label">' +
-            '<input type="checkbox" id="neuron_search_apply_filters{{NA-ID}}" />' +
+            '<input type="checkbox" id="neuron_search_apply_filters{{NA-ID}}" tabindex="-1" />' +
             'Apply filters' +
           '</label>' +
           '<form id="neuron_query_by_annotations{{NA-ID}}" autocomplete="on">' +
@@ -79,8 +79,8 @@
               '<td class="neuron_annotations_query_field_label">named as:</td> ' +
               '<td class="neuron_annotations_query_field">' +
                 '<label class="checkbox-label"><input type="checkbox" name="neuron_query_by_name_not" ' +
-                    'id="neuron_query_by_name_not{{NA-ID}}" />not</label>' +
-                '<input type="text" name="neuron_query_by_name" tabindex="1" ' +
+                    'id="neuron_query_by_name_not{{NA-ID}}" tabindex="-1" />not</label>' +
+                '<input type="text" name="neuron_query_by_name"' +
                     'id="neuron_query_by_name{{NA-ID}}" value="" class="" placeholder="Use / for RegEx" />' +
               '</td> ' +
               '<td><div class="help">Optional</div></td>' +
@@ -89,21 +89,21 @@
               '<td class="neuron_annotations_query_field_label">annotated:</td> ' +
               '<td class="neuron_annotations_query_field">' +
                 '<label class="checkbox-label"><input type="checkbox" name="neuron_query_by_annotation_not" ' +
-                    'id="neuron_query_not{{NA-ID}}" />not</label>' +
-                '<input type="text" name="neuron_query_by_annotation" autocomplete="off" tabindex="2" ' +
+                    'id="neuron_query_not{{NA-ID}}" tabindex="-1" />not</label>' +
+                '<input type="text" name="neuron_query_by_annotation" autocomplete="off" ' +
                     'class="neuron_query_by_annotation_name{{NA-ID}}" value="" placeholder="Use / for RegEx" />' +
               '</td><td>' +
-                '<label class="checkbox-label"><input type="checkbox" name="neuron_query_include_subannotation" tabindex="3"' +
+                '<label class="checkbox-label"><input type="checkbox" name="neuron_query_include_subannotation"' +
                     'class="neuron_query_include_subannotation{{NA-ID}}" value="" />' +
                 'Include sub-annotations</label> ' +
                 '<input type="button" name="neuron_annotations_add_annotation" ' +
-                    'id="neuron_annotations_add_annotation{{NA-ID}}" value="+" />' +
+                    'id="neuron_annotations_add_annotation{{NA-ID}}" value="+" tabindex="-1" />' +
               '</td> ' +
             '</tr>' +
-            '<tr id="neuron_query_by_annotator{{NA-ID}}">' +
+            '<tr id="neuron_query_by_annotator{{NA-ID}}" tabindex="-1">' +
               '<td class="neuron_annotations_query_field_label">by:</td>' +
               '<td class="neuron_annotations_query_field">' +
-                '<select name="neuron_query_by_annotator" ' +
+                '<select name="neuron_query_by_annotator" tabindex="-1" ' +
                     'id="neuron_query_by_annotator{{NA-ID}}" class="">' +
                   '<option value="-2">Anyone</option>' +
                   '<option value="Team">Team</option>' +
@@ -116,16 +116,16 @@
               '<td class="neuron_annotations_query_field">' +
                 '<input type="text" name="neuron_query_by_start_date" ' +
                     'id="neuron_query_by_start_date{{NA-ID}}" size="10" ' +
-                    'value="" class=""/>' +
+                    'value="" class="" tabindex="-1" />' +
                 ' and ' +
                 '<input type="text" name="neuron_query_by_end_date" ' +
                     'id="neuron_query_by_end_date{{NA-ID}}" size="10" ' +
-                    'value="" class=""/> ' +
+                    'value="" class="" tabindex="-1" /> ' +
               '</td>' +
               '<td><div class="help">Respected for included annotations</div></td>' +
             '</tr>' +
           '</table>' +
-          '<input type="submit" tabindex="4"/>' +
+          '<input type="submit" />' +
           '</form>';
         // Replace {{NA-ID}} with the actual widget ID
         var queryFields = document.createElement('div');
@@ -266,6 +266,8 @@
 
         // Make it support autocompletion
         $select.combobox();
+        // Ignore tab selection
+        $('input', $select.parent()).attr('tabindex', '-1');
 
         // Make annotation filter select support autocompletion and attach the
         // selected event handler right away. Unfortunately, this can't be done

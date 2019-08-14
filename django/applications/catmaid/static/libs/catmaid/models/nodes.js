@@ -421,13 +421,18 @@
      *                            specifies if it is a 'neuron' or 'skeleton'.
      * @returns Promise resolving in closest treenode.
      */
-    nearestNode: function(projectId, x, y, z, targetId, targetType) {
+    nearestNode: function(projectId, x, y, z, targetId, targetType = 'skeleton') {
       let params = {
         x: x,
         y: y,
         z: z,
       };
-      params[`${targetType}_id`] = targetId;
+      if (targetId) {
+        if (!targetType) {
+          throw new CATMAID.ValueError("Need targetType parameter if targetId is specified");
+        }
+        params[`${targetType}_id`] = targetId;
+      }
       return CATMAID.fetch(projectId + "/nodes/nearest", "GET", params);
     },
 

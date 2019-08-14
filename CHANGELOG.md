@@ -115,6 +115,8 @@ Miscellaneous:
 - Settings widget: the width of multiline select elements (e.g. annotation based
   neuron naming) is now adjusted automatically to fit the content.
 
+- 3D Viewer: fix skeleton vs. name CSV in "Synapses as CSV" export.
+
 ## 2019.06.20
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Pat Gunn, William Patton, Tom Kazimiers

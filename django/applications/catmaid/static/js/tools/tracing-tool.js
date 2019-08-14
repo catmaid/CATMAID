@@ -1150,17 +1150,27 @@
           }
           return true;
         } else if (e.altKey) {
+          let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
           let p = self.prototype.lastPointerCoordsP;
-          CATMAID.Nodes.nearestNode(project.id, p.x, p.y, p.z)
+          CATMAID.Nodes.nearestNode(project.id, p.x, p.y, p.z, activeSkeletonId, 'skeleton')
             .then(function(data) {
               var nodeIDToSelect = data.treenode_id;
               return SkeletonAnnotations.staticMoveTo(data.z, data.y, data.x)
                   .then(function () {
+                    if (activeSkeletonId) {
+                      CATMAID.msg("Success", "Selected closest node in active skeleton");
+                    } else {
+                      CATMAID.msg("Success", "Selected globally closest node");
+                    }
                     return SkeletonAnnotations.staticSelectNode(nodeIDToSelect);
                   });
             })
             .catch(function () {
-              CATMAID.warn('Selecing the globally closed node failed');
+              if (activeSkeletonId) {
+                CATMAID.warn('Selecing the closest node in the active skeleton failed');
+              } else{
+                CATMAID.warn('Selecing the globally closest node failed');
+              }
             });
           return true;
         } else {

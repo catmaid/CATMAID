@@ -1062,7 +1062,7 @@
               this,
               Object.keys(unique).reduce(function(o, skid) { o[skid] = new CATMAID.SkeletonModel(skid, "", dummy); return o; }, {}),
               function() {
-                let nameExporter = CATMAID.FileExporter.saveAs('"Skeleton ID", "Neuron name"\n',
+                let nameExporter = CATMAID.FileExporter.export('"Skeleton ID", "Neuron name"\n',
                     "neuron_name_vs_skeleton_id.csv", 'text/csv');
                 var names = Object.keys(unique).forEach(function(skid) {
                   nameExporter.write(`${skid}, ${nns.getName(skid)}\n`);

@@ -325,7 +325,7 @@
     },
     'buffers_clean': {
       name: 'Writter buffers',
-      comment: 'Numbr of buffers written by background writer',
+      comment: 'Number of buffers written by background writer',
     },
     'maxwritten_clean': {
       name: 'Canceled buffer writes',

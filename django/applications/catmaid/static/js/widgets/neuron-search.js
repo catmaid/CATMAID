@@ -27,6 +27,9 @@
     this.entity_selection_map = {};
     this.pid = project.id;
 
+    // Ordering of the result table, default to name ascending
+    this.ordering = [[0, 'asc']];
+
     // Limit the result set
     this.display_length = 50;
     this.display_start = 0;
@@ -521,7 +524,7 @@
         displayStart: this.display_start,
         pageLength: this.display_length,
         lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
-        order: [],
+        order: this.order,
         processing: true,
         columns: [
           { "orderable": true },
@@ -975,6 +978,7 @@
       if (datatable) {
         this.display_length = datatable.page.len();
         this.display_start = datatable.page() * this.display_length;
+        this.order = datatable.order();
         datatable.destroy();
       }
     }

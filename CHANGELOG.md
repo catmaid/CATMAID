@@ -109,6 +109,12 @@ Miscellaneous:
 - Neuron search: the tab key focus order within one widget is now maintained if
   multiple search windows are open.
 
+- Neuron search: sort results ascending by name by default and keep the sort
+  order through table redraws.
+
+- Settings widget: the width of multiline select elements (e.g. annotation based
+  neuron naming) is now adjusted automatically to fit the content.
+
 ## 2019.06.20
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Pat Gunn, William Patton, Tom Kazimiers

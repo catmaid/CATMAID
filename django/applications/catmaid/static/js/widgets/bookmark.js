@@ -69,7 +69,8 @@
     var bookmark = Bookmarks.entries.get(keyCode);
 
     if (!bookmark) {
-      return Promise.reject();
+      CATMAID.info('Bookmark not found');
+      return Promise.resolve();
     }
 
     if (mode === Bookmarks.MODES.SKELETON && bookmark.skeletonID) {

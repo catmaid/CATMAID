@@ -54,6 +54,10 @@
 
 - 3D Viewer: fix skeleton vs. name CSV in "Synapses as CSV" export.
 
+- Tracing tool: Alt + G will now select the closest node in the active skeleton.
+  If no skeleton is selected, the globally closest node is select. Regular G
+  works as before in the current section.
+
 ## 2019.06.20
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Pat Gunn, William Patton, Tom Kazimiers

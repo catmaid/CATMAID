@@ -1,10 +1,8 @@
 {
   "devDependencies": {
-    "bootprint": "^1.0.2",
-    "bootprint-openapi": "^1.1.1",
     "csslint": "1.0.5",
-    "jsdoc": "3.5.5",
-    "jshint": "2.9.5",
+    "jsdoc": "^3.6.3",
+    "jshint": "^2.10.2",
     "karma": "2.0.2",
     "karma-chrome-launcher": "2.2.0",
     "karma-qunit": "2.1.0",
@@ -13,7 +11,8 @@
     "mkdirp": "0.5.1",
     "npm-run-all": "^4.1.5",
     "optimist": "0.6.1",
-    "qunit": "2.6.1",
+    "qunit": "^2.9.2",
+    "redoc-cli": "^0.8.6",
     "sinon": "5.0.7"
   },
   "dependencies": {},

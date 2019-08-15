@@ -4,4 +4,4 @@ API Reference
 =============
 
 .. raw:: html
-   :file: _static/api/index.html
+   :file: _static/api/static.html

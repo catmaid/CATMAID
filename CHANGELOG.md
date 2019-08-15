@@ -46,6 +46,11 @@ Tracing overlay:
   the Settings Widget. The "Read-only mirror index" settings is kept but refers
   to list elements in the central configuration list.
 
+- Joining two skeletons without confirmation ("fast mode"), will now attach an
+  annotation to the resulting skeleton that references the merged in skeleton by
+  name. The name of this annotation as well as the suggested reference visible
+  in the confirmation dialog have the form "Merged: <neuron-name>".
+
 Miscellaneous:
 
 - Projects can now be kept open if all last stack-viewers are closed. To not

@@ -297,9 +297,9 @@
         // add name of model 2 to model 1). Don't check it, if it is named in the
         // default pattern "neuron 123456".
         var checked = (null === losingModel.baseName.match(/[Nn]euron \d+/));
-        var cb = create_labeled_checkbox(losingModel.baseName,
+        var cb = create_labeled_checkbox(`Merged: ${losingModel.baseName}`,
             CATMAID.session.userid, checked, false,
-            losingModel.baseName + " (reference to merged in neuron)");
+            `Merged: ${losingModel.baseName} (reference to merged in neuron)`);
         big.appendChild(cb, checked);
         // Add annotations
         add_annotations_fn(this.over_model_id, [{obj: big, checked: true}], true);

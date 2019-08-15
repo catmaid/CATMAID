@@ -61,10 +61,15 @@
      *                                  skeletons have samplers, a handling mode
      *                                  is needed. Either "create-intervals",
      *                                  "branch", "domain-end" or "new-domain".
+     * @param {boolean} fromNameReference (optional) If enabled, the back-end
+     *                                    will add a new annotation to the
+     *                                    target neuron, that is a refernce to
+     *                                    the merged in neuron. By default false.
      *
      * @returns A new promise that is resolved once both skeletons are joined.
      */
-    join: function(state, projectId, fromId, toId, annotationSet, samplerHandling) {
+    join: function(state, projectId, fromId, toId, annotationSet,
+        samplerHandling, fromNameReference = false) {
 
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to join skeletons');
@@ -73,6 +78,7 @@
         from_id: fromId,
         to_id: toId,
         state: state.makeMultiNodeState([fromId, toId]),
+        fromNameReference: fromNameReference,
       };
 
       if (annotationSet) {
@@ -81,6 +87,10 @@
 
       if (samplerHandling) {
         params.sampler_handling = samplerHandling;
+      }
+
+      if (fromNameReference) {
+        params.from_name_reference = fromNameReference;
       }
 
       return CATMAID.fetch(url, 'POST', params).then((function(json) {
@@ -493,13 +503,18 @@
      *                                  skeletons have samplers, a handling mode
      *                                  is needed. Either "create-intervals",
      *                                  "branch", "domain-end" or "new-domain".
+     * @param {boolean} fromNameReference (optional) If enabled, the back-end
+     *                                    will add a new annotation to the
+     *                                    target neuron, that is a refernce to
+     *                                    the merged in neuron. By default false.
    */
   CATMAID.JoinSkeletonsCommand = CATMAID.makeCommand(
-      function(state, projectId, fromId, toId, annotationSet, samplerHandling) {
+      function(state, projectId, fromId, toId, annotationSet, samplerHandling,
+        fromNameReference) {
 
     var exec = function(done, command, map) {
       var join = CATMAID.Skeletons.join(state, project.id, fromId, toId,
-          annotationSet, samplerHandling);
+          annotationSet, samplerHandling, fromNameReference);
       return join.then(function(result) {
         done();
         return result;

@@ -2162,14 +2162,15 @@ var SkeletonAnnotations = {};
           self.executeIfSkeletonEditable(from_skid, function() {
             self.executeIfSkeletonEditable(to_skid, function() {
               // The function used to instruct the backend to do the merge
-              var merge = function(annotation_set, fromId, toId, samplerHandling) {
+              var merge = function(annotation_set, fromId, toId,
+                  samplerHandling, fromNameReference = false) {
                 return self.submit.then(function() {
                   // Suspend tracing layer during join to avoid unnecessary
                   // reloads.
                   self.suspended = true;
                   // Join skeletons
                   var command = new CATMAID.JoinSkeletonsCommand(self.state, project.id,
-                      nodes[fromId], nodes[toId], annotation_set, samplerHandling);
+                      nodes[fromId], nodes[toId], annotation_set, samplerHandling, fromNameReference);
                   return CATMAID.commands.execute(command)
                     .catch(CATMAID.handleError)
                     .then(function(result) {
@@ -2195,8 +2196,8 @@ var SkeletonAnnotations = {};
 
                 if (noConfirmation) {
                   // Providing no annotation set, will result in all annotations
-                  // to be taken over.
-                  merge(undefined, from_skid, to_skid)
+                  // to be taken over. Add a from-skeleton reference annotation.
+                  merge(undefined, from_skid, to_skid, undefined, true)
                     .then(function() {
                       CATMAID.msg("Success", "Merged skeleton " + to_skid +
                           " into skeleton " + from_skid + " without confirmation");

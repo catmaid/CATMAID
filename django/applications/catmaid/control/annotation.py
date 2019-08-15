@@ -544,7 +544,8 @@ def query_annotated_classinstances(request:HttpRequest, project_id:Optional[Unio
     })
 
 
-def _update_neuron_annotations(project_id:Union[int,str], neuron_id, annotation_map:Dict[str,Any], losing_neuron_id=None) -> None:
+def _update_neuron_annotations(project_id:Union[int,str], neuron_id,
+        annotation_map:Dict[str,Any], losing_neuron_id=None) -> None:
     """ Ensure that the neuron is annotated_with only the annotations given.
     These annotations are expected to come as dictionary of annotation name
     versus annotator ID.

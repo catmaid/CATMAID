@@ -1964,9 +1964,11 @@ def join_skeleton(request:HttpRequest, project_id=None) -> JsonResponse:
         if annotation_set:
             annotation_set = json.loads(annotation_set)
         sampler_handling = request.POST.get('sampler_handling', None)
+        from_name_reference = get_request_bool(request.POST, 'from_name_reference', False)
 
         join_info = _join_skeleton(request.user, from_treenode_id, to_treenode_id,
-                project_id, annotation_set, sampler_handling)
+                project_id, annotation_set, sampler_handling,
+                from_name_reference)
 
         response_on_error = 'Could not log actions.'
 
@@ -2015,7 +2017,7 @@ def make_annotation_map(annotation_vs_user_id, neuron_id, cursor=None) -> Dict:
 
 
 def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
-        annotation_map, sampler_handling=None) -> Dict[str, Any]:
+        annotation_map, sampler_handling=None, from_name_reference=False) -> Dict[str, Any]:
     """ Take the IDs of two nodes, each belonging to a different skeleton, and
     make to_treenode be a child of from_treenode, and join the nodes of the
     skeleton of to_treenode into the skeleton of from_treenode, and delete the
@@ -2028,6 +2030,9 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
 
     If samplers link to one or both ot the input skeletons, a sampler handling
     mode is required. Otherwise, the merge operation is canceled.
+
+    If from_name_reference is enabled, the target skeleton will get a new
+    annotation that references the merged in skeleton using its name.
     """
     if from_treenode_id is None or to_treenode_id is None:
         raise Exception('Missing arguments to _join_skeleton')
@@ -2133,6 +2138,13 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
                     winning_time = winning_entry.get(field)
                     if losing_time and winning_time:
                         winning_entry[field] = min(winning_time, losing_time)
+
+        if from_name_reference:
+            name_ref = 'Merged: ' + to_neuron['neuronname']
+            if name_ref not in winning_map:
+                winning_map[name_ref] = {
+                    'user_id': user.id
+                }
 
         # Reroot to_skid at to_treenode if necessary
         response_on_error = 'Could not reroot at treenode %s' % to_treenode_id

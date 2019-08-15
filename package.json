@@ -3,7 +3,7 @@
     "csslint": "1.0.5",
     "jsdoc": "^3.6.3",
     "jshint": "^2.10.2",
-    "karma": "2.0.2",
+    "karma": "4.2.0",
     "karma-chrome-launcher": "2.2.0",
     "karma-qunit": "2.1.0",
     "karma-sinon": "1.0.5",

@@ -104,6 +104,16 @@ The optional settings parameter ``DEFAULT_CACHE_GRID_CELL_WIDTH``,
 ``DEFAULT_CACHE_GRID_CELL_HEIGHT`` and ``DEFAULT_CACHE_GRID_CELL_DEPTH`` allow
 to define defaults for the above management command.
 
+To speed up the computation, it is possible to provide the parameters ``--jobs``
+and ``--depth-step``. With ``--jobs`` the number of parallel processes can be
+specified that can be used, which allows parallel cache filling. By default only
+a single process is used. With ``--depth-steps`` it is possible to reevaluate
+the number of cells to look at N ``n`` times during the run. For instance, using
+``--depth-steps=2`` will do a bounding box query when the process is through
+with half of the depth dimension (Z for XY orientation). By default only a
+single bounding box query will be made. Updating the bounding box every 100
+sections or so can lead to large improvements in cache cell update times.
+
 Updating caches
 ---------------
 

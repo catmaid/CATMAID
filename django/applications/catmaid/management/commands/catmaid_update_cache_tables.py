@@ -71,6 +71,9 @@ class Command(BaseCommand):
         parser.add_argument('--progress', dest='progress', default=True,
             const=True, type=lambda x: (str(x).lower() == 'true'), nargs='?',
             help='Whether to show progress information')
+        parser.add_argument('--jobs', dest='jobs', default=1, help='The number of processes to use', type=int)
+        parser.add_argument('--depth-steps', dest='depth_steps', default=1, type=int,
+                help='The number of steps in which the source bounding box is re-evaluated')
 
     def handle(self, *args, **options):
         if options['from_config']:
@@ -170,10 +173,17 @@ class Command(BaseCommand):
         if lod_bucket_size:
             lod_bucket_size = int(lod_bucket_size)
 
-
         lod_strategy = options['lod_strategy']
         if lod_strategy not in ('linear', 'quadratic', 'exponential'):
             raise ValueError("Unknown LOD strategy: {}".format(lod_strategy))
+
+        jobs = options['jobs']
+        if jobs > 1 and cache_type != 'grid':
+            raise ValueError("Parallel processing works currently only with grid caches")
+
+        depth_steps = options['depth_steps']
+        if depth_steps > 1 and cache_type != 'grid':
+            raise ValueError("Depth steps work currently only with grid caches")
 
         progress = options['progress']
 
@@ -189,5 +199,7 @@ class Command(BaseCommand):
                         n_last_edited_skeletons_limit, hidden_last_editor_id, delete,
                         bb_limits, log=self.stdout.write, progress=progress,
                         allow_empty=allow_empty, lod_levels=lod_levels,
-                        lod_bucket_size=lod_bucket_size, lod_strategy=lod_strategy)
+                        lod_bucket_size=lod_bucket_size,
+                        lod_strategy=lod_strategy, jobs=jobs,
+                        depth_steps=depth_steps)
             self.stdout.write('Updated {} cache for project {}'.format(cache_type, p.id))

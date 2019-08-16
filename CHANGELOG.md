@@ -51,6 +51,20 @@ Tracing overlay:
   name. The name of this annotation as well as the suggested reference visible
   in the confirmation dialog have the form "Merged: <neuron-name>".
 
+Administration:
+
+- The catmaid_update_cache_tables management command accepts now a `--jobs=n`
+  parameter, which allows it to run in parallel when set to values `n` larger one.
+  By default a single process is used. This can speed up cache generation
+  significantly.
+
+- The catmaid_update_cache_tables management command accepts now a
+  `--depth-step=n` parameter, which makes the update process reevaluate the
+  number of grid cells to look at `n` times during a single run. For instance,
+  if set to 2, the upper bound of cells to look at is reevaluated when the
+  process is through with half the depth dimension. In larger datasets, this can
+  speed up cache generation significantly.
+
 Miscellaneous:
 
 - Projects can now be kept open if all last stack-viewers are closed. To not

@@ -1491,13 +1491,14 @@ def get_tracing_bounding_box(project_id, cursor=None, bb_limits=None):
 
     extra_filter = ''
     if bb_limits:
+        # Use 3D index using the &&& operator as well as the range index
         extra_filter = '''
-            AND ST_XMin(edge) >= %(min_x)s
-            AND ST_YMin(edge) >= %(min_y)s
-            AND ST_ZMin(edge) >= %(min_z)s
-            AND ST_XMax(edge) <= %(max_x)s
-            AND ST_YMax(edge) <= %(max_y)s
-            AND ST_ZMax(edge) <= %(max_z)s
+            AND edge &&& ST_MakeLine(ARRAY[
+                ST_MakePoint(%(min_x)s, %(max_y)s, %(max_z)s),
+                ST_MakePoint(%(max_x)s, %(min_y)s, %(min_z)s)] ::geometry[])
+            AND floatrange(ST_ZMin(edge), ST_ZMax(edge), '[]') &&
+            floatrange(%(min_z)s, %(max_z)s, '[)')
+
         '''
         params.update({
             'min_x': bb_limits[0][0],
@@ -1507,18 +1508,34 @@ def get_tracing_bounding_box(project_id, cursor=None, bb_limits=None):
             'max_y': bb_limits[1][1],
             'max_z': bb_limits[1][2],
         })
-
-    cursor.execute("""
-        SELECT ARRAY[ST_XMin(bb.box), ST_YMin(bb.box), ST_ZMin(bb.box)],
-               ARRAY[ST_XMax(bb.box), ST_YMax(bb.box), ST_ZMax(bb.box)]
-        FROM (
-            SELECT ST_3DExtent(edge) box FROM treenode_edge
-            WHERE project_id = %(project_id)s
-            {extra_filter}
-        ) bb;
-    """.format(**{
-        'extra_filter': extra_filter,
-    }), params)
+        cursor.execute("""
+            SELECT ARRAY[
+                    GREATEST(ST_XMin(bb.box), %(min_x)s),
+                    GREATEST(ST_YMin(bb.box), %(min_y)s),
+                    GREATEST(ST_ZMin(bb.box), %(min_z)s)
+                ],
+                ARRAY[
+                    LEAST(ST_XMax(bb.box), %(max_x)s),
+                    LEAST(ST_YMax(bb.box), %(max_y)s),
+                    LEAST(ST_ZMax(bb.box), %(max_z)s)
+                ]
+            FROM (
+                SELECT ST_3DExtent(edge) box FROM treenode_edge
+                WHERE project_id = %(project_id)s
+                {extra_filter}
+            ) bb;
+        """.format(**{
+            'extra_filter': extra_filter,
+        }), params)
+    else:
+        cursor.execute("""
+            SELECT ARRAY[ST_XMin(bb.box), ST_YMin(bb.boxST_ZMin(bb.box)],
+                   ARRAY[ST_XMax(bb.box), ST_YMax(bb.box), ST_ZMax(bb.box)]
+            FROM (
+                SELECT ST_3DExtent(edge) box FROM treenode_edge
+                WHERE project_id = %(project_id)s
+            ) bb;
+        """, params)
 
     row = cursor.fetchone()
     if not row:

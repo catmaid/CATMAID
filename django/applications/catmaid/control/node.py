@@ -1974,23 +1974,36 @@ def update_grid_cache(project_id, data_type, orientations,
                 local_max_h_i = int(local_bb[1][1] // cell_height)
                 local_max_d_i = int(local_bb[1][2] // cell_depth)
 
+                # The maximum number of depth cells.
+                full_local_min_d_i = int(local_min_depth // cell_depth)
+                full_local_max_d_i = int(local_max_depth // cell_depth)
+
                 # To prevent repeated evaluation of the border planes, we
                 # diminish the local max depth index coorinate, except for the
                 # last iteration, where we can't rely on the next iteration to
                 # fill in the data.
                 if depth_steps > (depth_section + 1):
                     local_max_d_i -= 1
+                    full_local_max_d_i -= 1
 
                 local_n_cells_w = local_max_w_i - local_min_w_i + 1
                 local_n_cells_h = local_max_h_i - local_min_h_i + 1
                 local_n_cells_d = local_max_d_i - local_min_d_i + 1
                 local_n_cells = local_n_cells_w * local_n_cells_h * local_n_cells_d
 
-                log(' -> Local grid dimension (cells per dimension X, Y and Z): {}, {}, {} Total cells: {} Min XYZ idx: {}, {}, {} Max XYZ idx {}, {}, {}'.format(
+                full_local_n_cells_d = full_local_max_d_i - full_local_min_d_i + 1
+                full_local_n_cells = n_cells_w * n_cells_h * full_local_n_cells_d
+                n_ignored_global_cells = full_local_n_cells - local_n_cells
+
+                log(' -> Local grid dimension (cells per dimension X, Y and Z): {}, {}, {} Total cells: {} Ingored: {} Min XYZ idx: {}, {}, {} Max XYZ idx {}, {}, {}'.format(
                         local_n_cells_w, local_n_cells_h, local_n_cells_d,
-                        local_n_cells, local_min_w_i, local_min_h_i,
-                        local_min_d_i, local_max_w_i, local_max_h_i,
-                        local_max_d_i))
+                        local_n_cells, n_ignored_global_cells, local_min_w_i,
+                        local_min_h_i, local_min_d_i, local_max_w_i,
+                        local_max_h_i, local_max_d_i))
+
+                if progress:
+                    counter += n_ignored_global_cells
+                    bar.update(counter)
 
             def iterate_space():
                 """A generator to iterate the local cell space."""

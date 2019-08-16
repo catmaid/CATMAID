@@ -58,10 +58,10 @@ class GridWorker():
                 params['hidden_last_editor_id'] = int(g.hidden_last_editor_id)
 
             added = update_grid_cell(g.project_id, g.id, w_i, h_i, d_i,
-                    g.cell_width, g.cell_height, g.cell_depth, provider,
+                    g.cell_width, g.cell_height, g.cell_depth,
                     params, g.allow_empty, g.n_lod_levels, g.lod_min_bucket_size,
                     g.lod_strategy, g.has_json_data, g.has_json_text_data,
-                    g.has_msgpack_data, cursor)
+                    g.has_msgpack_data, provider=provider, cursor=cursor)
 
             if added:
                 updated_cells += 1

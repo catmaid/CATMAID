@@ -5,6 +5,7 @@ from aggdraw import Draw, Pen, Brush, Font
 from collections import defaultdict
 import copy
 import json
+from concurrent import futures
 import math
 import msgpack
 from PIL import Image, ImageDraw
@@ -16,7 +17,7 @@ import ujson
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.conf import settings
-from django.db import connection
+from django.db import connection, connections
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
@@ -1733,7 +1734,7 @@ def update_grid_cache(project_id, data_type, orientations,
         n_last_edited_skeletons_limit=None, hidden_last_editor_id=None,
         delete=False, bb_limits=None, log=print, progress=True,
         allow_empty=False, lod_levels=1, lod_bucket_size=500,
-        lod_strategy='quadratic') -> None:
+        lod_strategy='quadratic', jobs=1, depth_steps=1) -> None:
     if data_type not in ('json', 'json_text', 'msgpack'):
         raise ValueError('Type must be one of: json, json_text, msgpack')
     if project_id is None:
@@ -1744,6 +1745,9 @@ def update_grid_cache(project_id, data_type, orientations,
         raise ValueError('Need non-zero cell height information')
     if not cell_depth:
         raise ValueError('Need non-zero cell depth information')
+
+    # In each job all orentations are computed and all general settings apply
+    # equally.
 
     orientation_ids = list(map(lambda x: ORIENTATIONS[x], orientations))
 
@@ -1813,6 +1817,8 @@ def update_grid_cache(project_id, data_type, orientations,
 
     provider = Postgis3dNodeProvider()
     types = ', '.join(data_types)
+
+    executor = futures.ProcessPoolExecutor(jobs)
 
     for o in orientations:
         orientation_id = ORIENTATIONS[o]
@@ -1897,37 +1903,95 @@ def update_grid_cache(project_id, data_type, orientations,
         if progress:
             bar = progressbar.ProgressBar(max_value=n_cells, redirect_stdout=True).start()
 
+        section_extent = math.ceil(n_cells_d // depth_steps) * cell_depth
+        min_z = bb[0][2]
+
         counter = 0
         created = 0
-        for d_i in range(min_d_i, max_d_i + 1):
-            for h_i in range(min_h_i, max_h_i + 1):
-                for w_i in range(min_w_i, max_w_i + 1):
-                    if progress:
-                        counter += 1
-                        bar.update(counter)
 
-                    added = update_grid_cell(project_id, grid_id, w_i, h_i, d_i,
-                            cell_width, cell_height, cell_depth, provider,
-                            params, allow_empty, lod_levels, lod_bucket_size,
-                            lod_strategy, update_json_cache,
-                            update_json_text_cache, update_msgpack_cache, cursor)
-                    if added:
-                        created += 1
+        # If the effective bounding box should be reavaluated
+        for depth_section in range(depth_steps):
+            cursor = connection.cursor()
+            # If there is only a single step asked for, reuse global bounding
+            # box. Otherwise, query a new one for the current step.
+            if (depth_steps == 1):
+                local_min_w_i, local_min_h_i, local_min_d_i = \
+                        min_w_i, min_h_i, min_d_i
+                local_max_w_i, local_max_h_i, local_max_d_i = \
+                        max_w_i, max_h_i, max_d_i
+            else:
+                local_min_depth = min_z + depth_section * section_extent
+                local_max_depth = min_z + (depth_section + 1) * section_extent
+                log(' -> Finding local tracing data bounding box for step {}/{}: {} - {} in depth'.format(
+                    depth_section + 1, depth_steps, local_min_depth, local_max_depth))
+                local_bb_limits = [
+                    [bb_limits[0][0], bb_limits[0][1], local_min_depth],
+                    [bb_limits[1][0], bb_limits[1][1], local_max_depth]]
+                row = get_tracing_bounding_box(project_id, cursor, local_bb_limits)
+                local_bb = [row[0], row[1]]
+                if None in local_bb[0] or None in local_bb[1]:
+                    log(' -> Found no valid bounding box, skipping depth section: {}'.format(local_bb))
+                    return
+                local_min_w_i = int(local_bb[0][0] // cell_width)
+                local_min_h_i = int(local_bb[0][1] // cell_height)
+                local_min_d_i = int(local_bb[0][2] // cell_depth)
+                local_max_w_i = int(local_bb[1][0] // cell_width)
+                local_max_h_i = int(local_bb[1][1] // cell_height)
+                local_max_d_i = int(local_bb[1][2] // cell_depth)
+
+                local_n_cells_w = local_max_w_i - local_min_w_i + 1
+                local_n_cells_h = local_max_h_i - local_min_h_i + 1
+                local_n_cells_d = local_max_d_i - local_min_d_i + 1
+                local_n_cells = local_n_cells_w * local_n_cells_h * local_n_cells_d
+
+                log(' -> Local grid dimension (cells per dimension X, Y and Z): {}, {}, {} Total cells: {}'.format(
+                        local_n_cells_w, local_n_cells_h, local_n_cells_d, local_n_cells))
+
+            def iterate_space():
+                """A generator to iterate the local cell space."""
+                for d_i in range(local_min_d_i, local_max_d_i + 1):
+                    for h_i in range(local_min_h_i, local_max_h_i + 1):
+                        for w_i in range(local_min_w_i, local_max_w_i + 1):
+                            yield w_i, h_i, d_i
+
+            # We need to close all database connections to not accidentally
+            # share the file descriptors of current connections with forks.
+            connections.close_all()
+
+            tasks = [executor.submit(update_grid_cell, project_id, grid_id, w_i,
+                h_i, d_i, cell_width, cell_height, cell_depth, params,
+                allow_empty, lod_levels, lod_bucket_size, lod_strategy,
+                update_json_cache, update_json_text_cache, update_msgpack_cache)
+                for w_i, h_i, d_i in iterate_space()]
+
+            for future in futures.as_completed(tasks):
+                if progress:
+                    counter += 1
+                    bar.update(counter)
+                if future.result():
+                    created += 1
+
         log(' -> Materialized {} grid cells'.format(created))
         if progress:
             bar.finish()
 
 
 def update_grid_cell(project_id, grid_id, w_i, h_i, d_i, cell_width,
-        cell_height, cell_depth, provider, params, allow_empty, lod_levels,
+        cell_height, cell_depth, params, allow_empty, lod_levels,
         lod_bucket_size, lod_strategy, update_json_cache,
-        update_json_text_cache, update_msgpack_cache, cursor) -> bool:
+        update_json_text_cache, update_msgpack_cache, provider=None, cursor=None) -> bool:
     params['left'] = w_i * cell_width
     params['right'] = (w_i + 1) * cell_width
     params['top'] = h_i * cell_height
     params['bottom'] = (h_i + 1) * cell_width
     params['z1'] = d_i * cell_depth
     params['z2'] = (d_i + 1) * cell_depth
+
+    if not provider:
+        provider = Postgis3dNodeProvider()
+
+    if not cursor:
+        cursor = connection.cursor()
 
     result_tuple = _node_list_tuples_query(params, project_id, provider,
             include_labels=True)

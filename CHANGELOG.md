@@ -56,7 +56,9 @@ Administration:
 - The catmaid_update_cache_tables management command accepts now a `--jobs=n`
   parameter, which allows it to run in parallel when set to values `n` larger one.
   By default a single process is used. This can speed up cache generation
-  significantly.
+  significantly. With the help of the option `--chunk-size=n` it is possible to
+  define how many cells should be processed per CPU task. For large dataset it
+  might be useful to raise the default of 10.
 
 - The catmaid_update_cache_tables management command accepts now a
   `--depth-step=n` parameter, which makes the update process reevaluate the

@@ -74,6 +74,8 @@ class Command(BaseCommand):
         parser.add_argument('--jobs', dest='jobs', default=1, help='The number of processes to use', type=int)
         parser.add_argument('--depth-steps', dest='depth_steps', default=1, type=int,
                 help='The number of steps in which the source bounding box is re-evaluated')
+        parser.add_argument('--chunk-size', dest='chunk_size', default=10, type=int,
+                help='The number of cache cells evaluated per process')
 
     def handle(self, *args, **options):
         if options['from_config']:
@@ -185,6 +187,8 @@ class Command(BaseCommand):
         if depth_steps > 1 and cache_type != 'grid':
             raise ValueError("Depth steps work currently only with grid caches")
 
+        chunksize = options['chunk_size']
+
         progress = options['progress']
 
         for p in projects:
@@ -201,5 +205,5 @@ class Command(BaseCommand):
                         allow_empty=allow_empty, lod_levels=lod_levels,
                         lod_bucket_size=lod_bucket_size,
                         lod_strategy=lod_strategy, jobs=jobs,
-                        depth_steps=depth_steps)
+                        depth_steps=depth_steps, chunksize=chunksize)
             self.stdout.write('Updated {} cache for project {}'.format(cache_type, p.id))

@@ -392,3 +392,14 @@ def is_valid_host(host:str, auth=None) -> Tuple[bool, str]:
     if not reachable:
         return (False, 'URL not reachable: {}'.format(reason))
     return (True, "Ok")
+
+
+def batches(iterable, size):
+    """Iterate in batches.
+    """
+    source = iter(iterable)
+    while True:
+        chunk = [val for _, val in zip(range(size), source)]
+        if not chunk:
+            raise StopIteration
+        yield chunk

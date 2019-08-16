@@ -29,8 +29,8 @@ from catmaid.models import (ClassInstance, UserRole, Treenode,
         ClassInstanceClassInstance, Review, Project)
 from catmaid.control.authentication import requires_user_role, \
         can_edit_all_or_fail
-from catmaid.control.common import (get_relation_to_id_map, get_request_bool,
-        get_request_list)
+from catmaid.control.common import (batches, get_relation_to_id_map,
+        get_request_bool, get_request_list)
 
 
 
@@ -1743,6 +1743,24 @@ def update_cache(project_id, data_type, orientations, steps, node_limit=None,
             z += step
 
 
+def process_batch(cell_defs, project_id, grid_id, cell_width, cell_height,
+        cell_depth, params, allow_empty, lod_levels,
+        lod_bucket_size, lod_strategy, update_json_cache,
+        update_json_text_cache, update_msgpack_cache):
+    created_in_process = 0
+    processed = 0
+    for w_i, h_i, d_i in cell_defs:
+        added = update_grid_cell(project_id, grid_id, w_i,
+            h_i, d_i, cell_width, cell_height, cell_depth, params,
+            allow_empty, lod_levels, lod_bucket_size, lod_strategy,
+            update_json_cache, update_json_text_cache,
+            update_msgpack_cache)
+        processed += 1
+        if added:
+            created_in_process += 1
+    return processed, created_in_process
+
+
 def update_grid_cache(project_id, data_type, orientations,
         cell_width=settings.DEFAULT_CACHE_GRID_CELL_WIDTH,
         cell_height=settings.DEFAULT_CACHE_GRID_CELL_HEIGHT,
@@ -1751,7 +1769,7 @@ def update_grid_cache(project_id, data_type, orientations,
         n_last_edited_skeletons_limit=None, hidden_last_editor_id=None,
         delete=False, bb_limits=None, log=print, progress=True,
         allow_empty=False, lod_levels=1, lod_bucket_size=500,
-        lod_strategy='quadratic', jobs=1, depth_steps=1) -> None:
+        lod_strategy='quadratic', jobs=1, depth_steps=1, chunksize=10) -> None:
     if data_type not in ('json', 'json_text', 'msgpack'):
         raise ValueError('Type must be one of: json, json_text, msgpack')
     if project_id is None:
@@ -1986,18 +2004,19 @@ def update_grid_cache(project_id, data_type, orientations,
                 # share the file descriptors of current connections with forks.
                 connections.close_all()
 
-                tasks = [executor.submit(update_grid_cell, project_id, grid_id, w_i,
-                    h_i, d_i, cell_width, cell_height, cell_depth, params,
-                    allow_empty, lod_levels, lod_bucket_size, lod_strategy,
-                    update_json_cache, update_json_text_cache, update_msgpack_cache)
-                    for w_i, h_i, d_i in iterate_space()]
+                tasks = [executor.submit(process_batch, cell_defs, project_id,
+                        grid_id, cell_width, cell_height, cell_depth, params,
+                        allow_empty, lod_levels, lod_bucket_size, lod_strategy,
+                        update_json_cache, update_json_text_cache,
+                        update_msgpack_cache)
+                    for cell_defs in batches(iterate_space(), chunksize)]
 
                 for future in futures.as_completed(tasks):
+                    result = future.result()
                     if progress:
-                        counter += 1
+                        counter += result[0]
                         bar.update(counter)
-                    if future.result():
-                        created += 1
+                    created += result[1]
             else:
                 for w_i, h_i, d_i in iterate_space():
                     if progress:

@@ -1510,14 +1510,14 @@ def get_tracing_bounding_box(project_id, cursor=None, bb_limits=None):
         })
         cursor.execute("""
             SELECT ARRAY[
-                    GREATEST(ST_XMin(bb.box), %(min_x)s),
-                    GREATEST(ST_YMin(bb.box), %(min_y)s),
-                    GREATEST(ST_ZMin(bb.box), %(min_z)s)
+                    CASE WHEN ST_XMin(bb.box) IS NULL THEN NULL ELSE GREATEST(ST_XMin(bb.box), %(min_x)s) END,
+                    CASE WHEN ST_YMin(bb.box) IS NULL THEN NULL ELSE GREATEST(ST_YMin(bb.box), %(min_y)s) END,
+                    CASE WHEN ST_ZMin(bb.box) IS NULL THEN NULL ELSE GREATEST(ST_ZMin(bb.box), %(min_z)s) END
                 ],
                 ARRAY[
-                    LEAST(ST_XMax(bb.box), %(max_x)s),
-                    LEAST(ST_YMax(bb.box), %(max_y)s),
-                    LEAST(ST_ZMax(bb.box), %(max_z)s)
+                    CASE WHEN ST_XMax(bb.box) IS NULL THEN NULL ELSE LEAST(ST_XMax(bb.box), %(max_x)s) END,
+                    CASE WHEN ST_YMax(bb.box) IS NULL THEN NULL ELSE LEAST(ST_YMax(bb.box), %(max_y)s) END,
+                    CASE WHEN ST_ZMax(bb.box) IS NULL THEN NULL ELSE LEAST(ST_ZMax(bb.box), %(max_z)s) END
                 ]
             FROM (
                 SELECT ST_3DExtent(edge) box FROM treenode_edge

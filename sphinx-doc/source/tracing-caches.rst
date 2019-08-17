@@ -112,7 +112,9 @@ the number of cells to look at N ``n`` times during the run. For instance, using
 ``--depth-steps=2`` will do a bounding box query when the process is through
 with half of the depth dimension (Z for XY orientation). By default only a
 single bounding box query will be made. Updating the bounding box every 100
-sections or so can lead to large improvements in cache cell update times.
+sections or so can lead to large improvements in cache cell update times. By
+default, 10 cache cells are executed per process in a parallel run. This can be
+adjusted using the ``--chunk-size`` parameter.
 
 Updating caches
 ---------------

@@ -67,6 +67,10 @@ Administration:
   process is through with half the depth dimension. In larger datasets, this can
   speed up cache generation significantly.
 
+- The catmaid_update_cache_tables management command accepts now an optional
+  ``--order`` parameter, which can be set to either "cable-asc" or "cable-desc".
+  By default no order is applied.
+
 Miscellaneous:
 
 - Projects can now be kept open if all last stack-viewers are closed. To not

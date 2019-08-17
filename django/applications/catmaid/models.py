@@ -1393,6 +1393,7 @@ class NodeGridCache(models.Model):
     has_json_text_data = models.BooleanField(default=False, null=False)
     has_msgpack_data = models.BooleanField(default=False, null=False)
     enabled = models.BooleanField(default=True, null=False)
+    ordering = models.TextField(null=True, default=None)
 
     class Meta:
         db_table = "node_grid_cache"

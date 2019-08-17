@@ -1477,6 +1477,7 @@ def update_node_query_cache(node_providers=None, log=print, force=False) -> None
         lod_levels = options.get('lod_levels')
         lod_bucket_size = options.get('lod_bucket_size')
         lod_strategy = options.get('lod_strategy')
+        ordering = options.get('ordering')
 
         data_type = CACHE_NODE_PROVIDER_DATA_TYPES.get(key)
         if not data_type:
@@ -1501,7 +1502,7 @@ def update_node_query_cache(node_providers=None, log=print, force=False) -> None
                     n_last_edited_skeletons_limit=n_last_edited_skeletons_limit,
                     hidden_last_editor_id=hidden_last_editor_id, lod_levels=lod_levels,
                     lod_bucket_size=lod_bucket_size, lod_strategy=lod_strategy,
-                    delete=clean_cache, log=log)
+                    delete=clean_cache, log=log, ordering=ordering)
 
 
 def get_tracing_bounding_box(project_id, cursor=None, bb_limits=None):
@@ -1638,7 +1639,8 @@ def get_lod_buckets(result_tuple, lod_levels, lod_bucket_size, lod_strategy) -> 
 def update_cache(project_id, data_type, orientations, steps, node_limit=None,
         n_largest_skeletons_limit=None, n_last_edited_skeletons_limit=None,
         hidden_last_editor_id=None, lod_levels=1, lod_bucket_size=500,
-        lod_strategy='quadratic', delete=False, bb_limits=None, log=print) -> None:
+        lod_strategy='quadratic', delete=False, bb_limits=None, log=print,
+        ordering=None) -> None:
     if data_type not in ('json', 'json_text', 'msgpack'):
         raise ValueError('Type must be one of: json, json_text, msgpack')
     if len(steps) != len(orientations):
@@ -1689,7 +1691,8 @@ def update_cache(project_id, data_type, orientations, steps, node_limit=None,
         'bottom': bb[1][1],
         'z2': None,
         'project_id': project_id,
-        'limit': node_limit
+        'limit': node_limit,
+        'ordering': ordering,
     }
 
     if n_largest_skeletons_limit:
@@ -1706,6 +1709,9 @@ def update_cache(project_id, data_type, orientations, steps, node_limit=None,
         params['hidden_last_editor_id'] = int(hidden_last_editor_id)
         log((' -> Only nodes not edited last by user {} will be allowed'.format(
                 hidden_last_editor_id)))
+
+    if ordering:
+        log(' -> Cached data is ordered: ' + ordering)
 
     log(' -> Level-of-detail steps: {}, bucket size: {}, strategy: {}'.format(
             lod_levels, lod_bucket_size, lod_strategy))
@@ -1794,7 +1800,8 @@ def update_grid_cache(project_id, data_type, orientations,
         n_last_edited_skeletons_limit=None, hidden_last_editor_id=None,
         delete=False, bb_limits=None, log=print, progress=True,
         allow_empty=False, lod_levels=1, lod_bucket_size=500,
-        lod_strategy='quadratic', jobs=1, depth_steps=1, chunksize=10) -> None:
+        lod_strategy='quadratic', jobs=1, depth_steps=1, chunksize=10,
+        ordering=None) -> None:
     if data_type not in ('json', 'json_text', 'msgpack'):
         raise ValueError('Type must be one of: json, json_text, msgpack')
     if project_id is None:
@@ -1852,7 +1859,8 @@ def update_grid_cache(project_id, data_type, orientations,
         'bottom': bb[1][1],
         'z2':     bb[1][2],
         'project_id': project_id,
-        'limit':  node_limit
+        'limit':  node_limit,
+        'ordering': ordering,
     }
 
     if n_largest_skeletons_limit:
@@ -1913,13 +1921,14 @@ def update_grid_cache(project_id, data_type, orientations,
                     cell_width, cell_height, cell_depth, n_largest_skeletons_limit,
                     n_last_edited_skeletons_limit, hidden_last_editor_id,
                     n_lod_levels, lod_min_bucket_size, lod_strategy, allow_empty,
-                    has_json_data, has_json_text_data, has_msgpack_data)
+                    has_json_data, has_json_text_data, has_msgpack_data,
+                    ordering)
                 VALUES (%(project_id)s, %(orientation)s, %(cell_width)s,
                     %(cell_height)s, %(cell_depth)s, %(n_largest_sk_limit)s,
                     %(n_last_edit_limit)s, %(hidden_last_editor_id)s,
                     %(n_lod_levels)s, %(lod_min_bucket_size)s, %(lod_strategy)s,
                     %(allow_empty)s, %(has_json_data)s, %(has_json_text_data)s,
-                    %(has_msgpack_data)s)
+                    %(has_msgpack_data)s, %(ordering)s)
                 RETURNING id;
             """, {
                 'project_id': project_id,
@@ -1937,6 +1946,7 @@ def update_grid_cache(project_id, data_type, orientations,
                 'has_json_data': update_json_cache,
                 'has_json_text_data': update_json_text_cache,
                 'has_msgpack_data': update_msgpack_cache,
+                'ordering': ordering,
             })
             grid_id = cursor.fetchone()[0]
 

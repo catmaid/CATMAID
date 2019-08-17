@@ -76,6 +76,8 @@ class Command(BaseCommand):
                 help='The number of steps in which the source bounding box is re-evaluated')
         parser.add_argument('--chunk-size', dest='chunk_size', default=10, type=int,
                 help='The number of cache cells evaluated per process')
+        parser.add_argument('--order', dest='order', default=None, type=str,
+                help='The order of data in the cache, can be either "cable-asc" or "cable-desc". By default no ordering is applied.')
 
     def handle(self, *args, **options):
         if options['from_config']:
@@ -188,15 +190,17 @@ class Command(BaseCommand):
             raise ValueError("Depth steps work currently only with grid caches")
 
         chunksize = options['chunk_size']
-
+        ordering = options['order']
         progress = options['progress']
+
 
         for p in projects:
             self.stdout.write('Updating {} cache for project {}'.format(cache_type, p.id))
             if cache_type == 'section':
                 update_cache(p.id, data_type, orientations, steps, node_limit,
                         n_largest_skeletons_limit, n_last_edited_skeletons_limit,
-                        hidden_last_editor_id, delete, bb_limits, log=self.stdout.write)
+                        hidden_last_editor_id, delete, bb_limits,
+                        log=self.stdout.write, ordering=ordering)
             elif cache_type == 'grid':
                 update_grid_cache(p.id, data_type, orientations, cell_width,
                         cell_height, cell_depth, node_limit, n_largest_skeletons_limit,
@@ -205,5 +209,6 @@ class Command(BaseCommand):
                         allow_empty=allow_empty, lod_levels=lod_levels,
                         lod_bucket_size=lod_bucket_size,
                         lod_strategy=lod_strategy, jobs=jobs,
-                        depth_steps=depth_steps, chunksize=chunksize)
+                        depth_steps=depth_steps, chunksize=chunksize,
+                        ordering=ordering)
             self.stdout.write('Updated {} cache for project {}'.format(cache_type, p.id))

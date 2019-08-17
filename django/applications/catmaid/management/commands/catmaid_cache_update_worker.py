@@ -49,6 +49,7 @@ class GridWorker():
             params = {
                 'project_id': g.project_id,
                 'limit': settings.NODE_LIST_MAXIMUM_COUNT,
+                'ordering': g.ordering,
             }
             if g.n_last_edited_skeletons_limit:
                 params['n_largest_skeletons_limit'] = int(g.n_largest_skeletons_limit)

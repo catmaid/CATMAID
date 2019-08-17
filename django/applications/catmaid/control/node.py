@@ -557,6 +557,10 @@ class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
             hidden_last_editor_id = params.get('hidden_last_editor_id')
             min_skeleton_length = params.get('min_skeleton_length')
             min_skeleton_nodes = params.get('min_skeleton_nodes')
+            ordering = params.get('ordering')
+
+            if ordering and ordering not in ('cable-asc', 'cable-desc'):
+                raise ValueError('Unknown ordering: ' + ordering)
 
             limit = n_largest_skeletons_limit + n_last_edited_skeletons_limit
 
@@ -630,6 +634,21 @@ class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
                         ON min_nodes.skeleton_id = basic_query.skeleton_id
                 """
 
+            result_order = ''
+            if ordering:
+                if ordering == 'cable-asc':
+                    result_order = 'ORDER BY length.cable_length ASC'
+                elif ordering == 'cable-desc':
+                    result_order = 'ORDER BY length.cable_length DESC'
+                extra_join = """
+                    JOIN (
+                        SELECT skeleton_id, cable_length
+                        FROM catmaid_skeleton_summary css
+                        WHERE project_id = %(project_id)s
+                    ) length(skeleton_id)
+                        ON length.skeleton_id = basic_query.skeleton_id
+                """
+
             if summary:
                 if extra_join:
                     query = '''
@@ -641,10 +660,12 @@ class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
                             {extra_join}
                         )
                         {summary}
+                        {ordering}
                     '''.format(**{
                         'query': query,
                         'summary': ' UNION '.join(summary),
                         'extra_join': extra_join,
+                        'ordering': result_order,
                     })
                 else:
                     query = '''
@@ -652,9 +673,11 @@ class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
                             {query}
                         )
                         {summary}
+                        {ordering}
                     '''.format(**{
                         'query': query,
                         'summary': ' UNION '.join(summary),
+                        'ordering': result_order,
                     })
             elif extra_join:
                 query = """
@@ -662,9 +685,11 @@ class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
                         {query}
                     ) basic_query
                     {extra_join}
+                    {ordering}
                 """.format(**{
                     'query': query,
                     'extra_join': extra_join,
+                    'ordering': result_order,
                 })
 
             cursor.execute(query, params)
@@ -2271,6 +2296,13 @@ def node_list_tuples(request:HttpRequest, project_id=None, provider=None) -> Htt
       required: false
       type: float
       paramType: form
+    - name: order
+      description: |
+        Either empty, cable-asc or cable-desc. Will return in a particular
+        order. By default, no ordering is applied.
+      required: false
+      type: string
+      paramType: form
     type:
     - type: array
       items:
@@ -2298,6 +2330,7 @@ def node_list_tuples(request:HttpRequest, project_id=None, provider=None) -> Htt
     params['hidden_last_editor_id'] = int(data['hidden_last_editor_id']) if 'hidden_last_editor_id' in data else None
     params['min_skeleton_length'] = float(data.get('min_skeleton_length', 0))
     params['min_skeleton_nodes'] = int(data.get('min_skeleton_nodes', 0))
+    params['ordering'] = data.get('order')
     params['project_id'] = project_id
     include_labels = get_request_bool(data, 'labels', False)
     target_format = data.get('format', 'json')
@@ -2346,7 +2379,7 @@ def node_list_tuples(request:HttpRequest, project_id=None, provider=None) -> Htt
 
 def _node_list_tuples_query(params, project_id, node_provider,
         explicit_treenode_ids=tuple(), explicit_connector_ids=tuple(),
-        include_labels=False, with_relation_map='used') -> List:
+        include_labels=False, with_relation_map='used', ordering=None) -> List:
     """The returned JSON data is sensitive to indices in the array, so care
     must be taken never to alter the order of the variables in the SQL
     statements without modifying the accesses to said data both in this

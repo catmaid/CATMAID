@@ -17,7 +17,10 @@ included in this changelog.
 
 ### Modifications
 
-None.
+- `POST|GET /{project_id}/node/list`:
+  Offers a new optional parameter
+  "ordering", which can be used to order the result set of nodes. The values
+  cable-asc and cable-desc are allowed. By default no ordering is applied.
 
 ### Deprecations
 

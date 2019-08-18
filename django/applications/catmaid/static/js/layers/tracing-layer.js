@@ -339,7 +339,7 @@
       value: this.ordering,
       options: [
           ['none', 'None'],
-          ['cable-desc', 'Cable-length desceding'],
+          ['cable-desc', 'Cable-length descending'],
           ['cable-asc', 'Cable-length ascending'],
       ],
       help: 'Apply a sorting to the tracing data. This is useful in combination with other filters that limit the number of nodes.',

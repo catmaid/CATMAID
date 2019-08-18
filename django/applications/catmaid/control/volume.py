@@ -391,11 +391,17 @@ def volume_collection(request:HttpRequest, project_id) -> JsonResponse:
         """)
         params['volume_ids'] = volume_ids
 
+    extra_fields = ''
+    if with_meshes:
+        extra_fields = ', Box3D(geometry) as bbox, ST_Asx3D(geometry) as mesh'
+
     cursor = connection.cursor()
     cursor.execute("""
         SELECT v.id, v.name, v.comment, v.user_id, v.editor_id, v.project_id,
             v.creation_time, v.edition_time,
-            JSON_AGG(ann.name) FILTER (WHERE ann.name IS NOT NULL) AS annotations
+            JSON_AGG(ann.name) FILTER (WHERE ann.name IS NOT NULL) AS annotations,
+            area, volume, watertight, meta_computed
+            {extra_fields}
         FROM catmaid_volume v
         LEFT JOIN volume_class_instance vci ON vci.volume_id = v.id
         LEFT JOIN class_instance_class_instance cici
@@ -412,6 +418,7 @@ def volume_collection(request:HttpRequest, project_id) -> JsonResponse:
             )
         GROUP BY v.id
         """.format(**{
+            'extra_fields': extra_fields,
             'extra_joins': '\n'.join(extra_joins),
         }), params)
 

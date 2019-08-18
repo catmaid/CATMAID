@@ -76,7 +76,12 @@ Administration:
 Volumes:
 
 - Volumes have now their surface area and volume associated with them as well as
-  whether they are watertight.
+  whether they are watertight. This information is visible in the Volume Manager
+  widget and can be recomputed on demand if needed, using the respective button
+  in the action column.
+
+- The base unit used for the ara and volume columns can be adjusted using the
+  "Reference unit" select box in the widget controls.
 
 Miscellaneous:
 

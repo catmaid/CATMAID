@@ -268,6 +268,18 @@
       let url = project.id + "/volumes/" + volumeId + "/intersect";
       return CATMAID.fetch(url, "GET", {x: x, y: y, z: z});
     },
+
+    /**
+     * Update area, volume and watertightness information of a volume.
+     *
+     * @param {number} projectId The project to operate in.
+     * @param {number} volumeId  The volume to recompute meta data for.
+     * @returns Promise resolving in the new data.
+     */
+    updateMetaInfo: function(projectId, volumeId) {
+      let url = project.id + "/volumes/" + volumeId + "/update-meta-info";
+      return CATMAID.fetch(url);
+    },
   };
 
   // Add events

@@ -59,6 +59,10 @@
     // Whether client-side filtering should be used to filter skeleton/volume
     // intersections exactly.
     this.innervationExactFiltering = true;
+    // The unit scale factor relative to nm and is used to scale area and volume
+    // displays. To show um**2 (instead of nm**2), this would need to be set to
+    // 1/1000, because 1nm = 1 / 1000 um.
+    this.unitScaleFactor = 1.0 / 1000.0;
 
     CATMAID.skeletonListSources.on(CATMAID.SkeletonSourceManager.EVENT_SOURCE_ADDED,
         this.handleChangedSkeletonSources, this);
@@ -728,6 +732,14 @@
     return '<li><a href="#" data-action="select-skeleton" data-skeleton-id="' + skeletonId + '">' + name + '</a></li>';
   }
 
+  function scaledArea(value, oneDimFactor) {
+    return value * oneDimFactor * oneDimFactor;
+  }
+
+  function scaledVolume(value, oneDimFactor) {
+    return value * oneDimFactor * oneDimFactor * oneDimFactor;
+  }
+
   VolumeManagerWidget.Modes = {
     list: {
       title: 'Main',
@@ -809,6 +821,28 @@
         }, {
           type: 'child',
           element: sourceSelectContainer,
+        }, {
+          type: 'select',
+          label: 'Reference unit',
+          title: 'Select which unit to use for the area and volume display.',
+          value: Math.round(1.0 / widget.unitScaleFactor),
+          entries: [{
+            title: 'nm',
+            value: '1',
+          }, {
+            title: 'um',
+            value: '1000',
+          }, {
+            title: 'mm',
+            value: '1000000',
+          }, {
+            title: 'cm',
+            value: '1000000000',
+          }],
+          onchange: function() {
+            widget.unitScaleFactor = 1.0 / Number(this.value);
+            widget.redraw();
+          },
         }];
       },
       createContent: function(container, widget) {
@@ -816,8 +850,9 @@
         table.style.width = "100%";
         var header = table.createTHead();
         var hrow = header.insertRow(0);
-        var columns = ['', 'Name', 'Id', 'Comment', 'Annotations', 'User', 'Creation time',
-            'Editor', 'Edition time', 'Action'];
+        var columns = ['', 'Name', 'Id', 'Comment', 'Annotations', 'Area',
+            'Volume', 'Watertight', 'User', 'Creation time', 'Editor',
+            'Edition time', 'Action'];
         columns.forEach(function(c) {
           hrow.insertCell().appendChild(document.createTextNode(c));
         });
@@ -872,6 +907,36 @@
               }
             },
             {
+              data: "area",
+              render: function (data, type, row, meta) {
+                if (type === 'display') {
+                  if (data === null) return '?';
+                  return Number(scaledArea(data, widget.unitScaleFactor)).toFixed(3);
+                }
+                return data;
+              },
+            },
+            {
+              data: "volume",
+              render: function (data, type, row, meta) {
+                if (type === 'display') {
+                  if (data === null) return '?';
+                  let scaledValue =  Number(scaledVolume(data, widget.unitScaleFactor)).toFixed(3);
+                  return row.watertight ? scaledValue : `${scaledValue} (?)`;
+                }
+                return data;
+              },
+            },
+            {
+              data: "watertight",
+              render: function (data, type, row, meta) {
+                if (type === 'display') {
+                  return data ? 'Yes' : 'No';
+                }
+                return data;
+              },
+            },
+            {
               data: "user_id",
               render: function(data, type, row, meta) {
                 return CATMAID.User.safe_get(data).login;
@@ -894,6 +959,7 @@
                   '<li><a href="#" data-action="list-connectors">List connectors</a></li> ' +
                   '<li><a href="#" data-action="export-STL">Export STL</a></li> ' +
                   '<li><a href="#" data-action="edit-volume">Edit</a></li> ' +
+                  '<li><a href="#" data-action="recompute-meta" title="Update area, volume and watertightnes information">Refresh</a></li> ' +
                   '<li><a href="#" data-action="remove">Remove</a></li></ul>',
             }
           ],
@@ -1049,6 +1115,22 @@
 
           // Prevent event from bubbling up.
           return false;
+        });
+
+        // Connector intersection list
+        $(table).on('click', 'a[data-action="recompute-meta"]', function() {
+          var tr = $(this).closest("tr");
+          var volume = widget.datatable.row(tr).data();
+
+          CATMAID.Volumes.updateMetaInfo(project.id, volume.id)
+            .then(result => {
+              volume.area = result.area;
+              volume.volume = result.volume;
+              volume.watertight = result.watertight;
+              widget.datatable.row(tr).data(volume).draw();
+              CATMAID.msg("Success", `Updated meta data for volume ${volume.id}`);
+            })
+            .catch(CATMAID.handleError);
         });
 
         // Display a volume if clicked

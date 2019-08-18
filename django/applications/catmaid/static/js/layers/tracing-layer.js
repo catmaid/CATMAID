@@ -153,6 +153,15 @@
         this.tracingOverlay.levelOfDetailMode = value;
       }
     });
+
+    Object.defineProperty(this, 'ordering', {
+      get: function() {
+        return this.tracingOverlay.ordering;
+      },
+      set: function(value) {
+        this.tracingOverlay.ordering = value;
+      }
+    });
   }
 
   TracingLayer.prototype = Object.create(CATMAID.PixiLayer.prototype);
@@ -324,6 +333,17 @@
       value: this.minSkeletonNodes,
       help: 'Limit the displayed skeletons to the ones of skeletons of at least this many nodes.'
     }, {
+      name: 'ordering',
+      displayName: 'Data ordering',
+      type: 'select',
+      value: this.ordering,
+      options: [
+          ['none', 'None'],
+          ['cable-desc', 'Cable-length desceding'],
+          ['cable-asc', 'Cable-length ascending'],
+      ],
+      help: 'Apply a sorting to the tracing data. This is useful in combination with other filters that limit the number of nodes.',
+    }, {
       name: 'nodeProviderOverride',
       displayName: 'Node provider',
       type: 'select',
@@ -371,6 +391,8 @@
       this.levelOfDetail = value;
     } else if ('levelOfDetailMode' === name) {
       this.levelOfDetailMode = value;
+    } else if ('ordering' === name) {
+      this.ordering = value;
     } else {
       update = false;
     }

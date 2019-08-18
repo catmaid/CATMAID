@@ -53,6 +53,12 @@ Tracing overlay:
   name. The name of this annotation as well as the suggested reference visible
   in the confirmation dialog have the form "Merged: <neuron-name>".
 
+- It is now possible order loaded tracing data by skeleton size, both in
+  ascending and descending order. This is useful with other node count limiting
+  filters. The layer settings accessible through the blue/white box in the lower
+  left corner of a stack viewer provides the "Data ordering" select box to
+  change this setting. By default no ordering is applied.
+
 Administration:
 
 - The catmaid_update_cache_tables management command accepts now a `--jobs=n`

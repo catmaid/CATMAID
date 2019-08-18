@@ -770,6 +770,9 @@ var SkeletonAnnotations = {};
      * This is only supported if a cache based node provider is used. */
     this.levelOfDetail = 'max';
     this.levelOfDetailMode = CATMAID.TracingOverlay.Settings.session.lod_mode;
+    /** An optional ordering of the tracing data. Allowed values: (empty), none,
+     * cable-desc, cable.asc. */
+    this.ordering = 'none';
     /** A cached copy of the a map from IDs to relation names, set on firt load. **/
     this.relationMap = null;
     /** An optional color source **/
@@ -3913,6 +3916,10 @@ var SkeletonAnnotations = {};
         lod: effectiveLOD,
         lod_type: percentLOD ? 'percent' : 'absolute',
       };
+
+      if (self.ordering && self.ordering !== 'none') {
+        params['ordering'] = self.ordering;
+      }
 
       // Extra treenode IDs and connector Ids are only fetched through the primary
       // query, if no dedicated quert for the active node is performed.

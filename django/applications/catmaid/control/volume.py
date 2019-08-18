@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from itertools import chain
+import logging
 import json
 import os
 import re
@@ -25,8 +26,13 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+
+logger = logging.getLogger(__name__)
+
+
 _num = '[-+]?[0-9]*.?[0-9]+'
 _bbox_re = r'BOX3D\(({0})\s+({0})\s+({0}),\s*({0})\s+({0})\s+({0})\)'.format(_num)
+
 
 def get_req_coordinate(request_dict, c) -> float:
     """Get a coordinate from a request dictionary or error.

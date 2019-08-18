@@ -5,6 +5,7 @@ import logging
 import json
 import os
 import re
+import trimesh
 from typing import Any, Callable, Dict, List, Tuple, Union
 from xml.etree import ElementTree as ET
 
@@ -375,9 +376,13 @@ def volume_collection(request:HttpRequest, project_id) -> JsonResponse:
     else:
         raise ValueError("Unsupported HTTP method" + request.method)
 
-    p = get_object_or_404(Project, pk=project_id)
     volume_ids = get_request_list(data, 'volume_ids', [], map_fn=int)
 
+    return JsonResponse(_volume_collection(project_id, volume_ids))
+
+
+def _volume_collection(project_id, volume_ids, with_meshes=False):
+    p = get_object_or_404(Project, pk=project_id)
     params = {
         'project_id': project_id,
     }
@@ -422,10 +427,10 @@ def volume_collection(request:HttpRequest, project_id) -> JsonResponse:
             'extra_joins': '\n'.join(extra_joins),
         }), params)
 
-    return JsonResponse({
+    return {
         'columns': [r[0] for r in cursor.description],
         'data': cursor.fetchall()
-    })
+    }
 
 def get_volume_details(project_id, volume_id) -> Dict[str, Any]:
     cursor = connection.cursor()
@@ -1137,3 +1142,157 @@ def _get_skeleton_innervations(project_id, skeleton_ids, volume_annotation,
         'volume_ids': x[1]
     }, cursor.fetchall()))
     return skeleton_intersections
+
+
+@api_view(['GET'])
+@requires_user_role([UserRole.Annotate])
+def update_meta_information(request, project_id, volume_id) -> JsonResponse:
+    """Update the meta data on all passed in volumes. This includes: area,
+    volume and watertightness.
+    ---
+    parameters:
+        - name: project_id
+          required: true
+          description: The project to operate in
+          type: integer
+          paramType: path
+        - name: volume_id
+          required: true
+          description: The volume to update
+          type: integer
+          paramType: path
+    """
+    project_id = int(project_id)
+    volume_id = int(volume_id)
+
+    update_results = update_volume_meta_information(project_id, [volume_id])
+    return JsonResponse(update_results.get(volume_id))
+
+
+def update_volume_meta_information(project_id, volume_ids=None):
+    """Update the meta data on all passed in volumes. This includes: area,
+    volume and watertightness.
+    """
+
+    if not volume_ids:
+        volume_ids = list(Volume.objects.filter(project_id=project_id) \
+                .values_list('id', flat=True))
+
+    volumes = get_volume_data(project_id, volume_ids)
+
+    new_data = {}
+    for volume_id, v in volumes.items():
+        try:
+            # Build tri-mesh and get properties
+            mesh = trimesh.Trimesh(vertices=v['vertices'], faces=v['faces'])
+            new_data[volume_id] = {
+                'area': mesh.area,
+                'volume': mesh.volume,
+                'watertight': mesh.is_watertight,
+            }
+        except:
+            new_data[volume_id] = {
+                'area': None,
+                'volume': None,
+                'watertight': None,
+            }
+
+    if new_data:
+        volume_template = "(" + "),(".join(["%s, %s, %s, %s"] * len(new_data)) + ")"
+        volume_table = list(chain.from_iterable(
+                [[k, v['area'], v['volume'], v['watertight']] for k,v in new_data.items()]))
+
+        # Update data in database
+        cursor = connection.cursor()
+        cursor.execute("""
+            UPDATE catmaid_volume v
+            SET area = target.area, volume = target.volume,
+                watertight = target.watertight,
+                meta_computed = TRUE
+            FROM (VALUES
+                {volume_template}
+            ) target(id, area, volume, watertight)
+            WHERE v.id = target.id
+        """.format(**{
+            'volume_template': volume_template
+        }), volume_table)
+
+    return new_data
+
+def get_volume_data(project_id, volume_ids):
+    """Compute the volume and area for a set of volumes and update them in the
+    database.
+    """
+    volume_data = _volume_collection(project_id, volume_ids, with_meshes=True)
+    columns = volume_data['columns']
+    data = volume_data['data']
+
+    id_idx = columns.index('id')
+    mesh_idx = columns.index('mesh')
+    name_idx = columns.index('name')
+
+    # Generate volume(s) from responses
+    volumes = {}
+    for r in data:
+        mesh_str = r[mesh_idx]
+        mesh_name = r[name_idx]
+        mesh_id = r[id_idx]
+
+        mesh_type = re.search('<(.*?) ', mesh_str).group(1)
+
+        # Now reverse engineer the mesh
+        if mesh_type == 'IndexedTriangleSet':
+            t = re.search("index='(.*?)'", mesh_str).group(1).split(' ')
+            faces = [(int(t[i]), int(t[i + 1]), int(t[i + 2]))
+                     for i in range(0, len(t) - 2, 3)]
+
+            v = re.search("point='(.*?)'", mesh_str).group(1).split(' ')
+            vertices = [(float(v[i]), float(v[i + 1]), float(v[i + 2]))
+                        for i in range(0, len(v) - 2, 3)]
+
+        elif mesh_type == 'IndexedFaceSet':
+            # For this type, each face is indexed and an index of -1 indicates
+            # the end of this face set
+            t = re.search("coordIndex='(.*?)'", mesh_str).group(1).split(' ')
+            faces = []
+            this_face = []
+            for f in t:
+                if int(f) != -1:
+                    this_face.append(int(f))
+                else:
+                    faces.append(this_face)
+                    this_face = []
+
+            # Make sure the last face is also appended
+            faces.append(this_face)
+
+            v = re.search("point='(.*?)'", mesh_str).group(1).split(' ')
+            vertices = [(float(v[i]), float(v[i + 1]), float(v[i + 2]))
+                        for i in range(0, len(v) - 2, 3)]
+
+        else:
+            logger.error("Unknown volume type: %s" % mesh_type)
+            raise Exception("Unknown volume type: %s" % mesh_type)
+
+        # For some reason, in this format vertices occur multiple times - we
+        # have to collapse that to get a clean mesh
+        final_faces = []
+        final_vertices = []
+
+        for t in faces:
+            this_faces = []
+            for v in t:
+                if vertices[v] not in final_vertices:
+                    final_vertices.append(vertices[v])
+
+                this_faces.append(final_vertices.index(vertices[v]))
+
+            final_faces.append(this_faces)
+
+        volumes[mesh_id] = {
+            'name': mesh_name,
+            'vertices': final_vertices,
+            'faces': final_faces,
+        }
+
+    return volumes

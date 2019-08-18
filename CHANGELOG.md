@@ -3,6 +3,8 @@
 
 ### Notes
 
+- A virtualenv update is required.
+
 - Python 3.5 is not supported anymore. Use Python 3.6 or 3.7.
 
 - Postgres 11 and PostGIS 2.5 is required. If both needs to be updated, update
@@ -70,6 +72,11 @@ Administration:
 - The catmaid_update_cache_tables management command accepts now an optional
   ``--order`` parameter, which can be set to either "cable-asc" or "cable-desc".
   By default no order is applied.
+
+Volumes:
+
+- Volumes have now their surface area and volume associated with them as well as
+  whether they are watertight.
 
 Miscellaneous:
 

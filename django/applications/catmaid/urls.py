@@ -519,6 +519,7 @@ urlpatterns += [
    url(r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/$', volume.VolumeDetail.as_view()),
    url(r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/intersect$', volume.intersects),
    url(r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/export\.(?P<extension>\w+)', volume.export_volume),
+   url(r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/update-meta-info$', volume.update_meta_information),
 ]
 
 # Analytics

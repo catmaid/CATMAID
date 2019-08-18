@@ -12,7 +12,8 @@ class VolumeSerializer(ModelSerializer):
     class Meta:
         model = Volume
         fields = ('id', 'name', 'comment', 'user', 'editor', 'project',
-                'creation_time', 'edition_time')
+                'creation_time', 'edition_time', 'area', 'volume', 'watertight',
+                'meta_computed')
 
 class PointSerializer(ModelSerializer):
     # We want to return UTC times by default, not the server timezone

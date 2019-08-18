@@ -682,6 +682,10 @@ class Volume(UserFocusedModel):
                                related_name='editor', db_column='editor_id')
     name = models.CharField(max_length=255)
     comment = models.TextField(blank=True, null=True)
+    volume = models.FloatField(blank=True, null=True)
+    area = models.FloatField(blank=True, null=True)
+    watertight = models.BooleanField(blank=True, null=True)
+    meta_computed = models.BooleanField(default=False)
     # A custom geometry field allows us to serialize the geometry data in a
     # simple text-based form.
     geometry = SerializableGeometryField()

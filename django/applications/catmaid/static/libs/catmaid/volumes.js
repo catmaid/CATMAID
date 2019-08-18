@@ -21,6 +21,10 @@
     this.creation_time = options.creation_time || null;
     this.selected = options.selected || false;
     this.annotations = options.annotations || [];
+    this.area = options.area || null;
+    this.volume = options.volume || null;
+    this.watertight = options.watertight || null;
+    this.meta_computed = options.meta_computed || false;
   };
 
   CATMAID.Volume.prototype = {};

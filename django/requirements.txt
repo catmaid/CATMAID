@@ -31,4 +31,5 @@ requests==2.22.0
 scipy==1.2.0
 Sphinx==1.8.5
 sqlparse==0.3.0
+trimesh==2.35.5
 ujson==1.35

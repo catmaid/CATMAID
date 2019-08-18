@@ -22,6 +22,17 @@ included in this changelog.
   "ordering", which can be used to order the result set of nodes. The values
   cable-asc and cable-desc are allowed. By default no ordering is applied.
 
+- `POST|GET /{project_id}/volumes/`:
+  Information on area, volume and watertightness is now returned for each
+  volume as well as information on whether these details have been computed
+  (meta_computed). This meta data can be computed for each volume using the
+  `{project_id}/volumes/{volume_id}/update-meta-info` API.
+
+- `GET /{project_id}/volumes/{volum_id}/update-meta-info`:
+  Try to compute area, volume and watertightness for a volume. Sets
+  `meta_computed` to true. If this operation fails, all meta data fields are set
+  to NULL/None.
+
 ### Deprecations
 
 None.

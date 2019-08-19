@@ -1331,7 +1331,7 @@ def list_annotations(request:HttpRequest, project_id=None) -> JsonResponse:
             return HttpResponse(annotation_json_text, content_type='application/json')
 
         cursor.execute('''
-            SELECT DISTINCT ci.name, ci.id, u.id, u.username
+            SELECT DISTINCT ON (ci.id, u.id) ci.name, ci.id, u.id, u.username
             FROM class_instance ci
             LEFT OUTER JOIN class_instance_class_instance cici
                          ON (ci.id = cici.class_instance_b)

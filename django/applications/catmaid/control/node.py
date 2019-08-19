@@ -2030,7 +2030,7 @@ def update_grid_cache(project_id, data_type, orientations,
                 full_local_n_cells = n_cells_w * n_cells_h * full_local_n_cells_d
                 n_ignored_global_cells = full_local_n_cells - local_n_cells
 
-                log(' -> Local grid dimension (cells per dimension X, Y and Z): {}, {}, {} Total cells: {} Ingored: {} Min XYZ idx: {}, {}, {} Max XYZ idx {}, {}, {}'.format(
+                log(' -> Local grid dimension (cells per dimension X, Y and Z): {}, {}, {} Total cells: {} Ignored: {} Min XYZ idx: {}, {}, {} Max XYZ idx {}, {}, {}'.format(
                         local_n_cells_w, local_n_cells_h, local_n_cells_d,
                         local_n_cells, n_ignored_global_cells, local_min_w_i,
                         local_min_h_i, local_min_d_i, local_max_w_i,

@@ -89,11 +89,15 @@ Volumes:
 - The base unit used for the ara and volume columns can be adjusted using the
   "Reference unit" select box in the widget controls.
 
-Miscellaneous:
+Neuron Search:
 
-- Neuron Search: name queries can now be marked as exact, which prevents
-  matching against parts of other names. This is ignored for regular
-  expressions.
+- Name queries can now be marked as exact, which prevents matching against parts
+  of other names. This is ignored for regular expressions.
+
+- Name queries can now be marked as case sensitive using the respective checkbox
+  next to the name field. By default name queries are case insensitive.
+
+Miscellaneous:
 
 - Projects can now be kept open if all last stack-viewers are closed. To not
   automatically close the open project with the last stack-viewer, uncheck the

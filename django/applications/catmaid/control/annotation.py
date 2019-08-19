@@ -68,6 +68,7 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
     name = params.get('name', "").strip()
     name_not = get_request_bool(params, 'name_not', False)
     name_exact = get_request_bool(params, 'name_exact', False)
+    name_case_sensitive = get_request_bool(params, 'name_case_sensitive', False)
     try:
         annotator_ids = set(map(int, params.getlist('annotated_by')))
     except AttributeError as e:
@@ -140,14 +141,11 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
     if name:
         is_regex = name.startswith('/')
         if is_regex:
-            op = '~*'
+            op = '~' if name_case_sensitive else '~*'
             params["name"] = name[1:]
-        elif exact_name:
-            op = '~~*'
-            params["name"] = name
         else:
-            op = '~~*'
-            params["name"] = '%' + name + '%'
+            op = '~~' if name_case_sensitive else '~~*'
+            params["name"] = name if name_exact else ('%' + name + '%')
 
         if name_not:
             filters.append("ci.name !{op} %(name)s".format(op=op))
@@ -409,10 +407,19 @@ def query_annotated_classinstances(request:HttpRequest, project_id:Optional[Unio
         description: The name (or a part of it) of result elements.
         type: string
         paramType: form
-      - name: exact_name
+      - name: name_exact
         description: |
             Whether the name has to match exactly or can be a part of the result
             name. This is typically faster than using a regular expression.
+            False by default.
+        type: bool
+        paramType: form
+        required: false
+        defaultValue: false
+      - name: name_case_sensitive
+        description: |
+            Whether the name has to match the exact letter case provided. False
+            by default.
         type: bool
         paramType: form
         required: false

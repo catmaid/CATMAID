@@ -33,6 +33,11 @@ included in this changelog.
   `meta_computed` to true. If this operation fails, all meta data fields are set
   to NULL/None.
 
+- `POST /{project_id}/annotations/query-targets`:
+  Accepts now an optional boolean "name_exact" parameter, which is set to false
+  by default. If set to true, the passed in name has to match exactly. This is
+  faster than using a regular expression like '/^name$' for exact matches.
+
 ### Deprecations
 
 None.

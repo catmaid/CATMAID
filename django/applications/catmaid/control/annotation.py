@@ -67,6 +67,7 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
     # Get name, annotator and time constraints, if available
     name = params.get('name', "").strip()
     name_not = get_request_bool(params, 'name_not', False)
+    name_exact = get_request_bool(params, 'name_exact', False)
     try:
         annotator_ids = set(map(int, params.getlist('annotated_by')))
     except AttributeError as e:
@@ -141,6 +142,9 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
         if is_regex:
             op = '~*'
             params["name"] = name[1:]
+        elif exact_name:
+            op = '~~*'
+            params["name"] = name
         else:
             op = '~~*'
             params["name"] = '%' + name + '%'
@@ -405,6 +409,14 @@ def query_annotated_classinstances(request:HttpRequest, project_id:Optional[Unio
         description: The name (or a part of it) of result elements.
         type: string
         paramType: form
+      - name: exact_name
+        description: |
+            Whether the name has to match exactly or can be a part of the result
+            name. This is typically faster than using a regular expression.
+        type: bool
+        paramType: form
+        required: false
+        defaultValue: false
       - name: annotated_by
         description: A result element was annotated by a user with this ID.
         type: integer

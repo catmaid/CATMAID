@@ -86,7 +86,8 @@
                 '<input type="text" name="neuron_query_by_name"' +
                     'id="neuron_query_by_name{{NA-ID}}" value="" class="" placeholder="Use / for RegEx" />' +
               '</td> ' +
-              '<td><div class="help">Optional</div></td>' +
+              '<td><label class="checkbox-label"><input type="checkbox" name="neuron_query_by_name_exact" ' +
+                    'id="neuron_query_by_name_exact{{NA-ID}}" tabindex="-1" title="Name must match exactly, parts of the name ara not accepted."/>Exact</label></td>' +
             '</tr>' +
             '<tr id="neuron_query_by_annotation{{NA-ID}}">' +
               '<td class="neuron_annotations_query_field_label">annotated:</td> ' +
@@ -752,6 +753,7 @@
     // Get user input
     var $widget = $('#neuron_query_by_annotations' + this.widgetID);
     var namedAsNot = $('input[name=neuron_query_by_name_not]', $widget).prop('checked');
+    var namedAsExact = $('input[name=neuron_query_by_name_exact]', $widget).prop('checked');
     var namedAs = $('input[name=neuron_query_by_name]', $widget).val().trim();
     var annotatedBy = $('select[name=neuron_query_by_annotator]', $widget).val().trim();
     var annotatedFrom = $('input[name=neuron_query_by_start_date]', $widget).val().trim();
@@ -785,6 +787,7 @@
     if (namedAs) {
       params['name'] = namedAs;
       params['name_not'] = namedAsNot;
+      params['name_exact'] = namedAsExact;
     }
     if (annotatedBy && -2 != annotatedBy) {
       params['annotated_by'] = 'Team' !== annotatedBy ? annotatedBy :

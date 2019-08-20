@@ -137,20 +137,27 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
         params['end_date'] = end_date
 
     # If a name is given, add this to the query. If its first character is a
-    # slash, treat it as regex.
+    # slash, treat it as regex. There is a a trigram index and a upper()
+    # expression index on class_instance.name and we add checks to utilize both,
+    # if possible. This is mainly useful for exact name queries, both
+    # case-sensitive and case insensitive as well as regex and normal.
     if name:
         is_regex = name.startswith('/')
         if is_regex:
             op = '~' if name_case_sensitive else '~*'
+            upper_name_op = '~'
             params["name"] = name[1:]
         else:
             op = '~~' if name_case_sensitive else '~~*'
+            upper_name_op = '~~'
             params["name"] = name if name_exact else ('%' + name + '%')
 
         if name_not:
             filters.append("ci.name !{op} %(name)s".format(op=op))
+            filters.append("upper(ci.name) !{uop} upper(%(name)s)".format(uop=upper_name_op))
         else:
             filters.append("ci.name {op} %(name)s".format(op=op))
+            filters.append("upper(ci.name) {uop} upper(%(name)s)".format(uop=upper_name_op))
 
     # Map annotation sets to their expanded sub-annotations
     sub_annotation_ids = get_sub_annotation_ids(project_id, annotation_sets_to_expand,

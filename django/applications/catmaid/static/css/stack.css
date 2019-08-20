@@ -60,9 +60,6 @@ div.smallMapView_hidden {
   max-width: 192px;
   max-height: 192px;
   border: none 0;
-  border-top: solid 4px #000000;
-  border-left: solid 4px #000000;
-  background: #000000;
   z-index: 6;
 }
 
@@ -227,8 +224,6 @@ div.stackControlToggle_hidden {
   width: 16px;
   height: 16px;
   border: none 0;
-  border-top: solid 4px #000000;
-  border-right: solid 4px #000000;
   background: #0000FF url(../images/slice_control_toggle_hide.svg) no-repeat center;
   z-index: 6;
 }

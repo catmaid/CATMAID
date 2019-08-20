@@ -2863,12 +2863,16 @@ def get_annotation_info(project_id, skeleton_ids, annotations, metaannotations,
     cursor.execute("""
         SELECT cici.class_instance_a, cici.class_instance_b
         FROM class_instance_class_instance cici
-        WHERE cici.project_id = %s AND
-              cici.relation_id = %s AND
-              cici.class_instance_a IN %s
-    """, (project_id, relations['model_of'], skeleton_ids))
+        WHERE cici.project_id = %(project_id)s AND
+              cici.relation_id = %(model_of)s AND
+              cici.class_instance_a = ANY(%(skeleton_ids)s::bigint[])
+    """, {
+        'project_id': project_id,
+        'model_of': relations['model_of'],
+        'skeleton_ids': list(skeleton_ids),
+    })
     n_to_sk_ids = {n:s for s,n in cursor.fetchall()}
-    neuron_ids = n_to_sk_ids.keys()
+    neuron_ids = list(n_to_sk_ids.keys())
 
     if not neuron_ids:
         raise Http404('No skeleton or neuron found')
@@ -2880,12 +2884,14 @@ def get_annotation_info(project_id, skeleton_ids, annotations, metaannotations,
                cici.class_instance_b AS aid, ci.name AS aname
         FROM class_instance_class_instance cici INNER JOIN
              class_instance ci ON cici.class_instance_b = ci.id
-        WHERE cici.relation_id = %s AND
-              cici.class_instance_a IN (%s) AND
-              ci.class_id = %s
-    """ % (relations['annotated_with'],
-           ','.join(map(str, neuron_ids)),
-           classes['annotation']))
+        WHERE cici.relation_id = %(annotated_with)s
+            AND cici.class_instance_a = ANY(%(neuron_ids)s::bigint[])
+            AND ci.class_id = %(annotation)s
+    """, {
+        'annotated_with': relations['annotated_with'],
+        'neuron_ids': neuron_ids,
+        'annotation': classes['annotation'],
+    })
 
     # Build result dictionaries: one that maps annotation IDs to annotation
     # names and another one that lists annotation IDs and annotator IDs for
@@ -2916,8 +2922,10 @@ def get_annotation_info(project_id, skeleton_ids, annotations, metaannotations,
         cursor.execute("""
             SELECT ci.id, ci.name
             FROM class_instance ci
-            WHERE ci.id IN (%s)
-        """ % (','.join(map(str, neuron_ids))))
+            WHERE ci.id = ANY(%(neuron_ids)s::bigint[])
+        """, {
+            'neuron_ids': neuron_ids,
+        })
         response['neuronnames'] = {n_to_sk_ids[n]:name for n,name in cursor.fetchall()}
 
     # If wanted, get the meta annotations for each annotation
@@ -2927,15 +2935,19 @@ def get_annotation_info(project_id, skeleton_ids, annotations, metaannotations,
         cursor.execute("""
             SELECT cici.class_instance_a AS aid, cici.user_id AS auid,
                    cici.class_instance_b AS maid, ci.name AS maname
-            FROM class_instance_class_instance cici INNER JOIN
-                 class_instance ci ON cici.class_instance_b = ci.id
-            WHERE cici.project_id = %s AND
-                  cici.relation_id = %s AND
-                  cici.class_instance_a IN (%s) AND
-                  ci.class_id = %s
-        """ % (project_id, relations['annotated_with'],
-               ','.join(map(str, annotations.keys())),
-               classes['annotation']))
+            FROM class_instance_class_instance cici
+            INNER JOIN class_instance ci
+                ON cici.class_instance_b = ci.id
+            WHERE cici.project_id = %(project_id)s
+                AND cici.relation_id = %(annotated_with)s
+                AND cici.class_instance_a = ANY (%(annotation_ids)s::bigint[])
+                AND ci.class_id = %(annotation)s
+        """, {
+            'project_id': project_id,
+            'annotated_with': relations['annotated_with'],
+            'annotation_ids': list(annotations.keys()),
+            'annotation': classes['annotation'],
+        })
 
         # Add this to the response
         metaannotations = {}

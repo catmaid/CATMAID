@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
-
 import re
 import functools
 
 from django.db import connection
 from django.db.transaction import TransactionManagementError
+
+from catmaid import locks
 
 transaction_label_pattern = re.compile('^\w+\.\w+$')
 
@@ -99,7 +99,14 @@ def enable_history_tracking(ignore_missing_fn=False) -> bool:
             # If the function does not exist, return silently if the missing
             # function shouldn't be reported
             return False
-    cursor.execute("SELECT enable_history_tracking()")
+    cursor.execute("""
+        -- Obtain an advisory lock so that this function works also in a parallel
+        -- context.
+        SELECT pg_advisory_xact_lock(%(lock_id)s::bigint);
+        SELECT enable_history_tracking();
+    """, {
+        'lock_id':  locks.history_update_event_lock
+    })
     return True
 
 
@@ -116,5 +123,12 @@ def disable_history_tracking(ignore_missing_fn=False) -> bool:
             # If the function does not exist, return silently if the missing
             # function shouldn't be reported
             return False
-    cursor.execute("SELECT disable_history_tracking()")
+    cursor.execute("""
+        -- Obtain an advisory lock so that this function works also in a parallel
+        -- context.
+        SELECT pg_advisory_xact_lock(%(lock_id)s::bigint);
+        SELECT disable_history_tracking();
+    """, {
+        'lock_id':  locks.history_update_event_lock
+    })
     return True

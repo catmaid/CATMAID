@@ -14,6 +14,10 @@
 - The management command catmaid_populate_summary_tables is now known as
   catmaid_refresh_node_statistics.
 
+- When enabling and disabling both history tracking and spatial update events on
+  startup, advisory locks are now used. This should make the startup of parallel
+  CATMAID workers more robust.
+
 
 ### Features and enhancements
 

@@ -563,6 +563,10 @@
       }
     }
 
+    // The effctively usable zoom for downsample factor needs to be not larger
+    // than the number of downsample factors available.
+    let closestDownsampleZoom = Math.min(zoom, this.stack.downsample_factors.length - 1);
+
     var lr, lc;
 
     // Adjust last tile index to display to the one intersecting the bottom right
@@ -572,9 +576,9 @@
     lr = Math.floor((yc + this.stackViewer.viewHeight - efficiencyThreshold * effectiveTileHeight) / effectiveTileHeight);
 
     // Clamp last tile coordinates within the slice edges.
-    lc = Math.min(lc, Math.floor((this.stack.dimension.x / this.stack.downsample_factors[zoom].x - 1)
+    lc = Math.min(lc, Math.floor((this.stack.dimension.x / this.stack.downsample_factors[closestDownsampleZoom].x - 1)
                       / this.tileWidth));
-    lr = Math.min(lr, Math.floor((this.stack.dimension.y / this.stack.downsample_factors[zoom].y - 1)
+    lr = Math.min(lr, Math.floor((this.stack.dimension.y / this.stack.downsample_factors[closestDownsampleZoom].y - 1)
                       / this.tileHeight));
 
     return {
@@ -584,7 +588,7 @@
       lastCol:   lc,
       top:       top,
       left:      left,
-      z:         Math.floor(z / this.stack.downsample_factors[zoom].z),
+      z:         Math.floor(z / this.stack.downsample_factors[closestDownsampleZoom].z),
       zoom:      zoom,
       mag:       mag,
       anisotropy: anisotropy

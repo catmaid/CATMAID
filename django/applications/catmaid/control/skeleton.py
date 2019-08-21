@@ -1562,14 +1562,17 @@ def skeleton_info_raw(request:HttpRequest, project_id=None) -> JsonResponse:
     # sanitize arguments
     project_id = int(project_id)
     skeleton_ids = get_request_list(request.POST, 'source_skeleton_ids', map_fn=int)
-    op = str(request.POST.get('boolean_op')) # values: AND, OR
-    op = {'AND': 'AND', 'OR': 'OR'}[op] # sanitize
+    op = str(request.POST.get('boolean_op', "OR")).upper()  # values: AND, OR
+    if op not in ("AND", "OR"):
+        raise ValueError("boolean_op should be 'AND' or 'OR'")
     with_nodes = get_request_bool(request.POST, 'with_nodes', False)
-    allowed_link_types = get_request_list(request.POST, 'link_types',
-            ['incoming', 'outgoing'])
+    allowed_link_types = get_request_list(
+        request.POST, 'link_types', ['incoming', 'outgoing']
+    )
 
-    skeleton_info = _skeleton_info_raw(project_id, skeleton_ids, op, with_nodes,
-            allowed_link_types)
+    skeleton_info = _skeleton_info_raw(
+        project_id, skeleton_ids, op, with_nodes, allowed_link_types
+    )
 
     return JsonResponse(skeleton_info)
 
@@ -2367,7 +2370,7 @@ def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleto
         start_end_intervals = cursor.fetchall()
 
         is_interval_start_or_end = len(start_end_intervals) > 0
-        #is_in_interval = 
+        #is_in_interval =
         #is_in_traced_out_part = not is_domain_end
 
 

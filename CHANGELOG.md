@@ -11,6 +11,9 @@
   PostGIS first and run `ALTER EXTENSION postgis UPDATE;` in every database. For
   docker-compose setups this database update is performed automatically.
 
+- The management command catmaid_populate_summary_tables is now known as
+  catmaid_refresh_node_statistics.
+
 
 ### Features and enhancements
 

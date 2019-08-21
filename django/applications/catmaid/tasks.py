@@ -24,16 +24,16 @@ def cleanup_cropped_stacks() -> str:
 def update_project_statistics() -> str:
     """Call management command to update all project statistics
     """
-    call_command('catmaid_populate_summary_tables')
-    return "Updated project statistics summary"
+    call_command('catmaid_refresh_node_statistics')
+    return "Updated project node statistics summary"
 
 
 @shared_task
 def update_project_statistics_from_scratch() -> str:
     """Call management command to update all project statistics
     """
-    call_command('catmaid_populate_summary_tables', clean=True)
-    return "Updated project statistics summary"
+    call_command('catmaid_refresh_node_statistics', clean=True)
+    return "Updated and cleand project node statistics summary"
 
 
 @shared_task

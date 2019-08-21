@@ -62,7 +62,7 @@
       return CATMAID.Volumes.update(project.id, this.id, this.serialize())
         .then(function(result) {
           if (result.success) {
-            CATMAID.msg("Changes saved", "The volume has been udpated");
+            CATMAID.msg("Changes saved", "The volume has been updated");
           } else {
             CATMAID.warn("Unknown status");
           }

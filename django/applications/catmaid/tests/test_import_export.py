@@ -115,13 +115,13 @@ class ImportExportTests(TestCase):
             importer.PreProject(p2_config, project_url, data_folder),
         ]
 
-        tags = [] # type: List
-        permissions = [] # type: List
+        tags:List = []
+        permissions:List = []
         default_tile_width = 256
         default_tile_height = 512
         default_tile_source_type = 5
         default_position = 0
-        cls_graph_ids_to_link = [] # type: List
+        cls_graph_ids_to_link:List = []
         remove_unref_stack_data = False
 
         imported, not_imported = importer.import_projects(self.user,
@@ -303,12 +303,12 @@ class ImportExportTests(TestCase):
         ]
         config = [p1_config, p2_config]
 
-        tags = [] # type: List
-        permissions = [] # type: List
+        tags:List = []
+        permissions:List = []
         default_tile_width = 256
         default_tile_height = 512
         default_tile_source_type = 1
-        cls_graph_ids_to_link = [] # type: List
+        cls_graph_ids_to_link:List = []
         remove_unref_stack_data = False
 
         # Make sure there are no existing projects or stacks

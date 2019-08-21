@@ -15,8 +15,8 @@ from catmaid.control.authentication import requires_user_role
 def get_wiring_diagram(project_id=None, lower_treenode_number_limit=0) -> Dict[str, List]:
 
     # result dictionary: {connectorid: presyn_skeletonid}
-    tmp={} # type: Dict
-    result={} # type: Dict
+    tmp:Dict = {}
+    result:Dict = {}
     # get the presynaptic connections
     qs = TreenodeConnector.objects.filter(
         project=project_id,
@@ -57,7 +57,7 @@ def get_wiring_diagram(project_id=None, lower_treenode_number_limit=0) -> Dict[s
             # connector with only postsynaptic connections
             pass
 
-    nodes_tmp={} # type: Dict
+    nodes_tmp:Dict = {}
     edges=[]
 
     for k,v in result.items():

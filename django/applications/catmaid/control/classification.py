@@ -533,7 +533,7 @@ def get_child_classes(workspace_pid, parent_ci, relation_map=None, cursor=None):
         """.format(class_a_ids_sql), (workspace_pid, relation_map['is_a']))
         all_sub_class_links = cursor.fetchall()
         # Create sub class map
-        sub_class_map = defaultdict(list) # type: DefaultDict[Any, List]
+        sub_class_map:DefaultDict[Any, List] = defaultdict(list)
         for row in all_sub_class_links:
             sub_class_map[row[1]].append((row[0], row[2], row[3]))
         # Collect classes to add
@@ -555,7 +555,7 @@ def get_child_classes(workspace_pid, parent_ci, relation_map=None, cursor=None):
                 classes_to_add.append(("Element", (cc.id, ), ca.id, ca.class_name, r)) # type: ignore
 
     # Get all required link data in one go
-    link_restriction_map = dict() # type: Dict
+    link_restriction_map:DefaultDict[Any, List] = defaultdict(list)
     if relevant_link_ids:
         link_ids_sql = ','.join("({})".format(l) for l in relevant_link_ids)
         cursor.execute("""
@@ -567,16 +567,12 @@ def get_child_classes(workspace_pid, parent_ci, relation_map=None, cursor=None):
         for row in ids:
             link_id = row[0]
             restr_id = row[1]
-            restrictions = link_restriction_map.get(link_id)
-            if not restrictions:
-                restrictions = []
-                link_restriction_map[link_id] = restrictions
-            restrictions.append(restr_id)
+            link_restriction_map[link_id].append(restr_id)
 
     # Create a dictionary where all classes are assigned to a class which
     # is used as a generalization (if possible). The generalization of a
     # class is linked to it with an 'is_a' relation.
-    child_types = {} # type: Dict
+    child_types:DefaultDict[Any, List] = defaultdict(list)
     for category, link_ids, class_id, class_name, rel in classes_to_add:
         restrictions = []
         # Iterate all links that might be relevant for this element
@@ -604,20 +600,16 @@ def get_child_classes(workspace_pid, parent_ci, relation_map=None, cursor=None):
 
         # Create child class data structure
         current_child = Child(class_id, class_name, rel, disabled)
-        children = child_types.get(category)
-        if not children:
-            children = []
-            child_types[category] = children
-        children.append(current_child)
+        child_types[category].append(current_child)
 
     return child_types
 
-def describe_child_types(child_types) -> Dict:
+def describe_child_types(child_types) -> DefaultDict[Any, List]:
     """ Converts a child type directory as created by the get_child_classes
     function to a dictionary that contains all required information to create
     new child instances
     """
-    json_dict = {} # type: Dict
+    json_dict:DefaultDict[Any, List] = defaultdict(list)
     for ct in child_types:
         children = child_types[ct]
         for c in children:
@@ -625,8 +617,6 @@ def describe_child_types(child_types) -> Dict:
             cdata = { 'id': c.class_id, 'name': c.class_name,
                 'disabled': c.disabled, 'relname': c.rel.relation_name,
                 'relid': c.rel.id }
-            if ct not in json_dict:
-                json_dict[ct] = []
             json_dict[ct].append(cdata)
     return json_dict
 
@@ -976,7 +966,7 @@ def infer_new_instances(workspace_pid, link, parent_ci) -> List:
     class in the classification space, new possible class instances are
     inferred and returned as a tuple (class_to_add, relation, parent_ci)
     """
-    instances_to_add = [] # type: List
+    instances_to_add:List = []
     # Get all restrictions linked to this link
     restrictions = Restriction.objects.filter(project_id=workspace_pid,
         restricted_link=link)
@@ -1119,8 +1109,8 @@ def get_graph_tag_indices(graph_ids, workspace_pid=-1) -> Tuple[Dict,Dict]:
 
     # Build project index
     project_ids = set()
-    cg_to_pids = defaultdict(list) # type: DefaultDict[Any, List]
-    pid_to_cgs = defaultdict(list) # type: DefaultDict[Any, List]
+    cg_to_pids:DefaultDict[Any, List] = defaultdict(list)
+    pid_to_cgs:DefaultDict[Any, List] = defaultdict(list)
     for cgid, cpid in cici_q.values_list('class_instance_b_id',
                                          'class_instance_a_id'):
         pid = cp_to_pid[cpid]
@@ -1137,7 +1127,7 @@ def get_graph_tag_indices(graph_ids, workspace_pid=-1) -> Tuple[Dict,Dict]:
     ct = ContentType.objects.get_for_model(Project)
     tag_links = TaggedItem.objects.filter(content_type=ct) \
             .values_list('object_id', 'tag__name')
-    pid_to_tags = defaultdict(set) # type: DefaultDict[Any, Set]
+    pid_to_tags:DefaultDict[Any, Set] = defaultdict(set)
     for pid, t in tag_links:
         pid_to_tags[pid].add(t)
 
@@ -1162,7 +1152,7 @@ def export(request:HttpRequest, workspace_pid=None, exclusion_tags=None) -> Json
     graph_to_features = {}
     for g,fl in graphs.items():
         # Get and attach tags of linked projects
-        tags = set() # type: Set
+        tags:Set = set()
         for pid in cg_to_pids[g.id]:
             # Attach tags only if the tag set of the current project doesn't
             # contain one of the exclusion tags.
@@ -1190,7 +1180,7 @@ def get_graphs_to_features(workspace_pid=None) -> DefaultDict[Any, List]:
     graphs = ClassInstance.objects.filter(class_column__in=ontologies)
 
     # Map graphs to realized features
-    graph_to_features = defaultdict(list) # type: DefaultDict[Any, List]
+    graph_to_features:DefaultDict[Any, List] = defaultdict(list)
     for o in ontologies:
         # Get features of the current ontology
         features = get_features(o, workspace_pid, graphs, add_nonleafs=True)
@@ -1287,13 +1277,9 @@ def graphs_instantiate_features(graphs, features, target:Optional[Union[np.ndarr
         SELECT * FROM linked_classes;
         """.format(graph_template), graph_ids)
     # Build index for paths of each graph
-    all_paths = {} # type: Dict
+    all_paths:DefaultDict[Any, List] = defaultdict(list)
     for row in cursor.fetchall():
-        paths = all_paths.get(row[0])
-        if not paths:
-            paths = []
-            all_paths[row[0]] = paths
-        paths.append(row)
+        all_paths[row[0]].append(row)
 
     for ng, g in enumerate(graphs):
         paths = all_paths.get(g.id)
@@ -1304,8 +1290,8 @@ def graphs_instantiate_features(graphs, features, target:Optional[Union[np.ndarr
         # Create tree representation, relates are taken care of implicitly.
         # They are part of a link definition (a class_instance_class_instance
         # row).
-        root = {} # type: Dict
-        cici_map = {} # type: Dict
+        root:Dict = {}
+        cici_map:Dict = {}
         for p in paths:
             cici_id = p[1]
             rel_id = p[2]
@@ -1481,7 +1467,7 @@ class ClassificationSearchWizard(SessionWizardView):
             graphs = ClassInstanceProxy.objects.filter(class_column__in=ontologies)
             # Features are abstract concepts (classes) and graphs will be
             # checked which classes they have instantiated.
-            raw_features = [] # type: List
+            raw_features:List = []
             for o in ontologies:
                 raw_features = raw_features + get_features(o,
                     self.workspace_pid, graphs, add_nonleafs=True,
@@ -1506,7 +1492,7 @@ class ClassificationSearchWizard(SessionWizardView):
         selected_feature_ids = cleaned_data[0].get('features')
         # Get selected features and build feature dict to map ontologies to
         # features.
-        ontologies_to_features = defaultdict(list) # type: DefaultDict[Any, List]
+        ontologies_to_features:DefaultDict[Any, List] = defaultdict(list)
         print("Starting clustering with n feature IDs:", len(selected_feature_ids))
         for f_id in selected_feature_ids:
             f = self.features[int(f_id)]
@@ -1570,8 +1556,8 @@ class ClassificationSearchWizard(SessionWizardView):
 
         # Build project index
         project_ids = set()
-        cg_to_pids = defaultdict(list) # type: DefaultDict[Any, List]
-        pid_to_cgs = defaultdict(list) # type: DefaultDict[Any, List]
+        cg_to_pids:DefaultDict[Any, List] = defaultdict(list)
+        pid_to_cgs:DefaultDict[Any, List] = defaultdict(list)
         for cgid, cpid in cici_q.values_list('class_instance_b_id',
                                             'class_instance_a_id'):
             pid = cp_to_pid[cpid]
@@ -1583,14 +1569,14 @@ class ClassificationSearchWizard(SessionWizardView):
         ct = ContentType.objects.get_for_model(Project)
         tag_links = TaggedItem.objects.filter(content_type=ct) \
             .values_list('object_id', 'tag__name')
-        tag_index = defaultdict(set) # type: DefaultDict[Any, Set]
+        tag_index:DefaultDict[Any, Set] = defaultdict(set)
         for pid, t in tag_links:
             if pid in project_ids:
                 tag_index[t].add(pid)
 
         # To actually open a result, the stacks are required as well. So we
         # need to build a stack index.
-        pid_to_sids = defaultdict(list) # type: DefaultDict[Any, List]
+        pid_to_sids:DefaultDict[Any, List] = defaultdict(list)
         for pid, sid in ProjectStack.objects.order_by('id') \
                 .values_list('project_id', 'stack_id'):
             pid_to_sids[pid].append(sid)

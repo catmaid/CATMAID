@@ -110,7 +110,7 @@ class ProjectsApiTests(CatmaidApiTestCase):
         # Expect a returned list with four projects
         self.assertEqual(len(result), 4)
 
-        seen_projects = [] # type: List
+        seen_projects:List = []
         for exported_project in result:
             data = exported_project['project']
             pid = data['id']
@@ -127,8 +127,8 @@ class ProjectsApiTests(CatmaidApiTestCase):
             stackgroup_links = StackStackGroup.objects.filter(stack__in=stacks)
             valid_stackgroup_ids = [sgl.stack_group_id for sgl in stackgroup_links]
 
-            seen_stacks = [] # type: List
-            seen_stackgroups = [] # type: List
+            seen_stacks:List = []
+            seen_stackgroups:List = []
             for s in data.get('stacks', []):
                 stack_id = s['id']
                 self.assertIn(stack_id, valid_stack_ids)

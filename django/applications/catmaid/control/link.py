@@ -132,7 +132,7 @@ UNDIRECTED_BINARY_LINK_TYPES =[p['relation'] for p in LINK_TYPES
             if p['isreciprocal'] and p.get('cardinality', None) == 2]
 
 
-LINKS_BY_RELATION = {l['relation']:l for l in LINK_TYPES} # type: Dict
+LINKS_BY_RELATION:Dict = {l['relation']:l for l in LINK_TYPES}
 
 
 @requires_user_role(UserRole.Annotate)

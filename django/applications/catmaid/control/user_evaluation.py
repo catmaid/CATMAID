@@ -59,7 +59,7 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations) -> List:
     epoch_ops = []
 
     # Synapses on the arbor: keyed by treenode_id
-    all_synapses = defaultdict(list) # type: DefaultDict[Any, List]
+    all_synapses:DefaultDict[Any, List] = defaultdict(list)
     for s in TreenodeConnector.objects.filter(skeleton=skeleton_id,
                                               relation__in=(relations['presynaptic_to'],
                                                             relations['postsynaptic_to'])):
@@ -77,16 +77,16 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations) -> List:
         def default_dates():
             return {'start': datetime.max.replace(tzinfo=pytz.utc),
                     'end': datetime.min.replace(tzinfo=pytz.utc)}
-        user_ranges = defaultdict(default_dates) # type: DefaultDict[Any, Dict[str, Any]]
+        user_ranges:DefaultDict[Any, Dict[str, Any]] = defaultdict(default_dates)
 
         # Node counts per user
-        user_node_counts = defaultdict(int) # type: DefaultDict[Any, int]
+        user_node_counts:DefaultDict[Any, int] = defaultdict(int)
 
         # Synapses for the set of nodes reviewed in this epoch, keyed by user_id and relation
-        nodes_synapses = defaultdict(partial(defaultdict, list)) # type: DefaultDict
+        nodes_synapses:DefaultDict = defaultdict(partial(defaultdict, list))
 
         # Synapses, keyed by user and relation, created by a user other than the user who created the treenode, after the treeenode's creation time
-        newer_synapses_count = defaultdict(partial(defaultdict, int)) # type: DefaultDict
+        newer_synapses_count:DefaultDict = defaultdict(partial(defaultdict, int))
 
         for node in nodes:
             props = tree.node[node]
@@ -121,8 +121,8 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations) -> List:
         epoch_n_post = sum(len(r.get(relations['postsynaptic_to'], [])) for r in nodes_synapses.values())
 
         # Find out synapses added by the reviewer within the epoch, keyed by treenode user
-        reviewer_n_pre = defaultdict(int) # type: DefaultDict[Any, int]
-        reviewer_n_post = defaultdict(int) # type: DefaultDict[Any, int]
+        reviewer_n_pre:DefaultDict[Any, int] = defaultdict(int)
+        reviewer_n_post:DefaultDict[Any, int] = defaultdict(int)
         reviewer_synapses = nodes_synapses.get(reviewer_id)
 
         if reviewer_synapses:
@@ -153,9 +153,9 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations) -> List:
         # of the join_skeleton contains two skeleton IDs is solved by
         # the fact that of these, only one skeleton survives the merge,
         # and it is always the one in question by definition.
-        splits = defaultdict(int) # type: DefaultDict[Any, int]
-        merges = defaultdict(int) # type: DefaultDict[Any, int]
-        appended = defaultdict(list) # type: DefaultDict[Any, List]
+        splits:DefaultDict[Any, int] = defaultdict(int)
+        merges:DefaultDict[Any, int] = defaultdict(int)
+        appended:DefaultDict[Any, List] = defaultdict(list)
 
         epoch_ops.append(EpochOps(reviewer_id, date_range, user_ranges,
             user_node_counts, splits, merges, appended, len(nodes),
@@ -295,7 +295,7 @@ def _evaluate(project_id, user_id, start_date, end_date, max_gap, min_nodes) -> 
         return None
 
     # Get review information and organize it by skeleton ID and treenode ID
-    reviews = defaultdict(lambda: defaultdict(list)) # type: DefaultDict
+    reviews:DefaultDict = defaultdict(lambda: defaultdict(list))
     for r in Review.objects.filter(skeleton_id__in=skeleton_ids):
         reviews[r.skeleton_id][r.treenode_id].append(r)
 

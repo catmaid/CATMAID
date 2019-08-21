@@ -208,7 +208,7 @@ def projects(request:HttpRequest) -> JsonResponse:
         INNER JOIN stack s
         ON ps.stack_id = s.id
     """.format(project_template), user_project_ids)
-    project_stack_mapping = dict() # type: Dict
+    project_stack_mapping:Dict = dict()
     for row in cursor.fetchall():
         stacks = project_stack_mapping.get(row[0])
         if not stacks:
@@ -221,7 +221,7 @@ def projects(request:HttpRequest) -> JsonResponse:
         })
 
     # Get all stack groups for this project
-    project_stack_groups = {} # type: Dict
+    project_stack_groups:Dict = {}
     cursor.execute("""
         SELECT DISTINCT ps.project_id, sg.id, sg.title, sg.comment
         FROM stack_group sg
@@ -243,8 +243,8 @@ def projects(request:HttpRequest) -> JsonResponse:
             'comment': row[3],
         })
 
-    result = [] # type: List
-    empty_tuple = tuple() # type: Tuple
+    result:List = []
+    empty_tuple:Tuple = tuple()
     for p in projects:
         stacks = project_stack_mapping.get(p.id, empty_tuple)
         stackgroups = project_stack_groups.get(p.id, empty_tuple)
@@ -305,7 +305,7 @@ def export_project_data(projects) -> List:
 
     # Build a stack mirror index that maps all stack mirrors to their respective
     # stacks.
-    stack_mirror_index = {} # type: Dict
+    stack_mirror_index:Dict = {}
     for row in cursor.fetchall():
         stack_id = row[1]
         mirrors = stack_mirror_index.get(stack_id)
@@ -337,14 +337,14 @@ def export_project_data(projects) -> List:
             ON ps.stack_id = s.id
     """.format(project_template), user_project_ids)
     visible_stacks = dict()
-    project_stack_mapping = dict() # type: Dict
+    project_stack_mapping:Dict = dict()
 
     for row in cursor.fetchall():
         stacks = project_stack_mapping.get(row[0])
         if not stacks:
             stacks = []
             project_stack_mapping[row[0]] = stacks
-        stack = {
+        stack:Dict[str, Any] = {
             'id': row[1],
             'title': row[2],
             'dimension': str(row[3]),
@@ -360,13 +360,13 @@ def export_project_data(projects) -> List:
             'broken_sections': row[12],
             'translation': row[13],
             'orientation': row[14]
-        } # type: Optional[Dict[str, Any]]
+        }
 
         stacks.append(stack)
         visible_stacks[row[1]] = stack
 
     # Add stack group information to stacks
-    project_stack_groups = {} # type: Dict
+    project_stack_groups:Dict = {}
     cursor.execute("""
         SELECT sg.id, ps.project_id, sg.title, sg.comment,
                array_agg(ssg.stack_id), array_agg(sgr.name)
@@ -408,7 +408,7 @@ def export_project_data(projects) -> List:
             })
 
     result = []
-    empty_tuple = tuple() # type: Tuple
+    empty_tuple:Tuple = tuple()
     for p in projects:
         stacks = project_stack_mapping.get(p.id, empty_tuple)
         result.append({
@@ -496,7 +496,7 @@ def interpolatable_sections(request:HttpRequest, project_id) -> JsonResponse:
             type: float
         required: true
     """
-    coords = [[], [], []] # type: List[List]
+    coords:List[List] = [[], [], []]
     for l in InterpolatableSection.objects.filter(
             project_id=project_id).values_list('orientation', 'location_coordinate'):
         coords[l[0]].append(l[1])

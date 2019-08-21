@@ -100,8 +100,8 @@ def delete_neuron(request:HttpRequest, project_id=None, neuron_id=None) -> JsonR
         try:
             root_node = Treenode.objects.get(
                     skeleton_id=skeleton_ids[0], parent=None)
-            root_location = (root_node.location_x, root_node.location_y,
-                             root_node.location_z) # type: Optional[Tuple[Any, Any, Any]]
+            root_location:Optional[Tuple[Any, Any, Any]] = (root_node.location_x, root_node.location_y,
+                                                            root_node.location_z)
         except (Treenode.DoesNotExist, Treenode.MultipleObjectsReturned):
             root_location = None
     else:
@@ -166,8 +166,7 @@ def give_neuron_to_other_user(request:HttpRequest, project_id=None, neuron_id=No
     qs = ClassInstanceClassInstance.objects.filter(
             class_instance_b=neuron_id,
             relation__relation_name='model_of').values_list('class_instance_a__user_id', 'class_instance_a')
-    skeletons = defaultdict(list) # type: DefaultDict[Any, List]
-                                  # user_id vs list of owned skeletons
+    skeletons:DefaultDict[Any, List] = defaultdict(list) # user_id vs list of owned skeletons
     for row in qs:
         skeletons[row[0]].append(row[1])
 

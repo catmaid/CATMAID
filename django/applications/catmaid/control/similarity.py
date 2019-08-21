@@ -445,8 +445,8 @@ class ConfigurationList(APIView):
             random_sample_id=None, tangent_neighbors=20, matching_subset=None):
         """Create and queue a new Celery task to create the scoring matrix.
         """
-        histogram = [] # type: List
-        probability = [] # type: List
+        histogram:List = []
+        probability:List = []
 
         if match_sample_id:
             match_sample = NblastSample.objects.get(id=match_sample_id)
@@ -485,8 +485,8 @@ class ConfigurationList(APIView):
         """Select a random set of neurons, optionally of a minimum length and
         queue a job to compute the scoring matrix.
         """
-        histogram = [] # type: List
-        probability = [] # type: List
+        histogram:List = []
+        probability:List = []
 
         with transaction.atomic():
             if match_sample_id:

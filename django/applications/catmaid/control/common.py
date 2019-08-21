@@ -256,7 +256,7 @@ def get_form_and_neurons(request:HttpRequest, project_id:Union[int,str], kwargs)
     neuron_id_to_cell_body_location = dict(
         (x.class_instance_a.id, x.class_instance_b.name) for x in cici_qs)
 
-    neuron_id_to_driver_lines = defaultdict(list) # type: DefaultDict[Any, List]
+    neuron_id_to_driver_lines:DefaultDict[Any, List] = defaultdict(list)
 
     for cici in ClassInstanceClassInstance.objects.filter(
         project__id=project_id,

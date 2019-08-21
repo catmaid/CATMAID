@@ -64,16 +64,16 @@ def split_by_synapse_domain(bandwidth, locations, arbors, treenode_connector, mi
         arbors: dictionary of skeleton ID vs list of DiGraph (that were, or not, split by confidence)
         treenode_connectors: dictionary of treenode ID vs list of tuples of connector_id, string of 'presynaptic_to' or 'postsynaptic_to'
     """
-    arbors2 = {} # type: Dict
+    arbors2:Dict = {}
                  # Some arbors will be split further
     for skeleton_id, graphs in arbors.items():
-        subdomains = [] # type: List
+        subdomains:List = []
         arbors2[skeleton_id] = subdomains
         for graph in graphs:
             treenode_ids = []
             connector_ids =[]
             relation_ids = []
-            for treenode_id in filter(treenode_connector.has_key, graph.nodes_iter()): # type: Tuple
+            for treenode_id in filter(treenode_connector.has_key, graph.nodes_iter()): # type: ignore
                                                                                        # this is from networkx and returns an iterator over tuples
                 for c in treenode_connector.get(treenode_id):
                     connector_id, relation = c
@@ -138,7 +138,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
     ''' % skeletons_string)
     rows = tuple(cursor.fetchall())
     # Each skeleton is represented with a DiGraph
-    arbors = defaultdict(nx.DiGraph) # type: Union[DefaultDict[Any, nx.DiGraph], Dict[Any, nx.DiGraph]]
+    arbors:Union[DefaultDict[Any, nx.DiGraph], Dict[Any, nx.DiGraph]] = defaultdict(nx.DiGraph)
 
     # Get reviewers for the requested skeletons
     reviews = get_treenodes_to_reviews(skeleton_ids=skeleton_ids)
@@ -158,20 +158,20 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
     WHERE skeleton_id IN (%s)
       AND (relation_id = %s OR relation_id = %s)
     ''' % (skeletons_string, relations[pre_rel], relations[post_rel]))
-    connectors = defaultdict(partial(defaultdict, list)) # type: DefaultDict
-    skeleton_synapses = defaultdict(partial(defaultdict, list)) # type: DefaultDict
+    connectors:DefaultDict = defaultdict(partial(defaultdict, list))
+    skeleton_synapses:DefaultDict = defaultdict(partial(defaultdict, list))
     for row in cursor.fetchall():
         connectors[row[0]][row[1]].append((row[2], row[3]))
         skeleton_synapses[row[3]][row[1]].append(row[2])
 
     # Cluster by synapses
-    minis = defaultdict(list) # type: DefaultDict[Any, List]
+    minis:DefaultDict[Any, List] = defaultdict(list)
                               # skeleton_id vs list of minified graphs
     locations = None
     whole_arbors = arbors
     if expand and bandwidth > 0:
         locations = {row[0]: (row[4], row[5], row[6]) for row in rows}
-        treenode_connector = defaultdict(list) # type: DefaultDict[Any, List]
+        treenode_connector:DefaultDict[Any, List] = defaultdict(list)
         for connector_id, pp in connectors.items():
             for treenode_id in chain.from_iterable(pp[relations[pre_rel]]):
                 treenode_connector[treenode_id].append((connector_id, pre_rel))
@@ -338,7 +338,7 @@ def skeleton_graph(request:HttpRequest, project_id=None) -> JsonResponse:
     for link_type in link_types:
         pair = KNOWN_LINK_PAIRS.get(link_type)
         if not pair:
-            raise ValueError("Unknown link type: " + link_type)
+            raise ValueError(f"Unknown link type: {link_type}")
 
         source_rel = pair['source']
         target_rel = pair['target']
@@ -346,9 +346,9 @@ def skeleton_graph(request:HttpRequest, project_id=None) -> JsonResponse:
         circuit = _skeleton_graph(project_id, skeleton_ids,
                 confidence_threshold, bandwidth, expand, compute_risk,
                 cable_spread, path_confluence, source_rel, target_rel)
-        package = {'nodes': [{'data': props} for props in circuit.node.values()],
-                   'edges': []} # type: Dict
-        edges = package['edges'] # type: List
+        package:Dict[str, Any] = {'nodes': [{'data': props} for props in circuit.node.values()],
+                   'edges': []}
+        edges:List = package['edges']
         for g1, g2, props in circuit.edges_iter(data=True):
             id1 = circuit.node[g1]['id']
             id2 = circuit.node[g2]['id']
@@ -390,7 +390,7 @@ def _node_centrality_by_synapse_db(skeleton_id:Union[int,str]) -> Dict:
     WHERE t.skeleton_id = %s
     ''', (skeleton_id))
 
-    nodes = {} # type: Dict
+    nodes:Dict = {}
                # node ID vs Counts
     tree = nx.DiGraph()
     root = None

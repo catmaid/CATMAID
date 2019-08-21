@@ -45,15 +45,15 @@ class ConfirmationForm(forms.Form):
     pass
 
 def get_tag_sets(add_supersets:bool=False, prefetch:bool=True) -> Tuple[List, Any, DefaultDict[Any, Set]]:
-    tag_sets = defaultdict(set) # type: DefaultDict[Any, Set]
-    tag_supersets = defaultdict(set) # type: DefaultDict[Any, Set]
+    tag_sets:DefaultDict[Any, Set] = defaultdict(set)
+    tag_supersets:DefaultDict[Any, Set] = defaultdict(set)
     project_ids = list(Project.objects.all().values_list('id', flat=True))
 
     # Build tag index
     ct = ContentType.objects.get_for_model(Project)
     tag_links = TaggedItem.objects.filter(content_type=ct) \
         .values_list('object_id', 'tag__name')
-    tag_index = defaultdict(set) # type: DefaultDict[Any, Set]
+    tag_index:DefaultDict[Any, Set] = defaultdict(set)
     for pid, t in tag_links:
         tag_index[pid].add(t)
 
@@ -94,13 +94,9 @@ def generate_tag_groups(add_supersets:bool=True, respect_superset_graphs:bool=Fa
     links_qs = links_qs.select_related('class_instance_a__project__id',
         'class_instance_b__id')
     # Execute the query set to build a look up table
-    projects_to_cls_links = {} # type: Dict
+    projects_to_cls_links:DefaultDict[Any, Set] = defaultdict(set)
     for cici in links_qs:
-        cls_links = projects_to_cls_links.get(cici.class_instance_a.project.id)
-        if not cls_links:
-            cls_links = set()
-            projects_to_cls_links[cici.class_instance_a.project.id] = cls_links
-        cls_links.add(cici.class_instance_b.id)
+        projects_to_cls_links[cici.class_instance_a.project.id].add(cici.class_instance_b.id)
 
     # Test which groups of projects belonging to a particular tag group,
     # have non-uniform classification graph links
@@ -108,7 +104,7 @@ def generate_tag_groups(add_supersets:bool=True, respect_superset_graphs:bool=Fa
     available_tag_groups = {}
     for tags, projects in tag_sets.items():
         differs = False
-        cg_roots = set() # type: Set
+        cg_roots:Set = set()
         projects_cgroots = {}
         # Collect all classification roots in this tag group
         for pid in projects:

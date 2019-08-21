@@ -407,7 +407,7 @@ def contributor_statistics(request:HttpRequest, project_id=None, skeleton_id=Non
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def contributor_statistics_multiple(request:HttpRequest, project_id=None, skeleton_ids=None) -> JsonResponse:
-    contributors = defaultdict(int) # type: DefaultDict[Any, int]
+    contributors:DefaultDict[Any, int] = defaultdict(int)
     n_nodes = 0
     # Count the total number of 20-second intervals with at least one treenode in them
     n_time_bins = 0
@@ -440,7 +440,7 @@ def contributor_statistics_multiple(request:HttpRequest, project_id=None, skelet
     # Therefore measure the time for the user that has the most nodes reviewed,
     # then add the nodes not reviewed by that user but reviewed by the rest
     def process_reviews(rev):
-        seen = set() # type: Set
+        seen:Set = set()
         min_review_bins = set()
         multi_review_bins = 0
         for reviewer, treenodes in sorted(rev.items(), key=lambda x: len(x[1]), reverse=True):
@@ -457,7 +457,7 @@ def contributor_statistics_multiple(request:HttpRequest, project_id=None, skelet
 
     rev = None
     last_skeleton_id = None
-    review_contributors = defaultdict(int) # type: DefaultDict[Any, int]
+    review_contributors:DefaultDict[Any, int] = defaultdict(int)
                                            # reviewer_id vs count of nodes reviewed
 
     for row in Review.objects.filter(skeleton_id__in=skeleton_ids).order_by('skeleton').values_list('reviewer', 'treenode', 'review_time', 'skeleton_id').iterator():
@@ -486,7 +486,7 @@ def contributor_statistics_multiple(request:HttpRequest, project_id=None, skelet
     pre = relations['presynaptic_to']
     post = relations['postsynaptic_to']
 
-    synapses = {} # type: dict
+    synapses:Dict = {}
     synapses[pre] = defaultdict(int)
     synapses[post] = defaultdict(int)
 
@@ -873,7 +873,7 @@ def connectivity_counts(request:HttpRequest, project_id=None) -> JsonResponse:
         'skeleton_ids': skeleton_ids,
     })
 
-    connectivity = {} # type: dict
+    connectivity:Dict = {}
     seen_relations = set()
     for row in cursor.fetchall():
         skeletton_entry = connectivity.get(row[0])
@@ -1339,15 +1339,14 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2,
     class Partner:
         def __init__(self):
             self.num_nodes = 0
-            self.skids = defaultdict(newSynapseCounts) # type: DefaultDict[Any, List[int]]
-                                                       # skid vs synapse count
+            self.skids:DefaultDict[Any, List[int]] = defaultdict(newSynapseCounts) # skid vs synapse count
             if with_nodes:
-                self.links = [] # type: List
+                self.links:List = []
 
     # Dictionary of partner skeleton ID vs Partner
     def newPartner():
         return Partner()
-    partners = defaultdict(newPartner) # type: DefaultDict[Any, Partner]
+    partners:DefaultDict[Any, Partner] = defaultdict(newPartner)
 
     # Obtain the synapses made by all skeleton_ids considering the desired
     # direction of the synapse, as specified by relation_id_1 and relation_id_2:
@@ -1663,7 +1662,7 @@ def connectivity_matrix_csv(request:HttpRequest, project_id) -> StreamingHttpRes
     project_id = int(project_id)
     rows = tuple(get_request_list(request.POST, 'rows', [], map_fn=int))
     cols = tuple(get_request_list(request.POST, 'columns', [], map_fn=int))
-    names = dict(map(lambda x: [int(x[0]), x[1]], get_request_list(request.POST, 'names', []))) # type: Dict
+    names:Dict = dict(map(lambda x: [int(x[0]), x[1]], get_request_list(request.POST, 'names', [])))
 
     matrix = get_connectivity_matrix(project_id, rows, cols)
 
@@ -1742,7 +1741,7 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids,
     # object with the fields 'count' and 'locations' is returned instead of a
     # single count.
     if with_locations:
-      outgoing = defaultdict(dict) # type: DefaultDict[Any, Dict]
+      outgoing:DefaultDict[Any, Dict] = defaultdict(dict)
       for r in cursor.fetchall():
           source, target = r[0], r[1]
           mapping = outgoing[source]
@@ -2237,7 +2236,7 @@ def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleto
     if not n_samplers:
         return None
 
-    sampler_index = defaultdict(list) # type: DefaultDict[Any, List]
+    sampler_index:DefaultDict[Any, List] = defaultdict(list)
     for s in samplers:
         sampler_index[s.skeleton_id].append(s)
 
@@ -2897,7 +2896,7 @@ def get_annotation_info(project_id, skeleton_ids, annotations, metaannotations,
     # names and another one that lists annotation IDs and annotator IDs for
     # each skeleton ID.
     annotations = {}
-    skeletons = {} # type: Dict
+    skeletons:Dict = {}
     for row in cursor.fetchall():
         skid, auid, aid, aname = n_to_sk_ids[row[0]], row[1], row[2], row[3]
         if aid not in annotations:

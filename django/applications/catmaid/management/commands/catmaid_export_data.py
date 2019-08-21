@@ -68,8 +68,8 @@ class Exporter():
         self.format = 'json'
         self.indent = 2
 
-        self.to_serialize = [] # type: List
-        self.seen = {} # type: Dict
+        self.to_serialize:List = []
+        self.seen:Dict = {}
 
     def collect_data(self):
         self.to_serialize = []
@@ -82,10 +82,10 @@ class Exporter():
         if not check_tracing_setup(self.project.id, classes, relations):
             raise CommandError("Project with ID %s is no tracing project." % self.project.id)
 
-        exclude_skeleton_id_constraints = set() # type: Set
-        exclude_neuron_id_constraint = set() # type: Set
-        exclude_annotation_map = dict() # type: Dict
-        exclude_annotation_ids = list() # type: List
+        exclude_skeleton_id_constraints:Set = set()
+        exclude_neuron_id_constraint:Set = set()
+        exclude_annotation_map:Dict = dict()
+        exclude_annotation_ids:List = list()
         if self.excluded_annotations:
             exclude_annotation_map = get_annotation_to_id_map(self.project.id,
                     self.excluded_annotations, relations, classes)
@@ -128,7 +128,7 @@ class Exporter():
             logger.info("Found {} neurons with the following annotations: {}".format(
                     num_total_records, ", ".join(self.required_annotations)))
 
-            skeleton_id_constraints = list(chain.from_iterable([n['skeleton_ids'] for n in neuron_info])) # type: Optional[List]
+            skeleton_id_constraints:Optional[List] = list(chain.from_iterable([n['skeleton_ids'] for n in neuron_info]))
             neuron_ids = [n['id'] for n in neuron_info]
 
             # Remove excluded skeletons if either a) exclusion_is_final is set
@@ -236,8 +236,8 @@ class Exporter():
             # annotations.
             if self.export_annotations and 'annotated_with' in relations:
                 annotated_with = relations['annotated_with']
-                all_annotations = set() # type: Set
-                all_annotation_links = set() # type: Set
+                all_annotations:Set = set()
+                all_annotation_links:Set = set()
                 working_set = [e for e in entities]
 
                 # Optionally, allow only annotations that are themselves
@@ -358,7 +358,7 @@ class Exporter():
 
 
         # Export referenced neurons and skeletons
-        exported_tids = set() # type: Set
+        exported_tids:Set = set()
         if treenodes:
             treenode_skeleton_ids = set(t.skeleton_id for t in treenodes)
             n_skeletons = ClassInstance.objects.filter(

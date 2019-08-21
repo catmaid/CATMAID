@@ -62,7 +62,7 @@ def graphedge_list(request:HttpRequest, project_id=None) -> JsonResponse:
     skeletonlist = get_request_list(request.POST, 'skeletonlist[]')
     skeletonlist = map(int, skeletonlist)
     p = get_object_or_404(Project, pk=project_id)
-    edge = {} # type: Dict
+    edge:Dict = {}
     connectordata = {}
 
     qs_tc = TreenodeConnector.objects.filter(
@@ -276,7 +276,7 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
 
     # Query connectors
     constraints = []
-    params = [] # type: List
+    params:List = []
 
     if skeleton_ids:
         sk_template = ",".join("(%s)" for _ in skeleton_ids)
@@ -358,7 +358,7 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
         for connector_id, labels in tags.items():
             labels.sort(key=lambda k: k.upper())
 
-    partners = defaultdict(list) # type: DefaultDict[Any, List]
+    partners:DefaultDict[Any, List] = defaultdict(list)
     if connector_ids and with_partners:
         c_template = ",".join("(%s)" for _ in connector_ids)
         cursor.execute('''
@@ -467,7 +467,7 @@ def list_connector_links(request:HttpRequest, project_id=None) -> JsonResponse:
         links.append(l)
 
     connector_ids = [l[1] for l in links]
-    tags = defaultdict(list) # type: DefaultDict[Any, List]
+    tags:DefaultDict[Any, List] = defaultdict(list)
     if connector_ids and with_tags:
         c_template = ",".join(("(%s)",) * len(connector_ids))
         cursor.execute('''
@@ -514,7 +514,7 @@ def _connector_skeletons(connector_ids, project_id) -> Dict:
       AND (relation_id = %s OR relation_id = %s)
     ''' % (",".join(map(str, connector_ids)), PRE, POST))
 
-    cs = {} # type: Dict
+    cs:Dict = {}
     for row in cursor.fetchall():
         c = cs.get(row[0])
         if not c:
@@ -561,7 +561,7 @@ def _connector_associated_edgetimes(connector_ids, project_id) -> Dict:
         'post_id': POST,
     })
 
-    cs = {} # type: Dict
+    cs:Dict = {}
     for row in cursor.fetchall():
         c = cs.get(row[0])
         if not c:
@@ -779,7 +779,7 @@ def connectors_info(request:HttpRequest, project_id) -> JsonResponse:
         FROM connector c
     ''']
 
-    query_params = [] # type: List
+    query_params:List = []
 
     # Add connector filter, if requested
     if cids:

@@ -199,7 +199,7 @@ class Command(BaseCommand):
                         ) triangle(volume_id, triangle_id, points)
                         WHERE array_length(points, 1) = 4;
             """)
-            volumes = {} # type: Dict
+            volumes:Dict = {}
             for tri in cursor.fetchall():
                 entry = volumes.get(tri[0])
                 if not entry:

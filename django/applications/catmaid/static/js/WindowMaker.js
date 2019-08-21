@@ -49,7 +49,7 @@ var WindowMaker = new function()
       try {
         return storeWidgetState(widget, widgetStateManager);
       } catch (e) {
-        CATMAID.warn("Coudln't save widget state");
+        CATMAID.warn("Couldn't save widget state");
         return false;
       }
     }
@@ -67,7 +67,7 @@ var WindowMaker = new function()
         localStorage.removeItem(key);
         return true;
       } catch (e) {
-        CATMAID.warn("Coudln't save widget state");
+        CATMAID.warn("Couldn't save widget state");
         return false;
       }
     } else {

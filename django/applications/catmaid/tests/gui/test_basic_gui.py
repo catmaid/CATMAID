@@ -110,11 +110,8 @@ class BasicUITest(StaticLiveServerTestCase):
         test, saucelabs.com is updated (which otherwise doesn't know if the
         whole test case was a success).
         """
-        if hasattr(self, '_outcome'):  # Python 3.4+
-            result = self.defaultTestResult()  # these 2 methods have no side effects
-            self._feedErrorsToResult(result, self._outcome.errors)
-        else:  # Python 3.2 - 3.3 or 2.7
-            result = getattr(self, '_outcomeForDoCleanups', self._resultForDoCleanups)
+        result = self.defaultTestResult()  # these 2 methods have no side effects
+        self._feedErrorsToResult(result, self._outcome.errors)
         error = self.list2reason(result.errors)
         failure = self.list2reason(result.failures)
         ok = not error and not failure

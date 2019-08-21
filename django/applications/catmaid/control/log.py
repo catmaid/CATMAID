@@ -54,7 +54,7 @@ def log(logger, level:str, msg:str) -> None:
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_logs(request:HttpRequest, project_id=None) -> JsonResponse:
     if 'user_id' in request.POST:
-        user_id = int(request.POST.get('user_id', -1)) # type: Optional[int]
+        user_id:Optional[int] = int(request.POST.get('user_id', -1))
                                                        # We can see logs for different users
     else:
         user_id = None
@@ -99,7 +99,7 @@ def list_logs(request:HttpRequest, project_id=None) -> JsonResponse:
 
     result = list(log_query[display_start:display_start + display_length])
 
-    response = {'iTotalRecords': len(result), 'iTotalDisplayRecords': len(result), 'aaData': []} # type: Dict[str, Any]
+    response:Dict[str, Any] = {'iTotalRecords': len(result), 'iTotalDisplayRecords': len(result), 'aaData': []}
     for log in result:
         response['aaData'] += [[
             log.username,

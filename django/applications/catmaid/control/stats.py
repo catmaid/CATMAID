@@ -482,7 +482,7 @@ def stats_user_history(request:HttpRequest, project_id=None) -> JsonResponse:
         tmp_date = start_date + timedelta(days=i)
         days.append(tmp_date.strftime("%Y%m%d"))
         daysformatted.append(tmp_date.strftime("%a %d, %h %Y"))
-    stats_table = {} # type: Dict
+    stats_table:Dict = {}
     for userid in all_users:
         if userid == -1:
             continue

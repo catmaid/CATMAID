@@ -18,10 +18,10 @@ def get_latest_unread_date(request:HttpRequest) -> JsonResponse:
     message added. It is formatted as epoch time.
     """
     try:
-        latest_date = int(Message.objects \
+        latest_date:Optional[int] = int(Message.objects \
             .filter(user=request.user, read=False) \
             .order_by('-time') \
-            .values_list('time', flat=True)[0].strftime('%s')) # type: Optional[int]
+            .values_list('time', flat=True)[0].strftime('%s'))
     except IndexError:
         latest_date = None
 

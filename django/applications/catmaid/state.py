@@ -101,7 +101,7 @@ def make_all_links_query(link_ids, node_id, is_connector=False) -> StateCheck:
 
 def list_to_table(l, n=1) -> Tuple[str, Any]:
     if n == 1:
-        args = [(e,) for e in l] # type: List[Tuple]
+        args:List[Tuple] = [(e,) for e in l]
     elif n == 2:
         args = [(e[0], e[1]) for e in l]
     else:
@@ -172,7 +172,7 @@ def collect_state_checks(node_id, state, cursor, node=False,
     they are valid children. If <children> is the boolean True, a state check is
     added that tests if the state provided children represent *all* children.
     """
-    state_checks = [] # type: List
+    state_checks:List = []
 
     if node:
         if 'edition_time' not in state:
@@ -336,7 +336,7 @@ def make_nocheck_state(parsed=False):
 
     If "parsed" is True, a parsed representation will be returned, otherwise a
     regular JSON representation is used."""
-    state = {'nocheck': True} # type: Union[str, Dict]
+    state:Union[str, Dict] = {'nocheck': True}
     if not parsed:
         state = json.dumps(state)
     return state
@@ -348,7 +348,7 @@ def check_state(state, state_checks, cursor) -> None:
         return
 
     sql_checks = [sc.sql for sc in state_checks]
-    args = [] # type: List
+    args:List = []
     for sc in state_checks:
         args.extend(p for p in sc.params)
 

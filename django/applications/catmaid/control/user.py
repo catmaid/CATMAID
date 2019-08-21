@@ -123,11 +123,11 @@ def user_list_datatable(request:HttpRequest) -> JsonResponse:
     num_records = len(user_query)
     result = list(user_query[display_start:display_start + display_length])
 
-    response = {
+    response:Dict[str, Any] = {
         'iTotalRecords': num_records,
         'iTotalDisplayRecords': num_records,
         'aaData': []
-    } # type: Dict[str, Any]
+    }
 
     for user in result:
         response['aaData'] += [[

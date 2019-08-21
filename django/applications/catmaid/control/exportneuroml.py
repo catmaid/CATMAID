@@ -30,7 +30,7 @@ def neuroml_single_cell(skeleton_id, nodes, pre, post) -> Cell:
     """
 
     # Collect the children of every node
-    successors = defaultdict(list) # type: DefaultDict[Any, List]
+    successors:DefaultDict[Any, List] = defaultdict(list)
                                    # parent node ID vs list of children node IDs
     rootID = None
     for nodeID, props in nodes.items():
@@ -41,7 +41,7 @@ def neuroml_single_cell(skeleton_id, nodes, pre, post) -> Cell:
         successors[parentID].append(nodeID) 
 
     # Cache of Point3DWithDiam
-    points = {} # type: Dict
+    points:Dict = {}
 
     def asPoint(nodeID):
         """ Return the node as a Point3DWithDiam, in micrometers. """
@@ -61,7 +61,7 @@ def neuroml_single_cell(skeleton_id, nodes, pre, post) -> Cell:
     # Starting from the root node, iterate towards the end nodes, adding a segment
     # for each parent-child pair.
 
-    segments = [] # type: List
+    segments:List = []
     segment_id = 1
     todo = [rootID]
 

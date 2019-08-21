@@ -148,7 +148,7 @@ def eventTimes(user_id, project_id, start_date, end_date, all_writes=True) -> Di
 
     if all_writes:
         if project_id:
-            params = (start_date, end_date, user_id, project_id) # type: Tuple[str, ...]
+            params:Tuple[str, ...] = (start_date, end_date, user_id, project_id)
             project_filter = "AND project_id = %s"
         else:
             params = (start_date, end_date, user_id)

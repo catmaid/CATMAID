@@ -38,7 +38,7 @@ def get_link_model(node_type:str) -> Union[ConnectorClassInstance, TreenodeClass
     elif node_type == 'connector':
         return ConnectorClassInstance
     else:
-        raise Exception('Unknown node type: "%s"', node_type)
+        raise Exception(f'Unknown node type: "{node_type}"')
 
 @requires_user_role(UserRole.Annotate)
 def label_remove(request:HttpRequest, project_id=None) -> JsonResponse:
@@ -200,7 +200,7 @@ def labels_for_node(request:HttpRequest, project_id=None, node_type:Optional[str
             connector=node_id,
             project=project_id).select_related('class_instance')
     else:
-        raise Http404('Unknown node type: "%s"' % (node_type,))
+        raise Http404(f'Unknown node type: "{node_type}"')
 
     return JsonResponse([l.class_instance.name for l in qs], safe=False)
 
@@ -210,7 +210,7 @@ def labels_for_nodes(request:HttpRequest, project_id=None) -> JsonResponse:
     # with commas as separators
     treenode_ids = request.POST.get('treenode_ids', '').strip()
     connector_ids = request.POST.get('connector_ids', '').strip()
-    result = defaultdict(list) # type: DefaultDict[Any, List]
+    result:DefaultDict[Any, List] = defaultdict(list)
     cursor = connection.cursor()
 
     if treenode_ids:
@@ -266,7 +266,7 @@ def label_update(request:HttpRequest, project_id, location_id, ntype:str) -> Jso
         node = Connector.objects.get(id=location_id)
 
     if not table:
-        raise Http404('Unknown node type: "%s"' % (ntype,))
+        raise Http404(f'Unknown node type: "{ntype}"')
 
     # Get the existing list of tags for the tree node/connector and delete any
     # that are not in the new list.

@@ -78,7 +78,7 @@ class GridWorker():
 class Command(BaseCommand):
     help = ""
     # The queue to process. Subclass and set this.
-    queue = [] # type: List
+    queue:List = []
     notify_channel = "catmaid.dirty-cache"
 
     def add_arguments(self, parser):
@@ -97,7 +97,7 @@ class Command(BaseCommand):
         self.delay = options['delay']
         self.grid_cache_update = options['grid_cache']
 
-        self.workers = [] # type: List
+        self.workers:List = []
 
         if options['grid_cache']:
             self.workers.append(GridWorker())

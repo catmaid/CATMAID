@@ -9,8 +9,7 @@ from django.db import connection
 from catmaid.control.node import (_node_list_tuples_query, update_cache,
         Postgis2dNodeProvider, ORIENTATIONS, update_node_query_cache,
         update_grid_cache)
-from catmaid.models import Project
-
+from catmaid.models import Project, User
 
 class Command(BaseCommand):
     help = "Update node query cache tables of all or individual projects."

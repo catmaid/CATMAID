@@ -364,7 +364,7 @@ class GridCachedNodeProvider(CachedNodeProvider):
             else:
                 lod_max = min(int(lod), lod_levels)
         else:
-            raise ValueError("Unknown LOD type: {}".format(lod_type))
+            raise ValueError(f"Unknown LOD type: {lod_type}")
 
         # Do the actual grid cell lookup in a separate query, to only use
         # constant values in the index checks. The Z index condition is slightly
@@ -453,10 +453,10 @@ class GridCachedMsgpackNodeProvider(GridCachedNodeProvider):
 class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
 
     CONNECTOR_STATEMENT_NAME = 'get_connectors_postgis'
-    connector_query = None # type: Optional[str]
+    connector_query:Optional[str] = None
 
     TREENODE_STATEMENT_NAME = 'get_treenodes_postgis'
-    treenode_query = None # type: Optional[str]
+    treenode_query:Optional[str] = None
 
     # Allows implementation to handle limit settings on its own
     managed_limit = True
@@ -1374,7 +1374,7 @@ class ExtraNodesOnlyNodeProvider(BasicNodeProvider):
             explicit_connector_ids, include_labels, with_relation_map) -> Tuple[Any, str]:
 
         # No regular tracing data lookup needs to be done.
-        tuples = [] # type: List
+        tuples:List = []
         # If there are exta nodes required, query them explicitely using a
         # regular Postgis 2D query. Inject the result into cached data.
         if explicit_treenode_ids or explicit_connector_ids:
@@ -1429,7 +1429,7 @@ def get_configured_node_providers(provider_entries, connection=None,
     if type(provider_entries) == str:
         provider_entries = [provider_entries]
     for entry in provider_entries:
-        options = {} # type: Dict
+        options:Dict = {}
         # An entry is allowed to be a two-tuple (name, options) to provide
         # options to the constructor call. Otherwise a simple name string is
         # expected.
@@ -1578,7 +1578,7 @@ def get_lod_buckets(result_tuple, lod_levels, lod_bucket_size, lod_strategy) -> 
 
     # Split data into LOD buckets, assume filtering and sorting has been
     # done in the node provider.
-    result_buckets = [[]] * lod_levels # type: List[List]
+    result_buckets:List[List] = [[]] * lod_levels
     half_bucket_size = int(lod_bucket_size / 2)
     connector_slice_end = 0
     node_slice_end = 0
@@ -2327,7 +2327,7 @@ def node_list_tuples(request:HttpRequest, project_id=None, provider=None) -> Htt
     else:
         raise ValueError("Unsupported HTTP method: " + request.method)
 
-    params = {} # type: Dict[str, Optional[Union[int, float]]]
+    params:Dict[str, Optional[Union[int, float]]] = {}
 
     treenode_ids = get_request_list(data, 'treenode_ids', tuple(), int)
     connector_ids = get_request_list(data, 'connector_ids', tuple(), int)
@@ -2416,14 +2416,14 @@ def _node_list_tuples_query(params, project_id, node_provider,
 
         connectors = []
         # A set of unique connector IDs
-        connector_ids = set() # type: Set
+        connector_ids:Set = set()
 
         # Collect links to connectors for each treenode. Each entry maps a
         # relation ID to a an object containing the relation name, and an object
         # mapping connector IDs to confidences.
-        links = defaultdict(list) # type: DefaultDict[Any, List]
+        links:DefaultDict[Any, List] = defaultdict(list)
         used_relations = set()
-        seen_links = set() # type: Set
+        seen_links:Set = set()
 
         for row in crows:
             # Collect treeenode IDs related to connectors but not yet in treenode_ids
@@ -2457,7 +2457,7 @@ def _node_list_tuples_query(params, project_id, node_provider,
                 params, missing_treenode_ids)
         n_retrieved_nodes = len(treenode_ids)
 
-        labels = defaultdict(list) # type: DefaultDict[Any, List]
+        labels:DefaultDict[Any, List] = defaultdict(list)
         if include_labels:
             # Avoid dict lookups in loop
             top, left, z1 = params['top'], params['left'], params['z1']
@@ -2560,7 +2560,7 @@ def create_node_response(result, params, target_format, target_options, data_typ
         elif data_type == 'msgpack':
             data = ujson.dumps(msgpack.unpackb(result, use_list=False))
         else:
-            raise ValueError("Unknown data type: " + data_type)
+            raise ValueError(f"Unknown data type: {data_type}")
         return HttpResponse(data, content_type='application/json')
     elif target_format == 'msgpack':
         if data_type == 'json':
@@ -2570,7 +2570,7 @@ def create_node_response(result, params, target_format, target_options, data_typ
         elif data_type == 'msgpack':
             data = result
         else:
-            raise ValueError("Unknown data type: " + data_type)
+            raise ValueError(f"Unknown data type: {data_type}")
         return HttpResponse(data, content_type='application/octet-stream')
     elif target_format == 'png' or target_format == 'gif':
         if data_type == 'json':
@@ -2580,7 +2580,7 @@ def create_node_response(result, params, target_format, target_options, data_typ
         elif data_type == 'msgpack':
             data = msgpack.unpackb(result, use_list=False)
         else:
-            raise ValueError("Unknown data type: " + data_type)
+            raise ValueError(f"Unknown data type: {data_type}")
         width = target_options['view_width']
         height = target_options['view_height']
         view_min_x = params['left']

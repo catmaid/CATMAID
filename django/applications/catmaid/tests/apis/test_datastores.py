@@ -1,15 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import json
+from urllib.parse import urlencode
+
 from .common import CatmaidApiTestCase
-
-try:
-    # For Python 3.0 and later
-    from urllib.parse import urlencode
-except ImportError:
-    # Fall back to Python 2's urllib2
-    from urllib import urlencode
-
 
 class DatastoresApiTests(CatmaidApiTestCase):
     def test_client_datastores(self):

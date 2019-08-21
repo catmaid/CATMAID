@@ -87,7 +87,7 @@ def create_treenode(request:HttpRequest, project_id=None) -> JsonResponse:
             'confidence': 0,
             'useneuron': -1,
             'parent_id': -1}
-    string_values = {} # type: Dict
+    string_values:Dict = {}
     for p in float_values.keys():
         params[p] = float(request.POST.get(p, float_values[p]))
     for p in int_values.keys():
@@ -136,7 +136,7 @@ def insert_treenode(request:HttpRequest, project_id=None) -> JsonResponse:
     node.
     """
     # Use creation time, if part of parameter set
-    params = {} # type: Dict[str, float]
+    params:Dict[str, float] = {}
     float_values = {
         'x': 0,
         'y': 0,
@@ -559,7 +559,7 @@ def update_radius(request:HttpRequest, project_id=None, treenode_id=None) -> Jso
 
     if 1 == option:
         # Update radius from treenode_id to next branch or end node (included)
-        children = defaultdict(list) # type: DefaultDict[Any, List]
+        children:DefaultDict[Any, List] = defaultdict(list)
         for row in cursor.fetchall():
             children[row[1]].append(row[0])
 
@@ -688,7 +688,7 @@ def delete_treenode(request:HttpRequest, project_id=None) -> JsonResponse:
     cursor = connection.cursor()
     try:
         if not parent_id:
-            children = [] # type: List
+            children:List = []
             # This treenode is root.
             response_on_error = 'Could not retrieve children for ' \
                 'treenode #%s' % treenode_id

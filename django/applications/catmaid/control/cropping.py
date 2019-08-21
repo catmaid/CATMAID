@@ -67,8 +67,8 @@ class CropJob(object):
             self.stack_mirror_ids= [stack_mirror_ids]
         else:
             self.stack_mirror_ids = stack_mirror_ids
-        self.stack_mirrors = [] # type: List
-        self.stack_tile_sources = {} # type: Dict
+        self.stack_mirrors:List = []
+        self.stack_tile_sources:Dict = {}
         for sid in self.stack_mirror_ids:
             stack_mirror = get_object_or_404(StackMirror, pk=sid)
             self.stack_mirrors.append(stack_mirror)
@@ -195,7 +195,6 @@ def addMetaData(path:str, job, result) -> None:
     res_x_nm_px = 1.0 / res_x_scaled
     res_y_nm_px = 1.0 / res_y_scaled
     res_z_nm_px = 1.0 / job.ref_stack.resolution.z
-    ifd = dict() # type: Dict
     ifd = TiffImagePlugin.ImageFileDirectory_v2()
     ifd[TiffImagePlugin.X_RESOLUTION] = res_x_nm_px
     ifd[TiffImagePlugin.Y_RESOLUTION] = res_y_nm_px

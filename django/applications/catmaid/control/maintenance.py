@@ -72,7 +72,7 @@ def neuron_treenode_counts(neuron_ids) -> DefaultDict[Any, List]:
     skeleton_neuron = {row[0]: row[1] for row in cursor.fetchall()}
 
     # Collect a map of treenode counts vs list of neurons with a skeleton that has that many treenodes
-    counts = defaultdict(list) # type: DefaultDict[Any, List]
+    counts:DefaultDict[Any, List] = defaultdict(list)
     neurons_with_treenodes = set()
     if skeleton_neuron:
         cursor.execute("""

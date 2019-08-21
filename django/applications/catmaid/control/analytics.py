@@ -241,7 +241,7 @@ def _analyze_skeleton(project_id:int, skeleton_id:int, adjacents:int) -> List[Un
     Treenode = namedtuple('Treenode', ['id', 'skeleton_id'])
 
     # Map of connector_id vs {pre: {Treenode, ...}, post: {Treenode, ...}}
-    connectors = defaultdict(partial(defaultdict, set)) # type: DefaultDict
+    connectors:DefaultDict = defaultdict(partial(defaultdict, set))
 
     # Condense rows to connectors represented by a map with two entries (PRE and POST),
     # each containing as value a set of Treenode:
@@ -252,7 +252,7 @@ def _analyze_skeleton(project_id:int, skeleton_id:int, adjacents:int) -> List[Un
         if row[4]:
             s[row[4]].add(Treenode(row[5], row[6]))
 
-    issues = [] # type: List[Union[Tuple[int, Any], Tuple[int, Any, Dict[str, Any]]]]
+    issues:List[Union[Tuple[int, Any], Tuple[int, Any, Dict[str, Any]]]] = []
 
     # Set of IDs of outgoing connectors
     pre_connector_ids = set()
@@ -294,7 +294,7 @@ def _analyze_skeleton(project_id:int, skeleton_id:int, adjacents:int) -> List[Un
     ''' % skeleton_id)
 
     # Collapse repeated rows into nodes with none or more tags
-    nodes = {} # type: Dict
+    nodes:Dict = {}
     parents = set()
     root = None
     for row in cursor.fetchall():

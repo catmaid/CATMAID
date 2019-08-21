@@ -537,7 +537,7 @@
       run: function(event) {
         var activeWidget = CATMAID.front();
         if (!activeWidget) {
-          CATMAID.warn("No active widget found, no data to copy to clipboard");
+          CATMAID.warn("No active widget found, No data to copy to clipboard");
           return false;
         }
         var sources = CATMAID.skeletonListSources.getSourcesOfOwner(activeWidget);

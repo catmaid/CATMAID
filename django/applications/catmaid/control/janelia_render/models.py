@@ -126,7 +126,7 @@ class JaneliaRenderStack:
         self.dimension = JaneliaRenderDimension(width, height, depth)
 
         # Broken slices
-        self.broken_slices = [] # type: List
+        self.broken_slices:List = []
         last = -1
         for i in z_values:
             for j in range(last + 1, i):
@@ -137,7 +137,7 @@ class JaneliaRenderStack:
         self.attribution = ''
         self.canary_location = JaneliaRenderDimension(0, 0, 0)
         self.placeholder_color = JaneliaRenderColor(0, 0, 0, 0)
-        self.tags = [] # type: List
+        self.tags:List = []
 
 
 class JaneliaRenderProjectStacks:

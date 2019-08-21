@@ -689,9 +689,9 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.fake_authentication()
 
         skeleton_ids = [235, 361, 373, 2364, 2388, 2411]
-        params = {
+        params:Dict[str, Any] = {
             'with_locations': True
-        } # type: Dict[str, Any]
+        }
         for i, k in enumerate(skeleton_ids):
             params['rows[%d]' % i] = k
             params['columns[%d]' % i] = k
@@ -919,9 +919,9 @@ class SkeletonsApiTests(CatmaidApiTestCase):
                 {'treenode_id': new_root})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
-        expected_result = {
+        expected_result:Dict[str, Any] = {
                 'newroot': 2394,
-                'skeleton_id': 2388} # type: Dict[str, Any]
+                'skeleton_id': 2388}
         self.assertEqual(expected_result, parsed_response)
 
         response = self.client.post(
@@ -986,7 +986,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
-        expected_result = {} # type: Dict[str, Any]
+        expected_result:Dict[str, Any] = {}
         self.assertEqual(expected_result, parsed_response)
 
         review_time = "2014-03-17T18:14:34.851Z"

@@ -76,13 +76,13 @@ class DVIDStack:
             int(max_point[2]) - int(min_point[2]))
 
         # Broken slices
-        self.broken_slices = [] # type: List
+        self.broken_slices:List = []
 
         self.downsample_factors = []
         self.attribution = ''
         self.canary_location = DVIDDimension(0, 0, 0)
         self.placeholder_color = DVIDColor(0, 0, 0, 0)
-        self.tags = [] # type: List
+        self.tags:List = []
 
 class DVIDProjectStacks:
     def __init__(self):

@@ -42,7 +42,7 @@ class GridWorker():
 
         # Find a grid cache for each provider and make sure each cache is only
         # referenced onece
-        self.grid_caches = [] # type: List
+        self.grid_caches:List = []
         for provider in enabled_grid_cache_providers:
             # If a particular cache is referenced explicitly, use it if it is
             # enabled.
@@ -65,13 +65,13 @@ class GridWorker():
         indices with each grid, update existing grids and create missing ones.
         """
         # Batch of grids to update during one run
-        grid_coords_to_update = {} # type: Dict
+        grid_coords_to_update:Dict = {}
         for update in updates:
             self.updatesReceived += 1
             self.get_intersected_grid_cell_ids(update,
                     cursor, create=True, grid_coords_to_update=grid_coords_to_update)
 
-        dirty_rows = set() # type: Set
+        dirty_rows:Set = set()
         for grid_id, coords in grid_coords_to_update.items():
             for c in coords:
                 self.cellsMarkedDirty += 1
@@ -170,7 +170,7 @@ class GridWorker():
 class Command(BaseCommand):
     help = ""
     # The queue to process. Subclass and set this.
-    queue = [] # type: List
+    queue:List = []
     notify_channel = "catmaid.spatial-update"
 
     def add_arguments(self, parser):
@@ -189,7 +189,7 @@ class Command(BaseCommand):
         self.delay = options['delay']
         self.grid_cache_update = options['grid_cache']
 
-        self.workers = [] # type: List
+        self.workers:List = []
 
         if options['grid_cache']:
             self.workers.append(GridWorker())

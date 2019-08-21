@@ -38,14 +38,14 @@ def tree_max_density(Gwud, synNodes, connector_ids, relations, h_list) -> Dict:
 
     D, id2index = distanceMatrix(Gwud, synNodes)
 
-    SynapseGroup = namedtuple("SynapseGroup", ['node_ids', 'connector_ids', 'relations', 'local_max']) # type: NamedTuple
-    synapseGroups = {} # type: Dict
+    SynapseGroup:NamedTuple = namedtuple("SynapseGroup", ['node_ids', 'connector_ids', 'relations', 'local_max'])
+    synapseGroups:Dict = {}
 
     for h in h_list:
         expDh = np.exp(-1 * np.multiply(D, D) / (h * h) )
 
-        targLoc = {} # type: Dict           # targLocs hosts the final destination nodes of the hill climbing
-        densityField = {} # type: Dict           # densityField stores the height of the hill to be climbed
+        targLoc:Dict = {}           # targLocs hosts the final destination nodes of the hill climbing
+        densityField:Dict = {}      # densityField stores the height of the hill to be climbed
         for startNode in synNodes:
             if startNode not in targLoc:
                 currNode = startNode
@@ -58,7 +58,7 @@ def tree_max_density(Gwud, synNodes, connector_ids, relations, h_list) -> Dict:
                 while True:
                     allOnPath.append(currNode)
 
-                    #Make sure I have densityField of all neighbors for comparison
+                    # Make sure I have densityField of all neighbors for comparison
                     if currNode in targLoc:
                         currNode = targLoc[ currNode ] # Jump right to the end already.
                         break
@@ -99,7 +99,7 @@ def tree_max_density(Gwud, synNodes, connector_ids, relations, h_list) -> Dict:
 def distanceMatrix(G, synNodes) -> Tuple[Any, Dict]:
     """ Given a nx graph, produce an all to all distance dict via scipy sparse matrix black magic.
      Also, you get in 'id2index' the the mapping from a node id to the index in matrix scaledDistance. """
-    dmat = {} # type: Dict
+    dmat:Dict = {}
     nodeList = tuple(G.nodes())
     synNodes = set(synNodes)
     synIndices = tuple(i for i,node in enumerate(nodeList) if node in synNodes)

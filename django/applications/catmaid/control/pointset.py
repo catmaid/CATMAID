@@ -39,7 +39,7 @@ def serialize_pointset(pointset, simple=False) -> Dict[str, Any]:
 
 def list_pointsets(project_id, user_id, simple, with_points=True,
         pointset_ids=None, order_by='id') -> List[Dict[str, Any]]:
-    extra_select = [] # type: List
+    extra_select:List = []
     extra_join = []
     query_params = {
         'project_id': project_id,

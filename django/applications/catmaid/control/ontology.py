@@ -144,11 +144,11 @@ def list_available_relations(request:HttpRequest, project_id=None) -> JsonRespon
     relations = Relation.objects.filter(project=project_id)
 
     if 0 == parent_id:
-        data = {
+        data:Dict[str, Any] = {
             'id': 'relations',
             'text': 'Relations',
             'type': 'root'
-        } # type: Dict[str, Any]
+        }
         # Test if there are relations present and mark the root
         # as leaf if there are none.
         if relations.count() > 0:
@@ -178,11 +178,11 @@ def list_available_classes(request:HttpRequest, project_id=None) -> JsonResponse
         classes = Class.objects.filter(project=project_id).exclude(class_name__in=root_classes)
 
     if 0 == parent_id:
-        data = {
+        data:Dict[str, Any] = {
             'id': 'classes',
             'text': 'Classes',
             'type': 'root'
-        } # type: Dict[str, Any]
+        }
         # Test if there are classes present and mark the root
         # as leaf if there are none.
         if classes.count() > 0:
@@ -309,7 +309,7 @@ def list_ontology(request:HttpRequest, project_id=None) -> JsonResponse:
             cc_q = ClassClass.objects.filter(
                 project=project_id, class_b_id=parent_id)
             # Combine same relations into one
-            relations = {} # type: Dict
+            relations:Dict = {}
             for cc in cc_q:
                 if cc.relation not in relations:
                     relations[ cc.relation ] = []
@@ -334,7 +334,7 @@ def get_restrictions(cc_link) -> Dict[str, Dict[str, Any]]:
     """ Returns a map with <restrition_type> as key and a list
     of data structures, desribing each restriction type.
     """
-    restrictions = {} # type: Dict
+    restrictions:Dict = {}
     # Add cardinality restrictions
     cardinality_restrictions_q = CardinalityRestriction.objects.filter(
         restricted_link=cc_link)
@@ -473,7 +473,7 @@ def remove_relation_from_ontology(request:HttpRequest, project_id=None) -> JsonR
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def remove_all_relations_from_ontology(request:HttpRequest, project_id=None) -> JsonResponse:
     force = bool(int(request.POST.get('force', 0)))
-    deleted_ids = [] # type: List
+    deleted_ids:List = []
     not_deleted_ids = []
 
     if force:
@@ -556,7 +556,7 @@ def remove_all_classes_from_ontology(request:HttpRequest, project_id=None) -> Js
     with this method
     """
     force = bool(int(request.POST.get('force', 0)))
-    deleted_ids = [] # type: List
+    deleted_ids:List = []
     not_deleted_ids = []
     exclude_list = root_classes if guard_root_classes else []
 

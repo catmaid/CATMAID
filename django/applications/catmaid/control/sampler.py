@@ -143,7 +143,7 @@ def list_samplers(request:HttpRequest, project_id) -> JsonResponse:
     if skeleton_ids:
         samplers = samplers.filter(skeleton_id__in=skeleton_ids)
 
-    domains = defaultdict(list) # type: DefaultDict[Any, List]
+    domains:DefaultDict[Any, List] = defaultdict(list)
     if with_domains:
         domain_query = SamplerDomain.objects.filter(sampler__in=samplers) \
                 .prefetch_related('samplerdomainend_set')
@@ -533,7 +533,7 @@ def delete_sampler(request:HttpRequest, project_id, sampler_id) -> JsonResponse:
 
             if nodes_to_remove:
                 query_parts = []
-                remove_params = [] # type: List
+                remove_params:List = []
                 if parent_update:
                     update_nodes_template = ",".join("(%s, %s)" for _ in parent_update)
                     update_nodes_flattened = list(chain.from_iterable(parent_update))
@@ -1176,7 +1176,7 @@ def add_all_intervals(request:HttpRequest, project_id, domain_id) -> JsonRespons
             if i[0] not in added_node_index]
     # Iterate over root intervals and create child nodes until another existing
     # node is found.
-    new_nodes = dict() # type: Dict
+    new_nodes:Dict = dict()
     for root_interval in existing_parent_intervals:
         current_interval = root_interval
         while current_interval:

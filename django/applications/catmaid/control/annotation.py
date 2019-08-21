@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from collections import defaultdict
-import re
 import dateutil.parser
+import re
 
-from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, DefaultDict, Dict, FrozenSet, List, Optional, Set, Tuple, Union
 
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
@@ -60,9 +60,9 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
 
     # One list of annotation sets for requested annotations and one for those
     # of which subannotations should be included
-    annotation_sets = set() # type: Set
-    not_annotation_sets = set() # type: Set
-    annotation_sets_to_expand = set() # type: Set
+    annotation_sets:Set[FrozenSet] = set()
+    not_annotation_sets:Set[FrozenSet] = set()
+    annotation_sets_to_expand:Set[FrozenSet] = set()
 
     # Get name, annotator and time constraints, if available
     name = params.get('name', "").strip()
@@ -85,7 +85,7 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
     # If annotation_names have been passed in, find matching IDs
     if annotation_reference == 'name':
         # Find annotation references
-        annotation_names = set() # type: Set
+        annotation_names:Set = set()
         for key in params:
             if key.startswith('annotated_with') or \
                     key.startswith('not_annotated_with') or \
@@ -300,7 +300,7 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
     cursor.execute(query.format(**query_fmt_params), params)
 
     entities = []
-    seen_ids = set() # type: Set
+    seen_ids:Set = set()
     for ent in cursor.fetchall():
         # Don't export objects with same ID multiple times
         if ent[0] in seen_ids:
@@ -332,10 +332,8 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
                     'class_instance_a', 'class_instance_b',
                     'class_instance_b__name', 'user__id')
 
-        annotation_dict = {} # type: Dict
+        annotation_dict:DefaultDict[Any, List] = defaultdict(list)
         for a in annotations:
-            if a[0] not in annotation_dict:
-                annotation_dict[a[0]] = []
             annotation_dict[a[0]].append(
             {'id': a[1], 'name': a[2], 'uid': a[3]})
 
@@ -364,10 +362,10 @@ def get_sub_annotation_ids(project_id:Union[int,str], annotation_sets, relations
     # A set wrapper to keep a set in a dictionary
     class set_wrapper:
         def __init__(self):
-            self.data = set() # type: Set
+            self.data:Set = set()
 
     # Create a dictionary of all annotations annotating a set of annotations
-    aaa = {} # type: Dict
+    aaa:Dict = {}
     for aa in aaa_tuples:
         sa_set = aaa.get(aa[0])
         if sa_set is None:
@@ -377,10 +375,10 @@ def get_sub_annotation_ids(project_id:Union[int,str], annotation_sets, relations
 
     # Collect all sub-annotations by following the annotation hierarchy for
     # every annotation in the annotation set passed.
-    sa_ids = {} # type: Dict
+    sa_ids:Dict = {}
     for annotation_set in annotation_sets:
         # Start with an empty result set for each requested annotation set
-        ls = set() # type: Set
+        ls:Set = set()
         for a in annotation_set:
             working_set = set([a])
             while working_set:
@@ -1376,15 +1374,13 @@ def list_annotations(request:HttpRequest, project_id=None) -> JsonResponse:
 
     # Create a set mapping annotation names to its users
     ids = {}
-    annotation_dict = {} # type: Dict
+    annotation_dict:Dict[Any, List[Dict]] = {}
     for annotation, aid, uid, username in annotation_tuples:
         ids[aid] = annotation
-        ls = annotation_dict.get(aid)
-        if ls is None:
-            ls = []
-            annotation_dict[aid] = ls
+        if aid not in annotation_dict: # With these two conditionals, we make sure an empty entry exists even if uid is None.
+            annotation_dict[aid] = []
         if uid is not None:
-            ls.append({'id': uid, 'name': username})
+            annotation_dict[aid].append({'id': uid, 'name': username})
     # Flatten dictionary to list
     annotations = tuple({'name': ids[aid], 'id': aid, 'users': users} for aid, users in annotation_dict.items())
     return JsonResponse({'annotations': annotations})
@@ -1537,11 +1533,11 @@ def list_annotations_datatable(request:HttpRequest, project_id=None) -> JsonResp
     #num_records = annotation_query.count() # len(annotation_query)
     num_records = len(annotation_query)
 
-    response = {
+    response:Dict[str, Any] = {
         'iTotalRecords': num_records,
         'iTotalDisplayRecords': num_records,
         'aaData': []
-    } # type: Dict[str, Any]
+    }
 
     for annotation in annotation_query[display_start:display_start + display_length]:
         # Format last used time
@@ -1601,7 +1597,7 @@ def annotations_for_skeletons(request:HttpRequest, project_id=None) -> JsonRespo
     ''' % (",".join(map(str, skids)), annotated_with_id))
 
     # Group by skeleton ID
-    m = defaultdict(list) # type: DefaultDict[Any, List]
+    m:DefaultDict[Any, List] = defaultdict(list)
     a = dict()
     for skid, aid, name, uid in cursor.fetchall():
         m[skid].append({'id': aid, 'uid': uid})
@@ -1660,7 +1656,7 @@ def annotations_for_entities(request:HttpRequest, project_id=None) -> JsonRespon
     ''' % (",".join(map(str, object_ids)), annotated_with_id))
 
     # Group by entity ID
-    m = defaultdict(list) # type: DefaultDict[Any, List]
+    m:DefaultDict[Any, List] = defaultdict(list)
     a = dict()
     for eid, aid, name, uid in cursor.fetchall():
         m[eid].append({'id': aid, 'uid': uid})

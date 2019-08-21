@@ -587,7 +587,7 @@
     var viewIndex = getViewIndex(stackViewers);
 
     if (!stackViewerCountMatchesLayout(stackViewers, newLayout._layout)) {
-      CATMAID.warn("Can't load layout, other stack viewer configuration expected");
+      CATMAID.warn("Can't load layout, Other stack viewer configuration expected");
       return;
     }
     
@@ -597,7 +597,7 @@
     // Now test if the layout really matches
     var matchResult = newLayout.matches(stackViewers, viewIndex);
     if (!matchResult.matches) {
-      CATMAID.warn("Can't load layout, other window configuration expected");
+      CATMAID.warn("Can't load layout, Other window configuration expected");
       return;
     }
 

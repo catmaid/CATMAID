@@ -322,7 +322,7 @@ def user_project_permissions(request:HttpRequest) -> JsonResponse:
     anonymous requests, because it reports as authenticated and a profile will
     be returned.
     """
-    permissions = {} # type: Dict
+    permissions:Dict = {}
     if request.user.is_authenticated:
         projectPerms = get_perms_for_model(Project)
         permNames = [perm.codename for perm in projectPerms]

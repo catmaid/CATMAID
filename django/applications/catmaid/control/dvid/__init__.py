@@ -55,7 +55,7 @@ class DVIDClient:
         info URL. Returned is a mapping from data instance type to instance names.
         """
         instance_key = 'DataInstances'
-        instances = defaultdict(list) # type: DefaultDict[str, List]
+        instances:DefaultDict[str, List] = defaultdict(list)
 
         for repo_id in self.info:
             repo = self.info[repo_id]

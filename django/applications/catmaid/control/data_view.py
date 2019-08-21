@@ -163,10 +163,10 @@ def get_data_view(request:HttpRequest, data_view_id) -> HttpResponse:
         projects = projects.prefetch_related('stacks')
 
     # Build a stack index
-    stack_index = defaultdict(list) # type: DefaultDict[Any, List]
-    stacks_of = defaultdict(list) # type: DefaultDict[Any, List]
-    stack_set_of = defaultdict(set) # type: DefaultDict[Any, Set]
-    projects_of_stack = defaultdict(set) # type: DefaultDict[Any, Set]
+    stack_index:DefaultDict[Any,List] = defaultdict(list)
+    stacks_of:DefaultDict[Any, List] = defaultdict(list)
+    stack_set_of:DefaultDict[Any, Set] = defaultdict(set)
+    projects_of_stack:DefaultDict[Any, Set] = defaultdict(set)
 
     if show_stacks or show_stackgroups:
         for p in projects:
@@ -182,20 +182,20 @@ def get_data_view(request:HttpRequest, data_view_id) -> HttpResponse:
 
     # Build a stack group index, if stack groups should be made available
     stackgroup_index = {}
-    stackgroups_of = defaultdict(list) # type: DefaultDict[Any, List]
+    stackgroups_of:DefaultDict[Any, List] = defaultdict(list)
     if show_stackgroups:
         stackgroup_links = StackStackGroup.objects.all().prefetch_related('stack', 'stack_group')
-        stackgroup_members = defaultdict(set) # type: DefaultDict[Any, Set]
+        stackgroup_members:DefaultDict[Any, Set] = defaultdict(set)
         for sgl in stackgroup_links:
             stackgroup_index[sgl.stack_group_id] = sgl.stack_group
             stackgroup_members[sgl.stack_group_id].add(sgl.stack.id)
         for sg, members in stackgroup_members.items():
             # Only accept stack groups of which all member stacks are linked to
             # the same project.
-            member_project_ids = set() # type: Set
-            project_member_ids = defaultdict(set) # type: DefaultDict[Any, Set]
+            member_project_ids:Set = set()
+            project_member_ids:DefaultDict[Any, Set] = defaultdict(set)
             for m in members:
-                project_ids = projects_of_stack.get(m, [])
+                project_ids = projects_of_stack.get(m, []) # type: ignore
                 member_project_ids.update(project_ids)
                 for pid in project_ids:
                     project_member_ids[pid].add(m)
@@ -223,7 +223,7 @@ def get_data_view(request:HttpRequest, data_view_id) -> HttpResponse:
     ct = ContentType.objects.get_for_model(Project)
     tag_links = TaggedItem.objects.filter(content_type=ct) \
         .values_list('object_id', 'tag__name')
-    tag_index = defaultdict(set) # type: DefaultDict[Any, Set]
+    tag_index:DefaultDict[Any, Set] = defaultdict(set)
     for pid, t in tag_links:
         if pid in project_ids:
             tag_index[t].add(pid)

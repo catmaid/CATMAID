@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import argparse
 from collections import defaultdict
 import inspect
 import logging
@@ -213,7 +214,7 @@ class FileImporter:
         logger.info("Building foreign key update index")
         # Build index for foreign key fields in models. For each type, map
         # each foreign key name to a model class.
-        fk_index = defaultdict(dict) # type: DefaultDict[Any, Dict]
+        fk_index:DefaultDict[Any, Dict] = defaultdict(dict)
         for c in target_classes:
             class_index = fk_index[c]
             foreign_key_fields = [
@@ -229,7 +230,7 @@ class FileImporter:
                 class_index[field.attname] = field.related_model
 
         logger.info("Updating foreign keys to imported objects with new IDs")
-        all_classes = dict() # type: Dict
+        all_classes:Dict = dict()
         all_classes.update(existing_classes)
         updated_fk_ids = 0
         unchanged_fk_ids = 0
@@ -359,11 +360,11 @@ class FileImporter:
         """)
 
         # Get all existing users so that we can map them based on their username.
-        mapped_user_ids = set() # type: Set
-        mapped_user_target_ids = set() # type: Set
+        mapped_user_ids:Set = set()
+        mapped_user_target_ids:Set = set()
 
         # Map data types to lists of object of the respective type
-        import_data = defaultdict(list) # type: DefaultDict[Any, List]
+        import_data:DefaultDict[Any, List] = defaultdict(list)
         n_objects = 0
 
         # Read the file and sort by type
@@ -379,7 +380,7 @@ class FileImporter:
         if n_objects == 0:
             raise CommandError("Nothing to import, no importable data found")
 
-        created_users = dict() # type: Dict
+        created_users:Dict = dict()
         if import_data.get(User):
             import_users = dict((u.object.id, u) for u in import_data.get(User))
             logger.info("Found {} referenceable users in import data".format(len(import_users)))
@@ -421,8 +422,8 @@ class FileImporter:
         n_moved = 0
         append_only = not self.preserve_ids
         need_separate_import = []
-        objects_to_save = defaultdict(list) # type: DefaultDict[Any, List]
-        import_objects_by_type_and_id = defaultdict(dict) # type: DefaultDict[Any, Dict]
+        objects_to_save:DefaultDict[Any, List] = defaultdict(list)
+        import_objects_by_type_and_id:DefaultDict[Any, Dict] = defaultdict(dict)
         for object_type, import_objects in import_data.items():
             # Allow user reference updates in CATMAID objects
             if object_type not in user_updatable_classes:
@@ -618,7 +619,7 @@ class FileImporter:
         else:
             logger.info("Finding imported skeleton IDs and connector IDs")
 
-            connector_ids = [] # type: List
+            connector_ids:List = []
             connectors = objects_to_save.get(Connector)
             if connectors:
                 connector_ids.extend(i.object.id for i in connectors)

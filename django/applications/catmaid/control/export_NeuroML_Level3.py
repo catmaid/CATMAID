@@ -168,7 +168,7 @@ def make_cables(cableIDs):
 
 def make_arbor(neuron_name, treenodes, scale, state):
     """ treenodes is a sequence of treenodes, where each treenode is a tuple of id, parent_id, location. """
-    successors = defaultdict(list) # type: DefaultDict[Any, List]
+    successors:DefaultDict[Any, List] = defaultdict(list)
     for treenode in treenodes:
         if treenode[1]:
             successors[treenode[1]].append(treenode)
@@ -254,7 +254,7 @@ def make_cells(cellIDs, neuron_names):
 
 def bodyMutual(neuron_names, all_treenodes, connections, scale):
     """ Create a cell for each arbor. """
-    synaptic_treenodes = {} # type: Dict
+    synaptic_treenodes:Dict = {}
     for m in connections.values():
         for synapses in m.values():
             for pre_treenodeID, post_treenodeID in synapses:
@@ -263,7 +263,7 @@ def bodyMutual(neuron_names, all_treenodes, connections, scale):
 
     state = State(synaptic_treenodes)
 
-    cellIDs = [] # type: List
+    cellIDs:List = []
     
     # First cells
     sources = [['<cells>\n'],
@@ -305,7 +305,7 @@ def bodySingle(neuron_names, all_treenodes, inputs, scale):
 
     state = State(synaptic_treenodes)
 
-    cellIDs = [] # type: List
+    cellIDs:List = []
 
     # First cells (only one)
     sources = [['<cells>\n'],

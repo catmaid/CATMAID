@@ -160,7 +160,7 @@ class TriangleMeshVolume(PostGISVolume):
             elif mesh_type == str:
                 self.mesh = json.loads(input_mesh)
             else:
-                raise ValueError("Unknown mesh type: " + str(mesh_type))
+                raise ValueError(f"Unknown mesh type: {mesh_type}")
         else:
             self.mesh = None
 
@@ -310,7 +310,7 @@ def _stl_ascii_to_indexed_triangles(stl_str) -> Tuple[List, List]:
         raise InvalidSTLError("Malformed solid header/ footer")
     start = 1 if stl_items[1] == "facet" else 2
     stop = -1 if stl_items[-2] == "endfacet" else -2
-    vertices = [] # type: List
+    vertices:List = []
     triangles = []
     for facet in _chunk(stl_items[start:stop], 21):
         if any([

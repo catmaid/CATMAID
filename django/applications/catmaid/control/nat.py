@@ -534,7 +534,7 @@ def compute_all_by_all_skeleton_similarity(project_id, user_id,
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     similarity = None
     errors = []
-    warnings = [] # type: List
+    warnings:List = []
 
     # If no skeletons are given, use all available with a certain minimum size.
     cursor = connection.cursor()
@@ -618,7 +618,7 @@ def get_cache_file_name(project_id, object_type, simplification=10) -> str:
     elif object_type == 'pointset':
         extra = ''
     else:
-        raise ValueError("Unsupported object type: {}".format(object_type))
+        raise ValueError(f"Unsupported object type: {object_type}")
 
     return "r-dps-cache-project-{project_id}-{object_type}{extra}.rda".format(**{
         'project_id': project_id,
@@ -778,7 +778,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
             'file': cache_path,
         })
     else:
-        raise ValueError('Unsupported object type: {}'. format(object_type))
+        raise ValueError(f'Unsupported object type: {object_type}')
 
 
 def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
@@ -891,7 +891,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         if query_type == 'skeleton':
             # Check cache, if enabled
             cache_hits = 0
-            query_cache_objects_dps = None # type: Any
+            query_cache_objects_dps:Any = None
             n_query_objects = len(query_object_ids)
             if use_cache and skeleton_cache:
                 # Find all skeleton IDs that aren't part of the cache
@@ -1047,7 +1047,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     })
             typed_query_object_ids = list(base.names(query_dps))
         else:
-            raise ValueError("Unknown query type: {}".format(query_type))
+            raise ValueError(f"Unknown query type: {query_type}")
 
         # Target objects, only needed if no all-by-all computation is done
         if all_by_all:
@@ -1058,7 +1058,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             if target_type == 'skeleton':
                 # Check cache, if enabled
                 cache_hits = 0
-                target_cache_objects_dps = None # type: Any
+                target_cache_objects_dps:Any = None
                 n_target_objects = len(target_object_ids)
                 if use_cache and skeleton_cache:
                     # Find all skeleton IDs that aren't part of the cache
@@ -1210,7 +1210,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                         })
                 typed_target_object_ids = list(base.names(target_dps))
             else:
-                raise ValueError("Unknown target type: {}".format(target_type))
+                raise ValueError(f"Unknown target type: {target_type}")
 
         if len(query_dps) == 0:
             raise ValueError("No valid query objects found")
@@ -1421,7 +1421,7 @@ def as_matrix(scores, a, b, transposed=False):
             'dimnames': robjects.r('list')(base.names(b), base.names(a)),
         })
 
-    raise ValueError("Can't convert to matrix, unknown type: {}".format(score_type))
+    raise ValueError(f"Can't convert to matrix, unknown type: {score_type}")
 
 
 def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False,
@@ -1610,7 +1610,7 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False,
                 ('radius', rinterface.FloatSexpVector, robjects.NA_Real),
                 ('confidence', rinterface.IntSexpVector, robjects.NA_Integer)
         ]
-        nodes = [(k,[]) for k,_,_ in node_cols] # type: List
+        nodes:List = [(k,[]) for k,_,_ in node_cols]
         for rn in raw_nodes:
                 for n, kv in enumerate(node_cols):
                         val = rn[n]
@@ -1629,7 +1629,7 @@ def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False,
                 ('y', rinterface.FloatSexpVector, robjects.NA_Real),
                 ('z', rinterface.FloatSexpVector, robjects.NA_Real)
         ]
-        connectors = [(k,[]) for k,_,_ in connector_cols] # type: List
+        connectors:List = [(k,[]) for k,_,_ in connector_cols]
         for rn in raw_connectors:
                 for n, kv in enumerate(connector_cols):
                         val = rn[n]

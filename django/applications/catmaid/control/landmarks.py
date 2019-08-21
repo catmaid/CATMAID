@@ -71,7 +71,7 @@ class LandmarkList(APIView):
             """.format(landmark_template),
                 landmark_ids + [project_id, project_id])
 
-            point_index = defaultdict(list) # type: DefaultDict[Any, List]
+            point_index:DefaultDict[Any, List] = defaultdict(list)
             for point in cursor.fetchall():
                 point_index[point[0]].append({
                     'id': point[1],
@@ -149,7 +149,7 @@ class LandmarkList(APIView):
         annotated_with_relation = Relation.objects.get(project_id=project_id,
                 relation_name='annotated_with')
 
-        point_ids = set() # type: Set
+        point_ids:Set = set()
         if not keep_points:
             point_landmark_links = PointClassInstance.objects.filter(project_id=project_id,
                     class_instance_id__in=landmark_ids, relation=annotated_with_relation)
@@ -285,7 +285,7 @@ class LandmarkDetail(APIView):
         can_edit_or_fail(request.user, landmark_id, 'class_instance')
         name = request.data.get('name')
         if request.data.get('group_ids') == 'none':
-            group_ids = [] # type: List
+            group_ids:List = []
         else:
             group_ids = get_request_list(request.data, 'group_ids', map_fn=int)
         append_memberships = get_request_bool(request.data, 'append_memberships', False)
@@ -580,7 +580,7 @@ class LandmarkGroupDetail(APIView):
             raise ValueError("Need landmark group ID")
         name = request.data.get('name')
         if request.data.get('members') == 'none':
-            members = [] # type: List
+            members:List = []
         else:
             members = get_request_list(request.data, 'members', map_fn=int)
 
@@ -758,7 +758,7 @@ class LandmarkGroupImport(APIView):
         imported_groups = []
 
         # Keep track of which landmarks have been seen and were accepted.
-        seen_landmarks = set() # type: Set
+        seen_landmarks:Set = set()
 
         for n, (group_name, linked_landmarks) in enumerate(data):
             # Test if group exists already and raise error if they do and are
@@ -781,7 +781,7 @@ class LandmarkGroupImport(APIView):
                 raise ValueError("Group \"{}\" does not exist. Please create " \
                         "it or enable automatic creation/".format(group_name))
 
-            imported_landmarks = [] # type: List
+            imported_landmarks:List = []
             imported_group = {
                     'id': existing_group_id,
                     'name': group_name,
@@ -857,7 +857,7 @@ def get_landmark_group_members(project_id, landmarkgroup_ids) -> DefaultDict[Any
         ORDER BY cici.class_instance_a
     """.format(landmarkgroups_template),
         landmarkgroup_ids + [project_id, project_id])
-    member_index = defaultdict(list) # type: DefaultDict[Any, List]
+    member_index:DefaultDict[Any, List] = defaultdict(list)
     for r in cursor.fetchall():
         member_index[r[1]].append(r[0])
     return member_index
@@ -878,7 +878,7 @@ def get_landmark_memberships(project_id, landmark_ids):
         'project_id': project_id,
         'landmark_ids': landmark_ids,
     })
-    membership_index = defaultdict(list) # type: DefaultDict[Any, List]
+    membership_index:DefaultDict[Any, List] = defaultdict(list)
     for r in cursor.fetchall():
         membership_index[r[0]].append(r[1])
     return membership_index
@@ -927,7 +927,7 @@ def get_landmark_group_locations(project_id, landmarkgroup_ids, with_names:bool=
             'landmarkgroup_ids': landmarkgroup_ids,
             'project_id': project_id
         })
-        location_index = defaultdict(list) # type: DefaultDict[Any, List]
+        location_index:DefaultDict[Any, List] = defaultdict(list)
         for r in cursor.fetchall():
             location_index[r[1]].append({
                 'id': r[0],
@@ -993,8 +993,8 @@ def make_landmark_relation_index(project_id, landmarkgroup_ids) -> Tuple[Default
         'landmarkgroup_ids': landmarkgroup_ids,
         'project_id': project_id,
     })
-    relation_index = defaultdict(list) # type: DefaultDict[Any, List]
-    relation_map = dict() # type: Dict
+    relation_index:DefaultDict[Any, List] = defaultdict(list)
+    relation_map:Dict = dict()
     for r in cursor.fetchall():
         if r[2] not in relation_map:
             relation_map[r[2]] = r[3]
@@ -1645,8 +1645,8 @@ class LandmarkGroupMaterializer(APIView):
         if not created:
             raise ValueError('A landmark group with name "' + group_b_name + '" exists already')
 
-        landmark_map = dict() # type: Dict
-        link_map = dict() # type: Dict
+        landmark_map:Dict = dict()
+        link_map:Dict = dict()
 
         n_created_landmarks = 0
         for landmark_name, x1, y1, z1, x2, y2, z2 in landmarks:

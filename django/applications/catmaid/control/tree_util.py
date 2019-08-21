@@ -25,7 +25,7 @@ def edge_count_to_root(tree, root_node=None) -> Dict:
     distances = {}
     count = 1
     current_level = [root_node if root_node else find_root(tree)]
-    next_level = [] # type: List
+    next_level:List = []
     while current_level:
         # Consume all elements in current_level
         while current_level:
@@ -91,7 +91,7 @@ def simplify(tree, keepers) -> Graph:
     reroot(tree, root)
     # For every keeper node, traverse towards the parent until
     # finding one that is in the minified graph, or is a branch node
-    children = defaultdict(int) # type: DefaultDict[Any, int]
+    children:DefaultDict[Any, int] = defaultdict(int)
     seen_branch_nodes = set(keepers) # a copy
     paths = []
     # For all keeper nodes except the root
@@ -131,7 +131,7 @@ def partition(tree, root_node=None):
     one that finishes at the root.
     Each sequence runs from an end node to either the root or a branch node. """
     distances = edge_count_to_root(tree, root_node=root_node) # distance in number of edges from root
-    seen = set() # type: Set
+    seen:Set = set()
     # Iterate end nodes sorted from highest to lowest distance to root
     endNodeIDs = (nID for nID in tree.nodes() if 0 == len(tree.successors(nID)))
     for nodeID in sorted(endNodeIDs, key=distances.get, reverse=True):
@@ -201,7 +201,7 @@ def lazy_load_trees(skeleton_ids, node_properties):
     in the django model of the Treenode table that is not the treenode id, parent_id
     or skeleton_id. """
 
-    values_list = ('id', 'parent_id', 'skeleton_id') # type: Tuple[str, ...]
+    values_list:Tuple[str, ...] = ('id', 'parent_id', 'skeleton_id')
     props = tuple(set(node_properties) - set(values_list))
     values_list += props
 
@@ -209,7 +209,7 @@ def lazy_load_trees(skeleton_ids, node_properties):
             .order_by('skeleton') \
             .values_list(*values_list)
     skid = None
-    tree = None # type: Optional[DiGraph]
+    tree:Optional[DiGraph] = None
     for t in ts:
         if t[2] != skid:
             if tree:

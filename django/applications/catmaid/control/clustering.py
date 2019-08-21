@@ -102,7 +102,7 @@ class ClusteringWizard(SessionWizardView):
             add_nonleafs = True
             # Featurs are abstract concepts (classes) and graphs will be
             # checked which classes they have instantiated.
-            raw_features = [] # type: List
+            raw_features:List = []
             for o in ontologies:
                 raw_features = raw_features + get_features( o, self.workspace_pid,
                     graphs, add_nonleafs, only_used_features )
@@ -172,7 +172,7 @@ class ClusteringWizard(SessionWizardView):
 
         # Create binary matrix
         logger.debug("Clustering: Creating binary matrix")
-        bin_matrix = create_binary_matrix(graphs, features) # type: np.ndarray
+        bin_matrix:np.ndarray = create_binary_matrix(graphs, features)
                                                             # maintenance concern: this wrapper for graphs_instantiate_features
                                                             # is required for the later bin_matrix.tolist() to be valid
         # Calculate the distance matrix
@@ -215,6 +215,6 @@ def setup_clustering(request, workspace_pid=None):
 
 def create_binary_matrix(graphs, features) -> np.ndarray:
     """ Creates a binary matrix for the graphs passed."""
-    matrix = np.zeros((len(graphs),len(features)), dtype=np.int) # type: np.ndarray
+    matrix:np.ndarray = np.zeros((len(graphs),len(features)), dtype=np.int)
     return graphs_instantiate_features(graphs, features, matrix)
 

@@ -68,17 +68,17 @@ class TreenodeExporter:
         self.entity_name = "treenode"
 
         # Output path for this job will be initialized, when needed
-        self.output_path = None # type: Optional[str]
+        self.output_path:Optional[str] = None
 
         # Cache for neuron and relation folder names
-        self.skid_to_neuron_folder = {} # type: Dict
-        self.relid_to_rel_folder = {} # type: Dict
+        self.skid_to_neuron_folder:Dict = {}
+        self.relid_to_rel_folder:Dict = {}
 
         # Get relation map
         self.relation_map = get_relation_to_id_map(job.project_id)
 
         # Store meta data for each node
-        self.metadata = {} # type: Dict
+        self.metadata:Dict = {}
 
     def create_message(self, title, message, url) -> None:
         msg = Message()
@@ -199,7 +199,7 @@ class TreenodeExporter:
 
         # Create log info for each treenode. Each line will contain treenode-id,
         # parent-id, nr. presynaptic sites, nr. postsynaptic sites, x, y, z
-        skid_to_metadata = {} # type: Dict
+        skid_to_metadata:Dict = {}
         for n in nodes:
             ls = skid_to_metadata.get(n.skeleton.id)
             if not ls:

@@ -6,6 +6,7 @@ from itertools import combinations, chain
 import json
 import math
 import networkx as nx
+from numbers import Number
 
 from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple, Union
 
@@ -31,7 +32,7 @@ def _next_circle(skeleton_set:Set, relations, cursor) -> DefaultDict:
       AND (tc1.relation_id = %s OR tc1.relation_id = %s)
       AND (tc2.relation_id = %s OR tc2.relation_id = %s)
     ''' % (','.join(map(str, skeleton_set)), pre, post, pre, post))
-    connections = defaultdict(partial(defaultdict, partial(defaultdict, int))) # type: DefaultDict
+    connections:DefaultDict = defaultdict(partial(defaultdict, partial(defaultdict, int)))
     for row in cursor.fetchall():
         connections[row[0]][row[1]][row[2]] += 1
     return connections
@@ -41,8 +42,8 @@ def _relations(cursor, project_id:Union[int,str]) -> Dict:
     return dict(cursor.fetchall())
 
 def _clean_mins(request:HttpRequest, cursor, project_id:Union[int,str]) -> Tuple[Dict, Any]:
-    min_pre = int(request.POST.get('min_pre',  -1)) # type: Union[int, float]
-    min_post = int(request.POST.get('min_post', -1)) # type: Union[int, float]
+    min_pre:Number = int(request.POST.get('min_pre',  -1))
+    min_post:Number = int(request.POST.get('min_post', -1))
 
     if -1 == min_pre and -1 == min_post:
         raise Exception("Can't grow: not retrieving any pre or post.")
@@ -102,7 +103,7 @@ def find_directed_paths(request:HttpRequest, project_id=None) -> JsonResponse:
 
     path_length = int(request.POST.get('path_length', 2))
     cursor = connection.cursor()
-    min = int(request.POST.get('min_synapses', -1)) # type: Union[int,float]
+    min:Union[int,float] = int(request.POST.get('min_synapses', -1))
     if -1 == min:
         min = float('inf')
 
@@ -180,7 +181,7 @@ def find_directed_path_skeletons(request:HttpRequest, project_id=None) -> JsonRe
         raise Exception('Need at least 1 skeleton IDs for both sources and targets to find directed paths!')
 
     max_n_hops = int(request.POST.get('n_hops', 2))
-    min_synapses = int(request.POST.get('min_synapses', -1)) # type: Union[int,float]
+    min_synapses:Union[int,float] = int(request.POST.get('min_synapses', -1))
     if -1 == min_synapses:
         min_synapses = float('inf')
 

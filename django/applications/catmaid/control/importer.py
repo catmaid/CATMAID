@@ -155,7 +155,7 @@ class PreStack(object):
         if not Double3D.tuple_pattern.match(self.project_translation):
             raise ValueError("Couldn't read translation value")
         # Collect stack group information
-        self.stackgroups = [] # type: List
+        self.stackgroups:List = []
         if 'stackgroups' in info_object:
             for stackgroup in info_object['stackgroups']:
                 self.stackgroups.append(PreStackGroup(stackgroup))
@@ -196,7 +196,7 @@ class PreProject:
         # Read out data
         self.title = p['title']
 
-        self.stacks = [] # type: List
+        self.stacks:List = []
         self.has_been_imported = False
         for s in p.get('stacks', []):
             self.stacks.append(PreStack(s, project_url, data_folder))
@@ -211,7 +211,7 @@ class PreProject:
         self.classification = p.get('classification', [])
 
         # Collect stack group information, if available
-        self.stackgroups = [] # type: List
+        self.stackgroups:List = []
         for sg in p.get('stackgroups', []):
             self.stackgroups.append(PreStackGroup(sg))
 
@@ -257,7 +257,7 @@ def find_project_folders(image_base:str, path:str, filter_term) -> Tuple[List, D
     info/project YAML file.
     """
     index = []
-    projects = {} # type: Dict
+    projects:Dict = {}
     not_readable = []
     for current_file in glob.glob( os.path.join(path, filter_term) ):
         if os.path.isdir(current_file):
@@ -295,7 +295,7 @@ def find_project_folders(image_base:str, path:str, filter_term) -> Tuple[List, D
 def get_projects_from_raw_data(data, filter_term, base_url=None) -> Tuple[List, Dict, List]: # FIXME: filter_term is unused
     index = []
     projects = {}
-    not_readable = [] # type: List
+    not_readable:List = []
 
     for p in data:
         project = PreProject(p, base_url, None)
@@ -320,7 +320,7 @@ def get_projects_from_url(url, filter_term, headers=None, auth=None,
 
     index = []
     projects = {}
-    not_readable = [] # type: List
+    not_readable:List = []
 
     # Ask remote server for data
     r = requests.get(url, headers=headers, auth=auth)
@@ -359,10 +359,10 @@ class ProjectSelector(object):
 
     def __init__(self, projects, project_index, known_project_filter,
             known_project_strategy, cursor=None):
-        self.ignored_projects = [] # type: List
-        self.merged_projects = [] # type: List
-        self.replacing_projects = [] # type: List
-        self.new_projects = [] # type: List
+        self.ignored_projects:List = []
+        self.merged_projects:List = []
+        self.replacing_projects:List = []
+        self.new_projects:List = []
 
         self.known_project_filter = known_project_filter
         self.known_project_strategy = known_project_strategy
@@ -414,7 +414,7 @@ class ProjectSelector(object):
                   GROUP BY project_id
                   ORDER BY project_id
                 """)
-                stack_map = defaultdict(list) # type: DefaultDict[Any, List]
+                stack_map:DefaultDict[Any, List] = defaultdict(list)
                 for row in cursor.fetchall():
                   stack_map[tuple(sorted(row[1]))].append(row[0])
 
@@ -426,7 +426,7 @@ class ProjectSelector(object):
                     # title matches
                     all_stacks_known = all(s.already_known for s in p.stacks)
                     if all_stacks_known:
-                        known_stack_image_bases = [] # type: List
+                        known_stack_image_bases:List = []
                         for s in p.stacks:
                             known_stack_image_bases.extend(sm.image_base for sm in s.mirrors)
                         known_stack_image_bases_tuple = tuple(sorted(known_stack_image_bases))
@@ -552,22 +552,18 @@ class ImportingWizard(SessionWizardView):
             # Get all classification graphs linked to those projects and add
             # them to a form for being selected.
             workspace = settings.ONTOLOGY_DUMMY_PROJECT_ID
-            croots = {} # type: Dict
+            croots:DefaultDict[Any, List] = defaultdict(list)
             for p in projects:
                 links_qs = get_classification_links_qs(workspace, p.id)
                 linked_croots = set([cici.class_instance_b for cici in links_qs])
                 # Build up dictionary with all classifications mapping to their
                 # linked projects.
                 for cr in linked_croots:
-                    try:
-                        croots[cr].append(p)
-                    except KeyError:
-                        croots[cr] = []
-                        croots[cr].append(p)
+                    croots[cr].append(p)
             # Remember graphs and projects
             form.cls_tags = tags
             form.cls_graph_map = croots
-            self.id_to_cls_graph = {} # type: Dict
+            self.id_to_cls_graph:Dict = {}
             # Create data structure for form field and id mapping
             cgraphs = []
             for cr in croots:
@@ -688,7 +684,7 @@ class ImportingWizard(SessionWizardView):
         # Classifications
         link_cls_graphs = self.get_cleaned_data_for_step(
             'projectselection')['link_classifications']
-        cls_graph_ids = [] # type: List
+        cls_graph_ids:List = []
         if link_cls_graphs:
             cls_graph_ids = self.get_cleaned_data_for_step(
                 'classification')['classification_graph_suggestions']
@@ -751,7 +747,7 @@ def get_element_permission_tuples(element, cls) -> List[Tuple[str,str]]:
     return tuples
 
 def get_permissions_from_selection(cls, selection) -> List[Tuple]:
-    permission_list = [] # type: List[Tuple]
+    permission_list:List[Tuple] = []
     for perm in selection:
         elem_id = perm[:perm.index('_')]
         elem = cls.objects.filter(id=elem_id)[0]
@@ -902,7 +898,7 @@ def create_classification_linking_form():
     workspace_pid = settings.ONTOLOGY_DUMMY_PROJECT_ID
     root_links = get_classification_links_qs( workspace_pid, [], True )
     # Make sure we use no classification graph more than once
-    known_roots = [] # type: List
+    known_roots:List = []
     root_ids = []
     for link in root_links:
         if link.class_instance_b.id not in known_roots:
@@ -1091,9 +1087,9 @@ def import_projects(user, pre_projects, tags, permissions,
     cursor = connection.cursor()
     for pp in pre_projects:
         project = None
-        currently_linked_stacks = [] # type: List
-        currently_linked_stack_ids = [] # type: List
-        links = {} # type: Dict
+        currently_linked_stacks:List = []
+        currently_linked_stack_ids:List = []
+        links:Dict = {}
         all_stacks_known = all(s.already_known for s in pp.stacks)
         try:
             if pp.already_known:
@@ -1156,11 +1152,11 @@ def import_projects(user, pre_projects, tags, permissions,
             # Create stacks and add them to project
             stacks = []
             updated_stacks = []
-            stack_groups = {} # type: Dict
-            translations = {}
-            orientations = {}
-            stack_classification = {}
-            stackgroup_classification = {} # type: Dict
+            stack_groups:Dict = {}
+            translations:Dict = {}
+            orientations:Dict = {}
+            stack_classification:Dict = {}
+            stackgroup_classification:Dict = {}
             for s in pp.stacks:
 
                 # Test if stack is alrady known. This can change with every

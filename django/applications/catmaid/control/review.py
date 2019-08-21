@@ -32,7 +32,7 @@ def get_treenodes_to_reviews(treenode_ids=None, skeleton_ids=None,
     # Only request treenode ID and reviewer ID
     reviews = reviews.values_list('treenode_id', 'reviewer_id')
     # Build dictionary
-    treenode_to_reviews = defaultdict(list) # type: DefaultDict[Any, List]
+    treenode_to_reviews:DefaultDict[Any, List] = defaultdict(list)
     for tid, rid in reviews:
         treenode_to_reviews[tid].append(umap(rid))
 
@@ -55,7 +55,7 @@ def get_treenodes_to_reviews_with_time(treenode_ids=None, skeleton_ids=None,
     # Only request treenode ID and reviewer ID
     reviews = reviews.values_list('treenode_id', 'reviewer_id', 'review_time')
     # Build dictionary
-    treenode_to_reviews = defaultdict(list) # type: DefaultDict[Any, List]
+    treenode_to_reviews:DefaultDict[Any, List] = defaultdict(list)
     for tid, rid, rtime in reviews:
         treenode_to_reviews[tid].append( (umap(rid),rtime) )
 
@@ -74,7 +74,7 @@ def get_review_count(skeleton_ids) -> DefaultDict:
     GROUP BY reviewer_id, skeleton_id
     ''' % ",".join(map(str, skeleton_ids)))
     # Build dictionary
-    reviews = defaultdict(lambda: defaultdict(int)) # type: DefaultDict
+    reviews:DefaultDict = defaultdict(lambda: defaultdict(int))
     for row in cursor.fetchall():
         reviews[row[0]][row[1]] = row[2]
 

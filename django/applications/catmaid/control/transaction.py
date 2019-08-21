@@ -210,7 +210,7 @@ class LocationRef(object):
     def __init__(self, d, key): self.d, self.key = d, key
     def get(self): return self.d[self.key].get()
 
-location_queries = {} # type: Dict
+location_queries:Dict = {}
 location_queries.update({
     # For annotations, select the root of the annotated neuron
     'annotations.add': LocationQuery("""

@@ -20214,7 +20214,7 @@ LTCp.updateElementsInLayers = function( eles, update ){
   var self = this;
   var isEles = is.element( eles[0] );
 
-  // collect udpated elements (cascaded from the layers) and update each
+  // collect updated elements (cascaded from the layers) and update each
   // layer itself along the way
   for( var i = 0; i < eles.length; i++ ){
     var req = isEles ? null : eles[i];

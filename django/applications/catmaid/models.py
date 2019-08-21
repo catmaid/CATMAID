@@ -257,7 +257,7 @@ class ClassInstance(models.Model):
         relations = dict((r.relation_name, r.id) for r in Relation.objects.filter(project=project_id))
         classes = dict((c.class_name, c.id) for c in Class.objects.filter(project=project_id))
 
-        connected_skeletons_dict = {} # type: Dict
+        connected_skeletons_dict:Dict = {}
         # Find connectivity for each skeleton and add neuron name
         for skeleton in skeletons:
             qs_tc = TreenodeConnector.objects.filter(
@@ -1457,7 +1457,7 @@ def distinct_user_color() -> Tuple[float, ...]:
     nr_users = User.objects.exclude(id__exact=-1).count()
 
     if nr_users < len(initial_colors):
-        distinct_color = initial_colors[nr_users] # type: Tuple[float, ...] 
+        distinct_color:Tuple[float, ...] = initial_colors[nr_users]
     else:
         distinct_color = colorsys.hsv_to_rgb(random(), random(), 1.0) + (1,)
 
@@ -1676,7 +1676,7 @@ class ChangeRequest(UserFocusedModel):
             # Run the request's validation code snippet to determine whether it is still valid.
             # The action is required to set a value for the is_valid variable.
             try:
-                _locals = {} # type: Dict
+                _locals:Dict = {}
                 exec(self.validate_action, globals(), _locals)
                 if 'is_valid' not in _locals:
                     raise Exception('validation action did not define is_valid')

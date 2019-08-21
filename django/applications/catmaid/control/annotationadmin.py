@@ -186,7 +186,7 @@ def copy_annotations(source_pid, target_pid, import_treenodes=True,
     # again.
     cursor = connection.cursor()
 
-    imported_treenodes = [] # type: List
+    imported_treenodes:List = []
 
     if import_treenodes:
         # Copy treenodes from source to target

@@ -25,11 +25,11 @@ def search(request:HttpRequest, project_id=None) -> JsonResponse:
         JOIN class c
             ON c.id = ci.class_id
         WHERE ci.project_id = %(project_id)s
-            AND UPPER(ci.name) ~~ UPPER(%(term)s)
+            AND ci.name ~* %(term)s
         ORDER BY c.class_name, ci.name
     """, {
         'project_id': project_id,
-        'term': f'%{search_string}%',
+        'term': search_string,
     })
     rows = [{
         'id': row[0],

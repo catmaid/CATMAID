@@ -115,6 +115,8 @@ class Command(BaseCommand):
 
             while True:
                 self.wait_and_queue()
+                # Wait for 0.01s to not have the busy waiting cause 100% CPU.
+                time.sleep(0.01)
         except InterruptedError:
             # got shutdown signal
             pass

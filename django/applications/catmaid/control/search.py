@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-
+from django.db import connection
 from django.http import HttpRequest, JsonResponse
 
 from catmaid.models import (UserRole, ClassInstance, ConnectorClassInstance,
@@ -11,19 +10,32 @@ from catmaid.control.common import get_relation_to_id_map
 @requires_user_role(UserRole.Browse)
 def search(request:HttpRequest, project_id=None) -> JsonResponse:
     search_string = request.GET.get('substring', "")
+    if not search_string:
+        raise ValueError("Need search term")
 
     ids = set()
 
+    cursor = connection.cursor()
+
     # 1. Query ClassInstance objects, where the name contains the search string.
     # This retrieves neurons, skeletons and groups by name.
-    row_query = ClassInstance.objects.values('id', 'name', 'class_column__class_name').filter(
-        name__icontains=search_string,
-        project=project_id).order_by('class_column__class_name', 'name')
+    cursor.execute("""
+        SELECT ci.id, ci.name, c.class_name
+        FROM class_instance ci
+        JOIN class c
+            ON c.id = ci.class_id
+        WHERE ci.project_id = %(project_id)s
+            AND UPPER(ci.name) ~~ UPPER(%(term)s)
+        ORDER BY c.class_name, ci.name
+    """, {
+        'project_id': project_id,
+        'term': f'%{search_string}%',
+    })
     rows = [{
-        'id': row['id'],
-        'name': row['name'],
-        'class_name': row['class_column__class_name']
-    } for row in row_query]
+        'id': row[0],
+        'name': row[1],
+        'class_name': row[2]
+    } for row in cursor.fetchall()]
     for row in rows:
         ids.add(row['id'])
 
@@ -74,61 +86,77 @@ def search(request:HttpRequest, project_id=None) -> JsonResponse:
             matching_labels.add(row['name'])
             label_rows[row['id']] = row
 
-    # Find treenodes with label
-    node_query = TreenodeClassInstance.objects.filter(
-        project=project_id,
-        treenode__project=project_id,
-        relation=relation_map['labeled_as'],
-        class_instance__name__in=matching_labels)\
-    .order_by('-treenode__id')\
-    .values('treenode',
-        'treenode__location_x',
-        'treenode__location_y',
-        'treenode__location_z',
-        'treenode__skeleton',
-        'class_instance__name',
-        'class_instance__id')
+    # We need a set to pass it to psycopg2.
+    matching_labels = list(matching_labels)
 
-    for node in node_query:
-        row_with_node = label_rows[node['class_instance__id']]
+    # Find treenodes with label. Use the UPPER() function to be able to use the
+    # respective expression index, cutting down query times by a lot.
+    cursor.execute("""
+        SELECT tci.treenode_id, t.location_x, t.location_y, t.location_z,
+            t.skeleton_id, tci.class_instance_id
+        FROM treenode_class_instance tci
+        JOIN class_instance ci
+            ON tci.class_instance_id = ci.id
+        JOIN treenode t
+            ON tci.treenode_id = t.id
+        JOIN UNNEST(%(matching_labels)s::text[]) query(name)
+            ON query.name = ci.name AND UPPER(ci.name) = UPPER(query.name)
+        WHERE tci.project_id = %(project_id)s
+            AND tci.relation_id = %(labeled_as_id)s
+            AND t.project_id = %(project_id)s
+        ORDER BY tci.treenode_id DESC;
+    """, {
+        'project_id': project_id,
+        'labeled_as_id': relation_map['labeled_as'],
+        'matching_labels': matching_labels,
+    })
+
+    for node in cursor.fetchall():
+        row_with_node = label_rows[node[5]]
         nodes = row_with_node.get('nodes', None)
         if not nodes:
             nodes = []
             row_with_node['nodes'] = nodes
         nodes.append({
-            'id': node['treenode'],
-            'x': node['treenode__location_x'],
-            'y': node['treenode__location_y'],
-            'z': node['treenode__location_z'],
-            'skid': node['treenode__skeleton']
+            'id': node[0],
+            'x': node[1],
+            'y': node[2],
+            'z': node[3],
+            'skid': node[4]
         })
 
 
-    # Find connectors with label
-    connector_query = ConnectorClassInstance.objects.filter(
-        project=project_id,
-        connector__project=project_id,
-        relation=relation_map['labeled_as'],
-        class_instance__name__in=matching_labels)\
-    .order_by('-connector__id')\
-    .values('connector',
-        'connector__location_x',
-        'connector__location_y',
-        'connector__location_z',
-        'class_instance__name',
-        'class_instance__id')
+    # Find connectors with label. Use the UPPER() function to be able to use the
+    # respective expression index, cutting down query times by a lot.
+    cursor.execute("""
+        SELECT c.id, c.location_x, c.location_y, c.location_z, ci.id
+        FROM connector_class_instance cci
+        JOIN class_instance ci
+            ON ci.id = cci.class_instance_id
+        JOIN connector c
+            ON c.id = cci.connector_id
+        JOIN UNNEST(%(matching_labels)s::text[]) query(name)
+            ON query.name = ci.name AND UPPER(ci.name) = UPPER(query.name)
+        WHERE cci.project_id = %(project_id)s
+            AND cci.relation_id = %(labeled_as_id)s
+            AND c.project_id = %(project_id)s
+    """, {
+        'project_id': project_id,
+        'labeled_as_id': relation_map['labeled_as'],
+        'matching_labels': matching_labels,
+    })
 
-    for connector in connector_query:
-        row_with_node = label_rows[connector['class_instance__id']]
+    for connector in cursor.fetchall():
+        row_with_node = label_rows[connector[4]]
         connectors = row_with_node.get('connectors', None)
         if not connectors:
             connectors = []
             row_with_node['connectors'] = connectors
         connectors.append({
-            'id': connector['connector'],
-            'x': connector['connector__location_x'],
-            'y': connector['connector__location_y'],
-            'z': connector['connector__location_z']
+            'id': connector[0],
+            'x': connector[1],
+            'y': connector[2],
+            'z': connector[3]
         })
 
 

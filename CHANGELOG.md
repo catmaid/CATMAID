@@ -115,6 +115,8 @@ Miscellaneous:
 
 - Retrieving review information is now faster for bigger skeletons.
 
+- Name search: the speed of search queries is now improved.
+
 ### Bug fixes
 
 

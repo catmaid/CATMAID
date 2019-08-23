@@ -19,6 +19,8 @@ from django.apps import apps
 from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection, transaction
+from .common import set_log_level
+
 
 logger = logging.getLogger(__name__)
 
@@ -759,6 +761,7 @@ class Command(BaseCommand):
                 return p
 
     def handle(self, *args, **options):
+        set_log_level(logger, options.get('verbosity', 1))
         if options['map_users'] and options['user']:
             raise CommandError("Can't override users and map users at the " +
                     "same time, use --user or --map-users.")

@@ -16,6 +16,7 @@ from catmaid.control.node import (get_configured_node_providers,
         GridCachedNodeProvider, Postgis3dNodeProvider, update_grid_cell)
 from catmaid.models import NodeGridCache, DirtyNodeGridCacheCell
 from catmaid.util import str2bool
+from .common import set_log_level
 
 
 logger = logging.getLogger(__name__)
@@ -92,6 +93,7 @@ class Command(BaseCommand):
                 const=True, default=True, help="Update spatial grid caches.")
 
     def handle(self, **options):
+        set_log_level(logger, options.get('verbosity', 1))
         self._shutdown = False
         self._in_task = False
         self.delay = options['delay']

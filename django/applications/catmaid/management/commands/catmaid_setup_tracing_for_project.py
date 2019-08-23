@@ -7,6 +7,7 @@ from catmaid.control.tracing import setup_tracing
 
 import logging
 logger = logging.getLogger(__name__)
+from .common import set_log_level
 
 
 class Command(BaseCommand):
@@ -19,6 +20,7 @@ class Command(BaseCommand):
                 help='The ID of the user who will own the relations and classes')
 
     def handle(self, *args, **options):
+        set_log_level(logger, options.get('verbosity', 1))
         user = None
         user_id = pk=options['user_id']
         if user_id is not None:

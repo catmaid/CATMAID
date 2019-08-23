@@ -10,6 +10,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import connection
 from catmaid.models import Project
 from catmaid.util import str2bool
+from .common import set_log_level
 
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,7 @@ class Command(BaseCommand):
                         const=True, default=True, help="Check volumes data.")
 
     def handle(self, *args, **options):
+        set_log_level(logger, options.get('verbosity', 1))
         project_ids = options['project_id']
         if not len(project_ids):
             project_ids = Project.objects.all().values_list('id', flat=True)

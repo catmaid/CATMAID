@@ -16,6 +16,7 @@ from django.db import connection
 from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.hashers import make_password
+from .common import set_log_level
 
 
 import logging
@@ -639,6 +640,7 @@ class Command(BaseCommand):
                 return p
 
     def handle(self, *args, **options):
+        set_log_level(logger, options.get('verbosity', 1))
         # Give some information about the export
         will_export = []
         wont_export = []

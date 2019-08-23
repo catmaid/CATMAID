@@ -5,6 +5,8 @@ from django.core.management.base import BaseCommand, CommandError
 from catmaid.models import Project, User
 from catmaid.control.project import validate_project_setup
 from catmaid.apps import get_system_user
+from .common import set_log_level
+
 
 import logging
 logger = logging.getLogger(__name__)
@@ -21,6 +23,7 @@ class Command(BaseCommand):
                 help='Optional ID of the user who will own the relations and classes')
 
     def handle(self, *args, **options):
+        set_log_level(logger, options.get('verbosity', 1))
         if options['user_id'] is None:
             user = get_system_user(User)
         else:

@@ -41,7 +41,7 @@ class GridWorker():
             logger.info("Could not find any enabled grid cache provider")
 
         # Find a grid cache for each provider and make sure each cache is only
-        # referenced onece
+        # referenced once.
         self.grid_caches:List = []
         for provider in enabled_grid_cache_providers:
             # If a particular cache is referenced explicitly, use it if it is
@@ -62,7 +62,7 @@ class GridWorker():
         cache segment is valid. Therefore we queue a new dirty cell entry and
         send another notify(). Queue entries are then processed by a set of
         different workers. To do this, get all the enabled grid caches for each
-        project and then, for each notification compute the insected grid
+        project and then, for each notification compute the intersected grid
         indices with each grid, update existing grids and create missing ones.
         """
         # Batch of grids to update during one run
@@ -134,7 +134,7 @@ class GridWorker():
             logger.warn('Could not parse project ID of message: ' + str(data))
             return
 
-        # No cache updae if there is no cache in the source project of the data.
+        # No cache update if there is no cache in the source project of the data.
         if project_id not in self.cache_project_ids:
             return
 

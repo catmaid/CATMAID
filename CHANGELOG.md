@@ -58,6 +58,9 @@
   If no skeleton is selected, the globally closest node is select. Regular G
   works as before in the current section.
 
+- Spatial update worker: cache cells are not queued for updates anymore if the
+  source project of a spatial event doesn't have any caches.
+
 ## 2019.06.20
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Pat Gunn, William Patton, Tom Kazimiers

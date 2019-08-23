@@ -55,6 +55,7 @@ class GridWorker():
             else:
                 enabled_grid_caches = list(NodeGridCache.objects.filter(enabled=True))
                 self.grid_caches.extend(enabled_grid_caches)
+        self.cache_project_ids = set([c.project_id for c in self.grid_caches])
 
     def update(self, updates, cursor):
         """ We want regular node queries to be able to tell whether a particular
@@ -128,6 +129,15 @@ class GridWorker():
         """Iterate over all known enabled grid caches and find all intersected
         cells.
         """
+        project_id = data.get('project_id')
+        if project_id is None:
+            logger.warn('Could not parse project ID of message: ' + str(data))
+            return
+
+        # No cache updae if there is no cache in the source project of the data.
+        if project_id not in self.cache_project_ids:
+            return
+
         data_type = data['type']
         # Find all cells to update in each enabled grid
         for grid_cache in self.grid_caches:

@@ -24,7 +24,7 @@ CUBE_PATH = os.path.join(FIXTURE_DIR, 'cube.stl')
 class VolumeTests(CatmaidApiTestCase):
 
     def setUp(self):
-        super(VolumeTests, self).setUp()
+        super().setUp()
         self.test_vol_1_box = BoxVolume(self.test_project_id, self.test_user_id, {
                 'title': 'Test volume 1',
                 'type': 'box',

@@ -458,7 +458,7 @@ class UserFocusedManager(models.Manager):
     # TODO: should there be a parameter or separate function that allows the caller to specify read-only vs. read-write objects?
 
     def for_user(self, user):
-        full_set = super(UserFocusedManager, self).get_queryset()
+        full_set = super().get_queryset()
 
         if user.is_superuser:
             return full_set
@@ -1206,7 +1206,7 @@ class DataView(models.Model):
         """ Does a post-save action: Make sure (only) one data view
         is the default.
         """
-        super(DataView, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
         # We need to declare a default view if there is none. Also if
         # there is more than one default, reduce this to one. If the
         # current data view is marked default, this will be the one.
@@ -1491,7 +1491,7 @@ class UserProfile(models.Model):
             except UserProfile.DoesNotExist:
                 pass
 
-        super(UserProfile, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def as_dict(self) -> Dict[str, Any]:
         """ Return a dictionary containing a user's profile information.
@@ -1570,7 +1570,7 @@ class ReducedInfoUser(models.Model):
     password = models.CharField(_('password'), max_length=150)
 
     def __init__(self, *args, **kwargs):
-        super(ReducedInfoUser, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # Override meta class model information for export. This is needed to
         # write out the correct model information (auth.user) for this class.
@@ -1599,7 +1599,7 @@ class ExportUser(models.Model):
     date_joined = models.DateTimeField(_('date joined'))
 
     def __init__(self, *args, **kwargs):
-        super(ExportUser, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # Override meta class model information for export. This is needed to
         # write out the correct model information (auth.user) for this class.

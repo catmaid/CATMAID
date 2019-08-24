@@ -28,7 +28,7 @@ class HistoryTableTests(TransactionTestCase):
         enabled for each test.
         """
         history.enable_history_tracking()
-        return super(HistoryTableTests, self).run(*args)
+        return super().run(*args)
 
     tables_with_history = (
         # CATMAID tables

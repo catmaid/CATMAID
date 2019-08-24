@@ -15,7 +15,7 @@ class StateCheckingTest(CatmaidTestCase):
     fixtures = ['catmaid_testdata']
 
     def setUp(self):
-        super(StateCheckingTest, self).setUp()
+        super().setUp()
 
     def test_node_locking(self):
         return

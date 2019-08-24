@@ -35,7 +35,7 @@ class ImportExportTests(TestCase):
         self.client = Client()
         self.client.login(username=self.username, password=self.password)
 
-        super(ImportExportTests, self).setUp();
+        super().setUp();
 
     def fake_authentication(self):
         self.client.force_login(self.user)

@@ -11,7 +11,7 @@ from catmaid.tests.common import CatmaidTestCase
 class TagCreationAndRemovalTest(CatmaidTestCase):
 
     def setUp(self):
-        super(TagCreationAndRemovalTest, self).setUp()
+        super().setUp()
         self.linked_as_relation = Relation.objects.get(
                 project_id=self.test_project_id, relation_name='labeled_as')
         self.label_class = Class.objects.get(

@@ -11,7 +11,7 @@ from functools import reduce
 class StateMatchingError(Exception):
     """Indicates that a state check wasn't successful"""
     def __init__(self, message, state):
-        super(StateMatchingError, self).__init__(message)
+        super().__init__(message)
         self.unmatched_state = state
 
     def __str__(self) -> str:

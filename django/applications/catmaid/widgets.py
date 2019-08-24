@@ -20,10 +20,10 @@ class LabeledMultiWidget(forms.MultiWidget):
 
     def __init__(self, labels, widgets, attrs, **kwargs):
         self.labels = labels
-        super(LabeledMultiWidget, self).__init__(widgets, attrs, **kwargs)
+        super().__init__(widgets, attrs, **kwargs)
 
     def get_context(self, name, value, attrs):
-        context = super(LabeledMultiWidget, self).get_context(name, value, attrs)
+        context = super().get_context(name, value, attrs)
         context['labels'] = self.labels
         return context
 
@@ -38,7 +38,7 @@ class Integer3DWidget(LabeledMultiWidget):
             forms.TextInput(attrs),
             forms.TextInput(attrs),
         )
-        super(Integer3DWidget, self).__init__(('X', 'Y', 'Z'), widgets, attrs,
+        super().__init__(('X', 'Y', 'Z'), widgets, attrs,
                 **kwargs)
 
     def decompress(self, value) -> List:
@@ -66,7 +66,7 @@ class Double3DWidget(LabeledMultiWidget):
             forms.TextInput(attrs),
             forms.TextInput(attrs),
         )
-        super(Double3DWidget, self).__init__(('X', 'Y', 'Z'), widgets, attrs,
+        super().__init__(('X', 'Y', 'Z'), widgets, attrs,
                 **kwargs)
 
     def decompress(self, value) -> List:
@@ -97,7 +97,7 @@ class RGBAWidget(LabeledMultiWidget):
             Swatch(attrs),
         )
 
-        super(RGBAWidget, self).__init__(('R', 'G', 'B', 'A', ''), widgets,
+        super().__init__(('R', 'G', 'B', 'A', ''), widgets,
                 attrs, **kwargs)
 
     def decompress(self, value) -> Union[List, Tuple]:
@@ -140,7 +140,7 @@ class DownsampleFactorsWidget(forms.MultiWidget):
             forms.TextInput(attrs),
         )
 
-        super(DownsampleFactorsWidget, self).__init__(widgets,
+        super().__init__(widgets,
                 attrs, **kwargs)
 
     def decompress(self, value) -> List:
@@ -160,4 +160,4 @@ class DownsampleFactorsWidget(forms.MultiWidget):
         # values by default.
         if catmaid.fields.DownsampleFactorsField.is_value(value):
             value = self.decompress(value)
-        return super(DownsampleFactorsWidget, self).get_context(name, value, attrs)
+        return super().get_context(name, value, attrs)

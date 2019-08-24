@@ -46,7 +46,7 @@ class TransactionLogTests(TransactionTestCase):
         Django, because it is not known as a model to it.
         """
         self.reset_tx_log()
-        result = super(TransactionLogTests, self).run(*args)
+        result = super().run(*args)
         return result
 
     def authenticate(self):

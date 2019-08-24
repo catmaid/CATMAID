@@ -148,13 +148,13 @@ class GroupAdminForm(forms.ModelForm):
         fields = '__all__'
 
     def __init__(self, *args, **kwargs):
-        super(GroupAdminForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         if self.instance and self.instance.pk:
             self.fields['users'].initial = self.instance.user_set.all()
 
     def save(self, commit=True):
-        group = super(GroupAdminForm, self).save(commit=False)
+        group = super().save(commit=False)
 
         if commit:
             group.save()
@@ -176,7 +176,7 @@ class BrokenSliceAdmin(GuardedModelAdmin):
     def get_fieldsets(self, request, obj=None):
         """ Remove last_index field if an existing instance is edited.
         """
-        fieldsets = super(BrokenSliceAdmin, self).get_fieldsets(request, obj)
+        fieldsets = super().get_fieldsets(request, obj)
         if obj and 'last_index' in fieldsets[0][1]['fields']:
             fieldsets[0][1]['fields'].remove('last_index')
         return fieldsets
@@ -185,7 +185,7 @@ class BrokenSliceAdmin(GuardedModelAdmin):
         """ After calling the super method, additinal broken slice records are
         created if a "last index was specified.
         """
-        super(BrokenSliceAdmin, self).save_model(request, obj, form, change)
+        super().save_model(request, obj, form, change)
         li = (form.cleaned_data.get('last_index'))
         # Only attemt to add additional broken slice entries, if a last index
         # was specified.
@@ -320,7 +320,7 @@ class StackMirrorAdmin(GuardedModelAdmin):
 
 class DataViewConfigWidget(forms.widgets.Textarea):
     def render(self, name, value, attrs=None, renderer=None) -> str:
-        output = super(DataViewConfigWidget, self).render(name, value, attrs,
+        output = super().render(name, value, attrs,
                 renderer)
         output += "<p id='data_view_config_help' class='help'></p>"
         return mark_safe(output)
@@ -335,7 +335,7 @@ class DataViewAdminForm(forms.ModelForm):
         fields = '__all__'
 
     def __init__(self, *args, **kwargs):
-        super(DataViewAdminForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         # Since we want to add additional information to the data view
         # configuration widget, we decorate it
         self.fields['config'].widget = DataViewConfigWidget(
@@ -390,7 +390,7 @@ class ProfileInline(admin.StackedInline):
             self.exclude = ()
         else:
             self.exclude = ('color',)
-        return super(ProfileInline, self).get_formset(request, obj, **kwargs)
+        return super().get_formset(request, obj, **kwargs)
 
 
 class GroupInactivityPeriodContactUserInline(admin.StackedInline):
@@ -417,8 +417,7 @@ class CustomUserAdmin(UserAdmin):
         """
         if request.user.is_superuser and self.list_display[-1] != 'color':
             self.list_display = self.list_display + ('color',)
-        return super(CustomUserAdmin, self) \
-            .changelist_view(request, extra_context=extra_context)
+        return super().changelist_view(request, extra_context=extra_context)
 
 class UserSetInline(admin.TabularInline):
     model = User.groups.through

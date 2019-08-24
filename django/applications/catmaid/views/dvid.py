@@ -86,7 +86,7 @@ class DVIDImportWizard(SessionWizardView):
         return TEMPLATES[self.steps.current]
 
     def get_form(self, step=None, data=None, files=None):
-        form = super(DVIDImportWizard, self).get_form(step, data, files)
+        form = super().get_form(step, data, files)
 
         if step is None:
             step = self.steps.current
@@ -180,7 +180,7 @@ class DVIDImportWizard(SessionWizardView):
         return redirect('admin:index')
 
     def get_context_data(self, form, **kwargs):
-        context = super(DVIDImportWizard, self).get_context_data(form=form, **kwargs)
+        context = super().get_context_data(form=form, **kwargs)
 
         if self.steps:
             if self.steps.current == 'stack':

@@ -466,7 +466,7 @@ class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
         If PREPARED_STATEMENTS is false but you want to override that for a few queries at a time,
         include a django.db.connection in the constructor.
         """
-        super(PostgisNodeProvider, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # If a node limit is set, append the LIMIT clause to both queries
         if self.managed_limit and settings.NODE_LIST_MAXIMUM_COUNT:

@@ -161,7 +161,7 @@ class ClassificationAdminWizard(SessionWizardView):
         return [TEMPLATES[self.steps.current]]
 
     def get_context_data(self, **kwargs):
-        context = super(ClassificationAdminWizard, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context['catmaid_url'] = settings.CATMAID_URL
 
         # The project links selection needs some extra context
@@ -191,7 +191,7 @@ class ClassificationAdminWizard(SessionWizardView):
         return tag_group_list
 
     def get_form(self, step:Optional[str]=None, data=None, files=None):
-        form = super(ClassificationAdminWizard, self).get_form(step, data, files)
+        form = super().get_form(step, data, files)
         # Determine step if not given
         if step is None:
             step = self.steps.current

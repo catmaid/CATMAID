@@ -20,10 +20,10 @@ class StatsApiTests(CatmaidApiTestCase):
 
     @classmethod
     def setUpTestData(cls):
-        super(StatsApiTests, cls).setUpTestData()
+        super().setUpTestData()
 
     def setUp(self):
-        super(StatsApiTests, self).setUp()
+        super().setUp()
         cursor = connection.cursor()
         cursor.execute("""
             SELECT setval('catmaid_stats_summary_id_seq',

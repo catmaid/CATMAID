@@ -460,7 +460,7 @@ class ImportingWizard(SessionWizardView):
         return [TEMPLATES[self.steps.current]]
 
     def get_form(self, step=None, data=None, files=None):
-        form = super(ImportingWizard, self).get_form(step, data, files)
+        form = super().get_form(step, data, files)
         current_step = step or self.steps.current
         if current_step == 'pathsettings':
             # Pre-populate base URL field with settings variable, if available
@@ -578,7 +578,7 @@ class ImportingWizard(SessionWizardView):
         return form
 
     def get_context_data(self, form, **kwargs):
-        context = super(ImportingWizard, self).get_context_data(form=form, **kwargs)
+        context = super().get_context_data(form=form, **kwargs)
 
         if self.steps:
             if self.steps.current == 'pathsettings':

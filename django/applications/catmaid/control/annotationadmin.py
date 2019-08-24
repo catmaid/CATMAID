@@ -97,7 +97,7 @@ class ImportingWizard(SessionWizardView):
         """ On the confirmation step, this will read in the data to import and
         collect some statistics on it.
         """
-        context = super(ImportingWizard, self).get_context_data(form=form, **kwargs)
+        context = super().get_context_data(form=form, **kwargs)
         if self.steps.current == 'confirmation':
             stats = []
             # Load all wanted information from the selected projects

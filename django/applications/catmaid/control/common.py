@@ -21,7 +21,7 @@ from catmaid.models import Log, NeuronSearch, CELL_BODY_CHOICES, \
 class ConfigurationError(Exception):
     """Indicates some sort of configuration error"""
     def __init__(self, message):
-        super(ConfigurationError, self).__init__(message)
+        super().__init__(message)
 
 
 def identity(x:Any) -> Any:

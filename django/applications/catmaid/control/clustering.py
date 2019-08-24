@@ -85,7 +85,7 @@ class ClusteringWizard(SessionWizardView):
     workspace_pid = None
 
     def get_form(self, step=None, data=None, files=None):
-        form = super(ClusteringWizard, self).get_form(step, data, files)
+        form = super().get_form(step, data, files)
         current_step = step or self.steps.current
         if current_step == 'classifications':
             # Select root nodes of graphs that are instances of the
@@ -117,7 +117,7 @@ class ClusteringWizard(SessionWizardView):
         return form
 
     def get_context_data(self, form, **kwargs):
-        context = super(ClusteringWizard, self).get_context_data(form=form, **kwargs)
+        context = super().get_context_data(form=form, **kwargs)
         extra_context = {'workspace_pid': self.workspace_pid}
 
         if self.steps.current == 'ontologies':

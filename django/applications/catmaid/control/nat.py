@@ -64,13 +64,13 @@ class CleanUpHTTPResponse(HttpResponse):
         self.file_path = file_path
         self.file_handle = open(file_path, 'rb')
         kwargs['content'] = self.file_handle
-        super(CleanUpHTTPResponse, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         #self['Content-Disposition'] = 'attachment; filename="{}"'.format(file_name)
 
     def close(self) -> None:
         """Make sure all file handles are closed and the input file is removed.
         """
-        super(CleanUpHTTPResponse, self).close()
+        super().close()
         if self.file_handle:
             self.file_handle.close()
         if os.path.exists(self.file_path):

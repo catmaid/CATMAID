@@ -72,7 +72,7 @@ class BasicUITest(StaticLiveServerTestCase):
         """Set up Selenium driver if GUI_TESTS_ENABLED (which will be a remote
         driver of saucelabs.com if GUI_TESTS_REMOTE is true).
         """
-        super(BasicUITest, self).setUp()
+        super().setUp()
         if settings.GUI_TESTS_ENABLED:
             if settings.GUI_TESTS_REMOTE:
                 # Set up Travis + Sauce Labs configuration
@@ -130,7 +130,7 @@ class BasicUITest(StaticLiveServerTestCase):
 
             self.selenium.quit()
 
-        super(BasicUITest, self).tearDown()
+        super().tearDown()
 
     @classmethod
     def setUpClass(cls):
@@ -138,14 +138,14 @@ class BasicUITest(StaticLiveServerTestCase):
         done before all tests are run.
         """
         cls.create_test_data()
-        super(BasicUITest, cls).setUpClass()
+        super().setUpClass()
 
     @classmethod
     def tearDownClass(cls):
         """Remove created test data after all tests are done.
         """
         cls.remove_test_data()
-        super(BasicUITest, cls).tearDownClass()
+        super().tearDownClass()
 
     def list2reason(self, exc_list):
         if exc_list and exc_list[-1][0] is self:

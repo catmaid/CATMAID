@@ -1431,7 +1431,7 @@ class ClassificationSearchWizard(SessionWizardView):
     workspace_pid = None
 
     def get_context_data(self, form, **kwargs):
-        context = super(ClassificationSearchWizard, self).get_context_data(
+        context = super().get_context_data(
                 form=form, **kwargs)
         extra_context = {'workspace_pid': self.workspace_pid}
 
@@ -1456,8 +1456,7 @@ class ClassificationSearchWizard(SessionWizardView):
         return context
 
     def get_form(self, step=None, data=None, files=None):
-        form = super(ClassificationSearchWizard, self) \
-            .get_form(step, data, files)
+        form = super().get_form(step, data, files)
         current_step = step or self.steps.current
         if current_step == 'features':
             # We want all ontologies represented (which are Class objects) that

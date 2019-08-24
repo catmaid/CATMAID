@@ -13,7 +13,7 @@ class CatmaidView(TemplateView):
     """
 
     def get_context_data(self, **kwargs):
-        context = super(self.__class__, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context['CATMAID_URL'] = settings.CATMAID_URL
         context['COOKIE_SUFFIX'] = settings.COOKIE_SUFFIX
         context['COMPRESSED_FILE_IDS'] = settings.COMPRESSED_FILE_IDS
@@ -33,7 +33,7 @@ class UseranalyticsView(TemplateView):
     template_name = "catmaid/useranalytics.html"
 
     def get_context_data(self, **kwargs):
-        context = super(UseranalyticsView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context['CATMAID_URL'] = settings.CATMAID_URL
         context['HISTORY_TRACKING'] = settings.HISTORY_TRACKING
         return context
@@ -42,7 +42,7 @@ class UserProficiencyView(TemplateView):
     template_name = "catmaid/userproficiency.html"
 
     def get_context_data(self, **kwargs):
-        context = super(UserProficiencyView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context['CATMAID_URL'] = settings.CATMAID_URL
         return context
 
@@ -50,7 +50,7 @@ class GroupMembershipHelper(TemplateView):
     template_name = "catmaid/groupmembershiphelper.html"
 
     def get_context_data(self, **kwargs):
-        context = super(GroupMembershipHelper, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context['catmaid_url'] = settings.CATMAID_URL
         context['users'] = User.objects.all()
         context['groups'] = Group.objects.all()

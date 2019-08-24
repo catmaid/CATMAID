@@ -151,7 +151,7 @@ class TriangleMeshVolume(PostGISVolume):
     """A generic triangle mesh, provided from an external source.
     """
     def __init__(self, project_id, user_id, options):
-        super(TriangleMeshVolume, self).__init__(project_id, user_id, options)
+        super().__init__(project_id, user_id, options)
         input_mesh = options.get("mesh", None)
         if input_mesh:
             mesh_type = type(input_mesh)
@@ -193,7 +193,7 @@ class TriangleMeshVolume(PostGISVolume):
 class BoxVolume(PostGISVolume):
 
     def __init__(self, project_id, user_id, options):
-        super(BoxVolume, self).__init__(project_id, user_id, options)
+        super().__init__(project_id, user_id, options)
         self.min_x = get_req_coordinate(options, "min_x")
         self.min_y = get_req_coordinate(options, "min_y")
         self.min_z = get_req_coordinate(options, "min_z")

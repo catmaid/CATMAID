@@ -31,7 +31,7 @@ _missing_types = {}
 class CompositeMeta(type):
     def __init__(cls, name, bases, clsdict):
         from django.db import connection
-        super(CompositeMeta, cls).__init__(name, bases, clsdict)
+        super().__init__(name, bases, clsdict)
         cls.register_composite(connection)
 
     def register_composite(cls, connection):
@@ -128,7 +128,7 @@ class Integer3DField(CompositeField):
     def formfield(self, **kwargs):
         defaults = {'form_class': Integer3DFormField}
         defaults.update(kwargs)
-        return super(Integer3DField, self).formfield(**defaults)
+        return super().formfield(**defaults)
 
     def db_type(self, connection):
         return 'integer3d'
@@ -178,7 +178,7 @@ class Double3DField(models.Field):
     def formfield(self, **kwargs):
         defaults = {'form_class': Double3DFormField}
         defaults.update(kwargs)
-        return super(Double3DField, self).formfield(**defaults)
+        return super().formfield(**defaults)
 
     def db_type(self, connection):
         return 'double3d'
@@ -238,7 +238,7 @@ class RGBAField(models.Field):
     def formfield(self, **kwargs):
         defaults = {'form_class': RGBAFormField}
         defaults.update(kwargs)
-        return super(RGBAField, self).formfield(**defaults)
+        return super().formfield(**defaults)
 
     def db_type(self, connection):
         return 'rgba'
@@ -275,10 +275,10 @@ class DownsampleFactorsField(ArrayField):
         kwargs['blank'] = True
         kwargs['null'] = True
         kwargs['base_field'] = Integer3DField()
-        super(DownsampleFactorsField, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def deconstruct(self):
-        name, path, args, kwargs = super(DownsampleFactorsField, self).deconstruct()
+        name, path, args, kwargs = super().deconstruct()
         del kwargs['blank']
         del kwargs['null']
         del kwargs['base_field']
@@ -287,7 +287,7 @@ class DownsampleFactorsField(ArrayField):
     def formfield(self, **kwargs):
         defaults = {'form_class': DownsampleFactorsFormField}
         defaults.update(kwargs)
-        return super(DownsampleFactorsField, self).formfield(**defaults)
+        return super().formfield(**defaults)
 
     @staticmethod
     def is_default_scale_pyramid(value):
@@ -321,7 +321,7 @@ class Integer3DFormField(forms.MultiValueField):
             forms.IntegerField(label='Y'),
             forms.IntegerField(label='Z'),
         )
-        super(Integer3DFormField, self).__init__(fields, *args, **kwargs)
+        super().__init__(fields, *args, **kwargs)
 
     def compress(self, data_list):
         if data_list:
@@ -337,7 +337,7 @@ class Double3DFormField(forms.MultiValueField):
             forms.FloatField(label='Y'),
             forms.FloatField(label='Z'),
         )
-        super(Double3DFormField, self).__init__(fields, *args, **kwargs)
+        super().__init__(fields, *args, **kwargs)
 
     def compress(self, data_list):
         if data_list:
@@ -354,7 +354,7 @@ class RGBAFormField(forms.MultiValueField):
             forms.FloatField(label='B'),
             forms.FloatField(label='A'),
         )
-        super(RGBAFormField, self).__init__(fields, *args, **kwargs)
+        super().__init__(fields, *args, **kwargs)
 
     def compress(self, data_list):
         if data_list:
@@ -384,7 +384,7 @@ class DownsampleFactorsFormField(forms.MultiValueField):
         )
         del kwargs['max_length']
         del kwargs['base_field']
-        super(DownsampleFactorsFormField, self).__init__(fields, *args, **kwargs)
+        super().__init__(fields, *args, **kwargs)
         # Because SimpleArrayField does not strictly adhere to Django conventions,
         # our widget must have access to its field so that `prepare_value` can
         # be used to convert the array to a string.

@@ -76,7 +76,7 @@ class ServerForm(forms.Form):
             help_text="(Optional) HTTP-Auth password for the remote server.")
 
     def clean(self):
-        form_data = super(ServerForm, self).clean()
+        form_data = super().clean()
 
         host = form_data['catmaid_host']
         api_key = form_data['api_key']
@@ -105,7 +105,7 @@ class ServerForm(forms.Form):
 class UserForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
-        super(UserForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # Also parse, fields with naming "importable-remote-user
         if 'data' in kwargs and kwargs.get('data') \
@@ -115,7 +115,7 @@ class UserForm(forms.Form):
             self.importable_users = []
 
     def clean(self):
-        form_data = super(UserForm, self).clean()
+        form_data = super().clean()
 
         if hasattr(self, 'importable_users') and not self.importable_users:
             raise ValidationError("No users selected")
@@ -135,7 +135,7 @@ class UserImportWizard(SessionWizardView):
         return TEMPLATES[self.steps.current]
 
     def get_context_data(self, form, **kwargs):
-        context = super(UserImportWizard, self).get_context_data(form=form, **kwargs)
+        context = super().get_context_data(form=form, **kwargs)
 
         if self.steps:
             if self.steps.current == 'user' or self.steps.current == 'confirm':

@@ -45,8 +45,8 @@ def rebuild_edge_tables(project_ids=None, log=None) -> None:
                     # Add edges of available treenodes, including self
                     # referencing edges for root nodes.
                     cursor.execute('''
-                        INSERT INTO treenode_edge (id, project_id, edge) (
-                            SELECT c.id, c.project_id, ST_MakeLine(
+                        INSERT INTO treenode_edge (id, parent_id, project_id, edge) (
+                            SELECT c.id, c.parent_id, c.project_id, ST_MakeLine(
                             ST_MakePoint(c.location_x, c.location_y, c.location_z),
                             ST_MakePoint(p.location_x, p.location_y, p.location_z))
                         FROM treenode c
@@ -114,16 +114,16 @@ def rebuild_edge_tables(project_ids=None, log=None) -> None:
 
             # Add edges of available treenodes
             cursor.execute('''
-                INSERT INTO treenode_edge (id, project_id, edge) (
-                    SELECT c.id, c.project_id, ST_MakeLine(
+                INSERT INTO treenode_edge (id, parent_id, project_id, edge) (
+                    SELECT c.id, c.parent_id, c.project_id, ST_MakeLine(
                     ST_MakePoint(c.location_x, c.location_y, c.location_z),
                     ST_MakePoint(p.location_x, p.location_y, p.location_z))
                     FROM treenode c JOIN treenode p ON c.parent_id = p.id
                     WHERE c.parent_id IS NOT NULL)''')
             # Add self referencing adges for all root nodes
             cursor.execute('''
-                INSERT INTO treenode_edge (id, project_id, edge) (
-                    SELECT r.id, r.project_id, ST_MakeLine(
+                INSERT INTO treenode_edge (id, parent_id, project_id, edge) (
+                    SELECT r.id, r.parent_id, r.project_id, ST_MakeLine(
                     ST_MakePoint(r.location_x, r.location_y, r.location_z),
                     ST_MakePoint(r.location_x, r.location_y, r.location_z))
                     FROM treenode r
@@ -276,8 +276,8 @@ def rebuild_edges_selectively(skeleton_ids, connector_ids=[], log=None) -> None:
         # for all root nodes.
         if skeleton_ids:
             cursor.execute('''
-                INSERT INTO treenode_edge (id, project_id, edge) (
-                    SELECT c.id, c.project_id, ST_MakeLine(
+                INSERT INTO treenode_edge (id, parent_id, project_id, edge) (
+                    SELECT c.id, c.parent_id, c.project_id, ST_MakeLine(
                         ST_MakePoint(c.location_x, c.location_y, c.location_z),
                         ST_MakePoint(p.location_x, p.location_y, p.location_z))
                     FROM treenode c

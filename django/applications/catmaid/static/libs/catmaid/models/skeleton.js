@@ -400,9 +400,10 @@
      * Get a list of skeleton IDs based on their annotation, optionally from a
      * remote server.
      */
-    byAnnotation: function(projectId, annotationNames, api) {
+    byAnnotation: function(projectId, annotationNames, includeSubAnnotations, api) {
       let params = {
         'annotated_with': annotationNames,
+        'sub_annotated_with': includeSubAnnotations ? annotationNames : undefined,
         'annotation_reference': 'name',
         'types': ['neuron'],
       };

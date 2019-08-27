@@ -2732,89 +2732,35 @@
         let sourceProject = project.id;
         let sourceNeuronAnnotation = '';
 
-        // Find selected remote configuration based on name
-        let getRemote = function() {
-          let remoteConfigs = CATMAID.Client.Settings.session.remote_catmaid_instances;
-          if (!remoteConfigs) {
-            CATMAID.warn("No configured remote instances found");
-            return;
-          }
-          let remote = remoteConfigs.filter(function(rc) {
-            return rc.name === sourceRemote;
-          });
-          if (remote.length === 0) {
-            CATMAID.warn("No matching remote found");
-            return;
-          }
-          if (remote.length > 1) {
-            CATMAID.warn("Found more than one matching remote config");
-            return;
-          }
-          return CATMAID.API.fromSetting(remote[0]);
-        };
-
         if (widget.showOtherProjectOptions) {
+
           // Remote select
-          let remoteOptions = CATMAID.Client.Settings.session.remote_catmaid_instances.reduce(function(o, rci) {
-            o.push({
-              title: rci.name,
-              value: rci.name,
-            });
-            return o;
-          }, [{
-            title: 'Local',
-            value: '',
-          }]);
+          let remoteSelect = CATMAID.Remote.createRemoteSelect('Source instance',
+              sourceRemote, true, e => {
+                sourceRemote = e.target.value;
+                sourceProject = null;
+                // Try to get all projects from the selected remote and update the
+                // displayed project options.
+                updateProjectList();
+                updateSourceGroupList();
+                if (updateMatchingGroupList) {
+                  updateMatchingGroupList();
+                }
+              });
+
+          let remoteSelectSetting = CATMAID.DOM.createLabeledControl("Source remote",
+              remoteSelect, "Select the source CATMAID instance that contains " +
+              "the source skeletons. The current remote is selected by default.");
+          $(newDTForm).append(remoteSelectSetting);
 
           // Project select
-          let getProjectList = function() {
-            if (!sourceRemote || sourceRemote.length === 0) {
-              return Promise.resolve(CATMAID.client.projects.map(function(p) {
-                return {
-                  title: p.title + ' (' + p.id + ')',
-                  value: p.id,
-                };
-              }));
-            } else {
-              // In case, no particular source remote is defined, we use the local instance.
-              // Find selected remote configuration based on name
-              let remoteConfigs = CATMAID.Client.Settings.session.remote_catmaid_instances;
-              if (!remoteConfigs) {
-                return Promise.reject("No configured remote instances found");
-              }
-              let remote = remoteConfigs.filter(function(rc) {
-                return rc.name === sourceRemote;
-              });
-              if (remote.length === 0) {
-                return Promise.reject("No matching remote found");
-              }
-              if (remote.length > 1) {
-                return Promise.reject("Found more than one matching remote config");
-              }
-              // Expect exactly one matching remote.
-              let api = new CATMAID.API.fromSetting(remote[0]);
-              // Fetch projects from remote.
-              return CATMAID.fetch({
-                  url: '/projects/',
-                  method: 'GET',
-                  api: api,
-                }).then(projects => {
-                  return projects.map(p => {
-                    return {
-                      title: p.title + ' (' + p.id + ')',
-                      value: p.id,
-                    };
-                  });
-                });
+          var projectSelectSettingWrapper = document.createElement('span');
+          var updateProjectList = function() {
+            while (projectSelectSettingWrapper.lastChild) {
+              projectSelectSettingWrapper.removeChild(projectSelectSettingWrapper.lastChild);
             }
-          };
-
-          var initProjectList = function() {
-            return getProjectList()
-              .then(projects => {
-                let projectSelect = CATMAID.DOM.createRadioSelect('Source project',
-                    projects, sourceProject, true, 'selected');
-                projectSelect.onchange = function(e) {
+            let asyncProjectList = CATMAID.Remote.createAsyncProjectSelect(sourceRemote,
+                sourceProject, undefined, e => {
                   sourceProject = parseInt(e.target.value, 10);
 
                   // If the source project is the current project, the regular source
@@ -2827,38 +2773,9 @@
                   if (updateMatchingGroupList) {
                     updateMatchingGroupList();
                   }
-                };
-                return projectSelect;
-              });
-          };
-
-          // Remote select
-          let remoteSelect = CATMAID.DOM.createRadioSelect('Source instance',
-              remoteOptions, sourceRemote, true, 'selected', 'Local');
-          let remoteSelectSetting = CATMAID.DOM.createLabeledControl("Source remote",
-              remoteSelect, "Select the source CATMAID instance that contains " +
-              "the source skeletons. The current remote is selected by default.");
-          remoteSelect.onchange = function(e) {
-            sourceRemote = e.target.value;
-            sourceProject = null;
-            // Try to get all projects from the selected remote and update the
-            // displayed project options.
-            updateProjectList();
-            updateSourceGroupList();
-            if (updateMatchingGroupList) {
-              updateMatchingGroupList();
-            }
-          };
-          $(newDTForm).append(remoteSelectSetting);
-
-          // Project select
-          var projectSelectSettingWrapper = document.createElement('span');
-          var updateProjectList = function() {
-            while (projectSelectSettingWrapper.lastChild) {
-              projectSelectSettingWrapper.removeChild(projectSelectSettingWrapper.lastChild);
-            }
+                });
             let projectSelectSetting = CATMAID.DOM.createLabeledAsyncPlaceholder("Source project",
-                initProjectList(), "Select the project that contains the source " +
+                asyncProjectList, "Select the project that contains the source " +
                 "skeletons. The current project is selected by default.");
             projectSelectSettingWrapper.appendChild(projectSelectSetting);
           };
@@ -2890,7 +2807,7 @@
             }
             let rc;
             if (sourceRemote.length > 0) {
-              rc = getRemote();
+              rc = CATMAID.Remote.getAPI(sourceRemote);
               if (!rc) {
                 return;
               }
@@ -3043,7 +2960,7 @@
           } else if (!sourceProject) {
             return Promise.resolve([]);
           } else {
-            let api = getRemote();
+            let api = CATMAID.Remote.getAPI(sourceRemote);
             // Fetch projects from remote
             return widget.updateSourceLandmarksAndGroups(api, sourceProject)
               .then(results => {
@@ -3486,7 +3403,7 @@
                   // source needs to load the remote objects first.
                   let remote;
                   if (sourceRemote.length > 0) {
-                    remote = getRemote();
+                    remote = CATMAID.Remote.getAPI(sourceRemote);
                     if (!remote) {
                       return;
                     }

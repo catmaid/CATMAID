@@ -1538,6 +1538,14 @@ var project;
     }
   };
 
+  Client.createRelativeDeepLink = function(projectId, options = {}) {
+    let components = [`pid=${projectId}`];
+    if (options.skeletonId) {
+      components.push(`active_skeleton_id=${options.skeletonId}`);
+    }
+    return `?${components.join('&')}`;
+  };
+
   // Export Client
   CATMAID.Client = Client;
 

@@ -117,45 +117,40 @@
         return projectSelect;
       });
   };
-
   /**
    * Open a 3D dialog that has all neurons from the remote CATMAID project
-   * loaded that are annotated with the passed in annotation..
+   * loaded that are annotated with the passed in annotation. The following
+   * options can be configured in the the options argument: api, buttons, title.
    */
-  Remote.previewSkeletons = function(projectId, neuronAnnotation, includeSubAnnotations, remote) {
-    // Get all remote skeletons
-    let api = remote ? remote : null;
-    CATMAID.Skeletons.byAnnotation(projectId, [neuronAnnotation], includeSubAnnotations, api)
-      .then(function(skeletonIds) {
-        // Fetch skeletons
-        let promises = skeletonIds.map(skeletonId => {
-          return CATMAID.fetch({
-              url: projectId + '/' + skeletonId + '/1/1/1/compact-arbor',
-              method: 'POST',
-              api: api,
-            }) .then(function(result) {
-              var ap = new CATMAID.ArborParser();
-              ap.tree(result[0]);
-              return [skeletonId, ap];
-            });
+  Remote.previewSkeletons = function(projectId, skeletonIds, options = {}) {
+    // Fetch skeletons
+    let promises = skeletonIds.map(skeletonId => {
+      return CATMAID.fetch({
+          url: projectId + '/' + skeletonId + '/1/1/1/compact-arbor',
+          method: 'POST',
+          api: options.api,
+        }) .then(function(result) {
+          var ap = new CATMAID.ArborParser();
+          ap.tree(result[0]);
+          return [skeletonId, ap];
         });
+    });
 
-        return Promise.all(promises)
-          .then((arborParsers) => {
-            return new Map(arborParsers);
-          });
+    return Promise.all(promises)
+      .then((arborParsers) => {
+        return new Map(arborParsers);
       })
       .then(arborParsers => {
         let skeletonIds = Array.from(arborParsers.keys());
         if (!skeletonIds || skeletonIds.length === 0) {
-          CATMAID.warn(`No neurons found with annotation "${neuronAnnotation}" from remote "${remote.name}"`);
+          CATMAID.warn(`No neurons found`);
           return;
         }
         // Create dialog
         var dialog = new CATMAID.Confirmation3dDialog({
-          title: `Preview of all ${skeletonIds.length} remote neurons annotated with "${neuronAnnotation}"`,
+          title: options.title || `Preview of all ${skeletonIds.length} remote neurons`,
           showControlPanel: false,
-          buttons: {
+          buttons: options.buttons || {
             "Close": () => dialog.close(),
           }});
 
@@ -165,7 +160,7 @@
         var glWidget = dialog.webglapp;
         var models = skeletonIds.reduce( (o, skid, i) => {
           let skeleton = new CATMAID.SkeletonModel(skid, undefined,
-              colorizer.pickColor(), api);
+              colorizer.pickColor(), options.api);
           skeleton.projectId = projectId;
           o[skid] = skeleton;
           return o;
@@ -179,22 +174,35 @@
             glWidget.lookAtSkeleton(skeletonIds[0]);
           },
           nodeProvider);
-      })
-      .catch(CATMAID.handleError);
+      });
+  };
+
+  /**
+   * Open a 3D dialog that has all neurons from the remote CATMAID project
+   * loaded that are annotated with the passed in annotation..
+   */
+  Remote.previewSkeletonsByAnnotation = function(projectId, neuronAnnotation,
+      includeSubAnnotations, options) {
+    // Get all remote skeletons
+    let api = options.remote ? options.remote : null;
+    return CATMAID.Skeletons.byAnnotation(projectId, [neuronAnnotation],
+        includeSubAnnotations, api)
+      .then(skeletonIds => CATMAID.Remote.previewSkeletons(projectId,
+          skeletonIds, options));
   };
 
   /**
    * Get a new API instance if it is a valid remote name. Otherwise undefined is
    * returned.
    */
-  Remove.getAPI = function(reomote) {
+  Remote.getAPI = function(remoteHandle) {
     let remoteConfigs = CATMAID.Client.Settings.session.remote_catmaid_instances;
     if (!remoteConfigs) {
       CATMAID.warn("No configured remote instances found");
       return;
     }
     let remote = remoteConfigs.filter(function(rc) {
-      return rc.name === sourceRemote;
+      return rc.name === remoteHandle;
     });
     if (remote.length === 0) {
       CATMAID.warn("No matching remote found");
@@ -205,6 +213,40 @@
       return;
     }
     return CATMAID.API.fromSetting(remote[0]);
+  };
+
+  /**
+   * Load the respective skeleton morphologies, optionally from a remote server,
+   * if the `api` option is passed in. This is done by first requesting the SWC
+   * from the API and importing it. The options object can contain the following
+   * fields: api, getMeta(), The `getMeta(skeletonId)` function is expected to
+   * return an object with the field `name` for each skeleton.
+   */
+  Remote.importSkeletons = function(sourceProjectId, targetProjectId, skeletonIds, options = {}) {
+    let getMeta = options.getMeta || function(skeletonId) {
+      return {
+        name: undefined,
+      };
+    };
+    // Get SWC for each skeleton ID
+    CATMAID.Skeletons.getSWC(sourceProjectId, skeletonIds, false, true, options.api)
+      .then(swcData => {
+        // Import
+        let importPromises = skeletonIds.map((skeletonId, i) => {
+            let data = swcData[i];
+            if (!data) {
+              throw new CATMAD.ValueError(`Could not find SWC data for remote skeleton ${skeletonId}`);
+            }
+            let meta = getMeta(skeletonId);
+            let sourceUrl = options.api ? options.api.url : '';
+            return CATMAID.Skeletons.importSWC(targetProjectId, data, meta.name, sourceUrl, skeletonId);
+          });
+        return Promise.all(importPromises);
+      })
+      .then(importedSkeletons => {
+        CATMAID.msg('Success', `Imported ${importedSkeletons.length} remote skeletons`);
+      })
+      .catch(CATMAID.handleError);
   };
 
 

@@ -2812,8 +2812,11 @@
                 return;
               }
             }
-            CATMAID.Remote.previewSkeletons(sourceProject,
-                sourceNeuronAnnotation, false, undefined, rc);
+            CATMAID.Remote.previewSkeletonsByAnnotation(sourceProject,
+                sourceNeuronAnnotation, false, {
+                  api: rc,
+                })
+              .catch(CATMAID.handleError);
           };
           $('input', remoteAnnotationInput).after(remotePreviewButton);
         } else {

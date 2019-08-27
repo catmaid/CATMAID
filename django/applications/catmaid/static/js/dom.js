@@ -75,6 +75,19 @@
     return $('<div/>').addClass('setting').append(label);
   };
 
+  DOM.wrapInLabel = function(label, element, helptext, postLabel = false) {
+    let labelElement = document.createElement('label');
+    if (postLabel) {
+      labelElement.appendChild(element);
+      labelElement.appendChild(document.createTextNode(label));
+    } else {
+      labelElement.appendChild(document.createTextNode(label));
+      labelElement.appendChild(element);
+    }
+    labelElement.setAttribute('title', helptext);
+    return labelElement;
+  };
+
   /**
    * Helper function to create a checkbox with label.
    */

@@ -14,6 +14,16 @@
     this.mode = "export";
     this.showImports = CATMAID.tools.getDefined(options.showImports,
         CATMAID.hasPermission(project.id, 'can_import'));
+
+    this.modes = ['export'];
+    if (this.showImports) {
+      this.modes.push('import-files');
+      this.modes.push('import-catmaid');
+    }
+
+    this.sourceRemote = '';
+    this.sourceProject = project.id;
+    this.importCatmaidResult = null;
   };
 
   ImportExportWidget.exportContentTemplate = `
@@ -110,101 +120,117 @@ annotations, neuron name, connectors or partner neurons.
   ImportExportWidget.prototype.getWidgetConfiguration = function() {
     return {
       createControls: function(controls) {
-        if (this.showImports) {
-          var tabs = CATMAID.DOM.addTabGroup(controls,
-              'import_export_controls', ['Export', 'Import']);
+        let tabNames = this.modes.map(m => ImportExportWidget.Modes[m].title);
+        var tabs = CATMAID.DOM.addTabGroup(controls, 'import_export_controls',
+            tabNames);
 
-          tabs['Export'].dataset.mode = 'export';
-          tabs['Import'].dataset.mode = 'import';
+        this.modes.forEach((m, i) => {
+          let mode = ImportExportWidget.Modes[m];
+          let tab = tabs[mode.title];
+          tab.dataset.mode = m;
+          tab.dataset.index = i;
+          CATMAID.DOM.appendToTab(tab, mode.createControls(this));
+        });
 
-          // Initialize tabs
-          var self = this;
-          $(controls).tabs({
-            activate: function(event, ui) {
-              var mode = ui.newPanel.attr('data-mode');
-              if (mode === 'export' || mode === 'import') {
-                self.mode = mode;
-                self.redraw();
-              } else {
-                CATMAID.warn('Unknown import export table mode: ' + mode);
-              }
+        // Initialize tabs
+        var self = this;
+        let tabControls = $(controls).tabs({
+          activate: function(event, ui) {
+            var mode = ui.newPanel.attr('data-mode');
+            if (self.modes.indexOf(mode) !== -1) {
+              self.mode = mode;
+              self.redraw();
+            } else {
+              CATMAID.warn('Unknown import export table mode: ' + mode);
             }
-          });
-        }
+          }
+        });
       },
       createContent: function(container) {
         var $container = $(container);
-        // Create tabs or show export only
-        if (this.showImports) {
-          // Import
-          var importContainer = container.appendChild(document.createElement('div'));
-          importContainer.innerHTML = ImportExportWidget.importContentTemplate;
-          this.containers['import'] = importContainer;
 
-          // Add some bindings
-          var $importContainer = $(importContainer);
-          $importContainer.find('button[data-role=import-swc]').click(function() {
-            var button = $(this);
-            button.prop('disabled', true);
-            var fileInput = $importContainer.find('input[data-role=swc-import-file]');
-            if (fileInput.length === 0) {
-              CATMAID.warn("No SWC file input found");
-              return;
-            }
-            var files = fileInput[0].files;
-            var importedFiles = new Map();
-            var failedImports = new Map();
-            var importQueue = Promise.resolve();
-            for (let i=0; i<files.length; ++i) {
-              let file = files[i];
-              importQueue = importQueue
-                .then(function() {
-                  return import_swc(file)
-                    .then(function(data) {
-                      CATMAID.msg("SWC successfully imported", "Neuron ID:" +
-                          data.neuron_id + " Skeleton ID: " + data.skeleton_id);
-                      importedFiles.set(file.name, data);
-                      if (files.length === 1) {
-                        CATMAID.TracingTool.goToNearestInNeuronOrSkeleton(
-                          'skeleton', data.skeleton_id);
-                      }
-                    })
-                    .catch(function(error) {
-                      CATMAID.warn("SWC not imported: " + file.name);
-                      failedImports.set(file.name, error);
-                    });
-                });
-            }
+        this.modes.forEach(m => {
+          let mode = ImportExportWidget.Modes[m];
+          this.containers[m] = container.appendChild(document.createElement('div'));
+          mode.createContent(this.containers[m], this);
+        });
 
-            importQueue
-              .then(function() {
-                if (failedImports.size === 0) {
-                  CATMAID.msg("Success", "Imported " + importedFiles.size + " neurons");
-                } else {
-                  var msg;
-                  if (importedFiles === 0) {
-                    msg = "Could not import any selected SWC file";
-                  } else {
-                    msg = "Some SWC files could not be imported";
-                  }
-                  var details = [];
-                  for (var [key, value] of failedImports.entries()) {
-                    details.push("File: " + key + " Error: " + value.error);
-                  }
-                  CATMAID.error(msg, details.join("\n"));
-                }
-              })
-              .catch(CATMAID.handleError)
-              .then(function() {
-                button.prop('disabled', false);
-              });
-          });
+        // Make default tab visible
+        this.redraw();
+      }
+    };
+  };
+
+  /**
+   * Redraw the complete import/export table and manage visibility.
+   */
+  ImportExportWidget.prototype.redraw = function() {
+    for (var containerName in this.containers) {
+      let container = this.containers[containerName];
+
+      if (containerName === this.mode) {
+        container.style.display = 'block';
+        delete container.dataset.msg;
+        let mode = ImportExportWidget.Modes[this.mode];
+        if (mode && CATMAID.tools.isFn(mode.update)) {
+          mode.update(container, this);
         }
+      } else {
+        container.style.display = 'none';
+      }
+    }
+  };
 
-        // Export
-        var exportContainer = container.appendChild(document.createElement('div'));
-        exportContainer.innerHTML = ImportExportWidget.exportContentTemplate;
-        this.containers['export'] = exportContainer;
+  /**
+   * Show a confirmation dialog for all passed in skeletons and initiate the
+   * import of them.
+   */
+  ImportExportWidget.prototype.importRemoteSkeletons = function(skeletonIds) {
+    let plural = skeletonIds.length > 0 ? 's' : '';
+    let title = `Please confirm the import of the following skeleton${plural}`;
+    let api = CATMAID.Remote.getAPI(this.sourceRemote);
+    let entityMap = this.importCatmaidResult.resultEntities.reduce((o,e) => {
+      for (let i=0; i<e.skeleton_ids.length; ++i) {
+        o[e.skeleton_ids[i]] = e;
+      }
+      return o;
+    }, {});
+    let sourceProjectId = this.sourceProject;
+    CATMAID.Remote.previewSkeletons(sourceProjectId, skeletonIds, {
+        api: api,
+        title: title,
+        buttons: {
+          'Confirm import': function() {
+            // Initate import
+            CATMAID.Remote.importSkeletons(sourceProjectId, project.id, skeletonIds, {
+                getMeta: (skeletonId) => {
+                  let e = entityMap[skeletonId];
+                  if (!e) {
+                    throw new CATMAID.ValueError("No skeleton meta data found");
+                  }
+                  return {
+                    'name': e.name,
+                  };
+                },
+                api: api,
+              });
+            $(this).dialog("destroy");
+          },
+          'Cancel': function() {
+            $(this).dialog("destroy");
+          }
+        }
+      })
+      .catch(CATMAID.handleError);
+  };
+
+  ImportExportWidget.Modes = {
+    'export': {
+      title: 'Export',
+      createControls: widget => [],
+      createContent: function(container, widget) {
+        container.innerHTML = ImportExportWidget.exportContentTemplate;
+        let $container = $(container);
 
         // Bind SWC export handler
         $container.find('#export-swc').click(export_swc);
@@ -232,20 +258,340 @@ annotations, neuron name, connectors or partner neurons.
         $container.find('#export-tree-geometry').click(function() {
           export_tree_geometry();
         });
+      },
+    },
 
-        // Make default tab visible
-        this.redraw();
-      }
-    };
-  };
+    'import-files': {
+      title: 'Import from files',
+      createControls: widget => [],
+      createContent: function(container, widget) {
+        container.innerHTML = ImportExportWidget.importContentTemplate;
 
-  /**
-   * Redraw the complete import/export table and manage visibility.
-   */
-  ImportExportWidget.prototype.redraw = function() {
-    for (var containerName in this.containers) {
-      this.containers[containerName].style.display = containerName === this.mode ? 'block' : 'none';
-    }
+        // Add some bindings
+        var $importContainer = $(container);
+        $importContainer.find('button[data-role=import-swc]').click(function() {
+          var button = $(this);
+          button.prop('disabled', true);
+          var fileInput = $importContainer.find('input[data-role=swc-import-file]');
+          if (fileInput.length === 0) {
+            CATMAID.warn("No SWC file input found");
+            return;
+          }
+          var files = fileInput[0].files;
+          var importedFiles = new Map();
+          var failedImports = new Map();
+          var importQueue = Promise.resolve();
+          for (let i=0; i<files.length; ++i) {
+            let file = files[i];
+            importQueue = importQueue
+              .then(function() {
+                return import_swc(file)
+                  .then(function(data) {
+                    CATMAID.msg("SWC successfully imported", "Neuron ID:" +
+                        data.neuron_id + " Skeleton ID: " + data.skeleton_id);
+                    importedFiles.set(file.name, data);
+                    if (files.length === 1) {
+                      CATMAID.TracingTool.goToNearestInNeuronOrSkeleton(
+                        'skeleton', data.skeleton_id);
+                    }
+                  })
+                  .catch(function(error) {
+                    CATMAID.warn("SWC not imported: " + file.name);
+                    failedImports.set(file.name, error);
+                  });
+              });
+          }
+
+          importQueue
+            .then(function() {
+              if (failedImports.size === 0) {
+                CATMAID.msg("Success", "Imported " + importedFiles.size + " neurons");
+              } else {
+                var msg;
+                if (importedFiles === 0) {
+                  msg = "Could not import any selected SWC file";
+                } else {
+                  msg = "Some SWC files could not be imported";
+                }
+                var details = [];
+                for (var [key, value] of failedImports.entries()) {
+                  details.push("File: " + key + " Error: " + value.error);
+                }
+                CATMAID.error(msg, details.join("\n"));
+              }
+            })
+            .catch(CATMAID.handleError)
+            .then(function() {
+              button.prop('disabled', false);
+            });
+        });
+      },
+    },
+
+    'import-catmaid': {
+      title: 'Import from CATMAID',
+      createControls: widget => {
+
+        // The currently selected source CATMAID instance, for CATMAID based import.
+        widget.sourceRemote = '';
+        widget.sourceProject = project.id;
+        let sourceNeuronAnnotation = '';
+
+        let searchSection = document.createElement('span');
+        searchSection.classList.add('section-header');
+        searchSection.appendChild(document.createTextNode('Search'));
+
+        // Remote select
+        let remoteSelect = CATMAID.Remote.createRemoteSelect(widget.sourceRemote, true,
+            'Source instance', e => {
+              widget.sourceRemote = e.target.value;
+              widget.sourceProject = null;
+              // Try to get all projects from the selected remote and update the
+              // displayed project options.
+              updateProjectList();
+            });
+
+        let remoteSelectWrapper = CATMAID.DOM.wrapInLabel("Source remote",
+            remoteSelect, "Select the source CATMAID instance that contains " +
+            "the source skeletons. The current remote is selected by default.");
+
+        // Project select
+        var projectSelectSettingWrapper = document.createElement('span');
+        var updateProjectList = function() {
+          while (projectSelectSettingWrapper.lastChild) {
+            projectSelectSettingWrapper.removeChild(projectSelectSettingWrapper.lastChild);
+          }
+          let asyncProjectList = CATMAID.Remote.createAsyncProjectSelect(widget.sourceRemote,
+              widget.sourceProject, undefined, e => {
+                widget.sourceProject = parseInt(e.target.value, 10);
+
+                // If the source project is the current project, the regular source
+                // select and source group select are shown. Otherwise hidden.
+                let currentProjectMode = widget.sourceProject == project.id ? 'block' : 'none';
+              });
+          let projectSelect = CATMAID.DOM.createAsyncPlaceholder(asyncProjectList);
+          let projectSelectWrapper = CATMAID.DOM.wrapInLabel("Source project",
+              projectSelect, "Select the project that contains the source " +
+              "skeletons. The current project is selected by default.");
+          projectSelectSettingWrapper.appendChild(projectSelectWrapper);
+        };
+
+        // Init project list for current project
+        updateProjectList();
+
+        // Add table with landmarks
+        let resultSection = document.createElement('span');
+        resultSection.classList.add('section-header');
+        resultSection.appendChild(document.createTextNode('Results'));
+
+        // TODO: Add active 3D viewers selector
+
+        let nameFilter = '';
+        let annotationFilter = '';
+        let withSubAnnotations = false;
+
+        return [{
+            type: 'child',
+            element: searchSection,
+          },
+          {
+            type: 'child',
+            element: remoteSelectWrapper,
+          },
+          {
+            type: 'child',
+            element: projectSelectSettingWrapper,
+          },
+          {
+            type: 'text',
+            label: 'Name',
+            placeholder: 'Use / for RegEx',
+            onchange: e => {
+              nameFilter = e.target.value;
+            },
+          },
+          {
+            type: 'text',
+            label: 'Annotation',
+            onchange: e => {
+              annotationFilter = e.target.value;
+            },
+          },
+          {
+            type: 'checkbox',
+            label: 'Incl. sub-annotations',
+            onchange: e => {
+              withSubAnnotations = e.target.checked;
+            },
+          },
+          {
+            type: 'button',
+            label: 'Search neurons',
+            onclick: e => {
+              if ((!nameFilter || nameFilter.length === 0) &&
+                  (!annotationFilter || annotationFilter.length === 0)) {
+                CATMAID.warn("Need name or annotation to search");
+                return;
+              }
+              let api = CATMAID.Remote.getAPI(widget.sourceRemote);
+              CATMAID.Skeletons.search(widget.sourceProject, {
+                name: nameFilter,
+                annotations: [annotationFilter],
+                withSubAnnotations: withSubAnnotations,
+              }, api)
+              .then(result => {
+                if (!result || !result.skeletonIds || result.skeletonIds.length === 0) {
+                  CATMAID.msg("Could not find any skeletons");
+                  return;
+                }
+                widget.importCatmaidResult = result;
+
+                // Add selection information
+                result.resultEntities.forEach((e, i) => {
+                  e.index = i;
+                  e.selected = true;
+                });
+                CATMAID.msg('Success', `Found ${result.skeletonIds.length} remote skeletons`);
+
+                // Redraw result content
+                widget.redraw();
+              })
+              .catch(CATMAID.handleError);
+            },
+          },
+          {
+            type: 'child',
+            element: resultSection,
+          },
+          {
+            type: 'button',
+            label: 'Preview selected',
+            title: "Preview all selected result skeletons",
+            onclick: e => {
+              let skeletonIds = widget.importCatmaidResult.resultEntities.reduce((l, e) => {
+                if (e.selected) {
+                  Array.prototype.push.apply(l, e.skeleton_ids);
+                }
+                return l;
+              }, []);
+              CATMAID.Remote.previewSkeletons(widget.sourceProject, skeletonIds, {
+                  api: CATMAID.Remote.getAPI(widget.sourceRemote),
+                  title: "The following skeletons can be imported",
+                })
+                .catch(CATMAID.handleError);
+            },
+          },
+          {
+            type: 'button',
+            label: 'Import selected',
+            title: "Import all selected result skeletons",
+            onclick: e => {
+              let skeletonIds = widget.importCatmaidResult.resultEntities.reduce((l, e) => {
+                if (e.selected) {
+                  Array.prototype.push.apply(l, e.skeleton_ids);
+                }
+                return l;
+              }, []);
+              widget.importRemoteSkeletons(skeletonIds);
+            },
+          },
+        ];
+      },
+      createContent: function(container, widget) {
+        if (!widget.importCatmaidResult) {
+          container.msg = 'Please search for a set of remote skeletons';
+          return;
+        }
+        let skeletonIds = widget.importCatmaidResult.skeletonIds;
+        if (!skeletonIds || skeletonIds.length === 0) {
+          container.msg = 'Could not find any skeletons matching your query.';
+          return;
+        }
+
+        let api = widget.sourceRemote ? CATMAID.Remote.getAPI(widget.sourceRemote) : null;
+        let getRemoteUrl = function(skeletonId) {
+          if (widget.sourceRemote && widget.sourceProject) {
+            return CATMAID.tools.urlJoin(api.url, CATMAID.Client.createRelativeDeepLink(widget.sourceProject, {
+              skeletonId: skeletonId,
+            }));
+          }
+          return '#';
+        };
+
+        // Create datatable with results
+        let table = container.appendChild(document.createElement('table'));
+        table.style.width = '100%';
+        let datatable = $(table).DataTable({
+          //dom: 'th<ip>',
+          dom: 'lfrtip',
+          order: [],
+          data: widget.importCatmaidResult.resultEntities,
+          language: {
+            info: "Showing _START_ to _END_  of _TOTAL_ remote skeleton(s)",
+            infoFiltered: "(filtered from _MAX_ total remote skeletons(s))",
+            emptyTable: 'No remote skeletons found',
+            zeroRecords: 'No remote skeletons found'
+          },
+          columns: [{
+            data: 'id',
+            render: function(data, type, row, meta) {
+              let checked = row.selected ? 'checked=checked' : '';
+              return `<label><input type="checkbox" data-action="select-import" ${checked}/></label>`;
+            },
+          }, {
+            data: 'name',
+            title: 'Remote neuron name',
+          }, {
+            data: 'skeleton_ids',
+            title: 'Remote skeleton ID',
+            render: function(data, type, row, meta) {
+              return data.join(', ');
+            },
+          }, {
+            title: 'Action',
+            render: function(data, type, row, meta) {
+              let remoteUrl = getRemoteUrl(row.skeleton_ids[0]);
+              return `<ul class="resultTags"><li><a href="#" data-action="preview-skeleton">Preview</a></li><li><a href="#" data-action="import-skeleton">Import</a></li><li><a href="${remoteUrl}" target="_blank">Open remotely</a></li></ul>`;
+            },
+          }],
+        });
+
+        datatable.on('change', 'input[data-action=select-import]', function(e) {
+          let table = $(this).closest('table');
+          let tr = $(this).closest('tr');
+          let data =  $(table).DataTable().row(tr).data();
+          // Uncheck in data, no need to refresh the table.
+          data.selected = this.checked;
+          widget.importCatmaidResult.resultEntities[data.index].selected = this.checked;
+        });
+
+        datatable.on('click', 'a[data-action=preview-skeleton]', function(e) {
+          let table = $(this).closest('table');
+          let tr = $(this).closest('tr');
+          let data =  $(table).DataTable().row(tr).data();
+          // Preview single skeleton
+          CATMAID.Remote.previewSkeletons(widget.sourceProject, data.skeleton_ids, {
+              api: CATMAID.Remote.getAPI(widget.sourceRemote),
+            })
+            .catch(CATMAID.handleError);
+        });
+
+        datatable.on('click', 'a[data-action=import-skeleton]', function(e) {
+          let table = $(this).closest('table');
+          let tr = $(this).closest('tr');
+          let data =  $(table).DataTable().row(tr).data();
+          // Import single skeleton
+          widget.importRemoteSkeletons(data.skeleton_ids);
+        });
+      },
+      update: function(container, widget) {
+        // Clear content and recreate
+        while (container.lastChild) {
+          container.removeChild(container.lastChild);
+        }
+        ImportExportWidget.Modes['import-catmaid'].createContent(container, widget);
+      },
+    },
   };
 
   function new_window_with_return( url ) {

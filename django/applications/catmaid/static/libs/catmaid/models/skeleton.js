@@ -161,19 +161,26 @@
      *                               "radius:<n>" to specify that the exported
      *                               SWC should mark somas and based on what
      *                               criterion. Precedence as listed.
+     * @param {API}      api         (optional) The CATMAID API to talk to.
      *
      * @return A new promise that is resolved with the skeleton's SWC
      *         representation.
      */
-    getSWC: function(projectId, skeletonIds, linearizeIds, somaMarkers) {
+    getSWC: function(projectId, skeletonIds, linearizeIds, somaMarkers, api) {
       if (!skeletonIds || !skeletonIds.length) {
         return Promise.reject("Need at least one skeleton ID");
       }
       var swcRequests = skeletonIds.map(function(skid) {
-        return CATMAID.fetch(projectId + '/skeleton/' + skid + '/swc', 'GET', {
+        return CATMAID.fetch({
+          url: projectId + '/skeleton/' + skid + '/swc',
+          method: 'GET',
+          data: {
             'linearize_ids': !!linearizeIds,
             'soma_markers': somaMarkers,
-        }, true);
+          },
+          raw: true,
+          api: api,
+        });
       });
 
       return Promise.all(swcRequests);
@@ -216,6 +223,27 @@
             });
           }
         });
+    },
+
+    /**
+     * Import SWC data into the back-end.
+     */
+    importSWC: function(projectId, swcData, name, sourceUrl, sourceId) {
+      let file = new File([swcData], 'skeleton.swc');
+      let data = new FormData();
+      data.append(file.name, file, file.name);
+      data.append('name', name);
+      data.append('sourceUrl', sourceUrl);
+      data.append('sourceId', sourceId);
+
+      return CATMAID.fetch({
+        url: projectId + '/skeletons/import',
+        method: 'POST',
+        headers: {
+          "Content-type": null,
+        },
+        data: data,
+      });
     },
 
     /**
@@ -418,6 +446,36 @@
             return l;
           }, []);
           return skeletonIds;
+        });
+    },
+
+    /**
+     * Get a list of skeleton IDs based on their annotation, optionally from a
+     * remote server. The search options object can contain the following
+     * fields: name, annotatios, includeSubAnnotations, annotationReference.
+     */
+    search: function(projectId, searchOptions = {}, api = undefined) {
+      let params = {
+        'name': searchOptions.name || undefined,
+        'annotated_with': searchOptions.annotations,
+        'sub_annotated_with': searchOptions.includeSubAnnotations ? annotations : undefined,
+        'annotation_reference': searchOptions.annotationReference || 'name',
+        'types': ['neuron'],
+      };
+      return CATMAID.fetch({
+          url: projectId + '/annotations/query-targets',
+          method: 'POST',
+          data: params,
+          api: api,
+        }).then(result => {
+          let skeletonIds = result.entities.reduce((l, e) => {
+            Array.prototype.push.apply(l, e.skeleton_ids);
+            return l;
+          }, []);
+          return {
+            skeletonIds: skeletonIds,
+            resultEntities: result.entities,
+          };
         });
     },
 

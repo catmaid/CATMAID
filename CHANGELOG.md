@@ -111,6 +111,12 @@ Neuron Search:
 - Name queries can now be marked as case sensitive using the respective checkbox
   next to the name field. By default name queries are case insensitive.
 
+Import/Export widget:
+
+- It is now possible to import neurons from other CATMAID instances. The "Import
+  from CATMAID" tab provides tools to search remote skeletons by name or
+  annotation.
+
 Miscellaneous:
 
 - Projects can now be kept open if all last stack-viewers are closed. To not

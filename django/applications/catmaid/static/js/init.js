@@ -460,9 +460,7 @@ var project;
                 project.moveTo(zp, yp, xp, sgs);
               }
             });
-        } else if (sids.length > 0) {
-          load = loadStacksFromURL(singleStackViewer);
-        } else {
+        } else if (pid && sids.length === 0) {
           // Get first available stack for project
           load = CATMAID.fetch(`${pid}/stacks`)
             .then(stacks => {
@@ -475,6 +473,8 @@ var project;
               ss.push(0);
               return loadStacksFromURL(singleStackViewer);
             });
+        } else {
+          load = loadStacksFromURL(singleStackViewer);
         }
 
         // After stacks or stack groups have been loaded, init selected tool.

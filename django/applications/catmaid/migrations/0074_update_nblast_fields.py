@@ -10,6 +10,9 @@ class Migration(migrations.Migration):
     be null and empty. This is already reflected in the database, just not in
     the Django models, which is why NoOps are used for the actual forward and
     backward migration.
+
+    Update: this has been fixed in the original migration since, and therefore
+    this migration become effectively a complete NoOp.
     """
 
     dependencies = [
@@ -18,16 +21,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL(migrations.RunSQL.noop, migrations.RunSQL.noop, [
-            migrations.AlterField(
-                model_name='nblastconfig',
-                name='match_sample',
-                field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='match_config_set', to='catmaid.NblastSample'),
-            ),
-            migrations.AlterField(
-                model_name='nblastconfig',
-                name='random_sample',
-                field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='random_config_set', to='catmaid.NblastSample'),
-            ),
-        ]),
+        migrations.RunSQL(migrations.RunSQL.noop, migrations.RunSQL.noop),
     ]

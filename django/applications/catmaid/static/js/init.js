@@ -460,8 +460,21 @@ var project;
                 project.moveTo(zp, yp, xp, sgs);
               }
             });
-        } else  {
+        } else if (sids.length > 0) {
           load = loadStacksFromURL(singleStackViewer);
+        } else {
+          // Get first available stack for project
+          load = CATMAID.fetch(`${pid}/stacks`)
+            .then(stacks => {
+              if (stacks.length === 0) {
+                throw new CATMAID.ValueError("No stacks found for project " + pid);
+              }
+              // Push stack with lowest ID using zoom level 0
+              stacks.sort((a,b) => a.id - b.id);
+              sids.push(stacks[0].id);
+              ss.push(0);
+              return loadStacksFromURL(singleStackViewer);
+            });
         }
 
         // After stacks or stack groups have been loaded, init selected tool.

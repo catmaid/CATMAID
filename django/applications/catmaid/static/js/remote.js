@@ -229,7 +229,7 @@
       };
     };
     // Get SWC for each skeleton ID
-    CATMAID.Skeletons.getSWC(sourceProjectId, skeletonIds, false, true, options.api)
+    return CATMAID.Skeletons.getSWC(sourceProjectId, skeletonIds, false, true, options.api)
       .then(swcData => {
         // Import
         let importPromises = skeletonIds.map((skeletonId, i) => {
@@ -245,8 +245,7 @@
       })
       .then(importedSkeletons => {
         CATMAID.msg('Success', `Imported ${importedSkeletons.length} remote skeletons`);
-      })
-      .catch(CATMAID.handleError);
+      });
   };
 
 

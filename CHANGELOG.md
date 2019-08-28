@@ -117,6 +117,10 @@ Import/Export widget:
   from CATMAID" tab provides tools to search remote skeletons by name or
   annotation.
 
+- The original ID and source URL of all imported skeletons is tracked. This
+  allows the widget to display local skeleton IDs, if the remote ID has already
+  been imported from the current source URL.
+
 Miscellaneous:
 
 - Projects can now be kept open if all last stack-viewers are closed. To not

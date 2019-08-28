@@ -38,7 +38,7 @@ from catmaid.control.link import LINK_TYPES
 from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.annotation import (annotations_for_skeleton,
         create_annotation_query, _annotate_entities, _update_neuron_annotations)
-from catmaid.control.provenance import get_data_source
+from catmaid.control.provenance import get_data_source, normalize_source_url
 from catmaid.control.review import get_review_status
 from catmaid.control.tree_util import find_root, reroot, edge_count_to_root
 from catmaid.control.volume import get_volume_details
@@ -763,6 +763,67 @@ def validity(request:HttpRequest, project_id=None) -> HttpResponse:
         })
 
     return HttpResponse(cursor.fetchone()[0], content_type='application/json')
+
+
+@api_view(['GET', 'POST'])
+@requires_user_role(UserRole.Browse)
+def origin_info(request:HttpRequest, project_id=None) -> JsonResponse:
+    """Find mappings to existing skeletons for potential imports.
+    ---
+    parameters:
+      - name: project_id
+        description: Project to operate in
+        type: integer
+        paramType: path
+        required: true
+      - name: source_ids[]
+        description: IDs of the source IDs to query origin for
+        required: true
+        type: array
+        items:
+          type: integer
+        paramType: form
+      - name: source_url
+        description: Source URL of skeletons
+        type: string
+        paramType: path
+        required: true
+    """
+
+    if request.method == 'GET':
+        data = request.GET
+    elif request.method == 'POST':
+        data = request.POST
+    else:
+        raise ValueError("Invalid HTTP method: " + request.method)
+
+    source_ids = get_request_list(data, 'source_ids', map_fn=int)
+    if not source_ids:
+        raise ValueError('Need at least one source ID')
+
+    source_url = data.get('source_url')
+    if not source_url:
+        raise ValueError('Need source_url for origin lookup')
+    source_url = normalize_source_url(source_url)
+
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT so.source_id, so.skeleton_id
+        FROM skeleton_origin so
+        JOIN UNNEST(%(source_ids)s::bigint[]) query(source_id)
+            ON query.source_id = so.source_id
+        JOIN data_source ds
+            ON ds.id = so.data_source_id
+        WHERE so.project_id = %(project_id)s
+            AND ds.project_id = %(project_id)s
+            AND ds.url = %(source_url)s
+    """, {
+        'source_ids': source_ids,
+        'project_id': project_id,
+        'source_url': source_url,
+    })
+
+    return JsonResponse(dict(cursor.fetchall()))
 
 
 @api_view(['GET', 'POST'])

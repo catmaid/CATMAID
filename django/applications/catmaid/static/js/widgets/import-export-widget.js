@@ -196,6 +196,7 @@ annotations, neuron name, connectors or partner neurons.
       return o;
     }, {});
     let sourceProjectId = this.sourceProject;
+    let self = this;
     CATMAID.Remote.previewSkeletons(sourceProjectId, skeletonIds, {
         api: api,
         title: title,
@@ -213,7 +214,11 @@ annotations, neuron name, connectors or partner neurons.
                   };
                 },
                 api: api,
-              });
+              })
+              .then(result => {
+                self.redraw();
+              })
+              .catch(CATMAID.handleError);
             $(this).dialog("destroy");
           },
           'Cancel': function() {
@@ -450,6 +455,7 @@ annotations, neuron name, connectors or partner neurons.
                 result.resultEntities.forEach((e, i) => {
                   e.index = i;
                   e.selected = true;
+                  e.localSkeletonId = undefined;
                 });
                 CATMAID.msg('Success', `Found ${result.skeletonIds.length} remote skeletons`);
 
@@ -544,8 +550,18 @@ annotations, neuron name, connectors or partner neurons.
           }, {
             data: 'skeleton_ids',
             title: 'Remote skeleton ID',
+            class: 'cm-center',
             render: function(data, type, row, meta) {
               return data.join(', ');
+            },
+          }, {
+            title: 'Local skeleton ID',
+            class: 'cm-center',
+            render: function(data, type, row, meta) {
+              if (row.localSkeletonId) {
+                return `<a href="#" data-action="select-local-skeleton">${row.localSkeletonId}</a>`;
+              }
+              return '-';
             },
           }, {
             title: 'Action',
@@ -583,6 +599,46 @@ annotations, neuron name, connectors or partner neurons.
           // Import single skeleton
           widget.importRemoteSkeletons(data.skeleton_ids);
         });
+
+        datatable.on('click', 'a[data-action=select-local-skeleton]', function(e) {
+          let table = $(this).closest('table');
+          let tr = $(this).closest('tr');
+          let data =  $(table).DataTable().row(tr).data();
+          // Import single skeleton
+          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', data.localSkeletonId);
+        });
+
+        // Fetch origin information
+        if (api) {
+          CATMAID.fetch({
+              url: project.id + '/skeletons/origin',
+              method: 'POST',
+              data: {
+                'source_ids': skeletonIds,
+                'source_url': api.url,
+              },
+              parallel: true,
+            })
+            .then(result => {
+              if (CATMAID.tools.isEmpty(result)) {
+                return;
+              }
+              let entityMap = widget.importCatmaidResult.resultEntities.reduce((o,e) => {
+                for (let i=0; i<e.skeleton_ids.length; ++i) {
+                  o[e.skeleton_ids[i]] = e;
+                }
+                return o;
+              }, {});
+              for (let sourceId in result) {
+                let queryResult = entityMap[sourceId];
+                if (queryResult) {
+                  queryResult.localSkeletonId = result[sourceId];
+                }
+              }
+              datatable.rows().invalidate();
+            })
+            .catch(CATMAID.handleError);
+        }
       },
       update: function(container, widget) {
         // Clear content and recreate

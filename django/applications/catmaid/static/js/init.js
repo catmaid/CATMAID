@@ -1556,6 +1556,9 @@ var project;
     if (options.skeletonId) {
       components.push(`active_skeleton_id=${options.skeletonId}`);
     }
+    if (options.tool) {
+      components.push(`tool=${options.tool}`);
+    }
     return `?${components.join('&')}`;
   };
 

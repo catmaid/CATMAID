@@ -519,6 +519,7 @@ annotations, neuron name, connectors or partner neurons.
           if (widget.sourceRemote && widget.sourceProject) {
             return CATMAID.tools.urlJoin(api.url, CATMAID.Client.createRelativeDeepLink(widget.sourceProject, {
               skeletonId: skeletonId,
+              tool: 'tracingtool',
             }));
           }
           return '#';

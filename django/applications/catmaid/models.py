@@ -1345,6 +1345,44 @@ class SkeletonSummary(models.Model):
         return "Skeleton {} summary ({} nodes, {} nm)".format(
                 self.skeleton_id, self.num_nodes, self.cable_length)
 
+
+class DataSource(NonCascadingUserFocusedModel):
+    """A simple object representing a data source, which are mainly used to
+    reference the origin of imported skeletons. This table is tracked by the
+    history system.
+    """
+
+    class Meta:
+        db_table = "data_source"
+
+    name = models.TextField(blank=True, null=True, default=None)
+    url = models.TextField(blank=False)
+
+
+class SkeletonOrigin(NonCascadingUserFocusedModel):
+    """Keeps track of imported skeletons by storing the import time, transaction
+    ID, source skeleton/fragment ID and source URL. If a skeleton is not listed
+    in here, it is by definition created in this CATMAID instance. This table is
+    tracked by the history system.
+    """
+
+    class Meta:
+        db_table = "skeleton_origin"
+
+    # Cascading deletion is taken care of in database.
+    skeleton = models.OneToOneField(ClassInstance, on_delete=models.DO_NOTHING,
+            db_index=True, primary_key=True)
+
+    # Cascading deletion is taken care of in database.
+    data_source = models.ForeignKey(DataSource, on_delete=models.DO_NOTHING)
+    source_id = models.IntegerField(null=False)
+    source_type = models.TextField()
+
+    def __str__(self) -> str:
+        return "Skeleton {} from {} ({})".format(
+                self.skeleton_id, self.data_source_id, self.source_id)
+
+
 class StatsSummary(models.Model):
     class Meta:
         db_table = "catmaid_stats_summary"

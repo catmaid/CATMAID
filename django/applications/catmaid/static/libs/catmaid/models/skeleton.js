@@ -233,8 +233,8 @@
       let data = new FormData();
       data.append(file.name, file, file.name);
       data.append('name', name);
-      data.append('sourceUrl', sourceUrl);
-      data.append('sourceId', sourceId);
+      data.append('source_url', sourceUrl);
+      data.append('source_id', sourceId);
 
       return CATMAID.fetch({
         url: projectId + '/skeletons/import',

@@ -25,7 +25,7 @@ from rest_framework.decorators import api_view
 from catmaid.models import (Project, UserRole, Class, ClassInstance, Review,
         ClassInstanceClassInstance, Relation, Sampler, Treenode,
         TreenodeConnector, SamplerDomain, SkeletonSummary, SamplerDomainEnd,
-        SamplerInterval, SamplerDomainType)
+        SamplerInterval, SamplerDomainType, SkeletonOrigin)
 from catmaid.objects import Skeleton, SkeletonGroup, \
         compartmentalize_skeletongroup_by_edgecount, \
         compartmentalize_skeletongroup_by_confidence
@@ -38,6 +38,7 @@ from catmaid.control.link import LINK_TYPES
 from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.annotation import (annotations_for_skeleton,
         create_annotation_query, _annotate_entities, _update_neuron_annotations)
+from catmaid.control.provenance import get_data_source
 from catmaid.control.review import get_review_status
 from catmaid.control.tree_util import find_root, reroot, edge_count_to_root
 from catmaid.control.volume import get_volume_details
@@ -2500,6 +2501,24 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
             If specified, the name of a new neuron will be set to this.
         paramType: form
         type: string
+      - name: source_id
+        description: >
+            If specified, this source ID will be saved and mapped to the new
+            skeleton ID.
+        paramType: form
+        type: string
+      - name: source_url
+        description: >
+            If specified, this source URL will be saved and mapped to the new
+            skeleton ID.
+        paramType: form
+        type: string
+      - name: source_type
+        description: >
+            Can be either 'skeleton' or 'segmentation', to further specify of
+            what type the origin data is.
+        paramType: form
+        type: string
       - name: file
         required: true
         description: A skeleton representation file to import.
@@ -2530,6 +2549,9 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
     force = get_request_bool(request.POST, 'force', False)
     auto_id = get_request_bool(request.POST, 'auto_id', True)
     name = request.POST.get('name', None)
+    source_id = request.POST.get('source_id', None)
+    source_url = request.POST.get('source_url', None)
+    source_type = request.POST.get('source_type', 'skeleton')
 
     if len(request.FILES) == 1:
         for uploadedfile in request.FILES.values():
@@ -2541,7 +2563,8 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
             if extension == 'swc':
                 swc_string = '\n'.join([line.decode('utf-8') for line in uploadedfile])
                 return import_skeleton_swc(request.user, project_id, swc_string,
-                        neuron_id, skeleton_id, name, force, auto_id)
+                        neuron_id, skeleton_id, name, force, auto_id, source_id,
+                        source_url, source_type)
             else:
                 return HttpResponse('File type "{}" not understood. Known file types: swc'.format(extension), status=415)
 
@@ -2549,7 +2572,8 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
 
 
 def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
-        skeleton_id=None, name=None, force=False, auto_id=True) -> JsonResponse:
+        skeleton_id=None, name=None, force=False, auto_id=True, source_id=None,
+        source_url=None, source_type='skeleton') -> JsonResponse:
     """Import a neuron modeled by a skeleton in SWC format.
     """
 
@@ -2575,7 +2599,7 @@ def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
         raise ValueError('SWC skeleton is malformed: it contains a cycle.')
 
     import_info = _import_skeleton(user, project_id, g, neuron_id, skeleton_id,
-            name, force, auto_id)
+            name, force, auto_id, source_id, source_url, source_type)
     node_id_map = {n: d['id'] for n, d in import_info['graph'].nodes_iter(data=True)}
 
     return JsonResponse({
@@ -2586,7 +2610,8 @@ def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
 
 
 def _import_skeleton(user, project_id, arborescence, neuron_id=None,
-        skeleton_id=None, name=None, force=False, auto_id=True) -> Dict[str, Any]:
+        skeleton_id=None, name=None, force=False, auto_id=True, source_id=None,
+        source_url=None, source_type='skeleton') -> Dict[str, Any]:
     """Create a skeleton from a networkx directed tree.
 
     Associate the skeleton to the specified neuron, or a new one if none is
@@ -2802,6 +2827,14 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
     insert_into_log(project_id, user.id, 'create_neuron',
                     new_location, 'Create neuron %d and skeleton '
                     '%d via import' % (new_neuron.id, new_skeleton.id))
+
+    # Store reference to source ID and source URL, if provided.
+    if source_url:
+        data_source = get_data_source(project_id, source_url, user.id)
+        skeleton_origin = SkeletonOrigin.objects.create(project_id=project_id,
+                user_id=user.id, data_source=data_source,
+                skeleton_id=new_skeleton.id, source_id=source_id,
+                source_type=source_type)
 
     if neuron_id or skeleton_id:
         # Reset ID sequence if IDs have been passed in.

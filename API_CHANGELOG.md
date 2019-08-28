@@ -38,6 +38,10 @@ included in this changelog.
   by default. If set to true, the passed in name has to match exactly. This is
   faster than using a regular expression like '/^name$' for exact matches.
 
+- `POST /{project_id}/skeletons/import`:
+  The new parameters `source_id` and `source_url` allow to associate a source
+  data reference with the imported skeleton.
+
 ### Deprecations
 
 None.

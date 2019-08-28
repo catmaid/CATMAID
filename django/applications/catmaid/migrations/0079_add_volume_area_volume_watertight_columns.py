@@ -109,7 +109,7 @@ class Migration(migrations.Migration):
             migrations.AddField(
                 model_name='volume',
                 name='meta_computed',
-                field=models.BooleanField(default=True),
+                field=models.BooleanField(default=False),
             ),
         ]),
         migrations.RunPython(init_volume_meta_data, migrations.RunPython.noop),

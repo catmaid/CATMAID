@@ -429,7 +429,7 @@ class Migration(migrations.Migration):
                 migrations.AddField(
                     model_name='nblastconfig',
                     name='match_sample',
-                    field=models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, related_name='match_config_set', to='catmaid.NblastSample'),
+                    field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='match_config_set', to='catmaid.NblastSample'),
                 ),
                 migrations.AddField(
                     model_name='nblastsample',
@@ -451,7 +451,7 @@ class Migration(migrations.Migration):
                 migrations.AddField(
                     model_name='nblastconfig',
                     name='random_sample',
-                    field=models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, related_name='random_config_set', to='catmaid.NblastSample'),
+                    field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='random_config_set', to='catmaid.NblastSample'),
                 ),
                 migrations.AddField(
                     model_name='nblastconfig',

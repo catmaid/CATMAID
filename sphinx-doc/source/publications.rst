@@ -17,6 +17,8 @@ Publications using CATMAID
 
 * Tihana Jovanic, Michael Winding, Albert Cardona, James W. Truman, Marc Gershow, Marta Zlatic. `Neural Substrates of Drosophila Larval Anemotaxis <https://www.cell.com/current-biology/pdf/S0960-9822(19)30011-9.pdf>`_, Cell Current Biology, 2019.
 
+* Sercan Sayin, Jean-Francois De Backer, K.P. Siju, Marina E. Wosniack, Laurence P. Lewis, Lisa-Marie Frisch, Benedikt Gansen, Philipp Schlegel, Amelia Edmondson-Stait, Nadiya Sharifi, Corey B. Fisher, Steven A. Calle-Schuler, J. Scott Lauritzen, Davi D. Bock, Marta Costa, Gregory S.X.E. Jefferis, Julijana Gjorgjieva, Ilona C. Grunwald Kadow. `A Neural Circuit Arbitrates between Persistence and Withdrawal in Hungry Drosophila <https://www.cell.com/neuron/fulltext/S0896-6273(19)30654-3>`_, Cell Neuron, 2019
+
 2018
 ~~~~
 

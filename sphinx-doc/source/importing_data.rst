@@ -121,15 +121,29 @@ source is a simple folder structure of tiled image data for each stack. To be
 accessible, a stack mirror's image base has to give access to such a folder from
 the web. Of course, stacks, stack mirrors and projects can be created by hand,
 but there is also an importing tool available in Django's admin interface. It
-can be found under *Custom Views* and is named *Image data importer*. For now,
-the importing tool only supports this standard data source.
+can be found under *Custom Views* and is named *Image data importer*.
 
-Therefore, the importing tool expects a certain data folder layout to work on
-and also relies on so called *project files* (which are very simple) to identify
-potential projects. The next section will introduce the project file format and
-after that the data layout will be explained.
+The importing tool expects a certain data folder layout to work on and also
+relies on so called *project files* (a simple YAML file) to identify potential
+projects. The next section will introduce the project file format and after that
+the data layout will be explained.
 
 How to use the importing tool will be shown in the last section.
+
+.. note::
+
+  Regardless of whether you import image stacks with the help of the importer or
+  add projects, stacks, stack mirrors, project-stack links and permissions by
+  hand: you need to make the image data accessible through your webserver. For
+  instance, say you are running CATMAID on the URL ``example.com/catmaid`` and
+  you are using the importer and have ``IMPORTER_DEFAULT_IMAGE_BASE`` set to
+  ``https://example.com/catmaid/data`` and ``CATMAID_IMPORT_PATH`` to
+  ``/home/catmaid/data/``. The webserver would now need to map ``/catmaid/data``
+  to ``/home/catmaid/data/``. For Nginx this would look like that::
+
+    location /catmaid/data/ {
+      alias /home/catmaid/data/;
+    }
 
 Project Files
 ^^^^^^^^^^^^^
@@ -184,7 +198,7 @@ file and could look like this for the example above::
                tile_height: 512
                tile_source_type: 2
                fileextension: "png"
-               url: "http://my.other.server.net/examplestack/"
+               url: "https://my.other.server.net/examplestack/"
            stackgroups:
              - title: "Example group"
                relation: "has_channel"
@@ -359,12 +373,12 @@ section. Due to having placed the link in the httpdocs directory it is
 already accessible under (if your webserver user has reading permissions
 on it)::
 
-    http://<CATMAID-URL>/data
+    https://<CATMAID-URL>/data
 
 A typical URL to a tile of a stack could then look like this (if you
 use ``jpeg`` as the file extension)::
 
-    http://<CATMAID-URL>/data/project1/stack1/0/0_0_0.jpeg
+    https://<CATMAID-URL>/data/project1/stack1/0/0_0_0.jpeg
 
 The importer uses this data directory or a folder below it as working
 directory. In this folder it treats every sub-directory as a potential
@@ -372,6 +386,10 @@ project directory and tests if it contains a project file named
 ``project.yaml``. If this file is found a folder remains potential
 project. A folder is ignored, though, when the project file is not
 available.
+
+Also note, that such a data folder needs to be made accessible by the webserver.
+Otherwise, the CATMAID front-end won't be able to retrieve and show image data.
+The "Note" box at the beginning of this section has more details on this.
 
 Importing skeletons through the API
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -404,7 +422,7 @@ CATMAID can construct an image base from the the ``IMPORTER_DEFAULT_IMAGE_BASE``
 setting plus the imported project and stack names. For the example above, this
 variable could be set to::
 
-    IMPORTER_DEFAULT_IMAGE_BASE = http://<CATMAID-URL>/data
+    IMPORTER_DEFAULT_IMAGE_BASE = https://<CATMAID-URL>/data
 
 With this in place, the importer can be used through Django's admin interface.
 It is listed as *Image data importer* under *Custom Views*. The first step is to

@@ -15,8 +15,12 @@ included in this changelog.
   Obtain a list of valid or invalid skeletons in a set pf passed in skeleton
   IDs.
 
+- `GET|POST /{project_id}/skeletons/from-origin`:
+  Looks up skeleton IDs based on a set of `source_ids`, a `source_url` and a
+  `source_project_id`..
+
 - `GET|POST /{project_id}/skeletons/origin`:
-  Looks up skeleton IDs based on a set of `source_ids` and a `source_url`.
+  Gets origin information on a list of `skeleton_ids`.
 
 ### Modifications
 

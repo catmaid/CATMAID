@@ -768,6 +768,78 @@ def validity(request:HttpRequest, project_id=None) -> HttpResponse:
 @api_view(['GET', 'POST'])
 @requires_user_role(UserRole.Browse)
 def origin_info(request:HttpRequest, project_id=None) -> JsonResponse:
+    """Get origin information of a set of skeletons.
+    ---
+    parameters:
+      - name: project_id
+        description: Project to operate in
+        type: integer
+        paramType: path
+        required: true
+      - name: skeleton_ids[]
+        description: IDs of skeletons to get origin for
+        required: true
+        type: array
+        items:
+          type: integer
+        paramType: form
+    """
+
+    if request.method == 'GET':
+        data = request.GET
+    elif request.method == 'POST':
+        data = request.POST
+    else:
+        raise ValueError("Invalid HTTP method: " + request.method)
+
+    skeleton_ids = get_request_list(data, 'skeleton_ids', map_fn=int)
+    if not skeleton_ids:
+        raise ValueError('Need at least one skeleton ID')
+
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT so.skeleton_id, so.source_id, so.data_source_id
+        FROM skeleton_origin so
+        JOIN UNNEST(%(skeleton_ids)s::bigint[]) query(skeleton_id)
+            ON query.skeleton_id = so.skeleton_id
+        WHERE so.project_id = %(project_id)s
+    """, {
+        'project_id': project_id,
+        'skeleton_ids': skeleton_ids,
+    })
+
+    origin_rows = dict((c1, {
+        'source_id': c2,
+        'data_source_id': c3
+    }) for c1, c2, c3 in cursor.fetchall())
+    data_source_ids = set(v['data_source_id'] for v in origin_rows.values())
+
+    cursor.execute("""
+        SELECT data_source.id, name, url, source_project_id
+        FROM data_source
+        JOIN UNNEST(%(data_source_ids)s::bigint[]) query(id)
+            ON query.id = data_source.id
+        WHERE project_id = %(project_id)s
+    """, {
+        'project_id': project_id,
+        'data_source_ids': list(data_source_ids),
+    })
+
+    data_sources = dict((c1, {
+        'name': c2,
+        'url': c3,
+        'source_project_id': c4
+    }) for c1, c2, c3, c4 in cursor.fetchall())
+
+    return JsonResponse({
+        'data_sources': data_sources,
+        'origins': origin_rows,
+    })
+
+
+@api_view(['GET', 'POST'])
+@requires_user_role(UserRole.Browse)
+def from_origin(request:HttpRequest, project_id=None) -> JsonResponse:
     """Find mappings to existing skeletons for potential imports.
     ---
     parameters:

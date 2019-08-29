@@ -612,7 +612,7 @@ annotations, neuron name, connectors or partner neurons.
         // Fetch origin information
         if (api) {
           CATMAID.fetch({
-              url: project.id + '/skeletons/origin',
+              url: project.id + '/skeletons/from-origin',
               method: 'POST',
               data: {
                 'source_ids': skeletonIds,

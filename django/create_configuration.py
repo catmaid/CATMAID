@@ -91,7 +91,7 @@ server {{
     location /{subdir}/static/ {{
         alias {cmpath}/django/static/;
     }}
-    `
+
     location /{subdir}/files/ {{
         alias {writable_path}/;
     }}

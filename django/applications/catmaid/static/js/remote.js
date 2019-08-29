@@ -117,29 +117,16 @@
         return projectSelect;
       });
   };
+
+
+
   /**
    * Open a 3D dialog that has all neurons from the remote CATMAID project
    * loaded that are annotated with the passed in annotation. The following
    * options can be configured in the the options argument: api, buttons, title.
    */
   Remote.previewSkeletons = function(projectId, skeletonIds, options = {}) {
-    // Fetch skeletons
-    let promises = skeletonIds.map(skeletonId => {
-      return CATMAID.fetch({
-          url: projectId + '/' + skeletonId + '/1/1/1/compact-arbor',
-          method: 'POST',
-          api: options.api,
-        }) .then(function(result) {
-          var ap = new CATMAID.ArborParser();
-          ap.tree(result[0]);
-          return [skeletonId, ap];
-        });
-    });
-
-    return Promise.all(promises)
-      .then((arborParsers) => {
-        return new Map(arborParsers);
-      })
+    return CATMAID.Skeletons.getArbors(projectId, skeletonIds, options.api)
       .then(arborParsers => {
         let skeletonIds = Array.from(arborParsers.keys());
         if (!skeletonIds || skeletonIds.length === 0) {

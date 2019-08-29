@@ -512,6 +512,37 @@
       });
     },
 
+    /**
+     * Load the passed in skeletons and return ArborParser instances, optionally
+     * from a remote API.
+     *
+     * @param projectId   {integer}   The project to work in.
+     * @param skeletonIds {integer[]} The skeletons to load.
+     * @param api         {API}       (optional) The API to use for loading
+     *                                skeletons.
+     * @return A Promise resolving into a Map of skeleton Ids to ArborParser
+     *         instance.
+     */
+    getArbors: function(projectId, skeletonIds, api = undefined) {
+      // Fetch skeletons
+      let promises = skeletonIds.map(skeletonId => {
+        return CATMAID.fetch({
+            url: projectId + '/' + skeletonId + '/1/1/1/compact-arbor',
+            method: 'POST',
+            api: api,
+          }) .then(function(result) {
+            var ap = new CATMAID.ArborParser();
+            ap.tree(result[0]);
+            return [skeletonId, ap];
+          });
+      });
+
+      return Promise.all(promises)
+        .then((arborParsers) => {
+          return new Map(arborParsers);
+        });
+    },
+
   };
 
   // Provide some basic events

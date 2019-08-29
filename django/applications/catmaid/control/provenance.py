@@ -7,10 +7,10 @@ def normalize_source_url(source_url):
     return source_url
 
 
-def get_data_source(project_id, source_url, user_id):
+def get_data_source(project_id, source_url, source_project_id, user_id):
     source_url = normalize_source_url(source_url)
     data_source, _ = DataSource.objects.get_or_create(project_id=project_id,
-            url=source_url, defaults={
+            url=source_url, source_project_id=source_project_id, defaults={
                 'user_id': user_id,
             })
     return data_source

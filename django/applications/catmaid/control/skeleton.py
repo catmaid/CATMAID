@@ -788,6 +788,11 @@ def origin_info(request:HttpRequest, project_id=None) -> JsonResponse:
         type: string
         paramType: path
         required: true
+      - name: source_project_id
+        description: Source project ID of skeletons
+        type: integer
+        paramType: path
+        required: true
     """
 
     if request.method == 'GET':
@@ -806,6 +811,10 @@ def origin_info(request:HttpRequest, project_id=None) -> JsonResponse:
         raise ValueError('Need source_url for origin lookup')
     source_url = normalize_source_url(source_url)
 
+    source_project_id = data.get('source_project_id');
+    if source_project_id is None:
+        raise ValueError("Need source_project_id for origin lookup")
+
     cursor = connection.cursor()
     cursor.execute("""
         SELECT so.source_id, so.skeleton_id
@@ -817,10 +826,12 @@ def origin_info(request:HttpRequest, project_id=None) -> JsonResponse:
         WHERE so.project_id = %(project_id)s
             AND ds.project_id = %(project_id)s
             AND ds.url = %(source_url)s
+            AND ds.source_project_id = %(source_project_id)s
     """, {
         'source_ids': source_ids,
         'project_id': project_id,
         'source_url': source_url,
+        'source_project_id': source_project_id,
     })
 
     return JsonResponse(dict(cursor.fetchall()))
@@ -2567,7 +2578,14 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
             If specified, this source ID will be saved and mapped to the new
             skeleton ID.
         paramType: form
-        type: string
+        type: integer
+      - name: source_project_id
+        description: >
+            If specified, this source project ID will be saved and mapped to the
+            new skeleton ID. This is only valid together with source_id and
+            source_url.
+        paramType: form
+        type: integer
       - name: source_url
         description: >
             If specified, this source URL will be saved and mapped to the new
@@ -2612,6 +2630,7 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
     name = request.POST.get('name', None)
     source_id = request.POST.get('source_id', None)
     source_url = request.POST.get('source_url', None)
+    source_project_id = request.POST.get('source_project_id', None)
     source_type = request.POST.get('source_type', 'skeleton')
 
     if len(request.FILES) == 1:
@@ -2625,7 +2644,7 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
                 swc_string = '\n'.join([line.decode('utf-8') for line in uploadedfile])
                 return import_skeleton_swc(request.user, project_id, swc_string,
                         neuron_id, skeleton_id, name, force, auto_id, source_id,
-                        source_url, source_type)
+                        source_url, source_project_id, source_type)
             else:
                 return HttpResponse('File type "{}" not understood. Known file types: swc'.format(extension), status=415)
 
@@ -2634,7 +2653,7 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
 
 def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
         skeleton_id=None, name=None, force=False, auto_id=True, source_id=None,
-        source_url=None, source_type='skeleton') -> JsonResponse:
+        source_url=None, source_project_id=None, source_type='skeleton') -> JsonResponse:
     """Import a neuron modeled by a skeleton in SWC format.
     """
 
@@ -2660,7 +2679,8 @@ def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
         raise ValueError('SWC skeleton is malformed: it contains a cycle.')
 
     import_info = _import_skeleton(user, project_id, g, neuron_id, skeleton_id,
-            name, force, auto_id, source_id, source_url, source_type)
+            name, force, auto_id, source_id, source_url, source_project_id,
+            source_type)
     node_id_map = {n: d['id'] for n, d in import_info['graph'].nodes_iter(data=True)}
 
     return JsonResponse({
@@ -2672,7 +2692,7 @@ def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
 
 def _import_skeleton(user, project_id, arborescence, neuron_id=None,
         skeleton_id=None, name=None, force=False, auto_id=True, source_id=None,
-        source_url=None, source_type='skeleton') -> Dict[str, Any]:
+        source_url=None, source_project_id=None, source_type='skeleton') -> Dict[str, Any]:
     """Create a skeleton from a networkx directed tree.
 
     Associate the skeleton to the specified neuron, or a new one if none is
@@ -2890,8 +2910,8 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
                     '%d via import' % (new_neuron.id, new_skeleton.id))
 
     # Store reference to source ID and source URL, if provided.
-    if source_url:
-        data_source = get_data_source(project_id, source_url, user.id)
+    if source_url and source_project_id:
+        data_source = get_data_source(project_id, source_url, source_project_id, user.id)
         skeleton_origin = SkeletonOrigin.objects.create(project_id=project_id,
                 user_id=user.id, data_source=data_source,
                 skeleton_id=new_skeleton.id, source_id=source_id,

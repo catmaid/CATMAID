@@ -238,8 +238,9 @@
               throw new CATMAD.ValueError(`Could not find SWC data for remote skeleton ${skeletonId}`);
             }
             let meta = getMeta(skeletonId);
-            let sourceUrl = options.api ? options.api.url : '';
-            return CATMAID.Skeletons.importSWC(targetProjectId, data, meta.name, sourceUrl, skeletonId);
+            let sourceUrl = options.api ? options.api.url : undefined;
+            return CATMAID.Skeletons.importSWC(targetProjectId, data, meta.name,
+                sourceUrl, skeletonId, sourceProjectId);
           });
         return Promise.all(importPromises);
       })

@@ -1357,6 +1357,7 @@ class DataSource(NonCascadingUserFocusedModel):
 
     name = models.TextField(blank=True, null=True, default=None)
     url = models.TextField(blank=False)
+    source_project_id = models.IntegerField(null=False)
 
 
 class SkeletonOrigin(NonCascadingUserFocusedModel):

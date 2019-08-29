@@ -617,6 +617,7 @@ annotations, neuron name, connectors or partner neurons.
               data: {
                 'source_ids': skeletonIds,
                 'source_url': api.url,
+                'source_project_id': widget.sourceProject,
               },
               parallel: true,
             })

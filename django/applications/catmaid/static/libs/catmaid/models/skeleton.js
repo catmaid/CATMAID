@@ -228,13 +228,21 @@
     /**
      * Import SWC data into the back-end.
      */
-    importSWC: function(projectId, swcData, name, sourceUrl, sourceId) {
+    importSWC: function(projectId, swcData, name, sourceUrl = undefined,
+        sourceId = undefined, sourceProjectId = undefined) {
+      let sourceParams = [sourceUrl, sourceId, sourceProjectId];
+      if (sourceParams.some(e => !!e) && !sourceParams.every(e => !!e)) {
+        throw new CATMAID.ValueError('All or none of the parameters sourceUrl, ' +
+            'sourceId and sourceProjectId have to be provided');
+      }
+
       let file = new File([swcData], 'skeleton.swc');
       let data = new FormData();
       data.append(file.name, file, file.name);
       data.append('name', name);
       data.append('source_url', sourceUrl);
       data.append('source_id', sourceId);
+      data.append('source_project_id', sourceProjectId);
 
       return CATMAID.fetch({
         url: projectId + '/skeletons/import',

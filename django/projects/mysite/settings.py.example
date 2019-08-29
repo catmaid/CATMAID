@@ -85,7 +85,7 @@ HDF5_STORAGE_PATH = 'CATMAIDPATH/django/hdf5/'
 # data. The IMPORTER_DEFAULT_IMAGE_BASE refers is the URL as seen from
 # outside that gives read access to the CATMAID_IMPORT_PATH. It is used if
 # imported stacks don't provide their URL explicitly.
-CATMAID_IMPORT_PATH = 'CATMAIDPATH/httpdocs/data'
+CATMAID_IMPORT_PATH = 'CATMAIDPATH/data'
 IMPORTER_DEFAULT_IMAGE_BASE = 'http://CATMAID_SERVERNAME/CATMAID_SUBDIR/data'
 
 # The URL under which custom front-end code can be made available

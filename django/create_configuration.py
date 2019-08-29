@@ -88,12 +88,19 @@ upstream catmaid-wsgi {{
 }}
 
 server {{
+    # CATMAID: access to static front-end data
     location /{subdir}/static/ {{
         alias {cmpath}/django/static/;
     }}
 
+    # CATMAID: access to exported and generated data
     location /{subdir}/files/ {{
         alias {writable_path}/;
+    }}
+
+    # CATMAID: Access to image data
+    location /{subdir}/data/ {{
+        alias {cmpath}/data;
     }}
 
     # Route all CATMAID Django WSGI requests to the Gevent WSGI server
@@ -126,6 +133,14 @@ Alias /{subdir} {cmpath}/django/projects/mysite/django.wsgi
 
 Alias /{subdir}/static {cmpath}/django/static/
 <Directory {cmpath}/django/static/>
+    Options FollowSymLinks
+    AllowOverride AuthConfig Limit FileInfo
+    Order deny,allow
+    Allow from all
+</Directory>
+
+Alias /{subdir}/data {cmpath}/data/
+<Directory {cmpath}/data/>
     Options FollowSymLinks
     AllowOverride AuthConfig Limit FileInfo
     Order deny,allow

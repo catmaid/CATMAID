@@ -358,7 +358,7 @@ It assumes that there is one data folder per CATMAID instance that is
 accessible from the outside world and is somehow referred to within
 a stack mirror's image base (if referring to folders in the project file). As
 an example, let's say a link named *data* has been placed in CATMAID's
-httpdocs directory. This link links to your actual data storage and has
+top-level directory. This link links to your actual data storage and has
 a layout like the following::
 
     data/
@@ -368,10 +368,9 @@ a layout like the following::
       tests/
         project4/
 
-Each project folder has contents similar to the example in the previous
-section. Due to having placed the link in the httpdocs directory it is
-already accessible under (if your webserver user has reading permissions
-on it)::
+Each project folder has contents similar to the example in the previous section.
+Assuming your webserver has been configured to make this folder accessible, it
+should be possible to have the browser access it under::
 
     https://<CATMAID-URL>/data
 
@@ -415,7 +414,7 @@ file to make your data path known to CATMAID. This can be done with the
 ``CATMAID_IMPORT_PATH`` settings. Sticking to the examples from before, this
 setting might be::
 
-    CATMAID_IMPORT_PATH = <CATMAID-PATH>/httpdocs/data
+    CATMAID_IMPORT_PATH = <CATMAID-PATH>/data
 
 For imported stack mirrors that don't provide an image URL by themselves,
 CATMAID can construct an image base from the the ``IMPORTER_DEFAULT_IMAGE_BASE``

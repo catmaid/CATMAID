@@ -795,11 +795,12 @@
       filter: function(skeletonId, neuron, input, options, invert) {
         var skeleton = input.skeletons[skeletonId];
         var tags = skeleton.tags;
+        var taggedNodes = tags[options.tag] || [];
         if (!invert) {
-          return tags[options.tag].reduce(addToObject, {}) || null;
+          return taggedNodes.reduce(addToObject, {}) || null;
         } else {
           let nodes = skeleton.arbor.nodes();
-          return tags[options.tag].reduce(removeFromObject, nodes) || null;
+          return taggedNodes.reduce(removeFromObject, nodes) || null;
         }
       }
     },

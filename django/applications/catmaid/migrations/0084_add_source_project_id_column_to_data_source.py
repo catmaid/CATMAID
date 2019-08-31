@@ -40,7 +40,7 @@ backward = """
     SELECT drop_history_view_for_table('data_source'::regclass);
 
     ALTER TABLE data_source
-    DROP CONSTRAINT data_source_project_id_url_key;
+    DROP CONSTRAINT data_source_project_id_url_source_project_id_key;
 
     ALTER TABLE data_source
     ADD CONSTRAINT data_source_project_id_url_key

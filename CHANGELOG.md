@@ -111,6 +111,16 @@ Neuron Search:
 - Name queries can now be marked as case sensitive using the respective checkbox
   next to the name field. By default name queries are case insensitive.
 
+Graph widget:
+
+- Node filters are now supported. Like in many widgets, they  available through
+  the funnel icon in the title bar. Only nodes that are allowed by the selected
+  filters, can contribute connections and the graph. At the moment, this comes
+  with a few caveats: if filters are in use, no subgraphs (e.g. axon/dendrite,
+  synapse clusters) can be used. Grouping isn't available either and in
+  addition, skeletons are removed from the widget if they don't comply with the
+  filters. All this is likely going to chagne in future versions.
+
 Import/Export widget:
 
 - It is now possible to import neurons from other CATMAID instances. The "Import

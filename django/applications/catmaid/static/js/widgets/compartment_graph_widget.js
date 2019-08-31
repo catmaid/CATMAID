@@ -74,6 +74,7 @@
     // Map of skeleton ID vs one of:
     // * SUBGRAPH_AXON_DENDRITE
     // * SUBGRAPH_AXON_BACKBONE_TERMINALS
+    // * SUBGRAPH_NODE_FILTERS
     // * a number larger than zero (bandwidth value for synapse clustering)
     this.subgraphs = {};
 
@@ -281,6 +282,13 @@
       }
     };
 
+    // A set of filter rules to apply to the handled skeletons
+    this.filterRules = [];
+    // Filter rules can optionally be disabled
+    this.applyFilterRules = true;
+    // A set of nodes allowed by node filters
+    this.allowedNodes = new Set();
+
     // Handle neuron deletion and merge events
     CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_CHANGED, this.handleSkeletonChanged, this);
     CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_DELETED, this.handleSkeletonDeletion, this);
@@ -294,6 +302,7 @@
   GroupGraph.prototype.SUBGRAPH_AXON_DENDRITE =  -1;
   GroupGraph.prototype.SUBGRAPH_AXON_BACKBONE_TERMINALS = -2;
   GroupGraph.prototype.SUBGRAPH_SPLIT_AT_TAG = -3;
+  GroupGraph.prototype.SUBGRAPH_NODE_FILTERS = -4;
 
   GroupGraph.prototype.getWidgetConfiguration = function() {
     return {
@@ -500,7 +509,29 @@
              ['Axon, backbone dendrite & dendritic terminals', GG.splitAxonAndTwoPartDendrite.bind(GG)],
              ['Synapse clusters', GG.splitBySynapseClustering.bind(GG)],
              ['Tag', GG.splitByTag.bind(GG)],
-             ['Reset', GG.unsplit.bind(GG)]]);
+             ['Reset', GG.unsplit.bind(GG)],
+             {
+               type: 'checkbox',
+               label: 'Apply node filters',
+               title: 'Apply all enabled node filters (funnel icon in title bar). If node filters are active, no further subgraphs can be created',
+               value: GG.applyFilterRules,
+               onclick: (e) => {
+                GG.applyFilterRules = e.target.checked;
+                if (GG.filterRules.length > 0) {
+                  if (e.target.checked) {
+                    GG.updateFilter();
+                  } else {
+                    for (let entry in this.subgraphs) {
+                      if (this.subgraphs[entry] === this.SUBGRAPH_NODE_FILTERS) {
+                        delete this.subgraphs[entry];
+                      }
+                    }
+                    GG.update();
+                  }
+                }
+               },
+               id: "gg_apply_filter_rules" + GG.widgetID},
+             ]);
 
         $(controls).tabs();
       },
@@ -527,6 +558,10 @@
         this.init();
       },
       helpPath: 'graph-widget.html',
+      filter: {
+        rules: this.filterRules,
+        update: this.updateFilter.bind(this),
+      }
     };
   };
 
@@ -1226,9 +1261,19 @@
                                           target: target_id,
                                           weight: 10}});
           });
-
         } else {
           CATMAID.info("No subgraph possible for '" + name + "' and tag '" + this.tag_title + "'");
+        }
+      } else if (mode === this.SUBGRAPH_NODE_FILTERS) {
+        // Test if there is any connector node valid in skeleton.
+        let validConnectors = new Set(m[1].filter(c => this.allowedNodes.has(c[0])).map(c => c[0]));
+        if (validConnectors.size > 0) {
+          // The new node can have the original ID, we don't need to create
+          // multiple nodes.
+          let node = createNode(skid, name);
+          parts[node.data.id] = (treenodeId) => validConnectors.has(treenodeId);
+          subnodes[node.data.id] = node;
+          graph.push(node);
         }
       } else if (mode > 0) {
         // Synapse clustering: mode is the bandwidth
@@ -1582,7 +1627,7 @@
         node.position(positions[id]);
         node.lock();
       }
-      // Locl newly added groups made from old nodes, for which a position is set
+      // Lock newly added groups made from old nodes, for which a position is set
       if (id in to_lock) {
         node.lock();
       }
@@ -1951,13 +1996,21 @@
 
   GroupGraph.prototype.load = function(models, positions = null) {
     // Register with name service before we attempt to load the graph
-    CATMAID.NeuronNameService.getInstance().registerAll(this, models, (function() {
+    CATMAID.NeuronNameService.getInstance().registerAll(this, models, () => {
       this._load(models, positions);
-    }).bind(this));
+    });
   };
 
   /** Fetch data from the database and remake the graph. */
-  GroupGraph.prototype._load = function(models, positions = null) {
+  GroupGraph.prototype._load = function(models, positions = null, skipNodeFilter = false) {
+    let activeNodeFilters = !skipNodeFilter && this.applyFilterRules && this.filterRules.length > 0;
+    if (activeNodeFilters) {
+      this.updateFilter(models, true)
+        .catch(CATMAID.handleError)
+        .finally(() => this._load(models, positions, true));
+      return;
+    }
+
     var skeleton_ids = Object.keys(models);
     if (0 === skeleton_ids.length) return CATMAID.info("Nothing to load!");
 
@@ -1981,6 +2034,41 @@
         if (error instanceof CATMAID.ReplacedRequestError) return;
         CATMAID.handleError(error);
       });
+  };
+
+  /**
+   * Reevaluate the current set of node filter rules to update the set of
+   * allowed nodes.
+   */
+  GroupGraph.prototype.updateFilter = function(models, skipUpdate) {
+    for (let entry in this.subgraphs) {
+      if (this.subgraphs[entry] !== this.SUBGRAPH_NODE_FILTERS) {
+        CATMAID.warn("Please reset subgraphs before using node filters");
+        return;
+      }
+    }
+    var skeletons = models || this.getSkeletonModels();
+    var skeletonIds = Object.keys(skeletons);
+    if (skeletonIds.length === 0 || this.filterRules.length === 0) {
+      if (!skipUpdate) this.update();
+      return Promise.resolve();
+    }
+
+    // Set subgraph type
+    skeletonIds.forEach(skeletonId => this.subgraphs[skeletonId] = this.SUBGRAPH_NODE_FILTERS);
+
+    var filter = new CATMAID.SkeletonFilter(this.filterRules, skeletons);
+    return filter.execute()
+      .then(filteredNodes => {
+        this.allowedNodes = new Set(Object.keys(filteredNodes.nodes).map(n => {
+          return parseInt(n, 10);
+        }));
+        if (0 === this.allowedNodes.length) {
+          CATMAID.warn("No points left after filter application");
+        }
+        if (!skipUpdate) this.update();
+      })
+      .catch(CATMAID.handleError);
   };
 
   GroupGraph.prototype.highlight = function(skeleton_id) {
@@ -3643,6 +3731,13 @@
   };
 
   GroupGraph.prototype.split = function(mode) {
+    if (mode) {
+      let activeNodeFilters = this.applyFilterRules && this.filterRules.length > 0;
+      if (activeNodeFilters) {
+        CATMAID.warn("Can't use subgraphs with active node filters");
+        return;
+      }
+    }
     var sel = this.getSelectedSkeletons();
     if (0 === sel.length) return CATMAID.info("Select one or more nodes first!");
     sel.forEach(function(skid) {

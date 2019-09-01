@@ -347,6 +347,8 @@ forward = """
         RETURN NEW;
     END;
     $$;
+
+    ANALYZE;
 """
 
 backward = """
@@ -640,6 +642,8 @@ backward = """
     -- reclaim space immediately. This should be okay for a backward migration.
     ALTER TABLE treenode_edge
     DROP COLUMN parent_id;
+
+    ANALYZE;
 """
 
 

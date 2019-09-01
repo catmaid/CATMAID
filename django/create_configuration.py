@@ -20,9 +20,17 @@ def backup_existing_copy(path):
     if not os.path.isfile(path):
         return
     now = datetime.datetime.now()
-    backup_path = f'{path}.backup-{now.year}-{now.month}-{now.day}-{now.hour}-{now.minute}-{now.second}'
+    backup_path = '{path}.backup-{year}-{month}-{day}-{hour}-{minute}-{second}'.format(**{
+        'path': path,
+        'year': now.year,
+        'month': now.month,
+        'day': now.day,
+        'hour': now.hour,
+        'minute': now.minute,
+        'second': now.second,
+    })
     os.rename(path, backup_path)
-    print(f'Created a backup of the existing configuration file file: {backup_path}')
+    print('Created a backup of the existing configuration file file: {}'.format(backup_path))
 
 # Make sure trailing and leading slashes are where they are expected.
 if abs_catmaid_path[-1] == '/':

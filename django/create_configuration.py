@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import datetime
 import tempfile
 import os.path as op
 import os
@@ -14,6 +15,22 @@ from configuration import *
 def exit_err(msg):
     print(msg)
     sys.exit(1)
+
+def backup_existing_copy(path):
+    if not os.path.isfile(path):
+        return
+    now = datetime.datetime.now()
+    backup_path = '{path}.backup-{year}-{month}-{day}-{hour}-{minute}-{second}'.format(**{
+        'path': path,
+        'year': now.year,
+        'month': now.month,
+        'day': now.day,
+        'hour': now.hour,
+        'minute': now.minute,
+        'second': now.second,
+    })
+    os.rename(path, backup_path)
+    print('Created a backup of the existing configuration file file: {}'.format(backup_path))
 
 # Make sure trailing and leading slashes are where they are expected.
 if abs_catmaid_path[-1] == '/':
@@ -38,6 +55,7 @@ if not hasattr(current_module, 'catmaid_database_port'):
 
 in_configfile = op.join('projects/mysite/django.wsgi.example')
 out_configfile = op.join('projects/mysite/django.wsgi')
+backup_existing_copy(out_configfile)
 
 o = open( out_configfile ,'w')
 data = open( in_configfile, 'r' ).read()
@@ -52,6 +70,7 @@ catmaid_secret_key = ''.join([choice(alphabet) for i in range(50)])
 
 in_configfile = op.join('projects/mysite/settings.py.example')
 out_configfile = op.join('projects/mysite/settings.py')
+backup_existing_copy(out_configfile)
 o = open( out_configfile ,'w')
 data = open( in_configfile, 'r' ).read()
 data = re.sub('CATMAIDPATH', abs_catmaid_path, data)

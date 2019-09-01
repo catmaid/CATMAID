@@ -61,6 +61,9 @@
 - Spatial update worker: cache cells are not queued for updates anymore if the
   source project of a spatial event doesn't have any caches.
 
+- Setup: the create_configuration.py script will now create backups of existing
+  settings.py and django.wsgi files.
+
 ## 2019.06.20
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Pat Gunn, William Patton, Tom Kazimiers

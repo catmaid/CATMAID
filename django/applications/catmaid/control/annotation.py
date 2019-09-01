@@ -1281,11 +1281,14 @@ def list_annotations(request:HttpRequest, project_id=None) -> JsonResponse:
           $ref: annotation_list_element
         required: true
     """
+    cursor = connection.cursor()
+    classes = get_class_to_id_map(project_id, ('annotation',), cursor)
+    # If there is no 'annotation' class, there can't be annotations
+    if 'annotation' not in classes:
+        return JsonResponse({'annotations': []})
 
     if request.method == 'GET':
-        cursor = connection.cursor()
         simple = get_request_bool(request.GET, 'simple', False)
-        classes = get_class_to_id_map(project_id, ('annotation',), cursor)
         relations = get_relation_to_id_map(project_id, ('annotated_with',), cursor)
         if_modified_since = request.GET.get('if_modified_since')
 

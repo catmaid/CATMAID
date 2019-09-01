@@ -12,6 +12,10 @@ forward = """
     -- setting `wal_level = minimal`, `archive_mode = off` and `max_wal_senders = 0`
     -- for Postgres. Also in case the fill factor should be changed, this is a
     -- good opportunity to do it, because the table is rewritten anyway.
+    --
+    -- To create the new version of the table and its indices in a new
+    -- tablespace, set the default tablespace before running this migration:
+    -- SET default_tablespace = '<tablespace-name>';
 
     ALTER TABLE treenode_edge
     RENAME TO treenode_edge_old;

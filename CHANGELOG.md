@@ -25,6 +25,12 @@
   the following Postgres options can speed up the process: `wal_level = minimal`,
   `archive_mode = off` and `max_wal_senders = 0`.
 
+- Both `configuration.py.example` and `create_configuration.py` support now the
+  option `catmaid_default_enabled_tools`, which defines the list of front-end
+  tools that are enabled by default for new users. The following options are
+  supported: cropping, tagging, textlabel, tracing, ontology and roi. By default
+  the tracing tool is now enabled for new users, because it seems in many setups
+  users want to have this enabled by default.
 
 ### Features and enhancements
 

@@ -77,6 +77,27 @@ data = re.sub('%s//' % known_protocols, '/', data)
 # redirects.
 if len(catmaid_subdirectory) == 0:
   data = re.sub(r'^FORCE_SCRIPT_NAME', '# FORCE_SCRIPT_NAME', data, flags=re.M)
+
+# Set default options for enabled tools
+if 'catmaid_default_enabled_tools' in locals():
+    known_tool_map = {
+        'cropping': 'PROFILE_SHOW_CROPPING_TOOL',
+        'tagging': 'PROFILE_SHOW_TAGGING_TOOL',
+        'textlabel': 'PROFILE_SHOW_TEXT_LABEL_TOOL',
+        'tracing': 'PROFILE_SHOW_TRACING_TOOL',
+        'ontology': 'PROFILE_SHOW_ONTOLOGY_TOOL',
+        'roi': 'PROFILE_SHOW_ROI_TOOL',
+    }
+    known_tools = set(known_tool_map.keys())
+    unknown_tools =set(catmaid_default_enabled_tools) - known_tools
+    if unknown_tools:
+        print('The following options for "catmaid_default_enabled_tools" are unknown: {}'.format(
+            ', '.join(unknown_tools)))
+    enabled_tools = known_tools.intersection(set(catmaid_default_enabled_tools))
+    data += '\n# Default tools that are enabled for new users\n'
+    for tool in known_tools:
+        data += f'{known_tool_map[tool]} = {"True" if tool in enabled_tools else "False"}\n'
+
 # Write out the configuration
 o.write( data )
 o.close()

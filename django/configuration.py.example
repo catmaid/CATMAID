@@ -42,3 +42,8 @@ catmaid_servername = ''
 # would be 'catmaid'. It should not have a leading or trailing slash.
 
 catmaid_subdirectory = ''
+
+# The tools enabled by default in the front-end. Possible options are: cropping,
+# tagging, textlabel, tracing, ontology, roi. By default only the tracing tool
+# is enabled.
+catmaid_default_enabled_tools = ['tracing']

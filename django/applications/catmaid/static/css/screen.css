@@ -1282,6 +1282,10 @@ div.review-block::after {
   stroke-width: 1.5px;
 }
 
+.neuron-link-group {
+  color: blue;
+}
+
 a.neuron-selection-link {
   color: black;
   text-decoration: none;

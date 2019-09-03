@@ -789,7 +789,7 @@
                   let skeletonLinks = skeletonIds ?
                       skeletonIds.map(skid => `<a class="neuron-selection-link" href="#" data-id="${skid}">${skid}</a>`) :
                       ['(none)'];
-                  return `${name}: ${skeletonLinks.join(', ')}`;
+                  return `<span class="neuron-link-group">${name}</span>: ${skeletonLinks.join(', ')}`;
                 });
                 let span2 = subGroupList.appendChild(document.createElement('span'));
                 span2.style.width = '85%';

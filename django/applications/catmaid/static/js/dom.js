@@ -61,11 +61,11 @@
           {
             complete: function() {
               // change open/close indicator box
-              var open_elements = $(".extend-box-open", content);
+              var open_elements = $(".extend-box-open", sc);
               if (open_elements.length > 0) {
                 open_elements.attr('class', 'extend-box-closed');
               } else {
-                $(".extend-box-closed", content).attr('class', 'extend-box-open');
+                $(".extend-box-closed", sc).attr('class', 'extend-box-open');
               }
           }});
       });

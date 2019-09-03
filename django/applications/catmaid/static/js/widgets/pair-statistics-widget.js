@@ -112,8 +112,8 @@
                 if (oldStepIndex !== newStepIndex) {
                   $(event.target).tabs('option', 'active', oldStepIndex);
                 }
+                self.update();
               }
-              self.update();
             }
           }
         });

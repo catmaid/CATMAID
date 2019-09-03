@@ -3913,7 +3913,7 @@ def import_info(request:HttpRequest, project_id=None) -> JsonResponse:
                 SELECT txid, creation_time
                 FROM treenode__with_history th
                 WHERE th.id = t.id
-                ORDER BY creation_time ASC
+                ORDER BY edition_time ASC
                 LIMIT 1
             ) t_origin
                 ON TRUE

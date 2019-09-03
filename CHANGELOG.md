@@ -153,6 +153,9 @@ Miscellaneous:
 - Selection table: the summary info button now shows also the number of imported
   nodes within the selected skeletons.
 
+- Neuron navigator: the new button "Imported nodes" will list all imported
+  treenodes for the displayed skeleton.
+
 ### Bug fixes
 
 

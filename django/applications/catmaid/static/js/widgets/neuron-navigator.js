@@ -2208,6 +2208,38 @@
       }
     }).bind(this);
 
+    var importedNodesButton = document.createElement('input');
+    importedNodesButton.setAttribute('type', 'button');
+    importedNodesButton.setAttribute('value', 'Imported nodes');
+    container.append(importedNodesButton);
+
+    importedNodesButton.onclick = (function() {
+      if (this.skeleton_ids.length > 0) {
+        CATMAID.Skeletons.importInfo(project.id, this.skeleton_ids, true)
+          .then(importInfo => {
+            let sum = Object.keys(importInfo).reduce((s, k) => {
+              return s + importInfo[k].n_imported_treenodes || 0;
+            }, 0);
+            if (sum === 0) {
+              CATMAID.msg("No imported nodes", "This neuron doesn't contain any imported nodes");
+              return;
+            }
+            // Open treenode table
+            var widget = WindowMaker.create('treenode-table').widget;
+            // Only show imported nodes
+            for (let skeletonId in importInfo) {
+              widget.filter_nodeids.addAll(importInfo[skeletonId].imported_treenodes);
+            }
+            // But show all node types
+            widget.setNodeTypeFilter('');
+            widget.append(this.getSelectedSkeletonModels());
+
+            CATMAID.msg(`${sum} imported node(s)`, `Showing all ${sum} imported nodes of this skeleton`);
+          })
+          .catch(CATMAID.handleError);
+      }
+    }).bind(this);
+
 
     /* Skeletons: Request compact JSON data */
     var content = document.createElement('div');

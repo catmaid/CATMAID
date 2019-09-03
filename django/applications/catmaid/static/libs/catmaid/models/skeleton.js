@@ -543,6 +543,32 @@
         });
     },
 
+    /**
+     * Get information which and how many nodes are imported in a particular
+     * skeleton.
+     *
+     * @param projectId   {integer}   The project to work in.
+     * @param skeletonIds {integer[]} The skeletons to get import info on.
+     * @param withTreenodes {Boolean} (optional) Whether to include a list of
+     *                                the actual imported treenodes in the
+     *                                result. False by default.
+     * @param api         {API}       (optional) The API to use for loading
+     *                                skeletons.
+     * @return A Promise resolving into a Map of skeleton Ids to import info
+     *         objects.
+     */
+    importInfo: function(projectId, skeletonIds, withTreenodes = false, api = undefined) {
+      return CATMAID.fetch({
+        url: project.id + '/skeletons/import-info',
+        method: 'POST',
+        data: {
+          skeleton_ids: skeletonIds,
+          with_treenodes: withTreenodes,
+        },
+        api: api,
+        parallel: true,
+      });
+    },
   };
 
   // Provide some basic events

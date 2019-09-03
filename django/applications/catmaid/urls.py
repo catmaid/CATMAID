@@ -289,6 +289,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/skeletons/review-status$', skeleton.review_status),
     url(r'^(?P<project_id>\d+)/skeletons/from-origin$', skeleton.from_origin),
     url(r'^(?P<project_id>\d+)/skeletons/origin$', skeleton.origin_info),
+    url(r'^(?P<project_id>\d+)/skeletons/import-info$', skeleton.import_info),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/statistics$', skeleton.skeleton_statistics),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/contributor_statistics$', skeleton.contributor_statistics),
     url(r'^(?P<project_id>\d+)/skeleton/contributor_statistics_multiple$', skeleton.contributor_statistics_multiple),

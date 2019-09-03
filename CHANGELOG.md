@@ -150,6 +150,9 @@ Miscellaneous:
 
 - Name search: the speed of search queries is now improved.
 
+- Selection table: the summary info button now shows also the number of imported
+  nodes within the selected skeletons.
+
 ### Bug fixes
 
 

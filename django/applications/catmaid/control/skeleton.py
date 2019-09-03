@@ -3842,3 +3842,110 @@ def change_history(request:HttpRequest, project_id=None) -> JsonResponse:
     })
 
     return JsonResponse(cursor.fetchall(), safe=False)
+
+
+@api_view(['GET', 'POST'])
+@requires_user_role(UserRole.Browse)
+def import_info(request:HttpRequest, project_id=None) -> JsonResponse:
+    """Get information on imported nodes of a set of skeletons.
+    ---
+    parameters:
+      - name: project_id
+        description: Project to operate in
+        type: integer
+        paramType: path
+        required: true
+      - name: skeleton_ids[]
+        description: IDs of skeletons to get import information for.
+        required: true
+        type: array
+        items:
+          type: integer
+        paramType: form
+      - name: with_treenodes
+        description: Whether to include IDs of all imported nodes in response.
+        type: boolean
+        paramType: form
+        required: false
+        defaultValue: false
+    """
+
+    if request.method == 'GET':
+        data = request.GET
+    elif request.method == 'POST':
+        data = request.POST
+    else:
+        raise ValueError("Invalid HTTP method: " + request.method)
+
+    skeleton_ids = get_request_list(data, 'skeleton_ids', map_fn=int)
+    if not skeleton_ids:
+        raise ValueError('Need at least one skeleton ID')
+
+    with_treenodes = get_request_bool(data, 'with_treenodes', False)
+
+    if with_treenodes:
+        tn_projection = ', imported_treenodes'
+        tn_aggregate = ', array_agg(t.id)'
+    else:
+        tn_projection = ''
+        tn_aggregate = ''
+
+    # For each passed in skeleton, select the initial transaction for each of
+    # its treenodes (i.e. when they were created) and find the ones that are
+    # labeled as "skeletons.import".
+    #
+    # Technically we need to add the following line to also heck for a matching
+    # execution time in case transaction wraparound recycled transaction IDs.
+    # This is no present danger, but should be employed at some point. The
+    # problem is that they the catmaid_transaction_info timestamp doesn't
+    # presently match the Django model defaults.
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT query.skeleton_id, n_imported_treenodes {tn_projection}
+        FROM UNNEST(%(skeleton_ids)s::bigint[]) query(skeleton_id)
+        JOIN catmaid_skeleton_summary css
+            ON css.skeleton_id = query.skeleton_id
+        JOIN LATERAL (
+            SELECT COUNT(*) {tn_aggregate} AS n_imported_treenodes
+            FROM treenode t
+            JOIN LATERAL (
+                -- Get original transaction ID and creation time
+                SELECT txid, creation_time
+                FROM treenode__with_history th
+                WHERE th.id = t.id
+                ORDER BY creation_time ASC
+                LIMIT 1
+            ) t_origin
+                ON TRUE
+            JOIN LATERAL (
+                SELECT label
+                FROM catmaid_transaction_info cti
+                WHERE cti.transaction_id = t_origin.txid
+                    --TODO: Add transaction ID wraparound match protection. See
+                    --comment above query.
+                    --AND cti.execution_time = t_origin.creation_time
+            ) t_origin_label
+                ON t_origin_label.label = 'skeletons.import'
+            WHERE t.skeleton_id = query.skeleton_id
+        ) sub
+            ON TRUE
+        WHERE css.project_id = %(project_id)s
+    """.format(**{
+        'tn_projection': tn_projection,
+        'tn_aggregate': tn_aggregate,
+    }), {
+        'project_id': project_id,
+        'skeleton_ids': skeleton_ids,
+    })
+
+    if with_treenodes:
+        import_info = dict((c1, {
+            'n_imported_treenodes': c2,
+            'imported_treenodes': c3
+        }) for c1, c2, c3 in cursor.fetchall())
+    else:
+        import_info = dict((c1, {
+            'n_imported_treenodes': c2,
+        }) for c1, c2 in cursor.fetchall())
+
+    return JsonResponse(import_info)

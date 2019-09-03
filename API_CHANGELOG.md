@@ -22,6 +22,10 @@ included in this changelog.
 - `GET|POST /{project_id}/skeletons/origin`:
   Gets origin information on a list of `skeleton_ids`.
 
+- `GET|POST /{project_id}/skeletons/import-info`:
+  Gets information on which and how many nodes are imported in a set of
+  skeletons.
+
 ### Modifications
 
 - `POST|GET /{project_id}/node/list`:

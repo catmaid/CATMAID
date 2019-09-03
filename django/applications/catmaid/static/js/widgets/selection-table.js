@@ -487,9 +487,24 @@
             ["Minimal review time (min): ", review_time_string],
             ["Multiuser review time (min): ", review_time_string2],
             ["Reviewed skeleton nodes:", format(json.review_contributors)],
+            ["Imported nodes:", '-', 'n-imported-nodes'],
           ].map(function(row) {
-            return "<tr><td>" + row[0] + "</td><td>" + row[1] + "</td></tr>";
+            let cellId = row.length === 3 ? ` id="${row[2]}"` : '';
+            return `<tr><td>${row[0]}</td><td ${cellId}>${row[1]}</td></tr>`;
           }).join('');
+
+          // Request information on imported nodes in this skeleton.
+          CATMAID.Skeletons.importInfo(project.id, skeleton_ids, false)
+            .then(importInfo => {
+              let target = table.querySelector('#n-imported-nodes');
+              if (target) {
+                let sum = Object.keys(importInfo).reduce((s, k) => {
+                  return s + importInfo[k].n_imported_treenodes || 0;
+                }, 0);
+                target.innerHTML = `${sum}`;
+              }
+            })
+            .catch(CATMAID.handleError);
 
           dialog.appendChild(table);
 

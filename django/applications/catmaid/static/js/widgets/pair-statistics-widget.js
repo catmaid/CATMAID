@@ -28,6 +28,8 @@
     this.maxGroupInstances = 2;
     // Whether or not to do completeness tests for skeletons.
     this.useOnlyCompleteSkeletons = true;
+    // How many skeletons to query completeness for at a time.
+    this.completenessBatchSize = 100;
 
     // Annotation groups
     this.groups = new Map();
@@ -479,6 +481,22 @@
           },
         });
 
+        controls.push({
+          type: 'numeric',
+          label: 'Batch size',
+          title: 'The number skeletons per completeness query. This can be tuned to get more throughput depending on the server setup.',
+          value: target.completenessBatchSize,
+          length: 4,
+          min: 0,
+          max: 10,
+          step: 1,
+          onchange: e => {
+            let value = Number(e.target.value);
+            if (Number.isNaN(value)) return;
+            target.completenessBatchSize = Math.floor(value);
+          }
+        });
+
         let mainCompletenessSection = document.createElement('span');
         mainCompletenessSection.classList.add('section-header');
         mainCompletenessSection.appendChild(document.createTextNode('Main completeness'));
@@ -705,17 +723,26 @@
             // respective configurations.
             let completenessPromises = [];
             if (mainSkeletonIds.size > 0) {
-              completenessPromises.push(CATMAID.Skeletons.completeness(
-                  project.id, Array.from(mainSkeletonIds),
-                  widget.mainMaxOpenEnds, widget.mainMinNodes,
-                  widget.mainMinCable, widget.mainIgnoreFragments,
-                  true));
+              let batches = [];
+              let workingSet = Array.from(mainSkeletonIds);
+              for (let i=0; i<mainSkeletonIds.size; i +=widget.completenessBatchSize) {
+                let batch = workingSet.slice(i, Math.min(workingSet.length, i + widget.completenessBatchSize));
+                completenessPromises.push(CATMAID.Skeletons.completeness(
+                    project.id, batch, widget.mainMaxOpenEnds,
+                    widget.mainMinNodes, widget.mainMinCable,
+                    widget.mainIgnoreFragments, true));
+                }
             }
             if (extraSkeletonIds.size > 0) {
-              completenessPromises.push(CATMAID.Skeletons.completeness(
-                  project.id, Array.from(extraSkeletonIds),
-                  widget.extraMaxOpenEnds, widget.extraMinNodes,
-                  widget.extraMinCable, widget.extraIgnoreFragments));
+              let batches = [];
+              let workingSet = Array.from(extraSkeletonIds);
+              for (let i=0; i<extraSkeletonIds.size; i +=widget.completenessBatchSize) {
+                let batch = workingSet.slice(i, Math.min(workingSet.length, i + widget.completenessBatchSize));
+                completenessPromises.push(CATMAID.Skeletons.completeness(
+                    project.id, batch, widget.extraMaxOpenEnds,
+                    widget.extraMinNodes, widget.extraMinCable,
+                    widget.extraIgnoreFragments));
+              }
             }
 
             return Promise.all(completenessPromises)

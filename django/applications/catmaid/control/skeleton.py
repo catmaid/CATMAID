@@ -3885,7 +3885,7 @@ def import_info(request:HttpRequest, project_id=None) -> JsonResponse:
 
     if with_treenodes:
         tn_projection = ', imported_treenodes'
-        tn_aggregate = ', array_agg(t.id)'
+        tn_aggregate = ', array_agg(t.id) AS imported_treenodes'
     else:
         tn_projection = ''
         tn_aggregate = ''
@@ -3906,7 +3906,7 @@ def import_info(request:HttpRequest, project_id=None) -> JsonResponse:
         JOIN catmaid_skeleton_summary css
             ON css.skeleton_id = query.skeleton_id
         JOIN LATERAL (
-            SELECT COUNT(*) {tn_aggregate} AS n_imported_treenodes
+            SELECT COUNT(*) AS n_imported_treenodes {tn_aggregate}
             FROM treenode t
             JOIN LATERAL (
                 -- Get original transaction ID and creation time

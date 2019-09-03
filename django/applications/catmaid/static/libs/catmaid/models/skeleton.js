@@ -591,7 +591,7 @@
      * @return A Promise resolving into completeness information.
      */
     completeness: function(projectId, skeletonIds, openEndsPercent = 0.03,
-        minNodes = 500, minCable = 0, ignoreFragments = true) {
+        minNodes = 500, minCable = 0, ignoreFragments = true, parallel = false) {
       return CATMAID.fetch({
         url: project.id + '/skeletons/completeness',
         method:'POST',
@@ -602,7 +602,7 @@
           min_cable: minCable,
           ignore_fragments: ignoreFragments,
         },
-        parallel: true,
+        parallel: parallel,
       });
     },
 

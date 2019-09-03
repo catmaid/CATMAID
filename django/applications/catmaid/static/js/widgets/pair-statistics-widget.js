@@ -741,7 +741,7 @@
                 completenessPromises.push(CATMAID.Skeletons.completeness(
                     project.id, batch, widget.extraMaxOpenEnds,
                     widget.extraMinNodes, widget.extraMinCable,
-                    widget.extraIgnoreFragments));
+                    widget.extraIgnoreFragments, true));
               }
             }
 

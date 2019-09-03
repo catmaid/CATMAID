@@ -475,23 +475,71 @@ class UserFocusedManager(models.Manager):
             return full_set.filter(Q(project__in=admin_projects) | (Q(project__in=other_projects) & Q(user=user)))
 
 
-class UserFocusedModel(models.Model):
-    objects = UserFocusedManager()
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    creation_time = models.DateTimeField(default=timezone.now)
-    edition_time = models.DateTimeField(default=timezone.now)
+class TimeFocusedModel(models.Model):
+    # Defaults for creation_time and edition_time are managed by the database
+    # (they are the transaction start time, `now()`). The None value is checked
+    # on inserts and if present, the database will be responsible for the
+    # default value. See _do_insert() below. This is done so that the default
+    # values match the catmaid_transaction_info table entries.
+    creation_time = models.DateTimeField(default=None)
+    edition_time = models.DateTimeField(default=None)
+
+    def _do_insert(self, manager, using, fields, update_pk, raw):
+        """Modify the database INSERT so that the database default values for
+        creation_time and edition_time can be used. This is helpful to match
+        catmaid_transaction_info entries both on a transaction ID and the
+        creation time (to be save from transaction wraparound duplicates).
+
+        Without this, we would use the datetime.now() time, which is Django's
+        view and is different from the database transaction start time.
+        """
+        filtering = True
+        db_time_default_fiels = []
+        while filtering:
+            rescan = False
+            for i, f in enumerate(fields):
+                if f.attname == 'creation_time' and self.creation_time is None:
+                    fields.pop(i)
+                    rescan = True
+                    db_time_default_fiels.append('creation_time')
+                    break
+                elif f.attname == 'edition_time' and self.edition_time is None:
+                    fields.pop(i)
+                    rescan = True
+                    db_time_default_fiels.append('edition_time')
+                    break
+            filtering = rescan
+
+        insert_result =  super()._do_insert(manager, using, fields, update_pk, raw)
+
+        # If DB defaults were used for this model, update the local
+        # representation of these fields.
+        if db_time_default_fiels:
+            cursor = connection.cursor()
+            cursor.execute("SELECT now()")
+            tx_time = cursor.fetchone()[0]
+            for f in db_time_default_fiels:
+                setattr(self, f, tx_time)
+
+        return insert_result
 
     class Meta:
         abstract = True
 
 
-class NonCascadingUserFocusedModel(models.Model):
+class UserFocusedModel(TimeFocusedModel):
+    objects = UserFocusedManager()
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+
+    class Meta:
+        abstract = True
+
+
+class NonCascadingUserFocusedModel(TimeFocusedModel):
     objects = UserFocusedManager()
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     project = models.ForeignKey(Project, on_delete=models.DO_NOTHING)
-    creation_time = models.DateTimeField(default=timezone.now)
-    edition_time = models.DateTimeField(default=timezone.now)
 
     class Meta:
         abstract = True

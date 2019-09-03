@@ -137,6 +137,16 @@ Import/Export widget:
   allows the widget to display local skeleton IDs, if the remote ID has already
   been imported from the current source URL.
 
+Neuron navigator:
+
+- The new button "Imported nodes" will list all imported treenodes for the
+  displayed skeleton.
+
+- The detail view of an annotation will now list the time a neuron was annotated
+  next to the listed neuron name. The last time this link was edited is shown as
+  well.
+
+
 Miscellaneous:
 
 - Projects can now be kept open if all last stack-viewers are closed. To not
@@ -152,9 +162,6 @@ Miscellaneous:
 
 - Selection table: the summary info button now shows also the number of imported
   nodes within the selected skeletons.
-
-- Neuron navigator: the new button "Imported nodes" will list all imported
-  treenodes for the displayed skeleton.
 
 ### Bug fixes
 

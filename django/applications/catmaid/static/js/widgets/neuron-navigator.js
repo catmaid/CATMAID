@@ -1162,12 +1162,19 @@
     // Create neuron table
     var selected_cb1 = document.createElement('input');
     selected_cb1.setAttribute('type', 'checkbox');
-    var columns1 = [selected_cb1, 'Name'];
-    var table_header = document.createElement('thead');
-    table_header.appendChild(this.create_header_row(columns1));
     var selected_cb2 = document.createElement('input');
     selected_cb2.setAttribute('type', 'checkbox');
+
+    var columns1 = [selected_cb1, 'Name'];
     var columns2 = [selected_cb2, 'Name'];
+
+    if (filters.annotations) {
+      columns1.push('Annotated on (UTC)', 'Link last edited on (UTC)');
+      columns2.push('Annotated on (UTC)', 'Link last edited on (UTC)');
+    }
+
+    var table_header = document.createElement('thead');
+    table_header.appendChild(this.create_header_row(columns1));
     var table_footer = document.createElement('tfoot');
     table_footer.appendChild(this.create_header_row(columns2));
     var table = document.createElement('table');
@@ -1184,9 +1191,26 @@
     // Add table to DOM
     $container.append(content);
 
+    let extraColumns =  [];
+    let printCreationTime = a => CATMAID.tools.dateToString(CATMAID.tools.isoStringToDate(a.creation_time));
+    let printEditionTime = a => CATMAID.tools.dateToString(CATMAID.tools.isoStringToDate(a.edition_time));
+    if (filters.annotations) {
+      extraColumns.push({
+        "orderable": true,
+        "render": function(data, type, row, meta) {
+          return row.filterAnnotations.map(printCreationTime).join(', ');
+        }
+      });
+      extraColumns.push({
+        "orderable": true,
+        "render": function(data, type, row, meta) {
+          return row.filterAnnotations.map(printEditionTime).join(', ');
+        }
+      });
+    }
+
     // Fill neuron table
     var datatable = $(table).dataTable({
-      // http://www.datatables.net/usage/options
       "destroy": true,
       "dom": '<"H"lrf>t<"F"ip>',
       "processing": true,
@@ -1206,6 +1230,7 @@
         params['sort_dir'] = data.order[0].dir;
         params['types[0]'] = 'neuron';
         params['with_annotations'] = true;
+        params['with_timestamps'] = true;
 
         // Annotation filter
         if (filters.annotations) {
@@ -1256,6 +1281,21 @@
               result.error = json.error;
             }
 
+            // Make timestamps of annotation of interest more easily accessible.
+            if (filters.annotations) {
+              for (let e of json.entities) {
+                let filterAnnotations = [];
+                for (let aId of filters.annotations) {
+                  for (let a of e.annotations) {
+                    if (a.id === aId) {
+                      filterAnnotations.push(a);
+                    }
+                  }
+                }
+                e.filterAnnotations = filterAnnotations;
+              }
+            }
+
             // Let datatables know about new data
             dtCallback(result);
 
@@ -1294,7 +1334,7 @@
             return row.name;
           }
         }
-      ]
+      ].concat(extraColumns)
     });
 
     // Wire up handlers

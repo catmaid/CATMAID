@@ -26,6 +26,11 @@ included in this changelog.
   Gets information on which and how many nodes are imported in a set of
   skeletons.
 
+- `POST /{project_id}/annotations/query-targets`:
+  Accepts now an optional boolean "with_timestamps" parameter, which is set to
+  false by default. If set to true, the returned annotations will include their
+  creation_time and edition_time.
+
 ### Modifications
 
 - `POST|GET /{project_id}/node/list`:

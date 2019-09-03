@@ -47,7 +47,8 @@ def get_annotation_to_id_map(project_id:Union[int,str], annotations:List, relati
 
 def get_annotated_entities(project_id:Union[int,str], params, relations=None, classes=None,
         allowed_classes=['neuron', 'annotation'], sort_by=None, sort_dir=None,
-        range_start=None, range_length=None, with_annotations:bool=True, with_skeletons:bool=True) -> Tuple[List, int]:
+        range_start=None, range_length=None, with_annotations:bool=True,
+        with_skeletons:bool=True, with_timestamps:bool=False) -> Tuple[List, int]:
     """Get a list of annotated entities based on the passed in search criteria.
     """
     if not relations:
@@ -326,16 +327,23 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
     if with_annotations:
         entity_ids = [e['id'] for e in entities]
         # Make second query to retrieve annotations and skeletons
+        annotation_fields = ['class_instance_a', 'class_instance_b',
+                    'class_instance_b__name', 'user_id']
+        if with_timestamps:
+            annotation_fields.append('creation_time')
+            annotation_fields.append('edition_time')
         annotations = ClassInstanceClassInstance.objects.filter(
             relation_id = relations['annotated_with'],
             class_instance_a__id__in = entity_ids).order_by('id').values_list(
-                    'class_instance_a', 'class_instance_b',
-                    'class_instance_b__name', 'user__id')
+                    *annotation_fields)
 
         annotation_dict:DefaultDict[Any, List] = defaultdict(list)
         for a in annotations:
-            annotation_dict[a[0]].append(
-            {'id': a[1], 'name': a[2], 'uid': a[3]})
+            ann_data = {'id': a[1], 'name': a[2], 'uid': a[3]}
+            if with_timestamps:
+                ann_data['creation_time'] = a[4]
+                ann_data['edition_time'] = a[5]
+            annotation_dict[a[0]].append(ann_data)
 
         for ent in entities:
             ent['annotations'] = annotation_dict.get(ent['id'], [])
@@ -505,6 +513,12 @@ def query_annotated_classinstances(request:HttpRequest, project_id:Optional[Unio
         defaultValue: id
         required: false
         paramType: form
+      - name: with_timestamps
+        description: Whether to return also the annotation time for each entity.
+        type: boolean
+        required: false
+        defaultValue: false
+        paramType: form
     models:
       annotated_entity:
         id: annotated_entity
@@ -557,10 +571,11 @@ def query_annotated_classinstances(request:HttpRequest, project_id:Optional[Unio
     range_start = request.POST.get('range_start', None)
     range_length = request.POST.get('range_length', None)
     with_annotations = get_request_bool(request.POST, 'with_annotations', False)
+    with_timestamps = get_request_bool(request.POST, 'with_timestamps', False)
 
     entities, num_total_records = get_annotated_entities(p.id, request.POST,
             relations, classes, allowed_classes, sort_by, sort_dir, range_start,
-            range_length, with_annotations)
+            range_length, with_annotations, with_timestamps=with_timestamps)
 
     return JsonResponse({
       'entities': entities,

@@ -1860,7 +1860,12 @@ var WindowMaker = new function()
           ['Skeletons as CSV', WA.exportSkeletonsAsCSV.bind(WA)],
           ['Neuron names', WA.exportNames.bind(WA)],
           ['Connectors as CSV', WA.exportConnectorsAsCSV.bind(WA)],
-          ['Synapses as CSV', WA.exportSynapsesAsCSV.bind(WA)],
+          {
+            type: 'button',
+            label: 'Synapses as CSV',
+            title: 'Export two CSV files: 1. all synaptic connections 2. the name of every involved skeleton',
+            onclick: WA.exportSynapsesAsCSV.bind(WA),
+          },
           ['Synapse count CSV', WA.countObjects.bind(WA)],
           ['Animation', WA.exportAnimation.bind(WA)],
           ['Skeletons as OBJ', function() {

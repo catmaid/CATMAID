@@ -2281,6 +2281,48 @@
       container.appendChild(searchForm);
     };
 
+    let addGlobalButtons = function(container) {
+      let clearSettingsButton = document.createElement('button');
+      clearSettingsButton.appendChild(document.createTextNode('Clear settings'));
+      clearSettingsButton.style.marginLeft = '1em';
+      clearSettingsButton.addEventListener('click', e => {
+        // Ask for confirmation
+        let dialog = new CATMAID.OptionsDialog("Clear settings");
+        dialog.appendMessage('Please select the settings you want to remove');
+        let scope = SETTINGS_SCOPE;
+        let backendSettingsCb = dialog.appendCheckbox(
+            `Clear all ${scope} back-end settings (settings widget)`, false, undefined,
+            'Whether or not all back-end settings of this scope should be deleted. Defaults are used instead.');
+        let frontendSettingsCb = dialog.appendCheckbox(
+            'Clear all global front-end settings (widget settings)', false, undefined,
+            'Whether or not front-end settings should be cleared. Defaults are used instead.');
+        dialog.onOK = e => {
+          if (!frontendSettingsCb.checked && !backendSettingsCb.checked) {
+            throw new CATMAID.Warning("Please select at least one option");
+          }
+          if (frontendSettingsCb.checked) {
+            // Remove all client-side settings
+            CATMAID.clearLocalSettings();
+            CATMAID.msg("Success", "All local settings cleaered");
+          }
+          if (backendSettingsCb.checked) {
+            // Remove all back-end settings
+            let settingsStore = CATMAID.DataStoreManager.get(CATMAID.Settings.DATA_STORE_NAME);
+            settingsStore.clearStore(scope)
+              .then(() => {
+                CATMAID.msg('Success', `All ${scope} back-end settings cleared`);
+              })
+              .catch(CATMAID.handleError);
+          }
+        };
+
+        dialog.show(400, 'auto');
+      });
+
+      container.appendChild(clearSettingsButton);
+    };
+
+
     var SETTINGS_SCOPE = 'session';
 
     function getScope() {
@@ -2294,6 +2336,7 @@
       buttonContainer.style.margin = ".5em .5em 1em .5em";
       addSettingsScopeSelect(buttonContainer);
       addSettingsFilter(buttonContainer, space);
+      addGlobalButtons(buttonContainer);
       space.appendChild(buttonContainer);
 
       // Add all settings

@@ -199,6 +199,19 @@
     }, this);
   };
 
+  /**
+   * Clear all data in this data store. Warning, this is a destructive method.
+   */
+  DataStore.prototype.clearStore = function (scope) {
+    return CATMAID.fetch(`/client/datastores/${this.name}/`, 'DELETE', {
+      project_id: (scope === 'USER_DEFAULT' ||
+                   scope === 'GLOBAL') ?
+          undefined : project.id,
+      ignore_user: scope === 'PROJECT_DEFAULT' ||
+                   scope === 'GLOBAL',
+    });
+  };
+
   CATMAID.DataStore = DataStore;
 
   /**

@@ -163,6 +163,10 @@ Miscellaneous:
 - Selection table: the summary info button now shows also the number of imported
   nodes within the selected skeletons.
 
+- Settings widget: it is now possible to clear both front-end and back-end
+  settings through the "Clear settings" button. It will ask for confirmation and
+  whether both front-end and back-end settings should be cleared.
+
 ### Bug fixes
 
 

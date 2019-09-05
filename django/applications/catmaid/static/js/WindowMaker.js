@@ -41,6 +41,13 @@ var WindowMaker = new function()
   };
 
   /**
+   * Remove all stored widget states in the front-end.
+   */
+  CATMAID.clearLocalSettings = function() {
+    localStorage.clear();
+  };
+
+  /**
    * Store the state of a widget if there is a state manager available for it.
    */
   CATMAID.saveWidgetState = function(widget) {

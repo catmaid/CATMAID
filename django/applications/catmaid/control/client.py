@@ -262,6 +262,67 @@ class ClientDataList(APIView):
             serializer = ClientDataSerializer(data)
             return Response(serializer.data)
 
+    @method_decorator(requires_user_role_for_any_project([UserRole.Browse, UserRole.Annotate]))
+    def delete(self, request:Request, name=None) -> Response:
+        """Delete all key-value store datastores for the client.
+
+        The request user must not be anonymous and must have browse, annotate
+        or administer permissions for at least one project.
+        ---
+        parameters:
+        - name: project_id
+          description: |
+            ID of a project to delete data from, if any.
+          required: false
+          type: integer
+          paramType: form
+        - name: ignore_user
+          description: |
+            Whether to clear dataassociated with the instance or the request
+            user. Only project administrators can do this for project-associated
+            instance data, and only super users can do this for global data
+            (instance data not associated with any project).
+          required: false
+          type: boolean
+          default: false
+          paramType: form
+        """
+        if request.user == get_anonymous_user() or not request.user.is_authenticated:
+            raise PermissionDenied('Unauthenticated or anonymous users ' \
+                                   'can not delete datastores.')
+
+        project_id = request.data.get('project_id', None)
+        project = None
+        if project_id:
+            project_id = int(project_id)
+            project = get_object_or_404(Project, pk=project_id)
+            if not check_user_role(request.user,
+                                   project,
+                                   [UserRole.Browse, UserRole.Annotate]):
+                raise PermissionDenied('User lacks the appropriate ' \
+                                       'permissions for this project.')
+
+        ignore_user = get_request_bool(request.data, 'ignore_user', False)
+        if ignore_user and not project_id:
+            if not request.user.is_superuser:
+                raise PermissionDenied('Only super users can delete instance ' \
+                                       'data.')
+        if ignore_user:
+            if not check_user_role(request.user,
+                                   project,
+                                   [UserRole.Admin]):
+                raise PermissionDenied('Only administrators can delete ' \
+                                       'project default data.')
+        user = None if ignore_user else request.user
+
+        datastore = ClientDatastore(name=name)
+        n_deleted, _ = ClientData.objects.filter(datastore=datastore,
+                project=project, user=user).delete()
+        return Response({
+            'n_deleted': n_deleted,
+        })
+
+
 def set_instance_settings(settings, force=False):
     """Set instance settings if they are not yet set. If <force> is True, the
     values will be set regardless. The <settings> parameter is expected to be a

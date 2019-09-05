@@ -706,6 +706,7 @@ def _annotate_entities(project_id:Union[int,str], entity_ids, annotation_map:Dic
     will add an incrementing number starting from X for each entity.
     """
     new_annotations = set()
+    existing_annotations = set()
     r = Relation.objects.get(project_id = project_id,
             relation_name = 'annotated_with')
 
@@ -768,14 +769,16 @@ def _annotate_entities(project_id:Union[int,str], entity_ids, annotation_map:Dic
                         defaults=new_cici_defaults)
                 if created:
                     newly_annotated.add(entity_id)
-                elif update_existing:
-                    # Update creation time and edition_time, if requested
-                    cici.update(**new_cici_defaults)
+                else:
+                    existing_annotations.add(ci.id)
+                    if update_existing:
+                        # Update creation time and edition_time, if requested
+                        cici.update(**new_cici_defaults)
 
             # Remember which entities got newly annotated
             annotation_objects[ci] = newly_annotated
 
-    return annotation_objects, new_annotations
+    return annotation_objects, new_annotations, existing_annotations
 
 def _annotate_entities_with_name(project_id:Union[int,str], user_id, entity_ids) -> Tuple[List[List[Any]], List[List[Any]]]:
     cursor = connection.cursor()
@@ -896,8 +899,8 @@ def annotate_entities(request:HttpRequest, project_id = None) -> JsonResponse:
 
     # Annotate enties
     annotation_map = {a: { 'user_id': request.user.id } for a in annotations}
-    annotation_objs, new_annotations = _annotate_entities(project_id,
-            entity_ids, annotation_map)
+    annotation_objs, new_annotations, existing_annotations = _annotate_entities(
+            project_id, entity_ids, annotation_map)
     # Annotate annotations
     if meta_annotations:
         annotation_ids = [a.id for a in annotation_objs.keys()]
@@ -921,7 +924,8 @@ def annotate_entities(request:HttpRequest, project_id = None) -> JsonResponse:
             'id': a.id,
             'entities': list(e)
         } for a,e in annotation_objs.items()],
-        'new_annotations': list(new_annotations)
+        'new_annotations': list(new_annotations),
+        'existing_annotations': list(existing_annotations),
     }
 
     return JsonResponse(result)

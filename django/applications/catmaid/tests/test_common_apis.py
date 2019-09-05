@@ -499,8 +499,8 @@ class ViewPageTests(TestCase):
 
         skeleton_id = 373
         neuron_id = 374
-        _, new_annotations = _annotate_entities(self.test_project_id, [neuron_id],
-                {'myannotation': {'user_id': self.test_user_id}})
+        _, new_annotations, existing = _annotate_entities(self.test_project_id,
+                [neuron_id], {'myannotation': {'user_id': self.test_user_id}})
         new_annotation_link_id = new_annotations.pop()
         url = '/%d/%d/1/1/compact-skeleton' % (self.test_project_id, skeleton_id)
         response = self.client.get(url, {

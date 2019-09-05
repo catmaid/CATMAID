@@ -206,15 +206,22 @@
             CATMAID.info('Annotation ' + name + ' added to ' +
                 result.annotations[0].entities.length +
                 (result.annotations[0].entities.length > 1 ? ' entities.' : ' entity.'));
+          } else if (result.existing_annotations.length > 0) {
+            CATMAID.info(`Annotation ${name} already exists.`);
           } else {
-            CATMAID.info('Couldn\'t add annotation ' + name + '.');
+            CATMAID.warn(`Couldn't add Annotation ${name}.`);
           }
         } else {
           if (result.used_annotations.length > 0) {
             CATMAID.info('Annotations ' + result.used_annotations.join(', ') + ' added.');
-          } else {
-            CATMAID.info('Couldn\'t add any of the annotations' +
-                result.annotation_names.join(', ') + '.');
+          }
+          if (result.existing_annotations.length > 0) {
+            CATMAID.info(`${result.existing_annotations.length} annotations exist already.`);
+          }
+          let nNotAddedAnnotations = result.annotations.length -
+              result.existing_annotations.length - result.new_annotations.length;
+          if (nNotAddedAnnotations > 0) {
+            CATMAID.warn(`Couldn't add ${nNotAddedAnnotations} annotations.`);
           }
         }
 

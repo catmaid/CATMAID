@@ -31,6 +31,12 @@ included in this changelog.
   false by default. If set to true, the returned annotations will include their
   creation_time and edition_time.
 
+- `POST /{project_id}/annotations/query-targets`:
+  Accepts now two additional sorting options: annotated_on,
+  last_annotation_link_edit. The first one sorts by the date the matched
+  annotations were added to the target. The second option sorts by when this
+  link was edited last.
+
 ### Modifications
 
 - `POST|GET /{project_id}/node/list`:

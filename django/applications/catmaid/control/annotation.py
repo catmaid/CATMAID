@@ -187,6 +187,11 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
 
     # Build needed joins for annotated_with search criteria
     joins = []
+    fields= ['ci.id, ci.user_id', 'ci.creation_time', 'ci.edition_time',
+            'ci.project_id', 'ci.class_id', 'ci.name', 'skel_link.skeletons']
+
+    creation_timestamp_fields = []
+    edition_timestamp_fields = []
     for n, annotation_id_set in enumerate(annotation_id_sets):
         joins.append("""
             INNER JOIN class_instance_class_instance cici{n}
@@ -197,6 +202,14 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
             cici{n}.relation_id = %(annotated_with)s AND
             cici{n}.class_instance_b = ANY (%(cici{n}_ann)s)
         """.format(n=n))
+
+        if with_timestamps:
+            c_field = f'cici{n}.creation_time'
+            e_field = f'cici{n}.edition_time'
+            fields.append(c_field)
+            fields.append(e_field)
+            creation_timestamp_fields.append(c_field)
+            edition_timestamp_fields.append(e_field)
 
         params['cici{}_ann'.format(n)] = list(annotation_id_set)
 
@@ -287,13 +300,23 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
         "where": " AND ".join(filters),
         "sort": "",
         "offset": offset,
-        "fields": "ci.id, ci.user_id, ci.creation_time, " \
-            "ci.edition_time, ci.project_id, ci.class_id, ci.name, " \
-            "skel_link.skeletons"
+        "fields": ', '.join(fields),
     }
 
     # Sort if requested
     if sort_dir and sort_by:
+        regular_sort_orders = ('id', 'name', 'first_name', 'last_name')
+        timebased_sort_order = ('annotated_on', 'last_annotation_link_edit')
+        if sort_by not in regular_sort_orders and sort_by not in timebased_sort_order:
+            raise ValueError(f'Unknown sort direction: {sort_by}')
+        if sort_by in timebased_sort_order and not with_timestamps:
+            raise ValueError('Set <with_timestamps> parameter to true')
+        if sort_by in regular_sort_orders:
+            sort_col = sort_by
+        elif sort_by == 'annotated_on':
+            sort_by = ', '.join(creation_timestamp_fields)
+        elif sort_by == 'last_annotation_link_edit':
+            sort_by = ', '.join(edition_timestamp_fields)
         query_fmt_params['sort'] = "ORDER BY {sort_col} {sort_dir}".format(
                 sort_col=sort_by, sort_dir=sort_dir.upper())
 
@@ -490,7 +513,7 @@ def query_annotated_classinstances(request:HttpRequest, project_id:Optional[Unio
         description: Indicates how results are sorted.
         type: string
         defaultValue: id
-        enum: [id, name, first_name, last_name]
+        enum: [id, name, first_name, last_name, 'annotated_on', 'last_annotation_link_edit']
         paramType: form
       - name: sort_dir
         description: Indicates sorting direction.
@@ -561,7 +584,8 @@ def query_annotated_classinstances(request:HttpRequest, project_id:Optional[Unio
     allowed_classes = get_request_list(request.POST, 'types', ['neuron', 'annotation'])
 
     sort_by = request.POST.get('sort_by', 'id')
-    if sort_by not in ('id', 'name', 'first_name', 'last_name'):
+    if sort_by not in ('id', 'name', 'first_name', 'last_name', 'annotated_on',
+            'last_annotation_link_edit'):
         raise ValueError("Only 'id', 'name', 'first_name' and 'last_name' "
                          "are allowed for the 'sort-dir' parameter")
     sort_dir = request.POST.get('sort_dir', 'asc')

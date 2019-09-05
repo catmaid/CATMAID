@@ -1226,7 +1226,13 @@
           params['range_start'] = data.start;
           params['range_length'] = data.length;
         }
-        params['sort_by'] = "name";
+        if (data.order[0].column === 2) {
+          params['sort_by'] = "annotated_on";
+        } else if (data.order[0].column === 3) {
+          params['sort_by'] = "last_annotation_link_edit";
+        } else {
+          params['sort_by'] = "name";
+        }
         params['sort_dir'] = data.order[0].dir;
         params['types[0]'] = 'neuron';
         params['with_annotations'] = true;

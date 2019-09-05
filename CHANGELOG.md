@@ -144,7 +144,7 @@ Neuron navigator:
 
 - The detail view of an annotation will now list the time a neuron was annotated
   next to the listed neuron name. The last time this link was edited is shown as
-  well.
+  well. Both columns can be used for sorting as well.
 
 
 Miscellaneous:

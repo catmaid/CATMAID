@@ -324,9 +324,7 @@
               title: "Created on",
               className: "cm-center",
               render: function(data, type, row, meta) {
-                var d = new Date(data);
-                return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()
-                    + ' ' + d.getHours() + ':' + d.getMinutes();
+                return CATMAID.tools.dateToString(new Date(1000 * data));
               }
             },
             {
@@ -334,9 +332,7 @@
               title: "Last modified",
               className: "cm-center",
               render: function(data, type, row, meta) {
-                var d = new Date(data);
-                return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()
-                    + ' ' + d.getHours() + ':' + d.getMinutes();
+                return CATMAID.tools.dateToString(new Date(1000 * data));
               }
             },
           ]

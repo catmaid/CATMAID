@@ -169,7 +169,7 @@ Miscellaneous:
 
 ### Bug fixes
 
-
+- Connector list: dates are now display correctly.
 
 ## Maintenance updates
 

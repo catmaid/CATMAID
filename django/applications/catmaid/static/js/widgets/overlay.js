@@ -2240,9 +2240,14 @@ var SkeletonAnnotations = {};
                 var noUI = SkeletonAnnotations.Settings.session.quick_single_node_merge;
 
                 if (noUI) {
+                  // Only add a source-model reference if the single-node source
+                  // neuron has a name different from "neuron <numner>".
+                  let mergedInName = json.neuron_name;
+                  let addFromNameRefRegEx = new RegExp('^neuron [0-9]\+$');
+                  let addFromNameRef = !addFromNameRefRegEx.test(mergedInName);
                   // Not specifying an annotation map will cause the combined
                   // annotation set of both skeletons to be used.
-                  merge(undefined, from_skid, to_skid);
+                  merge(undefined, from_skid, to_skid, undefined, addFromNameRef);
                 } else {
                   // Only show a dialog if the merged in neuron is annotated.
                   CATMAID.Annotations.forSkeleton(project.id, to_skid)

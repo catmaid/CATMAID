@@ -171,6 +171,10 @@ Miscellaneous:
 
 - Connector list: dates are now display correctly.
 
+- Tracing layer: merged-in single nodes will now also have their name remembered
+  as a new annotation in a join if their name doesn't follow the default pattern
+  "neuron <number>".
+
 ## Maintenance updates
 
 - CLI Exporter: if users should be exported, also export users of volumes.

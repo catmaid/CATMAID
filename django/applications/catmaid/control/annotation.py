@@ -929,8 +929,8 @@ def annotate_entities(request:HttpRequest, project_id = None) -> JsonResponse:
     if meta_annotations:
         annotation_ids = [a.id for a in annotation_objs.keys()]
         meta_annotation_map = {ma: { 'user_id': request.user.id } for ma in meta_annotations}
-        meta_annotation_objs, new_meta_annotations = _annotate_entities(
-                project_id, annotation_ids, meta_annotation_map)
+        meta_annotation_objs, new_meta_annotations, existing_meta_annotations = \
+                _annotate_entities(project_id, annotation_ids, meta_annotation_map)
         # Keep track of new annotations
         new_annotations.update(new_meta_annotations)
         # Update used annotation objects set

@@ -134,6 +134,13 @@
           <a href="#" data-role="url-to-clipboard"><i class="fa fa-copy" title="Copy to clipboard"></i></a>
           <a id="a_url" name="a_url" title="This is the URL to this view. You can bookmark it or send it to the people." href="" target="_blank">URL to this view</a>
         </p></div>
+        <div class="box_right" data-role="toolbar-box"><p>
+          <a href="#" data-role="pos-to-clipboard"><i class="fa fa-map-marker" title="Copy coordinates of the center of the field of view of the active stack viewer in project coordinates to the clipboard. Use Alt + Click to copy stack coorinates of the active stack."></i></a>
+          <input type="text" id="goto-user-input" name="position" size="7"
+          placeholder="Pos., ID, URL, …" title="Will try to parse in the following order: project coordinate tuple, stack coordinate tuple ('px' suffix), bookmarks, location IDs (treenodes, connectors), neuron IDs, skeleton IDs. If muliple IDs are provided, a selection table is opened."/>
+          <a href="#" data-role="go-to"><i class="fa fa-angle-double-right"
+              title="Parse text in input as location or ID and go to and select, respectively. Locations will also be stored as bookmark. If a location has the suffix 'px', it is treated as stack space coordinate of the primary stack."></i></a>
+        </p></div>
         <div class="toolbar_fill"></div>
       </div>
       <!--

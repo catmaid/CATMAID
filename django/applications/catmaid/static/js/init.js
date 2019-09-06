@@ -1525,6 +1525,25 @@ var project;
   };
 
   /**
+   * A command is a string that can trigger some action. By default this string
+   * will first looked as a project or stack location. If this interpretation
+   * isn't successful, it is interpreted as a location and concept ID. Next,
+   * bookmarks are looked up. Ultimately, it is tried to interpret it as regular
+   * URL parameters. Additional interpretors can be added through
+   * CATMAID.registerCommandParser().
+   */
+  Client.prototype.handleCommand = function(command) {
+    return Promise.resolve()
+      .then(() => CATMAID.handleTextCommand(command))
+      .then(handled => {
+        if (!handled) {
+          CATMAID.warn("Could not find any match");
+        }
+        return handled;
+      });
+  };
+
+  /**
    * Warns the user with a dialog about potential WebGL performance issues.
    */
   Client.warnOnPotentialGlPerformanceProblems = function () {

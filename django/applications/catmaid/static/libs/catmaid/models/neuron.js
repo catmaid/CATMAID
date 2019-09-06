@@ -54,7 +54,14 @@
             CATMAID.Neurons.trigger(CATMAID.Neurons.EVENT_NEURON_DELETED, neuronId);
             return result;
           });
-      }
+      },
+
+      /**
+       * Return all skeletons linked to this neuron.
+       */
+      getSkeletons: function(projectId, neuronId) {
+        return CATMAID.fetch(`${projectId}/neuron/${neuronId}/get-all-skeletons`);
+      },
   };
 
   // Provide some basic events

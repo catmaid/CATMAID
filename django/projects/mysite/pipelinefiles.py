@@ -188,6 +188,7 @@ JAVASCRIPT['catmaid'] = {
         'js/user.js',
         'js/remote.js',
         'js/WindowMaker.js',
+        'js/command.js',
         'js/skeleton-model.js',
         'js/skeleton-group.js',
         'js/time-series.js',

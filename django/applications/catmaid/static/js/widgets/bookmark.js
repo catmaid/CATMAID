@@ -99,6 +99,27 @@
   };
 
   /**
+   * Predicate to test if a particular key code is available for the passed in
+   * mode.
+   *
+   * @param  {number} keyCode      Emitted browser code for the mark key.
+   * @param  {string} mode         Retrieval mode, from Bookmarks.MODES.
+   * @return {boolean}             Indicates if bookmark is known.
+   */
+  Bookmarks.has = function (keyCode, mode) {
+    let bookmark = Bookmarks.entries.get(keyCode);
+    if (!bookmark) {
+      return false;
+    }
+    if (mode === Bookmarks.MODES.SKELETON && !bookmark.skeletonID) {
+      return false;
+    } else if (mode === Bookmarks.MODES.NODE && !bookmark.nodeID) {
+      return false;
+    }
+    return true;
+  };
+
+  /**
    * A simple bookmark creation and retrieval dialog.
    */
   Bookmarks.Dialog = function (mode, callback) {

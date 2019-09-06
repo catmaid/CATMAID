@@ -1623,12 +1623,16 @@ img.missing-image:before {
   border: 2px solid rgba(0,255,0,0.45);
 }
 
-a[data-role=url-to-clipboard] i {
+a[data-role=url-to-clipboard] i,
+a[data-role=go-to] i,
+a[data-role=pos-to-clipboard] i {
   color: #5459ff;
   margin: 0 0.5em 0 0.5em;
 }
 
-a[data-role=url-to-clipboard] i:hover {
+a[data-role=url-to-clipboard] i:hover,
+a[data-role=go-to] i:hover,
+a[data-role=pos-to-clipboard] i:hover {
   color: #ff8e43;
   margin: 0 0.5em 0 0.5em;
 }

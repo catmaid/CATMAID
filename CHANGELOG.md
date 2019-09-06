@@ -79,6 +79,31 @@ Tracing overlay:
   left corner of a stack viewer provides the "Data ordering" select box to
   change this setting. By default no ordering is applied.
 
+Navigator:
+
+- Two new buttons and a text input field on the right side of the toolbar allow
+  easier handling of locations: the first icon (the map marker) is a button to
+  copy the current location of the center of the view in project (physical)
+  coordinates. If clicked while the Alt key is pressed, stack (pixel)
+  coordinates will be copied. Both modes will copy the coordinates in the form
+  "X, Y, Z" to the clipboard.
+
+- The text input box allows to enter coordinates and other information. Pressing
+  enter or clicking the angle brackets on its right side will make CATMAID try
+  to interpret the text and act accordingly. The following interpretations are
+  attempted: 1. `Project coordinates` of the form "X, Y, Z" and "X, Y".
+  Parentheses and brackets are removed, 2. `Skeleton ID`, 3. `Location ID`
+  (treenode, connector, etc.), 4. `Neuron ID`, 5. `Bookmark letter` from the
+  bookmark system accessible through `;` and 6. Project coordinates from
+  `CATMAID URL`. These are tested in order and whatever matches first, wins.
+
+- Additionally, particular interpretations can be enforced by using any of the
+  following prefixes "stack:", "px:", "neuron:", "skeleton:", "node:",
+  "connector:", "url:" and "bookmark:". It is possible to use only the beginning
+  of a prefix, i.e. "stack: 1,2,3" is the same as "st 1,2,3". This will only try
+  the referenced parser. It also makes stack-coordinate parsing available, which
+  is otherwise not checked for.
+
 Administration:
 
 - The catmaid_update_cache_tables management command accepts now a `--jobs=n`

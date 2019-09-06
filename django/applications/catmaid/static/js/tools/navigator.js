@@ -79,6 +79,10 @@
         self.slider_s.getInputView(),
         slider_s_view.nextSibling );
 
+    this.input_goto_request = document.querySelector("div[data-role=toolbar-box] input#goto-user-input");
+    this.button_goto_request = document.querySelector("div[data-role=toolbar-box] a[data-role=go-to]");
+    this.button_copy_pos = document.querySelector("div[data-role=toolbar-box] a[data-role=pos-to-clipboard]");
+
     //! mouse catcher
     this.mouseCatcher = document.createElement( "div" );
     self.mouseCatcher.className = "sliceMouseCatcher";
@@ -408,6 +412,43 @@
       return false;
     };
 
+    var handleGoToRequest = function(e) {
+      let request = self.input_goto_request.value.trim();
+      if (request.length === 0) {
+        CATMAID.warn("No location, ID or bookmark query found");
+        return;
+      }
+
+      CATMAID.client.handleCommand(request)
+        .then(handled => {
+          if (handled) {
+            self.input_goto_request.blur();
+          }
+        })
+        .catch(CATMAID.handleError);
+    };
+
+    var handleGoToInputKeyDown = function(e) {
+      if (e.key === 'Enter') {
+        handleGoToRequest(e);
+        return false;
+      }
+      return true;
+    };
+
+    var hanleCopyPosRequest = function(e) {
+      if (e.altKey) {
+        let stack = project.getStackViewers()[0];
+        let stackLocation = `${stack.x.toFixed(2)}, ${stack.y.toFixed(2)}, ${stack.z.toFixed(2)}`;
+        CATMAID.tools.copyToClipBoard(stackLocation);
+        CATMAID.msg('Success', `Copied stack space location (px):<br />${stackLocation}`);
+      } else {
+        let projectLocation = `${project.coordinates.x}, ${project.coordinates.y}, ${project.coordinates.z}`;
+        CATMAID.tools.copyToClipBoard(projectLocation);
+        CATMAID.msg('Success', `Copied project space location (nm):<br />${projectLocation}`);
+      }
+    };
+
     this.getActions = function () {
       return actions;
     };
@@ -655,6 +696,10 @@
       self.input_y.onchange = changeYByInput;
       self.input_y.addEventListener( "wheel", YXMouseWheel, false );
 
+      self.input_goto_request.addEventListener('keypress', handleGoToInputKeyDown);
+      self.button_goto_request.addEventListener('click', handleGoToRequest);
+      self.button_copy_pos.addEventListener('click', hanleCopyPosRequest);
+
       self.updateControls();
     };
 
@@ -705,6 +750,10 @@
 
       self.input_y.onchange = null;
       self.input_y.removeEventListener( "wheel", YXMouseWheel, false );
+
+      self.input_goto_request.removeEventListener('keypress', handleGoToInputKeyDown);
+      self.button_goto_request.removeEventListener('click', handleGoToRequest);
+      self.button_copy_pos.removeEventListener('click', hanleCopyPosRequest);
 
       self.stackViewer = null;
     };

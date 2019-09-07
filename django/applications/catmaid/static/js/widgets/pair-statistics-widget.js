@@ -497,6 +497,16 @@
           }
         });
 
+        controls.push({
+          type: 'checkbox',
+          label: 'Only completed neurons',
+          title: 'Only completed neurons will be considered for pair statistics.',
+          value: target.useOnlyCompleteSkeletons,
+          onchange: e => {
+            target.useOnlyCompleteSkeletons = e.target.checked;
+          }
+        });
+
         let mainCompletenessSection = document.createElement('span');
         mainCompletenessSection.classList.add('section-header');
         mainCompletenessSection.appendChild(document.createTextNode('Main completeness'));

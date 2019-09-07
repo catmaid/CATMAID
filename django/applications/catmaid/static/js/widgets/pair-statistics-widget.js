@@ -14,8 +14,8 @@
     this.idPrefix = `pair-statistics-widget${this.widgetID}-`;
 
     // The current edit mode
-    this.mode = 'skeleton-pairs';
-    this.modes = ['skeleton-pairs', 'matching-pairs', 'pair-statistics'];
+    this.mode = 'groups';
+    this.modes = ['groups', 'matching-pairs', 'pair-statistics'];
 
     this.neuronNameService = CATMAID.NeuronNameService.getInstance();
 
@@ -204,8 +204,8 @@
   };
 
   PairStatisticsWidget.MODES = {
-    'skeleton-pairs': {
-      title: 'Skeleton pairs',
+    'groups': {
+      title: 'Groups',
       createControls: function(target) {
         let controls = [];
 

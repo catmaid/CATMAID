@@ -36,7 +36,7 @@
     this.extraGroups = new Map();
 
     // Matching parameters
-    this.newMatchName = '';
+    this.pairingMetaAnnotation = '';
 
     // Group completeness parameters
     this.mainMaxOpenEnds = 0.03;
@@ -171,6 +171,10 @@
     mode.createContent(this.content, this);
   };
 
+  PairStatisticsWidget.prototype.updateMatchReport = function() {
+    return Promise.resolve();
+  };
+
   PairStatisticsWidget.prototype.setMode = function(mode) {
     var index = this.modes.indexOf(mode);
     if (index === -1) {
@@ -181,26 +185,40 @@
     return true;
   };
 
-  /**
-   * Take all neurons that are grouped by the annotation configuration in the
-   * first tab (active neurons), remove incomple ones and match pairs between
-   * the groups.
-   */
-  PairStatisticsWidget.prototype.matchActiveNeurons = function() {
-    
+  PairStatisticsWidget.updatePairSource = function(source, pairs) {
+    // Update unmatched same group
+    let lut = new THREE.Lut("rainbow", pairs.length);
+    lut.setMin(0);
+    lut.setMax(pairs.length);
+    let counter = 0;
+    let models = {};
+    for (let pair of pairs) {
+      let color = lut.getColor(counter);
+      models[pair[0]] = new CATMAID.SkeletonModel(pair[0], undefined, color);
+      models[pair[1]] = new CATMAID.SkeletonModel(pair[1], undefined, color);
+      ++counter;
+    }
+    source.append(models);
   };
 
-  PairStatisticsWidget.extractSubGroupSets = function(source, target = new Map()) {
-    return Array.from(source.keys()).reduce((t,g) => {
-              let subgroups = source.get(g);
-              for (let [sg, aid] of subgroups.entries()) {
-                if (!t.has(sg)) {
-                  t.set(sg, new Set());
-                }
-                t.get(sg).add(aid);
-              }
-              return t;
-            }, target);
+  PairStatisticsWidget.addPairListElements = function(target, pairs, friendlyName) {
+    let selectedPairNames = pairs.map((pair, i) => {
+      let name = `${i}`;
+      let skeletonLinks = pair.map(skid => {
+        return `<a class="neuron-selection-link" href="#" data-id="${skid}">${skid}</a>`;
+      });
+      return `<span class="neuron-link-group">${name}</span>: ${skeletonLinks.join(', ')}`;
+    });
+    let selectedPairList = target.appendChild(document.createElement('p'));
+    if (pairs.length === 0) {
+      selectedPairList.appendChild(document.createTextNode(`Could not find any ${friendlyName} pairs`));
+    } else {
+      selectedPairList.style.display = 'flex';
+      selectedPairList.style.flexWrap = 'wrap';
+    }
+    let span = selectedPairList.appendChild(document.createElement('span'));
+    span.style.width = '85%';
+    span.innerHTML = selectedPairNames.join(', ');
   };
 
   PairStatisticsWidget.MODES = {
@@ -472,16 +490,6 @@
         let controls = [];
 
         controls.push({
-          type: 'text',
-          label: 'Match name',
-          value: target.newGroupName,
-          placeholder: '(optional)',
-          onchange: e => {
-            target.newGroupName = e.target.value;
-          },
-        });
-
-        controls.push({
           type: 'numeric',
           label: 'Batch size',
           title: 'The number skeletons per completeness query. This can be tuned to get more throughput depending on the server setup.',
@@ -639,14 +647,33 @@
           }
         });
 
+        let pairingSection = document.createElement('span');
+        pairingSection.classList.add('section-header');
+        pairingSection.appendChild(document.createTextNode('Pairing'));
+        mainCompletenessSection.title = 'Pairing properties for all subgroup skeletons.';
+        controls.push({
+          type: 'child',
+          element: pairingSection,
+        });
+
+        controls.push({
+          type: 'text',
+          label: 'Pairing meta-annotation',
+          value: target.pairingMetaAnnotation,
+          onchange: e => {
+            target.pairingMetaAnnotation = e.target.value;
+          },
+        });
+
         // Filter complete
         controls.push({
           type: 'button',
-          label: 'Match complete pairs',
+          label: 'Match pairs',
           title: 'Find all matching skeleton pairs between active annotation groups',
           onclick: e => {
-            target.matchActiveNeurons();
-            target.update();
+            target.updateMatchReport()
+              .then(() => target.update())
+              .catch(CATMAID.handleError);
           },
         });
 
@@ -655,10 +682,16 @@
       createContent: function(content, widget) {
         let currentGroupContainer = CATMAID.DOM.addResultContainer(content,
             "Active groups", true, true, true)[0];
+        let matchingPairsContainer = CATMAID.DOM.addResultContainer(content,
+            "Matched pairs across sub-groups", false, true, true)[0];
+        let ipsiPairsContainer = CATMAID.DOM.addResultContainer(content,
+            "Pairs in same sub-group", true, true, true)[0];
+        let contraPairsContainer = CATMAID.DOM.addResultContainer(content,
+            "Unmatched pairs across sub-groups (having one matched skeleton)", true, true, true)[0];
 
         // Map subgroup identifier to sets of annotations
-        let mainAnnotationMap = PairStatisticsWidget.extractSubGroupSets(widget.groups);
-        let extraAnnotationMap = PairStatisticsWidget.extractSubGroupSets(widget.extraGroups);
+        let mainAnnotationMap = CATMAID.SkeletonMatching.extractSubGroupSets(widget.groups);
+        let extraAnnotationMap = CATMAID.SkeletonMatching.extractSubGroupSets(widget.extraGroups);
         let subGroupMap = new Map([...mainAnnotationMap]);
         for (let [k,v] of extraAnnotationMap.entries()) {
           let set = subGroupMap.get(k);
@@ -683,6 +716,12 @@
           subGroupList.style.flexWrap = 'wrap';
         }
 
+        if (!widget.pairingMetaAnnotation || widget.pairingMetaAnnotation.length === 0) {
+          // TODO: Allow regardless
+          CATMAID.msg("Pairing meta annotation", "Please specify a pairing meta annotation");
+          return;
+        }
+
         let prepare = [
           // Get skeletons for all annotations. Combining multiple annotations
           // in one entry, results in an OR query
@@ -692,13 +731,41 @@
             'type': ['neuron'],
             'with_annotations': true,
           }),
+          // Get all annotations that are annotated with the pairing meta-annotation.
+          CATMAID.fetch(project.id + '/annotations/query-targets', 'POST', {
+            'annotated_with': [widget.pairingMetaAnnotation],
+            'annotation_reference': 'name',
+            'type': ['annotation'],
+          }),
         ];
 
         Promise.all(prepare)
           .then(results => {
+            let pairingMetaTargetSet = results[1].entities.reduce((t, e) => {
+              t.add(e.id);
+              return t;
+            }, new Set());
+
+            // Map skeleton IDs to their pairing annotations
+            let pairingMetaTargetMap = new Map();
+
             let annotationMap = results[0].entities.reduce((t, e) => {
               for (let i=0; i<e.annotations.length; ++i) {
                 let annotation = e.annotations[i];
+
+                // Collect valid pairing annotations per skeleton.
+                if (pairingMetaTargetSet.has(annotation.id)) {
+                  for (let j=0; j<e.skeleton_ids.length; ++j) {
+                    let skeletonId = e.skeleton_ids[j];
+                    if (!pairingMetaTargetMap.has(skeletonId)) {
+                      pairingMetaTargetMap.set(skeletonId, new Set());
+                    }
+                    let targetSet = pairingMetaTargetMap.get(skeletonId);
+                    targetSet.add(annotation.id);
+                  }
+                }
+
+                // Store only annotation mappings from focus annotations.
                 if (!annotationIdSet.has(annotation.id)) {
                   continue;
                 }
@@ -707,8 +774,8 @@
                   t.set(annotation.id, new Set());
                 }
                 let targetSet = t.get(annotation.id);
-                for (let i=0; i<e.skeleton_ids.length; ++i) {
-                  targetSet.add(e.skeleton_ids[i]);
+                for (let j=0; j<e.skeleton_ids.length; ++j) {
+                  targetSet.add(e.skeleton_ids[j]);
                 }
               }
               return t;
@@ -768,6 +835,7 @@
                 return {
                   annotationMap: annotationMap,
                   completionStatus: completionStatus,
+                  pairingMetaTargetMap: pairingMetaTargetMap,
                 };
               });
           })
@@ -834,25 +902,58 @@
               }
             }
 
-            // List matching ID pair information
-          })
-          .then(() => {
-            // Request completeness info
+            // List matching ID pair information. Compute all matches between
+            // neurons from each subgroup of a group. A neuron pair is matched
+            // if they share an annotation (such as cell type), indicated by a
+            // specific meta-annotation that needs to be shared by valid
+            // matching annotations.
+            let matchingPairSource = new CATMAID.BasicSkeletonSource('Skeleton pairs - matched across sub-group');
+            widget.groupSources.push(matchingPairSource);
+
+            let unmatchedIpsiPairSource = new CATMAID.BasicSkeletonSource('Skeleton pairs - unmatched same sub-group');
+            widget.groupSources.push(unmatchedIpsiPairSource);
+
+            let unmatchedContraPairSource = new CATMAID.BasicSkeletonSource('Skeleton pairs - unmatched across sub-group');
+            widget.groupSources.push(unmatchedContraPairSource);
+
+            let combinedGroups = CATMAID.SkeletonMatching.combineGroups([widget.groups, widget.extraGroups]);
+
+            CATMAID.SkeletonMatching.createMatchReport(project.id,
+                combinedGroups, meta.annotationMap, meta.pairingMetaTargetMap)
+              .then(report => {
+                this.matchReport = report;
+
+                // Update matched partner skeleton source
+                PairStatisticsWidget.updatePairSource(matchingPairSource,
+                    report.matchedContraPairs);
+                PairStatisticsWidget.updatePairSource(unmatchedIpsiPairSource,
+                    report.allIpsiPairs);
+                PairStatisticsWidget.updatePairSource(unmatchedContraPairSource,
+                    report.unmatchedControPairs);
+
+                // Update result display
+                PairStatisticsWidget.addPairListElements(matchingPairsContainer,
+                    report.matchedContraPairs, 'matched contra sub-group');
+                PairStatisticsWidget.addPairListElements(ipsiPairsContainer,
+                    report.allIpsiPairs, 'all same sub-group');
+                PairStatisticsWidget.addPairListElements(contraPairsContainer,
+                    report.unmatchedControPairs, 'unmatched contra sub-group');
+
+                CATMAID.msg("Success", "Computed pairing sets");
+              })
+              .catch(CATMAID.handleError);
           })
           .catch(CATMAID.handleError);
 
-        $(subGroupList).on('click', 'a[data-id]', e => {
-          let id = Number(e.target.dataset.id);
-          if (Number.isNaN(id)) {
-            CATMAID.warn("Could not parse ID: " + e.target.dataset.id);
-            return;
-          }
-          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', id);
-        });
-
-        let matchingPairsHeader = content.appendChild(document.createElement('h1'));
-        matchingPairsHeader.style.clear = 'both';
-        matchingPairsHeader.appendChild(document.createTextNode('Matching pairs'));
+        $(subGroupList).add(matchingPairsContainer).add(ipsiPairsContainer)
+          .add(contraPairsContainer).on('click', 'a[data-id]', e => {
+            let id = Number(e.target.dataset.id);
+            if (Number.isNaN(id)) {
+              CATMAID.warn("Could not parse ID: " + e.target.dataset.id);
+              return;
+            }
+            CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', id);
+          });
       }
     },
     'pair-statistics': {

@@ -94,7 +94,7 @@
   <p><em>Example:</em>To add the example lineage from before explicitely, the
   <em>Group name</em> could be set to <span class="inline-code">BLDc</span> and
   the list of subgroups could be <span class="inline-code">l|BLDc_l,
-  r|BLDc_r</span> or even <span class="inline-code">l|BLDc_l-cencsus, 
+  r|BLDc_r</span> or even <span class="inline-code">l|BLDc_l-census,
   r|BLDc_r-census</span>.</p>
 
 
@@ -140,6 +140,44 @@
   <p>The <em>Batch size</em> allows to tune how many skeletons will be queried
   completeness for at a time. If the server supports longer open connections,
   this value can be higher and more data queried in one request.</p>
+
+  <h4>Matching pairs</h4>
+
+  Based on the sets of (completed) skeletons that are collected for each
+  annotation subgroup, pairs of skeletons are selected that share a common
+  annotation. This can be any annotation as long as the annotation is annotated
+  with a particular <em>meta-annotation</em>. This meta-annotation is defined in
+  terms of the <em>Pairing meta-annotation</em> field in the UI.
+
+  Besides this set of matching skeleton pairs, two other sets of pairs are
+  created, resulting in the following three sets of skeleton pairs:
+
+  <ol>
+    <li>Matching pairs: both skeletons are from different subgroups within the
+      same group.</li>
+    <li>Same-group pairs: both skeletons are from the same subgroup, regardless
+      of their meta-annotations.</li>
+    <li>Unmatched pairs: both skeletons are from different subgroups with the
+      same group, while one of them has the required meta-annotation and the
+      other doesn't.</li>
+  </ol>
+
+  These sets will also be available as skeleton sources, in which one color is
+  used per skeleton pair.
+
+  <p><em>Example:</em>Consider the previously used example group, the lineage
+    <span class="inline-code">BLDc</span>, with its two subgroups
+    <span class="inline-code">BLDc_l</span> and <span class="inline-code">BLDc_r</span>.
+    In some cases pairs of neurons across both groups have been matched up and
+    annotated with <span class="inline-code">hemilateral_pair_<id1>_<id2></span>. These
+    annotations in turn are annotated with <span class="inline-code">brain-census</span>.
+    Using the <span class="inline-code">brain-census</span> annotation as
+    <em>pairing meta-annotation</em> allows the widget to use the fact that some
+    pairs are already verified. The <em>Matching pairs</em> tab will then
+    display the three sets of skeleton pairs above across these two subgroups,
+    viewing all skeleton pairs with both skeleton IDs meta-annotated with
+    <span class="inline-code">brain-census</span>.
+  </p>
 
 </body>
 </html>

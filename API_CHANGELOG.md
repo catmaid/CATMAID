@@ -37,6 +37,9 @@ included in this changelog.
   annotations were added to the target. The second option sorts by when this
   link was edited last.
 
+- GET|POST `/{project_id}/skeletons/completeness`:
+  Obtain compleness information on a list of skeletons.
+
 ### Modifications
 
 - `POST|GET /{project_id}/node/list`:

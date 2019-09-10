@@ -22,6 +22,7 @@ from django.views.decorators.cache import never_cache
 
 from rest_framework.decorators import api_view
 
+from catmaid.control import tracing
 from catmaid.models import (Project, UserRole, Class, ClassInstance, Review,
         ClassInstanceClassInstance, Relation, Sampler, Treenode,
         TreenodeConnector, SamplerDomain, SkeletonSummary, SamplerDomainEnd,
@@ -109,16 +110,16 @@ def open_leaves(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonR
         $ref: open_leaf_node
       required: true
     """
-    tnid = int(request.POST['treenode_id'])
+    treenode_id = int(request.POST['treenode_id'])
+    nearest, _ = _open_leaves(project_id, skeleton_id, treenode_id)
+    return JsonResponse(nearest, safe=False)
+
+
+def _open_leaves(project_id, skeleton_id, tnid=None):
     cursor = connection.cursor()
 
-    cursor.execute("""
-        SELECT id
-        FROM relation
-        WHERE project_id = %s
-        AND relation_name='labeled_as'
-        """, (int(project_id),))
-    labeled_as = cursor.fetchone()[0]
+    relations = get_relation_to_id_map(project_id, ['labeled_as'])
+    labeled_as = relations['labeled_as']
 
     # Select all nodes and their tags
     cursor.execute('''
@@ -130,13 +131,19 @@ def open_leaves(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonR
     # Some entries repeated, when a node has more than one tag
     # Create a graph with edges from parent to child, and accumulate parents
     tree = nx.DiGraph()
+    n_nodes = 0
     for row in cursor.fetchall():
+        n_nodes += 1
         node_id = row[0]
         if row[1]:
             # It is ok to add edges that already exist: DiGraph doesn't keep duplicates
             tree.add_edge(row[1], node_id)
         else:
             tree.add_node(node_id)
+
+            # Default to root node
+            if not tnid:
+                tnid = node_id
 
     if tnid not in tree:
         raise Exception("Could not find %s in skeleton %s" % (tnid, int(skeleton_id)))
@@ -180,7 +187,7 @@ def open_leaves(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonR
             d = distances[node_id]
             nearest.append([node_id, (row[1], row[2], row[3]), d, row[4]])
 
-    return JsonResponse(nearest, safe=False)
+    return nearest, n_nodes
 
 
 @api_view(['POST'])
@@ -233,7 +240,18 @@ def find_labels(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonR
     """
     tnid = int(request.POST['treenode_id'])
     label_regex = str(request.POST['label_regex'])
+
+    return JsonResponse(_find_labels(project_id, skeleton_id, label_regex, tnid))
+
+def _find_labels(project_id, skeleton_id, label_regex, tnid=None):
     cursor = connection.cursor()
+
+    if tnid is None:
+        cursor.execute("""
+            SELECT id FROM treenode
+            WHERE skeleton_id = %(skeleton_id)s AND parent_id IS NULL
+        """)
+        tnid = cursor.fetchone()[0]
 
     cursor.execute("SELECT id FROM relation WHERE project_id=%s AND relation_name='labeled_as'" % int(project_id))
     labeled_as = cursor.fetchone()[0]
@@ -3869,7 +3887,6 @@ def import_info(request:HttpRequest, project_id=None) -> JsonResponse:
         required: false
         defaultValue: false
     """
-
     if request.method == 'GET':
         data = request.GET
     elif request.method == 'POST':
@@ -3949,3 +3966,191 @@ def import_info(request:HttpRequest, project_id=None) -> JsonResponse:
         }) for c1, c2 in cursor.fetchall())
 
     return JsonResponse(import_info)
+
+
+@api_view(['GET', 'POST'])
+@requires_user_role([UserRole.Browse])
+def completeness(request:HttpRequest, project_id) -> JsonResponse:
+    """Obtain completeness information for a set of skeleton IDs.
+    ---
+    paramaters:
+      - name: project_id
+        description: Project of skeletons
+        type: integer
+        paramType: path
+        required: true
+      - name: skeleton_ids
+        description: IDs of the skeletons to get completeness for
+        required: true
+        type: array
+        items:
+          type: integer
+        paramType: form
+      - name: open_ends_percent
+        description: The number of allowed open ends in range [0,1].
+        type: float
+        paramType: form
+        default: 0.03
+        required: false
+      - name: min_nodes
+        description: |
+            The minimum number of nodes a complete skeleton has to have, e.g. to
+            exclude fragments.
+        type: int
+        paramType: form
+        default: 500
+        required: false
+      - name: min_cable
+        description: |
+            The minimum cable length in nm a complete skeleton has to have, e.g.
+            to exclude fragments.
+        type: float
+        paramType: form
+        default: 0
+        required: false
+      - name: ignore_fragments
+        description: |
+            Whether skeletons without a node tagged 'soma' or 'out to nerve'
+            should be ignored.
+        type: bool
+        paramType: form
+        default: true
+        required: false
+    """
+    if request.method == 'GET':
+        data = request.GET
+    elif request.method == 'POST':
+        data = request.POST
+    else:
+        raise ValueError("Unsupported HTTP method: " + request.method)
+
+    skeleton_ids = get_request_list(data, 'skeleton_ids', map_fn=int)
+    if not skeleton_ids:
+        raise ValueError('Need at least one skeleton ID')
+
+    open_ends_percent = min(max(float(data.get('open_ends_percent', 0.03)), 0.0), 1.0)
+    min_nodes = max(0, int(data.get('min_nodes', 500)))
+    min_cable = max(0.0, float(data.get('min_cable', 0)))
+    ignore_fragments = get_request_bool(data, 'ignore_fragments', True)
+
+    completeness = get_completeness_data(project_id, skeleton_ids,
+            open_ends_percent, min_nodes, min_cable, ignore_fragments)
+
+    return JsonResponse(completeness, safe=False)
+
+
+def get_completeness_data(project_id, skeleton_ids, open_ends_percent=0.03,
+        min_nodes=500, min_cable=0, ignore_fragments=True, include_data=False):
+    """Obtain completeness information for a set of skeleton IDs. Returns a two
+    element list containing the input skeleton ID and a boolean, indicating
+    whether the skeleton can be considered complete.If <include_data> is True,
+    A skeleton is considered complete if it fullfills all the constraints
+    defined through parameters.
+
+    The <open_ends_percent> is a value in range [0,1] and represents the ratio
+    of open leaf nodes versus total leaf nodes.
+    """
+    if not project_id or not skeleton_ids:
+        raise ValueError('Need project ID and skeleton IDs')
+
+    classes = get_class_to_id_map(project_id, ['label'])
+    relations = get_relation_to_id_map(project_id, ['labeled_as'])
+
+    tests = []
+    extra_joins = []
+    params = {
+        'project_id': project_id,
+        'skeleton_ids': skeleton_ids,
+        'min_nodes': min_nodes,
+        'min_cable': min_cable,
+        'ignore_fragments': ignore_fragments,
+        'open_ends_percent': open_ends_percent,
+        'labeled_as': relations['labeled_as'],
+    }
+
+    extra_select = []
+    if include_data:
+        extra_select = ['css.num_nodes', 'css.cable_length', 'n_open_ends',
+                'n_ends', 'is_fragment']
+
+    if open_ends_percent < 1.0 or include_data:
+        tests.append('open_end_ratio < %(open_ends_percent)s')
+        params['end_label_ci_ids'] = list(ClassInstance.objects.filter(
+                project_id=project_id, class_column_id=classes['label'],
+                name__in=tracing.end_tags).values_list('id', flat=True))
+        extra_joins.append("""
+            -- Compute open end ratio
+            LEFT JOIN LATERAL (
+                SELECT n_open_ends::float / n_ends::float, n_open_ends, n_ends
+                FROM (
+                    -- Tagged end nodes in skeleton
+                    SELECT COUNT(*) AS n_ends,
+                        COUNT(*) FILTER (WHERE n_tags = 0) AS n_open_ends
+                    FROM (
+                        SELECT t.id, COUNT(*) FILTER (WHERE tci.id IS NOT NULL) AS n_tags
+                        FROM treenode t
+                        LEFT JOIN treenode c
+                            ON c.parent_id = t.id OR (c.id = t.id AND c.parent_id IS NULL)
+                        LEFT JOIN treenode_class_instance tci
+                            ON tci.treenode_id = t.id
+                            AND tci.relation_id = %(labeled_as)s
+                            AND tci.class_instance_id = ANY(%(end_label_ci_ids)s::bigint[])
+                        WHERE c.id IS NULL
+                            AND t.skeleton_id = skeleton.id
+                        -- Needed, because treenodes can have multiple tags
+                        GROUP BY t.id
+                    ) categorized_ends(node_id, n_tags)
+                ) end_counts(n_ends, n_open_ends)
+            ) end_info(open_end_ratio, n_open_ends, n_ends)
+                ON TRUE
+        """)
+    if min_nodes > 0:
+        tests.append('css.num_nodes >= %(min_nodes)s')
+    if min_cable > 0:
+        tests.append('css.cable_length >= %(min_cable)s')
+    if ignore_fragments or include_data:
+        if ignore_fragments:
+            tests.append('NOT is_fragment')
+        # Find all skeleton IDs in the query set that have treenodes tagged with
+        # "soma" or "out to nerve"
+        non_fragment_tags = ['soma', 'out to nerve']
+        params['non_fragment_ci_ids'] = list(ClassInstance.objects.filter(
+                project_id=project_id, class_column_id=classes['label'],
+                name__in=non_fragment_tags).values_list('id', flat=True))
+        extra_joins.append("""
+            LEFT JOIN LATERAL (
+                SELECT NOT EXISTS(
+                    SELECT 1
+                    FROM treenode_class_instance tci
+                    JOIN treenode t
+                        ON t.id = tci.treenode_id
+                    JOIN class_instance ci
+                        ON ci.id = tci.class_instance_id
+                    WHERE ci.id = ANY(%(non_fragment_ci_ids)s::bigint[])
+                        AND t.skeleton_id = skeleton.id
+                        AND tci.relation_id = %(labeled_as)s
+                )
+            ) soma_labels(is_fragment)
+                ON TRUE
+        """)
+
+    # Default return value without filters.
+    if not tests:
+        tests.append('TRUE')
+
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT skeleton.id,
+            {is_complete}
+            {extra_select}
+        FROM catmaid_skeleton_summary css
+        JOIN UNNEST(%(skeleton_ids)s::bigint[]) skeleton(id)
+            ON skeleton.id = css.skeleton_id
+        {extra_joins}
+    """.format(**{
+        'is_complete': ' AND '.join(tests),
+        'extra_select': (',' + ', '.join(extra_select)) if extra_select else '',
+        'extra_joins': '\n'.join(extra_joins),
+    }), params)
+
+    return cursor.fetchall()

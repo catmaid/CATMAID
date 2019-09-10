@@ -1127,6 +1127,10 @@ div.review-block::after {
   bottom: -0.2em;
 }
 
+.result-container {
+  width: 100%;
+}
+
 .settings-container {
   clear: both;
   float: left;
@@ -1276,6 +1280,10 @@ div.review-block::after {
   fill: none;
   stroke: #fcc;
   stroke-width: 1.5px;
+}
+
+.neuron-link-group {
+  color: blue;
 }
 
 a.neuron-selection-link {

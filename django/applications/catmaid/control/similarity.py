@@ -213,7 +213,7 @@ class ConfigurationList(APIView):
             paramType: path
             required: true
           - name: simple
-            description: Wheter or not only ID and name should be returned
+            description: Whether or not only ID and name should be returned
             type: bool
             paramType: form
             required: false

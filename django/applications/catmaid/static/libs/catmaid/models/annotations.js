@@ -213,8 +213,90 @@
       return CATMAID.fetch(projectId + '/annotations/add-neuron-names', 'POST', {
           'skeleton_ids': skeletonIds,
         });
-    }
+    },
 
+    /**
+     * From the subset of annotations with names matching the regular expression
+     * <annotationFilter>
+     */
+    findGroupsAndSubgroups: function(annotationFilterPattern, metaAnnotationFilter,
+        groupPattern, minSubgroups, maxSubGroups, annotations = undefined) {
+      let promiseAnnotations = annotations ?
+        Promise.resolve(annotations)
+          .then((annotationCache) => {
+            return annotationCache.getAllNames().reduce((o, aName) => {
+              o.set(annotationCache.getID(aName), aName);
+              return o;
+            }, new Map());
+          })
+        :
+        CATMAID.fetch({
+            url: project.id + '/annotations/',
+            data: {
+              simple: true,
+            },
+          })
+          .then(response => {
+            return response.annotations.reduce((o, a) => {
+              o.set(a.id, a.name);
+              return o;
+            }, new Map());
+          });
+
+      return promiseAnnotations
+        .then(annotationNames => {
+          if (annotationFilterPattern && annotationFilterPattern[0] === '/') {
+            annotationFilterPattern = annotationFilterPattern.substr(1);
+          }
+          if (groupPattern && groupPattern[0] === '/') {
+            groupPattern = groupPattern.substr(1);
+          }
+          let annotationFilterRegex = new RegExp(
+              annotationFilterPattern && annotationFilterPattern.length > 0 ?
+              annotationFilterPattern : '.*');
+          let groupRegex = new RegExp(groupPattern);
+          if (!annotationFilterRegex || !groupRegex) return new Map();
+
+          let selectAnnotations = [];
+          // With all annotations available, we can now create the subset of
+          // relevant annotations, the ones matching both the <annotationFilter>
+          // regular expression and a potential meta-annotation rule.
+          for (let [key, value] of annotationNames) {
+            let valid = true;
+            if (annotationFilterRegex) {
+              valid = valid && annotationFilterRegex.test(value);
+            }
+            if (metaAnnotationFilter) {
+              // TODO: Check meta-annotations
+            }
+
+            if (valid) {
+              selectAnnotations.push(key);
+            }
+          }
+          let groups = new Map();
+          for (let annotationId of selectAnnotations) {
+            let groupInfo = groupRegex.exec(annotationNames.get(annotationId));
+            if (groupInfo === null || groupInfo.length !== 3) continue;
+
+            let groupName = groupInfo[1];
+            let instanceName = groupInfo[2];
+
+            if (!groups.has(groupName)) {
+              groups.set(groupName, new Map());
+            }
+            groups.get(groupName).set(instanceName, annotationId);
+          }
+
+          // Only keep the ones with allowed number of subgroups
+          for (let [key, value] of groups) {
+            if (value.size < minSubgroups || value.size > maxSubGroups) {
+              groups.delete(key);
+            }
+          }
+          return groups;
+        });
+    },
   };
 
   // Collect annotation related events in a dedicated object

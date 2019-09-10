@@ -382,6 +382,7 @@
       createContent: function(content, widget) {
         // Show table with current groups and sub groups.
         let groupTable = content.appendChild(document.createElement('table'));
+        groupTable.style.width = '100%';
         groupTable.appendChild(document.createElement('thead'));
         groupTable.appendChild(document.createElement('tbody'));
 
@@ -435,6 +436,7 @@
         extraGroupHeader.style.clear = 'both';
         extraGroupHeader.appendChild(document.createTextNode('Extra groups'));
         let extraGroupTable = content.appendChild(document.createElement('table'));
+        extraGroupTable.style.width = '100%';
         extraGroupTable.appendChild(document.createElement('thead'));
         extraGroupTable.appendChild(document.createElement('tbody'));
 

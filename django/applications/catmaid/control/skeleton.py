@@ -241,7 +241,7 @@ def find_labels(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonR
     tnid = int(request.POST['treenode_id'])
     label_regex = str(request.POST['label_regex'])
 
-    return JsonResponse(_find_labels(project_id, skeleton_id, label_regex, tnid))
+    return JsonResponse(_find_labels(project_id, skeleton_id, label_regex, tnid), safe=False)
 
 def _find_labels(project_id, skeleton_id, label_regex, tnid=None):
     cursor = connection.cursor()
@@ -309,7 +309,7 @@ def _find_labels(project_id, skeleton_id, label_regex, tnid=None):
 
     nearest.sort(key=lambda n: n[2])
 
-    return JsonResponse(nearest, safe=False)
+    return nearest
 
 
 @api_view(['POST'])

@@ -17,7 +17,7 @@ from catmaid.control import (authentication, user, group, log, message, client,
         classification, notifications, roi, clustering, volume, noop,
         useranalytics, user_evaluation, search, graphexport, transaction,
         graph2, circles, analytics, review, wiringdiagram, object, sampler,
-        similarity, skeletonpairs, nat, point, landmarks, pointcloud, pointset)
+        similarity, nat, point, landmarks, pointcloud, pointset)
 
 from catmaid.views import CatmaidView
 from catmaid.views.admin import ProjectDeletion

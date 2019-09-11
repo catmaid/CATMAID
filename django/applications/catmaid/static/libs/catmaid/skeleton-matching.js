@@ -78,6 +78,11 @@
    * The goal is to compute three kinds of sets of skeleton pairs. The first one
    * combines all matched skeletons between two sub-groups in all combination as
    * long as both groups are involved.
+   *
+   * TODO: Should it be allowed to only create only one matching pair per found
+   * pairingMetaAnnotation partners? I.e. does it always make sense to return
+   * all matching pairs that are linked to a single pairing meta annotation for
+   * a pair of subgroups?
    */
   SkeletonMatching.createMatchedPairs = function(subGroupMap, annotationMap,
       pairingMetaTargetMap) {

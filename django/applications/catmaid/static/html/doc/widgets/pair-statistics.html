@@ -130,7 +130,7 @@
   based annotation set and the set of extra groups.
   </p>
 
-  <p>Pressing "Match complete pairs" will get the completeness information from
+  <p>Pressing "Match pairs" will get the completeness information from
   the server. All complete neurons are mapped to their respective subgroups,
   which can be looked at either through the "Active groups" section in the
   content view of the "Matching pairs" tab, or in terms of skeleton sources,
@@ -140,6 +140,18 @@
   <p>The <em>Batch size</em> allows to tune how many skeletons will be queried
   completeness for at a time. If the server supports longer open connections,
   this value can be higher and more data queried in one request.</p>
+
+  <h4>Active groups</h4>
+
+  <p>Shows the list of all found subgroups across all groups. It shows the
+  groups each subgroup is found in as well as all <em>complete</em> skeletons
+  associated with the respective annotations.</p>
+
+  <p>Additionally, it is possible to define a <em>landmark group</em> for each
+  subgroup. These are spatial spaces defined through landmarks (see Landmark
+  Widget). This is needed to compute the similarity between pairs across
+  subgroups for each group. It allows transforming skeletons from one subgroup
+  into the other.</p>
 
   <h4>Matching pairs</h4>
 

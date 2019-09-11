@@ -714,8 +714,9 @@
         if (subGroupMap.size === 0) {
           subGroupList.appendChild(document.createTextNode('Could not find any sub-groups'));
         } else {
-          subGroupList.style.display = 'flex';
-          subGroupList.style.flexWrap = 'wrap';
+          subGroupList.style.display = 'grid';
+          subGroupList.style.gridGap = '0.5em';
+          subGroupList.style.gridTemplateColumns = '10em minmax(10em, min-content) auto';
         }
 
         if (!widget.pairingMetaAnnotation || widget.pairingMetaAnnotation.length === 0) {
@@ -870,14 +871,27 @@
               lut.setMax(annotationIds.length);
               // List number of active neurons for all available groups and update
               // skeleton sources.
+              let header1 = subGroupList.appendChild(document.createElement('span'));
+              header1.innerHTML = '<b>Subgroup</b>';
+              let header2 = subGroupList.appendChild(document.createElement('span'));
+              header2.innerHTML = '<b>Space</b>';
+              let header3 = subGroupList.appendChild(document.createElement('span'));
+              let completedInfo = widget.useOnlyCompleteSkeletons ? 'completed ' : '';
+              header3.innerHTML = `<b>Subgroup-annotations and ${completedInfo}skeletons</b>`;
+
               let counter = 0;
+              let landmarkGroupSelectMap = new Map();
               for (let [sg, annotationIds] of subGroupMap.entries()) {
                 let source = new CATMAID.BasicSkeletonSource('Pair statistics - sub-group ' + sg);
                 widget.groupSources.push(source);
 
                 let span1 = subGroupList.appendChild(document.createElement('span'));
-                span1.style.width = '10%';
                 span1.appendChild(document.createTextNode(sg));
+
+                let span2 = subGroupList.appendChild(document.createElement('span'));
+                span2.appendChild(document.createTextNode('...'));
+                landmarkGroupSelectMap.set(sg, span2);
+
                 let annotationNames = Array.from(annotationIds).map(e => {
                   let color = lut.getColor(counter);
                   ++counter;
@@ -898,10 +912,40 @@
                       ['(none)'];
                   return `<span class="neuron-link-group">${name}</span>: ${skeletonLinks.join(', ')}`;
                 });
-                let span2 = subGroupList.appendChild(document.createElement('span'));
-                span2.style.width = '85%';
-                span2.innerHTML = annotationNames.join(', ');
+                let span3 = subGroupList.appendChild(document.createElement('span'));
+                span3.innerHTML = annotationNames.join(', ');
               }
+
+              let prepare = CATMAID.Landmarks.listGroups(project.id).then(function(json) {
+                return json.sort(function(a, b) {
+                  return CATMAID.tools.compareStrings(a.name, b.name);
+                }).map(function(landmarkGroup) {
+                  return {
+                    title: landmarkGroup.name,
+                    value: landmarkGroup.id
+                  };
+                });
+              });
+
+              // Update all landmark group selectors once data becomes
+              // available.
+              let spaceGroupMapping = new Map();
+              prepare
+                .then(options => {
+                  for (let [sg, wrapper] of landmarkGroupSelectMap.entries()) {
+                    let select = CATMAID.DOM.createRadioSelect('Landmark group',
+                      options, undefined, true, 'selected');
+                    select.onchange = function(e) {
+                      spaceGroupMapping.set(sg, e.target.value);
+                    };
+                    // Clear content
+                    while (wrapper.lastChild) {
+                      wrapper.removeChild(wrapper.lastChild);
+                    }
+                    wrapper.appendChild(select);
+                  }
+                })
+                .catch(CATMAID.handleError);
             }
 
             // List matching ID pair information. Compute all matches between

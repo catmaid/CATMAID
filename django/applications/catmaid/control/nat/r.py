@@ -218,7 +218,7 @@ def export_skeleton_as_nrrd(skeleton_id, source_ref, target_ref, user_id, mirror
     }
 
 
-def test_r_environment() -> JsonResponse:
+def test_environment() -> JsonResponse:
     """Test if all required R packages are installed to use the NBLAST API.
     """
     setup_is_ok = False
@@ -247,7 +247,7 @@ def test_r_environment() -> JsonResponse:
     })
 
 
-def setup_r_environment() -> None:
+def setup_environment() -> None:
     """Install all R dependencies that are needed for NBLAST."""
     robjects.r("""
         if(!require("devtools")) install.packages("devtools")

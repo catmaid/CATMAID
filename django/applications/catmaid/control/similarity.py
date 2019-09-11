@@ -27,8 +27,8 @@ from catmaid.control.common import (insert_into_log, get_class_to_id_map,
 from catmaid.models import (NblastConfig, NblastSample, Project, PointSet,
         NblastConfigDefaultDistanceBreaks, NblastConfigDefaultDotBreaks,
         NblastSimilarity, PointCloud, UserRole)
-from catmaid.control.nat import (compute_scoring_matrix, nblast,
-        test_r_environment, setup_r_environment)
+from catmaid.control.nat.r import (compute_scoring_matrix, nblast,
+        test_environment, setup_environment)
 from catmaid.control.pointcloud import list_pointclouds
 
 
@@ -162,14 +162,14 @@ def serialize_pointcloud(pointcloud, with_locations=False, with_images=False) ->
 def install_dependencies() -> None:
     """Install all R rependencies.
     """
-    setup_r_environment()
+    setup_environment()
 
 
 @requires_user_role(UserRole.Browse)
 def test_setup(request, project_id) -> JsonResponse:
     """Test if all required R packages are installed to use the NBLAST API.
     """
-    return test_r_environment()
+    return test_environment()
 
 
 class ConfigurationDetail(APIView):

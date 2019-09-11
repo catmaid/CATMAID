@@ -1,7 +1,7 @@
 from django.core.management import call_command
 from django.conf import settings
 from catmaid.control.cropping import cleanup as cropping_cleanup, process_crop_job
-from catmaid.control.nat import export_skeleton_as_nrrd_async
+from catmaid.control.nat.r import export_skeleton_as_nrrd_async
 from catmaid.control.treenodeexport import process_export_job
 from catmaid.control.roi import create_roi_image
 from catmaid.control.node import update_node_query_cache as do_update_node_query_cache

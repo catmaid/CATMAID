@@ -40,6 +40,10 @@ included in this changelog.
 - GET|POST `/{project_id}/skeletons/completeness`:
   Obtain compleness information on a list of skeletons.
 
+- `POST /{project_id}/skeletons/{skeleton_id}/find-labels`:
+  The new optional bolean `only_leaves` parameter (default false) can be used to
+  return only tagged leaf nodes (including root).
+
 ### Modifications
 
 - `POST|GET /{project_id}/node/list`:

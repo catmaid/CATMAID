@@ -129,7 +129,7 @@ def _open_leaves(project_id, skeleton_id, tnid=None):
         ''', (int(skeleton_id),))
 
     # Some entries repeated, when a node has more than one tag
-    # Create a graph with edges from parent to child, and accumulate parents
+    # Create a graph with edges from parent to child, and accumulate parents.
     tree = nx.DiGraph()
     n_nodes = 0
     for row in cursor.fetchall():
@@ -210,6 +210,12 @@ def find_labels(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonR
           required: true
           type: string
           paramType: form
+        - name: only_leaves
+          description: Whether to only return information on leaf nodes.
+          type: boolean
+          required: false
+          defaultValue: false
+          paramType: form
     models:
       find_labels_node:
         id: find_labels_node
@@ -240,10 +246,13 @@ def find_labels(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonR
     """
     tnid = int(request.POST['treenode_id'])
     label_regex = str(request.POST['label_regex'])
+    only_leaves = get_request_bool(request.POST, 'only_leaves', False)
 
-    return JsonResponse(_find_labels(project_id, skeleton_id, label_regex, tnid), safe=False)
+    return JsonResponse(_find_labels(project_id, skeleton_id, label_regex, tnid,
+        only_leaves), safe=False)
 
-def _find_labels(project_id, skeleton_id, label_regex, tnid=None):
+def _find_labels(project_id, skeleton_id, label_regex, tnid=None,
+        only_leaves=False):
     cursor = connection.cursor()
 
     if tnid is None:
@@ -300,8 +309,17 @@ def _find_labels(project_id, skeleton_id, label_regex, tnid=None):
     distances = edge_count_to_root(tree, root_node=tnid)
 
     nearest = []
+    leaves = set()
+
+    if only_leaves:
+        for node_id, out_degree in tree.out_degree_iter():
+            if 0 == out_degree or node_id == tnid and 1 == out_degree:
+                # Found an end node
+                leaves.add(node_id)
 
     for nodeID, props in tree.nodes_iter(data=True):
+        if only_leaves and nodeID not in leaves:
+            continue;
         if 'tags' in props:
             # Found a node with a matching label
             d = distances[nodeID]

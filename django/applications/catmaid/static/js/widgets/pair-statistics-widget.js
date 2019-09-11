@@ -203,7 +203,7 @@
 
   PairStatisticsWidget.addPairListElements = function(target, pairs, friendlyName) {
     let selectedPairNames = pairs.map((pair, i) => {
-      let name = `${i}`;
+      let name = `${i+1}`;
       let skeletonLinks = pair.map(skid => {
         return `<a class="neuron-selection-link" href="#" data-id="${skid}">${skid}</a>`;
       });

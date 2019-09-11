@@ -105,7 +105,7 @@
               // annotation is part of the matchingAnnotationSet.
               let sharedAwnotations = otherPairingAnnotations.intersection(pairingAnnotations);
               if (sharedAwnotations.size > 0) {
-                l.pairs.push([otherSkeletonId, skeletonId]);
+                l.pairs.push([skeletonId, otherSkeletonId]);
               }
             }
           }
@@ -169,14 +169,14 @@
               for (let skeletonId of skeletonIds) {
                 let pairingAnnotations = pairingMetaTargetMap.get(skeletonId);
                 if (pairingAnnotations) continue;
-                l.pairs.push([otherSkeletonId, skeletonId]);
+                l.pairs.push([skeletonId, otherSkeletonId]);
               }
             } else {
               // If a skeleton is unmatched, pair it with matched local ones.
               for (let skeletonId of skeletonIds) {
                 let pairingAnnotations = pairingMetaTargetMap.get(skeletonId);
                 if (!pairingAnnotations) continue;
-                l.pairs.push([otherSkeletonId, skeletonId]);
+                l.pairs.push([skeletonId, otherSkeletonId]);
               }
             }
           }

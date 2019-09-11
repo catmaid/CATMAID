@@ -416,15 +416,15 @@
               .catch(CATMAID.handleError);
           },
           columns: [{
-            name: 'Group',
+            title: 'Group',
             width: '25%',
           }, {
-            name: 'Sub-groups',
+            title: 'Sub-groups',
             render: function(data, type, row, meta) {
               return data.join(', ');
             },
           }, {
-            name: 'Sub-group annotations',
+            title: 'Sub-group annotations',
             render: function(data, type, row, meta) {
               return data.join(', ');
             },

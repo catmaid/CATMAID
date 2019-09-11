@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from collections import OrderedDict, defaultdict
+import fnmatch
 import glob
 import json
 import os.path
@@ -292,13 +293,15 @@ def find_project_folders(image_base:str, path:str, filter_term) -> Tuple[List, D
     return (index, projects, not_readable)
 
 
-def get_projects_from_raw_data(data, filter_term, base_url=None) -> Tuple[List, Dict, List]: # FIXME: filter_term is unused
+def get_projects_from_raw_data(data, filter_term, base_url=None) -> Tuple[List, Dict, List]:
     index = []
     projects = {}
     not_readable:List = []
 
     for p in data:
         project = PreProject(p, base_url, None)
+        if filter_term and not fnmatch.fnmatch(project.title, filter_term):
+            continue;
         short_name = project.title
         key = "{}-{}".format('File', short_name)
         projects[key] = project
@@ -308,7 +311,7 @@ def get_projects_from_raw_data(data, filter_term, base_url=None) -> Tuple[List, 
 
 
 def get_projects_from_url(url, filter_term, headers=None, auth=None,
-        base_url=None, merge_same=True) -> Tuple[List, Dict, List]: # FIXME: filter_term is unused.
+        base_url=None, merge_same=True) -> Tuple[List, Dict, List]:
     if not url:
         raise ValueError("No URL provided")
     if auth and len(auth) != 2:
@@ -331,6 +334,8 @@ def get_projects_from_url(url, filter_term, headers=None, auth=None,
         content = r.json()
         for p in content:
             project = PreProject(p, base_url, None)
+            if filter_term and not fnmatch.fnmatch(project.title, filter_term):
+                continue;
             short_name = project.title
             key = "{}-{}".format(url, short_name)
             projects[key] = project
@@ -339,6 +344,8 @@ def get_projects_from_url(url, filter_term, headers=None, auth=None,
         content = yaml.load_all(r.content.decode('utf-8'), Loader=yaml.FullLoader)
         for p in content:
             project = PreProject(p, base_url, None)
+            if filter_term and not fnmatch.fnmatch(project.title, filter_term):
+                continue;
             short_name = project.title
             key = "{}-{}".format(url, short_name)
             if merge_same and key in projects:
@@ -807,7 +814,13 @@ class DataFileForm(forms.Form):
     filter_term = forms.CharField(initial="*", required=False,
         widget=forms.TextInput(attrs={'size':'40'}),
         help_text="Optionally, you can apply a <em>glob filter</em> to the " \
-                  "projects found in your data folder.")
+                  "projects found in your data folder. For file system based " \
+                  "imports this mean the whole path has to match it and for " \
+                  "both URL/CATMAID and raw file imports, the project title " \
+                  "has to match. A <em>glob</em> pattern users the asterisk " \
+                  "(*) as wildcard for one or more characters. E.g. to only " \
+                  "match those remote projects with XYZ in their names, one " \
+                  "would need to use the filter '*XYZ*'.")
     known_project_filter = forms.MultipleChoiceField(choices=KNOWN_PROJECT_FILTERS,
             label='Projects are known if', initial=('name', 'stacks'),
             widget=forms.CheckboxSelectMultiple(), required=False,

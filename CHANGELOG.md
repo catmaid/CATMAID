@@ -200,6 +200,9 @@ Miscellaneous:
   as a new annotation in a join if their name doesn't follow the default pattern
   "neuron <number>".
 
+- Project importer: the UNIX "glob" filter pattern that can be used to filter
+  imported projects is now also applied to imports from URLs and files.
+
 ## Maintenance updates
 
 - CLI Exporter: if users should be exported, also export users of volumes.

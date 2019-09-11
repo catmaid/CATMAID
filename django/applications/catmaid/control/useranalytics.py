@@ -290,9 +290,7 @@ def singleDayActiveness(activebouts, increment, start_hour, end_hour) -> Tuple[A
     daysConsidered = (activebouts[-1].end - activebouts[0].start).days + 1
 
     # Get start of current day
-    starttime = timezone.now()
-    # FIXME: replace doesn't replace in place, but returns a new object
-    starttime.replace(hour=start_hour,minute=0,second=0,microsecond=0)
+    starttime = timezone.now().replace(hour=start_hour,minute=0,second=0,microsecond=0)
     # Create time axis list with entry for every <increment> minutes between
     # <start_hour> and <end_hour>.
     timeaxis = [starttime + timedelta(0, 0, 0, 0, n * increment) \
@@ -318,11 +316,9 @@ def singleDayActiveness(activebouts, increment, start_hour, end_hour) -> Tuple[A
             continue
         # Crop start and end times of every valid bout to request period
         elif bout.start.hour < start_hour:
-            # FIXME: replace doesn't replace in place, but returns a new object
-            bout.start.replace(hour=start_hour,minute=0,second=0,microsecond=0)
+            bout.start = bout.start.replace(hour=start_hour,minute=0,second=0,microsecond=0)
         elif bout.end.hour > end_hour:
-            # FIXME: replace doesn't replace in place, but returns a new object
-            bout.end.replace(hour=end_hour,minute=0,second=0,microsecond=0)
+            bout.end = bout.end.replace(hour=end_hour,minute=0,second=0,microsecond=0)
 
         # Go through every sub bout, defined by periods if <increment> minutes,
         # and store the number of minutes for every time-fraction considered.

@@ -66,7 +66,7 @@ needed_sampler_connector_states = {
 
 # Tags that mark a true end
 end_tags = frozenset(['uncertain continuation', 'not a branch', 'ends',
-        'really ends', 'uncertain ends', 'anterior ends', 'posterior ends',
+        'really ends', 'uncertain end', 'anterior end', 'posterior end',
         'soma', 'out to nerve'])
 
 

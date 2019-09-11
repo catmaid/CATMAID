@@ -4048,7 +4048,8 @@ def get_completeness_data(project_id, skeleton_ids, open_ends_percent=0.03,
     defined through parameters.
 
     The <open_ends_percent> is a value in range [0,1] and represents the ratio
-    of open leaf nodes versus total leaf nodes.
+    of open leaf nodes versus total leaf nodes. As leaf nodes are all nodes
+    counted that don't have child nodes plus the root node.
     """
     if not project_id or not skeleton_ids:
         raise ValueError('Need project ID and skeleton IDs')
@@ -4090,12 +4091,12 @@ def get_completeness_data(project_id, skeleton_ids, open_ends_percent=0.03,
                         SELECT t.id, COUNT(*) FILTER (WHERE tci.id IS NOT NULL) AS n_tags
                         FROM treenode t
                         LEFT JOIN treenode c
-                            ON c.parent_id = t.id OR (c.id = t.id AND c.parent_id IS NULL)
+                            ON c.parent_id = t.id
                         LEFT JOIN treenode_class_instance tci
                             ON tci.treenode_id = t.id
                             AND tci.relation_id = %(labeled_as)s
                             AND tci.class_instance_id = ANY(%(end_label_ci_ids)s::bigint[])
-                        WHERE c.id IS NULL
+                        WHERE (c.id IS NULL OR t.parent_id IS NULL)
                             AND t.skeleton_id = skeleton.id
                         -- Needed, because treenodes can have multiple tags
                         GROUP BY t.id

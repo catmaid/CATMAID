@@ -152,18 +152,6 @@ class GroupAdminForm(forms.ModelForm):
         if self.instance and self.instance.pk:
             self.fields['users'].initial = self.instance.user_set.all()
 
-    def save(self, commit=True):
-        group = super(GroupAdminForm, self).save(commit=False)
-
-        if commit:
-            group.save()
-
-        if group.pk:
-            group.user_set.set(self.cleaned_data['users'])
-            self.save_m2m()
-
-        return group
-
 
 class BrokenSliceAdmin(GuardedModelAdmin):
     list_display = ('stack', 'index')
@@ -419,13 +407,14 @@ class CustomUserAdmin(UserAdmin):
         return super(CustomUserAdmin, self) \
             .changelist_view(request, extra_context=extra_context)
 
-class UserSetInline(admin.TabularInline):
-    model = User.groups.through
-    raw_id_fields = ('user',)  # optional, if you have too many users
-
 class CustomGroupAdmin(GroupAdmin):
     form = GroupAdminForm
     list_filter = ('name',)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if 'users' in form.cleaned_data:
+            form.instance.user_set.set(form.cleaned_data['users'])
 
 
 class GroupInactivityPeriodAdmin(admin.ModelAdmin):

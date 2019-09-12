@@ -198,6 +198,10 @@ Miscellaneous:
   automatically close the open project with the last stack-viewer, uncheck the
   "Project closes with last stack viewer" option in the Settings Widget.
 
+- Neuron similarity widget: besides a regular arithmetic mean, the geometric
+  mean is now an additional option for how to combine (normalized) forward and
+  reverse scores.
+
 - Neuron similarity detail widget: make CSV export of object IDs and names
   configurable.
 

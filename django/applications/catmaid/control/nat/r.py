@@ -4,6 +4,7 @@ from datetime import datetime
 import gc
 from itertools import chain
 import logging
+import math
 import numpy
 import os
 import progressbar
@@ -1208,7 +1209,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
                 # For mean normalization, the regular forward score is averaged
                 # with the reverse score.
-                if normalized == 'mean':
+                if normalized in ('mean', 'geometric-mean'):
                     # Compute reverse scores for top N forward matches of
                     # current query object.
                     reverse_query_dps = b.rx(rinterface.StrSexpVector(top_n_names_names))
@@ -1220,12 +1221,21 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     # target table format (scores for single query object form a
                     # row).  We can't sort these results, because they are
                     # merged with other query object results.
-                    result_row = pd.DataFrame([
-                            # Mean score: (forward score + reverse score) / 2
-                            [(scores_df.loc[reverse_scores.rownames[i]].score + reverse_scores[i]) / 2 \
-                                    for i in range(len(reverse_scores))]
-                        ],
-                        index=[query_name],
+                    if normalized == 'mean':
+                        # Mean score: (forward score + reverse score) / 2
+                        score = [(scores_df.loc[reverse_scores.rownames[i]].score + reverse_scores[i]) / 2 \
+                                for i in range(len(reverse_scores))]
+                    else:
+                        # Geometric mean score: sqrt(forward score * reverse
+                        # score). Set scores below zero to zero to not make
+                        # negative forward and backward values become positive
+                        # in the multiplication.
+                        score = [math.sqrt(
+                                math.max(0, scores_df.loc[reverse_scores.rownames[i]].score) * \
+                                math.max(0, reverse_scores[i])) \
+                                for i in range(len(reverse_scores))]
+
+                    result_row = pd.DataFrame([scores], index=[query_name],
                         columns=list(reverse_scores.rownames))
                 else:
                     # Get top N forward scores for input query as a row of the
@@ -1259,7 +1269,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             row_names = list(target_scores.index.values) # type: ignore # same as above
 
         else:
-            if normalized == 'mean':
+            if normalized in ('mean', 'geometric-mean'):
                 # Compute forward scores, either unnormalized or normalized so that a
                 # self-match is 1.
                 aa = rnblast.NeuriteBlast(a, b, **nblast_params)
@@ -1269,7 +1279,10 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 reverse_scores = as_matrix(bb, b, a)
 
                 # Compute mean
-                scores = (forward_scores.ro + reverse_scores.transpose()).ro / 2.0
+                if normalized == 'mean':
+                    scores = (forward_scores.ro + reverse_scores.transpose()).ro / 2.0
+                else:
+                    scores = base.sqrt(forward_scores.ro * reverse_scores.transpose())
             else:
                 # Compute forward scores, either unnormalized or normalized so that a
                 # self-match is 1.

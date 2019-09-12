@@ -658,7 +658,7 @@
         let configId = null;
         let queryType = 'skeleton';
         let targetType = 'all-skeletons';
-        let normalizedScores = 'mean';
+        let normalizedScores = 'geometric-mean';
         let reverse = false;
         let useAlpha = false;
         let removeTargetDuplicates = true;
@@ -856,6 +856,7 @@
             {title: 'None', value: 'raw'},
             {title: 'Self-match', value: 'normalized'},
             {title: 'Mean', value: 'mean'},
+            {title: 'Geometric mean', value: 'geometric-mean'},
           ],
           onchange: function() {
             normalizedScores = this.value;
@@ -1260,6 +1261,8 @@
                   return 'Self-match';
                 } else if (data === 'mean') {
                   return 'Mean';
+                } else if (data === 'geometric-mean') {
+                  return 'Geometric mean';
                 }
                 return 'Unknown: ' + data;
               }

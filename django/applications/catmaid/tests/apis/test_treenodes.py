@@ -172,21 +172,21 @@ class TreenodesApiTests(CatmaidApiTestCase):
         self.assertEqual(skeleton_count + 1, count_skeletons())
         self.assertEqual(neuron_count + 1, count_neurons())
 
-        neuron_skeleton_relation = ClassInstanceClassInstance.objects.filter(
+        neuron_skeleton_relation = ClassInstanceClassInstance.objects.get(
                 project=self.test_project_id,
                 relation=relation_map['model_of'],
                 class_instance_a=parsed_response['skeleton_id'])
-        neuron_log = Log.objects.filter(
+        neuron_id = neuron_skeleton_relation.class_instance_b.id
+        neuron_log = Log.objects.get(
                 project=self.test_project_id,
-                operation_type='create_neuron')
+                operation_type='create_neuron',
+                freetext=f'Create neuron {neuron_id} and skeleton {parsed_response["skeleton_id"]}')
 
         self.assertEqual(1, neuron_skeleton_relation.count())
-        # FIXME: This test doesn't work like expected
-        #self.assertEqual(1, neuron_log.count())
-        #neuron_log_location = neuron_log[0].location
-        #self.assertEqual(5, neuron_log_location.x)
-        #self.assertEqual(10, neuron_log_location.y)
-        #self.assertEqual(15, neuron_log_location.z)
+        neuron_log_location = neuron_log.location
+        self.assertEqual(5, neuron_log_location.x)
+        self.assertEqual(10, neuron_log_location.y)
+        self.assertEqual(15, neuron_log_location.z)
 
     def test_create_treenode2(self):
         self.fake_authentication()
@@ -220,28 +220,24 @@ class TreenodesApiTests(CatmaidApiTestCase):
         self.assertEqual(skeleton_count + 1, count_skeletons())
         self.assertEqual(neuron_count + 1, count_neurons())
 
-        neuron_skeleton_relation = ClassInstanceClassInstance.objects.filter(
+        neuron_skeleton_relation = ClassInstanceClassInstance.objects.get(
                 project=self.test_project_id,
                 relation=relation_map['model_of'],
                 class_instance_a=parsed_response['skeleton_id'])
-        # FIXME: Log test doesn't work like this, because we don't have the
-        # neuron ID available
-        #neuron_log = Log.objects.filter(
-        #        project=self.test_project_id,
-        #        operation_type='create_neuron',
-        #        freetext='Create neuron %s and skeleton %s' % (parsed_response['neuron_id'], parsed_response['skeleton_id']))
+        neuron_id = neuron_skeleton_relation.class_instance_b.id
+        neuron_log = Log.objects.get(
+                project=self.test_project_id,
+                operation_type='create_neuron',
+                freetext=f'Create neuron {neuron_id} and skeleton {parsed_response["skeleton_id"]}')
 
         root = ClassInstance.objects.filter(
                 project=self.test_project_id,
                 class_column=class_map['root'])[0]
 
-        self.assertEqual(1, neuron_skeleton_relation.count())
-        #FIXME: These tests don't work like expected anymore
-        #self.assertEqual(1, neuron_log.count())
-        #neuron_log_location = neuron_log[0].location
-        #self.assertEqual(5, neuron_log_location.x)
-        #self.assertEqual(10, neuron_log_location.y)
-        #self.assertEqual(15, neuron_log_location.z)
+        neuron_log_location = neuron_log.location
+        self.assertEqual(5, neuron_log_location.x)
+        self.assertEqual(10, neuron_log_location.y)
+        self.assertEqual(15, neuron_log_location.z)
 
     def test_create_treenode_with_existing_neuron(self):
         self.fake_authentication()

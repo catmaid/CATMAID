@@ -182,7 +182,6 @@ class TreenodesApiTests(CatmaidApiTestCase):
                 operation_type='create_neuron',
                 freetext=f'Create neuron {neuron_id} and skeleton {parsed_response["skeleton_id"]}')
 
-        self.assertEqual(1, neuron_skeleton_relation.count())
         neuron_log_location = neuron_log.location
         self.assertEqual(5, neuron_log_location.x)
         self.assertEqual(10, neuron_log_location.y)

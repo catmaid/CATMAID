@@ -1025,7 +1025,21 @@ var WindowMaker = new function()
           },
           ['Axes', o.show_axes, function() { WA.setAxesVisibility(this.checked); }, false],
           ['Debug', o.debug, function() { WA.setDebug(this.checked); }, false],
-          ['Line width', o.skeleton_line_width, null, function() { WA.updateSkeletonLineWidth(this.value); }, 4],
+          {
+            type: 'numeric',
+            label: 'Line width',
+            title: 'The width of displayed lines in px. Most operating systems require "volumetric lines" to be ' +
+                'enabled for this to be effective. The value is arbitrarily capped at 25, because for common ' +
+                'sets of displayed neurons a significat slowdown is experienced with larger values.',
+            value: o.skeleton_line_width,
+            length: 3,
+            min: 0,
+            // The maximum value is arbitrary, but with ~50 multi-thousand node
+            // skeletons loaded and a line width of > 25, the UI and the
+            // rendering becomes really slow.
+            max: 25,
+            onchange: function() { WA.updateSkeletonLineWidth(this.value); },
+          },
           {
             type: 'checkbox',
             label: 'Volumetric lines',

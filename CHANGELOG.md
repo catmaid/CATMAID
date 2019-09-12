@@ -269,6 +269,9 @@ Miscellaneous:
 - Setup: the create_configuration.py script will now create backups of existing
   settings.py and django.wsgi files.
 
+- 3D viewer: the line width has now an upper limit of 25px to prevent crashes of
+  the 3D viewer with larger values and many skeletons.
+
 ## 2019.06.20
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Pat Gunn, William Patton, Tom Kazimiers

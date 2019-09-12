@@ -172,11 +172,6 @@ class TreenodesApiTests(CatmaidApiTestCase):
         self.assertEqual(skeleton_count + 1, count_skeletons())
         self.assertEqual(neuron_count + 1, count_neurons())
 
-        treenode_skeleton_relation = TreenodeClassInstance.objects.filter(
-                project=self.test_project_id,
-                relation=relation_map['element_of'],
-                treenode=parsed_response['treenode_id'],
-                class_instance=parsed_response['skeleton_id'])
         neuron_skeleton_relation = ClassInstanceClassInstance.objects.filter(
                 project=self.test_project_id,
                 relation=relation_map['model_of'],
@@ -185,9 +180,6 @@ class TreenodesApiTests(CatmaidApiTestCase):
                 project=self.test_project_id,
                 operation_type='create_neuron')
 
-        # FIXME: discussed in
-        # https://github.com/catmaid/CATMAID/issues/754
-        #self.assertEqual(1, treenode_skeleton_relation.count())
         self.assertEqual(1, neuron_skeleton_relation.count())
         # FIXME: This test doesn't work like expected
         #self.assertEqual(1, neuron_log.count())
@@ -228,11 +220,6 @@ class TreenodesApiTests(CatmaidApiTestCase):
         self.assertEqual(skeleton_count + 1, count_skeletons())
         self.assertEqual(neuron_count + 1, count_neurons())
 
-        treenode_skeleton_relation = TreenodeClassInstance.objects.filter(
-                project=self.test_project_id,
-                relation=relation_map['element_of'],
-                treenode=parsed_response['treenode_id'],
-                class_instance=parsed_response['skeleton_id'])
         neuron_skeleton_relation = ClassInstanceClassInstance.objects.filter(
                 project=self.test_project_id,
                 relation=relation_map['model_of'],
@@ -251,7 +238,6 @@ class TreenodesApiTests(CatmaidApiTestCase):
         self.assertEqual(1, neuron_skeleton_relation.count())
         #FIXME: These tests don't work like expected anymore
         #self.assertEqual(1, neuron_log.count())
-        #self.assertEqual(1, treenode_skeleton_relation.count())
         #neuron_log_location = neuron_log[0].location
         #self.assertEqual(5, neuron_log_location.x)
         #self.assertEqual(10, neuron_log_location.y)
@@ -287,21 +273,11 @@ class TreenodesApiTests(CatmaidApiTestCase):
         self.assertEqual(treenode_count + 1, count_treenodes())
         self.assertEqual(skeleton_count + 1, count_skeletons())
 
-        treenode_skeleton_relation = TreenodeClassInstance.objects.filter(
-                project=self.test_project_id,
-                relation=relation_map['element_of'],
-                treenode=parsed_response['treenode_id'],
-                class_instance=parsed_response['skeleton_id'])
         neuron_skeleton_relation = ClassInstanceClassInstance.objects.filter(
                 project=self.test_project_id,
                 relation=relation_map['model_of'],
                 class_instance_a=parsed_response['skeleton_id'],
                 class_instance_b=neuron_id)
-
-        # FIXME: treenode_skeleton_relation.count() should be 1, but we
-        # currently don't store these relations.
-        # See: https://github.com/catmaid/CATMAID/issues/754
-        self.assertEqual(0, treenode_skeleton_relation.count())
         self.assertEqual(1, neuron_skeleton_relation.count())
 
     def test_create_treenode_with_nonexisting_parent_failure(self):

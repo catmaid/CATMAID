@@ -190,7 +190,8 @@
     name: 'url',
     handle: (command) => {
       var urlParams = CATMAID.tools.parseQuery(command);
-      if (urlParams['xp'] !== undefined && urlParams['yp'] !== undefined && urlParams['zp'] !== undefined) {
+      if (urlParams && urlParams['xp'] !== undefined &&
+          urlParams['yp'] !== undefined && urlParams['zp'] !== undefined) {
         let [xp, yp, zp] = [Number(urlParams['xp']), Number(urlParams['yp']), Number(urlParams['zp'])];
         if (Number.isNaN(xp) || Number.isNaN(yp) || Number.isNaN(zp)) {
           return false;

@@ -67,76 +67,73 @@
       controlsID: 'neuron_annotations_query_fields' + this.widgetID,
       contentID: 'neuron_annotations_query_results' + this.widgetID,
       createControls: function(content) {
-        // Create the query fields HTML and use {{NA-ID}} as template for the
-        // actual this.widgetID which will be replaced afterwards.
-        var queryFields_html =
-          '<label style="float: right" class="checkbox-label">' +
-            '<input type="checkbox" id="neuron_search_apply_filters{{NA-ID}}" tabindex="-1" />' +
-            'Apply filters' +
-          '</label>' +
-          '<form id="neuron_query_by_annotations{{NA-ID}}" autocomplete="on">' +
-          '<table cellpadding="0" cellspacing="0" border="0" ' +
-              'class="neuron_annotations_query_fields" ' +
-              'id="neuron_annotations_query_fields{{NA-ID}}">' +
-            '<tr id="neuron_query_by_name{{NA-ID}}">' +
-              '<td class="neuron_annotations_query_field_label">named as:</td> ' +
-              '<td class="neuron_annotations_query_field">' +
-                '<label class="checkbox-label"><input type="checkbox" name="neuron_query_by_name_not" ' +
-                    'id="neuron_query_by_name_not{{NA-ID}}" tabindex="-1" />not</label>' +
-                '<input type="text" name="neuron_query_by_name"' +
-                    'id="neuron_query_by_name{{NA-ID}}" value="" class="" placeholder="Use / for RegEx" />' +
-              '</td> ' +
-              '<td>' +
-                '<label class="checkbox-label"><input type="checkbox" name="neuron_query_by_name_exact" ' +
-                    'id="neuron_query_by_name_exact{{NA-ID}}" tabindex="-1" title="Name must match exactly, parts of the name ara not accepted."/>Exact</label>' +
-                '<label class="checkbox-label"><input type="checkbox" name="neuron_query_by_name_case_sensitive" ' +
-                    'id="neuron_query_by_name_case_sensitive{{NA-ID}}" tabindex="-1" title="Name must match the case of the letters provided."/>Case sensitive</label></td>' +
-            '</tr>' +
-            '<tr id="neuron_query_by_annotation{{NA-ID}}">' +
-              '<td class="neuron_annotations_query_field_label">annotated:</td> ' +
-              '<td class="neuron_annotations_query_field">' +
-                '<label class="checkbox-label"><input type="checkbox" name="neuron_query_by_annotation_not" ' +
-                    'id="neuron_query_not{{NA-ID}}" tabindex="-1" />not</label>' +
-                '<input type="text" name="neuron_query_by_annotation" autocomplete="off" ' +
-                    'class="neuron_query_by_annotation_name{{NA-ID}}" value="" placeholder="Use / for RegEx" />' +
-              '</td><td>' +
-                '<label class="checkbox-label"><input type="checkbox" name="neuron_query_include_subannotation"' +
-                    'class="neuron_query_include_subannotation{{NA-ID}}" value="" />' +
-                'Include sub-annotations</label> ' +
-                '<input type="button" name="neuron_annotations_add_annotation" ' +
-                    'id="neuron_annotations_add_annotation{{NA-ID}}" value="+" tabindex="-1" />' +
-              '</td> ' +
-            '</tr>' +
-            '<tr id="neuron_query_by_annotator{{NA-ID}}" tabindex="-1">' +
-              '<td class="neuron_annotations_query_field_label">by:</td>' +
-              '<td class="neuron_annotations_query_field">' +
-                '<select name="neuron_query_by_annotator" tabindex="-1" ' +
-                    'id="neuron_query_by_annotator{{NA-ID}}" class="">' +
-                  '<option value="-2">Anyone</option>' +
-                  '<option value="Team">Team</option>' +
-                '</select>' +
-              '</td>' +
-              '<td><div class="help">Respected for included annotations</div></td>' +
-            '</tr>' +
-            '<tr id="neuron_query_by_date_range{{NA-ID}}">' +
-              '<td class="neuron_annotations_query_field_label">between:</td>' +
-              '<td class="neuron_annotations_query_field">' +
-                '<input type="text" name="neuron_query_by_start_date" ' +
-                    'id="neuron_query_by_start_date{{NA-ID}}" size="10" ' +
-                    'value="" class="" tabindex="-1" />' +
-                ' and ' +
-                '<input type="text" name="neuron_query_by_end_date" ' +
-                    'id="neuron_query_by_end_date{{NA-ID}}" size="10" ' +
-                    'value="" class="" tabindex="-1" /> ' +
-              '</td>' +
-              '<td><div class="help">Respected for included annotations</div></td>' +
-            '</tr>' +
-          '</table>' +
-          '<input type="submit" />' +
-          '</form>';
-        // Replace {{NA-ID}} with the actual widget ID
+        // Create the query fields HTML
         var queryFields = document.createElement('div');
-        queryFields.innerHTML = queryFields_html.replace(/{{NA-ID}}/g, this.widgetID);
+        queryFields.innerHTML = `
+          <label style="float: right" class="checkbox-label">
+            <input type="checkbox" id="neuron_search_apply_filters${this.widgetID}" tabindex="-1" />
+            Apply filters
+          </label>
+          <form id="neuron_query_by_annotations${this.widgetID}" autocomplete="on">
+          <table cellpadding="0" cellspacing="0" border="0"
+              class="neuron_annotations_query_fields"
+              id="neuron_annotations_query_fields${this.widgetID}">
+            <tr id="neuron_query_by_name${this.widgetID}">
+              <td class="neuron_annotations_query_field_label">named as:</td>
+              <td class="neuron_annotations_query_field">
+                <label class="checkbox-label"><input type="checkbox" name="neuron_query_by_name_not"
+                    id="neuron_query_by_name_not${this.widgetID}" tabindex="-1" />not</label>
+                <input type="text" name="neuron_query_by_name"
+                    id="neuron_query_by_name${this.widgetID}" value="" class="" placeholder="Use / for RegEx" />
+              </td>
+              <td>
+                <label class="checkbox-label"><input type="checkbox" name="neuron_query_by_name_exact"
+                    id="neuron_query_by_name_exact${this.widgetID}" tabindex="-1" title="Name must match exactly, parts of the name ara not accepted."/>Exact</label>
+                <label class="checkbox-label"><input type="checkbox" name="neuron_query_by_name_case_sensitive"
+                    id="neuron_query_by_name_case_sensitive${this.widgetID}" tabindex="-1" title="Name must match the case of the letters provided."/>Case sensitive</label></td>
+            </tr>
+            <tr id="neuron_query_by_annotation${this.widgetID}">
+              <td class="neuron_annotations_query_field_label">annotated:</td>
+              <td class="neuron_annotations_query_field">
+                <label class="checkbox-label"><input type="checkbox" name="neuron_query_by_annotation_not"
+                    id="neuron_query_not${this.widgetID}" tabindex="-1" />not</label>
+                <input type="text" name="neuron_query_by_annotation" autocomplete="off"
+                    class="neuron_query_by_annotation_name${this.widgetID}" value="" placeholder="Use / for RegEx" />
+              </td><td>
+                <label class="checkbox-label"><input type="checkbox" name="neuron_query_include_subannotation"
+                    class="neuron_query_include_subannotation${this.widgetID}" value="" />
+                Include sub-annotations</label>
+                <input type="button" name="neuron_annotations_add_annotation"
+                    id="neuron_annotations_add_annotation${this.widgetID}" value="+" tabindex="-1" />
+              </td>
+            </tr>
+            <tr id="neuron_query_by_annotator${this.widgetID}" tabindex="-1">
+              <td class="neuron_annotations_query_field_label">by:</td>
+              <td class="neuron_annotations_query_field">
+                <select name="neuron_query_by_annotator" tabindex="-1"
+                    id="neuron_query_by_annotator${this.widgetID}" class="">
+                  <option value="-2">Anyone</option>
+                  <option value="Team">Team</option>
+                </select>
+              </td>
+              <td><div class="help">Respected for included annotations</div></td>
+            </tr>
+            <tr id="neuron_query_by_date_range${this.widgetID}">
+              <td class="neuron_annotations_query_field_label">between:</td>
+              <td class="neuron_annotations_query_field">
+                <input type="text" name="neuron_query_by_start_date"
+                    id="neuron_query_by_start_date${this.widgetID}" size="10"
+                    value="" class="" tabindex="-1" />
+                 and
+                <input type="text" name="neuron_query_by_end_date"
+                    id="neuron_query_by_end_date${this.widgetID}" size="10"
+                    value="" class="" tabindex="-1" />
+              </td>
+              <td><div class="help">Respected for included annotations</div></td>
+            </tr>
+          </table>
+          <input type="submit" />
+          </form>`;
         content.appendChild(queryFields);
       },
       createContent: function(content) {

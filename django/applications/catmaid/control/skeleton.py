@@ -1061,6 +1061,14 @@ def create_subgraph(source_graph, target_graph, start_node, end_nodes) -> None:
 
 
 def prune_samplers(skeleton_id, graph, treenode_parent, treenode):
+    """Handle samplers and their domains and intervals during a skeleton split.
+
+    skeleton_id: the skeleton to work with
+    graph: the networkx DiGraph of the skeleton, directed from parent TO child
+           (!). This is different from the database model.
+    treenode_parent: the parent node of the split node
+    treenode: the split node
+    """
     samplers = Sampler.objects.prefetch_related('samplerdomain_set',
             'samplerdomain_set__samplerdomainend_set',
             'samplerdomain_set__samplerinterval_set').filter(skeleton_id=skeleton_id)
@@ -1090,67 +1098,95 @@ def prune_samplers(skeleton_id, graph, treenode_parent, treenode):
             if domain_graph.size() == 0:
                 continue
 
-            new_sk_domain_nodes = set(nx.bfs_tree(domain_graph, treenode.id).nodes())
-
-            # At this point, we expect some intersecting domain nodes to be there.
-            if not new_sk_domain_nodes:
-                raise ValueError("Could not find any split-off domain nodes")
-
-            # Remove all explicit domain ends in split-off part. If the
-            # split off part leaves a branch, add a new domain end for it to
-            # remaining domain.
-            ends_to_remove = filter(lambda nid: nid in new_sk_domain_nodes, domain_end_ids)
-
-            if ends_to_remove:
-                domain_end_ids = set(map(lambda x: domain_end_map[x], ends_to_remove)) # type: ignore
-                SamplerDomainEnd.objects.filter(domain_id__in=domain_end_ids).delete()
-
-            if treenode_parent.parent_id is not None and \
-                    domain_graph.has_node(treenode_parent.parent_id) and \
-                    len(domain_graph.successors(treenode_parent.parent_id)) > 1:
-                new_domain_end = SamplerDomainEnd.objects.create(
-                            domain=domain, end_node=treenode_parent)
-
-            # Delete domain intervals that intersect with split-off part
-            domain_intervals = domain.samplerinterval_set.all()
-            intervals_to_delete = []
-            for di in domain_intervals:
-                start_split_off = di.start_node_id in new_sk_domain_nodes
-                end_split_off = di.end_node_id in new_sk_domain_nodes
-                # If neither start or end of the interval are in split-off
-                # part, the interval can be ignored.
-                if not start_split_off and not end_split_off:
+            # If the node where the split happens isn't part of this domain
+            # subgraph, there are two cases if the split treenode is outside the
+            # domain: 1. The treenode is downstream of the domain or 2. the
+            # treenode is upstream of the graph. In case 1, this domain will not
+            # be affected by this split because the split-off parts is entirely
+            # downstram of this domain. In case 2, this domain is entirely on
+            # the split-off fragment and we can move the entire domain to the
+            # split-off part. For now we delete it for consistency.
+            if treenode.id not in domain_graph:
+                # Try to find path from the treenode to a domain node. If it
+                # the domain node is upstream, we can get the distance.
+                # Otherwise an exception is raised. Note: this is a directed
+                # graph and in this particular case we expect edges to go from
+                # parent nodes to child nodes.
+                if nx.has_path(graph, domain.start_node_id, treenode.id):
+                    # Case 1, the split is downstream of the domain. We can
+                    # ignore this domain.
                     continue
-                # If both start and end node are split off, the whole
-                # interval can be removed, because the interval is
-                # completely in the split off part.
-                elif start_split_off and end_split_off:
-                    intervals_to_delete.append(di.id)
-                # If the start is not split off, but the end is, the
-                # interval crosses the split location and has to be
-                # adjusted. If this makes the start and end of the remaining
-                # part the same, the interval is deleted, too.
-                elif not start_split_off and end_split_off:
-                    if di.start_node_id == treenode_parent.id:
-                        intervals_to_delete.append(di.id)
-                    else:
-                        di.end_node_id = treenode_parent.id
-                        di.save()
-                # If the start is split off and the end is not, something is
-                # wrong and we raise an error
                 else:
-                    raise ValueError("Unexpected interval: start is split "
-                            "off, end is not")
+                    # Case 2, the split is upstream of the domain. Delete this
+                    # domain. TODO: Move it to the other split-off fragment.
+                    domain_intervals = SamplerInterval.objects.filter(domain=domain)
+                    n_deleted_sampler_intervals += domain_intervals.count()
+                    n_deleted_sampler_domains += 1
+                    domain_intervals.delete()
+                    domain.delete()
+                    continue
+            else:
+                new_sk_domain_nodes = set(nx.bfs_tree(domain_graph, treenode.id).nodes())
 
-            if intervals_to_delete:
-                SamplerInterval.objects.filter(id__in=intervals_to_delete).delete()
-                n_deleted_sampler_intervals += len(intervals_to_delete)
+                # At this point, we expect some intersecting domain nodes to be there.
+                if not new_sk_domain_nodes:
+                    raise ValueError("Could not find any split-off domain nodes")
 
-            # If the domain doesn't have any intervals left after this, it
-            # can be removed as well.
-            if len(domain_intervals) == len(intervals_to_delete):
-                domain.delete()
-                n_deleted_sampler_domains += 1
+                # Remove all explicit domain ends in split-off part. If the
+                # split off part leaves a branch, add a new domain end for it to
+                # remaining domain.
+                ends_to_remove = filter(lambda nid: nid in new_sk_domain_nodes, domain_end_ids)
+
+                if ends_to_remove:
+                    domain_end_ids = set(map(lambda x: domain_end_map[x], ends_to_remove)) # type: ignore
+                    SamplerDomainEnd.objects.filter(domain_id__in=domain_end_ids).delete()
+
+                if treenode_parent.parent_id is not None and \
+                        domain_graph.has_node(treenode_parent.parent_id) and \
+                        len(domain_graph.successors(treenode_parent.parent_id)) > 1:
+                    new_domain_end = SamplerDomainEnd.objects.create(
+                                domain=domain, end_node=treenode_parent)
+
+                # Delete domain intervals that intersect with split-off part
+                domain_intervals = domain.samplerinterval_set.all()
+                intervals_to_delete = []
+                for di in domain_intervals:
+                    start_split_off = di.start_node_id in new_sk_domain_nodes
+                    end_split_off = di.end_node_id in new_sk_domain_nodes
+                    # If neither start or end of the interval are in split-off
+                    # part, the interval can be ignored.
+                    if not start_split_off and not end_split_off:
+                        continue
+                    # If both start and end node are split off, the whole
+                    # interval can be removed, because the interval is
+                    # completely in the split off part.
+                    elif start_split_off and end_split_off:
+                        intervals_to_delete.append(di.id)
+                    # If the start is not split off, but the end is, the
+                    # interval crosses the split location and has to be
+                    # adjusted. If this makes the start and end of the remaining
+                    # part the same, the interval is deleted, too.
+                    elif not start_split_off and end_split_off:
+                        if di.start_node_id == treenode_parent.id:
+                            intervals_to_delete.append(di.id)
+                        else:
+                            di.end_node_id = treenode_parent.id
+                            di.save()
+                    # If the start is split off and the end is not, something is
+                    # wrong and we raise an error
+                    else:
+                        raise ValueError("Unexpected interval: start is split "
+                                "off, end is not")
+
+                if intervals_to_delete:
+                    SamplerInterval.objects.filter(id__in=intervals_to_delete).delete()
+                    n_deleted_sampler_intervals += len(intervals_to_delete)
+
+                # If the domain doesn't have any intervals left after this, it
+                # can be removed as well.
+                if len(domain_intervals) == len(intervals_to_delete):
+                    domain.delete()
+                    n_deleted_sampler_domains += 1
     return {
         'n_samplers': len(samplers),
         'n_deleted_domains': n_deleted_sampler_domains,

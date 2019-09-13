@@ -1184,7 +1184,8 @@ def prune_samplers(skeleton_id, graph, treenode_parent, treenode):
 
                 # If the domain doesn't have any intervals left after this, it
                 # can be removed as well.
-                if len(domain_intervals) == len(intervals_to_delete):
+                if len(intervals_to_delete) > 0 and \
+                        len(domain_intervals) == len(intervals_to_delete):
                     domain.delete()
                     n_deleted_sampler_domains += 1
     return {

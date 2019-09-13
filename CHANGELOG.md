@@ -272,6 +272,12 @@ Miscellaneous:
 - 3D viewer: the line width has now an upper limit of 25px to prevent crashes of
   the 3D viewer with larger values and many skeletons.
 
+- Skeleton splitting: if a skeleton sampler was in use, a split could so far
+  only be successfully executed if the split node is within a sampler domain.
+  This is fixed now and sampled skeletons can now be split upstream or
+  downstream of a domain as well. If split uptream, the domain will be deleted,
+  because it is part of the split-off fragment.
+
 ## 2019.06.20
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Pat Gunn, William Patton, Tom Kazimiers

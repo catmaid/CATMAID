@@ -1107,16 +1107,12 @@ def prune_samplers(skeleton_id, graph, treenode_parent, treenode):
             # the split-off fragment and we can move the entire domain to the
             # split-off part. For now we delete it for consistency.
             if treenode.id not in domain_graph:
-                # Try to find path from the treenode to a domain node. If it
-                # the domain node is upstream, we can get the distance.
-                # Otherwise an exception is raised. Note: this is a directed
-                # graph and in this particular case we expect edges to go from
-                # parent nodes to child nodes.
-                if nx.has_path(graph, domain.start_node_id, treenode.id):
-                    # Case 1, the split is downstream of the domain. We can
-                    # ignore this domain.
-                    continue
-                else:
+                # Try to find path from the treenode to a domain node, or a
+                # common ancestor. If it the domain node is upstream, we can get
+                # the distance. Otherwise an exception is raised. Note: this is
+                # a directed graph and in this particular case we expect edges
+                # to go from parent nodes to child nodes.
+                if nx.has_path(graph, treenode.id, domain.start_node_id):
                     # Case 2, the split is upstream of the domain. Delete this
                     # domain. TODO: Move it to the other split-off fragment.
                     domain_intervals = SamplerInterval.objects.filter(domain=domain)
@@ -1124,6 +1120,10 @@ def prune_samplers(skeleton_id, graph, treenode_parent, treenode):
                     n_deleted_sampler_domains += 1
                     domain_intervals.delete()
                     domain.delete()
+                    continue
+                else:
+                    # Case 1, the split is downstream of the domain or on
+                    # another branch. We can ignore this domain.
                     continue
             else:
                 new_sk_domain_nodes = set(nx.bfs_tree(domain_graph, treenode.id).nodes())

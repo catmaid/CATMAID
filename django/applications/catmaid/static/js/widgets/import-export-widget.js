@@ -825,7 +825,7 @@ annotations, neuron name, connectors or partner neurons.
     dialog.dialog.appendChild(sourceSelectLabelP);
 
     var targetSelect = document.createElement('select');
-    ['JFRC2'].forEach(function(key, i) {
+    ['JFRC2', 'JRC2018U'].forEach(function(key, i) {
       this.options.add(new Option(key, key));
       if (i === 0) {
         this.selectedIndex = i;

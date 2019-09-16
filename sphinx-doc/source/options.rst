@@ -86,3 +86,9 @@ overridden in ``settings.py``. Below is an explanation of all available settings
     ``FORCE_CLIENT_SETTING``
       By default, existing client settings won't be replaced if they exist
       already. To force a replace, set this variable to True.
+
+.. glossary::
+    ``CMTK_TEMPLATE_SPACES``
+     A list that defines folders with additional CMTK template spaces that can
+     be used with e.g. elmr or the nat.virtualflybrains R packages. Empty by
+     default.

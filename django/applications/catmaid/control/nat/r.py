@@ -164,6 +164,19 @@ def export_skeleton_as_nrrd(skeleton_id, source_ref, target_ref, user_id, mirror
             server_params.append('authname="{}"'.format(settings.CATMAID_HTTP_AUTH_USER))
             server_params.append('authpassword="{}"'.format(settings.CATMAID_HTTP_AUTH_PASS))
 
+        extra_options = ''
+        if getattr(settings, 'CMTK_TEMPLATE_SPACES', False):
+            # Add optionally additional template space registrations
+            extra_folders = ', '.join(map(lambda x: f'"{x}"', settings.CMTK_TEMPLATE_SPACES))
+            if extra_folders:
+                extra_folders = ', ' + extra_folders
+            extra_options = '''
+                library(R.utils)
+                setOption('nat.templatebrains.regdirs', c(getOption('nat.templatebrains.regdirs'){extra_folders}))
+            '''.format(**{
+                'extra_folders': extra_folders,
+            })
+
         r_script = """
         # if(!require("devtools")) install.packages("devtools")
         # devtools::source_gist("fdd1e5b6e009ff49e66be466a104fd92", filename = "install_flyconnectome_all.R")
@@ -174,6 +187,8 @@ def export_skeleton_as_nrrd(skeleton_id, source_ref, target_ref, user_id, mirror
         library(nat.nblast)
         library(doMC)
         doMC::registerDoMC(7)
+
+        {extra_options}
 
         conn = catmaid_login({server_params})
 
@@ -189,6 +204,7 @@ def export_skeleton_as_nrrd(skeleton_id, source_ref, target_ref, user_id, mirror
         im=as.im3d(xyzmatrix(xdp), {target_ref})
         write.im3d(im, '{output_path}')
         """.format(**{
+            'extra_options': extra_options,
             'server_params': ", ".join(server_params),
             'source_ref': source_ref,
             'target_ref': target_ref,
@@ -254,7 +270,7 @@ def setup_environment() -> None:
         devtools::install_github(c("jefferis/nat", "jefferislab/nat.nblast",
                 "jefferis/rcatmaid", "jefferis/elmr"))
         install.packages("doMC")
-        install.packages(c("curl", "httr"))
+        install.packages(c("curl", "httr", "R.utils"))
     """)
 
 

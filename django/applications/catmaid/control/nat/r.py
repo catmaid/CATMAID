@@ -194,7 +194,7 @@ def export_skeleton_as_nrrd(skeleton_id, source_ref, target_ref, user_id, mirror
 
         # based on fetchn_fafb
         x=catmaid::read.neurons.catmaid({skeleton_id}, conn=conn)
-        xt=xform_brain(x, sample="{source_ref}", reference={target_ref})
+        xt=xform_brain(x, sample="{source_ref}", reference="{target_ref}")
         if({mirror}) xt=mirror_brain(xt, {target_ref})
 
         # based on fetchdp_fafb

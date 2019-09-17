@@ -517,11 +517,13 @@
       event.stopPropagation();
     });
 
-    // TODO: remove the need for closing over oTable
-    var oTable = this.oTable;
-
     tableSelector.on("dblclick", "tbody tr", function() {
-      var aData = oTable.row(this).data();
+      let table = $(this).closest('table');
+      let tr = $(this).closest('tr');
+      let aData =  $(table).DataTable().row(tr).data();
+      if (!aData) {
+        return;
+      }
       // retrieve coordinates and moveTo
       var id = parseInt(aData[0], 10);
       var x = parseFloat(aData[4]);

@@ -195,13 +195,13 @@ def export_skeleton_as_nrrd(skeleton_id, source_ref, target_ref, user_id, mirror
         # based on fetchn_fafb
         x=catmaid::read.neurons.catmaid({skeleton_id}, conn=conn)
         xt=xform_brain(x, sample="{source_ref}", reference="{target_ref}")
-        if({mirror}) xt=mirror_brain(xt, "{target_ref}")
+        if({mirror}) xt=mirror_brain(xt, {target_ref})
 
         # based on fetchdp_fafb
         xdp=nat::dotprops(xt, resample=1, k=5)
         regtemplate(xdp)=regtemplate(xt)
 
-        im=as.im3d(xyzmatrix(xdp), "{target_ref}")
+        im=as.im3d(xyzmatrix(xdp), {target_ref})
         write.im3d(im, '{output_path}')
         """.format(**{
             'extra_options': extra_options,

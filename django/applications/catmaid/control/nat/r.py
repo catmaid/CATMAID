@@ -357,7 +357,7 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
         # nb also convert from nm to um, resample to 1µm spacing and use k=5
         # nearest neighbours of each point to define tangent vector
         logger.debug('Fetching {} matching skeletons'.format(len(matching_skeleton_ids)))
-        matching_neurons = dotprops_for_skeletons(project_id,
+        matching_neurons = neuronlist_for_skeletons(project_id,
                 matching_skeleton_ids, omit_failures, scale=nm_to_um, conn=conn)
 
 
@@ -431,7 +431,7 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
         # it into a list that can be understood by R.
 
         logger.debug('Fetching {} random skeletons'.format(len(random_skeleton_ids)))
-        nonmatching_neurons = dotprops_for_skeletons(project_id,
+        nonmatching_neurons = neuronlist_for_skeletons(project_id,
                 random_skeleton_ids, omit_failures, scale=nm_to_um, conn=conn)
 
         logger.debug('Computing random skeleton stats')
@@ -642,7 +642,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
 
         logger.debug('Fetching {} skeletons'.format(len(object_ids)))
         # Note: scaling down to um
-        objects = dotprops_for_skeletons(project_id, object_ids, omit_failures,
+        objects = neuronlist_for_skeletons(project_id, object_ids, omit_failures,
                 progress=progress, scale=nm_to_um, conn=conn)
 
         # Simplify
@@ -847,7 +847,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             logger.debug('Fetching {} query skeletons ({} cache hits)'.format(
                     len(effective_query_object_ids), cache_hits))
             if effective_query_object_ids:
-                query_objects = dotprops_for_skeletons(project_id,
+                query_objects = neuronlist_for_skeletons(project_id,
                         effective_query_object_ids, omit_failures,
                         scale=nm_to_um, conn=conn)
 
@@ -1014,7 +1014,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 logger.debug('Fetching {} target skeletons ({} cache hits)'.format(
                         len(effective_target_object_ids), cache_hits))
                 if effective_target_object_ids:
-                    target_objects = dotprops_for_skeletons(project_id,
+                    target_objects = neuronlist_for_skeletons(project_id,
                             effective_target_object_ids, omit_failures,
                             scale=nm_to_um, conn=conn)
 
@@ -1356,7 +1356,7 @@ def as_matrix(scores, a, b, transposed=False):
     raise ValueError(f"Can't convert to matrix, unknown type: {score_type}")
 
 
-def dotprops_for_skeletons(project_id, skeleton_ids, omit_failures=False,
+def neuronlist_for_skeletons(project_id, skeleton_ids, omit_failures=False,
         scale=None, conn=None, progress=False):
     """Get the R dotprops data structure for a set of skeleton IDs.
     If <conn> is true, those skeletons will be requested through HTTP.

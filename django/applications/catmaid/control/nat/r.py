@@ -100,15 +100,15 @@ def export_nrrd(request:HttpRequest, project_id, skeleton_id) -> HttpResponse:
         raise ValueError("The output path is not accessible")
 
     if async_export:
-        export_skeleton_as_nrrd_async.delay(skeleton_id, source_ref, target_ref,
-                request.user.id, mirror)
+        export_skeleton_as_nrrd_async.delay(project_id, skeleton_id, source_ref,
+                target_ref, request.user.id, mirror)
 
         return JsonResponse({
             'success': True
         })
     else:
-        result = export_skeleton_as_nrrd(skeleton_id, source_ref, target_ref,
-                request.user.id, mirror)
+        result = export_skeleton_as_nrrd(project_id, skeleton_id, source_ref,
+                target_ref, request.user.id, mirror)
 
         if result['errors']:
             raise RuntimeError("There were errors creating the NRRD file: {}".format(
@@ -121,8 +121,8 @@ def export_nrrd(request:HttpRequest, project_id, skeleton_id) -> HttpResponse:
 def export_skeleton_as_nrrd_async(skeleton_id, source_ref, target_ref, user_id,
                                   mirror=True, create_message=True) -> str:
 
-    result = export_skeleton_as_nrrd(skeleton_id, source_ref, target_ref,
-                                     user_id, mirror)
+    result = export_skeleton_as_nrrd(project_id, skeleton_id, source_ref,
+            target_ref, user_id, mirror)
     if create_message:
         msg = Message()
         msg.user = User.objects.get(pk=int(user_id))
@@ -141,82 +141,70 @@ def export_skeleton_as_nrrd_async(skeleton_id, source_ref, target_ref, user_id,
 
     return "Errors: {}".format('\n'.join(result['errors'])) if result['errors'] else result['nrrd_path']
 
-def export_skeleton_as_nrrd(skeleton_id, source_ref, target_ref, user_id, mirror=True) -> Dict:
+def export_skeleton_as_nrrd(project_id, skeleton_id, source_ref, target_ref,
+        user_id, mirror=True, use_http=False, omit_failures=False,
+        resample_by=1e3, tangent_neighbors=5) -> Dict:
     """ Export the skeleton with the passed in ID as NRRD file using R. For
     this to work R has to be installed.
 
     source_ref: FAFB14
-    target_ref: JFRC2
+    target_ref: JFRC2, JRC2018F, JRC2018U
     """
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     nrrd_name = "{}-{}.nrrd".format(skeleton_id, timestamp)
     nrrd_path = os.path.join(output_path, nrrd_name)
     errors = []
     try:
-        token, _ = Token.objects.get_or_create(user_id=user_id)
+        rnat = importr('nat')
+        rcatmaid = importr('catmaid')
+        rnattemplatebrains = importr('nat.templatebrains')
 
-        server_params = [
-            'server="{}"'.format(settings.CATMAID_FULL_URL),
-            'token="{}"'.format(token.key)
-        ]
+        # Needed for template spaces and bridging registrations
+        rflycircuit = importr('flycircuit')
+        relmr = importr('elmr')
 
-        if settings.CATMAID_HTTP_AUTH_USER:
-            server_params.append('authname="{}"'.format(settings.CATMAID_HTTP_AUTH_USER))
-            server_params.append('authpassword="{}"'.format(settings.CATMAID_HTTP_AUTH_PASS))
+        if settings.MAX_PARALLEL_ASYNC_WORKERS > 1:
+            #' # Parallelise NBLASTing across 4 cores using doMC package
+            rdomc = importr('doMC')
+            rdomc.registerDoMC(settings.MAX_PARALLEL_ASYNC_WORKERS)
 
-        extra_options = ''
         if getattr(settings, 'CMTK_TEMPLATE_SPACES', False):
             # Add optionally additional template space registrations
             extra_folders = ', '.join(map(lambda x: f'"{x}"', settings.CMTK_TEMPLATE_SPACES))
             if extra_folders:
                 extra_folders = ', ' + extra_folders
-            extra_options = '''
+            robjects.r('''
                 library(R.utils)
                 setOption('nat.templatebrains.regdirs', c(getOption('nat.templatebrains.regdirs'){extra_folders}))
             '''.format(**{
                 'extra_folders': extra_folders,
+            }))
+
+
+        object_ids = [skeleton_id]
+        conn = get_catmaid_connection(user.id) if use_http else None
+        logger.debug('Fetching {} skeletons'.format(len(object_ids)))
+        # Note: scaling down to um
+        objects = neuronlist_for_skeletons(project_id, object_ids, omit_failures,
+                progress=False, scale=nm_to_um, conn=conn)
+        # Transform neuron
+        target_ref_tb = robjects.r(target_ref)
+        xt = rnattemplatebrains.xform_brain(objects, sample=source_ref, reference=target_ref_tb)
+
+        if mirror:
+            xt = rnattemplatebrains.mirror_brain(xt, target_ref_tb)
+
+        xdp = rnat.dotprops(xt, **{
+                'k': tangent_neighbors,
+                'resample': resample_by * nm_to_um,
+                '.progress': 'none',
+                'OmitFailures': omit_failures,
             })
 
-        r_script = """
-        # if(!require("devtools")) install.packages("devtools")
-        # devtools::source_gist("fdd1e5b6e009ff49e66be466a104fd92", filename = "install_flyconnectome_all.R")
+        xdp.slots['regtemplate'] = rnattemplatebrains.regtemplate(xt)
 
-        library(flycircuit)
-        library(elmr)
-        library(catmaid)
-        library(nat.nblast)
-        library(doMC)
-        doMC::registerDoMC(7)
-
-        {extra_options}
-
-        conn = catmaid_login({server_params})
-
-        # based on fetchn_fafb
-        x=catmaid::read.neurons.catmaid({skeleton_id}, conn=conn)
-        xt=xform_brain(x, sample="{source_ref}", reference="{target_ref}")
-        if({mirror}) xt=mirror_brain(xt, {target_ref})
-
-        # based on fetchdp_fafb
-        xdp=nat::dotprops(xt, resample=1, k=5)
-        regtemplate(xdp)=regtemplate(xt)
-
-        im=as.im3d(xyzmatrix(xdp), {target_ref})
-        write.im3d(im, '{output_path}')
-        """.format(**{
-            'extra_options': extra_options,
-            'server_params': ", ".join(server_params),
-            'source_ref': source_ref,
-            'target_ref': target_ref,
-            'skeleton_id': skeleton_id,
-            'output_path': nrrd_path,
-            'mirror': "TRUE" if mirror else "FALSE",
-        })
-
-        # Call R, allow Rprofile.site file
-        cmd = "R --no-save --no-restore --no-init-file --no-environ"
-        pipe = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, encoding='utf8')
-        stdout, stderr = pipe.communicate(input=r_script)
+        im = rnat.as_im3d(rnat.xyzmatrix(xdp), target_ref_tb)
+        rnat.write_im3d(im, nrrd_path)
 
         if not os.path.exists(nrrd_path):
             raise ValueError("No output file created")

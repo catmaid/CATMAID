@@ -88,9 +88,7 @@ class BasicUITest(StaticLiveServerTestCase):
                     "captureHtml": True,
                     "webdriverRemoteQuietExceptions": False,
                     "tunnel-identifier": os.environ["TRAVIS_JOB_NUMBER"],
-                    "name": "Job: {} Commit {}".format(
-                            os.environ["TRAVIS_JOB_NUMBER"],
-                            os.environ["TRAVIS_COMMIT"]),
+                    "name": f"Job: {os.environ['TRAVIS_JOB_NUMBER']} Commit {os.environ['TRAVIS_COMMIT']}",
                     "build": os.environ["TRAVIS_BUILD_NUMBER"],
                     "tags": [os.environ["TRAVIS_PYTHON_VERSION"], "CI"]
                 }
@@ -120,7 +118,7 @@ class BasicUITest(StaticLiveServerTestCase):
             if settings.GUI_TESTS_REMOTE:
                 # Let saucelabs.com know about the outcome of this test
                 id = self.selenium.session_id
-                logger.info('Link to remote Selenium GUI test job: https://saucelabs.com/jobs/{}'.format(id))
+                logger.info(f'Link to remote Selenium GUI test job: https://saucelabs.com/jobs/{id}')
 
                 from sauceclient import SauceClient
                 username = os.environ["SAUCE_USERNAME"]
@@ -170,7 +168,7 @@ class BasicUITest(StaticLiveServerTestCase):
         for log_entry in browser_log:
             self.assertIn('message', log_entry)
             if 'SyntaxError' in log_entry['message']:
-                print("Syntax error: {}".format(log_entry['message']))
+                print(f"Syntax error: {log_entry['message']}")
 
                 # If there is a syntax error, try to parse the message to load
                 # the respective source file and print the relevant lines.
@@ -185,7 +183,7 @@ class BasicUITest(StaticLiveServerTestCase):
                         print("Relevant source code:")
                         c = 2
                         for l in range(max(0, line - c - 1), min(len(lines) - 1, line + c)):
-                            print("{}: {}".format(str(l + 1), lines[l]))
+                            print(f"{l+1}: {lines[l]}")
 
                 # Let test fail
                 self.assertNotIn('SyntaxError', log_entry['message'])

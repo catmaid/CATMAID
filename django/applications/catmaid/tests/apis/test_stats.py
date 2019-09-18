@@ -771,7 +771,7 @@ class StatsApiTests(CatmaidApiTestCase):
             """, {
                 "project_id": self.test_project_id,
                 "skeleton_class_id": skeleton_class_id,
-                "name": "Test skeleton %s ".format(i),
+                "name": f"Test skeleton {i} ",
                 "user_id": self.test_user_id,
                 "creation_time": datetime.datetime(2017, 7, 5, 16, 20, 10),
             })
@@ -921,16 +921,16 @@ class StatsApiTests(CatmaidApiTestCase):
         ]
         link_data = list(chain.from_iterable(connector_links))
         link_template = ','.join('(%s,%s,%s,%s,%s)' for _ in connector_links)
-        cursor.execute("""
+        cursor.execute(f"""
             INSERT INTO treenode_connector (project_id, treenode_id, skeleton_id,
                 relation_id, connector_id, user_id, creation_time)
             SELECT %s, link.treenode_id, t.skeleton_id, link.relation_id,
                 link.connector_id, link.user_id, link.creation_time::timestamptz
             FROM treenode t
-            JOIN (VALUES {}) link(treenode_id, relation_id, connector_id,
+            JOIN (VALUES {link_template}) link(treenode_id, relation_id, connector_id,
                 user_id, creation_time)
             ON t.id = link.treenode_id
-        """.format(link_template), [self.test_project_id] + link_data)
+        """, [self.test_project_id] + link_data)
 
     def _test_setup_connector_summary(self, time_zone, start_date_utc,
             end_date_utc, expected_stats):
@@ -983,15 +983,15 @@ class StatsApiTests(CatmaidApiTestCase):
         node_data = list(chain.from_iterable(reviews))
         node_template = ','.join('(%s,%s,%s)' for _ in reviews)
         cursor = connection.cursor()
-        cursor.execute("""
+        cursor.execute(f"""
             INSERT INTO review (project_id, reviewer_id, review_time,
                  skeleton_id, treenode_id)
             SELECT %s, node.reviewer_id, node.review_time::timestamptz,
                 t.skeleton_id, t.id
             FROM treenode t
-            JOIN (VALUES {}) node(treenode_id, reviewer_id, review_time)
+            JOIN (VALUES {node_template}) node(treenode_id, reviewer_id, review_time)
             ON t.id = node.treenode_id
-        """.format(node_template), [self.test_project_id] + node_data)
+        """, [self.test_project_id] + node_data)
 
     def _test_setup_review_summary(self, time_zone, start_date_utc,
             end_date_utc, expected_stats):

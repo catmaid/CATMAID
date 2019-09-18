@@ -44,7 +44,7 @@ def default(obj:Union[DateTimeTZRange, datetime]) -> str:
     if isinstance(obj, DateTimeTZRange):
         l_bound = "[" if obj.lower_inc else "("
         u_bound = "]" if obj.upper_inc else ")"
-        return "{}{},{}{}".format(l_bound, obj.lower, obj.upper, u_bound)
+        return f"{l_bound}{obj.lower},{obj.upper}{u_bound}"
     elif isinstance(obj, datetime):
         return str(obj)
 
@@ -110,8 +110,7 @@ def get_swc_string(project_id, skeleton_id, treenodes_qs:QuerySet, linearize_ids
 
             soma_nodes = cursor.fetchall()
             if len(soma_nodes) > 1:
-                raise ValueError("More than one node found that is tagged " +
-                        "\"soma\" in skeleton {}".format(skeleton_id))
+                raise ValueError(f'More than one node found that is tagged "soma" in skeleton {skeleton_id}')
             elif len(soma_nodes) == 1:
                 soma_node_id = soma_nodes[0][0]
         elif radius_markers:
@@ -135,8 +134,7 @@ def get_swc_string(project_id, skeleton_id, treenodes_qs:QuerySet, linearize_ids
 
             soma_nodes = cursor.fetchall()
             if len(soma_nodes) > 1:
-                raise ValueError("More than one node found with radius >= " +
-                        "{}nm in skeleton {}".format(radius, skeleton_id))
+                raise ValueError(f"More than one node found with radius >= {radius}nm in skeleton {skeleton_id}")
             elif len(soma_nodes) == 1:
                 soma_node_id = soma_nodes[0][0]
 
@@ -726,7 +724,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
                         ON tc.id = tch.id
                         AND tc.skeleton_id = %(skeleton_id)s
                         AND tch.skeleton_id <> tc.skeleton_id
-                '''.format(user_select=merge_user_select)
+                '''
             else:
                 extra_query = ''
 
@@ -787,11 +785,11 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
     if with_reviews:
         r_history_query = ', r.review_time' if with_history else ''
         history_suffix = '__with_history' if with_history else ''
-        cursor.execute("""
-            SELECT r.treenode_id, r.id, r.reviewer_id{0}
-            FROM review{1} r
+        cursor.execute(f"""
+            SELECT r.treenode_id, r.id, r.reviewer_id{r_history_query}
+            FROM review{history_suffix} r
             WHERE r.skeleton_id = %s
-        """.format(r_history_query, history_suffix), [skeleton_id])
+        """, [skeleton_id])
 
         for r in cursor.fetchall():
             reviews.append(r)
@@ -802,17 +800,17 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
         link_history_query = ', annotation_link.edition_time' if with_history else ''
         user_select = ', neuron_link.user_id' if with_user_info else ''
         # Fetch all node tags
-        cursor.execute('''
+        cursor.execute(f'''
             SELECT annotation_link.class_instance_b
-                   {0}
+                   {link_history_query}
                    {user_select}
-            FROM class_instance_class_instance{1} neuron_link
-            JOIN class_instance_class_instance{1} annotation_link
+            FROM class_instance_class_instance{history_suffix} neuron_link
+            JOIN class_instance_class_instance{history_suffix} annotation_link
                 ON annotation_link.class_instance_a = neuron_link.class_instance_b
             WHERE neuron_link.class_instance_a = %(skeleton_id)s
               AND neuron_link.relation_id = %(model_of)s
               AND annotation_link.relation_id = %(annotated_with)s
-        '''.format(link_history_query, history_suffix, user_select=user_select), {
+        ''', {
             'skeleton_id': skeleton_id,
             'model_of': relations['model_of'],
             'annotated_with': relations['annotated_with']

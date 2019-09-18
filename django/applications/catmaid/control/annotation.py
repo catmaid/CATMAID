@@ -154,11 +154,11 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
             params["name"] = name if name_exact else ('%' + name + '%')
 
         if name_not:
-            filters.append("ci.name !{op} %(name)s".format(op=op))
-            filters.append("upper(ci.name) !{uop} upper(%(name)s)".format(uop=upper_name_op))
+            filters.append(f"ci.name !{op} %(name)s")
+            filters.append(f"upper(ci.name) !{upper_name_op} upper(%(name)s)")
         else:
-            filters.append("ci.name {op} %(name)s".format(op=op))
-            filters.append("upper(ci.name) {uop} upper(%(name)s)".format(uop=upper_name_op))
+            filters.append(f"ci.name {op} %(name)s")
+            filters.append(f"upper(ci.name) {upper_name_op} upper(%(name)s)")
 
     # Map annotation sets to their expanded sub-annotations
     sub_annotation_ids = get_sub_annotation_ids(project_id, annotation_sets_to_expand,
@@ -193,15 +193,15 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
     creation_timestamp_fields = []
     edition_timestamp_fields = []
     for n, annotation_id_set in enumerate(annotation_id_sets):
-        joins.append("""
+        joins.append(f"""
             INNER JOIN class_instance_class_instance cici{n}
                     ON ci.id = cici{n}.class_instance_a
-        """.format(n=n))
+        """)
 
-        filters.append("""
+        filters.append(f"""
             cici{n}.relation_id = %(annotated_with)s AND
             cici{n}.class_instance_b = ANY (%(cici{n}_ann)s)
-        """.format(n=n))
+        """)
 
         if with_timestamps:
             c_field = f'cici{n}.creation_time'
@@ -211,21 +211,21 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
             creation_timestamp_fields.append(c_field)
             edition_timestamp_fields.append(e_field)
 
-        params['cici{}_ann'.format(n)] = list(annotation_id_set)
+        params[f'cici{n}_ann'] = list(annotation_id_set)
 
         # Add annotator and time constraints, if available
         if annotator_ids:
-            filters.append("""
+            filters.append(f"""
                 cici{n}.user_id = ANY (%(annotator_ids)s)
-            """.format(n=n))
+            """)
         if start_date:
-            filters.append("""
+            filters.append(f"""
                 cici{n}.creation_time >= %(start_date)s
-            """.format(n=n))
+            """)
         if end_date:
-            filters.append("""
+            filters.append(f"""
                 cici{n}.creation_time <= %(end_date)s
-             """.format(n=n))
+             """)
 
     # To exclude class instsances that are linked to particular annotation, all
     # annotations are collected and if in this list of annotations contains an
@@ -242,10 +242,10 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
             ) ann_link ON ci.id = ann_link.id
         """)
         for n, annotation_id_set in enumerate(not_annotation_sets):
-            filters.append("""
+            filters.append(f"""
                 NOT (ann_link.annotations && %(cici_ex{n}_ann)s)
-            """.format(n=n))
-            params['cici_ex{n}_ann'.format(n=n)] = list(annotation_id_set)
+            """)
+            params[f'cici_ex{n}_ann'] = list(annotation_id_set)
 
     # The bassic query
     query = """
@@ -317,8 +317,7 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
             sort_by = ', '.join(creation_timestamp_fields)
         elif sort_by == 'last_annotation_link_edit':
             sort_by = ', '.join(edition_timestamp_fields)
-        query_fmt_params['sort'] = "ORDER BY {sort_col} {sort_dir}".format(
-                sort_col=sort_by, sort_dir=sort_dir.upper())
+        query_fmt_params['sort'] = f"ORDER BY {sort_by} {sort_dir.upper()}"
 
     # Execute query and build result data structure
     cursor.execute(query.format(**query_fmt_params), params)
@@ -829,15 +828,14 @@ def _annotate_entities_with_name(project_id:Union[int,str], user_id, entity_ids)
     missing_name_annotations = entity_names - set(existing_name_annotations.keys())
     if missing_name_annotations:
         # Escape single quotes by double-quoting
-        escaped_name_annotations = [n.replace("'", "''") for n in missing_name_annotations]
-        cursor.execute("""
+        escaped_name_annotations = (n.replace("'", "''") for n in missing_name_annotations)
+        values = (f"({user_id}, {project_id}, {annotation_class.id}, {x})" for x in escaped_name_annotations)
+        values_str = ','.join(values) or '()'
+        cursor.execute(f"""
             INSERT INTO class_instance (user_id, project_id, class_id, name)
-            VALUES {n_list}
+            VALUES {values_str}
             RETURNING name, id;
-        """.format(**{
-            'n_list': '(' + '),('.join(map(lambda x: "{}, {}, {}, '{}'".format(
-                    user_id, project_id, annotation_class.id, x), escaped_name_annotations)) + ')',
-        }))
+        """)
         added_annotations = dict(cursor.fetchall())
         existing_name_annotations.update(added_annotations)
 

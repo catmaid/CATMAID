@@ -537,26 +537,26 @@ def delete_sampler(request:HttpRequest, project_id, sampler_id) -> JsonResponse:
                 if parent_update:
                     update_nodes_template = ",".join("(%s, %s)" for _ in parent_update)
                     update_nodes_flattened = list(chain.from_iterable(parent_update))
-                    query_parts.append("""
+                    query_parts.append(f"""
                         UPDATE treenode
                         SET parent_id = nodes_to_update.parent_id
-                        FROM (VALUES {}) nodes_to_update(child_id, parent_id)
+                        FROM (VALUES {update_nodes_template}) nodes_to_update(child_id, parent_id)
                         WHERE treenode.id = nodes_to_update.child_id;
-                    """.format(update_nodes_template))
+                    """)
                     remove_params = update_nodes_flattened
 
                 delete_nodes_template = ",".join("(%s)" for _ in nodes_to_remove)
-                query_parts.append("""
+                query_parts.append(f"""
                     DELETE
                     FROM treenode
                     WHERE id IN (
                         SELECT t.id
                         FROM treenode t
-                        JOIN (VALUES {}) to_delete(id)
+                        JOIN (VALUES {delete_nodes_template}) to_delete(id)
                             ON t.id = to_delete.id
                     )
                     RETURNING id;
-                """.format(delete_nodes_template))
+                """)
                 remove_params = remove_params + nodes_to_remove
 
                 cursor.execute("\n".join(query_parts), remove_params)
@@ -1153,8 +1153,7 @@ def add_all_intervals(request:HttpRequest, project_id, domain_id) -> JsonRespons
 
         if not is_collinear(child_loc, parent_loc, new_node_loc, True, epsilon):
             raise ValueError('New node location has to be collinear with child ' +
-                    'and parent. Child: {}, New Node: {}, Parent: {}'.format(
-                            child_loc, new_node_loc, parent_loc))
+                    f'and parent. Child: {child_loc}, New Node: {new_node_loc}, Parent: {parent_loc}')
 
         # Tag new treenode with SAMPLER_CREATED_CLASS
         label, _ = ClassInstance.objects.get_or_create(project_id=project_id,

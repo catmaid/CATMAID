@@ -366,16 +366,15 @@ class PointCloudList(APIView):
         n_images = len(request.FILES)
 
         if image_names and len(image_names) != n_images:
-            raise ValueError("If image names are passed in, there need to be exactly as many as passed in files ({})".format(n_images))
+            raise ValueError(f"If image names are passed in, there must be exactly as many as passed in files ({n_images})")
 
         if image_descriptions and len(image_descriptions) != n_images:
-            raise ValueError("If image descriptions are passed in, there need to be exactly as many as passed in files ({})".format(n_images))
+            raise ValueError(f"If image descriptions are passed in, there must be exactly as many as passed in files ({n_images})")
 
         cursor = connection.cursor()
         for n, image in enumerate(request.FILES.values()):
             if image.size > settings.IMPORTED_IMAGE_FILE_MAXIMUM_SIZE:
-                raise ValueError("Image {} is bigger than IMPORTED_IMAGE_FILE_MAXIMUM_SIZE ({} MB)".format(
-                        image.name, settings.IMPORTED_IMAGE_FILE_MAXIMUM_SIZE / 1024**2))
+                raise ValueError(f"Image {image.name} is bigger than IMPORTED_IMAGE_FILE_MAXIMUM_SIZE ({settings.IMPORTED_IMAGE_FILE_MAXIMUM_SIZE / 1024**2} MB)")
 
             # Transform into JPEG
             img = Image.open(image)
@@ -472,8 +471,7 @@ class PointCloudImageDetail(APIView):
         # everyone can read.
         if 'can_read' not in get_perms(request.user, pointcloud) and \
                 len(get_users_with_perms(pointcloud)) > 0:
-            raise PermissionError('User "{}" not allowed to read point cloud #{}'.format(
-                    request.user.username, pointcloud.id))
+            raise PermissionError(f'User "{request.user.username}" not allowed to read point cloud #{pointcloud.id}')
 
         cursor = connection.cursor()
         cursor.execute("""
@@ -501,7 +499,7 @@ class PointCloudImageDetail(APIView):
         name = rows[0][2]
 
         response = HttpResponse(image_data.tobytes(), content_type=content_type)
-        response['Content-Disposition'] = 'attachment; filename={}'.format(name)
+        response['Content-Disposition'] = f'attachment; filename={name}'
         return response
 
 
@@ -547,8 +545,7 @@ class PointCloudDetail(APIView):
         # everyone can read.
         if 'can_read' not in get_perms(request.user, pointcloud) and \
                 len(get_users_with_perms(pointcloud)) > 0:
-            raise PermissionError('User "{}" not allowed to read point cloud #{}'.format(
-                    request.user.username, pointcloud.id))
+            raise PermissionError(f'User "{request.user.username}" not allowed to read point cloud #{pointcloud.id}')
 
         if with_images:
             images = [serialize_image_data(i) for i in pointcloud.images.all()]

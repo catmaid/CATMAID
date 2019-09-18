@@ -149,7 +149,7 @@ def check_client_settings(app_configs, **kwargs):
     """Reset the default client settings for a catmaid instance.
     """
     from catmaid.control import client
-    messages = []
+    messages:List[str] = []
 
     instance_settings = getattr(settings, 'CLIENT_SETTINGS', None)
     if not instance_settings:
@@ -168,7 +168,7 @@ def check_client_settings(app_configs, **kwargs):
                 "Could not parse CLIENT_SETTINGS as JSON: " + instance_settings))
     except Exception as e:
         messages.append(Warning(
-            "Could not reset client instance settings: " + str(e)))
+            f"Could not reset client instance settings: {e}"))
 
     return messages;
 
@@ -193,7 +193,7 @@ class CATMAIDConfig(AppConfig):
 
     def ready(self) -> None:
         """Perform initialization for back-end"""
-        logger.info("CATMAID version {}".format(settings.VERSION))
+        logger.info(f"CATMAID version {settings.VERSION}")
 
         # Make sure all settings variables are of the type we expect.
         self.validate_configuration()

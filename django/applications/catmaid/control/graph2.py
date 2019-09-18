@@ -458,14 +458,14 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
                 tc1.relation_id, tc2.relation_id,
                 LEAST(tc1.confidence, tc2.confidence)
             FROM treenode_connector tc1
-            JOIN (VALUES {}) skeleton(id)
+            JOIN (VALUES {skeleton_id_template}) skeleton(id)
                 ON tc1.skeleton_id = skeleton.id
             JOIN treenode_connector tc2
                 ON tc1.connector_id = tc2.connector_id
             WHERE tc1.id != tc2.id
                 AND tc1.relation_id IN (%s, %s)
                 AND tc2.relation_id IN (%s, %s)
-            '''.format(skeleton_id_template), query_params)
+            ''', query_params)
 
             query_skeleton_ids = set(skeleton_ids)
             overall_counts:DefaultDict = defaultdict(partial(defaultdict, make_new_synapse_count_array))

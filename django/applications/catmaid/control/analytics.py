@@ -62,7 +62,7 @@ def check_broken_section(project_id:int, skeleton_ids=None, cursor=None) -> List
         skid_constraint = ''
 
     cursor = cursor or connection.cursor()
-    cursor.execute("""
+    cursor.execute(f"""
         WITH broken_project_slice AS (
             SELECT p.id AS project_id,
                 s.id AS stack_id,
@@ -107,8 +107,8 @@ def check_broken_section(project_id:int, skeleton_ids=None, cursor=None) -> List
                 AND t.location_x >= bps.broken_z
                 AND t.location_x < bps.next_z
             ))
-            {}
-    """.format(skid_constraint), params)
+            {skid_constraint}
+    """, params)
 
     return cursor.fetchall()
 

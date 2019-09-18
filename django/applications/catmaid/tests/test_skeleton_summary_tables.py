@@ -167,7 +167,7 @@ class SkeletonSummaryTableTests(TransactionTestCase):
         neuron_id = parsed_response[str(skeleton_id)]
 
         response = self.client.post(
-                '/{}/neuron/{}/delete'.format(self.project_id, neuron_id))
+                f'/{self.project_id}/neuron/{neuron_id}/delete')
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
 

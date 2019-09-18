@@ -87,12 +87,12 @@ def transaction_collection(request:Request, project_id) -> Response:
             params.append(range_length)
 
         cursor = connection.cursor()
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT row_to_json(cti), COUNT(*) OVER() AS full_count
             FROM catmaid_transaction_info cti
             WHERE project_id = %s
-            ORDER BY execution_time DESC {}
-        """.format(" ".join(constraints)), params)
+            ORDER BY execution_time DESC {" ".join(constraints)}
+        """, params)
         result = cursor.fetchall()
         json_data = [row[0] for row in result]
         total_count = result[0][1] if len(json_data) > 0 else 0
@@ -156,8 +156,8 @@ def get_location(request:Request, project_id) -> Response:
             """, (transaction_id, execution_time))
             result = cursor.fetchone()
             if not result:
-                raise ValueError("Couldn't find label for transaction {} and "
-                        "execution time {}".format(transaction_id, execution_time))
+                raise ValueError(f"Could not find label for transaction {transaction_id} and "
+                        "execution time {execution_time}")
             label = result[0]
 
         # Look first in live table and then in history table. Use only
@@ -177,11 +177,11 @@ def get_location(request:Request, project_id) -> Response:
                     location = (loc[0], loc[1], loc[2])
                     query = None
                 else:
-                    raise ValueError("Couldn't read location information, "
-                        "expected 3 columns, got {}".format(len(loc)))
+                    raise ValueError(f"Could not read location information, "
+                        "expected 3 columns, got {len(loc)}")
 
         if not location or len(location) != 3:
-            raise ValueError("Couldn't find location for transaction {}".format(transaction_id))
+            raise ValueError(f"Could not find location for transaction {transaction_id}")
 
         return Response({
             'x': location[0],

@@ -76,8 +76,8 @@ class PreStackGroup():
         self.relation = info_object.get('relation', None)
         valid_relations = ("view", "channel")
         if self.relation and self.relation not in valid_relations:
-            raise ValueError("Unsupported stack group relation: {}. Plese use "
-                    "one of: {}.".format(self.relation, ", ".join(valid_relations)))
+            raise ValueError(f"Unsupported stack group relation: {self.relation}. Please use " + \
+                    f"one of: {', '.join(valid_relations)}.")
 
 
 class PreMirror(object):
@@ -154,7 +154,7 @@ class PreStack(object):
         self.orientation = info_object.get('orientation', 0)
         # Make sure this dimension can be matched
         if not Double3D.tuple_pattern.match(self.project_translation):
-            raise ValueError("Couldn't read translation value")
+            raise ValueError("Could not read translation value")
         # Collect stack group information
         self.stackgroups:List = []
         if 'stackgroups' in info_object:
@@ -235,7 +235,7 @@ class PreProject:
             raise ValueError("Can only merge into unknown pre projects")
 
         if self.title != other.title:
-            self.title = "{}, {}".format(self.title, other.title)
+            self.title = f"{self.title}, {other.title}"
 
         self.stacks.extend(other.stacks)
         self.ontology.extend(other.ontology)
@@ -284,7 +284,7 @@ def find_project_folders(image_base:str, path:str, filter_term) -> Tuple[List, D
                         new_key_index = 1
                         while key in projects:
                             new_key_index += 1
-                            key = "{} #{}".format(current_file, new_key_index)
+                            key = f"{current_file} #{new_key_index}"
                         # Remember this project if it isn't available yet
                         projects[key] = project
                         index.append((key, short_name))
@@ -303,7 +303,7 @@ def get_projects_from_raw_data(data, filter_term, base_url=None) -> Tuple[List, 
         if filter_term and not fnmatch.fnmatch(project.title, filter_term):
             continue;
         short_name = project.title
-        key = "{}-{}".format('File', short_name)
+        key = f"File-{short_name}"
         projects[key] = project
         index.append((key, short_name))
 
@@ -337,7 +337,7 @@ def get_projects_from_url(url, filter_term, headers=None, auth=None,
             if filter_term and not fnmatch.fnmatch(project.title, filter_term):
                 continue;
             short_name = project.title
-            key = "{}-{}".format(url, short_name)
+            key = f"{url}-{short_name}"
             projects[key] = project
             index.append((key, short_name))
     elif 'yaml' in content_type:
@@ -347,7 +347,7 @@ def get_projects_from_url(url, filter_term, headers=None, auth=None,
             if filter_term and not fnmatch.fnmatch(project.title, filter_term):
                 continue;
             short_name = project.title
-            key = "{}-{}".format(url, short_name)
+            key = f"{url}-{short_name}"
             if merge_same and key in projects:
                 # Merge newly found and existing projects
                 existing_project = projects[key]
@@ -356,8 +356,8 @@ def get_projects_from_url(url, filter_term, headers=None, auth=None,
                 projects[key] = project
                 index.append((key, short_name))
     else:
-        raise ValueError("Unrecognized content type in response of remote "
-                "'{}\': {}, Content: {}".format( url, content_type, r.content))
+        raise ValueError("Unrecognized content type in response of remote " + \
+                f"'{url}\': {content_type}, Content: {r.content}")
 
     return (index, projects, not_readable)
 
@@ -398,12 +398,12 @@ class ProjectSelector(object):
                 for pi in project_index:
                     ip_data.append(pi[0])
                     ip_data.append(projects[pi[0]].title)
-                cursor.execute("""
+                cursor.execute(f"""
                     SELECT p.id, ip.key, ip.name
                     FROM project p
-                    JOIN (VALUES {}) ip(key, name)
+                    JOIN (VALUES {ip_template}) ip(key, name)
                         ON p.title = ip.name
-                """.format(ip_template), ip_data)
+                """, ip_data)
                 for row in cursor.fetchall():
                     known_project = row[1]
                     p = projects[known_project]
@@ -510,7 +510,7 @@ class ImportingWizard(SessionWizardView):
                 headers = None
                 if len(api_key) > 0:
                     headers = {
-                        'X-Authorization': 'Token {}'.format(api_key)
+                        'X-Authorization': f'Token {api_key}'
                     }
                 project_index, projects, not_readable = get_projects_from_url(
                         complete_catmaid_host, filter_term, headers, auth)
@@ -1394,8 +1394,7 @@ def import_projects(user, pre_projects, tags, permissions,
             import traceback
             not_imported.append((
                 pp,
-                Exception("Couldn't import project: {} {}".format(str(e),
-                        str(traceback.format_exc())))
+                Exception(f"Could not import project: {e} {traceback.format_exc()}")
             ))
 
     return (imported, not_imported)

@@ -67,7 +67,7 @@ def stats_cable_length(request:HttpRequest, project_id=None) -> JsonResponse:
             name_pattern = name_pattern[1:]
             name_match_where = 'AND ci.name ~ %(name_pattern)s AND cici.relation_id = %(model_of)s'
         else:
-            name_pattern = '%{}%'.format(name_pattern)
+            name_pattern = f'%{name_pattern}%'
             name_match_where = 'AND ci.name ~~* %(name_pattern)s AND cici.relation_id = %(model_of)s'
 
     cursor.execute("""

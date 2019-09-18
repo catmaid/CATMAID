@@ -162,7 +162,7 @@ def insert_into_log(project_id:Union[int, str], user_id, op_type:str, location=N
     ]
 
     if not op_type in operation_type_array:
-        return {'error': 'Operation type {0} not valid'.format(op_type)}
+        return {'error': f'Operation type {op_type} not valid'}
 
     new_log = Log()
     new_log.user_id = user_id
@@ -390,7 +390,7 @@ def is_valid_host(host:str, auth=None) -> Tuple[bool, str]:
         return (False, 'URL is missing protocol (http://...)')
     reachable, reason = is_reachable(host, auth)
     if not reachable:
-        return (False, 'URL not reachable: {}'.format(reason))
+        return (False, f'URL not reachable: {reason}')
     return (True, "Ok")
 
 

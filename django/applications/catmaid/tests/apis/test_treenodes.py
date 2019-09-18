@@ -1058,7 +1058,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
     def test_compact_detail_simple(self):
         self.fake_authentication()
         response = self.client.post(
-                '/{}/treenodes/compact-detail'.format(self.test_project_id),
+                f'/{self.test_project_id}/treenodes/compact-detail',
                 {
                     'treenode_ids': [261, 417, 415]
                 })
@@ -1075,7 +1075,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
     def test_compact_detail_label_names_and_treenode_set(self):
         self.fake_authentication()
         response = self.client.post(
-                '/{}/treenodes/compact-detail'.format(self.test_project_id),
+                f'/{self.test_project_id}/treenodes/compact-detail',
                 {
                     'treenode_ids': [261, 417, 415],
                     'label_names': ['TODO']
@@ -1091,7 +1091,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
     def test_compact_detail_label_names(self):
         self.fake_authentication()
         response = self.client.post(
-                '/{}/treenodes/compact-detail'.format(self.test_project_id),
+                f'/{self.test_project_id}/treenodes/compact-detail',
                 {
                     'label_names': ['TODO']
                 })
@@ -1107,7 +1107,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
     def test_compact_detail_label_id_and_treenode_set(self):
         self.fake_authentication()
         response = self.client.post(
-                '/{}/treenodes/compact-detail'.format(self.test_project_id),
+                f'/{self.test_project_id}/treenodes/compact-detail',
                 {
                     'treenode_ids': [261, 417, 415],
                     'label_ids': [351]
@@ -1123,7 +1123,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
     def test_compact_detail_label_ids(self):
         self.fake_authentication()
         response = self.client.post(
-                '/{}/treenodes/compact-detail'.format(self.test_project_id),
+                f'/{self.test_project_id}/treenodes/compact-detail',
                 {
                     'label_ids': [351]
                 })
@@ -1139,7 +1139,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
     def test_compact_detail_skeleton_ids(self):
         self.fake_authentication()
         response = self.client.post(
-                '/{}/treenodes/compact-detail'.format(self.test_project_id),
+                f'/{self.test_project_id}/treenodes/compact-detail',
                 {
                     'skeleton_ids': [235]
                 })
@@ -1181,7 +1181,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
     def test_compact_detail_skeleton_ids_and_label(self):
         self.fake_authentication()
         response = self.client.post(
-                '/{}/treenodes/compact-detail'.format(self.test_project_id),
+                f'/{self.test_project_id}/treenodes/compact-detail',
                 {
                     'skeleton_ids': [235],
                     'label_names': ['TODO']

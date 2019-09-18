@@ -286,7 +286,7 @@ def get_neuron_ids_from_models(request:HttpRequest, project_id=None) -> JsonResp
     cursor = connection.cursor()
     model_template = ",".join(("(%s)",) * len(model_ids)) or "()"
     params = [project_id] + model_ids + [project_id]
-    cursor.execute('''
+    cursor.execute(f'''
         WITH allowed_relation AS (
             SELECT id FROM relation
             WHERE project_id = %s AND relation_name = 'model_of'
@@ -294,11 +294,11 @@ def get_neuron_ids_from_models(request:HttpRequest, project_id=None) -> JsonResp
         )
         SELECT cici.class_instance_a, cici.class_instance_b
         FROM allowed_relation ar, class_instance_class_instance cici
-        JOIN (VALUES {}) model(id)
+        JOIN (VALUES {model_template}) model(id)
         ON cici.class_instance_a = model.id
         WHERE cici.project_id = %s
         AND cici.relation_id = ar.id
-    '''.format(model_template), params)
+    ''', params)
 
     models = {}
     for row in cursor.fetchall():
@@ -390,17 +390,16 @@ def _list_neurons(project_id, created_by, reviewed_by, from_date, to_date,
 
         # Get neurons modeled by skeletons
         if skeleton_ids:
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT DISTINCT c.id
                 FROM class_instance_class_instance cc
                 JOIN class_instance c
                     ON cc.class_instance_b = c.id
-                JOIN (VALUES {}) skeleton(id)
+                JOIN (VALUES {skeleton_id_template}) skeleton(id)
                     ON cc.class_instance_a = skeleton.id
                 WHERE cc.project_id = %s
                 AND c.class_id = %s
-            """.format(skeleton_id_template),
-                    skeleton_ids + [project_id, class_map["neuron"]])
+            """, skeleton_ids + [project_id, class_map["neuron"]])
 
             return list(map(lambda x: x[0], cursor.fetchall()))
         else:

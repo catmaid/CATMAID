@@ -17,17 +17,17 @@ def ws_update_connect(message) -> None:
     # Accept connection
     message.reply_channel.send({"accept": True})
     # Add user to the matching user group
-    Group("updates-{}".format(message.user.id)).add(message.reply_channel)
+    Group(f"updates-{message.user.id}").add(message.reply_channel)
 
 @channel_session_user
 def ws_update_disconnect(message) -> None:
     """Remove channel from group when user disconnects."""
-    Group("updates-{}".format(message.user.id)).discard(message.reply_channel)
+    Group(f"updates-{message.user.id}").discard(message.reply_channel)
 
 @channel_session_user
 def ws_update_message(message) -> None:
     """Handle client messages."""
-    logger.info("WebSockets message received: {}".format(message))
+    logger.info(f"WebSockets message received: {message}")
 
 def msg_user(user_id, event_name, data:str="", data_type:str="text", is_raw_data:bool=False,
         ignore_missing:bool=True) -> None:
@@ -44,7 +44,7 @@ def msg_user(user_id, event_name, data:str="", data_type:str="text", is_raw_data
         })
     # Broadcast to listening sockets
     try:
-        Group("updates-{}".format(user_id)).send({
+        Group(f"updates-{user_id}").send({
             data_type: payload
         })
     except KeyError as e:

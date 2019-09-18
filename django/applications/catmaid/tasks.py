@@ -53,4 +53,4 @@ def deactivate_inactive_users() -> str:
     the user account is set to inactive.
     """
     inactive_users = deactivate_inactive_users_impl()
-    return "Deactivated inactive users ({} in total)".format(len(inactive_users))
+    return f"Deactivated inactive users ({len(inactive_users)} in total)"

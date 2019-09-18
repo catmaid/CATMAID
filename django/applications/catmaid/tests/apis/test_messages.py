@@ -12,7 +12,7 @@ class MessagesApiTests(CatmaidApiTestCase):
         self.fake_authentication()
         message_id = 5050
 
-        response = self.client.post('/messages/{}/mark_read'.format(message_id))
+        response = self.client.post(f'/messages/{message_id}/mark_read')
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertIn('error', parsed_response)
@@ -24,7 +24,7 @@ class MessagesApiTests(CatmaidApiTestCase):
         self.fake_authentication()
         message_id = 3
 
-        response = self.client.post('/messages/{}/mark_read'.format(message_id))
+        response = self.client.post(f'/messages/{message_id}/mark_read')
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
@@ -36,7 +36,7 @@ class MessagesApiTests(CatmaidApiTestCase):
         self.fake_authentication()
         message_id = 1
 
-        response = self.client.post('/messages/{}/mark_read'.format(message_id))
+        response = self.client.post(f'/messages/{message_id}/mark_read')
         self.assertEqual(response.status_code, 302)
 
         message = Message.objects.filter(id=message_id)[0]

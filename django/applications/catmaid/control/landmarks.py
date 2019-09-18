@@ -55,12 +55,12 @@ class LandmarkList(APIView):
             landmark_ids = [lm['id'] for lm in serialized_landmarks]
             landmark_template = ",".join("(%s)" for _ in landmark_ids)
             cursor = connection.cursor()
-            cursor.execute("""
+            cursor.execute(f"""
                 SELECT landmark.id, p.id, p.location_x, p.location_y, p.location_z
                 FROM point_class_instance pci
                 JOIN point p
                     ON pci.point_id = p.id
-                JOIN (VALUES {}) landmark(id)
+                JOIN (VALUES {landmark_template}) landmark(id)
                     ON pci.class_instance_id = landmark.id
                 WHERE pci.relation_id = (
                     SELECT id FROM relation
@@ -68,7 +68,7 @@ class LandmarkList(APIView):
                     AND project_id = %s
                 )
                 AND pci.project_id = %s
-            """.format(landmark_template),
+            """,
                 landmark_ids + [project_id, project_id])
 
             point_index:DefaultDict[Any, List] = defaultdict(list)
@@ -108,7 +108,7 @@ class LandmarkList(APIView):
         existing_landmarks = ClassInstance.objects.filter(project_id=project_id,
                 name=name, class_column=landmark_class)
         if existing_landmarks:
-            raise ValueError("There is already a landmark with name {}".format(name))
+            raise ValueError(f"There is already a landmark with name {name}")
 
         landmark = ClassInstance.objects.create(project_id=project_id,
                 class_column=landmark_class, user=request.user,
@@ -459,7 +459,7 @@ class LandmarkGroupList(APIView):
         existing_landmarkgroups = ClassInstance.objects.filter(project_id=project_id,
                 name=name, class_column=landmarkgroup_class)
         if existing_landmarkgroups:
-            raise ValueError("There is already a landmark group with name {}".format(name))
+            raise ValueError(f"There is already a landmark group with name {name}")
 
         landmarkgroup = ClassInstance.objects.create(project_id=project_id,
                 class_column=landmarkgroup_class, user=request.user,
@@ -724,21 +724,19 @@ class LandmarkGroupImport(APIView):
         data = json.loads(data)
         for n, (group_name, landmarks) in enumerate(data):
             if not group_name:
-                raise ValueError("The {}. group doesn't have a name".format(n))
+                raise ValueError(f"The {n} group does not have a name")
             if not landmarks:
-                raise ValueError("Group {} doesn't contain any landmarks".format(group_name))
+                raise ValueError(f"Group {group_name} does not contain any landmarks")
             for m, link in enumerate(landmarks):
                 if not link or len(link) != 4:
-                    raise ValueError("The {}. link of the {}. group ({}) " \
-                        "doesn't conform to the [ID, X, Y, Z] format.".format(m,
-                        n, group_name))
-                for ci in (1,2,3):
+                    raise ValueError(f"The {m}. link of the {n}. group ({group_name}) " \
+                        "does not conform to the [ID, X, Y, Z] format.")
+                for ci in (1, 2, 3):
                     coordinate = link[ci]
                     value = float(coordinate)
                     if math.isnan(value):
-                        raise ValueError("The {}. link of the {}. group ({}) " \
-                            "doesn't have a valid {}. coordinate: {}.".format(
-                            m, n, group_name, ci, coordinate))
+                        raise ValueError(f"The {m}. link of the {n}. group ({group_name}) " \
+                            "does not have a valid {ci}. coordinate: {coordinate}.")
                     link[ci] = value
 
         classes = get_class_to_id_map(project_id)
@@ -767,9 +765,8 @@ class LandmarkGroupImport(APIView):
             if existing_group_id:
                 if n == 0:
                     if not reuse_existing_groups:
-                        raise ValueError("Group \"{}\" exists already ({}).  Please" \
-                                "remove it or enable group re-use.".format(
-                                group_name, existing_group_id))
+                        raise ValueError(f"Group \"{group_name}\" exists already ({existing_group_id}).  Please" \
+                                "remove it or enable group re-use.")
                     can_edit_or_fail(request.user, existing_group_id, 'class_instance')
             elif create_non_existing_groups:
                 group = ClassInstance.objects.create(project_id=project_id,
@@ -778,8 +775,8 @@ class LandmarkGroupImport(APIView):
                 existing_group_id = group.id
                 landmarkgroups[group_name.lower()] = group.id
             else:
-                raise ValueError("Group \"{}\" does not exist. Please create " \
-                        "it or enable automatic creation/".format(group_name))
+                raise ValueError(f"Group \"{group_name}\" does not exist. Please create " \
+                        "it or enable automatic creation.")
 
             imported_landmarks:List = []
             imported_group = {
@@ -797,9 +794,9 @@ class LandmarkGroupImport(APIView):
                     # Test only on first look at landmark
                     if existing_landmark_id not in seen_landmarks:
                         if not reuse_existing_landmarks:
-                            raise ValueError("Landmark \"{}\" exists already. " \
+                            raise ValueError(f"Landmark \"{landmark_name}\" exists already. " \
                                         "Please remove it or enable re-use of " \
-                                        "existing landmarks.".format(landmark_name))
+                                        "existing landmarks.")
                         can_edit_or_fail(request.user, existing_landmark_id, 'class_instance')
                 elif create_non_existing_landmarks:
                     landmark = ClassInstance.objects.create(project_id=project_id,
@@ -808,9 +805,8 @@ class LandmarkGroupImport(APIView):
                     existing_landmark_id = landmark.id
                     landmarks[landmark_name.lower()] = landmark.id
                 else:
-                    raise ValueError("Landmark \"{}\" does not exist. Please " \
-                            "create it or enable automatic creation.".format(
-                            landmark_name))
+                    raise ValueError(f"Landmark \"{landmark_name}\" does not exist. Please " \
+                            "create it or enable automatic creation.")
                 seen_landmarks.add(existing_landmark_id)
 
                 # Make sure the landmark is linked to the group
@@ -845,18 +841,17 @@ class LandmarkGroupImport(APIView):
 def get_landmark_group_members(project_id, landmarkgroup_ids) -> DefaultDict[Any, List]:
     cursor = connection.cursor()
     landmarkgroups_template = ','.join(['(%s)' for _ in landmarkgroup_ids])
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT cici.class_instance_a, cici.class_instance_b
         FROM class_instance_class_instance cici
-        JOIN (VALUES {}) landmarkgroup(id)
+        JOIN (VALUES {landmarkgroups_template}) landmarkgroup(id)
         ON cici.class_instance_b = landmarkgroup.id
         WHERE cici.relation_id = (
             SELECT id from relation
             WHERE relation_name = 'part_of' AND project_id = %s
         ) AND cici.project_id = %s
         ORDER BY cici.class_instance_a
-    """.format(landmarkgroups_template),
-        landmarkgroup_ids + [project_id, project_id])
+    """, landmarkgroup_ids + [project_id, project_id])
     member_index:DefaultDict[Any, List] = defaultdict(list)
     for r in cursor.fetchall():
         member_index[r[1]].append(r[0])
@@ -1465,8 +1460,8 @@ class LandmarkGroupLinkage(APIView):
         group_ids = None
         cursor = connection.cursor()
         if relation.isreciprocal:
-            cursor.execute("""
-                -- This assumes a reciprocal relation, direction is ignored.
+            # This assumes a reciprocal relation, direction is ignored.
+            cursor.execute(f"""
                 WITH RECURSIVE linked_group_paths(leaf, path, depth) AS (
                     SELECT CASE WHEN cici.class_instance_a = %(group_id)s
                         THEN cici.class_instance_b
@@ -1492,7 +1487,7 @@ class LandmarkGroupLinkage(APIView):
                         AND ROW(cici.class_instance_a, cici.class_instance_b) <> ALL(path)
                     WHERE cici.project_id = %(project_id)s
                         AND cici.relation_id = %(relation_id)s
-                        {}
+                        {max_depth_constraint}
                 )
                 SELECT ci.id
                 FROM (
@@ -1505,7 +1500,7 @@ class LandmarkGroupLinkage(APIView):
                     ON ci.id = lci.id
                 WHERE ci.class_id = lg.id
 
-            """.format(max_depth_constraint), {
+            """, {
                 'project_id': project_id,
                 'group_id': landmarkgroup_id,
                 'relation_id': relation_id,
@@ -1514,8 +1509,8 @@ class LandmarkGroupLinkage(APIView):
 
             group_ids = [r[0] for r in cursor.fetchall()]
         else:
-            cursor.execute("""
-                -- This assumes a reciprocal relation, direction is ignored.
+            # This assumes a reciprocal relation, direction is ignored.
+            cursor.execute(f"""
                 WITH RECURSIVE linked_group_paths(leaf, path, depth) AS (
                     SELECT cici.class_instance_b AS leaf,
                         ARRAY[ROW(cici.class_instance_a, cici.class_instance_b)] AS path,
@@ -1536,7 +1531,7 @@ class LandmarkGroupLinkage(APIView):
                         AND ROW(cici.class_instance_a, cici.class_instance_b) <> ALL(path)
                     WHERE cici.project_id = %(project_id)s
                         AND cici.relation_id = %(relation_id)s
-                        {}
+                        {max_depth_constraint}
                 )
                 SELECT ci.id
                 FROM (
@@ -1549,7 +1544,7 @@ class LandmarkGroupLinkage(APIView):
                     ON ci.id = lci.id
                 WHERE ci.class_id = lg.id
 
-            """.format(max_depth_constraint), {
+            """, {
                 'project_id': project_id,
                 'group_id': landmarkgroup_id,
                 'relation_id': relation_id,

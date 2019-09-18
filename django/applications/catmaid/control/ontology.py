@@ -48,10 +48,7 @@ class Feature:
         else:
             raise ValueError("A feature needs at least one element")
 
-    def __str__(self):
-        return self.__unicode__()
-
-    def __unicode__(self):
+    def __str__(self) -> str:
         return self.name
 
     def __len__(self):
@@ -64,13 +61,11 @@ class FeatureLink:
         self.relation = relation
         self.super_class = super_class
 
-    def __str__(self):
-        return self.__unicode__()
-
-    def __unicode__(self) -> str:
-        return "[CA {}: {} R {}: {} CB {}: SC {}: {}]".format(self.class_a.id,
-                self.class_a, self.relation.id, self.relation, self.class_b.id,
-                self.class_b, self.super_class.id, self.super_class)
+    def __str__(self) -> str:
+        return f"[CA {self.class_a.id}: {self.class_a} " + \
+               f"R {self.relation.id}: {self.relation} " + \
+               f"CB {self.class_b.id}: {self.class_b} " + \
+               f"SC {self.super_class.id}: {self.super_class}]"
 
 def get_known_ontology_roots(request:HttpRequest) -> JsonResponse:
     """ Returns an array of all known root class names.
@@ -234,7 +229,7 @@ def list_ontology(request:HttpRequest, project_id=None) -> JsonResponse:
                         return JsonResponse(warning)
                 else:
                     if root_class not in class_map:
-                        raise Exception('Root class "{0}" not found'.format( root_class ))
+                        raise Exception(f'Root class "{root_class}" not found')
                     root_class_ids = [ class_map[root_class] ]
 
                 root_node_q = Class.objects.filter(id__in=root_class_ids,

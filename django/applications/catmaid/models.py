@@ -6,10 +6,9 @@ import logging
 from random import random
 import re
 import sys
+from typing import Any, Dict, Tuple
 import urllib
 import urllib.parse
-
-from typing import Any, Dict, Tuple
 
 from django import forms
 from django.conf import settings
@@ -303,7 +302,7 @@ class ClassInstance(models.Model):
                         'id': neuron_of_skeleton[skeleton_id]['neuroid'],
                         'id__count': 1, # connectivity count
                         'skeleton_id': skeleton_id,
-                        'name': '{0} / skeleton {1}'.format(neuron_of_skeleton[skeleton_id]['neuroname'], skeleton_id)}
+                        'name': f'{neuron_of_skeleton[skeleton_id]["neuroname"]} / skeleton {skeleton_id}'}
 
         # sort by count
         from operator import itemgetter
@@ -379,7 +378,7 @@ class BrokenSlice(models.Model):
         db_table = "broken_slice"
 
     def __str__(self) -> str:
-        return "Broken section {} in stack {}".format(self.index, self.stack)
+        return f"Broken section {self.index} in stack {self.stack}"
 
 
 class InterpolatableSection(models.Model):
@@ -391,6 +390,8 @@ class InterpolatableSection(models.Model):
     kept in the stack. The client can the for instance interpolate skeletons in
     the 3D Viewer for this particular section.
     """
+    # Spelling of this class is unusual but is based on a Java class that does something
+    # similar, with the same spelling
     project = models.ForeignKey(Project, on_delete=models.CASCADE, db_index=True)
     location_coordinate = models.FloatField(db_index=True)
     orientation = models.SmallIntegerField(choices=((0, 'z'), (1, 'y'), (2, 'x')))
@@ -399,9 +400,7 @@ class InterpolatableSection(models.Model):
         db_table = "interpolatable_section"
 
     def __str__(self) -> str:
-        return "Interpoaltable location {} in orientation {}".format(
-                self.location_coordinate, self.orientation)
-
+        return f"Interpolable location {self.location_coordinate} in orientation {self.orientation}"
 
 class ClassClass(models.Model):
     # Repeat the columns inherited from 'relation_instance'
@@ -1252,7 +1251,7 @@ class Sampler(UserFocusedModel):
     merge_limit = models.FloatField(default=0)
 
     def __str__(self) -> str:
-        return "Sampler for {}".format(self.skeleton_id)
+        return f"Sampler for {self.skeleton_id}"
 
 
 class SamplerIntervalState(models.Model):
@@ -1275,7 +1274,7 @@ class SamplerInterval(UserFocusedModel):
             related_name="sampler_interval_end_node_set")
 
     def __str__(self) -> str:
-        return "({}, {})".format(self.start_node_id, self.end_node_id)
+        return f"({self.start_node_id}, {self.end_node_id})"
 
 
 class SamplerConnectorState(models.Model):
@@ -1292,7 +1291,7 @@ class SamplerConnector(UserFocusedModel):
     connector_state = models.ForeignKey(SamplerConnectorState, db_index=True, on_delete=models.CASCADE)
 
     def __str__(self) -> str:
-        return "({}, {})".format(self.start_node_id, self.end_node_id)
+        return f"({self.start_node_id}, {self.end_node_id})"
 
 
 class SamplerDomainType(models.Model):
@@ -1310,7 +1309,7 @@ class SamplerDomain(UserFocusedModel):
     parent_interval = models.ForeignKey(SamplerInterval, null=True, db_index=True, on_delete=models.CASCADE)
 
     def __str__(self) -> str:
-        return "Start: {}".format(self.start_node_id)
+        return f"Start: {self.start_node_id}"
 
 
 class SamplerDomainEnd(models.Model):
@@ -1318,7 +1317,7 @@ class SamplerDomainEnd(models.Model):
     end_node = models.ForeignKey(Treenode, on_delete=models.CASCADE)
 
     def __str__(self) -> str:
-        return "End: {}".format(self.end_node_id)
+        return f"End: {self.end_node_id}"
 
 class SkeletonSummary(models.Model):
     """Holds summary information on individual skeletons. Data insertion and
@@ -1342,9 +1341,7 @@ class SkeletonSummary(models.Model):
     cable_length = models.FloatField(null=False, default=0)
 
     def __str__(self) -> str:
-        return "Skeleton {} summary ({} nodes, {} nm)".format(
-                self.skeleton_id, self.num_nodes, self.cable_length)
-
+        return f"Skeleton {self.skeleton_id} summary ({self.num_nodes} nodes, {self.cable_length} nm)"
 
 class DataSource(NonCascadingUserFocusedModel):
     """A simple object representing a data source, which are mainly used to
@@ -1380,9 +1377,7 @@ class SkeletonOrigin(NonCascadingUserFocusedModel):
     source_type = models.TextField()
 
     def __str__(self) -> str:
-        return "Skeleton {} from {} ({})".format(
-                self.skeleton_id, self.data_source_id, self.source_id)
-
+        return f"Skeleton {self.skeleton_id} from {self.data_source_id} ({self.source_id})"
 
 class StatsSummary(models.Model):
     class Meta:
@@ -1402,8 +1397,7 @@ class StatsSummary(models.Model):
     cable_length = models.FloatField(null=False, default=0)
 
     def __str__(self) -> str:
-        return "Stats summary for {} on {}".format(
-                    self.user, self.date)
+        return f"Stats summary for {self.user} on {self.date}"
 
 class NodeQueryCache(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)

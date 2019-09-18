@@ -72,8 +72,7 @@ class GridWorker():
                 DirtyNodeGridCacheCell.objects.filter(grid_id=g.id, x_index=w_i,
                         y_index=h_i, z_index=d_i).delete()
 
-        logger.debug('Updated {} grid cell(s) in {} grid cache(s)'.format(
-            updated_cells, len(referenced_grid_ids)))
+        logger.debug(f'Updated {updated_cells} grid cell(s) in {len(referenced_grid_ids)} grid cache(s)')
 
 
 class Command(BaseCommand):
@@ -132,7 +131,7 @@ class Command(BaseCommand):
 
     def listen(self):
         with connection.cursor() as cur:
-            cur.execute('LISTEN "{}"'.format(self.notify_channel))
+            cur.execute(f'LISTEN "{self.notify_channel}"')
 
 
     def filter_notifies(self):
@@ -171,7 +170,7 @@ class Command(BaseCommand):
                     data = json.loads(n.payload)
                     updates.append(data)
                 except json.decoder.JSONDecodeError:
-                    logger.warn('Could not parse Postgres NOTIFY message: {}'.format(n.payload))
+                    logger.warn(f'Could not parse Postgres NOTIFY message: {n.payload}')
                     continue
 
             for worker in self.workers:

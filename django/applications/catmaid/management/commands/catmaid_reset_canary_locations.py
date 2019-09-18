@@ -30,5 +30,5 @@ class Command(BaseCommand):
             else:
                 location = (0, 0, 0)
             s.canary_location = location
-            print("Canary location of stack {}: {}".format(s.id, s.canary_location))
+            print(f"Canary location of stack {s.id}: {s.canary_location}")
             s.save()

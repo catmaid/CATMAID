@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime
+import gc
 from itertools import chain
 import logging
 import numpy
-import gc
 import os
-import re
 import progressbar
+import re
 import subprocess
 from typing import Any, Dict, List
 
@@ -111,8 +111,8 @@ def export_nrrd(request:HttpRequest, project_id, skeleton_id) -> HttpResponse:
                 target_ref, request.user.id, mirror)
 
         if result['errors']:
-            raise RuntimeError("There were errors creating the NRRD file: {}".format(
-                    '\n'.join(result['errors'])))
+            errs = "\n".join(result['errors'])
+            raise RuntimeError(f"There were errors creating the NRRD file: {errs}")
 
         return CleanUpHTTPResponse(result['nrrd_path'], result['nrrd_name'],
                 content_type='application/octet-stream')
@@ -128,14 +128,15 @@ def export_skeleton_as_nrrd_async(skeleton_id, source_ref, target_ref, user_id,
         msg.user = User.objects.get(pk=int(user_id))
         msg.read = False
         if result['errors']:
-            msg.title = "No NRRD file could be creaed for skeleton {}".format(skeleton_id)
-            msg.text = "There was at least one error during the NRRD export: {}".format('\n'.join(result['errors']))
+            msg.title = f"No NRRD file could be creaed for skeleton {skeleton_id}"
+            errs = "\n".join(result['errors'])
+            msg.text = f"There was at least one error during the NRRD export: {errs}"
             msg.action = ""
         else:
             url = urljoin(urljoin(settings.MEDIA_URL, settings.MEDIA_EXPORT_SUBDIRECTORY), result['nrrd_name'])
-            msg.title = "Exported skeleton {} as NRRD file".format(skeleton_id)
-            msg.text = "The requested skeleton was exported as NRRD file. You " \
-                    "can download it from this location: <a href='{}'>{}</a>".format(url, url)
+            msg.title = f"Exported skeleton {skeleton_id} as NRRD file"
+            msg.text = f"The requested skeleton was exported as NRRD file. You " \
+                    "can download it from this location: <a href='{url}'>{url}</a>"
             msg.action = url
         msg.save()
 
@@ -151,7 +152,7 @@ def export_skeleton_as_nrrd(project_id, skeleton_id, source_ref, target_ref,
     target_ref: JFRC2, JRC2018F, JRC2018U
     """
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    nrrd_name = "{}-{}.nrrd".format(skeleton_id, timestamp)
+    nrrd_name = f"{skeleton_id}-{timestamp}.nrrd"
     nrrd_path = os.path.join(output_path, nrrd_name)
     errors = []
     try:
@@ -170,7 +171,8 @@ def export_skeleton_as_nrrd(project_id, skeleton_id, source_ref, target_ref,
 
         if getattr(settings, 'CMTK_TEMPLATE_SPACES', False):
             # Add optionally additional template space registrations
-            extra_folders = ', '.join(map(lambda x: f'"{x}"', settings.CMTK_TEMPLATE_SPACES))
+
+            extra_folders = ', '.join(map(lambda x: str(x), settings.CMTK_TEMPLATE_SPACES))
             if extra_folders:
                 extra_folders = ', ' + extra_folders
             robjects.r('''
@@ -183,7 +185,8 @@ def export_skeleton_as_nrrd(project_id, skeleton_id, source_ref, target_ref,
 
         object_ids = [skeleton_id]
         conn = get_catmaid_connection(user.id) if use_http else None
-        logger.debug('Fetching {} skeletons'.format(len(object_ids)))
+
+        logger.debug(f'Fetching {len(object_ids)} skeletons')
         # Note: scaling down to um
         objects = neuronlist_for_skeletons(project_id, object_ids, omit_failures,
                 progress=False, scale=nm_to_um, conn=conn)
@@ -344,7 +347,8 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
         # Get neurons
         # nb also convert from nm to um, resample to 1µm spacing and use k=5
         # nearest neighbours of each point to define tangent vector
-        logger.debug('Fetching {} matching skeletons'.format(len(matching_skeleton_ids)))
+        logger.debug(f'Fetching {len(matching_skeleton_ids)} matching skeletons')
+
         matching_neurons = neuronlist_for_skeletons(project_id,
                 matching_skeleton_ids, omit_failures, scale=nm_to_um, conn=conn)
 
@@ -371,7 +375,7 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
 
             pointset_objects = rnat.as_neuronlist(pointsets)
             effective_pointset_object_ids = list(map(
-                    lambda x: "pointset-{}".format(x), matching_sample.sample_pointsets))
+                    lambda x: f"pointset-{x}", matching_sample.sample_pointsets))
             pointset_objects.names = rinterface.StrSexpVector(effective_pointset_object_ids)
 
             logger.debug('Computing matching pointset stats')
@@ -401,7 +405,7 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
 
             pointcloud_objects = rnat.as_neuronlist(pointclouds)
             effective_pointcloud_object_ids = list(map(
-                    lambda x: "pointcloud-{}".format(x), matching_sample.sample_pointclouds))
+                    lambda x: f"pointcloud-{x}", matching_sample.sample_pointclouds))
             pointcloud_objects.names = rinterface.StrSexpVector(effective_pointcloud_object_ids)
 
             logger.debug('Computing matching pointcloud stats')
@@ -418,7 +422,8 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
         # If there is subset of pairs given for the matching dorprops, convert
         # it into a list that can be understood by R.
 
-        logger.debug('Fetching {} random skeletons'.format(len(random_skeleton_ids)))
+        logger.debug(f'Fetching {len(random_skeleton_ids)} random skeletons')
+
         nonmatching_neurons = neuronlist_for_skeletons(project_id,
                 random_skeleton_ids, omit_failures, scale=nm_to_um, conn=conn)
 
@@ -457,23 +462,23 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
                 elem_b_type, elem_b_key = elem_b # type: ignore
 
                 if elem_a_type == 1:
-                    query_name = 'pointset-{}'.format(elem_a_key)
+                    query_name = f'pointset-{elem_a_key}'
                 elif elem_a_type == 2:
-                    query_name = 'pointcloud-{}'.format(elem_a_key)
+                    query_name = f'pointcloud-{elem_a_key}'
                 else:
                     query_name = elem_a_key
 
                 if elem_b_type == 1:
-                    target_name = 'pointset-{}'.format(elem_b_key)
+                    target_name = f'pointset-{elem_b_key}'
                 elif elem_b_type == 2:
-                    target_name = 'pointcloud-{}'.format(elem_b_key)
+                    target_name = f'pointcloud-{elem_b_key}'
                 else:
                     target_name = elem_b_key
 
                 query_names.append(query_name)
                 target_names.append(target_name)
 
-            logger.debug('Found {} subset pairs'.format(len(query_names)))
+            logger.debug(f'Found {len(query_names)} subset pairs')
             match_subset = robjects.DataFrame({
                 'query': rinterface.StrSexpVector(query_names),
                 'target': rinterface.StrSexpVector(target_names),
@@ -532,7 +537,7 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
 
 def get_cache_file_name(project_id, object_type, simplification=10) -> str:
     if object_type == 'skeleton':
-        extra = "-simple-{}".format(simplification)
+        extra = f"-simple-{simplification}"
     elif object_type == 'pointcloud':
         extra = ''
     elif object_type == 'pointset':
@@ -599,9 +604,9 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
     cache_dir = os.path.join(settings.MEDIA_ROOT, settings.MEDIA_CACHE_SUBDIRECTORY)
     cache_path = os.path.join(cache_dir, cache_file)
     if not os.path.exists(cache_dir) or not os.access(cache_dir, os.W_OK):
-        raise ValueError("Can't access cache directory: {}".format(cache_dir))
+        raise ValueError(f"Can not access cache directory: {cache_dir}")
     if os.path.exists(cache_path) and not os.access(cache_path, os.W_OK):
-        raise ValueError("Can't access cache file for writing: {}".format(cache_path))
+        raise ValueError(f"Can not access cache file for writing: {cache_path}")
 
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
@@ -628,7 +633,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
 
         conn = get_catmaid_connection(user.id) if use_http else None
 
-        logger.debug('Fetching {} skeletons'.format(len(object_ids)))
+        logger.debug(f'Fetching {len(object_ids)} skeletons')
         # Note: scaling down to um
         objects = neuronlist_for_skeletons(project_id, object_ids, omit_failures,
                 progress=progress, scale=nm_to_um, conn=conn)
@@ -658,8 +663,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         del(objects)
 
         # Save cache to disk
-        logger.debug('Storing skeleton cache with {} entries: {}'.format(
-                len(objects_dps), cache_path))
+        logger.debug(f'Storing skeleton cache with {len(objects_dps)} entries: {cache_path}')
         base.saveRDS(objects_dps, **{
             'file': cache_path,
         })
@@ -669,7 +673,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         if not object_ids:
             logger.info("No pointclouds found to populate cache from")
             return
-        logger.debug('Fetching {} query point clouds'.format(len(object_ids)))
+        logger.debug(f'Fetching {len(object_ids)} query point clouds')
         pointclouds = []
         for pcid in object_ids:
             target_pointcloud = PointCloud.objects.prefetch_related('points').get(pk=pcid)
@@ -683,7 +687,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
 
         objects = rnat.as_neuronlist(pointclouds)
         effective_object_ids = list(map(
-                lambda x: "{}".format(x), object_ids))
+                lambda x: str(x), object_ids))
         objects.names = rinterface.StrSexpVector(effective_object_ids)
 
         logger.debug('Computing query pointcloud stats')
@@ -832,15 +836,14 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 cache_typed_query_object_ids = []
                 effective_query_object_ids = query_object_ids
 
-            logger.debug('Fetching {} query skeletons ({} cache hits)'.format(
-                    len(effective_query_object_ids), cache_hits))
+            logger.debug(f'Fetching {len(effective_query_object_ids)} query skeletons ({cache_hits} cache hits)')
             if effective_query_object_ids:
                 query_objects = neuronlist_for_skeletons(project_id,
                         effective_query_object_ids, omit_failures,
                         scale=nm_to_um, conn=conn)
 
                 if simplify:
-                    logger.debug("Simplifying query neurons, removing parts below branch level {}".format(required_branches))
+                    logger.debug(f"Simplifying query neurons, removing parts below branch level {required_branches}")
                     query_objects = robjects.r.nlapply(query_objects,
                             relmr.simplify_neuron, **{
                                 'n': required_branches,
@@ -870,7 +873,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     query_dps = query_cache_objects_dps
         elif query_type == 'pointcloud':
             typed_query_object_ids = list(map(
-                    lambda x: "pointcloud-{}".format(x), query_object_ids))
+                    lambda x: f"pointcloud-{x}", query_object_ids))
             # Check cache, if enabled
             cache_hits = 0
             query_cache_objects_dps = None
@@ -885,7 +888,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 query_cache_objects_dps = rnat.subset_neuronlist(
                         query_cache_objects_dps, rinterface.StrSexpVector(non_na_ids))
                 cache_typed_query_object_ids = list(map(
-                        lambda x: "pointcloud-{}".format(x),
+                        lambda x: f"pointcloud-{x}",
                         list(base.names(query_cache_objects_dps))))
                 effective_query_object_ids = list(filter(
                         # Only allow neurons that are not part of the cache
@@ -897,8 +900,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 cache_typed_query_object_ids = []
                 effective_query_object_ids = query_object_ids
 
-            logger.debug('Fetching {} query point clouds ({} cache hits)'.format(
-                    len(effective_query_object_ids), cache_hits))
+            logger.debug(f'Fetching {len(effective_query_object_ids)} query point clouds ({cache_hits} cache hits)')
             if effective_query_object_ids:
                 pointclouds = []
                 for pcid in effective_query_object_ids:
@@ -913,7 +915,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
                 query_objects = rnat.as_neuronlist(pointclouds)
                 non_cache_typed_query_object_ids = list(map(
-                        lambda x: "pointcloud-{}".format(x), effective_query_object_ids))
+                        lambda x: f"pointcloud-{x}", effective_query_object_ids))
                 query_objects.names = rinterface.StrSexpVector(non_cache_typed_query_object_ids)
 
                 logger.debug('Computing query pointcloud stats')
@@ -940,12 +942,12 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
         elif query_type == 'pointset':
             typed_query_object_ids = list(map(
-                    lambda x: "pointset-{}".format(x), query_object_ids))
+                    lambda x: f"pointset-{x}", query_object_ids))
             # Check cache, if enabled
             if use_cache and pointset_cache:
                 pass
 
-            logger.debug('Fetching {} query point sets'.format(len(query_object_ids)))
+            logger.debug(f'Fetching {len(query_object_ids)} query point sets')
             pointsets = []
             for psid in query_object_ids:
                 target_pointset = PointSet.objects.get(pk=psid)
@@ -999,15 +1001,14 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     cache_typed_target_object_ids = []
                     effective_target_object_ids = target_object_ids
 
-                logger.debug('Fetching {} target skeletons ({} cache hits)'.format(
-                        len(effective_target_object_ids), cache_hits))
+                logger.debug(f'Fetching {len(effective_target_object_ids)} target skeletons ({cache_hits} cache hits)')
                 if effective_target_object_ids:
                     target_objects = neuronlist_for_skeletons(project_id,
                             effective_target_object_ids, omit_failures,
                             scale=nm_to_um, conn=conn)
 
                     if simplify:
-                        logger.debug("Simplifying target neurons, removing parts below branch level {}".format(required_branches))
+                        logger.debug(f"Simplifying target neurons, removing parts below branch level {required_branches}")
                         target_objects = robjects.r.nlapply(target_objects,
                                 relmr.simplify_neuron, **{
                                     'n': required_branches,
@@ -1038,7 +1039,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                         target_dps = target_cache_objects_dps
             elif target_type == 'pointcloud':
                 typed_target_object_ids = list(map(
-                        lambda x: "pointcloud-{}".format(x), target_object_ids))
+                        lambda x: f"pointcloud-{x}", target_object_ids))
                 # Check cache, if enabled
                 cache_hits = 0
                 target_cache_objects_dps = None
@@ -1053,7 +1054,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     target_cache_objects_dps = rnat.subset_neuronlist(
                             target_cache_objects_dps, rinterface.StrSexpVector(non_na_ids))
                     cache_typed_target_object_ids = list(map(
-                            lambda x: "pointcloud-{}".format(x),
+                            lambda x: f"pointcloud-{x}",
                             list(base.names(target_cache_objects_dps))))
                     effective_target_object_ids = list(filter(
                             # Only allow neurons that are not part of the cache
@@ -1065,8 +1066,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     cache_typed_target_object_ids = []
                     effective_target_object_ids = target_object_ids
 
-                logger.debug('Fetching {} target point clouds ({} cache hits)'.format(
-                        len(effective_target_object_ids), cache_hits))
+                logger.debug(f'Fetching {len(effective_target_object_ids)} target point clouds ({cache_hits} cache hits)')
                 if effective_target_object_ids:
                     pointclouds = []
                     for pcid in effective_target_object_ids:
@@ -1081,7 +1081,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
                     target_objects = rnat.as_neuronlist(pointclouds)
                     non_cache_typed_target_object_ids = list(map(
-                            lambda x: "pointcloud-{}".format(x), effective_target_object_ids))
+                            lambda x: f"pointcloud-{x}", effective_target_object_ids))
                     target_objects.names = rinterface.StrSexpVector(non_cache_typed_target_object_ids)
 
                     logger.debug('Computing target pointcloud stats')
@@ -1108,8 +1108,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                         typed_target_object_ids = cache_typed_target_object_ids
             elif target_type == 'pointset':
                 typed_target_object_ids = list(map(
-                        lambda x: "pointset-{}".format(x), target_object_ids))
-                logger.debug('Fetching {} target point sets'.format(len(target_object_ids)))
+                        lambda x: f"pointset-{x}", target_object_ids))
+                logger.debug(f'Fetching {len(target_object_ids)} target point sets')
                 pointsets = []
                 for psid in target_object_ids:
                     target_pointset = PointSet.objects.get(pk=psid)
@@ -1152,7 +1152,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
         logger.debug('Computing score (alpha: {a}, noramlized: {n}, reverse: {r}, top N: {tn})'.format(**{
             'a': 'Yes' if use_alpha else 'No',
-            'n': 'No' if normalized == 'raw' else 'Yes ({})'.format(normalized),
+            'n': 'No' if normalized == 'raw' else f'Yes ({normalized})',
             'r': 'Yes' if reverse else 'No',
             'tn': top_n if top_n else '-',
         }))
@@ -1176,7 +1176,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         # Only select a subset if there are more items than the limit in either
         # of the dimensions.
         if top_n and len(b_ids) > top_n:
-            logger.debug('top n {}'.format(top_n))
+            logger.debug(f'top n {top_n}')
             # Compute forward scores, either unnormalized or normalized so that a
             # self-match is 1.
             scores = as_matrix(rnblast.NeuriteBlast(a, b, **nblast_params), a, b)
@@ -1186,7 +1186,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             target_scores = None
             for n, query_object_dps in enumerate(query_dps):
                 query_name = query_dps.names[n]
-                logger.debug('Query object {}/{}: {}'.format(n+1, len(query_dps), query_name))
+                logger.debug(f'Query object {n+1}/{len(query_dps)}: {query_name}')
                 query_object_dps = rnat.subset_neuronlist(query_dps,
                         rinterface.StrSexpVector([query_name]))
 
@@ -1502,7 +1502,7 @@ def neuronlist_for_skeletons(project_id, skeleton_ids, omit_failures=False,
         except Exception as e:
             if not omit_failures:
                 raise
-            logger.error('Error loading skeleton {}'.format(skeleton_id))
+            logger.error(f'Error loading skeleton {skeleton_id}')
             logger.error(e)
             continue
 
@@ -1517,7 +1517,7 @@ def neuronlist_for_skeletons(project_id, skeleton_ids, omit_failures=False,
         if len(raw_nodes) < 2:
             if omit_failures:
                 continue
-            raise ValueError("Skeleton {} has less than two nodes".format(skeleton_id))
+            raise ValueError(f"Skeleton {skeleton_id} has less than two nodes")
 
         # Nodes in Rpy2 format
         node_cols = [
@@ -1593,7 +1593,7 @@ def neuronlist_for_skeletons(project_id, skeleton_ids, omit_failures=False,
                 '.progress': 'text' if progress else 'none',
                 'OmitFailures': omit_failures
             })
-    print("Converted {}/{} neurons".format(len(objects), len(skeleton_ids)))
+    print(f"Converted {len(objects)}/{len(skeleton_ids)} neurons")
 
     del(cs_r)
     gc.collect()

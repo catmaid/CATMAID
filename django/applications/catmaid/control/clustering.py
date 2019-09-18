@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import numpy as np
+from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -11,8 +13,6 @@ except ImportError:
     logger.warning("CATMAID was unable to load the scipy module. "
         "Ontology clustering will not be available")
 
-import numpy as np
-from typing import List
 
 from django import forms
 from django.forms.formsets import formset_factory
@@ -200,7 +200,7 @@ class ClusteringWizard(SessionWizardView):
             'dst_matrix': dst_matrix.tolist(),
             'dendrogram': dendrogram,
         })
-        logger.debug("Clustering: returning response of {} characters".format(len(response.content)))
+        logger.debug(f"Clustering: returning response of {len(response.content)} characters")
         return response
 
 def setup_clustering(request, workspace_pid=None):

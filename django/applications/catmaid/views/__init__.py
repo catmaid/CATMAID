@@ -101,10 +101,10 @@ class GroupMembershipHelper(TemplateView):
             users = User.objects.filter(id=target_user)
             n_user_instances = len(users)
             if 0 == n_user_instances:
-                messages.warning(request, 'Could not find user with ID {}'.format(target_user))
+                messages.warning(request, f'Could not find user with ID {target_user}')
                 continue
             if 1 < n_user_instances:
-                messages.warning(request, 'Found more than one user with ID {}'.format(target_user))
+                messages.warning(request, f'Found more than one user with ID {target_user}')
                 continue
 
             user = users[0]
@@ -117,5 +117,5 @@ class GroupMembershipHelper(TemplateView):
                 group.user_set.remove(*source_users)
                 updated += 1
 
-        messages.success(request, 'Successfully updated {} permissions'.format(updated))
+        messages.success(request, f'Successfully updated {updated} permissions')
         return HttpResponseRedirect(redirect_url)

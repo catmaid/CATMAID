@@ -112,7 +112,7 @@ class LabelsApiTests(CatmaidApiTestCase):
 
     def get_successful_stats_response(self):
         self.fake_authentication()
-        url = '/{}/labels/stats'.format(self.test_project_id)
+        url = f'/{self.test_project_id}/labels/stats'
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)
@@ -150,4 +150,4 @@ class LabelsApiTests(CatmaidApiTestCase):
         response = self.get_successful_stats_response()
 
         for row in response:
-            self.assertFalse(row[1] == 'skeleton {}'.format(row[0]) and row[2] == 1, msg=msg.format(row[0], row[1]))
+            self.assertFalse(row[1] == f'skeleton {row[0]}' and row[2] == 1, msg=msg.format(row[0], row[1]))

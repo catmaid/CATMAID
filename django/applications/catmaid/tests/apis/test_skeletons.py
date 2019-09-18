@@ -1210,7 +1210,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
 
     def assert_skeletons_by_node_labels(self, label_ids, expected_response):
         self.fake_authentication()
-        url = '/{}/skeletons/node-labels'.format(self.test_project_id)
+        url = f'/{self.test_project_id}/skeletons/node-labels'
 
         response = self.client.post(url, {'label_ids': label_ids})
 

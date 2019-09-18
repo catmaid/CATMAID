@@ -374,11 +374,11 @@ def compartmentalize_skeletongroup( skeleton_id_list, project_id, **kwargs ):
                 skeleton.graph.node[nodeid]['compartment_index'] = i
 
             if len(skeleton.neuron.name) > 30:
-                neuronname = skeleton.neuron.name[:30] + '...' + ' [{0}]'.format(i)
+                neuronname = f'{skeleton.neuron.name[:30]}... [{i}]'
             else:
-                neuronname = skeleton.neuron.name + ' [{0}]'.format(i)
+                neuronname = f'{skeleton.neuron.name} [{i}]'
 
-            resultgraph.add_node( '{0}_{1}'.format(skeleton_id, i), {
+            resultgraph.add_node(f'{skeleton_id}_{i}', {
                     'neuronname': neuronname,
                     'skeletonid': str(skeleton_id),
                     'compartment_index': i,
@@ -397,16 +397,12 @@ def compartmentalize_skeletongroup( skeleton_id_list, project_id, **kwargs ):
                 # add the skeleton id for each treenode that is in v['presynaptic_to']
                 # This can duplicate skeleton id entries which is correct
                 for e in v['presynaptic_to']:
-                    skeleton_compartment_id = '{0}_{1}'.format(
-                        skeleton_id,
-                        skeleton.graph.node[e]['compartment_index'])
+                    skeleton_compartment_id = f'{skeleton_id}_{skeleton.graph.node[e]["compartment_index"]}'
                     connectors[connector_id]['pre'].append( skeleton_compartment_id )
 
             if len(v['postsynaptic_to']):
                 for e in v['postsynaptic_to']:
-                    skeleton_compartment_id = '{0}_{1}'.format(
-                        skeleton_id,
-                        skeleton.graph.node[e]['compartment_index'])
+                    skeleton_compartment_id = f'{skeleton_id}_{skeleton.graph.node[e]["compartment_index"]}'
                     connectors[connector_id]['post'].append( skeleton_compartment_id )
 
     # merge connectors into graph

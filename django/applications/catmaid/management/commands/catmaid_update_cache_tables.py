@@ -1,6 +1,6 @@
-import ujson
 import msgpack
 import psycopg2
+import ujson
 
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
@@ -178,7 +178,7 @@ class Command(BaseCommand):
 
         lod_strategy = options['lod_strategy']
         if lod_strategy not in ('linear', 'quadratic', 'exponential'):
-            raise ValueError("Unknown LOD strategy: {}".format(lod_strategy))
+            raise ValueError(f"Unknown LOD strategy: {lod_strategy}")
 
         jobs = options['jobs']
         if jobs > 1 and cache_type != 'grid':
@@ -194,7 +194,7 @@ class Command(BaseCommand):
 
 
         for p in projects:
-            self.stdout.write('Updating {} cache for project {}'.format(cache_type, p.id))
+            self.stdout.write(f'Updating {cache_type} cache for project {p.id}')
             if cache_type == 'section':
                 update_cache(p.id, data_type, orientations, steps, node_limit,
                         n_largest_skeletons_limit, n_last_edited_skeletons_limit,
@@ -210,4 +210,4 @@ class Command(BaseCommand):
                         lod_strategy=lod_strategy, jobs=jobs,
                         depth_steps=depth_steps, chunksize=chunksize,
                         ordering=ordering)
-            self.stdout.write('Updated {} cache for project {}'.format(cache_type, p.id))
+            self.stdout.write(f'Updated {cache_type} cache for project {p.id}')

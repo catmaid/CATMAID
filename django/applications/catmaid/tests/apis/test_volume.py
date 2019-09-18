@@ -122,7 +122,7 @@ class VolumeTests(CatmaidApiTestCase):
         assign_perm('can_import', self.test_user, self.test_project)
         with open(CUBE_PATH, 'rb') as f:
             response = self.client.post(
-                "/{}/volumes/import".format(self.test_project_id),
+                f"/{self.test_project_id}/volumes/import",
                 {"cube.stl": f}
             )
 
@@ -133,7 +133,7 @@ class VolumeTests(CatmaidApiTestCase):
 
         cube_id = parsed_response["cube.stl"]
 
-        response = self.client.get("/{}/volumes/{}/".format(self.test_project_id, cube_id))
+        response = self.client.get(f"/{self.test_project_id}/volumes/{cube_id}/")
 
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
@@ -148,7 +148,7 @@ class VolumeTests(CatmaidApiTestCase):
         assign_perm('can_import', self.test_user, self.test_project)
         with open(CUBE_PATH, 'rb') as f:
             response = self.client.post(
-                "/{}/volumes/import".format(self.test_project_id),
+                f"/{self.test_project_id}/volumes/import",
                 {"cube.stl": f}
             )
 
@@ -160,7 +160,7 @@ class VolumeTests(CatmaidApiTestCase):
         cube_id = parsed_response["cube.stl"]
 
         response = self.client.get(
-            "/{}/volumes/{}/export.stl".format(self.test_project_id, cube_id),
+            f"/{self.test_project_id}/volumes/{cube_id}/export.stl",
             HTTP_ACCEPT="model/x.stl-ascii,model/stl")
 
         self.assertEqual(response.status_code, 200)

@@ -84,7 +84,7 @@ class CatmaidDataExportWizard(SessionWizardView):
         try:
             source_project = Project.objects.get(id=int(source_project_id))
         except:
-            raise Exception('Could not retrieve project with id {}'.format(source_project_id))
+            raise Exception(f'Could not retrieve project with id {source_project_id}')
 
         values = self.get_cleaned_data_for_step('server')
 
@@ -92,7 +92,7 @@ class CatmaidDataExportWizard(SessionWizardView):
 
         exported_fname = os.path.join(settings.MEDIA_ROOT,
             settings.MEDIA_EXPORT_SUBDIRECTORY,
-            'catmaid-export-pid-{}-{}.json'.format(values['source_project_id'], now))
+            f'catmaid-export-pid-{values["source_project_id"]}-{now}.json')
 
         options = {
             "export_treenodes": values["export_treenodes"],
@@ -116,6 +116,6 @@ class CatmaidDataExportWizard(SessionWizardView):
         logger.info("Export project data finished.")
 
         messages.add_message(self.request, messages.SUCCESS,
-                "CATMAID Project exported to: {}".format(exported_fname))
+                f"CATMAID Project exported to: {exported_fname}")
 
         return redirect('admin:index')

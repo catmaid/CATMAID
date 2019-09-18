@@ -65,9 +65,8 @@ def export_project_json_action(modeladmin, request, queryset) -> HttpResponse:
     result = export_project_data(projects)
 
     response = HttpResponse(json.dumps(result), content_type='application/json')
-    filename = "catmaid-projects-{}.json".format(
-            "-".join([str(p.id) for p in projects]))
-    response['Content-Disposition'] = u'attachment; filename={}'.format(filename)
+    filename = f"catmaid-projects-{'-'.join([str(p.id) for p in projects])}.json"
+    response['Content-Disposition'] = f'attachment; filename={filename}'
 
     return response
 
@@ -84,9 +83,8 @@ def export_project_yaml_action(modeladmin, request, queryset) -> HttpResponse:
     result = export_project_data(projects)
 
     response = HttpResponse(yaml.dump(result), content_type='application/yaml')
-    filename = "catmaid-projects-{}.yaml".format(
-            "-".join([str(p.id) for p in projects]))
-    response['Content-Disposition'] = u'attachment; filename={}'.format(filename)
+    filename = f"catmaid-projects-{'-'.join([str(p.id) for p in projects])}.yaml"
+    response['Content-Disposition'] = f'attachment; filename={filename}'
 
     return response
 
@@ -109,7 +107,7 @@ def delete_projects_and_data(modeladmin, request, queryset) -> HttpResponseRedir
     """
     project_ids = list(map(str, queryset.values_list('id', flat=True)))
     return HttpResponseRedirect(reverse("catmaid:delete-projects-with-data") +
-            "?ids={}".format(",".join(project_ids)))
+            f"?ids={','.join(project_ids)}")
 delete_projects_and_data.short_description = "Delete selected" # type: ignore # https://github.com/python/mypy/issues/2087
 
 

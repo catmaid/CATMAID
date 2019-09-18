@@ -797,7 +797,9 @@ annotations, neuron name, connectors or partner neurons.
     var select = document.createElement('select');
     CATMAID.skeletonListSources.createOptions().forEach(function(option, i) {
       select.options.add(option);
-      select.selectedIndex = i;
+      if (i === 0) {
+        select.selectedIndex = i;
+      }
     });
     var label_p = document.createElement('p');
     var label = document.createElement('label');

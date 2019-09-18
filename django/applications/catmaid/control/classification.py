@@ -55,7 +55,7 @@ class ClassProxy(Class):
         proxy=True
 
     def __unicode__(self):
-        return "{0} ({1})".format(self.class_name, str(self.id))
+        return f"{self.class_name} ({self.id})"
 
 class ClassInstanceProxy(ClassInstance):
     """ A proxy class to allow custom labeling of class instances in
@@ -65,7 +65,7 @@ class ClassInstanceProxy(ClassInstance):
         proxy=True
 
     def __unicode__(self):
-        return "{0} ({1})".format(self.name, str(self.id))
+        return f"{self.name} ({self.id})"
 
 class ClassInstanceClassInstanceProxy(ClassInstanceClassInstance):
     """ A proxy class to allow custom labeling of links between class
@@ -80,7 +80,7 @@ class ClassInstanceClassInstanceProxy(ClassInstanceClassInstance):
             name = self.class_instance_b.name
         else:
             name = self.class_instance_b.class_column.class_name
-        result = "{0} ({1})".format(name, str(self.class_instance_b.id))
+        result = f"{name} ({self.class_instance_b.id})"
 
         # Display reference count if wanted
         display_refs = True
@@ -90,7 +90,7 @@ class ClassInstanceClassInstanceProxy(ClassInstanceClassInstance):
             num_links = ClassInstanceClassInstance.objects.filter(
                 class_instance_b=self.class_instance_b,
                 relation__relation_name='classified_by').count()
-            result = "{0} Refs: {1}".format(result, str(num_links))
+            result = f"{result} Refs: {num_links}"
 
         return result
 
@@ -520,17 +520,17 @@ def get_child_classes(workspace_pid, parent_ci, relation_map=None, cursor=None):
 
     # Get sub classes for all available links
     if available_links:
-        class_a_ids_sql  = ','.join("({})".format(l.class_a_id) for l in available_links)
-        cursor.execute("""
+        class_a_ids_sql = ','.join(f"({l.class_a_id})" for l in available_links)
+        cursor.execute(f"""
             SELECT cc.id, cc.class_b, cc.class_a, ca.class_name
               FROM class cb
-              JOIN (VALUES ({})) v(id) ON cb.id = v.id
+              JOIN (VALUES ({class_a_ids_sql})) v(id) ON cb.id = v.id
               JOIN class_class cc ON cc.class_b = cb.id
               JOIN class ca ON cc.class_a = ca.id
-             WHERE cc.project_id = %s
-               AND cc.relation_id = %s
+             WHERE cc.project_id = {workspace_pid}
+               AND cc.relation_id = {relation_map['is_a']}
                AND cc.project_id = cb.project_id
-        """.format(class_a_ids_sql), (workspace_pid, relation_map['is_a']))
+        """)
         all_sub_class_links = cursor.fetchall()
         # Create sub class map
         sub_class_map:DefaultDict[Any, List] = defaultdict(list)
@@ -557,12 +557,12 @@ def get_child_classes(workspace_pid, parent_ci, relation_map=None, cursor=None):
     # Get all required link data in one go
     link_restriction_map:DefaultDict[Any, List] = defaultdict(list)
     if relevant_link_ids:
-        link_ids_sql = ','.join("({})".format(l) for l in relevant_link_ids)
-        cursor.execute("""
+        link_ids_sql = ','.join(f"({l})" for l in relevant_link_ids)
+        cursor.execute(f"""
             SELECT r.restricted_link_id, r.id
               FROM restriction r
-              JOIN (VALUES ({})) link(id) ON r.restricted_link_id=link.id
-        """.format(link_ids_sql))
+              JOIN (VALUES ({link_ids_sql})) link(id) ON r.restricted_link_id=link.id
+        """)
         ids = cursor.fetchall()
         for row in ids:
             link_id = row[0]
@@ -1261,12 +1261,12 @@ def graphs_instantiate_features(graphs, features, target:Optional[Union[np.ndarr
     # Get all instantiated paths and sub-paths from each graph
     graph_ids = [g.id for g in graphs]
     graph_template = ",".join(("%s",) * len(graphs))
-    cursor.execute("""
+    cursor.execute(f"""
         WITH RECURSIVE linked_classes(root_id, id, rel, class_instance_a, class_a, depth, path, cycle) AS (
             SELECT cici.class_instance_b, cici.id, cici.relation_id, cici.class_instance_a, cia.class_id, 1, ARRAY[cici.id], false
             FROM class_instance_class_instance cici
             JOIN class_instance cia ON cici.class_instance_a = cia.id
-            WHERE cici.class_instance_b IN ({})
+            WHERE cici.class_instance_b IN ({graph_template})
           UNION ALL
             SELECT lc.root_id, cici2.id, cici2.relation_id, cici2.class_instance_a, cia2.class_id, lc.depth + 1, path || cici2.id,
               cici2.id = ANY(path)
@@ -1275,7 +1275,7 @@ def graphs_instantiate_features(graphs, features, target:Optional[Union[np.ndarr
             JOIN class_instance cia2 ON cici2.class_instance_a = cia2.id
         )
         SELECT * FROM linked_classes;
-        """.format(graph_template), graph_ids)
+        """, graph_ids)
     # Build index for paths of each graph
     all_paths:DefaultDict[Any, List] = defaultdict(list)
     for row in cursor.fetchall():
@@ -1383,8 +1383,8 @@ def graph_instantiates_feature_complex(graph, feature) -> bool:
         return True
     else:
         # More than one?
-        raise Exception('Found more than one ({}) ontology node links of '
-            'one class instance.'.format(num_links))
+        raise Exception(f'Found more than one ({num_links}) ontology node links of '
+            'one class instance.')
 
 def graphs_instantiate_feature(graphlist, feature) -> bool:
     """ A delegate method to be able to use different implementations in a
@@ -1514,7 +1514,7 @@ class ClassificationSearchWizard(SessionWizardView):
                 matches = True
                 # All features of one ontology must match
                 for f in ontologies_to_features[o]:
-                    print("Check if graph {} instantiates feature {}".format(g.id, f))
+                    print(f"Check if graph {g.id} instantiates feature {f}")
                     if graph_instantiates_feature(g, f):
                         continue
                     else:

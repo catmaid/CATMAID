@@ -67,7 +67,7 @@ class Exporter():
             self.target_file = self.target_file.format(project.id)
         else:
             now = datetime.now().strftime('%Y-%m-%d-%H-%M')
-            self.target_file = 'catmaid-export-pid-{}-{}.json'.format(project.id, now)
+            self.target_file = f'catmaid-export-pid-{project.id}-{now}.json'
 
         self.show_traceback = True
         self.format = 'json'
@@ -107,8 +107,7 @@ class Exporter():
             neuron_info, num_total_records = get_annotated_entities(self.project.id,
                     query_params, relations, classes, ['neuron'], with_skeletons=True)
 
-            logger.info("Found {} neurons with the following exclusion annotations: {}".format(
-                    num_total_records, ", ".join(self.excluded_annotations)))
+            logger.info(f"Found {num_total_records} neurons with the following exclusion annotations: {', '.join(self.excluded_annotations)}")
 
             exclude_skeleton_id_constraints = set(chain.from_iterable(
                     [n['skeleton_ids'] for n in neuron_info]))
@@ -130,8 +129,7 @@ class Exporter():
             neuron_info, num_total_records = get_annotated_entities(self.project.id,
                     query_params, relations, classes, ['neuron'], with_skeletons=True)
 
-            logger.info("Found {} neurons with the following annotations: {}".format(
-                    num_total_records, ", ".join(self.required_annotations)))
+            logger.info(f"Found {num_total_records} neurons with the following annotations: {', '.join(self.required_annotations)}")
 
             skeleton_id_constraints:Optional[List] = list(chain.from_iterable([n['skeleton_ids'] for n in neuron_info]))
             neuron_ids = [n['id'] for n in neuron_info]
@@ -307,13 +305,11 @@ class Exporter():
                 if all_annotation_links:
                     self.to_serialize.append(all_annotation_links)
 
-                logger.info("Exporting {} annotations and {} annotation links: {}".format(
-                        len(all_annotations), len(all_annotation_links),
-                        ", ".join([a.name for a in all_annotations])))
+                logger.info(f"Exporting {len(all_annotations)} annotations " + \
+                            f"and {len(all_annotation_links)} annotation links: {', '.join([a.name for a in all_annotations])}")
                 if self.annotation_annotations:
-                    logger.info("Only annotations in hierarchy of the following "
-                            "annotations are exported: {}".format(
-                            ', '.join(self.annotation_annotations)))
+                    logger.info(f"Only annotations in hierarchy of the following " + \
+                                f"annotations are exported: {', '.join(self.annotation_annotations)}")
 
             # Export tags
             if self.export_tags and 'labeled_as' in relations:
@@ -328,8 +324,7 @@ class Exporter():
                 self.to_serialize.append(tags)
                 self.to_serialize.append(tag_links)
 
-                logger.info("Exporting {n_tags} tags, part of {n_links} links: {tags}".format(
-                    n_tags=len(tags), n_links=tag_links.count(), tags=', '.join(tag_names)))
+                logger.info(f"Exporting {len(tags)} tags, part of {tag_links.count()} links: {', '.join(tag_names)}")
 
             # TODO: Export reviews
         else:
@@ -377,8 +372,7 @@ class Exporter():
             neurons = set([l.class_instance_b_id for l in neuron_links])
 
             exported_tids = set(treenodes.values_list('id', flat=True))
-            logger.info("Exporting {} treenodes in {} skeletons and {} neurons".format(
-                    len(exported_tids), n_skeletons, len(neurons)))
+            logger.info(f"Exporting {len(exported_tids)} treenodes in {n_skeletons} skeletons and {len(neurons)} neurons")
 
         # Get current maximum concept ID
         cursor = connection.cursor()

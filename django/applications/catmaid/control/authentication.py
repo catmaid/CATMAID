@@ -210,8 +210,8 @@ def requires_user_role(roles):
                 # The user can execute the function.
                 return f(request, *args, **kwargs)
             else:
-                msg = "User '{}' with ID {} does not have the required permissions in " \
-                      "project {}".format(u.username, u.id, int(kwargs['project_id']))
+                msg = f"User '{u.username}' with ID {u.id} does not have the required permissions in " + \
+                      f"project {int(kwargs['project_id'])}"
                 raise PermissionError(msg)
 
         return wraps(f)(inner_decorator)
@@ -250,8 +250,8 @@ def requires_user_role_for_any_project(roles):
                 # The user can execute the function.
                 return f(request, *args, **kwargs)
             else:
-                msg = "User '{}' with ID {} does not have the required permissions " \
-                      "in any project".format(u.username, u.id)
+                msg = f"User '{u.username}' with ID {u.id} does not have the required permissions " + \
+                      f"in any project"
                 raise PermissionError(msg)
 
         return wraps(f)(inner_decorator)

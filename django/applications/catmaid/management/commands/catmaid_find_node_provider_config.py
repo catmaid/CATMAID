@@ -1,11 +1,12 @@
-import ujson
-import msgpack
-import psycopg2
-import progressbar
-import time
 
 from collections import defaultdict
+import msgpack
+import progressbar
+import psycopg2
+import time
 from timeit import default_timer as timer
+import ujson
+
 
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
@@ -92,25 +93,24 @@ class Command(BaseCommand):
         unavailable_node_providers = list(filter(lambda x: x not in AVAILABLE_NODE_PROVIDERS,
                 options['providers']))
         if unavailable_node_providers:
-            raise CommandError("Unknown node providers: {}".format(
-                    str(unavailable_node_providers)))
+            raise CommandError(f"Unknown node providers: {unavailable_node_providers}")
         node_providers = options['providers']
 
-        self.stdout.write("Using the following providers: {}".format(", ".join(node_providers)))
+        self.stdout.write(f"Using the following providers: {', '.join(node_providers)}")
 
         project_results = {}
 
         for p in projects:
-            self.stdout.write("Sampling project {}".format(p.id))
+            self.stdout.write(f"Sampling project {p.id}")
             # Find tracing bounding box
             self.stdout.write(' -> Finding tracing data bounding box')
             bb_data = get_tracing_bounding_box(p.id, cursor)
             bb = [bb_data[0], bb_data[1]]
             if None in bb[0] or None in bb[1]:
-                self.stdout.write(' -> Found no valid bounding box, skipping project: {}'.format(bb))
+                self.stdout.write(f' -> Found no valid bounding box, skipping project: {bb}')
                 continue
             else:
-                self.stdout.write(' -> Found bounding box: {}'.format(bb))
+                self.stdout.write(f' -> Found bounding box: {bb}')
 
             # Apply bounding box limits to it
             if bb_limits:
@@ -120,7 +120,7 @@ class Command(BaseCommand):
                 bb[1][0] = min(bb[1][0], bb_limits[1][0])
                 bb[1][1] = min(bb[1][1], bb_limits[1][1])
                 bb[1][2] = min(bb[1][2], bb_limits[1][2])
-                self.stdout.write(' -> Applied limits to bounding box: {}'.format(bb))
+                self.stdout.write(f' -> Applied limits to bounding box: {bb}')
 
             params = {
                 'left': bb[0][0],
@@ -151,9 +151,9 @@ class Command(BaseCommand):
             # section thickness <step> and <sample-interval>.
             for o, step, sample_interval in zip(orientations, steps, sample_intervals):
                 orientation_id = ORIENTATIONS[o]
-                self.stdout.write(' -> Sampling tracing data in orientation {} ' \
-                        'with depth resolution {} and interval {} for type(s) {}'.format(
-                        o, step, sample_interval, types))
+                self.stdout.write(f' -> Sampling tracing data in orientation {o} ' + \
+                                  f'with depth resolution {step} and interval {sample_interval} ' + \
+                                  f'for type(s) {types}')
 
                 with progressbar.ProgressBar(min_value=min_z, max_value=max_z, redirect_stdout=True) as pbar:
                     z = min_z
@@ -211,7 +211,7 @@ class Command(BaseCommand):
 
         self.stdout.write('Sorting data')
         for pid, data in project_results.items():
-            self.stdout.write('Top 2 queries with nodes per zoom and extent in project {}'.format(pid))
+            self.stdout.write(f'Top 2 queries with nodes per zoom and extent in project {pid}')
             nonzero_data = list(filter(lambda x: x['n_nodes'] > 0, data))
             sorted_data = sorted(nonzero_data, key=lambda x: (-x['width'], -x['height'], -x['n_nodes'], x['time']))
             depth_count = defaultdict(float)

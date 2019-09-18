@@ -201,13 +201,13 @@ def projects(request:HttpRequest) -> JsonResponse:
     project_template = ",".join(("(%s)",) * len(projects)) or "()"
     user_project_ids = [p.id for p in projects]
 
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT ps.project_id, ps.stack_id, s.title, s.comment FROM project_stack ps
-        INNER JOIN (VALUES {}) user_project(id)
+        INNER JOIN (VALUES {project_template}) user_project(id)
         ON ps.project_id = user_project.id
         INNER JOIN stack s
         ON ps.stack_id = s.id
-    """.format(project_template), user_project_ids)
+    """, user_project_ids)
     project_stack_mapping:Dict = dict()
     for row in cursor.fetchall():
         stacks = project_stack_mapping.get(row[0])
@@ -222,16 +222,16 @@ def projects(request:HttpRequest) -> JsonResponse:
 
     # Get all stack groups for this project
     project_stack_groups:Dict = {}
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT DISTINCT ps.project_id, sg.id, sg.title, sg.comment
         FROM stack_group sg
         JOIN stack_stack_group ssg
           ON ssg.stack_group_id = sg.id
         JOIN project_stack ps
           ON ps.stack_id = ssg.stack_id
-        INNER JOIN (VALUES {}) user_project(id)
+        INNER JOIN (VALUES {project_template}) user_project(id)
           ON ps.project_id = user_project.id
-    """.format(project_template), user_project_ids)
+    """, user_project_ids)
     for row in cursor.fetchall():
         groups = project_stack_groups.get(row[0])
         if not groups:
@@ -292,16 +292,16 @@ def export_project_data(projects) -> List:
     user_project_ids = [p.id for p in projects]
 
     # Get information on all relevant stack mirrors
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT sm.id, sm.stack_id, sm.title, sm.image_base, sm.file_extension,
                 sm.tile_width, sm.tile_height, sm.tile_source_type, sm.position
         FROM stack_mirror sm
         JOIN project_stack ps
             ON sm.stack_id = ps.stack_id
-        JOIN (VALUES {}) user_project(id)
+        JOIN (VALUES {project_template}) user_project(id)
             ON ps.project_id = user_project.id
         ORDER BY sm.id ASC, sm.position ASC
-    """.format(project_template), user_project_ids)
+    """, user_project_ids)
 
     # Build a stack mirror index that maps all stack mirrors to their respective
     # stacks.
@@ -323,7 +323,7 @@ def export_project_data(projects) -> List:
         })
 
     # Get all relevant stacks
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT ps.project_id, ps.stack_id, s.title,
             s.dimension, s.resolution, s.downsample_factors, s.metadata, s.comment,
             s.attribution, s.description, s.canary_location,
@@ -331,11 +331,11 @@ def export_project_data(projects) -> List:
             ARRAY(SELECT index FROM broken_slice WHERE stack_id = s.id ORDER BY index),
             ps.translation, ps.orientation
         FROM project_stack ps
-        INNER JOIN (VALUES {}) user_project(id)
+        INNER JOIN (VALUES {project_template}) user_project(id)
             ON ps.project_id = user_project.id
         INNER JOIN stack s
             ON ps.stack_id = s.id
-    """.format(project_template), user_project_ids)
+    """, user_project_ids)
     visible_stacks = dict()
     project_stack_mapping:Dict = dict()
 
@@ -367,7 +367,7 @@ def export_project_data(projects) -> List:
 
     # Add stack group information to stacks
     project_stack_groups:Dict = {}
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT sg.id, ps.project_id, sg.title, sg.comment,
                array_agg(ssg.stack_id), array_agg(sgr.name)
         FROM stack_group sg
@@ -375,12 +375,12 @@ def export_project_data(projects) -> List:
           ON ssg.stack_group_id = sg.id
         JOIN project_stack ps
           ON ps.stack_id = ssg.stack_id
-        INNER JOIN (VALUES {}) user_project(id)
+        INNER JOIN (VALUES {project_template}) user_project(id)
           ON ps.project_id = user_project.id
         INNER JOIN stack_group_relation sgr
           ON ssg.group_relation_id = sgr.id
         GROUP BY sg.id, ps.project_id, sg.title
-    """.format(project_template), user_project_ids)
+    """, user_project_ids)
     for row in cursor.fetchall():
         groups = project_stack_groups.get(row[1])
         if not groups:

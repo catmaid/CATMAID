@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 _num = '[-+]?[0-9]*.?[0-9]+'
-_bbox_re = r'BOX3D\(({0})\s+({0})\s+({0}),\s*({0})\s+({0})\s+({0})\)'.format(_num)
+_bbox_re = rf'BOX3D\(({_num})\s+({_num})\s+({_num}),\s*({_num})\s+({_num})\s+({_num})\)'
 
 
 def get_req_coordinate(request_dict, c) -> float:
@@ -49,7 +49,7 @@ def require_option(obj, field) -> Any:
     if field in obj:
         return obj.get(field)
     else:
-        raise ValueError("Parameter '{}' is missing".format(field))
+        raise ValueError(f"Parameter '{field}' is missing")
 
 def get_volume_instance(project_id, user_id, options):
     vtype = options.get("type", None)
@@ -102,7 +102,7 @@ class PostGISVolume(object):
                 RETURNING id
             """.format(**{
                 'fields': ', '.join(fields + ['edition_time']),
-                'templates': ', '.join(['%({})s'.format(f) for f in fields] + ['now()'])
+                'templates': ', '.join([f'%({f})s' for f in fields] + ['now()'])
             }), params)
         else:
             params = {
@@ -179,12 +179,11 @@ class TriangleMeshVolume(PostGISVolume):
         the other array, that are referenced by the triangle index values.
         """
         def pg_point(p):
-            return '{} {} {}'.format(p[0], p[1], p[2])
+            return f'{p[0]} {p[1]} {p[2]}'
 
         def pg_face(points, f):
             p0 = pg_point(points[f[0]])
-            return '(({}, {}, {}, {}))'.format(p0, pg_point(points[f[1]]),
-                 pg_point(points[f[2]]), p0)
+            return f'(({p0}, {pg_point(points[f[1]])}, {pg_point(points[f[2]])}, {p0}))'
 
         points, faces = mesh
         triangles = [pg_face(points, f) for f in faces]
@@ -252,9 +251,7 @@ def _chunk(iterable, length, fn=None):
             items.append(fn(next(it)))
         except StopIteration:
             if items:
-                raise ValueError(
-                    "Iterable did not have a multiple of {} items ({} spare)".format(length, len(items))
-                )
+                raise ValueError(f"Iterable did not have a multiple of {length} items ({len(items)} spare)")
             else:
                 return
         else:
@@ -328,7 +325,7 @@ def _stl_ascii_to_indexed_triangles(stl_str) -> Tuple[List, List]:
             vertices.append([float(item) for item in vertex[1:]])
             this_triangle.append(vertex_id)
         if len(this_triangle) != 3:
-            raise InvalidSTLError("Expected triangle, got {} points".format(this_triangle))
+            raise InvalidSTLError(f"Expected triangle, got {this_triangle} points")
         triangles.append(this_triangle)
 
     return vertices, triangles
@@ -531,7 +528,7 @@ def remove_volume(request:Request, project_id, volume_id) -> Response:
     """, (volume_id,))
     rows = cursor.fetchall()
     if 0 == len(rows):
-        raise ValueError("Could not find volume with ID {}".format(volume_id))
+        raise ValueError(f"Could not find volume with ID {volume_id}")
     volume_user_id = rows[0][0]
 
     if not user_can_edit(connection.cursor(), request.user.id, volume_user_id) and not request.user.is_superuser:
@@ -727,7 +724,7 @@ def import_volumes(request, project_id) -> Union[HttpResponse, JsonResponse]:
     for uploadedfile in request.FILES.values():
         if uploadedfile.size > settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:  # todo: use different setting
             return HttpResponse(
-                'File too large. Maximum file size is {} bytes.'.format(settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE),
+                f'File too large. Maximum file size is {settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE} bytes.',
                 status=413)
 
         filename = uploadedfile.name
@@ -738,7 +735,7 @@ def import_volumes(request, project_id) -> Union[HttpResponse, JsonResponse]:
             try:
                 vertices, triangles = _stl_ascii_to_indexed_triangles(stl_str)
             except InvalidSTLError as e:
-                raise ValueError("Invalid STL file ({})".format(str(e)))
+                raise ValueError(f"Invalid STL file ({e})")
 
             mesh = TriangleMeshVolume(
                 project_id, request.user.id,
@@ -746,7 +743,7 @@ def import_volumes(request, project_id) -> Union[HttpResponse, JsonResponse]:
             )
             fnames_to_id[filename] = mesh.save()
         else:
-            return HttpResponse('File type "{}" not understood. Known file types: stl'.format(extension), status=415)
+            return HttpResponse(f'File type "{extension}" not understood. Known file types: stl', status=415)
 
     return JsonResponse(fnames_to_id)
 
@@ -918,9 +915,9 @@ def find_volumes(project_id, annotation=None,
             'annotation_reference': 'name',
         }
         for n,a in enumerate(annotations):
-            query_params['annotated_with[{}]'.format(n)] = a
+            query_params[f'annotated_with[{n}]'] = a
             if transitive_annotation:
-                query_params['sub_annotated_with[{}]'.format(n)] = a
+                query_params[f'sub_annotated_with[{n}]'] = a
         query_result, _ = get_annotated_entities(project_id, query_params,
                 allowed_classes=['volume'], with_annotations=False,
                 with_skeletons=False)

@@ -43,7 +43,7 @@ def forward_update_stack_groups(apps, schema_editor):
 
     for sg in existing_stackgroups:
         if sg.name in sg_names:
-            name = "{} ({})".format(sg.name, sg.project.id)
+            name = f"{sg.name} ({sg.project.id})"
         else:
             name = sg.name
 
@@ -53,19 +53,19 @@ def forward_update_stack_groups(apps, schema_editor):
     if not sg_id_mapping:
         return
 
-    sg_pattern = ','.join(["({}, {})".format(k, v) for k,v in sg_id_mapping.items()])
+    sg_pattern = ','.join([f"({k}, {v})" for k,v in sg_id_mapping.items()])
     cursor = connection.cursor()
-    cursor.execute("""
+    cursor.execute(f"""
         INSERT INTO stack_stack_group (stack_id, stack_group_id, group_relation_id, position)
         SELECT sci.stack_id, sg_mapping.new_id, sgr.id, 0
         FROM stack_class_instance sci
-        JOIN (VALUES {}) sg_mapping(old_id, new_id)
+        JOIN (VALUES {sg_pattern}) sg_mapping(old_id, new_id)
         ON sci.class_instance_id = sg_mapping.old_id
         JOIN relation r
         ON sci.relation_id = r.id
         JOIN stack_group_relation sgr
         ON 'has_' || sgr.name = r.relation_name
-    """.format(sg_pattern))
+    """)
 
 
 def forward_migrate_overlays(apps, schema_editor):
@@ -122,7 +122,7 @@ def forward_migrate_overlays(apps, schema_editor):
         FROM stack s
         JOIN (VALUES {}) AS sgim (s_id, sg_id) ON sgim.s_id = s.id
     """.format(
-        ','.join(['({}, {})'.format(k, v) for k, v in stack_id_mapping.items()])))
+        ','.join([f'({k}, {v})' for k, v in stack_id_mapping.items()])))
 
     # Create stacks for each overlay.
     # Note stack is still the old stack model at this point.

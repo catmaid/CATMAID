@@ -45,7 +45,7 @@ def ask_a_b(a, b, title):
         d = ask()
         if d is not None:
             return d
-        print("Please answer only '{}' or '{}'".format(a, b))
+        print(f"Please answer only '{a}' or '{b}'")
 
 def ask_yes_no(title):
     """Return true if yes, False if no.
@@ -134,14 +134,14 @@ class FileImporter:
                             mapped_user_ids.add(obj_user_ref_id)
                             mapped_user_target_ids.add(existing_user_id)
                         elif import_user:
-                            raise CommandError("Referenced user \"{}\" ".format(obj_username) +
+                            raise CommandError(f"Referenced user \"{obj_username}\" " +
                                     "exists both in database and in import data. If the " +
                                     "existing user should be used, please use the " +
                                     "--map-users option to map all users or "
                                     "--username-mapping=\"import-user=target-user\" " +
                                     "for individual users")
                         else:
-                            raise CommandError("Referenced user \"{}\"".format(obj_username) +
+                            raise CommandError(f"Referenced user \"{obj_username}\"" +
                                     "exists in database, but not in import data. If the " +
                                     " existing user should be used, please use the " +
                                     "--map-users option")
@@ -163,7 +163,7 @@ class FileImporter:
                             created_users[obj_username] = user
                         setattr(obj, ref, user)
                     else:
-                        raise CommandError("User \"{}\" is not ".format(obj_username) +
+                        raise CommandError(f"User \"{obj_username}\" is not " +
                                 "found in existing data or import data. Please use " +
                                 "--user or --create-unknown-users")
                 elif map_user_ids and existing_user_same_id is not None:
@@ -174,15 +174,15 @@ class FileImporter:
                     if not user:
                         if self.auto_name_unknown_users:
                             logger.info("Creating new inactive user for imported " +
-                                    "user ID {}. No name information was ".format(obj_user_ref_id) +
+                                    f"user ID {obj_user_ref_id}. No name information was " +
                                     "available and CATMAID will generate a name.")
                         else:
                             logger.info("Creating new inactive user for imported " +
-                                    "user ID {}. No name information was ".format(obj_user_ref_id) +
+                                    f"user ID {obj_user_ref_id}. No name information was " +
                                     "available, please enter a new username.")
                         while True:
                             if self.auto_name_unknown_users:
-                                new_username = "User {}".format(self.next_auto_name_id)
+                                new_username = f"User {self.next_auto_name_id}"
                                 self.next_auto_name_id += 1
                                 if not self.user_map.get(new_username):
                                     break
@@ -191,7 +191,7 @@ class FileImporter:
                                 if not new_username:
                                     logger.info("Please enter a valid username")
                                 elif self.user_map.get(new_username):
-                                    logger.info("The username '{}' ".format(new_username) +
+                                    logger.info(f"The username '{new_username}' " +
                                             "exists already, choose a different one")
                                 else:
                                     break
@@ -203,8 +203,12 @@ class FileImporter:
                         self.created_unknown_users[obj_user_ref_id] = user
                     setattr(obj, ref, user)
                 else:
-                    raise ValueError("Could not find referenced user " +
-                            "\"{}\" in imported. Try using --map-users or ".format(obj_user_ref_id))
+                    raise CommandError(f'Could not find referenced user "{obj_user_ref_id}" ' +
+                        'in imported data. Try using the --map-users option to map all users ' +
+                        'or --username-mapping="import-user=target-user" for individual ' +
+                        'users. Additionally --create-unknown-users can be used to create ' +
+                        'missing users, optionally naming them automatically using ' +
+                        '--auto-name-unknown-users.')
 
     def reset_ids(self, target_classes, import_objects,
             import_objects_by_type_and_id, existing_classes,
@@ -252,7 +256,7 @@ class FileImporter:
 
             imported_parent_nodes = []
 
-            bar_prefix = "- {}: ".format(object_type.__name__)
+            bar_prefix = f"- {object_type.__name__}: "
             for deserialized_object in progressbar.progressbar(objects,
                     max_value=len(objects), redirect_stdout=True,
                     prefix=bar_prefix):
@@ -276,8 +280,7 @@ class FileImporter:
                             if object_type == Treenode and fk_type == Treenode:
                                 imported_parent_nodes.append((obj, current_ref))
                             elif ref_obj.id is None:
-                                raise ValueError("The referenced {} object '{}' with import ID {} wasn't stored yet".format(
-                                        fk_type, str(ref_obj), current_ref))
+                                raise ValueError(f"The referenced {fk_type} object '{ref_obj}' with import ID {current_ref} wasn't stored yet")
                             setattr(obj, fk_field, ref_obj.id)
                             updated_fk_ids += 1
                         else:
@@ -299,7 +302,7 @@ class FileImporter:
                         redirect_stdout=True, prefix="- Mapping parent treenodes: "):
                     new_parent = imported_objects_by_id.get(parent_id)
                     if not new_parent:
-                        raise ValueError("Could not find imported treenode {}".format(parent_id))
+                        raise ValueError(f"Could not find imported treenode {parent_id}")
                     obj.parent_id = new_parent.id
                     if save:
                         obj.save()
@@ -326,9 +329,8 @@ class FileImporter:
                                 skeleton_id=obj.id, defaults={'last_editor': last_editor})
                         explicitly_created_summaries += 1
 
-        logger.info("".join(["{} foreign key references updated, {} did not ",
-                "require change, {} skeleton summaries were created"]).format(
-                updated_fk_ids, unchanged_fk_ids, explicitly_created_summaries))
+        logger.info("".join([f"{updated_fk_ids} foreign key references updated, {unchanged_fk_ids} did not ",
+                f"require change, {explicitly_created_summaries} skeleton summaries were created"]))
 
     def override_fields(self, obj):
         # Override project to match target project
@@ -370,7 +372,7 @@ class FileImporter:
         n_objects = 0
 
         # Read the file and sort by type
-        logger.info("Loading data from {}".format(self.source))
+        logger.info(f"Loading data from {self.source}")
         with open(self.source, "r") as data:
             loaded_data = serializers.deserialize(self.format, data)
             for deserialized_object in progressbar.progressbar(loaded_data,
@@ -385,7 +387,7 @@ class FileImporter:
         created_users:Dict = dict()
         if import_data.get(User):
             import_users = dict((u.object.id, u) for u in import_data.get(User))
-            logger.info("Found {} referenceable users in import data".format(len(import_users)))
+            logger.info(f"Found {len(import_users)} referenceable users in import data")
         else:
             import_users = dict()
             logger.info("Found no referenceable users in import data")
@@ -393,14 +395,14 @@ class FileImporter:
         username_mapping = {}
         for m in self.options['username_mapping'] or []:
             username_mapping[m[0]] = m[1]
-            logger.info('Mapping import user "{}" to target user "{}"'.format(m[0], m[1]))
+            logger.info(f'Mapping import user "{m[0]}" to target user "{m[1]}"')
 
         # Get CATMAID model classes, which are the ones we want to allow
         # optional modification of user, project and ID fields.
         app = apps.get_app_config('catmaid')
         user_updatable_classes = set(app.get_models())
 
-        logger.info("Adjusting {} import objects to target database".format(n_objects))
+        logger.info(f"Adjusting {n_objects} import objects to target database")
 
         # Needed for name uniquness of classes, class_instances and relations
         existing_classes = dict(Class.objects.filter(project_id=self.target.id) \
@@ -513,8 +515,7 @@ class FileImporter:
             logger.info("No unmapped users imported")
 
         # Finally save all objects. Make sure they are saved in order:
-        logger.info("Storing {} database objects including {} moved objects, reusing additional {} existing objects" \
-                .format(n_objects - n_reused, n_moved, n_reused))
+        logger.info(f"Storing {n_objects - n_reused} database objects including {n_moved} moved objects, reusing additional {n_reused} existing objects")
 
         # In append-only mode, the foreign keys to objects with changed IDs have
         # to be updated. In preserve-ids mode only IDs to classes and relations
@@ -599,7 +600,7 @@ class FileImporter:
 
         if self.options.get('update_project_materializations'):
             if n_imported_connectors or n_imported_connectors:
-                logger.info("Updating edge tables for project {}".format(self.target.id))
+                logger.info(f"Updating edge tables for project {self.target.id}")
                 rebuild_edge_tables(project_ids=[self.target.id], log=lambda msg: logger.info(msg))
             else:
                 logger.info("No edge table update needed")
@@ -650,8 +651,8 @@ class FileImporter:
                         skeleton_ids.append(ci.id)
 
             if skeleton_ids or connector_ids:
-                logger.info("Updating edge tables for {} skeleton(s) and {} " \
-                        "connector(s)".format(len(skeleton_ids), len(connector_ids)))
+                logger.info(f"Updating edge tables for {len(skeleton_ids)} skeleton(s) " + \
+                            f"and {len(connector_ids)} connector(s)")
                 rebuild_edges_selectively(skeleton_ids, connector_ids, log=lambda msg: logger.info(msg))
             else:
                 logger.info("No materialization to update: no skeleton IDs or " \
@@ -805,8 +806,7 @@ class Command(BaseCommand):
         override_user = None
         if options['user']:
             override_user = User.objects.get(pk=options['user'])
-            logger.info("All imported objects will be owned by user \"{}\"".format(
-                    override_user.username))
+            logger.info(f'All imported objects will be owned by user "{override_user.username}"')
         else:
             if options['map_users']:
                 logger.info("Users referenced in import will be mapped to "

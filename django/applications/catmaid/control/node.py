@@ -3,14 +3,14 @@
 from abc import ABCMeta
 from aggdraw import Draw, Pen, Brush, Font
 from collections import defaultdict
+from concurrent import futures
 import copy
 import json
-from concurrent import futures
 import math
 import msgpack
 from PIL import Image, ImageDraw
-import psycopg2.extras
 import progressbar
+import psycopg2.extras
 import struct
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 import ujson
@@ -481,12 +481,12 @@ class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
         treenode_query_params = ['project_id', 'left', 'top', 'z1', 'right',
                                  'bottom', 'z2', 'halfz', 'halfzdiff', 'limit', 'sanitized_treenode_ids']
         self.treenode_query_psycopg = treenode_query_template.format(
-            **{k: '%({})s'.format(k) for k in treenode_query_params})
+            **{k: f'%({k})s' for k in treenode_query_params})
 
         connector_query_params = ['project_id', 'left', 'top', 'z1', 'right',
                                   'bottom', 'z2', 'halfz', 'halfzdiff', 'limit', 'sanitized_connector_ids']
         self.connector_query_psycopg = connector_query_template.format(
-            **{k: '%({})s'.format(k) for k in connector_query_params})
+            **{k: f'%({k})s' for k in connector_query_params})
 
         # Create prepared statement version
         prepare_var_names = {
@@ -519,20 +519,20 @@ class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
         for long lived connections.
         """
         cursor = connection.cursor()
-        cursor.execute("""
+        cursor.execute(f"""
             -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
             -- 8 halfz, 9 halfzdiff, 10 limit 11 sanitized_treenode_ids
-            PREPARE {} (int, real, real, real,
+            PREPARE {self.TREENODE_STATEMENT_NAME} (int, real, real, real,
                     real, real, real, real, real, int, bigint[]) AS
-            {}
-        """.format(self.TREENODE_STATEMENT_NAME, self.treenode_query_prepare))
-        cursor.execute("""
+            {self.treenode_query_prepare}
+        """)
+        cursor.execute(f"""
             -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
             -- 8 halfz, 9 halfzdiff, 10 limit, 11 sanitized connector ids
-            PREPARE {} (int, real, real, real,
+            PREPARE {self.CONNECTOR_STATEMENT_NAME} (int, real, real, real,
                     real, real, real, real, real, int, bigint[]) AS
-            {}
-        """.format(self.CONNECTOR_STATEMENT_NAME, self.connector_query_prepare))
+            {self.connector_query_prepare}
+        """)
 
     def get_treenode_data(self, cursor, params, extra_treenode_ids=None):
         """ Selects all treenodes of which links to other treenodes intersect
@@ -545,12 +545,12 @@ class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
 
         if self.prepared_statements:
             # Use a prepared statement to get the treenodes
-            cursor.execute('''
-                EXECUTE {}(%(project_id)s,
+            cursor.execute(f'''
+                EXECUTE {self.TREENODE_STATEMENT_NAME}(%(project_id)s,
                     %(left)s, %(top)s, %(z1)s, %(right)s, %(bottom)s, %(z2)s,
                     %(halfz)s, %(halfzdiff)s, %(limit)s,
                     %(sanitized_treenode_ids)s)
-            '''.format(self.TREENODE_STATEMENT_NAME), params)
+            ''', params)
         else:
             n_largest_skeletons_limit= params.get('n_largest_skeletons_limit') or 0
             n_last_edited_skeletons_limit = params.get('n_last_edited_skeletons_limit') or 0
@@ -709,12 +709,12 @@ class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
 
         if self.prepared_statements:
             # Use a prepared statement to get connectors
-            cursor.execute('''
-                EXECUTE {}(%(project_id)s,
+            cursor.execute(f'''
+                EXECUTE {self.CONNECTOR_STATEMENT_NAME}(%(project_id)s,
                     %(left)s, %(top)s, %(z1)s, %(right)s, %(bottom)s, %(z2)s,
                     %(halfz)s, %(halfzdiff)s, %(limit)s,
                     %(sanitized_connector_ids)s)
-            '''.format(self.CONNECTOR_STATEMENT_NAME), params)
+            ''', params)
         else:
             cursor.execute(self.connector_query_psycopg, params)
 
@@ -1437,7 +1437,7 @@ def update_node_query_cache(node_providers=None, log=print, force=False) -> None
         node_providers = get_node_provider_configs()
 
     for np in node_providers:
-        log("Checking node provder {}".format(np))
+        log(f"Checking node provider {np}")
         if type(np) in (list, tuple):
             key = np[0]
             options = np[1]
@@ -1463,16 +1463,16 @@ def update_node_query_cache(node_providers=None, log=print, force=False) -> None
 
         data_type = CACHE_NODE_PROVIDER_DATA_TYPES.get(key)
         if not data_type:
-            log("Skipping non-caching node provider: {}".format(key))
+            log(f"Skipping non-caching node provider: {key}")
             continue
 
         enabled = options.get('enabled', True)
         if not enabled and not force:
-            log("Skipping disabled node provider: {}".format(key))
+            log(f"Skipping disabled node provider: {key}")
             continue
 
         for project_id in project_ids:
-            log("Updating cache for project {}".format(project_id))
+            log(f"Updating cache for project {project_id}")
             orientations = [options.get('orientation', 'xy')]
             steps = [options.get('step')]
             if not steps:
@@ -1547,7 +1547,7 @@ def get_tracing_bounding_box(project_id, cursor=None, bb_limits=None):
 
     row = cursor.fetchone()
     if not row:
-        raise ValueError("Could not compute bounding box of project {}".format(project_id))
+        raise ValueError(f"Could not compute bounding box of project {project_id}")
 
     return row
 
@@ -1579,7 +1579,7 @@ def get_lod_buckets(result_tuple, lod_levels, lod_bucket_size, lod_strategy) -> 
         elif lod_strategy == 'exponential':
             offset = int(half_bucket_size * 2 ** lod_level)
         else:
-            raise ValueError("Unknown LOD strategy: {}".format(lod_strategy))
+            raise ValueError(f"Unknown LOD strategy: {lod_strategy}")
 
         node_slice_end = min(n_nodes_to_add, node_slice_end + offset)
         connector_slice_end =  min(n_connectors_to_add, connector_slice_start + offset)
@@ -1638,10 +1638,10 @@ def update_cache(project_id, data_type, orientations, steps, node_limit=None,
     row = get_tracing_bounding_box(project_id, cursor)
     bb = [row[0], row[1]]
     if None in bb[0] or None in bb[1]:
-        log(' -> Found no valid bounding box, skipping project: {}'.format(bb))
+        log(f' -> Found no valid bounding box, skipping project: {bb}')
         return
     else:
-        log(' -> Found bounding box: {}'.format(bb))
+        log(f' -> Found bounding box: {bb}')
 
     if bb_limits:
         bb[0][0] = max(bb[0][0], bb_limits[0][0])
@@ -1650,12 +1650,12 @@ def update_cache(project_id, data_type, orientations, steps, node_limit=None,
         bb[1][0] = min(bb[1][0], bb_limits[1][0])
         bb[1][1] = min(bb[1][1], bb_limits[1][1])
         bb[1][2] = min(bb[1][2], bb_limits[1][2])
-        log(' -> Applied limits to bounding box: {}'.format(bb))
+        log(f' -> Applied limits to bounding box: {bb}')
 
     if delete:
         for n, o in enumerate(orientations):
             orientation_id = orientation_ids[n]
-            log(' -> Deleting existing cache entries in orientation {}'.format(project_id, o))
+            log(f' -> Deleting existing cache entries in orientation {o}')
             cursor.execute("""
                 DELETE FROM node_query_cache
                 WHERE project_id = %(project_id)s
@@ -1679,24 +1679,22 @@ def update_cache(project_id, data_type, orientations, steps, node_limit=None,
 
     if n_largest_skeletons_limit:
         params['n_largest_skeletons_limit'] = int(n_largest_skeletons_limit)
-        log((' -> Allowing {} largest skeletons in the field of view in '
-                'each section').format(n_largest_skeletons_limit))
+        log(f' -> Allowing {n_largest_skeletons_limit} largest skeletons in the field of view in '
+                'each section')
 
     if n_last_edited_skeletons_limit:
         params['n_last_edited_skeletons_limit'] = int(n_last_edited_skeletons_limit)
-        log((' -> Allowing {} most recently edited skeletons in the '
-                'field of view in each section'). format(n_last_edited_skeletons_limit))
+        log(f' -> Allowing {n_last_edited_skeletons_limit} most recently edited skeletons in the '
+                'field of view in each section')
 
     if hidden_last_editor_id:
         params['hidden_last_editor_id'] = int(hidden_last_editor_id)
-        log((' -> Only nodes not edited last by user {} will be allowed'.format(
-                hidden_last_editor_id)))
+        log(f' -> Only nodes not edited last by user {hidden_last_editor_id} will be allowed')
 
     if ordering:
-        log(' -> Cached data is ordered: ' + ordering)
+        log(f' -> Cached data is ordered: {ordering}')
 
-    log(' -> Level-of-detail steps: {}, bucket size: {}, strategy: {}'.format(
-            lod_levels, lod_bucket_size, lod_strategy))
+    log(f' -> Level-of-detail steps: {lod_levels}, bucket size: {lod_bucket_size}, strategy: {lod_strategy}')
 
     min_z = bb[0][2]
     max_z = bb[1][2]
@@ -1712,7 +1710,7 @@ def update_cache(project_id, data_type, orientations, steps, node_limit=None,
 
     for o, step in zip(orientations, steps):
         orientation_id = ORIENTATIONS[o]
-        log(' -> Populating cache for orientation {} with depth resolution {} for types: {}'.format(o, step, types))
+        log(f' -> Populating cache for orientation {o} with depth resolution {step} for types: {types}')
         z = min_z
         while z < max_z:
             params['z1'] = z
@@ -1806,7 +1804,7 @@ def update_grid_cache(project_id, data_type, orientations,
     row = get_tracing_bounding_box(project_id, cursor, bb_limits)
     bb = [row[0], row[1]]
     if None in bb[0] or None in bb[1]:
-        log(' -> Found no valid bounding box, skipping project: {}'.format(bb))
+        log(f' -> Found no valid bounding box, skipping project: {bb}')
         return
     if bb_limits:
         bb[0][0] = max(bb[0][0], bb_limits[0][0])
@@ -1815,14 +1813,14 @@ def update_grid_cache(project_id, data_type, orientations,
         bb[1][0] = min(bb[1][0], bb_limits[1][0])
         bb[1][1] = min(bb[1][1], bb_limits[1][1])
         bb[1][2] = min(bb[1][2], bb_limits[1][2])
-        log(' -> Found bounding box within limits: {}'.format(bb))
+        log(f' -> Found bounding box within limits: {bb}')
     else:
-        log(' -> Found bounding box: {}'.format(bb))
+        log(f' -> Found bounding box: {bb}')
 
     if delete:
         for n, o in enumerate(orientations):
             orientation_id = orientation_ids[n]
-            log(' -> Deleting existing grid cache entries in orientation {}'.format(project_id, o))
+            log(f' -> Deleting existing grid cache entries in orientation {o}')
             cursor.execute("""
                 DELETE FROM node_grid_cache
                 WHERE project_id = %(project_id)s
@@ -1847,8 +1845,8 @@ def update_grid_cache(project_id, data_type, orientations,
 
     if n_largest_skeletons_limit:
         params['n_largest_skeletons_limit'] = int(n_largest_skeletons_limit)
-        log((' -> Allowing {} largest skeletons in the field of view in '
-                'each section').format(n_largest_skeletons_limit))
+        log(f' -> Allowing {n_largest_skeletons_limit} largest skeletons in the field of view in '
+                'each section')
 
     if n_last_edited_skeletons_limit:
         params['n_last_edited_skeletons_limit'] = int(n_last_edited_skeletons_limit)
@@ -1857,8 +1855,7 @@ def update_grid_cache(project_id, data_type, orientations,
 
     if hidden_last_editor_id:
         params['hidden_last_editor_id'] = int(hidden_last_editor_id)
-        log((' -> Only nodes not edited last by user {} will be allowed'.format(
-                hidden_last_editor_id)))
+        log(f' -> Only nodes not edited last by user {hidden_last_editor_id} will be allowed')
 
     data_types = [data_type]
     update_json_cache = 'json' in data_types
@@ -1872,8 +1869,7 @@ def update_grid_cache(project_id, data_type, orientations,
 
     for o in orientations:
         orientation_id = ORIENTATIONS[o]
-        log(' -> Populating grid cache for orientation {} with block size {} (x, y, z) for types: {}'.format(
-                o, (cell_width, cell_height, cell_depth), types))
+        log(f' -> Populating grid cache for orientation {o} with block size {(cell_width, cell_height, cell_depth)} (x, y, z) for types: {types}')
 
         cursor.execute("""
             SELECT id
@@ -1946,11 +1942,9 @@ def update_grid_cache(project_id, data_type, orientations,
         n_cells_d = max_d_i - min_d_i + 1
         n_cells = n_cells_w * n_cells_h * n_cells_d
 
-        log(' -> Grid dimension (cells per dimension X, Y and Z): {}, {}, {} Total cells: {}'.format(
-                n_cells_w, n_cells_h, n_cells_d, n_cells))
+        log(f' -> Grid dimension (cells per dimension X, Y and Z): {n_cells_w}, {n_cells_h}, {n_cells_d} Total cells: {n_cells}')
 
-        log(' -> Level-of-detail steps: {}, bucket size: {}, strategy: {}'.format(
-                lod_levels, lod_bucket_size, lod_strategy))
+        log(f' -> Level-of-detail steps: {lod_levels}, bucket size: {lod_bucket_size}, strategy: {lod_strategy}')
 
         if progress:
             bar = progressbar.ProgressBar(max_value=n_cells, redirect_stdout=True).start()
@@ -1974,15 +1968,14 @@ def update_grid_cache(project_id, data_type, orientations,
             else:
                 local_min_depth = min_z + depth_section * section_extent
                 local_max_depth = min_z + (depth_section + 1) * section_extent
-                log(' -> Finding local tracing data bounding box for step {}/{}: {} - {} in depth'.format(
-                    depth_section + 1, depth_steps, local_min_depth, local_max_depth))
+                log(f' -> Finding local tracing data bounding box for step {depth_section + 1}/{depth_steps}: {local_min_depth} - {local_max_depth} in depth')
                 local_bb_limits = [
                     [bb_limits[0][0], bb_limits[0][1], local_min_depth],
                     [bb_limits[1][0], bb_limits[1][1], local_max_depth]]
                 row = get_tracing_bounding_box(project_id, cursor, local_bb_limits)
                 local_bb = [row[0], row[1]]
                 if None in local_bb[0] or None in local_bb[1]:
-                    log(' -> Found no valid bounding box, skipping depth section: {}'.format(local_bb))
+                    log(f' -> Found no valid bounding box, skipping depth section: {local_bb}')
                     return
                 local_min_w_i = int(local_bb[0][0] // cell_width)
                 local_min_h_i = int(local_bb[0][1] // cell_height)
@@ -2012,11 +2005,11 @@ def update_grid_cache(project_id, data_type, orientations,
                 full_local_n_cells = n_cells_w * n_cells_h * full_local_n_cells_d
                 n_ignored_global_cells = full_local_n_cells - local_n_cells
 
-                log(' -> Local grid dimension (cells per dimension X, Y and Z): {}, {}, {} Total cells: {} Ignored: {} Min XYZ idx: {}, {}, {} Max XYZ idx {}, {}, {}'.format(
-                        local_n_cells_w, local_n_cells_h, local_n_cells_d,
-                        local_n_cells, n_ignored_global_cells, local_min_w_i,
-                        local_min_h_i, local_min_d_i, local_max_w_i,
-                        local_max_h_i, local_max_d_i))
+                log(f' -> Local grid dimension (cells per dimension X, Y and Z): ' + \
+                    f'{local_n_cells_w}, {local_n_cells_h}, {local_n_cells_d} ' + \
+                    f'Total cells: {local_n_cells} Ignored: {n_ignored_global_cells} ' + \
+                    f'Min XYZ idx: {local_min_w_i}, {local_min_h_i}, {local_min_d_i} ' + \
+                    f'Max XYZ idx {local_max_w_i}, {local_max_h_i}, {local_max_d_i}')
 
                 if progress:
                     counter += n_ignored_global_cells
@@ -2061,7 +2054,7 @@ def update_grid_cache(project_id, data_type, orientations,
                     if added:
                         created += 1
 
-        log(' -> Materialized {} grid cells'.format(created))
+        log(f' -> Materialized {created} grid cells')
         if progress:
             bar.finish()
 
@@ -2496,7 +2489,7 @@ def _node_list_tuples_query(params, project_id, node_provider,
 
     except Exception as e:
         import traceback
-        raise Exception(response_on_error + ':' + str(e) + '\nOriginal error: ' + str(traceback.format_exc()))
+        raise Exception(f'{response_on_error}:{e}\nOriginal error: {traceback.format_exc()}')
 
 def node_list_tuples_query(params, project_id, node_provider,
         explicit_treenode_ids=tuple(), explicit_connector_ids=tuple(),
@@ -2580,7 +2573,7 @@ def create_node_response(result, params, target_format, target_options, data_typ
             image.save(response, 'GIF', transparency=0, optimize=True)
         return response
     else:
-        raise ValueError("Unknown target format: {}".format(target_format))
+        raise ValueError(f"Unknown target format: {target_format}")
 
 def render_nodes_xy(node_data, params, width, height, view_min_x=0, view_min_y=0,
         xscale=1.0, yscale=1.0) -> Image:
@@ -2777,20 +2770,20 @@ def _update_location(table, nodes, now, user, cursor):
     # If we update the location parent table to update both treenode and connector
     # nodes, statement level triggers would not be run on the respective child
     # tables (treenode and connector).
-    cursor.execute("""
-        UPDATE {} n
+    cursor.execute(f"""
+        UPDATE {table} n
         SET editor_id = %s, location_x = target.x,
             location_y = target.y, location_z = target.z
         FROM (SELECT x.id, x.location_x AS old_loc_x,
                      x.location_y AS old_loc_y, x.location_z AS old_loc_z,
                      y.new_loc_x AS x, y.new_loc_y AS y, y.new_loc_z AS z
-              FROM {} x
-              INNER JOIN (VALUES {}) y(id, new_loc_x, new_loc_y, new_loc_z)
+              FROM {table} x
+              INNER JOIN (VALUES {node_template}) y(id, new_loc_x, new_loc_y, new_loc_z)
               ON x.id = y.id FOR NO KEY UPDATE) target
         WHERE n.id = target.id
         RETURNING n.id, n.edition_time, target.old_loc_x, target.old_loc_y,
                   target.old_loc_z
-    """.format(table, table, node_template), [user.id] + node_table)
+    """, [user.id] + node_table)
 
     updated_rows = cursor.fetchall()
     if len(nodes) != len(updated_rows):
@@ -2950,7 +2943,7 @@ def node_nearest(request:HttpRequest, project_id=None) -> JsonResponse:
 
     if nearest_treenode is None:
         if skeleton_id:
-            raise Exception('No treenodes were found for skeleton {}'.format(skeleton_id))
+            raise Exception(f'No treenodes were found for skeleton {skeleton_id}')
         raise Exception('No treenodes were found')
 
     return JsonResponse({
@@ -2966,7 +2959,7 @@ def _fetch_location(project_id, location_id):
     """Get the locations of the passed in node ID in the passed in project."""
     locations = _fetch_locations(project_id, [location_id])
     if not locations:
-        raise ValueError('Could not find location for node {}'.format(location_id))
+        raise ValueError(f'Could not find location for node {location_id}')
     return locations[0]
 
 
@@ -2976,17 +2969,17 @@ def _fetch_locations(project_id, location_ids):
     params = list(location_ids)
     params.append(project_id)
     cursor = connection.cursor()
-    cursor.execute('''
+    cursor.execute(f'''
         SELECT
           l.id,
           l.location_x AS x,
           l.location_y AS y,
           l.location_z AS z
         FROM location l
-        JOIN (VALUES {}) node(id)
+        JOIN (VALUES {node_template}) node(id)
             ON l.id = node.id
         WHERE project_id = %s
-    '''.format(node_template), params)
+    ''', params)
     return cursor.fetchall()
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -3062,16 +3055,16 @@ def user_info(request:HttpRequest, project_id=None) -> JsonResponse:
     node_template = ','.join('(%s)' for n in node_ids)
 
     cursor = connection.cursor()
-    cursor.execute('''
+    cursor.execute(f'''
         SELECT n.id, n.user_id, n.editor_id, n.creation_time, n.edition_time,
                array_agg(r.reviewer_id), array_agg(r.review_time)
         FROM location n
-        JOIN (VALUES {}) req_node(id)
+        JOIN (VALUES {node_template}) req_node(id)
             ON n.id = req_node.id
         LEFT OUTER JOIN review r
             ON r.treenode_id = n.id
         GROUP BY n.id
-    '''.format(node_template), node_ids)
+    ''', node_ids)
 
     # Build result
     result = {}

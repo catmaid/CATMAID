@@ -164,7 +164,7 @@ def insert_treenode(request:HttpRequest, project_id=None) -> JsonResponse:
     try:
         links = get_request_list(request.POST, 'links', [], int)
     except Exception as e:
-        raise ValueError("Couldn't parse list parameter: {}".format(e))
+        raise ValueError(f"Couldn't parse list parameter: {e}")
 
     # Make sure the back-end is in the expected state if the node should have a
     # parent and will therefore become part of another skeleton.
@@ -220,11 +220,11 @@ def insert_treenode(request:HttpRequest, project_id=None) -> JsonResponse:
     else:
         child_template = "%s"
 
-    cursor.execute("""
+    cursor.execute(f"""
         UPDATE treenode SET parent_id = %s
-         WHERE id IN ({})
+         WHERE id IN ({child_template})
      RETURNING id, edition_time
-    """.format(child_template), paramlist)
+    """, paramlist)
     result = cursor.fetchall()
     if not result or (len(paramlist) - 1) != len(result):
         raise ValueError("Couldn't update parent of inserted node's child: " + child.id)
@@ -481,19 +481,19 @@ def update_node_radii(node_ids, radii, cursor=None) -> Dict:
     cursor = cursor or connection.cursor()
 
     # Create a list of the form [(node id, radius), ...]
-    node_radii = "(" + "),(".join(map(lambda pair: "{},{}".format(pair[0], pair[1]),
+    node_radii = "(" + "),(".join(map(lambda pair: f"{pair[0]},{pair[1]}",
             zip(node_ids, radii))) + ")"
 
-    cursor.execute('''
+    cursor.execute(f'''
         UPDATE treenode t SET radius = target.new_radius
         FROM (SELECT x.id, x.radius AS old_radius, y.new_radius
               FROM treenode x
-              INNER JOIN (VALUES {}) y(id, new_radius)
+              INNER JOIN (VALUES {node_radii}) y(id, new_radius)
               ON x.id=y.id FOR NO KEY UPDATE) target
         WHERE t.id = target.id
         RETURNING t.id, target.old_radius, target.new_radius,
                       t.edition_time, t.skeleton_id;
-    '''.format(node_radii))
+    ''')
 
     updated_rows = cursor.fetchall()
     if len(node_ids) != len(updated_rows):
@@ -875,9 +875,9 @@ def _compact_detail(project_id, treenode_id):
 
     rows = cursor.fetchall()
     if len(rows) == 0:
-        raise ValueError("Could not find treenode with ID {}".format(treenode_id))
+        raise ValueError(f"Could not find treenode with ID {treenode_id}")
     if len(rows) > 1:
-        raise ValueError("Found {} treenodes with ID {}, expected one".format(len(rows), treenode_id))
+        raise ValueError(f"Found {len(rows)} treenodes with ID {treenode_id}, expected one")
 
     return rows[0]
 
@@ -1093,18 +1093,18 @@ def update_confidence(request:HttpRequest, project_id=None, treenode_id=None) ->
         if partner_ids:
             partner_template = ",".join(("(%s,%s)",) * len(partner_ids))
             partner_data = [p for v in zip(partner_ids, partner_confidences) for p in v]
-            cursor.execute('''
+            cursor.execute(f'''
                 UPDATE treenode_connector tc
                 SET confidence = target.new_confidence
                 FROM (SELECT x.id, x.confidence AS old_confidence,
                              new_values.confidence AS new_confidence
                       FROM treenode_connector x
-                      JOIN (VALUES {}) new_values(cid, confidence)
+                      JOIN (VALUES {partner_template}) new_values(cid, confidence)
                       ON x.connector_id = new_values.cid
                       WHERE x.treenode_id = %s) target
                 WHERE tc.id = target.id
                 RETURNING tc.connector_id, tc.edition_time, target.old_confidence
-            '''.format(partner_template), partner_data + [tnid])
+            ''', partner_data + [tnid])
         else:
             cursor.execute('''
                 UPDATE treenode_connector tc

@@ -1,5 +1,6 @@
-import re
+
 import functools
+import re
 
 from django.db import connection
 from django.db.transaction import TransactionManagementError
@@ -13,8 +14,7 @@ def fail_on_wrong_format_label(label) -> None:
     """Check the passed in label if it matches the expected format and raise an
     error if not."""
     if not transaction_label_pattern.match(label):
-        raise ValueError('Label "{}" doesn\'t follow convention '
-                         '"<resources>.<action>"'.format(label))
+        raise ValueError(f'Label "{label}" does not follow convention "<resources>.<action>"')
 
 def add_log_entry(user_id, label, project_id=None) -> None:
     """Give a label to the current transaction and time, executed by a

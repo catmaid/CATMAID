@@ -208,9 +208,9 @@ def create_link(request:HttpRequest, project_id=None) -> JsonResponse:
         synapse_links = TreenodeConnector.objects.filter(project=project, connector=to_connector, relation__relation_name__endswith='synaptic_to')
         name = LINKS_BY_RELATION[link_type]['name'].lower();
         if (undirected_links.count() > 1):
-            return JsonResponse({'error': 'Connector {} can only have two {} connections.'.format(to_id, name)})
+            return JsonResponse({'error': f'Connector {to_id} can only have two {name} connections.'})
         if (synapse_links.count() != 0):
-            return JsonResponse({'error': 'Connector {} is part of a synapse, and {} can not be added.'.format(to_id, name)})
+            return JsonResponse({'error': f'Connector {to_id} is part of a synapse, and {name} can not be added.'})
 
     link = TreenodeConnector(
         user=request.user,
@@ -244,8 +244,7 @@ def delete_link(request:HttpRequest, project_id=None) -> JsonResponse:
         treenode=treenode_id).select_related('relation')
 
     if links.count() == 0:
-        raise ValueError('Couldn\'t find link between connector {} '
-                'and node {}'.format(connector_id, treenode_id))
+        raise ValueError(f'Could not find link between connector {connector_id} and node {treenode_id}')
 
     link = links[0]
 
@@ -284,12 +283,12 @@ def create_connector_link(project_id, user_id, treenode_id, skeleton_id,
     cursor = cursor or connection.cursor()
     link_template = ",".join(("({})".format(",".join(("%s",) * 7)),) * len(links))
 
-    cursor.execute("""
+    cursor.execute(f"""
         INSERT INTO treenode_connector (user_id, project_id, relation_id,
                     treenode_id, connector_id, skeleton_id, confidence)
-        VALUES {}
+        VALUES {link_template}
         RETURNING id, edition_time
-        """.format(link_template), new_link_data)
+        """, new_link_data)
 
     return cursor.fetchall()
 
@@ -312,15 +311,15 @@ def create_treenode_links(project_id, user_id, connector_id, links, cursor=None)
     cursor = cursor or connection.cursor()
     link_template = ",".join(("({})".format(",".join(("%s",) * 6)),) * len(links))
 
-    cursor.execute("""
+    cursor.execute(f"""
         INSERT INTO treenode_connector (user_id, project_id, relation_id,
                     treenode_id, connector_id, skeleton_id, confidence)
         SELECT v.user_id, v.project_id, v.relation_id, v.treenode_id, v.connector_id,
                t.skeleton_id, v.confidence
-        FROM (VALUES {}) v(user_id, project_id, relation_id, treenode_id, connector_id,
+        FROM (VALUES {link_template}) v(user_id, project_id, relation_id, treenode_id, connector_id,
                 confidence)
         INNER JOIN treenode t ON v.treenode_id = t.id
         RETURNING id, edition_time, treenode_id, relation_id
-        """.format(link_template), new_link_data)
+        """, new_link_data)
 
     return cursor.fetchall()

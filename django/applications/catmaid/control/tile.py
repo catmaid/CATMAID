@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import os
+import base64
 from contextlib import closing
+from io import BytesIO
 import logging
 import numpy as np
-import base64
+import os
+
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 
@@ -12,7 +14,6 @@ from catmaid.models import UserRole, TILE_SOURCE_TYPES
 from catmaid.control.common import ConfigurationError
 from catmaid.control.authentication import requires_user_role
 
-from io import BytesIO
 
 
 logger = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ def get_tile(request:HttpRequest, project_id=None, stack_id=None) -> HttpRespons
     basename = request.GET.get('basename', 'raw')
 
     # need to know the stack name
-    fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}_{2}.hdf'.format( project_id, stack_id, basename ) )
+    fpath=os.path.join(settings.HDF5_STORAGE_PATH, f'{project_id}_{stack_id}_{basename}.hdf')
 
     if not os.path.exists( fpath ):
         data=np.zeros( (height, width) )
@@ -60,7 +61,7 @@ def get_tile(request:HttpRequest, project_id=None, stack_id=None) -> HttpRespons
         response = HttpResponse(content_type="image/png")
         pilImage.save(response, "PNG")
         return response
-        # return HttpResponse(json.dumps({'error': 'HDF5 file does not exists: {0}'.format(fpath)}))
+        # return HttpResponse(json.dumps({'error': f'HDF5 file does not exist: {fpath}'}))
 
     with closing(h5py.File(fpath, 'r')) as hfile:
         #import math
@@ -72,7 +73,7 @@ def get_tile(request:HttpRequest, project_id=None, stack_id=None) -> HttpRespons
             response = HttpResponse(content_type="image/png")
             pilImage.save(response, "PNG")
             return response
-            # return HttpResponse(json.dumps({'error': 'HDF5 file does not contain scale: {0}'.format(str(int(scale)))}))
+            # return HttpResponse(json.dumps({'error': f'HDF5 file does not contain scale: {int(scale)}'}))
         image_data=hfile[hdfpath]
         data=image_data[y:y+height,x:x+width]
         pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','L',0,1)
@@ -99,7 +100,7 @@ def put_tile(request:HttpRequest, project_id=None, stack_id=None) -> HttpRespons
     row = request.POST.get('row', 'x')
     image = request.POST.get('image', 'x')
 
-    fpath=os.path.join( settings.HDF5_STORAGE_PATH, '{0}_{1}.hdf'.format( project_id, stack_id ) )
+    fpath = os.path.join(settings.HDF5_STORAGE_PATH, f'{project_id}_{stack_id}.hdf')
 
     with closing(h5py.File(fpath, 'a')) as hfile:
         hdfpath = '/labels/scale/' + str(int(scale)) + '/data'
@@ -192,5 +193,5 @@ def get_tile_source(type_id):
     """Get a tile source instance for a type ID.
     """
     if type_id not in tile_source_map:
-        raise ValueError("Tile source type {} is unknown".format(type_id))
+        raise ValueError(f"Tile source type {type_id} is unknown")
     return tile_source_map[type_id]()

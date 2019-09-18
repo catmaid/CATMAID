@@ -35,4 +35,4 @@ class Command(BaseCommand):
         incremental = not clean
         for p in projects:
             populate_stats_summary(p.id, delete, incremental)
-            self.stdout.write('Computed statistics for project {}'.format(p.id))
+            self.stdout.write(f'Computed statistics for project {p.id}')

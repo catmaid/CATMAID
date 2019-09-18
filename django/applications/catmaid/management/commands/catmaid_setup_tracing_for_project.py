@@ -29,7 +29,7 @@ class Command(BaseCommand):
         if not user:
             from catmaid.apps import get_system_user
             user = get_system_user()
-            logger.info("Using system user account {} (ID: {})".format(user, user.id))
+            logger.info(f"Using system user account {user} (ID: {user.id})")
 
         # Set up tracing for the requested project
         setup_tracing(options['project_id'], user)

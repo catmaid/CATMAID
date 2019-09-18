@@ -88,9 +88,9 @@ class TransactionLogTests(TransactionTestCase):
         """Format one or two timestamps to represent a half-open Postgres range
         """
         if timestamp2:
-            return "[\"{}\",\"{}\")".format(timestamp1, timestamp2)
+            return f"[\"{timestamp1}\",\"{timestamp2}\")"
         else:
-            return "[\"{}\",)".format(timestamp1)
+            return f"[\"{timestamp1}\",)"
 
     def get_location(self, txid, exec_time, label):
         """ Get location based on the transaction ID and time"""

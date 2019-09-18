@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import logging
+logger = logging.getLogger(__name__)
+
 from django.core.management.base import BaseCommand, CommandError
 
 from catmaid.models import Project, User
@@ -8,8 +11,6 @@ from catmaid.apps import get_system_user
 from .common import set_log_level
 
 
-import logging
-logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -37,7 +38,7 @@ class Command(BaseCommand):
         for p in projects:
             try:
                 validate_project_setup(p.id, user.id, True)
-                logger.info("Validated project {} (ID: {})".format(p, p.id))
+                logger.info(f"Validated project {p} (ID: {p.id})")
             except Exception as e:
-                logger.error("Could not validate project setup of project " +
-                        "{} (ID: {}): {}".format(p, p.id, e))
+                logger.error(f"Could not validate project setup of project " + \
+                             f"{p} (ID: {p.id}): {e}")

@@ -18,7 +18,7 @@ class Point3D:
         self.x, self.y, self.z = x, y, z
 
     def __str__(self):
-        return "({}, {}, {})".format(self.x, self.y, self.z)
+        return f"({self.x}, {self.y}, {self.z})"
 
 def is_collinear(a, b, c, between=False, eps=epsilon) -> bool:
     """Return true if all three points are collinear, i.e. on one line. If

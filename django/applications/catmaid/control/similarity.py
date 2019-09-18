@@ -314,7 +314,7 @@ class ConfigurationList(APIView):
             has_role = check_user_role(request.user, p, UserRole.QueueComputeTask)
             if not has_role:
                 raise PermissionError("User " + str(request.user.id) +
-                        " doesn't have permission to queue computation tasks.")
+                        " does not have permission to queue computation tasks.")
 
         source = request.data.get('source', 'backend-random')
         tangent_neighbors = int(request.data.get('tangent_neighbors', '20'))
@@ -359,7 +359,7 @@ class ConfigurationList(APIView):
             for pointset_id in matching_pointset_ids:
                 pointset_data = matching_meta.get(str(pointset_id))
                 if not pointset_data:
-                    raise ValueError("Could not find data for pointset {}".format(pointset_id))
+                    raise ValueError(f"Could not find data for pointset {pointset_id}")
                 flat_points = list(chain.from_iterable(pointset_data['points']))
                 pointset = PointSet.objects.create(project_id=project_id,
                         user=request.user, name=pointset_data['name'],
@@ -414,7 +414,7 @@ class ConfigurationList(APIView):
             has_role = check_user_role(request.user, p, UserRole.QueueComputeTask)
             if not has_role:
                 raise PermissionError("User " + str(request.user.id) +
-                        " doesn't have permission to queue computation tasks.")
+                        " does not have permission to queue computation tasks.")
 
             config = self.compute_random_and_add_delayed(project_id, user_id, name,
                     matching_skeleton_ids, matching_pointset_ids,
@@ -609,7 +609,7 @@ def compute_nblast_config(config_id, user_id, use_cache=True) -> str:
             'config_status': config.status,
         })
 
-        return "Recomputed NBLAST configuration {}".format(config.id)
+        return f"Recomputed NBLAST configuration {config.id}"
     except:
         configs = NblastConfig.objects.filter(pk=config_id)
         if configs:
@@ -708,8 +708,8 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
 
         # Make sure we have a scoring matrix
         if not config.scoring:
-            raise ValueError("NBLAST config #" + config.id +
-                " doesn't have a computed scoring.")
+            raise ValueError(f"NBLAST config #{config.id}" +
+                " does not have a computed scoring.")
 
         scoring_info = nblast(project_id, user_id, config.id,
                 query_object_ids, target_object_ids,
@@ -757,7 +757,7 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
             'similarity_status': similarity.status,
         })
 
-        return "Computed new NBLAST similarity for config {}".format(config.id)
+        return f"Computed new NBLAST similarity for config {config.id}"
     except Exception as ex:
         duration = timer() - start_time
         similarities = NblastSimilarity.objects.filter(pk=similarity_id)
@@ -892,7 +892,7 @@ def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
     if not name:
         n_similarity_tasks = NblastSimilarity.objects.filter(
                 project_id=project_id).count()
-        name = 'Task {}'.format(n_similarity_tasks + 1)
+        name = f'Task {n_similarity_tasks + 1}'
 
     config_id = request.POST.get('config_id', None)
     if not config_id:
@@ -908,11 +908,11 @@ def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
 
     query_type_id = request.POST.get('query_type_id', 'skeleton')
     if query_type_id not in valid_type_ids:
-        raise ValueError("Need valid query type id ({})".format(', '.join(valid_type_ids)))
+        raise ValueError(f"Need valid query type id ({', '.join(valid_type_ids)})")
 
     target_type_id = request.POST.get('target_type_id', 'skeleton')
     if target_type_id not in valid_type_ids:
-        raise ValueError("Need valid target type id ({})".format(', '.join(valid_type_ids)))
+        raise ValueError(f"Need valid target type id ({', '.join(valid_type_ids)})")
 
     # Read potential query and target IDs. In case of skeletons and point
     # clouds, no IDs need to be provided, in which case all skeletons and point
@@ -928,22 +928,22 @@ def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
     config = NblastConfig.objects.get(project_id=project_id, pk=config_id)
 
     if not config.status == 'complete':
-        raise ValueError("NBLAST config #{} isn't marked as complete".format(config.id))
+        raise ValueError(f"NBLAST config #{config.id} isn't marked as complete")
 
     # Make sure we have a scoring matrix
     if not config.scoring:
-        raise ValueError("NBLAST config #{}  doesn't have a computed scoring.".format(config.id))
+        raise ValueError(f"NBLAST config #{config.id} does not have a computed scoring.")
 
     # Load potential query or target meta data
     query_meta = request.POST.get('query_meta')
     if query_meta:
         if not query_type_id == 'pointset':
-            raise ValueError("Did not expect 'query_meta' parameter with {} query type".format(query_type_id))
+            raise ValueError(f"Did not expect 'query_meta' parameter with {query_type_id} query type")
         query_meta = json.loads(query_meta)
     target_meta = request.POST.get('target_meta')
     if target_meta:
         if not target_type_id == 'pointset':
-            raise ValueError("Did not expect 'target_meta' parameter with {} target type".format(target_type_id))
+            raise ValueError(f"Did not expect 'target_meta' parameter with {target_type_id} target type")
         target_meta = json.loads(target_meta)
 
     # Other parameters
@@ -962,7 +962,7 @@ def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
             for pointset_id in query_ids:
                 pointset_data = query_meta.get(str(pointset_id))
                 if not pointset_data:
-                    raise ValueError("Could not find data for pointset {}".format(pointset_id))
+                    raise ValueError(f"Could not find data for pointset {pointset_id}")
                 flat_points = list(chain.from_iterable(pointset_data['points']))
                 pointset = PointSet.objects.create(project_id=project_id,
                         user=request.user, name=pointset_data['name'],
@@ -976,7 +976,7 @@ def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
             for pointset_id in target_ids:
                 pointset_data = target_meta.get(str(pointset_id))
                 if not pointset_data:
-                    raise ValueError("Could not find data for pointset {}".format(pointset_id))
+                    raise ValueError(f"Could not find data for pointset {pointset_id}")
                 flat_points = list(chain.from_iterable(pointset_data['points']))
                 pointset = PointSet.objects.create(project_id=project_id,
                         user=request.user, name=pointset_data['name'],

@@ -170,8 +170,7 @@ class Command(BaseCommand):
         non_triangles = list(cursor.fetchall())
         n_non_triangles = len(non_triangles)
         if n_non_triangles > 0:
-            self.stdout.write('FAILED: found {} non-triangle meshes in project {}'.format(
-                    n_non_triangles, project_id))
+            self.stdout.write(f'FAILED: found {n_non_triangles} non-triangle meshes in project {project_id}')
             self.stdout.write('\tThe following volumes contain those geometries: {}'.format(
                     ', '.join(nt[0] for nt in non_triangles)))
             passed = False
@@ -230,8 +229,7 @@ class Command(BaseCommand):
 
             if volumes_with_inconsistent_winding:
                 self.stdout.write('FAILED: The following volumes have an ' +
-                        'inconsistent winding: {}'.format(', '.join(
-                                volumes_with_inconsistent_winding)))
+                        f'inconsistent winding: {", ".join(volumes_with_inconsistent_winding)}')
             else:
                 self.stdout.write('OK')
 

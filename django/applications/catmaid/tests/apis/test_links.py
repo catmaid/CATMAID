@@ -21,7 +21,7 @@ class LinksApiTests(CatmaidApiTestCase):
                  'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
-        expected_result = {'error': 'Couldn\'t find link between connector {0} and node {0}'.format(connector_id)}
+        expected_result = {'error': f'Could not find link between connector {connector_id} and node {treenode_id}'}
         self.assertIn('error', parsed_response)
         self.assertEqual(expected_result['error'], parsed_response['error'])
         self.assertEqual(tc_count, TreenodeConnector.objects.all().count())

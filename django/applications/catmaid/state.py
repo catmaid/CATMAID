@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import decimal
+from functools import reduce
 import json
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from django.db import connection
-from functools import reduce
 
 
 class StateMatchingError(Exception):
@@ -57,12 +57,12 @@ class SQL:
 
     @staticmethod
     def edited(table):
-        return """
-            SELECT 1 FROM {} t
+        return f"""
+            SELECT 1 FROM {table} t
             WHERE t.id = %s
             AND t.edition_time >=(%s::timestamptz - '1 ms'::interval)
             AND t.edition_time < (%s::timestamptz + '1 ms'::interval)
-        """.format(table)
+        """
 
 class StateCheck:
     """A simple wraper arround state check SQL and parameters for it"""
@@ -74,13 +74,13 @@ class StateCheck:
         self.params = params if type(params) in (list, tuple) else (params,)
 
     def __str__(self) -> str:
-        return "SQL: {} Parameters: {}".format(self.sql, self.params)
+        return f"SQL: {self.sql} Parameters: {self.params}"
 
 def make_all_children_query(child_ids, node_id) -> StateCheck:
     if child_ids:
         table_sql, table_args = list_to_table(child_ids, 1)
         args = table_args
-        child_query = " LEFT JOIN {} p(id) ON t.id = p.id ".format(table_sql)
+        child_query = f" LEFT JOIN {table_sql} p(id) ON t.id = p.id "
         constraints = "AND p.id IS NULL"
         args.append(node_id)
         return StateCheck(SQL.all_children % (child_query, "%s", constraints), args)
@@ -92,7 +92,7 @@ def make_all_links_query(link_ids, node_id, is_connector=False) -> StateCheck:
     if link_ids:
         table_sql, table_args = list_to_table(link_ids, 1)
         args = table_args
-        link_query = " LEFT JOIN {} p(id) ON l.id = p.id ".format(table_sql)
+        link_query = f" LEFT JOIN {table_sql} p(id) ON l.id = p.id "
         constraints = "AND p.id IS NULL"
         args.append(node_id)
         return StateCheck(template % (link_query, "%s", constraints), args)
@@ -110,7 +110,7 @@ def list_to_table(l, n=1) -> Tuple[str, Any]:
         raise ValueError("Could't parse list argument in state check")
 
     records_list_template = ','.join(['%s'] * len(args))
-    return ("(VALUES {0})".format(records_list_template), args)
+    return (f"(VALUES {records_list_template})", args)
 
 def has_only_truthy_values(element, n=2) -> bool:
     return n == len(element) and all(element)
@@ -125,13 +125,13 @@ def parse_state(state):
 
     def check_ref(name, ref):
         if type(ref) not in (list, tuple) or len(ref) != 2:
-            raise ValueError("Invalid state provided, {} is no list of two elements".format(name))
+            raise ValueError(f"Invalid state provided, {name} is not a list of two elements")
 
     def parse_id(name, id):
         try:
             return int(id)
         except (ValueError, TypeError):
-            raise ValueError("Invalid state provided, couldn't parse {} id: {}".format(name, id))
+            raise ValueError(f"Invalid state provided, couldn't parse {name} id: {id}")
 
     # Make sure child, parent and link ids are integers
     parsed_state_type = type(state)
@@ -200,7 +200,7 @@ def collect_state_checks(node_id, state, cursor, node=False,
         if parent_id and -1 != parent_id:
             if is_parent:
                 if parent_id == node_id:
-                    raise ValueError("No valid state provided, parent is same as node ({})".format(parent_id))
+                    raise ValueError(f"No valid state provided, parent is same as node ({parent_id})")
                 state_checks.append(StateCheck(SQL.is_parent, (parent_id, node_id)))
             state_checks.append(StateCheck(SQL.was_edited,
                 (parent_id, parent[1], parent[1])))
@@ -289,7 +289,7 @@ def validate_state(node_ids, state, node=False, is_parent=False,
             for node_state in state:
                 node_id = node_state[0]
                 if node_id not in node_id_set:
-                    raise ValueError("Couldn't find node in state: {}".format(node_id))
+                    raise ValueError(f"Couldn't find node in state: {node_id}")
                 unseen.remove(node_id)
             if len(unseen) > 0:
                 raise ValueError("Couldn't find state info on node(s) {}".format(
@@ -322,9 +322,9 @@ def lock_node(node_id, cursor) -> None:
 def lock_nodes(node_ids, cursor) -> None:
     if node_ids:
         node_template = ",".join(("%s",) * len(node_ids))
-        cursor.execute("""
-            SELECT id FROM treenode WHERE id IN ({}) FOR UPDATE
-        """.format(node_template), node_ids)
+        cursor.execute(f"""
+            SELECT id FROM treenode WHERE id IN ({node_template}) FOR UPDATE
+        """, node_ids)
     else:
         raise ValueError("No nodes to lock")
 

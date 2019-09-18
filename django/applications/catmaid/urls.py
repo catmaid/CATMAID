@@ -19,9 +19,9 @@ from catmaid.control import (authentication, user, group, log, message, client,
         graph2, circles, analytics, review, wiringdiagram, object, sampler,
         similarity, nat, point, landmarks, pointcloud, pointset)
 
+from catmaid.history import record_request_action as record_view
 from catmaid.views import CatmaidView
 from catmaid.views.admin import ProjectDeletion
-from catmaid.history import record_request_action as record_view
 
 
 # A regular expression matching floating point and integer numbers
@@ -426,35 +426,35 @@ urlpatterns += [
 
 # Classification
 urlpatterns += [
-    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/roots/$'.format(integer),
+    url(rf'^(?P<project_id>{integer})/classification/(?P<workspace_pid>{integer})/roots/$',
         classification.get_classification_roots),
-    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/setup/test$'.format(integer),
+    url(rf'^(?P<project_id>{integer})/classification/(?P<workspace_pid>{integer})/setup/test$',
         classification.check_classification_setup_view, name='test_classification_setup'),
-    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/setup/rebuild$'.format(integer),
+    url(rf'^(?P<project_id>{integer})/classification/(?P<workspace_pid>{integer})/setup/rebuild$',
         record_view("classifications.rebuild_env")(classification.rebuild_classification_setup_view), name='rebuild_classification_setup'),
-    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/new$'.format(integer),
+    url(rf'^(?P<project_id>{integer})/classification/(?P<workspace_pid>{integer})/new$',
         record_view("classifications.add_graph")(classification.add_classification_graph), name='add_classification_graph'),
-    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/list$'.format(integer),
+    url(rf'^(?P<project_id>{integer})/classification/(?P<workspace_pid>{integer})/list$',
         classification.list_classification_graph, name='list_classification_graph'),
-    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/list/(?P<link_id>\d+)$'.format(integer),
+    url(rf'^(?P<project_id>{integer})/classification/(?P<workspace_pid>{integer})/list/(?P<link_id>\d+)$',
         classification.list_classification_graph, name='list_classification_graph'),
-    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/(?P<link_id>\d+)/remove$'.format(integer),
+    url(rf'^(?P<project_id>{integer})/classification/(?P<workspace_pid>{integer})/(?P<link_id>\d+)/remove$',
         record_view("classifications.remove_graph")(classification.remove_classification_graph), name='remove_classification_graph'),
-    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/instance-operation$'.format(integer),
+    url(rf'^(?P<project_id>{integer})/classification/(?P<workspace_pid>{integer})/instance-operation$',
         record_view("classifications.update_graph")(classification.classification_instance_operation), name='classification_instance_operation'),
-    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/(?P<link_id>\d+)/autofill$'.format(integer),
+    url(rf'^(?P<project_id>{integer})/classification/(?P<workspace_pid>{integer})/(?P<link_id>\d+)/autofill$',
         record_view("classifications.autofill_graph")(classification.autofill_classification_graph), name='autofill_classification_graph'),
-    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/link$'.format(integer),
+    url(rf'^(?P<project_id>{integer})/classification/(?P<workspace_pid>{integer})/link$',
         record_view("classifications.link_graph")(classification.link_classification_graph), name='link_classification_graph'),
-    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/stack/(?P<stack_id>{0})/linkroi/(?P<ci_id>{0})/$'.format(integer),
+    url(rf'^(?P<project_id>{integer})/classification/(?P<workspace_pid>{integer})/stack/(?P<stack_id>{integer})/linkroi/(?P<ci_id>{integer})/$',
         record_view("classifications.link_roi")(classification.link_roi_to_classification), name='link_roi_to_classification'),
-    url(r'^classification/(?P<workspace_pid>{0})/export$'.format(integer),
+    url(rf'^classification/(?P<workspace_pid>{integer})/export$',
         classification.export, name='export_classification'),
-    url(r'^classification/(?P<workspace_pid>{0})/export/excludetags/(?P<exclusion_tags>{1})/$'.format(integer, wordlist),
+    url(rf'^classification/(?P<workspace_pid>{integer})/export/excludetags/(?P<exclusion_tags>{wordlist})/$',
         classification.export, name='export_classification'),
-    url(r'^classification/(?P<workspace_pid>{0})/search$'.format(integer),
+    url(rf'^classification/(?P<workspace_pid>{integer})/search$',
         classification.search, name='search_classifications'),
-    url(r'^classification/(?P<workspace_pid>{0})/export_ontology$'.format(integer),
+    url(rf'^classification/(?P<workspace_pid>{integer})/export_ontology$',
         classification.export_ontology, name='export_ontology'),
 ]
 
@@ -467,40 +467,40 @@ urlpatterns += [
 
 # Regions of interest
 urlpatterns += [
-    url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/info$'.format(integer), roi.get_roi_info, name='get_roi_info'),
-    url(r'^(?P<project_id>{0})/roi/link/(?P<relation_id>{0})/stack/(?P<stack_id>{0})/ci/(?P<ci_id>{0})/$'.format(integer),
+    url(rf'^(?P<project_id>{integer})/roi/(?P<roi_id>{integer})/info$', roi.get_roi_info, name='get_roi_info'),
+    url(rf'^(?P<project_id>{integer})/roi/link/(?P<relation_id>{integer})/stack/(?P<stack_id>{integer})/ci/(?P<ci_id>{integer})/$',
         record_view("rois.create_link")(roi.link_roi_to_class_instance), name='link_roi_to_class_instance'),
-    url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/remove$'.format(integer), record_view("rois.remove_link")(roi.remove_roi_link), name='remove_roi_link'),
-    url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/image$'.format(integer), roi.get_roi_image, name='get_roi_image'),
-    url(r'^(?P<project_id>{0})/roi/add$'.format(integer), record_view("rois.create")(roi.add_roi), name='add_roi'),
+    url(rf'^(?P<project_id>{integer})/roi/(?P<roi_id>{integer})/remove$', record_view("rois.remove_link")(roi.remove_roi_link), name='remove_roi_link'),
+    url(rf'^(?P<project_id>{integer})/roi/(?P<roi_id>{integer})/image$', roi.get_roi_image, name='get_roi_image'),
+    url(rf'^(?P<project_id>{integer})/roi/add$', record_view("rois.create")(roi.add_roi), name='add_roi'),
 ]
 
 # General points
 urlpatterns += [
-    url(r'^(?P<project_id>{0})/points/$'.format(integer), point.PointList.as_view()),
-    url(r'^(?P<project_id>{0})/points/(?P<point_id>[0-9]+)/$'.format(integer), point.PointDetail.as_view()),
+    url(rf'^(?P<project_id>{integer})/points/$', point.PointList.as_view()),
+    url(rf'^(?P<project_id>{integer})/points/(?P<point_id>[0-9]+)/$', point.PointDetail.as_view()),
 ]
 
 # Landmarks
 urlpatterns += [
-    url(r'^(?P<project_id>{0})/landmarks/$'.format(integer), landmarks.LandmarkList.as_view()),
-    url(r'^(?P<project_id>{0})/landmarks/(?P<landmark_id>[0-9]+)/$'.format(integer), landmarks.LandmarkDetail.as_view()),
-    url(r'^(?P<project_id>{0})/landmarks/(?P<landmark_id>[0-9]+)/locations/$'.format(integer),
+    url(rf'^(?P<project_id>{integer})/landmarks/$', landmarks.LandmarkList.as_view()),
+    url(rf'^(?P<project_id>{integer})/landmarks/(?P<landmark_id>[0-9]+)/$', landmarks.LandmarkDetail.as_view()),
+    url(rf'^(?P<project_id>{integer})/landmarks/(?P<landmark_id>[0-9]+)/locations/$',
             landmarks.LandmarkLocationList.as_view()),
-    url(r'^(?P<project_id>{0})/landmarks/(?P<landmark_id>[0-9]+)/locations/(?P<location_id>[0-9]+)/$'.format(integer),
+    url(rf'^(?P<project_id>{integer})/landmarks/(?P<landmark_id>[0-9]+)/locations/(?P<location_id>[0-9]+)/$',
             landmarks.LandmarkLocationDetail.as_view()),
-    url(r'^(?P<project_id>{0})/landmarks/(?P<landmark_id>[0-9]+)/groups/(?P<group_id>[0-9]+)/$'.format(integer),
+    url(rf'^(?P<project_id>{integer})/landmarks/(?P<landmark_id>[0-9]+)/groups/(?P<group_id>[0-9]+)/$',
             landmarks.LandmarkAndGroupkLocationDetail.as_view()),
-    url(r'^(?P<project_id>{0})/landmarks/groups/$'.format(integer), landmarks.LandmarkGroupList.as_view()),
-    url(r'^(?P<project_id>{0})/landmarks/groups/import$'.format(integer), landmarks.LandmarkGroupImport.as_view()),
-    url(r'^(?P<project_id>{0})/landmarks/groups/materialize$'.format(integer), landmarks.LandmarkGroupMaterializer.as_view()),
-    url(r'^(?P<project_id>{0})/landmarks/groups/links/$'.format(integer), landmarks.LandmarkGroupLinks.as_view()),
-    url(r'^(?P<project_id>{0})/landmarks/groups/links/(?P<link_id>[0-9]+)/$'.format(integer),
+    url(rf'^(?P<project_id>{integer})/landmarks/groups/$', landmarks.LandmarkGroupList.as_view()),
+    url(rf'^(?P<project_id>{integer})/landmarks/groups/import$', landmarks.LandmarkGroupImport.as_view()),
+    url(rf'^(?P<project_id>{integer})/landmarks/groups/materialize$', landmarks.LandmarkGroupMaterializer.as_view()),
+    url(rf'^(?P<project_id>{integer})/landmarks/groups/links/$', landmarks.LandmarkGroupLinks.as_view()),
+    url(rf'^(?P<project_id>{integer})/landmarks/groups/links/(?P<link_id>[0-9]+)/$',
             landmarks.LandmarkGroupLinkDetail.as_view()),
-    url(r'^(?P<project_id>{0})/landmarks/groups/(?P<landmarkgroup_id>[0-9]+)/$'.format(integer), landmarks.LandmarkGroupDetail.as_view()),
-    url(r'^(?P<project_id>{0})/landmarks/groups/(?P<landmarkgroup_id>[0-9]+)/transitively-linked$'.format(integer),
+    url(rf'^(?P<project_id>{integer})/landmarks/groups/(?P<landmarkgroup_id>[0-9]+)/$', landmarks.LandmarkGroupDetail.as_view()),
+    url(rf'^(?P<project_id>{integer})/landmarks/groups/(?P<landmarkgroup_id>[0-9]+)/transitively-linked$',
         landmarks.LandmarkGroupLinkage.as_view()),
-    url(r'^(?P<project_id>{0})/landmarks/groups/(?P<landmarkgroup_id>[0-9]+)/locations/(?P<location_id>[0-9]+)/$'.format(integer),
+    url(rf'^(?P<project_id>{integer})/landmarks/groups/(?P<landmarkgroup_id>[0-9]+)/locations/(?P<location_id>[0-9]+)/$',
             landmarks.LandmarkGroupLocationList.as_view()),
 ]
 

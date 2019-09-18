@@ -42,7 +42,7 @@ def get_remote_users(url, api_key, auth=None, with_passwords=False):
 
     # Prepare headers
     headers = {
-        'X-Authorization': 'Token {}'.format(api_key)
+        'X-Authorization': f'Token {api_key}'
     }
 
     user_list_url = "{}/user-list".format(url[:-1] if url.endswith('/') else url)
@@ -51,12 +51,10 @@ def get_remote_users(url, api_key, auth=None, with_passwords=False):
     r = requests.get(user_list_url, headers=headers, auth=auth, params=({
         'with_passwords': 'true' if with_passwords else 'false'}))
     if r.status_code != 200:
-        raise ValueError("Unexpected status code ({}) for {}".format(
-                r.status_code, user_list_url))
+        raise ValueError(f"Unexpected status code ({r.status_code}) for {user_list_url}")
 
     if 'json' not in r.headers['content-type']:
-        raise ValueError("Unexpected content type ({}) for {}".format(
-                r.content_type, user_list_url))
+        raise ValueError(f"Unexpected content type ({r.status_code}) for {user_list_url}")
 
     return r.json()
 
@@ -97,7 +95,7 @@ class ServerForm(forms.Form):
         try:
             form_data['users'] = get_remote_users(host, api_key, auth, with_passwords=False)
         except Exception as e:
-            raise ValidationError('Could not retrieve user information: {}'.format(e))
+            raise ValidationError(f'Could not retrieve user information: {e}')
 
         return form_data
 
@@ -168,7 +166,7 @@ class UserImportWizard(SessionWizardView):
         try:
             users = get_remote_users(host, api_key, auth, with_passwords=True)
         except Exception as e:
-            raise ValidationError('Could not retrieve user information: {}'.format(e))
+            raise ValidationError(f'Could not retrieve user information: {e}')
 
         for u in users:
             if not 'password' in u:
@@ -187,5 +185,5 @@ class UserImportWizard(SessionWizardView):
             new_user.userprofile.save()
 
         messages.add_message(self.request, messages.SUCCESS,
-                "{} new user(s) have been imported".format(len(users_to_import)))
+                f"{len(users_to_import)} new user(s) have been imported")
         return redirect('admin:index')

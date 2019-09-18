@@ -47,7 +47,7 @@ def connector_types(request:HttpRequest, project_id) -> JsonResponse:
         # If the relation doesn't exist in the database, don't return it. Add it
         # to the log though:
         if relation_id is None:
-            logger.info("Tracing relation {} not found in database".format(t['relation']))
+            logger.info(f"Tracing relation {t['relation']} not found in database")
             return False
         else:
             t['relation_id'] = relation_id
@@ -280,12 +280,12 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
 
     if skeleton_ids:
         sk_template = ",".join("(%s)" for _ in skeleton_ids)
-        constraints.append('''
+        constraints.append(f'''
             JOIN treenode_connector tc
                 ON tc.connector_id = c.id
-            JOIN (VALUES {}) q_skeleton(id)
+            JOIN (VALUES {sk_template}) q_skeleton(id)
                 ON tc.skeleton_id = q_skeleton.id
-        '''.format(sk_template))
+        ''')
         params.extend(skeleton_ids)
         if relation_type:
             constraints.append('''
@@ -302,7 +302,7 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
 
     if tags:
         tag_template = ",".join("%s" for _ in tags)
-        constraints.append('''
+        constraints.append(f'''
             JOIN connector_class_instance cci
                 ON cci.connector_id = c.id
             JOIN class_instance label
@@ -311,25 +311,26 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
             JOIN (
                 SELECT id
                 FROM class_instance
-                WHERE name IN ({})
+                WHERE name IN ({tag_template})
                     AND project_id = %s
                     AND class_id = %s
             ) q_label(id) ON label.id = q_label.id
-        '''.format(tag_template))
+        ''')
         params.append(relation_map['labeled_as'])
         params.extend(tags)
         params.append(project_id)
         params.append(class_map['label'])
 
-    query = '''
+    constlines = "\n".join(constraints)
+    query = f'''
         SELECT DISTINCT c.id, c.location_x, c.location_y, c.location_z, c.confidence,
             c.user_id, c.editor_id, EXTRACT(EPOCH FROM c.creation_time),
             EXTRACT(EPOCH FROM c.edition_time)
         FROM connector c
-        {}
+        {constlines}
         WHERE c.project_id = %s
         ORDER BY c.id
-    '''.format('\n'.join(constraints))
+    '''
     params.append(project_id)
 
     cursor.execute(query, params)
@@ -340,16 +341,16 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
     tags = defaultdict(list)
     if connector_ids and with_tags:
         c_template = ",".join("(%s)" for _ in connector_ids)
-        cursor.execute('''
+        cursor.execute(f'''
             SELECT cci.connector_id, ci.name
             FROM connector_class_instance cci
-            JOIN (VALUES {}) q_connector(id)
+            JOIN (VALUES {c_template}) q_connector(id)
                 ON cci.connector_id = q_connector.id
             JOIN (VALUES (%s)) q_relation(id)
                 ON cci.relation_id = q_relation.id
             JOIN class_instance ci
                 ON cci.class_instance_id = ci.id
-        '''.format(c_template), connector_ids + [relation_map['labeled_as']])
+        ''', connector_ids + [relation_map['labeled_as']])
 
         for row in cursor.fetchall():
             tags[row[0]].append(row[1])
@@ -361,15 +362,15 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
     partners:DefaultDict[Any, List] = defaultdict(list)
     if connector_ids and with_partners:
         c_template = ",".join("(%s)" for _ in connector_ids)
-        cursor.execute('''
+        cursor.execute(f'''
             SELECT tc.connector_id, tc.id, tc.treenode_id, tc.skeleton_id,
                 tc.relation_id, tc.confidence, tc.user_id,
                 EXTRACT(EPOCH FROM tc.creation_time),
                 EXTRACT(EPOCH FROM tc.edition_time)
             FROM treenode_connector tc
-            JOIN (VALUES {}) c(id)
+            JOIN (VALUES {c_template}) c(id)
                 ON tc.connector_id = c.id
-        '''.format(c_template), connector_ids)
+        ''', connector_ids)
 
         for row in cursor.fetchall():
             partners[row[0]].append(row[1:])
@@ -446,18 +447,18 @@ def list_connector_links(request:HttpRequest, project_id=None) -> JsonResponse:
         raise ValueError("Unknown relation: " + relation_type)
     sk_template = ",".join(("(%s)",) * len(skeleton_ids))
 
-    cursor.execute('''
+    cursor.execute(f'''
         SELECT tc.skeleton_id, c.id, c.location_x, c.location_y, c.location_z,
               tc.confidence, tc.user_id, tc.treenode_id, tc.creation_time,
               tc.edition_time
         FROM treenode_connector tc
-        JOIN (VALUES {}) q_skeleton(id)
+        JOIN (VALUES {sk_template}) q_skeleton(id)
             ON tc.skeleton_id = q_skeleton.id
         JOIN (VALUES (%s)) q_relation(id)
             ON tc.relation_id = q_relation.id
         JOIN connector c
             ON tc.connector_id = c.id
-    '''.format(sk_template), skeleton_ids + [relation_id])
+    ''', skeleton_ids + [relation_id])
 
     links = []
     for row in cursor.fetchall():
@@ -470,16 +471,16 @@ def list_connector_links(request:HttpRequest, project_id=None) -> JsonResponse:
     tags:DefaultDict[Any, List] = defaultdict(list)
     if connector_ids and with_tags:
         c_template = ",".join(("(%s)",) * len(connector_ids))
-        cursor.execute('''
+        cursor.execute(f'''
             SELECT cci.connector_id, ci.name
             FROM connector_class_instance cci
-            JOIN (VALUES {}) q_connector(id)
+            JOIN (VALUES {c_template}) q_connector(id)
                 ON cci.connector_id = q_connector.id
             JOIN (VALUES (%s)) q_relation(id)
                 ON cci.relation_id = q_relation.id
             JOIN class_instance ci
                 ON cci.class_instance_id = ci.id
-        '''.format(c_template), connector_ids + [relation_map['labeled_as']])
+        ''', connector_ids + [relation_map['labeled_as']])
 
         for row in cursor.fetchall():
             tags[row[0]].append(row[1])
@@ -784,9 +785,9 @@ def connectors_info(request:HttpRequest, project_id) -> JsonResponse:
     # Add connector filter, if requested
     if cids:
         cid_template = ",".join(("(%s)",) * len(cids))
-        query_parts.append('''
-            JOIN (VALUES {}) rc(id) ON c.id = rc.id
-        '''.format(cid_template))
+        query_parts.append(f'''
+            JOIN (VALUES {cid_template}) rc(id) ON c.id = rc.id
+        ''')
         query_params.extend(cids)
 
     # Get first partner of connection
@@ -798,9 +799,9 @@ def connectors_info(request:HttpRequest, project_id) -> JsonResponse:
     # Add pre-synaptic skeleton filter, if requested
     if skids_pre:
         pre_skid_template = ",".join(("(%s)",) * len(skids_pre))
-        query_parts.append('''
-            JOIN (VALUES {}) sk_pre(id) ON tc1.skeleton_id = sk_pre.id
-        '''.format(pre_skid_template))
+        query_parts.append(f'''
+            JOIN (VALUES {pre_skid_template}) sk_pre(id) ON tc1.skeleton_id = sk_pre.id
+        ''')
         query_params.extend(skids_pre)
 
     # Get second partner of connection
@@ -812,17 +813,17 @@ def connectors_info(request:HttpRequest, project_id) -> JsonResponse:
     # Add post-synaptic skeleton filter, if requested
     if skids_post:
         post_skid_template = ",".join(("(%s)",) * len(skids_post))
-        query_parts.append('''
-            JOIN (VALUES {}) sk_post(id) ON tc2.skeleton_id = sk_post.id
-        '''.format(post_skid_template))
+        query_parts.append(f'''
+            JOIN (VALUES {post_skid_template}) sk_post(id) ON tc2.skeleton_id = sk_post.id
+        ''')
         query_params.extend(skids_post)
 
     # Add generic skeleton filters
     if skids:
         skid_template = ",".join(("(%s)",) * len(skids))
-        query_parts.append('''
-            JOIN (VALUES {}) sk(id) ON tc1.skeleton_id = sk.id OR tc2.skeleton_id = sk.id
-        '''.format(skid_template))
+        query_parts.append(f'''
+            JOIN (VALUES {skid_template}) sk(id) ON tc1.skeleton_id = sk.id OR tc2.skeleton_id = sk.id
+        ''')
         query_params.extend(skids)
 
     # Prevent self-joins of connector partners
@@ -1069,7 +1070,7 @@ def get_connectors_in_bb_postgis3d(params) -> List:
         {limit_clause}
     """.format(**{
         'distinct': 'DISTINCT' if not with_links else '',
-        'limit_clause': 'LIMIT {}'.format(limit) \
+        'limit_clause': f'LIMIT {limit}' \
                 if limit > 0 else '',
         'location_select': ', c.location_x, c.location_y, c.location_z' \
                 if with_locations else '',

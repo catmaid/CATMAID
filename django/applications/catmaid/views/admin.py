@@ -30,5 +30,5 @@ class ProjectDeletion(ListView):
             raise ValueError("No project IDs specified")
         delete_projects(project_ids)
         messages.add_message(self.request, messages.INFO,
-                "{} project(s) plus all their linked data have been deleted".format(len(project_ids)))
+                f"{len(project_ids)} project(s) plus all their linked data have been deleted")
         return HttpResponseRedirect(reverse('admin:index') + 'catmaid/project')

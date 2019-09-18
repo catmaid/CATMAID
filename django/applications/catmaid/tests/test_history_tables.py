@@ -318,14 +318,14 @@ class HistoryTableTests(TransactionTestCase):
         # Check if tables show up in own catmaid_history_table tracking table.
         # First, get all expected tables that are defined in the list above.
         cmt_template = ",".join(('(%s)',) * len(HistoryTableTests.tables_with_history))
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT cmt.table_name, cht.history_table,
                 COUNT(cmt.table_name), COUNT(cht.history_table)
             FROM catmaid_history_table cht
-            JOIN (VALUES {}) cmt(table_name)
+            JOIN (VALUES {cmt_template}) cmt(table_name)
                 ON cmt.table_name::regclass = cht.live_table
             GROUP BY cmt.table_name, cht.history_table
-        """.format(cmt_template), HistoryTableTests.tables_with_history)
+        """, HistoryTableTests.tables_with_history)
 
         # Expect exactly one history table for all the specified CATMAID tables
         table_info = cursor.fetchall()
@@ -359,42 +359,39 @@ class HistoryTableTests(TransactionTestCase):
 
         if unknown_tables:
             if 1 == len(unknown_tables):
-                raise ValueError("The tables {} wasn't declared as table with or "
+                raise ValueError(f"The table {unknown_tables[0]} was not declared as table with or "
                         "without history. Please add it to the list so that "
-                        "checks can be performed properly.".format(
-                            unknown_tables[0]))
+                        "checks can be performed properly.")
             else:
-                raise ValueError("The tables {} weren't declared as table with or "
+                raise ValueError(f"The tables {', '.join(unknown_tables)} were not declared as table with or "
                         "without history. Please add them to the list so that "
-                        "checks can be performed properly.".format(
-                            ", ".join(unknown_tables)))
-
+                        "checks can be performed properly.")
 
     @staticmethod
     def get_history_entries(cursor, live_table):
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT row_to_json(t)
-            FROM (SELECT * FROM {}__history) t
+            FROM (SELECT * FROM {live_table}__history) t
                   ORDER BY lower(sys_period)
-        """.format(live_table))
+        """)
         return cursor.fetchall()
 
     @staticmethod
     def get_history_view_entries(cursor, live_table, time_column='edition_time'):
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT row_to_json(t)
-            FROM (SELECT * FROM {}__with_history) t
-                  ORDER BY ({})
-        """.format(live_table, time_column))
+            FROM (SELECT * FROM {live_table}__with_history) t
+                  ORDER BY ({time_column})
+        """)
         return cursor.fetchall()
 
     @staticmethod
     def get_time_entries(cursor, live_table):
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT row_to_json(t)
-            FROM (SELECT * FROM {}__tracking) t
+            FROM (SELECT * FROM {live_table}__tracking) t
                   ORDER BY edition_time
-        """.format(live_table))
+        """)
         return cursor.fetchall()
 
     @staticmethod
@@ -411,9 +408,9 @@ class HistoryTableTests(TransactionTestCase):
         """Format one or two timestamps to represent a half-open Postgres range
         """
         if timestamp2:
-            return "[\"{}\",\"{}\")".format(timestamp1, timestamp2)
+            return f"[\"{timestamp1}\",\"{timestamp2}\")"
         else:
-            return "[\"{}\",)".format(timestamp1)
+            return f"[\"{timestamp1}\",)"
 
     def test_insert_with_time_column(self):
         """Test if inserting new data in a live table, leads to the expected

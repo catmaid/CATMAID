@@ -37,7 +37,7 @@ class GridWorker():
         self.cellsMarkedDirty = 0
 
         if enabled_grid_cache_providers:
-            logger.info("Found {} enabled grid cache provider(s)".format(len(enabled_grid_cache_providers)))
+            logger.info(f"Found {len(enabled_grid_cache_providers)} enabled grid cache provider(s)")
         else:
             logger.info("Could not find any enabled grid cache provider")
 
@@ -77,21 +77,20 @@ class GridWorker():
         for grid_id, coords in grid_coords_to_update.items():
             for c in coords:
                 self.cellsMarkedDirty += 1
-                key = "({},{},{},{})".format(grid_id, c[0], c[1], c[2])
+                key = f"({grid_id},{c[0]},{c[1]},{c[2]})"
                 if key not in dirty_rows:
                     dirty_rows.add(key)
 
         if dirty_rows:
             # Mark cells as dirty
-            cursor.execute("""
+            cursor.execute(f"""
                 INSERT INTO dirty_node_grid_cache_cell (grid_id, x_index, y_index, z_index)
-                VALUES {data}
+                VALUES {','.join(dirty_rows)}
                 ON CONFLICT (grid_id, x_index, y_index, z_index)
                 DO UPDATE SET invalidation_time = EXCLUDED.invalidation_time
-            """.format(data=','.join(dirty_rows)))
+            """)
 
-            logger.debug('Marked {} grid cells as dirty and queued update'.format(
-                len(dirty_rows)))
+            logger.debug(f'Marked {len(dirty_rows)} grid cells as dirty and queued update'
 
     def append_cells_to_update(self, coords_to_update, p1, p2, cell_width,
             cell_height, cell_depth):
@@ -173,7 +172,7 @@ class GridWorker():
                     int(p[2] // cell_depth),
                 ])
             else:
-                logger.error("Unknown data type: {}".format(data_type))
+                logger.error(f"Unknown data type: {data_type}")
 
         return grid_coords_to_update
 
@@ -234,7 +233,7 @@ class Command(BaseCommand):
 
     def listen(self):
         with connection.cursor() as cur:
-            cur.execute('LISTEN "{}"'.format(self.notify_channel))
+            cur.execute(f'LISTEN "{self.notify_channel}"')
 
 
     def filter_notifies(self):
@@ -273,7 +272,7 @@ class Command(BaseCommand):
                     data = json.loads(n.payload)
                     updates.append(data)
                 except json.decoder.JSONDecodeError:
-                    logger.warn('Could not parse Postgres NOTIFY message: {}'.format(n.payload))
+                    logger.warn(f'Could not parse Postgres NOTIFY message: {n.payload}')
                     continue
 
             for worker in self.workers:

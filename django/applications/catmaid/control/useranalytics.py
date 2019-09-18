@@ -157,14 +157,14 @@ def eventTimes(user_id, project_id, start_date, end_date, all_writes=True) -> Di
         # Query transaction log. This makes this feature only useful of history
         # tracking is available.
         cursor = connection.cursor()
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT execution_time
             FROM catmaid_transaction_info
             WHERE execution_time >= %s
             AND execution_time <= %s
             AND user_id = %s
-            {}
-        """.format(project_filter), params)
+            {project_filter}
+        """, params)
         events['write_events'] = [r[0] for r in cursor.fetchall()]
 
     return events

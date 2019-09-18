@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import os
+import glob
 import json
 import logging
-
+from math import cos, sin, radians
+import os
+import os.path
+from PIL import Image as PILImage, TiffImagePlugin
+import requests
+from time import time
 from typing import Dict, List, Tuple
 
 from django.conf import settings
@@ -17,14 +22,6 @@ from catmaid.control.common import (id_generator, json_error_response,
         get_request_bool, get_request_list)
 from catmaid.control.tile import get_tile_source
 from catmaid.control.message import notify_user
-
-from PIL import Image as PILImage, TiffImagePlugin
-
-import requests
-import os.path
-import glob
-from time import time
-from math import cos, sin, radians
 
 logger = logging.getLogger(__name__)
 
@@ -131,9 +128,9 @@ class ImagePart:
         try:
             r = requests.get(self.path, allow_redirects=True, verify=verify_ssl)
             if not r:
-                raise ValueError("Could not get " + self.path)
+                raise ValueError(f"Could not get {self.path}")
             if r.status_code != 200:
-                raise ValueError("Unexpected status code ({}) for {}".format(r.status_code, self.path))
+                raise ValueError(f"Unexpected status code ({r.status_code}) for {self.path}")
             img_data = r.content
             bytes_read = len(img_data)
         except requests.exceptions.RequestException as e:
@@ -215,15 +212,15 @@ def addMetaData(path:str, job, result) -> None:
     # sample with (the actual is a line break instead of a .):
     # ImageJ=1.45p.images={0}.channels=1.slices=2.hyperstack=true.mode=color.unit=micron.finterval=1.spacing=1.5.loop=false.min=0.0.max=4095.0.
     ij_data = [
-        "ImageJ={}".format(ij_version),
-        "unit={}".format(unit),
-        "spacing={}".format(str(res_z_nm_px)),
+        f"ImageJ={ij_version}",
+        f"unit={unit}",
+        f"spacing={str(res_z_nm_px)}",
     ]
 
     if n_channels > 1:
-        ij_data.append("images={}".format(str(n_images)))
-        ij_data.append("slices={}".format(str(n_slices)))
-        ij_data.append("channels={}".format(str(n_channels)))
+        ij_data.append(f"images={n_images}")
+        ij_data.append(f"slices={n_slices}")
+        ij_data.append(f"channels={n_channels}")
         ij_data.append("hyperstack=true")
         ij_data.append("mode=composite")
 
@@ -233,7 +230,7 @@ def addMetaData(path:str, job, result) -> None:
     ifd[TiffImagePlugin.IMAGEDESCRIPTION] = "\n".join(ij_data)
 
     # Information about the software used
-    ifd[TiffImagePlugin.SOFTWARE] = "CATMAID {}".format(settings.VERSION)
+    ifd[TiffImagePlugin.SOFTWARE] = f"CATMAID {settings.VERSION}"
 
     image = PILImage.open(path)
     # Can't use libtiff for saving non core libtiff exif tags, therefore
@@ -648,7 +645,7 @@ def crop(request:HttpRequest, project_id=None) -> JsonResponse:
                     "is writable." % crop_output_path
         else:
             err_message = "Sorry, the output path for the cropping tool " \
-                    "isn't set up correctly. Please contact an administrator."
+                    "is not set up correctly. Please contact an administrator."
         return json_error_response(err_message)
 
     # Use first reachable stack mirrors
@@ -669,7 +666,7 @@ def crop(request:HttpRequest, project_id=None) -> JsonResponse:
                 stack_mirror_ids.append(sm.id)
                 break
         if not reachable:
-            raise ValueError("Can't find reachable stack mirror for stack {}".format(sid))
+            raise ValueError(f"Can't find reachable stack mirror for stack {sid}")
 
     # Crate a new cropping job
     job = CropJob(request.user, project_id, stack_mirror_ids, x_min, x_max,

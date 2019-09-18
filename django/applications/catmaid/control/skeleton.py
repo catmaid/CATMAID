@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 
+from collections import defaultdict
 import csv
+from datetime import datetime, timedelta
+from itertools import chain
 import json
 import networkx as nx
 import pytz
 import re
-
-from datetime import datetime, timedelta
-from collections import defaultdict
-from itertools import chain
-
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
 from django.conf import settings
@@ -426,7 +424,7 @@ def skeleton_statistics(request:HttpRequest, project_id=None, skeleton_id=None) 
     p = get_object_or_404(Project, pk=project_id)
     skel = Skeleton( skeleton_id = skeleton_id, project_id = project_id )
     const_time = skel.measure_construction_time()
-    construction_time = '{0} minutes {1} seconds'.format( int(const_time / 60), const_time % 60)
+    construction_time = f'{int(const_time / 60)} minutes {const_time % 60} seconds'
     return JsonResponse({
         'node_count': skel.node_count(),
         'input_count': skel.input_count(),
@@ -1022,12 +1020,12 @@ def connectivity_counts(request:HttpRequest, project_id=None) -> JsonResponse:
         else:
             extra_target_check = ""
 
-        extra_select.append("""
+        extra_select.append(f"""
             JOIN treenode_connector tc2
                 ON tc.connector_id = tc2.connector_id
                 AND tc.id <> tc2.id
                 {extra_target_check}
-        """.format(extra_target_check=extra_target_check))
+        """)
 
     if source_relation_ids:
         extra_source_check = """
@@ -1227,7 +1225,7 @@ def split_skeleton(request:HttpRequest, project_id=None) -> JsonResponse:
     new_skeleton.user = skeleton.user # The same user that owned the skeleton to split
     new_skeleton.class_column = Class.objects.get(class_name='skeleton', project_id=project_id)
     new_skeleton.save()
-    new_skeleton.name = 'Skeleton {0}'.format( new_skeleton.id ) # This could be done with a trigger in the database
+    new_skeleton.name = f'Skeleton {new_skeleton.id}' # This could be done with a trigger in the database
     new_skeleton.save()
     # Create new neuron
     new_neuron = ClassInstance()
@@ -1278,7 +1276,7 @@ def split_skeleton(request:HttpRequest, project_id=None) -> JsonResponse:
     # Log the location of the node at which the split was done
     location = (treenode.location_x, treenode.location_y, treenode.location_z)
     insert_into_log(project_id, request.user.id, "split_skeleton", location,
-                    "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron.name ) )
+                    f"Split skeleton with ID {skeleton_id} (neuron: {neuron.name})")
 
     response = {
         'new_skeleton_id': new_skeleton.id,
@@ -1376,6 +1374,7 @@ def prune_samplers(skeleton_id, graph, treenode_parent, treenode):
                     # Case 1, the split is downstream of the domain or on
                     # another branch. We can ignore this domain.
                     continue
+
             else:
                 new_sk_domain_nodes = set(nx.bfs_tree(domain_graph, treenode.id).nodes())
 
@@ -1908,7 +1907,7 @@ def connectivity_matrix_csv(request:HttpRequest, project_id) -> StreamingHttpRes
             content_type='text/csv')
 
     filename = 'catmaid-connectivity-matrix.csv'
-    response['Content-Disposition'] = 'attachment; filename={}'.format(filename)
+    response['Content-Disposition'] = f'attachment; filename={filename}'
 
     return response
 
@@ -2093,8 +2092,7 @@ def _reroot_skeleton(treenode_id, project_id):
         n_samplers = Sampler.objects.filter(skeleton=rootnode.skeleton).count()
         response_on_error = 'Neuron is used in a sampler, can\'t reroot'
         if n_samplers > 0:
-            raise Exception('Skeleton {} is used in {} sampler(s)'.format(
-                    rootnode.skeleton_id, n_samplers))
+            raise Exception(f'Skeleton {rootnode.skeleton_id} is used in {n_samplers} sampler(s)')
 
         # Obtain the treenode from the response
         first_parent = rootnode.parent_id
@@ -2147,7 +2145,7 @@ def _reroot_skeleton(treenode_id, project_id):
         return rootnode
 
     except Exception as e:
-        raise Exception('{}: {}'.format(response_on_error,  str(e)))
+        raise Exception(f'{response_on_error}: {e}')
 
 
 def _root_as_parent(oid):
@@ -2466,10 +2464,10 @@ def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleto
     known_lose_sampler_handling_modes = ("delete-samplers",)
     if win_sampler_handling not in known_win_sampler_handling_modes:
         raise ValueError("Samplers in use on skeletons. Unknown "
-                "(winning) sampler handling mode: {}".format(win_sampler_handling))
+                f"(winning) sampler handling mode: {win_sampler_handling}")
     if lose_sampler_handling not in known_lose_sampler_handling_modes:
         raise ValueError("Samplers in use on skeletons. Unknown "
-                "(losing) sampler handling mode: {}".format(lose_sampler_handling))
+                f"(losing) sampler handling mode: {lose_sampler_handling}")
 
     n_deleted_intervals = 0
     n_deleted_domains = 0
@@ -2487,8 +2485,8 @@ def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleto
                     skeleton_id=lose_skeleton_id).delete()
             # TODO Update n_deleted_*
         else:
-            raise ValueError("The losing merge skeleton is referenced "
-                    "by {} sampler(s), merge aborted.".format(n_samplers_lose))
+            raise ValueError("The losing merge skeleton is referenced " +
+                    f"by {n_samplers_lose} sampler(s), merge aborted.")
 
     # Construct a networkx graph for the winning skeleton
     cursor = connection.cursor()
@@ -2605,8 +2603,8 @@ def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleto
             # because we don't treat interval start/end branches as part of the
             # interval.
             if is_interval_start_or_end:
-                raise ValueError("Please merge into an adjacent node, because "
-                        "the current target ({}) is a start or end of an interval".format(win_treenode_id))
+                raise ValueError("Please merge into an adjacent node, because " + \
+                        f"the current target ({win_treenode_id}) is a start or end of an interval")
             else:
                 # It doesn't matter whether this fragment is merged into an
                 # interval or not.
@@ -2781,7 +2779,7 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
     if len(request.FILES) == 1:
         for uploadedfile in request.FILES.values():
             if uploadedfile.size > settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:
-                return HttpResponse('File too large. Maximum file size is {} bytes.'.format(settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE), status=413)
+                return HttpResponse(f'File too large. Maximum file size is {settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE} bytes.', status=413)
 
             filename = uploadedfile.name
             extension = filename.split('.')[-1].strip().lower()
@@ -2791,7 +2789,7 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
                         neuron_id, skeleton_id, name, force, auto_id, source_id,
                         source_url, source_project_id, source_type)
             else:
-                return HttpResponse('File type "{}" not understood. Known file types: swc'.format(extension), status=415)
+                return HttpResponse(f'File type "{extension}" not understood. Known file types: swc', status=415)
 
     return HttpResponseBadRequest('No file received.')
 
@@ -2808,7 +2806,7 @@ def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
             continue
         row = line.strip().split()
         if len(row) != 7:
-            raise ValueError('SWC has a malformed line: {}'.format(line))
+            raise ValueError(f'SWC has a malformed line: {line}')
 
         node_id = int(row[0])
         parent_id = int(row[6])
@@ -2859,8 +2857,8 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
                     raise ValueError("Target neuron exists, but is part of other project")
 
                 if existing_neuron.class_column.class_name != 'neuron':
-                    raise ValueError("Existing object with ID {} is not a neuron, but marked as {}".format(
-                            existing_neuron.id, existing_neuron.class_column.class_name))
+                    raise ValueError(f"Existing object with ID {existing_neuron.id} is not a neuron, " + \
+                                     f"but is marked as {existing_neuron.class_column.class_name}")
 
                 # Remove all data linked to this neuron, including skeletons
                 cici = ClassInstanceClassInstance.objects.filter(
@@ -2910,8 +2908,8 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
                     raise ValueError("Target skeleton exists, but is part of other project")
 
                 if existing_skeleton.class_column.class_name != 'skeleton':
-                    raise ValueError("Existing object with ID {} is not a skeleton, but marked as {}".format(
-                            existing_skeleton.id, existing_skeleton.class_column.class_name))
+                    raise ValueError(f"Existing object with ID {existing_skeleton.id} is not a skeleton, " + \
+                                     f"but marked as {existing_skeleton.class_column.class_name}")
 
                 # Remove all data linked to this neuron, including skeletons
                 cici = ClassInstanceClassInstance.objects.filter(
@@ -3037,17 +3035,17 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
     treenode_values = list(chain.from_iterable([d['id'], d['x'], d['y'], d['z'], d['parent_id'], d['radius']] \
             for n, d in arborescence.nodes_iter(data=True)))
     # Include skeleton ID for index performance.
-    cursor.execute("""
+    cursor.execute(f"""
         UPDATE treenode SET
             location_x = v.x,
             location_y = v.y,
             location_z = v.z,
             parent_id = v.parent_id,
             radius = v.radius
-        FROM (VALUES {}) AS v(id, x, y, z, parent_id, radius)
+        FROM (VALUES {treenode_template}) AS v(id, x, y, z, parent_id, radius)
         WHERE treenode.id = v.id
             AND treenode.skeleton_id = %s
-    """.format(treenode_template), treenode_values + [new_skeleton.id])
+    """, treenode_values + [new_skeleton.id])
 
     # Log import.
     insert_into_log(project_id, user.id, 'create_neuron',
@@ -3346,12 +3344,12 @@ def _list_skeletons(project_id, created_by=None, reviewed_by=None, from_date=Non
 
     if nodecount_gt > 0:
         params['nodecount_gt'] = nodecount_gt
-        query = '''
+        query = f'''
             SELECT s.skeleton_id
-            FROM ({}) q JOIN catmaid_skeleton_summary s
+            FROM ({query}) q JOIN catmaid_skeleton_summary s
             ON q.skeleton_id = s.skeleton_id
             WHERE s.num_nodes > %(nodecount_gt)s
-        '''.format(query)
+        '''
 
     cursor = connection.cursor()
     cursor.execute(query, params)

@@ -796,12 +796,8 @@ annotations, neuron name, connectors or partner neurons.
         'skeleton should be transformed into a template space.');
     var select = document.createElement('select');
     CATMAID.skeletonListSources.createOptions().forEach(function(option, i) {
-      // Currently, only the active skeleton is allowed, because the back-end
-      // doesn't support multi skeleton export, yet.
-      if (option.value === 'Active skeleton') {
-        select.options.add(option);
-        select.selectedIndex = i;
-      }
+      select.options.add(option);
+      select.selectedIndex = i;
     });
     var label_p = document.createElement('p');
     var label = document.createElement('label');
@@ -838,6 +834,9 @@ annotations, neuron name, connectors or partner neurons.
     targetSelectLabelP.appendChild(targetSelectLabel);
     dialog.dialog.appendChild(targetSelectLabelP);
 
+    var createArchive = dialog.appendCheckbox('Create Zip archive if multiple skeletons',
+        'zip-archive', true);
+
     var mirrorSkeleton = dialog.appendCheckbox('Mirror',
         'mirror', true, 'Depending on the dataset, it is required to flip the exported skeleton.');
 
@@ -853,21 +852,60 @@ annotations, neuron name, connectors or partner neurons.
       var skids = source.getSelectedSkeletons();
       // Cancel if there are no skeletons
       if (skids.length === 0) {
-        CATMAID.error('Please select a source with at least one skeleton.');
-        return;
+        throw new CATMAID.Warning('Please select a source with at least one skeleton.');
       }
 
-      CATMAID.Skeletons.exportNRRD(project.id, skids[0], mirrorSkeleton.checked,
-          sourceSelect.value, targetSelect.value, asyncRequest.checked)
-        .then(function(sync_nrrd_blob) {
-          if (asyncRequest.checked) {
-            CATMAID.msg('Success', 'A new message is will notify you once the export is done');
-          } else {
-            saveAs(sync_nrrd_blob, "catmaid-" + skids[0] + ".nrrd");
-            CATMAID.msg('Success', 'The NRRD file was created successfully');
-          }
-        })
-        .catch(CATMAID.handleError);
+      // For now cancel if a Zip file should be create on the backend, because
+      // it isn't implemented yet.
+      if (asyncRequest.checked && createArchive.checked) {
+        throw new CATMAID.Warning('Please select either Zip file creation or async creation');
+      }
+
+      var effCreateArchive = skids.length > 1 && createArchive;
+
+      if (asyncRequest.checked) {
+        // In async exports, we transmit all skeleton IDs to the backend in one
+        // go.
+        CATMAID.Skeletons.exportNRRD(project.id, skids, mirrorSkeleton.checked,
+            sourceSelect.value, targetSelect.value, asyncRequest.checked,
+            effCreateArchive)
+          .then(function(sync_nrrd_blob) {
+            if (asyncRequest.checked) {
+              CATMAID.msg('Success', 'A new message is will notify you once the export is done');
+            } else {
+              saveAs(sync_nrrd_blob, "catmaid-" + skids[0] + ".nrrd");
+              CATMAID.msg('Success', 'The NRRD file was created successfully');
+            }
+          })
+          .catch(CATMAID.handleError);
+      } else {
+        Promise.all(skids.map(skeletonId => {
+            return CATMAID.Skeletons.exportNRRD(project.id, [skeletonId],
+                mirrorSkeleton.checked, sourceSelect.value, targetSelect.value,
+                asyncRequest.checked, effCreateArchive);
+          }))
+          .then(function(sync_nrrd_blobs) {
+            if (effCreateArchive) {
+              let zip = new JSZip();
+              sync_nrrd_blobs.forEach(function(blob, i) {
+                let skeletonId = skids[i];
+                zip.file(`catmaid-${skeletonId}.nrrd`, blob);
+              });
+              zip.generateAsync({type: "blob"})
+                .then(content => {
+                  saveAs(content, 'catmaid-nrrd-export.zip');
+                  CATMAID.msg('Success', `Zip file containing ${sync_nrrd_blobs.length} NRRD file(s) successfully created`);
+                })
+                .catch(CATMAID.handleError);
+            } else {
+              for (let blob of sync_nrrd_blobs) {
+                saveAs(blob, `catmaid-${skids[0]}.nrrd`);
+              }
+              CATMAID.msg('Success', `${sync_nrrd_blobs.length} NRRD file(s) were created successfully`);
+            }
+          })
+          .catch(CATMAID.handleError);
+      }
     };
 
     dialog.show(500, 'auto', true);

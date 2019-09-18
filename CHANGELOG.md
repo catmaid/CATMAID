@@ -162,6 +162,15 @@ Import/Export widget:
   allows the widget to display local skeleton IDs, if the remote ID has already
   been imported from the current source URL.
 
+- The NRRD export can now use the JRC2018U (unisex) target template brain space
+  as target.
+
+- The NRRD export can now export more than one skeleton at a time. All skeleton
+  sources are now displayed.
+
+- The NRRD export will now by default create a Zip file if multiple skeletons
+  are exported both in a synchronous and asynchronous export.
+
 Neuron navigator:
 
 - The new button "Imported nodes" will list all imported treenodes for the

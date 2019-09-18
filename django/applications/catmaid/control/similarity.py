@@ -392,7 +392,7 @@ class ConfigurationList(APIView):
 
         if scoring:
             config = self.add_from_raw_data(project_id, request.user.id, name,
-                    scoring, distance_breaks, dot_breaks)
+                    scoring, distance_breaks, dot_breaks, tangent_neighbors)
             return Response(serialize_config(config))
         elif source == 'request':
             if not matching_skeleton_ids and not matching_pointset_ids:
@@ -428,7 +428,8 @@ class ConfigurationList(APIView):
 
     def add_from_raw_data(self, project_id, user_id, name, scoring,
             distance_breaks=NblastConfigDefaultDistanceBreaks,
-            dot_breaks=NblastConfigDefaultDotBreaks):
+            dot_breaks=NblastConfigDefaultDotBreaks,
+            tangent_neighbors=20):
         """Add a scoring matrix based on the passed in array of arrays and
         dimensions.
         """

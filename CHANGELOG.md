@@ -212,6 +212,9 @@ Miscellaneous:
 - Project importer: the UNIX "glob" filter pattern that can be used to filter
   imported projects is now also applied to imports from URLs and files.
 
+- Nblast widget: store tangent neighbor count specified in UI for scoring matrix
+  imported from CSV.
+
 ## Maintenance updates
 
 - CLI Exporter: if users should be exported, also export users of volumes.

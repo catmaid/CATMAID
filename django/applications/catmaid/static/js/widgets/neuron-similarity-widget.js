@@ -2022,7 +2022,7 @@
                 });
               })
               .then(fileScore => CATMAID.Similarity.addConfigFromScoring(project.id, newIndexName,
-                  fileScore.distBreaks, fileScore.dotBreaks, fileScore.score))
+                  fileScore.distBreaks, fileScore.dotBreaks, fileScore.score, newTangentNeighbors))
               .then(function() {
                 return widget.refresh();
               })

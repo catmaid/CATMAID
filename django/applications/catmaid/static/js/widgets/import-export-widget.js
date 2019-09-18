@@ -823,12 +823,19 @@ annotations, neuron name, connectors or partner neurons.
     dialog.dialog.appendChild(sourceSelectLabelP);
 
     var targetSelect = document.createElement('select');
-    ['JFRC2', 'JRC2018U'].forEach(function(key, i) {
+    var targetSpaces = new Map([
+      ['JFRC2', {mirror: true}],
+      ['JRC2018U', {mirror: false}],
+    ]);
+    Array.from(targetSpaces.keys()).forEach(function(key, i) {
       this.options.add(new Option(key, key));
       if (i === 0) {
         this.selectedIndex = i;
       }
     }, targetSelect);
+    targetSelect.addEventListener('change', e => {
+      mirrorSkeleton.checked = targetSpaces.get(e.target.value).mirror;
+    });
     var targetSelectLabelP = document.createElement('p');
     var targetSelectLabel = document.createElement('label');
     targetSelectLabel.appendChild(document.createTextNode('Target space:'));

@@ -213,8 +213,8 @@
               var skeletonId = skeletonIds[i];
               zip.file(skeletonId + ".swc", swc);
             });
-            var content = zip.generate({type: "blob"});
-            saveAs(content, 'catmaid-swc-export.zip');
+            return zip.generateAsync({type: "blob"})
+              .then(content => saveAs(content, 'catmaid-swc-export.zip'));
           } else {
             swcData.forEach(function(swc, i) {
               var skeletonId = skeletonIds[i];

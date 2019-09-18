@@ -932,8 +932,8 @@
         if (exportColor) {
           zip.file(filename + ".mtl", materialData);
         }
-        var content = zip.generate({type: "blob"});
-        CATMAID.FileExporter.saveAs(content, filename + '.zip');
+        zip.generateAsync({type: "blob"})
+          .then(content => CATMAID.FileExporter.saveAs(content, filename + '.zip'));
       } else {
         CATMAID.FileExporter.saveAs(data, filename + '.obj', 'text/obj');
         if (exportColor) {

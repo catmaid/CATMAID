@@ -48,7 +48,7 @@ input:focus {
   box-shadow: 0 0 2px #4D90FE;
 }
 
-input:not([type=button]):focus {
+input:not([type=button]):not([type=submit]):focus {
   border: 0.5px solid #4D90FE;
 }
 

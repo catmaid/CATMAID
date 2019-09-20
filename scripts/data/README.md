@@ -14,7 +14,7 @@ the folder this file is part of contains a directory with image data, the
 `serve-directory.py` script and a file called `localhost.pem`.
 
 The `localhost.pem` certificate file should NEVER be used for actual encryption
-and identity purposes. The private key is included on purpose to make local
+and identity purposes. The private key is included for the purpose of making local
 image data serving a little bit easier. A certificate with the same properties
 can alternatively be generated the following way:
 
@@ -28,11 +28,11 @@ Again: NEVER use the included localhost.pem certificate for security.
 Starting the server
 -------------------
 
-To start the server, th `serve-directory.py` script has to be started, ideally
-from a terminal/shell. It expects to parameters, a port to provide image access
+To start the server, the `serve-directory.py` script has to be started, ideally
+from a terminal/shell. It expects two parameters: a port to provide image access
 from and a certificate file. The port can be any number greater than 1024. If a
-port should be already in use by another program, the `serve-directory.py`
-script will fail with an error and you have to try a different port.
+port is already in use by another program, the `serve-directory.py`script will
+fail with an error and you have to try a different port.
 
 Assuming a terminal is open and the current working directory is the directory
 of the `serve-directory.py` file (typically on a USB drive), a start command

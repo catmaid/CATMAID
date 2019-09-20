@@ -4062,7 +4062,7 @@ var SkeletonAnnotations = {};
           }
 
           return Promise.all(requests);
-        })
+        }, e => true /* Tell submitter we handle error */)
         .then(function(responses) {
           // Bail if the overlay was destroyed or suspended before this callback.
           if (self.suspended) {
@@ -4143,7 +4143,8 @@ var SkeletonAnnotations = {};
 
       // Return a proper promise to the caller (i.e. no submitter instance).
       return work.promise();
-    });
+    })
+    .catch(CATMAID.handleError);
   };
 
   CATMAID.TracingOverlay.prototype.createSubViewNodeListFromCache = function(params) {

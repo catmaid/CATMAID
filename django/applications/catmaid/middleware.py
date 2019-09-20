@@ -7,12 +7,15 @@ import logging
 from traceback import format_exc
 from datetime import datetime
 
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.conf import settings
 
 from guardian.utils import get_anonymous_user
 
 from rest_framework.authentication import TokenAuthentication
+from rest_framework.exceptions import APIException
+
+from catmaid.error import ClientError
 
 from io import StringIO
 
@@ -104,7 +107,21 @@ class AjaxExceptionMiddleware(object):
             (exc_type, exc_info, tb) = sys.exc_info()
             response['info'] = str(exc_info)
             response['traceback'] = ''.join(traceback.format_tb(tb))
-        return JsonResponse(response)
+
+        # Some CATMAID errors have a more detailed status code
+        if isinstance(exception, ClientError):
+            status = exception.status_code
+        elif isinstance(exception, Http404):
+            status = 404
+        elif isinstance(exception, APIException):
+            status = exception.status_code
+        elif isinstance(exception, ValueError):
+            # Value errors are assumed to be problems with the request/client.
+            status = 400
+        else:
+            status = 500
+
+        return JsonResponse(response, status=status, safe=False)
 
 
 class BasicModelMapMiddleware(object):

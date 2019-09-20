@@ -317,11 +317,6 @@ var requestQueue = new CATMAID.RequestQueue();
       return text;
     } else if (additionalStatusCodes && additionalStatusCodes.indexOf(status) > -1) {
       return text;
-    } else if (status === 502) { // Bad Gateway
-      var error = new CATMAID.NetworkAccessError("CATMAID server unreachable",
-          "Please wait or try to reload");
-      error.statusCode = status;
-      throw error;
     } else {
       var error = new CATMAID.Error("The server returned an unexpected status: " + status);
       error.statusCode = status;
@@ -338,13 +333,7 @@ var requestQueue = new CATMAID.RequestQueue();
   CATMAID.validateJsonResponse = function(status, text, xml, additionalStatusCodes) {
     var response = CATMAID.validateResponse(status, text, xml, undefined, additionalStatusCodes);
     // `text` may be empty for no content responses.
-    var json = text.length ? JSON.parse(text) : {};
-    if (json.error) {
-      var error = CATMAID.parseErrorResponse(json);
-      throw error;
-    } else {
-      return json;
-    }
+    return text.length ? JSON.parse(text) : {};
   };
 
   /**
@@ -450,6 +439,27 @@ var requestQueue = new CATMAID.RequestQueue();
         // this wasn't an asynchronously called function. But since this is the
         // case, we have to call reject() explicitly.
         try {
+          // Handle client and server errors
+          if (status >= 400 && status < 600) {
+            if (status === 502) { // Bad Gateway
+              var error = new CATMAID.NetworkAccessError("CATMAID server unreachable",
+                  "Please wait or try to reload");
+              error.statusCode = status;
+              throw error;
+            }
+            let errorDetails;
+            try {
+              errorDetails = JSON.parse(text);
+            } catch (e) {
+              errorDetails = null;
+            }
+            if (errorDetails && errorDetails.hasOwnProperty('error')) {
+              throw CATMAID.parseErrorResponse(errorDetails);
+            } else {
+              throw new CATMAID.Error(`The server returned an unexpected status: ${status}`, text);
+            }
+          }
+
           if (raw) {
             var response = CATMAID.validateResponse(status, text, xml,
                 responseType, supportedStatus);

@@ -144,7 +144,7 @@ def _open_leaves(project_id, skeleton_id, tnid=None):
                 tnid = node_id
 
     if tnid not in tree:
-        raise Exception("Could not find %s in skeleton %s" % (tnid, int(skeleton_id)))
+        raise ValueError("Could not find %s in skeleton %s" % (tnid, int(skeleton_id)))
 
     reroot(tree, tnid)
     distances = edge_count_to_root(tree, root_node=tnid)
@@ -301,7 +301,7 @@ def _find_labels(project_id, skeleton_id, label_regex, tnid=None,
                 props['tags'] = [row[5]]
 
     if tnid not in tree:
-        raise Exception("Could not find %s in skeleton %s" % (tnid, int(skeleton_id)))
+        raise ValueError("Could not find %s in skeleton %s" % (tnid, int(skeleton_id)))
 
     reroot(tree, tnid)
     distances = edge_count_to_root(tree, root_node=tnid)
@@ -370,7 +370,7 @@ def within_spatial_distance(request:HttpRequest, project_id=None) -> JsonRespons
     project_id = int(project_id)
     tnid = request.POST.get('treenode_id', None)
     if not tnid:
-        raise Exception("Need a treenode!")
+        raise ValueError("Need a treenode!")
     tnid = int(tnid)
     distance = int(request.POST.get('distance', 0))
     if 0 == distance:
@@ -661,7 +661,7 @@ def _get_neuronname_from_skeletonid( project_id, skeleton_id ):
         return {'neuronname': qs[0].class_instance_b.name,
             'neuronid': qs[0].class_instance_b.id }
     except IndexError:
-        raise Exception("Couldn't find a neuron linking to a skeleton with " \
+        raise ValueError("Couldn't find a neuron linking to a skeleton with " \
                 "ID %s" % skeleton_id)
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -1173,7 +1173,7 @@ def split_skeleton(request:HttpRequest, project_id=None) -> JsonResponse:
     if not check_annotations_on_split(project_id, skeleton_id,
             frozenset(upstream_annotation_map.keys()),
             frozenset(downstream_annotation_map.keys())):
-        raise Exception("Annotation distribution is not valid for splitting. " \
+        raise ValueError("Annotation distribution is not valid for splitting. " \
           "One part has to keep the whole set of annotations!")
 
     skeleton = ClassInstance.objects.select_related('user').get(pk=skeleton_id)
@@ -1485,12 +1485,12 @@ def skeleton_ancestry(request:HttpRequest, project_id=None) -> JsonResponse:
     # prefetch_related when we upgrade to Django 1.4 or above
     skeleton_id = int(request.POST.get('skeleton_id', None))
     if skeleton_id is None:
-        raise Exception('A skeleton id has not been provided!')
+        raise ValueError('A skeleton id has not been provided!')
 
     relation_map = get_relation_to_id_map(project_id)
     for rel in ['model_of', 'part_of']:
         if rel not in relation_map:
-            raise Exception(' => "Failed to find the required relation %s' % rel)
+            raise ValueError(' => "Failed to find the required relation %s' % rel)
 
     response_on_error = ''
     try:
@@ -1502,9 +1502,9 @@ def skeleton_ancestry(request:HttpRequest, project_id=None) -> JsonResponse:
             'class_instance_b__name')
         neuron_count = neuron_rows.count()
         if neuron_count == 0:
-            raise Exception('No neuron was found that the skeleton %s models' % skeleton_id)
+            raise ValueError('No neuron was found that the skeleton %s models' % skeleton_id)
         elif neuron_count > 1:
-            raise Exception('More than one neuron was found that the skeleton %s models' % skeleton_id)
+            raise ValueError('More than one neuron was found that the skeleton %s models' % skeleton_id)
 
         parent_neuron = neuron_rows[0]
         ancestry = []
@@ -1531,7 +1531,7 @@ def skeleton_ancestry(request:HttpRequest, project_id=None) -> JsonResponse:
             if parent_count == 0:
                 break  # We've reached the top of the hierarchy.
             elif parent_count > 1:
-                raise Exception('More than one class_instance was found that the class_instance %s is part_of.' % current_ci)
+                raise ValueError('More than one class_instance was found that the class_instance %s is part_of.' % current_ci)
             else:
                 parent = parents[0]
                 ancestry.append({
@@ -2074,14 +2074,14 @@ def reroot_skeleton(request:HttpRequest, project_id=None) -> JsonResponse:
         # Else, already root
         return JsonResponse({'error': 'Node #%s is already root!' % treenode_id})
     except Exception as e:
-        raise Exception(response_on_error + ':' + str(e))
+        raise ValueError(response_on_error + ':' + str(e))
 
 
 def _reroot_skeleton(treenode_id, project_id):
     """ Returns the treenode instance that is now root,
     or False if the treenode was root already. """
     if treenode_id is None:
-        raise Exception('A treenode id has not been provided!')
+        raise ValueError('A treenode id has not been provided!')
 
     response_on_error = ''
     try:
@@ -2092,7 +2092,7 @@ def _reroot_skeleton(treenode_id, project_id):
         n_samplers = Sampler.objects.filter(skeleton=rootnode.skeleton).count()
         response_on_error = 'Neuron is used in a sampler, can\'t reroot'
         if n_samplers > 0:
-            raise Exception(f'Skeleton {rootnode.skeleton_id} is used in {n_samplers} sampler(s)')
+            raise ValueError(f'Skeleton {rootnode.skeleton_id} is used in {n_samplers} sampler(s)')
 
         # Obtain the treenode from the response
         first_parent = rootnode.parent_id
@@ -2145,7 +2145,7 @@ def _reroot_skeleton(treenode_id, project_id):
         return rootnode
 
     except Exception as e:
-        raise Exception(f'{response_on_error}: {e}')
+        raise ValueError(f'{response_on_error}: {e}')
 
 
 def _root_as_parent(oid):
@@ -2199,7 +2199,7 @@ def join_skeleton(request:HttpRequest, project_id=None) -> JsonResponse:
         })
 
     except Exception as e:
-        raise Exception(response_on_error + ':' + str(e))
+        raise ValueError(response_on_error + ':' + str(e))
 
 
 def make_annotation_map(annotation_vs_user_id, neuron_id, cursor=None) -> Dict:
@@ -2253,7 +2253,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
     annotation that references the merged in skeleton using its name.
     """
     if from_treenode_id is None or to_treenode_id is None:
-        raise Exception('Missing arguments to _join_skeleton')
+        raise ValueError('Missing arguments to _join_skeleton')
 
     response_on_error = ''
     try:
@@ -2263,12 +2263,12 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         try:
             from_treenode = Treenode.objects.get(pk=from_treenode_id)
         except Treenode.DoesNotExist:
-            raise Exception("Could not find a skeleton for treenode #%s" % from_treenode_id)
+            raise ValueError("Could not find a skeleton for treenode #%s" % from_treenode_id)
 
         try:
             to_treenode = Treenode.objects.get(pk=to_treenode_id)
         except Treenode.DoesNotExist:
-            raise Exception("Could not find a skeleton for treenode #%s" % to_treenode_id)
+            raise ValueError("Could not find a skeleton for treenode #%s" % to_treenode_id)
 
         from_skid = from_treenode.skeleton_id
         from_neuron = _get_neuronname_from_skeletonid( project_id, from_skid )
@@ -2277,7 +2277,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         to_neuron = _get_neuronname_from_skeletonid( project_id, to_skid )
 
         if from_skid == to_skid:
-            raise Exception('Cannot join treenodes of the same skeleton, this would introduce a loop.')
+            raise ValueError('Cannot join treenodes of the same skeleton, this would introduce a loop.')
 
         # Make sure the user has permissions to edit both neurons
         can_edit_class_instance_or_fail(
@@ -2342,7 +2342,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
             if not check_annotations_on_join(project_id, user,
                     from_neuron['neuronid'], to_neuron['neuronid'],
                     frozenset(annotation_map.keys())):
-                raise Exception("Annotation distribution is not valid for joining. " \
+                raise ValueError("Annotation distribution is not valid for joining. " \
                 "Annotations for which you don't have permissions have to be kept!")
 
         # Find oldest creation_time and edition_time
@@ -2436,7 +2436,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         return response
 
     except Exception as e:
-        raise Exception(response_on_error + ':' + str(e))
+        raise ValueError(response_on_error + ':' + str(e))
 
 
 def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleton_id,
@@ -2996,7 +2996,7 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
     # treenodes.
     root = find_root(arborescence)
     if root is None:
-        raise Exception('No root, provided graph is malformed!')
+        raise ValueError('No root, provided graph is malformed!')
 
     # Bulk create the required number of treenodes. This must be done in two
     # steps because treenode IDs are not known.

@@ -19,7 +19,7 @@ class LinksApiTests(CatmaidApiTestCase):
                 '/%d/link/delete' % self.test_project_id,
                 {'connector_id': connector_id, 'treenode_id': treenode_id,
                  'state': make_nocheck_state()})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 400)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {'error': f'Could not find link between connector {connector_id} and node {treenode_id}'}
         self.assertIn('error', parsed_response)

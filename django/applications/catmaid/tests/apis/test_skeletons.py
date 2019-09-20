@@ -111,7 +111,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
                 {'file.swc': swc_file2, 'name': 'test2', 'neuron_id':
                     neuron.id, 'auto_id': False})
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 400)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 "error": "The passed in neuron ID is already in use and neither of the parameters force or auto_id are set to true."}
@@ -185,7 +185,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
                 {'file.swc': swc_file2, 'name': 'test2', 'skeleton_id':
                     skeleton.id, 'auto_id': False})
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 400)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 "error": "The passed in skeleton ID is already in use and neither of the parameters force or auto_id are set to true."}
@@ -365,7 +365,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
             {'treenode_id': 2394,
              'upstream_annotation_map':   json.dumps({'A': self.test_user_id}),
              'downstream_annotation_map': json.dumps({'C': self.test_user_id})})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 400)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = "Annotation distribution is not valid for splitting. " \
                           "One part has to keep the whole set of annotations!"
@@ -378,7 +378,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
             {'treenode_id': 2394,
              'upstream_annotation_map':   json.dumps({'A': self.test_user_id, 'B': self.test_user_id}),
              'downstream_annotation_map': json.dumps({'C': self.test_user_id, 'B': self.test_user_id})})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 400)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = "Annotation distribution is not valid for splitting. " \
                           "One part has to keep the whole set of annotations!"
@@ -813,7 +813,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         # Confidence split
         # Change confidence that affects 1 edge from 235 to 373
         response = self.client.post('/%d/treenodes/289/confidence' % self.test_project_id,
-            {'new_confidence': 3})
+                {'new_confidence': 3, 'state': '{"nocheck": true}'})
         self.assertEqual(response.status_code, 200)
         # Add confidence criteria, but not one that should affect the graph.
         response = self.client.post(
@@ -841,10 +841,11 @@ class SkeletonsApiTests(CatmaidApiTestCase):
              'skeleton_ids[2]': skeleton_ids[2],
              'confidence_threshold': 4})
         parsed_response = json.loads(response.content.decode('utf-8'))
-        expected_result_nodes = frozenset(['235', '361', '373'])
+        expected_result_nodes = frozenset(['235_1', '235_2', '361', '373'])
         expected_result_edges = [
-                ['235', '373', [0, 0, 0, 0, 2]],
-                ['235', '361', [0, 0, 0, 0, 1]]]
+                ['235_1', '373', [0, 0, 0, 0, 1]],
+                ['235_2', '373', [0, 0, 0, 0, 1]],
+                ['235_2', '361', [0, 0, 0, 0, 1]]]
 
         self.assertEqual(expected_result_nodes, frozenset(parsed_response['nodes']))
         # Since order is not important, check length and matches separately.
@@ -864,10 +865,11 @@ class SkeletonsApiTests(CatmaidApiTestCase):
              'confidence_threshold': 4,
              'bandwidth': 2000})
         parsed_response = json.loads(response.content.decode('utf-8'))
-        expected_result_nodes = frozenset(['361', '373', '235_1', '235_2'])
+        expected_result_nodes = frozenset(['361', '373', '235_1', '235_2_2', '235_2_3'])
         expected_result_edges = [
-                ['235_1', '373', [0, 0, 0, 0, 2]],
-                ['235_1', '361', [0, 0, 0, 0, 1]]]
+                ['235_1', '373', [0, 0, 0, 0, 1]],
+                ['235_2_2', '373', [0, 0, 0, 0, 1]],
+                ['235_2_2', '361', [0, 0, 0, 0, 1]]]
 
         self.assertEqual(expected_result_nodes, frozenset(parsed_response['nodes']))
         # Since order is not important, check length and matches separately.
@@ -896,7 +898,8 @@ class SkeletonsApiTests(CatmaidApiTestCase):
              'confidence_threshold': 4})
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result_edges = [
-                ['235', '373', [0, 0, 0, 0, 2]]]
+                ['235_1', '373', [0, 0, 0, 0, 1]],
+                ['235_2', '373', [0, 0, 0, 0, 1]]]
         # Since order is not important, check length and matches separately.
         self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
         for row in expected_result_edges:

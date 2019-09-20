@@ -20,7 +20,7 @@ from rest_framework.decorators import api_view
 
 from catmaid.consumers import msg_user
 from catmaid.control.authentication import (requires_user_role,
-        can_edit_or_fail, check_user_role)
+        can_edit_or_fail, check_user_role, PermissionError)
 from catmaid.control.common import (insert_into_log, get_class_to_id_map,
         get_relation_to_id_map, _create_relation, get_request_bool,
         get_request_list)

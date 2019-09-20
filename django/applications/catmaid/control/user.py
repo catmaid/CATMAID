@@ -12,7 +12,7 @@ from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib.auth.models import User
 import django.contrib.auth.views as django_auth_views
 
-from catmaid.control.authentication import access_check
+from catmaid.control.authentication import (access_check, PermissionError)
 from catmaid.control.common import get_request_bool
 
 

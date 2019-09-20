@@ -101,7 +101,7 @@ class TextlabelsApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/textlabel/update' % self.test_project_id,
                 params)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 400)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = 'Failed to find Textlabel with id %s.' % textlabel_id
         self.assertIn('error', parsed_response)

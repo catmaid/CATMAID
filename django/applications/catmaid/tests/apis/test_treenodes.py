@@ -32,7 +32,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
                 {'new_confidence': '4'})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 400)
         expected_result = 'No skeleton and neuron for treenode %s' % treenode_id
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(expected_result, parsed_response['error'])
@@ -288,7 +288,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
             'parent_id': parent_id,
             'radius': 2,
             'state': make_nocheck_state()})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 400)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {'error': 'Parent treenode %d does not exist' % parent_id}
         self.assertIn(expected_result['error'], parsed_response['error'])
@@ -335,7 +335,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/treenode/delete' % self.test_project_id,
                 {'treenode_id': treenode_id, 'state': make_nocheck_state()})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 400)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = "Could not delete root node: You can't delete the " \
                           "root node when it has children."
@@ -497,7 +497,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
             'child_id': child_id,
             'parent_id': parent_id})
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 403)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertTrue('error' in parsed_response)
 
@@ -539,7 +539,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
             'child_id': child_id,
             'parent_id': parent_id})
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 400)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertTrue('error' in parsed_response)
 
@@ -635,7 +635,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
 
         response = self.client.get(
                 '/%d/treenodes/%s/info' % (self.test_project_id, treenode_id))
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 400)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = 'No skeleton and neuron for treenode %s' % treenode_id
         self.assertIn('error', parsed_response)

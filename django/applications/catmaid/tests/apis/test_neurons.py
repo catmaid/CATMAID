@@ -50,7 +50,7 @@ class NeuronsApiTests(CatmaidApiTestCase):
 
         url = '/%d/neurons/%s/rename' % (self.test_project_id, neuron_id)
         response = self.client.post(url, {'name': new_name})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 403)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertTrue('error' in parsed_response)
         self.assertTrue(parsed_response['error'])

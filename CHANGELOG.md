@@ -32,6 +32,11 @@
   the tracing tool is now enabled for new users, because it seems in many setups
   users want to have this enabled by default.
 
+- Back-end errors result now in actual HTTP error status codes. Third-party
+  clients need possibly some adjustments to handle API errors. In case of an
+  error, status 400 is returned if an input data or parameter problem, 401 for
+  permission problems and 500 otherwise.
+
 ### Features and enhancements
 
 Node filters:

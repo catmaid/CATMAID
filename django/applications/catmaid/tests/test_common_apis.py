@@ -328,7 +328,7 @@ class ViewPageTests(TestCase):
             'with_passwords': True,
         })
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 403)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         self.assertTrue('error' in parsed_response)
@@ -693,7 +693,7 @@ class PermissionTests(TestCase):
         for api in self.can_browse_get_api:
             msg = "GET %s" % api
             response = self.client.get(api)
-            self.assertEqual(response.status_code, 200, msg)
+            self.assertNotIn(response.status_code, (401, 403), msg)
             try:
                 parsed_response = json.loads(response.content.decode('utf-8'))
                 missing_permissions = ('error' in parsed_response and
@@ -709,7 +709,7 @@ class PermissionTests(TestCase):
         for api in self.can_browse_post_api:
             msg = "POST %s" % api
             response = self.client.post(api)
-            self.assertEqual(response.status_code, 200, msg)
+            self.assertNotIn(response.status_code, (401, 403), msg)
             try:
                 parsed_response = json.loads(response.content.decode('utf-8'))
                 missing_permissions = ('error' in parsed_response and

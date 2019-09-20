@@ -121,6 +121,7 @@ def user_context_response(user, additional_fields=None) -> JsonResponse:
         'userid': user.id,
         'username': user.username,
         'is_superuser': user.is_superuser,
+        'is_authenticated': user != get_anonymous_user(),
         'userprofile': user.userprofile.as_dict(),
         'permissions': tuple(user.get_all_permissions()),
         'domain': list(user_domain(cursor, user.id))

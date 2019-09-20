@@ -2271,28 +2271,31 @@
         accum = $.extend({}, s.split_partners); // TODO unused?
 
     var grow = function(skids, n_circles, callback) {
-          requestQueue.register(CATMAID.makeURL(project.id + "/graph/circlesofhell"),
-              "POST",
-              {skeleton_ids: skids,
-               n_circles: n_circles,
-               min_pre: p.min_upstream,
-               min_post: p.min_downstream},
-              CATMAID.jsonResponseHandler(function(json) {
-                if (p.filter_regex !== '') {
-                  requestQueue.register(CATMAID.makeURL(project.id + "/annotations/forskeletons"),
-                      "POST",
-                      {skeleton_ids: json[0]},
-                      CATMAID.jsonResponseHandler(function (json) {
-                        var filterRegex = new RegExp(p.filter_regex, 'i');
-                        var filteredNeighbors = Object.keys(json.skeletons).filter(function (skid) {
-                          return json.skeletons[skid].some(function (a) {
-                            return filterRegex.test(json.annotations[a.id]);
-                          });
-                        });
-                        callback(skids.concat(filteredNeighbors));
-                      }));
-                } else callback(skids.concat(json[0]));
-              }));
+        CATMAID.fetch(project.id + "/graph/circlesofhell", "POST", {
+            skeleton_ids: skids,
+            n_circles: n_circles,
+            min_pre: p.min_upstream,
+            min_post: p.min_downstream,
+          })
+          .then(json => {
+            if (p.filter_regex !== '') {
+              return CATMAID.fetch(project.id + "/annotations/forskeletons", "POST", {
+                  skeleton_ids: json[0],
+                })
+                .then(annotations => {
+                  var filterRegex = new RegExp(p.filter_regex, 'i');
+                  var filteredNeighbors = Object.keys(annotations.skeletons).filter(function (skid) {
+                    return annotations.skeletons[skid].some(function (a) {
+                      return filterRegex.test(annotations.annotations[a.id]);
+                    });
+                  });
+                  callback(skids.concat(filteredNeighbors));
+                });
+            } else {
+              callback(skids.concat(json[0]));
+            }
+          })
+          .catch(CATMAID.handleError);
         },
         append = (function(skids) {
           var color = new THREE.Color().setHex(0xffae56),

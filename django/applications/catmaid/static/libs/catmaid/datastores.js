@@ -44,59 +44,56 @@
    * @return {Promise} Promise resolving once the datastore values are loaded.
    */
   DataStore.prototype.load = function () {
-    var self = this;
-    return new Promise(function (resolve, reject) {
-      requestQueue.register(
-          CATMAID.makeURL('/client/datastores/' + self.name + '/'),
-          'GET',
-          {project_id: project ? project.id : undefined},
-          CATMAID.jsonResponseHandler(
-              function (data) {
-                self.entries = data.reduce(
-                    function (e, d) {
-                      if (d.project) {
-                        var scope = d.user ? 'USER_PROJECT' : 'PROJECT_DEFAULT';
-                      } else {
-                        var scope = d.user ? 'USER_DEFAULT' : 'GLOBAL';
-                      }
+    return CATMAID.fetch({
+          url: `/client/datastores/${this.name}/`,
+          method: 'GET',
+          data: {
+            project_id: project ? project.id : undefined
+          },
+      })
+      .then(data => {
+        this.entries = data.reduce(
+            function (e, d) {
+              if (d.project) {
+                var scope = d.user ? 'USER_PROJECT' : 'PROJECT_DEFAULT';
+              } else {
+                var scope = d.user ? 'USER_DEFAULT' : 'GLOBAL';
+              }
 
-                      if (!e.has(d.key)) {
-                        e.set(d.key, {});
-                      }
+              if (!e.has(d.key)) {
+                e.set(d.key, {});
+              }
 
-                      try {
-                        var value = (typeof d.value === 'string' || d.value instanceof String) ?
-                            JSON.parse(d.value) :
-                            d.value;
-                        e.get(d.key)[scope] = {
-                          dirty: false,
-                          value: value
-                        };
-                      } catch (error) {
-                        // Do not alert the user, since this will not affect
-                        // other key/scopes and there is nothing explicit they
-                        // can do to correct it.
-                        console.log('Client data for store ' + d.key +
-                                    ', scope ' + scope + ' was not parsable.');
-                      }
+              try {
+                var value = (typeof d.value === 'string' || d.value instanceof String) ?
+                    JSON.parse(d.value) :
+                    d.value;
+                e.get(d.key)[scope] = {
+                  dirty: false,
+                  value: value
+                };
+              } catch (error) {
+                // Do not alert the user, since this will not affect
+                // other key/scopes and there is nothing explicit they
+                // can do to correct it.
+                console.log('Client data for store ' + d.key +
+                            ', scope ' + scope + ' was not parsable.');
+              }
 
-                      return e;
-                    },
-                    new Map());
-                self.trigger(DataStore.EVENT_LOADED, self);
-                resolve();
-              },
-              function (error) {
-                if (error.status === 404 || error.type === 'PermissionError') {
-                  self.entries = new Map();
-                  self.trigger(DataStore.EVENT_LOADED, self);
-                  resolve();
-                  return true;
-                } else {
-                  reject();
-                }
-              }));
-    });
+              return e;
+            },
+            new Map());
+        this.trigger(DataStore.EVENT_LOADED, this);
+      })
+      .catch(error => {
+        if (error instanceof CATMAID.MissingResourceError ||
+            error instanceof CATMAID.PermissionError) {
+          this.entries = new Map();
+          this.trigger(DataStore.EVENT_LOADED, this);
+          return true;
+        }
+        return Promise.reject(error);
+      });
   };
 
   /**
@@ -161,27 +158,25 @@
   DataStore.prototype._store = function (key, scope) {
     var entry = this.entries.get(key)[scope];
     entry.dirty = false;
-    var self = this;
-    return new Promise(function (resolve, reject) {
-      requestQueue.register(
-          CATMAID.makeURL('/client/datastores/' + self.name + '/'),
-          'PUT',
-          {
-            project_id: (scope === 'USER_DEFAULT' ||
-                         scope === 'GLOBAL') ?
-                undefined : project.id,
-            ignore_user: scope === 'PROJECT_DEFAULT' ||
-                         scope === 'GLOBAL',
-            key: key,
-            value: JSON.stringify(entry.value)
-          },
-          CATMAID.jsonResponseHandler(resolve, reject, true));
-    }).catch(function (reason) {
-      if (reason && reason.status && reason.status === 403) {
-        console.log('Datastore lacks permissions to store for ' +
-                    'store: ' + self.name + ' key: ' + key + ' scope: ' + scope);
-      }
-    });
+    return CATMAID.fetch({
+        url: `/client/datastores/${this.name}/`,
+        method: 'PUT',
+        data: {
+          project_id: (scope === 'USER_DEFAULT' ||
+                       scope === 'GLOBAL') ?
+              undefined : project.id,
+          ignore_user: scope === 'PROJECT_DEFAULT' ||
+                       scope === 'GLOBAL',
+          key: key,
+          value: JSON.stringify(entry.value)
+        },
+      })
+      .catch(reason => {
+        if (reason && reason.status && reason.status === 403) {
+          console.log('Datastore lacks permissions to store for ' +
+                      `store: ${this.name} key: ${key} scope: ${scope}`);
+        }
+      });
   };
 
   /**

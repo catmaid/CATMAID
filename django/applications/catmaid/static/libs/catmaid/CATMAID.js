@@ -318,9 +318,7 @@ var requestQueue = new CATMAID.RequestQueue();
     } else if (additionalStatusCodes && additionalStatusCodes.indexOf(status) > -1) {
       return text;
     } else {
-      var error = new CATMAID.Error("The server returned an unexpected status: " + status);
-      error.statusCode = status;
-      throw error;
+      throw new CATMAID.Error("The server returned an unexpected status: " + status);
     }
   };
 
@@ -339,7 +337,8 @@ var requestQueue = new CATMAID.RequestQueue();
   /**
    * Translate an error response into the appropriate front-end type.
    */
-  CATMAID.parseErrorResponse = function(error) {
+  CATMAID.parseErrorResponse = function(error, statusCode = undefined) {
+    error = error | {};
     if ('ValueError' === error.type) {
       return new CATMAID.ValueError(error.error, error.detail);
     } else if ('StateMatchingError' === error.type) {
@@ -354,6 +353,10 @@ var requestQueue = new CATMAID.RequestQueue();
       return new CATMAID.InactiveLoginError(error.error, error.detail, error.meta);
     } else if ('ReplacedRequestError' === error.type) {
       return new CATMAID.ReplacedRequestError(error.error, error.detail);
+    } else if (statusCode === 404) {
+      return new CATMAID.MissingResourceError(error.error, error.detail);
+    } else if (statusCode === 403) {
+      return new CATMAID.PermissionError("Insufficient permissions", error);
     } else {
       return new CATMAID.Error("Unsuccessful request: " + error.error,
           error.detail, error.type);
@@ -444,7 +447,6 @@ var requestQueue = new CATMAID.RequestQueue();
             if (status === 502) { // Bad Gateway
               var error = new CATMAID.NetworkAccessError("CATMAID server unreachable",
                   "Please wait or try to reload");
-              error.statusCode = status;
               throw error;
             }
             let errorDetails;
@@ -453,11 +455,7 @@ var requestQueue = new CATMAID.RequestQueue();
             } catch (e) {
               errorDetails = null;
             }
-            if (errorDetails && errorDetails.hasOwnProperty('error')) {
-              throw CATMAID.parseErrorResponse(errorDetails);
-            } else {
-              throw new CATMAID.Error(`The server returned an unexpected status: ${status}`, text);
-            }
+            throw CATMAID.parseErrorResponse(errorDetails, status);
           }
 
           if (raw) {

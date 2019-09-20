@@ -185,49 +185,6 @@
   CATMAID.warn = CATMAID.msg.bind(window, "Warning");
 
   /**
-   * Creates a generic JSON response handler that complains when the response
-   * status is different from 200 or a JSON error is set.
-   *
-   * @param success Called on success
-   * @param error Called on error
-   * @param silent No error dialogs are shown, if true
-   */
-  CATMAID.jsonResponseHandler = function(success, error, silent)
-  {
-    return function(status, text, xml) {
-      if (status >= 200 && status <= 204 &&
-          (typeof text === 'string' || text instanceof String)) {
-        // `text` may be empty for no content responses.
-        var json = text.length ? JSON.parse(text) : {};
-        if (json.error) {
-          // Call error handler, if any, and force silence if it returned true.
-          if (CATMAID.tools.isFn(error)) {
-            silent = error(json) || silent;
-          }
-          if (!silent) {
-            CATMAID.error(json.error, json.detail);
-          }
-        } else {
-          CATMAID.tools.callIfFn(success, json);
-        }
-      } else {
-        var e = {
-          error: "An error occured",
-          detail: "The server returned an unexpected status: " + status,
-          status: status
-        };
-        // Call error handler, if any, and force silence if it returned true.
-        if (CATMAID.tools.isFn(error)) {
-          silent = error(e) || silent;
-        }
-        if (!silent) {
-          CATMAID.error(e.msg, e.detail);
-        }
-      }
-    };
-  };
-
-  /**
    * Convenience function to show an error dialog.
    */
   CATMAID.error = function(msg, detail)

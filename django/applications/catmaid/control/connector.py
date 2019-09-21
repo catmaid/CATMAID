@@ -276,64 +276,63 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
 
     # Query connectors
     constraints = []
-    params:List = []
+    params:Dict = {
+        'project_id': project_id,
+    }
 
     if skeleton_ids:
-        sk_template = ",".join("(%s)" for _ in skeleton_ids)
         constraints.append(f'''
             JOIN treenode_connector tc
                 ON tc.connector_id = c.id
-            JOIN (VALUES {sk_template}) q_skeleton(id)
+            JOIN UNNEST(%(skeleton_ids)s::bigint[]) q_skeleton(id)
                 ON tc.skeleton_id = q_skeleton.id
         ''')
-        params.extend(skeleton_ids)
+        params['skeleton_ids'] = skeleton_ids
         if relation_type:
             constraints.append('''
-                AND tc.relation_id = %s
+                AND tc.relation_id = %(relation_id)s
             ''')
-            params.append(relation_id)
-    elif relation_type:
+            params['relation_id'] = relation_id
+
+    if relation_type:
         constraints.append('''
-            JOIN treenode_connector tc
-                ON tc.connector_id = c.id
-                AND tc.relation_id = %s
+            JOIN treenode_connector tc_rel
+                ON tc_rel.connector_id = c.id
+                AND tc_rel.relation_id = %(relation_id)s
         ''')
-        params.append(relation_id)
+        params['relation_id'] = relation_id
 
     if tags:
-        tag_template = ",".join("%s" for _ in tags)
         constraints.append(f'''
             JOIN connector_class_instance cci
                 ON cci.connector_id = c.id
             JOIN class_instance label
                 ON label.id = class_instance_id
-                AND cci.relation_id = %s
+                AND cci.relation_id = %(labeled_as)s
             JOIN (
-                SELECT id
+                SELECT class_instance.id
                 FROM class_instance
-                WHERE name IN ({tag_template})
-                    AND project_id = %s
-                    AND class_id = %s
+                JOIN UNNEST(%(tag_names)s::text[]) tag(name)
+                    ON tag.name = class_instance.name
+                WHERE project_id = %(project_id)s
+                    AND class_id = %(label)s
             ) q_label(id) ON label.id = q_label.id
         ''')
-        params.append(relation_map['labeled_as'])
-        params.extend(tags)
-        params.append(project_id)
-        params.append(class_map['label'])
+        params['labeled_as'] = relation_map['labeled_as']
+        params['tag_names'] = tags
+        params['label'] = lass_map['label']
+
 
     constlines = "\n".join(constraints)
-    query = f'''
+    cursor.execute(f'''
         SELECT DISTINCT c.id, c.location_x, c.location_y, c.location_z, c.confidence,
             c.user_id, c.editor_id, EXTRACT(EPOCH FROM c.creation_time),
             EXTRACT(EPOCH FROM c.edition_time)
         FROM connector c
         {constlines}
-        WHERE c.project_id = %s
+        WHERE c.project_id = %(project_id)s
         ORDER BY c.id
-    '''
-    params.append(project_id)
-
-    cursor.execute(query, params)
+    ''', params)
 
     connectors = cursor.fetchall()
 

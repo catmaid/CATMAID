@@ -442,3 +442,112 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                 'edition_time': '2011-12-20T10:46:01.360000+00:00'}]
 
         self.assertEqual(expected_result, parsed_response)
+
+    def test_simple_connector_list(self):
+        self.fake_authentication()
+        response = self.client.post(
+                f'/{self.test_project_id}/connectors/', {
+                    'skeleton_ids[0]': 373,
+                    'skeleton_ids[1]': 235,
+                })
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = []
+
+        expected_result = {
+            'connectors': [
+                [356, 6730.0, 2700.0, 0.0, 5, 3, 3, 1317110235.967, 1319712309.87],
+                [421, 6260.0, 3990.0, 0.0, 5, 3, 3, 1317970942.656, 1317970950.396],
+                [432, 2640.0, 3450.0, 0.0, 5, 3, 3, 1318330148.042, 1320038557.263]
+            ],
+            'tags': {
+                '432': ['synapse with more targets', 'TODO']
+            },
+            'partners': {}
+        }
+
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_relation_type_connector_list(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/connectors/' % self.test_project_id, {
+                    'skeleton_ids[0]': 373,
+                    'skeleton_ids[1]': 235,
+                    'relation_type': 'postsynaptic_to',
+                })
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        expected_result = {
+            'connectors': [
+                [356, 6730.0, 2700.0, 0.0, 5, 3, 3, 1317110235.967, 1319712309.87],
+                [421, 6260.0, 3990.0, 0.0, 5, 3, 3, 1317970942.656, 1317970950.396],
+            ],
+            'tags': {},
+            'partners': {}
+        }
+
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_no_tags_connector_list(self):
+        self.fake_authentication()
+        response = self.client.post(
+                f'/{self.test_project_id}/connectors/', {
+                    'skeleton_ids[0]': 373,
+                    'skeleton_ids[1]': 235,
+                    'with_tags': False,
+                })
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = []
+
+        expected_result = {
+            'connectors': [
+                [356, 6730.0, 2700.0, 0.0, 5, 3, 3, 1317110235.967, 1319712309.87],
+                [421, 6260.0, 3990.0, 0.0, 5, 3, 3, 1317970942.656, 1317970950.396],
+                [432, 2640.0, 3450.0, 0.0, 5, 3, 3, 1318330148.042, 1320038557.263]
+            ],
+            'tags': {},
+            'partners': {}
+        }
+
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_with_partners_connector_list(self):
+        self.fake_authentication()
+        response = self.client.post(
+                f'/{self.test_project_id}/connectors/', {
+                    'skeleton_ids[0]': 373,
+                    'skeleton_ids[1]': 235,
+                    'with_partners': True,
+                })
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = []
+        expected_result = {
+            'connectors': [
+                [356, 6730.0, 2700.0, 0.0, 5, 3, 3, 1317110235.967, 1319712309.87],
+                [421, 6260.0, 3990.0, 0.0, 5, 3, 3, 1317970942.656, 1317970950.396],
+                [432, 2640.0, 3450.0, 0.0, 5, 3, 3, 1318330148.042, 1320038557.263]
+            ],
+            "tags": {
+                '432': ["synapse with more targets", "TODO"]
+            },
+            "partners": {
+                "356": [
+                    [360, 285, 235, 1023, 5, 3, 1317110235.967, 1324377961.36],
+                    [372, 367, 361, 1024, 5, 3, 1317110238.175, 1324377961.36],
+                    [382, 377, 373, 1024, 5, 3, 1317110239.797, 1324377961.36]
+                ],
+                "421": [
+                    [425, 415, 235, 1023, 5, 3, 1317970942.656, 1324377961.36],
+                    [429, 409, 373, 1024, 5, 3, 1317970949.728, 1324377961.36]
+                ],
+                "432": [
+                    [437, 247, 235, 1023, 5, 3, 1318330148.042, 1324377961.36]
+                ]
+            }
+        }
+
+        self.assertEqual(expected_result, parsed_response)

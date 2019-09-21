@@ -143,4 +143,9 @@
    */
   CATMAID.ReplacedRequestError = class ReplacedRequestError extends CATMAID.Error {};
 
+  /**
+   * Indicate a missing (remote) resource.
+   */
+  CATMAID.MissingResourceError = class MissingResourceError extends CATMAID.Error {};
+
 })(CATMAID);

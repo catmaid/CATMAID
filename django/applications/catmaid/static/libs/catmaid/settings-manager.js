@@ -94,12 +94,13 @@
    *                             group and optional migrations between settings
    *                             version. See JSDoc for more.
    */
-  function Settings(name, schema) {
+  function Settings(name, schema, anonymousWriteBack = false) {
     this.name = name;
     this.schema = schema;
+    this.anonymousWriteBack = anonymousWriteBack;
     this.rendered = {};
     this.settingsStore = CATMAID.DataStoreManager.get(Settings.DATA_STORE_NAME);
-    this._boundLoad = this.load.bind(this);
+    this._boundLoad = this.load.bind(this, undefined);
     this._storeThrottleTimeout = null;
     this.settingsStore.on(CATMAID.DataStore.EVENT_LOADED, this._boundLoad);
     this.load();
@@ -128,9 +129,16 @@
    * Load settings values for all scopes by retrieving persisted values from
    * the DataStore and cascading values across scopes.
    *
+   * @param {Boolean} anonymousWriteBack (optional) Whether to write changed or
+   *                                     migrated settings back to the server if
+   *                                     the current user is not logged in.
+   *
    * @return {Promise} Promise yielding once loading is complete.
    */
-  Settings.prototype.load = function () {
+  Settings.prototype.load = function (anonymousWriteBack = undefined) {
+    if (anonymousWriteBack === undefined) {
+      anonymousWriteBack = this.anonymousWriteBack;
+    }
     var self = this;
     return this.settingsStore.get(this.name).then(function (stored) {
         var rendered = Object.keys(self.schema.entries).reduce(function (r, k) {
@@ -142,6 +150,8 @@
               };
           return r;
         }, {});
+
+        let work = [];
 
         // For scope level, in order of increasing specificity, check
         // persisted settings, migrate them if necesssary, merge them if
@@ -160,7 +170,8 @@
                     ' settings, resetting to defaults.');
                 scopeValues = {version: self.schema.version, entries: {}};
               }
-              self.settingsStore.set(self.name, scopeValues, datastoreScope, true);
+              let writeThrough = anonymousWriteBack || (!!CATMAID.session && CATMAID.session.is_authenticated);
+              work.push(self.settingsStore.set(self.name, scopeValues, datastoreScope, writeThrough));
             }
 
             Object.keys(scopeValues.entries).forEach(function (k) {
@@ -198,6 +209,8 @@
 
           self.rendered[scope] = $.extend(true, {}, rendered);
         });
+
+        return Promise.all(work);
     });
   };
 

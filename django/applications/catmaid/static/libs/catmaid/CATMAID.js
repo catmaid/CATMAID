@@ -317,15 +317,8 @@ var requestQueue = new CATMAID.RequestQueue();
       return text;
     } else if (additionalStatusCodes && additionalStatusCodes.indexOf(status) > -1) {
       return text;
-    } else if (status === 502) { // Bad Gateway
-      var error = new CATMAID.NetworkAccessError("CATMAID server unreachable",
-          "Please wait or try to reload");
-      error.statusCode = status;
-      throw error;
     } else {
-      var error = new CATMAID.Error("The server returned an unexpected status: " + status);
-      error.statusCode = status;
-      throw error;
+      throw new CATMAID.Error("The server returned an unexpected status: " + status);
     }
   };
 
@@ -338,19 +331,14 @@ var requestQueue = new CATMAID.RequestQueue();
   CATMAID.validateJsonResponse = function(status, text, xml, additionalStatusCodes) {
     var response = CATMAID.validateResponse(status, text, xml, undefined, additionalStatusCodes);
     // `text` may be empty for no content responses.
-    var json = text.length ? JSON.parse(text) : {};
-    if (json.error) {
-      var error = CATMAID.parseErrorResponse(json);
-      throw error;
-    } else {
-      return json;
-    }
+    return text.length ? JSON.parse(text) : {};
   };
 
   /**
    * Translate an error response into the appropriate front-end type.
    */
-  CATMAID.parseErrorResponse = function(error) {
+  CATMAID.parseErrorResponse = function(error, statusCode = undefined) {
+    error = error | {};
     if ('ValueError' === error.type) {
       return new CATMAID.ValueError(error.error, error.detail);
     } else if ('StateMatchingError' === error.type) {
@@ -365,6 +353,10 @@ var requestQueue = new CATMAID.RequestQueue();
       return new CATMAID.InactiveLoginError(error.error, error.detail, error.meta);
     } else if ('ReplacedRequestError' === error.type) {
       return new CATMAID.ReplacedRequestError(error.error, error.detail);
+    } else if (statusCode === 404) {
+      return new CATMAID.MissingResourceError(error.error, error.detail);
+    } else if (statusCode === 403) {
+      return new CATMAID.PermissionError("Insufficient permissions", error);
     } else {
       return new CATMAID.Error("Unsuccessful request: " + error.error,
           error.detail, error.type);
@@ -450,6 +442,22 @@ var requestQueue = new CATMAID.RequestQueue();
         // this wasn't an asynchronously called function. But since this is the
         // case, we have to call reject() explicitly.
         try {
+          // Handle client and server errors
+          if (status >= 400 && status < 600) {
+            if (status === 502) { // Bad Gateway
+              var error = new CATMAID.NetworkAccessError("CATMAID server unreachable",
+                  "Please wait or try to reload");
+              throw error;
+            }
+            let errorDetails;
+            try {
+              errorDetails = JSON.parse(text);
+            } catch (e) {
+              errorDetails = null;
+            }
+            throw CATMAID.parseErrorResponse(errorDetails, status);
+          }
+
           if (raw) {
             var response = CATMAID.validateResponse(status, text, xml,
                 responseType, supportedStatus);

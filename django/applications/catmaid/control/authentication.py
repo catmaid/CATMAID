@@ -28,21 +28,22 @@ from django.shortcuts import _get_queryset, render
 from rest_framework.authtoken import views as auth_views
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
+from catmaid.error import ClientError
 from catmaid.models import Project, UserRole, ClassInstance, \
         ClassInstanceClassInstance
 
 
-class PermissionError(Exception):
+class PermissionError(ClientError):
     """Indicates the lack of permissions for a particular action."""
-    pass
+    status_code = 403
 
 
-class InvalidLoginError(Exception):
+class InvalidLoginError(ClientError):
     """Indicates an unsuccessful login."""
-    pass
+    status_code = 400
 
 
-class InactiveLoginError(Exception):
+class InactiveLoginError(ClientError):
     """Indicates some sort of configuration error"""
     def __init__(self, message, meta=None):
         super().__init__(message)
@@ -120,6 +121,7 @@ def user_context_response(user, additional_fields=None) -> JsonResponse:
         'userid': user.id,
         'username': user.username,
         'is_superuser': user.is_superuser,
+        'is_authenticated': user != get_anonymous_user(),
         'userprofile': user.userprofile.as_dict(),
         'permissions': tuple(user.get_all_permissions()),
         'domain': list(user_domain(cursor, user.id))
@@ -386,7 +388,7 @@ def can_edit_class_instance_or_fail(user, ci_id, name='object') -> bool:
                     locked_by_other[0].user_id):
                 return True
 
-            raise Exception('User %s with id #%s cannot edit %s #%s' % \
+            raise PermissionError('User %s with id #%s cannot edit %s #%s' % \
                 (user.username, user.id, name, ci_id))
         # The class instance is locked by user or not locked at all
         return True
@@ -419,7 +421,7 @@ def can_edit_or_fail(user, ob_id:int, table_name) -> bool:
             if user_can_edit(cursor, user.id, owner_id):
                 return True
 
-        raise Exception('User %s with id #%s cannot edit object #%s (from user #%s) from table %s' % (user.username, user.id, ob_id, rows[0][0], table_name))
+        raise PermissionError('User %s with id #%s cannot edit object #%s (from user #%s) from table %s' % (user.username, user.id, ob_id, rows[0][0], table_name))
     raise ObjectDoesNotExist('Object #%s not found in table %s' % (ob_id, table_name))
 
 
@@ -448,7 +450,7 @@ def can_edit_all_or_fail(user, ob_ids, table_name) -> bool:
         if set(row[0] for row in rows).issubset(user_domain(cursor, user.id)):
             return True
 
-        raise Exception('User %s cannot edit all of the %s unique objects from table %s' % (user.username, len(ob_ids), table_name))
+        raise PermissionError('User %s cannot edit all of the %s unique objects from table %s' % (user.username, len(ob_ids), table_name))
     raise ObjectDoesNotExist('One or more of the %s unique objects were not found in table %s' % (len(ob_ids), table_name))
 
 def user_can_edit(cursor, user_id, other_user_id) -> bool:

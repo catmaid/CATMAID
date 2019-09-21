@@ -157,7 +157,7 @@ class NodesApiTests(CatmaidApiTestCase):
         response = self.client.post( '/%d/nodes/location' % (self.test_project_id + 1), {
             'node_ids': treenode_ids
         })
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 403)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertTrue('error' in parsed_response)
 
@@ -246,7 +246,7 @@ class NodesApiTests(CatmaidApiTestCase):
                         't[0][1]': x,
                         't[0][2]': y,
                         't[0][3]': z})
-            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.status_code, 400)
             parsed_response = json.loads(response.content.decode('utf-8'))
             self.assertIn('error', parsed_response)
             cursor = connection.cursor()
@@ -351,7 +351,7 @@ class NodesApiTests(CatmaidApiTestCase):
 
         response = self.client.post(
                 '/%d/node/update' % self.test_project_id, param_dict)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 403)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {'error': 'User test2 cannot edit all of the 4 '
                            'unique objects from table treenode'}

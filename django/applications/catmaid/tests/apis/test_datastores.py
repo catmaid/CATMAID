@@ -9,14 +9,14 @@ class DatastoresApiTests(CatmaidApiTestCase):
     def test_client_datastores(self):
         url = '/client/datastores/'
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 403)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertIn('error', parsed_response)
         self.assertIn('type', parsed_response)
         self.assertEquals('PermissionError', parsed_response['type'])
 
         response = self.client.post(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 403)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertIn('error', parsed_response)
         self.assertIn('type', parsed_response)
@@ -26,7 +26,7 @@ class DatastoresApiTests(CatmaidApiTestCase):
         self.fake_authentication()
         name = 'test-  %% datastore'
         response = self.client.post(url, {'name': name})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 500)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertTrue('error' in parsed_response)
         name = 'test-datastore'

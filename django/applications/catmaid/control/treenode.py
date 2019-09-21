@@ -422,7 +422,7 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
 
     except Exception as e:
         import traceback
-        raise Exception("%s: %s %s" % (response_on_error, str(e),
+        raise ValueError("%s: %s %s" % (response_on_error, str(e),
                                        str(traceback.format_exc())))
 
 
@@ -441,7 +441,7 @@ def update_parent(request:HttpRequest, project_id=None, treenode_id=None) -> Jso
     parent = get_object_or_404(Treenode, pk=parent_id, project_id=project_id)
 
     if child.skeleton_id != parent.skeleton_id:
-        raise Exception("Child node %s is in skeleton %s but parent node %s is in skeleton %s!", \
+        raise ValueError("Child node %s is in skeleton %s but parent node %s is in skeleton %s!", \
                         treenode_id, child.skeleton_id, parent_id, parent.skeleton_id)
 
     child.parent_id = parent_id
@@ -531,7 +531,7 @@ def update_radius(request:HttpRequest, project_id=None, treenode_id=None) -> Jso
     treenode_id = int(treenode_id)
     radius = float(request.POST.get('radius', -1))
     if math.isnan(radius):
-        raise Exception("Radius '%s' is not a number!" % request.POST.get('radius'))
+        raise ValueError("Radius '%s' is not a number!" % request.POST.get('radius'))
     option = int(request.POST.get('option', 0))
     cursor = connection.cursor()
     # Make sure the back-end is in the expected state
@@ -697,7 +697,7 @@ def delete_treenode(request:HttpRequest, project_id=None) -> JsonResponse:
             if n_children > 0:
                 # TODO yes you can, the new root is the first of the children,
                 # and other children become independent skeletons
-                raise Exception("You can't delete the root node when it "
+                raise ValueError("You can't delete the root node when it "
                                 "has children.")
             # Get the neuron before the skeleton is deleted. It can't be
             # accessed otherwise anymore.
@@ -768,7 +768,7 @@ def delete_treenode(request:HttpRequest, project_id=None) -> JsonResponse:
         })
 
     except Exception as e:
-        raise Exception(response_on_error + ': ' + str(e))
+        raise ValueError(response_on_error + ': ' + str(e))
 
 def _compact_detail_list(project_id, treenode_ids=None, label_ids=None,
         label_names=None, skeleton_ids=None):
@@ -1020,7 +1020,7 @@ def find_children(request:HttpRequest, project_id=None, treenode_id=None) -> Jso
         children = [[row] for row in cursor.fetchall()]
         return JsonResponse(children, safe=False)
     except Exception as e:
-        raise Exception('Could not obtain next branch node or leaf: ' + str(e))
+        raise ValueError('Could not obtain next branch node or leaf: ' + str(e))
 
 
 @api_view(['POST'])
@@ -1176,7 +1176,7 @@ def _find_first_interesting_node(sequence):
     Otherwise return the last node.
     """
     if not sequence:
-        raise Exception('No nodes ahead!')
+        raise ValueError('No nodes ahead!')
 
     if 1 == len(sequence):
         return sequence[0]
@@ -1201,7 +1201,7 @@ def _find_first_interesting_node(sequence):
             if props[1] < 5 or props[2] or props[3]:
                 return node_id
         else:
-            raise Exception('Nodes of this skeleton changed while inspecting them.')
+            raise ValueError('Nodes of this skeleton changed while inspecting them.')
 
     return sequence[-1]
 
@@ -1231,7 +1231,7 @@ def find_previous_branchnode_or_root(request:HttpRequest, project_id=None, treen
 
         return JsonResponse(_fetch_location(project_id, tnid), safe=False)
     except Exception as e:
-        raise Exception('Could not obtain previous branch node or root:' + str(e))
+        raise ValueError('Could not obtain previous branch node or root:' + str(e))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -1275,4 +1275,4 @@ def find_next_branchnode_or_end(request:HttpRequest, project_id=None, treenode_i
         branches = [[node_locations[node_id] for node_id in branch] for branch in branches]
         return JsonResponse(branches, safe=False)
     except Exception as e:
-        raise Exception('Could not obtain next branch node or leaf: ' + str(e))
+        raise ValueError('Could not obtain next branch node or leaf: ' + str(e))

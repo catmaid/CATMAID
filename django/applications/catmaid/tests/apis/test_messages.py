@@ -13,7 +13,7 @@ class MessagesApiTests(CatmaidApiTestCase):
         message_id = 5050
 
         response = self.client.post(f'/messages/{message_id}/mark_read')
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 404)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertIn('error', parsed_response)
         self.assertIn('type', parsed_response)

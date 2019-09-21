@@ -51,7 +51,7 @@ def update_textlabel(request:HttpRequest, project_id=None) -> HttpResponse:
         return HttpResponse(' ')
 
     except Exception as e:
-        raise Exception(response_on_error + ':' + str(e))
+        raise ValueError(response_on_error + ':' + str(e))
 
 
 @requires_user_role(UserRole.Annotate)

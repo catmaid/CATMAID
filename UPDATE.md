@@ -9,6 +9,11 @@ and other administration related changes are listed in order.
   PostGIS first and run `ALTER EXTENSION postgis UPDATE;` in every database. For
   docker-compose setups this database update is performed automatically.
 
+- Back-end errors result now in actual HTTP error status codes. Third-party
+  clients need possibly some adjustments to handle API errors. In case of an
+  error, status 400 is returned if an input data or parameter problem, 401 for
+  permission problems and 500 otherwise.
+
 ## 2019.06.20
 
 - A virtualenv update is required.

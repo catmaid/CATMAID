@@ -188,9 +188,14 @@ class BasicUITest(StaticLiveServerTestCase):
                 # Let test fail
                 self.assertNotIn('SyntaxError', log_entry['message'])
 
-            # Fail on any severe errors
+            # Fail on any severe errors that aren't expected. Expected are 403
+            # errors for settings loading for the anonymous user if not linked
+            # to any project.
             self.assertIn('level', log_entry)
-            self.assertNotIn('SEVERE', log_entry['level'], log_entry['message'])
+            unexpected_error = 'SEVERE' in log_entry['level'] and \
+                    '403 (Forbidden)' not in log_entry['message']
+            if unexpected_error:
+                self.assertNotIn('SEVERE', log_entry['level'], log_entry['message'])
 
         # Check title
         self.assertTrue("CATMAID" in self.selenium.title)

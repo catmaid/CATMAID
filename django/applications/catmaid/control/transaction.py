@@ -3,6 +3,7 @@
 from typing import Dict
 from django.db import connection
 
+from catmaid.error import ClientError
 from catmaid.control.authentication import requires_user_role
 from catmaid.models import UserRole
 
@@ -11,7 +12,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 
-class LocationLookupError(Exception):
+class LocationLookupError(ClientError):
     pass
 
 

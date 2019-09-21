@@ -7,8 +7,10 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from django.db import connection
 
+from catmaid.error import ClientError
 
-class StateMatchingError(Exception):
+
+class StateMatchingError(ClientError):
     """Indicates that a state check wasn't successful"""
     def __init__(self, message, state):
         super().__init__(message)

@@ -350,11 +350,10 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
         params['tag_names'] = tags
         params['label'] = lass_map['label']
 
-
     constlines = "\n".join(constraints)
     extra_where_lines = ("AND " + " AND ".join(extra_where)) if extra_where else ""
     cursor.execute(f'''
-        SELECT DISTINCT c.id, c.location_x, c.location_y, c.location_z, c.confidence,
+        SELECT DISTINCT ON (c.id) c.id, c.location_x, c.location_y, c.location_z, c.confidence,
             c.user_id, c.editor_id, EXTRACT(EPOCH FROM c.creation_time),
             EXTRACT(EPOCH FROM c.edition_time)
         FROM connector c

@@ -1456,6 +1456,7 @@
         // Synapse completeness
         this.synapseCompletenessContainer = content.appendChild(document.createElement('div'));
         this.synapseCompletenessContainer.innerHTML = `
+          <h4>Synapses without presynaptic node</h4>
           <table cellpadding="0" cellspacing="0" border="0" class="display">
             <thead>
               <tr>

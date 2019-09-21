@@ -720,6 +720,10 @@ table.neuron_annotations_query_fields {
   font-weight: bold;
 }
 
+.windowContent h4 {
+  margin: 0.5em 0.1em 1em 0.4em;
+}
+
 .windowContent span.file-path {
   display: block;
 }

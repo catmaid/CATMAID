@@ -157,6 +157,11 @@ Graph widget:
   addition, skeletons are removed from the widget if they don't comply with the
   filters. All this is likely going to chagne in future versions.
 
+Review widget:
+
+- The new tab "Synapse completeness" can list synaptic connector nodes don't
+  have a presynaptic node associated with them.
+
 Import/Export widget:
 
 - It is now possible to import neurons from other CATMAID instances. The "Import

@@ -1173,7 +1173,7 @@
       controlsID: "review_widget_buttons",
       createControls: function(controls) {
         var self = this;
-        var tabs = CATMAID.DOM.addTabGroup(controls, '-review', ['Node review', 'Skeleton analytics']);
+        var tabs = CATMAID.DOM.addTabGroup(controls, '-review', ['Node review', 'Skeleton analytics', 'Synapse completeness']);
 
         CATMAID.DOM.appendToTab(tabs['Node review'], [{
             type: 'button',
@@ -1309,10 +1309,23 @@
           }
         ]);
 
+        // Synapse completeness
+        tabs['Synapse completeness'].dataset.mode = 'synapse-completeness';
+        CATMAID.DOM.appendToTab(tabs['Synapse completeness'], [{
+            type: 'child',
+            element: CATMAID.skeletonListSources.createSelect(this)
+          }, {
+            type: 'button',
+            label: 'List incomplete connectors',
+            title: 'List all connectors linked to the selected skeletons that don\'t have a presynaptic node',
+            onclick: this.reloadSynapseCompletenessData.bind(this)
+          }
+        ]);
+
         $(controls).tabs({
           activate: function(event, ui) {
             var mode = ui.newPanel.attr('data-mode');
-            if (mode === 'node-review' || mode === 'analytics') {
+            if (mode === 'node-review' || mode === 'analytics' || mode === 'synapse-completeness') {
               self.mode = mode;
               self.redraw();
             }
@@ -1370,7 +1383,7 @@
         content.appendChild(this.nodeReviewContainer);
 
         // Skeleton analytics
-        this.analyticsContainer = document.createElement('div');
+        this.analyticsContainer = content.appendChild(document.createElement('div'));
         this.analyticsContainer.innerHTML =
           '<table cellpadding="0" cellspacing="0" border="0" class="display" id="skeletonanalyticstable' + this.widgetID + '">' +
             '<thead>' +
@@ -1440,6 +1453,116 @@
             .catch(CATMAID.handleError);
         });
 
+        // Synapse completeness
+        this.synapseCompletenessContainer = content.appendChild(document.createElement('div'));
+        this.synapseCompletenessContainer.innerHTML = `
+          <table cellpadding="0" cellspacing="0" border="0" class="display">
+            <thead>
+              <tr>
+                <th>Connector ID</th>
+                <th>X</th>
+                <th>Y</th>
+                <th>Z</th>
+                <th>Confidence</th>
+                <th>Creator</th>
+                <th>Creation time (UTC)</th>
+                <th>Editor</th>
+                <th>Edition time (UTC)</th>
+              </tr>
+            </thead>
+            <tbody>
+            </tbody>
+          </table>`;
+        this.synapseCompletenessTable = $('table', this.synapseCompletenessContainer).DataTable({
+          destroy: true,
+          dom: 'lfrtip',
+          processing: true,
+          // Enable sorting locally, and prevent sorting from calling the
+          // fnServerData to reload the table -- an expensive and undesirable
+          // operation.
+          serverSide: false,
+          autoWidth: false,
+          pageLength: -1,
+          lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+          columns: [
+            {
+              data: 'id',
+              searchable: true,
+              sortable: true
+            },
+            {
+              data: 'x',
+              searchable: true,
+              sortable: true
+            },
+            {
+              data: 'y',
+              searchable: true,
+              sortable: true
+            },
+            {
+              data: 'z',
+              searchable: true,
+              sortable: true
+            },
+            {
+              data: 'confidence',
+              searchable: true,
+              sortable: true,
+              class: 'cm-center',
+            },
+            {
+              data: 'userId',
+              searchable: true,
+              sortable: true,
+              render: (data, type, row, meta) => {
+                return CATMAID.User.safe_get(data).login;
+              }
+            },
+            {
+              data: 'creationTime',
+              searchable: true,
+              sortable: true,
+              class: 'cm-center',
+              render: (data, type, row, meta) => {
+                return CATMAID.tools.dateToString(new Date(data));
+              }
+            },
+            {
+              data: 'editorId',
+              searchable: true,
+              sortable: true,
+              render: (data, type, row, meta) => {
+                return CATMAID.User.safe_get(data).login;
+              }
+            },
+            {
+              data: 'editionTime',
+              searchable: true,
+              sortable: true,
+              class: 'cm-center',
+              render: (data, type, row, meta) => {
+                return CATMAID.tools.dateToString(new Date(data));
+              }
+            },
+          ]
+        });
+
+        /** Make rows double-clickable to go to the treenode location and select it. */
+        var synapseCompletenessTable = this.synapseCompletenessTable;
+        $('table tbody', this.synapseCompletenessContainer).on('dblclick', 'tr', function() {
+          var data = synapseCompletenessTable.row(this).data();
+          CATMAID.fetch(project.id + '/node/get_location', 'POST',
+              { tnid: data.id }, false, "synapse_completeness_go_to_node")
+            .then(function(json) {
+              SkeletonAnnotations.staticMoveTo(json[3], json[2], json[1]);
+            })
+            .then(function() {
+              return SkeletonAnnotations.staticSelectNode(data.id);
+            })
+            .catch(CATMAID.handleError);
+        });
+
         content.appendChild(this.analyticsContainer);
       },
       init: function() {
@@ -1448,7 +1571,8 @@
       filter: {
         rules: this.filterRules,
         update: this.updateFilter.bind(this)
-      }
+      },
+      helpPath: 'review-widget.html',
     };
   };
 
@@ -1467,11 +1591,17 @@
     if (this.mode === 'node-review') {
       this.nodeReviewContainer.style.display = this.currentSkeletonId ? 'block' : 'none';
       this.analyticsContainer.style.display = 'none';
+      this.synapseCompletenessContainer.style.display = 'none';
       $('.warning', this.nodeReviewContainer).css('display',
           this.persistReview ? 'none' : 'block');
     } else if (this.mode === 'analytics') {
       this.nodeReviewContainer.style.display = 'none';
       this.analyticsContainer.style.display = 'block';
+      this.synapseCompletenessContainer.style.display = 'none';
+    } else if (this.mode === 'synapse-completeness') {
+      this.nodeReviewContainer.style.display = 'none';
+      this.analyticsContainer.style.display = 'none';
+      this.synapseCompletenessContainer.style.display = 'block';
     }
   };
 
@@ -1586,6 +1716,62 @@
                      issue[1], // treenode ID
                      sk[0]]); // skeleton ID
         });
+      });
+
+      if (rows.length > 0) {
+        table.rows.add(rows);
+      }
+      table.draw();
+    })
+    .catch(CATMAID.handleError);
+  };
+
+  /**
+   * Refresh the synapse completeness data for the current set of skeletons.
+   */
+  CATMAID.ReviewSystem.prototype.reloadSynapseCompletenessData = function() {
+    var table = this.synapseCompletenessTable;
+    if (!table) {
+      CATMAID.warn("Couldn't find synapse completeness table");
+      return;
+    }
+    // Clear
+    table.clear();
+    // Reload
+    var skids = CATMAID.skeletonListSources.getSelectedSource(this).getSelectedSkeletons();
+    if (!skids || !skids[0]) {
+      CATMAID.msg("Oops", "Select skeleton(s) first!");
+      return;
+    }
+    // sSource is the sAjaxSource
+    var extra = $('#Skeletonanalytics-review_extra' + this.widgetID).val();
+    if (undefined === extra) {
+      throw new CATMAID.Error("Couldn't find parameter 'extra'");
+    }
+    var adjacents = $('#Skeletonanalytics-review_adjacents' + this.widgetID).val();
+    if (undefined === adjacents) {
+      throw new CATMAID.Error("Couldn't find parameter 'adjacents'");
+    }
+
+    CATMAID.fetch(project.id + '/connectors/', 'POST', {
+      skeleton_ids: skids,
+      without_relation_types: ['presynaptic_to'],
+    }, false, 'synapse_completeness_update', true)
+    .then(function(json) {
+      var rows = [];
+      json.connectors.forEach(function (c) {
+        // 0: connectorId, 1: X, 2: Y, 3: Z, 4: confidence, 5: user ID, 6: editor ID, 7: creation time 8: edition time
+          rows.push({
+            'id': c[0],
+            'x': c[1],
+            'y': c[2],
+            'z': c[3],
+            'confidence': c[4],
+            'userId': c[5],
+            'editorId': c[6],
+            'creationTime': c[7],
+            'editionTime': c[8],
+          });
       });
 
       if (rows.length > 0) {

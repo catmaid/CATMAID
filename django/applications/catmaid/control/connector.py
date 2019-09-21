@@ -232,6 +232,14 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
         type: string
         paramType: form
         required: false
+      - name: without_relation_types
+        description: |
+            Relations to linked skeletons that connectors must not have.
+        type: array
+        items:
+          type: string
+        paramType: form
+        required: false
       - name: with_tags
         description: If connector tags should be fetched
         type: boolean
@@ -262,6 +270,7 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
     skeleton_ids = get_request_list(request.POST, 'skeleton_ids', map_fn=int)
     tags = get_request_list(request.POST, 'tags')
     relation_type = request.POST.get('relation_type')
+    without_relation_types = get_request_list(request.POST, 'without_relation_types')
     with_tags = get_request_bool(request.POST, 'with_tags', True)
     with_partners = get_request_bool(request.POST, 'with_partners', False)
 
@@ -269,16 +278,18 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
     class_map = get_class_to_id_map(project_id, cursor=cursor)
     relation_map = get_relation_to_id_map(project_id, cursor=cursor)
 
-    if relation_type:
-        relation_id = relation_map.get(relation_type)
-        if not relation_id:
-            raise ValueError("Unknown relation: " + relation_type)
-
     # Query connectors
     constraints = []
+    extra_where = []
     params:Dict = {
         'project_id': project_id,
     }
+
+    if relation_type:
+        relation_id = relation_map.get(relation_type)
+        params['relation_id'] = relation_id
+        if not relation_id:
+            raise ValueError("Unknown relation: " + relation_type)
 
     if skeleton_ids:
         constraints.append(f'''
@@ -293,14 +304,31 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
                 AND tc.relation_id = %(relation_id)s
             ''')
             params['relation_id'] = relation_id
+    elif relation_type:
+            constraints.append('''
+                JOIN treenode_connector tc_rel
+                    ON tc_rel.connector_id = c.id
+                    AND tc_rel.relation_id = %(relation_id)s
+            ''')
 
-    if relation_type:
-        constraints.append('''
-            JOIN treenode_connector tc_rel
-                ON tc_rel.connector_id = c.id
-                AND tc_rel.relation_id = %(relation_id)s
+    if without_relation_types:
+        # Only connectors without the passed in relations. This is done through
+        # an anti-join.
+        try:
+            wo_rel_ids = list(map(lambda x: relation_map[x], without_relation_types))
+        except KeyError:
+            missing_relations = ", ".join(filter(lambda x: x not in relation_map, without_relation_types))
+            raise ValueError(f'Unknown relation: {missing_relations}')
+        constraints.append(f'''
+            LEFT JOIN treenode_connector tc_wo
+                ON tc_wo.connector_id = c.id
+                AND tc_wo.relation_id  = ANY (%(wo_rel_ids)s::bigint[])
         ''')
-        params['relation_id'] = relation_id
+        extra_where.append('''
+            tc_wo.id IS NULL
+        ''')
+
+        params['wo_rel_ids'] = wo_rel_ids
 
     if tags:
         constraints.append(f'''
@@ -324,6 +352,7 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
 
 
     constlines = "\n".join(constraints)
+    extra_where_lines = ("AND " + " AND ".join(extra_where)) if extra_where else ""
     cursor.execute(f'''
         SELECT DISTINCT c.id, c.location_x, c.location_y, c.location_z, c.confidence,
             c.user_id, c.editor_id, EXTRACT(EPOCH FROM c.creation_time),
@@ -331,6 +360,7 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
         FROM connector c
         {constlines}
         WHERE c.project_id = %(project_id)s
+        {extra_where_lines}
         ORDER BY c.id
     ''', params)
 

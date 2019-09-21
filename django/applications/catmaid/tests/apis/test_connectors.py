@@ -490,6 +490,51 @@ class ConnectorsApiTests(CatmaidApiTestCase):
 
         self.assertEqual(expected_result, parsed_response)
 
+    def test_without_relation_types_connector_list(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/connectors/' % self.test_project_id, {
+                    'skeleton_ids[0]': 373,
+                    'skeleton_ids[1]': 235,
+                    'without_relation_types[0]': 'presynaptic_to',
+                })
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        expected_result = {
+            'connectors': [],
+            'tags': {},
+            'partners': {}
+        }
+
+        # Delete all links to another connector
+        connector_id = 2463
+        TreenodeConnector.objects.filter(connector_id=connector_id).delete()
+        # Add post-link (1024) from other connector to node 285 in skeleton 235.
+        tc = TreenodeConnector.objects.create(project_id=self.test_project_id,
+                user_id=3, relation_id=1024, treenode_id=285,
+                connector_id=connector_id, skeleton_id=235)
+
+        # Query again for connectors without pre-link
+        response = self.client.post(
+                '/%d/connectors/' % self.test_project_id, {
+                    'skeleton_ids[0]': 373,
+                    'skeleton_ids[1]': 235,
+                    'without_relation_types[0]': 'presynaptic_to',
+                })
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        expected_result = {
+            'connectors': [
+                [2463, 7135.0, 5065.0, 0.0, 5, 3, 3, 1457547029.666, 1457547029.666]
+            ],
+            'tags': {},
+            'partners': {}
+        }
+
+        self.assertEqual(expected_result, parsed_response)
+
     def test_no_tags_connector_list(self):
         self.fake_authentication()
         response = self.client.post(

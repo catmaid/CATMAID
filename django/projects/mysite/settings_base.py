@@ -69,6 +69,7 @@ ROOT_URLCONF = 'mysite.urls'
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
+    'django.contrib.messages',
     'django.contrib.sessions',
     'django.contrib.sites',
     # Instead of 'django.contrib.admin', in order to disable the automatic

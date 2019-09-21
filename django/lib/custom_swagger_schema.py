@@ -3,7 +3,7 @@
 # This implementation is based on
 # https://github.com/m-haziq/django-rest-swagger-docs#integrating-django-rest-swagger
 
-from rest_framework.schemas.inspectors import AutoSchema
+from rest_framework.schemas.coreapi import AutoSchema
 from requests.compat import urljoin
 import yaml
 import coreapi

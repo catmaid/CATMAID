@@ -338,7 +338,7 @@ var requestQueue = new CATMAID.RequestQueue();
    * Translate an error response into the appropriate front-end type.
    */
   CATMAID.parseErrorResponse = function(error, statusCode = undefined) {
-    error = error | {};
+    error = error || {};
     if ('ValueError' === error.type) {
       return new CATMAID.ValueError(error.error, error.detail);
     } else if ('StateMatchingError' === error.type) {

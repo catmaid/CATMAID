@@ -46,6 +46,11 @@ included in this changelog.
 
 ### Modifications
 
+- All APIs: errors during a request are now indicated with a more useful HTTP
+  status code than 200: errors related to the request, input data and the client
+  will result in status 400, permission errors in status 403, unavailable
+  resources in status 404 and internal server errors in status 500.
+
 - `POST|GET /{project_id}/node/list`:
   Offers a new optional parameter
   "ordering", which can be used to order the result set of nodes. The values

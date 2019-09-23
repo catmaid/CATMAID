@@ -160,7 +160,8 @@ Graph widget:
 Review widget:
 
 - The new tab "Synapse completeness" can list synaptic connector nodes don't
-  have a presynaptic node associated with them.
+  have a presynaptic node associated with them as well the ones without a
+  postsynaptic node.
 
 Import/Export widget:
 

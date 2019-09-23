@@ -1457,7 +1457,26 @@
         this.synapseCompletenessContainer = content.appendChild(document.createElement('div'));
         this.synapseCompletenessContainer.innerHTML = `
           <h4>Synapses without presynaptic node</h4>
-          <table cellpadding="0" cellspacing="0" border="0" class="display">
+          <table cellpadding="0" cellspacing="0" border="0" class="display" data-role="missing-pre">
+            <thead>
+              <tr>
+                <th>Connector ID</th>
+                <th>X</th>
+                <th>Y</th>
+                <th>Z</th>
+                <th>Confidence</th>
+                <th>Creator</th>
+                <th>Creation time (UTC)</th>
+                <th>Editor</th>
+                <th>Edition time (UTC)</th>
+              </tr>
+            </thead>
+            <tbody>
+            </tbody>
+          </table>
+          <div class="clear"></div>
+          <h4>Synapses without postsynaptic node</h4>
+          <table cellpadding="0" cellspacing="0" border="0" class="display" data-role="missing-post">
             <thead>
               <tr>
                 <th>Connector ID</th>
@@ -1474,7 +1493,83 @@
             <tbody>
             </tbody>
           </table>`;
-        this.synapseCompletenessTable = $('table', this.synapseCompletenessContainer).DataTable({
+
+        this.synapseCompletenessTable = $('table[data-role=missing-pre]', this.synapseCompletenessContainer).DataTable({
+          destroy: true,
+          dom: 'lfrtip',
+          processing: true,
+          // Enable sorting locally, and prevent sorting from calling the
+          // fnServerData to reload the table -- an expensive and undesirable
+          // operation.
+          serverSide: false,
+          autoWidth: false,
+          pageLength: -1,
+          lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+          columns: [
+            {
+              data: 'id',
+              searchable: true,
+              sortable: true
+            },
+            {
+              data: 'x',
+              searchable: true,
+              sortable: true
+            },
+            {
+              data: 'y',
+              searchable: true,
+              sortable: true
+            },
+            {
+              data: 'z',
+              searchable: true,
+              sortable: true
+            },
+            {
+              data: 'confidence',
+              searchable: true,
+              sortable: true,
+              class: 'cm-center',
+            },
+            {
+              data: 'userId',
+              searchable: true,
+              sortable: true,
+              render: (data, type, row, meta) => {
+                return CATMAID.User.safe_get(data).login;
+              }
+            },
+            {
+              data: 'creationTime',
+              searchable: true,
+              sortable: true,
+              class: 'cm-center',
+              render: (data, type, row, meta) => {
+                return CATMAID.tools.dateToString(new Date(data));
+              }
+            },
+            {
+              data: 'editorId',
+              searchable: true,
+              sortable: true,
+              render: (data, type, row, meta) => {
+                return CATMAID.User.safe_get(data).login;
+              }
+            },
+            {
+              data: 'editionTime',
+              searchable: true,
+              sortable: true,
+              class: 'cm-center',
+              render: (data, type, row, meta) => {
+                return CATMAID.tools.dateToString(new Date(data));
+              }
+            },
+          ]
+        });
+
+        this.synapseCompletenessPostTable = $('table[data-role=missing-post]', this.synapseCompletenessContainer).DataTable({
           destroy: true,
           dom: 'lfrtip',
           processing: true,
@@ -1550,9 +1645,8 @@
         });
 
         /** Make rows double-clickable to go to the treenode location and select it. */
-        var synapseCompletenessTable = this.synapseCompletenessTable;
         $('table tbody', this.synapseCompletenessContainer).on('dblclick', 'tr', function() {
-          var data = synapseCompletenessTable.row(this).data();
+          var data = $(this).closest('table').DataTable().row(this).data();
           CATMAID.fetch(project.id + '/node/get_location', 'POST',
               { tnid: data.id }, false, "synapse_completeness_go_to_node")
             .then(function(json) {
@@ -1563,8 +1657,6 @@
             })
             .catch(CATMAID.handleError);
         });
-
-        content.appendChild(this.analyticsContainer);
       },
       init: function() {
         this.init();
@@ -1732,31 +1824,25 @@
    */
   CATMAID.ReviewSystem.prototype.reloadSynapseCompletenessData = function() {
     var table = this.synapseCompletenessTable;
-    if (!table) {
+    var postTable = this.synapseCompletenessPostTable;
+    if (!table || !postTable) {
       CATMAID.warn("Couldn't find synapse completeness table");
       return;
     }
     // Clear
     table.clear();
+    postTable.clear();
     // Reload
     var skids = CATMAID.skeletonListSources.getSelectedSource(this).getSelectedSkeletons();
     if (!skids || !skids[0]) {
       CATMAID.msg("Oops", "Select skeleton(s) first!");
       return;
     }
-    // sSource is the sAjaxSource
-    var extra = $('#Skeletonanalytics-review_extra' + this.widgetID).val();
-    if (undefined === extra) {
-      throw new CATMAID.Error("Couldn't find parameter 'extra'");
-    }
-    var adjacents = $('#Skeletonanalytics-review_adjacents' + this.widgetID).val();
-    if (undefined === adjacents) {
-      throw new CATMAID.Error("Couldn't find parameter 'adjacents'");
-    }
 
     CATMAID.fetch(project.id + '/connectors/', 'POST', {
       skeleton_ids: skids,
       without_relation_types: ['presynaptic_to'],
+      parallel: true,
     }, false, 'synapse_completeness_update', true)
     .then(function(json) {
       var rows = [];
@@ -1779,6 +1865,35 @@
         table.rows.add(rows);
       }
       table.draw();
+    })
+    .catch(CATMAID.handleError);
+
+    CATMAID.fetch(project.id + '/connectors/', 'POST', {
+      skeleton_ids: skids,
+      without_relation_types: ['postsynaptic_to'],
+      parallel: true,
+    }, false, 'synapse_completeness_update', true)
+    .then(function(json) {
+      var rows = [];
+      json.connectors.forEach(function (c) {
+        // 0: connectorId, 1: X, 2: Y, 3: Z, 4: confidence, 5: user ID, 6: editor ID, 7: creation time 8: edition time
+          rows.push({
+            'id': c[0],
+            'x': c[1],
+            'y': c[2],
+            'z': c[3],
+            'confidence': c[4],
+            'userId': c[5],
+            'editorId': c[6],
+            'creationTime': c[7],
+            'editionTime': c[8],
+          });
+      });
+
+      if (rows.length > 0) {
+        postTable.rows.add(rows);
+      }
+      postTable.draw();
     })
     .catch(CATMAID.handleError);
   };

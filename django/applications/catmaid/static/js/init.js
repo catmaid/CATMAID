@@ -879,7 +879,7 @@ var project;
       window.clearTimeout(edit_domain_timeout);
     }
 
-    if (e.id) { // Logged in as a non-anonymous user.
+    if (e.is_authenticated) { // Logged in as a non-anonymous user.
       document.getElementById("account").value = "";
       document.getElementById("password").value = "";
       document.getElementById("session_longname").replaceChild(

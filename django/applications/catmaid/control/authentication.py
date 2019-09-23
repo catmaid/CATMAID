@@ -69,7 +69,7 @@ def login_user(request:HttpRequest) -> JsonResponse:
     if request.method == 'POST':
         # Check if the user is authenticated already (e.g. due to an API token)
         # and return the user context if this is the case.
-        if request.user and request.user.is_authenticated:
+        if request.user and request.user.is_authenticated and request.user != get_anonymous_user():
             return user_context_response(request.user, profile_context)
 
         # Try to log the user into the system.

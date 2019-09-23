@@ -962,7 +962,7 @@ var project;
     CATMAID.setupCsrfProtection();
 
     var load = CATMAID.updatePermissions();
-    if (e.id || (e.permissions && -1 !== e.permissions.indexOf('catmaid.can_browse'))) {
+    if (e.is_authenticated || (e.permissions && -1 !== e.permissions.indexOf('catmaid.can_browse'))) {
       // Asynchronously, try to get a full list of users if a user is logged in
       // or the anonymous user has can_browse permissions.
       load = load.then(CATMAID.User.getUsers.bind(CATMAID.User));

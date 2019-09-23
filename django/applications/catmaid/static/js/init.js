@@ -1147,7 +1147,7 @@ var project;
    */
   function handle_message(e)
   {
-    if ( !CATMAID.session || !CATMAID.session.id )
+    if (!CATMAID.session)
       return;
 
     var message_container = document.getElementById( "message_container" );

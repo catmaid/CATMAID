@@ -67,6 +67,11 @@ def access_check(user) -> bool:
 def login_user(request:HttpRequest) -> JsonResponse:
     profile_context = {}
     if request.method == 'POST':
+        # Check if the user is authenticated already (e.g. due to an API token)
+        # and return the user context if this is the case.
+        if request.user and request.user.is_authenticated:
+            return user_context_response(request.user, profile_context)
+
         # Try to log the user into the system.
         username = request.POST.get('name', 0)
         password = request.POST.get('pwd', 0)
@@ -80,8 +85,6 @@ def login_user(request:HttpRequest) -> JsonResponse:
             # Redirect to a success page.
             request.session['user_id'] = user.id
             login(request, user)
-            # Add some context information
-            profile_context['id'] = request.session.session_key
             return user_context_response(user, profile_context)
         else:
             try:
@@ -99,7 +102,6 @@ def login_user(request:HttpRequest) -> JsonResponse:
     else:   # request.method == 'GET'
         # Check if the user is logged in.
         if request.user.is_authenticated:
-            profile_context['id'] = request.session.session_key
             return user_context_response(request.user, profile_context)
         else:
             # Return a 'not logged in' warning message.

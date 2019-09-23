@@ -2010,7 +2010,7 @@
       refresh: function (callback) {
         // If no project is open or no user is logged in, clear the whitelist.
         if (typeof project === 'undefined' || !project ||
-            !CATMAID.session || !CATMAID.session.id) {
+            !CATMAID.session || !CATMAID.session.is_authenticated) {
           whitelist = {};
           return;
         }
@@ -2031,7 +2031,7 @@
        */
       save: function (callback) {
         // If no user is logged in, do not attempt to save the whitelist.
-        if (!CATMAID.session || !CATMAID.session.id) return;
+        if (!CATMAID.session || !CATMAID.session.is_authenticated) return;
 
         var encodedWhitelist = Object.keys(whitelist).reduce(function (ewl, userId) {
           ewl[userId] = whitelist[userId].toISOString();

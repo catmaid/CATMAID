@@ -1903,6 +1903,16 @@
   TracingTool.actions = [
 
     new CATMAID.Action({
+      helpText: "Neuron Similarity: Compare between skeletons",
+      buttonID: "data_button_similarity",
+      buttonName: 'table_similarity',
+      run: function (e) {
+        WindowMaker.show('neuron-similarity');
+        return true;
+      }
+    }),
+
+    new CATMAID.Action({
       helpText: "Review Widget: Review existing skeletons",
       buttonID: "data_button_review",
       buttonName: 'table_review',

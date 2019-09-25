@@ -190,7 +190,7 @@ def export_skeleton_as_nrrd(project_id, skeleton_id, source_ref, target_ref,
         logger.debug(f'Fetching {len(object_ids)} skeletons')
         # Note: scaling down to um
         objects = neuronlist_for_skeletons(project_id, object_ids, omit_failures,
-                progress=False, scale=nm_to_um, conn=conn)
+                progress=False, conn=conn)
         # Transform neuron
         target_ref_tb = robjects.r(target_ref)
         xt = rnattemplatebrains.xform_brain(objects, sample=source_ref, reference=target_ref_tb)

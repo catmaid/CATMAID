@@ -4,7 +4,6 @@
   CATMAID,
   project,
   SkeletonAnnotations,
-  WindowMaker
 */
 
 (function(CATMAID) {

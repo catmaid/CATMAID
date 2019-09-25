@@ -24,6 +24,8 @@
     // Keep a reference to the current and last selected skeleton.
     this.lastSkeletonId = null;
     this.currentSkeletonId = null;
+    // Reference to the currently active 'More tools' context menu, if any.
+    this.moreToolsContextMenu = null;
 
     /**
      * Return the stack viewer referenced by the active node, or otherwise (if
@@ -1041,9 +1043,49 @@
     }));
 
     this.addAction(new CATMAID.Action({
+      helpText: "More tools",
+      buttonName: "moretools",
+      buttonID: "trace_button_moretools",
+      run: function(e) {
+        // Hide current context menut (if any) and show new context menu
+        if (self.moreToolsContextMenu) {
+          self.moreToolsContextMenu.hide();
+        }
+        // Show context menu
+        self.moreToolsContextMenu= new CATMAID.ContextMenu({
+          disableDefaultContextMenu: true,
+          select: function(selection) {
+            let data = selection.item.data;
+            let action = selection.item.value;
+            if (action === 'refresh-caches') {
+              if (!CATMAID.mayView()) {
+                return false;
+              }
+              self.refreshCaches()
+                .then(function() {
+                  CATMAID.msg("Success", "Caches updated");
+                })
+                .catch(CATMAID.handleError);
+            }
+          },
+          hide: function(selected) {
+            self.moreToolsContextMenu = null;
+          },
+          items: [
+            {
+              'title': 'Refresh caches',
+              'value': 'refresh-caches',
+            },
+          ],
+        });
+        self.moreToolsContextMenu.show(true);
+
+        return true;
+      }
+    }));
+
+    this.addAction(new CATMAID.Action({
       helpText: "Refresh cached data like neuron names and annotations",
-      buttonName: "refresh",
-      buttonID: "trace_button_refresh",
       keyShortcuts: { "F6": ["F6"] },
       run: function(e) {
         if (!CATMAID.mayView()) {

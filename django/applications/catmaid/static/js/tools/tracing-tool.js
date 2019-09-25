@@ -1167,9 +1167,9 @@
             })
             .catch(function () {
               if (activeSkeletonId) {
-                CATMAID.warn('Selecing the closest node in the active skeleton failed');
+                CATMAID.warn('Selecting the closest node in the active skeleton failed');
               } else{
-                CATMAID.warn('Selecing the globally closest node failed');
+                CATMAID.warn('Selecting the globally closest node failed');
               }
             });
           return true;

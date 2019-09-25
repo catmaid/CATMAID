@@ -37,6 +37,10 @@
   error, status 400 is returned if an input data or parameter problem, 401 for
   permission problems and 500 otherwise.
 
+- On startup, CATMAID will now test if the output directory is accessible as
+  well as if its expected folder layout is present. If expected subfolders are
+  missing, they will now be created.
+
 ### Features and enhancements
 
 Node filters:

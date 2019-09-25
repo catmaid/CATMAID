@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import logging, json
+import logging, json, os
 from typing import List
 
 from catmaid import history, spatial
@@ -187,6 +187,38 @@ def prepare_db_statements(sender, connection, **kwargs) -> None:
     from catmaid.control import node
     node.prepare_db_statements(connection)
 
+def check_media_path(app_configs, **kwargs) -> List[str]:
+    """See if the MEDIA_ROOT path is accessible. If it is, make sure all
+    relevant subfolders are present. Create them if not.
+    """
+    messages:List[str] = []
+
+    output_dir = settings.MEDIA_ROOT
+    if not os.path.exists(output_dir) or not os.access(output_dir, os.W_OK):
+        messages.append(Warning(f"The output folder {output_dir} is not writable",
+            hint="Make sure the user running CATMAID can write to the output directory or change the MEDIA_ROOT setting."))
+    else:
+        known_output_subfolders = [
+            settings.MEDIA_HDF5_SUBDIRECTORY,
+            settings.MEDIA_CROPPING_SUBDIRECTORY,
+            settings.MEDIA_ROI_SUBDIRECTORY,
+            settings.MEDIA_TREENODE_SUBDIRECTORY,
+            settings.MEDIA_EXPORT_SUBDIRECTORY,
+            settings.MEDIA_CACHE_SUBDIRECTORY,
+        ]
+        for s in known_output_subfolders:
+            sub_output_dir = os.path.join(settings.MEDIA_ROOT, s)
+            if not os.path.exists(sub_output_dir):
+                try:
+                    os.makedirs(sub_output_dir)
+                    logger.info(f'Created output folder {sub_output_dir}')
+                except OSError:
+                    messages.append(Warning(f"Could not create output folder {sub_output_dir}: {str(e)}"))
+            elif not os.access(sub_output_dir, os.W_OK):
+                messages.append(Warning(f"The output folder {sub_output_dir} is not writable"))
+
+    return messages
+
 class CATMAIDConfig(AppConfig):
     name = 'catmaid'
     verbose_name = "CATMAID"
@@ -221,6 +253,9 @@ class CATMAIDConfig(AppConfig):
 
         # Make sure the expected default client instance settings are set.
         register(check_client_settings)
+
+        # Test if output paths are accessible
+        register(check_media_path)
 
         # Init R interface, which is used by some parts of CATMAID
         if r_available:

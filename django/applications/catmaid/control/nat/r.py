@@ -173,7 +173,7 @@ def export_skeleton_as_nrrd(project_id, skeleton_id, source_ref, target_ref,
         if getattr(settings, 'CMTK_TEMPLATE_SPACES', False):
             # Add optionally additional template space registrations
 
-            extra_folders = ', '.join(map(lambda x: str(x), settings.CMTK_TEMPLATE_SPACES))
+            extra_folders = ', '.join(map(lambda x: f'"{str(x)}"', settings.CMTK_TEMPLATE_SPACES))
             if extra_folders:
                 extra_folders = ', ' + extra_folders
             robjects.r('''

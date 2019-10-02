@@ -1212,10 +1212,11 @@ var SkeletonAnnotations = {};
    * Update currently used pointer based on the current tracing tool mode.
    */
   CATMAID.TracingOverlay.prototype.updateCursor = function() {
+    if (!this.view) return;
     if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.MOVE) {
       this.view.style.cursor = "move";
     } else {
-      this.view.style.cursor ="url(" + STATIC_URL_JS + "images/svg-circle.cur) 15 15, crosshair";
+      this.view.style.cursor =`url(${CATMAID.makeStaticURL('images/svg-circle.cur')}) 15 15, crosshair`;
     }
   };
 

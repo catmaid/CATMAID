@@ -466,7 +466,7 @@
               } else {
                 dialog.appendMessage("While the active skeleton isn't used in a " +
                     "sampler, the merged-in fragment is used in " + samplerCount2 +
-                    "reconstruction " + samplerNoun2 + ". All samplers on " +
+                    " reconstruction " + samplerNoun2 + ". All samplers on " +
                     "merged-in fragments will be deleted.");
               }
 

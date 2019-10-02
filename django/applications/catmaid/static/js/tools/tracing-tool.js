@@ -313,7 +313,7 @@
         stackViewer.removeLayer(layerName);
       }
 
-      if (activeTracingLayer.stackViewer === stackViewer) {
+      if (activeTracingLayer && activeTracingLayer.stackViewer === stackViewer) {
         activeTracingLayer = null;
       }
 

@@ -2095,17 +2095,35 @@ def _reroot_skeleton(treenode_id, project_id):
         if first_parent is None:
             return False
 
-        # Make sure this skeleton is not used in a sampler
-        n_samplers = Sampler.objects.filter(skeleton=rootnode.skeleton).count()
-        response_on_error = 'Neuron is used in a sampler, can\'t reroot'
-        if n_samplers > 0:
-            raise ValueError(f'Skeleton {rootnode.skeleton_id} is used in {n_samplers} sampler(s)')
-
-        response_on_error = 'An error occured while rerooting.'
         q_treenode = Treenode.objects.filter(
                 skeleton_id=rootnode.skeleton_id,
                 project=project_id).values_list('id', 'parent_id', 'confidence')
         nodes = {tnid: (parent_id, confidence) for (tnid, parent_id, confidence) in list(q_treenode)}
+
+        # Make sure this skeleton is not used in a sampler
+        samplers = Sampler.objects.prefetch_related('samplerdomain_set') \
+                .filter(skeleton=rootnode.skeleton)
+        n_samplers = len(samplers)
+        if n_samplers > 0:
+            def is_same_or_downstream(node_id, upstream_node_id):
+                while True:
+                    if node_id == upstream_node_id:
+                        return True
+                    parent = nodes.get(node_id)
+                    if parent:
+                        node_id = parent[0]
+                    else:
+                        return False
+                return False
+            for sampler in samplers:
+                # Check if each sampler domain start node has a parent path to the
+                # new root. If it is has, nothing needs to change for these
+                # samplers.
+                for domain in sampler.samplerdomain_set.all():
+                    if not is_same_or_downstream(domain.start_node_id, rootnode.id):
+                        response_on_error = 'Neuron is used in a sampler, which is affected by the new root'
+                        raise ValueError(f'Skeleton {rootnode.skeleton_id} '
+                                    f'is used in {n_samplers} sampler(s), can\'t reeroot')
 
         # Traverse up the chain of parents, reversing the parent relationships so
         # that the selected treenode (with ID treenode_id) becomes the root.
@@ -2114,6 +2132,7 @@ def _reroot_skeleton(treenode_id, project_id):
         new_confidence = rootnode.confidence
         node = first_parent
 
+        response_on_error = 'An error occured while rerooting.'
         while True:
             # Store current values to be used in next iteration
             parent, confidence = nodes[node]
@@ -2182,10 +2201,11 @@ def join_skeleton(request:HttpRequest, project_id=None) -> JsonResponse:
         if annotation_set:
             annotation_set = json.loads(annotation_set)
         sampler_handling = request.POST.get('sampler_handling', None)
+        lose_sampler_handling = request.POST.get('lose_sampler_handling', "keep-samplers")
         from_name_reference = get_request_bool(request.POST, 'from_name_reference', False)
 
         join_info = _join_skeleton(request.user, from_treenode_id, to_treenode_id,
-                project_id, annotation_set, sampler_handling,
+                project_id, annotation_set, sampler_handling, lose_sampler_handling,
                 from_name_reference)
 
         response_on_error = 'Could not log actions.'
@@ -2235,7 +2255,8 @@ def make_annotation_map(annotation_vs_user_id, neuron_id, cursor=None) -> Dict:
 
 
 def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
-        annotation_map, sampler_handling=None, from_name_reference=False) -> Dict[str, Any]:
+        annotation_map, sampler_handling=None, lose_sampler_handling='keep-samplers',
+        from_name_reference=False) -> Dict[str, Any]:
     """ Take the IDs of two nodes, each belonging to a different skeleton, and
     make to_treenode be a child of from_treenode, and join the nodes of the
     skeleton of to_treenode into the skeleton of from_treenode, and delete the
@@ -2284,10 +2305,6 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
                 user, from_neuron['neuronid'], 'neuron')
         can_edit_class_instance_or_fail(
                 user, to_neuron['neuronid'], 'neuron')
-
-        # If samplers reference this skeleton, make sure they are updated as well
-        sampler_info = _update_samplers_in_merge(project_id, user.id, from_skid, to_skid,
-                from_treenode.id, to_treenode.id, sampler_handling, "delete-samplers")
 
         cursor = connection.cursor()
 
@@ -2368,6 +2385,11 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         response_on_error = 'Could not reroot at treenode %s' % to_treenode_id
         _reroot_skeleton(to_treenode_id, project_id)
 
+        # If samplers reference this skeleton, make sure they are updated as well
+        sampler_info = _update_samplers_in_merge(project_id, user.id, from_skid, to_skid,
+                from_treenode.id, to_treenode.id, sampler_handling,
+                lose_sampler_handling)
+
         # The target skeleton is removed and its treenode assumes
         # the skeleton id of the from-skeleton.
 
@@ -2441,7 +2463,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
 
 def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleton_id,
         win_treenode_id, lose_treenode_id, win_sampler_handling,
-        lose_sampler_handling) -> Optional[Dict[str, Any]]:
+        lose_sampler_handling='keep-samplers') -> Optional[Dict[str, Any]]:
     """Update the sampler configuration for the passed in skeletons under the
     assumption that this is part of a merge operation.
     """
@@ -2461,7 +2483,7 @@ def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleto
 
     known_win_sampler_handling_modes =("create-intervals", "branch",
             "domain-end", "new-domain")
-    known_lose_sampler_handling_modes = ("delete-samplers",)
+    known_lose_sampler_handling_modes = ("delete-samplers", "keep-samplers")
     if win_sampler_handling not in known_win_sampler_handling_modes:
         raise ValueError("Samplers in use on skeletons. Unknown "
                 f"(winning) sampler handling mode: {win_sampler_handling}")
@@ -2471,6 +2493,7 @@ def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleto
 
     n_deleted_intervals = 0
     n_deleted_domains = 0
+    n_deleted_samplers = 0
     n_added_intervals = 0
     n_added_domains = 0
     n_added_domain_ends = 0
@@ -2481,9 +2504,14 @@ def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleto
     if n_samplers_lose:
         if lose_sampler_handling == "delete-samplers":
             # Delete samplers that link to losing skeleton
-            Sampler.objects.filter(project_id=project_id,
+            n_deleted, _ = Sampler.objects.filter(project_id=project_id,
                     skeleton_id=lose_skeleton_id).delete()
-            # TODO Update n_deleted_*
+            n_deleted_samplers += n_deleted
+        elif lose_sampler_handling == "keep-samplers":
+            # Make sure all samplers match the tree structure of the skeleton,
+            # i.e. start nodes are closer to root.
+            samplers = Sampler.objects.filter(project_id=project_id,
+                    skeleton_id=lose_skeleton_id).update(skeleton_id=win_skeleton_id)
         else:
             raise ValueError("The losing merge skeleton is referenced " +
                     f"by {n_samplers_lose} sampler(s), merge aborted.")
@@ -2660,6 +2688,7 @@ def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleto
         'n_samplers_lose': n_samplers_lose,
         'n_deleted_intervals': n_deleted_intervals,
         'n_deleted_domains': n_deleted_domains,
+        'n_deleted_samplers': n_deleted_samplers,
         'n_added_intervals': n_added_intervals,
         'n_added_domains': n_added_domains,
         'n_added_domain_ends': n_added_domain_ends,

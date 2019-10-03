@@ -88,6 +88,9 @@ Tracing overlay:
   left corner of a stack viewer provides the "Data ordering" select box to
   change this setting. By default no ordering is applied.
 
+- When merging a fragment that contains a sampler, it can now be merged if the
+  respective skeleton doesn't need to be rerooted.
+
 Navigator:
 
 - Two new buttons and a text input field on the right side of the toolbar allow

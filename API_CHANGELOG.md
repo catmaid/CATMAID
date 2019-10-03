@@ -76,6 +76,13 @@ included in this changelog.
   The new parameters `source_id` and `source_url` allow to associate a source
   data reference with the imported skeleton.
 
+- `POST /{project_id}/skeleton/join`:
+  The new parameter `lose_sampler_handling` controls how to deal with samplers
+  defined for the merged in skeleton. Possible values are 'delete-sampler' and
+  'keep-sampler', the latter being the default. If samplers should be kept, it
+  is required that the sampler domains are defined on parts of the skeleton that
+  don't need local rerooting. Otherwise an error is raised.
+
 ### Deprecations
 
 None.

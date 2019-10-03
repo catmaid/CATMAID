@@ -202,6 +202,8 @@
       CATMAID.statusBar.printCoords('ui');
 
       let stackViewer = self.stackViewer;
+      if (!stackViewer) return;
+
       let _m = CATMAID.ui.getMouse(e, self.stackViewer.getView(), true);
       if (_m) {
         let sCoords = self.lastPointerCoordsS;

@@ -2088,18 +2088,18 @@ def _reroot_skeleton(treenode_id, project_id):
         response_on_error = 'Failed to select treenode with id %s.' % treenode_id
         rootnode = Treenode.objects.get(id=treenode_id, project=project_id)
 
-        # Make sure this skeleton is not used in a sampler
-        n_samplers = Sampler.objects.filter(skeleton=rootnode.skeleton).count()
-        response_on_error = 'Neuron is used in a sampler, can\'t reroot'
-        if n_samplers > 0:
-            raise ValueError(f'Skeleton {rootnode.skeleton_id} is used in {n_samplers} sampler(s)')
-
         # Obtain the treenode from the response
         first_parent = rootnode.parent_id
 
         # If no parent found it is assumed this node is already root
         if first_parent is None:
             return False
+
+        # Make sure this skeleton is not used in a sampler
+        n_samplers = Sampler.objects.filter(skeleton=rootnode.skeleton).count()
+        response_on_error = 'Neuron is used in a sampler, can\'t reroot'
+        if n_samplers > 0:
+            raise ValueError(f'Skeleton {rootnode.skeleton_id} is used in {n_samplers} sampler(s)')
 
         response_on_error = 'An error occured while rerooting.'
         q_treenode = Treenode.objects.filter(

@@ -1282,7 +1282,18 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 if normalized == 'mean':
                     scores = (forward_scores.ro + reverse_scores.transpose()).ro / 2.0
                 else:
-                    scores = base.sqrt(forward_scores.ro * reverse_scores.transpose())
+                    # Clamp negative scores to zero and compute geometric mean.
+                    robjects.r('''
+                        geometric_mean <- function(a, b) {
+                            b <- t(b)
+                            a[a < 0] <- 0
+                            b[b < 0] <- 0
+                            sqrt(a * b)
+                        }
+                    ''')
+                    geometric_mean = rinterface.globalenv['geometric_mean']
+                    scores = as_matrix(geometric_mean(forward_scores,
+                        reverse_scores), a, b)
             else:
                 # Compute forward scores, either unnormalized or normalized so that a
                 # self-match is 1.

@@ -237,6 +237,8 @@ Miscellaneous:
 - Nblast widget: store tangent neighbor count specified in UI for scoring matrix
   imported from CSV.
 
+- Celery can now be restarted again without restarting all of CATMAID.
+
 ## Maintenance updates
 
 - CLI Exporter: if users should be exported, also export users of volumes.

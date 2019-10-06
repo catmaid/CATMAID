@@ -199,6 +199,10 @@ var project;
         remote_catmaid_instances: {
           default: []
         },
+        // A list of known remote CATMAID projects, referencing above instance.
+        remote_catmaid_projects: {
+          default: [],
+        },
         last_stack_viewer_closes_project: {
           default: true,
         },

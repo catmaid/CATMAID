@@ -3,7 +3,6 @@
 /* global
   CATMAID,
   project,
-  user_groups,
   msgpack
 */
 

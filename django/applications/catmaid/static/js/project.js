@@ -598,10 +598,22 @@
   }
 
   /**
-   * Get all visible projects, optionally sorted by name.
+   * Get all visible projects, optionally sorted by name. This request is
+   * performed in parallel.
+   *
+   * @param {Boolean} hasTracingData (optional) If true, only projects with
+   *                                 tracing data are return. False by default.
+   * @param {API}     api            (optional) An API instance to use.
    */
-  Project.list = function(sort) {
-    var projects = CATMAID.fetch('projects/');
+  Project.list = function(sort, hasTracingData = false, api = undefined) {
+    var projects = CATMAID.fetch({
+      url: 'projects/',
+      data: {
+        has_tracing_data: hasTracingData,
+      },
+      parallel: true,
+      api: api,
+    });
     if (sort) {
       projects = projects.then(function(projects) {
         return projects.sort(function(a, b) {

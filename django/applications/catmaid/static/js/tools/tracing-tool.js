@@ -25,7 +25,11 @@
     this.lastSkeletonId = null;
     this.currentSkeletonId = null;
     // Reference to the currently active 'More tools' context menu, if any.
-    this.moreToolsContextMenu = null;
+    this.moreToolsMenu = new Menu();
+    // A collection of remote tracing layer information. For each remote CATMAID
+    // identifier (as stored in Client.Settings.remote_catmaid_instances), a
+    // list of tracing layers is stored.
+    this.remoteTracingProjcts = new Map();
 
     /**
      * Return the stack viewer referenced by the active node, or otherwise (if
@@ -1047,38 +1051,42 @@
       buttonName: "moretools",
       buttonID: "trace_button_moretools",
       run: function(e) {
-        // Hide current context menut (if any) and show new context menu
-        if (self.moreToolsContextMenu) {
-          self.moreToolsContextMenu.hide();
-        }
-        // Show context menu
-        self.moreToolsContextMenu= new CATMAID.ContextMenu({
-          disableDefaultContextMenu: true,
-          select: function(selection) {
-            let data = selection.item.data;
-            let action = selection.item.value;
-            if (action === 'refresh-caches') {
-              if (!CATMAID.mayView()) {
-                return false;
-              }
-              self.refreshCaches()
-                .then(function() {
-                  CATMAID.msg("Success", "Caches updated");
-                })
-                .catch(CATMAID.handleError);
+        // Clear children after button data
+        let nRemovedVisible = 0;
+        let parentNode = e.target.parentNode;
+        if (parentNode) {
+          while (parentNode.children.length > 1) {
+            let menuWrapper = parentNode.lastChild;
+            parentNode.removeChild(menuWrapper);
+            let visible = menuWrapper.children[0].style.display !== 'none';
+            if (visible) {
+              ++nRemovedVisible;
             }
-          },
-          hide: function(selected) {
-            self.moreToolsContextMenu = null;
-          },
-          items: [
-            {
-              'title': 'Refresh caches',
-              'value': 'refresh-caches',
-            },
-          ],
-        });
-        self.moreToolsContextMenu.show(true);
+          }
+        }
+
+        // Only show the menu if it was just removed
+        if (nRemovedVisible === 0) {
+          let menuWrapper = document.createElement('div');
+          menuWrapper.classList.add('menu_item');
+          let pulldown = menuWrapper.appendChild(document.createElement('div'));
+          pulldown.classList.add('pulldown');
+          pulldown.appendChild(self.moreToolsMenu.getView());
+          pulldown.style.display = 'block';
+          parentNode.appendChild(menuWrapper);
+
+          // Remove menu on pointer leave
+          menuWrapper.onpointerout = e => {
+            pulldown.style.display = 'none';
+          };
+          menuWrapper.onpointerover = e => {
+            pulldown.style.display = 'block';
+          };
+
+          menuWrapper.onclick = e => {
+            e.stopPropagation();
+          };
+        }
 
         return true;
       }
@@ -1718,6 +1726,11 @@
     };
 
     this.init = function() {
+
+      // Init extra menus
+      this._updateMoreToolsMenu();
+      this.updateRemoteTracingInfo();
+
       // Make sure all required initial data is available.
       return  CATMAID.fetch(project.id + '/tracing/setup/validate')
         .then(function() {
@@ -1773,7 +1786,8 @@
       CATMAID.annotations.update(true),
       CATMAID.NeuronNameService.getInstance().refresh(),
       SkeletonAnnotations.VisibilityGroups.refresh(),
-      SkeletonAnnotations.FastMergeMode.refresh()
+      SkeletonAnnotations.FastMergeMode.refresh(),
+      this.updateRemoteTracingInfo(),
     ]);
   };
 
@@ -1912,6 +1926,117 @@
       'closest to the mouse cursor using the <kbd>G</kbd> key. This is especially ',
       'useful in Navigation Mode.</p>'
     ].join('');
+  };
+
+  /**
+   * Update the cached remote tracing data information.
+   *
+   * @return a Promise that resolves one the data is updated.
+   */
+  TracingTool.prototype.updateRemoteTracingInfo = function() {
+    this.remoteTracingProjcts.clear();
+    let work = [];
+    for (let ri of CATMAID.Client.Settings.session.remote_catmaid_instances) {
+      try {
+        let api = CATMAID.Remote.getAPI(ri.name);
+        // Get remote projects with tracing data
+        work.push(CATMAID.Project.list(true, true, api)
+          .then(projects => {
+            this.remoteTracingProjcts.set(ri.name, {
+              api: api,
+              name: ri.name,
+              projects: projects,
+            });
+          })
+          .catch(e => {
+            CATMAID.warn(e.message);
+          }));
+      } catch (error) {
+        CATMAID.warn(`Could not create API for remote instance "${ri}"`);
+      }
+    }
+    return Promise.all(work)
+      .finally(() => {
+        // Recreate the "more tools" menu, because the remote tracing data might
+        // have changed.
+        this._updateMoreToolsMenu();
+        return this.remoteTracingProjcts;
+      });
+  };
+
+  TracingTool.prototype.openAdditionalTracinData = function(remoteName, remoteProject) {
+    CATMAID.msg(`Open (remote) tracing data`, `Loding data from ${remoteName}/${remoteProject.title}`);
+  };
+
+  /**
+   * Recreate the "More tools" menu, including remtoe tracing data options (if
+   * any available).
+   */
+  TracingTool.prototype._updateMoreToolsMenu = function() {
+    let items = {
+      'cache-refresh': {
+        title: 'Refresh caches',
+        note: '',
+        action: () => {
+          if (!CATMAID.mayView()) {
+            return false;
+          }
+          this.refreshCaches()
+            .then(function() {
+              CATMAID.msg("Success", "Caches updated");
+            })
+            .catch(CATMAID.handleError);
+        },
+      },
+    };
+
+    // If there are any remote CATMAID instances configured, list remote
+    // tracing layers here, if there are remote tracing projects.
+    if (this.remoteTracingProjcts.size > 0) {
+      let remoteProjects = {};
+      items['remote-data'] = {
+        title: 'Remote data',
+        action: remoteProjects,
+      };
+      let i = 0;
+      for (let [key, entry] of this.remoteTracingProjcts) {
+        if (entry && entry.projects.length > 0) {
+          // Create a sub menu for remote tracing layers that can be added to
+          // the current or a new stack viewer.
+          remoteProjects[i] = entry.projects.reduce((po, p, j) => {
+            po.action[`project-${j}`] = {
+              title: p.title,
+              note: 'tracing data',
+              action: e => {
+                this.openAdditionalTracinData(key, p);
+              },
+            };
+            return po;
+          }, {
+            title: key,
+            action: {},
+          });
+
+          ++i;
+        }
+      }
+    } else {
+      items['remote-projects'] = {
+        title: "Remote data",
+        action: {
+          'none': {
+              title: '(none)',
+              action: (e) => {
+                CATMAID.msg("You can add other CATMAID projects through the Settings Widget.");
+                return true;
+              },
+          }
+        },
+      };
+    }
+
+    // Update menu
+    this.moreToolsMenu.update(items);
   };
 
   /**

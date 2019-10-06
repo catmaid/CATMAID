@@ -269,6 +269,10 @@ Miscellaneous:
   settings through the "Clear settings" button. It will ask for confirmation and
   whether both front-end and back-end settings should be cleared.
 
+- Tracing tool: the tool bar button to refresh caches has been replaced with a
+  button to open a context menu titled "More tools". The context menu has an
+  entry to refresh cashes.
+
 ### Bug fixes
 
 - Connector list: dates are now display correctly.

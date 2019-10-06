@@ -106,6 +106,11 @@
   CATMAID.NetworkAccessError.prototype = Object.create(CATMAID.Error.prototype);
   CATMAID.NetworkAccessError.prototype.constructor = CATMAID.NetworkAccessError;
 
+  /**
+   * Indicate a missing (remote) resource.
+   */
+  CATMAID.CORSError = class CORSError extends CATMAID.Error {};
+
   /*
    * An error type to indicate a pre-condition for some action is not met.
    */

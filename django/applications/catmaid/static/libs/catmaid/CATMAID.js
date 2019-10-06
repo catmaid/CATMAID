@@ -448,6 +448,8 @@ var requestQueue = new CATMAID.RequestQueue();
               var error = new CATMAID.NetworkAccessError("CATMAID server unreachable",
                   "Please wait or try to reload");
               throw error;
+            } else if (status === 503) {
+              throw new CATMAID.CORSError(`Can't access ${url} due to CORS restrictions`);
             }
             let errorDetails;
             try {

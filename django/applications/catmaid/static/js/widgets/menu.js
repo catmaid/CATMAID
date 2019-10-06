@@ -69,7 +69,7 @@ Menu = function () {
       // Expect valid HTML for a stack's comment/note
       var noteContainer = document.createElement("div");
       noteContainer.setAttribute("class", "menu_item_note");
-      noteContainer.innerHTML = content[key].note;
+      noteContainer.innerHTML = content[key].note === undefined ? '' : content[key].note;
       note.appendChild(noteContainer);
 
       var d = document.createElement("div");

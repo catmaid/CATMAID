@@ -18,8 +18,8 @@ from django.contrib.auth.decorators import login_required
 
 from catmaid.models import (Stack, Project, ProjectStack, Message, User,
         StackMirror)
-from catmaid.control.common import (id_generator, json_error_response,
-        get_request_bool, get_request_list)
+from catmaid.control.common import (id_generator, get_request_bool,
+        get_request_list)
 from catmaid.control.tile import get_tile_source
 from catmaid.control.message import notify_user
 
@@ -641,12 +641,11 @@ def crop(request:HttpRequest, project_id=None) -> JsonResponse:
     # Make sure tmp dir exists and is writable
     if not os.path.exists( crop_output_path ) or not os.access( crop_output_path, os.W_OK ):
         if request.user.is_superuser:
-            err_message = "Please make sure your output folder (%s) exists " \
-                    "is writable." % crop_output_path
+            raise ValueError(f"Please make sure your output folder " \
+                    f"({crop_output_path}) exists is writable.")
         else:
-            err_message = "Sorry, the output path for the cropping tool " \
-                    "is not set up correctly. Please contact an administrator."
-        return json_error_response(err_message)
+            raise ValueError("Sorry, the output path for the cropping tool " \
+                    "is not set up correctly. Please contact an administrator.")
 
     # Use first reachable stack mirrors
     stack_mirror_ids = []
@@ -681,8 +680,7 @@ def crop(request:HttpRequest, project_id=None) -> JsonResponse:
                 err_message += str( n+1 ) + ". " + errtxt
             else:
                 err_message += ", " + str( n+1 ) + ". " + errtxt
-        err_response = json_error_response( err_message )
-        return err_response
+        raise ValueError(error_message)
 
     result = start_asynch_process(job)
     return result

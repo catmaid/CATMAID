@@ -1166,7 +1166,7 @@ def split_skeleton(request:HttpRequest, project_id=None) -> JsonResponse:
 
     # Check if the treenode is root!
     if not treenode.parent:
-        return JsonResponse({'error': 'Can\'t split at the root node: it doesn\'t have a parent.'})
+        raise ValueError('Can\'t split at the root node: it doesn\'t have a parent.')
     treenode_parent = treenode.parent
 
     # Check if annotations are valid
@@ -2072,7 +2072,7 @@ def reroot_skeleton(request:HttpRequest, project_id=None) -> JsonResponse:
             return JsonResponse({'newroot': treenode.id,
                                  'skeleton_id': treenode.skeleton_id})
         # Else, already root
-        return JsonResponse({'error': 'Node #%s is already root!' % treenode_id})
+        raise ValueError(f'Node #{treenode_id} is already root!')
     except Exception as e:
         raise ValueError(response_on_error + ':' + str(e))
 

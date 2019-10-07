@@ -162,7 +162,7 @@ def insert_into_log(project_id:Union[int, str], user_id, op_type:str, location=N
     ]
 
     if not op_type in operation_type_array:
-        return {'error': f'Operation type {op_type} not valid'}
+        raise ValueError(f'Operation type {op_type} not valid')
 
     new_log = Log()
     new_log.user_id = user_id
@@ -175,14 +175,6 @@ def insert_into_log(project_id:Union[int, str], user_id, op_type:str, location=N
 
     new_log.save()
     return None
-
-def json_error_response(message:str) -> JsonResponse:
-    """
-    When an operation fails we should return a JSON dictionary
-    with the key 'error' set to an error message.  This is a
-    helper method to return such a structure:
-    """
-    return JsonResponse({'error': message})
 
 
 def order_neurons(neurons:List, order_by=None):

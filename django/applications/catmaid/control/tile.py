@@ -61,7 +61,6 @@ def get_tile(request:HttpRequest, project_id=None, stack_id=None) -> HttpRespons
         response = HttpResponse(content_type="image/png")
         pilImage.save(response, "PNG")
         return response
-        # return HttpResponse(json.dumps({'error': f'HDF5 file does not exist: {fpath}'}))
 
     with closing(h5py.File(fpath, 'r')) as hfile:
         #import math
@@ -73,7 +72,6 @@ def get_tile(request:HttpRequest, project_id=None, stack_id=None) -> HttpRespons
             response = HttpResponse(content_type="image/png")
             pilImage.save(response, "PNG")
             return response
-            # return HttpResponse(json.dumps({'error': f'HDF5 file does not contain scale: {int(scale)}'}))
         image_data=hfile[hdfpath]
         data=image_data[y:y+height,x:x+width]
         pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','L',0,1)

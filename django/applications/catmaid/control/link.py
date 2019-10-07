@@ -162,23 +162,23 @@ def create_link(request:HttpRequest, project_id=None) -> JsonResponse:
             treenode=from_id,
             relation=relation.id)
     except ObjectDoesNotExist as e:
-        return JsonResponse({'error': str(e)})
+        raise
 
     if links.count() > 0:
-        return JsonResponse({'error': "A relation '%s' between these two elements already exists!" % link_type})
+        raise ValueError(f'A relation "{link_type}" between these two elements already exists!')
 
     related_skeleton_count = ClassInstance.objects.filter(project=project, id=from_treenode.skeleton.id).count()
     if related_skeleton_count > 1:
         # Can never happen. What motivated this check for an error of this kind? Would imply that a treenode belongs to more than one skeleton, which was possible when skeletons owned treendoes via element_of relations rather than by the skeleton_id column.
-        return JsonResponse({'error': 'Multiple rows for treenode with ID #%s found' % from_id})
+        raise ValueError(f'Multiple rows for treenode with ID #{from_id} found')
     elif related_skeleton_count == 0:
-        return JsonResponse({'error': 'Failed to retrieve skeleton id of treenode #%s' % from_id})
+        raise ValueError(f'Failed to retrieve skeleton id of treenode #{from_id}')
 
     if link_type == 'presynaptic_to':
         # Enforce only one presynaptic link
         presyn_links = TreenodeConnector.objects.filter(project=project, connector=to_connector, relation=relation)
         if (presyn_links.count() != 0):
-            return JsonResponse({'error': 'Connector %s does not have zero presynaptic connections.' % to_id})
+            raise ValueError(f'Connector {to_id} does not have zero presynaptic connections.')
 
     # The object returned in case of success
     result = {}
@@ -200,7 +200,7 @@ def create_link(request:HttpRequest, project_id=None) -> JsonResponse:
         gapjunction_links = TreenodeConnector.objects.filter(project=project, connector=to_connector,
             relation__relation_name='gapjunction_with')
         if (gapjunction_links.count() != 0):
-            return JsonResponse({'error': 'Connector %s cannot have both a gap junction and a postsynaptic node.' % to_id})
+            raise ValueError(f'Connector {to_id} cannot have both a gap junction and a postsynaptic node.')
 
     if link_type in UNDIRECTED_BINARY_LINK_TYPES:
         # Enforce only two gap junction links
@@ -208,9 +208,9 @@ def create_link(request:HttpRequest, project_id=None) -> JsonResponse:
         synapse_links = TreenodeConnector.objects.filter(project=project, connector=to_connector, relation__relation_name__endswith='synaptic_to')
         name = LINKS_BY_RELATION[link_type]['name'].lower();
         if (undirected_links.count() > 1):
-            return JsonResponse({'error': f'Connector {to_id} can only have two {name} connections.'})
+            raise ValueError(f'Connector {to_id} can only have two {name} connections.')
         if (synapse_links.count() != 0):
-            return JsonResponse({'error': f'Connector {to_id} is part of a synapse, and {name} can not be added.'})
+            raise ValueError(f'Connector {to_id} is part of a synapse, and {name} can not be added.')
 
     link = TreenodeConnector(
         user=request.user,

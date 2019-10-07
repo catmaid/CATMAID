@@ -161,7 +161,7 @@ def give_neuron_to_other_user(request:HttpRequest, project_id=None, neuron_id=No
     #    or owns the neuron and the skeletons under it
     neuron = ClassInstance.objects.get(pk=neuron_id)
     if not request.user.is_superuser and neuron.user.id != request.user.id:
-        return JsonResponse({'error': 'You don\'t own the neuron!'})
+        raise ValueError('You don\'t own the neuron!')
 
     qs = ClassInstanceClassInstance.objects.filter(
             class_instance_b=neuron_id,
@@ -171,14 +171,14 @@ def give_neuron_to_other_user(request:HttpRequest, project_id=None, neuron_id=No
         skeletons[row[0]].append(row[1])
 
     if not skeletons:
-        return JsonResponse({'error': 'The neuron does not contain any skeletons!'})
+        raise ValueError('The neuron does not contain any skeletons!')
 
     sks = {k:v[:] for k,v in skeletons.items()} # deep copy
     if request.user.id in sks:
         del sks[request.user.id]
     if not request.user.is_superuser and sks:
         skeleton_ids = reduce(operator.add, sks.values())
-        return JsonResponse({'error': 'You don\'t own: %s' % skeleton_ids})
+        raise ValueError(f'You don\'t own: {skeleton_ids}')
 
     # 2. Change neuron's and skeleton's and class_instance_class_instance relationship owner to target_user
 

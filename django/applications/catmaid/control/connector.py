@@ -636,7 +636,7 @@ def create_connector(request:HttpRequest, project_id=None) -> JsonResponse:
 
     parsed_confidence = int(query_parameters['confidence'])
     if parsed_confidence < 1 or parsed_confidence > 5:
-        return JsonResponse({'error': 'Confidence not in range 1-5 inclusive.'})
+        raise ValueError('Confidence not in range 1-5 inclusive.')
 
     cursor = connection.cursor()
 

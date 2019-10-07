@@ -717,9 +717,9 @@ def delete_treenode(request:HttpRequest, project_id=None) -> JsonResponse:
                 ClassInstance.objects.filter(pk=treenode.skeleton_id) \
                     .delete()
             else:
-                return JsonResponse({"error": "Can't delete " \
-                    "isolated node: erroneously, its skeleton contains more " \
-                    "than one treenode! Check for multiple root nodes."})
+                raise ValueError("Can't delete isolated node: erroneously, " \
+                        "its skeleton contains more than one treenode! " \
+                        "Check for multiple root nodes.")
 
             # If the neuron modeled by the skeleton of the treenode is empty,
             # delete it.

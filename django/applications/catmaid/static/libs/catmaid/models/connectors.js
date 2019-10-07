@@ -10,7 +10,7 @@
    * Information on a single connector node.
    */
   var ConnectorModel = function(id, x, y, z, links, confidence, creatorId,
-      editionTime, subtype) {
+      editionTime, subtype, api) {
     this.id = id;
     this.x = x;
     this.y = y;
@@ -21,6 +21,7 @@
     this.creatorId = creatorId;
     this.editionTime = editionTime;
     this.subtype = subtype;
+    this.api = api;
   };
 
   CATMAID.ConnectorModel = ConnectorModel;
@@ -44,10 +45,12 @@
      *                             representing treenode ID and a relation ID
      *                             based on which new links will be created
      * @param {string} subtype     (Optional) A subtype specification
+     * @param {API}    api         (Optional) The back-end to talk to.
      *
      * @returns a promise that is resolved once the connector is created
      */
-    create: function(state, projectId, x, y, z, confidence, links, subtype) {
+    create: function(state, projectId, x, y, z, confidence, links, subtype,
+        api = undefined) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to create connectors');
       var url = projectId + '/connector/create';
@@ -67,11 +70,16 @@
           state: execState
       };
 
-      return CATMAID.fetch(url, 'POST', params)
+      return CATMAID.fetch({
+          url: url,
+          method: 'POST',
+          data: params,
+          api: api,
+        })
         .then(function(result) {
           var newConnector = new CATMAID.ConnectorModel(result.connector_id,
               x, y, z, links, confidence, CATMAID.session.userid,
-              result.connector_edition_time, subtype);
+              result.connector_edition_time, subtype, api);
           CATMAID.Connectors.trigger(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
               newConnector);
           return {
@@ -85,12 +93,13 @@
     /**
      * Remove a single connector from a project.
      *
-     * @param {integer} projectId  The project space to delete the connector from
+     * @param {integer} projectId   The project space to delete the connector from
      * @param {integer} connectorId The connector to remove
+     * @param {API}     api         (Optional) The back-end to talk to.
      *
      * @returns a promise that resolves once the connector is removed
      */
-    remove: function(state, projectId, connectorId) {
+    remove: function(state, projectId, connectorId, api = undefined) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to remove connectors');
       var url = projectId + '/connector/delete';
@@ -99,7 +108,12 @@
         state: state.makeNeighborhoodState(connectorId, true)
       };
 
-      return CATMAID.fetch(url, 'POST', params)
+      return CATMAID.fetch({
+          url: url,
+          method: 'POST',
+          data: params,
+          api: api,
+        })
         .then(function(result) {
           CATMAID.Connectors.trigger(CATMAID.Connectors.EVENT_CONNECTOR_REMOVED,
               result.connector_id);
@@ -148,8 +162,9 @@
      * @param {integer} connectorId The connector linked to
      * @param {integer} nodeId      The node linked to
      * @param {string}  linkType    Relation to create
+     * @param {API}     api         (optional) The back-end to talk to.
      */
-    createLink: function(state, projectId, connectorId, nodeId, linkType) {
+    createLink: function(state, projectId, connectorId, nodeId, linkType, api = undefined) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to create links');
       var url = projectId + '/link/create';
@@ -161,7 +176,12 @@
         state: state.makeMultiNodeState([nodeId, connectorId])
       };
 
-      return CATMAID.fetch(url, 'POST', params)
+      return CATMAID.fetch({
+          url: url,
+          method: 'POST',
+          data: params,
+          api: api,
+        })
         .then(function(result) {
           if (result.warning) {
             CATMAID.warn(result.warning);
@@ -182,8 +202,9 @@
      * @param {integer} projectId   The project space of the new link
      * @param {integer} connectorId The linked connector
      * @param {integer} nodeId      The linked node
+     * @param {API}     api         (optional) The back-end to talk to.
      */
-    removeLink: function(state, projectId, connectorId, nodeId) {
+    removeLink: function(state, projectId, connectorId, nodeId, api = undefined) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to remove links');
       var url = projectId + '/link/delete';
@@ -194,7 +215,12 @@
         state: state.makeMultiNodeState([nodeId, connectorId])
       };
 
-      return CATMAID.fetch(url, 'POST', params)
+      return CATMAID.fetch({
+          url: url,
+          method: 'POST',
+          data: params,
+          api: api,
+        })
         .then(function(result) {
           CATMAID.Connectors.trigger(CATMAID.Connectors.EVENT_LINK_REMOVED,
               result.link_id, result.link_type, result.link_type_id,
@@ -244,11 +270,17 @@
      * first time this function is called. Later calls will use a cached result,
      * because this information is not expected to change often. If this is not
      * wanted, a cache update can be forced.
+     *
+     * @param {API}  api  (Optional) The back-end to talk to.
      */
-    linkTypes: function(projectId, forceCacheUpdate) {
+    linkTypes: function(projectId, forceCacheUpdate, api = undefined) {
+      let connectorTypeCache = connectorTypeCaches.get(api ? api.name : null);
       if (forceCacheUpdate || !connectorTypeCache) {
         var url = projectId + '/connectors/types/';
-        return CATMAID.fetch(url)
+        return CATMAID.fetch({
+            url: url,
+            api: api,
+          })
           .then(function(result) {
             // Make sure we know all returned types
             for (var i=0; i<result.length; ++i) {
@@ -257,8 +289,8 @@
             }
 
             // Update cache and return a copy
-            connectorTypeCache = result;
-            return JSON.parse(JSON.stringify(connectorTypeCache));
+            connectorTypeCaches.set(api ? api.name : null,  result);
+            return JSON.parse(JSON.stringify(result));
           });
       } else {
         // Return copy of cached result
@@ -353,8 +385,8 @@
     },
   };
 
-  // Keeps a copy of the available connector types
-  var connectorTypeCache = null;
+  // Keeps a copy of the available connector types per API name.
+  var connectorTypeCaches = new Map();
 
   CATMAID.asEventSource(Connectors);
   Connectors.EVENT_CONNECTOR_CREATED = "connector_created";
@@ -403,10 +435,11 @@
    * @param {integer} z          The Z coordinate of the connector's location
    * @param {integer} confidence (Optional) confidence in range 1-5
    * @param {integer} subtype    (Optional) A connector subtype
+   * @param {API}     api        (Optional) The back-end to talk to.
    *
    */
   CATMAID.CreateConnectorCommand = CATMAID.makeCommand(
-      function(projectId, x, y, z, confidence, subtype) {
+      function(projectId, x, y, z, confidence, subtype, api = undefined) {
 
     // First execution will set the original connector node that all mappings
     // will refer to.
@@ -416,7 +449,7 @@
       // For a regular connector creation, no state is required
       var execState = null;
       var create = CATMAID.Connectors.create(execState, projectId, x, y, z,
-          confidence, undefined, subtype);
+          confidence, undefined, subtype, api);
       return create.then(function(result) {
         // First execution will remember the added node for redo mapping
         if (!umConnectorId) {
@@ -441,7 +474,7 @@
       var links = [];
       var undoState = new CATMAID.LocalState([mConnector.value, mConnector.timestamp],
           null, null, links);
-      var remove = CATMAID.Connectors.remove(undoState, projectId, mConnector.value);
+      var remove = CATMAID.Connectors.remove(undoState, projectId, mConnector.value, api);
       return remove.then(function(result) {
         done();
       });
@@ -454,9 +487,11 @@
 
   /**
    * Delete a connector with this command. Can be undone.
+   *
+   * @param {API}     api        (Optional) The back-end to talk to.
    */
   CATMAID.RemoveConnectorCommand = CATMAID.makeCommand(
-      function(state, projectId, connectorId) {
+      function(state, projectId, connectorId, api = undefined) {
 
     // Use passed in state only to extract connector and and link states. A new
     // state will be created for actually executing the command (needed for redo).
@@ -481,7 +516,8 @@
           null, null, mLinks);
 
       // Get connector information
-      var remove = CATMAID.Connectors.remove(execState, projectId, mConnector.value);
+      var remove = CATMAID.Connectors.remove(execState, projectId,
+          mConnector.value, api);
 
       return remove.then(function(result) {
         command.store('confidence', result.confidence);
@@ -518,7 +554,7 @@
         undoState = new CATMAID.SimpleSetState(partnerInfo.state);
       }
 
-      var create = CATMAID.Connectors.create(undoState, projectId, x, y, z, confidence, links);
+      var create = CATMAID.Connectors.create(undoState, projectId, x, y, z, confidence, links, api);
       return create.then(function(result) {
         // Map new connector and created links
         map.add(map.CONNECTOR, umConnector[0], result.newConnectorId,
@@ -559,7 +595,7 @@
   });
 
   CATMAID.LinkConnectorCommand = CATMAID.makeCommand(
-      function(state, projectId, connectorId, nodeId, linkType) {
+      function(state, projectId, connectorId, nodeId, linkType, api = undefined) {
 
     var umNode = state.getNode(nodeId);
     var umConnector = state.getNode(connectorId);
@@ -574,7 +610,7 @@
       var execState = new CATMAID.SimpleSetState(nodes);
 
       var link = CATMAID.Connectors.createLink(execState, projectId,
-          mConnector.value, mNode.value, linkType);
+          mConnector.value, mNode.value, linkType, api);
       return link.then(function(result) {
         map.add(map.LINK, umNode[0], result.linkId, result.linkEditTime);
         done();
@@ -593,7 +629,7 @@
       var undoState = new CATMAID.SimpleSetState(nodes);
 
       var unlink = CATMAID.Connectors.removeLink(undoState,
-          projectId, mConnector.value, mNode.value);
+          projectId, mConnector.value, mNode.value, api);
       return unlink.then(function(result) {
         done();
         return result;

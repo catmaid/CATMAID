@@ -1,8 +1,5 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
-/* global
-  requestQueue
-  */
 
 (function(CATMAID) {
 
@@ -31,7 +28,7 @@
    * An optional fourth argument specifies whether the UI has to be blocked. An
    * optional fifth argument specifies calls with replace rather than register.
    */
-  CATMAID.submitterFn = function() {
+  CATMAID.submitterFn = function(api=undefined) {
     // Accumulate invocations
     var queue = [];
     // Store last result
@@ -157,6 +154,7 @@
             responseType: q.responseType,
             headers: q.headers,
             replace: q.replace,
+            api: api,
             details: true,
           })
           .then(response => {

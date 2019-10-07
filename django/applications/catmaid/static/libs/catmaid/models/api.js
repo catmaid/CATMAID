@@ -41,6 +41,13 @@
         setting.http_auth_user, setting.http_auth_pass);
   };
 
+  /**
+   * Test if two API instances have the same name.
+   */
+  API.equals = function(a, b) {
+    return (!a && !b) || (a && b && a.name === b.name);
+  };
+
   CATMAID.API = API;
 
 })(CATMAID);

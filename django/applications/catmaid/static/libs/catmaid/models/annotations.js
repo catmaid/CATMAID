@@ -16,13 +16,18 @@
      * for the neuron modeled by a particular skeleton. If the call was successfull,
      * the passed handler is called with the annotation set as parameter.
      */
-    forSkeleton: function(projectId, skeletonId) {
+    forSkeleton: function(projectId, skeletonId, api = undefined) {
       CATMAID.requirePermission(projectId, 'can_browse');
       var url = projectId + '/annotations/';
       var params = {
         'skeleton_id': skeletonId
       };
-      return CATMAID.fetch(url, 'POST', params).then(function(json) {
+      return CATMAID.fetch({
+          url: url,
+          method: 'POST',
+          data: params,
+          api: api,
+      }).then(function(json) {
         if (json.annotations && json.annotations instanceof Array) {
           return json.annotations;
         } else {

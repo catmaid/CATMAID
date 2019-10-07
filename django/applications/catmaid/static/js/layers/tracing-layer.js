@@ -21,7 +21,11 @@
 
     options = options || {};
 
+    this.projectId = options.projectId || project.id;
+    this.api = options.api || undefined;
+
     this.opacity = options.opacity || 1.0; // in the range [0,1]
+    this.name = options.name || "Neuron Tracing";
 
     CATMAID.PixiLayer.prototype._initBatchContainer.call(this);
     this.tracingOverlay = new CATMAID.TracingOverlay(stackViewer, this, options);
@@ -171,7 +175,7 @@
    * Return friendly name of this layer.
    */
   TracingLayer.prototype.getLayerName = function () {
-    return "Neuron tracing";
+    return this.name;
   };
 
   TracingLayer.prototype.resize = function (width, height) {

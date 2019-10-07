@@ -70,6 +70,16 @@ Project statistics:
 - It is now possible to configure how many largest neurons should be displayed
   as well as an optional name pattern.
 
+Tracing tool:
+
+- The tool bar button to refresh caches has been replaced with a button to open
+  a context menu titled "More tools". The context menu has an entry to refresh
+  cashes and a list of tracing data in other projects.
+
+- Tracing data from other CATMAID instances (or other local projects) can now be
+  added to the active stack viewer by selecting the respective remote project
+  from the "More tools" menu item "Remote data".
+
 Tracing overlay:
 
 - The remote mirror CATMAID instance configuration is now taken from the central
@@ -268,10 +278,6 @@ Miscellaneous:
 - Settings widget: it is now possible to clear both front-end and back-end
   settings through the "Clear settings" button. It will ask for confirmation and
   whether both front-end and back-end settings should be cleared.
-
-- Tracing tool: the tool bar button to refresh caches has been replaced with a
-  button to open a context menu titled "More tools". The context menu has an
-  entry to refresh cashes.
 
 ### Bug fixes
 

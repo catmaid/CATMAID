@@ -429,7 +429,7 @@
         url += "&zp=" + self.coordinates.z + "&yp=" + self.coordinates.y +
             "&xp=" + self.coordinates.x;
         url += "&tool=" + project.getTool().toolname;
-        if( project.getTool().toolname === 'tracingtool' ) {
+        if( project.getTool().toolname === 'tracingtool' && !SkeletonAnnotations.atn.isRemote()) {
           var active_skeleton_id = SkeletonAnnotations.getActiveSkeletonId();
           if( active_skeleton_id ) {
             url += "&active_skeleton_id=" + active_skeleton_id;

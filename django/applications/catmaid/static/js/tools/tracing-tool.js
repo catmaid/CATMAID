@@ -30,6 +30,8 @@
     // identifier (as stored in Client.Settings.remote_catmaid_instances), a
     // list of tracing layers is stored.
     this.remoteTracingProjcts = new Map();
+    // Names of remote layers
+    this.remoteLayers = [];
 
     /**
      * Return the stack viewer referenced by the active node, or otherwise (if
@@ -74,9 +76,12 @@
      *
      * @param {Number} maxDistancePx (Optional) The maximum distance of a node
      *                               to the cursor position.
+     * @param {Bool}   respectInvisibleLayers (Optional) Whether or not invisible
+     *                                        layers should be respected when finding
+     *                                        the closest node. Default is false.
      * @returns The ID of the cloesest node or null if no node was found.
      */
-    this.getClosestNode = function(maxDistancePx) {
+    this.getClosestNode = function(maxDistancePx, respectInvisibleLayers = false) {
       maxDistancePx = CATMAID.tools.getDefined(maxDistancePx, 100.0);
       // Give all layers a chance to activate a node
       var selectedNode = null;
@@ -89,11 +94,13 @@
       for (var i = layerOrder.length - 1; i >= 0; --i) {
         // Read layers from top to bottom
         var l = layers.get(layerOrder[i]);
-        if (CATMAID.tools.isFn(l.getClosestNode)) {
-          var candidateNode = l.getClosestNode(coords.x, coords.y, coords.z, r);
-          if (candidateNode && (!selectedNode || candidateNode.distsq < selectedNode.distsq)) {
-            selectedNode = candidateNode;
-          }
+        if (l.visible || respectInvisibleLayers) {
+            if (CATMAID.tools.isFn(l.getClosestNode)) {
+              var candidateNode = l.getClosestNode(coords.x, coords.y, coords.z, r);
+              if (candidateNode && (!selectedNode || candidateNode.distsq < selectedNode.distsq)) {
+                selectedNode = candidateNode;
+              }
+            }
         }
       }
 
@@ -307,7 +314,7 @@
       // remove it.
       var label = $('#active-element' + stackViewer.getId());
       var labelData = label.data();
-      if (labelData) CATMAID.NeuronNameService.getInstance().unregister(labelData);
+      if (labelData) CATMAID.NeuronNameService.getInstance(labelData.api).unregister(labelData);
       label.remove();
 
       // Remove the tracing layer
@@ -365,8 +372,9 @@
       }
 
       activeStackViewer = parentStackViewer;
-      activeTracingLayer = layer;
-      activateBindings(parentStackViewer, layer);
+      // The active tracing layer however is whichever contains the active node
+      // and its API.
+      let activeLayer = setActiveTracingLayer();
     };
 
     /**
@@ -439,7 +447,7 @@
       });
 
       // Forget the current stack viewer
-      self.activeStackViewer = null;
+      activeStackViewer = null;
 
       // Neurons from the closed project shouldn't need a front-end name
       // anymore.
@@ -462,7 +470,7 @@
         var label = $('#active-element' + stackViewer.getId());
         label.text(text || '');
         var labelData = label.data();
-        if (labelData) CATMAID.NeuronNameService.getInstance().unregister(labelData);
+        if (labelData) CATMAID.NeuronNameService.getInstance(labelData.api).unregister(labelData);
       });
     }
 
@@ -470,7 +478,7 @@
      * Set the text in the small bar next to the close button of each stack
      * viewer to the name of the skeleton as it is given by the nameservice.
      */
-    function setActiveElemenTopBarText(skeletonId, prefix) {
+    function setActiveElemenTopBarText(skeletonId, prefix, api) {
       if (!skeletonId) {
         clearTopbars();
         return;
@@ -479,42 +487,101 @@
       // Make sure we can refer to at least an empty prefix
       prefix = prefix || '';
 
-      project.getStackViewers().forEach(function(stackViewer) {
+      let suffix = api ? ` | ${api.name}` : '';
+
+      project.getStackViewers().forEach((stackViewer) => {
         var label = $('#active-element' + stackViewer.getId());
         if (0 === label.length) return;
 
         var labelData = label.data();
         if (labelData) {
-          CATMAID.NeuronNameService.getInstance().unregister(labelData);
+          CATMAID.NeuronNameService.getInstance(api).unregister(labelData);
         }
 
         // If a skeleton is selected, register with neuron name service.
         label.data('skeleton_id', skeletonId);
-        label.data('updateNeuronNames', function () {
-          label.text(prefix + CATMAID.NeuronNameService.getInstance().getName(this.skeleton_id));
+        label.data('api', api);
+        label.data('updateNeuronNames', () => {
+          let name = CATMAID.NeuronNameService.getInstance(api).getName(skeletonId);
+          label.text(`${prefix}${name}${suffix}` || '?');
         });
 
         var models = {};
         models[skeletonId] = {};
-        CATMAID.NeuronNameService.getInstance().registerAll(label.data(), models)
-          .then(function() {
-            label.text(prefix + CATMAID.NeuronNameService.getInstance().getName(skeletonId));
+        CATMAID.NeuronNameService.getInstance(api).registerAll(label.data(), models)
+          .then(() => {
+            let name = CATMAID.NeuronNameService.getInstance(api).getName(skeletonId) || '?';
+            label.text(`${prefix}${name}${suffix}`);
           })
           .catch(CATMAID.handleError);
       });
     }
 
     /**
+     * Iterate all tracing layers in the active stack viewer and set the first
+     * one as active stack layer that contains the active node, including its
+     * API.
+     */
+    function setActiveTracingLayer() {
+      if (!activeStackViewer) return;
+
+      // Get all tracing layers, the top one first.
+      let tracingLayers = activeStackViewer.getLayersOfType(CATMAID.TracingLayer);
+      tracingLayers.reverse();
+      let activeLayer;
+
+      if (tracingLayers.length === 0) return;
+      if (tracingLayers.length === 1) {
+        activeLayer = tracingLayers[0];
+        if (activeTracingLayer !== tracingLayers[0]) {
+          activeTracingLayer = activeLayer;
+          inactivateBindings(activeStackViewer);
+          activateBindings(activeStackViewer, activeLayer);
+        }
+        return activeLayer;
+      }
+
+      let activeNodeId = SkeletonAnnotations.getActiveNodeId();
+      if (activeNodeId !== undefined) {
+        let api = SkeletonAnnotations.getActiveSkeletonAPI();
+
+        for (let layer of tracingLayers) {
+          if (CATMAID.API.equals(layer.tracingOverlay.api, api) &&
+              layer.tracingOverlay.nodes.has(activeNodeId)) {
+            activeLayer = layer;
+            break;
+          }
+        }
+      }
+
+      if (!activeLayer) {
+        activeLayer = tracingLayers[0];
+      }
+
+      if (activeTracingLayer !== activeLayer) {
+        activeTracingLayer = activeLayer;
+        inactivateBindings(activeStackViewer);
+        activateBindings(activeStackViewer, activeLayer);
+      }
+
+      return activeLayer;
+    }
+
+    /**
      * Handle update of active node. All nodes are recolored and the neuron name in
      * the top bar is updated.
      */
-    function handleActiveNodeChange(node, skeletonChanged) {
+    function handleActiveNodeChange(node, skeletonChanged, api) {
+      // If this node is found in a tracing layer that is not the main back-end
+      // layer, update the active tracing layer.
+      setActiveTracingLayer(node);
+
       self.lastSkeletonId = self.currentSkeletonId;
       self.currentSkeletonId = null;
       if (node && node.id) {
         if (SkeletonAnnotations.TYPE_NODE === node.type) {
           if (skeletonChanged) {
-            setActiveElemenTopBarText(node.skeleton_id);
+            setActiveElemenTopBarText(node.skeleton_id, undefined, api);
           }
           self.currentSkeletonId = node.skeleton_id;
         } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
@@ -527,7 +594,7 @@
               var presynaptic_to = json[0] ? json[0][1].presynaptic_to : false;
               if (presynaptic_to) {
                 setActiveElemenTopBarText(presynaptic_to, 'Connector ' +
-                    node.id + ', presynaptic partner: ');
+                    node.id + ', presynaptic partner: ', api);
               } else {
                 clearTopbars('Connector ' + node.id + ' (no presynatpic partner)');
               }
@@ -654,6 +721,10 @@
               + (modifier ? 'removing the tag' : 'tagging with') + ' "' + tag + '"!');
           return true;
         }
+        if (!SkeletonAnnotations.atn.isRemote()) {
+          CATMAID.warn("Can't modify remote data");
+          return false;
+        }
 
         // If any modifier key is pressed, remove the tag
         if (modifier) {
@@ -755,6 +826,10 @@
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
+        if (!SkeletonAnnotations.atn.isRemote()) {
+          CATMAID.warn("Can't modify remote data");
+          return false;
+        }
         activeTracingLayer.tracingOverlay.activateNode(null);
         return true;
       }
@@ -833,6 +908,10 @@
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
+        if (!SkeletonAnnotations.atn.isRemote()) {
+          CATMAID.warn("Can't modify remote data");
+          return false;
+        }
         activeTracingLayer.tracingOverlay.editRadius(SkeletonAnnotations.getActiveNodeId(),
             e.shiftKey, false, e.ctrlKey);
         return true;
@@ -958,6 +1037,10 @@
           CATMAID.warn("No node selected");
           return false;
         }
+        if (!SkeletonAnnotations.atn.isRemote()) {
+          CATMAID.warn("Can't modify remote data");
+          return false;
+        }
         var tracingLayer = getActiveNodeTracingLayer();
         tracingLayer.tracingOverlay.splitSkeleton(activeNodeId);
         return true;
@@ -972,6 +1055,10 @@
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
+        if (!SkeletonAnnotations.atn.isRemote()) {
+          CATMAID.warn("Can't modify remote data");
+          return false;
+        }
         var tracingLayer = getActiveNodeTracingLayer();
         tracingLayer.tracingOverlay.rerootSkeleton(SkeletonAnnotations.getActiveNodeId());
         return true;
@@ -1126,6 +1213,10 @@
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
+        if (!SkeletonAnnotations.atn.isRemote()) {
+          CATMAID.warn("Can't modify remote data");
+          return false;
+        }
         var usePersonalTagSet = e.altKey;
         var personalTagSet;
         if (usePersonalTagSet) {
@@ -1191,7 +1282,8 @@
             var z = activeTracingLayer.stackViewer.primaryStack.projectToStackZ(
                 selectedNode.node.z, selectedNode.node.y, selectedNode.node.x);
             if (activeTracingLayer.stackViewer.z === z) {
-              SkeletonAnnotations.staticSelectNode(selectedNode.id, true)
+              SkeletonAnnotations.staticSelectNode(selectedNode.id, true,
+                  undefined, selectedNode.api)
                 .catch(CATMAID.handleError);
             } else {
               SkeletonAnnotations.staticMoveToAndSelectNode(selectedNode.id)
@@ -1276,6 +1368,10 @@
         if (e.shiftKey) {
           return false;
         }
+        if (!SkeletonAnnotations.atn.isRemote()) {
+          CATMAID.warn("Can't modify remote data");
+          return false;
+        }
         activeTracingLayer.tracingOverlay.setConfidence(1, e.altKey);
         return true;
       }
@@ -1288,6 +1384,10 @@
         if (!CATMAID.mayEdit())
           return false;
         if (e.shiftKey) {
+          return false;
+        }
+        if (!SkeletonAnnotations.atn.isRemote()) {
+          CATMAID.warn("Can't modify remote data");
           return false;
         }
         activeTracingLayer.tracingOverlay.setConfidence(2, e.altKey);
@@ -1304,6 +1404,10 @@
         if (e.shiftKey) {
           return false;
         }
+        if (!SkeletonAnnotations.atn.isRemote()) {
+          CATMAID.warn("Can't modify remote data");
+          return false;
+        }
         activeTracingLayer.tracingOverlay.setConfidence(3, e.altKey);
         return true;
       }
@@ -1318,6 +1422,10 @@
         if (e.shiftKey) {
           return false;
         }
+        if (!SkeletonAnnotations.atn.isRemote()) {
+          CATMAID.warn("Can't modify remote data");
+          return false;
+        }
         activeTracingLayer.tracingOverlay.setConfidence(4, e.altKey);
         return true;
       }
@@ -1330,6 +1438,10 @@
         if (!CATMAID.mayEdit())
           return false;
         if (e.shiftKey) {
+          return false;
+        }
+        if (!SkeletonAnnotations.atn.isRemote()) {
+          CATMAID.warn("Can't modify remote data");
           return false;
         }
         activeTracingLayer.tracingOverlay.setConfidence(5, e.altKey);
@@ -1402,6 +1514,10 @@
       keyShortcuts: { 'F3': [ 'F3' ] },
       run: function (e) {
         if (!CATMAID.mayEdit()) {
+          return false;
+        }
+        if (!SkeletonAnnotations.atn.isRemote()) {
+          CATMAID.warn("Can't modify remote data");
           return false;
         }
         var activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
@@ -1742,6 +1858,27 @@
         });
     };
 
+    this.openAdditionalTracinData = function(remoteName, remoteProject) {
+      CATMAID.msg(`Open (remote) tracing data`, `Loding data from ${remoteName}/${remoteProject.title}`);
+      if (!activeStackViewer) {
+        CATMAID.warn("Need active stack viewer");
+        return;
+      }
+
+      let n = this.remoteLayers.length + 1;
+      let layerName = `Remote data ${n}: ${remoteName}: ${remoteProject.title}`;
+      let layer = new CATMAID.TracingLayer(activeStackViewer, {
+        show_labels: CATMAID.TracingTool.Settings.session.show_node_labels,
+        api: CATMAID.Remote.getAPI(remoteName),
+        projectId: remoteProject.id,
+        mode: SkeletonAnnotations.MODES.SELECT,
+        name: layerName,
+      });
+      activeStackViewer.addLayer(layerName, layer);
+      activeStackViewer.moveLayer(layerName, getTracingLayerName(activeStackViewer));
+      layer.redraw();
+    };
+
     // Listen to creation and removal of new stack views in current project.
     project.on(CATMAID.Project.EVENT_STACKVIEW_ADDED, prepareAndUpdateStackViewer, this);
     project.on(CATMAID.Project.EVENT_STACKVIEW_CLOSED, closeStackViewer, this);
@@ -1928,6 +2065,10 @@
     ].join('');
   };
 
+  function sortProjectsByTitle(a, b) {
+    return CATMAID.tools.compareStrings(a, b);
+  }
+
   /**
    * Update the cached remote tracing data information.
    *
@@ -1942,6 +2083,7 @@
         // Get remote projects with tracing data
         work.push(CATMAID.Project.list(true, true, api)
           .then(projects => {
+            projects.sort((a,b) => sortProjectsByTitle);
             this.remoteTracingProjcts.set(ri.name, {
               api: api,
               name: ri.name,
@@ -1962,10 +2104,6 @@
         this._updateMoreToolsMenu();
         return this.remoteTracingProjcts;
       });
-  };
-
-  TracingTool.prototype.openAdditionalTracinData = function(remoteName, remoteProject) {
-    CATMAID.msg(`Open (remote) tracing data`, `Loding data from ${remoteName}/${remoteProject.title}`);
   };
 
   /**

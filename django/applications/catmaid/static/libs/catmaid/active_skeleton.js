@@ -49,14 +49,16 @@
     var active = SkeletonAnnotations.getActiveSkeletonId();
     if (!active) return null;
     var name = CATMAID.NeuronNameService.getInstance().getName(active);
-    return new CATMAID.SkeletonModel(active, name, new THREE.Color(1, 1, 0));
+    let api = SkeletonAnnotations.getActiveSkeletonAPI();
+    return new CATMAID.SkeletonModel(active, name, new THREE.Color(1, 1, 0), api);
   };
 
   ActiveSkeleton.prototype.getSkeletonModel = function(skeletonId) {
     var active = SkeletonAnnotations.getActiveSkeletonId();
     if (!active || active != skeletonId) return null;
     var name = CATMAID.NeuronNameService.getInstance().getName(active);
-    return new CATMAID.SkeletonModel(active, name, new THREE.Color(1, 1, 0));
+    let api = SkeletonAnnotations.getActiveSkeletonAPI();
+    return new CATMAID.SkeletonModel(active, name, new THREE.Color(1, 1, 0), api);
   };
 
   ActiveSkeleton.prototype.getSelectedSkeletonModels = function() {

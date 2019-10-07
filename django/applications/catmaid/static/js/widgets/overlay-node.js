@@ -1536,8 +1536,8 @@
 
         // Prevent node related click handling if the naviation mode is
         // enabled.
-        if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.MOVE ||
-            SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SELECT) {
+        let mode = catmaidTracingOverlay.mode || SkeletonAnnotations.currentmode;
+        if (mode === SkeletonAnnotations.MODES.MOVE || mode === SkeletonAnnotations.MODES.SELECT) {
           return;
         }
 
@@ -1674,14 +1674,15 @@
         if (e.shiftKey) return;
         if (!checkNodeID(this)) return;
 
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(this.node.overlayGlobals.skeletonElements);
+
         // Prevent node related pointer move handling if the naviation mode is
         // enabled.
-        if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.MOVE ||
-            SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SELECT) {
+        let mode = catmaidTracingOverlay.mode || SkeletonAnnotations.currentmode;
+        if (mode === SkeletonAnnotations.MODES.MOVE || mode === SkeletonAnnotations.MODES.SELECT) {
           return;
         }
 
-        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(this.node.overlayGlobals.skeletonElements);
         var node = this.node;
 
         if (!node) {

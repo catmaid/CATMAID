@@ -1007,7 +1007,9 @@
         viewB = layerB.getView();
       if (!this._layersView.contains(viewA) || !this._layersView.contains(viewB)) return;
       this._layersView.insertBefore(viewA, viewB);
-    } else this._layersView.appendChild(layerA.getView());
+    } else if (layerA.getView) {
+      this._layersView.appendChild(layerA.getView());
+    }
 
     if (typeof layerA.notifyReorder !== 'undefined')
       layerA.notifyReorder(layerB);

@@ -1536,7 +1536,8 @@
 
         // Prevent node related click handling if the naviation mode is
         // enabled.
-        if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.MOVE) {
+        if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.MOVE ||
+            SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SELECT) {
           return;
         }
 
@@ -1675,7 +1676,8 @@
 
         // Prevent node related pointer move handling if the naviation mode is
         // enabled.
-        if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.MOVE) {
+        if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.MOVE ||
+            SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SELECT) {
           return;
         }
 

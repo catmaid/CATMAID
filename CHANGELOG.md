@@ -227,6 +227,8 @@ Miscellaneous:
 
 - Connector list: dates are now display correctly.
 
+- Tracing tool: don't allow moving nodes in select-only mode.
+
 - Tracing layer: merged-in single nodes will now also have their name remembered
   as a new annotation in a join if their name doesn't follow the default pattern
   "neuron <number>".

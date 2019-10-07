@@ -13,7 +13,7 @@
     if (options[key]) {
       return options[key];
     } else {
-      throw Error("Option not found: " + key);
+      throw new CATMAID.Error("Option not found: " + key);
     }
   }
 
@@ -59,7 +59,7 @@
         } else if ("z" === axis) {
           axis = new THREE.Vector3(0, 0, 1);
         } else {
-          throw Error("Could not create animation, unknown axis: " + axis);
+          throw new CATMAID.ValueError("Could not create animation, unknown axis: " + axis);
         }
 
         // Make sure rotation axis, camera and target are not collinear. Throw
@@ -98,7 +98,7 @@
             options.startDate, options.endDate, options.tickLength,
             options.skeletonOptions, options.emptyBoutLength, notify);
       } else {
-        throw Error("Could not create animation, don't know type: " +
+        throw new CATMAID.ValueError("Could not create animation, don't know type: " +
             options.type);
       }
 

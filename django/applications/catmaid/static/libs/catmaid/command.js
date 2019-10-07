@@ -376,10 +376,10 @@
    */
   CommandStore.prototype.add = function(type, original, value, timestamp) {
     if (!value) {
-      throw CATMAID.ValueError("Can't add value to store: invalid value");
+      throw new CATMAID.ValueError("Can't add value to store: invalid value");
     }
     if (!timestamp) {
-      throw CATMAID.ValueError("Can't add value to store: invalid timestamp");
+      throw new CATMAID.ValueError("Can't add value to store: invalid timestamp");
     }
 
     // Get type specific map

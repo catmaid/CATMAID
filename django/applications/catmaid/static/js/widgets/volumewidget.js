@@ -310,7 +310,7 @@
       volumeType = this.newVolumeType;
       volumeHelper = volumeTypes[volumeType];
       if (!volumeType) {
-        throw CATMAID.ValueError("Couldn't find volume type: " +
+        throw new CATMAID.ValueError("Couldn't find volume type: " +
             this.newVolumeType);
       }
       volume = volumeHelper.createVolume({});

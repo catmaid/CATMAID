@@ -7391,7 +7391,7 @@
         }
         let parentNode = nodeIndex[node.parent_id];
         if (!parentNode) {
-          throw CATMAID.ValueError("Could not find parent of node " + node.node_id);
+          throw new CATMAID.ValueError("Could not find parent of node " + node.node_id);
         }
 
         v1.set(node.x, node.y, node.z);

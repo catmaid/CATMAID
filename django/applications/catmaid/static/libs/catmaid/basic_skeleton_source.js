@@ -368,10 +368,10 @@
    */
   var checkGroupName = function(groups, name) {
     if (!name) {
-      throw CATMAID.ValueError("Please give a valid group name");
+      throw new CATMAID.ValueError("Please give a valid group name");
     }
     if (groups[name]) {
-      throw CATMAID.ValueError("The group '" + name + "' exists already");
+      throw new CATMAID.ValueError("The group '" + name + "' exists already");
     }
   };
 

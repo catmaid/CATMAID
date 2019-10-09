@@ -1561,7 +1561,8 @@
             break;
           case 'creator':
             var creatorValue = $('#visibility-group-' + groupID + '-value-2').val();
-            groupSetting.creatorID = parseInt(creatorValue, 10);
+            if (creatorValue !== 'self') groupSetting.creatorID = parseInt(creatorValue, 10);
+            else groupSetting.creatorID = creatorValue;
             break;
         }
 
@@ -1655,7 +1656,9 @@
                   .reduce(function (o, user) {
                     o[user.getDisplayName()] = user.id;
                     return o;
-                  }, {});
+                  }, {
+                    '(self)': 'self',
+                  });
               select = CATMAID.DOM.createSelectSetting(
                     '',
                     users,

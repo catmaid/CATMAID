@@ -6430,7 +6430,8 @@ var SkeletonAnnotations = {};
      *                              keyed by 'metaAnnotationName' to a string
      *                              name of the meta-annotation to match. May be
      *                              keyed by 'creatorID' to the numeric ID of the
-     *                              creation user to match. May be keyed by
+     *                              creation user to match, which can also be
+     *                              specified as 'self'. May be keyed by
      *                              'invert' to a boolean to indicate if the
      *                              filter rule should inverted.
      */
@@ -6472,8 +6473,10 @@ var SkeletonAnnotations = {};
 
       let result;
       if (group.matchAll) result = true;
-      else if (group.creatorID) result = node.user_id === group.creatorID;
-      else result = group.skeletonIDs.has(node.skeleton_id);
+      else if (group.creatorID) {
+        if (group.creatorID === 'self') result = node.user_id === CATMAID.session.userid;
+        else result = node.user_id === group.creatorID;
+      } else result = group.skeletonIDs.has(node.skeleton_id);
 
       if (group.invert) return !result;
       else return result;

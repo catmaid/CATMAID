@@ -91,6 +91,12 @@ Tracing overlay:
 - When merging a fragment that contains a sampler, it can now be merged if the
   respective skeleton doesn't need to be rerooted.
 
+- Visibility groups can now use a generic node creator test that references
+  the current user (logged in our anonymous). It is called "(self)" in the list
+  of creators for all three visibility groups. This is useful to define
+  visibility groups on the project or instance level that include a hiding
+  pattern while guaranteeing that users see their own nodes.
+
 Navigator:
 
 - Two new buttons and a text input field on the right side of the toolbar allow

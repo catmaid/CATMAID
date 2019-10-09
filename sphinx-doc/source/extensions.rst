@@ -10,6 +10,11 @@ extension to people who may want to make use of it later. Therefore, we have
 designed the extension system to allow third parties to create external modules
 which interface with mainline CATMAID without having to change it.
 
+If all that is needed is a modification or extension of front-end code (i.e. no
+new back-end functionality or database schema changes), it might be enough to
+configure static front-end extensions. What these are is explained at the end of
+this section.
+
 Overview
 --------
 
@@ -96,3 +101,20 @@ Community Standards
 - As per Django's guidelines, namespace all static files, templates and so on to your \
     app - e.g. static files should be in a directory called \
     ``myextension/static/myextension/<files>``
+
+Simple front-end extensions
+---------------------------
+
+The CATMAID front-end can load extra JavaScript files that are not part of the
+regular source tree. This allows adding e.g. a new widget or custom analysis
+code without creating a full extension like explained above. This is sometimes
+easier and can be configured through three variables in the ``settings.py``
+file.
+
+Which additional files are loaded is defined in the ``STATIC_EXTENSION_FILES``
+variable, which is expected to be a list of file names. They are expected to be
+relative to the path defined in  ``STATIC_EXTENSION_ROOT``. It is the
+responsibility of the webserver in use (e.g. Nginx) is expected to map the
+relative URL path in ``STATIC_EXTENSION_URL`` to the ``STATIC_EXTENSION_ROOT``
+path, which allows the front-end to load the specified files from the static
+extension URL.

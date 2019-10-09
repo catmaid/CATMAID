@@ -92,3 +92,20 @@ overridden in ``settings.py``. Below is an explanation of all available settings
      A list that defines folders with additional CMTK template spaces that can
      be used with e.g. elmr or the nat.virtualflybrains R packages. Empty by
      default.
+
+.. glossary::
+    ``STATIC_EXTENSION_ROOT``
+    The absolute local path where the static extension files are kept. These can
+    be loaded by the front-end to include custom out-of-source extensions in the
+    front-end (e.g. a custom widget). Defaults to ``<catmaid-paith>/django/staticext``.
+
+.. glossary::
+    ``STATIC_EXTENSION_URL``
+     The URL under which custom front-end code can be made available. It is
+     expected to map to ``STATIC_EXTENSION_ROOT`` and is by default set to to
+     ``<catmaid-subdir>/staticext/``.
+
+.. glossary::
+    ``STATIC_EXTENSION_FILES``
+    A list of file names that are allowed to be loaded by the front-end through
+    ``STATIC_EXTENSION_URL`` and ``STATIC_EXTENSION_ROOT``. Empty by default.

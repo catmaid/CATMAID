@@ -1874,6 +1874,7 @@
         mode: SkeletonAnnotations.MODES.SELECT,
         name: layerName,
       });
+      layer.isRemovable = true;
       activeStackViewer.addLayer(layerName, layer);
       activeStackViewer.moveLayer(layerName, getTracingLayerName(activeStackViewer));
       layer.redraw();

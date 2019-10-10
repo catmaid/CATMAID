@@ -446,16 +446,21 @@ var requestQueue = new CATMAID.RequestQueue();
           if (status >= 400 && status < 600) {
             if (status === 502) { // Bad Gateway
               var error = new CATMAID.NetworkAccessError("CATMAID server unreachable",
-                  "Please wait or try to reload");
+                  "Please wait or try to reload", {detail: `URL: ${url}\nMethod: ${method}`});
               throw error;
             } else if (status === 503) {
-              throw new CATMAID.CORSError(`Can't access ${url} due to CORS restrictions`);
+              throw new CATMAID.CORSError(`Can't access ${url} (${method}) due to CORS restrictions`,
+                  {detail: `URL: ${url}`});
             }
             let errorDetails;
             try {
               errorDetails = JSON.parse(text);
+              if (errorDetails) {
+                if (errorDetails.detail) errorDetails.detail = `URL: ${url}\nMethod: ${method}\nDetails: ${errorDetails.detail}`;
+                else errorDetails.detail = `URL: ${url}\nMethod: ${method}`;
+              } else errorDetails = {detail: `URL: ${url}\nMethod: ${method}`};
             } catch (e) {
-              errorDetails = null;
+              errorDetails = {detail: `URL: ${url}\nMethod: ${method}\nError handling error: ${e}`};
             }
             throw CATMAID.parseErrorResponse(errorDetails, status);
           }

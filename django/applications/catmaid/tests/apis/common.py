@@ -8,10 +8,10 @@ from guardian.shortcuts import assign_perm
 from guardian.management import create_anonymous_user
 
 from catmaid.models import Project, Treenode, User
-from catmaid.tests.common import init_consistent_data
+from catmaid.tests.common import init_consistent_data, AssertStatusMixin
 
 
-class CatmaidApiTestCase(TestCase):
+class CatmaidApiTestCase(TestCase, AssertStatusMixin):
     fixtures = ['catmaid_testdata']
 
     maxDiff = None

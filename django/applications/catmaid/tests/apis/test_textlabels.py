@@ -36,7 +36,7 @@ class TextlabelsApiTests(CatmaidApiTestCase):
                 '/%d/textlabel/update' % self.test_project_id,
                 params)
         expected_result = ' '
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         self.assertEqual(expected_result, response.content.decode('utf-8'))
 
         label = Textlabel.objects.filter(id=textlabel_id)[0]
@@ -74,7 +74,7 @@ class TextlabelsApiTests(CatmaidApiTestCase):
                 '/%d/textlabel/update' % self.test_project_id,
                 params)
         expected_result = ' '
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         self.assertEqual(expected_result, response.content.decode('utf-8'))
 
         label = Textlabel.objects.filter(id=textlabel_id)[0]
@@ -118,7 +118,7 @@ class TextlabelsApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/textlabel/delete' % self.test_project_id,
                 {'tid': textlabel_id})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {'message': 'Success.'}
         self.assertEqual(expected_result, parsed_response)
@@ -157,7 +157,7 @@ class TextlabelsApiTests(CatmaidApiTestCase):
                     params)
 
             parsed_response = json.loads(response.content.decode('utf-8'))
-            self.assertEqual(response.status_code, 200)
+            self.assertStatus(response)
             self.assertEqual(label_count + 1 + i, Textlabel.objects.all().count())
             self.assertTrue('tid' in parsed_response.keys())
             label = get_object_or_404(Textlabel, id=parsed_response['tid'])
@@ -197,7 +197,7 @@ class TextlabelsApiTests(CatmaidApiTestCase):
                 'height': 7680,
                 'scale': 0.5,
                 'resolution': 5})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(expected_result, parsed_response)
 
@@ -237,6 +237,6 @@ class TextlabelsApiTests(CatmaidApiTestCase):
                 'height': 7680,
                 'scale': 0.5,
                 'resolution': 5})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(expected_result, parsed_response)

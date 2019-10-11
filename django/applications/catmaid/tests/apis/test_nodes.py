@@ -19,7 +19,7 @@ class NodesApiTests(CatmaidApiTestCase):
 
         response = self.client.get(
                 '/%d/nodes/most-recent' % self.test_project_id)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 'id': most_recent_node_id,
@@ -36,7 +36,7 @@ class NodesApiTests(CatmaidApiTestCase):
         response = self.client.get(
                 '/%d/nodes/most-recent' % self.test_project_id,
                 {'skeleton_id': skeleton_id})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 'id': most_recent_node_id,
@@ -57,7 +57,7 @@ class NodesApiTests(CatmaidApiTestCase):
                     'z': 4050,
                     'skeleton_id': 2388,
                     })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 "treenode_id": 2394,
@@ -78,7 +78,7 @@ class NodesApiTests(CatmaidApiTestCase):
                     'z': 0,
                     'neuron_id': 362,
                     })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 "treenode_id": 367,
@@ -95,7 +95,7 @@ class NodesApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/node/user-info' % (self.test_project_id),
                 {'node_ids': [367, 387]})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             "367": {
@@ -126,7 +126,7 @@ class NodesApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/node/get_location' % (self.test_project_id),
                 {'tnid': treenode_id})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [383, 7850.0, 1970.0, 0.0]
         self.assertEqual(expected_result, parsed_response)
@@ -139,7 +139,7 @@ class NodesApiTests(CatmaidApiTestCase):
         response = self.client.post( '/%d/nodes/location' % self.test_project_id, {
             'node_ids': treenode_ids
         })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
             [383, 7850.0, 1970.0, 0.0],
@@ -170,12 +170,12 @@ class NodesApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/label/treenode/%d/update' % (self.test_project_id, treenode_id),
                 {'tags': 'testlabel'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         treenode_id = 403
         response = self.client.post(
                 '/%d/label/treenode/%d/update' % (self.test_project_id, treenode_id),
                 {'tags': 'Testlabel'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
 
         response = self.client.post(
                 '/%d/nodes/find-labels' % (self.test_project_id, ),
@@ -183,7 +183,7 @@ class NodesApiTests(CatmaidApiTestCase):
                  'y': 1790,
                  'z': 0,
                  'label_regex': '[Tt]estlabel'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [[387, [9030.0, 1480.0, 0.0], 380.131556174964, ["testlabel"]],
                            [403, [7840.0, 2380.0, 0.0], 1135.3413583588, ["Testlabel"]]]
@@ -204,7 +204,7 @@ class NodesApiTests(CatmaidApiTestCase):
                     't[0][1]': x,
                     't[0][2]': y,
                     't[0][3]': z})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             'updated': 1,
@@ -285,7 +285,7 @@ class NodesApiTests(CatmaidApiTestCase):
 
         response = self.client.post(
                 '/%d/node/update' % self.test_project_id, param_dict)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             'updated': 4,
@@ -364,7 +364,7 @@ class NodesApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/label/treenode/%d/update' % (self.test_project_id, 2374),
                 {'tags': 'test_treenode_label', 'delete_existing': 'false'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
 
         expected_t_result = [
             [2374, 2372, 3310.0, 5190.0, 0.0, 5, -1.0, 2364, 1323093096.955, 5],
@@ -417,7 +417,7 @@ class NodesApiTests(CatmaidApiTestCase):
             'z2': 9,
             'labels': 'true',
         })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(expected_t_result), len(parsed_response[0]))
         self.assertEqual(len(expected_c_result), len(parsed_response[1]))
@@ -496,7 +496,7 @@ class NodesApiTests(CatmaidApiTestCase):
                 'z2': 9,
                 'treenode_ids': 2423,
                 'labels': False,})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(5, len(parsed_response))
         self.assertEqual(len(expected_t_result), len(parsed_response[0]))

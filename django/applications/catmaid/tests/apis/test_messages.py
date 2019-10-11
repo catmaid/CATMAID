@@ -25,7 +25,7 @@ class MessagesApiTests(CatmaidApiTestCase):
         message_id = 3
 
         response = self.client.post(f'/messages/{message_id}/mark_read')
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         message = Message.objects.get(id=message_id)
@@ -48,7 +48,7 @@ class MessagesApiTests(CatmaidApiTestCase):
 
         response = self.client.post(
                 '/messages/list', {})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         def get_message(data, id):

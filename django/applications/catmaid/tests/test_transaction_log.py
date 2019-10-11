@@ -13,9 +13,10 @@ from catmaid import history
 from catmaid.models import Class, Project, User
 from catmaid.control import tracing
 from catmaid.state import make_nocheck_state
+from catmaid.tests.common import AssertStatusMixin
 
 
-class TransactionLogTests(TransactionTestCase):
+class TransactionLogTests(TransactionTestCase, AssertStatusMixin):
     """Test the transaction log implementation, expecting an empty database.
     """
 
@@ -100,7 +101,7 @@ class TransactionLogTests(TransactionTestCase):
                     'execution_time': exec_time,
                     'label': label
                 })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         return parsed_response
 
@@ -118,7 +119,7 @@ class TransactionLogTests(TransactionTestCase):
             'confidence': 5,
             'parent_id': -1,
             'radius': 2})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         transaction.commit()
 
@@ -171,7 +172,7 @@ class TransactionLogTests(TransactionTestCase):
             'parent_id': -1,
             'radius': 2})
         transaction.commit()
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         self.assertTrue('treenode_id' in parsed_response)
@@ -203,7 +204,7 @@ class TransactionLogTests(TransactionTestCase):
                     't[0][2]': 11.2,
                     't[0][3]': 16.2})
         transaction.commit()
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         after_update_tx_entries = self.get_tx_entries(cursor)

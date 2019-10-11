@@ -45,7 +45,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
     def test_skeleton_root(self):
         self.fake_authentication()
         response = self.client.get('/%d/skeletons/%d/root' % (self.test_project_id, 235))
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(parsed_response['root_id'], 237)
         self.assertAlmostEqual(parsed_response['x'], 1065)
@@ -58,7 +58,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
 
         orig_skeleton_id = 235
         response = self.client.get('/%d/skeleton/%d/swc' % (self.test_project_id, orig_skeleton_id))
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         orig_swc_string = response.content.decode('utf-8')
 
         n_orig_skeleton_nodes = Treenode.objects.filter(skeleton_id=orig_skeleton_id).count()
@@ -74,7 +74,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
                 {'file.swc': swc_file, 'name': 'test'})
 
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         new_skeleton_id = parsed_response['skeleton_id']
         id_map = parsed_response['node_id_map']
@@ -127,7 +127,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
                 {'file.swc': swc_file2, 'name': 'test2', 'neuron_id':
                     neuron.id})
 
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         # Make sure there is still only one skeleton
@@ -154,7 +154,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
                 {'file.swc': swc_file2, 'name': 'test2', 'neuron_id': neuron.id,
                     'force': True})
 
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         # Make sure there is still only one skeleton
@@ -201,7 +201,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
                 {'file.swc': swc_file2, 'name': 'test3', 'skeleton_id':
                     skeleton.id})
 
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         last_skeleton_id = skeleton.id
         neuron = ClassInstance.objects.get(pk=parsed_response['neuron_id'])
@@ -217,7 +217,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.assertEqual(neuron.name, 'test3')
         self.assertEqual(skeleton.name, 'test3')
         self.assertNotEqual(neuron.id, last_neuron_id)
-        self.assertNotEqual(last_skeleton_id, skeleton.id) 
+        self.assertNotEqual(last_skeleton_id, skeleton.id)
 
         # Make sure there are as many nodes as expected for the imported
         # skeleton.
@@ -230,7 +230,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
                 {'file.swc': swc_file2, 'name': 'test2', 'skeleton_id': skeleton.id,
                     'force': True})
 
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         last_skeleton_edit_time = skeleton.edition_time
@@ -259,7 +259,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
             '/%d/skeleton/contributor_statistics_multiple' % (self.test_project_id,),
             {'skids[0]': 235})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_response = {
                 "pre_contributors": {"3": 3},
@@ -276,14 +276,14 @@ class SkeletonsApiTests(CatmaidApiTestCase):
 
         response = self.client.post(
             '/%d/skeleton/%d/contributor_statistics' % (self.test_project_id, 235))
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(parsed_response, expected_response)
 
         response = self.client.post(
             '/%d/skeleton/contributor_statistics_multiple' % (self.test_project_id,),
             {'skids[0]': 235, 'skids[1]': 361})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_response = {
                 "pre_contributors": {"3": 3},
@@ -305,7 +305,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         skeleton_id = 235
         response = self.client.post(
             '/%d/skeleton/%s/node_count' % (self.test_project_id, skeleton_id))
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_response = {
                 "count": 28,
@@ -314,7 +314,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
 
         response = self.client.post(
             '/%d/skeleton/node/%s/node_count' % (self.test_project_id, 253))
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(parsed_response, expected_response)
 
@@ -327,7 +327,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
             '/%d/skeleton/split' % (self.test_project_id,),
             {'treenode_id': 2394, 'upstream_annotation_map': '{}', 'downstream_annotation_map': '{}'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         new_skeleton_id = parsed_response['new_skeleton_id']
 
@@ -339,7 +339,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
             '/%d/skeleton/split' % (self.test_project_id,),
             {'treenode_id': 237, 'upstream_annotation_map': '{}', 'downstream_annotation_map': '{}'})
-        self.assertEqual(response.status_code, 400)
+        self.assertStatus(response, 400)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertIn('error', parsed_response)
         error_message = "Can't split at the root node: it doesn't have a parent."
@@ -357,7 +357,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
              'annotations[1]': 'B',
              'annotations[2]': 'C',
              'skeleton_ids[0]': old_skeleton_id})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
 
         # Expect an error if some annotations are not assigned.
         response = self.client.post(
@@ -391,7 +391,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
             {'treenode_id': 2394,
              'upstream_annotation_map':   json.dumps({'A': self.test_user_id, 'B': self.test_user_id}),
              'downstream_annotation_map': json.dumps({'A': self.test_user_id, 'B': self.test_user_id, 'C': self.test_user_id})})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         new_skeleton_id = parsed_response['new_skeleton_id']
 
@@ -399,7 +399,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
             '/%d/skeleton/annotationlist' % (self.test_project_id,),
             {'skeleton_ids[0]': old_skeleton_id,
              'skeleton_ids[1]': new_skeleton_id})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         old_skeleton_annotations = set([parsed_response['annotations'][str(aid['id'])] for aid in parsed_response['skeletons'][str(old_skeleton_id)]['annotations']])
         new_skeleton_annotations = set([parsed_response['annotations'][str(aid['id'])] for aid in parsed_response['skeletons'][str(new_skeleton_id)]['annotations']])
@@ -417,7 +417,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
              'source_skeleton_ids[1]': 373,
              'boolean_op': 'OR',
              'link_types': ['incoming', 'outgoing', 'gapjunction', 'attachment']})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             "outgoing_reviewers": [],
@@ -438,7 +438,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
              'source_skeleton_ids[1]': 373,
              'boolean_op': 'AND',
              'link_types': ['incoming', 'outgoing', 'gapjunction', 'attachment']})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             "outgoing_reviewers": [],
@@ -460,7 +460,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
 
         # Return untagged root
         response = self.client.post(url, {'treenode_id': 243})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         distsort = lambda end: end[2]
         parsed_response.sort(key=distsort)
@@ -475,9 +475,9 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/label/treenode/%d/update' % (self.test_project_id, 237),
                 {'tags': 'soma', 'delete_existing': 'false'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         response = self.client.post(url, {'treenode_id': 243})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         parsed_response.sort(key=distsort)
         expected_result.pop(0)
@@ -488,9 +488,9 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/label/treenode/%d/update' % (self.test_project_id, 261),
                 {'tags': 'End', 'delete_existing': 'false'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         response = self.client.post(url, {'treenode_id': 243})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         parsed_response.sort(key=distsort)
         expected_result.pop(0)
@@ -500,9 +500,9 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/label/treenode/%d/update' % (self.test_project_id, 277),
                 {'tags': 'mitochondria ends', 'delete_existing': 'false'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         response = self.client.post(url, {'treenode_id': 243})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         parsed_response.sort(key=distsort)
         self.assertEqual(parsed_response, expected_result)
@@ -516,18 +516,18 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/label/treenode/%d/update' % (self.test_project_id, treenode_id),
                 {'tags': 'testlabel'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         treenode_id = 393
         response = self.client.post(
                 '/%d/label/treenode/%d/update' % (self.test_project_id, treenode_id),
                 {'tags': 'Testlabel'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         # Label in other skeleton than should be ignored.
         treenode_id = 403
         response = self.client.post(
                 '/%d/label/treenode/%d/update' % (self.test_project_id, treenode_id),
                 {'tags': 'Testlabel'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
 
         skeleton_id = 361
         treenode_id = 367
@@ -535,7 +535,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
                 '/%d/skeletons/%d/find-labels' % (self.test_project_id, skeleton_id),
                 {'treenode_id': treenode_id,
                  'label_regex': '[Tt]estlabel'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [[393, [6910.0, 990.0, 0.0], 3, ["Testlabel"]],
                            [387, [9030.0, 1480.0, 0.0], 4, ["testlabel"]]]
@@ -549,7 +549,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/skeletons/within-spatial-distance' % (self.test_project_id,),
                 {'treenode_id': treenode_id, 'distance': 2000, 'size_mode': 0})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [2468, 2388, 235, 2411, 2364]
         self.assertCountEqual(expected_result, parsed_response['skeletons'])
@@ -557,7 +557,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/skeletons/within-spatial-distance' % (self.test_project_id,),
                 {'treenode_id': treenode_id, 'distance': 2000, 'size_mode': 1})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [2462, 2433, 373]
         self.assertCountEqual(expected_result, parsed_response['skeletons'])
@@ -570,7 +570,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
             '/%d/skeleton/%d/permissions' % (self.test_project_id, skeleton_id,))
         expected_result = {'can_edit': True}
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(parsed_response, expected_result)
 
@@ -578,7 +578,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
             '/%d/annotations/add' % (self.test_project_id,),
             {'annotations[0]': 'locked', 'skeleton_ids[0]': skeleton_id})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         lock_annotation_id = parsed_response['annotations'][0]['id']
         skeleton_entity_id = parsed_response['annotations'][0]['entities'][0]
@@ -587,7 +587,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
             '/%d/skeleton/%d/permissions' % (self.test_project_id, skeleton_id,))
         expected_result = {'can_edit': True} # test2 has permissions for test1
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(parsed_response, expected_result)
 
@@ -595,19 +595,19 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
             '/%d/annotations/%d/remove' % (self.test_project_id, lock_annotation_id,),
             {'entity_ids[0]': skeleton_entity_id})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
 
         self.fake_authentication('test0', 'test', True)
         response = self.client.post(
             '/%d/annotations/add' % (self.test_project_id,),
             {'annotations[0]': 'locked', 'skeleton_ids[0]': skeleton_id})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
 
         self.fake_authentication()
         response = self.client.post(
             '/%d/skeleton/%d/permissions' % (self.test_project_id, skeleton_id,))
         expected_result = {'can_edit': False} # test2 does not have permission for test0
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(parsed_response, expected_result)
 
@@ -618,7 +618,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         skeleton_id = 235
         response = self.client.post(
                 '/%d/skeleton/%s/statistics' % (self.test_project_id, skeleton_id,),)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 'node_count': 28,
@@ -639,7 +639,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/skeleton/ancestry' % self.test_project_id,
                 {'skeleton_id': skeleton_id})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
                 {"name":"downstream-B", "id":362, "class":"neuron"},
@@ -655,7 +655,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/skeleton/ancestry' % self.test_project_id,
                 {'skeleton_id': skeleton_id})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
                 {"name":"neuron 2365", "id":2365, "class":"neuron"},
@@ -675,7 +675,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/skeleton/connectivity_matrix' % (self.test_project_id,),
                 params)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 '235': {'361': 1, '373': 2},
@@ -698,7 +698,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/skeleton/connectivity_matrix' % (self.test_project_id,),
                 params)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             "235": {
@@ -814,7 +814,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         # Change confidence that affects 1 edge from 235 to 373
         response = self.client.post('/%d/treenodes/289/confidence' % self.test_project_id,
                 {'new_confidence': 3, 'state': '{"nocheck": true}'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         # Add confidence criteria, but not one that should affect the graph.
         response = self.client.post(
             '/%d/skeletons/confidence-compartment-subgraph' % self.test_project_id,
@@ -920,7 +920,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/skeleton/reroot' % self.test_project_id,
                 {'treenode_id': new_root})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result:Dict[str, Any] = {
                 'newroot': 2394,
@@ -932,7 +932,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
                     'from_id': link_from,
                     'to_id': link_to,
                     'annotation_set': '{}'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 'message': 'success',
@@ -960,7 +960,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/skeleton/connectors-by-partner' % self.test_project_id,
                 {'skids[0]': 235, 'skids[1]': 373})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         [[[c.sort() for c in p.values()] for p in t.values()] for t in parsed_response.values()]
         expected_result = {
@@ -987,7 +987,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         # No reviews
         url = '/%d/skeleton/%d/reviewed-nodes' % (self.test_project_id, skeleton_id)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result:Dict[str, Any] = {}
         self.assertEqual(expected_result, parsed_response)
@@ -1000,7 +1000,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         Review.objects.create(project_id=self.test_project_id, reviewer_id=3,
             review_time=review_time, skeleton_id=skeleton_id, treenode_id=263)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         expected_result = {
                 '253': [[3, review_time], [2, review_time]],
                 '263': [[3, review_time]]}
@@ -1018,7 +1018,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/skeleton/reroot' % self.test_project_id,
                 {'treenode_id': new_root})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 'newroot': 407,
@@ -1043,7 +1043,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         # No reviews, single segment
         url = '/%d/skeletons/review-status' % (self.test_project_id)
         response = self.client.post(url, {'skeleton_ids[0]': skeleton_id})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         expected_result = {'2388': [3, 0]}
         self.assertJSONEqual(response.content.decode('utf-8'), expected_result)
 
@@ -1056,14 +1056,14 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         Review.objects.create(project_id=self.test_project_id, reviewer_id=3,
             review_time=review_time, skeleton_id=skeleton_id, treenode_id=2394)
         response = self.client.post(url, {'skeleton_ids[0]': skeleton_id})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         expected_result = {'2388': [3, 2]}
         self.assertJSONEqual(response.content.decode('utf-8'), expected_result)
 
         # Use empty whitelist
         response = self.client.post(url,
                 {'skeleton_ids[0]': skeleton_id, 'whitelist': 'true'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         expected_result = {'2388': [3, 0]}
         self.assertJSONEqual(response.content.decode('utf-8'), expected_result)
 
@@ -1072,7 +1072,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
                 user_id=self.test_user_id, reviewer_id=2, accept_after=review_time)
         response = self.client.post(url,
                 {'skeleton_ids[0]': skeleton_id, 'whitelist': 'true'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         expected_result = {'2388': [3, 1]}
         self.assertJSONEqual(response.content.decode('utf-8'), expected_result)
 
@@ -1085,7 +1085,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         # No reviews, single segment
         url = '/%d/skeletons/%d/review' % (self.test_project_id, skeleton_id)
         response = self.client.post(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         expected_result = [{'status': '0.00', 'id': 0, 'nr_nodes': 3, 'sequence': [
                 {'y': 6550.0, 'x': 3680.0, 'z': 0.0, 'rids': [], 'sup': [], 'user_id': 3, 'id': 2396},
                 {'y': 6030.0, 'x': 3110.0, 'z': 0.0, 'rids': [], 'sup': [], 'user_id': 3, 'id': 2394},
@@ -1101,7 +1101,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         Review.objects.create(project_id=self.test_project_id, reviewer_id=3,
             review_time=review_time, skeleton_id=skeleton_id, treenode_id=2394)
         response = self.client.post(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         expected_result = [{'status': '66.67', 'id': 0, 'nr_nodes': 3, 'sequence': [
                 {'y': 6550.0, 'x': 3680.0, 'z': 0.0, 'rids': [[3, review_time], [2, review_time]], 'sup': [], 'user_id': 3, 'id': 2396},
                 {'y': 6030.0, 'x': 3110.0, 'z': 0.0, 'rids': [[3, review_time]], 'sup': [], 'user_id': 3, 'id': 2394},
@@ -1120,12 +1120,12 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(url)
         expected_result[0]['sequence'][0]['rids'].append([2, review_time])
         expected_result[0]['sequence'][1]['rids'].append([3, review_time])
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         self.assertJSONEqual(response.content.decode('utf-8'), expected_result)
 
         # Test subarbor support
         response = self.client.post(url, {'subarbor_node_id': 2394})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         expected_result[0]['status'] = '100.00'
         expected_result[0]['nr_nodes'] = 2
         del expected_result[0]['sequence'][-1]
@@ -1136,7 +1136,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.fake_authentication()
         url = '/%d/skeleton/235/swc' % (self.test_project_id,)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
 
         swc_output_for_skeleton_235 = '''
 237 0 1065 3035 0 0 -1
@@ -1175,7 +1175,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.fake_authentication()
         url = '/%d/skeleton/235/swc' % (self.test_project_id,)
         response = self.client.get(url, {'linearize_ids': 'true'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
 
         swc_output_for_skeleton_235 = '''
 1 0 1065 3035 0 0 -1
@@ -1217,7 +1217,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
 
         response = self.client.post(url, {'label_ids': label_ids})
 
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         self.assertJSONEqual(response.content.decode('utf-8'), expected_response)
 
 

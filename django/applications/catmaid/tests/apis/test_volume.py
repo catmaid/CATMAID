@@ -58,7 +58,7 @@ class VolumeTests(CatmaidApiTestCase):
             self.test_vol_1_id), {
                 'title': 'New title'
             })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(parsed_response, {
             'success': True,
@@ -91,7 +91,7 @@ class VolumeTests(CatmaidApiTestCase):
             self.test_vol_1_id), {
                 'comment': 'New comment'
             })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(parsed_response, {
             'success': True,
@@ -126,7 +126,7 @@ class VolumeTests(CatmaidApiTestCase):
                 {"cube.stl": f}
             )
 
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(parsed_response), 1)
         self.assertTrue("cube.stl" in parsed_response)
@@ -135,7 +135,7 @@ class VolumeTests(CatmaidApiTestCase):
 
         response = self.client.get(f"/{self.test_project_id}/volumes/{cube_id}/")
 
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(parsed_response['name'], 'cube')
         self.assertEqual(parsed_response['bbox'], {
@@ -152,7 +152,7 @@ class VolumeTests(CatmaidApiTestCase):
                 {"cube.stl": f}
             )
 
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(parsed_response), 1)
         self.assertTrue("cube.stl" in parsed_response)
@@ -163,4 +163,4 @@ class VolumeTests(CatmaidApiTestCase):
             f"/{self.test_project_id}/volumes/{cube_id}/export.stl",
             HTTP_ACCEPT="model/x.stl-ascii,model/stl")
 
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)

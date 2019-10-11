@@ -9,7 +9,7 @@ class LabelsApiTests(CatmaidApiTestCase):
     def test_labels(self):
         self.fake_authentication()
         response = self.client.get('/%d/labels/' % (self.test_project_id,))
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         returned_labels = json.loads(response.content.decode('utf-8'))
         self.assertEqual(set(returned_labels),
                          set(["t",
@@ -98,14 +98,14 @@ class LabelsApiTests(CatmaidApiTestCase):
                                                                       393),
                                     {'tags': ",".join(['soma', 'fake'])})
         parsed_response = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         self.assertFalse('warning' in parsed_response)
 
         response = self.client.post('/%d/label/treenode/%d/update' % (self.test_project_id,
                                                                       395),
                                     {'tags': ",".join(['soma', 'fake'])})
         parsed_response = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         self.assertTrue('warning' in parsed_response)
         self.assertTrue('soma (2, max. 1)' in parsed_response['warning'])
 
@@ -115,7 +115,7 @@ class LabelsApiTests(CatmaidApiTestCase):
         url = f'/{self.test_project_id}/labels/stats'
         response = self.client.get(url)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
 
         return response
 

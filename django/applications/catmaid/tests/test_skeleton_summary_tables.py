@@ -11,9 +11,10 @@ from catmaid import history
 from catmaid.control import tracing
 from catmaid.models import Class, Project, User
 from catmaid.state import make_nocheck_state
+from catmaid.tests.common import AssertStatusMixin
 
 
-class SkeletonSummaryTableTests(TransactionTestCase):
+class SkeletonSummaryTableTests(TransactionTestCase, AssertStatusMixin):
     """Test the trigger based skeleton summary upate.
     """
 
@@ -43,7 +44,7 @@ class SkeletonSummaryTableTests(TransactionTestCase):
             WHERE skeleton_id = %(skeleton_id)s
 
         """, {
-            'skeleton_id': skeleton_id    
+            'skeleton_id': skeleton_id
         })
         summaries = list(map(lambda x: {
             'skeleton_id': x[0],
@@ -71,7 +72,7 @@ class SkeletonSummaryTableTests(TransactionTestCase):
             'parent_id': -1,
             'radius': 2
         })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         skeleton_id = parsed_response['skeleton_id']
@@ -92,7 +93,7 @@ class SkeletonSummaryTableTests(TransactionTestCase):
             'radius': 2,
             'state': make_nocheck_state()
         })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         # Expect updated summary setup
@@ -114,7 +115,7 @@ class SkeletonSummaryTableTests(TransactionTestCase):
             'radius': 2,
             'state': make_nocheck_state()
         })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         # Remember third node
@@ -134,7 +135,7 @@ class SkeletonSummaryTableTests(TransactionTestCase):
                     't[0][1]': 10,
                     't[0][2]': 11,
                     't[0][3]': 12})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         # Expect updated summary setup
@@ -149,7 +150,7 @@ class SkeletonSummaryTableTests(TransactionTestCase):
                     'state': make_nocheck_state(),
                     'treenode_id': third_node_id
                 })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         # Expect updated summary setup
@@ -162,13 +163,13 @@ class SkeletonSummaryTableTests(TransactionTestCase):
         response = self.client.post('/%d/neurons/from-models' % self.project_id, {
             'model_ids[0]': skeleton_id
         })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         neuron_id = parsed_response[str(skeleton_id)]
 
         response = self.client.post(
                 f'/{self.project_id}/neuron/{neuron_id}/delete')
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         # Expect no summary entry for deleted skeleton
@@ -192,7 +193,7 @@ class SkeletonSummaryTableTests(TransactionTestCase):
                 'radius': 2,
                 'state': make_nocheck_state()
             })
-            self.assertEqual(response.status_code, 200)
+            self.assertStatus(response)
             parsed_response = json.loads(response.content.decode('utf-8'))
             parent = parsed_response['treenode_id']
             ids.append(parsed_response['treenode_id'])
@@ -249,7 +250,7 @@ class SkeletonSummaryTableTests(TransactionTestCase):
             'downstream_annotation_map': '{}',
             'state': make_nocheck_state()
         })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(parsed_response['existing_skeleton_id'], skeleton_id)
 
@@ -296,7 +297,7 @@ class SkeletonSummaryTableTests(TransactionTestCase):
             'annotation_set': '{}',
             'state': make_nocheck_state()
         })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(parsed_response['result_skeleton_id'], skeleton_id)
         self.assertEqual(parsed_response['deleted_skeleton_id'], skeleton_id_a)
@@ -326,7 +327,7 @@ class SkeletonSummaryTableTests(TransactionTestCase):
             'parent_id': -1,
             'radius': 2
         })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         skeleton_id = parsed_response['skeleton_id']

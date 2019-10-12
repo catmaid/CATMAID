@@ -303,7 +303,6 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
             constraints.append('''
                 AND tc.relation_id = %(relation_id)s
             ''')
-            params['relation_id'] = relation_id
     elif relation_type:
             constraints.append('''
                 JOIN treenode_connector tc_rel
@@ -348,7 +347,7 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
         ''')
         params['labeled_as'] = relation_map['labeled_as']
         params['tag_names'] = tags
-        params['label'] = lass_map['label']
+        params['label'] = class_map['label']
 
     constlines = "\n".join(constraints)
     extra_where_lines = ("AND " + " AND ".join(extra_where)) if extra_where else ""
@@ -584,7 +583,7 @@ def _connector_associated_edgetimes(connector_ids, project_id) -> Dict:
     FROM treenode_connector
     WHERE connector_id = ANY(%(connector_ids)s::bigint[])
       AND (relation_id = %(pre_id)s OR relation_id = %(post_id)s)
-    ''', { 
+    ''', {
         'connector_ids': connector_ids,
         'pre_id': PRE,
         'post_id': POST,

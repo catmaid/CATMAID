@@ -18,7 +18,7 @@ dictionary. JavaScript files go into the 'catmaid' entry of the ``JAVASCRIPT``
 dictonary at the end of this file.
 """
 
-from collections import Iterable, OrderedDict
+from collections import OrderedDict
 from importlib import import_module
 
 import six

@@ -38,7 +38,7 @@ before_script:
 script:
   - flake8 --config=.travis.flake8 --statistics --count --exit-zero -q -q django
     # see "scripts" in package.json
-  - npm run lint
+  - npm run lint:js
   - npm run jsdoc
   - cd $TRAVIS_BUILD_DIR
   # Static type checking for Python, for now only as warning and when mypy is

@@ -29,3 +29,4 @@ django/applications/catmaid/static/libs/streamsaver/**
 django/applications/catmaid/static/libs/webm-writer.js/**
 **/static/apps/**
 **/static/tests/libs/**
+**/node_modules/**

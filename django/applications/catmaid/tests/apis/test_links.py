@@ -83,10 +83,11 @@ class LinksApiTests(CatmaidApiTestCase):
                     'link_type': link_type,
                     'state': make_nocheck_state()
                 })
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 400)
         parsed_response = json.loads(response.content.decode('utf-8'))
-        expected_result = {'error': 'Connector %s does not have zero presynaptic connections.' % to_id}
-        self.assertEqual(expected_result, parsed_response)
+        self.assertIn('error', parsed_response)
+        error_message = f'Connector {to_id} does not have zero presynaptic connections.'
+        self.assertEqual(error_message, parsed_response.get('error'))
 
 
     def test_create_presynaptic_link_success(self):

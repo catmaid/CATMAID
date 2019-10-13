@@ -339,11 +339,11 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         response = self.client.post(
             '/%d/skeleton/split' % (self.test_project_id,),
             {'treenode_id': 237, 'upstream_annotation_map': '{}', 'downstream_annotation_map': '{}'})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 400)
         parsed_response = json.loads(response.content.decode('utf-8'))
-        expected_result = {
-                "error": "Can't split at the root node: it doesn't have a parent."}
-        self.assertEqual(expected_result, parsed_response)
+        self.assertIn('error', parsed_response)
+        error_message = "Can't split at the root node: it doesn't have a parent."
+        self.assertEqual(error_message, parsed_response.get('error'))
 
 
     def test_split_skeleton_annotations(self):

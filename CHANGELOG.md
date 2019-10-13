@@ -122,6 +122,8 @@ Navigator:
   the referenced parser. It also makes stack-coordinate parsing available, which
   is otherwise not checked for.
 
+- Annotation lists show now also annotation IDs.
+
 Administration:
 
 - The catmaid_update_cache_tables management command accepts now a `--jobs=n`

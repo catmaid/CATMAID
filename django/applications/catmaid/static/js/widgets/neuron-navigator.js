@@ -642,7 +642,7 @@
   var getAnnotationColumTitles = function(usage, annotator, unlink) {
     // Prepare column definition, depending on whether there is a removal handler
     // and if the annotator should be displayed.
-    var columns = ['Annotation', 'Annotated on (local)'];
+    var columns = ['Annotation', 'Id', 'Annotated on (local)'];
 
     if (usage) {
         columns.push('# used');
@@ -686,10 +686,16 @@
         "bSortable": true,
         "mData": 0
       },
+      { // Annotation ID
+        "bSearchable": true,
+        "bSortable": true,
+        "mData": 4
+      },
       { // Annotated on
         "bSearchable": false,
         "bSortable": true,
         "mData": 1,
+        "class": "cm-center",
         render: function(data, type, row, meta) {
           var d = new Date(data);
           return isNaN(d) ?

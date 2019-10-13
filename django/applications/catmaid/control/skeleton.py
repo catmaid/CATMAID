@@ -2745,6 +2745,14 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
             If specified, the name of a new neuron will be set to this.
         paramType: form
         type: string
+      - name: annotations
+        description: >
+            An optional list of annotation names that is added to the imported
+            skeleton.
+        paramType: form
+        type: array
+        items:
+          type: string
       - name: source_id
         description: >
             If specified, this source ID will be saved and mapped to the new
@@ -2800,6 +2808,7 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
     force = get_request_bool(request.POST, 'force', False)
     auto_id = get_request_bool(request.POST, 'auto_id', True)
     name = request.POST.get('name', None)
+    annotations = get_request_list(request.POST, 'annotations', ['Import'])
     source_id = request.POST.get('source_id', None)
     source_url = request.POST.get('source_url', None)
     source_project_id = request.POST.get('source_project_id', None)
@@ -2815,8 +2824,9 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
             if extension == 'swc':
                 swc_string = '\n'.join([line.decode('utf-8') for line in uploadedfile])
                 return import_skeleton_swc(request.user, project_id, swc_string,
-                        neuron_id, skeleton_id, name, force, auto_id, source_id,
-                        source_url, source_project_id, source_type)
+                        neuron_id, skeleton_id, name, annotations, force,
+                        auto_id, source_id, source_url, source_project_id,
+                        source_type)
             else:
                 return HttpResponse(f'File type "{extension}" not understood. Known file types: swc', status=415)
 
@@ -2824,8 +2834,9 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
 
 
 def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
-        skeleton_id=None, name=None, force=False, auto_id=True, source_id=None,
-        source_url=None, source_project_id=None, source_type='skeleton') -> JsonResponse:
+        skeleton_id=None, name=None, annotations=['Import'], force=False,
+        auto_id=True, source_id=None, source_url=None, source_project_id=None,
+        source_type='skeleton') -> JsonResponse:
     """Import a neuron modeled by a skeleton in SWC format.
     """
 
@@ -2851,8 +2862,8 @@ def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
         raise ValueError('SWC skeleton is malformed: it contains a cycle.')
 
     import_info = _import_skeleton(user, project_id, g, neuron_id, skeleton_id,
-            name, force, auto_id, source_id, source_url, source_project_id,
-            source_type)
+            name, annotations, force, auto_id, source_id, source_url,
+            source_project_id, source_type)
     node_id_map = {n: d['id'] for n, d in import_info['graph'].nodes_iter(data=True)}
 
     return JsonResponse({
@@ -2863,8 +2874,9 @@ def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
 
 
 def _import_skeleton(user, project_id, arborescence, neuron_id=None,
-        skeleton_id=None, name=None, force=False, auto_id=True, source_id=None,
-        source_url=None, source_project_id=None, source_type='skeleton') -> Dict[str, Any]:
+        skeleton_id=None, name=None, annotations=['Import'], force=False,
+        auto_id=True, source_id=None, source_url=None, source_project_id=None,
+        source_type='skeleton') -> Dict[str, Any]:
     """Create a skeleton from a networkx directed tree.
 
     Associate the skeleton to the specified neuron, or a new one if none is
@@ -3021,6 +3033,11 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
 
     relate_neuron_to_skeleton(neuron_id, new_skeleton.id)
 
+    # Add annotations, if that is requested
+    if annotations:
+        annotation_map = {a:{'user_id': user.id} for a in annotations}
+        _annotate_entities(project_id, [new_neuron.id], annotation_map)
+
     # For pathological networks this can error, so do it before inserting
     # treenodes.
     root = find_root(arborescence)
@@ -3077,9 +3094,10 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
     """, treenode_values + [new_skeleton.id])
 
     # Log import.
+    annotation_info = f' {", ".join(annotations)}' if annotations else ''
     insert_into_log(project_id, user.id, 'create_neuron',
-                    new_location, 'Create neuron %d and skeleton '
-                    '%d via import' % (new_neuron.id, new_skeleton.id))
+                    new_location, f'Create neuron {new_neuron.id} and skeleton '
+                    f'{new_skeleton.id} via import.{annotation_info}')
 
     # Store reference to source ID and source URL, if provided.
     if source_url and source_project_id:

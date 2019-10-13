@@ -227,7 +227,7 @@
             let meta = getMeta(skeletonId);
             let sourceUrl = options.api ? options.api.url : undefined;
             return CATMAID.Skeletons.importSWC(targetProjectId, data, meta.name,
-                sourceUrl, skeletonId, sourceProjectId);
+                meta.annotations, sourceUrl, skeletonId, sourceProjectId);
           });
         return Promise.all(importPromises);
       })

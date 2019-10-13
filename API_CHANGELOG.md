@@ -74,7 +74,9 @@ included in this changelog.
 
 - `POST /{project_id}/skeletons/import`:
   The new parameters `source_id` and `source_url` allow to associate a source
-  data reference with the imported skeleton.
+  data reference with the imported skeleton. The new list parameter
+  "annotations" can have annotation names, which are added to the import
+  skeleton. By default only the annotation "Import" is set.
 
 - `POST /{project_id}/skeleton/join`:
   The new parameter `lose_sampler_handling` controls how to deal with samplers

@@ -180,7 +180,9 @@ Import/Export widget:
 
 - It is now possible to import neurons from other CATMAID instances. The "Import
   from CATMAID" tab provides tools to search remote skeletons by name or
-  annotation.
+  annotation. Imported neurons can automatically be annotated with a set of
+  annotations. If no annotation are provided, CATMAID will add the annotation
+  "Import" to imported skeletons.
 
 - The original ID and source URL of all imported skeletons is tracked. This
   allows the widget to display local skeleton IDs, if the remote ID has already

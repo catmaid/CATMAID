@@ -185,7 +185,7 @@ annotations, neuron name, connectors or partner neurons.
    * Show a confirmation dialog for all passed in skeletons and initiate the
    * import of them.
    */
-  ImportExportWidget.prototype.importRemoteSkeletons = function(skeletonIds) {
+  ImportExportWidget.prototype.importRemoteSkeletons = function(skeletonIds, annotations) {
     let plural = skeletonIds.length > 0 ? 's' : '';
     let title = `Please confirm the import of the following skeleton${plural}`;
     let api = CATMAID.Remote.getAPI(this.sourceRemote);
@@ -211,6 +211,7 @@ annotations, neuron name, connectors or partner neurons.
                   }
                   return {
                     'name': e.name,
+                    'annotations': annotations,
                   };
                 },
                 api: api,
@@ -394,6 +395,7 @@ annotations, neuron name, connectors or partner neurons.
         let nameFilter = '';
         let annotationFilter = '';
         let withSubAnnotations = false;
+        let resultAnnotations = [];
 
         return [{
             type: 'child',
@@ -470,6 +472,14 @@ annotations, neuron name, connectors or partner neurons.
             element: resultSection,
           },
           {
+            type: 'text',
+            label: 'Annotations',
+            title: 'A set of annotations, separated by comma, that will be added to the import skeletons.',
+            onchange: e => {
+              resultAnnotations = e.target.value.split(',').map(v => v.trim());
+            },
+          },
+          {
             type: 'button',
             label: 'Preview selected',
             title: "Preview all selected result skeletons",
@@ -498,7 +508,7 @@ annotations, neuron name, connectors or partner neurons.
                 }
                 return l;
               }, []);
-              widget.importRemoteSkeletons(skeletonIds);
+              widget.importRemoteSkeletons(skeletonIds, resultAnnotations);
             },
           },
         ];

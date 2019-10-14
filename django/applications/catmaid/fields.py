@@ -263,7 +263,7 @@ class RGBAField(models.Field):
         elif isinstance(value, str):
             return RGBA.from_str(value)
         else:
-            return RGBA()    #.from_str(value)
+            return RGBA()  # .from_str(value)
 
     def get_db_prep_value(self, value, connection, prepared=False):
         value = self.to_python(value)

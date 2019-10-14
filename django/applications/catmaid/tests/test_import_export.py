@@ -21,7 +21,7 @@ from catmaid.tests.common import AssertStatusMixin
 class ImportExportTests(TestCase, AssertStatusMixin):
     """Test CATMAID's import and export functionality.
     """
-    #fixtures = ['catmaid_project_stack_data']
+    # fixtures = ['catmaid_project_stack_data']
 
     def setUp(self):
         # We need a super user during import

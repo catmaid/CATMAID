@@ -233,10 +233,10 @@ def get_child_links(parent_ci) -> List:
     children = [cici for cici in cici_q]
 
     # Collect all child node class instances
-    #children = []
-    #for c in cici_q:
-    #    child = Child(r, row[1], row[3])
-    #    children.append( child )
+    # children = []
+    # for c in cici_q:
+    #     child = Child(r, row[1], row[3])
+    #     children.append( child )
 
     return children
 
@@ -404,7 +404,7 @@ def remove_classification_graph(request:HttpRequest, workspace_pid, project_id=N
         traverse_class_instances(selected_graph.class_instance_b, delete_node)
         num_removed_ci = num_removed_ci + 1
 
-    #get_classification_links_qs
+    # get_classification_links_qs
 
     if num_removed_links == 0:
         msg = 'The requested link couldn\'t get removed.'
@@ -701,8 +701,8 @@ def list_classification_graph(request:HttpRequest, workspace_pid, project_id=Non
             response_on_error = 'Could not select the id of the classification root node.'
 
             # Collect all child node class instances
-            #child = Child( root_id, root_name, "classification_root", 'root')
-            #add_template_fields( [child] )
+            # child = Child( root_id, root_name, "classification_root", 'root')
+            # add_template_fields( [child] )
             response_on_error = 'Could not select child classes.'
             child_types = get_child_classes( workspace_pid, cls_graph, relation_map, cursor )
             child_types_info = describe_child_types( child_types )
@@ -751,7 +751,7 @@ def list_classification_graph(request:HttpRequest, workspace_pid, project_id=Non
             child_links = get_child_links( parent_ci )
 
             response_on_error = 'Could not retrieve child nodes.'
-            #add_template_fields( child_nodes )
+            # add_template_fields( child_nodes )
 
             # Get child types
             child_types = get_child_classes(workspace_pid, parent_ci, relation_map, cursor)
@@ -864,16 +864,16 @@ def classification_instance_operation(request:HttpRequest, workspace_pid=None, p
         node_parent_id = params['parentid']
         # TODO: Test if this parent exists
 
-        #if 0 == params['parentid']:
-        #    # Find root element
-        #    classification_instance_operation.res_on_err = 'Failed to select classification root.'
-        #    node_parent_id = ClassInstance.objects.filter(
-        #            project=workspace_pid,
-        #            class_column=class_map['classification_root'])[0].id
+        # if 0 == params['parentid']:
+        #     # Find root element
+        #     classification_instance_operation.res_on_err = 'Failed to select classification root.'
+        #     node_parent_id = ClassInstance.objects.filter(
+        #          project=workspace_pid,
+        #          class_column=class_map['classification_root'])[0].id
 
-        #Relation.objects.filter(id=params['relationid'])
-        #if params['relationname'] not in relation_map:
-        #    raise CatmaidException('Failed to select relation %s' % params['relationname'])
+        # Relation.objects.filter(id=params['relationid'])
+        # if params['relationname'] not in relation_map:
+        #     raise CatmaidException('Failed to select relation %s' % params['relationname'])
 
         classification_instance_operation.res_on_err = 'Failed to insert CICI-link.'
         cici = ClassInstanceClassInstance()
@@ -1094,7 +1094,7 @@ def get_graph_tag_indices(graph_ids, workspace_pid=-1) -> Tuple[Dict,Dict]:
                 project_id=workspace_pid, relation_name='classified_by')
     # Find all 'classification_project' class instances of all requested
     # projects that link to the matched graphs. They are the
-    #'class_instance_a' instances of these links.
+    # 'class_instance_a' instances of these links.
     cici_q = ClassInstanceClassInstance.objects.filter(
             project_id=workspace_pid, relation__in=classified_by_rel,
             class_instance_b_id__in=graph_ids,
@@ -1537,7 +1537,7 @@ class ClassificationSearchWizard(SessionWizardView):
                 project_id=self.workspace_pid, relation_name='classified_by')
         # Find all 'classification_project' class instances of all requested
         # projects that link to the matched graphs. They are the
-        #'class_instance_a' instances of these links.
+        # 'class_instance_a' instances of these links.
         mg_index = {}
         for mg in matching_graphs:
             mg_index[mg.id] = mg

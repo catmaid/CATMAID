@@ -277,9 +277,9 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
 
             try:
                 spanning = spanning_tree(post_arbor, edge_props['post_treenodes'])
-                #for arbor in whole_arbors[circuit[post_arbor]['skeleton_id']]:
-                #    if post_arbor == arbor:
-                #        tc = arbor.treenode_synapse_counts
+                # for arbor in whole_arbors[circuit[post_arbor]['skeleton_id']]:
+                #     if post_arbor == arbor:
+                #         tc = arbor.treenode_synapse_counts
                 tc = post_arbor.treenode_synapse_counts
                 count = spanning.number_of_nodes()
                 if count < 3:

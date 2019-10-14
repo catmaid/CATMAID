@@ -66,7 +66,7 @@ class CleanUpHTTPResponse(HttpResponse):
         self.file_handle = open(file_path, 'rb')
         kwargs['content'] = self.file_handle
         super().__init__(*args, **kwargs)
-        #self['Content-Disposition'] = 'attachment; filename="{}"'.format(file_name)
+        # self['Content-Disposition'] = 'attachment; filename="{}"'.format(file_name)
 
     def close(self) -> None:
         """Make sure all file handles are closed and the input file is removed.
@@ -166,7 +166,7 @@ def export_skeleton_as_nrrd(project_id, skeleton_id, source_ref, target_ref,
         relmr = importr('elmr')
 
         if settings.MAX_PARALLEL_ASYNC_WORKERS > 1:
-            #' # Parallelise NBLASTing across 4 cores using doMC package
+            # Parallelise NBLASTing across 4 cores using doMC package
             rdomc = importr('doMC')
             rdomc.registerDoMC(settings.MAX_PARALLEL_ASYNC_WORKERS)
 
@@ -341,7 +341,7 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
         conn = get_catmaid_connection(user_id) if use_http else None
 
         if settings.MAX_PARALLEL_ASYNC_WORKERS > 1:
-            #' # Parallelise NBLASTing across 4 cores using doMC package
+            # Parallelise NBLASTing across 4 cores using doMC package
             rdomc = importr('doMC')
             rdomc.registerDoMC(settings.MAX_PARALLEL_ASYNC_WORKERS)
 
@@ -620,7 +620,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
     Matrix = robjects.r.matrix
 
     if settings.MAX_PARALLEL_ASYNC_WORKERS > 1:
-        #' # Parallelise NBLASTing across 4 cores using doMC package
+        # Parallelise NBLASTing across 4 cores using doMC package
         rdomc = importr('doMC')
         rdomc.registerDoMC(settings.MAX_PARALLEL_ASYNC_WORKERS)
 
@@ -758,7 +758,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
         parallel = False
         if settings.MAX_PARALLEL_ASYNC_WORKERS > 1:
-            #' # Parallelise NBLASTing across 4 cores using doMC package
+            # Parallelise NBLASTing across 4 cores using doMC package
             rdomc = importr('doMC')
             rdomc.registerDoMC(settings.MAX_PARALLEL_ASYNC_WORKERS)
             parallel = True

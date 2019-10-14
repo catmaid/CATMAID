@@ -1456,7 +1456,7 @@ class DirtyNodeGridCacheCell(models.Model):
     """A dirty cache grid cell. Referential integrety is taken care of on the
     database level.
     """
-    #grid_cell = models.OneToOneField(NodeGridCacheCell, on_delete=models.DO_NOTHING, primary_key=True)
+    # grid_cell = models.OneToOneField(NodeGridCacheCell, on_delete=models.DO_NOTHING, primary_key=True)
     grid = models.ForeignKey(NodeGridCache, on_delete=models.DO_NOTHING)
     x_index = models.IntegerField(null=False)
     y_index = models.IntegerField(null=False)

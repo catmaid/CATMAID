@@ -580,7 +580,7 @@ class ImportingWizard(SessionWizardView):
                 # Create ID to classification graph mapping
                 self.id_to_cls_graph[cr.id] = cr
             form.fields['classification_graph_suggestions'].choices = cgraphs
-            #form.fields['classification_graph_suggestions'].initial = [cg[0] for cg in cgraphs]
+            # form.fields['classification_graph_suggestions'].initial = [cg[0] for cg in cgraphs]
 
         return form
 

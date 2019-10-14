@@ -1575,7 +1575,7 @@ def list_annotations_datatable(request:HttpRequest, project_id=None) -> JsonResp
     # due to the JOINS that are made).
     annotation_query = annotation_query.distinct()
 
-    #num_records = annotation_query.count() # len(annotation_query)
+    # num_records = annotation_query.count() # len(annotation_query)
     num_records = len(annotation_query)
 
     response:Dict[str, Any] = {

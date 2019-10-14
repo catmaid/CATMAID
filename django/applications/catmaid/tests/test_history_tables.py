@@ -1091,12 +1091,11 @@ class HistoryTableTests(TransactionTestCase):
 
         # Expect all former live table entries to now be in the history table
         class_history = self.get_history_entries(cursor, 'class')
-        self.assertEqual(len(class_history),
-                n_original_entries + n_live_classes)
+        self.assertEqual(len(class_history), n_original_entries + n_live_classes)
 
         # Get new project history entries
-        class_1_history_entry = class_history[-2][0] #older
-        class_2_history_entry = class_history[-1][0] #newer
+        class_1_history_entry = class_history[-2][0]  # older
+        class_2_history_entry = class_history[-1][0]  # newer
 
         # Expect all fields of the original table to match the history table
         for k,v in class_details.items():
@@ -1170,12 +1169,11 @@ class HistoryTableTests(TransactionTestCase):
 
         # Expect all former live table entries to now be in the history table
         truncate_history = self.get_history_entries(cursor, 'project')
-        self.assertEqual(len(truncate_history),
-                n_original_entries + n_live_projects)
+        self.assertEqual(len(truncate_history), n_original_entries + n_live_projects)
 
         # Get new project history entries
-        project_1_history_entry = truncate_history[-2][0] #older
-        project_2_history_entry = truncate_history[-1][0] #newer
+        project_1_history_entry = truncate_history[-2][0]  # older
+        project_2_history_entry = truncate_history[-1][0]  # newer
 
         # Expect all fields of the original table to match the history table
         for k,v in project_details.items():

@@ -59,7 +59,7 @@ def get_slice(stack, pos):
         return None
     # Check the type of the position informaiton
     pos_type = type(pos)
-    #return str(pos_type)
+    # return str(pos_type)
     if is_string_type(pos_type):
         if pos == "first":
             return 0

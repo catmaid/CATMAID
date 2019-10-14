@@ -2587,10 +2587,10 @@ def render_nodes_xy(node_data, params, width, height, view_min_x=0, view_min_y=0
     hr = radius / 2.0
     node_pen = Pen((255, 0, 255), 1)
     root_pen = Pen('red', 1)
-    #leaf_pen = Pen('red', 1)
+    # leaf_pen = Pen('red', 1)
     node_brush = Brush((255, 0, 255))
     root_brush = Brush('red')
-    #leaf_brush = Brush('red')
+    # leaf_brush = Brush('red')
 
     virtual_nodes = True
 
@@ -2737,13 +2737,13 @@ def most_recent_treenode(request:HttpRequest, project_id=None) -> JsonResponse:
 
     return JsonResponse({
         'id': tn.id,
-        #'skeleton_id': tn.skeleton.id,
+        # 'skeleton_id': tn.skeleton.id,
         'x': int(tn.location_x),
         'y': int(tn.location_y),
         'z': int(tn.location_z),
-        #'most_recent': str(tn.most_recent) + tn.most_recent.strftime('%z'),
-        #'most_recent': tn.most_recent.strftime('%Y-%m-%d %H:%M:%S.%f'),
-        #'type': 'treenode'
+        # 'most_recent': str(tn.most_recent) + tn.most_recent.strftime('%z'),
+        # 'most_recent': tn.most_recent.strftime('%Y-%m-%d %H:%M:%S.%f'),
+        # 'type': 'treenode'
     })
 
 

@@ -2614,11 +2614,8 @@ def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleto
         start_end_intervals = cursor.fetchall()
 
         is_interval_start_or_end = len(start_end_intervals) > 0
-        #is_in_interval =
-        #is_in_traced_out_part = not is_domain_end
-
-
-
+        # is_in_interval =
+        # is_in_traced_out_part = not is_domain_end
 
         # For each domain in this sampler in which the winning merging treenode
         # is contained, we need to update the
@@ -2649,18 +2646,18 @@ def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleto
                 # nothing has to be done. Regardless of whether it is a leaf or
                 # not.
                 pass
-            #elif is_in_interval:
+            # elif is_in_interval:
             #    new_domain_ends.append(lose_treenode_id)
-
-                #if is_in_traced_out_part:
-                    # A traced out fragment isn't part of the initial interval,
-                    # but has been added while tracing out the interval. To
-                    # maintain this as a part of this domain, we need to add
-                    # regular intervals on this branch (starting from the last
-                    # regular interval node and add the losing treenode as
-                    # domain end.
-                    # TODO
-                    #new_domain_ends.append(lose_treenode_id)
+            #
+            #     if is_in_traced_out_part:
+            #         A traced out fragment isn't part of the initial interval,
+            #         but has been added while tracing out the interval. To
+            #         maintain this as a part of this domain, we need to add
+            #         regular intervals on this branch (starting from the last
+            #         regular interval node and add the losing treenode as
+            #         domain end.
+            #         TODO
+            #         new_domain_ends.append(lose_treenode_id)
             else:
                 # If we merge into the domain, but not into an interval, make
                 # sure the domain isn't extended here by adding a new domain end

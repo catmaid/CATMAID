@@ -64,8 +64,8 @@ class FeatureForm(forms.Form):
     feature = forms.BooleanField()
 
 class ClusteringSetupFeatures(forms.Form):
-    #add_nonleafs = forms.BooleanField(initial=False,
-    #    required=False, label="Use sub-paths as features")
+    # add_nonleafs = forms.BooleanField(initial=False,
+    #     required=False, label="Use sub-paths as features")
     features = forms.MultipleChoiceField(choices=[],
             widget=CheckboxSelectMultiple(attrs={'class': 'autoselectable'}))
 

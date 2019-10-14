@@ -322,7 +322,7 @@ def edgecount_filtering( skeleton, edgecount ):
                 continue
             fromnode = graph.predecessors(nodeid)[0]
             tonode = graph.successors(nodeid)[0]
-            #newdistance = graph.edge[fromnode][nodeid]['distance'] + graph.edge[nodeid][tonode]['distance']
+            # newdistance = graph.edge[fromnode][nodeid]['distance'] + graph.edge[nodeid][tonode]['distance']
             newedgecount = graph.edge[fromnode][nodeid]['edgecount'] + graph.edge[nodeid][tonode]['edgecount']
             graph.add_edge(fromnode, tonode, {'edgecount': newedgecount}) # 'distance': newdistance,
             graph.remove_edge( fromnode, nodeid )

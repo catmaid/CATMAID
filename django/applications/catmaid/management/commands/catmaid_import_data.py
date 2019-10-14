@@ -227,7 +227,7 @@ class FileImporter:
                     f for f in c._meta.get_fields()
                     if f.is_relation
                     and f.many_to_one # ForeignKey instances
-                    #if field.get_internal_type() == 'ForeignKey':
+                    # if field.get_internal_type() == 'ForeignKey':
                     and f.related_model in target_classes
             ]
 

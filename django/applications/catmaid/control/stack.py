@@ -77,7 +77,7 @@ def get_stack_info_response(p, s, ps, mirror_data, broken_slices) -> Dict[str, A
         },
         'comment': s.comment,
         'description': s.description,
-        'metadata' : s.metadata,
+        'metadata': s.metadata,
         'broken_slices': broken_slices,
         'mirrors': mirrors,
         'orientation': ps.orientation,

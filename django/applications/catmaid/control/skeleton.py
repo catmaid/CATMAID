@@ -470,10 +470,10 @@ def contributor_statistics_multiple(request:HttpRequest, project_id=None, skelet
     if time_bins:
         n_time_bins += len(time_bins)
 
-
     # Take into account that multiple people may have reviewed the same nodes
     # Therefore measure the time for the user that has the most nodes reviewed,
     # then add the nodes not reviewed by that user but reviewed by the rest
+
     def process_reviews(rev):
         seen:Set = set()
         min_review_bins = set()
@@ -2342,6 +2342,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
                     annotations=True, metaannotations=False, neuronnames=False)
             to_annotation_info = get_annotation_info(project_id, (to_skid,),
                     annotations=True, metaannotations=False, neuronnames=False)
+
             # Create a new annotation map with the expected structure of
             # 'annotationname' vs. 'annotator id'.
             def merge_into_annotation_map(source, skid, target):

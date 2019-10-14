@@ -1285,6 +1285,7 @@ def _measure_skeletons(skeleton_ids) -> Dict[Any, Any]:
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def measure_skeletons(request:HttpRequest, project_id=None) -> JsonResponse:
     skeleton_ids = tuple(int(v) for k,v in request.POST.items() if k.startswith('skeleton_ids['))
+
     def asRow(skid, sk):
         return (skid, int(sk.raw_cable), int(sk.smooth_cable), sk.n_pre, sk.n_post, len(sk.nodes), sk.n_branch, sk.n_ends, sk.principal_branch_cable)
     return JsonResponse([asRow(skid, sk) for skid, sk in _measure_skeletons(skeleton_ids).items()], safe=False)

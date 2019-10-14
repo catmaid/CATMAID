@@ -127,6 +127,7 @@ class Slab:
         self.nodes = nodes
         self.parent = parent
         self.last_segmentID = None
+
     def lastSegmentIDOfParent(self):
         if self.parent:
             return self.parent.last_segmentID
@@ -196,9 +197,11 @@ class State:
     def __init__(self, synaptic_treenodes):
         self.ID = 0
         self.synaptic_treenodes = synaptic_treenodes
+
     def nextID(self):
         self.ID += 1
         return self.ID
+
     def record(self, treenodeID, segmentID):
         if treenodeID in self.synaptic_treenodes:
             self.synaptic_treenodes[treenodeID] = segmentID

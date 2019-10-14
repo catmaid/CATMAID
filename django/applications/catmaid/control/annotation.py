@@ -94,6 +94,7 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
                 if len(params[key]) > 0:
                     annotation_names |= set(params[key].split(','))
         annotation_id_map = get_annotation_to_id_map(project_id, list(annotation_names))
+
         def to_id(inval) -> int: # Python wants the signatures for "conditional program variants" to be the same, incl variable names
             id = annotation_id_map.get(inval)
             if not id:

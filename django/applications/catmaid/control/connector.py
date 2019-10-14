@@ -489,12 +489,12 @@ def list_connector_links(request:HttpRequest, project_id=None) -> JsonResponse:
 
     links = []
     for row in cursor.fetchall():
-        l = list(row)
-        l[8] = l[8].isoformat()
-        l[9] = l[9].isoformat()
-        links.append(l)
+        lst = list(row)
+        lst[8] = lst[8].isoformat()
+        lst[9] = lst[9].isoformat()
+        links.append(lst)
 
-    connector_ids = [l[1] for l in links]
+    connector_ids = [link[1] for link in links]
     tags:DefaultDict[Any, List] = defaultdict(list)
     if connector_ids and with_tags:
         c_template = ",".join(("(%s)",) * len(connector_ids))

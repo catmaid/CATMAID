@@ -10,8 +10,9 @@ from unittest import skipIf
 from django.shortcuts import get_object_or_404
 from guardian.shortcuts import assign_perm
 
-from catmaid.models import (ClassInstance, ClassInstanceClassInstance, Log,
-        Review, Treenode, TreenodeConnector, ReviewerWhitelist, Treenode)
+from catmaid.models import (
+    ClassInstance, ClassInstanceClassInstance, Log, Review, Treenode, TreenodeConnector, ReviewerWhitelist
+)
 
 from .common import CatmaidApiTestCase
 

@@ -254,7 +254,8 @@ def get_form_and_neurons(request:HttpRequest, project_id:Union[int,str], kwargs)
         project__id=project_id,
         relation__relation_name='expresses_in',
         class_instance_a__class_column__class_name='driver_line',
-        class_instance_b__class_column__class_name='neuron'):
+        class_instance_b__class_column__class_name='neuron',
+    ):
         neuron_id_to_driver_lines[cici.class_instance_b.id].append(cici.class_instance_a)
 
     all_neurons = list(all_neurons)

@@ -119,11 +119,11 @@ def export_nrrd(request:HttpRequest, project_id, skeleton_id) -> HttpResponse:
                 content_type='application/octet-stream')
 
 @task()
-def export_skeleton_as_nrrd_async(skeleton_id, source_ref, target_ref, user_id,
-                                  mirror=True, create_message=True) -> str:
+def export_skeleton_as_nrrd_async(project_id, skeleton_id, source_ref,
+        target_ref, user_id, mirror=True, create_message=True) -> str:
 
     result = export_skeleton_as_nrrd(project_id, skeleton_id, source_ref,
-            target_ref, user_id, mirror) # FIXME: this function doesn't get project_id
+            target_ref, user_id, mirror)
     if create_message:
         msg = Message()
         msg.user = User.objects.get(pk=int(user_id))

@@ -290,9 +290,9 @@ def cursor_fetch_dictionary(cursor) -> List[Dict]:
     "Returns all rows from a cursor as a dict"
     desc = cursor.description
     return [
-            dict(zip([col[0] for col in desc], row))
-            for row in cursor.fetchall()
-            ]
+        dict(zip([col[0] for col in desc], row))
+        for row in cursor.fetchall()
+    ]
 
 def get_relation_to_id_map(project_id:Union[int,str], name_constraints=None, cursor=None) -> Dict:
     """

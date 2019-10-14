@@ -41,42 +41,44 @@ class LogsApiTests(CatmaidApiTestCase):
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
-                'iTotalDisplayRecords': 0,
-                'iTotalRecords': 0,
-                'aaData': []
-                }
+            'iTotalDisplayRecords': 0,
+            'iTotalRecords': 0,
+            'aaData': [],
+        }
         self.assertEqual(expected_result, parsed_response)
 
 
     def test_list_logs_sort(self):
         self.fake_authentication()
         response = self.client.post(
-                '/%d/logs/list' % self.test_project_id, {
-                    'iSortingCols': 2,
-                    'iSortCol_0': 5,  # z
-                    'iSortDir_0': 'ASC',
-                    'iSortCol_1': 3,  # x
-                    'iSortDir_1': 'DESC'
-                    })
+            '/%d/logs/list' % self.test_project_id,
+            {
+                'iSortingCols': 2,
+                'iSortCol_0': 5,  # z
+                'iSortDir_0': 'ASC',
+                'iSortCol_1': 3,  # x
+                'iSortDir_1': 'DESC'
+            },
+        )
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
-                'iTotalDisplayRecords': 3,
-                'iTotalRecords': 3,
-                'aaData': [
-                    self.log_rows[0], self.log_rows[1], self.log_rows[2]
-                    ]
-                }
+            'iTotalDisplayRecords': 3,
+            'iTotalRecords': 3,
+            'aaData': [self.log_rows[0], self.log_rows[1], self.log_rows[2]],
+        }
         self.assertEqual(expected_result, parsed_response)
 
 
     def test_list_logs_subset(self):
         self.fake_authentication()
         response = self.client.post(
-                '/%d/logs/list' % self.test_project_id, {
-                    'iDisplayStart': 1,
-                    'iDisplayLength': 2
-                    })
+            '/%d/logs/list' % self.test_project_id,
+            {
+                'iDisplayStart': 1,
+                'iDisplayLength': 2
+            },
+        )
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(2, parsed_response['iTotalDisplayRecords'])

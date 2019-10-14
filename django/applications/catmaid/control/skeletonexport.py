@@ -1123,12 +1123,14 @@ def skeleton_with_metadata(request:HttpRequest, project_id=None, skeleton_id=Non
             )
         return millis
 
-    return JsonResponse(_skeleton_for_3d_viewer(skeleton_id, project_id, \
-        with_connectors=True, lean=0, all_field=True), safe=True,
+    return JsonResponse(
+        _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=0, all_field=True),
+        safe=True,
         json_dumps_params={
             'separators': (',', ':'),
             'default': default
-        })
+        },
+    )
 
 def _measure_skeletons(skeleton_ids) -> Dict[Any, Any]:
     if not skeleton_ids:

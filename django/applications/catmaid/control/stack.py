@@ -52,7 +52,7 @@ def get_stack_info_response(p, s, ps, mirror_data, broken_slices) -> Dict[str, A
             'tile_source_type': int(ele.tile_source_type),
             'file_extension': ele.file_extension,
             'position': int(ele.position)
-            })
+        })
     result = {
         'sid': s.id,
         'pid': p.id,

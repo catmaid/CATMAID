@@ -22,11 +22,11 @@ class NodesApiTests(CatmaidApiTestCase):
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
-                'id': most_recent_node_id,
-                'x': 6485,
-                'y': 6345,
-                'z': 0,
-                }
+            'id': most_recent_node_id,
+            'x': 6485,
+            'y': 6345,
+            'z': 0,
+        }
         self.assertEqual(expected_result, parsed_response)
 
         # Test with skeleton filter.
@@ -39,24 +39,25 @@ class NodesApiTests(CatmaidApiTestCase):
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
-                'id': most_recent_node_id,
-                'x': 4140,
-                'y': 6460,
-                'z': 0,
-                }
+            'id': most_recent_node_id,
+            'x': 4140,
+            'y': 6460,
+            'z': 0,
+        }
         self.assertEqual(expected_result, parsed_response)
 
 
     def test_node_nearest_for_skeleton(self):
         self.fake_authentication()
         response = self.client.get(
-                '/%d/nodes/nearest' % self.test_project_id,
-                {
-                    'x': 5115,
-                    'y': 3835,
-                    'z': 4050,
-                    'skeleton_id': 2388,
-                    })
+            '/%d/nodes/nearest' % self.test_project_id,
+            {
+                'x': 5115,
+                'y': 3835,
+                'z': 4050,
+                'skeleton_id': 2388,
+            }
+        )
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
@@ -71,13 +72,14 @@ class NodesApiTests(CatmaidApiTestCase):
     def test_node_nearest_for_neuron(self):
         self.fake_authentication()
         response = self.client.get(
-                '/%d/nodes/nearest' % self.test_project_id,
-                {
-                    'x': 5115,
-                    'y': 3835,
-                    'z': 0,
-                    'neuron_id': 362,
-                    })
+            '/%d/nodes/nearest' % self.test_project_id,
+            {
+                'x': 5115,
+                'y': 3835,
+                'z': 0,
+                'neuron_id': 362,
+            }
+        )
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {

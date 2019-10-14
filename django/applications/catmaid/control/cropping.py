@@ -724,4 +724,3 @@ def download_crop(request:HttpRequest, file_path=None) -> HttpResponse:
     response['Content-Disposition'] = 'attachment; filename="' + file_path + '"'
 
     return response
-

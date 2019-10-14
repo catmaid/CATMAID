@@ -49,4 +49,3 @@ def disable_spatial_update_events(ignore_missing_fn:bool=False) -> bool:
         'lock_id':  locks.spatial_update_event_lock
     })
     return True
-

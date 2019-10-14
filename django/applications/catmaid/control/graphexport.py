@@ -6,7 +6,7 @@ from django.http import HttpRequest, JsonResponse
 from django.shortcuts import get_object_or_404
 
 from catmaid.models import UserRole, Project
-from catmaid.control.authentication import requires_user_role 
+from catmaid.control.authentication import requires_user_role
 from catmaid.control.graph import _skeleton_graph
 from catmaid.control.skeleton import _skeleton_info_raw
 
@@ -39,7 +39,7 @@ def export_jsongraph(request:HttpRequest, project_id) -> JsonResponse:
         incoming, outgoing = skeleton_info['incoming'], skeleton_info['outgoing']
         skeletonlist = set( skeletonlist ).union( set(incoming.keys()) ).union( set(outgoing.keys()) )
         order -= 1
-    
+
     circuit = _skeleton_graph(project_id, skeletonlist, confidence_threshold, bandwidth, set(), compute_risk, cable_spread, path_confluence)
     newgraph = nx.DiGraph()
     for digraph, props in circuit.nodes_iter(data=True):

@@ -620,4 +620,3 @@ def skeleton_graph(request, project_id=None):
         raise ValueError("Could not compute graph")
 
     return JsonResponse(graph)
-

@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 
 from catmaid.control.authentication import requires_user_role
-        
+
 from catmaid.control.common import get_request_bool, get_request_list
 from catmaid.models import PointSet, UserRole
 

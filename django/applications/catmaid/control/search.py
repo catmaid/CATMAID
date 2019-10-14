@@ -161,4 +161,3 @@ def search(request:HttpRequest, project_id=None) -> JsonResponse:
 
 
     return JsonResponse(rows, safe=False)
-

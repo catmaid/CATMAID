@@ -21,4 +21,3 @@ def interpolatable_sections(request, project_id=None):
         'y': [],
         'z': [],
     })
-

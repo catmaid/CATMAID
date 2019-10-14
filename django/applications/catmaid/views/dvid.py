@@ -207,4 +207,3 @@ class DVIDImportWizard(SessionWizardView):
         })
 
         return context
-

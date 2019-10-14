@@ -236,4 +236,3 @@ def find_directed_path_skeletons(request:HttpRequest, project_id=None) -> JsonRe
         skeleton_ids = skeleton_ids.union(origin_fronts[i].intersection(target_fronts[max_n_hops -i]))
 
     return JsonResponse(tuple(skeleton_ids), safe=False)
-

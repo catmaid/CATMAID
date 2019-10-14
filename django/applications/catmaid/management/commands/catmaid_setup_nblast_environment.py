@@ -23,4 +23,3 @@ class Command(BaseCommand):
             raise CommandError('Please define the R_LIBS_USER setting in ' + \
                     'settings.py and set it to a path writable and readable ' + \
                     'by the user running CATMAID and the user running this command.')
-

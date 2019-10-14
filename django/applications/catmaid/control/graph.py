@@ -454,4 +454,3 @@ def _node_centrality_by_synapse(tree, nodes:Dict, totalOutputs:int, totalInputs:
             counts.seenOutputs = seenO
             counts.nPossibleIOPaths = counts.seenInputs * (totalOutputs - counts.seenOutputs) + counts.seenOutputs * (totalInputs - counts.seenInputs)
             counts.synapse_centrality = counts.nPossibleIOPaths / float(totalOutputs)
-

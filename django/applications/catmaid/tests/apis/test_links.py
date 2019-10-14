@@ -108,4 +108,3 @@ class LinksApiTests(CatmaidApiTestCase):
         self.assertIn('message', parsed_response)
         self.assertIn('link_id', parsed_response)
         self.assertEqual('success', parsed_response['message'])
-

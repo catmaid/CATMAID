@@ -264,7 +264,7 @@ def bodyMutual(neuron_names, all_treenodes, connections, scale):
     state = State(synaptic_treenodes)
 
     cellIDs:List = []
-    
+
     # First cells
     sources = [['<cells>\n'],
                make_arbors(neuron_names, all_treenodes, cellIDs, scale, state),
@@ -325,4 +325,3 @@ def bodySingle(neuron_names, all_treenodes, inputs, scale):
     for source in sources:
         for line in source:
             yield line
-

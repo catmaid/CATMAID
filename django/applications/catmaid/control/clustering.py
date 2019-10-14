@@ -217,4 +217,3 @@ def create_binary_matrix(graphs, features) -> np.ndarray:
     """ Creates a binary matrix for the graphs passed."""
     matrix:np.ndarray = np.zeros((len(graphs),len(features)), dtype=np.int)
     return graphs_instantiate_features(graphs, features, matrix)
-

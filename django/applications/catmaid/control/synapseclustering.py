@@ -186,5 +186,3 @@ def segregationIndex(synapseGroups, skeleton_id, pid, weightOutputs:bool=True):
     frac_unseg = sum(nout)/sum(ngrp)
     h_unseg = sum( ngrp) * ( frac_unseg*np.log(frac_unseg) + (1-frac_unseg)*np.log(1-frac_unseg) )
     return 1 - sum(h_partial)/h_unseg
-
-

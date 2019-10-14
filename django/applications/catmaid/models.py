@@ -1769,7 +1769,7 @@ class ChangeRequest(UserFocusedModel):
 def validate_change_request(sender, **kwargs) -> None:
     # Make sure the validate action defines is_valid.
     cr = kwargs['instance']
-    if re.search('is_valid\s=', cr.validate_action) is None:
+    if re.search(r'is_valid\s=', cr.validate_action) is None:
         raise Exception('The validate action of a ChangeRequest must assign a value to the is_valid variable.')
 
 

@@ -7,7 +7,7 @@ from django.db.transaction import TransactionManagementError
 
 from catmaid import locks
 
-transaction_label_pattern = re.compile('^\w+\.\w+$')
+transaction_label_pattern = re.compile(r'^\w+\.\w+$')
 
 
 def fail_on_wrong_format_label(label) -> None:

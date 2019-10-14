@@ -35,10 +35,9 @@ logger = logging.getLogger(__name__)
 # All needed classes by the classification system alongside their
 # descriptions.
 needed_classes = {
-    'classification_root':
-         "The root node class for classification graphs",
-    'classification_project':
-         "A project representation to link to classification graphs"}
+    'classification_root': "The root node class for classification graphs",
+    'classification_project': "A project representation to link to classification graphs"
+}
 
 # All needed relations by the classification system alongside their
 # descriptions.
@@ -184,7 +183,8 @@ def get_classification_links_qs(workspace_pid, project_ids, inverse=False,
     else:
         classification_project_cis_q = ClassInstance.objects.filter(
             project_id__in=project_ids,
-                class_column_id=class_map['classification_project'])
+            class_column_id=class_map['classification_project']
+        )
 
     # Return an empty query set if there aren't classification project
     # instances available.

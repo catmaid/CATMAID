@@ -94,18 +94,14 @@ def serialize_similarity(similarity, with_scoring=False, with_objects=False) -> 
         'normalized': similarity.normalized,
         'detailed_status': similarity.detailed_status,
         'computation_time': similarity.computation_time,
-        'n_query_objects': len(similarity.query_objects) \
-                if similarity.query_objects else 0,
-        'n_target_objects': len(similarity.target_objects) \
-                if similarity.target_objects else 0,
-        'n_invalid_query_objects': len(similarity.invalid_query_objects) \
-                if similarity.invalid_query_objects else 0,
-        'n_invalid_target_objects': len(similarity.invalid_target_objects) \
-                if similarity.invalid_target_objects else 0,
-        'n_initial_query_objects': len(similarity.initial_query_objects) \
-                if similarity.initial_query_objects else None,
-        'n_initial_target_objects': len(similarity.initial_target_objects) \
-                if similarity.initial_target_objects else None,
+        'n_query_objects': len(similarity.query_objects) if similarity.query_objects else 0,
+        'n_target_objects': len(similarity.target_objects) if similarity.target_objects else 0,
+        'n_invalid_query_objects': len(similarity.invalid_query_objects) if similarity.invalid_query_objects else 0,
+        'n_invalid_target_objects': len(similarity.invalid_target_objects) if similarity.invalid_target_objects else 0,
+        'n_initial_query_objects': len(similarity.initial_query_objects) if similarity.initial_query_objects else None,
+        'n_initial_target_objects': len(
+            similarity.initial_target_objects
+        ) if similarity.initial_target_objects else None,
         'reverse': similarity.reverse,
         'top_n': similarity.top_n,
     }

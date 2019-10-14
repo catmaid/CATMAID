@@ -821,20 +821,24 @@ class DataFileForm(forms.Form):
                   "(*) as wildcard for one or more characters. E.g. to only " \
                   "match those remote projects with XYZ in their names, one " \
                   "would need to use the filter '*XYZ*'.")
-    known_project_filter = forms.MultipleChoiceField(choices=KNOWN_PROJECT_FILTERS,
-            label='Projects are known if', initial=('name', 'stacks'),
-            widget=forms.CheckboxSelectMultiple(), required=False,
-            help_text='Select what makes makes a project known. An OR operation ' \
-                    'will be used to combine multiple selections.')
+    known_project_filter = forms.MultipleChoiceField(
+        choices=KNOWN_PROJECT_FILTERS,
+        label='Projects are known if', initial=('name', 'stacks'),
+        widget=forms.CheckboxSelectMultiple(), required=False,
+        help_text='Select what makes makes a project known. '
+                  'An OR operation will be used to combine multiple selections.'
+    )
     known_project_strategy = forms.ChoiceField(
-            initial=getattr(settings, 'IMPORTER_DEFAULT_EXISTING_DATA_STRATEGY', 'merge'),
-            choices=KNOWN_PROJECT_STRATEGIES,
-            help_text="Decide if imported projects that are already known " \
-                    "(see above) should be ignored, merged or replaced.")
-    base_url = forms.CharField(required=False,
-        widget=forms.TextInput(attrs={'size':'40'}),
-        help_text="The <em>base URL</em> should give read access to the data \
-                   folder in use.")
+        initial=getattr(settings, 'IMPORTER_DEFAULT_EXISTING_DATA_STRATEGY', 'merge'),
+        choices=KNOWN_PROJECT_STRATEGIES,
+        help_text="Decide if imported projects that are already known "
+                  "(see above) should be ignored, merged or replaced."
+    )
+    base_url = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'size': '40'}),
+        help_text="The <em>base URL</em> should give read access to the data folder in use."
+    )
 
     def clean(self):
         form_data = self.cleaned_data
@@ -864,46 +868,54 @@ class ProjectSelectionForm(forms.Form):
     available projects.
     """
     # A checkbox for each project, checked by default
-    projects = forms.MultipleChoiceField(required=False,
+    projects = forms.MultipleChoiceField(
+        required=False,
         widget=forms.CheckboxSelectMultiple(
-            attrs={'class': 'autoselectable'}),
-        help_text="Only selected projects will be imported.")
-    remove_unref_stack_data = forms.BooleanField(initial=False,
+            attrs={'class': 'autoselectable'}
+        ),
+        help_text="Only selected projects will be imported."
+    )
+    remove_unref_stack_data = forms.BooleanField(
+        initial=False,
         required=False, label="Remove unreferenced stacks and stack groups",
-         help_text="If checked, all stacks and stack groups that are not "
-         "referenced after the import will be removed.")
-    tags = forms.CharField(initial="", required=False,
-        widget=forms.TextInput(attrs={'size':'50'}),
-        help_text="A comma separated list of unquoted tags.")
+        help_text="If checked, all stacks and stack groups that are not referenced after the import will be removed."
+    )
+    tags = forms.CharField(
+        initial="", required=False,
+        widget=forms.TextInput(attrs={'size': '50'}),
+        help_text="A comma separated list of unquoted tags.",
+    )
     default_tile_width = forms.IntegerField(
         initial=settings.IMPORTER_DEFAULT_TILE_WIDTH,
-        help_text="The default width of one tile in <em>pixel</em>, " \
-            "used if not specified for a stack.")
+        help_text="The default width of one tile in <em>pixel</em>, used if not specified for a stack."
+    )
     default_tile_height = forms.IntegerField(
         initial=settings.IMPORTER_DEFAULT_TILE_HEIGHT,
-        help_text="The default height of one tile in <em>pixel</em>, " \
-            "used if not specified for a stack.")
+        help_text="The default height of one tile in <em>pixel</em>, used if not specified for a stack."
+    )
     default_tile_source_type = forms.ChoiceField(
-            initial=settings.IMPORTER_DEFAULT_TILE_SOURCE_TYPE,
-            choices=TILE_SOURCE_TYPES,
-            help_text="The default tile source type is used if there " \
-                    "none defined for an imported stack. It represents " \
-                    "how the tile data is organized. See " \
-                    "<a href=\"http://catmaid.org/page/tile_sources.html\">"\
-                    "tile source conventions documentation</a>.")
-    link_classifications = forms.BooleanField(initial=False,
-        required=False, help_text="If checked, this option will " \
-            "let the importer suggest classification graphs to " \
-            "link the new projects against and will allow manual " \
-            "links as well.")
-    user_permissions = forms.MultipleChoiceField(required=False,
+        initial=settings.IMPORTER_DEFAULT_TILE_SOURCE_TYPE,
+        choices=TILE_SOURCE_TYPES,
+        help_text="The default tile source type is used if there none defined for an imported stack. "
+                  "It represents how the tile data is organized. "
+                  "See <a href=\"http://catmaid.org/page/tile_sources.html\">tile source conventions documentation</a>."
+    )
+    link_classifications = forms.BooleanField(
+        initial=False,
+        required=False,
+        help_text="If checked, this option will let the importer suggest classification graphs "
+                  "to link the new projects against and will allow manual links as well."
+    )
+    user_permissions = forms.MultipleChoiceField(
+        required=False,
         widget=FilteredSelectMultiple('user permissions', is_stacked=False),
-        help_text="The selected <em>user/permission combination</em> \
-                   will be assigned to every project.")
-    group_permissions = forms.MultipleChoiceField(required=False,
+        help_text="The selected <em>user/permission combination</em> will be assigned to every project."
+    )
+    group_permissions = forms.MultipleChoiceField(
+        required=False,
         widget=FilteredSelectMultiple('group permissions', is_stacked=False),
-        help_text="The selected <em>group/permission combination</em> \
-                   will be assigned to every project.")
+        help_text="The selected <em>group/permission combination</em> will be assigned to every project."
+    )
 
 def create_classification_linking_form():
     """ Create a new ClassificationLinkingForm instance.
@@ -920,13 +932,16 @@ def create_classification_linking_form():
 
     class ClassificationLinkingForm(forms.Form):
         # A check-box for each project, checked by default
-        classification_graph_suggestions = forms.MultipleChoiceField(required=False,
+        classification_graph_suggestions = forms.MultipleChoiceField(
+            required=False,
             widget=forms.CheckboxSelectMultiple(),
-            help_text="Only selected classification graphs will be linked to the new projects.")
-        additional_links = forms.ModelMultipleChoiceField(required=False,
-            widget=FilteredSelectMultiple('Classification roots',
-                is_stacked=False),
-            queryset = ClassInstanceClassInstanceProxy.objects.filter(id__in=root_ids))
+            help_text="Only selected classification graphs will be linked to the new projects."
+        )
+        additional_links = forms.ModelMultipleChoiceField(
+            required=False,
+            widget=FilteredSelectMultiple('Classification roots', is_stacked=False),
+            queryset=ClassInstanceClassInstanceProxy.objects.filter(id__in=root_ids)
+        )
 
     return ClassificationLinkingForm
 
@@ -945,18 +960,16 @@ def ensure_classes(project, classes, user):
 
     def create(node, parent=None):
         name = node['class']
-        cls, _ = Class.objects.get_or_create(project=project, class_name=name,
-              defaults={
-                  'user': user
-              })
+        cls, _ = Class.objects.get_or_create(
+            project=project, class_name=name, defaults={'user': user}
+        )
 
         if parent:
             parent_relation_name = node.get('relation', None)
             if not parent_relation_name:
                 raise ValueError("Need parent relation for class \"" + name + "\"")
             rel, _ = Relation.objects.get_or_create(
-                project=project,
-                relation_name=parent_relation_name, defaults={'user': user}
+                project=project, relation_name=parent_relation_name, defaults={'user': user}
             )
             cls_cls, _ = ClassClass.objects.get_or_create(
                 project=project, class_a=cls, class_b=parent, relation=rel, defaults={'user': user}
@@ -967,14 +980,14 @@ def ensure_classes(project, classes, user):
 
         return cls
 
-    classification_root_class, _ = Class.objects.get_or_create(project=project,
-            class_name="classification_root", defaults={
-                'user': user
-            })
-    is_a, _ = Relation.objects.get_or_create(project=project,
-            relation_name="is_a", defaults={
-                'user': user
-            })
+    classification_root_class, _ = Class.objects.get_or_create(
+        project=project,
+        class_name="classification_root", defaults={'user': user}
+    )
+    is_a, _ = Relation.objects.get_or_create(
+        project=project,
+        relation_name="is_a", defaults={'user': user}
+    )
     for root_node in classes:
         root_class = create(root_node)
         # Make sure roots are classification roots
@@ -1001,22 +1014,22 @@ def ensure_class_instances(project, classification_paths, user, stack=None, stac
             parent_class = parent.class_column
             parent_cc = ClassClass.objects.get(project=project, class_a=cls, class_b=parent_class)
             rel = parent_cc.relation
-            ci = ClassInstance.objects.filter(project=project, class_column=cls,
-                    cici_via_a__class_instance_b=parent,
-                    cici_via_a__relation=rel)
+            ci = ClassInstance.objects.filter(
+                project=project, class_column=cls,
+                cici_via_a__class_instance_b=parent,
+                cici_via_a__relation=rel
+            )
             if 0 == len(ci):
-                ci, _ = ClassInstance.objects.get_or_create(project=project,
-                    class_column=cls, defaults={
-                        'user': user,
-                        'name': node
-                    })
-                cici, _ = ClassInstanceClassInstance.objects.get_or_create(project=project,
-                    class_instance_a=ci, class_instance_b=parent, relation=rel, defaults={
-                        'user': user
-                    })
+                ci, _ = ClassInstance.objects.get_or_create(
+                    project=project,
+                    class_column=cls, defaults={'user': user, 'name': node},
+                )
+                cici, _ = ClassInstanceClassInstance.objects.get_or_create(
+                    project=project,
+                    class_instance_a=ci, class_instance_b=parent, relation=rel, defaults={'user': user},
+                )
             elif 1 < len(ci):
-                raise ValueError("Found more than one existing matching " +
-                        "classification entry for \"" + node + "\"")
+                raise ValueError(f'Found more than one existing matching classification entry for "{node}"')
             else:
                 ci = ci[0]
         else:
@@ -1032,18 +1045,18 @@ def ensure_class_instances(project, classification_paths, user, stack=None, stac
             )
 
         return ci
-    classification_project_class, _ = Class.objects.get_or_create(project=project,
-            class_name="classification_project", defaults={
-                'user': user
-            })
-    classified_by, _ = Relation.objects.get_or_create(project=project,
-            relation_name="classified_by", defaults={
-                'user': user
-            })
-    linked_to, _ = Relation.objects.get_or_create(project=project,
-            relation_name="linked_to", defaults={
-                'user': user
-            })
+    classification_project_class, _ = Class.objects.get_or_create(
+        project=project,
+        class_name="classification_project", defaults={'user': user}
+    )
+    classified_by, _ = Relation.objects.get_or_create(
+        project=project,
+        relation_name="classified_by", defaults={'user': user}
+    )
+    linked_to, _ = Relation.objects.get_or_create(
+        project=project,
+        relation_name="linked_to", defaults={'user': user}
+    )
 
     t = type(classification_paths)
     if t is list or t is tuple:
@@ -1059,30 +1072,30 @@ def ensure_class_instances(project, classification_paths, user, stack=None, stac
 
             # Link root to project
             classification_project, _ = ClassInstance.objects.get_or_create(
-                    project=project, class_column=classification_project_class,
-                    defaults={
-                        'user': user
-                    })
+                project=project, class_column=classification_project_class,
+                defaults={'user': user},
+            )
             classification_project_link, _ = ClassInstanceClassInstance.objects.get_or_create(
-                    project=project, class_instance_a=classification_project,
-                    class_instance_b=root_node, relation=classified_by, defaults={
-                        'user': user
-                    })
+                project=project, class_instance_a=classification_project,
+                class_instance_b=root_node, relation=classified_by,
+                defaults={'user': user},
+            )
 
             if stack:
                 # Link stack to class instance at end of path
-                StackClassInstance.objects.get_or_create(project=project,
-                        relation=linked_to, stack=stack,
-                        class_instance=last_node, defaults={
-                            'user': user
-                        })
+                StackClassInstance.objects.get_or_create(
+                    project=project,
+                    relation=linked_to, stack=stack,
+                    class_instance=last_node,
+                    defaults={'user': user}
+                )
             if stackgroup:
                 # Link stackgroup to class instance at end of path
                 StackGroupClassInstance.objects.get_or_create(
-                        project=project, class_instance=last_node,
-                        stack_group=stackgroup, relation=linked_to, defaults={
-                            'user': user
-                        })
+                    project=project, class_instance=last_node,
+                    stack_group=stackgroup, relation=linked_to,
+                    defaults={'user': user}
+                )
     else:
         raise ValueError("Unknown classification syntax, expected list: " + t)
 
@@ -1108,10 +1121,8 @@ def import_projects(user, pre_projects, tags, permissions,
         try:
             if pp.already_known:
                 project = Project.objects.get(pk=pp.already_known_pid)
-                currently_linked_stacks = [ps.stack for ps in \
-                        ProjectStack.objects.filter(project=project)]
-                currently_linked_stack_ids = [s.id for s in \
-                        currently_linked_stacks]
+                currently_linked_stacks = [ps.stack for ps in ProjectStack.objects.filter(project=project)]
+                currently_linked_stack_ids = [s.id for s in currently_linked_stacks]
 
                 # Check if all imported stacks are already linked to the
                 # exisiting project. For now onlt consider a stack linked if the
@@ -1243,15 +1254,13 @@ def import_projects(user, pre_projects, tags, permissions,
                         'file_extension': m.file_extension,
                         'tile_width': getattr(m, "tile_width", default_tile_width),
                         'tile_height': getattr(m, "tile_height", default_tile_height),
-                        'tile_source_type': getattr(m, "tile_source_type",
-                            default_tile_source_type),
+                        'tile_source_type': getattr(m, "tile_source_type", default_tile_source_type),
                         'position': getattr(m, 'position')
                     }
 
                     known_mirrors = None
                     if existing_stack:
-                        known_mirrors = StackMirror.objects.filter(
-                            image_base=m.image_base, stack=existing_stack)
+                        known_mirrors = StackMirror.objects.filter(image_base=m.image_base, stack=existing_stack)
                     if known_mirrors and len(known_mirrors) > 0:
                         if 'ignore' == known_stack_action:
                             continue
@@ -1302,13 +1311,16 @@ def import_projects(user, pre_projects, tags, permissions,
                 orientation = orientations[s]
                 ps = ProjectStack.objects.create(
                     project=p, stack=s, translation=trln,
-                    orientation=orientation)
+                    orientation=orientation
+                )
             # Update project links of updated projects
             for us in updated_stacks:
                 trln = Double3D.from_str(translations[us])
                 orientation = orientations[us]
-                ps = ProjectStack.objects.create(project=p, stack=us,
-                    translation=trln, orientation=orientation)
+                ps = ProjectStack.objects.create(
+                    project=p, stack=us,
+                    translation=trln, orientation=orientation
+                )
             # Make project changes persistent
             p.save()
 
@@ -1328,8 +1340,9 @@ def import_projects(user, pre_projects, tags, permissions,
                 existing_stackgroups = StackGroup.objects.filter(title=sg)
 
                 if len(existing_stackgroups) > 1:
-                    raise ValueError("Found more than one existing stack group "
-                            "with the same title, expected zero or one.")
+                    raise ValueError(
+                        "Found more than one existing stack group with the same title, expected zero or one."
+                    )
                 elif len(existing_stackgroups) > 0:
                     if 'ignore' == known_stackgroup_action:
                         continue
@@ -1344,7 +1357,8 @@ def import_projects(user, pre_projects, tags, permissions,
                 referenced_stackgroups[sg] = stack_group
                 for n,ls in enumerate(linked_stacks):
                     group_relation, _ = StackGroupRelation.objects.get_or_create(
-                        name=ls['relation'])
+                        name=ls['relation']
+                    )
                     StackStackGroup.objects.create(
                         group_relation=group_relation,
                         stack=ls['stack'],
@@ -1355,8 +1369,10 @@ def import_projects(user, pre_projects, tags, permissions,
             for sg in pp.stackgroups:
                 ref_sg = referenced_stackgroups.get(sg.title)
                 if ref_sg and sg.classification:
-                    ensure_class_instances(p, sg.classification, user,
-                    stackgroup=ref_sg)
+                    ensure_class_instances(
+                        p, sg.classification, user,
+                        stackgroup=ref_sg
+                    )
 
             # Link classification graphs
             for cg in cls_graph_ids_to_link:
@@ -1396,4 +1412,4 @@ def import_projects(user, pre_projects, tags, permissions,
                 Exception(f"Could not import project: {e} {traceback.format_exc()}")
             ))
 
-    return (imported, not_imported)
+    return imported, not_imported

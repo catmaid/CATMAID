@@ -148,8 +148,7 @@ def delete_neuron(request:HttpRequest, project_id=None, neuron_id=None) -> JsonR
 
     return JsonResponse({
         'skeleton_ids': list(skeleton_ids),
-        'success': "Deleted neuron #%s as well as its skeletons and " \
-                "annotations." % neuron_id
+        'success': "Deleted neuron #%s as well as its skeletons and annotations." % neuron_id
     })
 
 @requires_user_role(UserRole.Annotate)

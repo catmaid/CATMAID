@@ -90,7 +90,7 @@ class GridWorker():
                 DO UPDATE SET invalidation_time = EXCLUDED.invalidation_time
             """)
 
-            logger.debug(f'Marked {len(dirty_rows)} grid cells as dirty and queued update'
+            logger.debug(f'Marked {len(dirty_rows)} grid cells as dirty and queued update')
 
     def append_cells_to_update(self, coords_to_update, p1, p2, cell_width,
             cell_height, cell_depth):

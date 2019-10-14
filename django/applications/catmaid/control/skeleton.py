@@ -317,7 +317,7 @@ def _find_labels(project_id, skeleton_id, label_regex, tnid=None,
 
     for nodeID, props in tree.nodes_iter(data=True):
         if only_leaves and nodeID not in leaves:
-            continue;
+            continue
         if 'tags' in props:
             # Found a node with a matching label
             d = distances[nodeID]
@@ -917,7 +917,7 @@ def from_origin(request:HttpRequest, project_id=None) -> JsonResponse:
         raise ValueError('Need source_url for origin lookup')
     source_url = normalize_source_url(source_url)
 
-    source_project_id = data.get('source_project_id');
+    source_project_id = data.get('source_project_id')
     if source_project_id is None:
         raise ValueError("Need source_project_id for origin lookup")
 
@@ -2584,7 +2584,7 @@ def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleto
         # If the merge point is not part of any domain in this sampler,
         # continue. No update is needed here.
         if len(matching_domains) == 0:
-            continue;
+            continue
 
 
         # We expect a single domain at the moment

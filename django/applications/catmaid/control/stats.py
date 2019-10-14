@@ -1056,7 +1056,7 @@ class ServerStats(APIView):
         """, {
             'db_name': db_name,
         })
-        db_stats = cursor.fetchone();
+        db_stats = cursor.fetchone()
 
         cursor.execute("""
             SELECT sum(heap_blks_read) AS heap_read,
@@ -1080,7 +1080,7 @@ class ServerStats(APIView):
                 extract(epoch from now() - pg_last_xact_replay_timestamp())
             FROM pg_stat_bgwriter
         """)
-        bgwriter_stats = cursor.fetchone();
+        bgwriter_stats = cursor.fetchone()
 
         return {
             'version': db_version,

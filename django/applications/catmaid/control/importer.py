@@ -301,7 +301,7 @@ def get_projects_from_raw_data(data, filter_term, base_url=None) -> Tuple[List, 
     for p in data:
         project = PreProject(p, base_url, None)
         if filter_term and not fnmatch.fnmatch(project.title, filter_term):
-            continue;
+            continue
         short_name = project.title
         key = f"File-{short_name}"
         projects[key] = project
@@ -335,7 +335,7 @@ def get_projects_from_url(url, filter_term, headers=None, auth=None,
         for p in content:
             project = PreProject(p, base_url, None)
             if filter_term and not fnmatch.fnmatch(project.title, filter_term):
-                continue;
+                continue
             short_name = project.title
             key = f"{url}-{short_name}"
             projects[key] = project
@@ -345,7 +345,7 @@ def get_projects_from_url(url, filter_term, headers=None, auth=None,
         for p in content:
             project = PreProject(p, base_url, None)
             if filter_term and not fnmatch.fnmatch(project.title, filter_term):
-                continue;
+                continue
             short_name = project.title
             key = f"{url}-{short_name}"
             if merge_same and key in projects:

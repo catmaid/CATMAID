@@ -146,7 +146,7 @@ class StatsApiTests(CatmaidApiTestCase):
         # ways.
         last_date_time = max(d[0] for d in summary_table)
         expected_summary.add((last_date_time, 0, 0, n_imported_nodes, 0, 0,
-            n_imported_nodes, 0, 0.0, 3, 3));
+            n_imported_nodes, 0, 0.0, 3, 3))
 
         self.assertEqual(summary_table, expected_summary)
 

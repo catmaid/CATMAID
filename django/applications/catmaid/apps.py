@@ -170,7 +170,7 @@ def check_client_settings(app_configs, **kwargs):
         messages.append(Warning(
             f"Could not reset client instance settings: {e}"))
 
-    return messages;
+    return messages
 
 def validate_environment(sender, **kwargs) -> None:
     """Make sure CATMAID is set up correctly."""

@@ -206,7 +206,7 @@ def create_link(request:HttpRequest, project_id=None) -> JsonResponse:
         # Enforce only two gap junction links
         undirected_links = TreenodeConnector.objects.filter(project=project, connector=to_connector, relation=relation)
         synapse_links = TreenodeConnector.objects.filter(project=project, connector=to_connector, relation__relation_name__endswith='synaptic_to')
-        name = LINKS_BY_RELATION[link_type]['name'].lower();
+        name = LINKS_BY_RELATION[link_type]['name'].lower()
         if (undirected_links.count() > 1):
             raise ValueError(f'Connector {to_id} can only have two {name} connections.')
         if (synapse_links.count() != 0):

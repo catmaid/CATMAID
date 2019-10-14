@@ -420,24 +420,24 @@ def get_intersected_grid_cells(p1, p2, cell_width, cell_height, cell_depth,
     current_cell_x, current_cell_y, current_cell_z = p1_cell
 
     if dir_x > 0.0:
-        step_x = 1;
+        step_x = 1
         next_cell_x = start_x + (p1_cell[0] + 1) * cell_width
     else:
-        step_x = -1;
+        step_x = -1
         next_cell_x = start_x + p1_cell[0] * cell_width
 
     if dir_y > 0.0:
-        step_y = 1;
+        step_y = 1
         next_cell_y = start_y + (p1_cell[1] + 1) * cell_height
     else:
-        step_y = -1;
+        step_y = -1
         next_cell_y = start_y + p1_cell[1] * cell_height
 
     if dir_z > 0.0:
-        step_z = 1;
+        step_z = 1
         next_cell_z = start_z + (p1_cell[2] + 1) * cell_depth
     else:
-        step_z = -1;
+        step_z = -1
         next_cell_z = start_z + p1_cell[2] * cell_depth
 
     if dir_x != 0.0:

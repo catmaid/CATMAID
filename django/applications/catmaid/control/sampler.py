@@ -350,7 +350,7 @@ def add_sampler(request:HttpRequest, project_id) -> JsonResponse:
     if merge_limit < 0 or merge_limit > 1.0:
         raise ValueError("Merge limit needs to be between 0 and 1")
 
-    sampler_state = SamplerState.objects.get(name="open");
+    sampler_state = SamplerState.objects.get(name="open")
 
     sampler = Sampler.objects.create(
         skeleton_id=skeleton_id,

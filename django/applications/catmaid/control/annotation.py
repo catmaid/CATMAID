@@ -327,7 +327,7 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
     for ent in cursor.fetchall():
         # Don't export objects with same ID multiple times
         if ent[0] in seen_ids:
-            continue;
+            continue
 
         class_name = allowed_class_idx[ent[5]]
         entity_info = {

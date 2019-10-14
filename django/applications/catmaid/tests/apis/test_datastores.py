@@ -31,9 +31,9 @@ class DatastoresApiTests(CatmaidApiTestCase):
         self.assertTrue('error' in parsed_response)
         name = 'test-datastore'
         response = self.client.post(url, {'name': name})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         parsed_response = [p for p in parsed_response if p['name'] == name]
         self.assertEqual(len(parsed_response), 1)
@@ -56,11 +56,11 @@ class DatastoresApiTests(CatmaidApiTestCase):
                     'key': 'test a',
                     'value': '{"json": true, "scope": "user-instance"}'}),
                 content_type='application/x-www-form-urlencoded')
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertFalse('error' in parsed_response)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(parsed_response), 1)
         self.assertEqual(parsed_response[0]['key'], 'test a')
@@ -74,7 +74,7 @@ class DatastoresApiTests(CatmaidApiTestCase):
                 content_type='application/x-www-form-urlencoded')
         self.assertEqual(response.status_code, 204)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(parsed_response), 1)
         value = parsed_response[0]['value']
@@ -87,16 +87,16 @@ class DatastoresApiTests(CatmaidApiTestCase):
                     'project_id': self.test_project_id,
                     'value': '{"json": true, "scope": "user-project"}'}),
                 content_type='application/x-www-form-urlencoded')
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertFalse('error' in parsed_response)
         # Omitting project ID should return only global and user-instance keys.
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(parsed_response), 1)
         response = self.client.get(url, {'project_id': self.test_project_id})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(parsed_response), 2)
         self.assertEqual(parsed_response[0]['key'], 'test a')

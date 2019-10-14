@@ -38,7 +38,7 @@ class LogsApiTests(CatmaidApiTestCase):
         self.fake_authentication()
         response = self.client.post(
                 '/%d/logs/list' % self.test_project_id, {'user_id': 1})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 'iTotalDisplayRecords': 0,
@@ -58,7 +58,7 @@ class LogsApiTests(CatmaidApiTestCase):
                     'iSortCol_1': 3,  # x
                     'iSortDir_1': 'DESC'
                     })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 'iTotalDisplayRecords': 3,
@@ -77,7 +77,7 @@ class LogsApiTests(CatmaidApiTestCase):
                     'iDisplayStart': 1,
                     'iDisplayLength': 2
                     })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(2, parsed_response['iTotalDisplayRecords'])
         self.assertEqual(2, parsed_response['iTotalRecords'])
@@ -87,7 +87,7 @@ class LogsApiTests(CatmaidApiTestCase):
         self.fake_authentication()
         response = self.client.post(
                 '/%d/logs/list' % self.test_project_id, {})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(3, parsed_response['iTotalDisplayRecords'])
         self.assertEqual(3, parsed_response['iTotalRecords'])

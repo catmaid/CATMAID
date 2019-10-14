@@ -42,7 +42,7 @@ class StatsApiTests(CatmaidApiTestCase):
                 '3': 89
             }
             response = self.client.get('/%d/stats/nodecount' % (self.test_project_id,))
-            self.assertEqual(response.status_code, 200)
+            self.assertStatus(response)
             parsed_response = json.loads(response.content.decode('utf-8'))
             self.assertEqual(parsed_response, expected_stats)
 
@@ -61,7 +61,7 @@ class StatsApiTests(CatmaidApiTestCase):
                     (self.test_project_id,), {
                         'with_imports': 'true' if with_imports else 'false'
                     })
-            self.assertEqual(response.status_code, 200)
+            self.assertStatus(response)
             parsed_response = json.loads(response.content.decode('utf-8'))
             self.assertEqual(parsed_response, expected_stats)
 
@@ -153,7 +153,7 @@ class StatsApiTests(CatmaidApiTestCase):
     def test_stats_summary(self):
         self.fake_authentication()
         response = self.client.get('/%d/stats/summary' % (self.test_project_id,))
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         expected_result = {
             "connectors_created": 0,
             'skeletons_created': 0,
@@ -426,7 +426,7 @@ class StatsApiTests(CatmaidApiTestCase):
                 'end_date': '2017-08-01',
                 'time_zone': 'UTC'
             })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(expected_stats, parsed_response)
 
@@ -438,7 +438,7 @@ class StatsApiTests(CatmaidApiTestCase):
                 'end_date': '2017-08-01',
                 'time_zone': 'UTC'
             })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(expected_stats, parsed_response)
 
@@ -706,7 +706,7 @@ class StatsApiTests(CatmaidApiTestCase):
                 'end_date': '2017-08-01',
                 'time_zone': 'America/New_York'
             })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(expected_stats, parsed_response)
 
@@ -718,7 +718,7 @@ class StatsApiTests(CatmaidApiTestCase):
                 'end_date': '2017-08-01',
                 'time_zone': 'America/New_York'
             })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(expected_stats, parsed_response)
 
@@ -805,7 +805,7 @@ class StatsApiTests(CatmaidApiTestCase):
 
         # Get SWC for a neuron
         response = self.client.get('/%d/skeleton/%d/swc' % (self.test_project_id, orig_skeleton_id))
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         orig_swc_string = response.content.decode('utf-8')
 
         # Give user import permissions and Import SWC
@@ -814,7 +814,7 @@ class StatsApiTests(CatmaidApiTestCase):
         response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
                 {'file.swc': swc_file, 'name': 'test'})
 
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         new_skeleton_id = parsed_response['skeleton_id']
         id_map = parsed_response['node_id_map']

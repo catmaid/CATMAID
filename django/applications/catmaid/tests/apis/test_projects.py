@@ -20,7 +20,7 @@ class ProjectsApiTests(CatmaidApiTestCase):
         # Check that, pre-authentication, we can see none of the
         # projects:
         response = self.client.get('/projects/')
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         result = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(result), 0)
 
@@ -32,7 +32,7 @@ class ProjectsApiTests(CatmaidApiTestCase):
         # Check that, pre-authentication, we can see two of the
         # projects:
         response = self.client.get('/projects/')
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         result = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(result), 1)
 
@@ -55,7 +55,7 @@ class ProjectsApiTests(CatmaidApiTestCase):
 
         # We expect four projects, one of them (project 2) is empty.
         response = self.client.get('/projects/')
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         result = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(result), 4)
 
@@ -87,7 +87,7 @@ class ProjectsApiTests(CatmaidApiTestCase):
         # Check that, pre-authentication, we can see none of the
         # projects:
         response = self.client.get('/projects/export')
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         result = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(result), 0)
 
@@ -104,7 +104,7 @@ class ProjectsApiTests(CatmaidApiTestCase):
         visible_projects = project.get_project_qs_for_user(test_user)
 
         response = self.client.get('/projects/export')
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         result = yaml.load(response.content.decode('utf-8'), Loader=yaml.FullLoader)
 
         # Expect a returned list with four projects

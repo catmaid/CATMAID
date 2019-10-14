@@ -14,7 +14,7 @@ class SearchApiTests(CatmaidApiTestCase):
         response = self.client.get(
                 '/%d/search' % self.test_project_id,
                 {'substring': 'tr'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
                 {"id":374, "name":"downstream-A", "class_name":"neuron"},
@@ -28,7 +28,7 @@ class SearchApiTests(CatmaidApiTestCase):
         response = self.client.get(
                 '/%d/search' % self.test_project_id,
                 {'substring': 'bobobobobobobo'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = []
         self.assertEqual(expected_result, parsed_response)
@@ -40,7 +40,7 @@ class SearchApiTests(CatmaidApiTestCase):
         response = self.client.get(
                 '/%d/search' % self.test_project_id,
                 {'substring': 't'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
                 {"id":465, "name":"tubby bye bye", "class_name":"driver_line"},
@@ -78,7 +78,7 @@ class SearchApiTests(CatmaidApiTestCase):
         response = self.client.get(
                 '/%d/search' % self.test_project_id,
                 {'substring': 'a'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
                 {"id":485, "name":"Local", "class_name":"cell_body_location"},
@@ -102,7 +102,7 @@ class SearchApiTests(CatmaidApiTestCase):
         response = self.client.get(
                 '/%d/search' % self.test_project_id,
                 {'substring': 'uncertain end'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         # Expect only one result that has a node linked
@@ -138,7 +138,7 @@ class SearchApiTests(CatmaidApiTestCase):
         response = self.client.get(
                 '/%d/search' % self.test_project_id,
                 {'substring': 'c'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
                 {"id":485, "name":"Local", "class_name":"cell_body_location"},

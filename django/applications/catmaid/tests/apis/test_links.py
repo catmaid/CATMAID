@@ -37,7 +37,7 @@ class LinksApiTests(CatmaidApiTestCase):
                 '/%d/link/delete' % self.test_project_id,
                 {'connector_id': connector_id, 'treenode_id': treenode_id,
                  'state': make_nocheck_state()})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             'link_id': 382,
@@ -63,7 +63,7 @@ class LinksApiTests(CatmaidApiTestCase):
                     'link_type': link_type,
                     'state': make_nocheck_state()
                 })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertIn('message', parsed_response)
         self.assertIn('link_id', parsed_response)
@@ -83,7 +83,7 @@ class LinksApiTests(CatmaidApiTestCase):
                     'link_type': link_type,
                     'state': make_nocheck_state()
                 })
-        self.assertEqual(response.status_code, 400)
+        self.assertStatus(response, 400)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertIn('error', parsed_response)
         error_message = f'Connector {to_id} does not have zero presynaptic connections.'
@@ -103,7 +103,7 @@ class LinksApiTests(CatmaidApiTestCase):
                     'link_type': link_type,
                     'state': make_nocheck_state()
                 })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertIn('message', parsed_response)
         self.assertIn('link_id', parsed_response)

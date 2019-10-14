@@ -8,16 +8,17 @@ import yaml
 from guardian.shortcuts import assign_perm
 
 from django.http import HttpResponse
-from django.test import TestCase
 from django.test.client import Client
+from django.test import TestCase
 
 from catmaid.control import importer
 from catmaid.control.common import urljoin
 from catmaid.models import (Class, ClassInstance, Project, ProjectStack,
         Relation, Stack, StackClassInstance, StackGroup, StackStackGroup, User)
+from catmaid.tests.common import AssertStatusMixin
 
 
-class ImportExportTests(TestCase):
+class ImportExportTests(TestCase, AssertStatusMixin):
     """Test CATMAID's import and export functionality.
     """
     #fixtures = ['catmaid_project_stack_data']
@@ -363,13 +364,13 @@ class ImportExportTests(TestCase):
 
         # Export imported YAML data
         response = self.client.get('/projects/export')
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         result_yaml = yaml.load(response.content.decode('utf-8'), Loader=yaml.FullLoader)
         test_result(result_yaml)
 
         # Export imported JSON data
         response = self.client.get('/projects/export', HTTP_ACCEPT='application/json')
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         result_json = json.loads(response.content.decode('utf-8'),
                 object_hook=parse_list)
         test_result(result_json)

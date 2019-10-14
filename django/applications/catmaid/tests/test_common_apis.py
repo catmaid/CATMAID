@@ -18,10 +18,10 @@ from catmaid.models import Project, Stack, ProjectStack, StackMirror
 from catmaid.models import ClassInstance, Log
 from catmaid.models import Treenode, Connector, User
 from catmaid.models import TreenodeClassInstance, ClassInstanceClassInstance
-from catmaid.tests.common import init_consistent_data
+from catmaid.tests.common import init_consistent_data, AssertStatusMixin
 
 
-class TransactionTests(TransactionTestCase):
+class TransactionTests(TransactionTestCase, AssertStatusMixin):
     fixtures = ['catmaid_testdata']
 
     maxDiff = None
@@ -67,7 +67,7 @@ class TransactionTests(TransactionTestCase):
         log_count = count_logs()
         response = self.client.post(
                 '/%d/neuron/%s/delete' % (self.test_project_id, neuron_id), {})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             'skeleton_ids': [skeleton_id],
@@ -182,7 +182,7 @@ class RelationQueryTests(TestCase):
         self.assertEqual(upstreams[0]['name'], "branched neuron / skeleton 235")
 
 
-class ViewPageTests(TestCase):
+class ViewPageTests(TestCase, AssertStatusMixin):
     fixtures = ['catmaid_testdata']
 
     maxDiff = None
@@ -250,13 +250,13 @@ class ViewPageTests(TestCase):
         # Now insert a fake session and expect a successful request
         self.fake_authentication()
         response = self.client.get('/user/password_change/')
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
 
     def test_token_authentication(self):
         response = self.client.post('/api-token-auth/',
                 {'username': 'test2',
                  'password': 'test'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         token = parsed_response['token']
 
@@ -276,7 +276,7 @@ class ViewPageTests(TestCase):
         response = token_client.post('/%d/node/user-info' % (self.test_project_id,),
                 {'node_ids': [383]},
                 HTTP_X_AUTHORIZATION='Token ' + token)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
 
         # Check that a DRF view rejects an unauthed request...
         response = token_client.post('/%d/annotations/' % (self.test_project_id,))
@@ -287,11 +287,11 @@ class ViewPageTests(TestCase):
         # ...but accepts a token auth request without CSRF
         response = token_client.post('/%d/annotations/' % (self.test_project_id,),
                 HTTP_X_AUTHORIZATION='Token ' + token)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
 
     def test_user_project_permissions_not_logged_in(self):
         response = self.client.get('/permissions')
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [{}, []]
         self.assertEqual(expected_result, parsed_response)
@@ -299,7 +299,7 @@ class ViewPageTests(TestCase):
     def test_user_project_permissions(self):
         self.fake_authentication()
         response = self.client.get('/permissions')
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
             {'can_administer': [],
@@ -320,7 +320,7 @@ class ViewPageTests(TestCase):
         self.fake_authentication()
         url = '/'
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
 
     def test_user_list_with_passwords_regular_user(self):
         self.fake_authentication()
@@ -341,7 +341,7 @@ class ViewPageTests(TestCase):
             'with_passwords': True,
         })
 
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         self.assertFalse('error' in parsed_response)
@@ -374,7 +374,7 @@ class ViewPageTests(TestCase):
             },
         ]
 
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         for u in expected_result:
@@ -425,7 +425,7 @@ class ViewPageTests(TestCase):
             }
         ]
 
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         for u in expected_result:
@@ -446,7 +446,7 @@ class ViewPageTests(TestCase):
         # Test that whitelist is empty by default.
         url = '/%d/user/reviewer-whitelist' % (self.test_project_id,)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = []
         self.assertEqual(expected_result, parsed_response)
@@ -456,10 +456,10 @@ class ViewPageTests(TestCase):
                 '1': "2014-03-17T00:00:00Z",
                 '2': "2014-03-18T00:00:00Z"}
         response = self.client.post(url, whitelist)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
 
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         expected_result = [{'reviewer_id': int(r), 'accept_after': t}
                 for r,t in whitelist.items()]
         parsed_response = json.loads(response.content.decode('utf-8'))
@@ -474,7 +474,7 @@ class ViewPageTests(TestCase):
         skeleton_id = 373
         response = self.client.post(
                 '/%d/%d/1/1/compact-skeleton' % (self.test_project_id, skeleton_id))
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_response = [
                 [[377, None, 3, 7620.0, 2890.0, 0.0, -1.0, 5],
@@ -506,7 +506,7 @@ class ViewPageTests(TestCase):
         response = self.client.get(url, {
             'with_annotations': True
         })
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_response = [
                 [[377, None, 3, 7620.0, 2890.0, 0.0, -1.0, 5],
@@ -532,7 +532,7 @@ class ViewPageTests(TestCase):
         skeleton_id = 373
         response = self.client.post(
                 '/%d/%d/1/1/1/compact-arbor' % (self.test_project_id, skeleton_id))
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_response = [
                 [[377, None, 3, 7620.0, 2890.0, 0.0, -1.0, 5],
@@ -553,7 +553,7 @@ class ViewPageTests(TestCase):
         skeleton_id = 373
         response = self.client.post(
                 '/%d/%d/1/1/1/compact-arbor-with-minutes' % (self.test_project_id, skeleton_id))
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_response = [
                 [[377, None, 3, 7620.0, 2890.0, 0.0, -1.0, 5],
@@ -618,7 +618,8 @@ class TreenodeTests(TestCase):
             treenodeconnector__treenode__treenodeclassinstance__class_instance=skeleton)
         self.assertEqual(len(connectors), 3)
 
-class PermissionTests(TestCase):
+
+class PermissionTests(TestCase, AssertStatusMixin):
     fixtures = ['catmaid_testdata']
 
     def setUp(self):
@@ -673,7 +674,7 @@ class PermissionTests(TestCase):
 
     def test_user_permissions(self):
             response = self.client.get("/permissions")
-            self.assertEqual(response.status_code, 200)
+            self.assertStatus(response)
             # Expect [{}, []] as result, because the anonymous user is
             # currently not assigned any permissions
             self.assertJSONEqual(response.content.decode('utf-8'), [{},[]])

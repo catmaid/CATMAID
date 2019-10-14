@@ -57,7 +57,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
              'annotations[1]': 'B',
              'annotations[2]': 'C',
              'skeleton_ids[0]': skeleton_id})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         annotations = {a['name']:a['id'] for a in parsed_response['annotations']}
         for a in ('A', 'B', 'C'):
@@ -69,13 +69,13 @@ class AnnotationsApiTests(CatmaidApiTestCase):
             {'entity_ids[0]': neuron_id,
              'annotation_ids[0]': annotations['A'],
              'annotation_ids[1]': annotations['C']})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         response = self.client.post(
             '/%d/annotations/forskeletons' % (self.test_project_id,),
             {'skeleton_ids[0]': skeleton_id})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         linked_annotations = parsed_response['skeletons'][str(skeleton_id)]
@@ -92,7 +92,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
             '/%d/annotations/add' % (self.test_project_id,),
             {'annotations[0]': 'A',
              'skeleton_ids[0]': skeleton_id})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         annotations = {a['name']:a['id'] for a in parsed_response['annotations']}
         for a in ('A',):
@@ -102,7 +102,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
         expected_response = [{'name': 'A', 'id': annotation_id, 'users': [{'id': 3, 'name': 'test2'}]}]
 
         response = self.client.get('/%d/annotations/' % (self.test_project_id,))
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         self.assertEqual(len(parsed_response['annotations']),
@@ -114,7 +114,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
         response = self.client.post(
             '/%d/annotations/add' % (self.test_project_id,),
             {'annotations[0]': 'B'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         annotations = {a['name']:a['id'] for a in parsed_response['annotations']}
         for a in ('B',):
@@ -124,7 +124,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
         expected_response.append({'name': 'B', 'id': annotation_id, 'users': []})
 
         response = self.client.get('/%d/annotations/' % (self.test_project_id,))
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
 
         self.assertEqual(len(parsed_response['annotations']),
@@ -154,7 +154,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
             '/%d/annotations/add' % (self.test_project_id,),
             {'annotations[0]': 'A',
              'skeleton_ids[0]': skeleton_id_a})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         annotations = {a['name']:a['id'] for a in parsed_response['annotations']}
         for a in ('A',):
@@ -165,7 +165,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
             '/%d/annotations/add' % (self.test_project_id,),
             {'annotations[0]': 'B',
              'skeleton_ids[0]': skeleton_id_b})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         annotations = {a['name']:a['id'] for a in parsed_response['annotations']}
         for a in ('B',):
@@ -176,7 +176,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
         response = self.client.post(
             '/%d/annotations/query-targets' % (self.test_project_id,),
             {'annotated_with[0]': ','.join(map(str, [annotation_id_a, annotation_id_b]))})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_entities = [
             {"skeleton_ids": [235],
@@ -195,7 +195,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
             '/%d/annotations/add' % (self.test_project_id,),
             {'annotations[0]': 'C',
              'skeleton_ids[0]': skeleton_id_a})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         annotations = {a['name']:a['id'] for a in parsed_response['annotations']}
         for a in ('C',):
@@ -206,7 +206,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
             '/%d/annotations/query-targets' % (self.test_project_id,),
             {'annotated_with[0]': ','.join(map(str, [annotation_id_a, annotation_id_b])),
              'annotated_with[1]': str(annotation_id_c)})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_entities = sorted([
             {"skeleton_ids": [235],
@@ -221,7 +221,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
             '/%d/annotations/add' % (self.test_project_id,),
             {'meta_annotations[0]': 'D',
              'annotations[0]': 'C'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         annotations = {a['name']:a['id'] for a in parsed_response['annotations']}
         for a in ('D',):
@@ -232,7 +232,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
             '/%d/annotations/query-targets' % (self.test_project_id,),
             {'annotated_with[0]': str(annotation_id_d),
              'sub_annotated_with[0]': str(annotation_id_d)})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_entities = [
             {"skeleton_ids": [235],
@@ -250,7 +250,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
         response = self.client.post(
             '/%d/annotations/query-targets' % (self.test_project_id,),
             {})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(parsed_response['totalRecords'], 17)
 
@@ -258,7 +258,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
         response = self.client.post(
             '/%d/annotations/query-targets' % (self.test_project_id,),
             {'name': 'downstream-A'})
-        self.assertEqual(response.status_code, 200)
+        self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_entities = [
             {'skeleton_ids': [373],

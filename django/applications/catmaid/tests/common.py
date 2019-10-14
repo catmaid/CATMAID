@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import textwrap
+from abc import ABC
 
 from django.db import connection
 from django.test import TestCase
@@ -26,7 +28,25 @@ def init_consistent_data():
         validate_project_setup(p.id, user.id, True)
 
 
-class CatmaidTestCase(TestCase):
+class AssertStatusMixin(ABC):
+
+    def assertStatus(self, response, code=200):
+        if code == response.status_code:
+            return
+
+        msg = f"Expected status {code}, got {response.status_code}"
+        if response.status_code != 200 and response["Content-Type"] == "application/json":
+            data = response.json()
+            msg += f" (server raised {data['type']})\n"
+            msg += textwrap.indent(data["detail"].rstrip(), " " * 4)
+        else:
+            msg += ". Response contained:\n"
+            msg += repr(response.content)
+
+        self.assertEqual(response.status_code, code, msg)
+
+
+class CatmaidTestCase(TestCase, AssertStatusMixin):
     fixtures = ['catmaid_testdata']
 
     maxDiff = None

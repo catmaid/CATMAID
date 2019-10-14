@@ -674,11 +674,11 @@ class PermissionTests(TestCase, AssertStatusMixin):
         ]
 
     def test_user_permissions(self):
-            response = self.client.get("/permissions")
-            self.assertStatus(response)
-            # Expect [{}, []] as result, because the anonymous user is
-            # currently not assigned any permissions
-            self.assertJSONEqual(response.content.decode('utf-8'), [{},[]])
+        response = self.client.get("/permissions")
+        self.assertStatus(response)
+        # Expect [{}, []] as result, because the anonymous user is
+        # currently not assigned any permissions
+        self.assertJSONEqual(response.content.decode('utf-8'), [{},[]])
 
     def test_can_browse_access(self):
         # Give anonymous user browse permissions for the test project

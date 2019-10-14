@@ -698,7 +698,7 @@ def cleanup(max_age:int=1209600) -> None:
         if (now - file_ctime) > max_age:
             files_to_remove.append(item)
     for item in files_to_remove:
-            os.remove(item)
+        os.remove(item)
 
 @login_required
 def download_crop(request:HttpRequest, file_path=None) -> HttpResponse:

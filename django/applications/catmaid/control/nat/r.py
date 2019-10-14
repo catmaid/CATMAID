@@ -1556,13 +1556,12 @@ def neuronlist_for_skeletons(project_id, skeleton_ids, omit_failures=False,
         ]
         nodes:List = [(k,[]) for k,_,_ in node_cols]
         for rn in raw_nodes:
-                for n, kv in enumerate(node_cols):
-                        val = rn[n]
-                        if val is None:
-                                val = kv[2]
-                        nodes[n][1].append(val)
-        r_nodes = [(kv[0], node_cols[n][1](kv[1]))
-                for n, kv in enumerate(nodes)]
+            for n, kv in enumerate(node_cols):
+                val = rn[n]
+                if val is None:
+                    val = kv[2]
+                nodes[n][1].append(val)
+        r_nodes = [(kv[0], node_cols[n][1](kv[1])) for n, kv in enumerate(nodes)]
 
         # Connectors in Rpy2 format
         connector_cols = [
@@ -1575,13 +1574,14 @@ def neuronlist_for_skeletons(project_id, skeleton_ids, omit_failures=False,
         ]
         connectors:List = [(k,[]) for k,_,_ in connector_cols]
         for rn in raw_connectors:
-                for n, kv in enumerate(connector_cols):
-                        val = rn[n]
-                        if val is None:
-                                val = kv[2]
-                        connectors[n][1].append(val)
-        r_connectors = [(kv[0], connector_cols[n][1](kv[1]))
-                for n, kv in enumerate(connectors)]
+            for n, kv in enumerate(connector_cols):
+                val = rn[n]
+                if val is None:
+                    val = kv[2]
+                connectors[n][1].append(val)
+        r_connectors = [
+            (kv[0], connector_cols[n][1](kv[1])) for n, kv in enumerate(connectors)
+        ]
 
         # Tags in Rpy2 format
         r_tags = {}

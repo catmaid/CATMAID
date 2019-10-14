@@ -1103,7 +1103,7 @@ def get_graph_tag_indices(graph_ids, workspace_pid=-1) -> Tuple[Dict,Dict]:
     # Build index from classification project class instance ID to PID
     cp_to_pid = {}
     for cp in classification_project_cis_q:
-            cp_to_pid[cp.id] = cp.project_id
+        cp_to_pid[cp.id] = cp.project_id
 
     # Build project index
     project_ids = set()
@@ -1119,7 +1119,7 @@ def get_graph_tag_indices(graph_ids, workspace_pid=-1) -> Tuple[Dict,Dict]:
     # Build index from classification project class instance ID to PID
     cp_to_pid = {}
     for cp in classification_project_cis_q:
-            cp_to_pid[cp.id] = cp.project_id
+        cp_to_pid[cp.id] = cp.project_id
 
     # Build tag index
     ct = ContentType.objects.get_for_model(Project)

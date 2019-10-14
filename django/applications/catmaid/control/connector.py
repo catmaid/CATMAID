@@ -304,11 +304,11 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
                 AND tc.relation_id = %(relation_id)s
             ''')
     elif relation_type:
-            constraints.append('''
-                JOIN treenode_connector tc_rel
-                    ON tc_rel.connector_id = c.id
-                    AND tc_rel.relation_id = %(relation_id)s
-            ''')
+        constraints.append('''
+            JOIN treenode_connector tc_rel
+                ON tc_rel.connector_id = c.id
+                AND tc_rel.relation_id = %(relation_id)s
+        ''')
 
     if without_relation_types:
         # Only connectors without the passed in relations. This is done through

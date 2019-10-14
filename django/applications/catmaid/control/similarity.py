@@ -351,7 +351,7 @@ class ConfigurationList(APIView):
                     if type(element) != list or len(element) != 2:
                         raise ValueError("Expeceted subset elements to be lists with two elements")
                     if type(element[0]) not in (int, list) or type(element[1]) != int:
-                            raise ValueError("Expected subset selements to consist of ints or lists of ints")
+                        raise ValueError("Expected subset selements to consist of ints or lists of ints")
 
         # Load and store point sets, if there are any.
         if matching_pointset_ids and matching_meta:

@@ -585,7 +585,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
         })
 
         if with_merge_history:
-            query =  '''
+            query = '''
                 {query}
                 UNION ALL
                 SELECT
@@ -849,7 +849,7 @@ def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,
     project_id = int(project_id)
     skeleton_id = int(skeleton_id)
     with_nodes = int(with_nodes)
-    with_connectors  = int(with_connectors)
+    with_connectors = int(with_connectors)
     with_tags = int(with_tags)
 
     cursor = connection.cursor()

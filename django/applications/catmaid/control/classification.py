@@ -1473,7 +1473,7 @@ class ClassificationSearchWizard(SessionWizardView):
             # Build form array
             features = []
             for i, f in enumerate(raw_features):
-                name =  "%s: %s" % (f.links[0].class_b.class_name, f.name)
+                name = "%s: %s" % (f.links[0].class_b.class_name, f.name)
                 features.append((i, name))
             # Add form array to form field
             form.fields['features'].choices = features

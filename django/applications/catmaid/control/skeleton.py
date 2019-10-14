@@ -3078,7 +3078,7 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
         arborescence.node[root]['radius'] = -1
     new_location = tuple([arborescence.node[root][k] for k in ('x', 'y', 'z')])
 
-    treenode_template = '(' + '),('.join('%s,%s,%s,%s,%s,%s' for n, d in arborescence.nodes_iter(data=True))  + ')'
+    treenode_template = '(' + '),('.join('%s,%s,%s,%s,%s,%s' for n, d in arborescence.nodes_iter(data=True)) + ')'
     treenode_values = list(chain.from_iterable([d['id'], d['x'], d['y'], d['z'], d['parent_id'], d['radius']] \
             for n, d in arborescence.nodes_iter(data=True)))
     # Include skeleton ID for index performance.

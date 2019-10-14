@@ -532,9 +532,9 @@ class ImportingWizard(SessionWizardView):
             # Sort the index (wrt. short name) to be better readable
             # Save these settings in the form
             form.not_readable = not_readable
-            form.new_projects       = np = project_selector.new_projects
-            form.ignored_projects   = ip = project_selector.ignored_projects
-            form.merged_projects    = mp = project_selector.merged_projects
+            form.new_projects = np = project_selector.new_projects
+            form.ignored_projects = ip = project_selector.ignored_projects
+            form.merged_projects = mp = project_selector.merged_projects
             form.replacing_projects = rp = project_selector.replacing_projects
             self.projects = projects
             # Update the folder list and select all by default
@@ -1196,7 +1196,7 @@ def import_projects(user, pre_projects, tags, permissions,
                 stack = None
 
                 if valid_link:
-                  if 'ignore' ==  known_stack_action:
+                  if 'ignore' == known_stack_action:
                       continue
                   elif 'import' == known_stack_action:
                       # Nothing to do, just for completeness

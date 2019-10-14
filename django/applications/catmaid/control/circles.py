@@ -54,7 +54,7 @@ def _clean_mins(request:HttpRequest, cursor, project_id:Union[int,str]) -> Tuple
 
     relations = _relations(cursor, project_id)
     mins = {}
-    mins[relations['presynaptic_to']]  = min_post # inverted: all postsynaptic to the set
+    mins[relations['presynaptic_to']] = min_post # inverted: all postsynaptic to the set
     mins[relations['postsynaptic_to']] = min_pre # inverted: all presynaptic to the set
     return mins, relations
 

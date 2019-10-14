@@ -1582,7 +1582,7 @@ def get_lod_buckets(result_tuple, lod_levels, lod_bucket_size, lod_strategy) -> 
             raise ValueError(f"Unknown LOD strategy: {lod_strategy}")
 
         node_slice_end = min(n_nodes_to_add, node_slice_end + offset)
-        connector_slice_end =  min(n_connectors_to_add, connector_slice_start + offset)
+        connector_slice_end = min(n_connectors_to_add, connector_slice_start + offset)
 
         # Try to reuse unused connector half for nodes and vice versa
         availble_nodes = offset - (node_slice_end - node_slice_start)
@@ -2516,7 +2516,7 @@ def compile_node_list_result(project_id, node_providers, params,
             result = node_provider.get_tuples(params, project_id,
                 explicit_treenode_ids, explicit_connector_ids, include_labels,
                 with_relation_map)
-            result_tuple, data_type =  result
+            result_tuple, data_type = result
 
             if result_tuple and data_type:
                 break

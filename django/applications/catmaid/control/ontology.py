@@ -200,7 +200,7 @@ def list_ontology(request:HttpRequest, project_id=None) -> JsonResponse:
     parent_id = int(request.GET.get('parentid', 0))
     expand_request = request.GET.get('expandtarget', None)
     parent_type = request.GET.get('parenttype', "relation")
-    class_b_id  = int(request.GET.get('classbid', 0))
+    class_b_id = int(request.GET.get('classbid', 0))
     if expand_request is None:
         expand_request = tuple()
     else:
@@ -397,7 +397,7 @@ def rename_class(request:HttpRequest, project_id=None) -> JsonResponse:
     if not class_id:
         raise Exception("No class id was provided!")
     class_id = int(class_id)
-    class_obj  = get_object_or_404(Class, id=class_id)
+    class_obj = get_object_or_404(Class, id=class_id)
     # Get new name
     new_name = request.POST.get('newname', None)
     if not new_name:

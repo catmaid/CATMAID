@@ -547,7 +547,7 @@ class FileImporter:
                     mapped_usernames = set(self.user_id_map.get(u) for u in mapped_user_target_ids)
                     import_usernames = set(import_users.keys())
                     not_imported_usernames = import_usernames - mapped_usernames
-                    already_imported_usernames  = import_usernames - not_imported_usernames
+                    already_imported_usernames = import_usernames - not_imported_usernames
 
                     if already_imported_usernames:
                         print("The following usernames are mapped to " +

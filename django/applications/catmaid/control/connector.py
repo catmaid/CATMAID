@@ -761,7 +761,7 @@ def _list_completed(project_id, completed_by=None, from_date=None, to_date=None)
         params.append(from_date.isoformat())
         query += " AND tc1.creation_time >= %s"
     if to_date:
-        to_date =  to_date + timedelta(days=1)
+        to_date = to_date + timedelta(days=1)
         params.append(to_date.isoformat())
         query += " AND tc1.creation_time < %s"
 

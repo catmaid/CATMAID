@@ -730,7 +730,7 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
         else:
             similarity.status = 'complete'
             similarity.scoring = scoring_info['similarity']
-            similarity.detailed_status =  ("Computed scoring for {} query " +
+            similarity.detailed_status = ("Computed scoring for {} query " +
                     "skeletons vs {} target skeletons.").format(
                             len(similarity.query_objects) if similarity.query_objects is not None else '?',
                             len(similarity.target_objects) if similarity.target_objects is not None else '?')

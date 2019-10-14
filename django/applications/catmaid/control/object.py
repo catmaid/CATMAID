@@ -19,10 +19,10 @@ def get_annotation_graph(project_id=None):
         "class_instance_a__class_column", "class_instance_b__class_column")
     g=nx.DiGraph()
     for e in qs:
-        if not e.class_instance_a.id in g:
+        if e.class_instance_a.id not in g:
             g.add_node( e.class_instance_a.id, {"class": e.class_instance_a.class_column.class_name,
                                                 "name": e.class_instance_a.name} )
-        if not e.class_instance_b.id in g:
+        if e.class_instance_b.id not in g:
             g.add_node( e.class_instance_b.id, {"class": e.class_instance_b.class_column.class_name,
                                                 "name": e.class_instance_b.name} )
         g.add_edge( e.class_instance_b.id, e.class_instance_a.id,

@@ -161,7 +161,7 @@ def insert_into_log(project_id:Union[int, str], user_id, op_type:str, location=N
         "reset_reviews"
     ]
 
-    if not op_type in operation_type_array:
+    if op_type not in operation_type_array:
         raise ValueError(f'Operation type {op_type} not valid')
 
     new_log = Log()

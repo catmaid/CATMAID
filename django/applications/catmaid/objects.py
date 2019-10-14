@@ -100,7 +100,7 @@ class Skeleton(object):
         results:Dict = {}
 
         for tc in qs_tc:
-            if not tc.connector_id in results:
+            if tc.connector_id not in results:
                 results[tc.connector_id] = {
                     'presynaptic_to': [],
                     'postsynaptic_to': [],
@@ -121,7 +121,7 @@ class Skeleton(object):
         qs_tc = TreenodeConnector.objects.filter( project=self.project_id, connector__in=presynaptic_connectors, relation=relations['postsynaptic_to'] )
         res:Dict = {}
         for ele in qs_tc:
-            if not ele.skeleton_id in res:
+            if ele.skeleton_id not in res:
                 res[ele.skeleton_id] = 0
             res[ele.skeleton_id] += 1
         return res
@@ -133,7 +133,7 @@ class Skeleton(object):
         qs_tc = TreenodeConnector.objects.filter( project=self.project_id, connector__in=postsynaptic_connectors, relation=relations['presynaptic_to'] )
         res:Dict = {}
         for ele in qs_tc:
-            if not ele.skeleton_id in res:
+            if ele.skeleton_id not in res:
                 res[ele.skeleton_id] = 0
             res[ele.skeleton_id] += 1
         return res
@@ -229,7 +229,7 @@ class SkeletonGroup(object):
         self.project_id = project_id
         self.skeletons:Dict = {}
         for skeleton_id in skeleton_id_list:
-            if not skeleton_id in self.skeletons:
+            if skeleton_id not in self.skeletons:
                 self.skeletons[skeleton_id] = Skeleton(skeleton_id, self.project_id)
         self.graph = self._connectivity_graph()
 
@@ -249,7 +249,7 @@ class SkeletonGroup(object):
         connectors:Dict = {}
         for skeleton_id, skeleton in self.skeletons.items():
             for connector_id, v in skeleton.connected_connectors.items():
-                if not connector_id in connectors:
+                if connector_id not in connectors:
                     connectors[connector_id] = {
                         'pre': [], 'post': []
                     }
@@ -388,7 +388,7 @@ def compartmentalize_skeletongroup( skeleton_id_list, project_id, **kwargs ):
     connectors:Dict = {}
     for skeleton_id, skeleton in skelgroup.skeletons.items():
         for connector_id, v in skeleton.connected_connectors.items():
-            if not connector_id in connectors:
+            if connector_id not in connectors:
                 connectors[connector_id] = {
                     'pre': [], 'post': []
                 }

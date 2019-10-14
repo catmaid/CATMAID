@@ -143,7 +143,7 @@ def find_directed_paths(request:HttpRequest, project_id=None) -> JsonResponse:
         s2 = set()
         for pre_skid, post_skid in next_level(s1, pre, post):
             graph.add_edge(pre_skid, post_skid)
-            if not post_skid in s1:
+            if post_skid not in s1:
                 s2.add(post_skid)
         s1 = s2
         i += 1
@@ -151,7 +151,7 @@ def find_directed_paths(request:HttpRequest, project_id=None) -> JsonResponse:
             t2 = set()
             for post_skid, pre_skid in next_level(t1, post, pre):
                 graph.add_edge(pre_skid, post_skid)
-                if not pre_skid in t1:
+                if pre_skid not in t1:
                     t2.add(pre_skid)
             t1 = t2
 

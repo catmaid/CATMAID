@@ -73,7 +73,7 @@ def graphedge_list(request:HttpRequest, project_id=None) -> JsonResponse:
         # Only look at synapse connectors
         if q.relation.relation_name not in ('presynaptic_to', 'postsynaptic_to'):
             continue
-        if not q.connector_id in edge:
+        if q.connector_id not in edge:
             # has to be a list, not a set, because we need matching treenode id
             edge[ q.connector_id ] = {'pre': [], 'post': [], 'pretreenode': [], 'posttreenode': []}
             connectordata[ q.connector_id ] = {

@@ -169,7 +169,7 @@ class UserImportWizard(SessionWizardView):
             raise ValidationError(f'Could not retrieve user information: {e}')
 
         for u in users:
-            if not 'password' in u:
+            if 'password' not in u:
                 raise ValidationError('Could not retrieve encrypted passwords for users')
 
         user_index = dict()

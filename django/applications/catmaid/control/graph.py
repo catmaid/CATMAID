@@ -65,7 +65,7 @@ def split_by_synapse_domain(bandwidth, locations, arbors, treenode_connector, mi
         treenode_connectors: dictionary of treenode ID vs list of tuples of connector_id, string of 'presynaptic_to' or 'postsynaptic_to'
     """
     arbors2:Dict = {}
-                 # Some arbors will be split further
+    # Some arbors will be split further
     for skeleton_id, graphs in arbors.items():
         subdomains:List = []
         arbors2[skeleton_id] = subdomains
@@ -74,7 +74,6 @@ def split_by_synapse_domain(bandwidth, locations, arbors, treenode_connector, mi
             connector_ids =[]
             relation_ids = []
             for treenode_id in filter(treenode_connector.has_key, graph.nodes_iter()): # type: ignore
-                                                                                       # this is from networkx and returns an iterator over tuples
                 for c in treenode_connector.get(treenode_id):
                     connector_id, relation = c
                     treenode_ids.append(treenode_id)
@@ -165,8 +164,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
         skeleton_synapses[row[3]][row[1]].append(row[2])
 
     # Cluster by synapses
-    minis:DefaultDict[Any, List] = defaultdict(list)
-                              # skeleton_id vs list of minified graphs
+    minis:DefaultDict[Any, List] = defaultdict(list)  # skeleton_id vs list of minified graphs
     locations = None
     whole_arbors = arbors
     if expand and bandwidth > 0:
@@ -390,8 +388,7 @@ def _node_centrality_by_synapse_db(skeleton_id:Union[int,str]) -> Dict:
     WHERE t.skeleton_id = %s
     ''', (skeleton_id))
 
-    nodes:Dict = {}
-               # node ID vs Counts
+    nodes:Dict = {}  # node ID vs Counts
     tree = nx.DiGraph()
     root = None
     totalInputs = 0

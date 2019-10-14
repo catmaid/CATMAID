@@ -30,8 +30,7 @@ def neuroml_single_cell(skeleton_id, nodes, pre, post) -> Cell:
     """
 
     # Collect the children of every node
-    successors:DefaultDict[Any, List] = defaultdict(list)
-                                   # parent node ID vs list of children node IDs
+    successors:DefaultDict[Any, List] = defaultdict(list)  # parent node ID vs list of children node IDs
     rootID = None
     for nodeID, props in nodes.items():
         parentID = props[0]

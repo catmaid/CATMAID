@@ -492,8 +492,7 @@ def contributor_statistics_multiple(request:HttpRequest, project_id=None, skelet
 
     rev = None
     last_skeleton_id = None
-    review_contributors:DefaultDict[Any, int] = defaultdict(int)
-                                           # reviewer_id vs count of nodes reviewed
+    review_contributors:DefaultDict[Any, int] = defaultdict(int)  # reviewer_id vs count of nodes reviewed
 
     for row in Review.objects.filter(skeleton_id__in=skeleton_ids).order_by('skeleton').values_list('reviewer', 'treenode', 'review_time', 'skeleton_id').iterator():
         if last_skeleton_id != row[3]:

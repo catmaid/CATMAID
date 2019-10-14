@@ -1170,8 +1170,7 @@ def _measure_skeletons(skeleton_ids) -> Dict[Any, Any]:
             self.n_pre = 0
             self.n_post = 0
 
-    skeletons:Dict[Any, Skeleton] = {}
-                   # skeleton ID vs (node ID vs Node)
+    skeletons:Dict[Any, Skeleton] = {}  # skeleton ID vs (node ID vs Node)
     for row in cursor.fetchall():
         if row[2] not in skeletons:
             skeleton = Skeleton()

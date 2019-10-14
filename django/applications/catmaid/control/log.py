@@ -54,8 +54,7 @@ def log(logger, level:str, msg:str) -> None:
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_logs(request:HttpRequest, project_id=None) -> JsonResponse:
     if 'user_id' in request.POST:
-        user_id:Optional[int] = int(request.POST.get('user_id', -1))
-                                                       # We can see logs for different users
+        user_id:Optional[int] = int(request.POST.get('user_id', -1))  # logs for different users
     else:
         user_id = None
     whitelist = get_request_bool(request.POST, 'whitelist', False)

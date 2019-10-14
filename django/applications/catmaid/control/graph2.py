@@ -135,8 +135,9 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold,
         if row[0] == current_skid:
             # Build the tree, breaking it at the low-confidence edges
             if row[2] and row[3] >= confidence_threshold:
-                    tree.add_edge(row[2], row[1]) # type: ignore
-                                                  # mypy cannot prove this will be a DiGraph by here
+                # mypy cannot prove this will be a DiGraph by here
+                tree.add_edge(row[2], row[1])  # type: ignore
+
             continue
 
         if tree:
@@ -152,8 +153,7 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold,
         nodeIDs.extend(split_by_confidence(current_skid, tree, stc[current_skid], connectors))
 
     # Create the edges of the graph from the connectors, which was populated as a side effect of 'split_by_confidence'
-    edges:DefaultDict = defaultdict(partial(defaultdict, make_new_synapse_count_array))
-                                                                            # pre vs post vs count
+    edges:DefaultDict = defaultdict(partial(defaultdict, make_new_synapse_count_array))  # pre vs post vs count
     for c in connectors.values():
         for pre in c[source_rel_id]:
             for post in c[target_rel_id]:
@@ -225,8 +225,8 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
             if row[0] == current_skid:
                 # Build the tree, breaking it at the low-confidence edges
                 if row[2] and row[3] >= confidence_threshold:
-                        tree.add_edge(row[2], row[1]) # type: ignore
-                                                      # mypy cannot prove this will be a nx.DiGraph by here
+                    # mypy cannot prove this will be a nx.DiGraph by here
+                    tree.add_edge(row[2], row[1])  # type: ignore
                 continue
 
             if tree:
@@ -274,8 +274,8 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
             locations[row[1]] = row[4:] # type: ignore
                                         # mypy cannot prove this will have a value by here
             if row[2] and row[3] >= confidence_threshold:
-                    tree.add_edge(row[2], row[1]) # type: ignore
-                                                  # mypy cannot prove this will have a value by here
+                # mypy cannot prove this will have a value by here
+                tree.add_edge(row[2], row[1])  # type: ignore
             continue
 
         if tree:

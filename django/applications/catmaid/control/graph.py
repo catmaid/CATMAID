@@ -25,7 +25,7 @@ from catmaid.control.link import KNOWN_LINK_PAIRS
 from catmaid.control.review import get_treenodes_to_reviews
 from catmaid.control.tree_util import simplify, find_root, reroot, partition, \
         spanning_tree, cable_length
-from catmaid.control.synapseclustering import  tree_max_density
+from catmaid.control.synapseclustering import tree_max_density
 
 
 def split_by_confidence_and_add_edges(confidence_threshold, digraphs, rows) -> Dict:

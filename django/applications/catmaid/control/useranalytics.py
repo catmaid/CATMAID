@@ -26,7 +26,7 @@ try:
     matplotlib.use('svg')
 
     import matplotlib.pyplot as plt
-    from matplotlib.dates import  DateFormatter, DayLocator
+    from matplotlib.dates import DateFormatter, DayLocator
     from pylab import figure
     from matplotlib.backends.backend_svg import FigureCanvasSVG
 except ImportError:

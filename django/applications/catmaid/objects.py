@@ -205,7 +205,7 @@ class Skeleton(object):
         threshold value in seconds.
         """
         sum = 0
-        for ID_from, ID_to, d  in self.graph.edges(data=True):
+        for ID_from, ID_to, d in self.graph.edges(data=True):
             if d['delta_creation_time'].seconds < threshold:
                 sum += d['delta_creation_time'].seconds
         return sum

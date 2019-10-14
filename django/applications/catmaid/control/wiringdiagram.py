@@ -77,10 +77,10 @@ def get_wiring_diagram(project_id=None, lower_treenode_number_limit=0) -> Dict[s
     nodes=[]
     for k,v in nodes_tmp.items():
         nodes.append(
-                {
+            {
                 "id": str(k),
                 "label": "Skeleton "+str(k),
-                'node_count': skeletons[k]
+                'node_count': skeletons[k],
             }
         )
 

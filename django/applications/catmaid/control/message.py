@@ -32,8 +32,8 @@ def get_latest_unread_date(request:HttpRequest) -> JsonResponse:
 def list_messages(request:HttpRequest, project_id=None) -> JsonResponse:
     messages = Message.objects.filter(
         user=request.user,
-        read=False)\
-    .order_by('-time')
+        read=False,
+    ).order_by('-time')
 
     def message_to_dict(message):
         return {

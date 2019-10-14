@@ -610,7 +610,8 @@ def connector_associated_edgetimes(request:HttpRequest, project_id=None) -> Json
 
     def default(obj):
         """Default JSON serializer."""
-        import calendar, datetime
+        import calendar
+        import datetime
 
         if isinstance(obj, datetime.datetime):
             if obj.utcoffset() is not None: # type: ignore

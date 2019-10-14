@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import re
-import cProfile, pstats
+import cProfile
+import pstats
 import logging
 
 from traceback import format_exc
@@ -103,7 +104,8 @@ class AjaxExceptionMiddleware(object):
             'meta': getattr(exception, 'meta', None),
         }
         if settings.DEBUG:
-            import sys, traceback
+            import sys
+            import traceback
             (exc_type, exc_info, tb) = sys.exc_info()
             response['info'] = str(exc_info)
             response['traceback'] = ''.join(traceback.format_tb(tb))

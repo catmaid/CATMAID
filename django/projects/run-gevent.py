@@ -8,7 +8,8 @@ monkey.patch_all()
 # Import the rest
 from django.core.wsgi import get_wsgi_application
 from gevent.wsgi import WSGIServer
-import os, sys
+import os
+import sys
 import mysite.settings as settings
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mysite.settings")

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import logging, os, re
+import logging
+import os
+import re
 import functools
 
 from selenium import webdriver

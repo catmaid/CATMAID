@@ -1111,7 +1111,8 @@ def skeleton_with_metadata(request:HttpRequest, project_id=None, skeleton_id=Non
 
     def default(obj) -> int:
         """Default JSON serializer."""
-        import calendar, datetime
+        import calendar
+        import datetime
 
         if isinstance(obj, datetime.datetime):
             if obj.utcoffset() is not None:

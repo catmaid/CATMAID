@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import logging, json, os
+import logging
+import json
+import os
 from typing import List
 
 from catmaid import history, spatial

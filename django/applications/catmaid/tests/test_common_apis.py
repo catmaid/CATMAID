@@ -302,16 +302,17 @@ class ViewPageTests(TestCase, AssertStatusMixin):
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
-            {'can_administer': [],
-             'add_project': [],
-             'can_annotate': [3],
-             'can_annotate_with_token': [],
-             'change_project': [],
-             'can_browse': [3],
-             'can_import': [],
-             'can_queue_compute_task': [],
-             'delete_project': [],
-             'view_project': [],
+            {
+                'can_administer': [],
+                'add_project': [],
+                'can_annotate': [3],
+                'can_annotate_with_token': [],
+                'change_project': [],
+                'can_browse': [3],
+                'can_import': [],
+                'can_queue_compute_task': [],
+                'delete_project': [],
+                'view_project': [],
             }, [u'test1']]
         self.assertEqual(expected_result, parsed_response)
 

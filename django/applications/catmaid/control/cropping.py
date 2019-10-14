@@ -680,7 +680,7 @@ def crop(request:HttpRequest, project_id=None) -> JsonResponse:
                 err_message += str( n+1 ) + ". " + errtxt
             else:
                 err_message += ", " + str( n+1 ) + ". " + errtxt
-        raise ValueError(error_message)
+        raise ValueError(err_message)
 
     result = start_asynch_process(job)
     return result

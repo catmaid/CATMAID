@@ -3,8 +3,8 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.core.management import call_command
 
-from catmaid.models import *
-from catmaid.fields import *
+from catmaid.fields import Double3D, Integer3D
+from catmaid.models import Project, ProjectStack, Stack, StackMirror, User
 
 class Command(BaseCommand):
     help = "Create 3 example projects in CATMAID, if they don't already exist"

@@ -1156,8 +1156,7 @@ def _measure_skeletons(skeleton_ids) -> Dict[Any, Any]:
             self.wx = x  # weighted average of itself and neighbors
             self.wy = y
             self.wz = z
-            self.children:Dict[Any, float] = {}
-                                # node ID vs distance - is first type an int or an str?
+            self.children:Dict[Any, float] = {}  # node ID vs distance - is first type an int or an str?
 
     class Skeleton():
         def __init__(self):

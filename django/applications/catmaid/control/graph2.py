@@ -271,8 +271,8 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
     for row in cursor.fetchall():
         if row[0] == current_skid:
             # Build the tree, breaking it at the low-confidence edges
-            locations[row[1]] = row[4:] # type: ignore
-                                        # mypy cannot prove this will have a value by here
+            # mypy cannot prove this will have a value by here
+            locations[row[1]] = row[4:]  # type: ignore
             if row[2] and row[3] >= confidence_threshold:
                 # mypy cannot prove this will have a value by here
                 tree.add_edge(row[2], row[1])  # type: ignore
@@ -298,8 +298,7 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
 
 
     # Create the edges of the graph
-    edges:DefaultDict = defaultdict(partial(defaultdict, make_new_synapse_count_array))
-                                                                            # pre vs post vs count
+    edges:DefaultDict = defaultdict(partial(defaultdict, make_new_synapse_count_array))  # pre vs post vs count
     for c in connectors.values():
         for pre in c[source_rel_id]:
             for post in c[target_rel_id]:

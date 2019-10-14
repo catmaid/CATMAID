@@ -172,9 +172,11 @@ class ClusteringWizard(SessionWizardView):
 
         # Create binary matrix
         logger.debug("Clustering: Creating binary matrix")
+
+        # maintenance concern: this wrapper for graphs_instantiate_features
+        # is required for the later bin_matrix.tolist() to be valid
         bin_matrix:np.ndarray = create_binary_matrix(graphs, features)
-                                                            # maintenance concern: this wrapper for graphs_instantiate_features
-                                                            # is required for the later bin_matrix.tolist() to be valid
+
         # Calculate the distance matrix
         logger.debug("Clustering: creating distsance matrix")
         dst_matrix = dist.pdist(bin_matrix, metric)

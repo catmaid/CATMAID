@@ -6291,7 +6291,6 @@ var SkeletonAnnotations = {};
               if ("" === val) {
                 SkeletonAnnotations.Tag.updateTags(tracingOverlay);
                 SkeletonAnnotations.Tag.removeTagbox();
-                tracingOverlay.updateNodes();
               } else {
                 SkeletonAnnotations.Tag.pushRecentLabel(val);
               }

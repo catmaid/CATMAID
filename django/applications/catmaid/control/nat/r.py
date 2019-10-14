@@ -123,13 +123,13 @@ def export_skeleton_as_nrrd_async(skeleton_id, source_ref, target_ref, user_id,
                                   mirror=True, create_message=True) -> str:
 
     result = export_skeleton_as_nrrd(project_id, skeleton_id, source_ref,
-            target_ref, user_id, mirror)
+            target_ref, user_id, mirror) # FIXME: this function doesn't get project_id
     if create_message:
         msg = Message()
         msg.user = User.objects.get(pk=int(user_id))
         msg.read = False
         if result['errors']:
-            msg.title = f"No NRRD file could be creaed for skeleton {skeleton_id}"
+            msg.title = f"No NRRD file could be created for skeleton {skeleton_id}"
             errs = "\n".join(result['errors'])
             msg.text = f"There was at least one error during the NRRD export: {errs}"
             msg.action = ""
@@ -185,7 +185,7 @@ def export_skeleton_as_nrrd(project_id, skeleton_id, source_ref, target_ref,
 
 
         object_ids = [skeleton_id]
-        conn = get_catmaid_connection(user.id) if use_http else None
+        conn = get_catmaid_connection(user_id) if use_http else None
 
         logger.debug(f'Fetching {len(object_ids)} skeletons')
         # Note: scaling down to um

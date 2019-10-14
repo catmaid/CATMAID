@@ -212,7 +212,7 @@ def check_media_path(app_configs, **kwargs) -> List[str]:
                 try:
                     os.makedirs(sub_output_dir)
                     logger.info(f'Created output folder {sub_output_dir}')
-                except OSError:
+                except OSError as e:
                     messages.append(Warning(f"Could not create output folder {sub_output_dir}: {str(e)}"))
             elif not os.access(sub_output_dir, os.W_OK):
                 messages.append(Warning(f"The output folder {sub_output_dir} is not writable"))

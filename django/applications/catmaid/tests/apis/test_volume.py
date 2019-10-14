@@ -25,7 +25,9 @@ class VolumeTests(CatmaidApiTestCase):
 
     def setUp(self):
         super().setUp()
-        self.test_vol_1_box = BoxVolume(self.test_project_id, self.test_user_id, {
+        self.test_vol_1_box = BoxVolume(
+            self.test_project_id, self.test_user_id,
+            {
                 'title': 'Test volume 1',
                 'type': 'box',
                 'comment': 'Comment on test volume 1',
@@ -35,7 +37,8 @@ class VolumeTests(CatmaidApiTestCase):
                 'max_x': 1,
                 'max_y': 1,
                 'max_z': 1
-            })
+            }
+        )
         self.test_vol_1_id = self.test_vol_1_box.save()
 
         cursor = connection.cursor()
@@ -139,9 +142,9 @@ class VolumeTests(CatmaidApiTestCase):
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(parsed_response['name'], 'cube')
         self.assertEqual(parsed_response['bbox'], {
-                'min': {'x': 0, 'y': 0, 'z': 0},
-                'max': {'x': 1, 'y': 1, 'z': 1}
-            })
+            'min': {'x': 0, 'y': 0, 'z': 0},
+            'max': {'x': 1, 'y': 1, 'z': 1}
+        })
 
     def test_export_stl(self):
         self.fake_authentication()

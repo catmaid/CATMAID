@@ -52,28 +52,28 @@ class PipelineSpecUpdater(object):
 
 STYLESHEETS = OrderedDict()
 STYLESHEETS['libraries'] = {
-        'source_filenames': (
-            'libs/jquery/themes/smoothness/jquery-ui.css',
-            'libs/jquery/datatable/css/demo_table.css',
-            'libs/jquery/datatable/extras/Buttons/css/buttons.dataTables.css',
-            'libs/jquery/jquery.growl.css',
-            'libs/jquery/jquery-ui.combobox.css',
-            'libs/jsTree/themes/default/style.css',
-        ),
-        'output_filename': 'css/libraries.css',
-        'extra_context': {
-            'media': 'screen,projection',
-        }
+    'source_filenames': (
+        'libs/jquery/themes/smoothness/jquery-ui.css',
+        'libs/jquery/datatable/css/demo_table.css',
+        'libs/jquery/datatable/extras/Buttons/css/buttons.dataTables.css',
+        'libs/jquery/jquery.growl.css',
+        'libs/jquery/jquery-ui.combobox.css',
+        'libs/jsTree/themes/default/style.css',
+    ),
+    'output_filename': 'css/libraries.css',
+    'extra_context': {
+        'media': 'screen,projection',
     }
+}
 STYLESHEETS['catmaid'] = {
-        'source_filenames': (
-            'css/*.css',
-        ),
-        'output_filename': 'css/catmaid.css',
-        'extra_context': {
-            'media': 'screen,projection',
-        }
+    'source_filenames': (
+        'css/*.css',
+    ),
+    'output_filename': 'css/catmaid.css',
+    'extra_context': {
+        'media': 'screen,projection',
     }
+}
 
 
 libraries_js = OrderedDict([

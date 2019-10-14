@@ -316,14 +316,17 @@ def copy_annotations(source_pid, target_pid, import_treenodes=True,
 
     if import_volumes:
         # Copy connectors from source to target
-        cursor.execute('''
+        cursor.execute(
+            '''
             INSERT INTO catmaid_volume (project_id, user_id, creation_time,
                 edition_time, editor_id, name, comment, geometry)
             SELECT %(target_pid)s, user_id, creation_time, now(),
                 edition_time, editor_id, name, comment, geometry
             FROM catmaid_volume v
             WHERE v.project_id=%(source_pid)s
-            ''', {
+            ''',
+            {
                 'target_pid': target_pid,
                 'source_pid': source_pid,
-            })
+            }
+        )

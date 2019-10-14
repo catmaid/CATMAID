@@ -51,11 +51,15 @@ def export_jsongraph(request:HttpRequest, project_id) -> JsonResponse:
     for g1, g2, props in circuit.edges_iter(data=True):
         id1 = circuit.node[g1]['id']
         id2 = circuit.node[g2]['id']
-        newgraph.add_edge( id1, id2, {
-           'id': '%s-%s' % (id1, id2),
-           'weight': props['c'],
-           'label': str(props['c']) if props['directed'] else None,
-           'directed': props['directed'] })
+        newgraph.add_edge(
+            id1, id2,
+            {
+                'id': '%s-%s' % (id1, id2),
+                'weight': props['c'],
+                'label': str(props['c']) if props['directed'] else None,
+                'directed': props['directed'],
+            },
+        )
 
     return JsonResponse(json_graph.node_link_data(newgraph), safe=False,
             json_dumps_params={'indent': 2})

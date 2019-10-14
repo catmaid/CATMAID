@@ -128,16 +128,16 @@ class ClusteringWizard(SessionWizardView):
                 'leaf should be used as features, too.'
         elif self.steps.current == 'classifications':
             extra_context['description'] = \
-               'Below are all classification graphs shown, that are based ' \
-               'on the previeously selected ontologies. Please select those ' \
-               'you want to be considered in the clustering.'
+                'Below are all classification graphs shown, that are based ' \
+                'on the previeously selected ontologies. Please select those ' \
+                'you want to be considered in the clustering.'
         elif self.steps.current == 'features':
             extra_context['description'] = \
-               'In this page you can select all the features you would ' \
-               'to be taken into account by the clustering. A selected term ' \
-               'means the path from the ontologie\'s root to this term will ' \
-               'be used as feature. By default all possible features of all ' \
-               'selected ontologies are selected.'
+                'In this page you can select all the features you would ' \
+                'to be taken into account by the clustering. A selected term ' \
+                'means the path from the ontologie\'s root to this term will ' \
+                'be used as feature. By default all possible features of all ' \
+                'selected ontologies are selected.'
             # Create formsets for before selected ontologies and add them to
             # context. Each formset ID will have the prefix "ontology-<ID>".
             ontologies = self.get_cleaned_data_for_step(
@@ -146,8 +146,9 @@ class ClusteringWizard(SessionWizardView):
             formsets = []
             for o in ontologies:
                 formsets.append({
-                   'ontology': o,
-                   'formset': FeatureFormset(prefix='ontology-' + str(o.id))})
+                    'ontology': o,
+                    'formset': FeatureFormset(prefix='ontology-' + str(o.id))
+                })
             extra_context['formsets'] = formsets
         else:
             extra_context['description'] = \

@@ -398,7 +398,8 @@ def _volume_collection(project_id, volume_ids, with_meshes=False):
         extra_fields = ', Box3D(geometry) as bbox, ST_Asx3D(geometry) as mesh'
 
     cursor = connection.cursor()
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT v.id, v.name, v.comment, v.user_id, v.editor_id, v.project_id,
             v.creation_time, v.edition_time,
             JSON_AGG(ann.name) FILTER (WHERE ann.name IS NOT NULL) AS annotations,
@@ -419,10 +420,9 @@ def _volume_collection(project_id, volume_ids, with_meshes=False):
                 )
             )
         GROUP BY v.id
-        """.format(**{
-            'extra_fields': extra_fields,
-            'extra_joins': '\n'.join(extra_joins),
-        }), params)
+        """.format(extra_fields=extra_fields, extra_joins='\n'.join(extra_joins)),
+        params,
+    )
 
     return {
         'columns': [r[0] for r in cursor.description],

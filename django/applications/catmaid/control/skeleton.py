@@ -54,7 +54,7 @@ def get_skeleton_permissions(request:HttpRequest, project_id, skeleton_id) -> Js
         can_edit = False
 
     permissions = {
-      'can_edit': can_edit,
+        'can_edit': can_edit,
     }
 
     return JsonResponse(permissions)
@@ -1933,26 +1933,26 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids,
         extra_join = ''
 
     # Obtain all synapses made between row skeletons and column skeletons.
-    cursor.execute('''
-    SELECT t1.skeleton_id, t2.skeleton_id
-        {extra_select}
-    FROM treenode_connector t1,
-         treenode_connector t2
-        {extra_join}
-    WHERE t1.skeleton_id = ANY(%(row_skeleton_ids)s::integer[])
-      AND t2.skeleton_id = ANY(%(col_skeleton_ids)s::integer[])
-      AND t1.connector_id = t2.connector_id
-      AND t1.relation_id = %(pre_rel_id)s
-      AND t2.relation_id = %(post_rel_id)s
-    '''.format(**{
-      'extra_select': extra_select,
-      'extra_join': extra_join,
-    }), {
-      'row_skeleton_ids': list(row_skeleton_ids),
-      'col_skeleton_ids': list(col_skeleton_ids),
-      'pre_rel_id': pre_rel_id,
-      'post_rel_id': post_rel_id
-    })
+    cursor.execute(
+        '''
+        SELECT t1.skeleton_id, t2.skeleton_id
+            {extra_select}
+        FROM treenode_connector t1,
+             treenode_connector t2
+            {extra_join}
+        WHERE t1.skeleton_id = ANY(%(row_skeleton_ids)s::integer[])
+          AND t2.skeleton_id = ANY(%(col_skeleton_ids)s::integer[])
+          AND t1.connector_id = t2.connector_id
+          AND t1.relation_id = %(pre_rel_id)s
+          AND t2.relation_id = %(post_rel_id)s
+        '''.format(extra_select=extra_select, extra_join=extra_join),
+        {
+            'row_skeleton_ids': list(row_skeleton_ids),
+            'col_skeleton_ids': list(col_skeleton_ids),
+            'pre_rel_id': pre_rel_id,
+            'post_rel_id': post_rel_id
+        },
+    )
 
     # Build a sparse connectivity representation. For all skeletons requested
     # map a dictionary of partner skeletons and the number of synapses
@@ -2864,10 +2864,10 @@ def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
     node_id_map = {n: d['id'] for n, d in import_info['graph'].nodes_iter(data=True)}
 
     return JsonResponse({
-            'neuron_id': import_info['neuron_id'],
-            'skeleton_id': import_info['skeleton_id'],
-            'node_id_map': node_id_map,
-        })
+        'neuron_id': import_info['neuron_id'],
+        'skeleton_id': import_info['skeleton_id'],
+        'node_id_map': node_id_map,
+    })
 
 
 def _import_skeleton(user, project_id, arborescence, neuron_id=None,

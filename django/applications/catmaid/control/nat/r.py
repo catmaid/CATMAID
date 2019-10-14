@@ -199,11 +199,11 @@ def export_skeleton_as_nrrd(project_id, skeleton_id, source_ref, target_ref,
             xt = rnattemplatebrains.mirror_brain(xt, target_ref_tb)
 
         xdp = rnat.dotprops(xt, **{
-                'k': tangent_neighbors,
-                'resample': resample_by * nm_to_um,
-                '.progress': 'none',
-                'OmitFailures': omit_failures,
-            })
+            'k': tangent_neighbors,
+            'resample': resample_by * nm_to_um,
+            '.progress': 'none',
+            'OmitFailures': omit_failures,
+        })
 
         xdp.slots['regtemplate'] = rnattemplatebrains.regtemplate(xt)
 
@@ -1241,12 +1241,14 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     # Get top N forward scores for input query as a row of the
                     # target table format (scores for single query object form a
                     # row).
-                    result_row = pd.DataFrame([
+                    result_row = pd.DataFrame(
+                        [
                             # Forward score:
                             [scores_df.loc[name].score for name in top_n_names_names]
                         ],
                         index=[query_name],
-                        columns=list(top_n_names_names))
+                        columns=list(top_n_names_names),
+                    )
 
                 # Collect top N scores for each query object and store them
                 # in new pandas table that contains the target columns of

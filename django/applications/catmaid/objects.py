@@ -379,11 +379,11 @@ def compartmentalize_skeletongroup( skeleton_id_list, project_id, **kwargs ):
                 neuronname = f'{skeleton.neuron.name} [{i}]'
 
             resultgraph.add_node(f'{skeleton_id}_{i}', {
-                    'neuronname': neuronname,
-                    'skeletonid': str(skeleton_id),
-                    'compartment_index': i,
-                    'node_count': subg.number_of_nodes(),
-                })
+                'neuronname': neuronname,
+                'skeletonid': str(skeleton_id),
+                'compartment_index': i,
+                'node_count': subg.number_of_nodes(),
+            })
 
     connectors:Dict = {}
     for skeleton_id, skeleton in skelgroup.skeletons.items():

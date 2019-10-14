@@ -422,10 +422,10 @@ class StatsApiTests(CatmaidApiTestCase):
         }
 
         response = self.client.get('/%d/stats/user-history' % (self.test_project_id,), {
-                'start_date': '2017-07-01',
-                'end_date': '2017-08-01',
-                'time_zone': 'UTC'
-            })
+            'start_date': '2017-07-01',
+            'end_date': '2017-08-01',
+            'time_zone': 'UTC'
+        })
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(expected_stats, parsed_response)
@@ -434,10 +434,10 @@ class StatsApiTests(CatmaidApiTestCase):
         stats.populate_stats_summary(self.test_project_id)
 
         response = self.client.get('/%d/stats/user-history' % (self.test_project_id,), {
-                'start_date': '2017-07-01',
-                'end_date': '2017-08-01',
-                'time_zone': 'UTC'
-            })
+            'start_date': '2017-07-01',
+            'end_date': '2017-08-01',
+            'time_zone': 'UTC'
+        })
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(expected_stats, parsed_response)
@@ -702,10 +702,10 @@ class StatsApiTests(CatmaidApiTestCase):
         }
 
         response = self.client.get('/%d/stats/user-history' % (self.test_project_id,), {
-                'start_date': '2017-07-01',
-                'end_date': '2017-08-01',
-                'time_zone': 'America/New_York'
-            })
+            'start_date': '2017-07-01',
+            'end_date': '2017-08-01',
+            'time_zone': 'America/New_York'
+        })
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(expected_stats, parsed_response)
@@ -714,10 +714,10 @@ class StatsApiTests(CatmaidApiTestCase):
         stats.populate_stats_summary(self.test_project_id)
 
         response = self.client.get('/%d/stats/user-history' % (self.test_project_id,), {
-                'start_date': '2017-07-01',
-                'end_date': '2017-08-01',
-                'time_zone': 'America/New_York'
-            })
+            'start_date': '2017-07-01',
+            'end_date': '2017-08-01',
+            'time_zone': 'America/New_York'
+        })
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(expected_stats, parsed_response)

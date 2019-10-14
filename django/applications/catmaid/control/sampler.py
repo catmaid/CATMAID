@@ -26,18 +26,18 @@ known_leaf_modes = frozenset(('ignore', 'merge', 'short-interval', 'merge-or-cre
 
 def serialize_sampler(sampler) -> Dict[str, Any]:
     return {
-       'id': sampler.id,
-       'creation_time': float(sampler.creation_time.strftime('%s')),
-       'edition_time': float(sampler.edition_time.strftime('%s')),
-       'interval_length': sampler.interval_length,
-       'interval_error': sampler.interval_error,
-       'leaf_segment_handling': sampler.leaf_segment_handling,
-       'merge_limit': sampler.merge_limit,
-       'review_required': sampler.review_required,
-       'create_interval_boundaries': sampler.create_interval_boundaries,
-       'state_id': sampler.sampler_state_id,
-       'skeleton_id': sampler.skeleton_id,
-       'user_id': sampler.user_id,
+        'id': sampler.id,
+        'creation_time': float(sampler.creation_time.strftime('%s')),
+        'edition_time': float(sampler.edition_time.strftime('%s')),
+        'interval_length': sampler.interval_length,
+        'interval_error': sampler.interval_error,
+        'leaf_segment_handling': sampler.leaf_segment_handling,
+        'merge_limit': sampler.merge_limit,
+        'review_required': sampler.review_required,
+        'create_interval_boundaries': sampler.create_interval_boundaries,
+        'state_id': sampler.sampler_state_id,
+        'skeleton_id': sampler.skeleton_id,
+        'user_id': sampler.user_id,
     }
 
 def serialize_domain(domain, with_ends=True, with_intervals=True) -> Dict[str, Any]:
@@ -808,19 +808,21 @@ def list_sampler_domains(request:HttpRequest, project_id, sampler_id) -> JsonRes
     domains = SamplerDomain.objects.filter(sampler_id=sampler_id) \
             .prefetch_related('samplerdomainend_set')
 
-    return JsonResponse([{
-       'id': d.id,
-       'creation_time': float(d.creation_time.strftime('%s')),
-       'edition_time': float(d.edition_time.strftime('%s')),
-       'parent_interval_id': d.parent_interval_id,
-       'start_node_id': d.start_node_id,
-       'type_id': d.domain_type_id,
-       'user_id': d.user_id,
-       'ends': [{
-            'id': e.id,
-            'node_id': e.end_node_id,
-        } for e in d.samplerdomainend_set.all()]
-    } for d in domains], safe=False)
+    return JsonResponse([
+        {
+            'id': d.id,
+            'creation_time': float(d.creation_time.strftime('%s')),
+            'edition_time': float(d.edition_time.strftime('%s')),
+            'parent_interval_id': d.parent_interval_id,
+            'start_node_id': d.start_node_id,
+            'type_id': d.domain_type_id,
+            'user_id': d.user_id,
+            'ends': [
+                {'id': e.id, 'node_id': e.end_node_id}
+                for e in d.samplerdomainend_set.all()
+            ],
+        } for d in domains
+    ], safe=False)
 
 
 @api_view(['POST'])
@@ -1276,13 +1278,13 @@ def list_domain_intervals(request:HttpRequest, project_id, domain_id) -> JsonRes
     intervals = SamplerInterval.objects.filter(domain_id=domain_id)
 
     return JsonResponse([{
-       'id': i.id,
-       'creation_time': float(i.creation_time.strftime('%s')),
-       'edition_time': float(i.edition_time.strftime('%s')),
-       'state_id': i.interval_state_id,
-       'user_id': i.user_id,
-       'start_node_id': i.start_node_id,
-       'end_node_id': i.end_node_id
+        'id': i.id,
+        'creation_time': float(i.creation_time.strftime('%s')),
+        'edition_time': float(i.edition_time.strftime('%s')),
+        'state_id': i.interval_state_id,
+        'user_id': i.user_id,
+        'start_node_id': i.start_node_id,
+        'end_node_id': i.end_node_id
     } for i in intervals], safe=False)
 
 

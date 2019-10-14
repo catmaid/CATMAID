@@ -49,7 +49,7 @@ using this <a href="http://fly.mpi-cbg.de/~saalfeld/download/volume.tar.bz2">sce
             'mirrors': [{
                 'title': 'FIB Public copy',
                 'image_base': 'http://incf.ini.uzh.ch/image-stack-fib/',
-             }]})
+            }]})
 
         # Make sure that each project and its stacks exist, and are
         # linked via ProjectStack:
@@ -61,9 +61,10 @@ using this <a href="http://fly.mpi-cbg.de/~saalfeld/download/volume.tar.bz2">sce
                 stack, _ = Stack.objects.get_or_create(
                     title=stack_dict['title'],
                     defaults={
-                       'dimension': stack_dict['dimension'],
-                       'resolution': stack_dict['resolution'],
-                    })
+                        'dimension': stack_dict['dimension'],
+                        'resolution': stack_dict['resolution'],
+                    }
+                )
                 mirrors = list(StackMirror.objects.filter(stack=stack))
                 if not mirrors:
                     for m in stack_dict['mirrors']:

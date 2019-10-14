@@ -602,8 +602,8 @@ def query_annotated_classinstances(request:HttpRequest, project_id:Optional[Unio
             range_length, with_annotations, with_timestamps=with_timestamps)
 
     return JsonResponse({
-      'entities': entities,
-      'totalRecords': num_total_records,
+        'entities': entities,
+        'totalRecords': num_total_records,
     })
 
 

@@ -414,7 +414,7 @@ def remove_classification_graph(request:HttpRequest, workspace_pid, project_id=N
         msg = 'The classification graph has been removed, along with its ' + str(num_removed_ci) + ' class instances.'
 
     return JsonResponse({
-      'success': msg
+        'success': msg
     })
 
 def traverse_class_instances(node, func) -> None:

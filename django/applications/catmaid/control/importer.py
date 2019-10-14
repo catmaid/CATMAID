@@ -954,14 +954,13 @@ def ensure_classes(project, classes, user):
             parent_relation_name = node.get('relation', None)
             if not parent_relation_name:
                 raise ValueError("Need parent relation for class \"" + name + "\"")
-            rel, _ = Relation.objects.get_or_create(project=project,
-                    relation_name=parent_relation_name, defaults={
-                      'user': user
-                    })
-            cls_cls, _ = ClassClass.objects.get_or_create(project=project,
-                    class_a=cls, class_b=parent, relation=rel, defaults={
-                      'user': user
-                    })
+            rel, _ = Relation.objects.get_or_create(
+                project=project,
+                relation_name=parent_relation_name, defaults={'user': user}
+            )
+            cls_cls, _ = ClassClass.objects.get_or_create(
+                project=project, class_a=cls, class_b=parent, relation=rel, defaults={'user': user}
+            )
 
         for child in node.get('children', []):
             create(child, cls)
@@ -980,10 +979,9 @@ def ensure_classes(project, classes, user):
         root_class = create(root_node)
         # Make sure roots are classification roots
         classification_root_link, _ = ClassClass.objects.get_or_create(
-                project=project, class_a=root_class,
-                class_b=classification_root_class, relation=is_a, defaults={
-                  'user': user
-                })
+            project=project, class_a=root_class,
+            class_b=classification_root_class, relation=is_a, defaults={'user': user}
+        )
 
 
 def ensure_class_instances(project, classification_paths, user, stack=None, stackgroup=None) -> None:

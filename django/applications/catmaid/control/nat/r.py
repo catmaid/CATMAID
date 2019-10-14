@@ -1586,7 +1586,7 @@ def neuronlist_for_skeletons(project_id, skeleton_ids, omit_failures=False,
         # Tags in Rpy2 format
         r_tags = {}
         for tag, node_ids in raw_tags.items():
-               r_tags[tag] = rinterface.IntSexpVector(node_ids)
+            r_tags[tag] = rinterface.IntSexpVector(node_ids)
 
         # Construct output similar to rcatmaid's request response parsing function.
         skeleton_data = robjects.ListVector({

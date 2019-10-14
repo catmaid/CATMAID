@@ -947,7 +947,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
         expected_result = [[383, 7850.0, 1970.0, 0.0], [391, 6740.0, 1530.0, 0.0]]
         parsed_response = [p[0] for p in parsed_response]
         for (expected, parsed) in zip(sorted(expected_result), sorted(parsed_response)):
-             self.assertEqual(expected, parsed)
+            self.assertEqual(expected, parsed)
 
 
     def test_suppressed_virtual_nodes(self):

@@ -183,7 +183,7 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
         # Add sub annotations, if requested
         sa_ids = sub_annotation_ids.get(not_annotation_set)
         if sa_ids and len(sa_ids):
-           current_not_annotation_ids.update(sa_ids)
+            current_not_annotation_ids.update(sa_ids)
         not_annotation_id_sets.append(current_not_annotation_ids)
 
     # Build needed joins for annotated_with search criteria

@@ -241,7 +241,7 @@ def activeTimesPerDay(active_bouts) -> Tuple[Any, List]:
     """
     # Return right away if there are no bouts
     if not active_bouts:
-      return [], []
+        return [], []
 
     # Find first event of first bout
     daystart = active_bouts[0].start.replace(
@@ -523,9 +523,9 @@ def eventsPerIntervalPerDayPlot(ax, times, start_date, end_date, interval=60) ->
         if np.sum(dat)==0:
             ignoredDays += 1
         else:
-           tmp, = ax.plot(timeaxis, dat, marker='s', linestyle='-.',alpha=0.5, color=cm(ind))
-           dats.append(tmp)
-           meandat += dat
+            tmp, = ax.plot(timeaxis, dat, marker='s', linestyle='-.',alpha=0.5, color=cm(ind))
+            dats.append(tmp)
+            meandat += dat
         ind += 1
 
     meandat = np.divide(meandat, daycount-ignoredDays)

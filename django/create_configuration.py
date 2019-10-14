@@ -87,7 +87,7 @@ data = re.sub('%s//' % known_protocols, '/', data)
 # has to be commented out. Otherwise, it would add an extra slash in
 # redirects.
 if len(catmaid_subdirectory) == 0:
-  data = re.sub(r'^FORCE_SCRIPT_NAME', '# FORCE_SCRIPT_NAME', data, flags=re.M)
+    data = re.sub(r'^FORCE_SCRIPT_NAME', '# FORCE_SCRIPT_NAME', data, flags=re.M)
 
 # Set default options for enabled tools
 if 'catmaid_default_enabled_tools' in locals():

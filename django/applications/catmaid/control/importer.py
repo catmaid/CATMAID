@@ -162,9 +162,9 @@ class PreStack(object):
                 self.stackgroups.append(PreStackGroup(stackgroup))
         # Collect classification information, if available
         if 'classification' in info_object:
-          self.classification = info_object['classification']
+            self.classification = info_object['classification']
         else:
-          self.classification = None
+            self.classification = None
 
         # Don't be considered known by default
         self.already_known = already_known
@@ -423,7 +423,7 @@ class ProjectSelector(object):
                 """)
                 stack_map:DefaultDict[Any, List] = defaultdict(list)
                 for row in cursor.fetchall():
-                  stack_map[tuple(sorted(row[1]))].append(row[0])
+                    stack_map[tuple(sorted(row[1]))].append(row[0])
 
                 for key, p in projects.items():
                     if p.already_known:
@@ -439,8 +439,8 @@ class ProjectSelector(object):
                         known_stack_image_bases_tuple = tuple(sorted(known_stack_image_bases))
                         known_projects = stack_map[known_stack_image_bases_tuple]
                         if known_projects:
-                          # First one wins
-                          p.set_known_pid(known_projects[0])
+                            # First one wins
+                            p.set_known_pid(known_projects[0])
 
         # Check for each project if it is already known
         for key,name in project_index:
@@ -1022,13 +1022,16 @@ def ensure_class_instances(project, classification_paths, user, stack=None, stac
             else:
                 ci = ci[0]
         else:
-          # Find existing class instance, also with passed in node name, expect
-          # a single root instance.
-          ci, _ = ClassInstance.objects.get_or_create(project=project, class_column=cls,
-              defaults={
-                  'user': user,
-                  'name': node
-              })
+            # Find existing class instance, also with passed in node name, expect
+            # a single root instance.
+            ci, _ = ClassInstance.objects.get_or_create(
+                project=project,
+                class_column=cls,
+                defaults={
+                    'user': user,
+                    'name': node
+                },
+            )
 
         return ci
     classification_project_class, _ = Class.objects.get_or_create(project=project,
@@ -1131,7 +1134,7 @@ def import_projects(user, pre_projects, tags, permissions,
                     # project, there is nothing left to do here. Otherwise, ignore
                     # existing stacks.
                     if all_stacks_linked:
-                      continue
+                        continue
                     # Merging projects means adding new stacks to an existing
                     # project, ignoring all existing linked stacks.
                     known_stack_action = 'ignore'
@@ -1196,26 +1199,25 @@ def import_projects(user, pre_projects, tags, permissions,
                 stack = None
 
                 if valid_link:
-                  if 'ignore' == known_stack_action:
-                      continue
-                  elif 'import' == known_stack_action:
-                      # Nothing to do, just for completeness
-                      pass
-                  elif 'override' == known_stack_action:
-                      # Copy properties of known imported stacks to matching
-                      # existing ones that have a valid link to the existing
-                      # project.
-                      stack = existing_stack
-                      for k,v in stack_properties.items():
-                        if hasattr(stack, k):
-                            setattr(stack, k, v)
-                        else:
-                            raise ValueError("Unknown stack field: " + k)
-                      stack.save()
-                      updated_stacks.append(stack)
-                  else:
-                      raise ValueError("Invalid action for known stacks: " +
-                          str(known_stack_action))
+                    if 'ignore' == known_stack_action:
+                        continue
+                    elif 'import' == known_stack_action:
+                        # Nothing to do, just for completeness
+                        pass
+                    elif 'override' == known_stack_action:
+                        # Copy properties of known imported stacks to matching
+                        # existing ones that have a valid link to the existing
+                        # project.
+                        stack = existing_stack
+                        for k, v in stack_properties.items():
+                            if hasattr(stack, k):
+                                setattr(stack, k, v)
+                            else:
+                                raise ValueError("Unknown stack field: " + k)
+                        stack.save()
+                        updated_stacks.append(stack)
+                    else:
+                        raise ValueError(f"Invalid action for known stacks: {known_stack_action}")
 
                 # TODO This breaks if the same stack is imported multiple times
                 # into the same imported project. Maybe we shouldn't only
@@ -1253,22 +1255,21 @@ def import_projects(user, pre_projects, tags, permissions,
                         known_mirrors = StackMirror.objects.filter(
                             image_base=m.image_base, stack=existing_stack)
                     if known_mirrors and len(known_mirrors) > 0:
-                      if 'ignore' == known_stack_action:
-                          continue
-                      elif 'import' == known_stack_action:
-                          pass
-                      elif 'override' == known_stack_action:
-                          # Find a linked (!) and matching mirror
-                          for mirror in known_mirrors:
-                              for k,v in mirror_properties.items():
-                                if hasattr(mirror, k):
-                                    setattr(mirror, k, v)
-                                else:
-                                    raise ValueError("Unknown mirror field: " + k)
-                              mirror.save()
-                      else:
-                          raise ValueError("Invalid action for known mirror: " +
-                             str(known_stack_action))
+                        if 'ignore' == known_stack_action:
+                            continue
+                        elif 'import' == known_stack_action:
+                            pass
+                        elif 'override' == known_stack_action:
+                            # Find a linked (!) and matching mirror
+                            for mirror in known_mirrors:
+                                for k, v in mirror_properties.items():
+                                    if hasattr(mirror, k):
+                                        setattr(mirror, k, v)
+                                    else:
+                                        raise ValueError("Unknown mirror field: " + k)
+                                mirror.save()
+                        else:
+                            raise ValueError(f"Invalid action for known mirror: {known_stack_action}")
                     else:
                         # Default to mirror creation
                         if not known_mirrors:
@@ -1370,25 +1371,25 @@ def import_projects(user, pre_projects, tags, permissions,
             # If unrefernced stacks and implicitely unreferenced stack groups
             # should be removed, find all of them and and remove them in one go.
             if remove_unref_stack_data:
-              cursor.execute("""
-                  SELECT s.id
-                  FROM stack s
-                  LEFT OUTER JOIN project_stack ps
-                    ON s.id = ps.stack_id
-                  WHERE
-                    ps.id IS NULL
-              """)
-              unused_stack_ids = [r[0] for r in cursor.fetchall()]
-              # Delete cascaded with the help of Django
-              Stack.objects.filter(id__in=unused_stack_ids).delete()
-              # Delete all empty stack groups
-              cursor.execute("""
-                  DELETE FROM stack_group
-                  USING stack_group sg
-                  LEFT OUTER JOIN stack_stack_group ssg
-                    ON sg.id = ssg.stack_id
-                  WHERE ssg.id IS NULL
-              """)
+                cursor.execute("""
+                    SELECT s.id
+                    FROM stack s
+                    LEFT OUTER JOIN project_stack ps
+                      ON s.id = ps.stack_id
+                    WHERE
+                      ps.id IS NULL
+                """)
+                unused_stack_ids = [r[0] for r in cursor.fetchall()]
+                # Delete cascaded with the help of Django
+                Stack.objects.filter(id__in=unused_stack_ids).delete()
+                # Delete all empty stack groups
+                cursor.execute("""
+                    DELETE FROM stack_group
+                    USING stack_group sg
+                    LEFT OUTER JOIN stack_stack_group ssg
+                      ON sg.id = ssg.stack_id
+                    WHERE ssg.id IS NULL
+                """)
 
         except Exception as e:
             import traceback

@@ -1085,9 +1085,9 @@ def check_annotations_on_split(project_id, skeleton_id, over_annotation_set,
     # Check if current set is equal to under or over set
     current_annotation_set = frozenset(a.name for a in annotation_query)
     if not current_annotation_set.difference(over_annotation_set):
-      return True
+        return True
     if not current_annotation_set.difference(under_annotation_set):
-      return True
+        return True
 
     return False
 
@@ -1927,11 +1927,11 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids,
     pre_rel_id = relation_map['presynaptic_to']
 
     if with_locations:
-      extra_select = ', c.id, c.location_x, c.location_y, c.location_z'
-      extra_join = 'JOIN connector c ON c.id = t2.connector_id'
+        extra_select = ', c.id, c.location_x, c.location_y, c.location_z'
+        extra_join = 'JOIN connector c ON c.id = t2.connector_id'
     else:
-      extra_select = ''
-      extra_join = ''
+        extra_select = ''
+        extra_join = ''
 
     # Obtain all synapses made between row skeletons and column skeletons.
     cursor.execute('''
@@ -1961,33 +1961,33 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids,
     # object with the fields 'count' and 'locations' is returned instead of a
     # single count.
     if with_locations:
-      outgoing:DefaultDict[Any, Dict] = defaultdict(dict)
-      for r in cursor.fetchall():
-          source, target = r[0], r[1]
-          mapping = outgoing[source]
-          connector_id = r[2]
-          info = mapping.get(target)
-          if not info:
-            info = { 'count': 0, 'locations': {} }
-            mapping[target] = info
-          count = info['count']
-          info['count'] = count + 1
+        outgoing:DefaultDict[Any, Dict] = defaultdict(dict)
+        for r in cursor.fetchall():
+            source, target = r[0], r[1]
+            mapping = outgoing[source]
+            connector_id = r[2]
+            info = mapping.get(target)
+            if not info:
+                info = { 'count': 0, 'locations': {} }
+                mapping[target] = info
+            count = info['count']
+            info['count'] = count + 1
 
-          if connector_id not in info['locations']:
-            location = [r[3], r[4], r[5]]
-            info['locations'][connector_id] = {
-              'pos': location,
-              'count': 1
-            }
-          else:
-            info['locations'][connector_id]['count'] += 1
+            if connector_id not in info['locations']:
+                location = [r[3], r[4], r[5]]
+                info['locations'][connector_id] = {
+                    'pos': location,
+                    'count': 1,
+                }
+            else:
+                info['locations'][connector_id]['count'] += 1
     else:
-      outgoing = defaultdict(dict)
-      for r in cursor.fetchall():
-          source, target = r[0], r[1]
-          mapping = outgoing[source]
-          count = mapping.get(target, 0)
-          mapping[target] = count + 1
+        outgoing = defaultdict(dict)
+        for r in cursor.fetchall():
+            source, target = r[0], r[1]
+            mapping = outgoing[source]
+            count = mapping.get(target, 0)
+            mapping[target] = count + 1
 
     return outgoing
 

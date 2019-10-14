@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging, os, re
+import functools
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -8,7 +9,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 import selenium.webdriver.support.expected_conditions as EC
 
-from unittest import skipUnless
+from unittest import SkipTest
 
 from django.conf import settings
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
@@ -19,6 +20,34 @@ from guardian.utils import get_anonymous_user
 
 
 logger = logging.getLogger(__name__)
+
+
+def credentials_available():
+    """Test if there are valid Saucelabs credentials set through environment
+    variables.
+    """
+    username = os.environ.get("SAUCE_USERNAME")
+    access_key = os.environ.get("SAUCE_ACCESS_KEY")
+    # The username 'ur-username' and the access key 'ur-access-key' are default
+    # values by Saucelabs that are set if no username or access key was provided
+    return username not in (None, 'ur-username') and \
+            access_key not in (None, 'ur-access-key')
+
+
+def gui_tests_enabled():
+    return settings.GUI_TESTS_ENABLED and \
+            (not settings.GUI_TESTS_REMOTE or credentials_available())
+
+
+def skipIfGUITestsDisabled(func):
+    """Skip a test if no Saucelaubs credentials can be found.
+    """
+    @functools.wraps(func)
+    def wrapper_decorator(*args, **kwargs):
+        if gui_tests_enabled():
+            return func(*args, **kwargs)
+        raise SkipTest('GUI tests are not enabled')
+    return wrapper_decorator
 
 
 class BasicUITest(StaticLiveServerTestCase):
@@ -73,11 +102,12 @@ class BasicUITest(StaticLiveServerTestCase):
         driver of saucelabs.com if GUI_TESTS_REMOTE is true).
         """
         super().setUp()
-        if settings.GUI_TESTS_ENABLED:
+        if gui_tests_enabled():
             if settings.GUI_TESTS_REMOTE:
                 # Set up Travis + Sauce Labs configuration
-                username = os.environ["SAUCE_USERNAME"]
-                access_key = os.environ["SAUCE_ACCESS_KEY"]
+                username = os.environ.get("SAUCE_USERNAME")
+                access_key = os.environ.get("SAUCE_ACCESS_KEY")
+
                 # Saucelab's linux platform only supports Chrome up to v48.
                 # Until this is updated, we have to work with their Windows
                 # platform to use Chrome >= v55.
@@ -114,7 +144,7 @@ class BasicUITest(StaticLiveServerTestCase):
         failure = self.list2reason(result.failures)
         ok = not error and not failure
 
-        if settings.GUI_TESTS_ENABLED:
+        if gui_tests_enabled():
             if settings.GUI_TESTS_REMOTE:
                 # Let saucelabs.com know about the outcome of this test
                 id = self.selenium.session_id
@@ -154,7 +184,7 @@ class BasicUITest(StaticLiveServerTestCase):
         """
         return self.live_server_url + path
 
-    @skipUnless(settings.GUI_TESTS_ENABLED, "GUI tests are disabled")
+    @skipIfGUITestsDisabled
     def test_home_page_login_logout(self):
         """Test if the test server is reachable, the index page can be parsed
         without syntax errors, has the correct page title and login/logout works

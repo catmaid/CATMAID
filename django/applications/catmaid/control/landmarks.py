@@ -586,7 +586,7 @@ class LandmarkGroupDetail(APIView):
 
         append_members = get_request_bool(request.data, 'append_members', False)
 
-        if not name and members == None:
+        if not name and members is None:
             raise ValueError('Need name or members parameter for update')
 
         landmarkgroup_class = Class.objects.get(project_id=project_id, class_name='landmarkgroup')

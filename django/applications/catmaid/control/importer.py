@@ -203,7 +203,7 @@ class PreProject:
             self.stacks.append(PreStack(s, project_url, data_folder))
 
         # Don't be considered known by default
-        self.already_known = already_known_pid != None
+        self.already_known = already_known_pid is not None
         self.already_known_pid = already_known_pid
         self.action = None
 
@@ -217,7 +217,7 @@ class PreProject:
             self.stackgroups.append(PreStackGroup(sg))
 
     def set_known_pid(self, pid) -> None:
-        self.already_known = pid != None
+        self.already_known = pid is not None
         self.already_known_pid = pid
 
     def imports_stack(self, stack) -> bool:

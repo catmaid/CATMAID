@@ -28,7 +28,7 @@ layer_to_remove_z = 9450.0
 
 layer_to_remove = int(round(layer_to_remove_z/50.0))
 
-directories = filter(lambda x: re.match('\d+$', x), os.listdir('.'))
+directories = filter(lambda x: re.match(r'\d+$', x), os.listdir('.'))
 directories = [int(x, 10) for x in directories]
 print(directories)
 directories = [x for x in directories if x > layer_to_remove]

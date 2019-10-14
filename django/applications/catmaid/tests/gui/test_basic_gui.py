@@ -202,7 +202,7 @@ class BasicUITest(StaticLiveServerTestCase):
 
                 # If there is a syntax error, try to parse the message to load
                 # the respective source file and print the relevant lines.
-                r = re.search('^(.*)\s(\d+):\d+\sUncaught', log_entry['message'])
+                r = re.search(r'^(.*)\s(\d+):\d+\sUncaught', log_entry['message'])
                 if r:
                     url = r.group(1)
                     line = int(r.group(2))

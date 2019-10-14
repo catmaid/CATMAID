@@ -676,16 +676,14 @@ def list_classification_graph(request:HttpRequest, workspace_pid, project_id=Non
                     relation=relation_map['is_a'], class_a_id=class_id)
                 if len(super_class_links_q) > 0:
                     cname = super_class_links_q[0].class_b.class_name
-                    return "%s: %s" % (cname, class_name)
+                    return f"{cname}: {class_name}"
                 else:
                     return class_name
             else:
                 return class_name
 
         def make_roi_html(roi):
-            img_data = (roi.id, settings.STATIC_URL)
-            return "<img class='roiimage' roi_id='%s' " \
-                    "src='%s/images/camera.png' \>" % img_data
+            return rf"<img class='roiimage' roi_id='{roi.id}' src='{settings.STATIC_URL}/images/camera.png' \>"
 
         def get_rois(ci):
             # Find ROIs for this class instance

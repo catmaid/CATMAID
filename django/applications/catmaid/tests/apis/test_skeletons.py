@@ -23,7 +23,7 @@ run_with_pypy = platform.python_implementation() == 'PyPy'
 class SkeletonsApiTests(CatmaidApiTestCase):
     def compare_swc_data(self, s1, s2):
         def swc_string_to_sorted_matrix(s):
-            m = [re.split("\s+", x) for x in s.splitlines() if not re.search('^\s*(#|$)', x)]
+            m = [re.split(r"\s+", x) for x in s.splitlines() if not re.search(r"^\s*(#|$)", x)]
             return sorted(m, key=lambda x: x[0])
 
         m1 = swc_string_to_sorted_matrix(s1)

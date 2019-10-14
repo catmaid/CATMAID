@@ -258,13 +258,13 @@ class CatmaidRelease(object):
         if not api_changelog_data:
             raise ValueError("Couldn't load API_CHANGELOG.md file for tag message creation")
 
-        changelog_section_match = re.search("(## {}.*?)## \d\d\d\d\.\d[\d]\.\d[\d]".format(self.release_name),
+        changelog_section_match = re.search(r"(## {}.*?)## \d\d\d\d\.\d[\d]\.\d[\d]".format(self.release_name),
             changelog_data, re.DOTALL)
         if not changelog_section_match or len(changelog_section_match.groups()) != 1:
             raise ValueError("Couldn't find release section in CHANGELOG.md for tag message")
         changelog_section = changelog_section_match.group(1)
 
-        api_changelog_section_match = re.search("(## {}.*?)## \d\d\d\d\.\d[\d]\.\d[\d]".format(self.release_name),
+        api_changelog_section_match = re.search(r"(## {}.*?)## \d\d\d\d\.\d[\d]\.\d[\d]".format(self.release_name),
             api_changelog_data, re.DOTALL)
         if not api_changelog_section_match or len(api_changelog_section_match.groups()) != 1:
             raise ValueError("Couldn't find release section in API_CHANGELOG.md for tag message")
@@ -285,7 +285,7 @@ class CatmaidRelease(object):
             replace = "{}\n{}".format(title, "-" * len(title))
             return replace
 
-        tag_message = re.sub("^#\s*(.*)$", replace_section_header, tag_message, flags=re.MULTILINE)
+        tag_message = re.sub(r"^#\s*(.*)$", replace_section_header, tag_message, flags=re.MULTILINE)
         return tag_message
 
 def main():

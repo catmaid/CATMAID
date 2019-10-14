@@ -65,16 +65,14 @@ def update_api_changelog(api_changelog_data):
 
 def update_documentation(doc_data):
     # Replace first occurrence of 'version' and 'release' fields
-    doc_data = re.sub("^version\s=\s*['\"](.*)['\"]\s*$", "version = '\g<1>-dev'",
-        doc_data, 1, re.MULTILINE)
-    doc_data = re.sub("^release\s=\s*['\"](.*)['\"]\s*$", "release = '\g<1>-dev'",
-        doc_data, 1, re.MULTILINE)
+    doc_data = re.sub(r"^version\s=\s*['\"](.*)['\"]\s*$", r"version = '\g<1>-dev'", doc_data, 1, re.MULTILINE)
+    doc_data = re.sub(r"^release\s=\s*['\"](.*)['\"]\s*$", r"release = '\g<1>-dev'", doc_data, 1, re.MULTILINE)
 
     return doc_data
 
 
 def update_version(doc_data):
-    doc_data = re.sub("^BASE_VERSION\s=\s*['\"](.*)['\"]\s*$", "BASE_VERSION = '\g<1>-dev'",
+    doc_data = re.sub(r"^BASE_VERSION\s=\s*['\"](.*)['\"]\s*$", r"BASE_VERSION = '\g<1>-dev'",
         doc_data, 1, re.MULTILINE)
 
     return doc_data

@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-# An entirely untested script to delete all the concepts in the
+# An entirely untested jython script to delete all the concepts in the
 # CATMAID database for a particular project.
 #
 # Mark Longair 2010
 #
+# flake8: noqa
 
 import os, re, sys, ij
 

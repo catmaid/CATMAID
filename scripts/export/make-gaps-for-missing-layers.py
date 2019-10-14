@@ -9,7 +9,9 @@
 #  * add the new "missing" layers to the broken_slice table
 #  * change the dimensions.z field of each stack in the stack
 #    table
-import glob, os, re, sys, subprocess
+import os
+import re
+import subprocess
 
 layers_missing_z = [
   4950.0,
@@ -27,11 +29,9 @@ layers_to_insert = layers_missing[:]
 
 # Find the layers we already have:
 
-directories = filter(lambda x: re.match('\d+$', x), os.listdir('.'))
-directories = [int(x, 10) for x in directories]
-directories.sort()
+directories = sorted(int(x, 10) for x in os.listdir('.') if re.match(r'\d+$', x))
 
-directory_mapping = zip(directories, directories)
+directory_mapping = list(zip(directories, directories))
 
 while layers_to_insert:
     missing_layer = layers_to_insert.pop(0)
@@ -39,9 +39,7 @@ while layers_to_insert:
         if t[1] >= missing_layer:
             directory_mapping[i] = (t[0], t[1] + 1)
 
-directory_mapping.reverse()
-
-for t in directory_mapping:
+for t in reversed(directory_mapping):
     if t[0] != t[1]:
         print("Will rename", t[0], "to", t[1])
         subprocess.check_call(["mv", str(t[0]), str(t[1])])

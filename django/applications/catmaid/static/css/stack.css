@@ -314,7 +314,7 @@ div.scaleBenchmark p span {
 
 .stackViewer p.active-element {
   position: absolute;
-  right: 60px;
+  right: 6.3em;
   top: 0;
   width: auto;
   border: none;

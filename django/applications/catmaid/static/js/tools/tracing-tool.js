@@ -469,6 +469,7 @@
       project.getStackViewers().forEach(function(stackViewer) {
         var label = $('#active-element' + stackViewer.getId());
         label.text(text || '');
+        label.removeClass("local remote");
         var labelData = label.data();
         if (labelData) CATMAID.NeuronNameService.getInstance(labelData.api).unregister(labelData);
       });
@@ -501,6 +502,8 @@
         // If a skeleton is selected, register with neuron name service.
         label.data('skeleton_id', skeletonId);
         label.data('api', api);
+        label.removeClass('remote local');
+        label.addClass(api ? 'remote' : 'local');
         label.data('updateNeuronNames', () => {
           let name = CATMAID.NeuronNameService.getInstance(api).getName(skeletonId);
           label.text(`${prefix}${name}${suffix}` || '?');

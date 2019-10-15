@@ -326,6 +326,14 @@ div.scaleBenchmark p span {
   background-color: #060;
 }
 
+.stackViewer p.active-element.local {
+  background-color: #060;
+}
+
+.stackViewer p.active-element.remote {
+  background-color: #ca6d16;
+}
+
 .stackViewer p.note {
   position: absolute;
   right: 0;

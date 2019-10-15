@@ -16,10 +16,9 @@ services:
 addons:
   chrome: stable
   postgresql: 10
-  sauce_connect:
-    username: catmaid
-    access_key:
-      secure: "rFiPF3KRokQqUaMHzr34wdt98pbYKyO47CFm9sJPO/HOKePhDCW6bMhiNa4x5Q2T5oAb0SRb/6CECExlGtA4mnzC5u47S8E9TidlZZ1m/n2TRZr2cvzhBJFhnYYZxcF8+6vCKq4DWVU+wD2/4wWktIHkcBJ9XMErl8HyICUHzLo="
+  # SAUCE_USERNAME and SAUCE_ACCESS_KEY are defined as part of the Travis
+  # project settings. GUI tests will be skipped if these are not defined.
+  sauce_connect: true
 before_install:
   - mkdir tmp
   - travis_retry sudo apt-get update -y -qq

@@ -21,7 +21,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render_to_response
-from django.utils.translation import ugettext as _
 
 from formtools.wizard.views import SessionWizardView
 

@@ -35,7 +35,7 @@ before_script:
   - ./scripts/travis/setup_database.sh
   - ./scripts/travis/configure_catmaid.sh
 script:
-  - flake8 --statistics --count --exit-zero -q -q django
+  - flake8 --statistics --count django
     # see "scripts" in package.json
   - npm run lint:js
   - npm run jsdoc

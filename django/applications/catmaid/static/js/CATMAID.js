@@ -68,15 +68,16 @@
   // Catch unhandled rejected promises. At the time of writing only Chromium
   // based browsers (like Chrome) have native suport for this.
   window.addEventListener('unhandledrejection', function handleRejection(event) {
-    var reason = event.reason || {};
-    var userAgent = navigator ? navigator.userAgent : 'N/A';
-    var detail = 'Error: ' + reason.message + ' User agent: ' + userAgent +
-        ' Stacktrace: ' + reason.stack;
-
     // We take care of the logging ourselves
     event.preventDefault();
 
-    handleUnhandledError(event.promise, detail);
+    event.promise.catch(e => {
+      let reason = typeof(event.reason) === 'string' ? {message: event.reason} : event.reason;
+      let userAgent = navigator ? navigator.userAgent : 'N/A';
+      let detail = 'Error: ' + reason.message + ' User agent: ' + userAgent +
+          ' Stacktrace: ' + reason.stack;
+      handleUnhandledError(e, detail);
+    });
 
     return true;
   });

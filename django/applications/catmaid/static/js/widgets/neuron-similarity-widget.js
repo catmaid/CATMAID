@@ -1912,7 +1912,7 @@
           multiple: false,
           onclick: function(e) {
             let prepare = !CATMAID.containsSingleValidFile(e.target.files, 'csv') ?
-                Promise.reject("No valid CSV file found") :
+                Promise.reject(new CATMAID.ValueError("No valid CSV file found")) :
                 CATMAID.parseCSVFile(e.target.files[0], ' ', 0);
             prepare
               .then(csvLines => {

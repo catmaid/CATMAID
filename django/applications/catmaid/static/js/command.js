@@ -206,10 +206,10 @@
 
   CATMAID.handleTextCommand = function(command, i = 0, forcePrefixCheck = false) {
     if (CATMAID.RegisteredCommandParsers.length === 0) {
-      return Promise.reject(CATMAID.Warning("No command parsers found"));
+      return Promise.reject(new CATMAID.Warning("No command parsers found"));
     }
     if ((CATMAID.RegisteredCommandParsers.length - 1) < i ) {
-      return Promise.reject(CATMAID.Warning("Passed in parser index larger than available parsers"));
+      return Promise.reject(new CATMAID.Warning("Passed in parser index larger than available parsers"));
     }
     if (CATMAID.RegisteredCommandParsers[i].passive) {
       if (CATMAID.RegisteredCommandParsers.length > (i + 1)) {

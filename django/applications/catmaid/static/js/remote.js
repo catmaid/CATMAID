@@ -52,16 +52,16 @@
     // Find selected remote configuration based on name
     let remoteConfigs = CATMAID.Client.Settings.session.remote_catmaid_instances;
     if (!remoteConfigs) {
-      return Promise.reject("No configured remote instances found");
+      return Promise.reject(new CATMAID.ValueError("No configured remote instances found"));
     }
     let remote = remoteConfigs.filter(function(rc) {
       return rc.name === sourceRemote;
     });
     if (remote.length === 0) {
-      return Promise.reject("No matching remote found");
+      return Promise.reject(new CATMAID.ValueError("No matching remote found"));
     }
     if (remote.length > 1) {
-      return Promise.reject("Found more than one matching remote config");
+      return Promise.reject(new CATMAID.ValueError("Found more than one matching remote config"));
     }
     // Expect exactly one matching remote.
     let api = new CATMAID.API.fromSetting(remote[0]);

@@ -194,7 +194,7 @@ var SkeletonAnnotations = {};
     var overlay = SkeletonAnnotations.getTracingOverlay(this.stack_viewer_id);
     var node = overlay.nodes.get(this.id);
     if (!node) {
-      return Promise.reject("Couldn't find node " + this.id + " in tracing layer");
+      return Promise.reject(new CATMAID.ValueError(`Couldn't find node ${this.id} in tracing layer`));
     }
     var nodePromise = overlay.promiseNode(node);
     var isNewSkeleton = !this.skeleton_id;
@@ -4325,7 +4325,7 @@ var SkeletonAnnotations = {};
    */
   CATMAID.TracingOverlay.prototype.cycleThroughBranches = function (
       treenode_id, node_index, ignoreVirtual) {
-    if (typeof this.nextBranches === 'undefined') return Promise.reject("No branch information found");
+    if (typeof this.nextBranches === 'undefined') return Promise.reject(new CATMAID.ValueError("No branch information found"));
 
     // Find branch of which treenode_id is part
     var referenceNodeID;
@@ -4407,7 +4407,7 @@ var SkeletonAnnotations = {};
    * @param {boolean} cycle - If true, subsequent calls cycle through children
    */
   CATMAID.TracingOverlay.prototype.goToChildNode = function (treenode_id, cycle, ignoreVirtual) {
-    if (this.isIDNull(treenode_id)) return Promise.reject("No valid node provided");
+    if (this.isIDNull(treenode_id)) return Promise.reject(new CATMAID.ValueError("No valid node provided"));
 
     // If the existing nextBranches was fetched for this treenode, reuse it to
     // prevent repeated queries when quickly alternating between child and parent.
@@ -4795,7 +4795,7 @@ var SkeletonAnnotations = {};
    */
   CATMAID.TracingOverlay.prototype.getNodeLocation = function (nodeId) {
     if (this.isIDNull(nodeId)) {
-      return Promise.reject("No node provided for selection");
+      return Promise.reject(new CATMAID.ValueError("No node provided for selection"));
     }
 
     var node = this.nodes.get(nodeId);
@@ -4843,7 +4843,7 @@ var SkeletonAnnotations = {};
       }
     }
 
-    return Promise.reject("Could not select node " + nodeId);
+    return Promise.reject(new CATMAID.ValueError(`Could not select node ${nodeId}`));
   };
 
   /**

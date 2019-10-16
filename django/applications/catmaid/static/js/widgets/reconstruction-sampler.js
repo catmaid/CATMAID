@@ -2069,7 +2069,7 @@
       }
     }
     if (!startedStateId) {
-      return Promise.reject("Missing interval state: started");
+      return Promise.reject(new CATMAID.ValueError("Missing interval state: started"));
     }
 
     // Open interval, select first node and then advance workflow
@@ -2941,7 +2941,7 @@
       }
     }
     if (!startedStateId) {
-      return Promise.reject("Missing connector state: started");
+      return Promise.reject(new CATMAID.ValueError("Missing connector state: started"));
     }
 
     var interval = widget.state['interval'];

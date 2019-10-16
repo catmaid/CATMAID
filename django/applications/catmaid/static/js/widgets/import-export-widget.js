@@ -691,7 +691,7 @@ annotations, neuron name, connectors or partner neurons.
 
   function import_swc(file, autoSelect) {
     if (!file) {
-      return Promise.reject("Need file");
+      return Promise.reject(new CATMAID.ValueError("Need file"));
     }
 
     var data = new FormData();

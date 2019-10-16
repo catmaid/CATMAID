@@ -168,7 +168,7 @@
      */
     getSWC: function(projectId, skeletonIds, linearizeIds, somaMarkers, api) {
       if (!skeletonIds || !skeletonIds.length) {
-        return Promise.reject("Need at least one skeleton ID");
+        return Promise.reject(new CATMAID.ValueError("Need at least one skeleton ID"));
       }
       var swcRequests = skeletonIds.map(function(skid) {
         return CATMAID.fetch({

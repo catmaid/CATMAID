@@ -1308,8 +1308,11 @@ var project;
 
   // a function for creating data view menu handlers
   var handleDataViewSelection = function(id) {
-    // close any open project and its windows
+    // If a project is active, ask for confirmation before closing it.
     if (project) {
+        if (!confirm('Are you sure you want to close all widgets and views?')) {
+          return;
+        }
       project.destroy();
     } else {
       CATMAID.rootWindow.closeAllChildren();

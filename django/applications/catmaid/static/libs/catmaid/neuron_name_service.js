@@ -837,6 +837,21 @@
       newInstance: function(empty, api = undefined) {
         return init(empty, api);
       },
+
+      /**
+       * Register all models for the passed in client. This is done for each API
+       * defined by the models.
+       */
+      registerAll: function(client, models, callback) {
+        let modelsPerAPI = CATMAID.API.splitByAPI(models);
+        let promises = [];
+        for (let [apiName, apiModels] of modelsPerAPI.entries()) {
+          promises.push(CATMAID.NeuronNameService.getInstance(apiName).registerAll(client, models));
+        }
+        let result = Promise.all(promises);
+        if (callback) result.then(callback).catch(CATMAID.handleError);
+        return result;
+      },
     };
   })();
 

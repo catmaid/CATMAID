@@ -5,7 +5,14 @@
 
   "use strict";
 
-  var RegularNodeProvider = function() {};
+  /**
+   * Obtain the nodes for the passed in skeleton IDs.
+   *
+   * @param {API} api (Optional) An API from which the node should be queried.
+   */
+  var RegularNodeProvider = function(api = undefined) {
+    this.api = api;
+  };
 
   RegularNodeProvider.prototype.get = function(projectId, skeletonIds, options,
       progressCallback, errorCallback) {
@@ -19,7 +26,7 @@
     }
     var binaryTransfer = options.format === 'msgpack';
 
-    return new Promise(function(resolve, reject) {
+    return new Promise((resolve, reject) => {
       var url1 = CATMAID.makeURL(projectId + '/skeletons/');
       var url2 = '/compact-detail';
 
@@ -36,7 +43,8 @@
           resolve();
         },
         'GET',
-        binaryTransfer);
+        binaryTransfer,
+        this.api);
     });
   };
 
@@ -94,8 +102,45 @@
     });
   };
 
+  class APINodeProvider {
+    constructor(models) {
+      this.apiMap = Object.keys(models).reduce((o, e) => {
+        o[e] = models[e].api;
+        return o;
+      }, {});
+      this.models = models;
+    }
+
+    /**
+     * Group skeleton IDs by API and use a dedicated node provider with each
+     * one.
+     */
+    get(projectId, skeletonIds, options, progressCallback, errorCallback) {
+      let skeletonsPerPromise = skeletonIds.reduce((o, skeletonId) => {
+          // The apiName `undefiend` represents the regular back-end.
+          let api = this.apiMap[skeletonId];
+          let apiKey = api ? api.name : undefined;
+          if (o.has(apiKey)) {
+            o.get(apiKey).push(skeletonId);
+          } else {
+            o.set(apiKey, [skeletonId]);
+          }
+          return o;
+        }, new Map());
+      let apiPromises = Array.from(skeletonsPerPromise.keys()).map(apiName => {
+          let api = apiName ? CATMAID.Remote.getAPI(apiName) : undefined;
+          let nodeProvider = new CATMAID.RegularNodeProvider(api);
+          return nodeProvider.get(projectId, skeletonIds, options,
+              progressCallback, errorCallback);
+        });
+
+      return Promise.all(apiPromises);
+    }
+  }
+
   // Export node providers
   CATMAID.RegularNodeProvider = RegularNodeProvider;
   CATMAID.ArborParserNodeProvider = ArborParserNodeProvider;
+  CATMAID.APINodeProvider = APINodeProvider;
 
 })(CATMAID);

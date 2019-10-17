@@ -374,7 +374,7 @@
       activeStackViewer = parentStackViewer;
       // The active tracing layer however is whichever contains the active node
       // and its API.
-      let activeLayer = setActiveTracingLayer();
+      let activeLayer = setActiveTracingLayer(true);
     };
 
     /**
@@ -525,7 +525,7 @@
      * one as active stack layer that contains the active node, including its
      * API.
      */
-    function setActiveTracingLayer() {
+    function setActiveTracingLayer(forceBindingUpdate) {
       if (!activeStackViewer) return;
 
       // Get all tracing layers, the top one first.
@@ -536,7 +536,7 @@
       if (tracingLayers.length === 0) return;
       if (tracingLayers.length === 1) {
         activeLayer = tracingLayers[0];
-        if (activeTracingLayer !== tracingLayers[0]) {
+        if (activeTracingLayer !== tracingLayers[0] || forceBindingUpdate) {
           activeTracingLayer = activeLayer;
           inactivateBindings(activeStackViewer);
           activateBindings(activeStackViewer, activeLayer);
@@ -561,7 +561,7 @@
         activeLayer = tracingLayers[0];
       }
 
-      if (activeTracingLayer !== activeLayer) {
+      if (activeTracingLayer !== activeLayer || forceBindingUpdate) {
         activeTracingLayer = activeLayer;
         inactivateBindings(activeStackViewer);
         activateBindings(activeStackViewer, activeLayer);
@@ -1648,12 +1648,15 @@
         if (self.peekingSkeleton) return;
 
         var skid = null;
+        let api;
         if (e.shiftKey) {
           skid = SkeletonAnnotations.getActiveSkeletonId();
+          api = SkeletonAnnotations.getActiveSkeletonAPI();
         } else {
           var match = self.getClosestNode(100.0);
           if (match) {
             skid = match.node.skeleton_id;
+            api = match.api;
           }
         }
 
@@ -1664,7 +1667,8 @@
         skeletonModels[skid] = new CATMAID.SkeletonModel(
             skid,
             undefined,
-            new THREE.Color(CATMAID.TracingOverlay.Settings.session.active_node_color));
+            new THREE.Color(CATMAID.TracingOverlay.Settings.session.active_node_color),
+            api);
         var viewersWithoutSkel = Array.from(WindowMaker.getOpenWindows('3d-viewer', true).values())
             .filter(function (viewer) { return !viewer.hasSkeleton(skid); });
 
@@ -1680,6 +1684,9 @@
           self.peekingSkeleton = false;
         };
 
+        // An API node provider delegates to other node providers,
+        let apiNodeProvider = new CATMAID.APINodeProvider(skeletonModels);
+
         viewersWithoutSkel.forEach(function (viewer) {
           // In case the key is released before the skeleton has loaded,
           // check after loading whether it is still being peeked.
@@ -1689,7 +1696,7 @@
             } else {
               viewer.render();
             }
-          });
+          }, apiNodeProvider);
         });
 
         // Set a key up a listener to remove the skeleton from these viewers
@@ -1880,7 +1887,7 @@
       layer.isRemovable = true;
       activeStackViewer.addLayer(layerName, layer);
       activeStackViewer.moveLayer(layerName, getTracingLayerName(activeStackViewer));
-      layer.redraw();
+      activeStackViewer.update(undefined, true);
     };
 
     // Listen to creation and removal of new stack views in current project.

@@ -542,7 +542,7 @@
   /**
    * align and update the stacks to be ( x, y ) in the image center
    */
-  StackViewer.prototype.redraw = function (completionCallback) {
+  StackViewer.prototype.redraw = function (completionCallback, force = false) {
     var allQueued = false, semaphore = 0, layer,
               onAnyCompletion = function () {
       -- semaphore;
@@ -569,7 +569,11 @@
         continue;
       }
       ++ semaphore;
-      layer.redraw(onAnyCompletion, this.blockingRedraws);
+      if (force) {
+        layer.forceRedraw(onAnyCompletion, this.blockingRedraws);
+      } else {
+        layer.redraw(onAnyCompletion, this.blockingRedraws);
+      }
     }
 
     this.old_z = this.z;

@@ -48,6 +48,47 @@
     return (!a && !b) || (a && b && a.name === b.name);
   };
 
+  /**
+   * Find all models for each API instance.
+   */
+  API.splitByAPI = function(obj) {
+    let apis = new Map();
+    let remoteApiModelsSeen = 0;
+    let localApiModelsSeen = 0;
+
+    for (let o in obj) {
+      let model = obj[o];
+      // Common case: a single API (the regular back-end). Therefore, first assign
+      // the passed in object first to the local back-end.
+      if (model.api) {
+        let target = apis.get(model.api.name);
+        if (!target) {
+          target = {};
+          apis.set(model.api.name, target);
+        }
+        target[o] = model;
+        ++remoteApiModelsSeen;
+      } else if (localApiModelsSeen === 0) {
+        apis.set(undefined, obj);
+      }
+    }
+
+    // If the common case assumption was wrong, create a new models object for
+    // the local-backend.
+    if (remoteApiModelsSeen > 0) {
+      let locals = {};
+      for (let o in obj) {
+        let model = obj[o];
+        if (!model.api) {
+          locals[o] = model;
+        }
+      }
+      apis.set(undefined, locals);
+    }
+
+    return apis;
+  };
+
   CATMAID.API = API;
 
 })(CATMAID);

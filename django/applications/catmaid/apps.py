@@ -49,8 +49,8 @@ def get_system_user(user_model=None):
             return user_model.objects.get(id=settings.SYSTEM_USER_ID, is_superuser=True)
         except user_model.DoesNotExist:
             raise ImproperlyConfigured("Could not find any super user with ID "
-                                       "configured in SYSTEM_USER_ID (%s), "
-                                       "please fix this in settings.py" % settings.SYSTEM_USER_ID)
+                                       f"configured in SYSTEM_USER_ID ({settings.SYSTEM_USER_ID}), "
+                                       "please fix this in settings.py")
     else:
         # Find admin user with lowest id
         users = user_model.objects.filter(is_superuser=True).order_by('id')
@@ -301,8 +301,7 @@ class CATMAIDConfig(AppConfig):
         # Make sure all expected settings are available.
         for field, data_type in CATMAIDConfig.required_setting_fields.items():
             if not hasattr(settings, field):
-                raise ImproperlyConfigured(
-                        "Please add the %s settings field" % field)
+                raise ImproperlyConfigured(f"Please add the {field} settings field")
             if isinstance(data_type, (list, tuple)):
                 allowed_types = data_type
             else:
@@ -311,11 +310,11 @@ class CATMAIDConfig(AppConfig):
             if not isinstance(getattr(settings, field), allowed_types): # type: ignore
                 current_type = type(getattr(settings, field))
                 if len(allowed_types) == 1:
-                    raise ImproperlyConfigured("Please make sure settings field %s "
-                            "is of type %s (current type: %s)" % (field, data_type, allowed_types[0]))
+                    raise ImproperlyConfigured(f"Please make sure settings field {field} "
+                            f"is of type {data_type} (current type: {current_type})")
                 else:
-                    raise ImproperlyConfigured("Please make sure settings field %s "
-                            "is of one of the types %s (current type: %s)" % (field, allowed_types, current_type))
+                    raise ImproperlyConfigured(f"Please make sure settings field {field} "
+                            f"is of one of the types {allowed_types} (current type: {current_type})")
 
         # Make sure swagger (API doc) knows about a potential sub-directory
         if not hasattr(settings, 'SWAGGER_SETTINGS'):

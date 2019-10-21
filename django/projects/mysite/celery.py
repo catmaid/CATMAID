@@ -54,7 +54,6 @@ def config_loggers(*args, **kwargs):
     their log output where we expect it.
     """
     from logging.config import dictConfig
-    from django.conf import settings
     dictConfig(settings.LOGGING)
 
 

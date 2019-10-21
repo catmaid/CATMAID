@@ -1710,10 +1710,10 @@ class ChangeRequest(UserFocusedModel):
             # The action is required to set a value for the is_valid variable.
             try:
                 _locals:Dict = {}
-                exec(self.validate_action, globals(), _locals)
+                exec(self.validate_action, globals(), _locals) # This directly manipulates Python's scope; type checkers will be angry.
                 if 'is_valid' not in _locals:
                     raise Exception('validation action did not define is_valid')
-                if not is_valid: # type: ignore
+                if not is_valid: # type: ignore # noqa: F821
                     # Cache the result so we don't have to do the exec next time.
                     # TODO: can a request ever be temporarily invalid?
                     self.status = ChangeRequest.INVALID
@@ -1744,7 +1744,7 @@ class ChangeRequest(UserFocusedModel):
             message = self.recipient.get_full_name() + ' has approved your ' + self.type.lower() + ' request.'
             notify_user(self.user, title, message)
         except Exception as e:
-            raise Exception('Failed to approve change request: %s' % str(e))
+            raise Exception(f'Failed to approve change request: {e}')
 
     def reject(self, *args, **kwargs) -> None:
         if not self.is_valid():

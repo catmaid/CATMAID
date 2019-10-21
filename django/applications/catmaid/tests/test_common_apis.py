@@ -66,7 +66,7 @@ class TransactionTests(TransactionTestCase, AssertStatusMixin):
         count_logs = lambda: Log.objects.all().count()
         log_count = count_logs()
         response = self.client.post(
-                '/%d/neuron/%s/delete' % (self.test_project_id, neuron_id), {})
+                f'/{int(self.test_project_id)}/neuron/{neuron_id}/delete', {})
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {

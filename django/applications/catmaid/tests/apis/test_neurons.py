@@ -19,7 +19,7 @@ class NeuronsApiTests(CatmaidApiTestCase):
         new_name = 'newname'
         self.assertFalse(old_name == new_name)
 
-        url = '/%d/neurons/%s/rename' % (self.test_project_id, neuron_id)
+        url = f'/{int(self.test_project_id)}/neurons/{neuron_id}/rename'
         response = self.client.post(url, {'name': new_name})
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
@@ -48,7 +48,7 @@ class NeuronsApiTests(CatmaidApiTestCase):
         new_name = 'newname'
         self.assertFalse(old_name == new_name)
 
-        url = '/%d/neurons/%s/rename' % (self.test_project_id, neuron_id)
+        url = f'/{int(self.test_project_id)}/neurons/{neuron_id}/rename'
         response = self.client.post(url, {'name': new_name})
         self.assertEqual(response.status_code, 403)
         parsed_response = json.loads(response.content.decode('utf-8'))
@@ -61,7 +61,7 @@ class NeuronsApiTests(CatmaidApiTestCase):
 
     def test_neuron_ids_from_models(self):
         self.fake_authentication()
-        url = '/%d/neurons/from-models' % (self.test_project_id,)
+        url = f'/{int(self.test_project_id)}/neurons/from-models'
         response = self.client.post(url, {'model_ids': [235, 373]})
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
@@ -74,8 +74,7 @@ class NeuronsApiTests(CatmaidApiTestCase):
 
     def test_skeletons_from_neuron(self):
         self.fake_authentication()
-        url = '/%d/neuron/%d/get-all-skeletons' % (self.test_project_id,
-                                              233)
+        url = f'/{int(self.test_project_id)}/neuron/233/get-all-skeletons'
         response = self.client.get(url)
         self.assertStatus(response)
 

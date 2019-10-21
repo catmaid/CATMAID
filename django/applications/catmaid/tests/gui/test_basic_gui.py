@@ -124,10 +124,10 @@ class BasicUITest(StaticLiveServerTestCase):
                     "build": os.environ["TRAVIS_BUILD_NUMBER"],
                     "tags": [os.environ["TRAVIS_PYTHON_VERSION"], "CI"]
                 }
-                hub_url = "%s:%s@localhost:4445" % (username, access_key)
+                hub_url = f"{username}:{access_key}@localhost:4445"
                 self.selenium = webdriver.Remote(
                         desired_capabilities=capabilities,
-                        command_executor="http://%s/wd/hub" % hub_url)
+                        command_executor=f"http://{hub_url}/wd/hub"
             else:
                 self.selenium = webdriver.Firefox()
 

@@ -44,7 +44,7 @@ class PruneSkeletonsTest(TestCase):
         # Call pruning for this project
         out = StringIO()
         call_command('catmaid_prune_skeletons', project_id=[p.project.id], stdout=out)
-        self.assertIn('Deleted 4 nodes in project "%s"' % p.project.id, out.getvalue())
+        self.assertIn(f'Deleted 4 nodes in project "{p.project.id}"', out.getvalue())
 
 
 class TestProject():

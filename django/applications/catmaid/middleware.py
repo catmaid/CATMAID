@@ -218,8 +218,7 @@ class ProfilingMiddleware(object):
             response = JsonResponse(data)
 
             if hasattr(request, 'profile-to-disk'):
-                labels = (request.META['REMOTE_ADDR'], datetime.now())
-                request.profiler.dump_stats('/tmp/catmaid-%s-%s.profile' % labels)
+                request.profiler.dump_stats(f'/tmp/catmaid-{request.META["REMOTE_ADDR"]}-{datetime.now()}.profile')
 
         return response
 

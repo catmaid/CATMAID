@@ -88,26 +88,27 @@ can close the virtualenv as follows::
 Backup and restore the database
 -------------------------------
 
-Backing CATMAID's database up as well as restoring it, is currently a
-manual process. Also keep in mind that a certain database state is
-related to a certain source code version. Reflecting the commit name
-in the backup name, might therefore be a good idea. A mismatch might
-cause some trouble when a database backup is used that includes
-migrations that are not present in the selected CATMAID version.
+Making a backup of CATMAID's Postgres database as well as restoring it, is
+currently a manual process. Also keep in mind that a certain database state is
+related to a certain source code version. This means after restoring a backup, a
+database migration might still be needed. To avoid this, reflecting the commit
+name in the backup name, might be a good idea. In most situations this shouldn't
+be a concern though.
 
-To backup the complete database (here named "catmaid") except for tables that
-can be materialized from existing data (to save space)::
+To backup a CATMAID database (here named ``catmaid``) execute::
 
-    pg_dump -Fc --clean -U <CATMAID-USER> catmaid -f catmaid_dump.sql
+    pg_dump -Fc --clean -U <CATMAID-USER> catmaid -f "catmaid-`date +%Y%m%d%H%M`.gz.dump"
 
-This produce a file named ``catmaid_dump.sql`` that can be used to restore a
-full CATMAID instance. The file is in Postgres specific format to improve
-loading speed and restoration options.
+This produces a file that includes a time stamp in its name (note the
+backticks!) and that can be used to restore an entire CATMAID instance. The file
+itself uses a Postgres specific format to improve loading speed and restoration
+options.
 
-To restore the dumped database into a database named "catmaid" (which would have
-to be created as described in the basic install instructions)::
+To restore the dumped database into a database named ``catmaid`` (which would
+have to be created as described in the basic install instructions, including the
+database user referenced in the backup)::
 
-    psql -U <CATMAID-USER> -d catmaid -f catmaid_dump.sql
+    pg_restore -U <CATMAID-USER> -d catmaid catmaid_dump.sql
 
 Both commands will ask for the password. Alternatively, you can use the
 scripts ``scripts/database/backup-database.py`` and
@@ -115,6 +116,21 @@ scripts ``scripts/database/backup-database.py`` and
 thing. Those don't ask for a password, but require a
 ``.pgpass`` file (see `PostgreSQL documentation
 <http://www.postgresql.org/docs/current/static/libpq-pgpass.html>`_).
+
+Note that the ``pg_dump`` command above will not include any Postgres user
+information. Like explained in the installation instructions, the would have to
+be created first, before the ``pg_restore`` command is called. Alternatively,
+users and other global database objects can be backed up as well in a separate
+file::
+
+    sudo -u postgres pg_dumpall --globals-only | gzip -9 > "globals.gz.dump"
+
+Which in turn could be restored in a completely new database like this::
+
+    zcat globals.gz.dump | sudo -u postgres psql
+
+Afterwards the above ``pg_restore`` command can be executed without further
+action.
 
 Excluding materialized views from backup
 ----------------------------------------

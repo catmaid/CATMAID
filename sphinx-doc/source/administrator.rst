@@ -15,6 +15,7 @@ Administrator Documentation
    tracing-caches
    history_tables
    replication
+   database
    docker
    userprofiles
    additional_backends

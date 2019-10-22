@@ -13,11 +13,11 @@ should be similar for other operating systems.
 Installing a recent version of R
 --------------------------------
 
-Add the RStudio repository along with its public keys::
+Add the R 3.6 repository along with its public keys::
 
-  sudo gpg --keyserver keyserver.ubuntu.com --recv-key E084DAB9
+  sudo gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-key E084DAB9
   sudo gpg -a --export E084DAB9 | sudo apt-key add -
-  echo "deb http://cran.rstudio.com/bin/linux/ubuntu xenial/" | sudo tee -a /etc/apt/sources.list
+  echo "deb https://cloud.r-project.org/bin/linux/ubuntu xenial-cran35/" | sudo tee -a /etc/apt/sources.list
 
 Install R and its development packages as well as two additional dependencies
 that are required to install all needed R packages::

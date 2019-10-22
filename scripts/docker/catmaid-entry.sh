@@ -1,31 +1,34 @@
 #!/bin/bash
 
+# Remove quotes around a string
+sanitize() { echo "$1" | sed "s/^[\"']\?\(.*[^\"']\)[\"']\?$/\1/"; }
+
 # Get environment configuration or use defaults if unavailable.
-DB_HOST=${DB_HOST:-localhost}
-DB_PORT=${DB_PORT:-5432}
-DB_NAME=${DB_NAME:-catmaid}
-DB_USER=${DB_USER:-catmaid_user}
-DB_PASS=${DB_PASS:-catmaid_password}
-DB_CONNECTIONS=${DB_CONNECTIONS:-50}
-DB_CONF_FILE=${DB_CONF_FILE:-"/etc/postgresql/10/main/postgresql.conf"}
-DB_FORCE_TUNE=${DB_FORCE_TUNE:-false}
-DB_TUNE=${DB_TUNE:-true}
-DB_FIXTURE=${DB_FIXTURE:-false}
+DB_HOST=$(sanitize ${DB_HOST:-localhost})
+DB_PORT=$(sanitize ${DB_PORT:-5432})
+DB_NAME=$(sanitize ${DB_NAME:-catmaid})
+DB_USER=$(sanitize ${DB_USER:-catmaid_user})
+DB_PASS=$(sanitize ${DB_PASS:-catmaid_password})
+DB_CONNECTIONS=$(sanitize ${DB_CONNECTIONS:-50})
+DB_CONF_FILE=$(sanitize ${DB_CONF_FILE:-"/etc/postgresql/10/main/postgresql.conf"})
+DB_FORCE_TUNE=$(sanitize ${DB_FORCE_TUNE:-false})
+DB_TUNE=$(sanitize ${DB_TUNE:-true})
+DB_FIXTURE=$(sanitize ${DB_FIXTURE:-false})
 AVAILABLE_MEMORY=`awk '/MemTotal/ { printf "%.3f \n", $2/1024 }' /proc/meminfo`
 INSTANCE_MEMORY=${INSTANCE_MEMORY:-$AVAILABLE_MEMORY}
-CM_DEBUG=${CM_DEBUG:-false}
-CM_EXAMPLE_PROJECTS=${CM_EXAMPLE_PROJECTS:-true}
-CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE=${CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:-""}
-CM_HOST=${CM_HOST:-0.0.0.0}
-CM_PORT=${CM_PORT:-8000}
-CM_FORCE_CONFIG_UPDATE=${CM_FORCE_CONFIG_UPDATE:-false}
-CM_WRITEABLE_PATH=${CM_WRITEABLE_PATH:-"'/tmp'"}
-CM_NODE_LIMIT=${CM_NODE_LIMIT:-10000}
-CM_NODE_PROVIDERS=${CM_NODE_PROVIDERS:-"['postgis2d']"}
-CM_SUBDIRECTORY=${CM_SUBDIRECTORY:-""}
-CM_CSRF_TRUSTED_ORIGINS=${CM_CSRF_TRUSTED_ORIGINS:-""}
-CM_FORCE_CLIENT_SETTINGS=${CM_FORCE_CLIENT_SETTINGS:-false}
-CM_CLIENT_SETTINGS=${CM_CLIENT_SETTINGS:-'None'}
+CM_DEBUG=$(sanitize ${CM_DEBUG:-false})
+CM_EXAMPLE_PROJECTS=$(sanitize ${CM_EXAMPLE_PROJECTS:-true})
+CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE=$(sanitize ${CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:-""})
+CM_HOST=$(sanitize ${CM_HOST:-0.0.0.0})
+CM_PORT=$(sanitize ${CM_PORT:-8000})
+CM_FORCE_CONFIG_UPDATE=$(sanitize ${CM_FORCE_CONFIG_UPDATE:-false})
+CM_WRITEABLE_PATH=$(sanitize ${CM_WRITEABLE_PATH:-"'/tmp'"})
+CM_NODE_LIMIT=$(sanitize ${CM_NODE_LIMIT:-10000})
+CM_NODE_PROVIDERS=$(sanitize ${CM_NODE_PROVIDERS:-"['postgis2d']"})
+CM_SUBDIRECTORY=$(sanitize ${CM_SUBDIRECTORY:-""})
+CM_CSRF_TRUSTED_ORIGINS=$(sanitize ${CM_CSRF_TRUSTED_ORIGINS:-""})
+CM_FORCE_CLIENT_SETTINGS=$(sanitize ${CM_FORCE_CLIENT_SETTINGS:-false})
+CM_CLIENT_SETTINGS=$(sanitize ${CM_CLIENT_SETTINGS:-""})
 TIMEZONE=`readlink /etc/localtime | sed "s/.*\/\(.*\)$/\1/"`
 PG_VERSION='10'
 
@@ -38,7 +41,7 @@ fi
 init_catmaid () {
   PGBIN="/usr/lib/postgresql/${PG_VERSION}/bin"
   echo "Wait until database $DB_HOST:$DB_PORT is ready..."
-  until su postgres -c "${PGBIN}/pg_isready -h ${DB_HOST} -p ${DB_PORT} -q; exit \$?"
+  until su postgres -c "${PGBIN}/pg_isready -h '${DB_HOST}' -p ${DB_PORT} -q; exit \$?"
   do
       sleep 1
   done
@@ -71,7 +74,7 @@ init_catmaid () {
     sed -i -e "s?^\(catmaid_timezone = \).*?\1'${TIMEZONE}'?g" /home/django/configuration.py
     sed -i -e "s?^\(catmaid_servername = \).*?\1'*'?g" /home/django/configuration.py
     sed -i -e "s?^\(catmaid_subdirectory = \).*?\1'${CM_SUBDIRECTORY}'?g" /home/django/configuration.py
-    sed -i -e "s?^\(catmaid_writable_path = \).*?\1${CM_WRITEABLE_PATH}?g" /home/django/configuration.py
+    sed -i -e "s?^\(catmaid_writable_path = \).*?\1'${CM_WRITEABLE_PATH}'?g" /home/django/configuration.py
     cd /home/django && python create_configuration.py
     mkdir -p /home/django/static
   fi
@@ -113,8 +116,8 @@ init_catmaid () {
 
   # Set initially client-setting
   sed -i "/^\(CLIENT_SETTINGS = \).*/d" mysite/settings.py
-  echo "Setting CLIENT_SETTINGS = ${CM_CLIENT_SETTINGS}"
-  echo "CLIENT_SETTINGS = ${CM_CLIENT_SETTINGS}" >> mysite/settings.py
+  echo "Setting CLIENT_SETTINGS = '${CM_CLIENT_SETTINGS}'"
+  echo "CLIENT_SETTINGS = '${CM_CLIENT_SETTINGS}'" >> mysite/settings.py
   sed -i "/^\(FORCE_CLIENT_SETTINGS = \).*/d" mysite/settings.py
   if [ "$CM_FORCE_CLIENT_SETTINGS" = true ]; then
     echo "Setting FORCE_CLIENT_SETTINGS = True"
@@ -155,15 +158,15 @@ init_catmaid () {
 }
 
 if [ "$1" = 'standalone' ]; then
-  if ! grep -Fxq "local ${DB_NAME} ${DB_USER} md5" ${DB_CONF_FILE/postgresql.conf/}pg_hba.conf
+  if ! grep -Fxq "local ${DB_NAME} ${DB_USER} md5" "${DB_CONF_FILE/postgresql.conf/}pg_hba.conf"
   then
       echo "Updating Postgres access configuration in file ${DB_CONF_FILE/postgresql.conf/}pg_hba.conf"
-      sed -i "/# DO NOT DISABLE!/ilocal ${DB_NAME} ${DB_USER} md5" ${DB_CONF_FILE/postgresql.conf/}pg_hba.conf
+      sed -i "/# DO NOT DISABLE!/ilocal ${DB_NAME} ${DB_USER} md5" "${DB_CONF_FILE/postgresql.conf/}pg_hba.conf"
   fi
 
   if [ "$DB_TUNE" = true ]; then
   echo "Tuning Postgres server configuration"
-    CONNECTIONS=${DB_CONNECTIONS} CONF_FILE=${DB_CONF_FILE} FORCE_PGTUNE=${DB_FORCE_TUNE} python /home/scripts/database/pg_tune.py
+    CONNECTIONS=${DB_CONNECTIONS} CONF_FILE="${DB_CONF_FILE}" FORCE_PGTUNE=${DB_FORCE_TUNE} python /home/scripts/database/pg_tune.py
   fi
 
   service postgresql restart

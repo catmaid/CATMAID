@@ -84,6 +84,27 @@ can be used to set the maximum allowed import file size in bytes.
 
     Make sure you change the default password of the admin user.
 
+Start on boot
+^^^^^^^^^^^^^
+
+This is easiest done with ``systemd``. Create a new service file, e.g.
+``/etc/systemd/system/catmaid.service``::
+
+    [Unit]
+    Description=CATMAID
+    Requires=docker.service
+    After=docker.service
+
+    [Service]
+    Restart=always
+    ExecStart=/usr/bin/docker-compose -f /home/catmaid/catmaid/docker-compose.yml up
+    ExecStop=/usr/bin/docker-compose -f /home/catmaid/catmaid/docker-compose.yml stop
+
+    [Install]
+    WantedBy=multi-user.target
+
+This still requires manual rebuilds during updates.
+
 Updating docker images
 -----------------------
 

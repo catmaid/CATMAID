@@ -829,7 +829,7 @@ def _annotate_entities_with_name(project_id:Union[int,str], user_id, entity_ids)
     if missing_name_annotations:
         # Escape single quotes by double-quoting
         escaped_name_annotations = (n.replace("'", "''") for n in missing_name_annotations)
-        values = (f"({user_id}, {project_id}, {annotation_class.id}, {x})" for x in escaped_name_annotations)
+        values = (f"({user_id}, {project_id}, {annotation_class.id}, '{x}')" for x in escaped_name_annotations)
         values_str = ','.join(values) or '()'
         cursor.execute(f"""
             INSERT INTO class_instance (user_id, project_id, class_id, name)

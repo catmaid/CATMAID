@@ -44,12 +44,6 @@
             })
             .append($('<input type="text" id="neuroglancer-link" name="neuroglancer-link" />'))
             .append($('<input type="submit" value="Open Neuroglancer" />')))
-
-        /*var container_html =
-          '<div id="neuroglancer_url{{NA-ID}}">' +
-            '<textarea id="neuroglancer_input_url{{NA-ID}}" name="input-url" row="10" cols="50" />'
-          '</div>';*/
-        // content.innerHTML = container_html.replace(/{{NA-ID}}/g, this.widgetID);
       },
       init: function () {
       },
@@ -67,11 +61,6 @@
   NeuroglancerWidget.prototype.handlelLocationChange = function () {
     this.ngWindow.location.hash = this.getNeuroglancerHash();
   };
-
-  /*NeuroglancerWidget.prototype.getNeuroglancerURL = function () {
-    var url = CATMAID.makeURL("neuroglancer" + this.getNeuroglancerHash());
-    return url;
-  };*/
 
   NeuroglancerWidget.prototype.replaceNeuroglancerTuple = function (url, key, replaceStr) {
     var vs_idx = url.indexOf(key)

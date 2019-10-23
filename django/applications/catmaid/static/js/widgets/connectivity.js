@@ -673,7 +673,7 @@
       // Ignore replaced requests.
       if (!(error instanceof CATMAID.ReplacedRequestError)) {
         partnerSetIds.forEach(function(psId) {
-          if (partnerSet.id in self.partnerSetMap) {
+          if (psId in self.partnerSetMap) {
             // Skip existing partner sets.
             return;
           }

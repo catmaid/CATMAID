@@ -196,7 +196,7 @@
           {
             removedRequest = queue.splice( i, 1 );
             // Send a distinguishable error reponse with the callback:
-            removedRequest[0].callback(200, JSON.stringify({
+            removedRequest[0].callback(400, JSON.stringify({
               'error': 'The request was replaced',
               'detail': r,
               'type': 'ReplacedRequestError',

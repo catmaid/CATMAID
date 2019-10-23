@@ -47,7 +47,7 @@
       },
       init: function () {
       },
-      helpText: "",
+      helpPath: "neuroglancer-widget.html",
     };
   };
 
@@ -110,7 +110,7 @@
   // Register widget with CATMAID
   CATMAID.registerWidget({
     name: "Neuroglancer",
-    description: "Open a Neuroglancer viewer for all open stacks",
+    description: "Open a Neuroglancer viewer with synchronized navigation",
     key: "neuroglancer",
     creator: NeuroglancerWidget
   });

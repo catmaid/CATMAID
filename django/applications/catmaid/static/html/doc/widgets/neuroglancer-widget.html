@@ -1,0 +1,24 @@
+<html>
+<body>
+  <h3>Synchronized Navigation with Neuroglancer</h3>
+
+  <p>This widget allows to open an instance of <a href='https://github.com/google/neuroglancer'>Neuroglancer</a>
+  in a new window and synchronizes its navigation with CATMAID
+  (x,y,z position, scale level). In order for the synchronized navigation to work properly,
+  the image dataset shown in Neuroglancer needs to match the specification of the dataset that
+  is open in the main stack viewer in CATMAID.
+  </p>
+
+  <h4>FAFB Example</h4>
+  <ul>
+    <li>assuming you are using the <a href='http://www.temca2data.org/'>FAFB dataset</a> in CATMAID and have it open in a stack viewer</li>
+    <li>you can browse the same dataset in Neuroglancer by visiting <a href='https://fafb-ffn1.storage.googleapis.com/landing.html'>this page</a> and clicking on the link which opens <a href='https://neuroglancer-demo.appspot.com/fafb.html#!%7B%22layers%22:%5B%7B%22source%22:%22precomputed://gs://neuroglancer-fafb-data/fafb_v14/fafb_v14_orig%22%2C%22type%22:%22image%22%2C%22name%22:%22fafb_v14%22%2C%22visible%22:false%7D%2C%7B%22source%22:%22precomputed://gs://neuroglancer-fafb-data/fafb_v14/fafb_v14_clahe%22%2C%22type%22:%22image%22%2C%22name%22:%22fafb_v14_clahe%22%7D%2C%7B%22type%22:%22segmentation%22%2C%22mesh%22:%22precomputed://gs://neuroglancer-fafb-data/elmr-data/FAFBNP.surf/mesh%22%2C%22segments%22:%5B%221%22%2C%2210%22%2C%2211%22%2C%2212%22%2C%2213%22%2C%2214%22%2C%2215%22%2C%2216%22%2C%2217%22%2C%2218%22%2C%2219%22%2C%222%22%2C%2220%22%2C%2221%22%2C%2222%22%2C%2223%22%2C%2224%22%2C%2225%22%2C%2226%22%2C%2227%22%2C%2228%22%2C%2229%22%2C%223%22%2C%2230%22%2C%2231%22%2C%2232%22%2C%2233%22%2C%2234%22%2C%2235%22%2C%2236%22%2C%2237%22%2C%2238%22%2C%2239%22%2C%224%22%2C%2240%22%2C%2241%22%2C%2242%22%2C%2243%22%2C%2244%22%2C%2245%22%2C%2246%22%2C%2247%22%2C%2248%22%2C%2249%22%2C%225%22%2C%2250%22%2C%2251%22%2C%2252%22%2C%2253%22%2C%2254%22%2C%2255%22%2C%2256%22%2C%2257%22%2C%2258%22%2C%2259%22%2C%226%22%2C%2260%22%2C%2261%22%2C%2262%22%2C%2263%22%2C%2264%22%2C%2265%22%2C%2266%22%2C%2267%22%2C%2268%22%2C%2269%22%2C%227%22%2C%2270%22%2C%2271%22%2C%2272%22%2C%2273%22%2C%2274%22%2C%2275%22%2C%228%22%2C%229%22%5D%2C%22skeletonRendering%22:%7B%22mode2d%22:%22lines_and_points%22%2C%22mode3d%22:%22lines%22%7D%2C%22name%22:%22neuropil-regions-surface%22%2C%22visible%22:false%7D%2C%7B%22type%22:%22mesh%22%2C%22source%22:%22vtk://https://storage.googleapis.com/neuroglancer-fafb-data/elmr-data/FAFB.surf.vtk.gz%22%2C%22vertexAttributeSources%22:%5B%5D%2C%22shader%22:%22void%20main%28%29%20%7BemitRGBA%28vec4%281.0%2C%200.0%2C%200.0%2C%200.5%29%29%3B%7D%22%2C%22name%22:%22neuropil-full-surface%22%2C%22visible%22:false%7D%2C%7B%22source%22:%22precomputed://gs://fafb-ffn1-20190805/segmentation%22%2C%22type%22:%22segmentation%22%2C%22segments%22:%5B%224613663523%22%5D%2C%22skeletonRendering%22:%7B%22mode2d%22:%22lines_and_points%22%2C%22mode3d%22:%22lines%22%7D%2C%22name%22:%22fafb-ffn1-20190805%22%7D%2C%7B%22source%22:%22precomputed://gs://fafb-ffn1-20190805/segmentation%22%2C%22type%22:%22segmentation%22%2C%22skeletons%22:%22precomputed://gs://fafb-ffn1-20190805/segmentation/skeletons_32nm%22%2C%22selectedAlpha%22:0%2C%22segments%22:%5B%224613663523%22%5D%2C%22skeletonRendering%22:%7B%22mode2d%22:%22lines_and_points%22%2C%22mode3d%22:%22lines%22%7D%2C%22name%22:%22skeletons_32nm%22%7D%2C%7B%22type%22:%22segmentation%22%2C%22skeletons%22:%22precomputed://gs://fafb-ffn1/fafb-public-skeletons%22%2C%22skeletonRendering%22:%7B%22mode2d%22:%22lines_and_points%22%2C%22mode3d%22:%22lines%22%7D%2C%22name%22:%22public_skeletons%22%7D%2C%7B%22source%22:%22n5://gs://fafb-v14-synaptic-clefts-heinrich-et-al-2018-n5/synapses_dt_reblocked%22%2C%22type%22:%22image%22%2C%22opacity%22:0.73%2C%22shader%22:%22void%20main%28%29%20%7BemitRGBA%28vec4%280.0%2C0.0%2C1.0%2CtoNormalized%28getDataValue%28%29%29%29%29%3B%7D%22%2C%22name%22:%22clefts_Heinrich_etal%22%7D%5D%2C%22navigation%22:%7B%22pose%22:%7B%22position%22:%7B%22voxelSize%22:%5B4%2C4%2C40%5D%2C%22voxelCoordinates%22:%5B123332.796875%2C67378.703125%2C3270%5D%7D%7D%2C%22zoomFactor%22:4.2859749888543615%7D%2C%22showAxisLines%22:false%2C%22perspectiveOrientation%22:%5B0%2C0.7071067690849304%2C0%2C0.7071067690849304%5D%2C%22perspectiveZoom%22:2682%2C%22showSlices%22:false%2C%22layout%22:%22xy-3d%22%7D'>Neuroglancer with the dataset</a></li>
+    <li>in CATMAID, you can open the 'Neuroglancer Widget' and then copy-paste the Neuroglancer URL into the text field in the widget</li>
+    <li>pressing the 'Open Neuroglancer' button opens a new Neuroglancer window which keeps the center-location of the stack viewer and the zoom-level in CATMAID in sync with Neuroglancer</li>
+    <li>now, you can quickly look at neuron segmentation and meshes in Neuroglancer based on your current location in CATMAID</li>
+  </ul>
+    
+  </p>
+</body>
+</html>
+

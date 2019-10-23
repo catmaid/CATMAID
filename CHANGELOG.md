@@ -251,6 +251,9 @@ Miscellaneous:
 
 - Celery can now be restarted again without restarting all of CATMAID.
 
+- Connectivity widget: fix error showing when doing many subsequent Refresh
+  button clicks.
+
 ## Maintenance updates
 
 - CLI Exporter: if users should be exported, also export users of volumes.

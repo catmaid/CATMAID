@@ -6,11 +6,11 @@ cache: pip
 python:
   - "3.6"
   - "3.7"
-  - "3.8-dev"
+  - "3.8"
   - "pypy3.6-7.1.1"
 matrix:
   allow_failures:
-  - python: "3.8-dev"
+  - python: "3.8"
 services:
   - postgresql
 addons:

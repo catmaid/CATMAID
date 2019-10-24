@@ -109,15 +109,82 @@ source is a simple folder structure of tiled image data for each stack. To be
 accessible, a stack mirror's image base has to give access to such a folder from
 the web. Of course, stacks, stack mirrors and projects can be created by hand,
 but there is also an importing tool available in Django's admin interface. It
-can be found under *Custom Views* and is named *Image data importer*. For now,
-the importing tool only supports this standard data source.
+can be found under *Custom Views* and is named *Import projects and image
+stacks*.
 
-Therefore, the importing tool expects a certain data folder layout to work on
-and also relies on so called *project files* (which are very simple) to identify
-potential projects. The next section will introduce the project file format and
-after that the data layout will be explained.
+The admin import tool can import project and stack information from various
+source:
+
+- Other CATMAID instances,
+- A general remote API endpoint
+- A remote or local JSON file
+- A textural JSON definition
+- A local file and folder structure
+
+All JSON representaitons that can be imported are of the format that is returned
+by CATMAID's ``/projects/export`` API endpoint. This very same format can be
+used with a managment command, ``catmaid_import_projects``, on the command line.
+
+The command line option and the file based import are explained in more detail
+below. The latter expects a certain data folder layout to work on and als relies
+on so called *project files* (a file in a simple YAML format) to identify
+potential projects. Its data layout is explained below as well.
 
 How to use the importing tool will be shown in the last section.
+
+.. note::
+
+  Regardless of whether you import image stacks with the help of the importer or
+  add projects, stacks, stack mirrors, project-stack links and permissions by
+  hand: you need to make the image data accessible through your webserver. For
+  instance, say you are running CATMAID on the URL ``example.com/catmaid`` and
+  you are using the importer and have ``IMPORTER_DEFAULT_IMAGE_BASE`` set to
+  ``https://example.com/catmaid/data`` and ``CATMAID_IMPORT_PATH`` to
+  ``/home/catmaid/data/``. The webserver would now need to map ``/catmaid/data``
+  to ``/home/catmaid/data/``. For Nginx this would look like that::
+
+    location /catmaid/data/ {
+      alias /home/catmaid/data/;
+    }
+
+Importing projects and stacks on the command line
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The management command ``catmaid_import_projects`` can be used to import project
+from the command line. It understands the basic ``/projects/export`` API
+endpoint format. A simple example might look like this::
+
+  [{
+    "project": {
+      "title": "L1 CNS",
+      "stacks": [{
+        "title": "L1 CNS",
+        "dimension": "(28128, 31840, 4841)",
+        "mirrors": [{
+          "fileextension": "jpg",
+          "position": 3,
+          "tile_source_type": 4,
+          "tile_height": 512,
+          "tile_width": 512,
+          "title": "Example tiles",
+          "url": "https://example.com/ssd-tiles/"
+        }],
+        "resolution": "(3.8,3.8,50)",
+        "translation": "(0,0,6050)"
+      }]
+    }
+  }]
+
+This can be provided as a file with its path provided as ``--input`` argument to
+``catmaid_import_projects`` or through the ``stdin`` stream that is piped into
+it. Additionally, it possible to provide permissions for the imported projects.
+This is done through one ore more ``--permission`` parameters. Each of them will
+take an argument in the form ``type:name:permission``, where ``type`` can either
+be ``user`` or ``group``. ``name`` is either a username or a groupname and
+``permission`` can be ``can_browse``, ``can_annotate`` and so forth.
+
+The import can be configured with additional options which are explained when
+using the ``--help`` option.
 
 Project Files
 ^^^^^^^^^^^^^

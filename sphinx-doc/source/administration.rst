@@ -18,7 +18,7 @@ database state.
 You may be asked to upgrade the database in the release notes for the
 versions between your current and your target version. If this is the
 case, follow those instructions first (after doing a database backup and
-stopping CATMAID). 
+stopping CATMAID).
 
 Updating a CATMAID instance involves several steps: First move to your
 CATMAID instance's root directory. This is also the root of CATMAID's
@@ -205,9 +205,9 @@ To avoid database triggers firing during direct database modifications, the
 following SQL can be used to disable triggers temporarily::
 
   SET session_replication_role = replica;
-  
+
   /* Do your edits */
-  
+
   SET session_replication_role = DEFAULT;
 
 

@@ -71,7 +71,7 @@ orientation. A ``--node-limit`` of 0 will remove any existing node limits. The
 type ``msgpack`` turned out to be the fastest one in our tests so far.
 
 It makes sense to automate this process to run once every night. This can be
-done with a cron-job or with predefined :ref:`Celery tasks` <celery tasks>,
+done with a cron-job or with predefined :ref:`Celery <celery>` tasks,
 which can be added to ``settings.py`` like this::
 
   CELERY_BEAT_SCHEDULE['update-node-query-cache'] = {

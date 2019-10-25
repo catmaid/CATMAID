@@ -3,7 +3,7 @@
 Configuring NBLAST
 ==================
 
-After setting up the :ref:`R environment <r_setup>` for NBLAST the front-end
+After setting up the :ref:`R environment <r-setup>` for NBLAST the front-end
 tools like the Similarity Widget should work. By default these tools will read
 the most recent skeleton data from the database. For bigger datasets this can
 introduce some performance problems. Typically, in bigger datasets, only a small

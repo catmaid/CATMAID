@@ -16,6 +16,11 @@ DB_TUNE=$(sanitize ${DB_TUNE:-true})
 DB_FIXTURE=$(sanitize ${DB_FIXTURE:-false})
 AVAILABLE_MEMORY=`awk '/MemTotal/ { printf "%.3f \n", $2/1024 }' /proc/meminfo`
 INSTANCE_MEMORY=${INSTANCE_MEMORY:-$AVAILABLE_MEMORY}
+CM_INITIAL_ADMIN_USER=$(sanitize ${CM_INITIAL_ADMIN_USER:-"admin"})
+CM_INITIAL_ADMIN_PASS=$(sanitize ${CM_INITIAL_ADMIN_PASS:-"admin"})
+CM_INITIAL_ADMIN_EMAIL=$(sanitize ${CM_INITIAL_ADMIN_EMAIL:-"admin@localhost.local"})
+CM_INITIAL_ADMIN_FIRST_NAME=$(sanitize ${CM_INITIAL_ADMIN_FIRST_NAME:-"Super"})
+CM_INITIAL_ADMIN_LAST_NAME=$(sanitize ${CM_INITIAL_ADMIN_LAST_NAME:-"User"})
 CM_DEBUG=$(sanitize ${CM_DEBUG:-false})
 CM_EXAMPLE_PROJECTS=$(sanitize ${CM_EXAMPLE_PROJECTS:-true})
 # This is expected to be a JSON project definition like it is exported through
@@ -145,7 +150,10 @@ init_catmaid () {
   echo "Updating static files"
   python manage.py collectstatic --clear --noinput
 
-  # The additional new lines are needed to end the input stream
+  # The additional new lines are needed to end the input stream. This will try
+  # to read the environment variables CM_INITIAL_ADMIN_USER,
+  # CM_INITIAL_ADMIN_PASS and CM_INITIAL_ADMIN_EMAIL,
+  # CM_INITIAL_ADMIN_FIRST_NAME, CM_INITIAL_ADMIN_LAST_NAME.
   echo "Ensuring existence of super user"
   printf '\n\n' | cat /home/scripts/docker/create_superuser.py - | python manage.py shell
 

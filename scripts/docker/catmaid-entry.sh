@@ -18,6 +18,10 @@ AVAILABLE_MEMORY=`awk '/MemTotal/ { printf "%.3f \n", $2/1024 }' /proc/meminfo`
 INSTANCE_MEMORY=${INSTANCE_MEMORY:-$AVAILABLE_MEMORY}
 CM_DEBUG=$(sanitize ${CM_DEBUG:-false})
 CM_EXAMPLE_PROJECTS=$(sanitize ${CM_EXAMPLE_PROJECTS:-true})
+# This is expected to be a JSON project definition like it is exported through
+# the /projects/export API.
+CM_INITIAL_PROJECTS=${CM_INITIAL_PROJECTS:-""}
+CM_INITIAL_PROJECTS_IMPORT_PARAMS=${CM_INITIAL_PROJECTS_IMPORT_PARAMS:-""}
 CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE=$(sanitize ${CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:-""})
 CM_HOST=$(sanitize ${CM_HOST:-0.0.0.0})
 CM_PORT=$(sanitize ${CM_PORT:-8000})
@@ -147,6 +151,11 @@ init_catmaid () {
 
   if [ "$CM_EXAMPLE_PROJECTS" = true ]; then
     python manage.py catmaid_insert_example_projects --user=1
+  fi
+
+  if [ ! -z "$CM_INITIAL_PROJECTS" ]; then
+    echo "Initializig project configuration";
+    echo "$CM_INITIAL_PROJECTS" | python manage.py catmaid_import_projects $CM_INITIAL_PROJECTS_IMPORT_PARAMS
   fi
 
   # Make sure uWSGI runs on the correct port

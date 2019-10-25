@@ -183,3 +183,193 @@ needs then to be rebuilt and run::
 After a successful upgrade, the ``DB_UPDATE`` variable should be set to
 ``false`` again, to not accidentally upgrade the data files without ensuring a
 back-up has been made.
+
+Parameterizing Docker containers
+--------------------------------
+
+Both the standalone Docker container and the docker-compose setup can be
+parameterized with various options. Some of them have already been discussed
+above. Generally, Docker parameters are provided as environment variables. For
+the regular Docker setup this happens by adding ``-e KEY=VALUE`` parameters to
+the ``docker run`` call. For ``docker-compose``, the respective entries have to
+be added to the ``docker-compose.yaml`` file. The following settings are
+available:
+
+.. glossary::
+  ``DB_HOST``
+    The dabase hostname. Default: localhost
+
+.. glossary::
+  ``DB_PORT``
+    The port the database is listening on. Default: 5432
+
+.. glossary::
+  ``DB_NAME``
+    The name of the CATMAID database. Default: catmaid
+
+.. glossary::
+  ``DB_USER``
+    The user as who to connect to the databae. Default: catmaid_user
+
+.. glossary::
+  ``DB_PASS``
+    The password of the database user. Default: catmaid_password. Please change
+    this!
+
+.. glossary::
+  ``DB_CONNECTIONS``
+    The maximum number of allowed database connections. Default: 50
+
+.. glossary::
+  ``DB_TUNE``
+    Whether the contaienr should try to tune the database on initial startup.
+    Default: true
+
+.. glossary::
+  ``DB_FORCE_TUNE``
+    Whether the next start of the container should include a database tuning
+    update. Default: false
+
+.. glossary::
+  ``DB_FIXTURE``
+    Whether or not to expect raw SQL as input on stdin. This can be piped
+    directly to the database. Assuming there is simple database dump with text
+    SQL commands in the file backup.sql, the following command can be used to
+    load it into the container database: ``cat backup.sql | docker run -i
+    -e DB_FIXTURE=true --name catmaid catmaid/catmaid-standalone``. Default:
+    false.
+
+.. glossary::
+  ``INSTANCE_MEMORY``
+    The amount of memory, the docker instance should have available. This is the
+    basis for tweaking some database parameters. By default, this is estimated
+    automatically, but can be overridden in terms of megabtes of memory, i.e. a
+    value of 4096 means 4GB.
+
+.. glossary::
+  ``CM_DEBUG``
+    Whether or not to run CATMAID in debug mode. Default: false
+
+.. glossary::
+  ``CM_EXAMPLE_PROJECTS``
+    Whether or not to setup example projects. Default: true
+
+.. glossary::
+  ``CM_INITIAL_PROJECTS``
+    A set of project and stack definitions that the container will set up
+    initiall. The expected format is JSON as it is returned by the
+    ``/projects/export`` API endpoint. This can be a multiline environment
+    variable, but Docker is somewhat picky about how this is provided.
+
+    Consider the following JSON representation of a Drosophila larva L1 project,
+    stored in the file ``larva-l1-project.json``::
+
+      [{
+        "project": {
+          "title": "L1 CNS",
+          "stacks": [{
+            "title": "L1 CNS",
+            "dimension": "(28128, 31840, 4841)",
+            "mirrors": [{
+              "fileextension": "jpg",
+              "position": 3,
+              "tile_source_type": 4,
+              "tile_height": 512,
+              "tile_width": 512,
+              "title": "Example tiles",
+              "url": "https://example.com/ssd-tiles/"
+            }],
+            "resolution": "(3.8,3.8,50)",
+            "translation": "(0,0,6050)"
+          }]
+        }
+      }]
+
+    This can now be used in the CM_INITIAL_PROJECTS environment variable like
+    this as a ``docker run`` parameter::
+
+      -e CM_INITIAL_PROJECTS="$(cat larva-l1-project.json)"
+
+    Alterantively, such a JSON block could be included also directly into the
+    call on the command line::
+
+      docker run … -e CM_INITIAL_PROJECTS='[{
+        "project": {
+          …
+        }
+      }]' -e …
+
+.. glossary::
+  ``CM_INITIAL_PROJECTS_IMPORT_PARAMS``
+    The parameter string provided to the ``catmaid_import_projects`` management
+    command by the importer to import the projects and stacks provided in
+    ``CM_INITIAL_PROJECTS``. This can for instance be give the anonymous user
+    read permissions on the imported data::
+
+      CM_INITIAL_PROJECTS_IMPORT_PARAMS="--permission user:AnonymousUser:can_browse"
+
+.. glossary::
+  ``CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE``
+    The maximum allowed file size for skeletons that are imported through the API
+    into the container. In Bytes.
+
+.. glossary::
+  ``CM_HOST``
+    The network interface in the container, the CATMAID application server should
+    be listening on.  Default: 0.0.0.0 (all interfaces).
+
+.. glossary::
+  ``CM_PORT``
+    The network port in the container, the CATMAID application server should be
+    listening on. Default: 8000
+
+.. glossary::
+  ``CM_FORCE_CONFIG_UPDATE``
+    Whether the CATMAID configurating should be updated on container start.
+    Normally, the settings are updated on initial container start. Default: false
+
+.. glossary::
+  ``CM_WRITEABLE_PATH``
+    Where CATMAID can expect to be able to write data. This can be useful to make
+    this folder accessible through a Docker volume. Default: "/tmp".
+
+.. glossary::
+  ``CM_NODE_LIMIT``
+    The maximum number of reconstruction nodes that should be loaded by a single
+    field of view query. Default: 10000
+
+.. glossary::
+  ``CM_NODE_PROVIDERS``
+    How the back-end node providers should be configured. Default: "['postgis2d']
+
+.. glossary::
+  ``CM_SUBDIRECTORY``
+    The subdirectory relative to the domain root that CATMAID is running in, e.g.
+    "/catmaid". By default, no subdirectory is used ("").
+
+.. glossary::
+  ``CM_CSRF_TRUSTED_ORIGINS``
+    Which servers to trust to bypass CSRF checks. None by default (""). The format
+    is expected to be a Python like list, e.g. '["example.com"].
+
+.. glossary::
+  ``CM_CLIENT_SETTINGS``
+    A JSON string representing a set of client settings that are used as default
+    instance level client settings. Already defined settings take precedence. By
+    default no client settings are provided ("").
+
+    This is an example that will set the neuron name rendering to prefer a name
+    set by an annotation that is meta-annotated with "Neuron name"::
+
+      CLIENT_SETTINGS: '{"neuron-name-service": {"component_list": [{"id": "skeletonid", "name": "Skeleton ID"}, {"id": "neuronname", "name": "Neuron name"}, {"id": "all-meta", "name": "All annotations annotated with \"neuron name\"", "option": "neuron name"}]}}'
+
+.. glossary::
+  ``CM_FORCE_CLIENT_SETTINGS``
+    Normally, the above client settings are only used if there is none already
+    defined for a user. To enforce the use of the CM_CLIENT_SETTINGS settings,
+    this can be set to true. Default: false
+
+.. glossary::
+  ``TIMEZONE``
+    The timezone this server runs in. By default CATMAID tries to guess.
+    Otherwise see https://en.wikipedia.org/wiki/List_of_tz_zones_by_name.

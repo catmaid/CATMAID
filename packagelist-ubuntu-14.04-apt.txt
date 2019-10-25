@@ -1,5 +1,5 @@
-postgresql-11
-postgresql-11-postgis-2.5
+postgresql-12
+postgresql-12-postgis-2.5
 gcc
 gfortran
 git

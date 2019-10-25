@@ -235,8 +235,11 @@ parameterized with various options. Some of them have already been discussed
 above. Generally, Docker parameters are provided as environment variables. For
 the regular Docker setup this happens by adding ``-e KEY=VALUE`` parameters to
 the ``docker run`` call. For ``docker-compose``, the respective entries have to
-be added to the ``docker-compose.yaml`` file. The following settings are
-available:
+be added to the ``docker-compose.yaml`` file. The available settings can broadly
+be categorized in infrastructure settings (database, webserver) and CATMAID
+settings.
+
+The following infrastructure settings are available:
 
 .. glossary::
   ``DB_HOST``
@@ -288,6 +291,31 @@ available:
     basis for tweaking some database parameters. By default, this is estimated
     automatically, but can be overridden in terms of megabtes of memory, i.e. a
     value of 4096 means 4GB.
+
+The following CATMAID settings are available. If anything, the administration
+password should be changed to something more secure (``CM_INITIAL_ADMIN_PASS``).
+
+.. glossary::
+  ``CM_INITIAL_ADMIN_USER``
+    This admin user is created during initial setup. Default: admin
+
+.. glossary::
+  ``CM_INITIAL_ADMIN_PASS``
+    This initial password of the admin user defined in CM_INITIAL_ADMIN_USER.
+    This should be changed to something more secure!  Default: admin
+
+.. glossary::
+  ``CM_INITIAL_ADMIN_EMAIL``
+    This initial email address of the admin user defined in CM_INITIAL_ADMIN_USER.
+    Default: admin@localhost.local
+
+.. glossary::
+  ``CM_INITIAL_ADMIN_FIRST_NAME``
+  The first name of the admin user defined in CM_INITIAL_ADMIN_USER. Default: Super
+
+.. glossary::
+  ``CM_INITIAL_ADMIN_LAST_NAME``
+  The last name of the admin user defined in CM_INITIAL_ADMIN_USER. Default: User
 
 .. glossary::
   ``CM_DEBUG``

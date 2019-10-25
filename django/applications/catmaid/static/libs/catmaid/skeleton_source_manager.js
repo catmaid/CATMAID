@@ -461,7 +461,11 @@
     var selectLast = this.defaultSelectLastSource && nameIndex > 0;
     var currentIndex = nameIndex - 1;
     while (currentIndex > 0) {
-      if (this.sources[this.orderedSources[currentIndex]].noDefaultSelection) {
+      let source = this.sources[this.orderedSources[currentIndex]];
+      if (!source) {
+        throw new CATMAID.ValueError(`Could not find skeleton source for name "${this.orderedSources[currentIndex]}"`);
+      }
+      if (source.noDefaultSelection) {
         --currentIndex;
       } else {
         break;

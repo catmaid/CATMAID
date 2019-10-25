@@ -1,0 +1,196 @@
+<html>
+<body>
+  <h3>Neuron pair statistics</h3>
+
+  <p>This widget assists with assigning lineages and cell type annotations to sets
+  of neurons and verifying assigned annotations are consistent with the observed
+  morpholgy. In order to do this, it relies heavily on a particular use of
+  <em>annotations</em> and <em>meta-annotations</em> (annotations on
+  annotations). From a pool of annotations, group annotations are selected based
+  on whether ther name matches a particular pattern (e.g. pick only annotations
+  with an underscore character and use everything in front of the first
+  underscore as the group name). These groups are then further divided into
+  subgroups/instances, based on a second pattern (e.g. everything after the
+  first underscore character will become the subgroup name.</p>
+
+  <p>For each annotation-based subgroup within each group all annotated neurons are
+  selected.</p>
+
+  <h4>Defining a pool of annotations</h4>
+
+  <p>The pool of annotations to work on can be defined in terms of a general
+  pattern (<em>Annotation filter</em> field in the UI), which can be a regular
+  expression if it starts with a forward slash character. Alternatively, a
+  meta-annotation can be specified (<em>Meta-annotation</em> field in the UI),
+  which all candidate annotations need to be annotated with.</p>
+
+  <p>It is of course fine to use all available annotations (e.g. with a regular
+  expression: <span class="inline-code">/.*</span> Generelly it seems cleaner to
+  constrain all available annotations to the ones that should form the actual
+  pool of options.</p>
+
+  <p>Updating the filter pattern will updatea the table below that shows the
+  list of groups and subgroups based on the current configuration.</em>
+
+  <p><em>Example:</em> Assume all relevant annotations start with an asterisk and
+  have the suffix "-cencus". A useful <em>annotation filter</em> would be this
+  regular expression: <span class="inline-code">/^\*.*-census$</span>.</p>
+
+  <h4>Groups and subgroups</h4>
+
+  <p>With a set of pool of candidate annotations defined, groups and subgroups
+  can now be extracted. Groups can contain multiple annotations if their name
+  shares a common pattern, e.g. the same text in front of the first underscore
+  character. Subgroups are groups within groups: all annotations that consitute
+  a group are further devided based on a second pattern. The allows to represent
+  different variants of the group. Both patterns are expressed in a single
+  regular expression, where the first match-group (pair of parentheses)
+  represents the group name and the second match-group represents the subgroup.
+  An example can hopefully illustrate this point a bit more:</p>
+
+  <p><em>Example:</em> We have organized the lineage annotations following the
+  pattern <span class="inline-code">&lt;lineage-name&gt;_&lt;side&gt;</span>
+  where <span class="inline-code">&lt;lineage-name&gt;</span> (the part before the
+  underscore) represents the lineage name (e.g. BLDc) and the part right after
+  the underscore (<span class="inline-code">&lt;side&gt;</span>) denotes the
+  left or the right side of the brain, specified by either <span
+  class="inline-code">l</span> or <span class="inline-code">r</span>. As a
+  grouping pattern we could therefore write. In such a setup, we can use the
+  default <em>Grouping pattern</em>: <span class="inline-code">/(.*)_([lr])
+  </span>. The part from the begining of the annotation name up to the first
+  underscore is stored as the first match-group, the group name: <span
+  class="inline-code">/(.*) </span>. The subgroup name is by either <span
+  class="inline-code">l</span> or <span class="inline-code">r</span> right after
+  the underscore by the second match-group: <span class="inline-code">([lr])
+  </span>. This will then match annotations like <span class="inline-code">
+  BLDc_l</span> and <span class="inline-code">BLDc_r</span> and would map them
+  to separate subgroups. Note that this pattern also works if the annotation
+  name continues after the side specification, like with the "-census" suffix
+  from the previous example, e.g.  <span class="inline-code">
+  BLDc_l-cencsus</span> and <span class="inline-code">BLDc_r-cencus</span>. If
+  an annotation from the pool doesn't match this pattern, it won't contribute to
+  the set of grouping annotations.</p>
+
+  <p>In addition to the group and subgroup pattern, it is also possible to only
+  allow groups that have a minimum and maximum number of subgroups through the
+  <em>Min subgroups</em> and <em>Max subgroups</em> fields.</p>
+
+  <h4>Extra groups and subgroups</h4>
+
+  <p>Sometimes there are outliers to a common pattern or there is no pattern in
+  the first place. This widget allows to also add custom groups and subgroups,
+  as long as they can be mapped to actual annotations. To add a custom group,
+  add first a group name in the <em>Group name</em> field in the <em>New
+  group</em> section. The group's subgroups are defined in terms of a comma
+  separate list consisting of the patterns <span class="inline-code">
+  &lt;subgroup-name&gt;|&lt;annotation-name&gt;</span>, where <span class="inline-code">
+  &lt;subgroup-name&gt;</span> defines the name of the subgroup (like <span
+  class="inline-code">l</span> and <span class="inline-code">r</span> above).
+  Each subgroup entry is mapped to a particular annotation, which is given by
+  the <span class="inline-code">&lt;annotation-name&gt;</span> part. Pressing
+  the "Add" button, will add the extra group to the list of "Extra groups" in
+  the content section. It is possible to add multiple extra groups.</p>
+
+  <p><em>Example:</em>To add the example lineage from before explicitely, the
+  <em>Group name</em> could be set to <span class="inline-code">BLDc</span> and
+  the list of subgroups could be <span class="inline-code">l|BLDc_l,
+  r|BLDc_r</span> or even <span class="inline-code">l|BLDc_l-census,
+  r|BLDc_r-census</span>.</p>
+
+
+  <h4>Mapping neurons to subgroups</h4>
+
+  <p>With all groups and subgroups set up, the next step is to find the neurons
+  belonging into each subgroup. This is performed in the <em>second tab</em>,
+  <em>Matching pairs</em>. These are of course the neurons annotated with the
+  respective subgroup annotation, but in addition the Pair Statistics Widget
+  will only allow neurons into subgroups that are considered
+  <em>complete</em>. This is done to weed out fragments, partial neurons and
+  also unreviewed neurons that to increase the quality of the result by making
+  individual morphologies more comparable.</p>
+
+  <h4>Completeness</h4>
+
+  <p>Neurons are considered compelete if at least two, optionally three
+  conditions are met:</p>
+  <ol>
+    <li>The skeleton doesn't have more than a defined percentage of open
+      ends, i.e. leaf nodes plus root that are <em>not marked</em> with one of
+      the following tags: "uncertain continuation", "not a branch", "ends",
+      "really ends", "uncertain end", "anterior end", "posterior end", "soma",
+      "out to nerve". By default 3% open ends are allowed.</li>
+    <li>The skeleton has a minimum length, either in terms of nodes (<em>Min
+        nodes</em> field) or nanometers (<em>Min cable</em> field).</li>
+    <li>Optionally, only neurons that aren't "fragments" can be considered
+      complete. A neuron is considered a fragment if it doesn't have either a
+      "soma" tagged node or a node tagged "out to nerve". The "Ignore fragments
+      checkbox" controls whether this should be tested.</li>
+  </ol>
+  <p>These completeness parameters can be defined separately for both the pattern
+  based annotation set and the set of extra groups.
+  </p>
+
+  <p>Pressing "Match pairs" will get the completeness information from
+  the server. All complete neurons are mapped to their respective subgroups,
+  which can be looked at either through the "Active groups" section in the
+  content view of the "Matching pairs" tab, or in terms of skeleton sources,
+  that are provided for each subgroup. Note that for larger sets of skeletons
+  this process can take a few minutes to complete. At the</p>
+
+  <p>The <em>Batch size</em> allows to tune how many skeletons will be queried
+  completeness for at a time. If the server supports longer open connections,
+  this value can be higher and more data queried in one request.</p>
+
+  <h4>Active groups</h4>
+
+  <p>Shows the list of all found subgroups across all groups. It shows the
+  groups each subgroup is found in as well as all <em>complete</em> skeletons
+  associated with the respective annotations.</p>
+
+  <p>Additionally, it is possible to define a <em>landmark group</em> for each
+  subgroup. These are spatial spaces defined through landmarks (see Landmark
+  Widget). This is needed to compute the similarity between pairs across
+  subgroups for each group. It allows transforming skeletons from one subgroup
+  into the other.</p>
+
+  <h4>Matching pairs</h4>
+
+  <p>Based on the sets of (completed) skeletons that are collected for each
+  annotation subgroup, pairs of skeletons are selected that share a common
+  annotation. This can be any annotation as long as the annotation is annotated
+  with a particular <em>meta-annotation</em>. This meta-annotation is defined in
+  terms of the <em>Pairing meta-annotation</em> field in the UI.</p>
+
+  <p>Besides this set of matching skeleton pairs, two other sets of pairs are
+  created, resulting in the following three sets of skeleton pairs:</p>
+
+  <ol>
+    <li>Matching pairs: both skeletons are from different subgroups within the
+      same group.</li>
+    <li>Same-group pairs: both skeletons are from the same subgroup, regardless
+      of their meta-annotations.</li>
+    <li>Unmatched pairs: both skeletons are from different subgroups with the
+      same group, while one of them has the required meta-annotation and the
+      other doesn't.</li>
+  </ol>
+
+  <p>These sets will also be available as skeleton sources, in which one color
+  is used per skeleton pair.</p>
+
+  <p><em>Example:</em>Consider the previously used example group, the lineage
+    <span class="inline-code">BLDc</span>, with its two subgroups
+    <span class="inline-code">BLDc_l</span> and <span class="inline-code">BLDc_r</span>.
+    In some cases pairs of neurons across both groups have been matched up and
+    annotated with <span class="inline-code">hemilateral_pair_<id1>_<id2></span>. These
+    annotations in turn are annotated with <span class="inline-code">brain-census</span>.
+    Using the <span class="inline-code">brain-census</span> annotation as
+    <em>pairing meta-annotation</em> allows the widget to use the fact that some
+    pairs are already verified. The <em>Matching pairs</em> tab will then
+    display the three sets of skeleton pairs above across these two subgroups,
+    viewing all skeleton pairs with both skeleton IDs meta-annotated with
+    <span class="inline-code">brain-census</span>.
+  </p>
+
+</body>
+</html>
+

@@ -760,7 +760,7 @@ def get_permissions_from_selection(cls, selection) -> List[Tuple]:
         elem = cls.objects.filter(id=elem_id)[0]
         perm_id = perm[perm.index('_')+1:]
         perm = Permission.objects.filter(id=perm_id)[0]
-        permission_list.append( (elem, perm) )
+        permission_list.append( (elem, perm.codename) )
     return permission_list
 
 KNOWN_PROJECT_FILTERS = (
@@ -1292,8 +1292,8 @@ def import_projects(user, pre_projects, tags, permissions,
             p = project or Project.objects.create(title=pp.title)
             # Assign permissions to project
             assigned_permissions = []
-            for user_or_group, perm in permissions:
-                assigned_perm = assign_perm( perm.codename, user_or_group, p )
+            for user_or_group, perm_codename in permissions:
+                assigned_perm = assign_perm( perm_codename, user_or_group, p )
                 assigned_permissions.append( assigned_perm )
             # Tag the project
             p.tags.add( *tags )

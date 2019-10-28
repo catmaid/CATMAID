@@ -2,4 +2,4 @@
 django-migration-testcase==0.0.13
 selenium==3.141.0
 sauceclient==1.0.0
-mypy==0.650; platform_python_implementation != 'PyPy'
+mypy==0.740; platform_python_implementation != 'PyPy'

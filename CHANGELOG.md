@@ -144,6 +144,9 @@ Administration:
   ``--order`` parameter, which can be set to either "cable-asc" or "cable-desc".
   By default no order is applied.
 
+- The group list will now also show a sortable column containing the number of
+  group members.
+
 Volumes:
 
 - Volumes have now their surface area and volume associated with them as well as

@@ -7,6 +7,7 @@ import yaml
 from django import forms
 from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import fields as db_fields, ForeignKey
+from django.db.models import Count
 from django.core.exceptions import ValidationError
 from django.contrib import admin, messages
 from django.contrib.admin.widgets import FilteredSelectMultiple
@@ -408,11 +409,22 @@ class CustomUserAdmin(UserAdmin):
 class CustomGroupAdmin(GroupAdmin):
     form = GroupAdminForm
     list_filter = ('name',)
+    list_display = ('name', 'member_count')
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
         if 'users' in form.cleaned_data:
             form.instance.user_set.set(form.cleaned_data['users'])
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        qs = qs.annotate(member_count=Count('user'))
+        return qs
+
+    def member_count(self, group_instance):
+        return group_instance.member_count
+    member_count.short_description = 'Member count'
+    member_count.admin_order_field = 'member_count'
 
 
 class GroupInactivityPeriodAdmin(admin.ModelAdmin):

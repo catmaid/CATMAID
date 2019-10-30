@@ -1825,7 +1825,7 @@ class TreenodeEdge(models.Model):
     Or, if they are root, back to themselves. Cascading delets are handled in
     the database.
     """
-    parent_id = models.ForeignKey(Treenode, on_delete=models.DO_NOTHING)
+    parent = models.ForeignKey(Treenode, on_delete=models.DO_NOTHING)
     project = models.ForeignKey(Project, on_delete=models.DO_NOTHING)
     edge = spatial_models.GeometryField(srid=0)
 

@@ -668,7 +668,7 @@ class Migration(migrations.Migration):
                     fields=[
                         ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                         ('edge', django.contrib.gis.db.models.fields.GeometryField(srid=0)),
-                        ('parent_id', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to='catmaid.Treenode')),
+                        ('parent', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to='catmaid.Treenode')),
                         ('project', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to='catmaid.Project')),
                     ],
                     options={

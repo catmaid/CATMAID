@@ -37,7 +37,7 @@ CM_NODE_PROVIDERS=$(sanitize ${CM_NODE_PROVIDERS:-"['postgis2d']"})
 CM_SUBDIRECTORY=$(sanitize ${CM_SUBDIRECTORY:-""})
 CM_CSRF_TRUSTED_ORIGINS=$(sanitize ${CM_CSRF_TRUSTED_ORIGINS:-""})
 CM_FORCE_CLIENT_SETTINGS=$(sanitize ${CM_FORCE_CLIENT_SETTINGS:-false})
-CM_CLIENT_SETTINGS=$(sanitize ${CM_CLIENT_SETTINGS:-""})
+CM_CLIENT_SETTINGS=${CM_CLIENT_SETTINGS:-""}
 TIMEZONE=`readlink /etc/localtime | sed "s/.*\/\(.*\)$/\1/"`
 PG_VERSION='10'
 
@@ -123,10 +123,11 @@ init_catmaid () {
   echo "Setting NODE_PROVIDERS = ${CM_NODE_PROVIDERS}"
   echo "NODE_PROVIDERS = ${CM_NODE_PROVIDERS}" >> mysite/settings.py
 
-  # Set initially client-setting
+  # Set initially client-setting, use raw string to not have Python interpret
+  # escaped characters.
   sed -i "/^\(CLIENT_SETTINGS = \).*/d" mysite/settings.py
-  echo "Setting CLIENT_SETTINGS = '${CM_CLIENT_SETTINGS}'"
-  echo "CLIENT_SETTINGS = '${CM_CLIENT_SETTINGS}'" >> mysite/settings.py
+  echo "Setting CLIENT_SETTINGS = r'${CM_CLIENT_SETTINGS}'"
+  echo "CLIENT_SETTINGS = r'${CM_CLIENT_SETTINGS}'" >> mysite/settings.py
   sed -i "/^\(FORCE_CLIENT_SETTINGS = \).*/d" mysite/settings.py
   if [ "$CM_FORCE_CLIENT_SETTINGS" = true ]; then
     echo "Setting FORCE_CLIENT_SETTINGS = True"

@@ -1,4 +1,5 @@
-from django.db import migrations
+from django.db import migrations, models
+import django.contrib.gis.db.models.fields
 
 
 forward = """
@@ -28,8 +29,7 @@ forward = """
     SELECT t.id, t.parent_id, t.project_id, te.edge
     FROM treenode t
     JOIN treenode_edge_old te
-        ON t.id = te.id
-    ORDER BY skeleton_id ASC;
+        ON t.id = te.id;
 
     -- Remove old table
 
@@ -662,5 +662,18 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-            migrations.RunSQL(forward, backward),
+            migrations.RunSQL(forward, backward, [
+                migrations.CreateModel(
+                    name='TreenodeEdge',
+                    fields=[
+                        ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                        ('edge', django.contrib.gis.db.models.fields.GeometryField(srid=0)),
+                        ('parent', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to='catmaid.Treenode')),
+                        ('project', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to='catmaid.Project')),
+                    ],
+                    options={
+                        'db_table': 'treenode_edge',
+                    },
+                ),
+            ]),
     ]

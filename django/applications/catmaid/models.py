@@ -1818,3 +1818,16 @@ class TreenodeConnectorEdge(models.Model):
 
     class Meta:
         db_table = "treenode_connector_edge"
+
+
+class TreenodeEdge(models.Model):
+    """A materialized view on edges between treenodes and their parent nodes.
+    Or, if they are root, back to themselves. Cascading delets are handled in
+    the database.
+    """
+    parent_id = models.ForeignKey(Treenode, on_delete=models.DO_NOTHING)
+    project = models.ForeignKey(Project, on_delete=models.DO_NOTHING)
+    edge = spatial_models.GeometryField(srid=0)
+
+    class Meta:
+        db_table = "treenode_edge"

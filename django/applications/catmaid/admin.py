@@ -132,6 +132,48 @@ class GroupNameFilter(admin.SimpleListFilter):
         return queryset
 
 
+class MinGroupCountFilter(admin.SimpleListFilter):
+    """This filter will always return a subset of all Group instances, either
+    filtering by the users choice or the default value.
+    """
+    title = "Min member count"
+    parameter_name = 'min_member_count'
+
+    def lookups(self, request, model_admin):
+        return [('1', '≥ 1'), ('2', '≥ 2'), ('5', '≥ 5'), ('10', '≥ 10'),
+                ('15', '≥ 15'), ('30', '≥ 30'), ('50', '≥ 50')]
+
+    def queryset(self, request, queryset):
+        min_count = self.value()
+
+        if min_count:
+            queryset = queryset.annotate(member_count=Count('user')) \
+                    .filter(member_count__gte=int(min_count))
+
+        return queryset
+
+
+class MaxGroupCountFilter(admin.SimpleListFilter):
+    """This filter will always return a subset of all Group instances, either
+    filtering by the users choice or the default value.
+    """
+    title = "Max member count"
+    parameter_name = 'max_member_count'
+
+    def lookups(self, request, model_admax):
+        return [('1', '≤ 1'), ('2', '≤ 2'), ('5', '≤ 5'), ('10', '≤ 10'),
+                ('15', '≤ 15'), ('30', '≤ 30'), ('50', '≤ 50')]
+
+    def queryset(self, request, queryset):
+        max_count = self.value()
+
+        if max_count:
+            queryset = queryset.annotate(member_count=Count('user')) \
+                    .filter(member_count__lte=int(max_count))
+
+        return queryset
+
+
 class BrokenSliceModelForm(forms.ModelForm):
     """ This model form for the BrokenSlide model, will add an optional "last
     index" field. BrokenSliceAdmin will deactivate it, when an existing
@@ -428,7 +470,7 @@ class CustomUserAdmin(UserAdmin):
 
 class CustomGroupAdmin(GroupAdmin):
     form = GroupAdminForm
-    list_filter = (GroupNameFilter,)
+    list_filter = (GroupNameFilter, MinGroupCountFilter, MaxGroupCountFilter)
     list_display = ('name', 'member_count')
 
     def save_model(self, request, obj, form, change):

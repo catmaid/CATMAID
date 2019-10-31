@@ -147,7 +147,8 @@ Administration:
 - The group list will now also show a sortable column containing the number of
   group members. It also provides a more useful filtering option on the right.
   Clicking "Only non-user groups" will now only show groups with a name that
-  isn't a username.
+  isn't a username. Additionally, it is possible to filter by a minimum and
+  maximum number of group members.
 
 Volumes:
 

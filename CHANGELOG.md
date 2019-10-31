@@ -145,7 +145,9 @@ Administration:
   By default no order is applied.
 
 - The group list will now also show a sortable column containing the number of
-  group members.
+  group members. It also provides a more useful filtering option on the right.
+  Clicking "Only non-user groups" will now only show groups with a name that
+  isn't a username.
 
 Volumes:
 

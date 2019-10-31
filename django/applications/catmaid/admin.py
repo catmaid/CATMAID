@@ -112,6 +112,26 @@ def delete_projects_and_data(modeladmin, request, queryset) -> HttpResponseRedir
 delete_projects_and_data.short_description = "Delete selected" # type: ignore # https://github.com/python/mypy/issues/2087
 
 
+class GroupNameFilter(admin.SimpleListFilter):
+    """This filter will always return a subset of all Group instances, either
+    filtering by the users choice or the default value.
+    """
+    title = "Group name"
+    parameter_name = 'group_name'
+
+    def lookups(self, request, model_admin):
+        return [('no-user-group', 'Only non-user groups')]
+
+    def queryset(self, request, queryset):
+        filter_type = self.value()
+
+        if filter_type == 'no-user-group':
+            usernames = User.objects.all().values_list('username', flat=True)
+            queryset = queryset.exclude(name__in=usernames)
+
+        return queryset
+
+
 class BrokenSliceModelForm(forms.ModelForm):
     """ This model form for the BrokenSlide model, will add an optional "last
     index" field. BrokenSliceAdmin will deactivate it, when an existing
@@ -408,7 +428,7 @@ class CustomUserAdmin(UserAdmin):
 
 class CustomGroupAdmin(GroupAdmin):
     form = GroupAdminForm
-    list_filter = ('name',)
+    list_filter = (GroupNameFilter,)
     list_display = ('name', 'member_count')
 
     def save_model(self, request, obj, form, change):

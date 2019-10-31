@@ -206,6 +206,7 @@
     this.stackFilterTerm = options.config.stackFilterTerm;
     this.with_stacks = options.config.with_stacks;
     this.with_stackgroups = options.config.with_stackgroups;
+    this.show_empty_projects = options.config.show_empty_projects;
     this.cacheLoadingTimeout = null;
   };
 
@@ -217,7 +218,8 @@
     projectFilterTerm: "",
     stackFilterTerm: "",
     with_stacks: true,
-    with_stackgroups: true
+    with_stackgroups: true,
+    show_empty_projects: false,
   };
 
   ProjectListDataView.prototype.createContent = function(content) {
@@ -338,6 +340,10 @@
 
       title = p.title;
       if (projectRegEx && !projectRegEx.test(title)) {
+        continue;
+      }
+
+      if (p.stacks.length === 0 && !this.show_empty_projects) {
         continue;
       }
 

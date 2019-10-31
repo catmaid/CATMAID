@@ -168,6 +168,7 @@ Name                    Options                                     Default
 ``message``             ``String``                                  ``def. message``
 ``with_stacks``         ``true, false``                             ``true``
 ``with_stackgroups``    ``true, false``                             ``true``
+``show_empty_projects`` ``true, false``                             ``false``
 ======================= =========================================== ================
 
 An example:

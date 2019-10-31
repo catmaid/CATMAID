@@ -332,6 +332,10 @@ Miscellaneous:
   downstream of a domain as well. If split uptream, the domain will be deleted,
   because it is part of the split-off fragment.
 
+- Data views: add option "show_empty_projects" to simple project list data view.
+  It is false by default and can be turned on to show empty projects, including
+  the classification dummy project.
+
 ## 2019.06.20
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Pat Gunn, William Patton, Tom Kazimiers

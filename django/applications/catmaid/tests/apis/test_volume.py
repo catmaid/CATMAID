@@ -58,7 +58,7 @@ class VolumeTests(CatmaidApiTestCase):
         self.fake_authentication()
         # Change title only
         response = self.client.post(
-            '/%d/volumes/%d/' % (self.test_project_id, self.test_vol_1_id), {'title': 'New title'},
+            f'/{self.test_project_id}/volumes/{self.test_vol_1_id}/', {'title': 'New title'},
         )
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
@@ -90,7 +90,7 @@ class VolumeTests(CatmaidApiTestCase):
         self.fake_authentication()
         # Change comment only
         response = self.client.post(
-            '/%d/volumes/%d/' % (self.test_project_id, self.test_vol_1_id), {'comment': 'New comment'}
+            f'/{self.test_project_id}/volumes/{self.test_vol_1_id}/', {'comment': 'New comment'}
         )
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))

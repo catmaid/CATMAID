@@ -161,6 +161,15 @@ class TriangleMeshVolume(PostGISVolume):
                 self.mesh = json.loads(input_mesh)
             else:
                 raise ValueError(f"Unknown mesh type: {mesh_type}")
+
+            # Ensure that the passed in mesh conforms to our expectation of
+            # being a two element tuple.
+            if type(self.mesh) not in (list, tuple) or len(self.mesh) != 2:
+                raise ValueError("Mesh doesn't conform to expected format: a " \
+                        "two-element tuple/list: [points, faces].")
+            if len(self.mesh[0]) < 3 or len(self.mesh[1]) < 1:
+                raise ValueError("Mesh needs to have at lest three points and one face.")
+
         else:
             self.mesh = None
 
@@ -179,9 +188,13 @@ class TriangleMeshVolume(PostGISVolume):
         the other array, that are referenced by the triangle index values.
         """
         def pg_point(p):
+            if not p or len(p) != 3:
+                raise ValueError(f'Point "{p}" does not have three elements')
             return f'{p[0]} {p[1]} {p[2]}'
 
         def pg_face(points, f):
+            if not f or len(f) != 3:
+                raise ValueError(f'Face "{f}" does not have three elements')
             p0 = pg_point(points[f[0]])
             return f'(({p0}, {pg_point(points[f[1]])}, {pg_point(points[f[2]])}, {p0}))'
 

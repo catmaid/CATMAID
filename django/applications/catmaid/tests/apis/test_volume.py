@@ -164,3 +164,82 @@ class VolumeTests(CatmaidApiTestCase):
             HTTP_ACCEPT="model/x.stl-ascii,model/stl")
 
         self.assertStatus(response)
+
+    def test_import_malformed_data(self):
+        self.fake_authentication()
+        assign_perm('can_import', self.test_user, self.test_project)
+
+        # Make sure a basic mesh can be added (a single triangle).
+        response = self.client.post(f'/{self.test_project_id}/volumes/add', {
+                "type": "trimesh",
+                "title": "Test volume",
+                "mesh": json.dumps([
+                    [[0,0,0], [1,0,0], [0,1,0]],
+                    [[0,1,2]],
+                ]),
+            })
+        self.assertStatus(response, code=200)
+
+        # No faces
+        response = self.client.post(f'/{self.test_project_id}/volumes/add', {
+                "type": "trimesh",
+                "title": "Malformed volume",
+                "mesh": [
+                    [[[0,0,0], [1,0,0], [0,1,0]]],
+                ],
+            })
+        self.assertStatus(response, code=400)
+        response = self.client.post(f'/{self.test_project_id}/volumes/add', {
+                "type": "trimesh",
+                "title": "Malformed volume",
+                "mesh": [
+                    [[[0,0,0], [1,0,0], [0,1,0]]],
+                    [],
+                ],
+            })
+        self.assertStatus(response, code=400)
+
+        # No points
+        self.assertStatus(response, code=400)
+        response = self.client.post(f'/{self.test_project_id}/volumes/add', {
+                "type": "trimesh",
+                "title": "Test volume",
+                "mesh": json.dumps([
+                    [],
+                    [[0,1,2]],
+                ]),
+            })
+        self.assertStatus(response, code=400)
+
+        # To few points
+        response = self.client.post(f'/{self.test_project_id}/volumes/add', {
+                "type": "trimesh",
+                "title": "Test volume",
+                "mesh": json.dumps([
+                    [[1,0,0], [0,1,0]],
+                    [[0,1,2]],
+                ]),
+            })
+        self.assertStatus(response, code=400)
+
+        # Too many point dimensions
+        response = self.client.post(f'/{self.test_project_id}/volumes/add', {
+                "type": "trimesh",
+                "title": "Test volume",
+                "mesh": json.dumps([
+                    [[0,0,0,0], [1,0,0], [0,1,0]],
+                    [[0,1,2]],
+                ]),
+            })
+        self.assertStatus(response, code=400)
+
+        # Too many face dimensions
+        response = self.client.post(f'/{self.test_project_id}/volumes/add', {
+                "type": "trimesh",
+                "title": "Test volume",
+                "mesh": json.dumps([
+                    [[0,0,0], [1,0,0], [0,1,0]],
+                    [[0,1,2,0]],
+                ]),
+            })
+        self.assertStatus(response, code=400)

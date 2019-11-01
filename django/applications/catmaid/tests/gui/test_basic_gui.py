@@ -126,8 +126,9 @@ class BasicUITest(StaticLiveServerTestCase):
                 }
                 hub_url = f"{username}:{access_key}@localhost:4445"
                 self.selenium = webdriver.Remote(
-                        desired_capabilities=capabilities,
-                        command_executor=f"http://{hub_url}/wd/hub"
+                    desired_capabilities=capabilities,
+                    command_executor=f"http://{hub_url}/wd/hub",
+                )
             else:
                 self.selenium = webdriver.Firefox()
 

@@ -49,12 +49,14 @@ in_configfile = op.join('projects/mysite/django.wsgi.example')
 out_configfile = op.join('projects/mysite/django.wsgi')
 backup_existing_copy(out_configfile)
 
-o = open( out_configfile,'w')
-data = open( in_configfile, 'r' ).read()
+with open(in_configfile) as in_f:
+    data = in_f.read()
+
 data = re.sub('CATMAIDPATH', abs_catmaid_path, data)
 data = re.sub('PYTHONLIBPATH', abs_virtualenv_python_library_path, data)
-o.write( data )
-o.close()
+
+with open(out_configfile, "w") as out_f:
+    out_f.write(data)
 
 # Create a secret key for Django
 alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
@@ -63,8 +65,10 @@ catmaid_secret_key = ''.join([choice(alphabet) for i in range(50)])
 in_configfile = op.join('projects/mysite/settings.py.example')
 out_configfile = op.join('projects/mysite/settings.py')
 backup_existing_copy(out_configfile)
-o = open( out_configfile,'w')
-data = open( in_configfile, 'r' ).read()
+
+with open(in_configfile) as in_f:
+    data = in_f.read()
+
 data = re.sub('CATMAIDPATH', abs_catmaid_path, data)
 data = re.sub('CATMAID_DATABASE_HOST', catmaid_database_host, data)
 data = re.sub('CATMAID_DATABASE_PORT', catmaid_database_port, data)
@@ -100,7 +104,7 @@ if 'catmaid_default_enabled_tools' in locals():
         'roi': 'PROFILE_SHOW_ROI_TOOL',
     }
     known_tools = set(known_tool_map.keys())
-    unknown_tools =set(catmaid_default_enabled_tools) - known_tools
+    unknown_tools = set(catmaid_default_enabled_tools) - known_tools
     if unknown_tools:
         print('The following options for "catmaid_default_enabled_tools" are unknown: {}'.format(
             ', '.join(unknown_tools)))
@@ -110,8 +114,8 @@ if 'catmaid_default_enabled_tools' in locals():
         data += f'{known_tool_map[tool]} = {"True" if tool in enabled_tools else "False"}\n'
 
 # Write out the configuration
-o.write( data )
-o.close()
+with open(out_configfile, 'w') as out_f:
+    out_f.write(data)
 
 nginx_out = """
 upstream catmaid-wsgi {{
@@ -147,11 +151,11 @@ server {{
         proxy_set_header X-Forwarded-Proto $scheme;
     }}
 }}
-""".format(**{
-    'cmpath': abs_catmaid_path,
-    'subdir': catmaid_subdirectory,
-    'writable_path': catmaid_writable_path,
-})
+""".format(
+    cmpath=abs_catmaid_path,
+    subdir=catmaid_subdirectory,
+    writable_path=catmaid_writable_path,
+)
 
 # Remove any double slashes from this configuration too:
 nginx_out = re.sub('(?<!(http:))//', '/', nginx_out)
@@ -195,11 +199,11 @@ Alias /{subdir}/files {writable_path}/
 # Remove any double slashes from this configuration too:
 apache_out = re.sub('//', '/', apache_out)
 
-print("""
+print(f"""
 Nginx configuration settings
 ----------------------------
-%s
+{nginx_out}
 Apache configuration settings
 -----------------------------
-%s
-""" % (nginx_out, apache_out))
+{apache_out}
+""")

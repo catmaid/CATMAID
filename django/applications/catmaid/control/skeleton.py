@@ -1933,8 +1933,7 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids,
         extra_join = ''
 
     # Obtain all synapses made between row skeletons and column skeletons.
-    cursor.execute(
-        '''
+    cursor.execute('''
         SELECT t1.skeleton_id, t2.skeleton_id
             {extra_select}
         FROM treenode_connector t1,
@@ -1945,14 +1944,12 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids,
           AND t1.connector_id = t2.connector_id
           AND t1.relation_id = %(pre_rel_id)s
           AND t2.relation_id = %(post_rel_id)s
-        '''.format(extra_select=extra_select, extra_join=extra_join),
-        {
-            'row_skeleton_ids': list(row_skeleton_ids),
-            'col_skeleton_ids': list(col_skeleton_ids),
-            'pre_rel_id': pre_rel_id,
-            'post_rel_id': post_rel_id
-        },
-    )
+    '''.format(extra_select=extra_select, extra_join=extra_join), {
+        'row_skeleton_ids': list(row_skeleton_ids),
+        'col_skeleton_ids': list(col_skeleton_ids),
+        'pre_rel_id': pre_rel_id,
+        'post_rel_id': post_rel_id
+    })
 
     # Build a sparse connectivity representation. For all skeletons requested
     # map a dictionary of partner skeletons and the number of synapses

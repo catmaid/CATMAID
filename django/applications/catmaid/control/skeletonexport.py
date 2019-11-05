@@ -1806,8 +1806,7 @@ def connector_polyadicity(request:HttpRequest, project_id=None) -> JsonResponse:
         ''')
 
     cursor = connection.cursor()
-    cursor.execute(
-        '''
+    cursor.execute('''
         SELECT skeleton_id, relation_name, connector_id, polyadicity
         FROM (
             SELECT tc1.skeleton_id, tc1.relation_id, tc1.connector_id,
@@ -1824,15 +1823,13 @@ def connector_polyadicity(request:HttpRequest, project_id=None) -> JsonResponse:
         ) sub
         JOIN relation r
             ON r.id = relation_id
-        '''.format(extra_conditions='AND' + ' AND '.join(extra_conditions) if extra_conditions else '',),
-        {
-            'project_id': project_id,
-            'skeleton_ids': skeleton_ids,
-            'self_relation_name': self_relation_name,
-            'partner_relation_name': partner_relation_name,
-            'connector_ids': connector_ids,
-        }
-    )
+    '''.format(extra_conditions='AND' + ' AND '.join(extra_conditions) if extra_conditions else '',), {
+        'project_id': project_id,
+        'skeleton_ids': skeleton_ids,
+        'self_relation_name': self_relation_name,
+        'partner_relation_name': partner_relation_name,
+        'connector_ids': connector_ids,
+    })
 
     # Skeleton IDs vs. pre relation names vs. connector IDs vs. polyadicity.
     skeleton_map:DefaultDict = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))

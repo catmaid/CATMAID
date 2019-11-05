@@ -1074,8 +1074,7 @@ def get_connectors_in_bb_postgis3d(params) -> List:
         """)
 
     cursor = connection.cursor()
-    cursor.execute(
-        """
+    cursor.execute("""
         SELECT {distinct} c.id
             {location_select}
             {link_select}
@@ -1097,19 +1096,17 @@ def get_connectors_in_bb_postgis3d(params) -> List:
             %(halfzdiff)s)
         AND tce.project_id = %(project_id)s
         {limit_clause}
-        """.format(
-            distinct='DISTINCT' if not with_links else '',
-            limit_clause=f'LIMIT {limit}' if limit > 0 else '',
-            location_select=', c.location_x, c.location_y, c.location_z' if with_locations else '',
-            link_select=", " + ", ".join([
-                "tc.skeleton_id", "tc.confidence", "tc.user_id",
-                "tc.treenode_id", "tc.creation_time", "tc.edition_time",
-                "tc.relation_id"
-            ]) if with_links else "",
-            extra_joins='\n'.join(extra_joins),
-        ),
-        params
-    )
+    """.format(
+        distinct='DISTINCT' if not with_links else '',
+        limit_clause=f'LIMIT {limit}' if limit > 0 else '',
+        location_select=', c.location_x, c.location_y, c.location_z' if with_locations else '',
+        link_select=", " + ", ".join([
+            "tc.skeleton_id", "tc.confidence", "tc.user_id",
+            "tc.treenode_id", "tc.creation_time", "tc.edition_time",
+            "tc.relation_id"
+        ]) if with_links else "",
+        extra_joins='\n'.join(extra_joins),
+    ), params)
 
     return list(cursor.fetchall())
 

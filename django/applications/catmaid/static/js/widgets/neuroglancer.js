@@ -43,7 +43,7 @@
               return false;
             })
             .append($('<input type="text" id="neuroglancer-link" name="neuroglancer-link" />'))
-            .append($('<input type="submit" value="Open Neuroglancer" />')))
+            .append($('<input type="submit" value="Open Neuroglancer" />')));
       },
       init: function () {
       },
@@ -63,12 +63,12 @@
   };
 
   NeuroglancerWidget.prototype.replaceNeuroglancerTuple = function (url, key, replaceStr) {
-    var vs_idx = url.indexOf(key)
+    var vs_idx = url.indexOf(key);
     var vs_s = url.substr(vs_idx).indexOf("[") + vs_idx + 1;
     var vs_e = url.substr(vs_idx).indexOf("]") + vs_idx;
     var new_url = url.substr(0, vs_s) + replaceStr + url.substr(vs_e);
-    return new_url
-  }
+    return new_url;
+  };
 
   NeuroglancerWidget.prototype.getNeuroglancerHash = function () {
     var sv = project.getStackViewers()[0];
@@ -92,7 +92,7 @@
     new_url = this.replaceNeuroglancerTuple(new_url, "voxelCoordinates", voxCoords);
 
     // replace zoom factor
-    var vs_idx = new_url.indexOf("zoomFactor")
+    var vs_idx = new_url.indexOf("zoomFactor");
     var vs_s = new_url.substr(vs_idx).indexOf(":") + vs_idx + 1;
     var vs_e = Math.min(new_url.substr(vs_idx).indexOf(","),
       new_url.substr(vs_idx).indexOf("}")) + vs_idx;
@@ -102,7 +102,7 @@
     new_url = "#!" + encodeURIComponent(new_url);
     
     return new_url;
-  }
+  };
 
   NeuroglancerWidget.prototype.refresh = function() {
   };

@@ -7,6 +7,7 @@ from django.db import migrations, models
 forward = """
     SELECT disable_history_tracking_for_table('nblast_sample'::regclass,
             get_history_table_name('nblast_sample'::regclass));
+    SELECT drop_history_view_for_table('nblast_sample'::regclass);
 
     ALTER TABLE nblast_sample
     ADD COLUMN subset jsonb;
@@ -14,6 +15,7 @@ forward = """
     ALTER TABLE nblast_sample__history
     ADD COLUMN subset jsonb;
 
+    SELECT create_history_view_for_table('nblast_sample'::regclass);
     SELECT enable_history_tracking_for_table('nblast_sample'::regclass,
             get_history_table_name('nblast_sample'::regclass), FALSE);
 """
@@ -21,6 +23,7 @@ forward = """
 backward = """
     SELECT disable_history_tracking_for_table('nblast_sample'::regclass,
             get_history_table_name('nblast_sample'::regclass));
+    SELECT drop_history_view_for_table('nblast_sample'::regclass);
 
     ALTER TABLE nblast_sample
     DROP COLUMN subset;
@@ -28,6 +31,7 @@ backward = """
     ALTER TABLE nblast_sample__history
     DROP COLUMN subset;
 
+    SELECT create_history_view_for_table('nblast_sample'::regclass);
     SELECT enable_history_tracking_for_table('nblast_sample'::regclass,
             get_history_table_name('nblast_sample'::regclass), FALSE);
 """

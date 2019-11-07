@@ -8,6 +8,7 @@ from django.db import migrations, models
 forward = """
     SELECT disable_history_tracking_for_table('nblast_similarity'::regclass,
             get_history_table_name('nblast_similarity'::regclass));
+    SELECT drop_history_view_for_table('nblast_similarity'::regclass);
 
     ALTER TABLE nblast_similarity
     ADD COLUMN reverse bool DEFAULT FALSE NOT NULL;
@@ -42,6 +43,7 @@ forward = """
     UPDATE nblast_similarity SET initial_query_objects = query_objects,
         initial_target_objects = target_objects;
 
+    SELECT create_history_view_for_table('nblast_similarity'::regclass);
     SELECT enable_history_tracking_for_table('nblast_similarity'::regclass,
             get_history_table_name('nblast_similarity'::regclass), FALSE);
 """
@@ -49,6 +51,7 @@ forward = """
 backward = """
     SELECT disable_history_tracking_for_table('nblast_similarity'::regclass,
             get_history_table_name('nblast_similarity'::regclass));
+    SELECT drop_history_view_for_table('nblast_similarity'::regclass);
 
     ALTER TABLE nblast_similarity
     DROP COLUMN reverse;
@@ -74,6 +77,7 @@ backward = """
     ALTER TABLE nblast_similarity__history
     DROP COLUMN initial_target_objects;
 
+    SELECT create_history_view_for_table('nblast_similarity'::regclass);
     SELECT enable_history_tracking_for_table('nblast_similarity'::regclass,
             get_history_table_name('nblast_similarity'::regclass), FALSE);
 """

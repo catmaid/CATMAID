@@ -7,6 +7,7 @@ from django.db import migrations, models
 forward = """
     SELECT disable_history_tracking_for_table('nblast_similarity'::regclass,
             get_history_table_name('nblast_similarity'::regclass));
+    SELECT drop_history_view_for_table('nblast_similarity'::regclass);
 
     ALTER TABLE nblast_similarity
     ADD COLUMN computation_time real;
@@ -32,6 +33,7 @@ forward = """
     ALTER TABLE nblast_similarity__history
     ADD COLUMN invalid_target_objects bigint[];
 
+    SELECT create_history_view_for_table('nblast_similarity'::regclass);
     SELECT enable_history_tracking_for_table('nblast_similarity'::regclass,
             get_history_table_name('nblast_similarity'::regclass), FALSE);
 """
@@ -39,6 +41,7 @@ forward = """
 backward = """
     SELECT disable_history_tracking_for_table('nblast_similarity'::regclass,
             get_history_table_name('nblast_similarity'::regclass));
+    SELECT drop_history_view_for_table('nblast_similarity'::regclass);
 
     ALTER TABLE nblast_similarity
     DROP COLUMN computation_time;
@@ -64,6 +67,7 @@ backward = """
     ALTER TABLE nblast_similarity__history
     DROP COLUMN invalid_target_objects;
 
+    SELECT create_history_view_for_table('nblast_similarity'::regclass);
     SELECT enable_history_tracking_for_table('nblast_similarity'::regclass,
             get_history_table_name('nblast_similarity'::regclass), FALSE);
 """

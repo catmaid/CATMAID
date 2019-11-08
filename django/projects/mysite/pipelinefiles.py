@@ -137,11 +137,6 @@ for k, v in six.iteritems(libraries_js):
 # particular name. Therefore, we can't use pipeline with them and include them
 # separately. Entries follow the same pattern as above: key - path.
 non_pipeline_js = {
-    'neuroglancer-worker': 'libs/neuroglancer/chunk_worker.bundle.js',
-    'neuroglancer-draco': 'libs/neuroglancer/draco.bundle.js',
-    'neuroglancer-tfjs-library': 'libs/neuroglancer/tfjs-library.bundle.js',
-    'neuroglancer-async-computation': 'libs/neuroglancer/async_computation.bundle.js',
-    'neuroglancer-main': 'libs/neuroglancer/main.bundle.js',
 }
 
 # Even non-pipeline files have to be made known to pipeline, because it takes
@@ -161,6 +156,11 @@ copy_only_files = {
         'streamsaver-worker-2': 'libs/streamsaver/worker/ping.html',
         'streamsaver-worker-3': 'libs/streamsaver/worker/ping.js',
         'streamsaver-worker-4': 'libs/streamsaver/worker/sw.js',
+        'neuroglancer-worker': 'libs/neuroglancer/chunk_worker.bundle.js',
+        'neuroglancer-draco': 'libs/neuroglancer/draco.bundle.js',
+        'neuroglancer-tfjs-library': 'libs/neuroglancer/tfjs-library.bundle.js',
+        'neuroglancer-async-computation': 'libs/neuroglancer/async_computation.bundle.js',
+        'neuroglancer-main': 'libs/neuroglancer/main.bundle.js',
 }
 
 # Let pipeline know about copy-only files.

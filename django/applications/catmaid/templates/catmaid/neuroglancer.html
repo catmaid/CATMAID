@@ -10,9 +10,11 @@
   <body>
     <div id="neuroglancer-container"></div>
 
-    {% for f in NON_COMPRESSED_FILES %}
-      {% if 'neuroglancer' in f %}
-        <script type="application/javascript" src="{{ STATIC_URL }}{{ f }}"></script>
-      {% endif %}
-    {% endfor %}
+    <script type="application/javascript" src="{{ STATIC_URL }}/libs/neuroglancer/chunk_worker.bundle.js"></script>
+    <script type="application/javascript" src="{{ STATIC_URL }}/libs/neuroglancer/draco.bundle.js"></script>
+    <script type="application/javascript" src="{{ STATIC_URL }}/libs/neuroglancer/draco.bundle.js"></script>
+    <script type="application/javascript" src="{{ STATIC_URL }}/libs/neuroglancer/tfjs-library.bundle.js"></script>
+    <script type="application/javascript" src="{{ STATIC_URL }}/libs/neuroglancer/async_computation.bundle.js"></script>
+    <script type="application/javascript" src="{{ STATIC_URL }}/libs/neuroglancer/main.bundle.js"></script>
+
 </html>

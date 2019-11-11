@@ -50,6 +50,10 @@
         {% endif %}
     {% endfor %}
 
+    {% for f in NON_COMPRESSED_FILES %}
+      <script type="application/javascript" src="{{ STATIC_URL }}{{ f }}"></script>
+    {% endfor %}
+
     <!-- Standalone static extension files -->
     {% for f in STATIC_EXTENSION_FILES %}
       <script type="text/javascript" src="{{ STATIC_EXTENSION_URL }}{{ f }}"></script>

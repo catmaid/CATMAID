@@ -75,7 +75,6 @@ STYLESHEETS['catmaid'] = {
         }
     }
 
-
 libraries_js = OrderedDict([
     ('modernizr', ['*.js']),
     ('jquery', ['jquery-2.1.3.min.js',
@@ -156,6 +155,11 @@ copy_only_files = {
         'streamsaver-worker-2': 'libs/streamsaver/worker/ping.html',
         'streamsaver-worker-3': 'libs/streamsaver/worker/ping.js',
         'streamsaver-worker-4': 'libs/streamsaver/worker/sw.js',
+        'neuroglancer-worker': 'libs/neuroglancer/chunk_worker.bundle.js',
+        'neuroglancer-draco': 'libs/neuroglancer/draco.bundle.js',
+        'neuroglancer-tfjs-library': 'libs/neuroglancer/tfjs-library.bundle.js',
+        'neuroglancer-async-computation': 'libs/neuroglancer/async_computation.bundle.js',
+        'neuroglancer-main': 'libs/neuroglancer/main.bundle.js',
 }
 
 # Let pipeline know about copy-only files.

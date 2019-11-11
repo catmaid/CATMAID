@@ -1913,6 +1913,16 @@
     }),
 
     new CATMAID.Action({
+      helpText: "Neuroglancer Widget: Interact with Neuroglancer",
+      buttonID: "data_button_neuroglancer",
+      buttonName: 'table_review',
+      run: function (e) {
+        WindowMaker.show('neuroglancer');
+        return true;
+      }
+    }),
+
+    new CATMAID.Action({
       helpText: "Review Widget: Review existing skeletons",
       buttonID: "data_button_review",
       buttonName: 'table_review',

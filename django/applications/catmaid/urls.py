@@ -37,7 +37,8 @@ app_name = 'catmaid'
 # Add the main index.html page at the root:
 urlpatterns = [
     url(r'^$', ensure_csrf_cookie(CatmaidView.as_view(template_name='catmaid/index.html')), name="home"),
-    url(r'^version$', common.get_catmaid_version)
+    url(r'^version$', common.get_catmaid_version),
+    url(r'^neuroglancer$', ensure_csrf_cookie(CatmaidView.as_view(template_name='catmaid/neuroglancer.html'))),
 ]
 
 # Additional administration views

@@ -214,6 +214,18 @@ Neuron navigator:
   next to the listed neuron name. The last time this link was edited is shown as
   well. Both columns can be used for sorting as well.
 
+Neuroglancer widget:
+
+- CATMAID now includes a copy of Neuroglancer that can be accessed at
+  <catmaid_base_url>/neuroglancer
+
+- The Neurglancer widget allows to open an instance of Neuroglancer in a new
+  window and its navigation (center location, zoom level) is synchronized with
+  the navigation happening in CATMAID. An URL to a Neuroglancer instance containing
+  the same dataset as shown in the CATMAID stack viewer needs to be provided.
+
+- The widget's info page has a step-by-step guide on how to use it for the
+  FAFB dataset
 
 Miscellaneous:
 

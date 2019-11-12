@@ -438,7 +438,7 @@
       return true;
     };
 
-    var hanleCopyPosRequest = function(e) {
+    var handleCopyPosRequest = function(e) {
       if (e.altKey) {
         let stack = project.getStackViewers()[0];
         let stackLocation = `${stack.x.toFixed(2)}, ${stack.y.toFixed(2)}, ${stack.z.toFixed(2)}`;
@@ -700,7 +700,7 @@
 
       self.input_goto_request.addEventListener('keypress', handleGoToInputKeyDown);
       self.button_goto_request.addEventListener('click', handleGoToRequest);
-      self.button_copy_pos.addEventListener('click', hanleCopyPosRequest);
+      self.button_copy_pos.addEventListener('click', handleCopyPosRequest);
 
       self.updateControls();
     };
@@ -755,7 +755,7 @@
 
       self.input_goto_request.removeEventListener('keypress', handleGoToInputKeyDown);
       self.button_goto_request.removeEventListener('click', handleGoToRequest);
-      self.button_copy_pos.removeEventListener('click', hanleCopyPosRequest);
+      self.button_copy_pos.removeEventListener('click', handleCopyPosRequest);
 
       self.stackViewer = null;
     };

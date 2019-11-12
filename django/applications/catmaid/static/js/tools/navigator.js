@@ -444,6 +444,8 @@
         let stackLocation = `${stack.x.toFixed(2)}, ${stack.y.toFixed(2)}, ${stack.z.toFixed(2)}`;
         CATMAID.tools.copyToClipBoard(stackLocation);
         CATMAID.msg('Success', `Copied stack space location (px):<br />${stackLocation}`);
+        // Necessary to handle event to prevent default download link behavior.
+        e.preventDefault();
       } else {
         let projectLocation = `${project.coordinates.x}, ${project.coordinates.y}, ${project.coordinates.z}`;
         CATMAID.tools.copyToClipBoard(projectLocation);

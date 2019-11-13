@@ -343,7 +343,7 @@
       this.dToSecBefore = -1;
       this.dToSecAfter = 1;
 
-      this.markerType = 'disc';
+      this.markerType = tracingOverlay.api ? 'ring' : 'disc';
 
       // Compute the planar X, Y and Z dimensions in stack space for the tracing
       // overlay of this prototype hierarchy. We don't expect this to change

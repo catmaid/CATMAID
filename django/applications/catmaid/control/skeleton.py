@@ -678,7 +678,7 @@ def _neuronnames(skeleton_ids, project_id) -> dict:
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def neuronnames(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Returns a JSON object with skeleton IDs as keys and neuron names as values. """
-    skeleton_ids = tuple(int(v) for k,v in request.POST.items() if k.startswith('skids['))
+    skeleton_ids = tuple(get_request_list(request.POST, 'skids', map_fn=int))
     return JsonResponse(_neuronnames(skeleton_ids, project_id))
 
 @api_view(['GET', 'POST'])

@@ -99,16 +99,16 @@
     if (User.prototype.users[id]) {
       return User.prototype.users[id];
     } else {
-      return {
+      return Object.create(User.prototype, {
         // Return dummy instance
-        id: id,
-        login: 'unknown',
-        fullName: 'unknown',
-        firstName: 'unknown',
-        lastName: 'unknown',
-        color: new THREE.Color(1, 0, 0),
-        primaryGroupId: null,
-      };
+        id: {value: id},
+        login: {value: 'unknown'},
+        fullName: {value: 'unknown'},
+        firstName: {value: 'unknown'},
+        lastName: {value: 'unknown'},
+        color: {value: new THREE.Color(1, 0, 0)},
+        primaryGroupId: {value: null},
+      });
     }
   };
 

@@ -34,6 +34,7 @@ var SkeletonAnnotations = {};
     edition_time: null,
     user_id: null,
     stack_viewer_id: null,
+    project_id: null,
     api: undefined,
   };
 
@@ -125,13 +126,16 @@ var SkeletonAnnotations = {};
    * cleared. Since the node passed is expected to come in scaled (!) stack space
    * coordinates, its position has to be unscaled.
    */
-  SkeletonAnnotations.atn.set = function(node, stack_viewer_id, api = undefined) {
+  SkeletonAnnotations.atn.set = function(node, stack_viewer_id, api = undefined, project_id = undefined) {
     var changed = false;
     var skeleton_changed = false;
 
+    if (project_id === undefined) {
+      project_id = project.id;
+    }
+
     if (node) {
       // Find out if there was a change
-      var stack_viewer = project.getStackViewer(stack_viewer_id);
       skeleton_changed = (this.skeleton_id !== node.skeleton_id);
       changed = (this.id !== node.id) ||
                 (skeleton_changed) ||
@@ -146,6 +150,7 @@ var SkeletonAnnotations = {};
                 (this.confidence !== node.confidence) ||
                 (this.edition_time !== node.edition_time) ||
                 (this.user_id !== node.user_id) ||
+                (this.project_id !== project_id) ||
                 (this.api !== api);
 
       SkeletonAnnotations.atn.validate(node);
@@ -164,6 +169,7 @@ var SkeletonAnnotations = {};
       this.edition_time = node.edition_time;
       this.user_id = node.user_id;
       this.stack_viewer_id = stack_viewer_id;
+      this.project_id = project_id;
       this.api = api;
     } else {
       changed = true;
@@ -510,6 +516,14 @@ var SkeletonAnnotations = {};
    */
   SkeletonAnnotations.getActiveStackViewerId = function() {
     return this.atn.stack_viewer_id;
+  };
+
+  /**
+   * Get the ID of the project the active node was selected from or null if
+   * there is no active node.
+   */
+  SkeletonAnnotations.getActiveProjectId = function() {
+    return this.atn.project_id;
   };
 
   /**
@@ -1773,7 +1787,7 @@ var SkeletonAnnotations = {};
     if (node) {
       this.printTreenodeInfo(node.id);
       // Select (doesn't matter if re-select same node)
-      atn.set(node, this.getStackViewer().getId(), this.api);
+      atn.set(node, this.getStackViewer().getId(), this.api, this.projectId);
     } else {
       CATMAID.status('');
       // Deselect

@@ -195,8 +195,6 @@ annotations, neuron name, connectors or partner neurons.
    * import of them.
    */
   ImportExportWidget.prototype.importRemoteSkeletons = function(skeletonIds, annotations) {
-    let plural = skeletonIds.length > 0 ? 's' : '';
-    let title = `Please confirm the import of the following skeleton${plural}`;
     let api = CATMAID.Remote.getAPI(this.sourceRemote);
     let entityMap = this.importCatmaidResult.resultEntities.reduce((o,e) => {
       for (let i=0; i<e.skeleton_ids.length; ++i) {
@@ -205,6 +203,14 @@ annotations, neuron name, connectors or partner neurons.
       return o;
     }, {});
     let sourceProjectId = this.sourceProject;
+
+    return this._importRemoteSkeletons(api, this.sourceProject, skeletonIds, annotations, entityMap);
+  };
+
+  ImportExportWidget.prototype._importRemoteSkeletons = function(api,
+      sourceProjectId, skeletonIds, annotations, entityMap) {
+    let plural = skeletonIds.length > 0 ? 's' : '';
+    let title = `Please confirm the import of the following skeleton${plural}`;
     let self = this;
     CATMAID.Remote.previewSkeletons(sourceProjectId, skeletonIds, {
         api: api,
@@ -400,6 +406,11 @@ annotations, neuron name, connectors or partner neurons.
         resultSection.classList.add('section-header');
         resultSection.appendChild(document.createTextNode('Results'));
 
+        // Add table with remote skeletons
+        let tracingSection = document.createElement('span');
+        tracingSection.classList.add('section-header');
+        tracingSection.appendChild(document.createTextNode('From Tracing Layer'));
+
         // TODO: Add active 3D viewers selector
 
         let nameFilter = '';
@@ -539,6 +550,38 @@ annotations, neuron name, connectors or partner neurons.
               }, []);
 
               widget.importRemoteSkeletons(skeletonIds, getEffectiveAnnotations());
+            },
+          },
+          {
+            type: 'child',
+            element: tracingSection,
+          },
+          {
+            type: 'button',
+            label: 'Import active skeleton',
+            title: "Import active skeleton if it is a remote skeleton",
+            onclick: e => {
+              let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+              let projectId = SkeletonAnnotations.getActiveProjectId();
+              let api = SkeletonAnnotations.getActiveSkeletonAPI();
+
+              if (!api) {
+                CATMAID.warn("The selected skeleton is already a local skeleton");
+                return;
+              }
+
+              // Load this skeleton and import it
+              CATMAID.Skeletons.getNames(projectId, [activeSkeletonId], api)
+                .then(names => {
+                  let entityMap = {};
+                  entityMap[activeSkeletonId] = {
+                    name: names[activeSkeletonId],
+                  };
+
+                  widget._importRemoteSkeletons(api, projectId, [activeSkeletonId],
+                      widget.getEffectiveAnnotations(), entityMap);
+                })
+                .catch(CATMAID.handleError);
             },
           },
         ];

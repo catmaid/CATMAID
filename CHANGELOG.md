@@ -218,6 +218,11 @@ Import/Export widget:
   allows the widget to display local skeleton IDs, if the remote ID has already
   been imported from the current source URL.
 
+- If the active skeleton is a remote skeleton (in a remote data tracing layer),
+  it can now be imported by clicking the "Import active skeleton" button in the
+  "Import from CATMAID" tab of the widget. Like the other import, this iwll
+  first ask for confirmation with a 3D dialog.
+
 - The NRRD export can now use the JRC2018U (unisex) target template brain space
   as target.
 

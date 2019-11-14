@@ -12,6 +12,19 @@
   var Skeletons = {
 
     /**
+     * Get base names for a list of skeletons, optionally from a remote API.
+     */
+    getNames: function(projectId, skeletonIds, api = undefined) {
+      return CATMAID.fetch({
+        url: projectId + '/skeleton/neuronnames',
+        data: {
+          skids: skeletonIds,
+        },
+        api: api,
+      });
+    },
+
+    /**
      * Split a skeleton at a specific treenodes.
      *
      * @param {State}   state      Neighborhood state for node

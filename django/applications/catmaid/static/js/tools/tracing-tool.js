@@ -2148,7 +2148,9 @@
         action: remoteProjects,
       };
       let i = 0;
-      for (let [key, entry] of this.remoteTracingProjcts) {
+      let sortedRemoteProjects = Array.from(this.remoteTracingProjcts.keys()).sort(CATMAID.tools.compareStrings);
+      for (let key of sortedRemoteProjects) {
+        let entry = this.remoteTracingProjcts.get(key);
         if (entry && entry.projects.length > 0) {
           // Create a sub menu for remote tracing layers that can be added to
           // the current or a new stack viewer.

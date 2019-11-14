@@ -32,6 +32,8 @@
     this.remoteTracingProjcts = new Map();
     // Names of remote layers
     this.remoteLayers = [];
+    // Remember whether the last active node was local (or remote).
+    this.lastActiveNodeWasLocal = true;
 
     /**
      * Return the stack viewer referenced by the active node, or otherwise (if
@@ -579,6 +581,7 @@
       // layer, update the active tracing layer.
       setActiveTracingLayer(node);
 
+      let isLocal = !SkeletonAnnotations.getActiveSkeletonAPI();
       self.lastSkeletonId = self.currentSkeletonId;
       self.currentSkeletonId = null;
       if (node && node.id) {
@@ -609,8 +612,17 @@
             clearTopbars('Abutting connector #' + node.id);
           }
         }
+
+        if (isLocal !== self.lastActiveNodeWasLocal) {
+          self._updateMoreToolsMenu();
+          self.lastActiveNodeWasLocal = isLocal;
+        }
       } else {
         clearTopbars();
+        if (!self.lastActiveNodeWasLocal) {
+          self.lastActiveNodeWasLocal = true;
+          self._updateMoreToolsMenu();
+        }
       }
     }
 
@@ -2183,6 +2195,49 @@
                 return true;
               },
           }
+        },
+      };
+    }
+
+    let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+    let activeSkeletonAPI = SkeletonAnnotations.getActiveSkeletonAPI();
+    if (activeSkeletonId && activeSkeletonAPI) {
+      items['import-active'] = {
+        title: "Import active skeleton",
+        action: (e) => {
+          let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+          let projectId = SkeletonAnnotations.getActiveProjectId();
+          let api = SkeletonAnnotations.getActiveSkeletonAPI();
+
+          if (!activeSkeletonId) {
+            CATMAID.warn("No skeleton selected");
+            return;
+          }
+
+          if (!api) {
+            CATMAID.warn("The selected skeleton is already a local skeleton");
+            return;
+          }
+
+          let annotations = CATMAID.TracingTool.substituteVariables(
+              CATMAID.TracingTool.getDefaultImportAnnotations(), {
+                'group': CATMAID.userprofile.primary_group_id !== undefined && CATMAID.userprofile.primary_group_id !== null ?
+                    CATMAID.groups.get(CATMAID.userprofile.primary_group_id) : CATMAID.session.username,
+                'source': api ? api.name : 'local',
+              });
+
+          // Load this skeleton and import it
+          CATMAID.Skeletons.getNames(projectId, [activeSkeletonId], api)
+            .then(names => {
+              let entityMap = {};
+              entityMap[activeSkeletonId] = {
+                name: names[activeSkeletonId],
+              };
+
+              CATMAID.Remote.importRemoteSkeletonsWithPreview(api, projectId, [activeSkeletonId],
+                annotations, entityMap);
+            })
+            .catch(CATMAID.handleError);
         },
       };
     }

@@ -205,45 +205,9 @@ annotations, neuron name, connectors or partner neurons.
     }, {});
     let sourceProjectId = this.sourceProject;
 
-    return this._importRemoteSkeletons(api, this.sourceProject, skeletonIds, annotations, entityMap);
-  };
-
-  ImportExportWidget.prototype._importRemoteSkeletons = function(api,
-      sourceProjectId, skeletonIds, annotations, entityMap) {
-    let plural = skeletonIds.length > 0 ? 's' : '';
-    let title = `Please confirm the import of the following skeleton${plural}`;
-    let self = this;
-    CATMAID.Remote.previewSkeletons(sourceProjectId, skeletonIds, {
-        api: api,
-        title: title,
-        buttons: {
-          'Confirm import': function() {
-            // Initate import
-            CATMAID.Remote.importSkeletons(sourceProjectId, project.id, skeletonIds, {
-                getMeta: (skeletonId) => {
-                  let e = entityMap[skeletonId];
-                  if (!e) {
-                    throw new CATMAID.ValueError("No skeleton meta data found");
-                  }
-                  return {
-                    'name': e.name,
-                    'annotations': annotations,
-                  };
-                },
-                api: api,
-              })
-              .then(result => {
-                self.redraw();
-              })
-              .catch(CATMAID.handleError);
-            $(this).dialog("destroy");
-          },
-          'Cancel': function() {
-            $(this).dialog("destroy");
-          }
-        }
-      })
-      .catch(CATMAID.handleError);
+    return CATMAID.Remote.importRemoteSkeletonsWithPreview(api,
+        this.sourceProject, skeletonIds, annotations, entityMap,
+        this.redraw.bind(this));
   };
 
   ImportExportWidget.Modes = {
@@ -753,7 +717,7 @@ annotations, neuron name, connectors or partner neurons.
                     name: names[activeSkeletonId],
                   };
 
-                  widget._importRemoteSkeletons(api, projectId, [activeSkeletonId],
+                  CATMAID.Remote.importRemoteSkeletonsWithPreview(api, projectId, [activeSkeletonId],
                       widget.getEffectiveAnnotations(), entityMap);
                 })
                 .catch(CATMAID.handleError);

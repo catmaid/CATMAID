@@ -236,6 +236,48 @@
       });
   };
 
+  Remote.importRemoteSkeletonsWithPreview = function(api, sourceProjectId,
+      skeletonIds, annotations, entityMap, callback) {
+    let plural = skeletonIds.length > 0 ? 's' : '';
+    let title = `Please confirm the import of the following skeleton${plural}`;
+    let self = this;
+    CATMAID.Remote.previewSkeletons(sourceProjectId, skeletonIds, {
+        api: api,
+        title: title,
+        buttons: {
+          'Confirm import': function() {
+            // Initate import
+            CATMAID.Remote.importSkeletons(sourceProjectId, project.id, skeletonIds, {
+                getMeta: (skeletonId) => {
+                  let e = entityMap[skeletonId];
+                  if (!e) {
+                    throw new CATMAID.ValueError("No skeleton meta data found");
+                  }
+                  return {
+                    'name': e.name,
+                    'annotations': annotations,
+                  };
+                },
+                api: api,
+              })
+              .then(result => {
+                if (CATMAID.tools.isFn(callback)) callback();
+              })
+              .catch(CATMAID.handleError);
+            $(this).dialog("destroy");
+          },
+          'Cancel': function() {
+            $(this).dialog("destroy");
+          }
+        }
+      })
+      .catch(CATMAID.handleError);
+  };
+
+  Remote.getDefaultSkeletonImportAnnotations = function() {
+
+  };
+
 
   // Export into CATMAID namespace.
   CATMAID.Remote = Remote;

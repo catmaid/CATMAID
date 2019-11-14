@@ -1881,13 +1881,14 @@
         show_labels: CATMAID.TracingTool.Settings.session.show_node_labels,
         api: CATMAID.Remote.getAPI(remoteName),
         projectId: remoteProject.id,
-        mode: SkeletonAnnotations.MODES.SELECT,
+        mode: SkeletonAnnotations.MODES.IMPORT,
         name: layerName,
       });
       layer.isRemovable = true;
       activeStackViewer.addLayer(layerName, layer);
       activeStackViewer.moveLayer(layerName, getTracingLayerName(activeStackViewer));
       activeStackViewer.update(undefined, true);
+      layer.forceRedraw();
     };
 
     // Listen to creation and removal of new stack views in current project.

@@ -1753,9 +1753,10 @@
   function getIssueLabel(type, name, details) {
     if (8 === type) {
       // Node in broken section
-      return name + " " + details.section + " of " +
-          CATMAID.Stack.ORIENTATION_NAMES[details.orientation] + " stack \"" +
-          details.stack_title  + "\" (id: " + details.stack + ")";
+      return `${name} ${details.section} of ${CATMAID.Stack.ORIENTATION_NAMES[details.orientation]} ` +
+          `stack "${details.stack_title}" (id: ${details.stack})`;
+    } else if (9 === type) {
+      return `${name}: ${details.confidence}`;
     } else {
       return name;
     }

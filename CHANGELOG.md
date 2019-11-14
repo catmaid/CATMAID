@@ -184,6 +184,10 @@ Review widget:
   have a presynaptic node associated with them as well the ones without a
   postsynaptic node.
 
+- The Skeleton analytics tab now also lists low confidence nodes/edges with a
+  confidence lower than 4. The label of each entry shows the respective
+  confidence value.
+
 Import/Export widget:
 
 - It is now possible to import neurons from other CATMAID instances. The "Import

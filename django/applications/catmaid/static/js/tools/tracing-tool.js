@@ -2142,7 +2142,7 @@
     // If there are any remote CATMAID instances configured, list remote
     // tracing layers here, if there are remote tracing projects.
     if (this.remoteTracingProjcts.size > 0) {
-      let remoteProjects = {};
+      let remoteProjects = [];
       items['remote-data'] = {
         title: 'Remote data',
         action: remoteProjects,
@@ -2154,7 +2154,7 @@
         if (entry && entry.projects.length > 0) {
           // Create a sub menu for remote tracing layers that can be added to
           // the current or a new stack viewer.
-          remoteProjects[i] = entry.projects.reduce((po, p, j) => {
+          remoteProjects.push(entry.projects.reduce((po, p, j) => {
             po.action[`project-${j}`] = {
               title: p.title,
               note: 'tracing data',
@@ -2166,7 +2166,7 @@
           }, {
             title: key,
             action: {},
-          });
+          }));
 
           ++i;
         }

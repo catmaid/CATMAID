@@ -33,10 +33,20 @@ Menu = function () {
     if (view.firstChild) view.removeChild(view.firstChild);
     pulldowns = {};
     var table = document.createElement("table");
-    for (var key in content) {
+
+    let elements;
+    if (!content) {
+      elements = [];
+    } else if (content instanceof Array) {
+      elements = content;
+    } else {
+      elements = Object.keys(content).map(e => content[e]);
+    }
+
+    for (var element of elements) {
       var row = table.insertRow(-1);
       row.className = "menu_item";
-      if (typeof content[key].action == "object") {
+      if (typeof element.action == "object") {
         row.onpointerover = function (e) {
           if (this.className == "menu_item") this.className = "menu_item_hover";
           this.cells[0].firstChild.lastChild.style.display = "block";
@@ -57,7 +67,7 @@ Menu = function () {
           return false;
         };
       }
-      if (typeof content[key].id !== 'undefined') row.id = content[key].id;
+      if (typeof element.id !== 'undefined') row.id = element.id;
 
       //var icon = row.insertCell( -1 );
       var item = row.insertCell(-1);
@@ -69,30 +79,30 @@ Menu = function () {
       // Expect valid HTML for a stack's comment/note
       var noteContainer = document.createElement("div");
       noteContainer.setAttribute("class", "menu_item_note");
-      noteContainer.innerHTML = content[key].note === undefined ? '' : content[key].note;
+      noteContainer.innerHTML = element.note === undefined ? '' : element.note;
       note.appendChild(noteContainer);
 
       var d = document.createElement("div");
       d.className = "pulldown_item";
       var a = document.createElement("a");
-      a.appendChild(document.createTextNode(content[key].title));
+      a.appendChild(document.createTextNode(element.title));
 
       d.appendChild(document.createElement("p"));
       d.firstChild.appendChild(a);
 
-      switch (typeof content[key].action) {
+      switch (typeof element.action) {
       case "function":
-        a.onclick = content[key].action;
+        a.onclick = element.action;
         break;
       case "string":
-        a.href = content[key].action;
+        a.href = element.action;
         break;
       case "object":
         var m = new Menu();
-        m.update(content[key].action);
+        m.update(element.action);
         var p = document.createElement("div");
         p.className = "pulldown";
-        pulldowns[content[key].title] = m;
+        pulldowns[element.title] = m;
         p.appendChild(m.getView());
 
         d.appendChild(p);

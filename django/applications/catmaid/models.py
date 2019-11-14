@@ -1510,6 +1510,7 @@ class UserProfile(models.Model):
     show_ontology_tool = models.BooleanField(default=False)
     show_roi_tool = models.BooleanField(default=False)
     color = RGBAField(default=distinct_user_color)
+    primary_group = models.ForeignKey(Group, default=None, null=True, on_delete=models.DO_NOTHING)
 
     def __str__(self) -> str:
         return self.user.username
@@ -1538,6 +1539,8 @@ class UserProfile(models.Model):
         pdict['show_tracing_tool'] = self.show_tracing_tool
         pdict['show_ontology_tool'] = self.show_ontology_tool
         pdict['show_roi_tool'] = self.show_roi_tool
+        pdict['primary_group_id'] = self.primary_group_id
+
         return pdict
 
 def create_user_profile(sender, instance, created, **kwargs) -> None:

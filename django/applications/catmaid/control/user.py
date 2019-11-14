@@ -53,7 +53,8 @@ def user_list(request:HttpRequest) -> JsonResponse:
             "full_name": u.get_full_name(),
             "first_name": u.first_name,
             "last_name": u.last_name,
-            "color": (up.color.r, up.color.g, up.color.b)
+            "color": (up.color.r, up.color.g, up.color.b),
+            "primary_group_id": up.primary_group_id,
         }
         if with_passwords:
             # Append encypted user password

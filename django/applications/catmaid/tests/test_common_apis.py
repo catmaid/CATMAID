@@ -354,7 +354,8 @@ class ViewPageTests(TestCase, AssertStatusMixin):
                 'full_name': 'Admin Superuser',
                 'login': 'admin',
                 'password': 'pbkdf2_sha256$12000$CqdO6wRdSSxH$c57xXXPO8k65prBMrHTvjj/inanxDnbdoaeDIeWWrik=',
-                'id': 4
+                'id': 4,
+                'primary_group_id': None,
             }, {
                 'first_name': 'Test',
                 'last_name': 'User 0',
@@ -362,7 +363,8 @@ class ViewPageTests(TestCase, AssertStatusMixin):
                 'full_name': 'Test User 0',
                 'login': 'test0',
                 'password': 'pbkdf2_sha256$12000$CqdO6wRdSSxH$c57xXXPO8k65prBMrHTvjj/inanxDnbdoaeDIeWWrik=',
-                'id': 5
+                'id': 5,
+                'primary_group_id': None,
             }, {
                 'first_name': 'Test',
                 'last_name': 'User 1',
@@ -370,7 +372,8 @@ class ViewPageTests(TestCase, AssertStatusMixin):
                 'full_name': 'Test User 1',
                 'login': 'test1',
                 'password': 'pbkdf2_sha256$12000$CqdO6wRdSSxH$c57xXXPO8k65prBMrHTvjj/inanxDnbdoaeDIeWWrik=',
-                'id': 2
+                'id': 2,
+                'primary_group_id': None,
             },
         ]
 

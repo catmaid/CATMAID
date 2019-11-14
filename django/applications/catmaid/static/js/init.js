@@ -969,7 +969,7 @@ var project;
     if (e.is_authenticated || (e.permissions && -1 !== e.permissions.indexOf('catmaid.can_browse'))) {
       // Asynchronously, try to get a full list of users if a user is logged in
       // or the anonymous user has can_browse permissions.
-      load = load.then(Promise.all([
+      load = load.then(() => Promise.all([
         CATMAID.User.getUsers(),
         CATMAID.Group.updateGroupCache(),
       ]));

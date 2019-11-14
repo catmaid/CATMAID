@@ -19,6 +19,7 @@
     if (this.showImports) {
       this.modes.push('import-files');
       this.modes.push('import-catmaid');
+      this.modes.push('import-tracing-layer');
     }
 
     this.sourceRemote = '';
@@ -406,11 +407,6 @@ annotations, neuron name, connectors or partner neurons.
         resultSection.classList.add('section-header');
         resultSection.appendChild(document.createTextNode('Results'));
 
-        // Add table with remote skeletons
-        let tracingSection = document.createElement('span');
-        tracingSection.classList.add('section-header');
-        tracingSection.appendChild(document.createTextNode('From Tracing Layer'));
-
         // TODO: Add active 3D viewers selector
 
         let nameFilter = '';
@@ -550,38 +546,6 @@ annotations, neuron name, connectors or partner neurons.
               }, []);
 
               widget.importRemoteSkeletons(skeletonIds, getEffectiveAnnotations());
-            },
-          },
-          {
-            type: 'child',
-            element: tracingSection,
-          },
-          {
-            type: 'button',
-            label: 'Import active skeleton',
-            title: "Import active skeleton if it is a remote skeleton",
-            onclick: e => {
-              let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
-              let projectId = SkeletonAnnotations.getActiveProjectId();
-              let api = SkeletonAnnotations.getActiveSkeletonAPI();
-
-              if (!api) {
-                CATMAID.warn("The selected skeleton is already a local skeleton");
-                return;
-              }
-
-              // Load this skeleton and import it
-              CATMAID.Skeletons.getNames(projectId, [activeSkeletonId], api)
-                .then(names => {
-                  let entityMap = {};
-                  entityMap[activeSkeletonId] = {
-                    name: names[activeSkeletonId],
-                  };
-
-                  widget._importRemoteSkeletons(api, projectId, [activeSkeletonId],
-                      widget.getEffectiveAnnotations(), entityMap);
-                })
-                .catch(CATMAID.handleError);
             },
           },
         ];
@@ -731,6 +695,74 @@ annotations, neuron name, connectors or partner neurons.
           container.removeChild(container.lastChild);
         }
         ImportExportWidget.Modes['import-catmaid'].createContent(container, widget);
+      },
+    },
+
+    'import-tracing-layer': {
+      title: 'Import from tracing layer',
+      createControls: widget => {
+        return [{
+            type: 'button',
+            label: 'Preview active skeleton',
+            title: "Preview active skeletons if it is a remote skeleton",
+            onclick: e => {
+              let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+              let projectId = SkeletonAnnotations.getActiveProjectId();
+              let api = SkeletonAnnotations.getActiveSkeletonAPI();
+
+              if (!activeSkeletonId) {
+                CATMAID.warn("No skeleton selected");
+                return;
+              }
+
+              if (!api) {
+                CATMAID.warn("The selected skeleton is already a local skeleton");
+                return;
+              }
+              CATMAID.Remote.previewSkeletons(projectId, [activeSkeletonId], {
+                  api: api,
+                  title: "The active skeletons can be imported",
+                })
+                .catch(CATMAID.handleError);
+            },
+          },
+          {
+            type: 'button',
+            label: 'Import active skeleton',
+            title: "Import active skeleton if it is a remote skeleton",
+            onclick: e => {
+              let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+              let projectId = SkeletonAnnotations.getActiveProjectId();
+              let api = SkeletonAnnotations.getActiveSkeletonAPI();
+
+              if (!activeSkeletonId) {
+                CATMAID.warn("No skeleton selected");
+                return;
+              }
+
+              if (!api) {
+                CATMAID.warn("The selected skeleton is already a local skeleton");
+                return;
+              }
+
+              // Load this skeleton and import it
+              CATMAID.Skeletons.getNames(projectId, [activeSkeletonId], api)
+                .then(names => {
+                  let entityMap = {};
+                  entityMap[activeSkeletonId] = {
+                    name: names[activeSkeletonId],
+                  };
+
+                  widget._importRemoteSkeletons(api, projectId, [activeSkeletonId],
+                      widget.getEffectiveAnnotations(), entityMap);
+                })
+                .catch(CATMAID.handleError);
+            },
+          },
+        ];
+      },
+      createContent: function(container, widget) {
+
       },
     },
   };

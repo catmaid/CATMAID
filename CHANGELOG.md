@@ -192,6 +192,14 @@ Import/Export widget:
   annotations. If no annotation are provided, CATMAID will add the annotation
   "Import" to imported skeletons.
 
+- A custom set of default annotations that will be added to imported skeletons
+  can be defined through the "Default skeleton import annotations" option in the
+  Settings Widget. At the moment, this is set to "Import" as well as "{source}
+  upload {group}". The second annotation uses two optional placeholders, which
+  are replaced by the skeleton import source reference and the user's primary
+  group, respectively. Should no primary group be set, the username name is
+  used.
+
 - The original ID and source URL of all imported skeletons is tracked. This
   allows the widget to display local skeleton IDs, if the remote ID has already
   been imported from the current source URL.

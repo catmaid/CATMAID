@@ -19,7 +19,19 @@
     });
   };
 
+  Group.updateGroupCache = function() {
+    return Group.list()
+      .then(groups => {
+        CATMAID.groups.clear();
+        for (let entry of groups) {
+          CATMAID.groups.set(entry.id, entry.name);
+        }
+      });
+  };
+
   // Export into namespace
   CATMAID.Group = Group;
+
+  CATMAID.groups = new Map();
 
 })(CATMAID);

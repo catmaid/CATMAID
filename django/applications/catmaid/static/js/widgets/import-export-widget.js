@@ -24,6 +24,7 @@
     this.sourceRemote = '';
     this.sourceProject = project.id;
     this.importCatmaidResult = null;
+    this.importAnnotations = CATMAID.TracingTool.getDefaultImportAnnotations();
   };
 
   ImportExportWidget.exportContentTemplate = `
@@ -179,6 +180,14 @@ annotations, neuron name, connectors or partner neurons.
         container.style.display = 'none';
       }
     }
+  };
+
+  ImportExportWidget.prototype.getEffectiveAnnotations = function() {
+    return CATMAID.TracingTool.substituteVariables(this.importAnnotations, {
+      'group': CATMAID.userprofile.primary_group_id !== undefined && CATMAID.userprofile.primary_group_id !== null ?
+          CATMAID.groups.get(CATMAID.userprofile.primary_group_id) : CATMAID.session.username,
+      'source': this.sourceRemote ? this.sourceRemote : 'local',
+    });
   };
 
   /**
@@ -355,6 +364,7 @@ annotations, neuron name, connectors or partner neurons.
               // Try to get all projects from the selected remote and update the
               // displayed project options.
               updateProjectList();
+              updateAnnotationTitle();
             });
 
         let remoteSelectWrapper = CATMAID.DOM.wrapInLabel("Source remote",
@@ -385,7 +395,7 @@ annotations, neuron name, connectors or partner neurons.
         // Init project list for current project
         updateProjectList();
 
-        // Add table with landmarks
+        // Add table with remote skeletons
         let resultSection = document.createElement('span');
         resultSection.classList.add('section-header');
         resultSection.appendChild(document.createTextNode('Results'));
@@ -395,7 +405,18 @@ annotations, neuron name, connectors or partner neurons.
         let nameFilter = '';
         let annotationFilter = '';
         let withSubAnnotations = false;
-        let resultAnnotations = [];
+
+        let user = CATMAID.User.safe_get(CATMAID.session.userid);
+
+        let getAnnotationTitle = function() {
+          let annotations = widget.getEffectiveAnnotations().join(', ');
+          return `A set of annotations, separated by comma, that will be added to the import skeletons. Every occurence of "{group}" will be replaced with your primary group (or your username, should now primary group be defined). Every occurence of "{source}" will be replaced with the handle of the import source (e.g. the server name).\n\nCurrent set of annotations: ${annotations}`;
+        };
+
+        var updateAnnotationTitle = function() {
+          let target = document.getElementById(`import-annotations-${widget.widgetID}`);
+          target.title = getAnnotationTitle();
+        };
 
         return [{
             type: 'child',
@@ -473,10 +494,14 @@ annotations, neuron name, connectors or partner neurons.
           },
           {
             type: 'text',
+            id: `import-annotations-${widget.widgetID}`,
             label: 'Annotations',
-            title: 'A set of annotations, separated by comma, that will be added to the import skeletons.',
+            length: 15,
+            title: getAnnotationTitle(),
+            value: widget.importAnnotations,
             onchange: e => {
-              resultAnnotations = e.target.value.split(',').map(v => v.trim());
+              widget.importAnnotations = e.target.value.split(',').map(v => v.trim());
+              updateAnnotationTitle();
             },
           },
           {
@@ -484,6 +509,10 @@ annotations, neuron name, connectors or partner neurons.
             label: 'Preview selected',
             title: "Preview all selected result skeletons",
             onclick: e => {
+              if (!widget.importCatmaidResult) {
+                CATMAID.warn("No remote skeletons queried yet. Please search remote skeletons first.");
+                return;
+              }
               let skeletonIds = widget.importCatmaidResult.resultEntities.reduce((l, e) => {
                 if (e.selected) {
                   Array.prototype.push.apply(l, e.skeleton_ids);
@@ -508,7 +537,8 @@ annotations, neuron name, connectors or partner neurons.
                 }
                 return l;
               }, []);
-              widget.importRemoteSkeletons(skeletonIds, resultAnnotations);
+
+              widget.importRemoteSkeletons(skeletonIds, getEffectiveAnnotations());
             },
           },
         ];
@@ -608,7 +638,7 @@ annotations, neuron name, connectors or partner neurons.
           let tr = $(this).closest('tr');
           let data =  $(table).DataTable().row(tr).data();
           // Import single skeleton
-          widget.importRemoteSkeletons(data.skeleton_ids);
+          widget.importRemoteSkeletons(data.skeleton_ids, widget.getEffectiveAnnotations());
         });
 
         datatable.on('click', 'a[data-action=select-local-skeleton]', function(e) {

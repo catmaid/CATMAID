@@ -1964,6 +1964,28 @@
         change: autoAnnotationChange,
       });
 
+      var defaultImportChange = function() {
+          let importAnnotations = this.value.split(',').map(v => v.trim()) || [];
+          CATMAID.TracingTool.Settings
+              .set(
+                'import_default_annotations_skeleton',
+                importAnnotations,
+                SETTINGS_SCOPE);
+        };
+      var defaultImportAnnotations = CATMAID.TracingTool.Settings[SETTINGS_SCOPE].import_default_annotations_skeleton;
+      defaultImportAnnotations = defaultImportAnnotations.length > 0 ?
+          defaultImportAnnotations.join(', ') : '';
+      var defaultImportInput = CATMAID.DOM.createInputSetting(
+              "Default skeleton import annotations",
+              defaultImportAnnotations,
+              'A set of annotations, separated by comma, that will be added to the import skeletons. Every occurence of "{group}" will be replaced with your primary group (or your username, should now primary group be defined). Every occurence of "{source}" will be replaced with the handle of the import source (e.g. the server name).',
+              defaultImportChange);
+      ds.append(wrapSettingsControl(
+          defaultImportInput,
+          CATMAID.TracingTool.Settings,
+          'import_default_annotations_skeleton',
+          SETTINGS_SCOPE));
+
       // Auto-select skeleton source created last
       ds.append(CATMAID.DOM.createCheckboxSetting('Auto-select widget created last as source ' +
             'for new widgets', CATMAID.skeletonListSources.defaultSelectLastSource,

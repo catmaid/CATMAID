@@ -1898,6 +1898,26 @@
   };
 
   /**
+   * Get a list of default import annotation names.
+   */
+  TracingTool.getDefaultImportAnnotations = function(variableSubstitutions = {}) {
+    let annotations = TracingTool.Settings.session.import_default_annotations_skeleton;
+    if (!annotations) {
+      return [];
+    }
+    return TracingTool.substituteVariables(annotations, variableSubstitutions);
+  };
+
+  TracingTool.substituteVariables = function(targetList, variableSubstitutions = {}) {
+    return targetList.map(a => {
+      for (let s in variableSubstitutions) {
+        a = a.replace(`\{${s}\}`, variableSubstitutions[s]);
+      }
+      return a;
+    });
+  };
+
+  /**
    * Actions available for the tracing tool.
    */
   TracingTool.actions = [
@@ -2117,6 +2137,9 @@
           show_node_labels: {
             default: false
           },
+          import_default_annotations_skeleton: {
+            default: ['Import', '{source} upload {group}'],
+          }
         },
         migrations: {}
       });

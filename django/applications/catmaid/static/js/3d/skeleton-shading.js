@@ -543,6 +543,22 @@
         };
       }
     },
+    'imported': {
+      prepare: initTreenodeImportMap,
+      vertexColorizer: function(skeleton, options) {
+        var arbor = skeleton.createArbor();
+        var importedTreenodes = skeleton.importedTreenodes;
+        // Find all treenodes that have been merged originally from another
+        // source.
+        let imported = new THREE.Color('green');
+        var regular = skeleton.actorColor;
+        return function(vertex) {
+          let d = vertex.node_id;
+          return importedTreenodes.has(typeof d === 'number' ? d : parseInt(d, 10)) ?
+              imported : regular;
+        };
+      },
+    },
   };
 
   let makeSamplerIntervalColorizer = function(skeleton, options) {

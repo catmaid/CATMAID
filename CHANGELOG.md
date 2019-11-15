@@ -229,7 +229,8 @@ Neuron navigator:
 3D viewer:
 
 - The new shading mode named "Imported fragments" will make only imported edges
-  visible.
+  visible. The new coloring mode "Imported (green)" will highlight all imported
+  fragments in green.
 
 Neuroglancer widget:
 

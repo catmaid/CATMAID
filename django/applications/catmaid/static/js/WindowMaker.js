@@ -591,7 +591,8 @@ var WindowMaker = new function()
      ['skeleton-z-lut', 'Z Depth rainbow per skeleton'],
      ['sampler-domains', 'Reconstrucion sampler domains'],
      ['binary-sampler-intervals', 'Reconstrucion sampler intervals (2 colors)'],
-     ['multicolor-sampler-intervals', 'Reconstrucion sampler intervals (11 colors)']
+     ['multicolor-sampler-intervals', 'Reconstrucion sampler intervals (11 colors)'],
+     ['imported', 'Imported (green)'],
     ].forEach(function(e) {
        var selected = o.color_method === e[0];
        colorMenu.options.add(new Option(e[1], e[0], selected, selected));

@@ -403,28 +403,32 @@ class ViewPageTests(TestCase, AssertStatusMixin):
                 u'color': [1.0, 1.0, 0.0],
                 u'full_name': u'Admin Superuser',
                 u'login': u'admin',
-                u'id': 4
+                u'id': 4,
+                u'primary_group_id': None,
             }, {
                 u'first_name': u'Test',
                 u'last_name': u'User 0',
                 u'color': [0.0, 0.0, 1.0],
                 u'full_name': u'Test User 0',
                 u'login': u'test0',
-                u'id': 5
+                u'id': 5,
+                u'primary_group_id': None,
             }, {
                 u'first_name': u'Test',
                 u'last_name': u'User 1',
                 u'color': [1.0, 0.0, 1.0],
                 u'full_name': u'Test User 1',
                 u'login': u'test1',
-                u'id': 2
+                u'id': 2,
+                u'primary_group_id': None,
             }, {
                 u'first_name': u'Test',
                 u'last_name': u'User 2',
                 u'color': [0.0, 1.0, 1.0],
                 u'full_name': u'Test User 2',
                 u'login': u'test2',
-                u'id': 3
+                u'id': 3,
+                u'primary_group_id': None,
             }
         ]
 

@@ -215,6 +215,22 @@
     return initSamplerDomains(skeleton, true);
   };
 
+  var initTreenodeImportMap = function(skeletons) {
+    var skeletonIds = Object.keys(skeletons);
+    return CATMAID.Skeletons.importInfo(project.id, skeletonIds, true)
+      .then(result => {
+        for (let skeletonId of skeletonIds) {
+          let details = result[skeletonId];
+          if (details && details.n_imported_treenodes > 0) {
+            skeletons[skeletonId].importedTreenodes = new Set(details.imported_treenodes);
+          } else {
+            skeletons[skeletonId].importedTreenodes = new Set();
+          }
+        }
+        return result;
+      });
+  };
+
   /**
    * Skeleton color method objects are expected to have a vertexColorizer
    * function that returns a per-vertex coloring function. This inner function
@@ -1067,7 +1083,23 @@
 
         return nodeWeights;
       }
-    }
+    },
+    'imported': {
+      prepare: initTreenodeImportMap,
+      weights: function(skeleton, options) {
+        var arbor = skeleton.createArbor();
+        var importedTreenodes = skeleton.importedTreenodes;
+
+        // Look at all nodes of all domains. Give them a weight of 1 if they are
+        // part of an interval and 0.2 if hey are only part of a domain.
+        var nodeWeights = arbor.nodesArray().reduce((o, d) => {
+          o[d] = importedTreenodes.has(typeof d === 'number' ? d : parseInt(d, 10)) ? 1 : 0;
+          return o;
+        }, {});
+
+        return nodeWeights;
+      }
+    },
   };
 
   /**

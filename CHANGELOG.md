@@ -226,6 +226,11 @@ Neuron navigator:
   next to the listed neuron name. The last time this link was edited is shown as
   well. Both columns can be used for sorting as well.
 
+3D viewer:
+
+- The new shading mode named "Imported fragments" will make only imported edges
+  visible.
+
 Neuroglancer widget:
 
 - CATMAID now includes a copy of Neuroglancer that can be accessed at

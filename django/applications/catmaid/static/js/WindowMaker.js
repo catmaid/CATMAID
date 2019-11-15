@@ -562,7 +562,8 @@ var WindowMaker = new function()
      ['strahler-threshold', 'Strahler threshold'],
      ['downstream-of-tag', 'Downstream of tag'],
      ['sampler-domains', 'Reconstrucion sampler domains'],
-     ['sampler-intervals', 'Reconstrucion sampler intervals']
+     ['sampler-intervals', 'Reconstrucion sampler intervals'],
+     ['imported', 'Imported fragments'],
     ].forEach(function(e) {
        var selected = o.shading_method === e[0];
        shadingMenu.options.add(new Option(e[1], e[0], selected, selected));

@@ -966,7 +966,7 @@ var project;
       // Asynchronously, try to get a full list of users if a user is logged in
       // or the anonymous user has can_browse permissions.
       load = load.then(Promise.all([
-        CATMAID.User.getUsers.bind(CATMAID.User),
+        CATMAID.User.getUsers(),
         CATMAID.Group.updateGroupCache(),
       ]));
     }

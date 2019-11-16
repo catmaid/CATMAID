@@ -51,6 +51,7 @@
     ringWeightPx: 2,
     crossWeightPx: 2,
     crossRadiusPx: 3,
+    crossWideRadiusPx: 4,
     bullseyeRadiusPx: 1,
     innerRingPpn: 0.4
   };
@@ -159,10 +160,10 @@
       SkeletonElements.prototype.ArrowLine.prototype,
     ];
 
-    this.initTextures = function(force) {
+    this.initTextures = function(force, markerType = undefined) {
         concreteElements.forEach(function (klass) {
           klass.overlayGlobals = this.overlayGlobals;
-          klass.initTextures(force);
+          klass.initTextures(force, markerType);
         }, this);
     };
 
@@ -358,7 +359,7 @@
       this.dToSecBefore = -1;
       this.dToSecAfter = 1;
 
-      this.markerType = tracingOverlay.api ? 'ring' : 'disc';
+      this.markerType = tracingOverlay.api ? CATMAID.TracingOverlay.Settings.session.remote_data_marker_type : 'disc';
 
       // Compute the planar X, Y and Z dimensions in stack space for the tracing
       // overlay of this prototype hierarchy. We don't expect this to change
@@ -528,7 +529,7 @@
           case 'crosshair':
             return makeCrosshair(radiusPx, args.ringWeightPx, args.crossWeightPx, args.crossRadiusPx);
           case 'crosshair-no-ring':
-            return makeCrosshairNoRing(args.crossWeightPx, args.crossRadiusPx);
+            return makeCrosshairNoRing(args.crossWeightPx, args.crossWideRadiusPx);
           case 'ring':
             return makeRing(radiusPx, args.ringWeightPx);
           case 'target':
@@ -540,17 +541,36 @@
         }
       };
 
-      this.initTextures = function () {
+      /**
+       * Using force causes this to leak a texture if the user switches between a small marker type (disc) and a large
+       * marker type (any other). This is necessary to change the size of the marker and happens very infrequently.
+       *
+       * @param force
+       */
+      this.initTextures = function (force = false, markerType = undefined) {
+        var oldMarkerType = this.markerType;
+        if (markerType) {
+          this.markerType = markerType;
+        }
+        force = force && (oldMarkerType === 'disc' ^ this.markerType === 'disc');
+        if (this.markerType === 'disc') {
+          this.NODE_RADIUS = 3;
+        } else if (this.markerType === 'crosshair-no-ring') {
+          this.NODE_RADIUS = 4;
+        } else {
+          this.NODE_RADIUS = 5;
+        }
         var g = this.makeMarker();
 
         var tracingOverlay = this.overlayGlobals.tracingOverlay;
         var texture = tracingOverlay.pixiLayer._context.renderer.generateTexture(g, PIXI.settings.SCALE_MODES, 1);
 
-        if (this.NODE_TEXTURE) {
+        if (!force && this.NODE_TEXTURE) {
           var oldBaseTexture = this.NODE_TEXTURE.baseTexture;
           this.NODE_TEXTURE.baseTexture = texture.baseTexture;
           oldBaseTexture.destroy();
         } else {
+          if (this.NODE_TEXTURE) console.log('Warning: Possible treenode texture leak');
           this.NODE_TEXTURE = texture;
         }
 
@@ -1438,9 +1458,9 @@
        *
        * @param force
        */
-      this.initTextures = function(force) {
+      this.initTextures = function(force, markerType) {
         var oldMarkerType = this.markerType;
-        this.markerType = CATMAID.TracingOverlay.Settings.session.connector_node_marker;
+        this.markerType = markerType || CATMAID.TracingOverlay.Settings.session.connector_node_marker;
         force = force && (oldMarkerType === 'disc' ^ this.markerType === 'disc');
         this.NODE_RADIUS = this.markerType === 'disc' ? 8 : 15;
         var g = this.makeMarker();

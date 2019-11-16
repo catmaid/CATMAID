@@ -235,6 +235,17 @@ var SkeletonAnnotations = {};
     return null;
   };
 
+  SkeletonAnnotations.getRemoteTracingOverlays = function() {
+    let remoteOverlays = [];
+    for (let key in CATMAID.TracingOverlay.prototype._instances) {
+      let overlays = CATMAID.TracingOverlay.prototype._instances[key];
+      for (let overlay of overlays) {
+        if (overlay.api) remoteOverlays.push(overlay);
+      }
+    }
+    return remoteOverlays;
+  };
+
   /**
    * Map a skeleton elements instance to an overlay.
    */
@@ -1259,7 +1270,10 @@ var SkeletonAnnotations = {};
               // Map zoom levels to LOD percentages, interpolate percentages
               // inbetween.
               default: [[0,1], [1,0]],
-            }
+            },
+            remote_data_marker_type: {
+              default: 'ring',
+            },
           },
           migrations: {
             0: function (settings) {

@@ -86,6 +86,10 @@ Tracing tool:
   added to the active stack viewer by selecting the respective remote project
   from the "More tools" menu item "Remote data".
 
+- The marker type used fore remote tracing data can be configured through the
+  Settings Widget in the Tracing Overlay section, option "Remote node marker". A
+  ring is used by default.
+
 Tracing overlay:
 
 - The remote mirror CATMAID instance configuration is now taken from the central

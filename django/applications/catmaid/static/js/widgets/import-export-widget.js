@@ -22,6 +22,8 @@
       this.modes.push('import-tracing-layer');
     }
 
+    this.csvImportNewNeuronName = '';
+
     this.sourceRemote = '';
     this.sourceProject = project.id;
     this.importCatmaidResult = null;
@@ -249,7 +251,17 @@ annotations, neuron name, connectors or partner neurons.
 
     'import-files': {
       title: 'Import from files',
-      createControls: widget => [],
+      createControls: widget => {
+        return [
+          {
+            type: 'text',
+            label: 'Name',
+            onchange: e => {
+              widget.csvImportNewNeuronName = e.target.value.trim();
+            },
+          },
+        ];
+      },
       createContent: function(container, widget) {
         container.innerHTML = ImportExportWidget.importContentTemplate;
 
@@ -271,7 +283,7 @@ annotations, neuron name, connectors or partner neurons.
             let file = files[i];
             importQueue = importQueue
               .then(function() {
-                return import_swc(file)
+                return import_swc(file, false, widget.csvImportNewNeuronName)
                   .then(function(data) {
                     CATMAID.msg("SWC successfully imported", "Neuron ID:" +
                         data.neuron_id + " Skeleton ID: " + data.skeleton_id);
@@ -758,12 +770,13 @@ annotations, neuron name, connectors or partner neurons.
     dialog.show();
   }
 
-  function import_swc(file, autoSelect) {
+  function import_swc(file, autoSelect, name) {
     if (!file) {
       return Promise.reject(new CATMAID.ValueError("Need file"));
     }
 
     var data = new FormData();
+    data.append('name', name);
     data.append('file', file);
     return new Promise(function(resolve, reject) {
       $.ajax({

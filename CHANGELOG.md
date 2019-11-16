@@ -238,6 +238,8 @@ Import/Export widget:
 - The NRRD export will now by default create a Zip file if multiple skeletons
   are exported both in a synchronous and asynchronous export.
 
+- SWC imports can now have a user defined initial name.
+
 Neuron navigator:
 
 - The new button "Imported nodes" will list all imported treenodes for the

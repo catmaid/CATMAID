@@ -358,11 +358,15 @@
       self.prototype.register(parentStackViewer, "edit_button_trace");
 
       // Initialize button state
-      document.getElementById( "trace_button_togglelabels" ).className =
-          CATMAID.TracingTool.Settings.session.show_node_labels ? "button_active" : "button";
+      let toolbarButton = document.getElementById( "trace_button_togglelabels" );
+      if (toolbarButton) {
+        toolbarButton.className = CATMAID.TracingTool.Settings.session.show_node_labels ? "button_active" : "button";
+      }
 
-      document.getElementById( "trace_button_togglecolorlength" ).className =
-          CATMAID.TracingOverlay.Settings.session.color_by_length ? "button_active" : "button";
+      let lengthColorButton = document.getElementById( "trace_button_togglecolorlength" );
+      if (lengthColorButton) {
+        lengthColorButton.className = CATMAID.TracingOverlay.Settings.session.color_by_length ? "button_active" : "button";
+      }
 
       // Try to get existing pointer bindings for this layer
       if (!bindings.has(parentStackViewer)) createPointerBindings(parentStackViewer, layer, view);

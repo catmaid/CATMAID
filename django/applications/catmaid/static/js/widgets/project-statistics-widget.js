@@ -37,13 +37,14 @@
       $("#connectors_created").text(data.connectors_created);
     };
 
+    function wrapWithLink(data, num, type) {
+      // Create a new link that retrieves the required information.
+      var link = '<a href="#" data-from="' + data.from + '" data-to="' +
+          data.to + '" data-type="' + type +'" data-user="' + data.user + '">' + num + '</a>';
+      return link;
+    }
+
     var get_formated_entry = function(data, withImports) {
-      function wrapWithLink(num, type) {
-        // Create a new link that retrieves the required information.
-        var link = '<a href="#" data-from="' + data.from + '" data-to="' +
-            data.to + '" data-type="' + type +'" data-user="' + data.user + '">' + num + '</a>';
-        return link;
-      }
 
       let newCablelength = data.hasOwnProperty('new_cable_length') ? data['new_cable_length'] : 0;
       let newTreenodes = data.hasOwnProperty('new_treenodes') ? data['new_treenodes'] : 0;
@@ -59,53 +60,53 @@
 
         // Display regular nodes with imports subtracted
         if(newCablelength > 0 ) {
-          entry += wrapWithLink((newCablelength).toLocaleString(), 'created') + ' /';
+          entry += wrapWithLink(data, newCablelength.toLocaleString(), 'created') + ' /';
           points += newCablelength;
         } else {
           entry += '0 /';
         }
         if(newTreenodes > 0 ) {
-          entry += ' ' + wrapWithLink((newTreenodes).toLocaleString(), 'created') + ' /';
+          entry += ' ' + wrapWithLink(data, newTreenodes.toLocaleString(), 'created') + ' /';
           points += newImportTreenodes;
         } else {
           entry += ' 0 /';
         }
 
         if(newImportCablelength > 0 ) {
-          entry += ' ' + wrapWithLink(newImportCablelength.toLocaleString(), 'created') + ' /';
+          entry += ' ' + wrapWithLink(data, newImportCablelength.toLocaleString(), 'created') + ' /';
           points += newImportCablelength;
         } else {
           entry += ' 0 /';
         }
 
         if( newImportTreenodes > 0 ) {
-          entry += ' ' + wrapWithLink(newImportTreenodes.toLocaleString(), 'created') + ' /';
+          entry += ' ' + wrapWithLink(data, newImportTreenodes.toLocaleString(), 'created') + ' /';
           points += newImportTreenodes;
         } else {
           entry += ' 0 /';
         }
       } else {
         if(newCablelength > 0 ) {
-          entry += wrapWithLink(newCablelength .toLocaleString(), 'created') + ' /';
+          entry += wrapWithLink(data, newCablelength .toLocaleString(), 'created') + ' /';
           points += newCablelength;
         } else {
           entry += '0 /';
         }
         if(newTreenodes > 0 ) {
-          entry += ' ' + wrapWithLink(newTreenodes.toLocaleString(), 'created') + ' /';
+          entry += ' ' + wrapWithLink(data, newTreenodes.toLocaleString(), 'created') + ' /';
           points += newTreenodes;
         } else {
           entry += ' 0 /';
         }
       }
       if( data.hasOwnProperty('new_connectors') && data['new_connectors'] > 0 ) {
-        entry += ' ' + wrapWithLink(data['new_connectors'].toLocaleString(), 'connectors') + ' /';
+        entry += ' ' + wrapWithLink(data, data['new_connectors'].toLocaleString(), 'connectors') + ' /';
         points += data['new_connectors'];
       } else {
         entry += ' 0 /';
       }
       if( data.hasOwnProperty('new_reviewed_nodes') && data['new_reviewed_nodes'] > 0 ) {
-        entry += ' ' + wrapWithLink(data['new_reviewed_nodes'].toLocaleString(), 'reviewed');
+        entry += ' ' + wrapWithLink(data, data['new_reviewed_nodes'].toLocaleString(), 'reviewed');
         points += data['new_reviewed_nodes'];
       } else {
         entry += ' 0';

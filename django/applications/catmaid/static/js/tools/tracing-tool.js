@@ -1159,7 +1159,7 @@
       run: function(e) {
         // Clear children after button data
         let nRemovedVisible = 0;
-        let parentNode = e.target.parentNode;
+        let parentNode = e.target.id === 'trace_button_moretools' ? e.target : e.target.parentNode;
         if (parentNode) {
           while (parentNode.children.length > 1) {
             let menuWrapper = parentNode.lastChild;

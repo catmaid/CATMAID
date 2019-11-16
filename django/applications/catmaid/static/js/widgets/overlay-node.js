@@ -112,6 +112,21 @@
   };
 
   /**
+   * Create a white crosshair, without outer ring.
+   *
+   * @param crossWeight
+   * @param crossRadius
+   */
+  var makeCrosshairNoRing = function(crossWeight, crossRadius) {
+    return new PIXI.Graphics()
+      .lineStyle(crossWeight, 0xFFFFFF)
+      .moveTo(-crossRadius, 0)
+      .lineTo(crossRadius, 0)
+      .moveTo(0, -crossRadius)
+      .lineTo(0, crossRadius);
+  };
+
+  /**
    * Create a white bullseye
    *
    * @param radius
@@ -512,6 +527,8 @@
         switch (this.markerType) {
           case 'crosshair':
             return makeCrosshair(radiusPx, args.ringWeightPx, args.crossWeightPx, args.crossRadiusPx);
+          case 'crosshair-no-ring':
+            return makeCrosshairNoRing(args.crossWeightPx, args.crossRadiusPx);
           case 'ring':
             return makeRing(radiusPx, args.ringWeightPx);
           case 'target':

@@ -1537,7 +1537,8 @@
         // Prevent node related click handling if the naviation mode is
         // enabled.
         let mode = catmaidTracingOverlay.mode || SkeletonAnnotations.currentmode;
-        if (mode === SkeletonAnnotations.MODES.MOVE || mode === SkeletonAnnotations.MODES.SELECT) {
+        if (mode === SkeletonAnnotations.MODES.MOVE || mode === SkeletonAnnotations.MODES.SELECT ||
+            mode === SkeletonAnnotations.MODES.IMPORT) {
           return;
         }
 
@@ -1679,7 +1680,8 @@
         // Prevent node related pointer move handling if the naviation mode is
         // enabled.
         let mode = catmaidTracingOverlay.mode || SkeletonAnnotations.currentmode;
-        if (mode === SkeletonAnnotations.MODES.MOVE || mode === SkeletonAnnotations.MODES.SELECT) {
+        if (mode === SkeletonAnnotations.MODES.MOVE || mode === SkeletonAnnotations.MODES.SELECT ||
+            mode === SkeletonAnnotations.MODES.IMPORT) {
           return;
         }
 

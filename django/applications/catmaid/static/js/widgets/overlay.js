@@ -118,7 +118,7 @@ var SkeletonAnnotations = {};
     };
   })();
 
-  SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1, SELECT: 2, MOVE: 3});
+  SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1, SELECT: 2, MOVE: 3, IMPORT: 4});
   SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.SKELETON;
 
   /**

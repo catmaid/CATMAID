@@ -109,6 +109,10 @@
       return selectedNode;
     };
 
+    this.getActiveStackViewer = function() {
+      return activeStackViewer;
+    };
+
     this.resize = function(width, height) {
       self.prototype.resize( width, height );
       return;
@@ -1884,6 +1888,10 @@
         });
     };
 
+    this.getRemoteLayerName = function(remoteName, remoteProject) {
+      return `Remote data: ${remoteName}: ${remoteProject.title}`;
+    };
+
     this.openAdditionalTracinData = function(remoteName, remoteProject) {
       CATMAID.msg(`Open (remote) tracing data`, `Loding data from ${remoteName}/${remoteProject.title}`);
       if (!activeStackViewer) {
@@ -1891,8 +1899,7 @@
         return;
       }
 
-      let n = this.remoteLayers.length + 1;
-      let layerName = `Remote data ${n}: ${remoteName}: ${remoteProject.title}`;
+      let layerName = this.getRemoteLayerName(remoteName, remoteProject);
       let layer = new CATMAID.TracingLayer(activeStackViewer, {
         show_labels: CATMAID.TracingTool.Settings.session.show_node_labels,
         api: CATMAID.Remote.getAPI(remoteName),
@@ -2164,6 +2171,7 @@
         title: 'Remote data',
         action: remoteProjects,
       };
+      let activeStackViewer = this.getActiveStackViewer();
       let i = 0;
       let sortedRemoteProjects = Array.from(this.remoteTracingProjcts.keys()).sort(CATMAID.tools.compareStrings);
       for (let key of sortedRemoteProjects) {
@@ -2172,11 +2180,20 @@
           // Create a sub menu for remote tracing layers that can be added to
           // the current or a new stack viewer.
           remoteProjects.push(entry.projects.reduce((po, p, j) => {
+            let layerName = this.getRemoteLayerName(key, p);
+            let isEnabled = activeStackViewer ? activeStackViewer.getLayer(layerName) : false;
             po.action[`project-${j}`] = {
               title: p.title,
+              state: isEnabled ? '*' : '',
               note: 'tracing data',
               action: e => {
-                this.openAdditionalTracinData(key, p);
+                if (isEnabled) {
+                  activeStackViewer.removeLayer(layerName);
+                  activeStackViewer.update();
+                } else {
+                  this.openAdditionalTracinData(key, p);
+                }
+                this._updateMoreToolsMenu();
               },
             };
             return po;

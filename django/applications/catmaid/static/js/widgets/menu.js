@@ -86,6 +86,9 @@ Menu = function () {
       d.className = "pulldown_item";
       var a = document.createElement("a");
       a.appendChild(document.createTextNode(element.title));
+      if (element.state) {
+        a.dataset.state = element.state;
+      }
 
       d.appendChild(document.createElement("p"));
       d.firstChild.appendChild(a);

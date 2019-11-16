@@ -736,7 +736,7 @@
               + (modifier ? 'removing the tag' : 'tagging with') + ' "' + tag + '"!');
           return true;
         }
-        if (!SkeletonAnnotations.atn.isRemote()) {
+        if (SkeletonAnnotations.atn.isRemote()) {
           CATMAID.warn("Can't modify remote data");
           return false;
         }
@@ -841,7 +841,7 @@
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
-        if (!SkeletonAnnotations.atn.isRemote()) {
+        if (SkeletonAnnotations.atn.isRemote()) {
           CATMAID.warn("Can't modify remote data");
           return false;
         }
@@ -923,7 +923,7 @@
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
-        if (!SkeletonAnnotations.atn.isRemote()) {
+        if (SkeletonAnnotations.atn.isRemote()) {
           CATMAID.warn("Can't modify remote data");
           return false;
         }
@@ -1052,7 +1052,7 @@
           CATMAID.warn("No node selected");
           return false;
         }
-        if (!SkeletonAnnotations.atn.isRemote()) {
+        if (SkeletonAnnotations.atn.isRemote()) {
           CATMAID.warn("Can't modify remote data");
           return false;
         }
@@ -1070,7 +1070,7 @@
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
-        if (!SkeletonAnnotations.atn.isRemote()) {
+        if (SkeletonAnnotations.atn.isRemote()) {
           CATMAID.warn("Can't modify remote data");
           return false;
         }
@@ -1228,7 +1228,7 @@
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
-        if (!SkeletonAnnotations.atn.isRemote()) {
+        if (SkeletonAnnotations.atn.isRemote()) {
           CATMAID.warn("Can't modify remote data");
           return false;
         }
@@ -1383,7 +1383,7 @@
         if (e.shiftKey) {
           return false;
         }
-        if (!SkeletonAnnotations.atn.isRemote()) {
+        if (SkeletonAnnotations.atn.isRemote()) {
           CATMAID.warn("Can't modify remote data");
           return false;
         }
@@ -1401,7 +1401,7 @@
         if (e.shiftKey) {
           return false;
         }
-        if (!SkeletonAnnotations.atn.isRemote()) {
+        if (SkeletonAnnotations.atn.isRemote()) {
           CATMAID.warn("Can't modify remote data");
           return false;
         }
@@ -1419,7 +1419,7 @@
         if (e.shiftKey) {
           return false;
         }
-        if (!SkeletonAnnotations.atn.isRemote()) {
+        if (SkeletonAnnotations.atn.isRemote()) {
           CATMAID.warn("Can't modify remote data");
           return false;
         }
@@ -1437,7 +1437,7 @@
         if (e.shiftKey) {
           return false;
         }
-        if (!SkeletonAnnotations.atn.isRemote()) {
+        if (SkeletonAnnotations.atn.isRemote()) {
           CATMAID.warn("Can't modify remote data");
           return false;
         }
@@ -1455,7 +1455,7 @@
         if (e.shiftKey) {
           return false;
         }
-        if (!SkeletonAnnotations.atn.isRemote()) {
+        if (SkeletonAnnotations.atn.isRemote()) {
           CATMAID.warn("Can't modify remote data");
           return false;
         }
@@ -1531,7 +1531,7 @@
         if (!CATMAID.mayEdit()) {
           return false;
         }
-        if (!SkeletonAnnotations.atn.isRemote()) {
+        if (SkeletonAnnotations.atn.isRemote()) {
           CATMAID.warn("Can't modify remote data");
           return false;
         }

@@ -265,6 +265,10 @@ Miscellaneous:
 - Selection table: the summary info button now shows also the number of imported
   nodes within the selected skeletons.
 
+- Neuron search: search fields will now expand if their content is bigger than
+  the default size. Also copied fields don't contain the content of the source
+  field anymore.
+
 - Settings widget: it is now possible to clear both front-end and back-end
   settings through the "Clear settings" button. It will ask for confirmation and
   whether both front-end and back-end settings should be cleared.

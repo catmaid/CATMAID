@@ -148,12 +148,17 @@
 
       return viewers.map(function(sv) {
         // Get tracing layer for this stack view, or undefined
-        return sv.getLayer(getTracingLayerName(sv));
-      }).filter(function(layer) {
+        return sv.getLayersOfType(CATMAID.TracingLayer);
+      }).reduce(function(o, layers) {
         // Ignore falsy layers (which come from stacks
         // that don't have tracing layers.
-        return layer ? true : false;
-      });
+        if (layers && layers.length > 0) {
+            for (let i=0; i<layers.length; ++i) {
+                o.push(layers[i]);
+            }
+        }
+        return o;
+      }, []);
     };
 
     var setTracingLayersSuspended = function(value, excludeActive) {
@@ -1126,7 +1131,9 @@
         settings.set('color_by_length', colorByLength, 'session');
         getTracingLayers().forEach(function(layer) {
           if (colorByLength) {
-            var source = new CATMAID.ColorSource('length', layer.tracingOverlay);
+            var source = new CATMAID.ColorSource('length', layer.tracingOverlay, {
+                api: layer.tracingOverlay.api,
+            });
             layer.tracingOverlay.setColorSource(source);
           } else {
             layer.tracingOverlay.setColorSource();

@@ -70,6 +70,12 @@ Project statistics:
 - It is now possible to configure how many largest neurons should be displayed
   as well as an optional name pattern.
 
+- The user/time action table will now also list imported nodes and imported
+  cable length. These values are subtracted from the corresponding regular
+  counters. If "Include imports" is unchecked, the same information that was
+  displayed before this commit is shown, i.e. the regular node count and cable
+  length field include the imported data.
+
 Tracing tool:
 
 - The tool bar button to refresh caches has been replaced with a button to open

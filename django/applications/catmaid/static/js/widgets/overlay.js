@@ -5477,7 +5477,7 @@ var SkeletonAnnotations = {};
     }
 
     if (this.api && prefix) {
-      prefix = "Remote " + prefix.replace(/^.{1}/g, prefix[0].toLowerCase()) + prefix.substr(1);
+      prefix = "Remote " + prefix.replace(/^.{1}/g, prefix[0].toLowerCase());
     }
 
     if (!(CATMAID.TracingOverlay.Settings.session.extended_status_update || forceExtendedStatus)) {

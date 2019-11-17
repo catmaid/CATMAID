@@ -1907,20 +1907,29 @@
         return;
       }
 
-      let layerName = this.getRemoteLayerName(remoteName, remoteProject);
-      let layer = new CATMAID.TracingLayer(activeStackViewer, {
-        show_labels: CATMAID.TracingTool.Settings.session.show_node_labels,
-        api: CATMAID.Remote.getAPI(remoteName),
-        projectId: remoteProject.id,
-        mode: SkeletonAnnotations.MODES.IMPORT,
-        name: layerName,
-      });
-      layer.isRemovable = true;
+      let api = CATMAID.Remote.getAPI(remoteName);
+      // Try to find a remote data source for this passed in remote info
+      CATMAID.API.linkDataSource(project.id, api, remoteProject.id)
+        .then(linkFound => {
+          if (!linkFound) {
+            console.log("Found no matching data source, hiding imported remote data not available");
+          }
+          let layerName = this.getRemoteLayerName(remoteName, remoteProject);
+          let layer = new CATMAID.TracingLayer(stackViewer, {
+            show_labels: CATMAID.TracingTool.Settings.session.show_node_labels,
+            api: api,
+            projectId: remoteProject.id,
+            mode: SkeletonAnnotations.MODES.IMPORT,
+            name: layerName,
+          });
+          layer.isRemovable = true;
 
-      stackViewer.addLayer(layerName, layer);
-      stackViewer.moveLayer(layerName, getTracingLayerName(stackViewer));
-      stackViewer.update(undefined, true);
-      layer.forceRedraw();
+          stackViewer.addLayer(layerName, layer);
+          stackViewer.moveLayer(layerName, getTracingLayerName(stackViewer));
+          stackViewer.update(undefined, true);
+          layer.forceRedraw();
+        })
+        .catch(CATMAID.handleError);
     };
 
     // Listen to creation and removal of new stack views in current project.

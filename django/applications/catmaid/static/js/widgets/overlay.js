@@ -235,12 +235,12 @@ var SkeletonAnnotations = {};
     return null;
   };
 
-  SkeletonAnnotations.getRemoteTracingOverlays = function() {
+  SkeletonAnnotations.getRemoteTracingOverlays = function(stackViewer = undefined) {
     let remoteOverlays = [];
     for (let key in CATMAID.TracingOverlay.prototype._instances) {
       let overlays = CATMAID.TracingOverlay.prototype._instances[key];
       for (let overlay of overlays) {
-        if (overlay.api) remoteOverlays.push(overlay);
+        if (overlay.api && (!stackViewer || overlay.stackViewer === stackViewer)) remoteOverlays.push(overlay);
       }
     }
     return remoteOverlays;
@@ -850,6 +850,9 @@ var SkeletonAnnotations = {};
     this.applyTracingWindow = CATMAID.TracingOverlay.Settings.session.apply_tracing_window;
     /** Wheter updates can be suspended during a planar panning operation */
     this.updateWhilePanning = CATMAID.TracingOverlay.Settings.session.update_while_panning;
+    /** Wheter remote data that is available locally in other layers should be
+     * hidden. */
+    this.hideImportedData = CATMAID.TracingOverlay.Settings.session.hide_imported_data;
     /** The level of detail (highter = more detail, "max" or 0 = everything).
      * This is only supported if a cache based node provider is used. */
     this.levelOfDetail = 'max';
@@ -1232,6 +1235,9 @@ var SkeletonAnnotations = {};
             },
             update_while_panning: {
               default: false
+            },
+            hide_imported_data: {
+              default: true
             },
             color_by_length: {
               default: false
@@ -2932,6 +2938,7 @@ var SkeletonAnnotations = {};
     var hitNodeLimit = jso[3];
     var relationMap = jso[4];
     var extraData = jso[5];
+    let originData = [];
 
     // If extra data was submitted (e.g. to augment cached data), add this data to
     // other fields.
@@ -2942,27 +2949,45 @@ var SkeletonAnnotations = {};
           // Ignore invalid entries.
           continue;
         }
-        // Extra treenodes
-        if (d[0] && d[0].length > 0) {
-          Array.prototype.push.apply(jsonNodes, d[0]);
-        }
-        // Extra connectors
-        if (d[1] && d[1].length > 0) {
-          Array.prototype.push.apply(jsonConnectors, d[1]);
-        }
-        // Extra labels
-        if (d[2]) {
-          for (var l in d[2]) {
-            labelData[l] = d[2][l];
+        // There are two types of extra data: skeleton origin data (3-element
+        // lists) and regular node query responses.
+        if (d[0] && d[0].length === 3) {
+          originData.push(d);
+        } else {
+          // Extra treenodes
+          if (d[0] && d[0].length > 0) {
+            Array.prototype.push.apply(jsonNodes, d[0]);
+          }
+          // Extra connectors
+          if (d[1] && d[1].length > 0) {
+            Array.prototype.push.apply(jsonConnectors, d[1]);
+          }
+          // Extra labels
+          if (d[2]) {
+            for (var l in d[2]) {
+              labelData[l] = d[2][l];
+            }
+          }
+          // Extra node limit hit
+          hitNodeLimit = hitNodeLimit && d[3];
+          // Extra relation map
+          if (d[4]) {
+            for (var r in d[4]) {
+              relationMap[r] = d[4][r];
+            }
           }
         }
-        // Extra node limit hit
-        hitNodeLimit = hitNodeLimit && d[3];
-        // Extra relation map
-        if (d[4]) {
-          for (var r in d[4]) {
-            relationMap[r] = d[4][r];
-          }
+      }
+    }
+
+    // If there is origin data available, announce it so that all remote layers
+    // in the enclosing stack viewer can hide the respective data (if enabled
+    // and should it match).
+    if (originData && originData.length > 0) {
+      let remoteLayers = SkeletonAnnotations.getRemoteTracingOverlays(this.stackViewer);
+      if (remoteLayers && remoteLayers.length > 0) {
+        for (let i=0; i < remoteLayers.length; ++i) {
+          remoteLayers[i].requestSkeletonOriginOverride(originData);
         }
       }
     }
@@ -4083,6 +4108,17 @@ var SkeletonAnnotations = {};
 
       if (self.nodeProviderOverride && self.nodeProviderOverride !== 'none') {
         params['src'] = self.nodeProviderOverride;
+      }
+
+      if (!api && self.hideImportedData) {
+        // If no API is specified for this layer, check if there are any remote
+        // layers at all. If so, obtain also skeleton origin information from
+        // the back-end. This is needed to hide remote nodes if they have been
+        // imported.
+        let remoteLayers = SkeletonAnnotations.getRemoteTracingOverlays();
+        if (remoteLayers && remoteLayers.length > 0) {
+          params['with_origin'] = true;
+        }
       }
 
       // Check the node list cache for an exactly matching request. Only request
@@ -6265,6 +6301,50 @@ var SkeletonAnnotations = {};
       this.view.appendChild(this._tracingWindowElement);
     } else if (this._tracingWindowElement.parentElement) {
       this._tracingWindowElement.parentElement.removeChild(this._tracingWindowElement);
+    }
+  };
+
+  /**
+   * Make this tracing layer aware of new oring data that could be used to
+   * displayed data, because it is available from the requesting local layer.
+   * The passed in origin data is expected to follow the node/list convention
+   * for origin data, i.e. 3-element tuples of the format [local-skeleton-id,
+   * remote-skeleton-id, remote-source-id]. The remote source is a reference to
+   * more detailed source information. The detailed data source information can
+   * be mapped to the the API in use for this overlay. If it matches and origin
+   * based node hiding is enabled, the respective node has to be hidden.
+   */
+  CATMAID.TracingOverlay.prototype.requestSkeletonOriginOverride = function(originData) {
+    if (this.api && this.api.dataSourceId !== undefined) {
+      let skeletonIdsToHide = new Set();
+      if (originData && this.api && this.api.dataSourceId !== undefined) {
+        let dataSourceId = this.api.dataSourceId;
+        for (let i=0; i<originData.length; ++i) {
+          let originDataCollection = originData[i];
+          for (let j=0; j<originDataCollection.length; ++j) {
+            // originRef[0]: local skeleton ID, orginRef[1]: origin skeleton ID,
+            // originRef[2]: data source ID.
+            let originRef = originDataCollection[j];
+            if (originRef[2] === dataSourceId) {
+              // Hide nodes of this remote skeleton
+              skeletonIdsToHide.add(originRef[1]);
+            }
+          }
+        }
+      }
+
+      // Wait until current requests are finished
+      this.submit().then(() => {
+        // Clear out currnet override information and disable all nodes with
+        // matching skeleton IDs.
+        let disabledId = CATMAID.SkeletonElementsFactory.DISABLED;
+        for (let node of this.nodes.values()) {
+          if (skeletonIdsToHide.has(node.skeleton_id)) {
+            node.id = disabledId;
+          }
+        }
+        this.updateVisibilityForAllNodes();
+      });
     }
   };
 

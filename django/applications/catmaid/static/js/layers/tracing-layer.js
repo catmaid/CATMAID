@@ -140,6 +140,15 @@
       }
     });
 
+    Object.defineProperty(this, 'hideImportedData', {
+      get: function() {
+        return this.tracingOverlay.hideImportedData;
+      },
+      set: function(value) {
+        this.tracingOverlay.hideImportedData = value;
+      }
+    });
+
     Object.defineProperty(this, 'levelOfDetail', {
       get: function() {
         return this.tracingOverlay.levelOfDetail;
@@ -244,6 +253,12 @@
       type: 'checkbox',
       value: this.updateWhilePanning,
       help: 'Whether or not to update the visible tracing data while panning the view.'
+    }, {
+      name: 'hideImportedData',
+      displayName: 'Hide data imported in other layers',
+      type: 'checkbox',
+      value: this.hideImportedData,
+      help: 'Whether or not to hide remote tracing data that has been imported into the local project.'
     }, {
       name: 'levelOfDetailMode',
       displayName: 'Level of detail mode',
@@ -391,6 +406,8 @@
     } else if ('updateWhilePanning' === name) {
       this.updateWhilePanning = value;
       update = false;
+    } else if ('hideImportedData' === name) {
+      this.hideImportedData = value;
     } else if ('levelOfDetail' === name) {
       this.levelOfDetail = value;
     } else if ('levelOfDetailMode' === name) {

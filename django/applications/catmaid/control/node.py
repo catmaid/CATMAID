@@ -82,14 +82,15 @@ class BasicNodeProvider(object):
         return matches
 
     def get_tuples(self, params, project_id, explicit_treenode_ids,
-                explicit_connector_ids, include_labels, with_relation_map) -> Tuple[Any, Optional[str]]:
+                explicit_connector_ids, include_labels, with_relation_map,
+                with_origin) -> Tuple[Any, Optional[str]]:
         return _node_list_tuples_query(params, project_id,
                 self, explicit_treenode_ids, explicit_connector_ids,
-                include_labels, with_relation_map), 'json'
+                include_labels, with_relation_map, with_origin=with_origin), 'json'
 
 
 def get_extra_nodes(params, project_id, explicit_treenode_ids,
-        explicit_connector_ids, include_labels, with_relation_map):
+        explicit_connector_ids, include_labels, with_relation_map, with_origin):
     explicit_node_params = copy.deepcopy(params)
     # Update params so that we don't query any nodes spatially
     explicit_node_params['left'] = float('inf')
@@ -103,7 +104,7 @@ def get_extra_nodes(params, project_id, explicit_treenode_ids,
     node_provider = Postgis2dNodeProvider()
     return node_provider.get_tuples(explicit_node_params, project_id,
         explicit_treenode_ids, explicit_connector_ids, include_labels,
-        with_relation_map)
+        with_relation_map, with_origin)
 
 class CachedNodeProvider(BasicNodeProvider):
     """A node provider that is based on cached data.
@@ -118,7 +119,8 @@ class CachedJsonNodeNodeProvder(CachedNodeProvider):
     """
 
     def get_tuples(self, params, project_id, explicit_treenode_ids,
-            explicit_connector_ids, include_labels, with_relation_map) -> Tuple[Any, Optional[str]]:
+            explicit_connector_ids, include_labels, with_relation_map,
+            with_origin) -> Tuple[Any, Optional[str]]:
         cursor = connection.cursor()
         # For JSONB type cache, use ujson to decode, this is roughly 2x faster
         psycopg2.extras.register_default_jsonb(loads=ujson.loads)
@@ -136,7 +138,7 @@ class CachedJsonNodeNodeProvder(CachedNodeProvider):
             if explicit_treenode_ids or explicit_connector_ids:
                 extra_tuples, extra_type = get_extra_nodes(params, project_id,
                     explicit_treenode_ids, explicit_connector_ids, include_labels,
-                    with_relation_map)
+                    with_relation_map, with_origin)
                 if extra_type != 'json':
                     raise ValueError("Unexpected type")
 
@@ -157,7 +159,8 @@ class CachedJsonTextNodeProvder(CachedNodeProvider):
     """
 
     def get_tuples(self, params, project_id, explicit_treenode_ids,
-                explicit_connector_ids, include_labels, with_relation_map) -> Tuple[Any, Optional[str]]:
+                explicit_connector_ids, include_labels, with_relation_map,
+                with_origin) -> Tuple[Any, Optional[str]]:
         cursor = connection.cursor()
         cursor.execute("""
             SELECT json_text_data FROM node_query_cache
@@ -173,7 +176,7 @@ class CachedJsonTextNodeProvder(CachedNodeProvider):
             if explicit_treenode_ids or explicit_connector_ids:
                 extra_tuples, extra_type = get_extra_nodes(params, project_id,
                     explicit_treenode_ids, explicit_connector_ids, include_labels,
-                    with_relation_map)
+                    with_relation_map, with_origin)
                 if extra_type != 'json':
                     raise ValueError("Unexpected type")
 
@@ -197,7 +200,8 @@ class CachedMsgpackNodeProvder(CachedNodeProvider):
     """
 
     def get_tuples(self, params, project_id, explicit_treenode_ids,
-                explicit_connector_ids, include_labels, with_relation_map) -> Tuple[Any, Optional[str]]:
+                explicit_connector_ids, include_labels, with_relation_map,
+                with_origin) -> Tuple[Any, Optional[str]]:
         cursor = connection.cursor()
         cursor.execute("""
             SELECT msgpack_data FROM node_query_cache
@@ -213,7 +217,7 @@ class CachedMsgpackNodeProvder(CachedNodeProvider):
             if explicit_treenode_ids or explicit_connector_ids:
                 extra_tuples, extra_type = get_extra_nodes(params, project_id,
                     explicit_treenode_ids, explicit_connector_ids, include_labels,
-                    with_relation_map)
+                    with_relation_map, with_origin)
                 if extra_type != 'json':
                     raise ValueError("Unexpected type")
 
@@ -310,7 +314,8 @@ class GridCachedNodeProvider(CachedNodeProvider):
             raise ValueError("Unexpected cached JSON tuple format")
 
     def get_tuples(self, params, project_id, explicit_treenode_ids,
-            explicit_connector_ids, include_labels, with_relation_map) -> Tuple[Any, Optional[str]]:
+            explicit_connector_ids, include_labels, with_relation_map,
+            with_origin) -> Tuple[Any, Optional[str]]:
         # Find a fitting grid index, return empty result if there is none.
         cursor = connection.cursor()
         params['volume'] = (params['right'] - params['left']) * \
@@ -419,7 +424,7 @@ class GridCachedNodeProvider(CachedNodeProvider):
             if explicit_treenode_ids or explicit_connector_ids:
                 decoded_extra_tuples, extra_type = get_extra_nodes(params, project_id,
                     explicit_treenode_ids, explicit_connector_ids, include_labels,
-                    with_relation_map)
+                    with_relation_map, with_origin)
                 if extra_type != 'json':
                     raise ValueError("Unexpected type")
 
@@ -1353,7 +1358,8 @@ class ExtraNodesOnlyNodeProvider(BasicNodeProvider):
     """
 
     def get_tuples(self, params, project_id, explicit_treenode_ids,
-            explicit_connector_ids, include_labels, with_relation_map) -> Tuple[Any, str]:
+            explicit_connector_ids, include_labels, with_relation_map,
+            with_origin) -> Tuple[Any, str]:
 
         # No regular tracing data lookup needs to be done.
         tuples:List = []
@@ -1362,7 +1368,7 @@ class ExtraNodesOnlyNodeProvider(BasicNodeProvider):
         if explicit_treenode_ids or explicit_connector_ids:
             extra_tuples, extra_type = get_extra_nodes(params, project_id,
                 explicit_treenode_ids, explicit_connector_ids, include_labels,
-                with_relation_map)
+                with_relation_map, with_origin)
             if extra_type != 'json':
                 raise ValueError("Unexpected type")
 
@@ -2256,6 +2262,14 @@ def node_list_tuples(request:HttpRequest, project_id=None, provider=None) -> Htt
       type: string
       defaultValue: used
       paramType: form
+    - name: with_origin
+      description: |
+        Whether the origin for each skeleton should be looked up and returned.
+        This will show which skeletons are imported.
+      required: false
+      type: boolean
+      defaultValue: false
+      paramType: form
     - name: n_largest_skeletons_limit
       description: |
         Maximum number of the largest skeletons in view
@@ -2325,6 +2339,7 @@ def node_list_tuples(request:HttpRequest, project_id=None, provider=None) -> Htt
     }
     override_provider = data.get('src')
     with_relation_map = data.get('with_relation_map', 'used')
+    with_origin = get_request_bool(data, 'with_origin', False)
     if with_relation_map not in ("none", "used", "all"):
         raise ValueError("Relation map can only be 'none', 'used' or 'all'")
     if with_relation_map == 'none':
@@ -2359,12 +2374,13 @@ def node_list_tuples(request:HttpRequest, project_id=None, provider=None) -> Htt
 
     return compile_node_list_result(project_id, node_providers, params,
         treenode_ids, connector_ids, include_labels, target_format,
-        target_options, with_relation_map)
+        target_options, with_relation_map, with_origin)
 
 
 def _node_list_tuples_query(params, project_id, node_provider,
         explicit_treenode_ids=tuple(), explicit_connector_ids=tuple(),
-        include_labels=False, with_relation_map='used', ordering=None) -> List:
+        include_labels=False, with_relation_map='used', ordering=None,
+        with_origin=False) -> List:
     """The returned JSON data is sensitive to indices in the array, so care
     must be taken never to alter the order of the variables in the SQL
     statements without modifying the accesses to said data both in this
@@ -2433,19 +2449,21 @@ def _node_list_tuples_query(params, project_id, node_provider,
         n_retrieved_nodes = len(treenode_ids)
 
         labels:DefaultDict[Any, List] = defaultdict(list)
+        visible_treenodes = None
+
+        # Avoid dict lookups in loop
+        top, left, z1 = params['top'], params['left'], params['z1']
+        bottom, right, z2 = params['bottom'], params['right'], params['z2']
+
+        def is_visible(r):
+            return left <= r[2] < right and \
+                top <= r[3] < bottom and \
+                z1 <= r[4] < z2
+
         if include_labels:
-            # Avoid dict lookups in loop
-            top, left, z1 = params['top'], params['left'], params['z1']
-            bottom, right, z2 = params['bottom'], params['right'], params['z2']
-
-            def is_visible(r):
-                return left <= r[2] < right and \
-                    top <= r[3] < bottom and \
-                    z1 <= r[4] < z2
-
             # Collect treenodes visible in the current section
-            visible = [row[0] for row in treenodes if is_visible(row)]
-            if visible:
+            visible_treenodes = [row[0] for row in treenodes if is_visible(row)]
+            if visible_treenodes:
                 cursor.execute('''
                 SELECT treenode_class_instance.treenode_id,
                        class_instance.name
@@ -2455,7 +2473,7 @@ def _node_list_tuples_query(params, project_id, node_provider,
                 WHERE treenode_class_instance.relation_id = %s
                   AND class_instance.id = treenode_class_instance.class_instance_id
                   AND treenode_class_instance.treenode_id = tnid
-                ''', (visible, relation_map['labeled_as']))
+                ''', (visible_treenodes, relation_map['labeled_as']))
                 for row in cursor.fetchall():
                     labels[row[0]].append(row[1])
 
@@ -2475,6 +2493,29 @@ def _node_list_tuples_query(params, project_id, node_provider,
                 for row in cursor.fetchall():
                     labels[row[0]].append(row[1])
 
+        if with_origin:
+            visible_skeletons = set(row[7] for row in treenodes if is_visible(row))
+            # It would be faster to do this query as part of the main treendoe
+            # query, but this is easier to read and implement. It has the
+            # benefit of requiring likely less memory in some cases (repeated
+            # skeleton IDs).
+            # TODO: We night to traverse merges too! This might be possible by
+            # collecting all merges (and splits in the skeleton_origin table.
+            # This duplicates history to some extend, but makes ist easier
+            # accessible. It would be a materialized view hybrid (because it
+            # would also contain imports).
+            cursor.execute('''
+                SELECT skeleton_id, so.source_id, so.data_source_id
+                FROM skeleton_origin so
+                JOIN UNNEST(%(skeleton_ids)s::bigint[]) query_skeleton(id)
+                    ON query_skeleton.id = so.skeleton_id
+            ''', {
+                'skeleton_ids': list(visible_skeletons),
+            })
+            export_skeleton_origin = cursor.fetchall()
+        else:
+            export_skeleton_origin = [];
+
         if with_relation_map == 'used':
             export_relation_map = {r:id_to_relation[r] for r in used_relations}
         elif with_relation_map == 'all':
@@ -2485,6 +2526,11 @@ def _node_list_tuples_query(params, project_id, node_provider,
         result = [treenodes, connectors, labels,
                 n_retrieved_nodes == params['limit'], export_relation_map]
 
+        if export_skeleton_origin:
+            # This list can contain origin data and complete query responses.
+            extra_data = [export_skeleton_origin]
+            result.append(extra_data)
+
         return result
 
     except Exception as e:
@@ -2494,18 +2540,18 @@ def _node_list_tuples_query(params, project_id, node_provider,
 def node_list_tuples_query(params, project_id, node_provider,
         explicit_treenode_ids=tuple(), explicit_connector_ids=tuple(),
         include_labels=False, target_format='json', target_options=None,
-        with_relation_map=True) -> HttpResponse:
+        with_relation_map=True, with_origin=False) -> HttpResponse:
 
     result_tuple, data_type = node_provider.get_tuples(params, project_id,
         explicit_treenode_ids, explicit_connector_ids, include_labels,
-        with_relation_map)
+        with_relation_map, with_origin)
 
     return create_node_response(result_tuple, params, target_format, target_options, data_type)
 
 def compile_node_list_result(project_id, node_providers, params,
         explicit_treenode_ids=tuple(), explicit_connector_ids=tuple(),
         include_labels=False, target_format='json', target_options=None,
-        with_relation_map=True) -> HttpResponse:
+        with_relation_map=True, with_origin=False) -> HttpResponse:
     """Create a valid HTTP response for the provided node query. If
     override_provider is not passed in, the list of node_providers will be
     iterated until a result is found.
@@ -2515,7 +2561,7 @@ def compile_node_list_result(project_id, node_providers, params,
         if node_provider.matches(params):
             result = node_provider.get_tuples(params, project_id,
                 explicit_treenode_ids, explicit_connector_ids, include_labels,
-                with_relation_map)
+                with_relation_map, with_origin)
             result_tuple, data_type =  result
 
             if result_tuple and data_type:

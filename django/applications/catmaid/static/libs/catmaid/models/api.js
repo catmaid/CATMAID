@@ -18,7 +18,10 @@
       this.apiKey = apiKey;
       this.httpAuthUser = httpAuthUser;
       this.httpAuthPass = httpAuthPass;
+      this.dataSourceId = undefined;
     }
+
+
   }
 
   /**
@@ -30,6 +33,7 @@
     apiKey: undefined,
     httpAuthUser: undefined,
     httpAuthPass: undefined,
+    dataSourceId: undefined,
   });
 
   /**
@@ -87,6 +91,31 @@
     }
 
     return apis;
+  };
+
+  /**
+   * Attempt to find a a data source known to the back-end that matches this API
+   * definition.
+   */
+  API.linkDataSource = function(projectId, queryApi, queryProjectId) {
+    return CATMAID.fetch(`${projectId}/origins/`)
+      .then(datasources => {
+        let normalizeUrl = /^(\w+:\/\/)?(.*)/;
+        let normalizeUrl2 = /\/$/;
+        let found = false;
+        for (let datasource of datasources) {
+          // Compare URLs by removing the protocol and enforce trailing slash
+          let dsUrl = datasource.url.replace(normalizeUrl, '$2').replace(normalizeUrl2, '') + '/';
+          let apiUrl = queryApi.url.replace(normalizeUrl, '$2').replace(normalizeUrl2, '') + '/';
+
+          if (apiUrl === dsUrl && queryProjectId == datasource.project) {
+            queryApi.dataSourceId = datasource.id;
+            found = true;
+            break;
+          }
+        }
+        return found;
+      });
   };
 
   CATMAID.API = API;

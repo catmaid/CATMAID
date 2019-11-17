@@ -47,6 +47,8 @@
     };
   })();
 
+  CATMAID.SkeletonElementsFactory.DISABLED = -1;
+
   var NODE_PARAMS = {
     ringWeightPx: 2,
     crossWeightPx: 2,
@@ -588,7 +590,7 @@
       this.MIN_EDGE_LENGTH_SQ = 4; // Minimum size in px for edges to be drawn.
 
       // ID of the disabled nodes
-      this.DISABLED = -1;
+      this.DISABLED = CATMAID.SkeletonElementsFactory.DISABLED;
 
       this.type = SkeletonAnnotations.TYPE_NODE;
 

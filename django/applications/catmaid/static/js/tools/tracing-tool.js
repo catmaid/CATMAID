@@ -113,6 +113,10 @@
       return activeStackViewer;
     };
 
+    this.getActiveTracingLayer = function() {
+      return getActiveNodeTracingLayer();
+    };
+
     this.resize = function(width, height) {
       self.prototype.resize( width, height );
       return;
@@ -2283,6 +2287,7 @@
         title: "Import active skeleton",
         action: (e) => {
           let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+          let activeNodeId = SkeletonAnnotations.getActiveNodeId();
           let projectId = SkeletonAnnotations.getActiveProjectId();
           let api = SkeletonAnnotations.getActiveSkeletonAPI();
 
@@ -2311,8 +2316,17 @@
                 name: names[activeSkeletonId],
               };
 
-              CATMAID.Remote.importRemoteSkeletonsWithPreview(api, projectId, [activeSkeletonId],
-                annotations, entityMap);
+              return CATMAID.Remote.importRemoteSkeletonsWithPreview(api,
+                  projectId, [activeSkeletonId], annotations, entityMap, result => {
+                    let activeTracingLayer = this.getActiveTracingLayer();
+                    if (activeTracingLayer) {
+                      activeTracingLayer.forceRedraw(() => {
+                        if (result && result.length > 0) {
+                          CATMAID.Remote.selectImportedNode(activeNodeId, result[0]);
+                        }
+                      });
+                    }
+                  });
             })
             .catch(CATMAID.handleError);
         },

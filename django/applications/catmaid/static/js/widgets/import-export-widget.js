@@ -708,6 +708,7 @@ annotations, neuron name, connectors or partner neurons.
             title: "Import active skeleton if it is a remote skeleton",
             onclick: e => {
               let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+              let activeNodeId = SkeletonAnnotations.getActiveNodeId();
               let projectId = SkeletonAnnotations.getActiveProjectId();
               let api = SkeletonAnnotations.getActiveSkeletonAPI();
 
@@ -730,7 +731,20 @@ annotations, neuron name, connectors or partner neurons.
                   };
 
                   CATMAID.Remote.importRemoteSkeletonsWithPreview(api, projectId, [activeSkeletonId],
-                      widget.getEffectiveAnnotations(), entityMap);
+                      widget.getEffectiveAnnotations(), entityMap, result => {
+                        // Select new active node
+                        let tool = project.getTool();
+                        if (tool && tool instanceof CATMAID.TracingTool) {
+                          let activeTracingLayer = tool.getActiveTracingLayer();
+                          if (activeTracingLayer) {
+                            activeTracingLayer.forceRedraw(() => {
+                              if (result && result.length > 0) {
+                                CATMAID.Remote.selectImportedNode(activeNodeId, result[0]);
+                              }
+                            });
+                          }
+                        }
+                      });
                 })
                 .catch(CATMAID.handleError);
             },

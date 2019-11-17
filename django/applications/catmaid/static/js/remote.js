@@ -279,6 +279,30 @@
 
   };
 
+  Remote.selectImportedNode = function(activeNodeId, importedData) {
+    let newActiveNodeId;
+    if (SkeletonAnnotations.isRealNode(activeNodeId)) {
+      newActiveNodeId = importedData.node_id_map[activeNodeId];
+    } else {
+      // Lookup parent and child of virtual node and compute new location to
+      // select a similar node after the import.
+      let parentId = SkeletonAnnotations.getParentOfVirtualNode(activeNodeId);
+      let childId = SkeletonAnnotations.getChildOfVirtualNode(activeNodeId);
+      let x = Number(SkeletonAnnotations.getXOfVirtualNode(activeNodeId));
+      let y = Number(SkeletonAnnotations.getYOfVirtualNode(activeNodeId));
+      let z = Number(SkeletonAnnotations.getZOfVirtualNode(activeNodeId));
+      let newParentId = importedData.node_id_map[parentId];
+      let newChildId = importedData.node_id_map[childId];
+
+      newActiveNodeId = SkeletonAnnotations.getVirtualNodeID(newChildId, newParentId, x, y, z);
+    }
+
+    if (newActiveNodeId !== undefined) {
+        SkeletonAnnotations.staticSelectNode(newActiveNodeId, true);
+        CATMAID.msg("New active node", "Selected imported active node");
+    }
+  };
+
 
   // Export into CATMAID namespace.
   CATMAID.Remote = Remote;

@@ -586,8 +586,7 @@ var SkeletonAnnotations = {};
    * further checks are attempted.
    */
   SkeletonAnnotations._getVirtualNodeID = function(childId, parentId, x, y, z) {
-    return 'vn:' + childId + ':' + parentId + ':' + x.toFixed(3) + ':' +
-      y.toFixed(3) + ':' + z.toFixed(3);
+    return `vn:${childId}:${parentId}:${x.toFixed(3)}:${y.toFixed(3)}:${z.toFixed(3)}`;
   };
 
   /**

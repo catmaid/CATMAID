@@ -854,10 +854,6 @@
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
-        if (SkeletonAnnotations.atn.isRemote()) {
-          CATMAID.warn("Can't modify remote data");
-          return false;
-        }
         activeTracingLayer.tracingOverlay.activateNode(null);
         return true;
       }

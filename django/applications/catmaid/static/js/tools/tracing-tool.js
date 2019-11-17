@@ -2221,6 +2221,17 @@
               });
             }
 
+            submenu.push({
+              title: "Open remote view",
+              action: () => {
+                let api = CATMAID.Remote.getAPI(key);
+                // Construct link for current view on remote CATMAID instance.
+                let relativeUrl = CATMAID.Project.createRelativeURL(p.id, project.coordinates.x,
+                    project.coordinates.y, project.coordinates.z, project.getTool().toolname);
+                window.open(CATMAID.tools.urlJoin(api.url, relativeUrl));
+              },
+            });
+
             po.action[`project-${j}`] = {
               title: p.title,
               state: isEnabled ? '*' : '',

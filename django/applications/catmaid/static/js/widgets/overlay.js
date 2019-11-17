@@ -4115,7 +4115,7 @@ var SkeletonAnnotations = {};
         // layers at all. If so, obtain also skeleton origin information from
         // the back-end. This is needed to hide remote nodes if they have been
         // imported.
-        let remoteLayers = SkeletonAnnotations.getRemoteTracingOverlays();
+        let remoteLayers = SkeletonAnnotations.getRemoteTracingOverlays(self.stackViewer);
         if (remoteLayers && remoteLayers.length > 0) {
           params['with_origin'] = true;
         }

@@ -17,6 +17,7 @@
     getNames: function(projectId, skeletonIds, api = undefined) {
       return CATMAID.fetch({
         url: projectId + '/skeleton/neuronnames',
+        method: 'POST',
         data: {
           skids: skeletonIds,
         },

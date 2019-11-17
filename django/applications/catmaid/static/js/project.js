@@ -629,7 +629,7 @@
       url += `&active_node_id=${activeNodeId}`;
     }
     if (stacks && stackScaleLevels) {
-      for (let i=0; i<stacks.length; +i) {
+      for (let i=0; i<stacks.length; ++i) {
         url += `&sid${i}=${stacks[i]}&s${i}=${stackScaleLevels[i]}`;
       }
     }
@@ -637,7 +637,7 @@
       url += `&sg=${stackGroupId}`;
     }
     if (sgs) {
-      for (let i=0; i<sgs.length; +i) {
+      for (let i=0; i<sgs.length; ++i) {
         url += `&sgs=${sgs[i]}`;
       }
     }

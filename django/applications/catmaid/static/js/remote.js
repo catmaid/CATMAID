@@ -233,6 +233,7 @@
       })
       .then(importedSkeletons => {
         CATMAID.msg('Success', `Imported ${importedSkeletons.length} remote skeletons`);
+        return importedSkeletons;
       });
   };
 
@@ -261,7 +262,7 @@
                 api: api,
               })
               .then(result => {
-                if (CATMAID.tools.isFn(callback)) callback();
+                if (CATMAID.tools.isFn(callback)) callback(result);
               })
               .catch(CATMAID.handleError);
             $(this).dialog("destroy");

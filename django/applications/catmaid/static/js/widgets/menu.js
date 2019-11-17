@@ -46,27 +46,25 @@ Menu = function () {
     for (var element of elements) {
       var row = table.insertRow(-1);
       row.className = "menu_item";
-      if (typeof element.action == "object") {
-        row.onpointerover = function (e) {
-          if (this.className == "menu_item") this.className = "menu_item_hover";
-          this.cells[0].firstChild.lastChild.style.display = "block";
-          return false;
-        };
-        row.onpointerout = function (e) {
-          if (this.className == "menu_item_hover") this.className = "menu_item";
-          this.cells[0].firstChild.lastChild.style.display = "none";
-          return false;
-        };
-      } else {
-        row.onpointerover = function (e) {
-          if (this.className == "menu_item") this.className = "menu_item_hover";
-          return false;
-        };
-        row.onpointerout = function (e) {
-          if (this.className == "menu_item_hover") this.className = "menu_item";
-          return false;
-        };
+
+      let hasSubMenuAction = typeof element.action === "object" || element.action instanceof Array;
+      let hasSubMenuField = typeof element.submenu === "object" || element.submenu instanceof Array;
+      let hasSubMenu = hasSubMenuAction || hasSubMenuField;
+      if (hasSubMenuAction && hasSubMenuField) {
+        throw new CATMAID.ValueError("Please use either menu action or menu submenu field for menu creation, not both.");
       }
+
+      row.onpointerover = function (e) {
+        if (this.className == "menu_item") this.className = "menu_item_hover";
+        if (hasSubMenu) this.cells[0].firstChild.lastChild.style.display = "block";
+        return false;
+      };
+      row.onpointerout = function (e) {
+        if (this.className == "menu_item_hover") this.className = "menu_item";
+        if (hasSubMenu) this.cells[0].firstChild.lastChild.style.display = "none";
+        return false;
+      };
+
       if (typeof element.id !== 'undefined') row.id = element.id;
 
       //var icon = row.insertCell( -1 );
@@ -93,6 +91,18 @@ Menu = function () {
       d.appendChild(document.createElement("p"));
       d.firstChild.appendChild(a);
 
+      // hasSubMenuAction is covered by "object" case below.
+      if (hasSubMenuField) {
+        var m = new Menu();
+        m.update(element.submenu);
+        var p = document.createElement("div");
+        p.className = "pulldown";
+        pulldowns[element.title] = m;
+        p.appendChild(m.getView());
+
+        d.appendChild(p);
+      }
+
       switch (typeof element.action) {
       case "function":
         a.onclick = element.action;
@@ -101,6 +111,7 @@ Menu = function () {
         a.href = element.action;
         break;
       case "object":
+        // Will also catch Array
         var m = new Menu();
         m.update(element.action);
         var p = document.createElement("div");

@@ -1899,9 +1899,10 @@
       return `Remote data: ${remoteName}: ${remoteProject.title}`;
     };
 
-    this.openAdditionalTracinData = function(remoteName, remoteProject) {
+    this.openAdditionalTracinData = function(remoteName, remoteProject, stackViewer = undefined) {
       CATMAID.msg(`Open (remote) tracing data`, `Loding data from ${remoteName}/${remoteProject.title}`);
-      if (!activeStackViewer) {
+      stackViewer = stackViewer || activeStackViewer;
+      if (!stackViewer) {
         CATMAID.warn("Need active stack viewer");
         return;
       }
@@ -1915,9 +1916,10 @@
         name: layerName,
       });
       layer.isRemovable = true;
-      activeStackViewer.addLayer(layerName, layer);
-      activeStackViewer.moveLayer(layerName, getTracingLayerName(activeStackViewer));
-      activeStackViewer.update(undefined, true);
+
+      stackViewer.addLayer(layerName, layer);
+      stackViewer.moveLayer(layerName, getTracingLayerName(stackViewer));
+      stackViewer.update(undefined, true);
       layer.forceRedraw();
     };
 
@@ -2189,10 +2191,41 @@
           remoteProjects.push(entry.projects.reduce((po, p, j) => {
             let layerName = this.getRemoteLayerName(key, p);
             let isEnabled = activeStackViewer ? activeStackViewer.getLayer(layerName) : false;
+            let submenu = [{
+              title: "Open in new viewer",
+              action: () => {
+                CATMAID.openProjectStack(project.id, activeStackViewer.primaryStack.id)
+                  .then((stackViewer) => {
+                    this.openAdditionalTracinData(key, p, stackViewer);
+                    this._updateMoreToolsMenu();
+                  });
+              },
+            }];
+
+            if (isEnabled) {
+              submenu.push({
+                title: "Remove from focused viewer",
+                action: () => {
+                  activeStackViewer.removeLayer(layerName);
+                  activeStackViewer.update();
+                  this._updateMoreToolsMenu();
+                },
+              });
+            } else {
+              submenu.push({
+                title: "Add to focused viewer",
+                action: () => {
+                  this.openAdditionalTracinData(key, p);
+                  this._updateMoreToolsMenu();
+                },
+              });
+            }
+
             po.action[`project-${j}`] = {
               title: p.title,
               state: isEnabled ? '*' : '',
               note: 'tracing data',
+              submenu: submenu,
               action: e => {
                 if (isEnabled) {
                   activeStackViewer.removeLayer(layerName);

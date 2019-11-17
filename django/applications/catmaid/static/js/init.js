@@ -1722,7 +1722,7 @@ var project;
             mirrorIndex,
             undefined,
             reorient)
-          .then(function() {
+          .then(function(stackViewer) {
             if (noLayout) {
               return;
             }
@@ -1732,6 +1732,7 @@ var project;
             } catch(error) {
               CATMAID.handleError(error);
             }
+            return stackViewer;
           });
       });
 

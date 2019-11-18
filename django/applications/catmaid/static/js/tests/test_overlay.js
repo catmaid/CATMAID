@@ -59,7 +59,9 @@ QUnit.test('Tracing overlay test', function( assert ) {
           id: 42,
           canEdit: function () { return true; },
           type: SkeletonAnnotations.TYPE_NODE,
+          disable: function() {},
           obliterate: function() {},
+          connectors: new Map(),
           drawEdges: function() {},
           x: 0, y:0, z:0
         }]]);
@@ -100,6 +102,7 @@ QUnit.test('Tracing overlay test', function( assert ) {
     };
     FakeOverlay.prototype = Object.create(CATMAID.TracingOverlay.prototype);
     var fakeOverlay = new FakeOverlay();
+    fakeOverlay.projectId = 1;
 
     // Indicates which nodes are available in our fake backend
     var availableNodes = { 41: {}, 42: {} };

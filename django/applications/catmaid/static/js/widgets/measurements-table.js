@@ -199,7 +199,7 @@
     fetchSkeletons(
         Object.keys(models).map(Number),
         function(skid) {
-          return CATMAID.makeURL(project.id + '/' + skid + '/1/1/0/compact-arbor');
+          return `${project.id}/${skid}/1/1/0/compact-arbor`;
         },
         function(skid) { return {}; },
         function(skid, json) {

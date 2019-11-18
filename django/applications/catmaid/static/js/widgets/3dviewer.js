@@ -1036,7 +1036,7 @@
     fetchSkeletons(
         this.getSelectedSkeletons(),
         function(skid) {
-          return CATMAID.makeURL(project.id + '/' + skid + '/0/1/0/compact-arbor');
+          return `${project.id}/${skid}/0/1/0/compact-arbor`;
         },
         function(skid) { return {}; }, // POST
         function(skid, json) {
@@ -6954,7 +6954,7 @@
       } else if ('axon-and-dendrite' === options.connector_color || 'synapse-clustering' === options.connector_color) {
         fetchSkeletons(
             skeletons.map(function(skeleton) { return skeleton.id; }),
-            function(skid) { return CATMAID.makeURL(project.id + '/' + skid + '/0/1/0/compact-arbor'); },
+            function(skid) { return `${project.id}/${skid}/0/1/0/compact-arbor`; },
             function(skid) { return {}; },
             (function(skid, json) { self.content.skeletons[skid].completeUpdateConnectorColor(options, json); }).bind(self),
             function(skid) { CATMAID.msg("Error", "Failed to load synapses for: " + skid); },
@@ -8803,9 +8803,7 @@
           reject("No skeletons available");
           return;
         }
-        var url1 = CATMAID.makeURL(project.id + '/skeletons/'),
-            lean = this.options.lean_mode,
-            url2 = '/compact-detail';
+        let lean = this.options.lean_mode;
         // Get historic data of current skeletons. Create a map of events, Which
         // are consumed if their time is ready.
         var now = new Date();
@@ -8814,7 +8812,7 @@
         fetchSkeletons.call(this,
             skeletonIds,
             function(skeletonId) {
-              return url1 + skeletonId + url2;
+              return `${project.id}/skeletons/${skeletonId}/compact-detail`;
             },
             function(skeleton_id) {
               return {

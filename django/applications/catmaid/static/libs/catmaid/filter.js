@@ -202,7 +202,7 @@
           var a = needsArbor ? "1" : "0";
           var p = needsPartners ? "1" : "0";
           var t = needsTags ? "1" : "0";
-          return CATMAID.makeURL(project.id + '/' + skid + '/' + a + '/' + p + '/' + t + '/compact-arbor');
+          return `${project.id}/${skid}/${a}/${p}/${t}/compact-arbor`;
         },
         function(skid) {
           return {

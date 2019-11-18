@@ -641,7 +641,7 @@
   SynapseFractions.prototype.updateMorphologies = function(skids) {
     fetchSkeletons(
         skids,
-        function(skid) { return CATMAID.makeURL(project.id + '/' + skid + '/0/1/0/compact-arbor'); },
+        function(skid) { return `${project.id}/${skid}/0/1/0/compact-arbor`; },
         function(skid) { return {}; }, // POST
         (function(skid, json) {
           // register

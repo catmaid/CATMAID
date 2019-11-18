@@ -300,7 +300,7 @@
     fetchSkeletons(
         skeleton_ids,
         function(skid) {
-          return CATMAID.makeURL(project.id + '/skeletons/' + skid + '/node-overview');
+          return `${project.id}/skeletons/${skid}/node-overview`;
         },
         function(skid) { return {}; }, // post
         (function(skid, json) {

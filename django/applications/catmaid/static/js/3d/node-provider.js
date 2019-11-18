@@ -27,12 +27,9 @@
     var binaryTransfer = options.format === 'msgpack';
 
     return new Promise((resolve, reject) => {
-      var url1 = CATMAID.makeURL(projectId + '/skeletons/');
-      var url2 = '/compact-detail';
-
       fetchSkeletons(skeletonIds,
         function(skeletonId) {
-          return url1 + skeletonId + url2;
+          return `${projectId}/skeletons/${skeletonId}/compact-detail`;
         },
         function(skeletonId) {
           return options;

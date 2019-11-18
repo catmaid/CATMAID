@@ -1468,7 +1468,7 @@
           (function(skid) {
             var mode = this.subgraphs[skid],
                 with_tags = (mode === this.SUBGRAPH_AXON_BACKBONE_TERMINALS || mode === this.SUBGRAPH_SPLIT_AT_TAG ? 1 : 0);
-            return CATMAID.makeURL(project.id + '/' + skid + '/1/1/' + with_tags + '/compact-arbor');
+            return `${project.id}/${skid}/1/1/${with_tags}/compact-arbor`;
           }).bind(this),
           function(skid) { return {}; },
           function(skid, json) { morphologies[skid] = json; },
@@ -3524,7 +3524,7 @@
     fetchSkeletons(
         targets,
         function(skid) {
-          return CATMAID.makeURL(project.id + '/connector/list/one_to_many');
+          return `${project.id}/connector/list/one_to_many`;
         },
         function(target) {
           return {skid: target,
@@ -3571,7 +3571,7 @@
     fetchSkeletons(
         Object.keys(edges), // targets could have changed if some failed to load
         function(skid) {
-          return CATMAID.makeURL(project.id + '/' + skid + '/1/1/0/compact-arbor');
+          return `${project.id}/${skid}/1/1/0/compact-arbor`;
         },
         function(skid) {
           return {}; // POST

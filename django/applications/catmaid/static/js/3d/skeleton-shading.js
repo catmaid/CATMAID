@@ -115,7 +115,7 @@
       fetchSkeletons(
           skeleton_ids,
           function(skeleton_id) {
-            return CATMAID.makeURL(project.id + '/skeleton/' + skeleton_id + '/reviewed-nodes');
+            return `${project.id}/skeleton/${skeleton_id}/reviewed-nodes`;
           },
           function(skeleton_id) { return {}; }, // post
           function(skeleton_id, json) {
@@ -143,7 +143,7 @@
     fetchSkeletons(
         skeleton_ids,
         function(skid) {
-          return CATMAID.makeURL(project.id + '/' + skid + '/0/1/0/compact-arbor');
+          return `${project.id}/${skid}/0/1/0/compact-arbor`;
         },
         function(skid) { return {}; }, // post
         function(skid, json) {

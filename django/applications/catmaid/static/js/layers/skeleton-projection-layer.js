@@ -347,7 +347,7 @@
           skeletonIds,
           function(skid) {
             // Get arbor with nodes and connectors, but without tags
-            return CATMAID.makeURL(project.id + '/' + skid + '/1/1/0/compact-arbor');
+            return `${project.id}/${skid}/1/1/0/compact-arbor`;
           },
           function(skid) { return {}; },
           function(skid, json) {

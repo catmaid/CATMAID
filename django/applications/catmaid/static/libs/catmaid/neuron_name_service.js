@@ -846,7 +846,7 @@
         let modelsPerAPI = CATMAID.API.splitByAPI(models);
         let promises = [];
         for (let [apiName, apiModels] of modelsPerAPI.entries()) {
-          promises.push(CATMAID.NeuronNameService.getInstance(apiName).registerAll(client, models));
+          promises.push(CATMAID.NeuronNameService.getInstance(apiName).registerAll(client, apiModels));
         }
         let result = Promise.all(promises);
         if (callback) result.then(callback).catch(CATMAID.handleError);

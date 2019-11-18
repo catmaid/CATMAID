@@ -390,9 +390,12 @@ var requestQueue = new CATMAID.RequestQueue();
    *
    * @param {int[]}   supportedStatus (optional) A list of HTTP status code,
    *                                  that are allowed besied the default.
+   * @param {String}  decoder (Optional) The default decoder to use when non-raw
+   *                          content is returned. By default that's "json", but
+   *                          "msgpack" is supported as well.
    */
   CATMAID.fetch = function(relativeURL, method, data, raw, id, replace,
-      responseType, headers, parallel, details, api, supportedStatus) {
+      responseType, headers, parallel, details, api, supportedStatus, decoder = 'json') {
     // Alternatively, accept a single argument that provides all parameters as
     // fields.
     let absoluteURL;
@@ -411,6 +414,13 @@ var requestQueue = new CATMAID.RequestQueue();
       details = options.details;
       api = options.api;
       supportedStatus = options.supportedStatus;
+      decoder = options.decoder || 'json';
+    }
+
+    // If 'msgpack' is used as a decoder, the response type should be
+    // 'arraybuffer'. Error, if this is not the case:
+    if (decoder === 'msgpack' && responseType !== 'arraybuffer') {
+      throw new CATMAID.ValueError('For msgpack decoding, the passed in response type needs to be "arraybuffer".');
     }
 
     // If an API instance is provided, relative URLs are replaced with an
@@ -480,8 +490,18 @@ var requestQueue = new CATMAID.RequestQueue();
               resolve(text);
             }
           } else {
-            var json = CATMAID.validateJsonResponse(status, text, xml,
-                supportedStatus);
+            let json;
+            if (decoder === 'msgpack') {
+              var response = CATMAID.validateResponse(status, text, xml,
+                  responseType, supportedStatus);
+              json = msgpack.decode(new Uint8Array(text));
+            } else if (decoder === 'json') {
+              json = CATMAID.validateJsonResponse(status, text, xml,
+                  supportedStatus);
+            } else {
+              throw new CATMAID.ValueError(`Unknown decoder type: ${decoder}`);
+            }
+
             if (details) {
               resolve({
                 data: json,
@@ -491,7 +511,7 @@ var requestQueue = new CATMAID.RequestQueue();
             } else {
               resolve(json);
             }
-          }
+        }
         } catch (e) {
           reject(e);
         }

@@ -98,6 +98,7 @@ var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne,
             method: method,
             data: fnPost(skeleton_id),
             responseType: (binaryTransfer ? 'arraybuffer' : undefined),
+            decoder: binaryTransfer ? 'msgpack' : 'json',
             api: api,
           })
           .then(data => {

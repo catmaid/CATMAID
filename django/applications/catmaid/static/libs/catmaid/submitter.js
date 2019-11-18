@@ -68,9 +68,6 @@
     var invoke = function(q, json, dataSize) {
       try {
         lastResult = q.fn ? q.fn(json, dataSize) : json;
-      } catch (e) {
-        CATMAID.error(e, e.stack);
-      } finally {
         // If the result of the invocation is a promise (i.e. has a then()
         // method), wait with completion for its fulfillment.
         if (lastResult && CATMAID.tools.isFn(lastResult.then)) {
@@ -84,6 +81,9 @@
         } else {
           complete(q);
         }
+      } catch (error) {
+        CATMAID.error(error, error.stack);
+        reset(q, error);
       }
     };
 

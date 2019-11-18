@@ -68,7 +68,7 @@ create_constraints = """
 """
 
 db_maintenance = """
-    VACUUM ANALYZE;
+    VACUUM ANALYZE connector_geom;
 """
 
 

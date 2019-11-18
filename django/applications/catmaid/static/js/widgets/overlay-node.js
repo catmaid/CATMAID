@@ -1576,23 +1576,30 @@
         // Prevent node related click handling if the naviation mode is
         // enabled.
         let mode = catmaidTracingOverlay.mode || SkeletonAnnotations.currentmode;
-        if (mode === SkeletonAnnotations.MODES.MOVE || mode === SkeletonAnnotations.MODES.SELECT ||
-            mode === SkeletonAnnotations.MODES.IMPORT) {
+        let noInteraction = mode === SkeletonAnnotations.MODES.MOVE || mode === SkeletonAnnotations.MODES.SELECT;
+        let passiveInteraction = mode === SkeletonAnnotations.MODES.IMPORT;
+        let activeInteraction = !passiveInteraction;
+
+        if (noInteraction) {
           return;
         }
 
         var node = this.node;
         if (e.shiftKey || e.altKey) {
           var atnID = SkeletonAnnotations.getActiveNodeId();
-          if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-            // Delete node, but relay only a boolean result status using !!
-            return !!catmaidTracingOverlay.deleteNode(node.id);
+
+          if (activeInteraction) {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+              // Delete node, but relay only a boolean result status using !!
+              return !!catmaidTracingOverlay.deleteNode(node.id);
+            }
           }
+
           if (atnID) {
             var atnType = SkeletonAnnotations.getActiveNodeType();
             // connected activated treenode or connectornode
             // to existing treenode or connectornode
-            if (atnType === SkeletonAnnotations.TYPE_CONNECTORNODE) {
+            if (atnType === SkeletonAnnotations.TYPE_CONNECTORNODE && activeInteraction) {
               let atnSubType = SkeletonAnnotations.getActiveNodeSubType();
               let connectorNode = catmaidTracingOverlay.nodes.get(atnID);
 
@@ -1689,13 +1696,68 @@
             } else if (atnType === SkeletonAnnotations.TYPE_NODE) {
               // Joining two skeletons: only possible if one owns both nodes involved
               // or is a superuser
-              if( node.skeleton_id === SkeletonAnnotations.getActiveSkeletonId() ) {
+              if (node.skeleton_id === SkeletonAnnotations.getActiveSkeletonId()) {
                 alert('Can not join node with another node of the same skeleton!');
                 return;
               }
-              catmaidTracingOverlay.createTreenodeLink(atnID, node.id);
-              // TODO check for error
-              CATMAID.statusBar.replaceLast("Joined node #" + atnID + " to node #" + node.id);
+              // Remote skeletons can be involved, pass along a possible remote API. It is currently not
+              // allowed to have both skeletons of the merge being remote.
+              let fromApi = SkeletonAnnotations.getActiveSkeletonAPI();
+              let fromStackViewer = SkeletonAnnotations.getActiveStackViewerId();
+              let fromProjectId = SkeletonAnnotations.getActiveProjectId();
+              if (fromApi && catmaidTracingOverlay.api) {
+                CATMAID.warn("At least one skeleton has to be local");
+                return;
+              }
+              // In case the from-node has an API associated, swap from and to,, for this the fromApi is needed.
+              if (fromApi || catmaidTracingOverlay.api) {
+                let losingApi, losingSkeletonId, losingNodeId, losingProjectId,
+                    winningApi, winningSkeletonId, winningNodeId, winningProjectId,
+                    winningOverlay;
+                if (fromApi) {
+                  losingApi = fromApi;
+                  losingNodeId = atnID;
+                  losingSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+                  losingProjectId = fromProjectId;
+                  winningApi = undefined;
+                  winningNodeId = node.id;
+                  winningSkeletonId = node.skeleton_id;
+                  winningProjectId = catmaidTracingOverlay.projectId;
+                  winningOverlay = catmaidTracingOverlay;
+                } else {
+                  losingApi = catmaidTracingOverlay.api;
+                  losingNodeId = node.id;
+                  losingSkeletonId = node.skeleton_id;
+                  losingProjectId = catmaidTracingOverlay.projectId;
+                  winningApi = undefined;
+                  winningNodeId = atnID;
+                  winningSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+                  winningProjectId = fromProjectId;
+                  winningOverlay =null;
+                  // Find other overlay
+                  for (let stackViewer of project.getStackViewers()) {
+                    for (let layer of stackViewer.getLayersOfType(CATMAID.TracingLayer)) {
+                      if (!layer.api && layer.tracingOverlay.nodes.has(winningNodeId)) {
+                        winningOverlay = layer.tracingOverlay;
+                        break;
+                      }
+                    }
+                  }
+                  if (!winningOverlay) {
+                    CATMAID.warn("Could not find local tracing overlay");
+                    return;
+                  }
+                }
+                CATMAID.Remote.mergeImportSkeleton( losingProjectId,
+                    losingSkeletonId, losingNodeId, losingApi, winningProjectId,
+                    winningSkeletonId, winningNodeId, winningApi, winningOverlay);
+                // TODO check for error
+                CATMAID.statusBar.replaceLast(`Attempting to join remote node #${losingNodeId} to local node ${winningNodeId}`);
+              } else {
+                catmaidTracingOverlay.createTreenodeLink(atnID, node.id, fromApi);
+                // TODO check for error
+                CATMAID.statusBar.replaceLast(`Joined node #${atnID} to node #${node.id}`);
+              }
             }
           } else {
             alert("Nothing to join without an active node!");

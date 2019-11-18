@@ -268,6 +268,8 @@
         CATMAID.warn("Invalid login");
       } else if (error instanceof CATMAID.InactiveLoginError) {
         CATMAID.warn("Account is disabled");
+      } else if (error instanceof CATMAID.CanceledByUser) {
+        CATMAID.warn("Canceled by user");
       } else {
         CATMAID.error(error.message, error.detail);
       }

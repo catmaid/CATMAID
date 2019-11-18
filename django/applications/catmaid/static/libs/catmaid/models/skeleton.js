@@ -25,6 +25,22 @@
       });
     },
 
+    getNodeCount: function(projectId, skeletonId, api = undefined) {
+      return CATMAID.fetch({
+        url: `${projectId}/skeleton/${skeletonId}/node_count`,
+        method: 'POST',
+        api: api,
+      });
+    },
+
+    getNodeCountFromTreenode: function(projectId, treenodeId, api = undefined) {
+      return CATMAID.fetch({
+        url: `${projectId}/skeleton/node/${treenodeId}/node_count`,
+        method: 'POST',
+        api: api,
+      });
+    },
+
     /**
      * Split a skeleton at a specific treenodes.
      *

@@ -242,7 +242,8 @@
     let plural = skeletonIds.length > 0 ? 's' : '';
     let title = `Please confirm the import of the following skeleton${plural}`;
     let self = this;
-    CATMAID.Remote.previewSkeletons(sourceProjectId, skeletonIds, {
+    return new Promise((resolve, reject) => {
+      CATMAID.Remote.previewSkeletons(sourceProjectId, skeletonIds, {
         api: api,
         title: title,
         buttons: {
@@ -263,14 +264,144 @@
               })
               .then(result => {
                 if (CATMAID.tools.isFn(callback)) callback(result);
+                resolve(result);
               })
-              .catch(CATMAID.handleError);
+              .catch(reject);
             $(this).dialog("destroy");
           },
           'Cancel': function() {
             $(this).dialog("destroy");
+            reject(new CATMAID.CanceledByUser());
           }
         }
+      })
+      .catch(CATMAID.handleError);
+    });
+  };
+
+  Remote.mergeImportSkeleton = function(losingProjectId, losingSkeletonId,
+      losingNodeId, losingApi, winningProjectId, winningSkeletonId, winningNodeId,
+      winningApi, winningOverlay) {
+    let sameApi = (!losingApi && !winningApi) || (losingApi && winningApi && losingApi.equals(winningApi));
+    if (losingNodeId === winningApi && sameApi) return;
+
+    // In case both nodes come with an API, stop the merge. At the moment the target
+    // ultimately needs to be the local skeleton.
+    if (winningApi && losingApi) {
+      CATMAID.warn("At least one skeleton has to be local");
+      return;
+    }
+
+    let losingReferenceNodeId = SkeletonAnnotations.isRealNode(losingNodeId) ?
+        losingNodeId : SkeletonAnnotations.getChildOfVirtualNode(losingNodeId);
+
+    // Show preview and confirmation only if the losing skeleton node count is
+    // > 1 and fast merge mode doesn't match.
+    return Promise.all([
+        CATMAID.Skeletons.getNodeCountFromTreenode(losingProjectId, losingReferenceNodeId, losingApi),
+        CATMAID.Skeletons.getNames(losingProjectId, [losingSkeletonId], losingApi),
+      ])
+      .then(results => {
+        let nLosingNodes = results[0].count;
+        if (nLosingNodes === undefined) {
+          throw new CATMAID.ValueError("Could not find number of nodes for remote skeleton");
+        }
+        let entityMap = {};
+        entityMap[losingSkeletonId] = {
+          name: results[1][losingSkeletonId],
+        };
+        let annotations = '';
+
+        let options = {
+          getMeta: (skeletonId) => {
+            if (skeletonId !== losingSkeletonId) {
+              throw new CATMAID.ValueError(`Unexpected skeleton ID requested: ${skeletonId}`);
+            }
+            return {
+              'name': entityMap[skeletonId],
+              'annotations': annotations,
+            };
+          },
+          api: losingApi,
+        };
+
+        /* If the to-node contains more than one node, show the dialog.
+         * Otherwise, check if the to-node contains annotations. If so, show the
+         * dialog. Otherwise, merge it right away and keep the from-annotations.
+         */
+        if (nLosingNodes > 1) {
+          return CATMAID.Remote.mergeImportSkeletonWithPreview(losingProjectId,
+              losingSkeletonId, losingNodeId, losingApi, winningProjectId,
+              winningSkeletonId, winningNodeId, winningApi, winningOverlay,
+              annotations, entityMap);
+        } else {
+          return CATMAID.Remote.mergeImportSkeletonNoConfirmation(losingProjectId,
+              losingSkeletonId, losingNodeId, losingApi, winningProjectId,
+              winningSkeletonId, winningNodeId, winningApi, winningOverlay, options);
+        }
+      })
+      .catch(CATMAID.handleError);  
+  };
+
+  /**
+   * Merge a remote skeleton after is has been imported. Show now preview
+   * confirmation dialog. The import and merge is attempted right away.
+   */
+  Remote.mergeImportSkeletonNoConfirmation = function(losingProjectId,
+      losingSkeletonId, losingNodeId, losingApi, winningProjectId,
+      winningSkeletonId, winningNodeId, winningApi, winningOverlay, options) {
+    // Import remote skeleton
+    return CATMAID.Remote.importSkeletons(losingProjectId, winningProjectId,
+        [losingSkeletonId], options)
+      .then(result => {
+        return new Promise((resolve, reject) => {
+          winningOverlay.redraw(true, resolve);
+        }).then(() => {
+          return SkeletonAnnotations.staticMoveToAndSelectNode(winningNodeId);
+        })
+        .then(() => result);
+      })
+      .then(result => {
+        // Find new node ID and skeleton ID after import and merge it into the
+        // winning node.
+        let newLosingNodeId = result.node_id_map[losingNodeId];
+        let newLosingSkeletonId = result.skeleton_id;
+
+        // This merge will happen only on the winning API side. To reuse the
+        // existing logic, we defer to the tracing overlay for the actual merge.
+        // TODO: There is no real need to know the tracing overlay here, if we
+        // could factor the merge out.
+        return winningOverlay.createTreenodeLink(winningNodeId, newLosingNodeId, false);
+      })
+      .catch(CATMAID.handleError);
+  };
+
+  /**
+   * Merge a remote skeleton after is has been imported. Show a preview dialog.
+   */
+  Remote.mergeImportSkeletonWithPreview = function(losingProjectId,
+      losingSkeletonId, losingNodeId, losingApi, winningProjectId,
+      winningSkeletonId, winningNodeId, winningApi, winningOverlay, annotations,
+      entityMap) {
+    // Import remote skeleton
+    return CATMAID.Remote.importRemoteSkeletonsWithPreview(losingApi,
+        losingProjectId, [losingSkeletonId], annotations, entityMap)
+      .then(result => {
+        return new Promise((resolve, reject) => {
+            winningOverlay.redraw(true, resolve);
+          })
+          .then(() => {
+            return SkeletonAnnotations.staticSelectNode(winningNodeId, true);
+          })
+          .then(() => result[0]);
+      })
+      .then((importedData) => {
+        let newLosingNodeId = CATMAID.Remote.getImportedActiveNode(losingNodeId, importedData);
+        // This merge will happen only on the winning API side. To reuse the
+        // existing logic, we defer to the tracing overlay for the actual merge.
+        // TODO: There is no real need to know the tracing overlay here, if we
+        // could factor the merge out.
+        return winningOverlay.createTreenodeLink(winningNodeId, newLosingNodeId, false);
       })
       .catch(CATMAID.handleError);
   };
@@ -279,7 +410,7 @@
 
   };
 
-  Remote.selectImportedNode = function(activeNodeId, importedData) {
+  Remote.getImportedActiveNode = function(activeNodeId, importedData) {
     let newActiveNodeId;
     if (SkeletonAnnotations.isRealNode(activeNodeId)) {
       newActiveNodeId = importedData.node_id_map[activeNodeId];
@@ -296,11 +427,17 @@
 
       newActiveNodeId = SkeletonAnnotations.getVirtualNodeID(newChildId, newParentId, x, y, z);
     }
+    return newActiveNodeId;
+  };
 
+  Remote.selectImportedNode = function(activeNodeId, importedData) {
+    let newActiveNodeId = CATMAID.Remote.getImportedActiveNode(activeNodeId, importedData);
     if (newActiveNodeId !== undefined) {
-        SkeletonAnnotations.staticSelectNode(newActiveNodeId, true);
         CATMAID.msg("New active node", "Selected imported active node");
+        return SkeletonAnnotations.staticSelectNode(newActiveNodeId, true)
+          .then(() => newActiveNodeId);
     }
+    return Promise.reject(new CATMAID.ValueError("Can't find new active node ID after import"));
   };
 
 

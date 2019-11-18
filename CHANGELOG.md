@@ -121,6 +121,11 @@ Tracing overlay:
   visibility groups on the project or instance level that include a hiding
   pattern while guaranteeing that users see their own nodes.
 
+- Shift + Click on a remote node from a local node (or vice versa) will now
+  bring up an import preview dialog which is used as a merge preview at the same
+  time. Confirming the change will import the remote skeleton and merge it at
+  the selected location, works with virtual nodes.
+
 Navigator:
 
 - Two new buttons and a text input field on the right side of the toolbar allow

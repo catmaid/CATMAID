@@ -2244,8 +2244,13 @@ var SkeletonAnnotations = {};
   /**
    * Used to join two skeletons together. Permissions are checked at the server
    * side, returning an error if not allowed.
+   *
+   * @param {Boolean|String} showUI (Optional) If 'auto' (default) the UI is
+   *                                shown based on the user settings alone. If
+   *                                set to true or false, a particular choice
+   *                                can be enforced.
    */
-  CATMAID.TracingOverlay.prototype.createTreenodeLink = function (fromid, toid) {
+  CATMAID.TracingOverlay.prototype.createTreenodeLink = function (fromid, toid, showUI = 'auto') {
     if (fromid === toid) return;
     if (!this.nodes.has(toid)) return;
     var self = this;
@@ -2300,8 +2305,8 @@ var SkeletonAnnotations = {};
               var merge_multiple_nodes = function() {
                 // If a fast merge mode is enabled, check if this operation
                 // matches the settings and don't show the UI if this is the case.
-                let noConfirmation = SkeletonAnnotations.FastMergeMode.isNodeMatched(
-                    self.nodes.get(toid));
+                let noConfirmation = (SkeletonAnnotations.FastMergeMode.isNodeMatched(
+                    self.nodes.get(toid)) || showUI === false) && showUI !== true;
 
                 if (noConfirmation) {
                   // Providing no annotation set, will result in all annotations
@@ -2314,7 +2319,7 @@ var SkeletonAnnotations = {};
                 } else {
                   var to_color = new THREE.Color(1, 0, 1);
                   var to_model = new CATMAID.SkeletonModel(
-                      to_skid, json.neuron_name, to_color, api);
+                      to_skid, json.neuron_name, to_color, self.api);
                   // Extend the display with the newly created line
                   var extension = {};
                   var p = self.nodes.get(SkeletonAnnotations.getActiveNodeId()),
@@ -2343,7 +2348,7 @@ var SkeletonAnnotations = {};
                  * there are some. Otherwise merge the single not without showing
                  * the dialog.
                  */
-                var noUI = SkeletonAnnotations.Settings.session.quick_single_node_merge;
+                var noUI = (SkeletonAnnotations.Settings.session.quick_single_node_merge || showUI === false) && showUI !== true;
 
                 if (noUI) {
                   // Only add a source-model reference if the single-node source

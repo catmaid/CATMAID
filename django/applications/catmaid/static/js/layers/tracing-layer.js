@@ -212,14 +212,14 @@
 
   /** */
   TracingLayer.prototype.redraw = function (completionCallback) {
-    this.tracingOverlay.redraw(false, completionCallback);
+    return this.tracingOverlay.redraw(false, completionCallback);
   };
 
   /**
    * Force redraw of the tracing layer.
    */
   TracingLayer.prototype.forceRedraw = function (completionCallback) {
-    this.tracingOverlay.redraw(true, completionCallback);
+    return this.tracingOverlay.redraw(true, completionCallback);
   };
 
   TracingLayer.prototype.unregister = function () {

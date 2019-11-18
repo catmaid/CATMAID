@@ -153,4 +153,9 @@
    */
   CATMAID.MissingResourceError = class MissingResourceError extends CATMAID.Error {};
 
+  /**
+   * Indicate an operation was canceled by the user.
+   */
+  CATMAID.CanceledByUser = class CanceledByUser extends CATMAID.Error {};
+
 })(CATMAID);

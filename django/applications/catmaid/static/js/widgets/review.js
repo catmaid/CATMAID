@@ -668,7 +668,7 @@
         }
 
         if (self.persistReview) {
-          self.submit(CATMAID.makeURL(self.projectId + "/node/" + node['id'] + "/reviewed"),
+          self.submit(`${self.projectId}/node/${node['id']}/reviewed`,
               'POST',
               {},
               function(json) {
@@ -1099,7 +1099,7 @@
                 $(this).dialog('destroy');
               },
               "Remove all of my reviews": function () {
-                self.submit(CATMAID.makeURL(self.projectId + "/skeleton/" + self.currentSkeletonId + "/review/" + fnName), "POST", {},
+                self.submit(`${self.projectId}/skeleton/${self.currentSkeletonId}/review/${fnName}`, "POST", {},
                   function (json) {
                     self.refresh();
                   });
@@ -1700,8 +1700,7 @@
 
   CATMAID.ReviewSystem.prototype.update = function() {
     if (this.currentSkeletonId) {
-      var url = CATMAID.makeURL(this.projectId + "/skeletons/" +
-          this.currentSkeletonId + "/review");
+      var url = `${this.projectId}/skeletons/${this.currentSkeletonId}/review`;
       var self = this;
       this.submit(url, "POST", {'subarbor_node_id': this.currentSubarborNodeId},
         function(skeleton_data) {

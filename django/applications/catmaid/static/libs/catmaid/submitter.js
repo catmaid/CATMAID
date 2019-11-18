@@ -20,7 +20,7 @@
    *
    * ... then submit requests like:
    *
-   * submit(CATMAID.makeURL('/skeleton_id/' + skeleton_id),
+   * submit(`/skeleton_id/${skeleton_id}`,
    *    'POST',
    *    {all: true},
    *    function(json) { alert('Continuation OK! JSON reply: ' + json); });

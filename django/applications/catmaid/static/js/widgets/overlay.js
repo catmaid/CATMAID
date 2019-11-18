@@ -1464,7 +1464,7 @@ var SkeletonAnnotations = {};
       function(node_id, fn_one, fn_more)
   {
     this.submit(
-        CATMAID.makeURL(`${this.projectId}/skeleton/node/${node_id}/node_count`),
+        `${this.projectId}/skeleton/node/${node_id}/node_count`,
         'POST',
         {},
         function(json) {
@@ -1504,7 +1504,7 @@ var SkeletonAnnotations = {};
     if (!skeletonID) return;
     var self = this;
     this.submit(
-        CATMAID.makeURL(`${this.projectId}/skeleton/${skeletonID}/neuronname`),
+        `${this.projectId}/skeleton/${skeletonID}/neuronname`,
         'POST',
         {},
         function(json) {
@@ -2027,7 +2027,7 @@ var SkeletonAnnotations = {};
 
     atn.promise().then(function(atnId) {
       self.submit(
-          CATMAID.makeURL(`${self.projectId}/treenodes/${atnId}/next-branch-or-end`),
+          `${self.projectId}/treenodes/${atnId}/next-branch-or-end`,
           'POST',
           undefined,
           function(json) {
@@ -2053,7 +2053,7 @@ var SkeletonAnnotations = {};
                 .then(function(parentId) {
                   // Need to fetch the parent node first.
                   self.submit(
-                      CATMAID.makeURL(`${self.projectId}/node/get_location`),
+                      `${self.projectId}/node/get_location`,
                       'POST',
                       {tnid: parentId},
                       function(json) {
@@ -2259,7 +2259,7 @@ var SkeletonAnnotations = {};
     this.promiseNodes(this.nodes.get(fromid), this.nodes.get(toid)).then(function(nids) {
       var fromid = nids[0], toid=nids[1];
       self.submit(
-        CATMAID.makeURL(`${self.projectId}/treenodes/${toid}/info`),
+        `${self.projectId}/treenodes/${toid}/info`,
         'GET',
         undefined,
         function(json) {
@@ -4616,7 +4616,7 @@ var SkeletonAnnotations = {};
       } else {
         return new Promise(function(resolve, reject) {
           self.submit(
-              CATMAID.makeURL(`${self.projectId}/treenodes/${queryNode}/children`),
+              `${self.projectId}/treenodes/${queryNode}/children`,
               'POST',
               undefined,
               function(json) {
@@ -4978,7 +4978,7 @@ var SkeletonAnnotations = {};
     } else if (SkeletonAnnotations.isRealNode(nodeId)) {
       var self = this;
       return new Promise(function(resolve, reject) {
-        self.submit(CATMAID.makeURL(`${self.projectId}/node/get_location`),
+        self.submit(`${self.projectId}/node/get_location`,
             'POST', {tnid: nodeId},
             function(json) {
               // json[0], [1], [2], [3]: id, x, y, z
@@ -5178,7 +5178,7 @@ var SkeletonAnnotations = {};
     // Request location from backend
     var self = this;
     return new Promise(function(resolve, reject) {
-      var url = CATMAID.makeURL(`${self.projectId}/node/get_location`);
+      var url = `${self.projectId}/node/get_location`;
       self.submit(url, 'POST', {tnid: nodeID}, resolve, true, false, reject);
     }).then(function(json) {
       return {
@@ -5307,7 +5307,7 @@ var SkeletonAnnotations = {};
       // TODO could be done by inspecting the graph locally if it is loaded in the
       // 3D viewer or treenode table (but either source may not be up to date)
       this.submit(
-          CATMAID.makeURL(`${self.projectId}/skeletons/${skid}/open-leaves`),
+          `${self.projectId}/skeletons/${skid}/open-leaves`,
           'POST',
           {treenode_id: nodeID},
           function (json) {
@@ -5386,7 +5386,7 @@ var SkeletonAnnotations = {};
         }
         var skeletonId = SkeletonAnnotations.getActiveSkeletonId();
         self.submit(
-            CATMAID.makeURL(`${self.projectId}/skeletons/${skeletonId}/find-labels`),
+            `${self.projectId}/skeletons/${skeletonId}/find-labels`,
             'POST',
             { treenode_id: nodeId,
               label_regex: self.nextNearestMatchingTag.query },
@@ -5402,7 +5402,7 @@ var SkeletonAnnotations = {};
       } else {
         var projectCoordinates = self.stackViewer.projectCoordinates();
         self.submit(
-            CATMAID.makeURL(`${self.projectId}/nodes/find-labels`),
+            `${self.projectId}/nodes/find-labels`,
             'POST',
             { x: projectCoordinates.x,
               y: projectCoordinates.y,
@@ -5530,7 +5530,7 @@ var SkeletonAnnotations = {};
     } else {
       CATMAID.status(prefix + " (loading authorship information)");
 
-      var url = CATMAID.makeURL(`${this.projectId}/node/user-info`);
+      var url = `${this.projectId}/node/user-info`;
 
       this.submit(url, 'POST', {node_ids: [nodeID]}, function(json) {
           var info = json[nodeID];

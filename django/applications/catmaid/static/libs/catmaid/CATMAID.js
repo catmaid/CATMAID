@@ -312,9 +312,12 @@ var requestQueue = new CATMAID.RequestQueue();
   CATMAID.validateResponse = function(status, text, xml, responseType,
       additionalStatusCodes) {
     var isTextResponse = !responseType || responseType === '' || responseType === 'text';
-    if (status >= 200 && status <= 204 &&
-        (!isTextResponse || typeof text === 'string' || text instanceof String)) {
-      return text;
+    if (status >= 200 && status <= 204) {
+      if (!isTextResponse || typeof text === 'string' || text instanceof String) {
+        return text;
+      } else {
+        throw new CATMAID.ValueError(`Unexpected response format: ${typeof text}`);
+      }
     } else if (additionalStatusCodes && additionalStatusCodes.indexOf(status) > -1) {
       return text;
     } else {

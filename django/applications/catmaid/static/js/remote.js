@@ -222,7 +222,7 @@
         let importPromises = skeletonIds.map((skeletonId, i) => {
             let data = swcData[i];
             if (!data) {
-              throw new CATMAD.ValueError(`Could not find SWC data for remote skeleton ${skeletonId}`);
+              throw new CATMAID.ValueError(`Could not find SWC data for remote skeleton ${skeletonId}`);
             }
             let meta = getMeta(skeletonId);
             let sourceUrl = options.api ? options.api.url : undefined;

@@ -285,24 +285,29 @@
    * fields: api, getMeta(), The `getMeta(skeletonId)` function is expected to
    * return an object with the field `name` for each skeleton.
    */
-  Remote.importSkeletons = function(sourceProjectId, targetProjectId, skeletonIds, options = {}) {
+  Remote.importSkeletons = function(sourceProjectId, targetProjectId,
+      skeletonIds, extendedInfo = true, options = {}) {
     let getMeta = options.getMeta || function(skeletonId) {
       return {
         name: undefined,
       };
     };
+
+    let swcReadApi = extendedInfo ? CATMAID.Skeletons.getESWC : CATMAID.Skeletons.getSWC;
+    let swcWriteApit = extendedInfo ? CATMAID.Skeletons.importESWC : CATMAID.Skeletons.importSWC;
+
     // Get SWC for each skeleton ID
-    return CATMAID.Skeletons.getSWC(sourceProjectId, skeletonIds, false, true, options.api)
+    return swcReadApi(sourceProjectId, skeletonIds, false, true, options.api)
       .then(swcData => {
         // Import
         let importPromises = skeletonIds.map((skeletonId, i) => {
             let data = swcData[i];
             if (!data) {
-              throw new CATMAID.ValueError(`Could not find SWC data for remote skeleton ${skeletonId}`);
+              throw new CATMAID.ValueError(`Could not find ${extendedInfo ? 'e' : ''}SWC data for remote skeleton ${skeletonId}`);
             }
             let meta = getMeta(skeletonId);
             let sourceUrl = options.api ? options.api.url : undefined;
-            return CATMAID.Skeletons.importSWC(targetProjectId, data, meta.name,
+            return swcWriteApit(targetProjectId, data, meta.name,
                 meta.annotations, sourceUrl, skeletonId, sourceProjectId);
           });
         return Promise.all(importPromises);
@@ -325,7 +330,7 @@
         buttons: {
           'Confirm import': function() {
             // Initate import
-            CATMAID.Remote.importSkeletons(sourceProjectId, project.id, skeletonIds, {
+            CATMAID.Remote.importSkeletons(sourceProjectId, project.id, skeletonIds, true, {
                 getMeta: (skeletonId) => {
                   let e = entityMap[skeletonId];
                   if (!e) {
@@ -371,7 +376,7 @@
             let samplerHandling = options.dialog.samplerHandling;
 
             // Initate import
-            CATMAID.Remote.importSkeletons(sourceProjectId, winningProjectId, [skeletonId], {
+            CATMAID.Remote.importSkeletons(sourceProjectId, winningProjectId, [skeletonId], true, {
                 getMeta: (skeletonId) => {
                   let e = entityMap[skeletonId];
                   if (!e) {
@@ -479,7 +484,7 @@
       winningSkeletonId, winningNodeId, winningApi, winningOverlay, options) {
     // Import remote skeleton
     return CATMAID.Remote.importSkeletons(losingProjectId, winningProjectId,
-        [losingSkeletonId], options)
+        [losingSkeletonId], true, options)
       .then(result => {
         return new Promise((resolve, reject) => {
           winningOverlay.redraw(true, resolve);

@@ -4,6 +4,7 @@ from collections import defaultdict
 import csv
 from datetime import datetime, timedelta
 from itertools import chain
+import dateutil.parser
 import json
 import networkx as nx
 import pytz
@@ -24,7 +25,7 @@ from catmaid.control import tracing
 from catmaid.models import (Project, UserRole, Class, ClassInstance, Review,
         ClassInstanceClassInstance, Relation, Sampler, Treenode,
         TreenodeConnector, SamplerDomain, SkeletonSummary, SamplerDomainEnd,
-        SamplerInterval, SamplerDomainType, SkeletonOrigin)
+        SamplerInterval, SamplerDomainType, SkeletonOrigin, User)
 from catmaid.objects import Skeleton, SkeletonGroup, \
         compartmentalize_skeletongroup_by_edgecount, \
         compartmentalize_skeletongroup_by_confidence
@@ -2700,7 +2701,7 @@ def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleto
 def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse, HttpResponseBadRequest]:
     """Import a neuron modeled by a skeleton from an uploaded file.
 
-    Currently only SWC representation is supported.
+    Currently only SWC and eSWC representation is supported.
     ---
     consumes: multipart/form-data
     parameters:
@@ -2827,6 +2828,12 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
                         neuron_id, skeleton_id, name, annotations, force,
                         auto_id, source_id, source_url, source_project_id,
                         source_type)
+            if extension == 'eswc':
+                swc_string = '\n'.join([line.decode('utf-8') for line in uploadedfile])
+                return import_skeleton_eswc(request.user, project_id, swc_string,
+                        neuron_id, skeleton_id, name, annotations, force,
+                        auto_id, source_id, source_url, source_project_id,
+                        source_type)
             else:
                 return HttpResponse(f'File type "{extension}" not understood. Known file types: swc', status=415)
 
@@ -2873,10 +2880,60 @@ def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
         })
 
 
+def import_skeleton_eswc(user, project_id, swc_string, neuron_id=None,
+        skeleton_id=None, name=None, annotations=['Import'], force=False,
+        auto_id=True, source_id=None, source_url=None, source_project_id=None,
+        source_type='skeleton') -> JsonResponse:
+    """Import a neuron modeled by a skeleton in eSWC format.
+    """
+
+    user_map = dict(User.objects.all().values_list('username', 'id'))
+
+    parse_time = dateutil.parser.parse
+    g = nx.DiGraph()
+    for line in swc_string.splitlines():
+        if line.startswith('#') or not line.strip():
+            continue
+        row = line.strip().split()
+        if len(row) != 12:
+            raise ValueError(f'eSWC has a malformed line ({len(row)} instead of 12 columns): {line}')
+
+        node_id = int(row[0])
+        parent_id = int(row[6])
+        g.add_node(node_id, {
+            'x': float(row[2]),
+            'y': float(row[3]),
+            'z': float(row[4]),
+            'radius': float(row[5]),
+            'user_id': user_map[row[7]],
+            'creation_time': parse_time(row[8]),
+            'editor_id': user_map[row[9]],
+            'edition_time': parse_time(row[10]),
+            'confidence': int(row[11]),
+        })
+
+        if parent_id != -1:
+            g.add_edge(parent_id, node_id)
+
+    if not nx.is_directed_acyclic_graph(g):
+        raise ValueError('SWC skeleton is malformed: it contains a cycle.')
+
+    import_info = _import_skeleton(user, project_id, g, neuron_id, skeleton_id,
+            name, annotations, force, auto_id, source_id, source_url,
+            source_project_id, source_type, extended_data=True)
+    node_id_map = {n: d['id'] for n, d in import_info['graph'].nodes_iter(data=True)}
+
+    return JsonResponse({
+            'neuron_id': import_info['neuron_id'],
+            'skeleton_id': import_info['skeleton_id'],
+            'node_id_map': node_id_map,
+        })
+
+
 def _import_skeleton(user, project_id, arborescence, neuron_id=None,
         skeleton_id=None, name=None, annotations=['Import'], force=False,
         auto_id=True, source_id=None, source_url=None, source_project_id=None,
-        source_type='skeleton') -> Dict[str, Any]:
+        source_type='skeleton', extended_data=False, map_available_users=True) -> Dict[str, Any]:
     """Create a skeleton from a networkx directed tree.
 
     Associate the skeleton to the specified neuron, or a new one if none is
@@ -3077,21 +3134,48 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
         arborescence.node[root]['radius'] = -1
     new_location = tuple([arborescence.node[root][k] for k in ('x', 'y', 'z')])
 
-    treenode_template = '(' + '),('.join('%s,%s,%s,%s,%s,%s' for n, d in arborescence.nodes_iter(data=True))  + ')'
-    treenode_values = list(chain.from_iterable([d['id'], d['x'], d['y'], d['z'], d['parent_id'], d['radius']] \
-            for n, d in arborescence.nodes_iter(data=True)))
-    # Include skeleton ID for index performance.
-    cursor.execute(f"""
-        UPDATE treenode SET
-            location_x = v.x,
-            location_y = v.y,
-            location_z = v.z,
-            parent_id = v.parent_id,
-            radius = v.radius
-        FROM (VALUES {treenode_template}) AS v(id, x, y, z, parent_id, radius)
-        WHERE treenode.id = v.id
-            AND treenode.skeleton_id = %s
-    """, treenode_values + [new_skeleton.id])
+    if extended_data:
+        treenode_template = '(' + '),('.join('%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s' for n, d in arborescence.nodes_iter(data=True))  + ')'
+        treenode_values = list(chain.from_iterable([d['id'], d['x'], d['y'], d['z'],
+                d['parent_id'], d['radius'], d['user_id'],
+                d['creation_time'], d['editor_id'],
+                d['edition_time'], d['confidence'] ] \
+                for n, d in arborescence.nodes_iter(data=True)))
+        # Include skeleton ID for index performance.
+        cursor.execute(f"""
+            UPDATE treenode SET
+                location_x = v.x,
+                location_y = v.y,
+                location_z = v.z,
+                parent_id = v.parent_id,
+                radius = v.radius,
+                user_id = v.user_id,
+                creation_time = v.creation_time,
+                editor_id = v.editor_id,
+                edition_time = v.edition_time,
+                confidence = v.confidence
+            FROM (VALUES {treenode_template}) AS v(id, x, y, z, parent_id,
+                radius, user_id, creation_time, editor_id, edition_time,
+                confidence)
+            WHERE treenode.id = v.id
+                AND treenode.skeleton_id = %s
+        """, treenode_values + [new_skeleton.id])
+    else:
+        treenode_template = '(' + '),('.join('%s,%s,%s,%s,%s,%s' for n, d in arborescence.nodes_iter(data=True))  + ')'
+        treenode_values = list(chain.from_iterable([d['id'], d['x'], d['y'], d['z'], d['parent_id'], d['radius']] \
+                for n, d in arborescence.nodes_iter(data=True)))
+        # Include skeleton ID for index performance.
+        cursor.execute(f"""
+            UPDATE treenode SET
+                location_x = v.x,
+                location_y = v.y,
+                location_z = v.z,
+                parent_id = v.parent_id,
+                radius = v.radius
+            FROM (VALUES {treenode_template}) AS v(id, x, y, z, parent_id, radius)
+            WHERE treenode.id = v.id
+                AND treenode.skeleton_id = %s
+        """, treenode_values + [new_skeleton.id])
 
     # Log import.
     annotation_info = f' {", ".join(annotations)}' if annotations else ''

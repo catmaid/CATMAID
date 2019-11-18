@@ -229,6 +229,44 @@
     },
 
     /**
+     * Export skeletons as eSWC files. They are like SWCs files but contain
+     * additional columns for each node: creator username, creation time, editor
+     * username, edition_time, confidence.
+     *
+     * @param {number}   projectId    Project sapce to work in
+     * @param {number[]} skeletonIds  Skeletons to export as SWC
+     * @param {boolean}  linearizeIds Whether node IDs should be mapped to
+     *                                incremental numbers starting with 1.
+     * @param {string[]} somaMarkers (optional) A list of "root", "tag:soma",
+     *                               "radius:<n>" to specify that the exported
+     *                               SWC should mark somas and based on what
+     *                               criterion. Precedence as listed.
+     * @param {API}      api         (optional) The CATMAID API to talk to.
+     *
+     * @return A new promise that is resolved with the skeleton's SWC
+     *         representation.
+     */
+    getESWC: function(projectId, skeletonIds, linearizeIds, somaMarkers, api) {
+      if (!skeletonIds || !skeletonIds.length) {
+        return Promise.reject(new CATMAID.ValueError("Need at least one skeleton ID"));
+      }
+      var eswcRequests = skeletonIds.map(function(skid) {
+        return CATMAID.fetch({
+          url: projectId + '/skeleton/' + skid + '/eswc',
+          method: 'GET',
+          data: {
+            'linearize_ids': !!linearizeIds,
+            'soma_markers': somaMarkers,
+          },
+          raw: true,
+          api: api,
+        });
+      });
+
+      return Promise.all(eswcRequests);
+    },
+
+    /**
      * Export skeletons as SWC and ask browser to download it.
      *
      * @param {number}   projectId   Project space to work in
@@ -279,6 +317,42 @@
       }
 
       let file = new File([swcData], 'skeleton.swc');
+      let data = new FormData();
+      data.append(file.name, file, file.name);
+      data.append('name', name);
+      if (annotations) {
+        for (let i=0; i<annotations.length; ++i) {
+          data.append(`annotations[${i}]`, annotations[i]);
+        }
+      }
+      data.append('source_url', sourceUrl);
+      data.append('source_id', sourceId);
+      data.append('source_project_id', sourceProjectId);
+
+      return CATMAID.fetch({
+        url: projectId + '/skeletons/import',
+        method: 'POST',
+        headers: {
+          "Content-type": null,
+        },
+        data: data,
+      });
+    },
+
+    /**
+     * Import eSWC data into the back-end. They are like SWCs files but contain
+     * additional columns for each node: creator username, creation time, editor
+     * username, edition_time, confidence.
+     */
+    importESWC: function(projectId, swcData, name, annotations,
+        sourceUrl = undefined, sourceId = undefined, sourceProjectId = undefined) {
+      let sourceParams = [sourceUrl, sourceId, sourceProjectId];
+      if (sourceParams.some(e => !!e) && !sourceParams.every(e => !!e)) {
+        throw new CATMAID.ValueError('All or none of the parameters sourceUrl, ' +
+            'sourceId and sourceProjectId have to be provided');
+      }
+
+      let file = new File([swcData], 'skeleton.eswc');
       let data = new FormData();
       data.append(file.name, file, file.name);
       data.append('name', name);

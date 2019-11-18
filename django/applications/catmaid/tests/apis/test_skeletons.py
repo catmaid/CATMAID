@@ -11,7 +11,7 @@ from django.shortcuts import get_object_or_404
 from guardian.shortcuts import assign_perm
 
 from catmaid.models import (ClassInstance, ClassInstanceClassInstance, Log,
-        Review, Treenode, TreenodeConnector, ReviewerWhitelist, Treenode)
+        Review, Treenode, TreenodeConnector, ReviewerWhitelist, Treenode, User)
 
 from .common import CatmaidApiTestCase
 
@@ -40,6 +40,29 @@ class SkeletonsApiTests(CatmaidApiTestCase):
             for f in ('x', 'y', 'z', 'radius'):
                 self.assertAlmostEqual(float(e1[d[f]]),
                                   float(e2[d[f]]))
+
+    def compare_eswc_data(self, s1, s2):
+        def swc_string_to_sorted_matrix(s):
+            m = [re.split("\s+", x) for x in s.splitlines() if not re.search('^\s*(#|$)', x)]
+            return sorted(m, key=lambda x: x[0])
+
+        m1 = swc_string_to_sorted_matrix(s1)
+        m2 = swc_string_to_sorted_matrix(s2)
+        self.assertEqual(len(m1), len(m2))
+
+        fields = ['id', 'type', 'x', 'y', 'z', 'radius', 'parent', 'username',
+                'creation_time', 'editor_name', 'edition_time', 'confidence']
+        d = dict((x, i) for (i, x) in enumerate(fields))
+
+        for i, e1 in enumerate(m1):
+            e2 = m2[i]
+            for f in ('id', 'parent', 'type', 'username', 'creation_time',
+                    'editor_name', 'edition_time', 'confidence'):
+                self.assertEqual(e1[d[f]], e2[d[f]])
+            for f in ('x', 'y', 'z', 'radius'):
+                self.assertAlmostEqual(float(e1[d[f]]),
+                                  float(e2[d[f]]))
+
 
 
     def test_skeleton_root(self):
@@ -228,6 +251,212 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         swc_file2 = StringIO(orig_swc_string)
         response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
                 {'file.swc': swc_file2, 'name': 'test2', 'skeleton_id': skeleton.id,
+                    'force': True})
+
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        last_skeleton_edit_time = skeleton.edition_time
+
+        # Make sure there is still only one skeleton
+        skeleton.refresh_from_db()
+
+        replaced_neurons = ClassInstanceClassInstance.objects.filter(
+                class_instance_a_id=skeleton.id,
+                relation__relation_name='model_of',
+                class_instance_b__class_column__class_name='neuron')
+        self.assertEqual(len(replaced_neurons), 1)
+        self.assertEqual(skeleton.id, parsed_response['skeleton_id'])
+        self.assertEqual(skeleton.name, 'test2')
+        self.assertNotEqual(skeleton.edition_time, last_skeleton_edit_time)
+
+        # Make sure there are as many nodes as expected for the imported
+        # skeleton.
+        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
+        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
+
+
+    def test_import_skeleton_eswc(self):
+        self.fake_authentication()
+
+        orig_skeleton_id = 235
+        response = self.client.get('/%d/skeleton/%d/eswc' % (self.test_project_id, orig_skeleton_id))
+        self.assertStatus(response)
+        orig_swc_string = response.content.decode('utf-8')
+
+        n_orig_skeleton_nodes = Treenode.objects.filter(skeleton_id=orig_skeleton_id).count()
+
+        # Try inserting without permission and expect fail
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                                    {'file.eswc': ''})
+        self.assertTrue("PermissionError" in response.content.decode('utf-8'))
+
+        # Add permission and expect success
+        swc_file = StringIO(orig_swc_string)
+        assign_perm('can_import', self.test_user, self.test_project)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.eswc': swc_file, 'name': 'test'})
+
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        new_skeleton_id = parsed_response['skeleton_id']
+        id_map = parsed_response['node_id_map']
+
+        skeleton = ClassInstance.objects.get(id=new_skeleton_id)
+        model_rel = ClassInstanceClassInstance.objects.get(class_instance_a=skeleton,
+                relation__relation_name='model_of')
+        neuron = model_rel.class_instance_b
+        self.assertEqual(neuron.id, parsed_response['neuron_id'])
+        self.assertEqual('test', neuron.name)
+
+        user_name_map = dict(User.objects.all().values_list('id', 'username'))
+
+        for tn in Treenode.objects.filter(skeleton_id=orig_skeleton_id):
+            new_tn = Treenode.objects.get(id=id_map[str(tn.id)])
+            self.assertEqual(new_skeleton_id, new_tn.skeleton_id)
+            if tn.parent_id:
+                self.assertEqual(id_map[str(tn.parent_id)], new_tn.parent_id)
+            self.assertEqual(tn.location_x, new_tn.location_x)
+            self.assertEqual(tn.location_y, new_tn.location_y)
+            self.assertEqual(tn.location_z, new_tn.location_z)
+            self.assertEqual(user_name_map[tn.user_id], user_name_map[new_tn.user_id])
+            self.assertEqual(user_name_map[tn.editor_id], user_name_map[new_tn.editor_id])
+            self.assertEqual(tn.creation_time, new_tn.creation_time)
+            self.assertEqual(tn.confidence, new_tn.confidence)
+            self.assertEqual(max(tn.radius, 0), max(new_tn.radius, 0))
+
+
+        # Remember current edit time for later
+        last_neuron_id = neuron.id
+        last_skeleton_id = skeleton.id
+        last_neuron_edit_time = neuron.edition_time
+        last_skeleton_edit_time = skeleton.edition_time
+
+
+        # Test replacing the imported neuron without forcing an update and
+        # auto_id disabled.
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.eswc': swc_file2, 'name': 'test2', 'neuron_id':
+                    neuron.id, 'auto_id': False})
+
+        self.assertEqual(response.status_code, 400)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = {
+                "error": "The passed in neuron ID is already in use and neither of the parameters force or auto_id are set to true."}
+        for k,v in expected_result.items():
+            self.assertTrue(k in parsed_response)
+            self.assertEqual(parsed_response[k], v)
+
+
+        # Test replacing the imported neuron without forcing an update and
+        # auto_id enabled (default).
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.eswc': swc_file2, 'name': 'test2', 'neuron_id':
+                    neuron.id})
+
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        # Make sure there is still only one skeleton
+        neuron.refresh_from_db()
+        linked_skeletons = ClassInstanceClassInstance.objects.filter(
+                class_instance_b_id=neuron.id,
+                relation__relation_name='model_of',
+                class_instance_a__class_column__class_name='skeleton')
+        self.assertEqual(len(linked_skeletons), 1)
+        self.assertEqual(neuron.name, 'test')
+        self.assertEqual(neuron.id, last_neuron_id)
+        self.assertEqual(neuron.edition_time, last_neuron_edit_time)
+        self.assertNotEqual(neuron.id, parsed_response['neuron_id'])
+
+        # Make sure there are as many nodes as expected for the imported
+        # skeleton.
+        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
+        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
+
+
+        # Test replacing the imported neuron with forcing an update
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.eswc': swc_file2, 'name': 'test2', 'neuron_id': neuron.id,
+                    'force': True})
+
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        # Make sure there is still only one skeleton
+        neuron.refresh_from_db()
+        replaced_skeletons = ClassInstanceClassInstance.objects.filter(
+                class_instance_b_id=neuron.id,
+                relation__relation_name='model_of',
+                class_instance_a__class_column__class_name='skeleton')
+        self.assertEqual(len(replaced_skeletons), 1)
+        self.assertEqual(neuron.id, parsed_response['neuron_id'])
+        self.assertEqual(neuron.name, 'test2')
+        self.assertEqual(neuron.id, last_neuron_id)
+        self.assertNotEqual(neuron.edition_time, last_neuron_edit_time)
+
+        # Make sure there are as many nodes as expected for the imported
+        # skeleton.
+        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
+        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
+
+
+        # Make sure we work with most recent skeleton data
+        skeleton = ClassInstance.objects.get(pk=parsed_response['skeleton_id'])
+
+        # Test replacing the imported skeleton without forcing an update and
+        # auto_id disabled.
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.eswc': swc_file2, 'name': 'test2', 'skeleton_id':
+                    skeleton.id, 'auto_id': False})
+
+        self.assertEqual(response.status_code, 400)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = {
+                "error": "The passed in skeleton ID is already in use and neither of the parameters force or auto_id are set to true."}
+        for k,v in expected_result.items():
+            self.assertTrue(k in parsed_response)
+            self.assertEqual(parsed_response[k], v)
+
+
+        # Test replacing the imported skeleton without forcing an update and
+        # auto_id enabled (default).
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.eswc': swc_file2, 'name': 'test3', 'skeleton_id':
+                    skeleton.id})
+
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        last_skeleton_id = skeleton.id
+        neuron = ClassInstance.objects.get(pk=parsed_response['neuron_id'])
+        skeleton = ClassInstance.objects.get(pk=parsed_response['skeleton_id'])
+
+
+        # Make sure there is still only one skeleton
+        linked_neurons = ClassInstanceClassInstance.objects.filter(
+                class_instance_a_id=skeleton.id,
+                relation__relation_name='model_of',
+                class_instance_b__class_column__class_name='neuron')
+        self.assertEqual(len(linked_neurons), 1)
+        self.assertEqual(neuron.name, 'test3')
+        self.assertEqual(skeleton.name, 'test3')
+        self.assertNotEqual(neuron.id, last_neuron_id)
+        self.assertNotEqual(last_skeleton_id, skeleton.id)
+
+        # Make sure there are as many nodes as expected for the imported
+        # skeleton.
+        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
+        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
+
+        # Test replacing the imported neuron with forcing an update
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.eswc': swc_file2, 'name': 'test2', 'skeleton_id': skeleton.id,
                     'force': True})
 
         self.assertStatus(response)
@@ -1209,6 +1438,45 @@ class SkeletonsApiTests(CatmaidApiTestCase):
 '''
 
         self.compare_swc_data(response.content.decode('utf-8'), swc_output_for_skeleton_235)
+
+
+    def test_eswc_file(self):
+        self.fake_authentication()
+        url = '/%d/skeleton/235/eswc' % (self.test_project_id,)
+        response = self.client.get(url)
+        self.assertStatus(response)
+
+        eswc_output_for_skeleton_235 = '''
+237 0 1065.0 3035.0 0.0 0 -1 test2 2011-09-27T07:49:15.802000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+239 0 1135.0 2800.0 0.0 0 237 test2 2011-09-27T07:49:16.553000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+241 0 1340.0 2660.0 0.0 0 239 test2 2011-09-27T07:49:17.217000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+243 0 1780.0 2570.0 0.0 0 241 test2 2011-09-27T07:49:17.660000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+245 0 1970.0 2595.0 0.0 0 243 test2 2011-09-27T07:49:18.343000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+247 0 2610.0 2700.0 0.0 0 245 test2 2011-09-27T07:49:19.012000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+249 0 2815.0 2590.0 0.0 0 247 test2 2011-09-27T07:49:19.887000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+251 0 3380.0 2330.0 0.0 0 249 test2 2011-09-27T07:49:20.514000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+253 0 3685.0 2160.0 0.0 0 251 test2 2011-09-27T07:49:21.493000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+255 0 3850.0 1790.0 0.0 0 253 test2 2011-09-27T07:49:22.835000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+257 0 3825.0 1480.0 0.0 0 255 test2 2011-09-27T07:49:23.591000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+259 0 3445.0 1385.0 0.0 0 257 test2 2011-09-27T07:49:24.879000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+261 0 2820.0 1345.0 0.0 0 259 test2 2011-09-27T07:49:25.549000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+263 0 3915.0 2105.0 0.0 0 253 test2 2011-09-27T07:49:27.637000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+265 0 4570.0 2125.0 0.0 0 263 test2 2011-09-27T07:49:28.080000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+267 0 5400.0 2200.0 0.0 0 265 test2 2011-09-27T07:49:28.515000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+269 0 4820.0 1900.0 0.0 0 265 test2 2011-09-27T07:49:31.952000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+271 0 5090.0 1675.0 0.0 0 269 test2 2011-09-27T07:49:32.376000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+273 0 5265.0 1610.0 0.0 0 271 test2 2011-09-27T07:49:32.824000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+275 0 5800.0 1560.0 0.0 0 273 test2 2011-09-27T07:49:33.254000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+277 0 6090.0 1550.0 0.0 0 275 test2 2011-09-27T07:49:33.770000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+279 0 5530.0 2465.0 0.0 0 267 test2 2011-09-27T07:49:35.689000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+281 0 5675.0 2635.0 0.0 0 279 test2 2011-09-27T07:49:36.374000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+283 0 5985.0 2745.0 0.0 0 281 test2 2011-09-27T07:49:36.843000+00:00 test2 2011-12-15T13:51:36.955000+00:00 5
+285 0 6100.0 2980.0 0.0 0 283 test2 2011-09-27T07:49:37.269000+00:00 test2 2011-12-04T13:51:36.955000+00:00 5
+289 0 6210.0 3480.0 0.0 0 285 test2 2011-09-27T07:49:38.607000+00:00 test2 2011-11-06T13:51:36.955000+00:00 5
+415 0 5810.0 3950.0 0.0 0 289 test2 2011-10-07T07:02:13.511000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+417 0 4990.0 4200.0 0.0 0 415 test2 2011-10-07T07:02:15.176000+00:00 test2 2011-12-05T13:51:36.955000+00:00 5
+'''
+        self.compare_eswc_data(response.content.decode('utf-8'), eswc_output_for_skeleton_235)
 
 
     def assert_skeletons_by_node_labels(self, label_ids, expected_response):

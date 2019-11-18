@@ -324,6 +324,7 @@ urlpatterns += [
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/neuroml/neuroml_level3_v181$', skeletonexport.export_neuroml_level3_v181),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/swc$', skeletonexport.skeleton_swc),
+    url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/eswc$', skeletonexport.skeleton_eswc),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuroml$', skeletonexport.skeletons_neuroml),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/json$', skeletonexport.skeleton_with_metadata),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/compact-json$', skeletonexport.skeleton_for_3d_viewer),

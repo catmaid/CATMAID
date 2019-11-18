@@ -22,7 +22,7 @@ from django.db.models.query import QuerySet
 from rest_framework.decorators import api_view
 
 from catmaid.models import UserRole, ClassInstance, Treenode, \
-        TreenodeClassInstance, ConnectorClassInstance, Review
+        TreenodeClassInstance, ConnectorClassInstance, Review, User
 from catmaid.control import export_NeuroML_Level3
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import (get_relation_to_id_map, get_request_bool,
@@ -67,7 +67,7 @@ def get_treenodes_qs(project_id=None, skeleton_id=None, with_labels:bool=True) -
 
 
 def get_swc_string(project_id, skeleton_id, treenodes_qs:QuerySet, linearize_ids:bool=False,
-        soma_markers:List[str]=None) -> str:
+        soma_markers:List[str]=None, get_extra_cols=None) -> str:
     """
     Structure identifiers (www.neuromorpho.org):
     0 - undefined
@@ -159,6 +159,10 @@ def get_swc_string(project_id, skeleton_id, treenodes_qs:QuerySet, linearize_ids
         swc_row.append(tn.location_z)
         swc_row.append(max(tn.radius, 0))
         swc_row.append(-1 if tn.parent_id is None else tn.parent_id)
+
+        if get_extra_cols:
+            swc_row.extend(get_extra_cols(tn))
+
         all_rows.append(swc_row)
 
     if linearize_ids:
@@ -203,6 +207,19 @@ def export_skeleton_response(request:HttpRequest, project_id=None, skeleton_id=N
         soma_markers = get_request_list(request.GET, 'soma_markers', [])
         return HttpResponse(get_swc_string(project_id, skeleton_id, treenode_qs,
                 linearize_ids, soma_markers), content_type='text/plain')
+    if format == 'eswc':
+        linearize_ids = get_request_bool(request.GET, 'linearize_ids', False)
+        soma_markers = get_request_list(request.GET, 'soma_markers', [])
+        user_map = dict(User.objects.all().values_list('id', 'username'))
+        def get_extra_cols(treenode):
+            return [f'{user_map[treenode.user_id]}',
+                    f'{treenode.creation_time.isoformat()}',
+            f'{user_map[treenode.editor_id]}',
+            f'{treenode.edition_time.isoformat()}',
+            f'{treenode.confidence}']
+        return HttpResponse(get_swc_string(project_id, skeleton_id, treenode_qs,
+                linearize_ids, soma_markers, get_extra_cols=get_extra_cols),
+                content_type='text/plain')
     elif format == 'json':
         return JsonResponse(treenode_qs)
     else:
@@ -1439,9 +1456,23 @@ def export_neuroml_level3_v181(request:HttpRequest, project_id=None) -> HttpResp
     return response
 
 
+@api_view(['GET'])
 @requires_user_role(UserRole.Browse)
 def skeleton_swc(*args, **kwargs):
+    """Export a skeleton as standard SWC file.
+    """
     kwargs['format'] = 'swc'
+    return export_skeleton_response(*args, **kwargs)
+
+
+@api_view(['GET'])
+@requires_user_role(UserRole.Browse)
+def skeleton_eswc(*args, **kwargs):
+    """Export an extended SWC file. It includes a creation user name, creation
+    timestamp, editor user name and edition time stamp as well as a condidence
+    value in range [0,5].
+    """
+    kwargs['format'] = 'eswc'
     return export_skeleton_response(*args, **kwargs)
 
 

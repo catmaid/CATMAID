@@ -2250,7 +2250,8 @@ var SkeletonAnnotations = {};
    *                                set to true or false, a particular choice
    *                                can be enforced.
    */
-  CATMAID.TracingOverlay.prototype.createTreenodeLink = function (fromid, toid, showUI = 'auto') {
+  CATMAID.TracingOverlay.prototype.createTreenodeLink = function (fromid, toid,
+      showUI = 'auto', annotations = undefined, samplerHandling = undefined) {
     if (fromid === toid) return;
     if (!this.nodes.has(toid)) return;
     var self = this;
@@ -2358,7 +2359,7 @@ var SkeletonAnnotations = {};
                   let addFromNameRef = !addFromNameRefRegEx.test(mergedInName);
                   // Not specifying an annotation map will cause the combined
                   // annotation set of both skeletons to be used.
-                  merge(undefined, from_skid, to_skid, undefined, addFromNameRef);
+                  merge(annotations, from_skid, to_skid, samplerHandling, addFromNameRef);
                 } else {
                   // Only show a dialog if the merged in neuron is annotated.
                   CATMAID.Annotations.forSkeleton(self.projectId, to_skid)

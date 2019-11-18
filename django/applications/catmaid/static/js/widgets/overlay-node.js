@@ -1712,12 +1712,14 @@
               // In case the from-node has an API associated, swap from and to,, for this the fromApi is needed.
               if (fromApi || catmaidTracingOverlay.api) {
                 let losingApi, losingSkeletonId, losingNodeId, losingProjectId,
+                    losingLocation,
                     winningApi, winningSkeletonId, winningNodeId, winningProjectId,
                     winningOverlay;
                 if (fromApi) {
                   losingApi = fromApi;
                   losingNodeId = atnID;
                   losingSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+                  losingLocation = SkeletonAnnotations.getActiveNodePositionW();
                   losingProjectId = fromProjectId;
                   winningApi = undefined;
                   winningNodeId = node.id;
@@ -1729,6 +1731,7 @@
                   losingNodeId = node.id;
                   losingSkeletonId = node.skeleton_id;
                   losingProjectId = catmaidTracingOverlay.projectId;
+                  losingLocation = {x: node.x, y: node.y, z: node.z};
                   winningApi = undefined;
                   winningNodeId = atnID;
                   winningSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
@@ -1748,8 +1751,8 @@
                     return;
                   }
                 }
-                CATMAID.Remote.mergeImportSkeleton( losingProjectId,
-                    losingSkeletonId, losingNodeId, losingApi, winningProjectId,
+                CATMAID.Remote.mergeImportSkeleton(losingProjectId, losingSkeletonId,
+                    losingNodeId, losingApi, losingLocation, winningProjectId,
                     winningSkeletonId, winningNodeId, winningApi, winningOverlay);
                 // TODO check for error
                 CATMAID.statusBar.replaceLast(`Attempting to join remote node #${losingNodeId} to local node ${winningNodeId}`);

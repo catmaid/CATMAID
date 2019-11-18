@@ -678,7 +678,7 @@ def _neuronnames(skeleton_ids, project_id) -> dict:
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def neuronnames(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Returns a JSON object with skeleton IDs as keys and neuron names as values. """
-    skeleton_ids = tuple(int(v) for k,v in request.POST.items() if k.startswith('skids['))
+    skeleton_ids = tuple(get_request_list(request.POST, 'skids', map_fn=int))
     return JsonResponse(_neuronnames(skeleton_ids, project_id))
 
 @api_view(['GET', 'POST'])
@@ -3805,7 +3805,7 @@ def skeletons_in_bounding_box(request:HttpRequest, project_id) -> JsonResponse:
 @api_view(['GET'])
 @requires_user_role([UserRole.Browse])
 def change_history(request:HttpRequest, project_id=None) -> JsonResponse:
-    """Return the history of all skeletons ID changes in project over time.
+    """Return the history of all skeletons ID changes in a project over time.
     Optionally, this can be constrained by a user ID and a time window.
     ---
     parameters:
@@ -3894,13 +3894,22 @@ def change_history(request:HttpRequest, project_id=None) -> JsonResponse:
                 SELECT t.id, t.skeleton_id, MIN(txid) as txid, MIN(edition_time) as edition_time
                 FROM (
                         /* Deleted skeletons from history */
-                        select th.id as id, th.skeleton_id as skeleton_id, MIN(th.txid) as txid, MIN(th.edition_time) as edition_time from treenode__history th
+                        -- TODO: It might be that we want really the initial
+                        -- versions, and not all of them with each having the
+                        -- minimum th.txid and edit time.
+                        SELECT th.id as id, th.skeleton_id as skeleton_id, MIN(th.txid) as txid,
+                            MIN(th.edition_time) AS edition_time
+                        FROM treenode__history th
                         /* where th.exec_transaction_id = txs.transaction_id */
                         {init_constraints}
-                        group by th.id, th.skeleton_id
-                        union all
+                        GROUP By th.id, th.skeleton_id
+
+                        UNION ALL
+
                         /* Current skeletons */
-                        select t.id as id, t.skeleton_id as skeleton_id, MIN(t.txid) as txid, MIN(t.edition_time) as edition_time from treenode t
+                        select t.id as id, t.skeleton_id as skeleton_id, MIN(t.txid) as txid,
+                            MIN(t.edition_time) AS edition_time
+                        FROM treenode t
                         /* where t.txid = txs.transaction_id */
                         {init_constraints}
                         GROUP BY t.id, t.skeleton_id

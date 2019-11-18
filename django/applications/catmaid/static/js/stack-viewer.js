@@ -542,7 +542,7 @@
   /**
    * align and update the stacks to be ( x, y ) in the image center
    */
-  StackViewer.prototype.redraw = function (completionCallback) {
+  StackViewer.prototype.redraw = function (completionCallback, force = false) {
     var allQueued = false, semaphore = 0, layer,
               onAnyCompletion = function () {
       -- semaphore;
@@ -569,7 +569,11 @@
         continue;
       }
       ++ semaphore;
-      layer.redraw(onAnyCompletion, this.blockingRedraws);
+      if (force) {
+        layer.forceRedraw(onAnyCompletion, this.blockingRedraws);
+      } else {
+        layer.redraw(onAnyCompletion, this.blockingRedraws);
+      }
     }
 
     this.old_z = this.z;
@@ -972,16 +976,18 @@
     if (this._layers.size === 1) return false;
 
     var layer = this._layers.get(key);
-    if ( typeof layer !== "undefined" && layer && layer instanceof CATMAID.StackLayer ) {
-      if (layer.stack.id === this.primaryStack.id) {
-        // If this layer is for the primary stack, it is only removable if
-        // there are other primary stack layers.
-        return this.getLayersOfType(CATMAID.StackLayer)
-          .filter(s => s.stack.id === this.primaryStack.id)
-          .length > 1;
+    if ( typeof layer !== "undefined" && layer) {
+      if (layer instanceof CATMAID.StackLayer ) {
+        if (layer.stack.id === this.primaryStack.id) {
+          // If this layer is for the primary stack, it is only removable if
+          // there are other primary stack layers.
+          return this.getLayersOfType(CATMAID.StackLayer)
+            .filter(s => s.stack.id === this.primaryStack.id)
+            .length > 1;
+        }
+        return true;
       }
-
-      return true;
+      return layer.isRemovable;
     }
     else
       return false;
@@ -1007,7 +1013,9 @@
         viewB = layerB.getView();
       if (!this._layersView.contains(viewA) || !this._layersView.contains(viewB)) return;
       this._layersView.insertBefore(viewA, viewB);
-    } else this._layersView.appendChild(layerA.getView());
+    } else if (layerA.getView) {
+      this._layersView.appendChild(layerA.getView());
+    }
 
     if (typeof layerA.notifyReorder !== 'undefined')
       layerA.notifyReorder(layerB);

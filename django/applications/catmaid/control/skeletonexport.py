@@ -16,7 +16,7 @@ from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import connection
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse, Http404
 from django.db.models.query import QuerySet
 
 from rest_framework.decorators import api_view
@@ -625,7 +625,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
     if 0 == len(nodes):
         # Check if the skeleton exists
         if 0 == ClassInstance.objects.filter(pk=skeleton_id).count():
-            raise Exception("Skeleton #%s doesn't exist" % skeleton_id)
+            raise Http404(f"Skeleton #{skeleton_id} doesn't exist")
         # Otherwise returns an empty list of nodes
 
     connectors:Tuple = ()

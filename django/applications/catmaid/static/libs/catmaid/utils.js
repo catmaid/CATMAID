@@ -74,7 +74,7 @@ InstanceRegistry.prototype.getLastInstance = function() {
  *
  * If no <method> parameter is passed in, POST is assumed.*/
 var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne,
-    fnFailedLoading, fnDone, method, binaryTransfer) {
+    fnFailedLoading, fnDone, method, binaryTransfer, api = undefined) {
   method = method || "POST";
   var i = 0,
       missing = [],
@@ -91,48 +91,47 @@ var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne,
         $.unblockUI();
         fnMissing();
       },
+      cancelError = null,
       loadOne = function(skeleton_id) {
-        requestQueue.register(fnMakeURL(skeleton_id), method, fnPost(skeleton_id),
-            function(status, text, xml, dataSize, contentType) {
-              try {
-                if (200 === status) {
-                  var data;
-                  if (binaryTransfer && contentType === 'application/octet-stream') {
-                    data = msgpack.decode(new Uint8Array(text));
-                  } else {
-                    data = JSON.parse(text);
-                  }
-                  if (data.error) {
-                    if (0 === data.error.indexOf("Skeleton #" + skeleton_id + " doesn't exist")) {
-                      missing.push(skeleton_id);
-                    } else {
-                      unloadable.push(skeleton_id);
-                    }
-                    fnFailedLoading(skeleton_id);
-                  } else {
-                    fnLoadedOne(skeleton_id, data);
-                  }
-                } else {
-                  unloadable.push(skeleton_id);
-                  fnFailedLoading(skeleton_id);
-                }
-                // Next iteration
-                i += 1;
-                $('#counting-loaded-skeletons').text(i + " / " + skeleton_ids.length);
-                if (i < skeleton_ids.length) {
-                  loadOne(skeleton_ids[i]);
-                } else {
-                  finish();
-                  fnDone();
-                }
-              } catch (e) {
+        CATMAID.fetch({
+            url: fnMakeURL(skeleton_id),
+            method: method,
+            data: fnPost(skeleton_id),
+            responseType: (binaryTransfer ? 'arraybuffer' : undefined),
+            api: api,
+          })
+          .then(data => {
+            try {
+              fnLoadedOne(skeleton_id, data);
+            } catch (e) {
+              cancelError = e;
+            }
+          })
+          .catch(error => {
+            if (error instanceof CATMAID.MissingResourceError) {
+              missing.push(skeleton_id);
+            } else {
+              unloadable.push(skeleton_id);
+            }
+            fnFailedLoading(skeleton_id);
+          })
+          .then(() => {
+            if (cancelError) {
+              finish();
+              CATMAID.handleError(cancelError);
+              CATMAID.msg("ERROR", `Problem loading skeleton ${skeleton_id}`);
+            } else {
+              // Next iteration
+              i += 1;
+              $('#counting-loaded-skeletons').text(i + " / " + skeleton_ids.length);
+              if (i < skeleton_ids.length) {
+                loadOne(skeleton_ids[i]);
+              } else {
                 finish();
-                console.log(e, e.stack);
-                CATMAID.msg("ERROR", "Problem loading skeleton " + skeleton_id);
+                fnDone();
               }
-            },
-            undefined,
-            binaryTransfer ? 'arraybuffer' : undefined);
+            }
+          });
       };
   if (skeleton_ids.length > 1) {
     $.blockUI({message: '<img src="' + STATIC_URL_JS +

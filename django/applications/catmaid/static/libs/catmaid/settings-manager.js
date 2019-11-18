@@ -93,17 +93,22 @@
    * @param {Object} schema      Description of the entries in this settings
    *                             group and optional migrations between settings
    *                             version. See JSDoc for more.
+   * @param {DataStore} store    (Optional) The data store to use.
+   * @param {Boolean}   load     (Optional) Whether to load the settings
+   *                             initially. Default is true.
    */
-  function Settings(name, schema, anonymousWriteBack = false) {
+  function Settings(name, schema, anonymousWriteBack = false, store = undefined, load = true) {
     this.name = name;
     this.schema = schema;
     this.anonymousWriteBack = anonymousWriteBack;
     this.rendered = {};
-    this.settingsStore = CATMAID.DataStoreManager.get(Settings.DATA_STORE_NAME);
+    this.settingsStore = store ? store : CATMAID.DataStoreManager.get(Settings.DATA_STORE_NAME);
     this._boundLoad = this.load.bind(this, undefined);
     this._storeThrottleTimeout = null;
     this.settingsStore.on(CATMAID.DataStore.EVENT_LOADED, this._boundLoad);
-    this.load();
+    if (load) {
+      this.load();
+    }
   }
 
   /**
@@ -212,6 +217,17 @@
 
         return Promise.all(work);
     });
+  };
+
+  /**
+   * Create an immutable copy of this Settings object with data from the
+   * provided back-end.
+   */
+  Settings.prototype.fromAPI = function(api, load = false) {
+    let store = new CATMAID.DataStore(Settings.DATA_STORE_NAME, api);
+    let settingsClone = new CATMAID.Settings(this.name, this.schema, false,
+        store, load);
+    return settingsClone;
   };
 
   /**

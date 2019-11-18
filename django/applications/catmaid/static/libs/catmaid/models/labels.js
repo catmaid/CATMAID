@@ -17,38 +17,53 @@
      * @param {integer} projectId        The project the node is part of
      * @param {integer} nodeId           Id of node
      * @param {string}  nodeType         Either 'treenode' or 'connector'
+     * @param {API}     api       (Optional) The back-end to talk to.
      *
      * @returns {Object} Promise that is resolved with an object mapping label
      *                   IDs to label names.
      */
-    forNode: function(projectId, nodeId, nodeType) {
+    forNode: function(projectId, nodeId, nodeType, api = undefined) {
       var url = projectId + '/labels/' + nodeType  + '/' + nodeId + '/';
-      return CATMAID.fetch(url, 'GET');
+      return CATMAID.fetch({
+        url: url,
+        method: 'GET',
+        api: api,
+      });
     },
 
     /**
      * Get all labels in a project.
      *
      * @param {integer} projectId        The project the node is part of
+     * @param {API}     api       (Optional) The back-end to talk to.
      *
      * @returns {Object} Promise that is resolved with a list of available label
      *                   names.
      */
-    listAll: function(projectId) {
+    listAll: function(projectId, api = undefined) {
       var url = projectId + '/labels/';
-      return CATMAID.fetch(url, 'GET');
+      return CATMAID.fetch({
+        url: url,
+        method: 'GET',
+        api: api,
+      });
     },
 
     /**
      * Get all labels in a project.
      *
      * @param {integer} projectId        The project the node is part of
+     * @param {API}     api       (Optional) The back-end to talk to.
      *
      * @returns {Object} Promise that is resolved with a list of label objects,
      *                   each with an id and name field.
      */
-    listAllDetail: function(projectId) {
-      return CATMAID.fetch(projectId + '/labels/detail', 'GET');
+    listAllDetail: function(projectId, api = undefined) {
+      return CATMAID.fetch({
+        url: projectId + '/labels/detail',
+        method: 'GET',
+        api: api,
+      });
     },
 
     /**
@@ -61,18 +76,24 @@
      *                                   that the node should have.
      * @param {bool}    deleteExisting   If true, all existing labels will be
      *                                   removed before new labels are added.
+     * @param {API}     api       (Optional) The back-end to talk to.
      *
      * @returns {Object} Promise that is resolved with update information once
      *                   the update request returned successfully.
      */
-    update: function(projectId, nodeId, nodeType, newLabels, deleteExisting) {
+    update: function(projectId, nodeId, nodeType, newLabels, deleteExisting, api = undefined) {
       var url = projectId + '/label/' + nodeType + '/' + nodeId + '/update';
       var params = {
         tags: newLabels.join(','),
         delete_existing: !!deleteExisting
       };
 
-      return CATMAID.fetch(url, 'POST', params).then(function(json) {
+      return CATMAID.fetch({
+        url: url,
+        method: 'POST',
+        data: params,
+        api: api,
+      }).then(function(json) {
         CATMAID.Labels.trigger(CATMAID.Labels.EVENT_NODE_LABELS_CHANGED, nodeId);
         if (json.warning) {
           CATMAID.warn(json.warning);
@@ -92,13 +113,21 @@
      * @param {integer} nodeId    Id of node
      * @param {string}  nodeType  Either 'treenode' or 'connector'
      * @param {string}  label     The label to remove
+     * @param {API}     api       (Optional) The back-end to talk to.
      *
      * @returns {Object} Promise that is resolved with update information once
      *                   the update request returned successfully.
      */
-    remove: function(projectId, nodeId, nodeType, label) {
+    remove: function(projectId, nodeId, nodeType, label, api = undefined) {
       var url = projectId + '/label/' + nodeType + '/' + nodeId + '/remove';
-      return CATMAID.fetch(url, 'POST', {tag: label}).then(function(json) {
+      return CATMAID.fetch({
+        url: url,
+        method: 'POST',
+        data: {
+          tag: label
+        },
+        api: api,
+      }).then(function(json) {
         CATMAID.Labels.trigger(CATMAID.Labels.EVENT_NODE_LABELS_CHANGED, nodeId);
         return {
           'deletedLabels': [label],
@@ -119,11 +148,11 @@
    * This information will only be acquired if the command is executed.
    */
   CATMAID.AddTagsToNodeCommand = CATMAID.makeCommand(function(projectId, nodeId, nodeType,
-        tags, deleteExisting) {
+        tags, deleteExisting, api = undefined) {
 
     var exec = function(done, command) {
       var addLabel = CATMAID.Labels.update(projectId, nodeId, nodeType,
-          tags, deleteExisting);
+          tags, deleteExisting, api);
       // After the label has been added, store undo parameters in command and
       // mark command execution as done.
       return addLabel.then(function(result) {
@@ -144,7 +173,7 @@
       // existed before. Othewise, remove all added tags.
       var removeLabel = 0 === command._addedTags.length ? Promise.resolve() :
         Promise.all(command._addedTags.map(function(t) {
-          return CATMAID.Labels.remove(projectId, nodeId, nodeType, t);
+          return CATMAID.Labels.remove(projectId, nodeId, nodeType, t, api);
         }));
 
       return removeLabel.then(done);
@@ -165,10 +194,10 @@
    * actually removed, its undo() method will re-add the tag.
    */
   CATMAID.RemoveTagFromNodeCommand = CATMAID.makeCommand(function(projectId, nodeId,
-        nodeType, tag) {
+        nodeType, tag, api) {
 
     var exec = function(done, command) {
-      var removeLabel = CATMAID.Labels.remove(projectId, nodeId, nodeType, tag);
+      var removeLabel = CATMAID.Labels.remove(projectId, nodeId, nodeType, tag, api);
       // After the label has been removed, store undo parameters in command and
       // mark command execution as done.
       return removeLabel.then(function(result) {
@@ -188,7 +217,7 @@
       // happen due to multiple reasons, e.g. lack of permissions or the tag
       // existed before. Otherwise, remove all added tags.
       var addLabel = (command._deletedLabels.length === 0) ? Promise.resolve() :
-          CATMAID.Labels.update(projectId, nodeId, nodeType, command._deletedLabels);
+          CATMAID.Labels.update(projectId, nodeId, nodeType, command._deletedLabels, api);
 
       return addLabel.then(done);
     };

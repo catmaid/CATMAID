@@ -30,6 +30,14 @@
 
   SkeletonModel.prototype = {};
 
+  /**
+   * A skeleton is a remote skeleton if it has an API associated with it.
+   */
+  Object.defineProperty(SkeletonModel.prototype, 'isRemote', {
+    get() { return !!this.api; },
+    enumerable: true,
+  });
+
   SkeletonModel.prototype.setVisible = function(v) {
       this.selected = v;
       this.pre_visible = v;

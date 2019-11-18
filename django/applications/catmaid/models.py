@@ -1395,6 +1395,7 @@ class StatsSummary(models.Model):
     n_imported_treenodes = models.IntegerField(null=False, default=0)
     n_imported_connectors = models.IntegerField(null=False, default=0)
     cable_length = models.FloatField(null=False, default=0)
+    import_cable_length = models.FloatField(null=False, default=0)
 
     def __str__(self) -> str:
         return f"Stats summary for {self.user} on {self.date}"

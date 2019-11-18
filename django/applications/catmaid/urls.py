@@ -17,7 +17,7 @@ from catmaid.control import (authentication, user, group, log, message, client,
         classification, notifications, roi, clustering, volume, noop,
         useranalytics, user_evaluation, search, graphexport, transaction,
         graph2, circles, analytics, review, wiringdiagram, object, sampler,
-        similarity, nat, point, landmarks, pointcloud, pointset)
+        similarity, nat, origin, point, landmarks, pointcloud, pointset)
 
 from catmaid.history import record_request_action as record_view
 from catmaid.views import CatmaidView
@@ -314,6 +314,10 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', skeleton.adjacency_matrix),
     url(r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', skeleton.skeletonlist_subgraph),
     url(r'^(?P<project_id>\d+)/skeletongroup/all_shared_connectors', skeleton.all_shared_connectors),
+]
+
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/origins/$', origin.OriginCollection.as_view()),
 ]
 
 # Skeleton export

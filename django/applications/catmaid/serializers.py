@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.utils import timezone
 from rest_framework.serializers import ModelSerializer, DateTimeField
-from catmaid.models import ClassInstance, Point, Volume
+from catmaid.models import ClassInstance, DataSource, Point, Volume
 
 
 class VolumeSerializer(ModelSerializer):
@@ -37,3 +37,14 @@ class BasicClassInstanceSerializer(ModelSerializer):
         read_only_fields = ('id',)
         fields = ('id', 'name', 'user', 'project', 'creation_time',
                 'edition_time')
+
+class DataSourceSerializer(ModelSerializer):
+    # We want to return UTC times by default, not the server timezone
+    creation_time = DateTimeField(default_timezone=timezone.utc)
+    edition_time = DateTimeField(default_timezone=timezone.utc)
+
+    class Meta:
+        model = DataSource
+        read_only_fields = ('id',)
+        fields = ('id', 'user', 'project', 'creation_time',
+                'edition_time', 'name', 'url', 'source_project_id')

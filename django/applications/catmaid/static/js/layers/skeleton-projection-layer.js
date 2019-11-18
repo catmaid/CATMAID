@@ -310,7 +310,7 @@
   /**
    * Redraw the skeleton if the active node changed.
    */
-  SkeletonProjectionLayer.prototype.handleActiveNodeChange = function(node, skeletonChanged) {
+  SkeletonProjectionLayer.prototype.handleActiveNodeChange = function(node, skeletonChanged, api) {
     var nReferenceNodes = this.currentReferenceNodes.size,
         replacesSelection = node && (nReferenceNodes > 0),
         firstSelection = node && (nReferenceNodes === 0),
@@ -560,7 +560,8 @@
     return nearestnode ?
         {id: nearestnode,
          node: {x: nearestpos.x, y: nearestpos.y, z: nearestpos.z},
-         distsq: mindistsq} :
+         distsq: mindistsqi,
+         api: undefined,} :
         null;
   };
 

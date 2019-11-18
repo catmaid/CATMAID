@@ -1037,6 +1037,40 @@
 
       ds.append(wrapSettingsControl(
         CATMAID.DOM.createSelectSetting(
+          'Remote node marker',
+          {
+            'Disc': 'disc',
+            'Ring': 'ring',
+            'Target': 'target',
+            'Crosshair': 'crosshair',
+            'Crosshair without ring': 'crosshair-no-ring',
+            'Bullseye': 'bullseye'
+          },
+          "Texture to use for remote nodes: by default a ring is used.",
+          function() {
+            CATMAID.TracingOverlay.Settings
+              .set(
+                'remote_data_marker_type',
+                this.value,
+                SETTINGS_SCOPE
+              )
+              .then(function() {
+                SkeletonAnnotations.getRemoteTracingOverlays().forEach(overlay => {
+                  overlay.graphics.cache.nodePool.clear();
+                  overlay.graphics.initTextures(true, CATMAID.TracingOverlay.Settings.session.remote_data_marker_type);
+                  overlay.redraw(true);
+                });
+              });
+          },
+          CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].remote_data_marker_type
+        ),
+        CATMAID.TracingOverlay.Settings,
+        'remote_data_marker_type',
+        SETTINGS_SCOPE
+      ));
+
+      ds.append(wrapSettingsControl(
+        CATMAID.DOM.createSelectSetting(
           'Data transfer mode',
           {
             'JSON': 'json',

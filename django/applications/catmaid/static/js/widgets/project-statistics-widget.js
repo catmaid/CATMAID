@@ -21,6 +21,10 @@
     // Whether import activity should be included in the displayed statistics.
     this.includeImports = false;
 
+    // Whether import activity should be included in the displayed contribution
+    // table.
+    this.includeImportContributions = false;
+
     // How many largest neurons should be displayed
     this.displayTopN = 10;
 
@@ -33,35 +37,76 @@
       $("#connectors_created").text(data.connectors_created);
     };
 
-    var get_formated_entry = function(data) {
-      function wrapWithLink(num, type) {
-        // Create a new link that retrieves the required information.
-        var link = '<a href="#" data-from="' + data.from + '" data-to="' +
-            data.to + '" data-type="' + type +'" data-user="' + data.user + '">' + num + '</a>';
-        return link;
-      }
+    function wrapWithLink(data, num, type) {
+      // Create a new link that retrieves the required information.
+      var link = '<a href="#" data-from="' + data.from + '" data-to="' +
+          data.to + '" data-type="' + type +'" data-user="' + data.user + '">' + num + '</a>';
+      return link;
+    }
+
+    var get_formated_entry = function(data, withImports) {
+
+      let newCablelength = data.hasOwnProperty('new_cable_length') ? data['new_cable_length'] : 0;
+      let newTreenodes = data.hasOwnProperty('new_treenodes') ? data['new_treenodes'] : 0;
 
       var entry = '', points = 0;
-      if( data.hasOwnProperty('new_cable_length') && data['new_cable_length'] > 0 ) {
-        entry += wrapWithLink(data['new_cable_length'].toLocaleString(), 'created') + ' /';
-        points += data['new_cable_length'];
+      if (withImports) {
+        let newImportCablelength = data.hasOwnProperty('new_import_cable_length') ? data['new_import_cable_length'] : 0;
+        let newImportTreenodes = data.hasOwnProperty('new_import_treenodes') ? data['new_import_treenodes'] : 0;
+
+        // Offset the regular cable length and treenode information.
+        newCablelength -= newImportCablelength;
+        newTreenodes -= newImportTreenodes;
+
+        // Display regular nodes with imports subtracted
+        if(newCablelength > 0 ) {
+          entry += wrapWithLink(data, newCablelength.toLocaleString(), 'created') + ' /';
+          points += newCablelength;
+        } else {
+          entry += '0 /';
+        }
+        if(newTreenodes > 0 ) {
+          entry += ' ' + wrapWithLink(data, newTreenodes.toLocaleString(), 'created') + ' /';
+          points += newImportTreenodes;
+        } else {
+          entry += ' 0 /';
+        }
+
+        if(newImportCablelength > 0 ) {
+          entry += ' ' + wrapWithLink(data, newImportCablelength.toLocaleString(), 'created') + ' /';
+          points += newImportCablelength;
+        } else {
+          entry += ' 0 /';
+        }
+
+        if( newImportTreenodes > 0 ) {
+          entry += ' ' + wrapWithLink(data, newImportTreenodes.toLocaleString(), 'created') + ' /';
+          points += newImportTreenodes;
+        } else {
+          entry += ' 0 /';
+        }
       } else {
-        entry += '0 /';
-      }
-      if( data.hasOwnProperty('new_treenodes') && data['new_treenodes'] > 0 ) {
-        entry += wrapWithLink(data['new_treenodes'].toLocaleString(), 'created') + ' /';
-        points += data['new_treenodes'];
-      } else {
-        entry += ' 0 /';
+        if(newCablelength > 0 ) {
+          entry += wrapWithLink(data, newCablelength .toLocaleString(), 'created') + ' /';
+          points += newCablelength;
+        } else {
+          entry += '0 /';
+        }
+        if(newTreenodes > 0 ) {
+          entry += ' ' + wrapWithLink(data, newTreenodes.toLocaleString(), 'created') + ' /';
+          points += newTreenodes;
+        } else {
+          entry += ' 0 /';
+        }
       }
       if( data.hasOwnProperty('new_connectors') && data['new_connectors'] > 0 ) {
-        entry += ' ' + wrapWithLink(data['new_connectors'].toLocaleString(), 'connectors') + ' /';
+        entry += ' ' + wrapWithLink(data, data['new_connectors'].toLocaleString(), 'connectors') + ' /';
         points += data['new_connectors'];
       } else {
         entry += ' 0 /';
       }
       if( data.hasOwnProperty('new_reviewed_nodes') && data['new_reviewed_nodes'] > 0 ) {
-        entry += ' ' + wrapWithLink(data['new_reviewed_nodes'].toLocaleString(), 'reviewed');
+        entry += ' ' + wrapWithLink(data, data['new_reviewed_nodes'].toLocaleString(), 'reviewed');
         points += data['new_reviewed_nodes'];
       } else {
         entry += ' 0';
@@ -75,7 +120,7 @@
      * summarize multiple days, e.g. in weeks when <timeinterval> is 7. For
      * displaying days, it has to be 1.
      */
-    var update_user_history = function(data, timeunit) {
+    var update_user_history = function(data, timeunit, withImports = true) {
       // Select time interval, default to days
       var timeinterval;
       if ("year" === timeunit) {
@@ -159,6 +204,8 @@
               new_treenodes: 0,
               new_connectors: 0,
               new_reviewed_nodes: 0,
+              new_import_treenodes: 0,
+              new_import_cable_length: 0,
               user: uid,
               from: data['days'][i],
               to: data['days'][i + timeinterval - 1] || data['days'][data['days'].length - 1],
@@ -176,9 +223,11 @@
                 intervalData.new_treenodes += stats.new_treenodes || 0;
                 intervalData.new_connectors += stats.new_connectors || 0;
                 intervalData.new_reviewed_nodes += stats.new_reviewed_nodes || 0;
+                intervalData.new_import_treenodes += stats.new_import_treenodes || 0;
+                intervalData.new_import_cable_length += stats.new_import_cable_length || 0;
             }
             // Print table cell
-            var formated = get_formated_entry(intervalData);
+            var formated = get_formated_entry(intervalData, withImports);
             row += '<td>'+ formated['entry'] +'</td>';
             weekpointcount += formated['points'];
             userIntervals.push(intervalData);
@@ -228,7 +277,7 @@
         let row = '<tr><th></th><th>Selected users</th>';
         for (let i=0; i<aggData.length; ++i) {
           // Print table cell
-          var formated = get_formated_entry(aggData[i]);
+          var formated = get_formated_entry(aggData[i], withImports);
           row += '<td>'+ formated['entry'] +'</td>';
         }
 
@@ -245,7 +294,7 @@
         } else {
           aggregatedUsers.delete(userId);
         }
-        update_user_history(statisticsData, timeUnit);
+        update_user_history(statisticsData, timeUnit, withImports);
       });
       $('#project_stats_history_table').on('change','input[data-role=select-all]', function(e) {
         if (this.checked) {
@@ -257,7 +306,7 @@
           aggregatedUsers.clear();
         }
         $('#project_stats_history_table').find('input[data-role=user-select]').prop('checked', this.checked);
-        update_user_history(statisticsData, timeUnit);
+        update_user_history(statisticsData, timeUnit, withImports);
       });
 
       if (showUserAnalytics) {
@@ -661,13 +710,14 @@
             "pid": project.id,
             "start_date": $("#stats-history-start-date").val(),
             "end_date": $("#stats-history-end-date").val(),
+            "with_imports": this.includeImportContributions,
           },
           parallel: true,
         })
-        .then(function(jso) {
+        .then((jso) => {
           $(".stats-history-setting").prop('disabled', false);
           statisticsData = jso || null;
-          update_user_history(jso, timeUnit);
+          update_user_history(jso, timeUnit, this.includeImportContributions);
         })
         .catch(CATMAID.handleError);
       return true;
@@ -697,7 +747,7 @@
      */
     this.refresh_timeunit = function(unit) {
       timeUnit = unit;
-      update_user_history(statisticsData, timeUnit);
+      update_user_history(statisticsData, timeUnit, this.includeImportContributions);
     };
   };
 
@@ -739,11 +789,16 @@
           '<div class="project-stats">' +
           '<h3>Contribution Record</h3>' +
           '<p>' +
+            '<div class="buttonpanel">' +
             '<div class="left">' +
             'beween <input type="text" class="stats-history-setting"' +
                 'id="stats-history-start-date" />' +
             'and <input type="text" class="stats-history-setting"' +
                 'id="stats-history-end-date" />' +
+            '</div><div class="left">' +
+            `<label><input class="stats-history-setting" type="checkbox" id="include-import-contrib" ${this.includeImportContributions ? "checked" : ""}/>Include imports</label>` +
+            '</div>' +
+            '<div class="left">' +
             '<input type="button" class="stats-history-setting"' +
                 'id="stats-history-refresh" value="Refresh" />' +
             '</div>' +
@@ -757,10 +812,13 @@
                 '<option value="all">All</option>' +
               '</select>' +
             '</div>' +
+            '</div>' +
           '</p>' +
           '<div class="clear">' +
             '<br />' +
-            'per cell values: new cable length (nm) / new nodes / completed connector links / reviewed nodes' +
+            (this.includeImportContributions ?
+            'per cell values: new cable length (nm) / new nodes / imported cable length (nm) / imported nodes / completed connector links / reviewed nodes' :
+            'per cell values: new cable length (nm) / new nodes / completed connector links / reviewed nodes') +
             '<table cellpadding="0" cellspacing="0" border="1" class="project-stats"' +
                 'id="project_stats_history_table">' +
             '</table>' +
@@ -773,6 +831,11 @@
           '<h3>Largest neurons</h3>' +
           '<div id="project-stats-largest-neurons"></div>' +
           '</div>';
+
+        $(container).on('change', 'input#include-import-contrib', e => {
+          this.includeImportContributions = !this.includeImportContributions;
+          this.refresh_project_statistics();
+        });
 
         $(container).on('click', 'a[data-role=select-skeleton]', function() {
           let skeletonId = parseInt(this.dataset.skeletonId, 10);

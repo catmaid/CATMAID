@@ -9,8 +9,9 @@ from guardian.shortcuts import assign_perm
 from guardian.utils import get_anonymous_user
 
 from catmaid.control import project
-from catmaid.models import (Class, ClassInstance, Project, Stack, User,
-        Relation, StackClassInstance, StackGroup, StackStackGroup, StackMirror)
+from catmaid.models import (Class, ClassInstance, Project, Stack, ProjectStack,
+        User, Relation, StackClassInstance, StackGroup, StackStackGroup,
+        StackMirror)
 
 from .common import CatmaidApiTestCase
 
@@ -79,6 +80,43 @@ class ProjectsApiTests(CatmaidApiTestCase):
         p5= get_project(result, 5)
         self.assertEqual(len(p5['stacks']), 2)
         self.assertEqual(len(p5['stackgroups']), 1)
+
+    def test_tracing_project_list(self):
+        self.fake_authentication()
+        # We expect four projects, one of them (project 2) is empty.
+        response = self.client.get('/projects/')
+        print(response.content)
+        self.assertEqual(response.status_code, 200)
+        result = json.loads(response.content.decode('utf-8'))
+        original_n_project_entries = len(result)
+
+        response = self.client.get('/projects/', {
+            'has_tracing_data': True,
+        })
+        self.assertEqual(response.status_code, 200)
+        result = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(result), original_n_project_entries)
+
+        # Add an empty project with a stack linked to it. A stack has to be
+        # linked, or otherwise the back-end won't return the project no matter
+        # what.
+        p = Project.objects.create(title="Test project")
+        test_user = User.objects.get(pk=self.test_user_id)
+        assign_perm('can_browse', test_user, p)
+        ps = ProjectStack.objects.create(project=p, stack_id=3)
+
+        response = self.client.get('/projects/')
+        self.assertEqual(response.status_code, 200)
+        result = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(result), original_n_project_entries + 1)
+
+        response = self.client.get('/projects/', {
+            'has_tracing_data': True,
+        })
+        self.assertEqual(response.status_code, 200)
+        result = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(result), original_n_project_entries)
+
 
     def test_project_export(self):
         """Test projects/export endpoint, which returns a YAML format which can

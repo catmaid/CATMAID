@@ -21,7 +21,11 @@
 
     options = options || {};
 
+    this.projectId = options.projectId || project.id;
+    this.api = options.api || undefined;
+
     this.opacity = options.opacity || 1.0; // in the range [0,1]
+    this.name = options.name || "Neuron Tracing";
 
     CATMAID.PixiLayer.prototype._initBatchContainer.call(this);
     this.tracingOverlay = new CATMAID.TracingOverlay(stackViewer, this, options);
@@ -136,6 +140,15 @@
       }
     });
 
+    Object.defineProperty(this, 'hideImportedData', {
+      get: function() {
+        return this.tracingOverlay.hideImportedData;
+      },
+      set: function(value) {
+        this.tracingOverlay.hideImportedData = value;
+      }
+    });
+
     Object.defineProperty(this, 'levelOfDetail', {
       get: function() {
         return this.tracingOverlay.levelOfDetail;
@@ -171,7 +184,7 @@
    * Return friendly name of this layer.
    */
   TracingLayer.prototype.getLayerName = function () {
-    return "Neuron tracing";
+    return this.name;
   };
 
   TracingLayer.prototype.resize = function (width, height) {
@@ -199,14 +212,14 @@
 
   /** */
   TracingLayer.prototype.redraw = function (completionCallback) {
-    this.tracingOverlay.redraw(false, completionCallback);
+    return this.tracingOverlay.redraw(false, completionCallback);
   };
 
   /**
    * Force redraw of the tracing layer.
    */
   TracingLayer.prototype.forceRedraw = function (completionCallback) {
-    this.tracingOverlay.redraw(true, completionCallback);
+    return this.tracingOverlay.redraw(true, completionCallback);
   };
 
   TracingLayer.prototype.unregister = function () {
@@ -240,6 +253,12 @@
       type: 'checkbox',
       value: this.updateWhilePanning,
       help: 'Whether or not to update the visible tracing data while panning the view.'
+    }, {
+      name: 'hideImportedData',
+      displayName: 'Hide data imported in other layers',
+      type: 'checkbox',
+      value: this.hideImportedData,
+      help: 'Whether or not to hide remote tracing data that has been imported into the local project.'
     }, {
       name: 'levelOfDetailMode',
       displayName: 'Level of detail mode',
@@ -387,6 +406,8 @@
     } else if ('updateWhilePanning' === name) {
       this.updateWhilePanning = value;
       update = false;
+    } else if ('hideImportedData' === name) {
+      this.hideImportedData = value;
     } else if ('levelOfDetail' === name) {
       this.levelOfDetail = value;
     } else if ('levelOfDetailMode' === name) {

@@ -70,6 +70,30 @@ Project statistics:
 - It is now possible to configure how many largest neurons should be displayed
   as well as an optional name pattern.
 
+- The user/time action table will now also list imported nodes and imported
+  cable length. These values are subtracted from the corresponding regular
+  counters. If "Include imports" is unchecked, the same information that was
+  displayed before this commit is shown, i.e. the regular node count and cable
+  length field include the imported data.
+
+Tracing tool:
+
+- The tool bar button to refresh caches has been replaced with a button to open
+  a context menu titled "More tools". The context menu has an entry to refresh
+  cashes and a list of tracing data in other projects.
+
+- Tracing data from other CATMAID instances (or other local projects) can now be
+  added to the active stack viewer by selecting the respective remote project
+  from the "More tools" menu item "Remote data".
+
+- To open a remote CATMAID instance at the same location as the current view,
+  find the remote project in the "Remote data" section of the "More tools" menu,
+  and click on "Open remote view".
+
+- The marker type used fore remote tracing data can be configured through the
+  Settings Widget in the Tracing Overlay section, option "Remote node marker". A
+  ring is used by default.
+
 Tracing overlay:
 
 - The remote mirror CATMAID instance configuration is now taken from the central
@@ -96,6 +120,11 @@ Tracing overlay:
   of creators for all three visibility groups. This is useful to define
   visibility groups on the project or instance level that include a hiding
   pattern while guaranteeing that users see their own nodes.
+
+- Shift + Click on a remote node from a local node (or vice versa) will now
+  bring up an import preview dialog which is used as a merge preview at the same
+  time. Confirming the change will import the remote skeleton and merge it at
+  the selected location, works with virtual nodes.
 
 Navigator:
 
@@ -208,6 +237,11 @@ Import/Export widget:
   allows the widget to display local skeleton IDs, if the remote ID has already
   been imported from the current source URL.
 
+- If the active skeleton is a remote skeleton (in a remote data tracing layer),
+  it can now be imported by clicking the "Import active skeleton" button in the
+  "Import from CATMAID" tab of the widget. Like the other import, this iwll
+  first ask for confirmation with a 3D dialog.
+
 - The NRRD export can now use the JRC2018U (unisex) target template brain space
   as target.
 
@@ -216,6 +250,8 @@ Import/Export widget:
 
 - The NRRD export will now by default create a Zip file if multiple skeletons
   are exported both in a synchronous and asynchronous export.
+
+- SWC imports can now have a user defined initial name.
 
 Neuron navigator:
 

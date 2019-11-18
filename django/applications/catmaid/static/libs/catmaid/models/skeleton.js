@@ -12,6 +12,36 @@
   var Skeletons = {
 
     /**
+     * Get base names for a list of skeletons, optionally from a remote API.
+     */
+    getNames: function(projectId, skeletonIds, api = undefined) {
+      return CATMAID.fetch({
+        url: projectId + '/skeleton/neuronnames',
+        method: 'POST',
+        data: {
+          skids: skeletonIds,
+        },
+        api: api,
+      });
+    },
+
+    getNodeCount: function(projectId, skeletonId, api = undefined) {
+      return CATMAID.fetch({
+        url: `${projectId}/skeleton/${skeletonId}/node_count`,
+        method: 'POST',
+        api: api,
+      });
+    },
+
+    getNodeCountFromTreenode: function(projectId, treenodeId, api = undefined) {
+      return CATMAID.fetch({
+        url: `${projectId}/skeleton/node/${treenodeId}/node_count`,
+        method: 'POST',
+        api: api,
+      });
+    },
+
+    /**
      * Split a skeleton at a specific treenodes.
      *
      * @param {State}   state      Neighborhood state for node
@@ -21,11 +51,12 @@
      *                                     IDs for the upstream split part.
      * @param {object}  upstream_annot_map Map of annotation names vs annotator
      *                                     IDs for the downstream split part.
+     * @param {API}      api       (optional) The CATMAID API to talk to.
      *
      * @returns A new promise that is resolved once the skeleton is split.
      */
     split: function(state, projectId, treenodeId,
-        upstream_annot_map, downstream_annot_map) {
+        upstream_annot_map, downstream_annot_map, api = undefined) {
 
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to split skeletons');
@@ -37,7 +68,12 @@
         state: state.makeNeighborhoodState(treenodeId)
       };
 
-      return CATMAID.fetch(url, 'POST', params).then((function(json) {
+      return CATMAID.fetch({
+        url: url,
+        method: 'POST',
+        data: params,
+        api: api,
+      }).then((function(json) {
         this.trigger(CATMAID.Skeletons.EVENT_SKELETON_SPLIT,
             json.new_skeleton_id,
             json.existing_skeleton_id,
@@ -65,11 +101,12 @@
      *                                    will add a new annotation to the
      *                                    target neuron, that is a refernce to
      *                                    the merged in neuron. By default false.
+     * @param {API}      api          (optional) The CATMAID API to talk to.
      *
      * @returns A new promise that is resolved once both skeletons are joined.
      */
     join: function(state, projectId, fromId, toId, annotationSet,
-        samplerHandling, fromNameReference = false) {
+        samplerHandling, fromNameReference = false, api = undefined) {
 
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to join skeletons');
@@ -93,7 +130,12 @@
         params.from_name_reference = fromNameReference;
       }
 
-      return CATMAID.fetch(url, 'POST', params).then((function(json) {
+      return CATMAID.fetch({
+          url: url,
+          method: 'POST',
+          data: params,
+          api: api,
+      }).then((function(json) {
         // Trigger join, delete and change events
         CATMAID.Skeletons.trigger(
             CATMAID.Skeletons.EVENT_SKELETONS_JOINED, json.deleted_skeleton_id,
@@ -634,13 +676,15 @@
    *                                     IDs for the upstream split part.
    * @param {object}  upstream_annot_map Map of annotation names vs annotator
    *                                     IDs for the downstream split part.
+   * @param {API}     api         (optional) The CATMAID API to talk to.
    */
   CATMAID.SplitSkeletonCommand = CATMAID.makeCommand(
-      function(state, projectId, treenodeId, upstream_annot_map, downstream_annot_map) {
+      function(state, projectId, treenodeId, upstream_annot_map, downstream_annot_map, api = undefined) {
 
     var exec = function(done, command, map) {
       var split = CATMAID.Skeletons.split(state,
-          project.id, treenodeId, upstream_annot_map, downstream_annot_map);
+          project.id, treenodeId, upstream_annot_map, downstream_annot_map,
+          api);
       return split.then(function(result) {
         done();
         return result;
@@ -673,14 +717,15 @@
      *                                    will add a new annotation to the
      *                                    target neuron, that is a refernce to
      *                                    the merged in neuron. By default false.
+     * @param {API}     api           (optional) The CATMAID API to talk to.
    */
   CATMAID.JoinSkeletonsCommand = CATMAID.makeCommand(
       function(state, projectId, fromId, toId, annotationSet, samplerHandling,
-        fromNameReference) {
+        fromNameReference, api = undefined) {
 
     var exec = function(done, command, map) {
       var join = CATMAID.Skeletons.join(state, project.id, fromId, toId,
-          annotationSet, samplerHandling, fromNameReference);
+          annotationSet, samplerHandling, fromNameReference, api);
       return join.then(function(result) {
         done();
         return result;

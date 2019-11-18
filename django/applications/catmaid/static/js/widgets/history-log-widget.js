@@ -288,16 +288,21 @@
               range_start: data.start,
               range_length: data.length
             };
-            CATMAID.fetch(project.id +  "/transactions/", "GET", params)
-              .then(function(result) {
-                callback({
-                  draw: data.draw,
-                  recordsTotal: result.total_count,
-                  recordsFiltered: result.total_count,
-                  data: result.transactions
-                });
-              })
-              .catch(CATMAID.handleError);
+            CATMAID.fetch({
+              url: project.id +  "/transactions/",
+              method: "GET",
+              data: params,
+              parallel: true,
+            })
+            .then(result => {
+              callback({
+                draw: data.draw,
+                recordsTotal: result.total_count,
+                recordsFiltered: result.total_count,
+                data: result.transactions
+              });
+            })
+            .catch(CATMAID.handleError);
           },
           order: [],
           columns: [

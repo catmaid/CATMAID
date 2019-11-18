@@ -2034,7 +2034,7 @@
         }
 
         // Register with the neuron name service and fetch the skeleton data
-        return CATMAID.NeuronNameService.getInstance().registerAll(this, models)
+        return CATMAID.NeuronNameService.registerAll(this, models)
           .then(function() {
             if (self.hasActiveFilters()) {
               return self.insertIntoNodeWhitelist(models);

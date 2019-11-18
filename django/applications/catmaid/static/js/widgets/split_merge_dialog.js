@@ -19,8 +19,14 @@
     // Sampler handling
     this.samplerHandling = 'domain-end';
 
+    // Whether data will be loaded manually into the 3D viewer
+    this.manualLoading = options.manualLoading === undefined ? false : options.manualLoading;
+    this.nodeProvider = options.nodeProvider;
+
     // Whether or not swapping is enabled
-    this.swapEnabled = true;
+    this.swapEnabled = options.swapEnabled === undefined ? true : options.swapEnabled;
+
+    this.initialTitle = options.title;
 
     // Models object
     this.models = {};
@@ -41,8 +47,9 @@
     // Basic dialog setup
     CATMAID.Confirmation3dDialog.call(this, {
       id: "skeleton-split-merge-dialog",
-      title: this.in_merge_mode ? "Merge skeletons" : "Split skeletons",
+      title: options.title || (this.in_merge_mode ? "Merge skeletons" : "Split skeletons"),
       close: options.close,
+      buttons: options.buttons,
     });
   };
 
@@ -188,8 +195,8 @@
     };
 
     // Get all annotations for a skeleton and fill the list boxes
-    var add_annotations_fn = function(skid, listboxes, disable_unpermitted) {
-      CATMAID.Annotations.forSkeleton(project.id, skid).then(function(annotations) {
+    var add_annotations_fn = function(skid, listboxes, disable_unpermitted, api) {
+      CATMAID.Annotations.forSkeleton(project.id, skid, api).then(function(annotations) {
             // Create annotation check boxes
             annotations.forEach(function(aobj) {
               var create_cb = function(a_info, checked) {
@@ -279,9 +286,11 @@
               this.webglapp.render();
             }).bind(this));
 
-        var title = 'Merge skeleton "' + losingModel.baseName +
-          '" into "' + winningModel.baseName + '"';
-        $(this.dialog).dialog('option', 'title', title);
+        if (!this.initialTitle) {
+          var title = 'Merge skeleton "' + losingModel.baseName +
+            '" into "' + winningModel.baseName + '"';
+          $(this.dialog).dialog('option', 'title', title);
+        }
 
         // Update titles and name winning model first
         titleBig.appendChild(document.createTextNode(Math.round(over_length) +
@@ -302,8 +311,8 @@
             `Merged: ${losingModel.baseName} (reference to merged in neuron)`);
         big.appendChild(cb, checked);
         // Add annotations
-        add_annotations_fn(this.over_model_id, [{obj: big, checked: true}], true);
-        add_annotations_fn(this.under_model_id, [{obj: small, checked: true}], true);
+        add_annotations_fn(this.over_model_id, [{obj: big, checked: true}], true, this.models[this.over_model_id].api);
+        add_annotations_fn(this.under_model_id, [{obj: small, checked: true}], true, this.models[this.under_model_id].api);
       } else {
         var skeleton = this.webglapp.space.content.skeletons[this.model1_id],
             arbor = skeleton.createArbor(),
@@ -489,7 +498,7 @@
           }).bind(this))
           .catch(CATMAID.handleError);
       }
-    }).bind(this));
+    }).bind(this), this.nodeProvider);
 
     var self = this;
     var firstButton = this.customOptions.firstChild;

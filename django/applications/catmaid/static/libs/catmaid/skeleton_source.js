@@ -244,6 +244,19 @@
    */
   SkeletonSource.prototype.loadSource = function(silent) {
     var models = CATMAID.skeletonListSources.getSelectedSkeletonModels(this);
+
+    if (!this.supportsRemoteSkeletons) {
+      let nRemovedRemotes = 0;
+      for (let skeletonId in models) {
+        if (models[skeletonId].isRemote) {
+          delete models[skeletonId];
+          ++nRemovedRemotes;
+        }
+      }
+      if (nRemovedRemotes > 0) {
+        CATMAID.info(`${nRemovedRemotes} remote skeletons dropped, the target doesn't support remote data`);
+      }
+    }
     var numModels = Object.keys(models).length;
     if (0 === numModels) {
       if (!silent) {

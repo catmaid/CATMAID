@@ -2575,7 +2575,9 @@
       this.navigator.unregister(this, this.current_skid);
     }
 
-    this.current_skid = SkeletonAnnotations.getActiveSkeletonId();
+    if (!SkeletonAnnotations.atn.isRemote()) {
+      this.current_skid = SkeletonAnnotations.getActiveSkeletonId();
+    }
 
     if (this.navigator && this.current_skid) {
         this.navigator.register(this, this.current_skid);

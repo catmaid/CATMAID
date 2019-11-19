@@ -168,11 +168,8 @@
             }
           });
       } else {
-        // No url: direct async execution with last result (consistent behavior
-        // with request above). Synronous execution can lead to surprising
-        // execution plans when otherwise async continuations are involved
-        // (like after calling promise()).
-        return Promise.resolve().then(() => invoke(q, lastResult));
+        // No url: direct execution with last result
+        invoke(q, lastResult);
       }
     };
 

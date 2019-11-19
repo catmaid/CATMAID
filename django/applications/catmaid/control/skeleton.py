@@ -3136,7 +3136,9 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
     # Set parent node ID
     for n, nbrs in arborescence.adjacency_iter():
         for nbr in nbrs:
-            arborescence.node[nbr]['parent_id'] = arborescence.node[n]['id']
+            # FIXME: the cast here and below in the SQL (::bigint) shouldn't be
+            # needed
+            arborescence.node[nbr]['parent_id'] = int(arborescence.node[n]['id'])
             if not 'radius' in arborescence.node[nbr]:
                 arborescence.node[nbr]['radius'] = -1
     arborescence.node[root]['parent_id'] = None
@@ -3157,7 +3159,7 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
                 location_x = v.x,
                 location_y = v.y,
                 location_z = v.z,
-                parent_id = v.parent_id,
+                parent_id = v.parent_id::bigint,
                 radius = v.radius,
                 user_id = v.user_id,
                 creation_time = v.creation_time,

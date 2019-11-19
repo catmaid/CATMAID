@@ -2898,6 +2898,16 @@ def import_skeleton_eswc(user, project_id, swc_string, neuron_id=None,
         if len(row) != 12:
             raise ValueError(f'eSWC has a malformed line ({len(row)} instead of 12 columns): {line}')
 
+        if row[7] not in user_map:
+            # Create deactivated user with this username
+            new_creator = User.objects.create(username=row[7], is_active=False)
+            user_map[row[7]] = new_creator.id
+
+        if row[9] not in user_map:
+            # Create deactivated user with this username
+            new_editor = User.objects.create(username=row[9], is_active=False)
+            user_map[row[9]] = new_editor.id
+
         node_id = int(row[0])
         parent_id = int(row[6])
         g.add_node(node_id, {

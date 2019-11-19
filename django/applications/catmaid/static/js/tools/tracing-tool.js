@@ -310,7 +310,8 @@
         spanName.appendChild(document.createTextNode(""));
         activeElement.appendChild(spanName);
         stackFrame.appendChild(activeElement);
-        setActiveElemenTopBarText(SkeletonAnnotations.getActiveSkeletonId());
+        setActiveElemenTopBarText(SkeletonAnnotations.getActiveProjectId(), SkeletonAnnotations.getActiveSkeletonId(),
+            undefined, SkeletonAnnotations.getActiveSkeletonAPI());
       }
 
       return layer;
@@ -498,7 +499,7 @@
      * Set the text in the small bar next to the close button of each stack
      * viewer to the name of the skeleton as it is given by the nameservice.
      */
-    function setActiveElemenTopBarText(skeletonId, prefix, api) {
+    function setActiveElemenTopBarText(projectId, skeletonId, prefix, api) {
       if (!skeletonId) {
         clearTopbars();
         return;
@@ -529,7 +530,7 @@
         });
 
         var models = {};
-        models[skeletonId] = {};
+        models[skeletonId] = new CATMAID.SkeletonModel(skeletonId, undefined, undefined, api, projectId);
         CATMAID.NeuronNameService.getInstance(api).registerAll(label.data(), models)
           .then(() => {
             let name = CATMAID.NeuronNameService.getInstance(api).getName(skeletonId) || '?';
@@ -598,25 +599,28 @@
       // layer, update the active tracing layer.
       setActiveTracingLayer(node);
 
+      let projectId = node.project_id === undefined ? project.id : node.project_id;
+
       let isLocal = !SkeletonAnnotations.getActiveSkeletonAPI();
       self.lastSkeletonId = self.currentSkeletonId;
       self.currentSkeletonId = null;
       if (node && node.id) {
         if (SkeletonAnnotations.TYPE_NODE === node.type) {
           if (skeletonChanged) {
-            setActiveElemenTopBarText(node.skeleton_id, undefined, api);
+            setActiveElemenTopBarText(projectId, node.skeleton_id, undefined, api);
           }
           self.currentSkeletonId = node.skeleton_id;
         } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
           if (CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR === node.subtype) {
             // Retrieve presynaptic skeleton
-            CATMAID.fetch(project.id + "/connector/skeletons", "POST", {
-              connector_ids: [node.id]
+            CATMAID.fetch(projectId + "/connector/skeletons", "POST", {
+              connector_ids: [node.id],
+              api: api,
             })
             .then(function(json) {
               var presynaptic_to = json[0] ? json[0][1].presynaptic_to : false;
               if (presynaptic_to) {
-                setActiveElemenTopBarText(presynaptic_to, 'Connector ' +
+                setActiveElemenTopBarText(projectId, presynaptic_to, 'Connector ' +
                     node.id + ', presynaptic partner: ', api);
               } else {
                 clearTopbars('Connector ' + node.id + ' (no presynatpic partner)');

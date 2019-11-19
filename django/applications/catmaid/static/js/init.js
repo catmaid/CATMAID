@@ -48,6 +48,7 @@ var project;
   CATMAID.asEventSource(CATMAID.Init);
   CATMAID.Init.EVENT_PROJECT_CHANGED = "init_project_changed";
   CATMAID.Init.EVENT_USER_CHANGED = "init_user_changed";
+  CATMAID.Init.EVENT_KNOWN_REMOTES_CHANGED = "init_remotes_changed";
 
   /**
    * A menu showing available data views.

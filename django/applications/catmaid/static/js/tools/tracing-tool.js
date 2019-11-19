@@ -453,6 +453,8 @@
           handleActiveNodeChange, this);
       SkeletonAnnotations.off(SkeletonAnnotations.EVENT_INTERACTION_MODE_CHANGED,
           this.handleChangedInteractionMode, this);
+      CATMAID.Init.off(CATMAID.Init.EVENT_KNOWN_REMOTES_CHANGED,
+          this.handleKnownRemotesChange, this);
 
       project.getStackViewers().forEach(function(stackViewer) {
         closeStackViewer(stackViewer);
@@ -1947,6 +1949,9 @@
     // If the interation mode changes, update the UI
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_INTERACTION_MODE_CHANGED,
         this.handleChangedInteractionMode, this);
+
+    CATMAID.Init.on(CATMAID.Init.EVENT_KNOWN_REMOTES_CHANGED,
+        this.handleKnownRemotesChange, this);
   }
 
   /**
@@ -1970,6 +1975,10 @@
         document.getElementById("trace_button_synapse").className = "button_active";
         break;
     }
+  };
+
+  TracingTool.prototype.handleKnownRemotesChange = function(newRemotes) {
+    this.updateRemoteTracingInfo();
   };
 
   /**

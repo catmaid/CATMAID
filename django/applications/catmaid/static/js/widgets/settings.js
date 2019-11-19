@@ -2179,6 +2179,7 @@
               newList,
               SETTINGS_SCOPE)
             .then(function() {
+              CATMAID.Init.trigger(CATMAID.Init.EVENT_KNOWN_REMOTES_CHANGED, newList);
               updateComponentList();
             })
             .catch(CATMAID.handleError);
@@ -2272,6 +2273,7 @@
             newList,
             SETTINGS_SCOPE)
           .then(function() {
+            CATMAID.Init.trigger(CATMAID.Init.EVENT_KNOWN_REMOTES_CHANGED, newList);
             updateComponentList();
             newRemoteNameInput.find('input').val('');
             newRemoteNameUrlInput.find('input').val('');

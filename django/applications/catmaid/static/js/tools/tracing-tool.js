@@ -1681,15 +1681,17 @@
         if (self.peekingSkeleton) return;
 
         var skid = null;
-        let api;
+        let api, projectId;
         if (e.shiftKey) {
           skid = SkeletonAnnotations.getActiveSkeletonId();
           api = SkeletonAnnotations.getActiveSkeletonAPI();
+          projectId = SkeletonAnnotations.getActiveProjectId();
         } else {
           var match = self.getClosestNode(100.0);
           if (match) {
             skid = match.node.skeleton_id;
             api = match.api;
+            projectId = match.projectId === undefined ? project.id : match.projectId;
           }
         }
 
@@ -1701,7 +1703,8 @@
             skid,
             undefined,
             new THREE.Color(CATMAID.TracingOverlay.Settings.session.active_node_color),
-            api);
+            api,
+            projectId);
         var viewersWithoutSkel = Array.from(WindowMaker.getOpenWindows('3d-viewer', true).values())
             .filter(function (viewer) { return !viewer.hasSkeleton(skid); });
 
@@ -1729,7 +1732,7 @@
             } else {
               viewer.render();
             }
-          }, apiNodeProvider);
+          }, apiNodeProvider, projectId);
         });
 
         // Set a key up a listener to remove the skeleton from these viewers

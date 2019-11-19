@@ -1901,7 +1901,7 @@ var SkeletonAnnotations = {};
       }
     }
     return nearestnode ?
-        {id: nearestnode.id, node: nearestnode, distsq: mindistsq, api: this.api} :
+        {id: nearestnode.id, node: nearestnode, distsq: mindistsq, api: this.api, projectId: this.projectId} :
         null;
   };
 

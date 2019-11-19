@@ -2009,7 +2009,8 @@
   };
 
   /** Fetch skeletons one by one, and render just once at the end. */
-  WebGLApplication.prototype.addSkeletons = function(models, callback, nodeProvider) {
+  WebGLApplication.prototype.addSkeletons = function(models, callback, nodeProvider, projectId) {
+    projectId = projectId === undefined ? project.id : projectId;
     // Handle multiple skeleton additions sequentially
     var prepare;
     if (this._activeLoading) {
@@ -2041,7 +2042,7 @@
             }
           })
           .then(function() {
-            return nodeProvider.get(project.id, missingSkeletonIds, {
+            return nodeProvider.get(projectId, missingSkeletonIds, {
                 with_tags: !lean,
                 with_connectors: !lean,
                 with_history: false

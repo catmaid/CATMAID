@@ -2075,7 +2075,10 @@ var project;
             CATMAID.Project.createFork(project.id, newName)
               .then(result => {
                   switchToNewProject(result.new_project_id);
-                  return CATMAID.client.updateProjects();
+                  return Promise.all([
+                    CATMAID.client.updateProjects(),
+                    CATMAID.updatePermissions(),
+                  ]);
               })
               .catch(CATMAID.handleError);
           },

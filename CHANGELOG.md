@@ -281,6 +281,12 @@ Neuroglancer widget:
 - The widget's info page has a step-by-step guide on how to use it for the
   FAFB dataset
 
+Spaces:
+
+- Users with the new "can_fork" permission have a new user menu entry in the
+  upper right corner: "Create own space". This allows to create a personal copy
+  of a project, without any tracing data.
+
 Miscellaneous:
 
 - Projects can now be kept open if all last stack-viewers are closed. To not

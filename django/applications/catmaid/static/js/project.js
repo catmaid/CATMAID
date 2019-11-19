@@ -24,7 +24,7 @@
    * @class
    * @param {number} pid  API ID of this CATMAID project.
    */
-  function Project( pid ) {
+  function Project(pid, title) {
 
     this.interpolatableSections = {
       'x': [],
@@ -614,6 +614,19 @@
     }
 
     return projects;
+  };
+
+  /**
+   * Create a fork of this project with this name.
+   */
+  Project.createFork = function(projectId, name) {
+    return CATMAID.fetch({
+      url: `${projectId}/fork`,
+      method: 'POST',
+      data: {
+        name: name,
+      }
+    });
   };
 
   Project.createRelativeURL = function(projectId, x, y, z, tool, activeNodeId,

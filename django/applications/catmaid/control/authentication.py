@@ -154,6 +154,8 @@ def check_user_role(user, project, roles) -> bool:
                 has_role = checker.has_perm('can_annotate', project)
             elif role == UserRole.Browse:
                 has_role = checker.has_perm('can_browse', project)
+            elif role == UserRole.Fork:
+                has_role = checker.has_perm('can_fork', project)
             elif role == UserRole.Import:
                 has_role = checker.has_perm('can_import', project)
             elif role == UserRole.QueueComputeTask:

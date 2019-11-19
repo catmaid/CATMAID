@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import yaml
 
 from guardian.shortcuts import get_objects_for_user
+from guardian.shortcuts import assign_perm
 
 from django.db import connection
 from django.db.models import Exists, OuterRef
@@ -534,4 +535,44 @@ def interpolatable_sections(request:HttpRequest, project_id) -> JsonResponse:
         'x': coords[2],
         'y': coords[1],
         'z': coords[0]
+    })
+
+
+@api_view(['POST'])
+@requires_user_role(UserRole.Fork)
+def fork(request:HttpRequest, project_id) -> JsonResponse:
+    """Attempt to create a new project based on the passed in project ID.
+    ---
+    parameters:
+    - name: name
+      description: Name of new project
+      required: true
+      type: string
+    """
+    name = request.POST.get('name')
+    if not name:
+        raise ValueError('Need new project name')
+
+    current_p = get_object_or_404(Project, pk=project_id)
+    new_p = get_object_or_404(Project, pk=project_id)
+
+    new_p.id = None
+    new_p.title = name
+    new_p.save()
+
+    # Copy all project-stack links
+    ps_links = ProjectStack.objects.filter(project=current_p)
+    for ps in ps_links:
+        ps.id = None
+        ps.project = new_p
+        ps.save()
+
+    # Assign read/write/import permissions for new fork
+    assign_perm('can_browse', request.user, new_p)
+    assign_perm('can_annotate', request.user, new_p)
+    assign_perm('can_import', request.user, new_p)
+
+    return JsonResponse({
+        'new_project_id': new_p.id,
+        'n_copied_stack_links': len(ps_links),
     })

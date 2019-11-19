@@ -246,6 +246,8 @@ var project;
           }
           // This should only applied the first time.
           CATMAID.client.contextHelpVisibilityEnforced = false;
+
+          CATMAID._updateUserMenu();
         });
   });
 
@@ -750,6 +752,8 @@ var project;
       }
     }
 
+    CATMAID._updateUserMenu();
+
     // update the edit tool actions and its div container
     var new_edit_actions = CATMAID.createButtonsFromActions(CATMAID.EditTool.actions,
       'toolbox_edit', '');
@@ -867,6 +871,34 @@ var project;
   // Publicly accessible session
   CATMAID.session = null;
 
+  CATMAID._updateUserMenu = function() {
+      let userMenuItems = {
+        "user_menu_entry_1": {
+          action: CATMAID.makeURL("user/password_change/"),
+          title: "Change password",
+          note: "",
+        },
+        "user_menu_entry_2": {
+          action: CATMAID.getAuthenticationToken,
+          title: "Get API token",
+          note: ""
+        }
+      };
+
+      // If users are allowed to create new spaces, add the respective menu
+      // entry
+      let s = CATMAID.session;
+      let canForkProjects = s.is_authenticated || (s.permissions && -1 !== s.permissions.indexOf('catmaid.can_fork'));
+      if (project && canForkProjects) {
+        userMenuItems["user_menu_entry_3"] = {
+          title: "Create own space",
+          note: "",
+          action: () => CATMAID.forkCurrentProject(),
+        };
+      }
+      user_menu.update(userMenuItems);
+  };
+
   /**
    * Handle an updated session, typically as a reaction to a login or logout
    * action.
@@ -895,18 +927,7 @@ var project;
       document.getElementById("message_box").style.display = "block";
 
       // Update user menu
-      user_menu.update({
-        "user_menu_entry_1": {
-          action: CATMAID.makeURL("user/password_change/"),
-          title: "Change password",
-          note: "",
-        },
-        "user_menu_entry_2": {
-          action: CATMAID.getAuthenticationToken,
-          title: "Get API token",
-          note: ""
-        }
-      });
+      CATMAID._updateUserMenu();
 
       edit_domain_timeout = window.setTimeout(CATMAID.client.refreshEditDomain,
                                               EDIT_DOMAIN_TIMEOUT_INTERVAL);
@@ -1426,6 +1447,7 @@ var project;
 
   Client.prototype._handleProjectDestroyed = function() {
     this.updateContextHelp(true);
+    CATMAID._updateUserMenu();
   };
 
   Client.prototype._handleRequestStart = function() {
@@ -2002,6 +2024,69 @@ var project;
   };
 
   /**
+   * Attempt to fork the passed in project.
+   */
+  CATMAID.forkCurrentProject = function() {
+    if (!CATMAID.mayFork()) {
+      CATMAID.warn("You don't have the required permissions to create your own space");
+      return;
+    }
+
+    CATMAID.Project.list()
+      .then(projects => {
+        let projectDetails = projects.reduce((o,p) => p.id === project.id ? p : o, undefined);
+        if (!projectDetails) {
+          throw new CATMAID.ValueError(`Could not find details on current project ID: ${project.id}`);
+        }
+        let [x, y, z] = [project.coordinates.x, project.coordinates.y, project.coordinates.z];
+        let s = project.focusedStackViewer.s;
+        let nSpaces = projects.length;
+        let newName = `Space #${nSpaces + 1} - ${projectDetails.title}`;
+
+        let switchToNewProject = function(newProjectId) {
+          let switchDialog = new CATMAID.OptionsDialog("Switch to new project?");
+          switchDialog.appendMessage(`Your new project has been created successfully, it has has ID ${newProjectId}. Do you want to switch to it? It is also visible from the front page views and the project menu.`);
+          switchDialog.onOK = function() {
+            // Open new space
+            let stackId = project.focusedStackViewer.primaryStack.id;
+            CATMAID.openProjectStack(newProjectId, stackId)
+              .then(stackViewer => {
+                stackViewer.moveTo(z, y, x, s);
+                CATMAID.msg("Success", "Opened newly created space");
+              })
+              .catch(CATMAID.handleError);
+          };
+
+          switchDialog.show(400, 'auto');
+        };
+
+        let confirmationDialog = new CATMAID.OptionsDialog("Create own copy of project", {
+          'Create copy': () => {
+            newName = nameField.value.trim();
+            if (newName.length === 0) {
+              throw new CATMAID.Warning('Empty name not allowed');
+            }
+            CATMAID.Project.createFork(project.id, newName)
+              .then(result => {
+                  switchToNewProject(result.new_project_id);
+                  return CATMAID.client.updateProjects();
+              })
+              .catch(CATMAID.handleError);
+          },
+          'Cancel': () => {
+            //
+          }
+        });
+        confirmationDialog.appendMessage("Please confirm the creation of the new space. Update the name if you like.");
+        var nameField = confirmationDialog.appendField("Name", undefined, newName);
+        nameField.size = 50;
+
+        return confirmationDialog.show(400, 'auto');
+      })
+      .catch(CATMAID.handleError);
+  };
+
+  /**
    * Initialize CATMAID.
    *
    * Check browser capabilities.
@@ -2059,6 +2144,10 @@ var project;
 
   CATMAID.mayView = function() {
     return checkPermission('can_annotate') || checkPermission('can_browse');
+  };
+
+  CATMAID.mayFork = function() {
+    return checkPermission('can_fork');
   };
 
   function checkPermission(p) {

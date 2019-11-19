@@ -1402,6 +1402,8 @@ var project;
         CATMAID.client.blazy.revalidate();
 
         self.current_dataview = dataview;
+
+        CATMAID._updateUserMenu();
       });
 
     // Make sure container is visible

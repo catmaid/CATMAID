@@ -212,7 +212,10 @@ var project;
       }
     });
 
-  CATMAID.Init.on(CATMAID.Init.EVENT_PROJECT_CHANGED, function () {
+  CATMAID.Init.on(CATMAID.Init.EVENT_PROJECT_CHANGED, function (project) {
+    // Update window title bar
+    document.title = `CATMAID - ${project.title}`;
+
     // Load user settings
     CATMAID.Client.Settings
         .load()
@@ -1850,7 +1853,7 @@ var project;
     }
     // If the stack's project is not the opened project, replace it.
     if (!(project && project.id == e.pid)) {
-      project = new CATMAID.Project(e.pid);
+      project = new CATMAID.Project(e.pid, e.ptitle);
       project.register();
       // Update all datastores to reflect the active project before triggering
       // any events. This is necessary so that settings are correct when

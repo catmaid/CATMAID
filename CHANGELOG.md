@@ -289,6 +289,8 @@ Spaces:
 
 Miscellaneous:
 
+- The active project title is now shown in the window title.
+
 - Projects can now be kept open if all last stack-viewers are closed. To not
   automatically close the open project with the last stack-viewer, uncheck the
   "Project closes with last stack viewer" option in the Settings Widget.

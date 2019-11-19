@@ -481,6 +481,7 @@
     // initialise
     var self = this;
     this.id = pid;
+    this.title = title;
 
     var tool = null;
 

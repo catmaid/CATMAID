@@ -56,6 +56,7 @@
     m.meta_visible = this.meta_visible;
     m.opacity = this.opacity;
     m.api = this.api;
+    m.projectId = this.projectId;
     return m;
   };
 

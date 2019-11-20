@@ -135,10 +135,9 @@
             <tbody> 
             </tbody> 
           </table>`;
-
-        $("select#" + this.idPrefix + "search-type").val(this.filter_nodetype);
       },
       init: function() {
+        this.setNodeTypeFilter(this.filter_nodetype);
         this.init(project.getId());
       }
     };
@@ -489,25 +488,39 @@
       }
     });
 
-    $('select#' + this.idPrefix + 'search-type').change((function() {
+    $('select#' + this.idPrefix + 'search-type').change(() => {
       this.filter_nodetype = $('select#' + this.idPrefix + 'search-type').val();
+      this.setNodeTypeFilter(this.filter_nodetype);
       this.oTable.column(1).search(this.filter_nodetype).draw();
-    }).bind(this));
+    });
 
     var confFilterSelector = $('.conf_filter');
 
     confFilterSelector.change(function() {
       var numbers = [1, 2, 3, 4, 5];
-      var number = document.getElementById(self.idPrefix + 'conf-number').value;
-      var operator = document.getElementById(self.idPrefix + 'conf-operator').value;
+      var numberElement = document.getElementById(self.idPrefix + 'conf-number');
+      var number = numberElement.value;
+      var operatorElement = document.getElementById(self.idPrefix + 'conf-operator');
 
       var regex;
 
-      switch (operator) {
+      switch (operatorElement.value) {
         case 'none': regex = '.*'; break;
         case 'eq': regex = String(number); break;
         case 'lt': regex = numbers.filter(function(item) {return item < number;}).join('|'); break;
         case 'gt': regex = numbers.filter(function(item) {return item > number;}).join('|'); break;
+      }
+
+      if (numberElement.value !== "") {
+        numberElement.classList.add('highlight');
+      } else {
+        numberElement.classList.remove('highlight');
+      }
+
+      if (operatorElement.value !== "none") {
+        operatorElement.classList.add('highlight');
+      } else {
+        operatorElement.classList.remove('highlight');
       }
 
       self.oTable.column(3).search(regex, true).draw();
@@ -541,7 +554,17 @@
 
   TreenodeTable.prototype.setNodeTypeFilter = function(value) {
     this.filter_nodetype = value;
-    $("select#" + this.idPrefix + "search-type").val(this.filter_nodetype);
+    let selectElement = document.querySelector(`select#${this.idPrefix}search-type`);
+    if (!selectElement) {
+      throw new CATMAID.ValueError("Could not find node type filter element");
+    }
+    selectElement.value = value;
+
+    if (value !== "") {
+      selectElement.classList.add('highlight');
+    } else {
+      selectElement.classList.remove('highlight');
+    }
   };
 
   // Export widget

@@ -18,6 +18,10 @@
     this.filter_searchtag = '';
     this.filter_nodeids = new Set();
 
+    // There is only limited functionality in this widget, remote support should
+    // be easy to maintain in its current form.
+    this.supportsRemoteSkeletons = true;
+
     this.treenodeViewer = null;
   };
 
@@ -138,7 +142,7 @@
       },
       init: function() {
         this.setNodeTypeFilter(this.filter_nodetype);
-        this.init(project.getId());
+        this.init();
       }
     };
   };
@@ -298,8 +302,9 @@
 
     fetchSkeletons(
         skeleton_ids,
-        function(skid) {
-          return `${project.id}/skeletons/${skid}/node-overview`;
+        (skid) => {
+          let projectId = CATMAID.tools.getDefined(this.models[skid].projectId, project.id);
+          return `${projectId}/skeletons/${skid}/node-overview`;
         },
         function(skid) { return {}; }, // post
         (function(skid, json) {
@@ -382,7 +387,9 @@
             this.oTable.columns(0).search('').draw();
           }
         }).bind(this),
-        'GET');
+        'GET',
+        false,
+        (skeletonId => this.models[skeletonId].api));
   };
 
   TreenodeTable.prototype.init = function() {

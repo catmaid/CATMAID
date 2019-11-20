@@ -72,7 +72,12 @@ InstanceRegistry.prototype.getLastInstance = function() {
  *
  * Additionally, when done if any skeletons don't exist anymore, a dialog will ask to remove them from all widgets that are skeleton sources.
  *
- * If no <method> parameter is passed in, POST is assumed.*/
+ * @param {String}       method  (Optional) The HTTP method to use. By default
+ *                               "POST" is used.
+ * @param {API|Function} api     (Optional) Either an API instance to use for
+ *                               all requested skeletons or a function that
+ *                               returns an API instance given a skeleton ID.
+ */
 var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne,
     fnFailedLoading, fnDone, method, binaryTransfer, api = undefined) {
   method = method || "POST";
@@ -99,7 +104,7 @@ var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne,
             data: fnPost(skeleton_id),
             responseType: (binaryTransfer ? 'arraybuffer' : undefined),
             decoder: binaryTransfer ? 'msgpack' : 'json',
-            api: api,
+            api: CATMAID.tools.isFn(api) ? api(skeleton_id) : api,
           })
           .then(data => {
             try {

@@ -308,6 +308,7 @@ class ViewPageTests(TestCase, AssertStatusMixin):
              'can_annotate_with_token': [],
              'change_project': [],
              'can_browse': [3],
+             'can_fork': [],
              'can_import': [],
              'can_queue_compute_task': [],
              'delete_project': [],

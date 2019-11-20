@@ -313,6 +313,11 @@ Miscellaneous:
   the default size. Also copied fields don't contain the content of the source
   field anymore.
 
+- Treenode table: the UI elements to select  active filter options like node
+  type, confidence or confidence operator now havea a colored background if an
+  active filter is selected. This is useful to draw more attention to the fact
+  that leaf nodes are selected by default.
+
 - Settings widget: it is now possible to clear both front-end and back-end
   settings through the "Clear settings" button. It will ask for confirmation and
   whether both front-end and back-end settings should be cleared.

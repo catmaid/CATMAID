@@ -398,7 +398,6 @@
       "paging": true,
       "lengthChange": true,
       "autoWidth": false,
-      "pageLength": 30,
       "lengthMenu": [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
       "jQueryUI": true,
       "deferRender": true,

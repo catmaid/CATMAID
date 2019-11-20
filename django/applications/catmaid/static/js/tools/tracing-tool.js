@@ -754,6 +754,7 @@
         if (e.altKey || e.ctrlKey || e.metaKey) return false;
         var modifier = e.shiftKey;
         var nodeId = SkeletonAnnotations.getActiveNodeId();
+        let projectId = SkeletonAnnotations.getActiveProjectId();
         if (null === nodeId) {
           alert('Must activate a treenode or connector before '
               + (modifier ? 'removing the tag' : 'tagging with') + ' "' + tag + '"!');
@@ -766,7 +767,7 @@
 
         // If any modifier key is pressed, remove the tag
         if (modifier) {
-          SkeletonAnnotations.Tag.removeATNLabel(tag, activeTracingLayer.tracingOverlay);
+          SkeletonAnnotations.Tag.removeATNLabel(projectId, tag, activeTracingLayer.tracingOverlay);
         } else {
           SkeletonAnnotations.Tag.tagATNwithLabel(tag, activeTracingLayer.tracingOverlay, false);
         }
@@ -1267,7 +1268,8 @@
            if (usePersonalTagSet) {
              // Delete personal tag set tags
              var removeRequests = personalTagSet.map(function(t) {
-               return SkeletonAnnotations.Tag.removeATNLabel(t, activeTracingLayer.tracingOverlay);
+               let projectId = SkeletonAnnotations.getActiveProjectId();
+               return SkeletonAnnotations.Tag.removeATNLabel(projectId, t, activeTracingLayer.tracingOverlay);
              });
              Promise.all(removeRequests)
                .catch(CATMAID.handleError);

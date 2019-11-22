@@ -4321,10 +4321,6 @@
     this.active_node.mesh.material.dispose();
   };
 
-  WebGLApplication.prototype.Space.prototype.Content.prototype.newMesh = function(geometry, material) {
-    return new THREE.Mesh(geometry, material);
-  };
-
   /** Adjust content according to the persistent options. */
   WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(options, space, submit) {
     this.active_node.mesh.material.depthTest = !options.active_node_on_top;

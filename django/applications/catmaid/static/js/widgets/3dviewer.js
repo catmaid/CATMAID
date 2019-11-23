@@ -3443,6 +3443,9 @@
 
     this.missing_sections = [];
 
+    // Maps ortho plane names to ortho plane Mesh instances.
+    this.orthoPlanes = new Map();
+
     // Shared across skeletons
     this.labelspheregeometry = new THREE.OctahedronGeometry(32, 3);
     this.radiusSphere = new THREE.OctahedronGeometry(10, 3);
@@ -3798,7 +3801,8 @@
   };
 
   WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createPlaneGeometry =
-      function (stack, tileSource, tileZoomLevel) {
+      function (stack, tileSource, tileZoomLevel, orientation = undefined) {
+    orientation = CATMAID.tools.getDefined(orientation, stack.orientation);
     var stackPlane = stack.createStackExtentsBox(),
         plane = stack.createStackToProjectBox(stackPlane),
         geometry, pDepth;
@@ -3808,7 +3812,7 @@
         planeDimSeq = minorDimSeq,
         seq, pWidth, pHeight;
 
-    switch (stack.orientation) {
+    switch (orientation) {
       case CATMAID.Stack.ORIENTATION_XY:
         pDepth = plane.max.z - plane.min.z;
         plane.min.z = plane.max.z = 0;
@@ -3834,7 +3838,7 @@
 
     if (tileSource && undefined !== tileZoomLevel) {
       var pTileWidth, pTileHeight;
-      switch (stack.orientation) {
+      switch (orientation) {
         case CATMAID.Stack.ORIENTATION_XY:
           pTileWidth = tileSource.tileWidth * stack.resolution.x;
           pTileHeight = tileSource.tileHeight * stack.resolution.y;
@@ -3858,7 +3862,7 @@
       var tileHeight = tileSource.tileHeight;
       var nHTiles = getNZoomedParts(stack.dimension.x, tileZoomLevel, tileWidth);
       var nVTiles = getNZoomedParts(stack.dimension.y, tileZoomLevel, tileHeight);
-      var transpose = tileSource.transposeTiles.has(stack.orientation);
+      var transpose = tileSource.transposeTiles.has(orientation);
 
       // Use THREE's plane geometry so that UVs and normals are set up aleady.
       var tilePlaneWidth = nHTiles * pTileWidth;
@@ -3946,7 +3950,7 @@
         geometry.vertices.push( new THREE.Vector3( plane[seq.x[i]].x,
               plane[seq.y[i]].y, plane[seq.z[i]].z ) );
       }
-      geometry.faces.push( new THREE.Face3( 0, 1, 2 ) );
+      geometry.faces.push( new THREE.Face3( 0, 2, 1 ) );
       geometry.faces.push( new THREE.Face3( 1, 2, 3 ) );
     }
 
@@ -4061,8 +4065,9 @@
     this.__notify();
   };
 
-  var setDepth = function(target, stack, source, stackOffset = 0, projectOffset = 0) {
-    switch (stack.orientation) {
+  var setDepth = function(target, stack, source, stackOffset = 0, projectOffset = 0, orientation = undefined) {
+    orientation = CATMAID.tools.getDefined(orientation, stack.orientation);
+    switch (orientation) {
       case CATMAID.Stack.ORIENTATION_XY:
         target.z = stack.stackToProjectZ(source.z + stackOffset, source.y, source.x) + projectOffset;
         break;
@@ -4074,6 +4079,50 @@
         break;
     }
     return target;
+  };
+
+  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.updateOrthoPlanePositions = function(
+      space, stack) {
+    if (!this.orthoPlanes || this.orthoPlanes.size === 0) {
+      return;
+    }
+    let p = stack.createStackToProjectBox(stack.createStackExtentsBox());
+
+    // Find reference stack position, add set location of current layer.
+    for (let [name, details] of this.orthoPlanes.entries()) {
+      let planeCenter = {
+        x: p.min.x + (p.max.x - p.min.x) * (1.0 - details.coverage.x) * 0.5,
+        y: p.min.y + (p.max.y - p.min.y) * (1.0 - details.coverage.y) * 0.5,
+        z: p.min.z + (p.max.z - p.min.z) * (1.0 - details.coverage.z) * 0.5,
+      };
+
+      // With reduced coverage, offset from stack center to real center.
+      if (1.0 - details.coverage.x > 0.0001) {
+        planeCenter.x += project.coordinates.x - (p.max.x - p.min.x) * 0.5;
+      }
+      if (1.0 - details.coverage.y > 0.0001) {
+        planeCenter.y += project.coordinates.y - (p.max.y - p.min.y) * 0.5;
+      }
+      if (1.0 - details.coverage.z > 0.0001) {
+        planeCenter.z += project.coordinates.z - (p.max.z - p.min.z) * 0.5;
+      }
+
+      switch (details.orientation) {
+        case CATMAID.Stack.ORIENTATION_XY:
+          planeCenter.z = CATMAID.tools.getDefined(details.fixedUpCoord, project.coordinates.z);
+          break;
+        case CATMAID.Stack.ORIENTATION_XZ:
+          planeCenter.y = CATMAID.tools.getDefined(details.fixedUpCoord, project.coordinates.y);
+          break;
+        case CATMAID.Stack.ORIENTATION_ZY:
+          planeCenter.x = CATMAID.tools.getDefined(details.fixedUpCoord, project.coordinates.x);
+          break;
+      }
+
+      for (let m of details.meshes) {
+        m.position.set(planeCenter.x, planeCenter.y, planeCenter.z);
+      }
+    }
   };
 
   WebGLApplication.prototype.Space.prototype.StaticContent.prototype.updateZPlanePosition = function(
@@ -4304,6 +4353,115 @@
     }, []);
   };
 
+  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.removeOrthoPlane = function(space, name) {
+    let plane = this.orthoPlanes.get(name);
+    if (plane) {
+      space.scene.remove.apply(space.scene, plane.meshes);
+    } else {
+      return false;
+    }
+    return true;
+  };
+
+  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.removeAllOrthoPlanes = function(space) {
+    let allRemoved = true;
+    for (let name of this.orthoPlanes.keys()) {
+      allRemoved = allRemoved && this.removeOrthoPlane(space, name);
+    }
+    return allRemoved;
+  };
+
+  /**
+   * Add a new plane that is aligned with one of the three orientations in the
+   * passed in stack. If a plane with the same name exists already, it is
+   * replaced.
+   *
+   * @param {Space}   space              The space to add the plane to.
+   * @param {String}  name               A unique name for the added plane. If a
+   *                                     plane with the same name exists, it
+   *                                     will be replaced.
+   * @param {Stack}   stack              The stack this plane is constrained by.
+   * @param {Object}  materialOpts       (Optional) The color, opacity, etc. of the plane.
+   * @param {Object}  borderMaterialOpts (Optional) The color and opacity of the
+   *                                     border of the plane.
+   * @param {Object}  coverage           (Optional) The percentage of area
+   *                                     covered by the respective dimension.
+   *                                     Has fields x, y and z. The plane is
+   *                                     centered in all dimensions.
+   * @param {String}  fixedUpCoord       (Optional) By default a plane is bound
+   *                                     to the current stack position. This can
+   *                                     be overriden by a fixed up orientaiton
+   *                                     coorinate (e.g. Z in XY orientation).
+   */
+  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createOrthoPlane = function(
+      space, name, stack, orientation = undefined, materialOpts = undefined, borderMaterialOpts = undefined,
+      coverage = {x: 1, y: 1, z: 1}, fixedUpCoord=undefined) {
+    this.removeOrthoPlane(space, name);
+
+    orientation = CATMAID.tools.getDefined(orientation, stack.orientation);
+
+    materialOpts = CATMAID.tools.getDefined(materialOpts, {
+        color: 0x151349,
+        opacity:0.6,
+    });
+
+    if (!materialOpts.hasOwnProperty('transparent')) {
+      materialOpts['transparent'] = true;
+    }
+
+    if (!materialOpts.hasOwnProperty('side')) {
+      materialOpts['side'] = THREE.DoubleSide;
+    }
+
+    if (materialOpts === null) {
+      materialOpts.visible = false;
+    }
+
+
+    borderMaterialOpts = CATMAID.tools.getDefined(borderMaterialOpts, {
+      color: 0x00ffff,
+    });
+
+    if (!borderMaterialOpts.hasOwnProperty('linewidth')) {
+      borderMaterialOpts.linewidth = 2;
+    }
+
+    if (!borderMaterialOpts.hasOwnProperty('transparent')) {
+      borderMaterialOpts['transparent'] = true;
+    }
+
+    if (!borderMaterialOpts.hasOwnProperty('side')) {
+      borderMaterialOpts['side'] = THREE.DoubleSide;
+    }
+
+    if (borderMaterialOpts === null) {
+      borderMaterialOpts.visible = false;
+    }
+
+    let planeGeometry = this.createPlaneGeometry(stack, undefined, undefined, orientation);
+    let edgeGeometry = new THREE.EdgesGeometry(planeGeometry);
+
+    let meshes = [
+      new THREE.Mesh(planeGeometry, new THREE.MeshBasicMaterial(materialOpts)),
+      new THREE.LineSegments(edgeGeometry, new THREE.LineBasicMaterial(borderMaterialOpts)),
+    ];
+
+    meshes[0].scale.set(coverage.x, coverage.y, coverage.z);
+    meshes[1].scale.set(coverage.x, coverage.y, coverage.z);
+
+    space.scene.project.add(meshes[0], meshes[1]);
+    this.orthoPlanes.set(name, {
+      meshes: meshes,
+      orientation: orientation,
+      fixedUpCoord: fixedUpCoord,
+      coverage: coverage,
+    });
+
+    this.updateOrthoPlanePositions(space, stack);
+
+    return meshes;
+  };
+
   /**
    * Constructor for an object that manages the content in a scene.
    */
@@ -4319,6 +4477,10 @@
   WebGLApplication.prototype.Space.prototype.Content.prototype.dispose = function() {
     this.active_node.mesh.geometry.dispose();
     this.active_node.mesh.material.dispose();
+  };
+
+  WebGLApplication.prototype.Space.prototype.Content.prototype.newMesh = function(geometry, material) {
+    return new THREE.Mesh(geometry, material);
   };
 
   /** Adjust content according to the persistent options. */
@@ -8353,6 +8515,7 @@
    */
   WebGLApplication.prototype.handlelLocationChange = function() {
     this.space.staticContent.updateZPlanePosition(this.space, project.focusedStackViewer);
+    this.space.staticContent.updateOrthoPlanePositions(this.space, project.focusedStackViewer.primaryStack);
     this.space.render();
   };
 
@@ -8960,13 +9123,16 @@
     return (rotation, frame) => {
       steps = Math.floor(frame / frameChangeRate);
       let offset = steps * changeStep;
-      return this.space.staticContent.updateZPlanePosition(this.space, project.focusedStackViewer, offset);
+      return Promise.all([
+        this.space.staticContent.updateZPlanePosition(this.space, project.focusedStackViewer, offset),
+      ]);
     };
   };
 
   WebGLApplication.prototype.createZPlaneResetHandler = function(visible, zLocation) {
     return () => {
       this.space.staticContent.updateZPlanePosition(this.space, project.focusedStackViewer);
+      this.space.staticContent.updateOrthoPlanePositions(this.space, project.focusedStackViewer.primaryStack);
       this.options.show_zplane = visible;
       this.adjustStaticContent();
     };

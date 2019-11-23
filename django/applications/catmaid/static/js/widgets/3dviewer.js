@@ -110,9 +110,6 @@
     this.initialized = true;
   };
 
-  // Store views in the prototype to make them available for all instances.
-  WebGLApplication.prototype.availableViews = {};
-
   WebGLApplication.prototype.getName = function() {
     return "3D View " + this.widgetID;
   };
@@ -1531,36 +1528,63 @@
    */
   WebGLApplication.prototype.storeCurrentView = function(name, callback) {
     if (!name) {
-      var dialog = new CATMAID.OptionsDialog("Store current view");
-      dialog.appendMessage('Please enter a name for the current view');
-      var n = this.getStoredViews().length + 1;
-      var nameField = dialog.appendField("Name: ", "new-view-name", 'View ' + n);
+      return new Promise((resolve, reject) => {
+        var dialog = new CATMAID.OptionsDialog("Store current view");
+        dialog.appendMessage('Please enter a name for the current view');
+        var n = this.getStoredViews().length + 1;
+        var nameField = dialog.appendField("Name: ", "new-view-name", 'View ' + n);
 
-      // Call this function with a name as parameter
-      dialog.onOK = (function() {
-        this.storeCurrentView(nameField.value, callback);
-      }).bind(this);
-      dialog.show(300, 200, true);
+        // Call this function with a name as parameter
+        dialog.onOK = () => {
+          this.storeCurrentView(nameField.value, callback);
+          resolve();
+        };
+
+        dialog.onCancel = () => {
+          reject(new CATMAID.CanceledByUser());
+        };
+
+        dialog.show(300, 200, true);
+      });
     } else {
       // Abort if a view with this name exists already
-      if (name in this.availableViews) {
+      if (name in CATMAID.WebGLApplication.Settings.session.available_views) {
         CATMAID.error("A view with the name \"" + name + "\" already exists.");
         return;
       }
-      // Store view
-      this.availableViews[name] = this.space.view.getView();
 
-      if (callback) {
-        callback();
-      }
+      // Store view
+      let views = CATMAID.tools.deepCopy(CATMAID.WebGLApplication.Settings.session.available_views);
+      views[name] = this.space.view.getView();
+      let result = CATMAID.WebGLApplication.Settings.set('available_views', views, 'session');
+      result.then(() => {
+        if (callback) {
+          callback();
+        }
+      });
+      return result;
     }
+  };
+
+  /**
+   * Remove the stored view with the passed in name.
+   */
+  WebGLApplication.prototype.removeStoredView = function(name) {
+    if (!(name in CATMAID.WebGLApplication.Settings.session.available_views)) {
+      throw new CATMAID.ValueError(`No view with "${name}" found.`);
+    }
+
+    // Store view
+    let views = CATMAID.tools.deepCopy(CATMAID.WebGLApplication.Settings.session.available_views);
+    delete views[name];
+    return CATMAID.WebGLApplication.Settings.set('available_views', views, 'session');
   };
 
   /**
    * Return the list of stored views.
    */
   WebGLApplication.prototype.getStoredViews = function() {
-    return Object.keys(this.availableViews);
+    return Object.keys(CATMAID.WebGLApplication.Settings.session.available_views).sort(CATMAID.tools.compareStrings);
   };
 
   /**
@@ -1570,12 +1594,12 @@
    * @param {String} name - name of the view to activate
    */
   WebGLApplication.prototype.activateView = function(name) {
-    if (!(name in this.availableViews)) {
+    if (!(name in CATMAID.WebGLApplication.Settings.session.available_views)) {
       CATMAID.error("There is no view named \"" + name + "\"!");
       return;
     }
     // Activate view by executing the stored function
-    var view = this.availableViews[name];
+    var view = CATMAID.WebGLApplication.Settings.session.available_views[name];
     this.space.view.setView(view.target, view.position, view.up, view.zoom,
         view.orthographic);
     // Update options
@@ -9652,6 +9676,18 @@
 
     dialog.show(400, 300, false);
   };
+
+  WebGLApplication.Settings = new CATMAID.Settings(
+      '3d-viewer',
+      {
+        version: 1,
+        entries: {
+          available_views: {
+            // Maps view names to view configurations.
+            default: {},
+          },
+        },
+      });
 
   var fieldCoordMapping = {
     'interpolated_sections_x': 'x',

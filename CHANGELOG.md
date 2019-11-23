@@ -268,6 +268,10 @@ Neuron navigator:
   visible. The new coloring mode "Imported (green)" will highlight all imported
   fragments in green.
 
+- Stored views (View tab > Save view) are now shared between all CATMAID
+  instances, not only between all 3D Viewers like it is done now. This means
+  they are also persisted on the back-end and can be retrieved at a later point.
+
 Neuroglancer widget:
 
 - CATMAID now includes a copy of Neuroglancer that can be accessed at

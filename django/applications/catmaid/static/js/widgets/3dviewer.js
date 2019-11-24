@@ -4473,6 +4473,14 @@
     meshes[0].scale.set(coverage.x, coverage.y, coverage.z);
     meshes[1].scale.set(coverage.x, coverage.y, coverage.z);
 
+    // If a plane is transparent, we want to see everything that is behind it
+    // and have to render it therefore before the plane. Objects that need to
+    // appear in front of the plane need to rendered again in a second pass. If
+    // the plane is not transparent, it needs to be renderede together with all
+    // other objects to have the correct relative position to everything.
+    meshes[0].renderOrder = meshes[0].material.transparent ? 1 : 0;
+    meshes[1].renderOrder = meshes[1].material.transparent ? 1 : 0;
+
     space.scene.project.add(meshes[0], meshes[1]);
     this.orthoPlanes.set(name, {
       meshes: meshes,

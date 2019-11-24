@@ -1359,12 +1359,17 @@
       }, new WebGLApplication.prototype.Options());
   };
 
-  WebGLApplication.prototype.Options.prototype.createMeshMaterial = function(color, opacity) {
+  WebGLApplication.prototype.Options.prototype.createMeshMaterial = function(color, opacity, depthWrite = undefined) {
     color = color || new THREE.Color(this.meshes_color);
     if (typeof opacity === 'undefined') opacity = this.meshes_opacity;
-    return new THREE.MeshLambertMaterial({color: color, opacity: opacity,
-      transparent: opacity !== 1, wireframe: !this.meshes_faces, side: THREE.DoubleSide,
-      depthWrite: opacity === 1});
+    return new THREE.MeshLambertMaterial({
+      color: color,
+      opacity: opacity,
+      transparent: opacity !== 1,
+      wireframe: !this.meshes_faces,
+      side: THREE.DoubleSide,
+      depthWrite: depthWrite === undefined ? opacity === 1 : depthWrite,
+    });
   };
 
   WebGLApplication.prototype.Options.prototype.createLandmarkGroupMaterial = function(color, opacity) {

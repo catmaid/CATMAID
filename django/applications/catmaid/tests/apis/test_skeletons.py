@@ -4,14 +4,14 @@ from io import StringIO
 import json
 import platform
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict
 from unittest import skipIf
 
 from django.shortcuts import get_object_or_404
 from guardian.shortcuts import assign_perm
 
 from catmaid.models import (
-    ClassInstance, ClassInstanceClassInstance, Log, Review, Treenode, TreenodeConnector, ReviewerWhitelist, Treenode, User
+    ClassInstance, ClassInstanceClassInstance, Log, Review, TreenodeConnector, ReviewerWhitelist, Treenode, User
 )
 
 from .common import CatmaidApiTestCase
@@ -44,7 +44,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
 
     def compare_eswc_data(self, s1, s2):
         def swc_string_to_sorted_matrix(s):
-            m = [re.split("\s+", x) for x in s.splitlines() if not re.search('^\s*(#|$)', x)]
+            m = [re.split(r"\s+", x) for x in s.splitlines() if not re.search(r'^\s*(#|$)', x)]
             return sorted(m, key=lambda x: x[0])
 
         m1 = swc_string_to_sorted_matrix(s1)

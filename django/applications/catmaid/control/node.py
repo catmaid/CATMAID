@@ -2514,10 +2514,10 @@ def _node_list_tuples_query(params, project_id, node_provider,
             })
             export_skeleton_origin = cursor.fetchall()
         else:
-            export_skeleton_origin = [];
+            export_skeleton_origin = []
 
         if with_relation_map == 'used':
-            export_relation_map = {r:id_to_relation[r] for r in used_relations}
+            export_relation_map = {r: id_to_relation[r] for r in used_relations}
         elif with_relation_map == 'all':
             export_relation_map = id_to_relation
         else:

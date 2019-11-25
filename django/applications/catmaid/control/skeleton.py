@@ -494,8 +494,7 @@ def contributor_statistics_multiple(request:HttpRequest, project_id=None, skelet
 
     rev = None
     last_skeleton_id = None
-    review_contributors:DefaultDict[Any, int] = defaultdict(int)
-                                           # reviewer_id vs count of nodes reviewed
+    review_contributors:DefaultDict[Any, int] = defaultdict(int)  # reviewer_id vs count of nodes reviewed
 
     for row in Review.objects.filter(skeleton_id__in=skeleton_ids).order_by('skeleton').values_list('reviewer', 'treenode', 'review_time', 'skeleton_id').iterator():
         if last_skeleton_id != row[3]:
@@ -2870,10 +2869,10 @@ def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
     node_id_map = {n: d['id'] for n, d in import_info['graph'].nodes_iter(data=True)}
 
     return JsonResponse({
-            'neuron_id': import_info['neuron_id'],
-            'skeleton_id': import_info['skeleton_id'],
-            'node_id_map': node_id_map,
-        })
+        'neuron_id': import_info['neuron_id'],
+        'skeleton_id': import_info['skeleton_id'],
+        'node_id_map': node_id_map,
+    })
 
 
 def import_skeleton_eswc(user, project_id, swc_string, neuron_id=None,
@@ -2930,10 +2929,10 @@ def import_skeleton_eswc(user, project_id, swc_string, neuron_id=None,
     node_id_map = {n: d['id'] for n, d in import_info['graph'].nodes_iter(data=True)}
 
     return JsonResponse({
-            'neuron_id': import_info['neuron_id'],
-            'skeleton_id': import_info['skeleton_id'],
-            'node_id_map': node_id_map,
-        })
+        'neuron_id': import_info['neuron_id'],
+        'skeleton_id': import_info['skeleton_id'],
+        'node_id_map': node_id_map,
+    })
 
 
 def _import_skeleton(user, project_id, arborescence, neuron_id=None,
@@ -3138,17 +3137,22 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
             if 'radius' not in arborescence.node[nbr]:
                 arborescence.node[nbr]['radius'] = -1
     arborescence.node[root]['parent_id'] = None
-    if not 'radius' in arborescence.node[root]:
+    if 'radius' not in arborescence.node[root]:
         arborescence.node[root]['radius'] = -1
     new_location = tuple([arborescence.node[root][k] for k in ('x', 'y', 'z')])
 
     if extended_data:
-        treenode_template = '(' + '),('.join('%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s' for n, d in arborescence.nodes_iter(data=True))  + ')'
-        treenode_values = list(chain.from_iterable([d['id'], d['x'], d['y'], d['z'],
+        treenode_template = '(' + '),('.join(
+            '%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s' for _ in arborescence.nodes_iter()
+        ) + ')'
+        treenode_values = list(chain.from_iterable(
+            [
+                d['id'], d['x'], d['y'], d['z'],
                 d['parent_id'], d['radius'], d['user_id'],
                 d['creation_time'], d['editor_id'],
-                d['edition_time'], d['confidence'] ] \
-                for n, d in arborescence.nodes_iter(data=True)))
+                d['edition_time'], d['confidence']
+            ] for n, d in arborescence.nodes_iter(data=True)
+        ))
         # Include skeleton ID for index performance.
         cursor.execute(f"""
             UPDATE treenode SET
@@ -3169,7 +3173,7 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
                 AND treenode.skeleton_id = %s
         """, treenode_values + [new_skeleton.id])
     else:
-        treenode_template = '(' + '),('.join('%s,%s,%s,%s,%s,%s' for n, d in arborescence.nodes_iter(data=True))  + ')'
+        treenode_template = '(' + '),('.join('%s,%s,%s,%s,%s,%s' for _ in arborescence.nodes_iter()) + ')'
         treenode_values = list(chain.from_iterable([d['id'], d['x'], d['y'], d['z'], d['parent_id'], d['radius']] \
                 for n, d in arborescence.nodes_iter(data=True)))
         # Include skeleton ID for index performance.

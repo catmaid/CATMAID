@@ -211,12 +211,16 @@ def export_skeleton_response(request:HttpRequest, project_id=None, skeleton_id=N
         linearize_ids = get_request_bool(request.GET, 'linearize_ids', False)
         soma_markers = get_request_list(request.GET, 'soma_markers', [])
         user_map = dict(User.objects.all().values_list('id', 'username'))
+
         def get_extra_cols(treenode):
-            return [f'{user_map[treenode.user_id]}',
-                    f'{treenode.creation_time.isoformat()}',
-            f'{user_map[treenode.editor_id]}',
-            f'{treenode.edition_time.isoformat()}',
-            f'{treenode.confidence}']
+            return [
+                str(user_map[treenode.user_id]),
+                str(treenode.creation_time.isoformat()),
+                str(user_map[treenode.editor_id]),
+                str(treenode.edition_time.isoformat()),
+                str(treenode.confidence),
+            ]
+
         return HttpResponse(get_swc_string(project_id, skeleton_id, treenode_qs,
                 linearize_ids, soma_markers, get_extra_cols=get_extra_cols),
                 content_type='text/plain')

@@ -351,6 +351,9 @@ Miscellaneous:
 - Connectivity widget: fix error showing when doing many subsequent Refresh
   button clicks.
 
+- 3D viewer: the handling of intersecting transparent objects has improved and
+  works like expected in most situations.
+
 ## Maintenance updates
 
 - CLI Exporter: if users should be exported, also export users of volumes.

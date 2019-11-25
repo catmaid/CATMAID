@@ -2378,11 +2378,33 @@
             var material = this.options.createMeshMaterial(color, opacity);
             material.wireframe = !faces;
 
-            var addedMeshes = scene.children.map(function(mesh) {
+            let material2;
+            if (faces) {
+              // Add an additional copy of the volume. Render the first one
+              // first, but back-side only. Then render the second with
+              // front-side only.
+              material2 = this.options.createMeshMaterial(color, opacity, true);
+              material2.wireframe = !faces;
+              material2.side = THREE.DoubleSide;
+            }
+
+            var addedMeshes = scene.children.reduce((collection, mesh) => {
               mesh.material = material;
               this.space.scene.project.add(mesh);
-              return mesh;
-            }, this);
+              collection.push(mesh);
+
+              if (faces) {
+                // Create copy of the meseh to fix a transparency problem with
+                // intersecting transparent objects.
+                let meshCopy = mesh.clone();
+                mesh.renderOrder = 1;
+                meshCopy.material = material2;
+                this.space.scene.project.add(meshCopy);
+                collection.push(meshCopy);
+              }
+
+              return collection;
+            }, []);
             var originalGeometries = addedMeshes.map(function(mesh) {
               return mesh.geometry;
             });

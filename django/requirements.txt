@@ -19,7 +19,7 @@ mock==3.0.5
 msgpack==0.6.2; platform_python_implementation != 'PyPy'
 msgpack_python==0.5.6
 networkx==1.11
-numpy==1.15.4
+numpy==1.17.4
 pillow==6.2.1
 progressbar2==3.46.0
 psycopg2-binary==2.8.3; platform_python_implementation != 'PyPy'

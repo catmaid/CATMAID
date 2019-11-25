@@ -45,6 +45,9 @@
     // Filter rules can optionally be disabled
     this.applyFilterRules = true;
 
+    // Stores the inititial width of search input boxes.
+    this.initialWidthMap = new WeakMap();
+
     // Listen to annotation change events to update self when needed
     CATMAID.Annotations.on(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
         this.handleAnnotationUpdate, this);
@@ -84,7 +87,7 @@
                 <label class="checkbox-label"><input type="checkbox" name="neuron_query_by_name_not"
                     id="neuron_query_by_name_not${this.widgetID}" tabindex="-1" />not</label>
                 <input type="text" name="neuron_query_by_name"
-                    id="neuron_query_by_name${this.widgetID}" value="" class="" placeholder="Use / for RegEx" />
+                    id="neuron_query_by_name${this.widgetID}" value="" class="expandable" placeholder="Use / for RegEx" />
               </td>
               <td>
                 <label class="checkbox-label"><input type="checkbox" name="neuron_query_by_name_exact"
@@ -98,7 +101,7 @@
                 <label class="checkbox-label"><input type="checkbox" name="neuron_query_by_annotation_not"
                     id="neuron_query_not${this.widgetID}" tabindex="-1" />not</label>
                 <input type="text" name="neuron_query_by_annotation" autocomplete="off"
-                    class="neuron_query_by_annotation_name${this.widgetID}" value="" placeholder="Use / for RegEx" />
+                    class="neuron_query_by_annotation_name${this.widgetID} expandable" value="" placeholder="Use / for RegEx" />
               </td><td>
                 <label class="checkbox-label"><input type="checkbox" name="neuron_query_include_subannotation"
                     class="neuron_query_include_subannotation${this.widgetID}" value="" />
@@ -135,6 +138,29 @@
           <input type="submit" />
           </form>`;
         content.appendChild(queryFields);
+
+        // Make search fields adjust size on typing
+        let meassureSpan = content.appendChild(CATMAID.DOM.createMeasureElement());
+        let fitExpandableSize = (e) => {
+          if (e.target.classList.contains('expandable')) {
+            // Find pixel width and add one character as padding
+            meassureSpan.textContent = (e.target.value + 'W') || '';
+            let textWidth = meassureSpan.offsetWidth;
+            let minLength;
+            if (this.initialWidthMap.has(e.target)) {
+              minLength = this.initialWidthMap.get(e.target);
+            } else {
+              minLength = parseInt(window.getComputedStyle(e.target)['width'], 10);
+              this.initialWidthMap.set(e.target, minLength);
+            }
+            e.size = '';
+            e.target.style.width = `${Math.max(textWidth, minLength)}px`;
+          }
+        };
+        content.addEventListener('change', fitExpandableSize);
+        content.addEventListener('keypress', fitExpandableSize);
+        content.addEventListener('keyup', fitExpandableSize);
+        content.addEventListener('paste', fitExpandableSize);
       },
       createContent: function(content) {
         this.content = content;
@@ -1304,8 +1330,11 @@
             this.nextFieldID,
         name: 'neuron_query_by_annotation' + this.widgetID + '_' +
             this.nextFieldID,
-        value: ''
+        value: '',
+        size: 20,
     });
+    $text.val('');
+    $text.css('width', '');
     // Add autocompletion to it
     CATMAID.annotations.add_autocomplete_to_input($text);
 

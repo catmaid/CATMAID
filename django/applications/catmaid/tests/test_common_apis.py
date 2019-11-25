@@ -302,17 +302,17 @@ class ViewPageTests(TestCase, AssertStatusMixin):
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
-            {
-                'can_administer': [],
-                'add_project': [],
-                'can_annotate': [3],
-                'can_annotate_with_token': [],
-                'change_project': [],
-                'can_browse': [3],
-                'can_import': [],
-                'can_queue_compute_task': [],
-                'delete_project': [],
-                'view_project': [],
+            {'can_administer': [],
+             'add_project': [],
+             'can_annotate': [3],
+             'can_annotate_with_token': [],
+             'change_project': [],
+             'can_browse': [3],
+             'can_fork': [],
+             'can_import': [],
+             'can_queue_compute_task': [],
+             'delete_project': [],
+             'view_project': [],
             }, [u'test1']]
         self.assertEqual(expected_result, parsed_response)
 
@@ -355,7 +355,8 @@ class ViewPageTests(TestCase, AssertStatusMixin):
                 'full_name': 'Admin Superuser',
                 'login': 'admin',
                 'password': 'pbkdf2_sha256$12000$CqdO6wRdSSxH$c57xXXPO8k65prBMrHTvjj/inanxDnbdoaeDIeWWrik=',
-                'id': 4
+                'id': 4,
+                'primary_group_id': None,
             }, {
                 'first_name': 'Test',
                 'last_name': 'User 0',
@@ -363,7 +364,8 @@ class ViewPageTests(TestCase, AssertStatusMixin):
                 'full_name': 'Test User 0',
                 'login': 'test0',
                 'password': 'pbkdf2_sha256$12000$CqdO6wRdSSxH$c57xXXPO8k65prBMrHTvjj/inanxDnbdoaeDIeWWrik=',
-                'id': 5
+                'id': 5,
+                'primary_group_id': None,
             }, {
                 'first_name': 'Test',
                 'last_name': 'User 1',
@@ -371,7 +373,8 @@ class ViewPageTests(TestCase, AssertStatusMixin):
                 'full_name': 'Test User 1',
                 'login': 'test1',
                 'password': 'pbkdf2_sha256$12000$CqdO6wRdSSxH$c57xXXPO8k65prBMrHTvjj/inanxDnbdoaeDIeWWrik=',
-                'id': 2
+                'id': 2,
+                'primary_group_id': None,
             },
         ]
 
@@ -401,28 +404,32 @@ class ViewPageTests(TestCase, AssertStatusMixin):
                 u'color': [1.0, 1.0, 0.0],
                 u'full_name': u'Admin Superuser',
                 u'login': u'admin',
-                u'id': 4
+                u'id': 4,
+                u'primary_group_id': None,
             }, {
                 u'first_name': u'Test',
                 u'last_name': u'User 0',
                 u'color': [0.0, 0.0, 1.0],
                 u'full_name': u'Test User 0',
                 u'login': u'test0',
-                u'id': 5
+                u'id': 5,
+                u'primary_group_id': None,
             }, {
                 u'first_name': u'Test',
                 u'last_name': u'User 1',
                 u'color': [1.0, 0.0, 1.0],
                 u'full_name': u'Test User 1',
                 u'login': u'test1',
-                u'id': 2
+                u'id': 2,
+                u'primary_group_id': None,
             }, {
                 u'first_name': u'Test',
                 u'last_name': u'User 2',
                 u'color': [0.0, 1.0, 1.0],
                 u'full_name': u'Test User 2',
                 u'login': u'test2',
-                u'id': 3
+                u'id': 3,
+                u'primary_group_id': None,
             }
         ]
 

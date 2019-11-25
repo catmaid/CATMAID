@@ -43,6 +43,7 @@ class UserRole(object):
     Admin = 'Admin'
     Annotate = 'Annotate'
     Browse = 'Browse'
+    Fork = 'Fork'
     Import = 'Import'
     QueueComputeTask = 'QueueComputeTask'
 
@@ -69,6 +70,7 @@ class Project(models.Model):
             ("can_import", "Can import into projects"),
             ("can_queue_compute_task", "Can queue resource-intensive tasks"),
             ("can_annotate_with_token", "Can annotate project using API token"),
+            ("can_fork", "Can create personal copies of projects (only stacks)"),
         )
 
     def __str__(self):
@@ -1395,6 +1397,7 @@ class StatsSummary(models.Model):
     n_imported_treenodes = models.IntegerField(null=False, default=0)
     n_imported_connectors = models.IntegerField(null=False, default=0)
     cable_length = models.FloatField(null=False, default=0)
+    import_cable_length = models.FloatField(null=False, default=0)
 
     def __str__(self) -> str:
         return f"Stats summary for {self.user} on {self.date}"
@@ -1510,6 +1513,7 @@ class UserProfile(models.Model):
     show_ontology_tool = models.BooleanField(default=False)
     show_roi_tool = models.BooleanField(default=False)
     color = RGBAField(default=distinct_user_color)
+    primary_group = models.ForeignKey(Group, default=None, null=True, on_delete=models.DO_NOTHING)
 
     def __str__(self) -> str:
         return self.user.username
@@ -1538,6 +1542,8 @@ class UserProfile(models.Model):
         pdict['show_tracing_tool'] = self.show_tracing_tool
         pdict['show_ontology_tool'] = self.show_ontology_tool
         pdict['show_roi_tool'] = self.show_roi_tool
+        pdict['primary_group_id'] = self.primary_group_id
+
         return pdict
 
 def create_user_profile(sender, instance, created, **kwargs) -> None:

@@ -1927,6 +1927,16 @@
       });
     };
 
+  DOM.createMeasureElement = function() {
+    let measureSpan = document.createElement('span');
+    measureSpan.style.width = 'auto';
+    measureSpan.style.position = 'absolute';
+    measureSpan.style.left = '-1000px';
+    measureSpan.style.top = '-1000px';
+    measureSpan.style.whiteSpace = 'pre';
+    return measureSpan;
+  };
+
   // Export DOM namespace
   CATMAID.DOM = DOM;
 

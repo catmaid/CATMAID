@@ -1037,6 +1037,40 @@
 
       ds.append(wrapSettingsControl(
         CATMAID.DOM.createSelectSetting(
+          'Remote node marker',
+          {
+            'Disc': 'disc',
+            'Ring': 'ring',
+            'Target': 'target',
+            'Crosshair': 'crosshair',
+            'Crosshair without ring': 'crosshair-no-ring',
+            'Bullseye': 'bullseye'
+          },
+          "Texture to use for remote nodes: by default a ring is used.",
+          function() {
+            CATMAID.TracingOverlay.Settings
+              .set(
+                'remote_data_marker_type',
+                this.value,
+                SETTINGS_SCOPE
+              )
+              .then(function() {
+                SkeletonAnnotations.getRemoteTracingOverlays().forEach(overlay => {
+                  overlay.graphics.cache.nodePool.clear();
+                  overlay.graphics.initTextures(true, CATMAID.TracingOverlay.Settings.session.remote_data_marker_type);
+                  overlay.redraw(true);
+                });
+              });
+          },
+          CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].remote_data_marker_type
+        ),
+        CATMAID.TracingOverlay.Settings,
+        'remote_data_marker_type',
+        SETTINGS_SCOPE
+      ));
+
+      ds.append(wrapSettingsControl(
+        CATMAID.DOM.createSelectSetting(
           'Data transfer mode',
           {
             'JSON': 'json',
@@ -1964,6 +1998,28 @@
         change: autoAnnotationChange,
       });
 
+      var defaultImportChange = function() {
+          let importAnnotations = this.value.split(',').map(v => v.trim()) || [];
+          CATMAID.TracingTool.Settings
+              .set(
+                'import_default_annotations_skeleton',
+                importAnnotations,
+                SETTINGS_SCOPE);
+        };
+      var defaultImportAnnotations = CATMAID.TracingTool.Settings[SETTINGS_SCOPE].import_default_annotations_skeleton;
+      defaultImportAnnotations = defaultImportAnnotations.length > 0 ?
+          defaultImportAnnotations.join(', ') : '';
+      var defaultImportInput = CATMAID.DOM.createInputSetting(
+              "Default skeleton import annotations",
+              defaultImportAnnotations,
+              'A set of annotations, separated by comma, that will be added to the import skeletons. Every occurence of "{group}" will be replaced with your primary group (or your username, should now primary group be defined). Every occurence of "{source}" will be replaced with the handle of the import source (e.g. the server name).',
+              defaultImportChange);
+      ds.append(wrapSettingsControl(
+          defaultImportInput,
+          CATMAID.TracingTool.Settings,
+          'import_default_annotations_skeleton',
+          SETTINGS_SCOPE));
+
       // Auto-select skeleton source created last
       ds.append(CATMAID.DOM.createCheckboxSetting('Auto-select widget created last as source ' +
             'for new widgets', CATMAID.skeletonListSources.defaultSelectLastSource,
@@ -2123,6 +2179,7 @@
               newList,
               SETTINGS_SCOPE)
             .then(function() {
+              CATMAID.Init.trigger(CATMAID.Init.EVENT_KNOWN_REMOTES_CHANGED, newList);
               updateComponentList();
             })
             .catch(CATMAID.handleError);
@@ -2216,6 +2273,7 @@
             newList,
             SETTINGS_SCOPE)
           .then(function() {
+            CATMAID.Init.trigger(CATMAID.Init.EVENT_KNOWN_REMOTES_CHANGED, newList);
             updateComponentList();
             newRemoteNameInput.find('input').val('');
             newRemoteNameUrlInput.find('input').val('');

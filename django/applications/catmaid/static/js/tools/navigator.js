@@ -438,12 +438,15 @@
       return true;
     };
 
-    var hanleCopyPosRequest = function(e) {
+    var handleCopyPosRequest = function(e) {
       if (e.altKey) {
-        let stack = project.getStackViewers()[0];
+        let stack = project.focusedStackViewer;
+        let stackTitle = stack.primaryStack.title;
         let stackLocation = `${stack.x.toFixed(2)}, ${stack.y.toFixed(2)}, ${stack.z.toFixed(2)}`;
         CATMAID.tools.copyToClipBoard(stackLocation);
-        CATMAID.msg('Success', `Copied stack space location (px):<br />${stackLocation}`);
+        CATMAID.msg('Success', `Copied stack space location for stack "${stackTitle}" (px):<br />${stackLocation}`);
+        // Necessary to handle event to prevent default download link behavior.
+        e.preventDefault();
       } else {
         let projectLocation = `${project.coordinates.x}, ${project.coordinates.y}, ${project.coordinates.z}`;
         CATMAID.tools.copyToClipBoard(projectLocation);
@@ -700,7 +703,7 @@
 
       self.input_goto_request.addEventListener('keypress', handleGoToInputKeyDown);
       self.button_goto_request.addEventListener('click', handleGoToRequest);
-      self.button_copy_pos.addEventListener('click', hanleCopyPosRequest);
+      self.button_copy_pos.addEventListener('click', handleCopyPosRequest);
 
       self.updateControls();
     };
@@ -755,7 +758,7 @@
 
       self.input_goto_request.removeEventListener('keypress', handleGoToInputKeyDown);
       self.button_goto_request.removeEventListener('click', handleGoToRequest);
-      self.button_copy_pos.removeEventListener('click', hanleCopyPosRequest);
+      self.button_copy_pos.removeEventListener('click', handleCopyPosRequest);
 
       self.stackViewer = null;
     };

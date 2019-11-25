@@ -60,6 +60,10 @@ select.wide-select {
   min-width: 20em;
 }
 
+select.highlight {
+  background-color: #fffcd3;
+}
+
 h1 {
 	margin: 1.5em 16px 0.5em 20px;
 	font-size: 25px;

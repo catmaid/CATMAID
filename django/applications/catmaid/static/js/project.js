@@ -24,7 +24,7 @@
    * @class
    * @param {number} pid  API ID of this CATMAID project.
    */
-  function Project( pid ) {
+  function Project(pid, title) {
 
     this.interpolatableSections = {
       'x': [],
@@ -421,33 +421,25 @@
      * create a URL to the current view
      */
     this.createURL = function() {
-      var coords;
-      var url="?pid=" + self.id;
-      if ( stackViewers.length > 0 )
-      {
-        //coords = stacks[ 0 ].projectCoordinates();    //!< @todo get this from the SELECTED stack to avoid approximation errors!
-        url += "&zp=" + self.coordinates.z + "&yp=" + self.coordinates.y +
-            "&xp=" + self.coordinates.x;
-        url += "&tool=" + project.getTool().toolname;
-        if( project.getTool().toolname === 'tracingtool' ) {
-          var active_skeleton_id = SkeletonAnnotations.getActiveSkeletonId();
-          if( active_skeleton_id ) {
-            url += "&active_skeleton_id=" + active_skeleton_id;
-          }
-          var active_node_id = SkeletonAnnotations.getActiveNodeId();
-          if (active_node_id) {
-            url += "&active_node_id=" + active_node_id;
-          }
+      let x, y, z, activeNodeId, activeSkeletonId, stackGroupId, sgs = [],
+          stacks = [], stackScaleLevels = [];
+      let tool = project.getTool().toolname;
+
+      if (stackViewers.length > 0) {
+        [x, y, z] = [self.coordinates.x, self.coordinates.y, self.coordinates.z];
+
+        if( tool === 'tracingtool' && !SkeletonAnnotations.atn.isRemote()) {
+          activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+          activeNodeId = SkeletonAnnotations.getActiveNodeId();
         }
 
         var sgStacks;
         if (this.lastLoadedStackGroup) {
-          url += "&sg=" + this.lastLoadedStackGroup.id;
+          stackGroupId = this.lastLoadedStackGroup.id;
           sgStacks = new Set(this.lastLoadedStackGroup.stacks.map(function(s) {
             return s.id;
           }));
         }
-
 
         var sgsAdded = false;
 
@@ -455,19 +447,18 @@
         {
           var sv = stackViewers[i];
           if (this.lastLoadedStackGroup && !sgsAdded && sgStacks && sgStacks.has(sv.primaryStack.id)) {
-            url += "&sgs=" + sv.s;
+            sgs.push(sv.s);
             sgsAdded = true;
           }
 
-          url += "&sid" + i + "=" + sv.primaryStack.encodedId() + "&s" + i + "=" + sv.s;
+          stacks.push(sv.primaryStack.encodedId());
+          stackScaleLevels.push(sv.s);
         }
       }
 
-      if (CATMAID.client.showContextHelp) {
-        url += "&help=true";
-      }
-
-      return url;
+      return Project.createRelativeURL(self.id, x, y, z, tool, activeNodeId,
+        activeSkeletonId, stacks, stackScaleLevels, stackGroupId, sgs,
+        CATMAID.client.showContextHelp);
     };
 
     /** This function should return true if there was any action
@@ -490,6 +481,7 @@
     // initialise
     var self = this;
     this.id = pid;
+    this.title = title;
 
     var tool = null;
 
@@ -598,10 +590,22 @@
   }
 
   /**
-   * Get all visible projects, optionally sorted by name.
+   * Get all visible projects, optionally sorted by name. This request is
+   * performed in parallel.
+   *
+   * @param {Boolean} hasTracingData (optional) If true, only projects with
+   *                                 tracing data are return. False by default.
+   * @param {API}     api            (optional) An API instance to use.
    */
-  Project.list = function(sort) {
-    var projects = CATMAID.fetch('projects/');
+  Project.list = function(sort, hasTracingData = false, api = undefined) {
+    var projects = CATMAID.fetch({
+      url: 'projects/',
+      data: {
+        has_tracing_data: hasTracingData,
+      },
+      parallel: true,
+      api: api,
+    });
     if (sort) {
       projects = projects.then(function(projects) {
         return projects.sort(function(a, b) {
@@ -611,6 +615,47 @@
     }
 
     return projects;
+  };
+
+  /**
+   * Create a fork of this project with this name.
+   */
+  Project.createFork = function(projectId, name) {
+    return CATMAID.fetch({
+      url: `${projectId}/fork`,
+      method: 'POST',
+      data: {
+        name: name,
+      }
+    });
+  };
+
+  Project.createRelativeURL = function(projectId, x, y, z, tool, activeNodeId,
+      activeSkeletonId, stacks, stackScaleLevels, stackGroupId, sgs, help) {
+    var url = `?pid=${projectId}&zp=${z}&yp=${y}&xp=${x}`;
+    if (tool) {
+      url += `&tool=${tool}`;
+    }
+    if (activeSkeletonId) {
+      url += `&active_skeleton_id=${activeSkeletonId}`;
+    }
+    if (activeNodeId) {
+      url += `&active_node_id=${activeNodeId}`;
+    }
+    if (stacks && stackScaleLevels) {
+      for (let i=0; i<stacks.length; ++i) {
+        url += `&sid${i}=${stacks[i]}&s${i}=${stackScaleLevels[i]}`;
+      }
+    }
+    if (stackGroupId) {
+      url += `&sg=${stackGroupId}`;
+    }
+    if (sgs) {
+      for (let i=0; i<sgs.length; ++i) {
+        url += `&sgs=${sgs[i]}`;
+      }
+    }
+    return url;
   };
 
   // Add event support to project and define some event constants

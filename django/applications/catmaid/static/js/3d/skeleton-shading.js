@@ -115,7 +115,7 @@
       fetchSkeletons(
           skeleton_ids,
           function(skeleton_id) {
-            return CATMAID.makeURL(project.id + '/skeleton/' + skeleton_id + '/reviewed-nodes');
+            return `${project.id}/skeleton/${skeleton_id}/reviewed-nodes`;
           },
           function(skeleton_id) { return {}; }, // post
           function(skeleton_id, json) {
@@ -143,7 +143,7 @@
     fetchSkeletons(
         skeleton_ids,
         function(skid) {
-          return CATMAID.makeURL(project.id + '/' + skid + '/0/1/0/compact-arbor');
+          return `${project.id}/${skid}/0/1/0/compact-arbor`;
         },
         function(skid) { return {}; }, // post
         function(skid, json) {
@@ -213,6 +213,22 @@
 
   var initSamplerIntervals = function(skeleton) {
     return initSamplerDomains(skeleton, true);
+  };
+
+  var initTreenodeImportMap = function(skeletons) {
+    var skeletonIds = Object.keys(skeletons);
+    return CATMAID.Skeletons.importInfo(project.id, skeletonIds, true)
+      .then(result => {
+        for (let skeletonId of skeletonIds) {
+          let details = result[skeletonId];
+          if (details && details.n_imported_treenodes > 0) {
+            skeletons[skeletonId].importedTreenodes = new Set(details.imported_treenodes);
+          } else {
+            skeletons[skeletonId].importedTreenodes = new Set();
+          }
+        }
+        return result;
+      });
   };
 
   /**
@@ -526,6 +542,22 @@
           return lut.getColor(vertex.z);
         };
       }
+    },
+    'imported': {
+      prepare: initTreenodeImportMap,
+      vertexColorizer: function(skeleton, options) {
+        var arbor = skeleton.createArbor();
+        var importedTreenodes = skeleton.importedTreenodes;
+        // Find all treenodes that have been merged originally from another
+        // source.
+        let imported = new THREE.Color('green');
+        var regular = skeleton.actorColor;
+        return function(vertex) {
+          let d = vertex.node_id;
+          return importedTreenodes.has(typeof d === 'number' ? d : parseInt(d, 10)) ?
+              imported : regular;
+        };
+      },
     },
   };
 
@@ -1067,7 +1099,23 @@
 
         return nodeWeights;
       }
-    }
+    },
+    'imported': {
+      prepare: initTreenodeImportMap,
+      weights: function(skeleton, options) {
+        var arbor = skeleton.createArbor();
+        var importedTreenodes = skeleton.importedTreenodes;
+
+        // Look at all nodes of all domains. Give them a weight of 1 if they are
+        // part of an interval and 0.2 if hey are only part of a domain.
+        var nodeWeights = arbor.nodesArray().reduce((o, d) => {
+          o[d] = importedTreenodes.has(typeof d === 'number' ? d : parseInt(d, 10)) ? 1 : 0;
+          return o;
+        }, {});
+
+        return nodeWeights;
+      }
+    },
   };
 
   /**

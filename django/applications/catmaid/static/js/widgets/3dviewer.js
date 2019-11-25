@@ -110,9 +110,6 @@
     this.initialized = true;
   };
 
-  // Store views in the prototype to make them available for all instances.
-  WebGLApplication.prototype.availableViews = {};
-
   WebGLApplication.prototype.getName = function() {
     return "3D View " + this.widgetID;
   };
@@ -1036,7 +1033,7 @@
     fetchSkeletons(
         this.getSelectedSkeletons(),
         function(skid) {
-          return CATMAID.makeURL(project.id + '/' + skid + '/0/1/0/compact-arbor');
+          return `${project.id}/${skid}/0/1/0/compact-arbor`;
         },
         function(skid) { return {}; }, // POST
         function(skid, json) {
@@ -1362,12 +1359,17 @@
       }, new WebGLApplication.prototype.Options());
   };
 
-  WebGLApplication.prototype.Options.prototype.createMeshMaterial = function(color, opacity) {
+  WebGLApplication.prototype.Options.prototype.createMeshMaterial = function(color, opacity, depthWrite = undefined) {
     color = color || new THREE.Color(this.meshes_color);
     if (typeof opacity === 'undefined') opacity = this.meshes_opacity;
-    return new THREE.MeshLambertMaterial({color: color, opacity: opacity,
-      transparent: opacity !== 1, wireframe: !this.meshes_faces, side: THREE.DoubleSide,
-      depthWrite: opacity === 1});
+    return new THREE.MeshLambertMaterial({
+      color: color,
+      opacity: opacity,
+      transparent: opacity !== 1,
+      wireframe: !this.meshes_faces,
+      side: THREE.DoubleSide,
+      depthWrite: depthWrite === undefined ? opacity === 1 : depthWrite,
+    });
   };
 
   WebGLApplication.prototype.Options.prototype.createLandmarkGroupMaterial = function(color, opacity) {
@@ -1531,36 +1533,63 @@
    */
   WebGLApplication.prototype.storeCurrentView = function(name, callback) {
     if (!name) {
-      var dialog = new CATMAID.OptionsDialog("Store current view");
-      dialog.appendMessage('Please enter a name for the current view');
-      var n = this.getStoredViews().length + 1;
-      var nameField = dialog.appendField("Name: ", "new-view-name", 'View ' + n);
+      return new Promise((resolve, reject) => {
+        var dialog = new CATMAID.OptionsDialog("Store current view");
+        dialog.appendMessage('Please enter a name for the current view');
+        var n = this.getStoredViews().length + 1;
+        var nameField = dialog.appendField("Name: ", "new-view-name", 'View ' + n);
 
-      // Call this function with a name as parameter
-      dialog.onOK = (function() {
-        this.storeCurrentView(nameField.value, callback);
-      }).bind(this);
-      dialog.show(300, 200, true);
+        // Call this function with a name as parameter
+        dialog.onOK = () => {
+          this.storeCurrentView(nameField.value, callback);
+          resolve();
+        };
+
+        dialog.onCancel = () => {
+          reject(new CATMAID.CanceledByUser());
+        };
+
+        dialog.show(300, 200, true);
+      });
     } else {
       // Abort if a view with this name exists already
-      if (name in this.availableViews) {
+      if (name in CATMAID.WebGLApplication.Settings.session.available_views) {
         CATMAID.error("A view with the name \"" + name + "\" already exists.");
         return;
       }
-      // Store view
-      this.availableViews[name] = this.space.view.getView();
 
-      if (callback) {
-        callback();
-      }
+      // Store view
+      let views = CATMAID.tools.deepCopy(CATMAID.WebGLApplication.Settings.session.available_views);
+      views[name] = this.space.view.getView();
+      let result = CATMAID.WebGLApplication.Settings.set('available_views', views, 'session');
+      result.then(() => {
+        if (callback) {
+          callback();
+        }
+      });
+      return result;
     }
+  };
+
+  /**
+   * Remove the stored view with the passed in name.
+   */
+  WebGLApplication.prototype.removeStoredView = function(name) {
+    if (!(name in CATMAID.WebGLApplication.Settings.session.available_views)) {
+      throw new CATMAID.ValueError(`No view with "${name}" found.`);
+    }
+
+    // Store view
+    let views = CATMAID.tools.deepCopy(CATMAID.WebGLApplication.Settings.session.available_views);
+    delete views[name];
+    return CATMAID.WebGLApplication.Settings.set('available_views', views, 'session');
   };
 
   /**
    * Return the list of stored views.
    */
   WebGLApplication.prototype.getStoredViews = function() {
-    return Object.keys(this.availableViews);
+    return Object.keys(CATMAID.WebGLApplication.Settings.session.available_views).sort(CATMAID.tools.compareStrings);
   };
 
   /**
@@ -1570,12 +1599,12 @@
    * @param {String} name - name of the view to activate
    */
   WebGLApplication.prototype.activateView = function(name) {
-    if (!(name in this.availableViews)) {
+    if (!(name in CATMAID.WebGLApplication.Settings.session.available_views)) {
       CATMAID.error("There is no view named \"" + name + "\"!");
       return;
     }
     // Activate view by executing the stored function
-    var view = this.availableViews[name];
+    var view = CATMAID.WebGLApplication.Settings.session.available_views[name];
     this.space.view.setView(view.target, view.position, view.up, view.zoom,
         view.orthographic);
     // Update options
@@ -2009,7 +2038,8 @@
   };
 
   /** Fetch skeletons one by one, and render just once at the end. */
-  WebGLApplication.prototype.addSkeletons = function(models, callback, nodeProvider) {
+  WebGLApplication.prototype.addSkeletons = function(models, callback, nodeProvider, projectId) {
+    projectId = projectId === undefined ? project.id : projectId;
     // Handle multiple skeleton additions sequentially
     var prepare;
     if (this._activeLoading) {
@@ -2034,14 +2064,14 @@
         }
 
         // Register with the neuron name service and fetch the skeleton data
-        return CATMAID.NeuronNameService.getInstance().registerAll(this, models)
+        return CATMAID.NeuronNameService.registerAll(this, models)
           .then(function() {
             if (self.hasActiveFilters()) {
               return self.insertIntoNodeWhitelist(models);
             }
           })
           .then(function() {
-            return nodeProvider.get(project.id, missingSkeletonIds, {
+            return nodeProvider.get(projectId, missingSkeletonIds, {
                 with_tags: !lean,
                 with_connectors: !lean,
                 with_history: false
@@ -2348,11 +2378,33 @@
             var material = this.options.createMeshMaterial(color, opacity);
             material.wireframe = !faces;
 
-            var addedMeshes = scene.children.map(function(mesh) {
+            let material2;
+            if (faces) {
+              // Add an additional copy of the volume. Render the first one
+              // first, but back-side only. Then render the second with
+              // front-side only.
+              material2 = this.options.createMeshMaterial(color, opacity, true);
+              material2.wireframe = !faces;
+              material2.side = THREE.DoubleSide;
+            }
+
+            var addedMeshes = scene.children.reduce((collection, mesh) => {
               mesh.material = material;
               this.space.scene.project.add(mesh);
-              return mesh;
-            }, this);
+              collection.push(mesh);
+
+              if (faces) {
+                // Create copy of the meseh to fix a transparency problem with
+                // intersecting transparent objects.
+                let meshCopy = mesh.clone();
+                mesh.renderOrder = 1;
+                meshCopy.material = material2;
+                this.space.scene.project.add(meshCopy);
+                collection.push(meshCopy);
+              }
+
+              return collection;
+            }, []);
             var originalGeometries = addedMeshes.map(function(mesh) {
               return mesh.geometry;
             });
@@ -3231,7 +3283,10 @@
   };
 
   WebGLApplication.prototype.Space.prototype.removeAll = function(objects) {
-    this.scene.project.remove.apply(this.scene.project, objects);
+    let projectSpace = this.scene.project;
+    for (let i=0; i<objects.length; ++i) {
+      projectSpace.remove(objects[i]);
+    }
   };
 
   WebGLApplication.prototype.Space.prototype.render = function() {
@@ -3438,6 +3493,9 @@
     this.lastZPlaneOptions = null;
 
     this.missing_sections = [];
+
+    // Maps ortho plane names to ortho plane Mesh instances.
+    this.orthoPlanes = new Map();
 
     // Shared across skeletons
     this.labelspheregeometry = new THREE.OctahedronGeometry(32, 3);
@@ -3794,7 +3852,8 @@
   };
 
   WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createPlaneGeometry =
-      function (stack, tileSource, tileZoomLevel) {
+      function (stack, tileSource, tileZoomLevel, orientation = undefined) {
+    orientation = CATMAID.tools.getDefined(orientation, stack.orientation);
     var stackPlane = stack.createStackExtentsBox(),
         plane = stack.createStackToProjectBox(stackPlane),
         geometry, pDepth;
@@ -3804,7 +3863,7 @@
         planeDimSeq = minorDimSeq,
         seq, pWidth, pHeight;
 
-    switch (stack.orientation) {
+    switch (orientation) {
       case CATMAID.Stack.ORIENTATION_XY:
         pDepth = plane.max.z - plane.min.z;
         plane.min.z = plane.max.z = 0;
@@ -3830,7 +3889,7 @@
 
     if (tileSource && undefined !== tileZoomLevel) {
       var pTileWidth, pTileHeight;
-      switch (stack.orientation) {
+      switch (orientation) {
         case CATMAID.Stack.ORIENTATION_XY:
           pTileWidth = tileSource.tileWidth * stack.resolution.x;
           pTileHeight = tileSource.tileHeight * stack.resolution.y;
@@ -3854,7 +3913,7 @@
       var tileHeight = tileSource.tileHeight;
       var nHTiles = getNZoomedParts(stack.dimension.x, tileZoomLevel, tileWidth);
       var nVTiles = getNZoomedParts(stack.dimension.y, tileZoomLevel, tileHeight);
-      var transpose = tileSource.transposeTiles.has(stack.orientation);
+      var transpose = tileSource.transposeTiles.has(orientation);
 
       // Use THREE's plane geometry so that UVs and normals are set up aleady.
       var tilePlaneWidth = nHTiles * pTileWidth;
@@ -3942,7 +4001,7 @@
         geometry.vertices.push( new THREE.Vector3( plane[seq.x[i]].x,
               plane[seq.y[i]].y, plane[seq.z[i]].z ) );
       }
-      geometry.faces.push( new THREE.Face3( 0, 1, 2 ) );
+      geometry.faces.push( new THREE.Face3( 0, 2, 1 ) );
       geometry.faces.push( new THREE.Face3( 1, 2, 3 ) );
     }
 
@@ -4057,8 +4116,9 @@
     this.__notify();
   };
 
-  var setDepth = function(target, stack, source, stackOffset = 0, projectOffset = 0) {
-    switch (stack.orientation) {
+  var setDepth = function(target, stack, source, stackOffset = 0, projectOffset = 0, orientation = undefined) {
+    orientation = CATMAID.tools.getDefined(orientation, stack.orientation);
+    switch (orientation) {
       case CATMAID.Stack.ORIENTATION_XY:
         target.z = stack.stackToProjectZ(source.z + stackOffset, source.y, source.x) + projectOffset;
         break;
@@ -4070,6 +4130,50 @@
         break;
     }
     return target;
+  };
+
+  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.updateOrthoPlanePositions = function(
+      space, stack) {
+    if (!this.orthoPlanes || this.orthoPlanes.size === 0) {
+      return;
+    }
+    let p = stack.createStackToProjectBox(stack.createStackExtentsBox());
+
+    // Find reference stack position, add set location of current layer.
+    for (let [name, details] of this.orthoPlanes.entries()) {
+      let planeCenter = {
+        x: p.min.x + (p.max.x - p.min.x) * (1.0 - details.coverage.x) * 0.5,
+        y: p.min.y + (p.max.y - p.min.y) * (1.0 - details.coverage.y) * 0.5,
+        z: p.min.z + (p.max.z - p.min.z) * (1.0 - details.coverage.z) * 0.5,
+      };
+
+      // With reduced coverage, offset from stack center to real center.
+      if (1.0 - details.coverage.x > 0.0001) {
+        planeCenter.x += project.coordinates.x - (p.max.x - p.min.x) * 0.5;
+      }
+      if (1.0 - details.coverage.y > 0.0001) {
+        planeCenter.y += project.coordinates.y - (p.max.y - p.min.y) * 0.5;
+      }
+      if (1.0 - details.coverage.z > 0.0001) {
+        planeCenter.z += project.coordinates.z - (p.max.z - p.min.z) * 0.5;
+      }
+
+      switch (details.orientation) {
+        case CATMAID.Stack.ORIENTATION_XY:
+          planeCenter.z = CATMAID.tools.getDefined(details.fixedUpCoord, project.coordinates.z);
+          break;
+        case CATMAID.Stack.ORIENTATION_XZ:
+          planeCenter.y = CATMAID.tools.getDefined(details.fixedUpCoord, project.coordinates.y);
+          break;
+        case CATMAID.Stack.ORIENTATION_ZY:
+          planeCenter.x = CATMAID.tools.getDefined(details.fixedUpCoord, project.coordinates.x);
+          break;
+      }
+
+      for (let m of details.meshes) {
+        m.position.set(planeCenter.x, planeCenter.y, planeCenter.z);
+      }
+    }
   };
 
   WebGLApplication.prototype.Space.prototype.StaticContent.prototype.updateZPlanePosition = function(
@@ -4298,6 +4402,123 @@
         return mesh;
       }));
     }, []);
+  };
+
+  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.removeOrthoPlane = function(space, name) {
+    let plane = this.orthoPlanes.get(name);
+    if (plane) {
+      space.scene.remove.apply(space.scene, plane.meshes);
+    } else {
+      return false;
+    }
+    return true;
+  };
+
+  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.removeAllOrthoPlanes = function(space) {
+    let allRemoved = true;
+    for (let name of this.orthoPlanes.keys()) {
+      allRemoved = allRemoved && this.removeOrthoPlane(space, name);
+    }
+    return allRemoved;
+  };
+
+  /**
+   * Add a new plane that is aligned with one of the three orientations in the
+   * passed in stack. If a plane with the same name exists already, it is
+   * replaced.
+   *
+   * @param {Space}   space              The space to add the plane to.
+   * @param {String}  name               A unique name for the added plane. If a
+   *                                     plane with the same name exists, it
+   *                                     will be replaced.
+   * @param {Stack}   stack              The stack this plane is constrained by.
+   * @param {Object}  materialOpts       (Optional) The color, opacity, etc. of the plane.
+   * @param {Object}  borderMaterialOpts (Optional) The color and opacity of the
+   *                                     border of the plane.
+   * @param {Object}  coverage           (Optional) The percentage of area
+   *                                     covered by the respective dimension.
+   *                                     Has fields x, y and z. The plane is
+   *                                     centered in all dimensions.
+   * @param {String}  fixedUpCoord       (Optional) By default a plane is bound
+   *                                     to the current stack position. This can
+   *                                     be overriden by a fixed up orientaiton
+   *                                     coorinate (e.g. Z in XY orientation).
+   */
+  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createOrthoPlane = function(
+      space, name, stack, orientation = undefined, materialOpts = undefined, borderMaterialOpts = undefined,
+      coverage = {x: 1, y: 1, z: 1}, fixedUpCoord=undefined) {
+    this.removeOrthoPlane(space, name);
+
+    orientation = CATMAID.tools.getDefined(orientation, stack.orientation);
+
+    materialOpts = CATMAID.tools.getDefined(materialOpts, {
+        color: 0x151349,
+        opacity:0.6,
+    });
+
+    if (!materialOpts.hasOwnProperty('transparent')) {
+      materialOpts['transparent'] = true;
+    }
+
+    if (!materialOpts.hasOwnProperty('side')) {
+      materialOpts['side'] = THREE.DoubleSide;
+    }
+
+    if (materialOpts === null) {
+      materialOpts.visible = false;
+    }
+
+
+    borderMaterialOpts = CATMAID.tools.getDefined(borderMaterialOpts, {
+      color: 0x00ffff,
+    });
+
+    if (!borderMaterialOpts.hasOwnProperty('linewidth')) {
+      borderMaterialOpts.linewidth = 2;
+    }
+
+    if (!borderMaterialOpts.hasOwnProperty('transparent')) {
+      borderMaterialOpts['transparent'] = true;
+    }
+
+    if (!borderMaterialOpts.hasOwnProperty('side')) {
+      borderMaterialOpts['side'] = THREE.DoubleSide;
+    }
+
+    if (borderMaterialOpts === null) {
+      borderMaterialOpts.visible = false;
+    }
+
+    let planeGeometry = this.createPlaneGeometry(stack, undefined, undefined, orientation);
+    let edgeGeometry = new THREE.EdgesGeometry(planeGeometry);
+
+    let meshes = [
+      new THREE.Mesh(planeGeometry, new THREE.MeshBasicMaterial(materialOpts)),
+      new THREE.LineSegments(edgeGeometry, new THREE.LineBasicMaterial(borderMaterialOpts)),
+    ];
+
+    meshes[0].scale.set(coverage.x, coverage.y, coverage.z);
+    meshes[1].scale.set(coverage.x, coverage.y, coverage.z);
+
+    // If a plane is transparent, we want to see everything that is behind it
+    // and have to render it therefore before the plane. Objects that need to
+    // appear in front of the plane need to rendered again in a second pass. If
+    // the plane is not transparent, it needs to be renderede together with all
+    // other objects to have the correct relative position to everything.
+    meshes[0].renderOrder = meshes[0].material.transparent ? 1 : 0;
+    meshes[1].renderOrder = meshes[1].material.transparent ? 1 : 0;
+
+    space.scene.project.add(meshes[0], meshes[1]);
+    this.orthoPlanes.set(name, {
+      meshes: meshes,
+      orientation: orientation,
+      fixedUpCoord: fixedUpCoord,
+      coverage: coverage,
+    });
+
+    this.updateOrthoPlanePositions(space, stack);
+
+    return meshes;
   };
 
   /**
@@ -6954,7 +7175,7 @@
       } else if ('axon-and-dendrite' === options.connector_color || 'synapse-clustering' === options.connector_color) {
         fetchSkeletons(
             skeletons.map(function(skeleton) { return skeleton.id; }),
-            function(skid) { return CATMAID.makeURL(project.id + '/' + skid + '/0/1/0/compact-arbor'); },
+            function(skid) { return `${project.id}/${skid}/0/1/0/compact-arbor`; },
             function(skid) { return {}; },
             (function(skid, json) { self.content.skeletons[skid].completeUpdateConnectorColor(options, json); }).bind(self),
             function(skid) { CATMAID.msg("Error", "Failed to load synapses for: " + skid); },
@@ -8353,6 +8574,7 @@
    */
   WebGLApplication.prototype.handlelLocationChange = function() {
     this.space.staticContent.updateZPlanePosition(this.space, project.focusedStackViewer);
+    this.space.staticContent.updateOrthoPlanePositions(this.space, project.focusedStackViewer.primaryStack);
     this.space.render();
   };
 
@@ -8803,9 +9025,7 @@
           reject("No skeletons available");
           return;
         }
-        var url1 = CATMAID.makeURL(project.id + '/skeletons/'),
-            lean = this.options.lean_mode,
-            url2 = '/compact-detail';
+        let lean = this.options.lean_mode;
         // Get historic data of current skeletons. Create a map of events, Which
         // are consumed if their time is ready.
         var now = new Date();
@@ -8814,7 +9034,7 @@
         fetchSkeletons.call(this,
             skeletonIds,
             function(skeletonId) {
-              return url1 + skeletonId + url2;
+              return `${project.id}/skeletons/${skeletonId}/compact-detail`;
             },
             function(skeleton_id) {
               return {
@@ -8962,13 +9182,16 @@
     return (rotation, frame) => {
       steps = Math.floor(frame / frameChangeRate);
       let offset = steps * changeStep;
-      return this.space.staticContent.updateZPlanePosition(this.space, project.focusedStackViewer, offset);
+      return Promise.all([
+        this.space.staticContent.updateZPlanePosition(this.space, project.focusedStackViewer, offset),
+      ]);
     };
   };
 
   WebGLApplication.prototype.createZPlaneResetHandler = function(visible, zLocation) {
     return () => {
       this.space.staticContent.updateZPlanePosition(this.space, project.focusedStackViewer);
+      this.space.staticContent.updateOrthoPlanePositions(this.space, project.focusedStackViewer.primaryStack);
       this.options.show_zplane = visible;
       this.adjustStaticContent();
     };
@@ -9488,6 +9711,18 @@
 
     dialog.show(400, 300, false);
   };
+
+  WebGLApplication.Settings = new CATMAID.Settings(
+      '3d-viewer',
+      {
+        version: 1,
+        entries: {
+          available_views: {
+            // Maps view names to view configurations.
+            default: {},
+          },
+        },
+      });
 
   var fieldCoordMapping = {
     'interpolated_sections_x': 'x',

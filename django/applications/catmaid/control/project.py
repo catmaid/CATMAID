@@ -5,15 +5,18 @@ from typing import Any, Dict, List, Optional, Tuple
 import yaml
 
 from guardian.shortcuts import get_objects_for_user
+from guardian.shortcuts import assign_perm
 
 from django.db import connection
+from django.db.models import Exists, OuterRef
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 
 from catmaid.models import (BrokenSlice, Class, ClientDatastore,
-        InterpolatableSection, Project, ProjectStack, Relation, Stack,
+        InterpolatableSection, Location, Project, ProjectStack, Relation, Stack,
         StackGroup, StackStackGroup, UserRole)
 from catmaid.control.authentication import requires_user_role
+from catmaid.control.common import get_request_bool
 
 from rest_framework.decorators import api_view
 
@@ -183,6 +186,12 @@ def projects(request:HttpRequest) -> JsonResponse:
             items:
               $ref: project_api_stackgroup_element
             required: true
+    parameters:
+    - name: has_tracing_data
+      description: Return only projects that have tracing data
+      required: false
+      defaultValue: falese
+      type: boolean
     type:
       projects:
         type: array
@@ -193,6 +202,14 @@ def projects(request:HttpRequest) -> JsonResponse:
 
     # Get all projects that are visisble for the current user
     projects = get_project_qs_for_user(request.user).order_by('title')
+    has_tracing_data = get_request_bool(request.GET, 'has_tracing_data', False)
+
+    if has_tracing_data:
+        projects = projects.annotate(
+                no_locations=~Exists(Location.objects.filter(project=OuterRef('pk')))
+            ).filter(
+                no_locations=False
+            )
 
     if 0 == len(projects):
         return JsonResponse([], safe=False)
@@ -200,6 +217,19 @@ def projects(request:HttpRequest) -> JsonResponse:
     cursor = connection.cursor()
     project_template = ",".join(("(%s)",) * len(projects)) or "()"
     user_project_ids = [p.id for p in projects]
+
+    tracing_data_join = ''
+    extra_where = []
+    if has_tracing_data:
+        tracing_data_join = '''
+            INNER JOIN LATERAL (
+                SELECT EXISTS (SELECT 1 FROM location WHERE project_id = ps.project_id)
+            ) sub(has_tracing_data)
+                ON TRUE
+        '''
+        extra_where.append('''
+            sub.has_tracing_data = True
+        ''')
 
     cursor.execute(f"""
         SELECT ps.project_id, ps.stack_id, s.title, s.comment FROM project_stack ps
@@ -505,4 +535,44 @@ def interpolatable_sections(request:HttpRequest, project_id) -> JsonResponse:
         'x': coords[2],
         'y': coords[1],
         'z': coords[0]
+    })
+
+
+@api_view(['POST'])
+@requires_user_role(UserRole.Fork)
+def fork(request:HttpRequest, project_id) -> JsonResponse:
+    """Attempt to create a new project based on the passed in project ID.
+    ---
+    parameters:
+    - name: name
+      description: Name of new project
+      required: true
+      type: string
+    """
+    name = request.POST.get('name')
+    if not name:
+        raise ValueError('Need new project name')
+
+    current_p = get_object_or_404(Project, pk=project_id)
+    new_p = get_object_or_404(Project, pk=project_id)
+
+    new_p.id = None
+    new_p.title = name
+    new_p.save()
+
+    # Copy all project-stack links
+    ps_links = ProjectStack.objects.filter(project=current_p)
+    for ps in ps_links:
+        ps.id = None
+        ps.project = new_p
+        ps.save()
+
+    # Assign read/write/import permissions for new fork
+    assign_perm('can_browse', request.user, new_p)
+    assign_perm('can_annotate', request.user, new_p)
+    assign_perm('can_import', request.user, new_p)
+
+    return JsonResponse({
+        'new_project_id': new_p.id,
+        'n_copied_stack_links': len(ps_links),
     })

@@ -5,7 +5,7 @@
 
   "use strict";
 
-  function User(userID, login, fullName, firstName, lastName, color)
+  function User(userID, login, fullName, firstName, lastName, color, primaryGroupId = null)
   {
     if (userID !== undefined && login === undefined && fullName === undefined &&
         firstName === undefined && lastName === undefined && color === undefined)
@@ -23,6 +23,7 @@
       this.lastName = lastName;
       this.color = color;
       this.isAanonymous = (login === 'AnonymousUser');
+      this.primaryGroupId = primaryGroupId;
 
       // Cache the instance for later lookups.
       User.prototype.users[userID] = this;
@@ -98,15 +99,16 @@
     if (User.prototype.users[id]) {
       return User.prototype.users[id];
     } else {
-      return {
+      return Object.create(User.prototype, {
         // Return dummy instance
-        id: id,
-        login: 'unknown',
-        fullName: 'unknown',
-        firstName: 'unknown',
-        lastName: 'unknown',
-        color: new THREE.Color(1, 0, 0),
-      };
+        id: {value: id},
+        login: {value: 'unknown'},
+        fullName: {value: 'unknown'},
+        firstName: {value: 'unknown'},
+        lastName: {value: 'unknown'},
+        color: {value: new THREE.Color(1, 0, 0)},
+        primaryGroupId: {value: null},
+      });
     }
   };
 
@@ -148,7 +150,7 @@
           var userData = json[i];
           new User(userData.id, userData.login, userData.full_name,
               userData.first_name, userData.last_name, new THREE.Color(
-                  userData.color[0], userData.color[1], userData.color[2]));
+                  userData.color[0], userData.color[1], userData.color[2], userData.primary_group_id));
         }
       })
       .catch(CATMAID.handleError)
@@ -161,12 +163,15 @@
    * This userprofile class represents options that are set for a particular user.
    */
   var Userprofile = function(profile) {
+    let allowedNull = new Set(['primary_group_id', 'primary_group_name']);
     // Store all recognized options as a member
     for (var field in this.getOptions()) {
       // Raise an error if an expected field does not exist.
       if (profile[field] === undefined || profile[field] === null) {
-        throw "The initialization data for the user profile is lacking the '" +
-            field + "' option!";
+        if (!allowedNull.has(field)) {
+          throw "The initialization data for the user profile is lacking the '" +
+              field + "' option!";
+        }
       }
       // Store the data if it is available
       this[field] = profile[field];
@@ -186,6 +191,7 @@
       show_tracing_tool: false,
       show_ontology_tool: false,
       show_roi_tool: false,
+      primary_group_id: false,
     };
   };
 

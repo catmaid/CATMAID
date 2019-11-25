@@ -383,6 +383,14 @@ def stats_user_history(request:HttpRequest, project_id=None) -> JsonResponse:
       required: false
       type: string
       paramType: form
+    - name: with_imports
+      description: |
+        Whether or not to return information on the imported number of nodes and
+        cable length.
+      required: false
+      defaultValue: true
+      type: string
+      paramType: form
     models:
       stats_user_history_cell:
         id: stats_user_history_cell
@@ -438,6 +446,7 @@ def stats_user_history(request:HttpRequest, project_id=None) -> JsonResponse:
     """
     raw_time_zone = request.GET.get('time_zone', settings.TIME_ZONE)
     time_zone = pytz.timezone(raw_time_zone)
+    with_imports = get_request_bool(request.GET, 'with_imports', True)
 
     # Get the start date for the query, defaulting to 10 days ago.
     start_date = request.GET.get('start_date', None)
@@ -504,6 +513,12 @@ def stats_user_history(request:HttpRequest, project_id=None) -> JsonResponse:
     tree_reviewed_nodes = select_review_stats(cursor, project_id,
             start_date_utc, end_date_utc, time_zone)
 
+    if with_imports:
+        import_treenode_stats = select_import_node_stats(cursor, project_id,
+                start_date_utc, end_date_utc, time_zone)
+        import_cable_stats = select_import_cable_stats(cursor, project_id,
+                start_date_utc, end_date_utc, time_zone)
+
     for di in treenode_stats:
         user_id = str(di[0])
         date = di[1].strftime('%Y%m%d')
@@ -523,6 +538,17 @@ def stats_user_history(request:HttpRequest, project_id=None) -> JsonResponse:
         user_id = str(di[0])
         date = di[1].strftime('%Y%m%d')
         stats_table[user_id][date]['new_reviewed_nodes'] = di[2]
+
+    if with_imports:
+        for di in import_treenode_stats:
+            user_id = str(di[0])
+            date = di[1].strftime('%Y%m%d')
+            stats_table[user_id][date]['new_import_treenodes'] = di[2]
+
+        for di in import_cable_stats:
+            user_id = str(di[0])
+            date = di[1].strftime('%Y%m%d')
+            stats_table[user_id][date]['new_import_cable_length'] = di[2]
 
     return JsonResponse({
         'stats_table': stats_table,
@@ -647,6 +673,166 @@ def select_cable_stats(cursor, project_id, start_date_utc, end_date_utc,
     ''', dict(tz=time_zone.zone, project_id=project_id,
             start_date_utc=start_date_utc, end_date_utc=end_date_utc,
             time_unit=time_unit))
+
+    return cursor.fetchall()
+
+def select_import_node_stats(cursor, project_id, start_date_utc, end_date_utc,
+        time_zone, time_unit='day'):
+
+    # Get review information by first getting all hourly precomputed statistics
+    # for the requested timezone and then add all remaining statistics on
+    # demand. The result sum is returned as float, to not required
+    # Decimal-to-JSON conversion.
+    cursor.execute('''
+        WITH precomputed AS (
+            SELECT user_id,
+                date,
+                SUM(n_imported_treenodes) AS n_imported_treenodes
+            FROM catmaid_stats_summary
+            WHERE project_id = %(project_id)s
+            AND date >= %(start_date_utc)s
+            AND date < %(end_date_utc)s
+            -- This is required to not just take the last available cache
+            -- entry, which might not contain a valid precomputed import
+            -- cache field.
+            AND n_imported_treenodes > 0
+            GROUP BY 1, 2
+        ),
+        last_precomputation AS (
+            SELECT COALESCE(
+                -- Select first start date after last precomputed hour/bucket
+                date_trunc('hour', MAX(date)) + interval '1 hour',
+                %(start_date_utc)s) as max_date
+            FROM precomputed
+        ),
+        transactions AS (
+            SELECT cti.transaction_id, cti.execution_time
+            FROM last_precomputation
+            JOIN catmaid_transaction_info cti
+                ON cti.execution_time >= last_precomputation.max_date
+            WHERE cti.project_id = %(project_id)s
+            AND label = 'skeletons.import'
+        ),
+        all_treenodes AS (
+            SELECT p.user_id AS user_id,
+                p.date AS date,
+                p.n_imported_treenodes AS n_imported_treenodes
+            FROM precomputed p
+
+            -- Don't expect duplicates
+            UNION ALL
+
+            SELECT sorted_row_history.user_id AS user_id,
+                sorted_row_history.date,
+                1 AS n_imported_treenodes
+            FROM (
+                SELECT t.id, t.user_id, t.creation_time AS date,
+                    ROW_NUMBER() OVER(PARTITION BY t.id ORDER BY t.edition_time) AS n
+                FROM last_precomputation,
+                   transactions tx
+                JOIN treenode__with_history t
+                    ON t.txid = tx.transaction_id
+                WHERE t.creation_time = tx.execution_time
+                AND t.creation_time >= last_precomputation.max_date
+            ) sorted_row_history
+            WHERE sorted_row_history.n = 1
+        )
+        SELECT t.user_id,
+            date_trunc(%(time_unit)s, timezone(%(tz)s, t.date)) AS date,
+            SUM(t.n_imported_treenodes)::float
+        FROM all_treenodes t
+        GROUP BY 1, 2
+    ''', {
+        'tz': time_zone.zone,
+        'utc_offset': time_zone,
+        'project_id': project_id,
+        'start_date_utc': start_date_utc,
+        'end_date_utc': end_date_utc,
+        'time_unit': time_unit
+    })
+
+    return cursor.fetchall()
+
+def select_import_cable_stats(cursor, project_id, start_date_utc, end_date_utc,
+        time_zone, time_unit='day'):
+    # The result sum is returned as float, to not required Decimal-to-JSON
+    # conversion.
+    cursor.execute('''
+        WITH precomputed AS (
+            SELECT user_id,
+                date,
+                SUM(import_cable_length) AS cable_length
+            FROM catmaid_stats_summary
+            WHERE project_id = %(project_id)s
+            AND date >= %(start_date_utc)s
+            AND date < %(end_date_utc)s
+            AND import_cable_length > 0
+            GROUP BY 1, 2
+        ),
+        last_precomputation AS (
+            SELECT COALESCE(
+                -- Select first start date after last precomputed hour/bucket
+                date_trunc('hour', MAX(date)) + interval '1 hour',
+                %(start_date_utc)s) as max_date
+            FROM precomputed
+        ),
+        cable_info AS (
+            SELECT p.user_id, p.date, p.cable_length
+            FROM precomputed p
+
+            -- Don't expect duplicates
+            UNION ALL
+
+            SELECT child.uid AS user_id,
+                child.date AS date,
+                SUM(edge.length) AS cable_length
+            FROM (
+                SELECT
+                    child.user_id AS uid,
+                    child.date,
+                    child.parent_id,
+                    child.location_x,
+                    child.location_y,
+                    child.location_z,
+                    child.txid
+                FROM (
+                    SELECT DISTINCT t.id, t.user_id, t.creation_time AS date,
+                        t.parent_id, t.location_x, t.location_y, t.location_z, t.txid,
+                        ROW_NUMBER() OVER(PARTITION BY t.id ORDER BY t.edition_time) AS n
+                    FROM last_precomputation, treenode__with_history t
+                    JOIN catmaid_transaction_info cti
+                      ON t.txid = cti.transaction_id
+                    WHERE cti.project_id = %(project_id)s
+                      AND ABS(EXTRACT(EPOCH FROM t.creation_time) - EXTRACT(EPOCH FROM cti.execution_time)) < 3600
+                      AND t.creation_time >= last_precomputation.max_date
+                      AND label = 'skeletons.import'
+                ) child
+            ) AS child
+            INNER JOIN LATERAL (
+                SELECT sqrt(pow(child.location_x - parent.location_x, 2)
+                          + pow(child.location_y - parent.location_y, 2)
+                          + pow(child.location_z - parent.location_z, 2)) AS length
+                FROM treenode__with_history parent
+                WHERE parent.project_id = %(project_id)s
+                  AND parent.id = child.parent_id
+                  -- This is okay, because we assume one transaction per import
+                  AND parent.txid = child.txid
+                LIMIT 1
+            ) AS edge ON TRUE
+            GROUP BY child.uid, child.date
+        )
+        SELECT l.user_id,
+            date_trunc(%(time_unit)s, timezone(%(tz)s, l.date)) AS date,
+            ROUND(SUM(l.cable_length))::float
+        FROM cable_info l
+        GROUP BY 1, 2
+    ''', {
+        'tz': time_zone.zone,
+        'project_id': project_id,
+        'start_date_utc': start_date_utc,
+        'end_date_utc': end_date_utc,
+        'time_unit': time_unit
+    })
 
     return cursor.fetchall()
 
@@ -791,6 +977,7 @@ def populate_stats_summary(project_id, delete:bool=False, incremental:bool=True)
     populate_cable_stats_summary(project_id, incremental, cursor)
     populate_nodecount_stats_summary(project_id, incremental, cursor)
     populate_import_nodecount_stats_summary(project_id, incremental, cursor)
+    populate_import_cable_stats_summary(project_id, incremental, cursor)
 
 def populate_review_stats_summary(project_id, incremental:bool=True, cursor=None) -> None:
     """Add review summary information to the summary table. Create hourly
@@ -981,6 +1168,12 @@ def populate_import_nodecount_stats_summary(project_id, incremental:bool=True,
     # import treenode count value above zero for the passed in project and
     # (re)compute statistics starting one hour before. This means, some
     # statistics might be recomputed, which is done to increase reobustness.
+    #
+    # Note on line "AND ABS(EXTRACT…)": Ideally, we could query for the first
+    # transaction for an object by testing for equality of creation_time and
+    # execution_time. Unfortunately, this only works in cases where no ORM was
+    # used at the moment. In that case we assume the difference is smaller than
+    # one hour (3600 seconds). This should be robust enough for our use case.
     cursor.execute("""
         WITH last_precomputation AS (
             SELECT CASE WHEN %(incremental)s = FALSE THEN '-infinity'
@@ -1001,7 +1194,7 @@ def populate_import_nodecount_stats_summary(project_id, incremental:bool=True,
                 JOIN catmaid_transaction_info cti
                   ON t.txid = cti.transaction_id
                 WHERE cti.project_id = %(project_id)s
-                  AND t.creation_time = cti.execution_time
+                  AND ABS(EXTRACT(EPOCH FROM t.creation_time) - EXTRACT(EPOCH FROM cti.execution_time)) < 3600
                   AND t.creation_time >= last_precomputation.max_date
                   AND label = 'skeletons.import'
             ) sorted_row_history
@@ -1014,6 +1207,72 @@ def populate_import_nodecount_stats_summary(project_id, incremental:bool=True,
         FROM node_info ni
         ON CONFLICT (project_id, user_id, date) DO UPDATE
         SET n_imported_treenodes = EXCLUDED.n_imported_treenodes;
+    """, dict(project_id=project_id, incremental=incremental))
+
+def populate_import_cable_stats_summary(project_id, incremental:bool=True, cursor=None) -> None:
+    """Add imported cable length summary data to the statistics summary table.
+    By default, this happens in an incremental manner, but can optionally be
+    fone for all data from scratch (overriding existing statistics).
+    """
+    if not cursor:
+        cursor = connection.cursor()
+
+    cursor.execute("""
+        WITH last_precomputation AS (
+            SELECT CASE WHEN %(incremental)s = FALSE THEN '-infinity'
+                ELSE COALESCE(date_trunc('hour', MAX(date)) - interval '1 hour',
+                    '-infinity') END AS max_date
+            FROM catmaid_stats_summary
+            WHERE project_id=%(project_id)s
+                AND import_cable_length > 0
+        ),
+        sorted_row_history AS (
+            SELECT DISTINCT t.id, t.user_id, t.creation_time AS date,
+                t.parent_id,  t.location_x, t.location_y, t.location_z, t.txid,
+                ROW_NUMBER() OVER(PARTITION BY t.id ORDER BY t.edition_time) AS n
+            FROM last_precomputation, treenode__with_history t
+            JOIN catmaid_transaction_info cti
+              ON t.txid = cti.transaction_id
+            WHERE cti.project_id = %(project_id)s
+              AND ABS(EXTRACT(EPOCH FROM t.creation_time) - EXTRACT(EPOCH FROM cti.execution_time)) < 3600
+              AND t.creation_time >= last_precomputation.max_date
+              AND t.creation_time < date_trunc('hour', CURRENT_TIMESTAMP)
+              AND label = 'skeletons.import'
+        ),
+        cable_info AS (
+            SELECT child.uid AS user_id,
+                child.date AS date,
+                SUM(edge.length) AS cable_length
+            FROM (
+                SELECT
+                    child.user_id AS uid,
+                    child.date,
+                    child.parent_id,
+                    child.location_x,
+                    child.location_y,
+                    child.location_z,
+                    child.txid
+                FROM sorted_row_history child
+            ) AS child
+            INNER JOIN LATERAL (
+                SELECT sqrt(pow(child.location_x - parent.location_x, 2)
+                          + pow(child.location_y - parent.location_y, 2)
+                          + pow(child.location_z - parent.location_z, 2)) AS length
+                FROM treenode__with_history parent
+                WHERE parent.project_id = %(project_id)s
+                  AND parent.id = child.parent_id
+                  -- This is okay, because we assume one transaction per import
+                  AND parent.txid = child.txid
+                LIMIT 1
+            ) AS edge ON TRUE
+            GROUP BY child.uid, child.date
+        )
+        INSERT INTO catmaid_stats_summary (project_id, user_id, date,
+                import_cable_length)
+        SELECT %(project_id)s, ci.user_id, ci.date, ci.cable_length
+        FROM cable_info ci
+        ON CONFLICT (project_id, user_id, date) DO UPDATE
+        SET import_cable_length = EXCLUDED.cable_length;
     """, dict(project_id=project_id, incremental=incremental))
 
 

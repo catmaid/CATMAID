@@ -15,8 +15,8 @@
    */
   CATMAID.NeuronNameService = (function()
   {
-    // The NeuronNameService is a singleton
-    var instance;
+    // The NeuronNameService is a singleton, one per API.
+    var instances = new Map();
 
     var DEFAULT_COMPONENT_LIST = [
           {id: 'skeletonid', name: "Skeleton ID"},
@@ -29,7 +29,7 @@
      * Creates a new instance of the neuron name service. If empty is true, the
      * component list is empty.
      */
-    function init(empty) {
+    function init(empty, api = undefined) {
       // All available naming options. If an entry needs a parameter and includes
       // the pattern "..." in its name, this pattern will be replaced by the
       // parameter when added to the actual label component list.
@@ -266,7 +266,7 @@
         registerAllFromList: function(client, skeletonIds)
         {
           let models = skeletonIds.reduce((o, skid) => {
-            o[skid] = new CATMAID.SkeletonModel(skid);
+            o[skid] = new CATMAID.SkeletonModel(skid, undefined, undefined, api);
             return o;
           }, {});
           return this.registerAll(client, models);
@@ -462,7 +462,7 @@
               var metaLabel = function(maID, userID) {
                   var ma = data.skeletons[skid].annotations.reduce(function(o, a) {
                     // Test if current annotation has meta annotations
-                    if (a.id in data.metaannotations) {
+                    if (data.metaannotations && a.id in data.metaannotations) {
                       var hasID = function(ma) {
                         return ma.id === maID;
                       };
@@ -695,7 +695,9 @@
               // Sort queries by API
               let querySkidsByAPI = querySkids.reduce((o, s) => {
                 let entry = managedSkeletons[s];
-                let key = entry && entry.model ? (entry.model.api || undefined) : undefined;
+                // If either the model has an API defined or the neuron name
+                // server instance has an API defined, use it.
+                let key = entry && entry.model ? (entry.model.api || api || undefined) : undefined;
                 let apiModels = o.get(key);
                 if (!apiModels) {
                   apiModels = [];
@@ -753,6 +755,10 @@
          * annotation links so that the name service can update itself.
          */
         registerEventHandlers: function() {
+          let instance = instances.get(api);
+          if (!instance) {
+            throw new CATMAID.ValueError('Could not find neuron name service for API');
+          }
           CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
               this.unregisterSingleFromAllClients, instance);
           CATMAID.Annotations.on(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
@@ -768,6 +774,10 @@
          * change events.
          */
         unregisterEventHandlers: function() {
+          let instance = instances.get(api);
+          if (!instance) {
+            throw new CATMAID.ValueError('Could not find neuron name service for API');
+          }
           CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
               this.unregisterSingleFromAllClients, instance);
           CATMAID.Annotations.off(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
@@ -786,9 +796,20 @@
     }
 
     return {
-      getInstance: function() {
+
+      /**
+       * Return a singleton instance of the NeuronNameService.
+       *
+       * @param {API} api (optional) The back-end to use. By default the regular
+       *                             back-end is used.
+       */
+      getInstance: function(api = undefined) {
+        // If no API is provided (the default), null is used as a unique index
+        // for the regular back-end.
+        let instance = instances.get(api ? api : undefined);
         if (!instance) {
-          instance = init();
+          instance = init(undefined, api);
+          instances.set(api || undefined, instance);
           instance.registerEventHandlers();
           instance.loadConfigurationFromSettings();
         }
@@ -797,11 +818,39 @@
       },
 
       /**
+       * Remove a previously created singleton.
+       *
+       * @param {API} api (optional) The back-end to use. By default the regular
+       *                             back-end is used.
+       */
+      forgetInstance: function(api = undefined) {
+        instances.delete(api ? api : undefined);
+      },
+
+      /**
        * Crate a new name service instance which is independent from the
        * singleton.
+       *
+       * @param {API} api (optional) The back-end to use. By default the regular
+       *                             back-end is used.
        */
-      newInstance: function(empty) {
-        return init(empty);
+      newInstance: function(empty, api = undefined) {
+        return init(empty, api);
+      },
+
+      /**
+       * Register all models for the passed in client. This is done for each API
+       * defined by the models.
+       */
+      registerAll: function(client, models, callback) {
+        let modelsPerAPI = CATMAID.API.splitByAPI(models);
+        let promises = [];
+        for (let [apiName, apiModels] of modelsPerAPI.entries()) {
+          promises.push(CATMAID.NeuronNameService.getInstance(apiName).registerAll(client, apiModels));
+        }
+        let result = Promise.all(promises);
+        if (callback) result.then(callback).catch(CATMAID.handleError);
+        return result;
       },
     };
   })();

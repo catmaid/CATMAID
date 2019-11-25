@@ -112,10 +112,13 @@ def check_broken_section(project_id:int, skeleton_ids=None, cursor=None) -> List
 
     return cursor.fetchall()
 
+@api_view(['POST'])
 @requires_user_role(UserRole.Browse)
 def analyze_skeletons(request:HttpRequest, project_id=None) -> JsonResponse:
+    """Find potentially problematic locations in a list of skeletons.
+    """
     project_id = int(project_id)
-    skids = [int(v) for k,v in request.POST.items() if k.startswith('skeleton_ids[')]
+    skids = get_request_list(request.POST, 'skeleton_ids', map_fn=int)
     s_skids = ",".join(map(str, skids))
     extra = int(request.POST.get('extra', 0))
     adjacents = int(request.POST.get('adjacents', 0))
@@ -179,12 +182,13 @@ def analyze_skeletons(request:HttpRequest, project_id=None) -> JsonResponse:
         5: "End node without end tag",
         6: "TODO tag",
         7: "End-node tag in a non-end node.",
-        8: "Node in broken section"
+        8: "Node in broken section",
+        9: "Low confidence location",
     }
 
     return JsonResponse(blob)
 
-def _analyze_skeleton(project_id:int, skeleton_id:int, adjacents:int) -> List[Union[Tuple[int, Any], Tuple[int, Any, Dict[str, Any]]]]:
+def _analyze_skeleton(project_id:int, skeleton_id:int, adjacents:int, min_positive_confidence:int=4) -> List[Union[Tuple[int, Any], Tuple[int, Any, Dict[str, Any]]]]:
     """ Takes a skeleton and returns a list of potentially problematic issues,
     as a list of tuples of two values: issue type and treenode ID.
     adjacents: the number of nodes in the paths starting at a node when checking for duplicated connectors.
@@ -388,6 +392,23 @@ def _analyze_skeleton(project_id:int, skeleton_id:int, adjacents:int) -> List[Un
             'orientation': r[3],
             'section': r[4],
             'section_phys': r[5]
+        }))
+
+    # Type 9: low confidence locations
+    cursor.execute("""
+        SELECT id, confidence
+        FROM treenode
+        WHERE confidence < %(min_positive_confidence)s
+        AND skeleton_id = %(skeleton_id)s
+        AND project_id = %(project_id)s
+    """, {
+        'project_id': project_id,
+        'skeleton_id': skeleton_id,
+        'min_positive_confidence': min_positive_confidence,
+    })
+    for row in cursor.fetchall():
+        issues.append((9, row[0], {
+            'confidence': row[1],
         }))
 
     return issues

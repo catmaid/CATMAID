@@ -70,6 +70,30 @@ Project statistics:
 - It is now possible to configure how many largest neurons should be displayed
   as well as an optional name pattern.
 
+- The user/time action table will now also list imported nodes and imported
+  cable length. These values are subtracted from the corresponding regular
+  counters. If "Include imports" is unchecked, the same information that was
+  displayed before this commit is shown, i.e. the regular node count and cable
+  length field include the imported data.
+
+Tracing tool:
+
+- The tool bar button to refresh caches has been replaced with a button to open
+  a context menu titled "More tools". The context menu has an entry to refresh
+  cashes and a list of tracing data in other projects.
+
+- Tracing data from other CATMAID instances (or other local projects) can now be
+  added to the active stack viewer by selecting the respective remote project
+  from the "More tools" menu item "Remote data".
+
+- To open a remote CATMAID instance at the same location as the current view,
+  find the remote project in the "Remote data" section of the "More tools" menu,
+  and click on "Open remote view".
+
+- The marker type used fore remote tracing data can be configured through the
+  Settings Widget in the Tracing Overlay section, option "Remote node marker". A
+  ring is used by default.
+
 Tracing overlay:
 
 - The remote mirror CATMAID instance configuration is now taken from the central
@@ -96,6 +120,11 @@ Tracing overlay:
   of creators for all three visibility groups. This is useful to define
   visibility groups on the project or instance level that include a hiding
   pattern while guaranteeing that users see their own nodes.
+
+- Shift + Click on a remote node from a local node (or vice versa) will now
+  bring up an import preview dialog which is used as a merge preview at the same
+  time. Confirming the change will import the remote skeleton and merge it at
+  the selected location, works with virtual nodes.
 
 Navigator:
 
@@ -184,6 +213,10 @@ Review widget:
   have a presynaptic node associated with them as well the ones without a
   postsynaptic node.
 
+- The Skeleton analytics tab now also lists low confidence nodes/edges with a
+  confidence lower than 4. The label of each entry shows the respective
+  confidence value.
+
 Import/Export widget:
 
 - It is now possible to import neurons from other CATMAID instances. The "Import
@@ -192,9 +225,22 @@ Import/Export widget:
   annotations. If no annotation are provided, CATMAID will add the annotation
   "Import" to imported skeletons.
 
+- A custom set of default annotations that will be added to imported skeletons
+  can be defined through the "Default skeleton import annotations" option in the
+  Settings Widget. At the moment, this is set to "Import" as well as "{source}
+  upload {group}". The second annotation uses two optional placeholders, which
+  are replaced by the skeleton import source reference and the user's primary
+  group, respectively. Should no primary group be set, the username name is
+  used.
+
 - The original ID and source URL of all imported skeletons is tracked. This
   allows the widget to display local skeleton IDs, if the remote ID has already
   been imported from the current source URL.
+
+- If the active skeleton is a remote skeleton (in a remote data tracing layer),
+  it can now be imported by clicking the "Import active skeleton" button in the
+  "Import from CATMAID" tab of the widget. Like the other import, this iwll
+  first ask for confirmation with a 3D dialog.
 
 - The NRRD export can now use the JRC2018U (unisex) target template brain space
   as target.
@@ -205,6 +251,8 @@ Import/Export widget:
 - The NRRD export will now by default create a Zip file if multiple skeletons
   are exported both in a synchronous and asynchronous export.
 
+- SWC imports can now have a user defined initial name.
+
 Neuron navigator:
 
 - The new button "Imported nodes" will list all imported treenodes for the
@@ -214,8 +262,47 @@ Neuron navigator:
   next to the listed neuron name. The last time this link was edited is shown as
   well. Both columns can be used for sorting as well.
 
+3D viewer:
+
+- The new shading mode named "Imported fragments" will make only imported edges
+  visible. The new coloring mode "Imported (green)" will highlight all imported
+  fragments in green.
+
+- Stored views (View tab > Save view) are now shared between all CATMAID
+  instances, not only between all 3D Viewers like it is done now. This means
+  they are also persisted on the back-end and can be retrieved at a later point.
+
+Neuroglancer widget:
+
+- CATMAID now includes a copy of Neuroglancer that can be accessed at
+  <catmaid_base_url>/neuroglancer
+
+- The Neurglancer widget allows to open an instance of Neuroglancer in a new
+  window and its navigation (center location, zoom level) is synchronized with
+  the navigation happening in CATMAID. An URL to a Neuroglancer instance containing
+  the same dataset as shown in the CATMAID stack viewer needs to be provided.
+
+- The widget's info page has a step-by-step guide on how to use it for the
+  FAFB dataset
+
+Treenode table:
+
+- The UI elements to select active filter options like node type, confidence or
+  confidence operator now havea a colored background if an active filter is
+  selected. This is useful to draw more attention to the fact that leaf nodes
+  are selected by default.
+
+- Remote skeletons are now supported. They can be mixed with local skeletons.
+
+Spaces:
+
+- Users with the new "can_fork" permission have a new user menu entry in the
+  upper right corner: "Create own space". This allows to create a personal copy
+  of a project, without any tracing data.
 
 Miscellaneous:
+
+- The active project title is now shown in the window title.
 
 - Projects can now be kept open if all last stack-viewers are closed. To not
   automatically close the open project with the last stack-viewer, uncheck the
@@ -234,6 +321,10 @@ Miscellaneous:
 
 - Selection table: the summary info button now shows also the number of imported
   nodes within the selected skeletons.
+
+- Neuron search: search fields will now expand if their content is bigger than
+  the default size. Also copied fields don't contain the content of the source
+  field anymore.
 
 - Settings widget: it is now possible to clear both front-end and back-end
   settings through the "Clear settings" button. It will ask for confirmation and
@@ -259,6 +350,9 @@ Miscellaneous:
 
 - Connectivity widget: fix error showing when doing many subsequent Refresh
   button clicks.
+
+- 3D viewer: the handling of intersecting transparent objects has improved and
+  works like expected in most situations.
 
 ## Maintenance updates
 

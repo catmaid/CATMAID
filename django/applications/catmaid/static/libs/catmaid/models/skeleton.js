@@ -12,6 +12,36 @@
   var Skeletons = {
 
     /**
+     * Get base names for a list of skeletons, optionally from a remote API.
+     */
+    getNames: function(projectId, skeletonIds, api = undefined) {
+      return CATMAID.fetch({
+        url: projectId + '/skeleton/neuronnames',
+        method: 'POST',
+        data: {
+          skids: skeletonIds,
+        },
+        api: api,
+      });
+    },
+
+    getNodeCount: function(projectId, skeletonId, api = undefined) {
+      return CATMAID.fetch({
+        url: `${projectId}/skeleton/${skeletonId}/node_count`,
+        method: 'POST',
+        api: api,
+      });
+    },
+
+    getNodeCountFromTreenode: function(projectId, treenodeId, api = undefined) {
+      return CATMAID.fetch({
+        url: `${projectId}/skeleton/node/${treenodeId}/node_count`,
+        method: 'POST',
+        api: api,
+      });
+    },
+
+    /**
      * Split a skeleton at a specific treenodes.
      *
      * @param {State}   state      Neighborhood state for node
@@ -21,11 +51,12 @@
      *                                     IDs for the upstream split part.
      * @param {object}  upstream_annot_map Map of annotation names vs annotator
      *                                     IDs for the downstream split part.
+     * @param {API}      api       (optional) The CATMAID API to talk to.
      *
      * @returns A new promise that is resolved once the skeleton is split.
      */
     split: function(state, projectId, treenodeId,
-        upstream_annot_map, downstream_annot_map) {
+        upstream_annot_map, downstream_annot_map, api = undefined) {
 
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to split skeletons');
@@ -37,7 +68,12 @@
         state: state.makeNeighborhoodState(treenodeId)
       };
 
-      return CATMAID.fetch(url, 'POST', params).then((function(json) {
+      return CATMAID.fetch({
+        url: url,
+        method: 'POST',
+        data: params,
+        api: api,
+      }).then((function(json) {
         this.trigger(CATMAID.Skeletons.EVENT_SKELETON_SPLIT,
             json.new_skeleton_id,
             json.existing_skeleton_id,
@@ -65,11 +101,12 @@
      *                                    will add a new annotation to the
      *                                    target neuron, that is a refernce to
      *                                    the merged in neuron. By default false.
+     * @param {API}      api          (optional) The CATMAID API to talk to.
      *
      * @returns A new promise that is resolved once both skeletons are joined.
      */
     join: function(state, projectId, fromId, toId, annotationSet,
-        samplerHandling, fromNameReference = false) {
+        samplerHandling, fromNameReference = false, api = undefined) {
 
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to join skeletons');
@@ -93,7 +130,12 @@
         params.from_name_reference = fromNameReference;
       }
 
-      return CATMAID.fetch(url, 'POST', params).then((function(json) {
+      return CATMAID.fetch({
+          url: url,
+          method: 'POST',
+          data: params,
+          api: api,
+      }).then((function(json) {
         // Trigger join, delete and change events
         CATMAID.Skeletons.trigger(
             CATMAID.Skeletons.EVENT_SKELETONS_JOINED, json.deleted_skeleton_id,
@@ -187,6 +229,44 @@
     },
 
     /**
+     * Export skeletons as eSWC files. They are like SWCs files but contain
+     * additional columns for each node: creator username, creation time, editor
+     * username, edition_time, confidence.
+     *
+     * @param {number}   projectId    Project sapce to work in
+     * @param {number[]} skeletonIds  Skeletons to export as SWC
+     * @param {boolean}  linearizeIds Whether node IDs should be mapped to
+     *                                incremental numbers starting with 1.
+     * @param {string[]} somaMarkers (optional) A list of "root", "tag:soma",
+     *                               "radius:<n>" to specify that the exported
+     *                               SWC should mark somas and based on what
+     *                               criterion. Precedence as listed.
+     * @param {API}      api         (optional) The CATMAID API to talk to.
+     *
+     * @return A new promise that is resolved with the skeleton's SWC
+     *         representation.
+     */
+    getESWC: function(projectId, skeletonIds, linearizeIds, somaMarkers, api) {
+      if (!skeletonIds || !skeletonIds.length) {
+        return Promise.reject(new CATMAID.ValueError("Need at least one skeleton ID"));
+      }
+      var eswcRequests = skeletonIds.map(function(skid) {
+        return CATMAID.fetch({
+          url: projectId + '/skeleton/' + skid + '/eswc',
+          method: 'GET',
+          data: {
+            'linearize_ids': !!linearizeIds,
+            'soma_markers': somaMarkers,
+          },
+          raw: true,
+          api: api,
+        });
+      });
+
+      return Promise.all(eswcRequests);
+    },
+
+    /**
      * Export skeletons as SWC and ask browser to download it.
      *
      * @param {number}   projectId   Project space to work in
@@ -237,6 +317,42 @@
       }
 
       let file = new File([swcData], 'skeleton.swc');
+      let data = new FormData();
+      data.append(file.name, file, file.name);
+      data.append('name', name);
+      if (annotations) {
+        for (let i=0; i<annotations.length; ++i) {
+          data.append(`annotations[${i}]`, annotations[i]);
+        }
+      }
+      data.append('source_url', sourceUrl);
+      data.append('source_id', sourceId);
+      data.append('source_project_id', sourceProjectId);
+
+      return CATMAID.fetch({
+        url: projectId + '/skeletons/import',
+        method: 'POST',
+        headers: {
+          "Content-type": null,
+        },
+        data: data,
+      });
+    },
+
+    /**
+     * Import eSWC data into the back-end. They are like SWCs files but contain
+     * additional columns for each node: creator username, creation time, editor
+     * username, edition_time, confidence.
+     */
+    importESWC: function(projectId, swcData, name, annotations,
+        sourceUrl = undefined, sourceId = undefined, sourceProjectId = undefined) {
+      let sourceParams = [sourceUrl, sourceId, sourceProjectId];
+      if (sourceParams.some(e => !!e) && !sourceParams.every(e => !!e)) {
+        throw new CATMAID.ValueError('All or none of the parameters sourceUrl, ' +
+            'sourceId and sourceProjectId have to be provided');
+      }
+
+      let file = new File([swcData], 'skeleton.eswc');
       let data = new FormData();
       data.append(file.name, file, file.name);
       data.append('name', name);
@@ -634,13 +750,15 @@
    *                                     IDs for the upstream split part.
    * @param {object}  upstream_annot_map Map of annotation names vs annotator
    *                                     IDs for the downstream split part.
+   * @param {API}     api         (optional) The CATMAID API to talk to.
    */
   CATMAID.SplitSkeletonCommand = CATMAID.makeCommand(
-      function(state, projectId, treenodeId, upstream_annot_map, downstream_annot_map) {
+      function(state, projectId, treenodeId, upstream_annot_map, downstream_annot_map, api = undefined) {
 
     var exec = function(done, command, map) {
       var split = CATMAID.Skeletons.split(state,
-          project.id, treenodeId, upstream_annot_map, downstream_annot_map);
+          project.id, treenodeId, upstream_annot_map, downstream_annot_map,
+          api);
       return split.then(function(result) {
         done();
         return result;
@@ -673,14 +791,15 @@
      *                                    will add a new annotation to the
      *                                    target neuron, that is a refernce to
      *                                    the merged in neuron. By default false.
+     * @param {API}     api           (optional) The CATMAID API to talk to.
    */
   CATMAID.JoinSkeletonsCommand = CATMAID.makeCommand(
       function(state, projectId, fromId, toId, annotationSet, samplerHandling,
-        fromNameReference) {
+        fromNameReference, api = undefined) {
 
     var exec = function(done, command, map) {
       var join = CATMAID.Skeletons.join(state, project.id, fromId, toId,
-          annotationSet, samplerHandling, fromNameReference);
+          annotationSet, samplerHandling, fromNameReference, api);
       return join.then(function(result) {
         done();
         return result;

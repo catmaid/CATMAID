@@ -47,10 +47,13 @@
     };
   })();
 
+  CATMAID.SkeletonElementsFactory.DISABLED = -1;
+
   var NODE_PARAMS = {
     ringWeightPx: 2,
     crossWeightPx: 2,
     crossRadiusPx: 3,
+    crossWideRadiusPx: 4,
     bullseyeRadiusPx: 1,
     innerRingPpn: 0.4
   };
@@ -112,6 +115,21 @@
   };
 
   /**
+   * Create a white crosshair, without outer ring.
+   *
+   * @param crossWeight
+   * @param crossRadius
+   */
+  var makeCrosshairNoRing = function(crossWeight, crossRadius) {
+    return new PIXI.Graphics()
+      .lineStyle(crossWeight, 0xFFFFFF)
+      .moveTo(-crossRadius, 0)
+      .lineTo(crossRadius, 0)
+      .moveTo(0, -crossRadius)
+      .lineTo(0, crossRadius);
+  };
+
+  /**
    * Create a white bullseye
    *
    * @param radius
@@ -144,10 +162,10 @@
       SkeletonElements.prototype.ArrowLine.prototype,
     ];
 
-    this.initTextures = function(force) {
+    this.initTextures = function(force, markerType = undefined) {
         concreteElements.forEach(function (klass) {
           klass.overlayGlobals = this.overlayGlobals;
-          klass.initTextures(force);
+          klass.initTextures(force, markerType);
         }, this);
     };
 
@@ -343,7 +361,7 @@
       this.dToSecBefore = -1;
       this.dToSecAfter = 1;
 
-      this.markerType = 'disc';
+      this.markerType = tracingOverlay.api ? CATMAID.TracingOverlay.Settings.session.remote_data_marker_type : 'disc';
 
       // Compute the planar X, Y and Z dimensions in stack space for the tracing
       // overlay of this prototype hierarchy. We don't expect this to change
@@ -512,6 +530,8 @@
         switch (this.markerType) {
           case 'crosshair':
             return makeCrosshair(radiusPx, args.ringWeightPx, args.crossWeightPx, args.crossRadiusPx);
+          case 'crosshair-no-ring':
+            return makeCrosshairNoRing(args.crossWeightPx, args.crossWideRadiusPx);
           case 'ring':
             return makeRing(radiusPx, args.ringWeightPx);
           case 'target':
@@ -523,17 +543,36 @@
         }
       };
 
-      this.initTextures = function () {
+      /**
+       * Using force causes this to leak a texture if the user switches between a small marker type (disc) and a large
+       * marker type (any other). This is necessary to change the size of the marker and happens very infrequently.
+       *
+       * @param force
+       */
+      this.initTextures = function (force = false, markerType = undefined) {
+        var oldMarkerType = this.markerType;
+        if (markerType) {
+          this.markerType = markerType;
+        }
+        force = force && (oldMarkerType === 'disc' ^ this.markerType === 'disc');
+        if (this.markerType === 'disc') {
+          this.NODE_RADIUS = 3;
+        } else if (this.markerType === 'crosshair-no-ring') {
+          this.NODE_RADIUS = 4;
+        } else {
+          this.NODE_RADIUS = 5;
+        }
         var g = this.makeMarker();
 
         var tracingOverlay = this.overlayGlobals.tracingOverlay;
-        var texture = tracingOverlay.pixiLayer._context.renderer.generateTexture(g, PIXI.settings.SCALE_MODES, 1);
+        var texture = tracingOverlay.pixiLayer._context.renderer.generateTexture(g, PIXI.settings.SCALE_MODE, 1);
 
-        if (this.NODE_TEXTURE) {
+        if (!force && this.NODE_TEXTURE) {
           var oldBaseTexture = this.NODE_TEXTURE.baseTexture;
           this.NODE_TEXTURE.baseTexture = texture.baseTexture;
           oldBaseTexture.destroy();
         } else {
+          if (this.NODE_TEXTURE) console.log('Warning: Possible treenode texture leak');
           this.NODE_TEXTURE = texture;
         }
 
@@ -551,7 +590,7 @@
       this.MIN_EDGE_LENGTH_SQ = 4; // Minimum size in px for edges to be drawn.
 
       // ID of the disabled nodes
-      this.DISABLED = -1;
+      this.DISABLED = CATMAID.SkeletonElementsFactory.DISABLED;
 
       this.type = SkeletonAnnotations.TYPE_NODE;
 
@@ -1421,15 +1460,15 @@
        *
        * @param force
        */
-      this.initTextures = function(force) {
+      this.initTextures = function(force, markerType) {
         var oldMarkerType = this.markerType;
-        this.markerType = CATMAID.TracingOverlay.Settings.session.connector_node_marker;
+        this.markerType = markerType || CATMAID.TracingOverlay.Settings.session.connector_node_marker;
         force = force && (oldMarkerType === 'disc' ^ this.markerType === 'disc');
         this.NODE_RADIUS = this.markerType === 'disc' ? 8 : 15;
         var g = this.makeMarker();
 
         var tracingOverlay = this.overlayGlobals.tracingOverlay;
-        var texture = tracingOverlay.pixiLayer._context.renderer.generateTexture(g, PIXI.settings.SCALE_MODES, 1);
+        var texture = tracingOverlay.pixiLayer._context.renderer.generateTexture(g, PIXI.settings.SCALE_MODE, 1);
 
         if (!force && this.NODE_TEXTURE) {
           var oldBaseTexture = this.NODE_TEXTURE.baseTexture;
@@ -1536,23 +1575,31 @@
 
         // Prevent node related click handling if the naviation mode is
         // enabled.
-        if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.MOVE ||
-            SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SELECT) {
+        let mode = catmaidTracingOverlay.mode || SkeletonAnnotations.currentmode;
+        let noInteraction = mode === SkeletonAnnotations.MODES.MOVE || mode === SkeletonAnnotations.MODES.SELECT;
+        let passiveInteraction = mode === SkeletonAnnotations.MODES.IMPORT;
+        let activeInteraction = !passiveInteraction;
+
+        if (noInteraction) {
           return;
         }
 
         var node = this.node;
         if (e.shiftKey || e.altKey) {
           var atnID = SkeletonAnnotations.getActiveNodeId();
-          if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-            // Delete node, but relay only a boolean result status using !!
-            return !!catmaidTracingOverlay.deleteNode(node.id);
+
+          if (activeInteraction) {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+              // Delete node, but relay only a boolean result status using !!
+              return !!catmaidTracingOverlay.deleteNode(node.id);
+            }
           }
+
           if (atnID) {
             var atnType = SkeletonAnnotations.getActiveNodeType();
             // connected activated treenode or connectornode
             // to existing treenode or connectornode
-            if (atnType === SkeletonAnnotations.TYPE_CONNECTORNODE) {
+            if (atnType === SkeletonAnnotations.TYPE_CONNECTORNODE && activeInteraction) {
               let atnSubType = SkeletonAnnotations.getActiveNodeSubType();
               let connectorNode = catmaidTracingOverlay.nodes.get(atnID);
 
@@ -1649,13 +1696,71 @@
             } else if (atnType === SkeletonAnnotations.TYPE_NODE) {
               // Joining two skeletons: only possible if one owns both nodes involved
               // or is a superuser
-              if( node.skeleton_id === SkeletonAnnotations.getActiveSkeletonId() ) {
+              if (node.skeleton_id === SkeletonAnnotations.getActiveSkeletonId()) {
                 alert('Can not join node with another node of the same skeleton!');
                 return;
               }
-              catmaidTracingOverlay.createTreenodeLink(atnID, node.id);
-              // TODO check for error
-              CATMAID.statusBar.replaceLast("Joined node #" + atnID + " to node #" + node.id);
+              // Remote skeletons can be involved, pass along a possible remote API. It is currently not
+              // allowed to have both skeletons of the merge being remote.
+              let fromApi = SkeletonAnnotations.getActiveSkeletonAPI();
+              let fromStackViewer = SkeletonAnnotations.getActiveStackViewerId();
+              let fromProjectId = SkeletonAnnotations.getActiveProjectId();
+              if (fromApi && catmaidTracingOverlay.api) {
+                CATMAID.warn("At least one skeleton has to be local");
+                return;
+              }
+              // In case the from-node has an API associated, swap from and to,, for this the fromApi is needed.
+              if (fromApi || catmaidTracingOverlay.api) {
+                let losingApi, losingSkeletonId, losingNodeId, losingProjectId,
+                    losingLocation,
+                    winningApi, winningSkeletonId, winningNodeId, winningProjectId,
+                    winningOverlay;
+                if (fromApi) {
+                  losingApi = fromApi;
+                  losingNodeId = atnID;
+                  losingSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+                  losingLocation = SkeletonAnnotations.getActiveNodePositionW();
+                  losingProjectId = fromProjectId;
+                  winningApi = undefined;
+                  winningNodeId = node.id;
+                  winningSkeletonId = node.skeleton_id;
+                  winningProjectId = catmaidTracingOverlay.projectId;
+                  winningOverlay = catmaidTracingOverlay;
+                } else {
+                  losingApi = catmaidTracingOverlay.api;
+                  losingNodeId = node.id;
+                  losingSkeletonId = node.skeleton_id;
+                  losingProjectId = catmaidTracingOverlay.projectId;
+                  losingLocation = {x: node.x, y: node.y, z: node.z};
+                  winningApi = undefined;
+                  winningNodeId = atnID;
+                  winningSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+                  winningProjectId = fromProjectId;
+                  winningOverlay =null;
+                  // Find other overlay
+                  for (let stackViewer of project.getStackViewers()) {
+                    for (let layer of stackViewer.getLayersOfType(CATMAID.TracingLayer)) {
+                      if (!layer.api && layer.tracingOverlay.nodes.has(winningNodeId)) {
+                        winningOverlay = layer.tracingOverlay;
+                        break;
+                      }
+                    }
+                  }
+                  if (!winningOverlay) {
+                    CATMAID.warn("Could not find local tracing overlay");
+                    return;
+                  }
+                }
+                CATMAID.Remote.mergeImportSkeleton(losingProjectId, losingSkeletonId,
+                    losingNodeId, losingApi, losingLocation, winningProjectId,
+                    winningSkeletonId, winningNodeId, winningApi, winningOverlay);
+                // TODO check for error
+                CATMAID.statusBar.replaceLast(`Attempting to join remote node #${losingNodeId} to local node ${winningNodeId}`);
+              } else {
+                catmaidTracingOverlay.createTreenodeLink(atnID, node.id, fromApi);
+                // TODO check for error
+                CATMAID.statusBar.replaceLast(`Joined node #${atnID} to node #${node.id}`);
+              }
             }
           } else {
             alert("Nothing to join without an active node!");
@@ -1674,14 +1779,16 @@
         if (e.shiftKey) return;
         if (!checkNodeID(this)) return;
 
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(this.node.overlayGlobals.skeletonElements);
+
         // Prevent node related pointer move handling if the naviation mode is
         // enabled.
-        if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.MOVE ||
-            SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SELECT) {
+        let mode = catmaidTracingOverlay.mode || SkeletonAnnotations.currentmode;
+        if (mode === SkeletonAnnotations.MODES.MOVE || mode === SkeletonAnnotations.MODES.SELECT ||
+            mode === SkeletonAnnotations.MODES.IMPORT) {
           return;
         }
 
-        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(this.node.overlayGlobals.skeletonElements);
         var node = this.node;
 
         if (!node) {
@@ -2247,7 +2354,7 @@
           cachedText.alpha = 1.0;
           cachedText.resolution = this.textResolution;
           var texture = this.overlayGlobals.tracingOverlay.pixiLayer._context.renderer.generateTexture(
-              cachedText, PIXI.settings.SCALE_MODES, 1);
+              cachedText, PIXI.settings.SCALE_MODE, 1);
           confidenceTextCache[confidence] = cachedText;
         } else if (cachedText.style.fontSize !== this.confidenceFontSize) {
           cachedText.style = {
@@ -2257,7 +2364,7 @@
               baseline: 'middle'};
           cachedText.resolution = this.textResolution;
           var texture = this.overlayGlobals.tracingOverlay.pixiLayer._context.renderer.generateTexture(
-              cachedText, PIXI.settings.SCALE_MODES, 1);
+              cachedText, PIXI.settings.SCALE_MODE, 1);
         }
 
         if (existing) {

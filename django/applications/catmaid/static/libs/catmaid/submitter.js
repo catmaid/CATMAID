@@ -1,8 +1,5 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
-/* global
-  requestQueue
-  */
 
 (function(CATMAID) {
 
@@ -23,7 +20,7 @@
    *
    * ... then submit requests like:
    *
-   * submit(CATMAID.makeURL('/skeleton_id/' + skeleton_id),
+   * submit(`/skeleton_id/${skeleton_id}`,
    *    'POST',
    *    {all: true},
    *    function(json) { alert('Continuation OK! JSON reply: ' + json); });
@@ -31,7 +28,7 @@
    * An optional fourth argument specifies whether the UI has to be blocked. An
    * optional fifth argument specifies calls with replace rather than register.
    */
-  CATMAID.submitterFn = function() {
+  CATMAID.submitterFn = function(api=undefined) {
     // Accumulate invocations
     var queue = [];
     // Store last result
@@ -136,39 +133,6 @@
       }
     };
 
-    var handlerFn = function(q) {
-      return function(status, text, xml, dataSize) {
-        if (200 !== status) {
-          return reset(q, "Unexpected request response status: " + status + "\n for URL: " + q.url);
-        }
-        if (!text) {
-          return reset(q, "Unexpected request response text: " + text + "\n for URL: " + q.url);
-        }
-        var json;
-        try {
-          if (q.raw) {
-            json = text;
-          } else {
-            json = JSON.parse(text);
-          }
-        } catch (e) {
-          alert(e);
-          return reset(q, "Unable to parse json text: " + text + "\n for URL: " + q.url);
-        }
-        if (!json) {
-          return reset(q, "Unexpected json: " + json + "\n for URL: " + q.url);
-        }
-        if (json.error) {
-          if (q.replace && 'REPLACED' === json.error) {
-            return complete(q);
-          } else {
-            return reset(q, json);
-          }
-        }
-        invoke(q, json, dataSize);
-      };
-    };
-
     var next = function() {
       if (0 === queue.length) return;
 
@@ -181,11 +145,28 @@
       }
 
       if (q.url) {
-        if (q.replace) {
-          requestQueue.replace(q.url, q.method, q.params, handlerFn(q), q.id, q.responseType, q.headers);
-        } else {
-          requestQueue.register(q.url, q.method, q.params, handlerFn(q), q.id, q.responseType, q.headers);
-        }
+        return CATMAID.fetch({
+            url: q.url,
+            method: q.method,
+            data: q.params,
+            id: q.id,
+            raw: q.raw,
+            responseType: q.responseType,
+            headers: q.headers,
+            replace: q.replace,
+            api: api,
+            details: true,
+          })
+          .then(response => {
+            invoke(q, response.data, response.dataSize);
+          })
+          .catch(error => {
+            if (error instanceof CATMAID.ReplacedRequestError) {
+              return complete(q);
+            } else {
+              return reset(q, error);
+            }
+          });
       } else {
         // No url: direct execution with last result
         invoke(q, lastResult);

@@ -15,7 +15,7 @@
    * @param {THREE.Color} color (Optional) Color of skeleton, default is yellow
    * @param {API}         api   (Optional) api of where to find this skeleton
    */
-  var SkeletonModel = function( id, name, color, api = undefined) {
+  var SkeletonModel = function( id, name, color, api = undefined, projectId = undefined) {
       this.id = parseInt(id);
       this.baseName = name || "";
       this.selected = true;
@@ -26,9 +26,18 @@
       this.color = color || new THREE.Color(defaultColor);
       this.opacity = 1; // from 0 to 1
       this.api = api;
+      this.projectId = projectId;
   };
 
   SkeletonModel.prototype = {};
+
+  /**
+   * A skeleton is a remote skeleton if it has an API associated with it.
+   */
+  Object.defineProperty(SkeletonModel.prototype, 'isRemote', {
+    get() { return !!this.api; },
+    enumerable: true,
+  });
 
   SkeletonModel.prototype.setVisible = function(v) {
       this.selected = v;
@@ -47,6 +56,7 @@
     m.meta_visible = this.meta_visible;
     m.opacity = this.opacity;
     m.api = this.api;
+    m.projectId = this.projectId;
     return m;
   };
 

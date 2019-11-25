@@ -64,15 +64,19 @@
 
     // This basic context menu offers so far only the option to jump to raw data.
     var contextMenu = new Menu();
-    contextMenu.update(options.items.reduce(function(config, item, i) {
-      // Use array index as key
-      config[i] = {
-        "title": item.title,
-        "action": select.bind(self, item),
-        "note": item.note || ""
-      };
-      return config;
-    }, {}));
+    if (options.items instanceof Array) {
+      contextMenu.update(options.items.reduce(function(config, item, i) {
+        // Use array index as key
+        config[i] = {
+          "title": item.title,
+          "action": item.action || select.bind(self, item),
+          "note": item.note || ""
+        };
+        return config;
+      }, {}));
+    } else {
+      contextMenu.update(items);
+    }
 
     // Append context menu to body and hide it by default
     var menuElement = contextMenu.getView();

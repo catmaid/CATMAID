@@ -245,7 +245,7 @@
     fetchSkeletons(
         skeleton_ids,
         function(skeleton_id) {
-          return CATMAID.makeURL(project.id + '/' + skeleton_id + '/1/0/compact-skeleton');
+          return `${project.id}/${skeleton_id}/1/0/compact-skeleton`;
         },
         function(skeleton_id) { return {}; }, // post
         (function(skeleton_id, json) {

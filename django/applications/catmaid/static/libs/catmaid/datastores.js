@@ -8,10 +8,12 @@
    * @class DataStore
    * @constructor
    * @param {string} name Name of this datastore, alphanumeric and hyphens only.
+   * @param {API}    api  (Optional) The back-end to use.
    */
-  function DataStore(name) {
+  function DataStore(name, api = undefined) {
     this.name = name;
     this.entries = null;
+    this.api = api;
 
     CATMAID.asEventSource(this);
   }
@@ -50,6 +52,7 @@
           data: {
             project_id: project ? project.id : undefined
           },
+          api: this.api,
       })
       .then(data => {
         this.entries = data.reduce(
@@ -170,6 +173,7 @@
           key: key,
           value: JSON.stringify(entry.value)
         },
+        api: this.api,
       })
       .catch(reason => {
         if (reason && reason.status && reason.status === 403) {
@@ -198,12 +202,17 @@
    * Clear all data in this data store. Warning, this is a destructive method.
    */
   DataStore.prototype.clearStore = function (scope) {
-    return CATMAID.fetch(`/client/datastores/${this.name}/`, 'DELETE', {
-      project_id: (scope === 'USER_DEFAULT' ||
-                   scope === 'GLOBAL') ?
-          undefined : project.id,
-      ignore_user: scope === 'PROJECT_DEFAULT' ||
-                   scope === 'GLOBAL',
+    return CATMAID.fetch({
+        url: `/client/datastores/${this.name}/`,
+        method: 'DELETE',
+        data: {
+          project_id: (scope === 'USER_DEFAULT' ||
+                       scope === 'GLOBAL') ?
+              undefined : project.id,
+          ignore_user: scope === 'PROJECT_DEFAULT' ||
+                       scope === 'GLOBAL',
+        },
+        api: this.api,
     });
   };
 

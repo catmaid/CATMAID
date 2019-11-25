@@ -473,6 +473,7 @@ var WindowMaker = new function()
           ['ZX', WA.ZXView.bind(WA)],
           [storedViewsSelect],
           ['Save view', storeView],
+          ['Remove view', removeView],
           ['Fullscreen', WA.fullscreenWebGL.bind(WA)],
           [vrGroup],
           [connectorRestrictions],
@@ -505,10 +506,26 @@ var WindowMaker = new function()
 
     function storeView()
     {
-      WA.storeCurrentView(null, function() {
-        updateAvailableViews();
-        storedViewsSelect.selectedIndex = storedViewsSelect.options.length - 1;
-      });
+      WA.storeCurrentView(null)
+        .then(() => {
+          updateAvailableViews();
+          storedViewsSelect.selectedIndex = storedViewsSelect.options.length - 1;
+        })
+        .catch(CATMAID.handleError);
+    }
+
+    function removeView()
+    {
+      if (!storedViewsSelect.value || storedViewsSelect.selectedIndex === -1) {
+        CATMAID.warn("No stored view selected");
+        return;
+      }
+      WA.removeStoredView(storedViewsSelect.value)
+        .then(() => {
+          updateAvailableViews();
+          CATMAID.msg("Success", "View removed");
+        })
+        .catch(CATMAID.handleError);
     }
 
     function updateAvailableViews()
@@ -562,7 +579,8 @@ var WindowMaker = new function()
      ['strahler-threshold', 'Strahler threshold'],
      ['downstream-of-tag', 'Downstream of tag'],
      ['sampler-domains', 'Reconstrucion sampler domains'],
-     ['sampler-intervals', 'Reconstrucion sampler intervals']
+     ['sampler-intervals', 'Reconstrucion sampler intervals'],
+     ['imported', 'Imported fragments'],
     ].forEach(function(e) {
        var selected = o.shading_method === e[0];
        shadingMenu.options.add(new Option(e[1], e[0], selected, selected));
@@ -590,7 +608,8 @@ var WindowMaker = new function()
      ['skeleton-z-lut', 'Z Depth rainbow per skeleton'],
      ['sampler-domains', 'Reconstrucion sampler domains'],
      ['binary-sampler-intervals', 'Reconstrucion sampler intervals (2 colors)'],
-     ['multicolor-sampler-intervals', 'Reconstrucion sampler intervals (11 colors)']
+     ['multicolor-sampler-intervals', 'Reconstrucion sampler intervals (11 colors)'],
+     ['imported', 'Imported (green)'],
     ].forEach(function(e) {
        var selected = o.color_method === e[0];
        colorMenu.options.add(new Option(e[1], e[0], selected, selected));

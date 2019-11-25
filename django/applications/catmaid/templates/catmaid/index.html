@@ -106,7 +106,15 @@
         <div class="menu">
         <div id="logout_box" class="box_right" style="display:none"><p><a
             id="logout" name="logout" title="Logout" onclick="CATMAID.client.logout();" href="#">Logout</a></p></div>
-        <div id="login_box" class="box_right" style="display:none"><p>account&nbsp;</p><p><input type="text" id="account" name="account" size="8" /></p><p>&nbsp;&nbsp;password&nbsp;</p><p><input type="password" id="password" name="password" size="8" /></p><p>&nbsp;&nbsp;<a id="login" name="login" title="Login" href="#" onclick="CATMAID.client.login( document.getElementById( 'account' ).value, document.getElementById( 'password' ).value );">Login</a></p></div>
+        <div id="login_box" class="box_right" style="display:none">
+          <form>
+            <p>account&nbsp;</p>
+            <p><input type="text" id="account" name="account" size="8" /></p>
+            <p>&nbsp;&nbsp;password&nbsp;</p>
+            <p><input type="password" id="password" name="password" size="8" /></p>
+            <p>&nbsp;&nbsp;<a id="login" name="login" title="Login" href="#" onclick="CATMAID.client.login( document.getElementById( 'account' ).value, document.getElementById( 'password' ).value );">Login</a></p>
+          </form>
+        </div>
         <div id="session_box" class="box_right" style="display:none"> <div class="menu_item" onpointerover="this.lastChild.style.display = 'block';" onpointerout="this.lastChild.style.display = 'none';">
             <p><a>You are <span id="session_longname">&nbsp;</span>.</a></p>
             <div class="pulldown" id="user_menu"></div></div>
@@ -114,7 +122,6 @@
         </div>
         <div class="box_right" id="toolbox_show" style="display:none">
           <a href="#" class="button_active" id="show_button_text" onclick="project.toggleShow( 'text' );"><img src="{{ STATIC_URL }}images/show_text.gif" alt="show textlabels" title="show textlabels" /></a>
-          <!--<a href="#" class="button_active" id="show_button_trace" onclick="project.toggleShow( 'trace' );"><img src="{{ STATIC_URL }}images/show_trace.gif" alt="show traces" title="show traces" /></a>//-->
         </div>
         <div class="toolbar_fill"></div>
       </div>
@@ -156,7 +163,6 @@
         <div class="box"><p>colour&nbsp;</p><p>&nbsp;red&nbsp;</p><p id="input_fontcolourred"></p><p>&nbsp;green&nbsp;</p><p id="input_fontcolourgreen"></p><p>&nbsp;blue&nbsp;</p><p id="input_fontcolourblue"></p></div>
         <div class="box"><p>scaling&nbsp;</p><p><input type="checkbox" id="fontscaling" name="fontscaling" checked="checked" /></p></div>
                 <div class="box"><p>textlabel editable&nbsp;</p><p><input type="checkbox" id="textlabeleditable" name="textlabeleditable" checked="checked" /></p></div>
-        <!--<div class="box_right"><a href="#" class="button" id="button_text_apply" onclick="return false;"><img src="{{ STATIC_URL }}images/apply.gif" alt="apply" title="apply" /></a></div>-->
         <div class="box_right"><p id="icon_text_apply" class="toolbar_wait">applying ...</p></div>
         <div class="toolbar_fill"></div>
       </div>

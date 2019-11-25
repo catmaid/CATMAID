@@ -150,13 +150,13 @@ QUnit.test('Utilities test', function( assert ) {
         "CATMAID.tools.arraysEqual correctly finds arrays are equal");
     assert.ok(CATMAID.tools.arraysEqual([1,2], [1,2]),
         "CATMAID.tools.arraysEqual correctly finds arrays are equal");
-    assert.notOk(CATMAID.tools.arraysEqual(null, [1,2]),
+    assert.ok(!CATMAID.tools.arraysEqual(null, [1,2]),
         "CATMAID.tools.arraysEqual correctly finds arrays are not equal");
-    assert.notOk(CATMAID.tools.arraysEqual([1,2], null),
+    assert.ok(!CATMAID.tools.arraysEqual([1,2], null),
         "CATMAID.tools.arraysEqual correctly finds arrays are not equal");
-    assert.notOk(CATMAID.tools.arraysEqual([1,2], [2,1]),
+    assert.ok(!CATMAID.tools.arraysEqual([1,2], [2,1]),
         "CATMAID.tools.arraysEqual correctly finds arrays are not equal");
-    assert.notOk(CATMAID.tools.arraysEqual([1,2], [1,2,3]),
+    assert.ok(!CATMAID.tools.arraysEqual([1,2], [1,2,3]),
         "CATMAID.tools.arraysEqual correctly finds arrays are not equal");
   })();
 

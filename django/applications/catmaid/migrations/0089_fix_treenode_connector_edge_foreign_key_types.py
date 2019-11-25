@@ -69,7 +69,7 @@ create_constraints = """
 """
 
 db_maintenance = """
-    VACUUM ANALYZE;
+    VACUUM ANALYZE treenode_connector_edge;
 """
 
 

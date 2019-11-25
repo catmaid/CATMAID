@@ -17,7 +17,7 @@ from catmaid.control import (authentication, user, group, log, message, client,
         classification, notifications, roi, clustering, volume, noop,
         useranalytics, user_evaluation, search, graphexport, transaction,
         graph2, circles, analytics, review, wiringdiagram, object, sampler,
-        similarity, nat, point, landmarks, pointcloud, pointset)
+        similarity, nat, origin, point, landmarks, pointcloud, pointset)
 
 from catmaid.history import record_request_action as record_view
 from catmaid.views import CatmaidView
@@ -37,7 +37,8 @@ app_name = 'catmaid'
 # Add the main index.html page at the root:
 urlpatterns = [
     url(r'^$', ensure_csrf_cookie(CatmaidView.as_view(template_name='catmaid/index.html')), name="home"),
-    url(r'^version$', common.get_catmaid_version)
+    url(r'^version$', common.get_catmaid_version),
+    url(r'^neuroglancer$', ensure_csrf_cookie(CatmaidView.as_view(template_name='catmaid/neuroglancer.html'))),
 ]
 
 # Additional administration views
@@ -101,6 +102,7 @@ urlpatterns += [
     url(r'^projects/$', project.projects),
     url(r'^projects/export$', project.export_projects),
     url(r'^(?P<project_id>\d+)/interpolatable-sections/$', project.interpolatable_sections),
+    url(r'^(?P<project_id>\d+)/fork$', project.fork),
 ]
 
 # General stack model access
@@ -315,10 +317,15 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/skeletongroup/all_shared_connectors', skeleton.all_shared_connectors),
 ]
 
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/origins/$', origin.OriginCollection.as_view()),
+]
+
 # Skeleton export
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/neuroml/neuroml_level3_v181$', skeletonexport.export_neuroml_level3_v181),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/swc$', skeletonexport.skeleton_swc),
+    url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/eswc$', skeletonexport.skeleton_eswc),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuroml$', skeletonexport.skeletons_neuroml),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/json$', skeletonexport.skeleton_with_metadata),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/compact-json$', skeletonexport.skeleton_for_3d_viewer),

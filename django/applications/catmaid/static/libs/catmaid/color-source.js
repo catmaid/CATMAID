@@ -13,7 +13,7 @@
     }
 
     this.skeletonSource = skeletonSource;
-    this.options = options;
+    this.options = options || {};
 
     this.inputSource = new CATMAID.BasicSkeletonSource("Input source", {
       register: false,
@@ -45,7 +45,7 @@
     });
 
     var self = this;
-    this.colorMode.colorSkeletons(skeletonIds, models)
+    this.colorMode.colorSkeletons(skeletonIds, models, this.options)
       .then(function() {
         self.outputSource.append(models);
       })
@@ -58,7 +58,7 @@
       return models[modelId].id;
     });
     var self = this;
-    this.colorMode.colorSkeletons(skeletonIds, models)
+    this.colorMode.colorSkeletons(skeletonIds, models, this.options)
       .then(function() {
         self.outputSource.updateModels(models);
       })
@@ -78,9 +78,14 @@
 
   var SkeletonColorMode = {
     'length': {
-      'colorSkeletons': function(skeletonIds, models) {
-        return CATMAID.fetch(project.id + '/skeletons/cable-length', 'POST', {
-            skeleton_ids: skeletonIds
+      'colorSkeletons': function(skeletonIds, models, options) {
+        return CATMAID.fetch({
+            url: project.id + '/skeletons/cable-length',
+            method: 'POST',
+            data: {
+              skeleton_ids: skeletonIds
+            },
+            api: options.api,
           })
           .then(function(lengthData) {
             let colorSteps = CATMAID.TracingOverlay.Settings.session.length_color_steps;

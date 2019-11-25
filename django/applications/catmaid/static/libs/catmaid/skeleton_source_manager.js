@@ -555,19 +555,20 @@
   /**
    * React to a node change event by selecting this node in all souces.
    */
-  SkeletonSourceManager.prototype.handleActiveNodeChange = function(node, skeletonChanged) {
+  SkeletonSourceManager.prototype.handleActiveNodeChange = function(node, skeletonChanged, api) {
     // (de)highlight in SkeletonSource instances if any if different from the last
     // activated skeleton
     if (skeletonChanged) {
-      this.highlight(SkeletonAnnotations.activeSkeleton, node.skeleton_id);
+      this.highlight(SkeletonAnnotations.activeSkeleton, node.skeleton_id, api);
     }
   };
 
-  SkeletonSourceManager.prototype.highlight = function(caller, skeleton_id) {
+  SkeletonSourceManager.prototype.highlight = function(caller, skeleton_id, api) {
     Object.keys(this.sources).forEach(function(name) {
       var source = this.sources[name];
       if (source === caller) return;
-      source.highlight(skeleton_id);
+      if (api && !source.supportsRemoteSkeletons) source.highlight(null);
+      else source.highlight(skeleton_id);
     }, this);
   };
 

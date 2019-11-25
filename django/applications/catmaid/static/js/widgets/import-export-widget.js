@@ -19,11 +19,15 @@
     if (this.showImports) {
       this.modes.push('import-files');
       this.modes.push('import-catmaid');
+      this.modes.push('import-tracing-layer');
     }
+
+    this.csvImportNewNeuronName = '';
 
     this.sourceRemote = '';
     this.sourceProject = project.id;
     this.importCatmaidResult = null;
+    this.importAnnotations = CATMAID.TracingTool.getDefaultImportAnnotations();
   };
 
   ImportExportWidget.exportContentTemplate = `
@@ -181,13 +185,19 @@ annotations, neuron name, connectors or partner neurons.
     }
   };
 
+  ImportExportWidget.prototype.getEffectiveAnnotations = function() {
+    return CATMAID.TracingTool.substituteVariables(this.importAnnotations, {
+      'group': CATMAID.userprofile.primary_group_id !== undefined && CATMAID.userprofile.primary_group_id !== null ?
+          CATMAID.groups.get(CATMAID.userprofile.primary_group_id) : CATMAID.session.username,
+      'source': this.sourceRemote ? this.sourceRemote : 'local',
+    });
+  };
+
   /**
    * Show a confirmation dialog for all passed in skeletons and initiate the
    * import of them.
    */
   ImportExportWidget.prototype.importRemoteSkeletons = function(skeletonIds, annotations) {
-    let plural = skeletonIds.length > 0 ? 's' : '';
-    let title = `Please confirm the import of the following skeleton${plural}`;
     let api = CATMAID.Remote.getAPI(this.sourceRemote);
     let entityMap = this.importCatmaidResult.resultEntities.reduce((o,e) => {
       for (let i=0; i<e.skeleton_ids.length; ++i) {
@@ -196,38 +206,10 @@ annotations, neuron name, connectors or partner neurons.
       return o;
     }, {});
     let sourceProjectId = this.sourceProject;
-    let self = this;
-    CATMAID.Remote.previewSkeletons(sourceProjectId, skeletonIds, {
-        api: api,
-        title: title,
-        buttons: {
-          'Confirm import': function() {
-            // Initate import
-            CATMAID.Remote.importSkeletons(sourceProjectId, project.id, skeletonIds, {
-                getMeta: (skeletonId) => {
-                  let e = entityMap[skeletonId];
-                  if (!e) {
-                    throw new CATMAID.ValueError("No skeleton meta data found");
-                  }
-                  return {
-                    'name': e.name,
-                    'annotations': annotations,
-                  };
-                },
-                api: api,
-              })
-              .then(result => {
-                self.redraw();
-              })
-              .catch(CATMAID.handleError);
-            $(this).dialog("destroy");
-          },
-          'Cancel': function() {
-            $(this).dialog("destroy");
-          }
-        }
-      })
-      .catch(CATMAID.handleError);
+
+    return CATMAID.Remote.importRemoteSkeletonsWithPreview(api,
+        this.sourceProject, skeletonIds, annotations, entityMap,
+        this.redraw.bind(this));
   };
 
   ImportExportWidget.Modes = {
@@ -269,7 +251,17 @@ annotations, neuron name, connectors or partner neurons.
 
     'import-files': {
       title: 'Import from files',
-      createControls: widget => [],
+      createControls: widget => {
+        return [
+          {
+            type: 'text',
+            label: 'Name',
+            onchange: e => {
+              widget.csvImportNewNeuronName = e.target.value.trim();
+            },
+          },
+        ];
+      },
       createContent: function(container, widget) {
         container.innerHTML = ImportExportWidget.importContentTemplate;
 
@@ -291,7 +283,7 @@ annotations, neuron name, connectors or partner neurons.
             let file = files[i];
             importQueue = importQueue
               .then(function() {
-                return import_swc(file)
+                return import_swc(file, false, widget.csvImportNewNeuronName)
                   .then(function(data) {
                     CATMAID.msg("SWC successfully imported", "Neuron ID:" +
                         data.neuron_id + " Skeleton ID: " + data.skeleton_id);
@@ -355,6 +347,7 @@ annotations, neuron name, connectors or partner neurons.
               // Try to get all projects from the selected remote and update the
               // displayed project options.
               updateProjectList();
+              updateAnnotationTitle();
             });
 
         let remoteSelectWrapper = CATMAID.DOM.wrapInLabel("Source remote",
@@ -385,7 +378,7 @@ annotations, neuron name, connectors or partner neurons.
         // Init project list for current project
         updateProjectList();
 
-        // Add table with landmarks
+        // Add table with remote skeletons
         let resultSection = document.createElement('span');
         resultSection.classList.add('section-header');
         resultSection.appendChild(document.createTextNode('Results'));
@@ -395,7 +388,18 @@ annotations, neuron name, connectors or partner neurons.
         let nameFilter = '';
         let annotationFilter = '';
         let withSubAnnotations = false;
-        let resultAnnotations = [];
+
+        let user = CATMAID.User.safe_get(CATMAID.session.userid);
+
+        let getAnnotationTitle = function() {
+          let annotations = widget.getEffectiveAnnotations().join(', ');
+          return `A set of annotations, separated by comma, that will be added to the import skeletons. Every occurence of "{group}" will be replaced with your primary group (or your username, should now primary group be defined). Every occurence of "{source}" will be replaced with the handle of the import source (e.g. the server name).\n\nCurrent set of annotations: ${annotations}`;
+        };
+
+        var updateAnnotationTitle = function() {
+          let target = document.getElementById(`import-annotations-${widget.widgetID}`);
+          target.title = getAnnotationTitle();
+        };
 
         return [{
             type: 'child',
@@ -473,10 +477,14 @@ annotations, neuron name, connectors or partner neurons.
           },
           {
             type: 'text',
+            id: `import-annotations-${widget.widgetID}`,
             label: 'Annotations',
-            title: 'A set of annotations, separated by comma, that will be added to the import skeletons.',
+            length: 15,
+            title: getAnnotationTitle(),
+            value: widget.importAnnotations,
             onchange: e => {
-              resultAnnotations = e.target.value.split(',').map(v => v.trim());
+              widget.importAnnotations = e.target.value.split(',').map(v => v.trim());
+              updateAnnotationTitle();
             },
           },
           {
@@ -484,6 +492,10 @@ annotations, neuron name, connectors or partner neurons.
             label: 'Preview selected',
             title: "Preview all selected result skeletons",
             onclick: e => {
+              if (!widget.importCatmaidResult) {
+                CATMAID.warn("No remote skeletons queried yet. Please search remote skeletons first.");
+                return;
+              }
               let skeletonIds = widget.importCatmaidResult.resultEntities.reduce((l, e) => {
                 if (e.selected) {
                   Array.prototype.push.apply(l, e.skeleton_ids);
@@ -508,7 +520,8 @@ annotations, neuron name, connectors or partner neurons.
                 }
                 return l;
               }, []);
-              widget.importRemoteSkeletons(skeletonIds, resultAnnotations);
+
+              widget.importRemoteSkeletons(skeletonIds, getEffectiveAnnotations());
             },
           },
         ];
@@ -608,7 +621,7 @@ annotations, neuron name, connectors or partner neurons.
           let tr = $(this).closest('tr');
           let data =  $(table).DataTable().row(tr).data();
           // Import single skeleton
-          widget.importRemoteSkeletons(data.skeleton_ids);
+          widget.importRemoteSkeletons(data.skeleton_ids, widget.getEffectiveAnnotations());
         });
 
         datatable.on('click', 'a[data-action=select-local-skeleton]', function(e) {
@@ -660,6 +673,88 @@ annotations, neuron name, connectors or partner neurons.
         ImportExportWidget.Modes['import-catmaid'].createContent(container, widget);
       },
     },
+
+    'import-tracing-layer': {
+      title: 'Import from tracing layer',
+      createControls: widget => {
+        return [{
+            type: 'button',
+            label: 'Preview active skeleton',
+            title: "Preview active skeletons if it is a remote skeleton",
+            onclick: e => {
+              let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+              let projectId = SkeletonAnnotations.getActiveProjectId();
+              let api = SkeletonAnnotations.getActiveSkeletonAPI();
+
+              if (!activeSkeletonId) {
+                CATMAID.warn("No skeleton selected");
+                return;
+              }
+
+              if (!api) {
+                CATMAID.warn("The selected skeleton is already a local skeleton");
+                return;
+              }
+              CATMAID.Remote.previewSkeletons(projectId, [activeSkeletonId], {
+                  api: api,
+                  title: "The active skeletons can be imported",
+                })
+                .catch(CATMAID.handleError);
+            },
+          },
+          {
+            type: 'button',
+            label: 'Import active skeleton',
+            title: "Import active skeleton if it is a remote skeleton",
+            onclick: e => {
+              let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+              let activeNodeId = SkeletonAnnotations.getActiveNodeId();
+              let projectId = SkeletonAnnotations.getActiveProjectId();
+              let api = SkeletonAnnotations.getActiveSkeletonAPI();
+
+              if (!activeSkeletonId) {
+                CATMAID.warn("No skeleton selected");
+                return;
+              }
+
+              if (!api) {
+                CATMAID.warn("The selected skeleton is already a local skeleton");
+                return;
+              }
+
+              // Load this skeleton and import it
+              CATMAID.Skeletons.getNames(projectId, [activeSkeletonId], api)
+                .then(names => {
+                  let entityMap = {};
+                  entityMap[activeSkeletonId] = {
+                    name: names[activeSkeletonId],
+                  };
+
+                  CATMAID.Remote.importRemoteSkeletonsWithPreview(api, projectId, [activeSkeletonId],
+                      widget.getEffectiveAnnotations(), entityMap, result => {
+                        // Select new active node
+                        let tool = project.getTool();
+                        if (tool && tool instanceof CATMAID.TracingTool) {
+                          let activeTracingLayer = tool.getActiveTracingLayer();
+                          if (activeTracingLayer) {
+                            activeTracingLayer.forceRedraw(() => {
+                              if (result && result.length > 0) {
+                                CATMAID.Remote.selectImportedNode(activeNodeId, result[0]);
+                              }
+                            });
+                          }
+                        }
+                      });
+                })
+                .catch(CATMAID.handleError);
+            },
+          },
+        ];
+      },
+      createContent: function(container, widget) {
+
+      },
+    },
   };
 
   function new_window_with_return( url ) {
@@ -689,12 +784,13 @@ annotations, neuron name, connectors or partner neurons.
     dialog.show();
   }
 
-  function import_swc(file, autoSelect) {
+  function import_swc(file, autoSelect, name) {
     if (!file) {
       return Promise.reject(new CATMAID.ValueError("Need file"));
     }
 
     var data = new FormData();
+    data.append('name', name);
     data.append('file', file);
     return new Promise(function(resolve, reject) {
       $.ajax({

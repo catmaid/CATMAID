@@ -4,6 +4,7 @@ from django.db import migrations, models
 forward_history = """
     SELECT disable_history_tracking_for_table('nblast_similarity'::regclass,
             get_history_table_name('nblast_similarity'::regclass));
+    SELECT drop_history_view_for_table('nblast_similarity'::regclass);
 
     ALTER TABLE nblast_similarity
     ADD COLUMN normalized text;
@@ -38,6 +39,7 @@ forward_history = """
     UPDATE nblast_similarity__history
     SET use_alpha = FALSE;
 
+    SELECT create_history_view_for_table('nblast_similarity'::regclass);
     SELECT enable_history_tracking_for_table('nblast_similarity'::regclass,
             get_history_table_name('nblast_similarity'::regclass), FALSE);
 """
@@ -45,6 +47,7 @@ forward_history = """
 backward_history = """
     SELECT disable_history_tracking_for_table('nblast_similarity'::regclass,
             get_history_table_name('nblast_similarity'::regclass));
+    SELECT drop_history_view_for_table('nblast_similarity'::regclass);
 
     ALTER TABLE nblast_similarity
     DROP COLUMN normalized;
@@ -55,6 +58,7 @@ backward_history = """
     ALTER TABLE nblast_similarity__history
     DROP COLUMN use_alpha;
 
+    SELECT create_history_view_for_table('nblast_similarity'::regclass);
     SELECT enable_history_tracking_for_table('nblast_similarity'::regclass,
             get_history_table_name('nblast_similarity'::regclass), FALSE);
 """

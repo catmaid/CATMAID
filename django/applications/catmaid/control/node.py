@@ -239,7 +239,7 @@ class CachedMsgpackNodeProvder(CachedNodeProvider):
 
 
 def get_pack_array_header(n) -> bytes:
-    """Return binary header for msgpack conform array header. This is is size
+    """Return binary header for msgpack conform array header. This is size
     dependent. See:
     https://github.com/msgpack/msgpack-python/blob/8b6ce53cce40e528af7cce89f358f7dde1a09289/msgpack/fallback.py#L907
     """

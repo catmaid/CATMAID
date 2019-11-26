@@ -64,7 +64,7 @@ database_url = "jdbc:postgresql://%s/%s" % (conf['host'], conf['database'])
 c = DriverManager.getConnection(database_url,
                                 conf['username'],
                                 conf['password'])
-
+c.setAutoCommit(False);
 required_classes = [
  "skeleton",
  "label",
@@ -716,6 +716,7 @@ ps_class_instance_class_instance.close()
 ps_treenode_class_instance.close()
 ps_get_root_nodes.close()
 
+c.commit()
 c.close()
 
 print("Done")

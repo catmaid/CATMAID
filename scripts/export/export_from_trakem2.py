@@ -19,6 +19,7 @@ from ij.gui import YesNoCancelDialog
 from java.util.concurrent.atomic import AtomicInteger
 from jarray import array
 
+from java.lang import Class
 from java.sql import DriverManager, Connection, SQLException, Types
 
 cal = None
@@ -68,11 +69,12 @@ required_classes = [
  "skeleton",
  "label",
  "root",
- "synapse",
+# "synapse",
  "neuron",
- "group",
- "presynaptic terminal",
- "postsynaptic terminal" ]
+# "group",
+# "presynaptic terminal",
+# "postsynaptic terminal",
+]
 
 # Fetch all the class names and IDs:
 class_to_class_id = {}
@@ -97,6 +99,8 @@ for new_class in (x for x in required_classes if x not in class_to_class_id):
   new_id = rs.getLong(1)
   class_to_class_id[new_class] = new_id
   rs.close()
+else:
+  print("All required classes have been found")
 
 # FIXME: Don't Repeat Yourself...
 
@@ -112,10 +116,10 @@ required_relations = [
   "presynaptic_to",
   "postsynaptic_to",
   "model_of",
-  "part_of",
+  #"part_of",
   "labeled_as",
-  "is_a",
-  "element_of"
+  #"is_a",
+  #"element_of"
 ]
 
 # Insert any that didn't already exist:
@@ -129,6 +133,13 @@ for new_relation in (x for x in required_relations if x not in relation_to_relat
   new_id = rs.getLong(1)
   relation_to_relation_id[new_relation] = new_id
   rs.close()
+else:
+  print("All required relations have been found")
+
+
+class AbstractNode:
+  pass
+projectRoot = AbstractNode()
 
 # ========================================================================
 
@@ -137,30 +148,31 @@ for new_relation in (x for x in required_relations if x not in relation_to_relat
 
 ps_new_treenode = c.prepareStatement(
   "INSERT INTO treenode "+
-  "(user_id,project_id,parent_id,location,radius,confidence,skeleton_id) "+
-  "VALUES (?,?,?,(?,?,?),?,?,?) "+
+  "(user_id,editor_id,project_id,parent_id,location_x,location_y,location_z,radius,confidence,skeleton_id) "+
+  "VALUES (?,?,?,?,?,?,?,?,?,?) "+
   "RETURNING id")
 
 ps_new_treenode.setInt(1,user_id)
-ps_new_treenode.setInt(2,project_id)
+ps_new_treenode.setInt(2,user_id)
+ps_new_treenode.setInt(3,project_id)
 
 def insert_treenode( parent_id, x, y, z, radius, confidence, skeleton_id=None ):
   if parent_id == None:
-    ps_new_treenode.setNull(3,Types.BIGINT)
+    ps_new_treenode.setNull(4,Types.BIGINT)
   else:
-    ps_new_treenode.setInt(3,parent_id)
-  ps_new_treenode.setDouble(4,x)
-  ps_new_treenode.setDouble(5,y)
-  ps_new_treenode.setDouble(6,z)
-  ps_new_treenode.setDouble(7,radius)
-  ps_new_treenode.setInt(8,confidence)
-  ps_new_treenode.setInt(9,skeleton_id)
+    ps_new_treenode.setInt(4,parent_id)
+  ps_new_treenode.setDouble(5,x)
+  ps_new_treenode.setDouble(6,y)
+  ps_new_treenode.setDouble(7,z)
+  ps_new_treenode.setDouble(8,radius)
+  ps_new_treenode.setInt(9,confidence)
+  ps_new_treenode.setInt(10,skeleton_id)
   rs = ps_new_treenode.executeQuery()
   rs.next()
   new_id = rs.getLong(1)
   rs.close()
-  if skeleton_id:
-    new_treenode_class_instance('element_of',new_id,skeleton)
+  #if skeleton_id:
+  #  new_treenode_class_instance('element_of',new_id,skeleton)
   return new_id
 
 # ------------------------------------------------------------------------
@@ -177,6 +189,20 @@ def new_class_instance(class_name,class_instance_name):
   ps_new_class_instance.setInt(3,class_to_class_id[class_name])
   ps_new_class_instance.setString(4,class_instance_name)
   rs = ps_new_class_instance.executeQuery()
+  rs.next()
+  new_id = rs.getLong(1)
+  rs.close()
+  return new_id
+
+# ------------------------------------------------------------------------
+
+ps_delete_class_instance = c.prepareStatement(
+  "DELETE FROM class_instance wHERE id = ? " +
+  "RETURNING id")
+
+def delete_class_instance(obj_id):
+  ps_delete_class_instance.setInt(1,obj_id)
+  rs = ps_delete_class_instance.executeQuery()
   rs.next()
   new_id = rs.getLong(1)
   rs.close()
@@ -246,22 +272,23 @@ def new_connector_class_instance(relation_name,c,ci):
 
 ps_new_connector = c.prepareStatement(
   "INSERT INTO connector "+
-  "(user_id,project_id,location) "+
-  "VALUES (?,?,(?,?,?)) "+
+  "(user_id,editor_id,project_id,location_x, location_y, location_z) "+
+  "VALUES (?,?,?,?,?,?) "+
   "RETURNING id")
 
 ps_new_connector.setInt(1,user_id)
-ps_new_connector.setInt(2,project_id)
+ps_new_connector.setInt(2,user_id)
+ps_new_connector.setInt(3,project_id)
 
 def insert_connector_and_synapse( x, y, z, synapse_name ):
-  ps_new_connector.setDouble(3,x)
-  ps_new_connector.setDouble(4,y)
-  ps_new_connector.setDouble(5,z)
+  ps_new_connector.setDouble(4,x)
+  ps_new_connector.setDouble(5,y)
+  ps_new_connector.setDouble(6,z)
   rs = ps_new_connector.executeQuery()
   rs.next()
   connector_id = rs.getLong(1)
   rs.close()
-  synapse_id = new_class_instance('synapse',synapse_name)
+  #synapse_id = new_class_instance('synapse',synapse_name)
   new_connector_class_instance('model_of',connector_id,synapse_id)
   return (connector_id, synapse_id)
 
@@ -300,11 +327,11 @@ def get_class_instance_from_treenode(treenode_id, relation):
 # ------------------------------------------------------------------------
 
 ps_get_treenodes = c.prepareStatement(
-  "SELECT id,(t.location).x,(t.location).y,(t.location).z "+
+  "SELECT id, t.location_x,t.location_y,t.location_z "+
   "FROM treenode AS t WHERE project_id = ? AND "+
-  "(t.location).x >= ? AND (t.location).x <= ? AND "+
-  "(t.location).y >= ? AND (t.location).y <= ? AND "+
-  "(t.location).z >= ? AND (t.location).z <= ?")
+  "t.location_x >= ? AND t.location_x <= ? AND "+
+  "t.location_y >= ? AND t.location_y <= ? AND "+
+  "t.location_z >= ? AND t.location_z <= ?")
 
 ps_get_treenodes.setInt(1,project_id)
 
@@ -340,8 +367,11 @@ def insert_group( part_of_group_id, name ):
 
 def insert_neuron( part_of_group_id, name ):
   new_id = new_class_instance('neuron',name)
-  new_class_instance_class_instance('part_of',new_id,part_of_group_id)
+  #new_class_instance_class_instance('part_of',new_id,part_of_group_id)
   return new_id
+
+def delete_neuron( part_of_group_id ):
+  delete_class_instance(part_of_group_id)
 
 def insert_skeleton( model_of_neuron_id, name ):
   new_id = new_class_instance('skeleton',name)
@@ -377,28 +407,8 @@ def insert_project_root_node( name ):
     rs.next()
     root_id = rs.getLong(1)
     ps.close()
+    root_id = None
   return root_id
-
-ps_get_fragments_id = c.prepareStatement("SELECT ci.id from class_instance as ci, class_instance_class_instance as cici WHERE ci.project_id = ? AND cici.project_id = ? AND ci.user_id = ? AND cici.user_id = ? AND ci.name = '%s' AND cici.class_instance_a = ci.id and cici.class_instance_b = ?"%(fragments_group_name,))
-ps_get_fragments_id.setInt(1,project_id)
-ps_get_fragments_id.setInt(2,project_id)
-ps_get_fragments_id.setInt(3,user_id)
-ps_get_fragments_id.setInt(4,user_id)
-
-def get_fragments_node_id():
-  root_node_id = get_root_node_ids()[0]
-  ps_get_fragments_id.setInt(5,root_node_id)
-  rs = ps_get_fragments_id.executeQuery()
-  fragment_ids = []
-  while rs.next():
-    fragment_ids.append(rs.getLong(1))
-  if len(fragment_ids) > 1:
-    raise Exception, "Found more than one id for the class 'Fragments'"
-  # Create the group if it doesn't exist:
-  if len(fragment_ids) == 0:
-    return insert_group(root_node_id,fragments_group_name)
-  else:
-    return fragment_ids[0]
 
 # ------------------------------------------------------------------------
 
@@ -445,6 +455,27 @@ def node_to_coordinates(aff,nd):
     z = float(nd.layer.z) * pw
     return (x,y,z)
 
+ps_get_fragments_id = c.prepareStatement("SELECT ci.id from class_instance as ci, class_instance_class_instance as cici WHERE ci.project_id = ? AND cici.project_id = ? AND ci.user_id = ? AND cici.user_id = ? AND ci.name = '%s' AND cici.class_instance_a = ci.id and cici.class_instance_b = ?"%(fragments_group_name,))
+ps_get_fragments_id.setInt(1,project_id)
+ps_get_fragments_id.setInt(2,project_id)
+ps_get_fragments_id.setInt(3,user_id)
+ps_get_fragments_id.setInt(4,user_id)
+
+def get_fragments_node_id():
+  root_node_id = get_root_node_ids()[0]
+  ps_get_fragments_id.setInt(5,root_node_id)
+  rs = ps_get_fragments_id.executeQuery()
+  fragment_ids = []
+  while rs.next():
+    fragment_ids.append(rs.getLong(1))
+  if len(fragment_ids) > 1:
+    raise Exception, "Found more than one id for the class 'Fragments'"
+  # Create the group if it doesn't exist:
+  if len(fragment_ids) == 0:
+    return insert_group(root_node_id,fragments_group_name)
+  else:
+    return fragment_ids[0]
+
 def insertTree(tree,skeleton_id):
   if isinstance(tree, unicode):
     return
@@ -469,7 +500,6 @@ def insertTree(tree,skeleton_id):
       radius = -1
     new_id = insert_treenode( parent, x, y, z, radius, confidence, skeleton_id )
     table[nd] = new_id
-    new_treenode_class_instance('element_of',new_id,skeleton_id)
     # Also try to find any tags:
     all_tags = nd.getTags()
     if all_tags:
@@ -481,49 +511,71 @@ def insertTree(tree,skeleton_id):
 def add_recursively(pt,parent_id,depth=0):
   name_with_id = get_project_thing_name(pt)
   print(" "*depth, pt, name_with_id)
+  ignore = True
+  is_neuron = False
   new_id = None
   pt_type = pt.getType()
   if not parent_id:
     # Then this should be the root:
-    new_id = insert_project_root_node(name_with_id)
+    #new_id = insert_project_root_node(name_with_id)
+    new_id = projectRoot
+    print("Ignoring project root")
+  elif pt_type == "neuropil":
+    new_id = parent_id
+    ignore = False
+    print("Descending into neuropil")
   elif pt_type in ("sensory", "class", "vnc", "contour", "group", "neuropile", "synapses", "trachea", "imported_labels", "commissures"):
     # Just create all of these as groups for the moment:
-    new_id = insert_group(parent_id,name_with_id)
+    #new_id = insert_group(parent_id,name_with_id)
+    print("Ignoring group: " + pt_type)
   elif pt_type == "nucleus":
-    pass
+    print("Ignoring nucleus")
   elif pt_type in ("pre", "post"):
-    pass
+    print("Ignoring pre/post object")
   elif pt_type == "neuron":
+    is_neuron = True
+    ignore = False
     new_id = insert_neuron(parent_id,name_with_id)
   elif pt_type == "connector":
     # TODO
-    pass
+    print("Ignoring connector")
   elif pt_type == "treeline":
+    ignore = False
     skeleton_id = insert_skeleton(parent_id,name_with_id)
     tl = pt.getObject()
     insertTree(tl,skeleton_id)
   elif pt_type == "areatree":
     # FIXME: no proper support for areatrees yet, so just import as a
     # treeline for the moment:
+    ignore = False
     skeleton_id = insert_skeleton(parent_id,name_with_id)
     tl = pt.getObject()
     insertTree(tl,skeleton_id)
   elif pt_type == "ball":
     # TODO: could just be supported by a treenode, since they
     # have a radius
-    pass
+    print("Ignoring ball")
   elif pt_type == "profile":
-    pass
+    print("Ignoring profile")
   elif pt_type == "profile_list":
-    pass
+    print("Ignoring profile list")
   elif pt_type == "area_list":
-    pass
+    print("Ignoring area list")
+  elif pt_type == "pipe":
+    print("Ignoring pipe")
+  elif pt_type == "centrosome_without_cilium":
+    print("Ignoring centrosome_without_cilium")
   else:
     raise Exception, "Unknown type: "+str(pt_type)
   children = pt.getChildren()
   if children and new_id:
+    all_ignored = True
     for c in children:
-      add_recursively(c,new_id,depth+1)
+      all_ignored = add_recursively(c,new_id,depth+1) and all_ignored
+    if is_neuron and all_ignored:
+      print("Deleted empty neuron {}".format(new_id))
+      delete_neuron(new_id)
+  return ignore
 
 class ConnectorNode:
   def __init__(self,t,r):
@@ -589,7 +641,7 @@ def add_synapse( name, connector, pre_nodes, post_nodes ):
         fragments_group_id = get_fragments_node_id()
         neuron_id = insert_neuron(fragments_group_id,'orphaned '+side_string)
         skeleton_id = insert_skeleton(neuron_id,'orphaned '+side_string)
-        new_treenode_class_instance('element_of',treenode_id,skeleton_id)
+        #new_treenode_class_instance('element_of',treenode_id,skeleton_id)
       # * for each of treenodes:
       for tn in treenodes:
         # * create a new pre/post synaptic terminal
@@ -602,8 +654,8 @@ def add_synapse( name, connector, pre_nodes, post_nodes ):
         new_class_instance_class_instance(terminal_relationship,terminal_id,synapse_id)
         # * make the pre/postsynaptic terminal a part_of the skeleton
         # * find the skeleton ID
-        skeleton_id = get_class_instance_from_treenode(tn.treenode_id,'element_of')
-        new_class_instance_class_instance('part_of',terminal_id,skeleton_id)
+        #skeleton_id = get_class_instance_from_treenode(tn.treenode_id,'element_of')
+        #new_class_instance_class_instance('part_of',terminal_id,skeleton_id)
         # * make the treenode pre/postsynaptic_to the connector
         new_treenode_connector(terminal_relationship,tn.treenode_id,connector_id)
 
@@ -654,7 +706,7 @@ def run():
 
   add_recursively(rpt,None)
 
-  add_connectors_recursively(rpt)
+  #add_connectors_recursively(rpt)
 
 run()
 
@@ -665,3 +717,5 @@ ps_treenode_class_instance.close()
 ps_get_root_nodes.close()
 
 c.close()
+
+print("Done")

@@ -456,7 +456,8 @@ class GroupInactivityPeriodContactGroupInline(admin.StackedInline):
 
 class CustomUserAdmin(UserAdmin):
     inlines = [ProfileInline, GroupInactivityPeriodContactUserInline]
-    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff')
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff',
+            'profile_primary_group')
     filter_horizontal = ('groups', 'user_permissions')
 
     def changelist_view(self, request, extra_context=None):
@@ -467,6 +468,10 @@ class CustomUserAdmin(UserAdmin):
         if request.user.is_superuser and self.list_display[-1] != 'color':
             self.list_display = self.list_display + ('color',)
         return super().changelist_view(request, extra_context=extra_context)
+
+    def profile_primary_group(self, u):
+        return u.userprofile.primary_group
+    profile_primary_group.short_description = "Primary group"
 
 class CustomGroupAdmin(GroupAdmin):
     form = GroupAdminForm

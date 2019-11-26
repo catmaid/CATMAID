@@ -4,39 +4,39 @@
 sanitize() { echo "$1" | sed "s/^[\"']\?\(.*[^\"']\)[\"']\?$/\1/"; }
 
 # Get environment configuration or use defaults if unavailable.
-DB_HOST=$(sanitize ${DB_HOST:-localhost})
-DB_PORT=$(sanitize ${DB_PORT:-5432})
-DB_NAME=$(sanitize ${DB_NAME:-catmaid})
-DB_USER=$(sanitize ${DB_USER:-catmaid_user})
-DB_PASS=$(sanitize ${DB_PASS:-catmaid_password})
-DB_CONNECTIONS=$(sanitize ${DB_CONNECTIONS:-50})
-DB_CONF_FILE=$(sanitize ${DB_CONF_FILE:-"/etc/postgresql/10/main/postgresql.conf"})
-DB_FORCE_TUNE=$(sanitize ${DB_FORCE_TUNE:-false})
-DB_TUNE=$(sanitize ${DB_TUNE:-true})
-DB_FIXTURE=$(sanitize ${DB_FIXTURE:-false})
+DB_HOST=$(sanitize "${DB_HOST:-localhost}")
+DB_PORT=$(sanitize "${DB_PORT:-5432}")
+DB_NAME=$(sanitize "${DB_NAME:-catmaid}")
+DB_USER=$(sanitize "${DB_USER:-catmaid_user}")
+DB_PASS=$(sanitize "${DB_PASS:-catmaid_password}")
+DB_CONNECTIONS=$(sanitize "${DB_CONNECTIONS:-50}")
+DB_CONF_FILE=$(sanitize "${DB_CONF_FILE:-"/etc/postgresql/10/main/postgresql.conf"}")
+DB_FORCE_TUNE=$(sanitize "${DB_FORCE_TUNE:-false}")
+DB_TUNE=$(sanitize "${DB_TUNE:-true}")
+DB_FIXTURE=$(sanitize "${DB_FIXTURE:-false}")
 AVAILABLE_MEMORY=`awk '/MemTotal/ { printf "%.3f \n", $2/1024 }' /proc/meminfo`
 INSTANCE_MEMORY=${INSTANCE_MEMORY:-$AVAILABLE_MEMORY}
-CM_INITIAL_ADMIN_USER=$(sanitize ${CM_INITIAL_ADMIN_USER:-"admin"})
-CM_INITIAL_ADMIN_PASS=$(sanitize ${CM_INITIAL_ADMIN_PASS:-"admin"})
-CM_INITIAL_ADMIN_EMAIL=$(sanitize ${CM_INITIAL_ADMIN_EMAIL:-"admin@localhost.local"})
-CM_INITIAL_ADMIN_FIRST_NAME=$(sanitize ${CM_INITIAL_ADMIN_FIRST_NAME:-"Super"})
-CM_INITIAL_ADMIN_LAST_NAME=$(sanitize ${CM_INITIAL_ADMIN_LAST_NAME:-"User"})
-CM_DEBUG=$(sanitize ${CM_DEBUG:-false})
-CM_EXAMPLE_PROJECTS=$(sanitize ${CM_EXAMPLE_PROJECTS:-true})
+CM_INITIAL_ADMIN_USER=$(sanitize "${CM_INITIAL_ADMIN_USER:-"admin"}")
+CM_INITIAL_ADMIN_PASS=$(sanitize "${CM_INITIAL_ADMIN_PASS:-"admin"}")
+CM_INITIAL_ADMIN_EMAIL=$(sanitize "${CM_INITIAL_ADMIN_EMAIL:-"admin@localhost.local"}")
+CM_INITIAL_ADMIN_FIRST_NAME=$(sanitize "${CM_INITIAL_ADMIN_FIRST_NAME:-"Super"}")
+CM_INITIAL_ADMIN_LAST_NAME=$(sanitize "${CM_INITIAL_ADMIN_LAST_NAME:-"User"}")
+CM_DEBUG=$(sanitize "${CM_DEBUG:-false}")
+CM_EXAMPLE_PROJECTS=$(sanitize "${CM_EXAMPLE_PROJECTS:-true}")
 # This is expected to be a JSON project definition like it is exported through
 # the /projects/export API.
 CM_INITIAL_PROJECTS=${CM_INITIAL_PROJECTS:-""}
 CM_INITIAL_PROJECTS_IMPORT_PARAMS=${CM_INITIAL_PROJECTS_IMPORT_PARAMS:-""}
-CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE=$(sanitize ${CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:-""})
-CM_HOST=$(sanitize ${CM_HOST:-0.0.0.0})
-CM_PORT=$(sanitize ${CM_PORT:-8000})
-CM_FORCE_CONFIG_UPDATE=$(sanitize ${CM_FORCE_CONFIG_UPDATE:-false})
-CM_WRITEABLE_PATH=$(sanitize ${CM_WRITEABLE_PATH:-"'/tmp'"})
-CM_NODE_LIMIT=$(sanitize ${CM_NODE_LIMIT:-10000})
-CM_NODE_PROVIDERS=$(sanitize ${CM_NODE_PROVIDERS:-"['postgis2d']"})
-CM_SUBDIRECTORY=$(sanitize ${CM_SUBDIRECTORY:-""})
-CM_CSRF_TRUSTED_ORIGINS=$(sanitize ${CM_CSRF_TRUSTED_ORIGINS:-""})
-CM_FORCE_CLIENT_SETTINGS=$(sanitize ${CM_FORCE_CLIENT_SETTINGS:-false})
+CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE=$(sanitize "${CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:-""}")
+CM_HOST=$(sanitize "${CM_HOST:-0.0.0.0}")
+CM_PORT=$(sanitize "${CM_PORT:-8000}")
+CM_FORCE_CONFIG_UPDATE=$(sanitize "${CM_FORCE_CONFIG_UPDATE:-false}")
+CM_WRITEABLE_PATH=$(sanitize "${CM_WRITEABLE_PATH:-"'/tmp'"}")
+CM_NODE_LIMIT=$(sanitize "${CM_NODE_LIMIT:-10000}")
+CM_NODE_PROVIDERS=$(sanitize "${CM_NODE_PROVIDERS:-"['postgis2d']"}")
+CM_SUBDIRECTORY=$(sanitize "${CM_SUBDIRECTORY:-""}")
+CM_CSRF_TRUSTED_ORIGINS=$(sanitize "${CM_CSRF_TRUSTED_ORIGINS:-""}")
+CM_FORCE_CLIENT_SETTINGS=$(sanitize "${CM_FORCE_CLIENT_SETTINGS:-false}")
 CM_CLIENT_SETTINGS=${CM_CLIENT_SETTINGS:-""}
 TIMEZONE=`readlink /etc/localtime | sed "s/.*\/\(.*\)$/\1/"`
 PG_VERSION='10'

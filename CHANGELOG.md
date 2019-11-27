@@ -304,6 +304,11 @@ Miscellaneous:
 
 - The active project title is now shown in the window title.
 
+- There is a new menu item named "User info" in the menu displayed when hovering
+  the mouse cursor over the user's name in the upper right corner. When clicked,
+  it will show the basic information on a user: name, username, user id, primary
+  group and color.
+
 - Projects can now be kept open if all last stack-viewers are closed. To not
   automatically close the open project with the last stack-viewer, uncheck the
   "Project closes with last stack viewer" option in the Settings Widget.

@@ -876,29 +876,35 @@ var project;
   CATMAID.session = null;
 
   CATMAID._updateUserMenu = function() {
-      let userMenuItems = {
-        "user_menu_entry_1": {
+      let userMenuItems = [{
           action: CATMAID.makeURL("user/password_change/"),
           title: "Change password",
           note: "",
         },
-        "user_menu_entry_2": {
+        {
           action: CATMAID.getAuthenticationToken,
           title: "Get API token",
           note: ""
-        }
-      };
+        },
+        {
+          action: () => {
+            let dialog = new CATMAID.UserInfoDialog();
+            dialog.show();
+          },
+          title: "User info",
+          note: ""
+        }];
 
       // If users are allowed to create new spaces, add the respective menu
       // entry
       let s = CATMAID.session;
       let canForkProjects = s.is_authenticated || (s.permissions && -1 !== s.permissions.indexOf('catmaid.can_fork'));
       if (project && canForkProjects) {
-        userMenuItems["user_menu_entry_3"] = {
+        userMenuItems.push({
           title: "Create own space",
           note: "",
           action: () => CATMAID.forkCurrentProject(),
-        };
+        });
       }
       user_menu.update(userMenuItems);
   };

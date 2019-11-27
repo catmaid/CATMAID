@@ -1779,3 +1779,21 @@ button.files-loaded {
   height: 100%;
   border: 0;
 }
+
+.three-column-grid {
+  display: grid;
+  grid-template-columns: 8em 1fr 2em;
+  grid-row-gap: 0.2em;
+}
+
+.three-column-grid .grid-item {
+  display: flex;
+}
+
+.three-column-grid .hover-highlight {
+  color: #aaa;
+}
+
+.hover-highlight:hover {
+  color: #ff8e43;
+}

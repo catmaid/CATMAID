@@ -585,7 +585,7 @@
     if (0 === skids.length) return;
     // Remove any skids from existing items if already present
     for (var i=0; i<this.items.length; ++i) {
-      var item = items[i];
+      var item = this.items[i];
       for (var k=0; k<skids.length; ++k) {
         var skid = skids[k];
         if (item.models.hasOwnProperty(skid)) {

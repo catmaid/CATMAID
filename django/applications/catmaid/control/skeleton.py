@@ -1248,6 +1248,8 @@ def split_skeleton(request:HttpRequest, project_id=None) -> JsonResponse:
     cici.save()
 
     # Update skeleton IDs for treenodes, treenode_connectors, and reviews.
+    # TODO: No need to duplicate the change_list array three times in the query.
+    # Use a CTE
     cursor.execute("""
         UPDATE treenode
           SET skeleton_id = %(new_skeleton_id)s

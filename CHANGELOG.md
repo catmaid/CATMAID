@@ -331,6 +331,9 @@ Miscellaneous:
   the default size. Also copied fields don't contain the content of the source
   field anymore.
 
+- The speed of bulk operations on skeletons has changed (e.g. splitting, joins,
+  reroot).
+
 - Settings widget: it is now possible to clear both front-end and back-end
   settings through the "Clear settings" button. It will ask for confirmation and
   whether both front-end and back-end settings should be cleared.

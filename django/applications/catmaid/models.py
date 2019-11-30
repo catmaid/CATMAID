@@ -1341,6 +1341,7 @@ class SkeletonSummary(models.Model):
     last_editor = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     num_nodes = models.IntegerField(null=False, default=0)
     cable_length = models.FloatField(null=False, default=0)
+    num_imported_nodes = models.IntegerField(null=False, default=0)
 
     def __str__(self) -> str:
         return f"Skeleton {self.skeleton_id} summary ({self.num_nodes} nodes, {self.cable_length} nm)"

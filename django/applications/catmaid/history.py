@@ -60,11 +60,13 @@ def record_request_action(label, method=None):
 
             project_id = kwargs.get('project_id', None)
 
-            result = f(*args, **kwargs)
-
+            # Add transaction information first, so that trigger functions in
+            # the database can use this information.
             user_id = request.user.id
             if not method or request.method == method:
                 add_log_entry(user_id, label, project_id)
+
+            result = f(*args, **kwargs)
 
             return result
         return wrapped_f

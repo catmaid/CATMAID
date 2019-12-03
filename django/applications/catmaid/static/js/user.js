@@ -149,8 +149,9 @@
         {
           var userData = json[i];
           new User(userData.id, userData.login, userData.full_name,
-              userData.first_name, userData.last_name, new THREE.Color(
-                  userData.color[0], userData.color[1], userData.color[2], userData.primary_group_id));
+              userData.first_name, userData.last_name,
+              new THREE.Color(userData.color[0], userData.color[1], userData.color[2]),
+              userData.primary_group_id);
         }
       })
       .catch(CATMAID.handleError)

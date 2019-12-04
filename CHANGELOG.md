@@ -197,6 +197,9 @@ Neuron Search:
 - Name queries can now be marked as case sensitive using the respective checkbox
   next to the name field. By default name queries are case insensitive.
 
+- The search can now be further constrained to only skeletons that include at
+  least partially imported fragments or to skeletons that are fully imported.
+
 Graph widget:
 
 - Node filters are now supported. Like in many widgets, they  available through

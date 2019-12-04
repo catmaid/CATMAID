@@ -4122,7 +4122,9 @@ def import_info(request:HttpRequest, project_id=None) -> JsonResponse:
     # execution time in case transaction wraparound recycled transaction IDs.
     # This is no present danger, but should be employed at some point. The
     # problem is that they the catmaid_transaction_info timestamp doesn't
-    # presently match the Django model defaults.
+    # presently match the Django model defaults. See catmaid/catmaid#1949. It
+    # should however be no problem to enable this for SWC imports, since they
+    # don't use Django's ORM.
     cursor = connection.cursor()
     cursor.execute("""
         SELECT query.skeleton_id, n_imported_treenodes {tn_projection}

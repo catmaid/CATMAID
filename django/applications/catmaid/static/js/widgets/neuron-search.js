@@ -134,6 +134,19 @@
               </td>
               <td><div class="help">Respected for included annotations</div></td>
             </tr>
+            <tr>
+              <td class="neuron_annotations_query_field_label">other:</td>
+              <td class="neuron_annotations_query_field" colspan=2>
+                <label><input type="checkbox" name="neuron_query_import_partial"
+                    id="neuron_query_import_partial${this.widgetID}" size="10" tabindex="-1" />
+                    contains imported fragments
+                </label>
+                <label><input type="checkbox" name="neuron_query_import_full"
+                    id="neuron_query_import_full${this.widgetID}" size="10" tabindex="-1" />
+                    is imported entirely
+                </label>
+              </td>
+            </tr>
           </table>
           <input type="submit" />
           </form>`;
@@ -786,6 +799,8 @@
     var annotatedFrom = $('input[name=neuron_query_by_start_date]', $widget).val().trim();
     var annotatedTo = $('input[name=neuron_query_by_end_date]', $widget).val().trim();
     var annotations = [];
+    let importPartial= $('input[name=neuron_query_import_partial]', $widget).prop('checked');
+    let importFull= $('input[name=neuron_query_import_full]', $widget).prop('checked');
     var nSelector = 'name=neuron_query_by_annotation_not';
     var aSelector = 'name=neuron_query_by_annotation';
     var sSelector = 'name=neuron_query_include_subannotation';
@@ -866,6 +881,12 @@
       }
       if (s) params['sub_annotated_with[' + n + ']'] = value;
       ++n;
+    }
+
+    if (importFull) {
+      params['import_only'] = 'full';
+    } else if (importPartial) {
+      params['import_only'] = 'partial';
     }
 
     // Make sure that the result is constrained in some way and not all neurons

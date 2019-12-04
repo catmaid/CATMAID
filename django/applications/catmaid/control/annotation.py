@@ -48,7 +48,8 @@ def get_annotation_to_id_map(project_id:Union[int,str], annotations:List, relati
 def get_annotated_entities(project_id:Union[int,str], params, relations=None, classes=None,
         allowed_classes=['neuron', 'annotation'], sort_by=None, sort_dir=None,
         range_start=None, range_length=None, with_annotations:bool=True,
-        with_skeletons:bool=True, with_timestamps:bool=False) -> Tuple[List, int]:
+        with_skeletons:bool=True, with_timestamps:bool=False,
+        import_only:Union[None, str]=None) -> Tuple[List, int]:
     """Get a list of annotated entities based on the passed in search criteria.
     """
     if not relations:
@@ -296,6 +297,24 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
         ) skel_link ON ci.id = skel_link.id
     """)
 
+    # Check if some nodes originate from an import transaction, if only a
+    # partial match is needed. This is done separately to use a more optimized
+    # query.
+    if import_only == 'partial' or import_only == 'full':
+        joins.append("""
+            JOIN catmaid_skeleton_summary css
+                ON css.skeleton_id = ANY(skel_link.skeletons)
+        """)
+        if import_only == 'partial':
+            filters.append('css.num_imported_nodes > 0')
+        else:
+            filters.append('css.num_imported_nodes > 0')
+            filters.append('css.num_imported_nodes = css.num_nodes')
+    elif import_only == None:
+        pass
+    else:
+        raise ValueError(f'Unknown import constraint mode: {import_only}')
+
     query_fmt_params = {
         "joins": "\n".join(joins),
         "where": " AND ".join(filters),
@@ -542,6 +561,15 @@ def query_annotated_classinstances(request:HttpRequest, project_id:Optional[Unio
         required: false
         defaultValue: false
         paramType: form
+      - name: import_only
+        description: |
+            Whether and how only skeletons that contain imported fragments
+            should be returned. If set to 'partial', only skeletons that have at
+            least one imported node in them are returned. If set to 'full', only
+            skeletons that are fully imported are returned. Not set by default.
+        type: string
+        required: false
+        paramType: form
     models:
       annotated_entity:
         id: annotated_entity
@@ -596,10 +624,12 @@ def query_annotated_classinstances(request:HttpRequest, project_id:Optional[Unio
     range_length = request.POST.get('range_length', None)
     with_annotations = get_request_bool(request.POST, 'with_annotations', False)
     with_timestamps = get_request_bool(request.POST, 'with_timestamps', False)
+    import_only = request.POST.get('import_only', None)
 
     entities, num_total_records = get_annotated_entities(p.id, request.POST,
             relations, classes, allowed_classes, sort_by, sort_dir, range_start,
-            range_length, with_annotations, with_timestamps=with_timestamps)
+            range_length, with_annotations, with_timestamps=with_timestamps,
+            import_only=import_only)
 
     return JsonResponse({
         'entities': entities,

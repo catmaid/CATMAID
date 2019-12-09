@@ -163,6 +163,16 @@ All new code should include docstrings that follow `PEP257
 formatting
 <http://sphinxcontrib-napoleon.readthedocs.org/en/latest/example_google.html>`_.
 
+For consistency, python code will be linted using ``flake8``: the configuration can be found
+`in the repository <https://github.com/clbarnes/CATMAID/blob/flake8-fixes/setup.cfg#L6>`_.
+Contributions which do not conform with those rules will fail CI checks.
+Several rules are ignored due to a large volume of non-compliant legacy code.
+New code should try to conform even to these rules where appropriate,
+unless doing so would reduce the consistency of the codebase.
+
+Type annotations should be used where possible.
+Currently, these are checked on CI using ``mypy`` for informational purposes only.
+
 HTTP API
 ********
 
